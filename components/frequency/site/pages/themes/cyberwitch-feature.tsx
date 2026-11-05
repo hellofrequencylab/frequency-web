@@ -4,15 +4,15 @@
 // tags, the questions and a last line. The owner asked for the theme page to wear the theme's own look (2026-11-05), so this page
 // leaves Nocturne's feature layout. Server Component. Every value is a --cw-* token (lib/theme/cyberwitch.ts) under the CyberWitch root;
 // it is a marketing page, so the theme fence (ADR-1906: no site theme in member, console or admin areas) is untouched.
-import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Hourglass, KeyRound, MoonStar, SprayCan, type LucideIcon } from 'lucide-react'
 import { CYBERWITCH_FONT_CLASS } from '@/components/sites/cyberwitch-fonts'
 import { createSpaceHref } from '@/lib/create-space/href'
 import { CYBERWITCH_KIT_INDEX } from '@/lib/sites/kits/cyberwitch-profile-index'
-import { CYBERWITCH_ACCENTS, CYBERWITCH_ACCENT_CSS, CYBERWITCH_DIALS_CSS, CYBERWITCH_TOKENS_CSS, type CyberWitchAccentId } from '@/lib/theme/cyberwitch'
-import { THEME_FEATURES, themeFeatureShot } from '@/lib/themes/theme-feature-data'
+import { CYBERWITCH_ACCENT_CSS, CYBERWITCH_DIALS_CSS, CYBERWITCH_TOKENS_CSS } from '@/lib/theme/cyberwitch'
+import { THEME_FEATURES } from '@/lib/themes/theme-feature-data'
 import { CYBERWITCH_FEATURE_CSS } from './cyberwitch-feature-css'
+import { CyberWitchAccentDial, CyberWitchAccentImage, CyberWitchAccentRoot, CyberWitchAccentTags } from './cyberwitch-accent'
 
 const NEEDS: [LucideIcon, string, string][] = [
   [SprayCan, 'Look like nobody else', 'Blackletter, neon tags and concrete. It does not look like a template because it does not behave like one.'],
@@ -51,13 +51,12 @@ function Frame({ label, children, tall }: { label: string; children: React.React
 export function CyberWitchThemeFeature() {
   const copy = THEME_FEATURES.cyberwitch
   const start = createSpaceHref('cyberwitch')
-  const accents = Object.keys(CYBERWITCH_ACCENTS) as CyberWitchAccentId[]
   return (
-    <div data-house-theme="cyberwitch" data-accent="hex" className={`cwf ${CYBERWITCH_FONT_CLASS}`}>
+    <CyberWitchAccentRoot className={`cwf ${CYBERWITCH_FONT_CLASS}`}>
       <style dangerouslySetInnerHTML={{ __html: CYBERWITCH_TOKENS_CSS + CYBERWITCH_DIALS_CSS + CYBERWITCH_ACCENT_CSS + CYBERWITCH_FEATURE_CSS }} />
 
       <section className="cwf-hero">
-        <Image src="/sites/cyberwitch/photos/hero-hex.jpg" alt="" fill priority sizes="100vw" className="cwf-hero-photo" />
+        <CyberWitchAccentImage hero alt="" fill priority sizes="100vw" className="cwf-hero-photo" />
         <i className="cwf-hero-wash" aria-hidden />
         <div className="cwf-hero-in">
           <nav className="cwf-crumbs" aria-label="Breadcrumb"><Link href="/spaces">For Spaces</Link> / <Link href="/themes">Themes</Link> / <span>CyberWitch</span></nav>
@@ -90,10 +89,10 @@ export function CyberWitchThemeFeature() {
       <section className="cwf-sec cwf-sec--sunk" id="surfaces">
         <Head n={2} eyebrow="Every surface" title="One look," em="four places." lede={copy.lead} />
         <div className="cwf-surfaces">
-          <Frame label="Website"><Image src={themeFeatureShot('cyberwitch', 'site')} alt="A CyberWitch website: the neon wall hero" width={1280} height={800} sizes="(max-width: 900px) 92vw, 720px" /></Frame>
-          <Frame label="Spotlight" tall><Image src={themeFeatureShot('cyberwitch', 'spot')} alt="A CyberWitch Spotlight: arched portrait, wordmark and riveted plates" width={780} height={1688} sizes="(max-width: 900px) 60vw, 300px" /></Frame>
-          <Frame label="Email"><Image src={themeFeatureShot('cyberwitch', 'email')} alt="A CyberWitch welcome email" width={900} height={760} sizes="(max-width: 900px) 92vw, 520px" /></Frame>
-          <Frame label="Space page"><Image src={themeFeatureShot('cyberwitch', 'spacedesk')} alt="A Space page wearing the CyberWitch faces and neon" width={1280} height={770} sizes="(max-width: 900px) 92vw, 640px" /></Frame>
+          <Frame label="Website"><CyberWitchAccentImage shot="site" alt="A CyberWitch website: the neon wall hero" width={1280} height={800} sizes="(max-width: 900px) 92vw, 720px" /></Frame>
+          <Frame label="Spotlight" tall><CyberWitchAccentImage shot="spot" alt="A CyberWitch Spotlight: arched portrait, wordmark and riveted plates" width={780} height={1688} sizes="(max-width: 900px) 60vw, 300px" /></Frame>
+          <Frame label="Email"><CyberWitchAccentImage shot="email" alt="A CyberWitch welcome email" width={900} height={760} sizes="(max-width: 900px) 92vw, 520px" /></Frame>
+          <Frame label="Space page"><CyberWitchAccentImage shot="spacedesk" alt="A Space page wearing the CyberWitch faces and neon" width={1280} height={770} sizes="(max-width: 900px) 92vw, 640px" /></Frame>
         </div>
         <p className="cwf-note">Your Space page keeps Frequency&apos;s frame, so people on the network always know where they are. It wears your name, your neon and your offers.</p>
       </section>
@@ -112,15 +111,8 @@ export function CyberWitchThemeFeature() {
       </section>
 
       <section className="cwf-sec cwf-sec--sunk">
-        <Head n={4} eyebrow="Accents" title="Five" em="neon tags." lede="Pick one. Every glow, rule and button follows it." />
-        <ul className="cwf-tags">
-          {accents.map((id) => (
-            <li key={id} data-house-theme="cyberwitch" data-accent={id}>
-              <span className="cwf-tag">{CYBERWITCH_ACCENTS[id].label}</span>
-              <span className="cwf-label">{CYBERWITCH_ACCENTS[id].meaning}</span>
-            </li>
-          ))}
-        </ul>
+        <Head n={4} eyebrow="Accents" title="Five" em="neon tags." lede="Pick one and watch this page wear it. On your Space it is one setting: your website, Spotlight, Space page and emails all follow it." />
+        <CyberWitchAccentTags />
       </section>
 
       <section className="cwf-sec">
@@ -143,6 +135,7 @@ export function CyberWitchThemeFeature() {
           <Placard href="/themes">See every theme</Placard>
         </div>
       </section>
-    </div>
+      <CyberWitchAccentDial />
+    </CyberWitchAccentRoot>
   )
 }

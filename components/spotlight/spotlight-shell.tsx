@@ -93,7 +93,7 @@ export function SpotlightShell({
     }
     if (isCyberWitchKitLayout(theme.layout)) {
       // The CyberWitch theme draws its own page inside the same wrapper and footer.
-      const content = cyberwitchKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined, portrait: profile.avatar_url ? avatarSrc(profile.avatar_url) : undefined })
+      const content = cyberwitchKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, accent: theme.accent ?? undefined, photo: profile.header_image_url ?? undefined, portrait: profile.avatar_url ? avatarSrc(profile.avatar_url) : undefined })
       return (
         <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
           <main className="relative mx-auto max-w-xl">

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -203,13 +203,22 @@ const LAYOUT_COMPONENT: Record<CyberWitchLayoutKey, (p: { c: C }) => ReactNode> 
   stack: Stack, 'card-wall': CardWall, story: Story, 'calendar-first': CalendarFirst, 'shop-front': ShopFront, profile: Profile,
 }
 
+/** An owner's own neon (none of the five): the flare ramp is mixed from it, the way the website's skin follows --color-primary. */
+function ownNeon(hex: string | null): CSSProperties | undefined {
+  if (!hex) return undefined
+  return {
+    '--cw-flare-500': hex, '--cw-flare-400': `color-mix(in oklab, ${hex} 78%, white)`, '--cw-flare-300': `color-mix(in oklab, ${hex} 55%, white)`,
+    '--cw-flare-600': `color-mix(in oklab, ${hex} 78%, black)`, '--cw-flare-700': `color-mix(in oklab, ${hex} 50%, black)`,
+  } as CSSProperties
+}
+
 /** One CyberWitch Spotlight layout, wearing the owner's accent. The `<style>` carries the theme's tokens and
  *  the layout sheet, so it renders the same anywhere (the Spotlight route, a preview, a test). */
 export function CyberWitchKitSpotlightLayout({ layout, content, className }: { layout: CyberWitchKitLayoutId; content: CyberWitchSpotlightContent; className?: string }) {
   const Layout = LAYOUT_COMPONENT[layout.slice('cyberwitch-kit:'.length) as CyberWitchLayoutKey]
   if (!Layout) return null
   return (
-    <div data-house-theme="cyberwitch" data-accent={content.accent} data-layout={layout} className={`cws${className ? ` ${className}` : ''}`}>
+    <div data-house-theme="cyberwitch" data-accent={content.accent} data-layout={layout} className={`cws${className ? ` ${className}` : ''}`} style={ownNeon(content.accentHex)}>
       <style dangerouslySetInnerHTML={{ __html: CYBERWITCH_TOKENS_CSS + CYBERWITCH_DIALS_CSS + CYBERWITCH_ACCENT_CSS + CYBERWITCH_KIT_LAYOUTS_CSS }} />
       <Layout c={content} />
     </div>

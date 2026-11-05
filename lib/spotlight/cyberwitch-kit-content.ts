@@ -22,6 +22,8 @@ interface CyberWitchReview { q: string; who: string; what: string }
 export interface CyberWitchSpotlightContent {
   kit: string
   accent: CyberWitchAccentId
+  /** The owner's own neon when it is none of the five (a hex from their Space or Spotlight); null wears `accent`. */
+  accentHex: string | null
   name: string
   descriptor: string
   owner: string
@@ -121,6 +123,8 @@ function firstName(owner: string): string {
   return a!.endsWith('.') && b ? `${a} ${b}` : a!
 }
 
+const HEX6 = /^#[0-9a-f]{6}$/i
+
 /** The kit ids, in the design's order. */
 export const CYBERWITCH_SPOTLIGHT_KIT_IDS = Object.keys(KITS)
 
@@ -131,7 +135,12 @@ export function cyberwitchKitSpotlightContent(kit: string, opts: { name?: string
   const k = KITS[id]!
   const sample = opts.sample !== false
   const pick = (a: string | undefined): CyberWitchAccentId | null => (a && a in CYBERWITCH_ACCENTS ? (a as CyberWitchAccentId) : null)
-  const accent = pick(opts.accent) ?? pick(k.accent) ?? 'hex'
+  // The owner's accent arrives as a preset id or as a colour (their Space's brand accent, ONE ACCENT): a colour that is
+  // one of the five wears that preset, any other colour is worn as itself over Hex's ramps.
+  const hex = opts.accent && HEX6.test(opts.accent) ? opts.accent.toLowerCase() : null
+  const byHex = hex ? (Object.keys(CYBERWITCH_ACCENTS) as CyberWitchAccentId[]).find((id) => CYBERWITCH_ACCENTS[id].accent.toLowerCase() === hex) ?? null : null
+  const accent = pick(opts.accent) ?? byHex ?? pick(k.accent) ?? 'hex'
+  const accentHex = hex && !byHex ? hex : null
   const offers: CyberWitchOffer[] = sample ? k.offers.map(([name, price, dur, icon]) => ({ name, price, dur, icon })) : []
   const groups = k.groups.length ? k.groups : []
   const has = (h: Has) => (h === 'groups' ? groups.length > 0 : k.has.includes(h))
@@ -161,6 +170,7 @@ export function cyberwitchKitSpotlightContent(kit: string, opts: { name?: string
   return {
     kit: id,
     accent,
+    accentHex,
     name: opts.name ?? k.name,
     descriptor: k.descriptor,
     owner: k.owner,

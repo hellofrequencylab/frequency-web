@@ -21,7 +21,10 @@ import { SERVICES_ACCENTS } from '@/lib/theme/services'
 import { CYBERWITCH_ACCENTS } from '@/lib/theme/cyberwitch'
 
 const SERVICES_TIDE = SERVICES_ACCENTS.tide.accent
-const CYBERWITCH_HEX = CYBERWITCH_ACCENTS.hex.accent
+// CW_ACCENT=<absinthe|ice|blood|venom> renders CyberWitch in that neon (its own photos, accent and email fill), for the theme
+// page's accent picker; unset is Hex, the default pictures.
+const CW = (process.env.CW_ACCENT && process.env.CW_ACCENT in CYBERWITCH_ACCENTS ? process.env.CW_ACCENT : 'hex') as keyof typeof CYBERWITCH_ACCENTS
+const CYBERWITCH_HEX = CYBERWITCH_ACCENTS[CW].accent
 const out = process.env.RENDER_OUT
 const ROOT = process.cwd()
 const face = (fam: string, f: string, style = 'normal', w = '100 900') => `@font-face{font-family:"${fam}";src:url("file://${ROOT}/app/fonts/${f}") format("woff2");font-style:${style};font-weight:${w}}`
@@ -50,7 +53,7 @@ const THEMES: { ed: 'Menswork' | 'Wildheart' | 'Services' | 'CyberWitch'; id: st
   // Services: the General kit on Night, in its Tide starting accent (SERVICES_ACCENTS.tide).
   { ed: 'Services', id: 'services', mega: 'services', kit: 'services-general', skin: { theme: 'services', season: 'fall' }, photo: '/brand/frequency/photos/gathering-10.jpg', cover: '/brand/frequency/photos/gathering-12.jpg', accent: SERVICES_TIDE },
   // CyberWitch: the General kit in its Hex starting accent (CYBERWITCH_ACCENTS.hex), dark only.
-  { ed: 'CyberWitch', id: 'cyberwitch', mega: 'cyberwitch', kit: 'cyberwitch-general', skin: { theme: 'cyberwitch', season: 'fall' }, photo: '/sites/cyberwitch/photos/founder-hex.jpg', cover: '/sites/cyberwitch/photos/hero-hex.jpg', accent: CYBERWITCH_HEX },
+  { ed: 'CyberWitch', id: 'cyberwitch', mega: 'cyberwitch', kit: 'cyberwitch-general', skin: { theme: 'cyberwitch', season: 'fall' }, photo: `/sites/cyberwitch/photos/founder-${CW}.jpg`, cover: `/sites/cyberwitch/photos/hero-${CW}.jpg`, accent: CYBERWITCH_HEX },
 ]
 
 async function html(el: unknown): Promise<string> {
@@ -130,7 +133,7 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
         body,
       ),
     )
-    const vars = Object.entries(websiteThemeVars(t.ed as never, null, new Date('2026-10-15'))).map(([k, v]) => `${k}:${v}`).join(';').replace(/"/g, "'")
+    const vars = Object.entries(websiteThemeVars(t.ed as never, t.mega === 'cyberwitch' ? t.accent : null, new Date('2026-10-15'))).map(([k, v]) => `${k}:${v}`).join(';').replace(/"/g, "'")
     const skinCss = t.skin === null ? FREQUENCY_PAGE_CSS : t.skin.theme === 'wildheart' ? FREQUENCY_PAGE_CSS + WILDHEART_CSS : t.skin.theme === 'services' ? FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS : t.skin.theme === 'cyberwitch' ? FREQUENCY_PAGE_CSS + CYBERWITCH_CSS : MENSWORK_CSS + MENSWORK_PAGE_CSS
     // Services draws the owner's accent from the accent scope above its skin, the way the live site does (AccentScope).
     const accentVars = t.mega === 'services' ? Object.entries(servicesAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : t.mega === 'cyberwitch' ? Object.entries(cyberwitchAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : ''
@@ -141,7 +144,7 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
     const data = {
       profile: { display_name: 'Maya Torres', handle: 'maya', bio: 'I host small movement circles on the coast. Come as you are.', avatar_url: t.id === 'wildheart' ? '/brand/wildheart/photos/forest-witch.jpg' : t.id === 'cyberwitch' ? t.photo : null, header_image_url: t.cover, community_role: null, nexus_regions: { name: 'North County San Diego' }, profile_theme: null },
       hostedEvents: [], canTip: false, programs: { circles: [], journeys: [], spaces: [] }, layout: { blocks: [] },
-      background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }, theme: t.mega === 'cyberwitch' ? { ...preset, layout: 'cyberwitch-kit:stack', kit: 'general' } : preset, totalZaps: 0, contributionCounts: { eventsHosted: 0, journeysFinished: 0 }, guestbook: [], grid: null,
+      background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }, theme: t.mega === 'cyberwitch' ? { ...preset, layout: 'cyberwitch-kit:stack', kit: 'general', accent: t.accent.toLowerCase() } : preset, totalZaps: 0, contributionCounts: { eventsHosted: 0, journeysFinished: 0 }, guestbook: [], grid: null,
     }
     const linkCards = ['Join the Thursday circle', 'This month’s dates', 'Book a first visit'].map((l) => h('a', { key: l, href: '#', style: { display: 'block', marginTop: 12, padding: 16, fontWeight: 600, color: 'var(--color-text)', background: 'var(--color-surface-elevated)', border: '1px solid color-mix(in srgb, var(--color-text) 18%, transparent)', borderRadius: ({ none: 0, sm: 6, md: 12, lg: 18, xl: 28 } as Record<string, number>)[preset.card.radius] ?? 18, textDecoration: 'none' } }, l))
     const spot = await html(h(Shell as never, { data, showBio: true, sampleContent: true } as never, h('div', null, linkCards)))
@@ -191,7 +194,7 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
     if (t.mega === 'cyberwitch') {
       const { cyberwitchKitEmail } = await import('@/lib/theme/cyberwitch-kit-email')
       const { CYBERWITCH_SURFACE } = await import('@/lib/theme/cyberwitch')
-      const cw = cyberwitchKitEmail('welcome', { name: 'Ash & Ember', descriptor: 'Readings, ritual and spellwork', owner: 'Mara Quill', role: 'Reader', city: 'San Diego', accent: { fill: CYBERWITCH_SURFACE.accent.accent, text: CYBERWITCH_SURFACE.accent.text }, postalLine: 'Ash & Ember, San Diego', siteUrl: 'https://example.com', siteLabel: 'ashandember.example', unsubscribeUrl: 'https://example.com/unsubscribe' })
+      const cw = cyberwitchKitEmail('welcome', { name: 'Ash & Ember', descriptor: 'Readings, ritual and spellwork', owner: 'Mara Quill', role: 'Reader', city: 'San Diego', accent: CW === 'hex' ? { fill: CYBERWITCH_SURFACE.accent.accent, text: CYBERWITCH_SURFACE.accent.text } : { fill: CYBERWITCH_ACCENTS[CW].accent, text: CYBERWITCH_ACCENTS[CW].text }, postalLine: 'Ash & Ember, San Diego', siteUrl: 'https://example.com', siteLabel: 'ashandember.example', unsubscribeUrl: 'https://example.com/unsubscribe' })
       writeFileSync(`${out}/${t.id}-email.html`, cw.html)
       continue
     }

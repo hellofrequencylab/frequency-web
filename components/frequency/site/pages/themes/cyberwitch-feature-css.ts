@@ -97,4 +97,15 @@ export const CYBERWITCH_FEATURE_CSS = `
 /* The last line. */
 .cwf-last{position:relative;z-index:1;display:grid;justify-items:center;gap:22px;text-align:center;padding:clamp(90px,12vw,150px) 24px;background:var(--cw-haze-spray),var(--cw-tex-chain),var(--cw-ink-950)}
 .cwf-last .cwf-d{font-size:clamp(60px,9vw,128px)}
+/* The neon picker: the five tags are buttons, and a small riveted dial sits bottom right (design's DialBar). */
+.cwf-tagbtn{display:grid;gap:8px;justify-items:start;background:none;border:0;padding:6px 4px;cursor:pointer;color:inherit;text-align:left;opacity:.62;transition:opacity .2s}
+.cwf-tagbtn:hover,.cwf-tagbtn[aria-pressed="true"]{opacity:1}
+.cwf-tagbtn[aria-pressed="true"] .cwf-label{color:var(--cw-flare-300)}
+.cwf-tagbtn:focus-visible,.cwf-dial button:focus-visible{outline:2px solid var(--cw-flare-300);outline-offset:4px}
+.cwf-dial{position:fixed;right:16px;bottom:16px;z-index:40;display:flex;align-items:center;gap:12px;padding:10px 14px;background:color-mix(in oklab,var(--cw-ink-950) 90%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px var(--cw-border-default),var(--cw-shadow-plate)}
+.cwf-dial-sw{display:flex;gap:8px}
+.cwf-dial button{width:12px;height:30px;padding:0;border:0;cursor:pointer;background:var(--cw-flare-500);box-shadow:0 0 0 1px var(--cw-border-default);opacity:.55;transition:opacity .2s,box-shadow .2s}
+.cwf-dial button[aria-pressed="true"]{opacity:1;box-shadow:0 0 0 1px var(--cw-flare-300),var(--cw-glow-sm)}
+.cwf-dial-name{font-family:var(--cw-font-scrawl);font-weight:400;font-size:18px;color:var(--cw-flare-400);min-width:6ch}
+@media (max-width:599px){.cwf-dial{left:16px;right:16px;justify-content:space-between}}
 `
