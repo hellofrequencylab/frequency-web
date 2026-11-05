@@ -21,7 +21,11 @@ type Block = KitPage['blocks'][number]
 const slot = (key: string, sample: string) => `{{${key}|${sample}}}`
 const hasNumber = (s: string) => /\d/.test(s)
 
-function pages(s: ServicesTradeSpec): KitPage[] {
+/** The General kit's photo hero: a window washer at work (owner's picture, 2026-11-05), the Services theme's hero everywhere it shows. */
+export const SERVICES_HERO_IMAGE = '/sites/services/hero-squeegee.webp'
+const SERVICES_HERO_ALT = 'A window washer with a squeegee on a long blue pole, cleaning a tall storefront window'
+
+function pages(s: ServicesTradeSpec, trade: ServicesTradeId): KitPage[] {
   const offers = s.offers.map((o, i) => ({
     name: slot(`offer${i + 1}Title`, o.name), meta: o.length, body: slot(`offer${i + 1}Blurb`, o.meta), price: slot(`offer${i + 1}Price`, o.price), href: '~/booking',
   }))
@@ -29,7 +33,7 @@ function pages(s: ServicesTradeSpec): KitPage[] {
     type: 'ServicesHero',
     props: {
       look: 'photo', eyebrow: s.hero.eyebrow, title: `${s.hero.title} *${s.hero.em}*`, lead: s.hero.body,
-      primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: 'See what we do', secondaryHref: '~/services', proof: '', image: '', alt: '',
+      primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: 'See what we do', secondaryHref: '~/services', proof: '', image: trade === 'general' ? SERVICES_HERO_IMAGE : '', alt: trade === 'general' ? SERVICES_HERO_ALT : '',
       panelTitle: 'Book online', panelNote: 'Pick a time', offers: offers.map((o) => ({ name: o.name, meta: o.meta, price: o.price, href: o.href })), areas: [],
     },
   }
@@ -119,6 +123,6 @@ export function servicesKit(trade: ServicesTradeId): ServicesKit {
   const s: ServicesTradeSpec = SERVICES_TRADES[trade]
   return {
     id: `services-${trade}`, version: 1, theme: 'Services', niche: 'general', trade, label: s.label, description: servicesKitDescription(trade),
-    tools: s.tools, accent: SERVICES_ACCENTS[s.accent].accent, pages: pages(s),
+    tools: s.tools, accent: SERVICES_ACCENTS[s.accent].accent, pages: pages(s, trade),
   }
 }
