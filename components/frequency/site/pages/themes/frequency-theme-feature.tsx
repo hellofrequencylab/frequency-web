@@ -18,6 +18,7 @@ import { THEME_LOOK_CONTROLS, THEME_TOOLS } from '@/lib/themes/library'
 import { THEME_FEATURES, themeFeatureShot, type ThemeFeatureId, type ThemeFeatureSurface } from '@/lib/themes/theme-feature-data'
 import { NewWorldBrowser, NewWorldPhone } from './new-world-preview'
 import { ThemeFeatureMail, ThemeFeatureStage } from './theme-feature-preview'
+import { CyberWitchThemeFeature } from './cyberwitch-feature'
 const PAGES: [string, string][] = [
   ['Home', 'What happens here, who it is for and a way to come along. The first thing people see.'],
   ['Services', 'Every offer with its length, price and a button. Free first visits are written as Free.'],
@@ -71,6 +72,8 @@ function Status() {
 }
 
 export function FrequencyThemeFeature({ theme }: { theme: ThemeFeatureId }) {
+  // CyberWitch wears its own theme page (the owner's call, 2026-11-05); every other theme keeps Nocturne's layout.
+  if (theme === 'cyberwitch') return <CyberWitchThemeFeature />
   const copy = THEME_FEATURES[theme]
   const name = copy.name
   const START_HREF = createSpaceHref(theme)
