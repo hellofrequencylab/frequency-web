@@ -30,7 +30,7 @@ describe('a CyberWitch Space Spotlight', () => {
     expect(c.cta).toEqual({ label: 'Book a reading', href: 'https://tablenine.example/book' })
   })
   it('leaves every other theme to the block page', () => {
-    expect(cyberwitchSpacePage(space('new-world', null), null, {})).toBeNull()
+    expect(cyberwitchSpacePage(space('services', null), null, {})).toBeNull()
   })
 })
 
