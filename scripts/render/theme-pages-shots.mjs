@@ -49,15 +49,18 @@ const CW_CSS =
   [400, 500, 600, 700].map((w) => `@font-face{font-family:Spectral;src:url(/fonts/spectral/spectral-${w}.woff2) format("woff2");font-weight:${w}}`).join('')
 writeFileSync(join(dir, 'fonts.css'), FONTS_CSS + BOLD_CSS + WH_CSS + CW_CSS)
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
+// CW_ACCENT (with THEME_ONLY=cyberwitch) writes that neon's pictures under public/brand/theme-pages/cyberwitch/<accent>/.
+const cwAccent = process.env.CW_ACCENT && process.env.CW_ACCENT !== 'hex' ? process.env.CW_ACCENT : null
 for (const t of themes) {
-  mkdirSync(`public/brand/theme-pages/${t}`, { recursive: true })
+  const outDir = t === 'cyberwitch' && cwAccent ? `public/brand/theme-pages/${t}/${cwAccent}` : `public/brand/theme-pages/${t}`
+  mkdirSync(outDir, { recursive: true })
   for (const [name, { width, height, scale }] of Object.entries(shots)) {
     // Bold's website picture is taken at 1.25x the frame and scaled back, so the headline AND the photo under it sit in the window.
     const zoom = (t === 'bold' || t === 'wildheart') && name === 'site' ? 1.25 : 1
     const page = await browser.newPage({ viewport: { width: width * zoom, height: height * zoom }, deviceScaleFactor: scale / zoom })
     await page.goto(name === 'spacedesk' || name === 'spot' ? `${base}/${t}-${name}.html` : pathToFileURL(`${dir}/${t}-${name}.html`).href, { waitUntil: 'load' })
     await page.waitForTimeout(600)
-    await page.screenshot({ path: `public/brand/theme-pages/${t}/${name}.jpg`, type: 'jpeg', quality: 82, clip: { x: 0, y: 0, width: width * zoom, height: height * zoom } })
+    await page.screenshot({ path: `${outDir}/${name}.jpg`, type: 'jpeg', quality: 82, clip: { x: 0, y: 0, width: width * zoom, height: height * zoom } })
     await page.close()
   }
 }
