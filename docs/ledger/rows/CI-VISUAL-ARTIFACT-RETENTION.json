@@ -14,5 +14,6 @@
     "kind": "manual",
     "evidence": "OPEN. Daniel approved exact workflow patch SHA256 05b29b302606bea428c260a5e22b617a28c4dbd95767ee04d72eaaea9aa0c7f4 on 2026-11-04. Applied against main bbdfba1b: exactly six YAML leaves isolate public/member/advisory results and HTML directories; upload roots, selectors, secrets, gates, thresholds, baselines and blocking/advisory semantics preserved. Installed pnpm/Playwright non-browser controls reproduce pristine advisory-only retention and preserve candidate smoke plus all three visual tiers; intentional public/advisory exit1 and reporter append controls pass. Exact-head CI and inspection of actual retained artifacts remain pending. Local fixtures do not establish a visual or performance pass; do not close until CI artifact retention is verified.",
     "checked": "2026-11-04"
-  }
+  },
+  "wave": "W7"
 }
