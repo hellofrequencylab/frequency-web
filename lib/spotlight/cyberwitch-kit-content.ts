@@ -28,6 +28,11 @@ export interface CyberWitchSpotlightContent {
   role: string
   story: string
   hero: { eyebrow: string; title: string; em: string; body: string; photo: string | null }
+  /** The arched portrait at the top of a page: the owner's photo, or on the sample page the theme's own founder picture. */
+  portrait: string | null
+  /** The kit's sprayed marker tag ("no fear ✕") and the one line a stranger should remember (kits.cyberwitch.json tag, pain). */
+  tag: string
+  pain: string
   cta: { label: string; href: string }
   /** The kit's second button ("See the calendar"). */
   secondaryCta: string
@@ -62,6 +67,11 @@ interface KitSource {
 }
 
 const ICON_FOR: IconName[] = ['sparkle', 'calendar', 'star']
+/** The design's sprayed tag per kit (kits.cyberwitch.json `tag`). */
+const TAGS: Record<string, string> = { general: 'your tag line', practitioner: 'no fixing', reader: 'no fear', band: 'play it loud', brand: 'made to last', studio: 'by appointment' }
+const PAIN = 'The one sentence a stranger should remember about you.'
+/** The theme's own pictures (public/sites/cyberwitch/photos), one per accent; the sample page wears them, a live page never does. */
+const themePhoto = (kind: 'hero' | 'founder', accent: CyberWitchAccentId) => `/sites/cyberwitch/photos/${kind}-${accent}.jpg`
 const KITS: Record<string, KitSource> = Object.fromEntries(
   Object.entries(CYBERWITCH_KIT_SPECS).map(([id, s]): [string, KitSource] => [
     id,
@@ -115,8 +125,8 @@ function firstName(owner: string): string {
 export const CYBERWITCH_SPOTLIGHT_KIT_IDS = Object.keys(KITS)
 
 /** Everything a CyberWitch layout shows for a kit. `sample` fills the prices, open times, reviews and the quote (the
- *  design's sample page); a live page passes false and gets none of them. `accent` and `photo` are the owner's. */
-export function cyberwitchKitSpotlightContent(kit: string, opts: { name?: string; sample?: boolean; accent?: string; photo?: string } = {}): CyberWitchSpotlightContent {
+ *  design's sample page); a live page passes false and gets none of them. `accent`, `photo` (the header picture) and `portrait` (the avatar) are the owner's. */
+export function cyberwitchKitSpotlightContent(kit: string, opts: { name?: string; sample?: boolean; accent?: string; photo?: string; portrait?: string } = {}): CyberWitchSpotlightContent {
   const id = KITS[kit] ? kit : 'general'
   const k = KITS[id]!
   const sample = opts.sample !== false
@@ -156,7 +166,10 @@ export function cyberwitchKitSpotlightContent(kit: string, opts: { name?: string
     owner: k.owner,
     role: k.role,
     story: k.story,
-    hero: { ...k.hero, photo: opts.photo ?? null },
+    hero: { ...k.hero, photo: opts.photo ?? (sample ? themePhoto('hero', accent) : null) },
+    portrait: opts.portrait ?? (sample ? themePhoto('founder', accent) : null),
+    tag: TAGS[id] ?? TAGS.general!,
+    pain: PAIN,
     cta: { label: k.cta, href: '/book' },
     secondaryCta: k.cta2,
     doors,

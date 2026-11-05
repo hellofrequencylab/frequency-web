@@ -58,6 +58,28 @@ ${C} .hs-btn-primary,${C} .hs-btn-dark,${C} .sv-btn--accent{background:var(--col
 ${C} .hs-btn-primary:hover,${C} .hs-btn-dark:hover,${C} .sv-btn--accent:hover{background:var(--color-primary-hover);color:var(--color-text-on-primary);box-shadow:var(--cw-glow-lg)}
 ${C} .hs-btn-soft,${C} .sv-btn--secondary{background:transparent;color:var(--color-text);border:1px solid var(--cw-border-strong)}
 ${C} .hs-btn-soft:hover,${C} .sv-btn--secondary:hover{background:var(--cw-accent-tint);border-color:var(--cw-accent);color:var(--color-text)}
+/* The design's sticker button (components/core/Button.jsx): the accent is a hand-cut quad with a marker label, a degree off true, that
+ * straightens on hover; the second button is a gallery placard, a double hairline frame with tracked serif caps. */
+${C} .hs-btn-primary,${C} .hs-btn-dark,${C} .sv-btn--accent{border-radius:0;clip-path:polygon(1.5% 9%,98.5% 0,100% 88%,2.5% 100%);font-family:var(--cw-font-scrawl);font-weight:400;font-size:17px;letter-spacing:.02em;text-transform:uppercase;transform:rotate(-1.2deg);transition:transform var(--cw-dur-base) ${EASE},background var(--cw-dur-fast)}
+${C} .sv-btn--accent.sv-btn--lg{font-size:20px;height:60px;padding:0 32px}
+${C} .sv-btn--accent::before,${C} .sv-btn--accent::after{display:none}
+${C} .hs-btn-primary:hover,${C} .hs-btn-dark:hover,${C} .sv-btn--accent:hover{transform:none}
+${C} .hs-btn-soft,${C} .sv-btn--secondary{border:0;border-radius:0;background:transparent;box-shadow:inset 0 0 0 1px var(--cw-border-strong),inset 0 0 0 4px var(--cw-surface-page),inset 0 0 0 5px var(--cw-border-default);font-size:14px;letter-spacing:.14em}
+${C} .hs-btn-soft:hover,${C} .sv-btn--secondary:hover{border:0;color:var(--cw-accent-text);box-shadow:inset 0 0 0 1px var(--cw-accent),inset 0 0 0 4px var(--cw-surface-page),inset 0 0 0 5px var(--cw-accent-line)}
+/* The photo hero (Sections.jsx Hero, look photo, the theme's default): the neon-wall picture full bleed, an iron scrim from the left so the
+ * words read and the figure on the right stays lit, the words held to the left half. */
+${C} .sv-hero--photo{min-height:min(92vh,880px)}
+${C} .sv-hero-bg--photo{background-position:70% 40%}
+${C} .sv-hero-bg--photo::before{background:linear-gradient(90deg,color-mix(in oklab,var(--cw-ink-950) 90%,transparent) 0%,color-mix(in oklab,var(--cw-ink-950) 80%,transparent) 38%,color-mix(in oklab,var(--cw-ink-950) 25%,transparent) 58%,transparent 72%),linear-gradient(0deg,var(--cw-ink-900) 0%,transparent 30%)}
+${C} .sv-hero-bg--photo::after{display:none}
+${C} .sv-hero--photo .sv-hero-in{grid-template-columns:minmax(0,1fr);align-items:end}
+${C} .sv-hero--photo .sv-hero-copy{max-width:min(100%,640px)}
+@media (min-width:900px){${C} .sv-hero--photo .sv-hero-copy{max-width:min(56%,640px)}}
+@media (max-width:899px){${C} .sv-hero-bg--photo{background-position:84% 40%}}
+${C} .sv-hero--photo .sv-hero-copy .sv-display{font-size:clamp(44px,5.6vw,88px)}
+${C} .sv-hero .sv-eyebrow{color:var(--cw-ink-900)}
+/* The wordmark in the bar (Logo, descriptor off): the name in bone blackletter, lit by the shadow, never the accent. */
+${C} .hs-brand{color:var(--cw-chrome-50);font-size:clamp(24px,2.4vw,32px)}
 /* The header: a steel bar with a neon hairline under it. */
 ${C} .hs-header{position:sticky;top:0;z-index:40}
 ${C} .hs-pill{background:color-mix(in oklab,var(--cw-ink-900) 88%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--cw-border-subtle);box-shadow:0 1px 0 color-mix(in oklab,var(--cw-flare-500) 28%,transparent)}

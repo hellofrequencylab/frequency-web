@@ -41,7 +41,7 @@ const WH_FACES =
   face('EB Garamond', 'eb-garamond/eb-garamond.woff2', 'normal', '400 800') + face('EB Garamond', 'eb-garamond/eb-garamond-italic.woff2', 'italic', '400 800') +
   face('Noto Sans Symbols', 'noto-sans-symbols/noto-sans-symbols.woff2') + face('Playfair Display', 'playfair-display/playfair-display.woff2', 'normal', '400 900')
 const WH_VARS = '--font-wh-fell:"IM Fell English";--font-wh-garamond:"EB Garamond";--font-wh-hanken:"Hanken Grotesk";--font-wh-symbols:"Noto Sans Symbols";--font-playfair:"Playfair Display";'
-const pub = (html: string) => html.replace(/ loading="lazy"/g, '').replace(/(src|href)="\/(sites|brand|themes|create-a-space)\//g, `$1="file://${ROOT}/public/$2/`)
+const pub = (html: string) => html.replace(/ loading="lazy"/g, '').replace(/(src|href)="\/(sites|brand|themes|create-a-space)\//g, `$1="file://${ROOT}/public/$2/`).replace(/url\(&quot;\/(sites|brand|themes)\//g, `url(&quot;file://${ROOT}/public/$1/`)
 
 type Skin = { theme: 'menswork' | 'wildheart' | 'services' | 'cyberwitch'; season: 'fall' } | null
 const THEMES: { ed: 'Menswork' | 'Wildheart' | 'Services' | 'CyberWitch'; id: string; mega: 'bold' | 'wildheart' | 'services' | 'cyberwitch'; kit: string; skin: Skin; photo: string; cover: string; accent: string }[] = [
@@ -101,7 +101,7 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
     if (!r.ok) throw new Error(r.error)
     const home = r.snapshot.pages.find((p) => p.slug === 'home' || p.slug === '') ?? r.snapshot.pages[0]!
     for (const b of home.doc.content as { type: string; props: Record<string, unknown> }[]) {
-      if (b.type === 'ServicesHero' || b.type === 'Hero') b.props.image = t.photo
+      if (b.type === 'ServicesHero' || b.type === 'Hero') b.props.image = t.id === 'cyberwitch' ? t.cover : t.photo
       // Bold's kit hero is text-only; the design puts the headline above a full-width photo, so the picture shows the photo variant.
       if (b.type === 'PhotoHero' && t.id === 'wildheart') Object.assign(b.props, { variant: 'image', image: t.cover, alt: 'Women gathered on a beach in warm light', height: 'medium', display: 'below' })
       if (b.type === 'PhotoHero' && t.id === 'bold') Object.assign(b.props, { variant: 'image', image: t.photo, alt: 'People gathered on a beach at sunset', height: 'medium', display: 'below' })
@@ -139,7 +139,7 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
     // ---- Spotlight: the real shell on the theme's own preset.
     const preset = THEME_PRESETS.find((p) => p.id === t.mega)!.theme
     const data = {
-      profile: { display_name: 'Maya Torres', handle: 'maya', bio: 'I host small movement circles on the coast. Come as you are.', avatar_url: t.id === 'wildheart' ? '/brand/wildheart/photos/forest-witch.jpg' : null, header_image_url: t.cover, community_role: null, nexus_regions: { name: 'North County San Diego' }, profile_theme: null },
+      profile: { display_name: 'Maya Torres', handle: 'maya', bio: 'I host small movement circles on the coast. Come as you are.', avatar_url: t.id === 'wildheart' ? '/brand/wildheart/photos/forest-witch.jpg' : t.id === 'cyberwitch' ? t.photo : null, header_image_url: t.cover, community_role: null, nexus_regions: { name: 'North County San Diego' }, profile_theme: null },
       hostedEvents: [], canTip: false, programs: { circles: [], journeys: [], spaces: [] }, layout: { blocks: [] },
       background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }, theme: t.mega === 'cyberwitch' ? { ...preset, layout: 'cyberwitch-kit:stack', kit: 'general' } : preset, totalZaps: 0, contributionCounts: { eventsHosted: 0, journeysFinished: 0 }, guestbook: [], grid: null,
     }
