@@ -195,3 +195,18 @@ export function cyberwitchAccentVars(brandAccent: string | null | undefined): Ac
     "--color-text-on-primary": contrastRatio(CYBERWITCH_ON_ACCENT, accent) >= 4.5 ? CYBERWITCH_ON_ACCENT : "#FFFFFF",
   };
 }
+
+/** The preset a colour is, or null for any other colour. */
+export function cyberwitchAccentId(hex: string | null | undefined): CyberWitchAccentId | null {
+  const want = hex?.trim().toUpperCase();
+  if (!want) return null;
+  return (Object.keys(CYBERWITCH_ACCENTS) as CyberWitchAccentId[]).find((id) => CYBERWITCH_ACCENTS[id].accent.toUpperCase() === want) ?? null;
+}
+
+const CYBERWITCH_ACCENT_PHOTO = /\/sites\/cyberwitch\/photos\/(hero|founder)-(hex|absinthe|ice|blood|venom)\.jpg/g;
+
+/** The hero wall and the founder are shot once per neon. Every one of those pictures in `value` (a site snapshot, any JSON)
+ *  re-pointed to `accent`'s shot, so a Space started in Absinthe opens on the green wall, not the kit's default. PURE. */
+export function withCyberWitchAccentPhotos<T>(value: T, accent: CyberWitchAccentId): T {
+  return JSON.parse(JSON.stringify(value).replace(CYBERWITCH_ACCENT_PHOTO, (_m, kind: string) => `/sites/cyberwitch/photos/${kind}-${accent}.jpg`)) as T;
+}

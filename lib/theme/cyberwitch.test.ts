@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { contrastRatio } from '@/lib/spaces/accent'
-import { CYBERWITCH_ACCENTS, CYBERWITCH_ACCENT_CSS, CYBERWITCH_DIALS_CSS, CYBERWITCH_ON_ACCENT, CYBERWITCH_SURFACE, CYBERWITCH_TOKENS_CSS, cyberwitchAccentVars, type CyberWitchAccentId } from './cyberwitch'
+import { CYBERWITCH_ACCENTS, CYBERWITCH_ACCENT_CSS, CYBERWITCH_DIALS_CSS, CYBERWITCH_ON_ACCENT, CYBERWITCH_SURFACE, CYBERWITCH_TOKENS_CSS, cyberwitchAccentId, cyberwitchAccentVars, withCyberWitchAccentPhotos, type CyberWitchAccentId } from './cyberwitch'
 
 const SHEETS = [CYBERWITCH_TOKENS_CSS, CYBERWITCH_DIALS_CSS, CYBERWITCH_ACCENT_CSS]
 
@@ -38,5 +38,18 @@ describe('CyberWitch theme tokens', () => {
     expect(custom['--color-primary']).toBe('#2244aa')
     expect(custom['--color-text-on-primary']).toBe('#FFFFFF')
     expect(cyberwitchAccentVars('not a colour')['--color-primary']).toBe('#FF00FF')
+  })
+})
+
+describe('one neon on the starter site pictures', () => {
+  it('names the preset a colour is, any case, and nothing for another colour', () => {
+    expect(cyberwitchAccentId('#b4ff1a')).toBe('absinthe')
+    expect(cyberwitchAccentId('#FF00FF')).toBe('hex')
+    expect(cyberwitchAccentId('#123456')).toBeNull()
+    expect(cyberwitchAccentId(null)).toBeNull()
+  })
+  it('re-points every wall and founder shot to the neon and leaves the rest', () => {
+    const snap = { pages: [{ blocks: [{ props: { image: '/sites/cyberwitch/photos/hero-hex.jpg', portrait: '/sites/cyberwitch/photos/founder-ice.jpg', story: '/sites/cyberwitch/photos/story.jpg' } }] }] }
+    expect(withCyberWitchAccentPhotos(snap, 'absinthe')).toEqual({ pages: [{ blocks: [{ props: { image: '/sites/cyberwitch/photos/hero-absinthe.jpg', portrait: '/sites/cyberwitch/photos/founder-absinthe.jpg', story: '/sites/cyberwitch/photos/story.jpg' } }] }] })
   })
 })
