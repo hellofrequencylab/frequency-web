@@ -5,6 +5,7 @@
 // scripts/render/theme-pages-shots with CW_ACCENT). The pick is remembered on this device only.
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from 'react'
 import Image, { type ImageProps } from 'next/image'
+import Link from 'next/link'
 import { CYBERWITCH_ACCENTS, type CyberWitchAccentId } from '@/lib/theme/cyberwitch'
 
 const IDS = Object.keys(CYBERWITCH_ACCENTS) as CyberWitchAccentId[]
@@ -16,22 +17,30 @@ export const cyberwitchShot = (accent: CyberWitchAccentId, shot: string) => `/br
 
 // The pick lives in this device's storage (a per-viewer convenience), with a module copy when storage is off. Read through
 // useSyncExternalStore so the server and the first paint agree on Hex and the saved neon arrives right after.
-let memory: CyberWitchAccentId = 'hex'
+let memory: CyberWitchAccentId | null = null
 const listeners = new Set<() => void>()
 const isAccent = (v: unknown): v is CyberWitchAccentId => typeof v === 'string' && v in CYBERWITCH_ACCENTS
-function readAccent(): CyberWitchAccentId {
+/** The neon this device picked last, on this page or the Theme Kits page; null when it never picked one. */
+function readPicked(): CyberWitchAccentId | null {
   try {
     const saved = window.localStorage.getItem(KEY)
     if (isAccent(saved)) return saved
   } catch { /* storage off */ }
   return memory
 }
-function writeAccent(a: CyberWitchAccentId) {
+const readAccent = (): CyberWitchAccentId => readPicked() ?? 'hex'
+/** Remember a neon for this device: the theme page, the Theme Kits page and both Use buttons read it. */
+export function writeAccent(a: CyberWitchAccentId) {
   memory = a
   try { window.localStorage.setItem(KEY, a) } catch { /* storage off */ }
   listeners.forEach((l) => l())
 }
 const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l) } }
+
+/** The neon this device picked, for the Theme Kits page's CyberWitch section; null until one is picked. */
+export function useCyberWitchPick(): CyberWitchAccentId | null {
+  return useSyncExternalStore(subscribe, readPicked, () => null)
+}
 
 /** The page root: carries the theme and the picked neon. */
 export function CyberWitchAccentRoot({ className, children }: { className: string; children: ReactNode }) {
@@ -82,4 +91,10 @@ export function CyberWitchAccentDial() {
       <b className="cwf-dial-name">{CYBERWITCH_ACCENTS[accent].label}</b>
     </div>
   )
+}
+
+/** A link into the builder that carries the picked neon (&accent=, lib/create-space/door.ts), so the Space starts in it. */
+export function CyberWitchUseLink({ href, className, children }: { href: string; className: string; children: ReactNode }) {
+  const { accent } = useContext(Ctx)
+  return <Link href={`${href}${href.includes('?') ? '&' : '?'}accent=${accent}`} className={className}>{children}</Link>
 }

@@ -83,3 +83,17 @@ describe('every signed-out door lands in the builder primed', () => {
     expect(paramsOf(createSpaceDoorHref(p))).toEqual({ intents: 'events,community', name: 'Hearth' })
   })
 })
+
+describe('the accent picked beside a Use button', () => {
+  it('opens the builder on it, by name or hex, and drops one the kit does not have', () => {
+    expect(doorArrival((k) => ({ kit: 'cyberwitch', accent: 'absinthe' } as Record<string, string>)[k] ?? null).accentAt).toBe(1)
+    expect(doorArrival((k) => ({ kit: 'cyberwitch', accent: '#1FF4FF' } as Record<string, string>)[k] ?? null).accentAt).toBe(2)
+    expect(doorArrival((k) => ({ kit: 'cyberwitch', accent: 'volt' } as Record<string, string>)[k] ?? null).accentAt).toBeUndefined()
+    expect(doorArrival((k) => ({ accent: 'absinthe' } as Record<string, string>)[k] ?? null).accentAt).toBeUndefined()
+  })
+  it('rides through the signed-out door and back', () => {
+    const href = createSpaceDoorHref({ kit: 'cyberwitch', accent: 'Absinthe' })
+    expect(href).toBe('/create-a-space?kit=cyberwitch&accent=absinthe')
+    expect(doorArrival((k) => paramsOf(href)[k] ?? null).accentAt).toBe(1)
+  })
+})

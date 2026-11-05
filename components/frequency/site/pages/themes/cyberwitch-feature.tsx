@@ -12,7 +12,7 @@ import { CYBERWITCH_KIT_INDEX } from '@/lib/sites/kits/cyberwitch-profile-index'
 import { CYBERWITCH_ACCENT_CSS, CYBERWITCH_DIALS_CSS, CYBERWITCH_TOKENS_CSS } from '@/lib/theme/cyberwitch'
 import { THEME_FEATURES } from '@/lib/themes/theme-feature-data'
 import { CYBERWITCH_FEATURE_CSS } from '@/components/sites/cyberwitch-feature-css'
-import { CyberWitchAccentDial, CyberWitchAccentImage, CyberWitchAccentRoot, CyberWitchAccentTags } from './cyberwitch-accent'
+import { CyberWitchAccentDial, CyberWitchAccentImage, CyberWitchAccentRoot, CyberWitchAccentTags, CyberWitchUseLink } from './cyberwitch-accent'
 
 const NEEDS: [LucideIcon, string, string][] = [
   [SprayCan, 'Look like nobody else', 'Blackletter, neon tags and concrete. It does not look like a template because it does not behave like one.'],
@@ -25,7 +25,7 @@ const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI']
 const KIT_NAME: Record<string, string> = { general: 'Your Name', practitioner: 'Your Practice', reader: 'Your Craft', band: 'Your Band', brand: 'Your Brand', studio: 'Your Studio' }
 
 function Sticker({ href, children }: { href: string; children: React.ReactNode }) {
-  return <Link href={href} className="cwf-sticker"><span>{children}</span></Link>
+  return <CyberWitchUseLink href={href} className="cwf-sticker"><span>{children}</span></CyberWitchUseLink>
 }
 function Placard({ href, children }: { href: string; children: React.ReactNode }) {
   return <Link href={href} className="cwf-placard">{children}</Link>
@@ -101,11 +101,11 @@ export function CyberWitchThemeFeature() {
         <Head n={3} eyebrow="Kits" title="Start from" em="your niche." lede="Six kits write the prompts, the sample rows and which tools are on. Colour and type stay yours." />
         <div className="cwf-kits">
           {CYBERWITCH_KIT_INDEX.map((k) => (
-            <Link key={k.id} href={start} className="cwf-plate cwf-kit">
+            <CyberWitchUseLink key={k.id} href={start} className="cwf-plate cwf-kit">
               <span className="cwf-kit-name">{KIT_NAME[k.kit] ?? k.label}</span>
               <span className="cwf-label">{k.label}</span>
               <small>{k.description}</small>
-            </Link>
+            </CyberWitchUseLink>
           ))}
         </div>
       </section>

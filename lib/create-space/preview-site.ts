@@ -99,8 +99,8 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
     covers: [FREE_HUMAN_PHOTO('heritage-a-virgin'), FREE_HUMAN_PHOTO('place-daisies'), FREE_HUMAN_PHOTO('light-sun'), FREE_HUMAN_PHOTO('light-floating-candles'), FREE_HUMAN_PHOTO('light-lanterns')],
     portraits: [FREE_HUMAN_PHOTO('founder-audrey'), FREE_HUMAN_PHOTO('light-honey-dipper')],
   },
-  // CyberWitch's own pictures (the zip's assets/imagery): the sprayed hero is its hero, the founder its portrait. Every photo follows the
-  // accent, so the Hex set stands in until the owner picks another.
+  // CyberWitch's own pictures (the zip's assets/imagery): the sprayed hero is its hero, the founder its portrait. The Hex pair is the
+  // default; kitImagery(kit, accentAt) swaps in the picked neon's pair.
   cyberwitch: {
     hero: CYBERWITCH_PHOTO('hero-hex'), heroPos: 'center 40%', portrait: CYBERWITCH_PHOTO('founder-hex'), portraitPos: 'center 30%',
     strip: [CYBERWITCH_PHOTO('story'), CYBERWITCH_PHOTO('hero-ice'), CYBERWITCH_PHOTO('hero-absinthe')], nav1: 'Work with me', cta2: 'See the work',
@@ -153,7 +153,22 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
 }
 
 /** Every kit's pictures: a kit with its own library never borrows another's. */
-export const kitImagery = (kit: MegaThemeId): KitImagery => KIT_IMAGERY[kit]
+export function kitImagery(kit: MegaThemeId, accentAt?: number): KitImagery {
+  const base = KIT_IMAGERY[kit]
+  if (kit !== 'cyberwitch' || accentAt === undefined) return base
+  // CyberWitch's hero and founder are shot in each neon: the picked accent's pair leads, the rest of the library follows.
+  const id = (Object.keys(CYBERWITCH_ACCENTS) as (keyof typeof CYBERWITCH_ACCENTS)[])[accentAt]
+  if (!id) return base
+  const hero = CYBERWITCH_PHOTO(`hero-${id}`)
+  const portrait = CYBERWITCH_PHOTO(`founder-${id}`)
+  return {
+    ...base, hero, portrait,
+    // The offer strip in the same neon: the story, the founder, the wall.
+    strip: [CYBERWITCH_PHOTO('story'), portrait, hero],
+    covers: [hero, ...base.covers.filter((c) => c !== hero && c !== base.hero)],
+    portraits: [portrait, ...base.portraits.filter((c) => c !== portrait && c !== base.portrait)],
+  }
+}
 /** Every kit's accents are its own: no kit falls back to another kit's family (Daniel, 2026-11-03). */
 export const kitAccents = (kit: MegaThemeId): readonly PreviewAccent[] => KIT_ACCENTS[kit]
 
@@ -164,6 +179,16 @@ export function kitAccentFill(kit: unknown, at: unknown): string | null {
   const n = typeof at === 'string' && /^\d{1,2}$/.test(at) ? Number(at) : typeof at === 'number' ? at : NaN
   const fill = Number.isInteger(n) ? kitAccents(kit)[n]?.fill : undefined
   return fill && /^#[0-9a-fA-F]{6}$/.test(fill) ? fill : null
+}
+
+/** The place in a kit's accent list an address names (`?accent=` from a Theme Kit page's Use button): the accent's name
+ *  (`absinthe`) or its hex, any case. Null when the kit or the accent is not one of ours, so the builder keeps its default. */
+export function kitAccentIndex(kit: unknown, accent: unknown): number | null {
+  if (typeof kit !== 'string' || !isPreviewKit(kit) || typeof accent !== 'string') return null
+  const want = accent.trim().toLowerCase().replace(/^%23/, '#')
+  if (!want || want.length > 40) return null
+  const at = kitAccents(kit).findIndex((a) => a.name.toLowerCase() === want || a.fill.toLowerCase() === want || a.fill.toLowerCase() === `#${want}`)
+  return at >= 0 ? at : null
 }
 
 interface PreviewAccent {
@@ -244,6 +269,8 @@ interface SiteInput {
   hostName: string
   intents: readonly string[]
   kit: MegaThemeId
+  /** The accent's place in the kit's list, for a kit whose pictures follow it (kitImagery). */
+  accentAt?: number
   /** Their one sentence about what they offer (v3 step 2). When given, it is the tagline, as they wrote it. */
   offer?: string
   /** How clients reach them (v3 step 3): the contact strip and the Spotlight read these. */
@@ -303,7 +330,7 @@ const isIntent = (id: string): id is IntentId => id in INTENT_LOOK
 
 /** The words and pictures of the preview for the current state. Total: empty state reads as a sample Space. */
 export function deriveSite(input: SiteInput): PreviewSite {
-  const imagery = kitImagery(input.kit)
+  const imagery = kitImagery(input.kit, input.accentAt)
   const picks = WIZARD_INTENTS.filter((i) => input.intents.includes(i.id))
   const first = picks[0] ? INTENT_LOOK[picks[0].id] : null
   const offerIds: IntentId[] = (picks.length ? picks.map((p) => p.id) : [...FALLBACK_OFFERS]).slice(0, 3)
