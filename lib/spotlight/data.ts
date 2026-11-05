@@ -13,8 +13,7 @@ import {
 } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
-import { isCyberWitchKitLayout } from '@/lib/spotlight/layouts'
-import { pickThemeSpaceAccent } from './space-accent'
+import { pickThemeSpaceAccent, themeOfLayout } from './space-accent'
 import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import { readPageSettings, type SpotlightPageSettings } from './link-in-bio'
@@ -158,8 +157,9 @@ async function loadMemberSpotlight(
   const layout = validateSpotlightLayout(readSpotlightLayoutRaw(g.meta), ownerAuthId)
   const background = validateSpotlightBackground(readSpotlightBackgroundRaw(g.meta), ownerAuthId)
   const stored = validateSpotlightTheme(readSpotlightThemeRaw(g.meta))
-  // ONE ACCENT: a CyberWitch Spotlight wears its owner's CyberWitch Space accent (lib/spotlight/space-accent.ts).
-  const spaceAccent = stored.layout && isCyberWitchKitLayout(stored.layout) ? await readThemeSpaceAccent(admin, g.id, 'cyberwitch') : null
+  // ONE ACCENT: a themed Spotlight wears the accent of its owner's Space in the same theme (lib/spotlight/space-accent.ts).
+  const layoutTheme = themeOfLayout(stored.layout)
+  const spaceAccent = layoutTheme ? await readThemeSpaceAccent(admin, g.id, layoutTheme) : null
   const theme = spaceAccent ? { ...stored, accent: spaceAccent } : stored
 
   // Page row: the explicit allowlist only.

@@ -16,3 +16,20 @@ export function pickThemeSpaceAccent(rows: readonly { brand_accent: string | nul
   }
   return null
 }
+
+// A themed Spotlight layout's id starts with its kit's name; the Space that wears the same theme is the one whose accent it
+// borrows. Designer is left out: its profile ramps are the design's own data (lib/spotlight/designer-kit-content.ts).
+const LAYOUT_THEME: Record<string, string> = {
+  'new-world-kit': 'new-world', 'services-kit': 'services', 'temple-kit': 'temple-kit', 'free-human': 'free-human', 'network-kit': 'network-kit', 'cyberwitch-kit': 'cyberwitch',
+}
+/** The site theme whose Space accent a Spotlight layout wears, or null for a layout that keeps its own. Pure. */
+export function themeOfLayout(layout: string | null | undefined): string | null {
+  return (layout && LAYOUT_THEME[layout.split(':')[0] ?? '']) || null
+}
+
+/** The key of `table` whose `accent` is the `#rrggbb` the owner picked (case-blind), else null. Pure. */
+export function presetForAccent<T extends Record<string, { accent: string }>>(table: T, accent: string | null | undefined): Extract<keyof T, string> | null {
+  const want = accent?.trim().toLowerCase()
+  if (!want) return null
+  return (Object.keys(table).find((k) => table[k]!.accent.toLowerCase() === want) as Extract<keyof T, string> | undefined) ?? null
+}
