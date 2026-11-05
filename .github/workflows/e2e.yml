@@ -474,10 +474,10 @@ jobs:
             rm -f "${refused}"
             states=$(
               for dep in $(read_api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" '.[].id'); do
-                read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" '.[].state'
+                read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" 'max_by([.created_at, .id]) | .state // empty'
               done
               read_api "repos/${REPO}/commits/${SHA}/statuses?per_page=100" \
-                '.[] | select(.context | ascii_downcase | test("vercel")) | .state'
+                'group_by(.context)[] | max_by([.created_at, .id]) | select(.context | ascii_downcase | test("vercel")) | .state'
               # A refused read prints nothing and is recorded in ${refused}, read just below, so the
               # subshell's own exit status is not the signal and must not trip `set -e`.
               true
@@ -654,9 +654,10 @@ jobs:
       - name: Public surface -- production contracts
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/public-contracts
           PW_BASE_URL: https://frequencylocal.com
           PW_PROBE_CRON: '0'
-        run: pnpm exec playwright test public-surface.spec.ts --project mobile
+        run: pnpm exec playwright test public-surface.spec.ts --project mobile --output=test-results/public-contracts
 
       # ── THE VISUAL COMPARE, IN TWO TIERS (2026-09-14) ──────────────────────────────────
       #
@@ -1109,10 +1110,10 @@ jobs:
             rm -f "${refused}"
             states=$(
               for dep in $(read_api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" '.[].id'); do
-                read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" '.[].state'
+                read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" 'max_by([.created_at, .id]) | .state // empty'
               done
               read_api "repos/${REPO}/commits/${SHA}/statuses?per_page=100" \
-                '.[] | select(.context | ascii_downcase | test("vercel")) | .state'
+                'group_by(.context)[] | max_by([.created_at, .id]) | select(.context | ascii_downcase | test("vercel")) | .state'
               # A refused read prints nothing and is recorded in ${refused}, read just below, so the
               # subshell's own exit status is not the signal and must not trip `set -e`.
               true
