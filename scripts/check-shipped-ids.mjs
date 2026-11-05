@@ -19,7 +19,8 @@
 // ── WHAT COUNTS AS AN ID, and why the window starts where it does ─────────────────────────────
 // A token is an id when its PREFIX is one some row already uses (`LIVE`, `HYG`, `SCAN`, `OWN`,
 // `PROG`, `DEF`, ... read from the JSON itself, never a second list here) followed by `-` and an
-// upper-case alphanumeric suffix. Subjects BEFORE the seed commit (ADR-1043, #2142, 2026-08-17)
+// upper-case alphanumeric suffix. Additional letter-led segments are part of the same ID.
+// A numeric range such as SCAN-915-919 still names SCAN-915. Subjects BEFORE the seed commit (ADR-1043, #2142, 2026-08-17)
 // name ids from the five retired planning systems the one list absorbed — BUG-4, SEC-9, PERF-3,
 // ADMIN-04 — and those were never rows and never will be, so the window opens at the seed rather
 // than carrying forty-odd permanent exemptions. Subjects only: bodies discuss ids in prose.
@@ -115,7 +116,7 @@ export function rowPrefixes(ids) {
 /** A regex matching every id-shaped token for the given prefixes, whole-word. */
 export function idPattern(prefixes) {
   const alt = [...prefixes].sort().join('|')
-  return new RegExp(`\\b(?:${alt})-[A-Z0-9]+\\b`, 'g')
+  return new RegExp(`\\b(?:${alt})-[A-Z0-9]+(?:-[A-Z][A-Z0-9]*)*\\b`, 'g')
 }
 
 /** The ids one subject names, in order, deduplicated. */
