@@ -71,6 +71,11 @@ describe('the build identity a deploy check reads', () => {
 })
 
 describe('the index contract it already had is unchanged', () => {
+  it('publishes the one-hour browser and shared-cache policy at the origin', () => {
+    const directives = GET().headers.get('cache-control')?.split(',').map((directive) => directive.trim())
+    expect(directives).toEqual(['public', 'max-age=3600', 's-maxage=3600'])
+  })
+
   it('still lists the endpoint family and the SLO summary', async () => {
     const json = await body()
     expect(json.service).toBe('frequency')

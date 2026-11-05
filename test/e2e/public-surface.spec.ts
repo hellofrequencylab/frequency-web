@@ -88,11 +88,19 @@ test.describe('public surface (platform host)', { tag: '@public-surface' }, () =
     const res = await request.get('/api/status')
     expect(res.status()).toBe(200)
     expect(res.headers()['content-type']).toContain('application/json')
-    expect(res.headers()['cache-control']).toMatch(/s-maxage=\d+/)
+    // Vercel consumes s-maxage at its edge. Check the client policy and actual cache reuse.
+    const cacheControl = res.headers()['cache-control'].split(',').map((directive) => directive.trim())
+    expect(cacheControl).toEqual(expect.arrayContaining(['public', 'max-age=3600']))
+    expect(cacheControl).not.toContain('private')
+    expect(cacheControl).not.toContain('no-store')
     expect(res.headers()['set-cookie'], 'a cacheable machine endpoint sets no cookie').toBeUndefined()
     const json = await res.json()
     expect(json.service).toBe('frequency')
     expect(json.build.env).toBe('production')
+    await expect.poll(async () => {
+      const cached = await request.get('/api/status')
+      return cached.ok() ? cached.headers()['x-vercel-cache'] : cached.status()
+    }, { message: '/api/status is served from the Vercel cache after warming' }).toBe('HIT')
   })
 
   test('unknown API paths and anonymous private APIs never 5xx and answer JSON-or-empty', async ({ request }) => {
