@@ -270,7 +270,7 @@ const KIT_ACCENT_LISTS = Object.fromEntries(
     const have = new Set(KIT_ACCENTS[k].map((a) => a.fill.toLowerCase()))
     return [k, [...KIT_ACCENTS[k], ...(THEMES_PAGE_ACCENTS[k] ?? []).filter((a) => !have.has(a.fill.toLowerCase()))]]
   }),
-) as Record<MegaThemeId, readonly PreviewAccent[]>
+) as unknown as Record<MegaThemeId, readonly PreviewAccent[]>
 
 /** The kits the page offers, in the page's order, with the wizard's labels and pitches. */
 export const PREVIEW_KITS = PREVIEW_KIT_ORDER.map((id) => {
