@@ -22,7 +22,7 @@ const slot = (key: string, sample: string) => `{{${key}|${sample}}}`
 const hasNumber = (s: string) => /\d/.test(s)
 
 /** The General kit's photo hero: a window washer at work (owner's picture, 2026-11-05), the Services theme's hero everywhere it shows. */
-export const SERVICES_HERO_IMAGE = '/sites/services/hero-squeegee.webp'
+const SERVICES_HERO_IMAGE = '/sites/services/hero-squeegee.webp'
 const SERVICES_HERO_ALT = 'A window washer with a squeegee on a long blue pole, cleaning a tall storefront window'
 
 function pages(s: ServicesTradeSpec, trade: ServicesTradeId): KitPage[] {
