@@ -11,4 +11,9 @@ describe('createSpaceHref', () => {
     expect(createSpaceHref(null)).toBe('/create-a-space')
     expect(createSpaceHref()).toBe('/create-a-space')
   })
+  it('carries the accent picked beside the Use button, and drops an odd one', () => {
+    expect(createSpaceHref('cyberwitch', 'Absinthe')).toBe('/create-a-space?kit=cyberwitch&accent=absinthe')
+    expect(createSpaceHref('cyberwitch', 'a b<c')).toBe('/create-a-space?kit=cyberwitch')
+    expect(createSpaceHref('network', 'absinthe')).toBe('/create-a-space')
+  })
 })

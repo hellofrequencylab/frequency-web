@@ -65,6 +65,19 @@ describe('what counts as an id', () => {
 })
 
 describe('findUnlisted: the comparison, arm by arm', () => {
+  it('checks whole multi-segment IDs without treating a numeric range as an ID', () => {
+    const list = rows('THEME-USE-ACCENT-ALL-KITS', 'SCAN-915')
+    const r = findUnlisted({
+      commits: [
+        commit('Shipped (THEME-USE-ACCENT-ALL-KITS) and SCAN-915-919'),
+        commit('Missing (THEME-SPOTLIGHT-MISSING)'),
+      ],
+      rows: list,
+      exceptions: {},
+    })
+    expect(r.missing.map(({ id }) => id)).toEqual(['THEME-SPOTLIGHT-MISSING'])
+  })
+
   const list = rows('LIVE-1', 'LIVE-2', 'HYG-3')
 
   it('passes a window whose every id is a row', () => {

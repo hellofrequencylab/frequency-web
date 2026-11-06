@@ -1,0 +1,19 @@
+{
+  "id": "SEC-POSTGIS-PUBLIC",
+  "title": "Secure exposed PostGIS objects through a staged provider-compatible plan",
+  "status": "open",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "source": {
+    "file": "docs/RUNBOOKS.md",
+    "ref": "Daniel 2026-11-04 audit and approved improvement scope"
+  },
+  "detail": "Read-only metadata identified public.spatial_ref_sys owned by supabase_admin, RLS disabled and broad browser-role privileges. Supabase November4 guidance treats exposed PostGIS objects as a real advisor issue; extension relocation/permission repair needs provider-compatible staging, impact inventory and rollback. This is separate from backup-table containment; do not change extension ownership or apply SQL speculatively.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-04",
+    "evidence": "Metadata-only finding; no exploit, table-row read or mutation performed. Acceptance: exact current extension/object/role inventory; isolated provider/version staging and spatial/webhook/pool compatibility; reviewed committed SQL and Daniel-only execution if required; live effective-permission and application postconditions."
+  },
+  "wave": "W7"
+}
