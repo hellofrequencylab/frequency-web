@@ -54,6 +54,8 @@ export interface SpaceSpotlight {
   published: boolean
   /** The saved one-column layout, or null when the owner has not arranged one (the starter renders). */
   layout: EntityLayout | null
+  /** The owner's chosen whole-page look on a New World Space: `profile` (the owner first). Absent = the stack. */
+  look?: 'profile'
 }
 
 function spotlightNode(preferences: unknown): Record<string, unknown> | null {
@@ -124,15 +126,16 @@ function toSpotlightLayout(layout: EntityLayout | null): EntityLayout | null {
 export function readSpaceSpotlight(preferences: unknown): SpaceSpotlight {
   const node = spotlightNode(preferences)
   if (!node) return { published: false, layout: null }
+  const look = node.look === 'profile' ? ({ look: 'profile' } as const) : {}
   // A NATIVE node document: nodes are the truth (`layout.nodes`, which every renderer reads through
   // resolveNodeRowsFor), and `rows` is a best-effort type-keyed projection, one row per distinct shown type with
   // the first node's bags, so the same document still reads sensibly with the switch off. It must be non-empty:
   // the renderers fall back to the starter when `rows` has none.
   if (hasNativeNodeStorage(node.layout)) {
     const nodes = toSpotlightNodes(upgradeLayout(node.layout))
-    return { published: node.published === true, layout: nodes ? nodeProjection(nodes) : null }
+    return { published: node.published === true, layout: nodes ? nodeProjection(nodes) : null, ...look }
   }
-  return { published: node.published === true, layout: toSpotlightLayout(parseEntityLayout(node.layout)) }
+  return { published: node.published === true, layout: toSpotlightLayout(parseEntityLayout(node.layout)), ...look }
 }
 
 /** The layout a Space Spotlight renders: the saved one, else the starter. Always one column. PURE. */
@@ -176,6 +179,7 @@ export function nextSpotlightPreferences(
   const prev = readSpaceSpotlight(current)
   const published = typeof change.published === 'boolean' ? change.published : prev.published
   const node: Record<string, unknown> = { published }
+  if (prev.look) node.look = prev.look
   if (change.native === true && change.layout) {
     // A NATIVE node document (render_path_spotlight on, ADR-1853): stored as nodes, narrowed to the Spotlight.
     const nodes = toSpotlightNodes(sanitizeNodeLayout(change.layout, 'space'))

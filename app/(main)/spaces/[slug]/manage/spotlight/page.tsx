@@ -20,7 +20,7 @@ import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { renderSpaceBlockNodes } from '@/components/widgets/space-profile/space-profile-modules'
 import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
-import { SpotlightAccent, SpotlightHeader } from '@/components/spotlight/space-spotlight'
+import { NewWorldProfileSpotlight, SpotlightAccent, SpotlightHeader, wearsNewWorldProfile } from '@/components/spotlight/space-spotlight'
 import { SpaceSpotlightEditor } from '@/components/spotlight/space-spotlight-editor'
 import { getSpaceLayoutRailData } from '../rail-getters'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
@@ -131,7 +131,15 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
       }
     : null
 
-  const preview = (
+  // A New World Space on the Profile look previews the SAME layout the public page draws (saved state; it refreshes as
+  // the owner edits), not the generic card page.
+  const preview = wearsNewWorldProfile(space) ? (
+    <SpotlightAccent space={space}>
+      <div className="mx-auto max-w-xl overflow-hidden rounded-card border border-border">
+        <NewWorldProfileSpotlight space={space} tagline={tagline} grid={grid} />
+      </div>
+    </SpotlightAccent>
+  ) : (
     <SpotlightAccent space={space}>
       <div className="mx-auto max-w-xl rounded-card border border-border bg-canvas px-4 pb-10">
         <SpotlightHeader space={space} tagline={tagline} />
