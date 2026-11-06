@@ -12,7 +12,7 @@
   "detail": "Card links box on /admin/cyberunicorn: find a member, see where their card opens, pick a site page or paste any https link, save. Staff only (consoleStaffGate); same normalizer as the member's own editor.",
   "verify": {
     "kind": "cmd",
-    "cmd": "test -f lib/member-cards/staff-actions.ts && grep -q StaffCardLinkBox app/\\(main\\)/admin/cyberunicorn/page.tsx"
+    "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('lib/member-cards/staff-actions.ts')&&f.readFileSync('app/(main)/admin/cyberunicorn/page.tsx','utf8').includes('StaffCardLinkBox')?0:1)\""
   },
   "wave": "W7",
   "closed": "2026-11-06"
