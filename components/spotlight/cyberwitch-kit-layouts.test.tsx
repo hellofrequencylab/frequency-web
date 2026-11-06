@@ -85,4 +85,16 @@ describe('CyberWitch Kit Spotlight layouts', () => {
     expect(html).toContain('Harbor Plumbing')
     expect(html).toContain('p.jpg')
   })
+
+  it('wears the owner\'s accent: one of the five as its preset, any other colour as its own neon', () => {
+    const preset = cyberwitchKitSpotlightContent('general', { accent: '#B4FF1A' })
+    expect(preset.accent).toBe('absinthe')
+    expect(preset.accentHex).toBeNull()
+    expect(renderToStaticMarkup(<CyberWitchKitSpotlightLayout layout="cyberwitch-kit:stack" content={preset} />)).toContain('data-accent="absinthe"')
+    const own = cyberwitchKitSpotlightContent('general', { accent: '#3366FF' })
+    expect(own.accentHex).toBe('#3366ff')
+    expect(renderToStaticMarkup(<CyberWitchKitSpotlightLayout layout="cyberwitch-kit:stack" content={own} />)).toContain('--cw-flare-500:#3366ff')
+    expect(cyberwitchKitSpotlightContent('general', { accent: 'ice' }).accent).toBe('ice')
+    expect(cyberwitchKitSpotlightContent('general', { accent: 'nonsense' }).accentHex).toBeNull()
+  })
 })

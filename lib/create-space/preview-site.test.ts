@@ -5,7 +5,7 @@ import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
 import { FREE_HUMAN_PROFILES } from '@/lib/theme/free-human'
 import { SERVICES_ACCENTS } from '@/lib/theme/services'
 import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
-import { INTENT_LOOK, PREVIEW_CLIP, PREVIEW_KITS, asSentence, clipPreview, deriveSite, kitAccentFill, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
+import { INTENT_LOOK, PREVIEW_CLIP, PREVIEW_KITS, asSentence, clipPreview, deriveSite, kitAccentFill, kitAccentIndex, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
 
 const base = { name: '', handle: '', hostName: '', intents: [] as string[], kit: 'designer' as const }
 
@@ -108,3 +108,26 @@ describe('preview site', () => {
     expect(kitAccentFill('network', '0')).toBeNull()
   })
 })
+
+describe('the /themes page accents reach the builder', () => {
+  const KIT_OF: Record<string, string> = { 'new-world': 'new-world', network: 'network-kit', services: 'services', designer: 'designer', bold: 'bold', temple: 'temple-kit', cyberwitch: 'cyberwitch', wildheart: 'wildheart', nocturne: 'midnight' }
+  it('every swatch on a theme page resolves to an accent in its kit by hex', async () => {
+    const { THEMES } = await import('@/components/frequency/site/pages/themes/kit-showcase/data')
+    for (const th of THEMES) {
+      const kit = KIT_OF[th.id as string]
+      if (!kit) continue
+      for (const a of th.accents as { label: string; hex: string }[]) {
+        if (th.id === 'new-world' && a.label === 'Violet') continue // barred by the violet-family probe until the owner allows it
+        expect(kitAccentIndex(kit, a.hex.replace('#', '')), `${th.id} ${a.label}`).not.toBeNull()
+      }
+    }
+  })
+  it('no kit lists two accents under one name or one colour', () => {
+    for (const id of Object.keys(KIT_OF_ALL)) {
+      const l = kitAccents(id as never)
+      expect(new Set(l.map((a) => a.name.toLowerCase())).size, id).toBe(l.length)
+      expect(new Set(l.map((a) => a.fill.toLowerCase())).size, id).toBe(l.length)
+    }
+  })
+})
+const KIT_OF_ALL: Record<string, true> = { 'new-world': true, 'network-kit': true, services: true, designer: true, bold: true, 'temple-kit': true, cyberwitch: true, wildheart: true, midnight: true }

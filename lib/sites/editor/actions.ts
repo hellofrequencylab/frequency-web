@@ -64,6 +64,15 @@ export async function saveWebsiteDraft(host: string, expectedRevision: number, d
     // THEME DRAFTS: picking a theme in the editor changes the draft only. Publishing is when the site wears it.
     const styled = await publishDraftStyle(auth, draft)
     if (!styled.ok) return { ok: false, error: styled.error }
+    // ONE ACCENT (owner, 2026-11-05): the accent picked for the website becomes the Space's accent, so the Space page,
+    // the emails and a themed Spotlight (lib/spotlight/space-accent.ts) wear the same colour. A token or "theme accent"
+    // pick leaves the Space's own colour as it is.
+    const picked = draft.brand?.accent?.trim()
+    if (picked && /^#[0-9a-f]{6}$/i.test(picked)) {
+      const spaces = auth.db as unknown as { from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> } } }
+      const { error } = await spaces.from('spaces').update({ brand_accent: picked }).eq('id', auth.space.id)
+      if (error) return { ok: false, error: 'Your website published, but its accent could not be saved to your Space. Publish again.' }
+    }
     refreshSite(auth.space.slug)
   }
   return { ok: true, state: next }

@@ -83,7 +83,11 @@ type Phase = 'build' | 'saved'
 function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: string | null }) {
   // A door's hints (lib/create-space/door.ts) prime the start: the name is typed in, the goals light the preview's
   // offer cards before a sentence is written, and the niche rides to the launch. Nothing is marked done for them.
-  const [draft, setDraft] = useState<BuilderDraft>(() => ({ ...emptyDraft(arrival.kit, arrival.chosen), name: arrival.name, goals: arrival.goals, niche: arrival.niche }))
+  // The accent picked beside the kit's Use button arrives picked: they chose it there, so it is not asked again.
+  const [draft, setDraft] = useState<BuilderDraft>(() => ({
+    ...emptyDraft(arrival.kit, arrival.chosen), name: arrival.name, goals: arrival.goals, niche: arrival.niche,
+    ...(arrival.accentAt !== undefined ? { accentAt: arrival.accentAt, accentPicked: true } : {}),
+  }))
   const [step, setStep] = useState(0)
   const [phase, setPhase] = useState<Phase>('build')
   const [busyLine, setBusyLine] = useState<number | null>(null)
@@ -270,7 +274,7 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
   const kitLabel = PREVIEW_KITS.find((k) => k.id === draft.kit)?.label ?? draft.kit
   const tokens = previewTokens(draft.kit)
   const vars = { ...tokens, ...previewAccentVars(accent.fill, accent.text, !lightGround(tokens['--pv-bg'])) }
-  const imagery = kitImagery(draft.kit)
+  const imagery = kitImagery(draft.kit, draft.accentAt)
   const building = phase === 'build'
   const hasName = draft.name.trim().length > 0
   const intro = building && step === 0 && !hasName
@@ -279,7 +283,7 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
   const handle = claimedHandle(draft)
   const status = useHandleStatus(handle, building && step === 0 && hasName)
   const site = deriveSite({
-    name: draft.name, handle: handleOf(draft), hostName: draft.hostName, intents: draft.goals, kit: draft.kit,
+    name: draft.name, handle: handleOf(draft), hostName: draft.hostName, intents: draft.goals, kit: draft.kit, accentAt: draft.accentAt,
     offer: draft.done.offer ? draft.offer : undefined, reach: { email: draft.email, phone: draft.phone, where: draft.where }, ghost: !draft.done.offer,
   })
   const coverSrc = slotSrc(draft.cover, imagery.covers, imagery.hero, uploads.cover)
@@ -562,7 +566,7 @@ function FromUrl() {
   // because this page is static. An explicit ?kit= wins.
   const last = useSyncExternalStore(noopSubscribe, () => lastKitFrom(document.cookie), () => null as MegaThemeId | null)
   const arrival = asked.chosen || !last ? asked : { ...asked, kit: last, chosen: true }
-  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} draftToken={params.get('draft')} />
+  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.accentAt ?? ''}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} draftToken={params.get('draft')} />
 }
 
 export function CreateSpaceStudio() {

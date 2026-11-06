@@ -13,6 +13,7 @@ import {
 } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
+import { pickThemeSpaceAccent, themeOfLayout } from './space-accent'
 import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import { readPageSettings, type SpotlightPageSettings } from './link-in-bio'
@@ -155,7 +156,11 @@ async function loadMemberSpotlight(
   const ownerAuthId = g.auth_user_id ?? ''
   const layout = validateSpotlightLayout(readSpotlightLayoutRaw(g.meta), ownerAuthId)
   const background = validateSpotlightBackground(readSpotlightBackgroundRaw(g.meta), ownerAuthId)
-  const theme = validateSpotlightTheme(readSpotlightThemeRaw(g.meta))
+  const stored = validateSpotlightTheme(readSpotlightThemeRaw(g.meta))
+  // ONE ACCENT: a themed Spotlight wears the accent of its owner's Space in the same theme (lib/spotlight/space-accent.ts).
+  const layoutTheme = themeOfLayout(stored.layout)
+  const spaceAccent = layoutTheme ? await readThemeSpaceAccent(admin, g.id, layoutTheme) : null
+  const theme = spaceAccent ? { ...stored, accent: spaceAccent } : stored
 
   // Page row: the explicit allowlist only.
   const { data: row } = await admin
@@ -209,6 +214,22 @@ async function loadMemberSpotlight(
     guestbook,
     grid,
     page: readPageSettings(g.meta),
+  }
+}
+
+/** ONE ACCENT: the brand accent of the owner's Space that wears `theme` (lib/spotlight/space-accent.ts), or null. One small
+ *  read, only for a themed Spotlight. Fails closed to null. */
+async function readThemeSpaceAccent(admin: ReturnType<typeof createAdminClient>, profileId: string, theme: string): Promise<string | null> {
+  try {
+    const { data } = await admin
+      .from('spaces')
+      .select('brand_accent, preferences')
+      .eq('owner_profile_id', profileId)
+      .order('created_at', { ascending: true })
+      .limit(20)
+    return pickThemeSpaceAccent((data ?? []) as { brand_accent: string | null; preferences: unknown }[], theme)
+  } catch {
+    return null
   }
 }
 
