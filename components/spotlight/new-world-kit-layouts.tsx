@@ -215,26 +215,33 @@ function ShopFront({ c }: { c: C }) {
 }
 
 function Profile({ c }: { c: C }) {
+  const page = c.linkPage
+  const doors = page ? c.doors : c.doors.slice(0, 3)
   return (
     <>
-      <div className="nws-profile-head">
-        <div className="nws-portrait"><span aria-hidden>{c.owner.charAt(0)}</span></div>
-        <div className="nws-d nws-profile-name">{c.owner}</div>
-        <Eyebrow>{c.role} · {c.name}</Eyebrow>
-        <p>{c.story}</p>
-        <Socials size={14} />
-      </div>
-      <div className="nws-pad" style={{ paddingTop: 22 }}><Btn href={c.cta.href}>{c.cta.label}<ArrowRight size={14} aria-hidden /></Btn></div>
-      {c.secondReview && <div className="nws-pad" style={{ paddingTop: 22 }}><Review r={c.secondReview} c={c} /></div>}
-      <div className="nws-pad" style={{ paddingTop: 22 }}>
-        <Eyebrow>Where to start</Eyebrow>
-        <div className="nws-card nws-list">
-          {c.doors.slice(0, 3).map((d) => (
-            <Link key={d.id} href={d.href}><Tile icon={d.icon} size={32} /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowRight size={12} className="nws-sub" aria-hidden /></Link>
-          ))}
+      <div className={`nws-profile-head${page?.cover ? ' nws-profile-head--cover' : ''}`}>
+        {page?.cover && <Image src={page.cover} alt="" fill sizes="(min-width: 640px) 576px, 100vw" className="nws-profile-cover" priority />}
+        <div className="nws-portrait">
+          {page?.portrait ? <Image src={page.portrait} alt={c.owner} width={112} height={112} className="nws-portrait-img" priority /> : <span aria-hidden>{c.owner.charAt(0)}</span>}
         </div>
+        <div className="nws-d nws-profile-name">{c.owner}</div>
+        {c.role && <Eyebrow>{page ? c.role : `${c.role} · ${c.name}`}</Eyebrow>}
+        {c.story && <p>{c.story}</p>}
+        {!page && <Socials size={14} />}
       </div>
-      <Foot />
+      {c.cta.href && <div className="nws-pad" style={{ paddingTop: 22 }}><Btn href={c.cta.href}>{c.cta.label}<ArrowRight size={14} aria-hidden /></Btn></div>}
+      {c.secondReview && <div className="nws-pad" style={{ paddingTop: 22 }}><Review r={c.secondReview} c={c} /></div>}
+      {doors.length > 0 && (
+        <div className="nws-pad" style={{ paddingTop: 22 }}>
+          {!page && <Eyebrow>Where to start</Eyebrow>}
+          <div className="nws-card nws-list">
+            {doors.map((d) => (
+              <Link key={d.id} href={d.href}><Tile icon={d.icon} size={32} /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowRight size={12} className="nws-sub" aria-hidden /></Link>
+            ))}
+          </div>
+        </div>
+      )}
+      {!page && <Foot />}
     </>
   )
 }
