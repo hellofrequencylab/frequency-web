@@ -5,6 +5,7 @@
 // design's template reads, so the view (kit-showcase-view.tsx) stays the design's own markup.
 import { useCallback, useEffect, useState } from 'react'
 import { rememberKit } from '@/lib/create-space/last-kit'
+import { useCyberWitchPick, writeAccent as writeCyberWitchAccent } from '../cyberwitch-accent'
 import { FILTERS, LAY, SPD, SURF, THEMES, type Any } from './data'
 import { BASE, SKIN, lum, onA, resolveDeco } from './skins'
 
@@ -24,8 +25,17 @@ const WORDS = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'e
 const shot = (th: Any, a: Any, key: string) =>
   a.set ? `/themes-index/s/accent/${a.set}${key}.webp` : `/themes-index/s/themes/${th.dir}/shots/${a.id}-${key}.webp`
 
+/** A Use address with the picked accent added (?accent=<name>, lib/create-space/door.ts). Only a kit's own Use link
+ *  carries one; null stays null. */
+function withAccent(href: string | null, accent: string | undefined): string | null {
+  if (!href || !accent || !/^[a-z0-9 -]{1,40}$/i.test(accent)) return href
+  return `${href}${href.includes('?') ? '&' : '?'}accent=${encodeURIComponent(accent.toLowerCase())}`
+}
+
 export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; links: ShowcaseLinks }) {
   const [acc, setAcc] = useState<Record<string, number>>({})
+  // CyberWitch's neon is one pick on this device: the theme page's dial and this section read and write the same one.
+  const cwPick = useCyberWitchPick()
   const [filter, setFilter] = useState('all')
   const [lb, setLb] = useState<{ id: string; surf: string } | null>(null)
   const [feat, setFeat] = useState<Record<string, any>>({})
@@ -107,8 +117,14 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
     return () => clearTimeout(t)
   }, [heroOn, left, heroFeat])
 
+  /** The accent a kit wears: the one picked here, else (CyberWitch) the device's neon, else the kit's first. */
+  const accAt = (th: Any): number => {
+    if (acc[th.id] !== undefined) return acc[th.id]
+    const cw = th.id === 'cyberwitch' && cwPick ? th.accents.findIndex((x: Any) => x.id === cwPick) : -1
+    return cw >= 0 ? cw : 0
+  }
   const build = (th: Any, i: number, total: number) => {
-    const ai = acc[th.id] ?? 0
+    const ai = accAt(th)
     const a = th.accents[ai]
     const A = a.hex
     const T = a.text || a.hex
@@ -185,7 +201,8 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
       accentLabel: a.label,
       accentMeaning: a.meaning || '',
       glow: A + '2B',
-      useHref: link ? link.use : props.links.start,
+      // The accent picked here rides the Use button, so the builder (and the Space it makes) starts on it.
+      useHref: link ? withAccent(link.use, typeof a.hex === 'string' ? a.hex.replace('#', '') : a.id || a.label) : props.links.start,
       kitHref: link?.page ?? null,
       mailBg: th.mailBg || th.t.bg,
       mailW: th.id === 'new-world' ? '150%' : '100%',
@@ -202,7 +219,10 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
         pressed: j === ai ? 'true' : 'false',
         ring: j === ai ? `0 0 0 3px ${th.t.bg},0 0 0 5px ${x.hex}` : `inset 0 0 0 1px ${lum(th.t.bg) > 0.4 ? 'rgba(0,0,0,.14)' : 'rgba(255,255,255,.22)'}`,
         heroRing: j === ai ? `0 0 0 3px #0A0612,0 0 0 5px ${x.hex}` : 'inset 0 0 0 1px rgba(255,255,255,.25)',
-        onClick: () => setAcc((s) => ({ ...s, [th.id]: j })),
+        onClick: () => {
+          setAcc((s) => ({ ...s, [th.id]: j }))
+          if (th.id === 'cyberwitch' && x.id) writeCyberWitchAccent(x.id)
+        },
       })),
       surfaces: SURF.map((s) => {
         const r = !!th.status[s[0]]
@@ -225,7 +245,7 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
   const scenes = all.filter((th) => filter === 'all' || th.reg === filter || th.temp === filter)
   scenes.forEach((th, i) => {
     ;(th as Any).textOrder = (props.alternate ?? true) && i % 2 === 1 ? 2 : 0
-    const a = th.accents[acc[th.id] ?? 0]
+    const a = th.accents[accAt(th)]
     ;(th as Any).dk = resolveDeco(th.id, a.hex, a, (th as Any).textOrder === 2)
   })
   const byId = (id: string) => all.find((x) => x.id === id)

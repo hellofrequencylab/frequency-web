@@ -47,6 +47,8 @@ export interface NewWorldSpotlightContent {
   rating: string | null
   letter: { title: string; em: string; body: string; action: string } | null
   headings: { openings: { title: string; em: string }; services: { title: string; em: string } }
+  /** A Space's own link page (the Profile layout): its profile photo, its header image, no sample furniture. */
+  linkPage?: { portrait: string | null; cover: string | null }
   defaultLayout: NewWorldLayoutKey
   layouts: NewWorldLayoutKey[]
 }
@@ -251,5 +253,39 @@ export function newWorldLinkPageContent(opts: {
     cta: { label: 'Message me', href: opts.messageHref ?? '/' },
     footerCta: opts.closing ?? undefined,
     layouts: ['stack'],
+  }
+}
+
+/** THE PROFILE LINK PAGE (a Space's Spotlight on New World, look `profile`): the design's Profile layout, the owner first.
+ *  The Space's profile photo is the portrait, its header image washes the top, its tagline and About text sit under the
+ *  name, the PRIMARY link (frequencylocal.com when the owner has it, else the first) is the big accent button and every
+ *  other link is a door under it. Nothing is invented: no sample quote, price or review. */
+export function newWorldProfilePageContent(opts: {
+  name: string
+  tagline: string | null
+  about: string | null
+  portrait: string | null
+  cover: string | null
+  accent?: string
+  links: { label: string; url: string }[]
+}): NewWorldSpotlightContent {
+  const link = newWorldLinkPageContent({ name: opts.name, tagline: opts.tagline, photo: opts.portrait, messageHref: null, links: opts.links, closing: null })
+  const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, '') } catch { return '' } }
+  const primary = opts.links.find((l) => host(l.url) === 'frequencylocal.com') ?? opts.links[0] ?? null
+  const rest = link.doors.filter((_, i) => opts.links[i] !== primary)
+  const accent = opts.accent && opts.accent in NEW_WORLD_ACCENTS ? (opts.accent as NewWorldAccentId) : link.accent
+  return {
+    ...link,
+    accent,
+    owner: opts.name,
+    role: opts.tagline ?? '',
+    name: opts.name,
+    story: opts.about ?? '',
+    doors: rest,
+    cta: primary ? { label: host(primary.url) || primary.label, href: primary.url } : { label: '', href: '' },
+    secondReview: null,
+    linkPage: { portrait: opts.portrait, cover: opts.cover },
+    layouts: ['profile'],
+    defaultLayout: 'profile',
   }
 }

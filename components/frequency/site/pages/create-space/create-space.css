@@ -395,3 +395,46 @@ article.cs-pain-lead h3.cs-pain-h{font-size:clamp(24px,2.4vw,32px)}
 .cs-tools{grid-template-columns:minmax(0,1fr);gap:8px}
 .cs-tool{padding:14px 16px}}
 @media (prefers-reduced-motion:reduce){.cs-signal i{animation:none}}
+
+/* ---- CyberWitch: the preview wears the theme's own look (owner, 2026-11-05: "all the applications of the theme look like
+   the template page"). The neon wall is the website's full-bleed hero with an iron scrim, the headline is blackletter
+   over the sprayed marker phrase, the buttons are a tilted sticker and a double-ruled placard, the offers are riveted
+   plates; the phone has the arch portrait, the sticker and plate rows of its Spotlight. Still only --pv-* tokens. */
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-site{border-radius:1.4cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-nav{position:relative;z-index:2;background:color-mix(in oklab,var(--pv-bg) 92%,transparent);box-shadow:inset 0 -1px 0 color-mix(in oklab,var(--pv-accent) 30%,transparent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-brand{font-size:2.6cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-badge{display:none}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-btn{font-family:var(--pv-font-em);text-transform:uppercase;letter-spacing:.04em;font-weight:400;border-radius:0;transform:rotate(-2deg);clip-path:polygon(0 6%,100% 0,98% 100%,2% 94%);box-shadow:0 0 2.4cqi color-mix(in oklab,var(--pv-accent) 45%,transparent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-btn-o{font-family:var(--pv-font-body);transform:none;clip-path:none;background:none;color:var(--pv-ink);box-shadow:inset 0 0 0 1px var(--pv-ink),inset 0 0 0 .35cqi var(--pv-bg),inset 0 0 0 calc(.35cqi + 1px) color-mix(in oklab,var(--pv-ink) 55%,transparent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-hero{position:relative;display:flex;align-items:flex-end;padding:3cqi 3.6cqi 3cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-pic{position:absolute;inset:0;width:auto;height:auto;min-height:0;max-height:none;aspect-ratio:auto;justify-self:stretch;align-self:stretch}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-pic::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,color-mix(in oklab,var(--pv-bg) 88%,transparent) 0%,color-mix(in oklab,var(--pv-bg) 55%,transparent) 42%,transparent 72%),linear-gradient(0deg,color-mix(in oklab,var(--pv-bg) 70%,transparent),transparent 40%)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-photo{border-radius:0;box-shadow:none}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-ring{display:none}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-copy{position:relative;z-index:1;max-width:60%;gap:1.6cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-eyebrow{align-self:flex-start;padding:.7cqi 1.2cqi;background:var(--pv-ink);color:var(--pv-bg);font-size:1.05cqi;transform:rotate(-1.5deg)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-rule{display:none}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-h1{font-size:5cqi;line-height:1.05;text-shadow:0 .3cqi 1.4cqi var(--pv-bg)}
+.cs-pv[data-preview-theme="cyberwitch"] em{font-style:normal;text-transform:uppercase;color:var(--pv-accent-ink);text-shadow:0 0 1.6cqi color-mix(in oklab,var(--pv-accent) 70%,transparent);display:inline-block;transform:rotate(-2deg);font-size:.82em}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-lead{color:color-mix(in oklab,var(--pv-ink) 80%,transparent);font-weight:400}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offers{padding-top:1.8cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer{position:relative;border-radius:0;padding:.6cqi;background:linear-gradient(180deg,var(--pv-card),var(--pv-bg));box-shadow:inset 0 0 0 1px var(--pv-line),inset 0 1px 0 color-mix(in oklab,var(--pv-accent) 35%,transparent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer::before,.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer::after{content:"";position:absolute;top:.6cqi;width:.5cqi;height:.5cqi;border-radius:50%;background:var(--pv-muted);z-index:1}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer::before{left:.6cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer::after{right:.6cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer-pic{border-radius:0}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-num{border-radius:0;font-style:normal}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer-t{font-family:var(--pv-font-body);text-transform:uppercase;letter-spacing:.1em;font-size:1.25cqi;font-weight:600}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-screen{background:radial-gradient(120% 60% at 50% 0%,color-mix(in oklab,var(--pv-accent) 14%,var(--pv-bg)),var(--pv-bg) 70%)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-portrait{width:13cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-portrait .cs-pv-photo{border-radius:50% 50% 0 0/38% 38% 0 0}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-host{order:3;margin-top:0;color:var(--pv-ink);opacity:.85;display:flex;align-items:center;gap:.8cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-host::before,.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-host::after{content:"";width:1.4cqi;height:.4cqi;border-radius:999px;background:var(--pv-accent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-pname{order:2;font-size:2.7cqi;text-shadow:0 .3cqi 1cqi var(--pv-bg)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-pname em{display:none}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-links{order:4}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-handle{order:5}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-link{position:relative;border-radius:0;justify-content:flex-start;padding:0 1.6cqi;background:linear-gradient(180deg,var(--pv-card),var(--pv-bg));box-shadow:inset 0 0 0 1px var(--pv-line),inset 0 1px 0 color-mix(in oklab,var(--pv-accent) 35%,transparent);font:600 .95cqi/1 var(--pv-font-body);letter-spacing:.12em;text-transform:uppercase}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-link::after{content:"→";margin-left:auto;color:var(--pv-muted)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-link-p{justify-content:center;background:var(--pv-btn-bg);color:var(--pv-btn-ink);font:400 1.15cqi/1 var(--pv-font-em);letter-spacing:.04em;transform:rotate(-2deg);clip-path:polygon(0 8%,100% 0,98% 100%,2% 92%);box-shadow:0 0 1.6cqi color-mix(in oklab,var(--pv-accent) 50%,transparent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-link-p::after{content:none}

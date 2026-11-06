@@ -30,7 +30,7 @@ export function LastKitLink() {
   return (
     <Link
       href={themePagePath(kit)}
-      className="fixed bottom-4 left-4 z-40 rounded-full bg-surface px-4 py-2 text-body-sm font-medium text-muted shadow-sm ring-1 ring-border hover:text-text"
+      className="fixed bottom-4 left-4 z-40 rounded-pill bg-surface px-4 py-2 text-body-sm font-medium text-muted lift-1 ring-1 ring-border hover:text-text"
     >
       Back to the {name} kit
     </Link>

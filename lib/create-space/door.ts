@@ -9,6 +9,7 @@
 // cannot disagree about a key. Everything is a hint: an unknown value is dropped, never an error.
 //
 //   kit      the Theme Kit (?kit= from a /themes page, or ?theme= as /spaces/new names it)
+//   accent   the accent picked beside that kit's Use button, by name or hex (lib/create-space/preview-site.ts kitAccentIndex)
 //   mode     a Space Mode id (`business:appointments`) from a /go or /for door; it primes the goals
 //   intents  the pricing calculator's picks, `a,b`
 //   niche    the Mega niche the door named; rides to the launch hold (lib/launch/pending.ts)
@@ -16,7 +17,7 @@
 
 import { WIZARD_INTENTS, parseIntents } from '@/lib/spaces/create-wizard'
 import { isMegaNicheId, type MegaNicheId, type MegaThemeId } from '@/lib/theme/mega-theme'
-import { isPreviewKit } from './preview-site'
+import { isPreviewKit, kitAccentIndex } from './preview-site'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 
 type IntentId = (typeof WIZARD_INTENTS)[number]['id']
@@ -26,6 +27,8 @@ export interface DoorArrival {
   kit: MegaThemeId
   /** The visitor arrived having chosen the kit, as opposed to previewing the house one. */
   chosen: boolean
+  /** The accent picked beside the kit's Use button, as its place in the kit's list; absent when none was named. */
+  accentAt?: number
   name: string
   goals: IntentId[]
   niche: MegaNicheId | null
@@ -61,6 +64,7 @@ export function doorArrival(get: (key: string) => string | string[] | null | und
   return {
     kit: kit ?? COLD_KIT,
     chosen: kit !== null,
+    accentAt: (kit ? kitAccentIndex(kit, one(get('accent'))) : null) ?? undefined,
     name: one(get('name')).trim().slice(0, NAME_MAX),
     goals: goalsFromDoor(one(get('mode')) || null, one(get('intents')) || null),
     niche: isMegaNicheId(niche) ? niche : null,
@@ -74,6 +78,7 @@ export function createSpaceDoorHref(params: Record<string, string | string[] | u
   const a = doorArrival(get)
   const q = new URLSearchParams()
   if (a.chosen) q.set('kit', a.kit)
+  if (a.chosen && a.accentAt !== undefined) q.set('accent', one(get('accent')).trim().toLowerCase())
   const mode = one(get('mode'))
   if (MODE_RE.test(mode) && goalsFromDoor(mode, null).length) q.set('mode', mode)
   const intents = parseIntents(one(get('intents')).split(','))

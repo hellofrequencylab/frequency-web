@@ -101,9 +101,11 @@ function pages(s: Spec): KitPage[] {
   const hero: Block = {
     type: 'ServicesHero',
     props: {
-      look: 'split', eyebrow: s.hero.eyebrow, title: `${s.hero.title} *${s.hero.em}*`, lead: s.hero.body,
+      look: 'photo', eyebrow: s.hero.eyebrow, title: `${s.hero.title} *${s.hero.em}*`, lead: s.hero.body,
       primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: s.cta2, secondaryHref: '~/services', proof: '', image: photo(s, 'hero'), alt: s.hero.title + ' ' + s.hero.em,
-      panelTitle: 'Book online', panelNote: 'Pick a time', offers: offers.map((o) => ({ name: o.name, meta: o.meta, price: o.price, href: o.href })), areas: [],
+      // The design's own hero (THEME_LOOK hero: 'photo'): the neon-wall picture full bleed under an iron scrim, the words on the left,
+      // nothing over the figure on the right, so no booking panel.
+      panelTitle: 'Book online', panelNote: 'Pick a time', offers: [], areas: [],
     },
   }
   const trust: Block = { type: 'ServicesTrust', props: { items: s.trust.map(([title, line]) => ({ title, line })) } }

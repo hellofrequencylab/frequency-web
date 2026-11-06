@@ -30,9 +30,11 @@ import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { addSiteSubdomain } from '@/lib/sites/vercel-domains'
 import { briefError, log } from '@/lib/log'
 import type { Space } from '@/lib/spaces/types'
+import { readSiteStyle } from '@/lib/theme/site-style'
+import { asSpotlightLook, spaceLooksFor, type SpotlightLook } from '@/lib/spotlight/layouts'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 
-type SpotlightChange = { published?: boolean; layout?: unknown; native?: boolean }
+type SpotlightChange = { published?: boolean; layout?: unknown; native?: boolean; look?: SpotlightLook | null }
 
 /** The Space, when the caller may manage it. */
 async function managedSpace(slug: string): Promise<{ space: Space } | { error: string }> {
@@ -125,4 +127,16 @@ export async function saveSpaceSpotlightLayout(slug: string, layout: BuilderLayo
 /** The publish switch: puts the Spotlight on the network, or takes it off. The layout is kept either way. */
 export async function setSpaceSpotlightPublished(slug: string, published: boolean): Promise<{ error?: string }> {
   return writeSpotlight(slug, { published: published === true })
+}
+
+/** The look picker: which of the Space theme's whole-page looks the Spotlight wears. `null` puts it back to the theme's
+ *  default. A look the Space's theme does not offer is refused, so a stored look always has a layout to draw. */
+export async function setSpaceSpotlightLook(slug: string, look: string | null): Promise<{ error?: string }> {
+  const managed = await managedSpace(slug)
+  if ('error' in managed) return managed
+  if (look === null) return writeSpotlight(slug, { look: null })
+  const wanted = asSpotlightLook(look)
+  const offered = spaceLooksFor(readSiteStyle(managed.space.preferences).theme)
+  if (!wanted || !offered.some((l) => l.look === wanted)) return { error: 'That look is not part of this theme.' }
+  return writeSpotlight(slug, { look: wanted })
 }
