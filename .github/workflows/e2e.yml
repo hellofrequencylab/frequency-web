@@ -474,10 +474,10 @@ jobs:
             rm -f "${refused}"
             states=$(
               for dep in $(read_api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" '.[].id'); do
-                read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" '.[].state'
+                read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" 'max_by([.created_at, .id]) | .state // empty'
               done
               read_api "repos/${REPO}/commits/${SHA}/statuses?per_page=100" \
-                '.[] | select(.context | ascii_downcase | test("vercel")) | .state'
+                'group_by(.context)[] | max_by([.created_at, .id]) | select(.context | ascii_downcase | test("vercel")) | .state'
               # A refused read prints nothing and is recorded in ${refused}, read just below, so the
               # subshell's own exit status is not the signal and must not trip `set -e`.
               true
@@ -654,9 +654,10 @@ jobs:
       - name: Public surface -- production contracts
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/public-contracts
           PW_BASE_URL: https://frequencylocal.com
           PW_PROBE_CRON: '0'
-        run: pnpm exec playwright test public-surface.spec.ts --project mobile
+        run: pnpm exec playwright test public-surface.spec.ts --project mobile --output=test-results/public-contracts
 
       # ── THE VISUAL COMPARE, IN TWO TIERS (2026-09-14) ──────────────────────────────────
       #
@@ -701,25 +702,27 @@ jobs:
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         env:
           PW_BASE_URL: ${{ steps.preview.outputs.url }}
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/visual-public
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
           PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL }}
           PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
-        run: pnpm test:e2e:visual:stable
+        run: pnpm test:e2e:visual:stable --output=test-results/visual-public
 
       - name: Visual compare -- member shell + operator
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         env:
           PW_BASE_URL: ${{ steps.preview.outputs.url }}
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/visual-shell
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
           PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL }}
           PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
-        run: pnpm test:e2e:visual:shell
+        run: pnpm test:e2e:visual:shell --output=test-results/visual-shell
 
       # LIVE-313 / ADR-1449: the member-shell step above is a real gate. /discover stays in
       # its own advisory step (LIVE-373) because its HEIGHT is production Circles, events and
@@ -741,13 +744,14 @@ jobs:
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         env:
           PW_BASE_URL: ${{ steps.preview.outputs.url }}
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/visual-advisory
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
           PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL }}
           PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
-        run: pnpm test:e2e:visual:advisory
+        run: pnpm test:e2e:visual:advisory --output=test-results/visual-advisory
 
       # An advisory tier that fails silently is the thing it was built to avoid, so say it in
       # the summary where a reviewer already looks. EVERY surface on the tier is named here, with
@@ -1106,10 +1110,10 @@ jobs:
             rm -f "${refused}"
             states=$(
               for dep in $(read_api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" '.[].id'); do
-                read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" '.[].state'
+                read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" 'max_by([.created_at, .id]) | .state // empty'
               done
               read_api "repos/${REPO}/commits/${SHA}/statuses?per_page=100" \
-                '.[] | select(.context | ascii_downcase | test("vercel")) | .state'
+                'group_by(.context)[] | max_by([.created_at, .id]) | select(.context | ascii_downcase | test("vercel")) | .state'
               # A refused read prints nothing and is recorded in ${refused}, read just below, so the
               # subshell's own exit status is not the signal and must not trip `set -e`.
               true

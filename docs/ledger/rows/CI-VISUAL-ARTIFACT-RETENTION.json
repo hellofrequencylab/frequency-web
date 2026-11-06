@@ -1,0 +1,19 @@
+{
+  "id": "CI-VISUAL-ARTIFACT-RETENTION",
+  "title": "Preserve every visual tier failure artifact through the final CI upload",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": ".github/workflows/e2e.yml",
+    "ref": "Visual compare public/member/advisory steps and final Upload report + diffs"
+  },
+  "detail": "Read-only audit of exact control run41904712802 found112 blocking public/member visual failures in logs, but its final official artifact13361658194 contains only6 final advisory Discover cases:4failed and2skipped. Independent Playwright invocations reuse default test-results and playwright-report, so later tiers erase earlier screenshots/reports before the single final upload. Isolate both output and HTML report directories per tier without changing selectors, thresholds, baselines, timeouts, secrets or blocking/advisory semantics. Preserve initial smoke/root evidence too. Related broader audit SCAN-1032 remains open. This repair preserves evidence only; it does not resolve visual differences, demonstrate a visual/performance pass or authorize baseline recapture.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "OPEN. Daniel approved exact workflow patch SHA256 05b29b302606bea428c260a5e22b617a28c4dbd95767ee04d72eaaea9aa0c7f4 on 2026-11-04. Applied against main bbdfba1b: exactly six YAML leaves isolate public/member/advisory results and HTML directories; upload roots, selectors, secrets, gates, thresholds, baselines and blocking/advisory semantics preserved. Installed pnpm/Playwright non-browser controls reproduce pristine advisory-only retention and preserve candidate smoke plus all three visual tiers; intentional public/advisory exit1 and reporter append controls pass. Exact-head CI and inspection of actual retained artifacts remain pending. Local fixtures do not establish a visual or performance pass; do not close until CI artifact retention is verified.",
+    "checked": "2026-11-04"
+  },
+  "wave": "W7"
+}

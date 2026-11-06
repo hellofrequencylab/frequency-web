@@ -114,6 +114,11 @@ export const NEW_WORLD_KIT_LAYOUTS_CSS = `
 .nws-profile-head{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;padding:70px 20px 0;text-align:center}
 .nws-portrait{display:grid;place-items:center;width:116px;height:116px;border-radius:50%;padding:2px;background:linear-gradient(150deg,var(--nw-flare-400),color-mix(in oklab,var(--nw-chrome-50) 10%,transparent) 40%,var(--nw-swell-300));box-shadow:0 0 40px -10px var(--nw-flare-500)}
 .nws-portrait > span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--nw-spread-tr),var(--nw-spread-bl),var(--nw-surface-sunken);font-family:var(--nw-font-display);font-stretch:var(--nw-stretch-display);font-weight:var(--nw-fw-heavy);font-size:40px;color:var(--nw-chrome-50)}
+.nws-profile-head--cover{overflow:hidden;padding-top:56px}
+.nws-profile-head--cover::after{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,color-mix(in oklab,var(--nw-surface-page) 35%,transparent),var(--nw-surface-page) 92%)}
+.nws-profile-head--cover > *:not(.nws-profile-cover){position:relative;z-index:1}
+.nws-profile-cover{object-fit:cover;z-index:0}
+.nws-portrait-img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 .nws-profile-name{font-size:32px}
 .nws-profile-head p{max-width:310px;font-size:15px;line-height:1.55;color:var(--nw-text-secondary)}
 .nws-review{padding:18px}
