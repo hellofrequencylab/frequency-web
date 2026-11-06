@@ -91,3 +91,33 @@ export function isServicesKitLayout(id: SpotlightLayoutId): id is ServicesKitLay
 export function isCyberWitchKitLayout(id: SpotlightLayoutId): id is CyberWitchKitLayoutId {
   return id.startsWith('cyberwitch-kit:')
 }
+
+/** The whole-page looks, in the design's order. A Space's Spotlight stores one of these (`preferences.spotlight.look`). */
+export const SPOTLIGHT_LOOKS = ['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile'] as const
+export type SpotlightLook = (typeof SPOTLIGHT_LOOKS)[number]
+
+/** A stored look name, or null when it is not one of the six. */
+export function asSpotlightLook(v: unknown): SpotlightLook | null {
+  return typeof v === 'string' && (SPOTLIGHT_LOOKS as readonly string[]).includes(v) ? (v as SpotlightLook) : null
+}
+
+/** A Space's website theme id to the registry key that holds its Spotlight layouts. A theme missing here (Nocturne, Bold,
+ *  Wildheart, the older Network and Temple) has no whole-page layouts, so its Spotlight stays the block page. */
+const SPACE_THEME_LAYOUT_KEY: Record<string, string> = {
+  'new-world': 'new-world', services: 'services', cyberwitch: 'cyberwitch', designer: 'designer-kit',
+  'temple-kit': 'temple-kit', 'free-human': 'free-human', 'network-kit': 'network-kit',
+}
+
+/** The looks a Space on `siteTheme` can pick for its Spotlight (empty for a theme with none). */
+export function spaceLooksFor(siteTheme: string): readonly { look: SpotlightLook; label: string; blurb: string }[] {
+  const key = SPACE_THEME_LAYOUT_KEY[siteTheme]
+  if (!key) return []
+  return spotlightLayoutsFor(key).map((l) => ({ look: l.id.split(':')[1] as SpotlightLook, label: l.label, blurb: l.blurb }))
+}
+
+/** The registered layout id for a Space's theme and look, or null when the theme has none. */
+export function spaceLayoutId(siteTheme: string, look: SpotlightLook): SpotlightLayoutId | null {
+  const key = SPACE_THEME_LAYOUT_KEY[siteTheme]
+  const hit = key ? spotlightLayoutsFor(key).find((l) => l.id.endsWith(`:${look}`)) : undefined
+  return hit?.id ?? null
+}
