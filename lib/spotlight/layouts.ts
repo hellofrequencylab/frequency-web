@@ -93,7 +93,7 @@ export function isCyberWitchKitLayout(id: SpotlightLayoutId): id is CyberWitchKi
 }
 
 /** The whole-page looks, in the design's order. A Space's Spotlight stores one of these (`preferences.spotlight.look`). */
-export const SPOTLIGHT_LOOKS = ['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile'] as const
+const SPOTLIGHT_LOOKS = ['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile'] as const
 export type SpotlightLook = (typeof SPOTLIGHT_LOOKS)[number]
 
 /** A stored look name, or null when it is not one of the six. */
