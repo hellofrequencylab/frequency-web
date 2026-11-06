@@ -423,6 +423,7 @@
 # member_cards are service-role only. store.ts scopes every read and write to the signed-in member's own profile id
 # or runs behind the Space owner gate (loyaltyOwnerGate); the tap lookup reads one card by its token hash.
 # rewards.ts calls card_meet() and the capped award_zaps_atomic for the two members of one verified tap.
+# lib/member-cards/staff-actions.ts (added 2026-11-06, CARD-STAFF-LINK): the CyberUnicorn console's Card links box. card_faces is service-role only; every call runs behind consoleStaffGate (platform staff) and writes only mode and link_url for the named member.
 # LIVE-1347: lib/ai/discovery-guidance-store.ts serves a strict-secret cron and stores only public guidance digests/status in the service-role-only platform_settings key. It has no user/tenant query or session-authorized surface.
 # lib/notifications/inapp.ts (added 2026-10-26, SCAN-1151): the 'inapp' outbox handler that writes the bell row. The caller is the QUEUE DRAIN (lib/queue/handlers.ts, run by the process-queue cron), so there is no session client to prefer and no cookie to run under. The row is addressed to ANOTHER member than whoever triggered it, and `notifications` has no insert policy for anybody. It writes exactly one `notifications` row from ids the router already gated (inapp_<category> switch, suppression, per-subject mute) and reads nothing.
 # LIVE-1510 (the Circle page, new Circles design): three reads that the member session cannot serve, all behind the circle page's own member gate, all aggregate or already-visible-to-members. NOT a wider surface than the DAWN circle tab-facts / feed it replaces.
@@ -1109,6 +1110,7 @@ lib/match/prefs.ts
 lib/match/romance.ts
 lib/meet/store.ts
 lib/member-cards/rewards.ts
+lib/member-cards/staff-actions.ts
 lib/member-cards/store.ts
 lib/member-cards/swap.ts
 lib/member-day.ts

@@ -302,7 +302,10 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       case 'focus': railDispatch({ type: 'focus', on: !rails.focus }); break
       case 'publish': publish(); break
       case 'add': openAdd(); break
-      case 'update-layouts': if (legacyN) setLayoutsOpen(true); break
+      case 'update-layouts':
+        if (legacyN) setLayoutsOpen(true)
+        else setToast({ say: 'No layout updates are available for this page. Your sections stay as they are.', undo: false })
+        break
       case 'device-desktop': case 'device-tablet': case 'device-phone': dispatch({ type: 'device', device: id.slice(7) as BuilderDevice }); break
       case 'rail-left': case 'rail-right': toggleRail(id === 'rail-left' ? 'left' : 'right'); break
       case 'pin-left': case 'pin-right': railDispatch({ type: 'pin', side: id === 'pin-left' ? 'left' : 'right', pinned: true }); break
