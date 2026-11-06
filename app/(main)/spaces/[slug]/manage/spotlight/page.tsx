@@ -20,7 +20,10 @@ import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { renderSpaceBlockNodes } from '@/components/widgets/space-profile/space-profile-modules'
 import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
-import { NewWorldProfileSpotlight, SpotlightAccent, SpotlightHeader, wearsNewWorldProfile } from '@/components/spotlight/space-spotlight'
+import { SpotlightAccent, SpotlightHeader } from '@/components/spotlight/space-spotlight'
+import { spotlightLookOf, spotlightWearsTheme, ThemedSpaceSpotlight } from '@/components/spotlight/themed-space-spotlight'
+import { spaceLooksFor } from '@/lib/spotlight/layouts'
+import { readSiteStyle } from '@/lib/theme/site-style'
 import { SpaceSpotlightEditor } from '@/components/spotlight/space-spotlight-editor'
 import { getSpaceLayoutRailData } from '../rail-getters'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
@@ -131,12 +134,13 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
       }
     : null
 
-  // A New World Space on the Profile look previews the SAME layout the public page draws (saved state; it refreshes as
-  // the owner edits), not the generic card page.
-  const preview = wearsNewWorldProfile(space) ? (
+  // A Space on a theme with whole-page layouts previews the SAME page the public link draws (its saved state), not the
+  // generic card page, so the editor and the link cannot disagree.
+  const themed = spotlightWearsTheme(space)
+  const preview = themed ? (
     <SpotlightAccent space={space}>
-      <div className="mx-auto max-w-xl overflow-hidden rounded-card border border-border">
-        <NewWorldProfileSpotlight space={space} tagline={tagline} grid={grid} />
+      <div className="mx-auto max-w-xl overflow-hidden rounded-card border border-border bg-canvas">
+        <ThemedSpaceSpotlight space={space} tagline={tagline} saved={spaceSpotlightGrid(spotlight)} />
       </div>
     </SpotlightAccent>
   ) : (
@@ -182,6 +186,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
         upgrade={upgrade}
         ownLinks={ownLinks}
         clicks={canManage ? clicks : undefined}
+        looks={themed ? { options: spaceLooksFor(readSiteStyle(space.preferences).theme), current: spotlightLookOf(space) } : undefined}
       />
     </ConsoleFocusTemplate>
   )

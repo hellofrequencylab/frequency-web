@@ -3,6 +3,7 @@ import { hasNativeNodeStorage, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-bloc
 import { normalizeNodeLayout, sanitizeNodeLayout } from '@/lib/entity-blocks/node-ops'
 import { nodeProjection } from '@/lib/entity-blocks/node-projection'
 import { upgradeLayout, type BlockNode, type NodeLayout } from '@/lib/entity-blocks/node-tree'
+import { asSpotlightLook, type SpotlightLook } from '@/lib/spotlight/layouts'
 
 // THE SPACE SPOTLIGHT (owner ask 2026-10-07: "use the exact same Spotlight app / editor for both personal
 // and space ... it should act as a linktree"). A Space's Spotlight is a one-column link page built from
@@ -54,8 +55,8 @@ export interface SpaceSpotlight {
   published: boolean
   /** The saved one-column layout, or null when the owner has not arranged one (the starter renders). */
   layout: EntityLayout | null
-  /** The owner's chosen whole-page look on a New World Space: `profile` (the owner first). Absent = the stack. */
-  look?: 'profile'
+  /** The owner's chosen whole-page look from the Space's theme (one of the six in lib/spotlight/layouts.ts). Absent = the theme's default. */
+  look?: SpotlightLook
 }
 
 function spotlightNode(preferences: unknown): Record<string, unknown> | null {
@@ -126,7 +127,8 @@ function toSpotlightLayout(layout: EntityLayout | null): EntityLayout | null {
 export function readSpaceSpotlight(preferences: unknown): SpaceSpotlight {
   const node = spotlightNode(preferences)
   if (!node) return { published: false, layout: null }
-  const look = node.look === 'profile' ? ({ look: 'profile' } as const) : {}
+  const found = asSpotlightLook(node.look)
+  const look = found ? { look: found } : {}
   // A NATIVE node document: nodes are the truth (`layout.nodes`, which every renderer reads through
   // resolveNodeRowsFor), and `rows` is a best-effort type-keyed projection, one row per distinct shown type with
   // the first node's bags, so the same document still reads sensibly with the switch off. It must be non-empty:
@@ -174,12 +176,13 @@ export function spotlightSiteGrid(grid: EntityLayout): EntityLayout {
  *  the wire sends is stored unchecked; `layout: null` clears it back to the starter. PURE. */
 export function nextSpotlightPreferences(
   current: Record<string, unknown>,
-  change: { published?: boolean; layout?: unknown; native?: boolean },
+  change: { published?: boolean; layout?: unknown; native?: boolean; look?: SpotlightLook | null },
 ): Record<string, unknown> {
   const prev = readSpaceSpotlight(current)
   const published = typeof change.published === 'boolean' ? change.published : prev.published
   const node: Record<string, unknown> = { published }
-  if (prev.look) node.look = prev.look
+  const look = change.look === undefined ? prev.look : (change.look ?? undefined)
+  if (look) node.look = look
   if (change.native === true && change.layout) {
     // A NATIVE node document (render_path_spotlight on, ADR-1853): stored as nodes, narrowed to the Spotlight.
     const nodes = toSpotlightNodes(sanitizeNodeLayout(change.layout, 'space'))
