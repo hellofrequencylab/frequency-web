@@ -52,3 +52,9 @@ describe('spaceCrumbs', () => {
     expect(spaceCrumbs(`${S}/edit-page`, 'willow', 'Willow Studio', `${S}/manage`)).toEqual([])
   })
 })
+
+
+it('names the reserved Program destination without changing the old custom Program page', () => {
+  expect(spaceCrumbs('/spaces/willow/-/program', 'willow', 'Willow Studio', '/spaces/willow/manage').at(-1)).toEqual({ href: '/spaces/willow/-/program', label: 'Program' })
+  expect(spaceCrumbs('/spaces/willow/program', 'willow', 'Willow Studio', '/spaces/willow/manage').at(-1)).toEqual({ href: '/spaces/willow/program', label: 'Program' })
+})
