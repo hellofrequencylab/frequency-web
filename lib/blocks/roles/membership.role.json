@@ -2,6 +2,11 @@
   "role": "Membership",
   "type": "RoleMembership",
   "label": "Membership (all themes)",
+  "intent": "Offer memberships",
+  "why": "Your ways to join, side by side with their prices.",
+  "group": "Show up",
+  "icon": "membership",
+  "live": false,
   "replaces": [
     "Tiers",
     "MidnightMembership",
@@ -32,22 +37,43 @@
       "eyebrow": "text<=40",
       "heading": "text<=120",
       "lead": "text<=280"
+    },
+    "labels": {
+      "items": {
+        "label": "Memberships",
+        "hint": "Each way to join, with its price."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      }
     }
   },
   "variants": {
     "tiers": {
       "label": "Tier cards",
-      "max": 4
+      "max": 4,
+      "thumb": "tiers"
     },
     "table": {
       "label": "Table rows",
-      "max": 4
+      "max": 4,
+      "thumb": "table"
     },
     "spotlight": {
       "label": "One tier in the spotlight",
       "needs": [
         "featured"
-      ]
+      ],
+      "thumb": "spotlight"
     }
   },
   "default": "tiers",
@@ -148,5 +174,11 @@
     "price",
     "text",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "freeze"
+  }
 }

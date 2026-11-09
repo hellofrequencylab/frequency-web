@@ -1,20 +1,15 @@
 {
   "id": "LIVE-1967",
-  "title": "Create a Space lead capture: saveDraftLead, create_space_drafts, autosave and resume by token",
-  "lane": "live",
-  "priority": "P1",
-  "size": "L",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/create-a-space/rules.json",
-    "ref": "design_handoff create-a-space v3 README section 5; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+  "patch": {
+    "status": "done",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const f=require('fs');process.exit(f.readdirSync('supabase/migrations').some(n=>n.includes('create_space_drafts'))?0:1)\""
+    },
+    "closed": "2026-11-02"
   },
-  "detail": "Migration for create_space_drafts (RLS deny-all), saveDraftLead with throttles and honeypot through captureLead, debounced autosave and pagehide beacon, ?draft= restore.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node -e \"const f=require('fs');process.exit(f.readdirSync('supabase/migrations').some(n=>n.includes('create_space_drafts'))?0:1)\"",
-    "checked": "2026-11-02",
-    "evidence": "Fails today: the file or change the probe names is not on main."
+  "append": {
+    "detail": "\n\nMigration 20270346028600_create_space_drafts (service-role-only table, create_space joins the signup_leads sources, capture_signup_lead widened in step), pgTAP test, saveDraft/readDraftByToken/markDraftConverted in lib/create-space/draft-io.ts (token-hash keyed, token never stored), saveDraftLead and restoreDraft actions with IP and mailbox throttles and the honeypot, the pagehide beacon route (authz ledger entry), debounced server save from step 3 with Saved to {email}, ?draft= Welcome back restore, handle re-check on every save, create_space excluded from the signup recovery mailer (Track A owns it). Lead score lives on the lead payload; the copy to contacts.meta is LIVE-1970. The SQL is applied to production when this PR is next to merge."
   },
   "wave": "W7"
 }

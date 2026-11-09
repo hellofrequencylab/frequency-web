@@ -24,3 +24,20 @@ describe('presentation layer (LIVE-1861)', () => {
     expect(roleVariant('hero', '', presentationDefault('nope', 'hero'))).toBe(ROLES.hero.default)
   })
 })
+
+describe('new roles on every themed site (BLD-212)', () => {
+  const NEW = ['firstvisit', 'booking', 'locations', 'business', 'story'] as const
+  it('every themed site (all but DAWN) gives each new role a layout', () => {
+    for (const theme of THEMES.filter((t) => t !== 'DAWN')) for (const role of NEW) {
+      expect(presentationDefault(theme, role), `${theme} ${role}`).toBeTypeOf('string')
+    }
+  })
+})
+
+describe('every role on every themed site (BLD-212)', () => {
+  it('each themed site (all but DAWN) gives every role a layout', () => {
+    for (const theme of THEMES.filter((t) => t !== 'DAWN')) for (const role of ROLE_IDS) {
+      expect(presentationDefault(theme, role), `${theme} ${role}`).toBeTypeOf('string')
+    }
+  })
+})

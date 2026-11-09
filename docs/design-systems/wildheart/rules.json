@@ -1,0 +1,451 @@
+{
+ "theme": "wildheart",
+ "repoThemeId": "wildheart",
+ "note": "Same shape as docs/design-systems/free-human/rules.json. First match wins. The design names its semantic layer without a prefix (--bg-page, --gradient-violet); the repo keeps every Wildheart token under --wh-.",
+ "tokenSources": [
+  "WILDHEART_TOKENS_CSS"
+ ],
+ "baseline": "docs/design-systems/wildheart/baseline.json",
+ "tokenMap": [
+  {
+   "from": "--bg-page",
+   "to": "--color-canvas"
+  },
+  {
+   "from": "--surface-card",
+   "to": "--color-surface"
+  },
+  {
+   "from": "--surface-raised",
+   "to": "--color-surface-elevated"
+  },
+  {
+   "from": "--surface-primary-soft",
+   "to": "--wh-mist"
+  },
+  {
+   "from": "--surface-secondary-soft",
+   "to": "--wh-madder-soft"
+  },
+  {
+   "from": "--border-hairline",
+   "to": "--color-border"
+  },
+  {
+   "from": "--border-strong",
+   "to": "--wh-border-strong"
+  },
+  {
+   "from": "--border-w",
+   "to": "--wh-border-w"
+  },
+  {
+   "from": "--text-primary",
+   "to": "--color-text"
+  },
+  {
+   "from": "--text-secondary-accent",
+   "to": "--wh-secondary-accent"
+  },
+  {
+   "from": "--text-secondary",
+   "to": "--color-text-muted"
+  },
+  {
+   "from": "--text-muted",
+   "to": "--color-text-subtle"
+  },
+  {
+   "from": "--text-on-fill",
+   "to": "--wh-text-on-fill"
+  },
+  {
+   "from": "--text-on-season",
+   "to": "--wh-text-on-season"
+  },
+  {
+   "from": "--text-link",
+   "to": "--wh-violet-text"
+  },
+  {
+   "from": "--text-witch",
+   "to": "--wh-witch"
+  },
+  {
+   "from": "--fill-primary-pressed",
+   "to": "--wh-violet-pressed"
+  },
+  {
+   "from": "--fill-primary-soft",
+   "to": "--wh-lavender"
+  },
+  {
+   "from": "--fill-primary",
+   "to": "--wh-violet"
+  },
+  {
+   "from": "--fill-secondary",
+   "to": "--wh-madder"
+  },
+  {
+   "from": "--focus-ring",
+   "to": "--wh-focus-ring"
+  },
+  {
+   "from": "--wh-lavender-mist",
+   "to": "--wh-mist"
+  },
+  {
+   "from": "--logo-",
+   "to": "--wh-logo-"
+  },
+  {
+   "from": "--aura-violet",
+   "to": "--wh-aura"
+  },
+  {
+   "from": "--aura-madder",
+   "to": "--wh-aura-madder"
+  },
+  {
+   "from": "--radius-petal-",
+   "to": "--wh-petal-"
+  },
+  {
+   "from": "--radius-arch",
+   "to": "--wh-arch"
+  },
+  {
+   "from": "--breath",
+   "to": "--wh-breath"
+  },
+  {
+   "from": "--ease",
+   "to": "--wh-ease"
+  },
+  {
+   "from": "--rise-y",
+   "to": "--wh-rise-y"
+  },
+  {
+   "from": "--measure",
+   "to": "--wh-measure"
+  },
+  {
+   "from": "--veil",
+   "to": "--wh-veil"
+  },
+  {
+   "from": "--glyph-watermark-opacity",
+   "to": "--wh-watermark"
+  },
+  {
+   "from": "--gradient-",
+   "to": "--wh-gradient-"
+  },
+  {
+   "from": "--wash-",
+   "to": "--wh-wash-"
+  },
+  {
+   "from": "--symbol-",
+   "to": "--wh-symbol-"
+  },
+  {
+   "from": "--dur-",
+   "to": "--wh-dur-"
+  },
+  {
+   "from": "--tracking-",
+   "to": "--wh-tracking-"
+  },
+  {
+   "from": "--season",
+   "to": "--wh-season"
+  },
+  {
+   "from": "--texture-grain",
+   "to": "--wh-grain"
+  },
+  {
+   "from": "--texture-",
+   "to": "--wh-"
+  },
+  {
+   "from": "--shadow-",
+   "to": "--wh-shadow-"
+  },
+  {
+   "from": "--space-",
+   "to": "--wh-space-"
+  }
+ ],
+ "rules": [
+  {
+   "glob": "README.md",
+   "kind": "reference",
+   "reason": "Handoff text; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "SKILL.md",
+   "kind": "reference",
+   "reason": "Claude Design's skill note for the design system."
+  },
+  {
+   "glob": "brand-guide.md",
+   "kind": "reference",
+   "reason": "Brand guide; its rules are the README's, checked through tokens, copy and assets."
+  },
+  {
+   "glob": "theme.json",
+   "kind": "reference",
+   "reason": "The same values as tokens/*.css in machine-readable form; the tokens rule checks them."
+  },
+  {
+   "glob": "styles.css",
+   "kind": "reference",
+   "reason": "Prototype stylesheet that imports tokens/*.css."
+  },
+  {
+   "glob": "_ds_bundle.js",
+   "kind": "reference",
+   "reason": "Generated prototype bundle."
+  },
+  {
+   "glob": "support.js",
+   "kind": "reference",
+   "reason": "Prototype runtime."
+  },
+  {
+   "glob": "templates/*/support.js",
+   "kind": "reference",
+   "reason": "Prototype runtime."
+  },
+  {
+   "glob": "templates/*/ds-base.js",
+   "kind": "reference",
+   "reason": "Prototype loader."
+  },
+  {
+   "glob": "tokens/*.css",
+   "kind": "tokens"
+  },
+  {
+   "glob": "Website.html",
+   "kind": "reference",
+   "reason": "Self-contained copy of templates/website/Website.dc.html; the copy rule runs on the template."
+  },
+  {
+   "glob": "templates/website/Website.dc.html",
+   "kind": "reference",
+   "reason": "The Wildheart program's own website copy (its circles, retreat, pillars and year). Wildheart is a general website for women-led Spaces (owner 2026-11-03: take every recommended option), so its starter copy is general and lives in lib/sites/kits/wildheart-*.ts; the program's words do not ship. Look reference only."
+  },
+  {
+   "glob": "Vision.html",
+   "kind": "reference",
+   "reason": "Wildheart program's leadership overview (an admin page for that program, not a theme surface)."
+  },
+  {
+   "glob": "Calendar.html",
+   "kind": "reference",
+   "reason": "Wrapper for templates/calendar/Calendar.dc.html."
+  },
+  {
+   "glob": "templates/executive-overview/ExecutiveOverview.dc.html",
+   "kind": "reference",
+   "reason": "Wildheart program's leadership overview (an admin page for that program, not a theme surface)."
+  },
+  {
+   "glob": "templates/calendar/Calendar.dc.html",
+   "kind": "reference",
+   "reason": "Wildheart program's 2027 ritual calendar admin page; the theme's calendar parts (SkyMap, NowLine, SeasonTrack) are checked as built components."
+  },
+  {
+   "glob": "assets/photos/*.jpg",
+   "kind": "asset",
+   "target": "public/brand/wildheart/photos/{base}"
+  },
+  {
+   "glob": "assets/wildheart-logo.svg",
+   "kind": "asset",
+   "target": "public/brand/wildheart/{base}"
+  },
+  {
+   "glob": "assets/wildheart-figure.svg",
+   "kind": "asset",
+   "target": "public/brand/wildheart/{base}"
+  },
+  {
+   "glob": "assets/*.png",
+   "kind": "reference",
+   "reason": "Raster copies of the logo; the site ships the SVG."
+  },
+  {
+   "glob": "fonts/IMFellEnglish-*.ttf",
+   "kind": "asset",
+   "target": "public/fonts/wildheart/{base}"
+  },
+  {
+   "glob": "components/calendar/SkyMap.*",
+   "kind": "built",
+   "target": "components/sites/wildheart-sky-map.tsx"
+  },
+  {
+   "glob": "components/calendar/NowLine.*",
+   "kind": "built",
+   "target": "components/sites/wildheart-now-line.tsx"
+  },
+  {
+   "glob": "components/core/LogoMark.*",
+   "kind": "built",
+   "target": "components/sites/wildheart-symbols.tsx"
+  },
+  {
+   "glob": "components/**",
+   "kind": "reference",
+   "reason": "Prototype component sources; Frequency's own components carry the restyle (README section 3)."
+  }
+ ],
+ "tokenDeviations": [
+  {
+   "name": "--wh-muted",
+   "reason": "Muted text and the strong border stay #6B5B51 (tokens-v3 accessibility fix): the design's #7D6D62 reads 4.30:1 on parchment and 3.90:1 on aged, under AA for small text; #6B5B51 reads 5.62:1."
+  },
+  {
+   "name": "--border-strong",
+   "reason": "Muted text and the strong border stay #6B5B51 (tokens-v3 accessibility fix): the design's #7D6D62 reads 4.30:1 on parchment and 3.90:1 on aged, under AA for small text; #6B5B51 reads 5.62:1."
+  },
+  {
+   "name": "--text-muted",
+   "reason": "Muted text and the strong border stay #6B5B51 (tokens-v3 accessibility fix): the design's #7D6D62 reads 4.30:1 on parchment and 3.90:1 on aged, under AA for small text; #6B5B51 reads 5.62:1."
+  },
+  {
+   "name": "--gradient-madder",
+   "reason": "The madder gradient's light stop stays #9A5461 (tokens-v3 accessibility fix): vellum text on the design's #A6606E reads 4.35:1, under AA; #9A5461 reads 5.15:1."
+  },
+  {
+   "name": "--season",
+   "reason": "The comparison flattens every selector, so the last [data-season] block wins; the repo's own default is var(--color-primary) (the Space accent, violet unless the owner picks one), which is the design's default."
+  },
+  {
+   "name": "--season-ink",
+   "reason": "The comparison flattens every selector, so the last [data-season] block wins; the repo's own default is var(--color-primary) (the Space accent, violet unless the owner picks one), which is the design's default."
+  },
+  {
+   "name": "--gradient-season",
+   "reason": "The comparison flattens every selector, so the last [data-season] block wins; the repo's own default is var(--color-primary) (the Space accent, violet unless the owner picks one), which is the design's default."
+  },
+  {
+   "name": "--accent",
+   "reason": "The Space's own accent: the --color-primary family is set by wildheartAccentVars (violet with vellum text when no accent is picked), so the theme block leaves it alone on purpose.",
+   "undeclared": true
+  },
+  {
+   "name": "--text-on-accent",
+   "reason": "The Space's own accent: the --color-primary family is set by wildheartAccentVars (violet with vellum text when no accent is picked), so the theme block leaves it alone on purpose.",
+   "undeclared": true
+  },
+  {
+   "name": "--radius-circle",
+   "reason": "A circle is written as 50% where it is used (avatars and moon dots); no token needed.",
+   "undeclared": true
+  },
+  {
+   "name": "--petal-sm",
+   "reason": "The scalar petal size is folded into the full petal radius tokens (--wh-petal-sm/md/lg carry the tucked corner), which the --radius-petal-* names check.",
+   "undeclared": true
+  },
+  {
+   "name": "--petal-md",
+   "reason": "The scalar petal size is folded into the full petal radius tokens (--wh-petal-sm/md/lg carry the tucked corner), which the --radius-petal-* names check.",
+   "undeclared": true
+  },
+  {
+   "name": "--petal-lg",
+   "reason": "The scalar petal size is folded into the full petal radius tokens (--wh-petal-sm/md/lg carry the tucked corner), which the --radius-petal-* names check.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-body",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-body-l",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-body-s",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-body-strong",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-l",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-m",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-s",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-xl",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-display-xs",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-label",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-label-l",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-label-s",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-numeral",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--type-ui",
+   "reason": "The type scale is applied per element in components/sites/wildheart-css.ts through --wh-display, --wh-body and --wh-ui; a shorthand font token per size is not declared.",
+   "undeclared": true
+  },
+  {
+   "name": "--gradient-violet-pressed",
+   "reason": "Kept from the tokens-v3 pass (lib/theme/wildheart.ts header): the pressed violet is FLAT, because a pressed gradient read as a second hover."
+  },
+  {
+   "name": "--gradient-vellum",
+   "reason": "Kept from the tokens-v3 pass (lib/theme/wildheart.ts header): the vellum gradient runs vellum to the parchment token, so no unnamed hex sits inside a gradient and Nightshade re-points it with one override."
+  },
+  {
+   "name": "--gradient-dusk",
+   "reason": "Kept from the tokens-v3 pass (lib/theme/wildheart.ts header): the dusk gradient's middle stop is the blush gradient's light stop, so no unnamed hex sits inside a gradient."
+  }
+ ]
+}

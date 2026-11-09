@@ -750,7 +750,7 @@ export function FrequencyMidnight({ spotlightHref = null }: { spotlightHref?: st
                     ['mail', 'email', 'Email', 'Four templates · Inbox'],
                   ] as [string, Surface, string, string][]
                 ).map(([cls, s, label, sub]) => (
-                  <button type="button" className={cls} key={s} aria-label={`Preview the ${label.toLowerCase()}`} onClick={() => setPv({ view: s })}>
+                  <button type="button" className={cls} key={s} onClick={() => setPv({ view: s })}>
                     {s === 'spacedesk' || s === 'spotlight' ? (
                       <Phone kit={kit} shot={s === 'spotlight' ? 'spot' : 'space'} label={label} tone={s === 'spotlight' ? 'dark' : 'light'} sizes="(max-width: 900px) 45vw, 240px" />
                     ) : (

@@ -2,6 +2,11 @@
   "role": "Shop",
   "type": "RoleShop",
   "label": "Shop (all themes)",
+  "intent": "Sell a few things",
+  "why": "A few things people can buy from you.",
+  "group": "More",
+  "icon": "tag",
+  "live": false,
   "replaces": [
     "MidnightShop",
     "NetworkKitShop",
@@ -27,17 +32,42 @@
       "heading": "text<=120",
       "lead": "text<=280",
       "action": "link"
+    },
+    "labels": {
+      "items": {
+        "label": "Products",
+        "hint": "A few things people can buy."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "action": {
+        "label": "Link under the section",
+        "hint": "Where people go to see more."
+      }
     }
   },
   "variants": {
     "grid": {
-      "label": "Grid"
+      "label": "Grid",
+      "thumb": "grid"
     },
     "rail": {
-      "label": "Sideways rail"
+      "label": "Sideways rail",
+      "thumb": "rail"
     },
     "list": {
-      "label": "List"
+      "label": "List",
+      "thumb": "list"
     }
   },
   "default": "grid",
@@ -132,5 +162,11 @@
     "price",
     "text",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "draw"
+  }
 }

@@ -1,0 +1,19 @@
+{
+  "id": "BLD-213",
+  "title": "Builder: the live connections each role reads (trust, circles, booking, reviews, team, posts, shop, locations)",
+  "lane": "program",
+  "priority": "P2",
+  "size": "L",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Revision 2, builder v3 (2026-11-03): docs/design/frequency-builder-v3/v3-review-and-needs.md"
+  },
+  "detail": "Only offerings, events, memberships and tickets resolve through resolveFeatureSourceItems today. Wire the rest to the Space's rows with an empty state each: trust counts, circles with next session, booking openings, reviews, team, posts, shop, and a Space hours field for locations. No sample number reaches a live page. Done when: each live role renders real rows for a fixture Space and nothing when the Space has none. PROGRESS (2026-11-03): stats, proof (reviews), people (team) and chapters now read metadata.space and draw nothing when a sample-copy block meets a live Space with no rows (tested in roles.test.tsx). Still open: circles with next session, booking openings, posts, shop, library and a Space hours field for locations, which need readers content-data.ts does not have yet. Part 2 (2026-11-03): offerings draws the Space's practices, journeys and circles; booking draws nothing on a live page while it holds only sample times (openings are not stored yet). Still open: circles with next session, booking openings, posts, shop, library, locations hours. Part 3 (2026-11-03): locations draws the Space's Business Info (address, hours, phone, email); shop and library draw nothing on a live page while they hold only sample copy, because a Space has no shop or library source of its own yet (marketplace listings belong to people; posts have no role). Still open: a Space-owned shop and library source, booking openings, circles with next session.\n\nPart 4 (2026-11-09): Booking draws the Space's next open slots (content-data booking.openings from the public booking reader, labelled in the Space's clock) and nothing on a live page without them; booking.role.json is live. Every live role now has a reader in roleHasSpaceRows and a fixture case in the live-rows test. Shop and library stay owner-written until a Space-owned source exists; a circle's next session is not stored.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-213.mjs"
+  },
+  "closed": "2026-11-09",
+  "wave": "W7"
+}

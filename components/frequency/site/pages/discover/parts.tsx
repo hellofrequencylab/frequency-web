@@ -18,7 +18,7 @@ import type { NetworkedSpace } from '@/lib/spaces/discovery'
 import { eventDateBadge } from '@/lib/utils'
 import { FOUNDING_PLACE, SOCIAL_PROOF_FLOOR } from '@/lib/site'
 import { eventWhen } from '../shared/data'
-import { photoImg } from '../shared/parts'
+import { photoBg, photoImg } from '../shared/parts'
 import { groupByMonth, groupByWhen, splitAt, type EventGroup } from './group'
 
 export const PHOTOS = '/brand/frequency/photos'
@@ -52,7 +52,7 @@ export function DxHero({
 }) {
   return (
     <section className="phero" data-energy={energy} data-screen-label="01 Hero">
-      <div className="bg" style={{ backgroundImage: `url('${photo}')` }} />
+      <div className="bg" style={photoBg(photo)} />
       <div className="fq-aura" style={aura(0.3)} />
       <div className="shade" />
       <div className="fq-grain" />

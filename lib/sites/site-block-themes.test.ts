@@ -42,6 +42,7 @@ const PAGE_OWN_RENDER = new Set([
   // The role blocks (LIVE-1858) draw themselves from the core token contract, so every theme wears them.
   'RoleHero', 'RoleSteps', 'RoleOfferings', 'RoleGatherings', 'RoleMembership', 'RoleProof', 'RoleFaq', 'RoleCta',
   'RoleStatement', 'RoleLetter', 'RoleStats', 'RoleChapters', 'RolePeople', 'RoleGallery', 'RoleShop', 'RoleLibrary', 'RoleContact',
+  'RoleFirstVisit', 'RoleBooking', 'RoleLocations', 'RoleBusiness', 'RoleStory',
 ])
 
 /** Home blocks that keep the Space page's own render (inside the house `.hs-plain` band). */

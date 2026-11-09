@@ -50,6 +50,7 @@ export async function POST(request: Request) {
         const result = await runConciergeTurn(body.stage, body.text, body.history, {
           onText: (text, round) => controller.enqueue(line({ t: 'delta', text, round })),
           ip,
+          space: body.space,
         })
         controller.enqueue(line({ t: 'final', ...result }))
       } catch {

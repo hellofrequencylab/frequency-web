@@ -185,6 +185,7 @@ ${N} .fh-footer-brand .fh-logo{gap:14px}
 ${N} .fh-footer-brand .fh-logo-name{font-size:36px;color:var(--fh-cream-50);text-shadow:none}
 ${N} .fh-footer-brand .fh-logo-name em{color:var(--text-gilt)}
 ${N} .fh-footer-brand .fh-logo-tag{display:block;color:var(--fh-saffron-300)}
+@media (max-width:479px){${N} .fh-footer-brand .fh-logo-name{font-size:27px}${N} .fh-footer-brand .fh-logo-mark{width:36px;height:45px}}
 ${N} .fh-footer-blurb{margin:0;max-width:330px;line-height:1.65;color:var(--fh-cream-100)}
 ${N} .fh-footer-col{display:flex;flex-direction:column;gap:10px}
 ${N} .fh-footer-col-title{${INSCRIPTION};font-size:12px;letter-spacing:.2em;color:var(--text-gilt)}

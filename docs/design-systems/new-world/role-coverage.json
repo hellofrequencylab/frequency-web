@@ -1,0 +1,21 @@
+{
+  "ids": [
+    "role:chapters",
+    "role:contact",
+    "role:cta",
+    "role:faq",
+    "role:gallery",
+    "role:gatherings",
+    "role:hero",
+    "role:letter",
+    "role:library",
+    "role:membership",
+    "role:offerings",
+    "role:people",
+    "role:proof",
+    "role:shop",
+    "role:statement",
+    "role:stats",
+    "role:steps"
+  ]
+}

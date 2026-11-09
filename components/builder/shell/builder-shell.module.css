@@ -1,0 +1,289 @@
+/* THE BUILDER FRAME (BLD-101; docs/design/frequency-builder-v3/block-editor-spec.md §2). The chrome wears the
+   Frequency design system's Commons tokens whatever theme the site wears; only the canvas frame wears the site.
+   Every value is a token: radius steps and editor tokens from BLD-002 (app/themes/frequency.css). */
+
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-rows: 60px minmax(0, 1fr);
+  /* The rail columns come from lib/builder/rails.ts through --rail-left and --rail-right (BLD-102). */
+  grid-template-columns: var(--rail-left, 264px) minmax(0, 1fr) var(--rail-right, 320px);
+  grid-template-areas: 'top top top' 'outline canvas panel';
+  background: var(--editor-canvas);
+  color: var(--fq-text-strong);
+  font-family: var(--fq-font-sans);
+  font-size: 14px;
+}
+.root[data-preview='true'] { grid-template-columns: 0 minmax(0, 1fr) 0; }
+.root[data-preview='true'] .outline,
+.root[data-preview='true'] .panel { visibility: hidden; }
+
+/* THE RAILS (BLD-102). Each rail wears the mode railModes() gives it: pinned (open beside the canvas), strip (a thin
+   bar with its toggle), overlay (open over the canvas) or hidden. The breakpoints live in lib/builder/rails.ts, not
+   in media queries here, so the table test is the whole truth. */
+.outline[data-mode='strip'] .rowText, .outline[data-mode='strip'] .caption,
+.panel[data-mode='strip'] .panelBody { display: none; }
+.outline[data-mode='hidden'], .panel[data-mode='hidden'] { visibility: hidden; }
+.outline[data-mode='overlay'], .panel[data-mode='overlay'] {
+  position: fixed;
+  top: 60px;
+  bottom: 0;
+  z-index: 3;
+  box-shadow: var(--fq-shadow-float);
+}
+.outline[data-mode='overlay'] { left: 0; width: min(264px, 86vw); }
+.panel[data-mode='overlay'] { right: 0; width: min(var(--rail-width, 320px), 92vw); }
+.railHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 8px 0; }
+.panel .railHead { padding: 0 0 8px; }
+.panel[data-mode='strip'] { padding: 10px 8px; }
+.grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.grip:hover, .grip:focus-visible { background: var(--editor-select); outline: none; }
+
+.top {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--fq-surface-raised);
+  border-bottom: 1px solid var(--fq-border-hair);
+  min-width: 0;
+}
+.back {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-control);
+  color: var(--fq-text-strong);
+}
+.back:hover { background: var(--fq-bg-sunken); }
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--fq-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.crumbs b { color: var(--fq-text-strong); font-weight: 600; }
+.crumbs select {
+  font: inherit;
+  font-weight: 600;
+  color: var(--fq-text-strong);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-1);
+  padding: 4px 6px;
+}
+.crumbs select:hover { border-color: var(--fq-border-hair); }
+.save { display: inline-flex; align-items: center; gap: 8px; color: var(--fq-text-muted); font-size: 13px; white-space: nowrap; }
+.dot { width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--fq-presence); }
+.save[data-state='saving'] .dot,
+.save[data-state='unsaved'] .dot { background: var(--fq-reward); }
+.save[data-state='offline'] .dot,
+.save[data-state='error'] .dot,
+.save[data-state='conflict'] .dot { background: var(--fq-danger); }
+.spacer { flex: 1; }
+.hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--fq-border-hair);
+  background: var(--fq-surface-raised);
+  color: var(--fq-text-strong);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { border-color: var(--fq-border-strong); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn[aria-pressed='true'] { background: var(--fq-text-strong); color: var(--fq-surface-raised); border-color: var(--fq-text-strong); }
+.icon { width: 36px; padding: 0; justify-content: center; }
+.kbd { font-size: 11px; color: var(--fq-text-muted); border: 1px solid var(--fq-border-hair); border-radius: var(--r-1); padding: 1px 5px; }
+.devices { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--r-control); background: var(--fq-bg-sunken); }
+.devices .btn { border: 0; background: transparent; height: 32px; }
+.devices .btn[aria-pressed='true'] { background: var(--fq-surface-raised); color: var(--fq-text-strong); box-shadow: var(--fq-shadow-1); }
+.btn:focus-visible, .back:focus-visible, .grip:focus-visible, .row:focus-visible, .crumbs select:focus-visible {
+  outline: 2px solid var(--fq-text-strong);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--editor-ring);
+}
+
+.outline {
+  grid-area: outline;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--fq-surface-raised);
+  border-right: 1px solid var(--fq-border-hair);
+}
+.caption { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 10px 4px 16px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--fq-text-muted); }
+.list { list-style: none; margin: 0; padding: 0 8px 16px; overflow: auto; }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.row:hover { background: var(--fq-bg-sunken); }
+.row[aria-current='true'] { background: var(--fq-bg-sunken); }
+.tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-2);
+  background: var(--fq-bg-sunken);
+  color: var(--fq-text-strong);
+}
+.row[aria-current='true'] .tile { background: var(--fq-text-strong); color: var(--fq-surface-raised); }
+.tile { position: relative; }
+/* A section with readiness issues (BLD-204): a 5px dot in the tile's corner (spec §2 outline rail). */
+.issueDot { position: absolute; top: 3px; right: 3px; width: 5px; height: 5px; border-radius: var(--r-pill); background: var(--fq-warning); }
+.rowText { flex: 1; display: grid; justify-items: start; min-width: 0; text-align: left; }
+.rowText b { font-weight: 600; font-size: 13px; }
+.rowText small { max-width: 100%; color: var(--fq-text-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.canvas { grid-area: canvas; min-width: 0; min-height: 0; overflow: auto; padding: 24px; }
+.frame {
+  margin: 0 auto;
+  border-radius: var(--r-panel);
+  overflow: hidden;
+  background: var(--fq-surface-raised);
+  box-shadow: var(--fq-shadow-2);
+}
+
+.panel {
+  grid-area: panel;
+  position: relative;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px;
+  background: var(--fq-surface-raised);
+  border-left: 1px solid var(--fq-border-hair);
+}
+.panel h2 { font-family: var(--fq-font-display); font-size: 16px; font-weight: 500; margin: 0 0 4px; }
+.panel p { margin: 0 0 12px; color: var(--fq-text-muted); line-height: 1.5; }
+
+.previewPill {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  background: var(--fq-text-strong);
+  color: var(--fq-surface-raised);
+  font-size: 13px;
+}
+
+/* BLD-216: the top bar fits at 390. It answers to its own width (a container query, not a viewport media query, which
+   rails.ts owns): Show as and Find leave first, then the device switch. */
+.top { container-type: inline-size; }
+@container (max-width: 839px) {
+  .wide { display: none; }
+}
+@container (max-width: 599px) {
+  .devices { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+}
+
+/* THE OUTLINE'S ROWS (BLD-103): dimmed where hidden on this device, a line where a drag would drop. */
+.list li[data-hidden] .row { opacity: .5; }
+.list li[data-drop] { box-shadow: inset 0 2px 0 var(--editor-select); }
+
+/* THE TOAST (BLD-104): what a section action did, with Undo after a delete. */
+.toastSlot { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 4; }
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border-radius: var(--r-pill);
+  background: var(--fq-text-strong);
+  color: var(--fq-surface-raised);
+  font-size: 13px;
+  box-shadow: var(--fq-shadow-float);
+}
+.toast .btn { height: 30px; border-radius: var(--r-pill); }
+
+/* PHONE (BLD-107): under 600 the rails open as bottom sheets over the canvas, opened from a bottom bar with
+   44px targets. The sheets carry the same two Tune layers as the side panel. */
+.root[data-phone] { grid-template-rows: 56px minmax(0, 1fr) 64px; grid-template-areas: 'top top top' 'outline canvas panel' 'bar bar bar'; }
+.root[data-phone] .top { gap: 4px; padding: 0 8px; overflow-x: auto; }
+.root[data-phone] .crumbs > span, .root[data-phone] .devices, .root[data-phone] .save,
+.root[data-phone] .top [data-action='focus'], .root[data-phone] .top [aria-haspopup='menu'], .root[data-phone] #builder-command { display: none; }
+.root[data-phone] .btn { min-height: 44px; min-width: 44px; }
+.root[data-phone] .canvas { padding: 8px; }
+.root[data-phone] .outline[data-mode='overlay'],
+.root[data-phone] .panel[data-mode='overlay'] {
+  top: auto;
+  left: 0;
+  right: 0;
+  bottom: 64px;
+  width: auto;
+  max-height: min(72vh, calc(100dvh - 140px));
+  overflow: auto;
+  border-radius: var(--r-panel) var(--r-panel) 0 0;
+}
+.root[data-phone] .row, .root[data-phone] .railHead button { min-height: 44px; }
+.bottomBar {
+  grid-area: bar;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--fq-surface-raised);
+  border-top: 1px solid var(--fq-border-hair);
+}
+.bottomBar button {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--fq-text-muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.bottomBar button[aria-pressed='true'] { color: var(--fq-text-strong); box-shadow: inset 0 2px 0 var(--editor-select); }
+.bottomBar button:disabled { opacity: .45; cursor: default; }
+.bottomBar button:focus-visible { outline: 2px solid var(--fq-text-strong); outline-offset: -4px; }
+
+/* Update to new layouts (BLD-205): the outline's prompt when this page still has theme-named blocks. */
+.legacy { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: calc(100% - 16px); min-height: 44px; margin: 0 8px 8px; padding: 8px 10px; border: 1px dashed var(--fq-border-strong); border-radius: var(--r-2); background: var(--fq-bg-sunken); color: var(--fq-text-strong); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.legacy span { flex: none; font-weight: 600; text-decoration: underline; }
+.legacy:focus-visible { outline: 2px solid var(--fq-text-strong); outline-offset: 2px; box-shadow: 0 0 0 5px var(--editor-ring); }

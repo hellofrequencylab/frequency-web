@@ -243,18 +243,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1 },
     // /start MERGED into /join (2026-10-14): it 301s, so it is not listed. /join is the front door.
-    // /the-lab MERGED into /vision (owner ruling 2026-10-14): it 301s, so it is not listed.
-    // Frequency-only pages (ADR-1737): /vision exists in the Frequency design's site map and answers
-    // 404 under DAWN, so it is advertised only when the build wears Frequency. /stories is HIDDEN until
+    // /the-lab and /vision MERGED into /about, /system into /features and /networks into /for/networks
+    // (LIVE-2103, owner ruling 2026-11-03): each 301s, so none is listed.
+    // Frequency-only pages (ADR-1737) are advertised only when the build wears Frequency. /stories is HIDDEN until
     // three real stories exist (owner ruling 2026-10-14): it 302s to /the-community, so it is not listed.
     ...(SITE_DESIGN === "frequency"
       ? ([
-          { url: `${SITE_URL}/vision`, changeFrequency: "monthly", priority: 0.5 },
-          // /networks (SCAN-961): the Network plan's page, Frequency-only like /vision.
-          { url: `${SITE_URL}/networks`, changeFrequency: "monthly", priority: 0.6 },
           { url: `${SITE_URL}/create-a-space`, changeFrequency: "monthly", priority: 0.7 },
-          // /system (LIVE-1562): the whole system in one story.
-          { url: `${SITE_URL}/system`, changeFrequency: "monthly", priority: 0.6 },
           // /free-spotlight (VLS-05): listed only while the doorway is open; it answers 404 otherwise.
           ...(launchEntryEnabled() ? [{ url: `${SITE_URL}/free-spotlight`, changeFrequency: "monthly" as const, priority: 0.5 }] : []),
           // /themes (LIVE-1460): the theme gallery.
@@ -263,12 +258,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/themes/nocturne`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/designer (LIVE-1743): the Designer Theme Kit's feature page.
           { url: `${SITE_URL}/themes/designer`, changeFrequency: "monthly", priority: 0.5 },
+          // /themes/new-world (LIVE-2065): the New World Theme Kit's feature page, public now that New World is offered in the pickers.
+          { url: `${SITE_URL}/themes/new-world`, changeFrequency: "monthly", priority: 0.5 },
+          // /themes/services (LIVE-1996): the Services theme's feature page, public now that Services is offered in the pickers.
+          { url: `${SITE_URL}/themes/services`, changeFrequency: "monthly", priority: 0.5 },
+          // /themes/cyberwitch (LIVE-2148): the CyberWitch Theme Kit's feature page, public now that CyberWitch is offered in the pickers.
+          { url: `${SITE_URL}/themes/cyberwitch`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/[theme] (LIVE-1514): the other six themes' kit pages.
           // /themes/network (LIVE-1751): the Network Theme Kit's feature page.
           { url: `${SITE_URL}/themes/network`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/temple (LIVE-1870): the Temple Theme Kit's feature page.
           { url: `${SITE_URL}/themes/temple`, changeFrequency: "monthly", priority: 0.5 },
-          ...['frequency', 'bold', 'wildheart'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
+          ...['bold', 'wildheart'].map((t) => ({ url: `${SITE_URL}/themes/${t}`, changeFrequency: "monthly" as const, priority: 0.5 })),
         ] satisfies MetadataRoute.Sitemap)
       : []),
     { url: `${SITE_URL}/the-community`, lastModified: GUIDE_LAST_MODIFIED["the-community"], changeFrequency: "monthly", priority: 0.8 },
@@ -344,7 +345,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/loneliness`, lastModified: GUIDE_LAST_MODIFIED["loneliness"], changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/friendship-as-an-adult`, lastModified: GUIDE_LAST_MODIFIED["friendship-as-an-adult"], changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/how-to-build-community`, lastModified: GUIDE_LAST_MODIFIED["how-to-build-community"], changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/calm-down-fast`, lastModified: GUIDE_LAST_MODIFIED["calm-down-fast"], changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/mindless`, changeFrequency: "monthly", priority: 0.6 },
     // Leader-track pillar (CONTENT-VOICE §7b.2): the activation guide for the
     // natural connector — answer-first, HowTo + FAQ schema.

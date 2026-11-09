@@ -64,3 +64,11 @@ describe('sitemap URLs are reachable by a signed-out crawler', () => {
     }
   })
 })
+
+
+it('admits only the reserved public Program page and no neighboring owner path', () => {
+  expect(isAnonPublicDetail('/spaces/example/-/program')).toBe(true)
+  for (const path of ['/spaces/example/-/program/manage', '/spaces/example/-/settings', '/spaces/example/manage/program', '/spaces/example/-/pages/program']) {
+    expect(isAnonPublicDetail(path), path).toBe(false)
+  }
+})

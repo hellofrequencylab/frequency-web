@@ -9,6 +9,8 @@ export type ConciergeStage = 'greet' | 'learn' | 'orient' | 'handoff' | 'done'
 export interface ProposedToolCall {
   tool: string
   args: Record<string, unknown>
+  /** Server-written card words, when the client cannot word the proposal itself (a Space switch). */
+  label?: string
 }
 
 export interface ConciergeReply {

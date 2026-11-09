@@ -7,7 +7,7 @@ vi.mock('@/lib/supabase/server', () => ({
     from: (t: string) => {
       const chain: Record<string, unknown> = {}
       const result = () => Promise.resolve(tables[t] ?? { data: null, count: 0, error: null })
-      for (const m of ['select', 'eq', 'is', 'or']) chain[m] = () => chain
+      for (const m of ['select', 'eq', 'neq', 'is', 'or']) chain[m] = () => chain
       chain.maybeSingle = result
       chain.then = (ok: (v: Result) => unknown, bad?: (e: unknown) => unknown) => result().then(ok, bad)
       return chain

@@ -6,10 +6,22 @@ import { createClient } from '@/lib/supabase/server'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { runConciergeTurn, type ConciergeTurnResult } from '@/lib/ai/vera/turn'
 import { VERA_TURN_BODY } from '@/lib/ai/vera/turn-input'
-import { MEMBER_CHAT_TOOL_KEYS, requiresConfirmation } from '@/lib/ai/vera/tools'
+import { MEMBER_CHAT_TOOL_KEYS, requiresConfirmation, validateToolCall } from '@/lib/ai/vera/tools'
+import { veraRoleCard, veraSwitchName, veraSwitchable } from '@/lib/ai/vera/space-guide'
+import { veraSettingValue, veraSettingWhere } from '@/lib/ai/vera/space-settings'
+import { ticketChange } from '@/lib/ai/vera/admin-changes'
+import { setTicketFields } from '@/app/(main)/admin/support/actions'
+import { getCallerProfile } from '@/lib/auth'
+import { isStaff } from '@/lib/core/roles'
+import { setSpaceSkyMarkers, setSpaceTimeZone } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
+import { setSpaceCoverScrim, setSpaceHeroLook, setSpaceLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { setSpaceFeatureEnabled, setSpaceFeatureMinRole } from '@/app/(main)/spaces/[slug]/manage/modules/actions'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isError } from '@/lib/action-result'
+import { isError, type ActionResult } from '@/lib/action-result'
+import type { CoverScrim, LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import type { HeroButtonOrientation, HeroHeight } from '@/lib/spaces/hero-config'
+import type { TicketPriority, TicketStatus } from '@/lib/support/types'
 import { joinCircle } from '@/app/(main)/circles/actions'
 
 export type { ConciergeTurnResult }
@@ -55,8 +67,9 @@ export async function conciergeTurn(stage: string, memberText: string, history: 
   return runConciergeTurn(body.stage, body.text, body.history, { ip: await callerIp() })
 }
 
-/** The member confirmed a proposed write — execute it (consent-gated). */
-export async function confirmProposal(tool: string, argsJson: string): Promise<{ ok: boolean; error?: string }> {
+/** The member confirmed a proposed write — execute it (consent-gated). `message` is what Vera says once a
+ *  change landed, when there is something to say (a Space switch says where to switch it back). */
+export async function confirmProposal(tool: string, argsJson: string): Promise<{ ok: boolean; error?: string; message?: string }> {
   const profileId = await callerProfileId()
   if (!profileId) return { ok: false, error: 'Not signed in.' }
   let args: Record<string, unknown>
@@ -69,6 +82,15 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   // join_circle is an app-level action (capacity checks + rewards + redirect), so it's
   // handled here rather than in the lib executor.
   if (tool === 'join_circle') return joinCircleForMember(String(args.circle ?? ''))
+
+  // A Space switch (LIVE-2157) goes through the Module Manager's OWN guarded action, which re-resolves the
+  // Space from the slug and re-checks that the caller is its owner or an admin. Money, the plan, the team
+  // list and deleting are refused here as well as in the chat, whatever the request carries.
+  if (tool === 'set_space_feature') return setSpaceSwitch(args)
+  if (tool === 'set_space_role') return setSpaceRole(args)
+  if (tool === 'set_space_setting') return setSpaceSetting(args)
+  // A ticket change (LIVE-2191) is for the Frequency team only and goes through the support console's own action.
+  if (tool === 'set_ticket') return setTicket(args)
 
   // The member-facing confirm path may run ONLY the small set of member-SAFE, self-scoped
   // tools. executeConfirmedTool ALSO dispatches the operator-only Resonance Engine playbook
@@ -86,6 +108,73 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
     revalidatePath('/people', 'layout')
   }
   return result
+}
+
+/** Turn one area of a Space on or off for the owner or an admin who tapped Vera's card (LIVE-2157). */
+async function setSpaceSwitch(args: Record<string, unknown>): Promise<{ ok: boolean; error?: string; message?: string }> {
+  if (!validateToolCall('set_space_feature', args).ok) return { ok: false, error: 'That change was not complete. Ask Vera again?' }
+  const feature = String(args.feature)
+  if (!veraSwitchable(feature)) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
+  const slug = String(args.space)
+  const on = args.on === true
+  const res = await setSpaceFeatureEnabled(slug, feature, on)
+  if (isError(res)) return { ok: false, error: res.error }
+  return { ok: true, message: `Done. ${veraSwitchName(feature)} is ${on ? 'on' : 'off'}. You can switch it back any time at /spaces/${slug}/manage/modules.` }
+}
+
+/** Set the lowest role that can use one area of a Space, for the owner or an admin who tapped Vera's card
+ *  (LIVE-2185). Same refusals as a switch; the Module Manager's own action re-checks the caller and the role. */
+async function setSpaceRole(args: Record<string, unknown>): Promise<{ ok: boolean; error?: string; message?: string }> {
+  if (!validateToolCall('set_space_role', args).ok) return { ok: false, error: 'That change was not complete. Ask Vera again?' }
+  const feature = String(args.feature)
+  const role = String(args.role)
+  if (!veraSwitchable(feature) || !veraRoleCard(feature, role)) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
+  const slug = String(args.space)
+  const res = await setSpaceFeatureMinRole(slug, feature, role)
+  if (isError(res)) return { ok: false, error: res.error }
+  return { ok: true, message: `Done. You can change who can use ${veraSwitchName(feature)} any time at /spaces/${slug}/manage/modules.` }
+}
+
+/** Each setting on Vera's list (lib/ai/vera/space-settings.ts) and the settings page action that writes it.
+ *  The value is already checked against the list's closed values before it gets here. */
+const SETTING_WRITERS: Record<string, (slug: string, value: string) => Promise<ActionResult>> = {
+  'calendar.time_zone': async (slug, value) => await setSpaceTimeZone(slug, value),
+  'calendar.sky_markers': async (slug, value) => await setSpaceSkyMarkers(slug, value === 'on'),
+  'page.cover_style': (slug, value) => setSpaceCoverScrim(slug, value as CoverScrim),
+  'page.logo_backdrop': (slug, value) => setSpaceLogoBackdrop(slug, value as LogoBackdrop),
+  'page.hero_height': (slug, value) => setSpaceHeroLook(slug, { height: value as HeroHeight }),
+  'page.hero_buttons': (slug, value) => setSpaceHeroLook(slug, { buttonOrientation: value as HeroButtonOrientation }),
+}
+
+/** Change one Space setting for someone who tapped Vera's card (LIVE-2186). Each setting goes through its
+ *  settings page's OWN guarded action, which re-resolves the Space and re-checks the caller; a setting or value
+ *  that is not on Vera's list is refused here whatever the request carries. */
+async function setSpaceSetting(args: Record<string, unknown>): Promise<{ ok: boolean; error?: string; message?: string }> {
+  if (!validateToolCall('set_space_setting', args).ok) return { ok: false, error: 'That change was not complete. Ask Vera again?' }
+  const setting = String(args.setting)
+  const value = veraSettingValue(setting, args.value)
+  if (value === null) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
+  const slug = String(args.space)
+  const write = Object.hasOwn(SETTING_WRITERS, setting) ? SETTING_WRITERS[setting] : null
+  const res = write ? await write(slug, value) : null
+  if (!res) return { ok: false, error: 'That setting can only be changed by hand in your Space settings.' }
+  if (isError(res)) return { ok: false, error: res.error }
+  return { ok: true, message: `Done. You can change it back any time at ${veraSettingWhere(setting, slug)}.` }
+}
+
+/** Change one support ticket's status or priority for a team member who tapped Vera's card (LIVE-2191). Only a
+ *  staff session finds the ticket at all, and the support console's own setTicketFields re-checks the caller. */
+async function setTicket(args: Record<string, unknown>): Promise<{ ok: boolean; error?: string; message?: string }> {
+  if (!validateToolCall('set_ticket', args).ok) return { ok: false, error: 'That change was not complete. Ask Vera again?' }
+  const change = ticketChange(args.ticket, args.field, args.value)
+  if (!change) return { ok: false, error: 'That ticket change can only be made by hand at /admin/support.' }
+  const me = await getCallerProfile()
+  if (!me || !isStaff(me.webRole)) return { ok: false, error: 'That action is not available here.' }
+  const { data } = await createAdminClient().from('support_tickets').select('id').eq('ref', change.ref).maybeSingle()
+  if (!data?.id) return { ok: false, error: `There is no support ticket #${change.ref}.` }
+  const res = await setTicketFields(data.id, change.field === 'status' ? { status: change.value as TicketStatus } : { priority: change.value as TicketPriority })
+  if (isError(res)) return { ok: false, error: res.error }
+  return { ok: true, message: `Done. Ticket #${change.ref} is updated. You can change it back any time at /admin/support/${data.id}.` }
 }
 
 /** Resolve a circle (by slug, then name) and join the member via the canonical

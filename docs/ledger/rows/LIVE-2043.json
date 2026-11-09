@@ -1,0 +1,19 @@
+{
+ "id": "LIVE-2043",
+ "title": "First-selection style picker: Kit, Accent, Register and Look chosen with the theme seed the site",
+ "lane": "live",
+ "priority": "P1",
+ "size": "M",
+ "status": "done",
+ "source": {
+  "file": "docs/design-systems/services/rules.json",
+  "ref": "Daniel 2026-11-02 New World thread"
+ },
+ "detail": "When an owner first picks a theme, they choose Kit, Accent, Register (Night/Day) and optionally a Look. That choice seeds preferences.siteStyle and the kit's pages, so the editor opens already looking like it. Built on ThemeControls and the dial registry, theme-agnostic: every converted theme gets it. Theme fence: the picker preview renders only the stand-alone site surface.\n\nPick your look: a never-saved website opens on one sheet (theme, accent, Night or Day, look, starter kit, home page canvas), each pick through the Theme tab's handlers; Theme tab row reopens it. Daniel approved the compact mock 2026-11-04.",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node -e \"process.exit(require('fs').existsSync('components/sites/editor/theme-first-pick.tsx')?0:1)\""
+ },
+ "closed": "2026-11-04",
+ "wave": "W7"
+}

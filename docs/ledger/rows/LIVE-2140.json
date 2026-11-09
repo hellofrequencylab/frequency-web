@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-2140",
+  "title": "Services blocks draw on every theme: the Services family joins the contract skin, and the editor sends it for the saved theme",
+  "lane": "live",
+  "priority": "P0",
+  "size": "M",
+  "status": "done",
+  "source": { "file": "lib/sites/skin-family.ts", "ref": "Daniel 2026-11-04: only New World works for danieltyack.com; Designer shows Services blocks as raw text" },
+  "detail": "The contract skin dressed six theme-named block families on a foreign theme; the Services block family (ServicesHero, ServicesStory and the rest, the blocks every kit composes) was not one, so on any theme except Services and New World they drew as raw text. Services is now the seventh family (components/sites/contract-skin-css.ts, palette and faces read from the host) and New World counts it as native. The website editor also sent the skin only while a theme was being tried on; it now sends it for the saved theme too, as the published page already did. Audit 2026-11-04 of every Space with a website: each live site's blocks are native to its theme (Designer, Midnight, Network, Temple, Wildheart, Services, New World) or shared blocks only (Bold, Free Human).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const f=require('fs'),a=f.readFileSync('lib/sites/skin-family.ts','utf8'),b=f.readFileSync('components/sites/contract-skin-css.ts','utf8'),c=f.readFileSync('components/sites/editor/shell.tsx','utf8');if(!/\\['Services', 'services'\\]/.test(a)||!/services: \\{ id: 'services'/.test(b)||!/useTryItOnSkin\\(pageDocs, tryId \\?\\? lookStyle\\.theme\\)/.test(c))process.exit(1)\""
+  },
+  "wave": "W7"
+}

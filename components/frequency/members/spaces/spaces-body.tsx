@@ -104,7 +104,7 @@ export function FqSpacesBody({
   const toggle = (key: 'events' | 'following', label: string) => {
     const on = params[key] === '1'
     return (
-      <Link className={on ? 'chip on' : 'chip'} href={hrefWith(BASE, cur, { [key]: on ? null : '1' })} aria-pressed={on}>
+      <Link className={on ? 'chip on' : 'chip'} href={hrefWith(BASE, cur, { [key]: on ? null : '1' })} aria-current={on ? 'true' : undefined}>
         {label}
       </Link>
     )

@@ -2,6 +2,11 @@
   "role": "Offerings",
   "type": "RoleOfferings",
   "label": "Offerings (all themes)",
+  "intent": "List ways in",
+  "why": "The things people can join, book or try.",
+  "group": "Show up",
+  "icon": "compass",
+  "live": true,
   "replaces": [
     "FeatureGrid",
     "SpaceOfferings",
@@ -31,17 +36,42 @@
       "heading": "text<=120",
       "lead": "text<=280",
       "action": "link"
+    },
+    "labels": {
+      "items": {
+        "label": "Ways in",
+        "hint": "Each thing people can join or book. Filled from your Space when it has them."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "action": {
+        "label": "Link under the section",
+        "hint": "Where people go to see more."
+      }
     }
   },
   "variants": {
     "list": {
-      "label": "Ruled list"
+      "label": "Ruled list",
+      "thumb": "list"
     },
     "cards": {
-      "label": "Cards"
+      "label": "Cards",
+      "thumb": "cards"
     },
     "split": {
-      "label": "List beside the heading"
+      "label": "List beside the heading",
+      "thumb": "split"
     }
   },
   "default": "cards",
@@ -129,5 +159,11 @@
     "price",
     "text",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "freeze"
+  }
 }

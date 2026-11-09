@@ -29,6 +29,11 @@ const PAINS = [
   },
 ]
 
+// Full-bleed stills behind the free band and the closing call (decorative: the words carry the section).
+// A morning class on the lawn for the money promise, a night of dancing in pink light for the last call.
+const FREE_STILL = '/brand/frequency/photos/gathering-06.jpg'
+const CLOSE_STILL = '/brand/frequency/photos/night-yoga-rave-web.jpg'
+
 const TOOLS: { name: string; body: string; icon: FqIconName }[] = [
   { name: 'Booking', body: 'Availability, deposits and reminders from one button.', icon: 'clock' },
   { name: 'Calendar and gatherings', body: 'What’s happening, how to join and who is coming.', icon: 'event' },
@@ -61,7 +66,7 @@ const FAQ = [
   },
   {
     q: 'Can I come back later?',
-    a: 'Yes. Your draft saves in this browser as you go. Once you save it with your email, the link brings you back to it on any device.',
+    a: 'Yes. Your draft saves as you go. Once you add your email, we keep it there too, so you can pick up on any device.',
   },
   {
     q: 'Can I change the look later?',
@@ -82,14 +87,14 @@ export function SoundFamiliar() {
           <h2 id="cs-familiar-h" className="cs-sec-h">Good with people. Tired of the <em className="fq-iri-text">tabs.</em></h2>
         </div>
         <div className="cs-pains">
-          {PAINS.map((c) => (
-            <article key={c.pain} className="cs-pain">
+          {PAINS.map((c, i) => (
+            <article key={c.pain} className={i === 0 ? 'cs-pain cs-pain-lead fq-iri-rim' : 'cs-pain'}>
               <div className="cs-pain-pic">
-                <Image src={c.src} alt={c.alt} fill sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 400px" style={{ objectFit: 'cover' }} />
+                <Image src={c.src} alt={c.alt} fill sizes={i === 0 ? '(max-width: 700px) 84vw, 640px' : '(max-width: 700px) 84vw, 480px'} style={{ objectFit: 'cover' }} />
                 <div className="fq-grain" aria-hidden="true" />
                 <div className="cs-pain-fade" aria-hidden="true" />
               </div>
-              <div className="cs-pain-text">
+              <div className="cs-pain-text fq-glass">
                 <h3 className="cs-pain-h">{c.pain}</h3>
                 <p className="cs-pain-p">{c.way}</p>
               </div>
@@ -105,7 +110,8 @@ export function DayOne() {
   return (
     <section className="cs-sec cs-sec-rule cs-dayone" data-screen-label="04 Day one" aria-labelledby="cs-dayone-h">
       <div className="fq-aura" aria-hidden="true" />
-      <div className="cs-sec-in cs-sec-lift">
+      <div className="cs-signal" aria-hidden="true"><i /></div>
+      <div className="cs-sec-in cs-sec-lift cs-dayone-in">
         <div className="cs-dayone-top">
           <div className="cs-sec-intro">
             <span className="cs-sec-eyebrow">What you get on day one</span>
@@ -130,7 +136,12 @@ export function DayOne() {
 export function FreeToOperate() {
   return (
     <section className="cs-sec cs-free-sec" data-screen-label="05 Free to operate" aria-labelledby="cs-free-h">
-      <div className="fq-iri-rim cs-free">
+      <div className="cs-band-pic" aria-hidden="true">
+        <Image src={FREE_STILL} alt="" fill sizes="100vw" style={{ objectFit: 'cover' }} />
+        <div className="cs-band-shade" />
+        <div className="fq-grain" />
+      </div>
+      <div className="fq-iri-rim fq-glass cs-free">
         <h2 id="cs-free-h" className="cs-sec-h cs-free-h">
           <span className="cs-free-old">Free to start.</span>
           <span>Free to <em className="fq-iri-text">operate.</em></span>
@@ -168,6 +179,11 @@ export function Questions() {
 export function Closing() {
   return (
     <section className="cs-sec cs-sec-rule cs-close" data-screen-label="07 Closing" aria-labelledby="cs-close-h">
+      <div className="cs-band-pic" aria-hidden="true">
+        <Image src={CLOSE_STILL} alt="" fill sizes="100vw" style={{ objectFit: 'cover' }} />
+        <div className="cs-band-shade" />
+        <div className="fq-grain" />
+      </div>
       <div className="fq-aura" aria-hidden="true" />
       <div className="cs-close-in">
         <h2 id="cs-close-h" className="cs-close-h">Get people together. Do things on <em className="fq-iri-text">purpose.</em></h2>

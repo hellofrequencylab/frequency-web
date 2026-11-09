@@ -1,0 +1,19 @@
+{
+  "id": "BLD-215",
+  "title": "Builder: surface parity for the 21 roles on site, profile, Spotlight and email",
+  "lane": "program",
+  "priority": "P2",
+  "size": "L",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Revision 2, builder v3 (2026-11-03): docs/design/frequency-builder-v3/v3-review-and-needs.md"
+  },
+  "detail": "Each role has a profile (Frequency frame, no site theme), Spotlight door and email block. Email hides faq, gallery, business, forms and locations and freezes trust, events, circles, plans, booking and services at send. Done when: check:surface-binding resolves every role on all four surfaces and the freeze rule has a test. PROGRESS (2026-11-03): each role manifest now declares surfaces (site, profile, spotlight, email) with the audit's email rule: hides faq, gallery, business, contact (forms), locations; freezes stats, gatherings, membership, booking, offerings, chapters; pinned by lib/blocks/roles/surfaces.test.ts. Still open: the profile frame render, the Spotlight doors and the email send-time freeze, which the New World email thread builds against this table.\n\nProfile frame (Space page resolver, skin off, DAWN) and Spotlight doors (one per role section) in the builder; email freeze rule tested in lib/blocks/roles/surfaces.test.ts. check:surface-binding is about App page surfaces, not roles; the role probe stands in.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-215.mjs"
+  },
+  "closed": "2026-11-09",
+  "wave": "W7"
+}

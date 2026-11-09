@@ -53,12 +53,11 @@ describe('the circle detail default layout (/circles/*)', () => {
   })
 
   it('orders the rail time-bound, then people, then action, then evergreen', () => {
-    // 1. what is on next (and the way in to RSVP) · 2. the Space's own details, on a Space Circle
-    // only · 3. who is actually in the room · 4. this week's practice and its log button ·
-    // 5. how and where we meet.
+    // 1. what is on next (and the way in to RSVP) · 2. who is actually in the room · 3. this week's
+    // practice and its log button · 4. how and where we meet. (The Space Circle's info board left
+    // this rail with the Space Circle, ADR-1938.)
     expect(visible(config, 'side', ids)).toEqual([
       'circle-events',
-      'circle-space-info',
       'circle-members',
       'circle-practice',
       'circle-meeting',

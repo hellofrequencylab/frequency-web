@@ -32,6 +32,15 @@ interface VoiceLintResult {
   hasEmDash: boolean
 }
 
+interface VoiceLintOptions {
+  /** Names the scan never reads as phrases: the Space's own name, owner-chosen names, theme names. */
+  exempt?: readonly string[]
+  /** Whose words these are. Frequency's own copy (the default) is held to the banned list; an owner's copy gets the
+   *  same findings softened into suggestions, because the banned words are Frequency's rule for Frequency's voice
+   *  (BLD-000 ruling 3). The em dash stays a finding either way; only Frequency's send path refuses on it. */
+  author?: 'frequency' | 'owner'
+}
+
 // Vibe-verbs / hype words from the voice primer (lib/ai/voice.ts §banned). A curated,
 // high-signal subset — the lint flags them as warnings; the em dash is the hard block.
 const BANNED_PHRASES = [
@@ -64,7 +73,7 @@ const BANNED_PHRASES = [
  * human still reads for voice); it is the machine-checkable floor every authored piece
  * of email copy is held to.
  */
-export function lintVoice(text: string): VoiceLintResult {
+export function lintVoice(text: string, opts: VoiceLintOptions = {}): VoiceLintResult {
   const violations: VoiceViolation[] = []
   const hasEmDash = /[—–]/.test(text)
   if (hasEmDash) {
@@ -73,10 +82,19 @@ export function lintVoice(text: string): VoiceLintResult {
       detail: 'Contains an em or en dash. Use a period, comma, or parentheses instead.',
     })
   }
-  const lower = text.toLowerCase()
+  // Names are exempt (BLD-000 ruling 3): a Space called "Tribe Collective" or a theme name is the owner's word
+  // or the product's, not a phrase someone wrote. Blank each one out before the phrase scan reads the copy.
+  let lower = text.toLowerCase()
+  for (const name of opts.exempt ?? []) {
+    const n = name.trim().toLowerCase()
+    if (n) lower = lower.split(n).join(' ')
+  }
+  const owner = opts.author === 'owner'
   for (const phrase of BANNED_PHRASES) {
     if (lower.includes(phrase)) {
-      violations.push({ rule: 'banned-phrase', detail: `Banned phrase: "${phrase}". Say it plainly instead.` })
+      violations.push(owner
+        ? { rule: 'suggestion', detail: `"${phrase}" can read as hype. A plainer word may land better.` }
+        : { rule: 'banned-phrase', detail: `Banned phrase: "${phrase}". Say it plainly instead.` })
     }
   }
   const exclamations = (text.match(/!/g) ?? []).length

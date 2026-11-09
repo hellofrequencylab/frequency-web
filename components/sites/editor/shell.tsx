@@ -14,13 +14,15 @@ import { resetDocumentPlacements, sectionDeviceLayout } from '@/lib/sites/editor
 import { pendingChangeLabels, publishChecks } from '@/lib/sites/editor/publish-checks'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
-import { KitLibrary } from './kit-library'
+import { KitLibrary, starterKits } from './kit-library'
+import { ThemeFirstPick, type FirstPickAccent } from './theme-first-pick'
+import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { ThemeChanger } from './theme-changer'
 import { UpdateLayouts } from './update-layouts'
 import { upgradableCount } from '@/lib/blocks/roles/legacy-map'
 import { TryItOnBar, legacyBlocksOn, useTryItOnSkin } from '../theme-preview-swap'
 import { ThemeDraftsPanel } from './theme-drafts-panel'
-import { activeThemeDraftId, addThemeDraft, draftDials, draftLook, liveThemeDraftId, removeThemeDraft, renameThemeDraft, switchThemeDraft, themeDrafts } from '@/lib/sites/editor/theme-drafts'
+import { THEME_DRAFT_NAME, activeThemeDraftId, addThemeDraft, draftDials, draftLook, liveThemeDraftId, removeThemeDraft, renameThemeDraft, switchThemeDraft, themeDrafts } from '@/lib/sites/editor/theme-drafts'
 import type { KitChanges } from '@/lib/sites/kits/apply'
 import type { KitApplyMode, KitNiche } from '@/lib/sites/kits/types'
 import { editorBlockMeta, editorPickerGroups, VERA_SUGGESTIONS } from '@/lib/sites/editor/block-meta'
@@ -31,20 +33,24 @@ import { duplicateWebsiteSection } from '@/lib/sites/editor/duplicate'
 import { FqIcon, type FqEditorIconName, type FqIconName } from '@/components/frequency/icon'
 import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsiteSnapshot, resolveWebsiteBrand, updateSectionDisplay, setSectionVisibility, sectionVisibility, patchSectionBase, type WebsiteSnapshot, type WebsiteTheme, type WebsiteEditorState, type Device, type WebsitePresence, type SectionDisplay } from '@/lib/sites/editor/state'
 import type { MwLive } from '@/lib/sites/menswork-data'
-import { SITE_LOOK_OPTIONS, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK, siteDials, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { SITE_LOOK_OPTIONS, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK, servicesDials, siteDials, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { ThemeControls } from './theme-controls'
 import { themeAccents, themeEditor } from '@/lib/themes/editor-dials'
-import type { LookPreset } from '@/lib/theme/dials'
+import { hasNewDials, type LookPreset } from '@/lib/theme/dials'
 import { EDITOR_THEME_OF, siteCanvasVars, siteRenderStyle } from '@/lib/sites/site-render-style'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import dynamic from 'next/dynamic'
 // The canvas loads on the client; until it does the stage says so instead of standing empty.
+const noSubscribe = () => () => {}
 const WebsiteCanvas = dynamic(() => import('./canvas').then((module) => module.WebsiteCanvas), { ssr: false, loading: () => <div className="we-canvas-loading" role="status">Loading your page…</div> })
 import type { FieldFocus } from '@/lib/sites/editor/field-sync'
 import { WebsiteInspector, WebsiteChromeInspector } from './inspector'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
-import { VeraDock } from './vera-dock'
+import { VeraDock, VeraLayoutProposal } from './vera-dock'
+import { websiteVeraFacts, type WebsiteVeraFacts } from '@/lib/sites/editor/vera-guide'
+import { veraImageFrom, veraScreenshotFrom } from '@/lib/sites/editor/vera-screenshot'
+import { applyWebsiteVeraLayout, describeWebsiteVeraChange, parseWebsiteVeraLayout, websiteVeraBlockOptions, websiteVeraGhost, websiteVeraOutline, websiteVeraStylePatch, type WebsiteVeraChange, type WebsiteVeraSection, type WebsiteVeraStyleMenu } from '@/lib/sites/editor/vera-layout'
 import { SectionIcon, sectionLine } from './section-icon'
 import { FQ_EDITOR, k, on } from './skin'
 import './editor.css'
@@ -80,8 +86,12 @@ export interface WebsiteEditorShellProps {
   onSave: (revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string | null) => Promise<SaveResult>
   onPresence?: (cursor: WebsitePresence['cursor']) => Promise<{ ok: true; people: WebsitePresence[] } | { ok: false; error: string }>
   onPropose?: (request: string, value: string) => Promise<{ ok: true; promptIds: WebsiteCoachingPromptId[] } | { ok: false; error: string }>
+  /** Vera's layout proposals (LIVE-2097): structure and the theme's own styles (LIVE-2098), applied by the person to the draft. */
+  onLayout?: (request: string, outline: WebsiteVeraSection[], styleMenu?: WebsiteVeraStyleMenu, facts?: WebsiteVeraFacts) => Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }>
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
+  /** The website has never been saved or published: open on Pick your look (LIVE-2043). */
+  firstOpen?: boolean
   onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>>; pages?: Record<string, SiteThemeId | null> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
   /** The Space type's default accent (defaultAccentForType): what the live site paints when no brand accent is set. */
   defaultAccent?: string | null
@@ -117,10 +127,10 @@ function subscribeViewport(callback: () => void) {
 }
 
 /** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. */
-const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', NetworkKit: 'Network', Temple: 'Temple', TempleKit: 'Temple', Designer: 'Designer', FreeHuman: 'Free Human' }
+const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Default', Midnight: 'Midnight', Wildheart: 'Wildheart', Network: 'Network', NetworkKit: 'Network', Temple: 'Temple', TempleKit: 'Temple', Designer: 'Designer', FreeHuman: 'Free Human', Services: 'Services', NewWorld: 'New World', CyberWitch: 'CyberWitch' }
 const EDITOR_THEME: Record<SiteThemeId, WebsiteTheme> = EDITOR_THEME_OF
 /** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
-const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'NetworkKit' ? 'network-kit' : theme === 'Temple' ? 'temple' : theme === 'TempleKit' ? 'temple-kit' : theme === 'Midnight' ? 'midnight' : theme === 'Designer' ? 'designer' : theme === 'FreeHuman' ? 'free-human' : 'frequency')
+const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : theme === 'Network' ? 'network' : theme === 'NetworkKit' ? 'network-kit' : theme === 'Temple' ? 'temple' : theme === 'TempleKit' ? 'temple-kit' : theme === 'Midnight' ? 'midnight' : theme === 'Designer' ? 'designer' : theme === 'FreeHuman' ? 'free-human' : theme === 'Services' ? 'services' : theme === 'NewWorld' ? 'new-world' : theme === 'CyberWitch' ? 'cyberwitch' : 'frequency')
 /** A page's publish state in the design's words (Pages tab and page menu dots). */
 type PageState = 'live' | 'changed' | 'draft'
 const PAGE_STATE_LABEL: Record<PageState, string> = { live: 'Published', changed: 'Draft changes', draft: 'Not published yet' }
@@ -135,7 +145,7 @@ const TABS: { label: Tab; icon: typeof FileText }[] = [{ label: 'Pages', icon: F
 const TAB_ICON: Record<Tab, FqIconName | FqEditorIconName> = { Pages: 'page', Layers: 'layers', Add: 'plus', Theme: 'palette', Site: 'settings' }
 const DEVICES: { id: Device; icon: typeof Monitor; label: string }[] = [{ id: 'desktop', icon: Monitor, label: 'Desktop' }, { id: 'tablet', icon: Tablet, label: 'Tablet' }, { id: 'phone', icon: Smartphone, label: 'Phone' }]
 
-function Dialog({ label, children }: { label: string; children: ReactNode }) {
+function Dialog({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
@@ -150,14 +160,14 @@ function Dialog({ label, children }: { label: string; children: ReactNode }) {
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
   }
-  return <div ref={root} className={k('we-modal')} role="dialog" aria-modal="true" aria-label={label} onKeyDown={trap} onClick={(event) => event.stopPropagation()}>{children}</div>
+  return <div ref={root} className={className ? `${k('we-modal')} ${className}` : k('we-modal')} role="dialog" aria-modal="true" aria-label={label} onKeyDown={trap} onClick={(event) => event.stopPropagation()}>{children}</div>
 }
 
 function Icon({ label, hint, children, className = '', ...props }: { label: string; hint?: string; children: ReactNode; className?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button type="button" className={k(`we-icon ${className}`)} aria-label={label} title={hint ?? label} {...props}>{children}</button>
 }
 
-export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain }: WebsiteEditorShellProps) {
+export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onLayout, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain, firstOpen = false }: WebsiteEditorShellProps) {
   const [people, setPeople] = useState<WebsitePresence[]>([])
   const cursor = useRef<WebsitePresence['cursor']>(null)
   useEffect(() => {
@@ -226,6 +236,18 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [pageMenu, setPageMenu] = useState(false)
   const [modal, setModal] = useState<'publish' | 'templates' | 'insert' | 'delete-page' | 'menu' | 'theme' | 'layouts' | null>(null)
   const [filter, setFilter] = useState('')
+  // PICK YOUR LOOK (LIVE-2043): a website that has never been saved or published (the page says so: `firstOpen`) opens on the first-pick sheet. A skip
+  // or an open marks it seen on this browser, and any pick saves the draft, so it does not come back.
+  const firstPickKey = `fq-first-pick:${host}`
+  // Read on the client only (the server snapshot says "seen"), so the server render and hydration agree.
+  const firstPickSeen = useSyncExternalStore(noSubscribe, () => { try { return window.localStorage.getItem(firstPickKey) === '1' } catch { return false } }, () => true)
+  const [firstPickChoice, setFirstPickChoice] = useState<'open' | 'closed' | null>(null)
+  const firstPick = firstPickChoice ? firstPickChoice === 'open' : FQ_EDITOR && firstOpen && !firstPickSeen
+  const setFirstPick = (open: boolean) => setFirstPickChoice(open ? 'open' : 'closed')
+  function closeFirstPick() {
+    try { window.localStorage.setItem(firstPickKey, '1') } catch { /* storage blocked: the saved draft keeps it closed */ }
+    setFirstPick(false)
+  }
   const [insertAt, setInsertAt] = useState<number | null>(null)
   const [pageName, setPageName] = useState('')
   const [publishWhen, setPublishWhen] = useState<'now' | 'schedule'>('now')
@@ -234,11 +256,15 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [pinPosition, setPinPosition] = useState<{ blockId: string; x: number; y: number } | null>(null)
   const [replies, setReplies] = useState<Record<string, string>>({})
   const [request, setRequest] = useState('')
+  // LIVE-2162: a screenshot the owner dropped, pasted or picked for the next ask, already shrunk. Sent once, never kept.
+  const [shot, setShot] = useState<string | null>(null)
+  const [shotOver, setShotOver] = useState(false)
   const [textSelection, setTextSelection] = useState<{ blockId: string; field: string; path: (string | number)[]; value: string } | null>(null)
   // The field the owner is typing in on the inspector, lit on the canvas (lib/sites/editor/field-sync.ts).
   const [fieldFocus, setFieldFocus] = useState<FieldFocus | null>(null)
   const [coachingQuestions, setCoachingQuestions] = useState<string[]>([])
   const [veraStatus, setVeraStatus] = useState('')
+  const [layoutProposal, setLayoutProposal] = useState<{ slug: string; menu: WebsiteVeraStyleMenu; note: string; changes: WebsiteVeraChange[]; ticked: boolean[]; refused: string[]; preview?: boolean } | null>(null)
   const [asking, setAsking] = useState(false)
   // Frequency-only view state (no effect on the draft): the top bar's page menu and the inspector tab.
   const [pickOpen, setPickOpen] = useState(false)
@@ -248,13 +274,22 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [dropId, setDropId] = useState<string | null>(null)
   const [toast, setToast] = useState('')
   const toastTimer = useRef<number | undefined>(undefined)
+  const toastMounted = useRef(true)
+  useEffect(() => {
+    toastMounted.current = true
+    return () => {
+      toastMounted.current = false
+      window.clearTimeout(toastTimer.current)
+      toastTimer.current = undefined
+    }
+  }, [])
   // When the draft last saved, for the design's "Draft saved · 2 min ago"; the clock ticks once a minute.
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => { if (!FQ_EDITOR) return; const timer = window.setInterval(() => setNow(Date.now()), 60000); return () => window.clearInterval(timer) }, [])
   const veraInput = useRef<HTMLInputElement>(null)
-  // Vera's bar can be put away (it covers the canvas): a small orb stays in its place, the choice is
-  // remembered on this device, and ⌘K or the orb brings it back. View state only, no effect on the draft.
+  // Vera is a tab at the bottom right that opens and closes (it covers the canvas when open); the choice is
+  // remembered on this device, and ⌘K or the tab brings it back. View state only, no effect on the draft.
   const veraHidden = useSyncExternalStore(subscribeVeraHidden, readVeraHidden, () => false)
   const focusVeraNext = useRef(false)
   function putVeraAway(hidden: boolean, focus = false) {
@@ -266,6 +301,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const pickRef = useRef<HTMLDivElement>(null)
   const uid = useId()
   function say(message: string) {
+    if (!toastMounted.current) return
     setToast(message)
     window.clearTimeout(toastTimer.current)
     toastTimer.current = window.setTimeout(() => setToast(''), 2600)
@@ -296,11 +332,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // keeps the current look until the legacy skin has loaded, so the swap is one commit and never draws bare.
   const [tryId, setTryId] = useState<SiteThemeId | null>(null)
   const pageDocs = useMemo(() => draft.pages.map((item) => item.doc), [draft.pages])
-  const trySkin = useTryItOnSkin(pageDocs, tryId)
+  // The contract skin also dresses the SAVED theme's foreign blocks (a Services hero on a Designer site): the published
+  // page sends it (site-page.tsx), so the canvas must too, or those blocks draw bare in the editor (Daniel, 2026-11-04).
+  const trySkin = useTryItOnSkin(pageDocs, tryId ?? lookStyle.theme)
   const trying = tryId && typeof trySkin === 'string' && EDITOR_THEME[tryId] !== resolvedTheme ? tryId : null
   const canvasTheme = trying ? EDITOR_THEME[trying] : resolvedTheme
   const canvasVars = trying ? websiteThemeVars(canvasTheme, render.accent) : resolvedVars
-  const trySheet = trying ? { css: trySkin as string, themeId: trying } : null
+  const trySheet = typeof trySkin === 'string' && trySkin ? { css: trySkin, themeId: trying ?? lookStyle.theme } : null
   const pageLookStyle = render.lookStyle
   const activeAccent = render.accent
   const accentValue = String(canvasVars['--th-accent' as keyof React.CSSProperties])
@@ -347,10 +385,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     return () => document.removeEventListener('focusout', end)
   }, [])
   const blockName = (id: string | null | undefined, doc = page.doc) => { const type = id ? findBlockDeep(doc, config, id)?.type : undefined; return type ? config.components[type]?.label ?? type : 'Section' }
-  function updateDoc(doc: Data, meta?: { label?: string; burst?: string }) {
+  /** The snapshot with this page's document replaced: stale layout positions and comments on removed blocks drop out. */
+  function withPageDoc(snapshot: WebsiteSnapshot, doc: Data): WebsiteSnapshot {
     const layout = doc.root.props?.websiteLayout
     if (layout && typeof layout === 'object') doc = { ...doc, root: { ...doc.root, props: { ...doc.root.props, websiteLayout: Object.fromEntries(Object.entries(layout).filter(([id]) => !!findBlockDeep(doc, config, id))) } } }
-    commit({ ...latest.current, pages: latest.current.pages.map((p) => p.slug === page.slug ? { ...p, doc, comments: p.comments.filter((comment) => !!findBlockDeep(doc, config, comment.blockId)) } : p) }, meta) }
+    return { ...snapshot, pages: snapshot.pages.map((p) => p.slug === page.slug ? { ...p, doc, comments: p.comments.filter((comment) => !!findBlockDeep(doc, config, comment.blockId)) } : p) }
+  }
+  function updateDoc(doc: Data, meta?: { label?: string; burst?: string }) { commit(withPageDoc(latest.current, doc), meta) }
   const updateDisplay = useCallback((id: string, value: SectionDisplay | null, typing = false) => {
     const current = latest.current
     const target = current.pages.find((p) => p.slug === page.slug)
@@ -481,11 +522,13 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   }
   // THE THEME EDITOR'S DIALS (LIVE-1997): written into the same draft `look`, so each change is one undo step and goes
   // live on publish. A value equal to the theme's own is not stored (`null`), exactly as the four legacy styles.
-  function changeDials(patch: Record<string, string | null>, drop: readonly string[] = [], label = 'Style') {
+  function lookWith(patch: Record<string, string | null>, drop: readonly string[] = []): NonNullable<WebsiteSnapshot['look']> {
     const base: Record<string, string | null | undefined> = { ...lookStyle.look, ...lookStyle.dials }
     for (const key of drop) delete base[key]
-    const next = Object.entries({ ...base, ...patch }).filter(([, v]) => v != null)
-    commit({ ...draft, look: Object.fromEntries(next) as NonNullable<WebsiteSnapshot['look']> }, { label })
+    return Object.fromEntries(Object.entries({ ...base, ...patch }).filter(([, v]) => v != null)) as NonNullable<WebsiteSnapshot['look']>
+  }
+  function changeDials(patch: Record<string, string | null>, drop: readonly string[] = [], label = 'Style') {
+    commit({ ...draft, look: lookWith(patch, drop) }, { label })
   }
   // THEME DRAFTS: several themes over the same pages. A switch is one undo step; when the theme differs the element
   // positions reset to that theme's layout (Undo restores them), exactly as picking a theme does.
@@ -567,6 +610,97 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     finally { setAsking(false) }
   }
 
+  // The theme editor's controls: drawn from the registry and this theme's manifest. A theme that has declared no dial
+  // beyond the four above (every theme until it is converted) draws nothing here, so its editor is unchanged.
+  const themeUi = themeEditor(lookStyle.theme, WEBSITE_THEME_LABEL[draft.theme])
+  const { accent: _ownAccent, ...ownDials } = siteDials({ ...lookStyle, dials: undefined }, themeUi.own)
+  const { accent: dialAccent, ...nowDials } = siteDials(lookStyle, themeUi.own)
+  void _ownAccent
+  const dialOwn: Record<string, string> = { ...THEME_LOOK[lookStyle.theme], ...ownDials }
+  const dialNow: Record<string, string> = { ...siteLook(lookStyle), ...nowDials }
+  const dialIds = themeUi.dials.map((d) => d.id)
+  // VERA'S STYLE MENU (LIVE-2098): exactly what the Style panel offers this theme, the four global styles and every
+  // dial the theme declares, its named accents and its Looks. Vera can only pick from it; nothing else is storable.
+  const veraStyleMenu: WebsiteVeraStyleMenu = {
+    dials: [
+      ...(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => ({ id: key as string, label: LOOK_LABEL[key], options: SITE_LOOK_OPTIONS[key].map((o) => ({ id: o.id, label: o.label })), current: dialNow[key] ?? '', own: dialOwn[key] ?? '' })),
+      ...themeUi.dials.filter((d) => d.id !== 'accent' && d.options.length > 0 && !(d.id in SITE_LOOK_OPTIONS)).map((d) => ({ id: d.id, label: d.label, options: d.options.map((o) => ({ id: o.id, label: o.label })), current: dialNow[d.id] ?? '', own: dialOwn[d.id] ?? '' })),
+    ],
+    accents: themeAccents(draft.theme).map((a) => ({ id: a.id, label: a.label })),
+    accent: dialAccent ?? null,
+    looks: themeUi.looks.filter((l) => l.id !== 'own').map((l) => ({ id: l.id, label: l.label, dials: l.dials })),
+    // LIVE-2135: the sections the Add tab offers on this page now (a block at its per-page cap is left out).
+    sections: [...new Map(groups.flatMap((g) => g.items).filter((c) => !c.disabled).map((c) => [c.type, { type: c.type, label: c.label }])).values()].slice(0, 80),
+    // LIVE-2162: each section's own design options on this page (a card's Accent surface, a title's alignment), read
+    // from the block config, so she can pick only what the section's own panel offers.
+    options: websiteVeraBlockOptions(page.doc, config),
+  }
+  async function takeShot(file: File | null) {
+    if (!file) return
+    const taken = await veraScreenshotFrom(file)
+    if (taken.ok) { setShot(taken.dataUrl); setVeraStatus('Vera will look at your screenshot with your next ask.') }
+    else setVeraStatus(taken.error)
+  }
+  // THE VERA BAR'S ROUTER (LIVE-2097): a typed ask with no text selected is about the page's STRUCTURE and goes to
+  // the layout proposal; selected text (and every chip) stays on the questions-only coaching path in askVera.
+  function submitVera() {
+    const text = request
+    if (!onLayout || text.trim().startsWith('/') || (!shot && textSelection && textSelection.blockId === selectedId)) { void askVera(); return }
+    if ((!text.trim() && !shot) || asking) return
+    setVeraStatus(''); setCoachingQuestions([]); setRequest(''); setLayoutProposal(null)
+    void askLayout(text.trim() || 'Look at my screenshot. What is off, and which design choices would fix it?')
+  }
+  async function askLayout(text: string) {
+    if (!onLayout) return
+    setAsking(true)
+    try {
+      const slug = page.slug
+      const menu = veraStyleMenu
+      // LIVE-2110: what she may know to answer a question: counts and labels about this draft, never its words.
+      // LIVE-2162: the screenshot rides this one ask with the facts and is let go once sent.
+      const facts = { ...websiteVeraFacts({ draft: latest.current, published: persisted.published, scheduledAt: persisted.scheduled?.at ?? null, pageInView: page.label, themeLabel: THEME_DRAFT_NAME[latest.current.theme], config }), ...(shot ? { screenshot: shot } : {}) }
+      setShot(null)
+      const result = await onLayout(text, websiteVeraOutline(page.doc, config), menu, facts)
+      if (!result.ok) { setVeraStatus(result.error); return }
+      // The reply crossed the network: parse it again against THIS page's own sections before showing a line.
+      const current = latest.current.pages.find((p) => p.slug === slug)
+      const ids = new Set((current?.doc.content ?? []).map((block) => String(block.props.id ?? '')))
+      const parsed = parseWebsiteVeraLayout({ changes: result.changes }, ids, menu)
+      const refused = [...new Set([...(Array.isArray(result.refused) ? result.refused.filter((r): r is string => typeof r === 'string').slice(0, 12) : []), ...parsed.refused])]
+      const note = typeof result.note === 'string' ? result.note.slice(0, 500) : ''
+      if (!parsed.changes.length && !refused.length) { setVeraStatus(note || 'Vera had no change for that. Try naming the section or the style.'); return }
+      setLayoutProposal({ slug, menu, note, changes: parsed.changes, ticked: parsed.changes.map(() => true), refused })
+    } catch { setVeraStatus('Vera could not reply. Try again in a moment.') }
+    finally { setAsking(false) }
+  }
+  function applyLayout() {
+    if (!layoutProposal) return
+    if (layoutProposal.slug !== page.slug) { setLayoutProposal(null); setVeraStatus('That proposal was for another page. Ask again here.'); return }
+    const chosen = layoutProposal.changes.filter((_, i) => layoutProposal.ticked[i])
+    const { doc, results: sectionResults } = applyWebsiteVeraLayout(page.doc, config, chosen)
+    const style = websiteVeraStylePatch(veraStyleMenu, chosen)
+    const results = [...sectionResults, ...style.results]
+    const applied = results.filter((r) => r.ok).length
+    // ONE undo step for the whole proposal: when style lines are ticked, the page's sections and the draft's style
+    // move together in one commit. Style lines are checked again against the theme the draft wears NOW.
+    const label = `Vera: ${applied} ${applied === 1 ? 'change' : 'changes'}`
+    if (applied && style.results.some((r) => r.ok)) commit({ ...withPageDoc(latest.current, doc), look: lookWith(style.patch, style.drop) }, { label })
+    else if (applied) updateDoc(doc, { label: `Vera: ${applied} layout ${applied === 1 ? 'change' : 'changes'}` })
+    setLayoutProposal(null)
+    const missed = results.filter((r) => !r.ok).map((r) => r.line)
+    setVeraStatus([applied ? `Applied ${applied} to your draft. Undo reverses ${applied === 1 ? 'it' : 'them'} in one step.` : 'Nothing was applied.', ...missed].join(' '))
+    if (FQ_EDITOR && applied) say(`Vera applied ${applied} ${applied === 1 ? 'change' : 'changes'} to your draft`)
+  }
+  function toggleLayoutLine(index: number) {
+    setLayoutProposal((p) => p && { ...p, ticked: p.ticked.map((t, i) => (i === index ? !t : t)) })
+  }
+  // THE GHOST PREVIEW (LIVE-2141): while it is on, the canvas draws the ticked section lines read-only. It lives on
+  // the proposal, so dismissing, applying or a new ask turns it off; nothing reaches the draft until Apply.
+  const ghost = layoutProposal?.preview && layoutProposal.slug === page.slug ? websiteVeraGhost(page.doc, config, layoutProposal.changes, layoutProposal.ticked) : null
+  const toggleGhost = () => setLayoutProposal((p) => p && { ...p, preview: !p.preview })
+  const ghostBanner = ghost && <div className="vera-ghost" role="status"><span>{`Previewing ${ghost.changed} ${ghost.changed === 1 ? 'change' : 'changes'} from Vera. Nothing is on your draft yet.`}{ghost.styleLines > 0 && ' Style changes show once you apply them.'}</span><button type="button" className={FQ_EDITOR ? 'btn sm txt' : 'we-action txt sm'} onClick={toggleGhost}>Back to your page</button></div>
+  const layoutLines = layoutProposal && layoutProposal.slug === page.slug ? layoutProposal.changes.map((change, i) => ({ line: describeWebsiteVeraChange(change, page.doc, config, layoutProposal.menu), ticked: layoutProposal.ticked[i] })) : null
+
   function openChrome(area: 'header' | 'footer') { setTextSelection(null); setSelectedId(null); setPanel(area); openRight() }
   function movePage(direction: -1 | 1) {
     const index = draft.pages.indexOf(page), target = index + direction
@@ -616,18 +750,14 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   </>
   // The theme editor's controls: drawn from the registry and this theme's manifest. A theme that has declared no dial
   // beyond the four above (every theme until it is converted) draws nothing here, so its editor is unchanged.
-  const themeUi = themeEditor(lookStyle.theme, WEBSITE_THEME_LABEL[draft.theme])
-  const { accent: _ownAccent, ...ownDials } = siteDials({ ...lookStyle, dials: undefined }, themeUi.own)
-  const { accent: dialAccent, ...nowDials } = siteDials(lookStyle, themeUi.own)
-  void _ownAccent
-  const dialOwn: Record<string, string> = { ...THEME_LOOK[lookStyle.theme], ...ownDials }
-  const dialNow: Record<string, string> = { ...siteLook(lookStyle), ...nowDials }
-  const dialIds = themeUi.dials.map((d) => d.id)
-  const themeControls = <ThemeControls dials={themeUi.dials} values={dialNow} own={dialOwn} looks={themeUi.looks} accents={themeAccents(draft.theme)} accent={dialAccent}
-    onChange={(id, value) => changeDials({ [id]: value })}
-    onAccent={(value) => changeDials({ accent: value })}
-    onPreset={(look: LookPreset) => changeDials(Object.fromEntries(Object.entries(look.dials).filter(([id, v]) => v !== dialOwn[id])), dialIds.filter((id) => id !== 'accent'), 'Look')}
-    onReset={() => changeDials({}, [...dialIds, 'accent'], 'Style')} />
+  const themeControlProps = { dials: themeUi.dials, values: dialNow, own: dialOwn, looks: themeUi.looks, accents: themeAccents(draft.theme), accent: dialAccent,
+    onChange: (id: string, value: string | null) => changeDials({ [id]: value }),
+    onAccent: (value: string | null) => changeDials({ accent: value }),
+    onPreset: (look: LookPreset) => changeDials(Object.fromEntries(Object.entries(look.dials).filter(([id, v]) => v !== dialOwn[id])), dialIds.filter((id) => id !== 'accent'), 'Look'),
+    onReset: () => changeDials({}, [...dialIds, 'accent'], 'Style') }
+  const themeControls = <ThemeControls {...themeControlProps} variant="panel" />
+  // LIVE-2031: the same controls as a compact bar floated over the preview, calling the same handlers (null for a theme with only the legacy dials).
+  const themeBar = hasNewDials(themeUi.dials) && !preview ? <div className={k('we-float-bar')} role="region" aria-label="Quick style"><ThemeControls {...themeControlProps} variant="bar" /></div> : null
   const themeFonts = String(canvasVars['--th-display' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const bodyFont = String(canvasVars['--th-body' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const spaceAccent = brandAccent && /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(brandAccent) ? brandAccent : null
@@ -641,6 +771,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {draftsPanel}
     <div className="cap">Theme</div>
     {changeThemeButton}
+    <button type="button" className="row" onClick={() => setFirstPick(true)}><span className="ic"><FqIcon name="settings" /></span><span className="t">Pick your look<small>Theme, colour, Night or Day and look on one sheet</small></span></button>
     {SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className={`theme${on(draft.theme === theme)}`} aria-pressed={draft.theme === theme} onClick={() => pickTheme(t)}>
       <span className="sw" style={websiteThemeVars(theme)} aria-hidden><i data-swatch="bg" /><i data-swatch="accent" /></span><span><b>{WEBSITE_THEME_LABEL[theme]}</b><small>{t.description}</small></span></button> })}
     <KitLibrary onApply={applyKitChoice} onPreview={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />
@@ -659,6 +790,34 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <div className="acts"><button type="button" className="btn sm" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="btn sm" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } }, { label: 'Logo' })}>Remove logo</button>}</div>
     <div className="note">A theme or style you pick changes this draft only. Visitors see it when you publish. Words and photos stay; blocks take on the new colors and type.</div>
   </>
+  // PICK YOUR LOOK (LIVE-2043): the Theme tab's own parts on one sheet, each pick through the Theme tab's own handler.
+  // New World offers its five accents as the brand colour (Tide is its own, so it stores nothing); a theme with named
+  // accents offers those. Night or Day shows for the themes that carry both registers.
+  const pickAccents: FirstPickAccent[] = draft.theme === 'NewWorld'
+    ? Object.entries(NEW_WORLD_ACCENTS).map(([id, a], index) => ({ id, label: a.label, swatch: a.accent, value: index === 0 ? null : a.accent, on: index === 0 ? !draft.brand?.accent || draft.brand.accent.toUpperCase() === a.accent : draft.brand?.accent?.toUpperCase() === a.accent }))
+    : themeAccents(draft.theme).map((a) => ({ id: a.id, label: a.label, swatch: a.swatch, value: a.swatch, on: draft.brand?.accent?.toLowerCase() === a.swatch.toLowerCase() }))
+  const twoRegisters = lookStyle.theme === 'new-world' || lookStyle.theme === 'services'
+  const firstPickSheet = <ThemeFirstPick
+    themes={SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return { id: t.id, label: WEBSITE_THEME_LABEL[theme], description: t.description, swatch: websiteThemeVars(theme), on: draft.theme === theme } })}
+    onTheme={(id) => { const t = SITE_THEMES.find((x) => x.id === id); if (t) pickTheme(t) }}
+    accents={pickAccents}
+    onAccent={(value) => commit({ ...draft, brand: { ...draft.brand, accent: value } }, { label: 'Accent' })}
+    register={twoRegisters ? (dialNow.register === 'day' ? 'day' : 'night') : null}
+    onRegister={(value) => changeDials({ register: value === dialOwn.register ? null : value })}
+    looks={(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => ({ key, label: LOOK_LABEL[key], options: SITE_LOOK_OPTIONS[key].map((o) => ({ id: o.id, label: o.label, on: siteLook(lookStyle)[key] === o.id })) }))}
+    onLook={(key, id) => { const look = key as SiteLookKey; setLook(look, id === THEME_LOOK[lookStyle.theme][look] ? null : id) }}
+    kits={starterKits(draft.theme, metadata?.niche as KitNiche | null | undefined)}
+    preview={<WebsiteCanvas pageSlug={page.slug} doc={page.doc} theme={canvasTheme} trySkin={trySheet} register={siteDials(pageLookStyle).register === 'day' ? 'day' : 'night'} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={null} preview comments={[]} chrome={draft.chrome} onSelect={() => {}} onEdit={() => {}} onAction={() => {}} onInsert={() => {}} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} />}
+    onOpen={async (kitId) => {
+      if (kitId) {
+        // A first open replaces the empty starter pages; reopened later, a kit adds its pages beside the owner's.
+        const message = await applyKitChoice(kitId, firstOpen ? 'replace' : 'add')
+        if (!message.endsWith('Undo takes it back.')) return message
+      }
+      closeFirstPick()
+      return ''
+    }}
+    onSkip={closeFirstPick} />
   // ── The rail tabs and inspector panels, shared by both designs. Under DAWN the rail tabs are the Site Editor's
   // (LIVE-907); under Frequency, the kit's. Class names go through k() (skin.ts). The handlers are the same either way.
   const pressedChoice = (pressed: boolean) => (FQ_EDITOR ? on(pressed).trim() || undefined : 'we-action secondary')
@@ -728,7 +887,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // layout. Top bar, left rail (Pages, Layers, Add, Theme, Site), the stage with the Vera bar, the inspector
   // (Content, Design, Advanced, Notes) and the publish modal. Folding is the kit's data-lf / data-rf.
   if (FQ_EDITOR) {
-    const veraVisible = asking || !!veraStatus || coachingQuestions.length > 0
+    const veraVisible = asking || !!veraStatus || coachingQuestions.length > 0 || !!layoutLines
     // The design's save line: "Saving…", then "Draft saved · 2 min ago". A failed save says so and the line retries.
     const fqSaveLabel = status === 'saving' ? 'Saving…' : status === 'saved' ? (savedAt ? `Draft saved · ${savedAgo(savedAt, now)}` : 'Draft saved') : status === 'unsaved' ? 'Unsaved changes' : status === 'conflict' ? 'A newer draft exists' : 'Not saved · Retry'
     // "Section 2 of 8 · Live data" (the design's inspector header) for a top-level section; nested blocks keep the scope line.
@@ -777,20 +936,23 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           <div className="foot"><span className="lbl">Changes save as a draft</span><a className="btn sm txt" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
         </aside>
         <main className="stage" data-device={device} aria-label="Website editor canvas" style={{ ['--pe-zoom' as string]: preview ? 1 : zoom / 100 }}>
-          <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
+          {themeBar}
+          {ghostBanner}
+          <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={ghost?.doc ?? page.doc} theme={canvasTheme} trySkin={trySheet} register={siteDials(pageLookStyle).register === 'day' ? 'day' : 'night'} dials={servicesDials(siteDials(pageLookStyle, themeEditor(pageLookStyle.theme).own))} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview || !!ghost} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} onVisibility={(id, visible) => setVisible(id, device, visible)} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
           {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><FqIcon name="minus" /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><FqIcon name="plus" /></Icon></div>}
-          {!preview && veraHidden && <button type="button" className="vera-orb" aria-label="Show Vera" aria-keyshortcuts="Meta+K Control+K Meta+Backslash Control+Backslash" title="Show Vera (⌘K)" onClick={() => putVeraAway(false, true)}><span className="orb" aria-hidden /></button>}
-          {!preview && !veraHidden && <div className="vera">
-            <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is choosing coaching questions…' : <><b>Vera</b>{veraStatus && <p>{veraStatus}</p>}{coachingQuestions.map(question => <p key={question}>{question}</p>)}{coachingQuestions.length > 0 && <button type="button" className="btn sm txt" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button>}</>}</div>
-            <form className="bar" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
-              <span className="orb" aria-hidden />
-              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder="Ask Vera to help review your writing…" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
-              <span className="ctx">{veraContext}</span>
+          {!preview && veraHidden && <button type="button" className="vera-orb vera-tab" aria-label="Show Vera" aria-expanded={false} aria-keyshortcuts="Meta+K Control+K Meta+Backslash Control+Backslash" title="Show Vera (⌘K)" onClick={() => putVeraAway(false, true)}><span className="orb" aria-hidden /><span>Vera</span></button>}
+          {!preview && !veraHidden && <section className={`vera${shotOver ? ' drop' : ''}`} aria-label="Vera" onDragOver={(e) => { if (onLayout && Array.from(e.dataTransfer.types).includes('Files')) { e.preventDefault(); setShotOver(true) } }} onDragLeave={() => setShotOver(false)} onDrop={(e) => { const file = veraImageFrom(e.dataTransfer); setShotOver(false); if (onLayout && file) { e.preventDefault(); void takeShot(file) } }}>
+            <div className="vera-head"><span className="orb" aria-hidden /><b>Vera</b><span className="ctx">{veraContext}</span><button type="button" className="ib vera-hide" aria-label="Hide Vera" aria-expanded aria-keyshortcuts="Meta+Backslash Control+Backslash" title="Hide Vera (⌘\\)" onClick={() => putVeraAway(true)}><FqIcon name="close" /></button></div>
+            <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is thinking…' : <>{veraStatus && <p>{veraStatus}</p>}{coachingQuestions.map(question => <p key={question}>{question}</p>)}{coachingQuestions.length > 0 && <button type="button" className="btn sm txt" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button>}{layoutLines && layoutProposal && <VeraLayoutProposal note={layoutProposal.note} lines={layoutLines} refused={layoutProposal.refused} onToggle={toggleLayoutLine} onApply={applyLayout} onDismiss={() => setLayoutProposal(null)} previewing={!!ghost} onPreview={toggleGhost} buttonClass="btn sm ink" dismissClass="btn sm txt" />}</>}</div>
+            <form className="bar" onSubmit={(e) => { e.preventDefault(); submitVera() }}>
+              <Input ref={veraInput} aria-label="Ask Vera" aria-keyshortcuts="Meta+K Control+K" placeholder={onLayout ? 'Ask Vera a question, or to rearrange or restyle…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} onPaste={(e) => { const file = veraImageFrom(e.clipboardData); if (onLayout && file) { e.preventDefault(); void takeShot(file) } }} />
+              {onLayout && <label className="ib vera-attach" title="Add a screenshot"><FqIcon name="photo" /><span className="sr-only">Add a screenshot for Vera</span><input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { void takeShot(e.target.files?.[0] ?? null); e.target.value = '' }} /></label>}
               <button type="submit" className="btn sm ink" disabled={asking}>Ask</button>
-              <button type="button" className="ib vera-hide" aria-label="Hide Vera" aria-keyshortcuts="Meta+Backslash Control+Backslash" title="Hide Vera (⌘\\)" onClick={() => putVeraAway(true)}><FqIcon name="close" /></button>
             </form>
+            {shot && <div className="vera-shot"><img src={shot} alt="Your screenshot for Vera" /><span>Vera will look at this with your next ask.</span><button type="button" className="btn sm txt" onClick={() => setShot(null)}>Remove</button></div>}
+            {onLayout && !shot && <p className="vera-drop-hint">Drop or paste a screenshot to show Vera what you mean.</p>}
             <div className="chips">{suggestions.map((chip) => <button type="button" key={chip.label} disabled={asking || !selected} onClick={() => void askVera(chip.prompt, chip.fields)}>{chip.label}</button>)}</div>
-          </div>}
+          </section>}
         </main>
         <aside className="insp" aria-label="Inspector">
           {right && nothingSelected && <>{!!error && <div className="note err" role="alert">{error}{status === 'error' && <button type="button" className="row" onClick={() => void save()}>Retry save</button>}{status === 'conflict' && <button type="button" className="row" onClick={() => window.location.reload()}>Reload newer draft</button>}</div>}
@@ -805,6 +967,10 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       </div>
       {logoPicker}
       <div className={`toast${on(!!toast)}`} role="status" aria-live="polite">{toast}</div>
+      {firstPick && !modal && <div className="ov on" onClick={closeFirstPick}><Dialog label="Pick your look" className="fp">
+        <Icon label="Close" className="x" onClick={closeFirstPick}><FqIcon name="close" /></Icon>
+        {firstPickSheet}
+      </Dialog></div>}
       {modal && <div className="ov on" onClick={() => setModal(null)}><Dialog label={modalLabel}>
         <Icon label="Close dialog" className="x" onClick={() => setModal(null)}><FqIcon name="close" /></Icon>
         {modal === 'publish' && <span className="eyebrow">{draft.chrome?.name || brandName} · {page.label}</span>}
@@ -864,15 +1030,17 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <div className="we-foot"><span className="we-foot-lbl">Changes save as a draft</span><a className="we-action txt sm" aria-label="Website home" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
     </aside>
     <main className="we-stage" data-device={device} aria-label="Website editor canvas">
-      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} trySkin={trySheet} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
+      {themeBar}
+      {ghostBanner}
+      <div className="we-frame-scroller"><div className="we-frame-card"><WebsiteCanvas zoom={zoom} key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={ghost?.doc ?? page.doc} theme={canvasTheme} trySkin={trySheet} register={siteDials(pageLookStyle).register === 'day' ? 'day' : 'night'} dials={servicesDials(siteDials(pageLookStyle, themeEditor(pageLookStyle.theme).own))} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} themeVars={canvasVars} spaceTheme={render.fonts} selectedId={selectedId} preview={preview || !!ghost} comments={page.comments} onSelect={select} onTextSelect={(selection) => { setTextSelection(selection); setFieldFocus(null) }} focusField={fieldFocus} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); openRight() }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div></div>
       {!preview && <div className="we-zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><Minus size={15} aria-hidden /></Icon><span>{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><Plus size={15} aria-hidden /></Icon></div>}
       {!preview && <VeraDock>
-        {(asking || veraStatus || coachingQuestions.length > 0) && <div className="we-thread">
-          <p role="status"><b>Vera</b>{selected ? ` · ${config.components[selected.type]?.label ?? selected.type}` : ''}<br />{asking ? 'Vera is choosing coaching questions…' : veraStatus}</p>{coachingQuestions.length > 0 && <div className="we-proposal"><div className="we-caption">Questions for your writing</div>{coachingQuestions.map(question => <p key={question}>{question}</p>)}<button type="button" className="we-action txt sm" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button></div>}</div>}
+        {(asking || veraStatus || coachingQuestions.length > 0 || !!layoutLines) && <div className="we-thread">
+          <p role="status"><b>Vera</b>{selected ? ` · ${config.components[selected.type]?.label ?? selected.type}` : ''}<br />{asking ? 'Vera is thinking…' : veraStatus}</p>{coachingQuestions.length > 0 && <div className="we-proposal"><div className="we-caption">Questions for your writing</div>{coachingQuestions.map(question => <p key={question}>{question}</p>)}<button type="button" className="we-action txt sm" onClick={() => { setCoachingQuestions([]); setVeraStatus('') }}>Not now</button></div>}{layoutLines && layoutProposal && <VeraLayoutProposal className="we-proposal" note={layoutProposal.note} lines={layoutLines} refused={layoutProposal.refused} onToggle={toggleLayoutLine} onApply={applyLayout} onDismiss={() => setLayoutProposal(null)} previewing={!!ghost} onPreview={toggleGhost} buttonClass="we-action ink sm" dismissClass="we-action txt sm" />}</div>}
         <div className="we-suggestions"><button type="button" onClick={() => void askVera('Help me decide which details to keep in this passage.')}>Review length</button><button type="button" onClick={() => void askVera('What should I consider about welcoming tone while writing in my own words?')}>Review tone</button><button type="button" onClick={() => void askVera('Which questions should I consider while writing my own heading for this section?')}>Review the heading</button><button type="button" onClick={() => insert(page.doc.content.length)}>Add a section</button></div>
-        <form className="we-vera-bar" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
+        <form className="we-vera-bar" onSubmit={(e) => { e.preventDefault(); submitVera() }}>
           <span className="we-orb" aria-hidden />
-          <Input variant="seamless" aria-label="Ask Vera" placeholder="Ask Vera to help review your writing…" value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
+          <Input variant="seamless" aria-label="Ask Vera" placeholder={onLayout ? 'Ask Vera a question, or to rearrange or restyle…' : 'Ask Vera to help review your writing…'} value={request} onChange={(e) => { setRequest(e.target.value); if (e.target.value === '/') { setRequest(''); insert(page.doc.content.length) } }} />
           <span className="we-context" title={textSelection ? `Selected text · ${textSelection.field}` : undefined}>{textSelection ? 'Selected text' : selected ? config.components[selected.type]?.label ?? selected.type : page.label}</span>
           <button type="submit" className="we-action ink sm" disabled={asking}>Ask</button>
         </form>

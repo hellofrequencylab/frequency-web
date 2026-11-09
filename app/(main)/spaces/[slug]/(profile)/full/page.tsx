@@ -10,6 +10,8 @@ import { getMyMembership, listMembershipTiers } from '@/lib/spaces/memberships'
 import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
 import type { SpaceViewer } from '@/lib/spaces/front-door'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
+import { SpaceContextLinks } from '@/components/spaces/space-context-links'
+import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { OwnerSpaceLayoutPreview } from '@/components/spaces/owner-space-layout-preview'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { SpaceBodyPanel } from '@/components/spaces/workspace/space-body-panel'
@@ -74,7 +76,8 @@ async function SpaceProfileBody({ slug, panel, area, tab, view }: { slug: string
   // A visitor / non-owner never sees a panel (canSeeAsOwner is false).
   if (canSeeAsOwner && isPanelId(panel)) return <SpaceBodyPanel slug={space.slug} panel={panel} area={area} tab={tab} view={view} />
 
-  if (canSeeAsOwner) return <OwnerSpaceLayoutPreview slug={space.slug} />
+  const { contextLinks } = await buildSpaceProfileNav(space)
+  if (canSeeAsOwner) return <><OwnerSpaceLayoutPreview slug={space.slug} /><SpaceContextLinks catalog={contextLinks} /></>
 
   // 🔴 THE MEMBER TREE IS THE ONLY ONE THAT CAN TELL A MEMBER FROM A STRANGER (LIVE-524), and until
   // now it never asked. A signed-in non-member and a paying member got BYTE-IDENTICAL bodies here,
@@ -91,6 +94,7 @@ async function SpaceProfileBody({ slug, panel, area, tab, view }: { slug: string
   return (
     <>
       <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
+      <SpaceContextLinks catalog={contextLinks} />
       <SpaceFrontDoor
         viewer={viewer}
         brandName={space.brandName?.trim() || space.name}

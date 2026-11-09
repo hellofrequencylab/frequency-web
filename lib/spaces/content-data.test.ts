@@ -241,12 +241,12 @@ describe('getSpaceCommunity', () => {
       {
         id: 'c1', slug: 'a', name: 'Alpha', about: 'About A', memberCount: 5,
         memberCap: 0, type: 'in-person', status: 'active', access: null,
-        imageUrl: null, neighborhood: null, isSpacePrimary: false,
+        imageUrl: null, neighborhood: null,
       },
       {
         id: 'c3', slug: 'c', name: 'Gamma', about: null, memberCount: 0,
         memberCap: 0, type: 'in-person', status: 'active', access: null,
-        imageUrl: null, neighborhood: null, isSpacePrimary: false,
+        imageUrl: null, neighborhood: null,
       },
     ])
   })
@@ -254,20 +254,20 @@ describe('getSpaceCommunity', () => {
   // THE POINT OF THE WIDENING (Circles block redesign). The reader's COLS always selected these;
   // the projection dropped them, so the block could only draw a name, a blurb and a count while the
   // Events block beside it drew a full card. Carried through, they ARE the card: cover, format,
-  // capacity meter, access-honest CTA, place line, and the Space Circle's lead position. Pinned
+  // capacity meter, access-honest CTA and place line. Pinned
   // field by field, because losing any one of them silently degrades a card rather than breaking it.
   it('carries every field the shared CircleCard draws', async () => {
     listPublicSpaceCircles.mockResolvedValue([
       {
         id: 'c1', slug: 'hearth', name: 'Hearth', about: 'Sundays', status: 'forming',
         member_count: 12, member_cap: 40, type: 'online', access: 'closed',
-        image_url: 'https://example.test/c.jpg', neighborhood: 'Vista', is_space_primary: true,
+        image_url: 'https://example.test/c.jpg', neighborhood: 'Vista',
       },
     ])
     expect((await getSpaceCommunity('space-1'))[0]).toEqual({
       id: 'c1', slug: 'hearth', name: 'Hearth', about: 'Sundays', memberCount: 12,
       memberCap: 40, type: 'online', status: 'forming', access: 'closed',
-      imageUrl: 'https://example.test/c.jpg', neighborhood: 'Vista', isSpacePrimary: true,
+      imageUrl: 'https://example.test/c.jpg', neighborhood: 'Vista',
     })
   })
 

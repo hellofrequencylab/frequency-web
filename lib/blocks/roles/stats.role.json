@@ -2,6 +2,11 @@
   "role": "Stats",
   "type": "RoleStats",
   "label": "Figures (all themes)",
+  "intent": "Show your numbers",
+  "why": "A few numbers that show you are real and active.",
+  "group": "Welcome",
+  "icon": "chart",
+  "live": true,
   "replaces": [
     "StatRow",
     "LiveStats",
@@ -25,17 +30,42 @@
       "eyebrow": "text<=40",
       "heading": "text<=120",
       "lead": "text<=280"
+    },
+    "labels": {
+      "items": {
+        "label": "Figures",
+        "hint": "Each number with what it counts. Filled from your Space when it has numbers."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      }
     }
   },
   "variants": {
     "row": {
-      "label": "A row of figures"
+      "label": "A row of figures",
+      "thumb": "figures"
     },
     "cards": {
-      "label": "Cards"
+      "label": "Cards",
+      "thumb": "cards"
     },
     "band": {
-      "label": "Full band"
+      "label": "Full band",
+      "thumb": "band"
+    },
+    "bar": {
+      "label": "One bar",
+      "thumb": "bar"
     }
   },
   "default": "row",
@@ -107,5 +137,11 @@
     "label",
     "list",
     "value"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "freeze"
+  }
 }

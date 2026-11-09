@@ -18,6 +18,8 @@ import { getContactPreferences, CONTACT_TOPICS } from '@/lib/comms/contact-prefe
 import type { NotificationCategory, NotificationTopic } from '@/lib/notification-preferences'
 import { PreferenceCenter, type ContactTopicState } from './preference-center'
 import { ConfirmUnsubscribe } from './confirm-unsubscribe'
+import { ConfirmDraftUnsubscribe } from './confirm-draft-unsubscribe'
+import { isDraftLink } from '@/lib/create-space/draft-io'
 import { UnsubscribeFrame, ManageLink } from './card'
 
 // Token-authorised transactional landing (reached from an email link, never crawled). Already in
@@ -39,14 +41,25 @@ const CATEGORY_LABELS: Record<string, string> = {
 // `p`/`c` carry the GLOBAL member unsubscribe; `s`/`e` carry the per-Space unsubscribe (a Space
 // emails contacts who may have no Frequency profile, so it is keyed on space + email, not profile +
 // category). Both share `t` (the HMAC token).
-type SP = { p?: string; c?: string; s?: string; e?: string; t?: string }
+// `d` carries a Create a Space draft's own signed link (LIVE-1968): no profile, no Space, the draft itself.
+type SP = { p?: string; c?: string; s?: string; e?: string; t?: string; d?: string }
 
 export default async function UnsubscribePage({
   searchParams,
 }: {
   searchParams: Promise<SP>
 }) {
-  const { p, c, s, e, t } = await searchParams
+  const { p, c, s, e, t, d } = await searchParams
+
+  // A draft's reminders (LIVE-1968). GET only verifies the signature and shows a button; the write is the action.
+  if (d) {
+    if (!isDraftLink(d)) {
+      return <UnsubscribeFrame title="This link is invalid or expired." description="If you got here from an email, please reply to it and we'll help.">
+        <ManageLink />
+      </UnsubscribeFrame>
+    }
+    return <ConfirmDraftUnsubscribe token={d} />
+  }
 
   // Per-Space preference center: instead of a one-shot hard unsubscribe, the token opens a
   // preference center where a contact can opt DOWN individual topics or unsubscribe from

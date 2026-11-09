@@ -20,8 +20,15 @@ const THEME_PALETTE_VIOLET = {
   // Owner 2026-10-28: "allow #B094FF for the Business kit". The one hex, in the one file that holds the kit accents.
   'lib/themes/nocturne-feature-data.json': new Set(['B094FF']),
   // Owner 2026-10-28: "allow #B094FF in the theme contract". Replaces the older Midnight accent in the same file.
-  'lib/sites/editor/theme-contract.json': new Set(['1C1424', '261C31', '654590', '6E4D96', 'C7ADE8', '6A3FA0', '5F3694', '1C1430', '7D5FD3', 'B094FF', 'CDBDFB']),
+  // Owner 2026-11-03: "Add the violet accents". The Services Iris, Signal and Bloom ramps, mirrored from the contract.
+  'lib/theme/services.ts': new Set(['3F3494', '5E4FD1', '7C6CF2', 'A193FF', 'C9C1FF', 'E879F9', '8B7BFF', 'B57CFF']),
+  // Owner 2026-11-09: "allow New World violet in violet-family". The one hex, New World's Violet swatch, in the builder's accent lists.
+  'lib/create-space/preview-site.ts': new Set(['8B5CFF']),
+  'lib/sites/editor/theme-contract.json': new Set(['1C1424', '261C31', '654590', '6E4D96', 'C7ADE8', '6A3FA0', '5F3694', '1C1430', '7D5FD3', 'B094FF', 'CDBDFB', '3F3494', '5E4FD1', '7C6CF2', 'A193FF', 'C9C1FF', 'E879F9', '8B7BFF', 'B57CFF']),
 }
+// Owner 2026-11-04: "allow the kit palettes in violet-family". The Theme Kits page (LIVE-2188) draws each kit in its
+// own palette, mirrored from the design (Services, Wildheart, Cyber Witch and the rest). Scoped to that one folder.
+const KIT_PALETTE_DIR = 'components/frequency/site/pages/themes/kit-showcase/'
 const files = execSync('git ls-files app components lib').toString().split('\n').filter(Boolean)
 const bad = []
 
@@ -36,6 +43,7 @@ function hsl(hex) {
 }
 
 for (const f of files) {
+  if (f.startsWith(KIT_PALETTE_DIR)) continue
   if (SKIP.has(f) || /\.test\.(ts|tsx)$/.test(f) || !/\.(css|ts|tsx|json|mjs)$/.test(f)) continue
   readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
     if (/--fq-pa:|--fq-pa-soft:|--pa:|--fq-pa-orb:|--pa-orb:/.test(line)) return

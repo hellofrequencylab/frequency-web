@@ -28,7 +28,7 @@ describe('the Space front door says something true to each reader', () => {
 
   it('sends a member to the conversation, which is where a Space actually lives', () => {
     const d = spaceFrontDoor({ ...base, viewer: 'member' })!
-    expect(d.action?.href).toBe('/spaces/royaltemple/circles#discussion')
+    expect(d.action?.href).toBe('/spaces/royaltemple/community')
   })
 
   // The two join arms must reach the surface that lists the tiers and takes the money, never Home

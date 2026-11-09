@@ -76,6 +76,10 @@ const HERO = `
 [data-role="hero"][data-variant="full"] [data-part="cta"][data-kind="secondary"]{background:transparent;color:var(--c-on-band);border-color:var(--c-on-band)}
 [data-role="hero"][data-variant="center"] [data-part="copy"]{justify-items:center;text-align:center;margin-inline:auto;max-width:48rem}
 [data-role="hero"][data-variant="center"] [data-part="media"]{max-width:56rem;width:100%;margin-inline:auto}
+[data-role="hero"][data-variant="glow"]{background:radial-gradient(60rem 28rem at 50% 0%,color-mix(in srgb,var(--c-accent) 24%,transparent),transparent 70%),var(--c-canvas)}
+[data-role="hero"][data-variant="glow"] [data-part="copy"],[data-role="hero"][data-variant="minimal"] [data-part="copy"]{justify-items:center;text-align:center;margin-inline:auto;max-width:48rem}
+[data-role="hero"][data-variant="glow"] [data-part="actions"],[data-role="hero"][data-variant="minimal"] [data-part="actions"]{justify-content:center}
+[data-role="hero"][data-variant="minimal"] [data-part="title"]{font-size:clamp(2rem,1.2rem + 4cqi,3.5rem)}
 `
 
 const STEPS = `
@@ -126,6 +130,13 @@ const GATHERINGS = `
 [data-role="gatherings"][data-variant="rows"] [data-part="item"]{background:transparent;border:0;border-radius:0;box-shadow:none;border-block-end:1px solid var(--c-line)}
 [data-role="gatherings"][data-variant="cards"] [data-part="item"]{grid-template-columns:1fr;align-content:start;justify-items:start}
 @container (min-width:40rem){[data-role="gatherings"][data-variant="cards"] [data-part="list"]{grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))}}
+[data-role="gatherings"][data-variant="agenda"] [data-part="side"]{display:grid;gap:calc(var(--sp-gap) * 1.25);min-width:0}
+[data-role="gatherings"][data-variant="agenda"] [data-part="ribbon"]{list-style:none;margin:0;padding:0 0 calc(var(--sp-gap) * .6);display:flex;gap:calc(var(--sp-gap) * .6);overflow-x:auto;border-block-end:1px solid var(--c-line-strong)}
+[data-role="gatherings"][data-variant="agenda"] [data-part="chip"]{flex:0 0 auto;display:grid;place-items:center;min-width:3.5rem;padding:.45rem .6rem;border-radius:var(--r-control);background:var(--c-accent-bg);color:var(--c-accent-text);line-height:1.05}
+[data-role="gatherings"][data-variant="agenda"] [data-part="chip"] b{font-family:var(--f-label);font-size:.625rem;letter-spacing:.14em;text-transform:uppercase}
+[data-role="gatherings"][data-variant="agenda"] [data-part="chip"] span{font-family:var(--f-display);font-weight:var(--w-display);font-size:1.25rem}
+[data-role="gatherings"][data-variant="agenda"] [data-part="list"]{gap:0}
+[data-role="gatherings"][data-variant="agenda"] [data-part="item"]{background:transparent;border:0;border-radius:0;box-shadow:none;border-block-end:1px solid var(--c-line)}
 [data-role="gatherings"][data-variant="split"] [data-part="side"]{display:grid;gap:calc(var(--sp-gap) * 1.5);align-content:start;min-width:0}
 @container (min-width:56rem){[data-role="gatherings"][data-variant="split"][data-media] [data-part="inner"]{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:start}}
 `
@@ -271,6 +282,9 @@ const STATS = `
 [data-role="stats"][data-variant="band"] [data-part="label"]{color:inherit;opacity:.85}
 [data-role="stats"][data-variant="band"] [data-part="meta"]{color:inherit;opacity:.7}
 [data-role="stats"][data-variant="band"] [data-part="lead"]{color:inherit;opacity:.85}
+[data-role="stats"][data-variant="bar"] [data-part="list"]{border-block:1px solid var(--c-line-strong);padding-block:calc(var(--sp-gap) * 1.25)}
+[data-role="stats"][data-variant="bar"] [data-part="item"]{padding-inline:var(--sp-gap)}
+@container (min-width:36rem){[data-role="stats"][data-variant="bar"] [data-part="item"]+[data-part="item"]{border-inline-start:1px solid var(--c-line)}}
 `
 
 const SHOP = `
@@ -364,14 +378,76 @@ const CHAPTERS = `
 [data-role="chapters"][data-variant="list"] [data-part="item"]{padding:calc(var(--sp-gap) * 1.1) 0;border-block-end:1px solid var(--c-line)}
 [data-role="chapters"][data-variant="list"] [data-part="media"]{display:none}
 @container (min-width:44rem){[data-role="chapters"][data-variant="list"] [data-part="text"]{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);column-gap:calc(var(--sp-gap) * 2);align-items:baseline}[data-role="chapters"][data-variant="list"] [data-part="meta"]{grid-column:1;grid-row:2}[data-role="chapters"][data-variant="list"] [data-part="body"]{grid-column:2;grid-row:1 / span 2}}
+[data-role="chapters"][data-variant="timetable"] [data-part="list"]{gap:0;border-block-start:1px solid var(--c-line-strong)}
+[data-role="chapters"][data-variant="timetable"] [data-part="item"]{display:grid;grid-template-columns:4rem 1fr;gap:var(--sp-gap);align-items:center;padding:calc(var(--sp-gap) * .9) 0;border-block-end:1px solid var(--c-line)}
+[data-role="chapters"][data-variant="timetable"] [data-part="item"] [data-part="media"]{--rb-ratio:1/1;border-radius:var(--r-control);clip-path:none}
+[data-role="chapters"][data-variant="timetable"] [data-part="item"]:not(:has([data-part="media"])) [data-part="text"]{grid-column:1 / -1}
+@container (min-width:44rem){[data-role="chapters"][data-variant="timetable"] [data-part="text"]{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.6fr);column-gap:calc(var(--sp-gap) * 1.5);align-items:baseline}[data-role="chapters"][data-variant="timetable"] [data-part="meta"]{grid-column:2;grid-row:1}[data-role="chapters"][data-variant="timetable"] [data-part="body"]{grid-column:3;grid-row:1}}
 `
 
 /** The shared chunk, then one chunk per role. Split so a test can prove each role reads only its declared tokens. */
-export const ROLE_CSS_CHUNKS: Readonly<Record<string, string>> = { base: BASE, hero: HERO, steps: STEPS, offerings: OFFERINGS, gatherings: GATHERINGS, membership: MEMBERSHIP, proof: PROOF, faq: FAQ, cta: CTA, statement: STATEMENT, letter: LETTER, contact: CONTACT, stats: STATS, shop: SHOP, library: LIBRARY, people: PEOPLE, gallery: GALLERY, chapters: CHAPTERS }
+const FIRSTVISIT = `
+[data-role="firstvisit"] [data-part="list"]{list-style:none;margin:0;padding:0;display:grid;gap:var(--sp-gap)}
+[data-role="firstvisit"] [data-part="item"]{display:grid;grid-template-columns:auto 1fr;gap:calc(var(--sp-gap) * 1.25);align-items:start}
+[data-role="firstvisit"] [data-part="text"]{display:grid;gap:.3rem;min-width:0}
+[data-role="firstvisit"][data-variant="thread"] [data-part="list"]{gap:0;border-inline-start:2px solid var(--c-line-strong);margin-inline-start:.75rem}
+[data-role="firstvisit"][data-variant="thread"] [data-part="item"]{position:relative;padding:0 0 calc(var(--sp-gap) * 2) calc(var(--sp-gap) * 2.25);display:block}
+[data-role="firstvisit"][data-variant="thread"] [data-part="item"]:last-child{padding-bottom:0}
+[data-role="firstvisit"][data-variant="thread"] [data-part="index"]{position:absolute;inset-inline-start:0;inset-block-start:0;translate:calc(-50% - 1px) 0;display:grid;place-items:center;width:2rem;height:2rem;border-radius:var(--r-control);background:var(--c-accent);color:var(--c-on-accent);font-family:var(--f-label);font-style:normal;font-size:.9375rem;font-weight:700}
+[data-role="firstvisit"][data-variant="grid"] [data-part="item"]{padding:calc(var(--sp-gap) * 1.5)}
+@container (min-width:44rem){[data-role="firstvisit"][data-variant="grid"] [data-part="list"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
+`
+
+const BOOKING = `
+[data-role="booking"] [data-part="list"]{list-style:none;margin:0;padding:0;display:grid;gap:var(--sp-gap)}
+[data-role="booking"] [data-part="item"]{display:grid;grid-template-columns:minmax(5rem,auto) 1fr auto;gap:calc(var(--sp-gap) * 1.25);align-items:center;padding:calc(var(--sp-gap) * 1.1) calc(var(--sp-gap) * 1.25)}
+[data-role="booking"] [data-part="when"]{display:grid;gap:.1rem}
+[data-role="booking"] [data-part="day"]{font-family:var(--f-display);font-weight:var(--w-display);font-size:1.125rem;color:var(--c-accent-text)}
+[data-role="booking"] [data-part="time"]{font-family:var(--f-label);font-size:.8125rem;color:var(--c-text-subtle)}
+[data-role="booking"] [data-part="text"]{display:grid;gap:.15rem;min-width:0}
+[data-role="booking"] [data-part="go"]{font-size:1.25rem;color:var(--c-accent-text)}
+[data-role="booking"][data-variant="board"] [data-part="list"]{gap:0;border-block-start:1px solid var(--c-line-strong)}
+[data-role="booking"][data-variant="board"] [data-part="item"]{padding-inline:0;border-block-end:1px solid var(--c-line)}
+@container (min-width:44rem){[data-role="booking"][data-variant="cards"] [data-part="list"]{grid-template-columns:repeat(auto-fit,minmax(16rem,1fr))}[data-role="booking"][data-variant="cards"] [data-part="item"]{grid-template-columns:1fr auto;align-content:start}[data-role="booking"][data-variant="cards"] [data-part="when"]{grid-column:1 / -1}}
+`
+
+const LOCATIONS = `
+[data-role="locations"] [data-part="inner"]{align-items:center}
+[data-role="locations"] [data-part="copy"]{display:grid;gap:calc(var(--sp-gap) * 1.25);min-width:0}
+[data-role="locations"] [data-part="address"]{font-style:normal;font-family:var(--f-display);font-weight:var(--w-display);font-size:1.375rem;line-height:1.3}
+[data-role="locations"] [data-part="list"]{list-style:none;margin:0;padding:0;display:grid;gap:0;border-block-start:1px solid var(--c-line-strong)}
+[data-role="locations"] [data-part="item"]{display:grid;grid-template-columns:minmax(5rem,9rem) 1fr;gap:var(--sp-gap);padding:.7rem 0;border-block-end:1px solid var(--c-line)}
+[data-role="locations"] [data-part="value"]{color:var(--c-text)}
+[data-role="locations"] [data-part="note"]{margin:0;color:var(--c-text-muted)}
+[data-role="locations"][data-variant="card"] [data-part="copy"]{padding:calc(var(--sp-gap) * 1.75);background:var(--c-surface);border:1px solid var(--c-line);border-radius:var(--r-card);box-shadow:var(--shadow-card)}
+@container (min-width:56rem){[data-role="locations"][data-variant="split"][data-media] [data-part="inner"]{grid-template-columns:1fr 1fr;gap:calc(var(--sp-gap) * 4)}}
+`
+
+const BUSINESS = `
+[data-role="business"] [data-part="list"]{list-style:none;margin:0;padding:0;display:grid;gap:var(--sp-gap)}
+[data-role="business"] [data-part="item"]{display:grid;gap:.3rem;align-content:start}
+[data-role="business"][data-variant="list"] [data-part="list"]{gap:0;border-block-start:1px solid var(--c-line-strong)}
+[data-role="business"][data-variant="list"] [data-part="item"]{padding:calc(var(--sp-gap) * 1.1) 0;border-block-end:1px solid var(--c-line)}
+@container (min-width:44rem){[data-role="business"][data-variant="list"] [data-part="item"]{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);column-gap:calc(var(--sp-gap) * 2);align-items:baseline}[data-role="business"][data-variant="grid"] [data-part="list"]{grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))}}
+[data-role="business"][data-variant="grid"] [data-part="item"]{padding:calc(var(--sp-gap) * 1.5)}
+`
+
+const STORY = `
+[data-role="story"] [data-part="inner"]{align-items:center}
+[data-role="story"] [data-part="copy"]{display:grid;gap:calc(var(--sp-gap) * 1.5);min-width:0}
+[data-role="story"] [data-part="lines"]{display:grid;gap:var(--sp-gap);max-width:var(--measure)}
+[data-role="story"] [data-part="quote"]{margin:0;padding-inline-start:calc(var(--sp-gap) * 1.25);border-inline-start:3px solid var(--c-accent);font-family:var(--f-voice);font-style:italic;font-size:1.375rem;line-height:1.35;max-width:var(--measure)}
+[data-role="story"][data-variant="center"] [data-part="copy"]{justify-items:center;text-align:center;margin-inline:auto}
+[data-role="story"][data-variant="center"] [data-part="quote"]{border-inline-start:0;padding-inline-start:0}
+@container (min-width:56rem){[data-role="story"][data-variant="split"][data-media] [data-part="inner"]{grid-template-columns:1.1fr .9fr;gap:calc(var(--sp-gap) * 4)}}
+`
+
+
+export const ROLE_CSS_CHUNKS: Readonly<Record<string, string>> = { base: BASE, hero: HERO, steps: STEPS, offerings: OFFERINGS, gatherings: GATHERINGS, membership: MEMBERSHIP, proof: PROOF, faq: FAQ, cta: CTA, statement: STATEMENT, letter: LETTER, contact: CONTACT, stats: STATS, shop: SHOP, library: LIBRARY, people: PEOPLE, gallery: GALLERY, chapters: CHAPTERS, firstvisit: FIRSTVISIT, booking: BOOKING, locations: LOCATIONS, business: BUSINESS, story: STORY }
 
 /** Editor theme id to the contract theme whose mapping it wears. */
 const CONTRACT_OF: Partial<Record<WebsiteTheme, ContractThemeId>> = {
-  DAWN: 'frequency', Menswork: 'bold', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Midnight: 'midnight', Designer: 'designer', FreeHuman: 'free-human',
+  DAWN: 'frequency', Menswork: 'bold', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Midnight: 'midnight', Designer: 'designer', FreeHuman: 'free-human', Services: 'services', NewWorld: 'new-world', CyberWitch: 'cyberwitch',
 }
 
 /** The sheet for a page that carries role blocks: the active theme's contract mapping, then the structure. */

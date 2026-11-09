@@ -42,7 +42,6 @@ export interface MwCircle {
   /** The host's display name, or null. */
   host: string | null
   hostAvatar: string | null
-  isSpacePrimary: boolean
 }
 
 export interface MwJourney {
@@ -143,8 +142,13 @@ const s = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null)
 async function readCircles(spaceId: string): Promise<MwCircle[]> {
   try {
     const list = await listPublicSpaceCircles(spaceId, { viewerProfileId: null, limit: CIRCLES_CAP })
-    // In a Menswork program the Space Circle is the primary circle, where hosts train; it leads the finder.
-    const local = [...list].sort((a, b) => Number(b.is_space_primary === true) - Number(a.is_space_primary === true))
+    // In a Menswork program the founding circle (the program's first, where hosts train) leads the
+    // finder; the rest keep their newest-first order. It used to be the Space Circle (ADR-1938).
+    const founding = list.reduce<(typeof list)[number] | null>(
+      (o, c) => (!o || +new Date(c.created_at ?? 0) < +new Date(o.created_at ?? 0) ? c : o),
+      null,
+    )
+    const local = founding ? [founding, ...list.filter((c) => c.id !== founding.id)] : list
     if (local.length === 0) return []
     const admin = createAdminClient() as unknown as {
       from: (t: string) => { select: (c: string) => { in: (c: string, v: string[]) => Promise<{ data: Row[] | null }> } }
@@ -171,7 +175,6 @@ async function readCircles(spaceId: string): Promise<MwCircle[]> {
         meets: meetBy.get(c.id) ?? null,
         host: s(h?.display_name),
         hostAvatar: s(h?.avatar_url),
-        isSpacePrimary: c.is_space_primary === true,
       }
     })
   } catch {

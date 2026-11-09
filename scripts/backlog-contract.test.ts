@@ -993,7 +993,9 @@ describe('the real tree', () => {
     // in-process kinds share). That is why a budget built from the probe reading can be asserted
     // against guardCpuMs at all, and why BASE is 2s rather than 300ms: it is the half NOT covered
     // by the per-probe reading, so it gets the loose end of the estimate.
-    const PER_PROBE_CEILING_MS = 4_500 // 2.1x the worst CI probe (2150ms), 2.3x the worst local
+    // 2026-11-03: 4_500 -> 6_500 (owner pick "1. A"). SCAN-502's tree scan reads 4.58s of CPU in CI under contention
+    // (1.8s alone), and it cannot be made cheaper without changing what it measures. SCAN-1176 left the sweep's hot list.
+    const PER_PROBE_CEILING_MS = 6_500 // 3.0x the worst CI probe on record (2150ms); SCAN-502 has read 4.58s under CI load
     const BASE_CPU_MS = 2_000 // ~7x the measured 300ms of non-probe work
     const PER_PROBE_ALLOWANCE_MS = 180 // 2.3x the 77ms CI average; at n=111 the total is 22.0s
 

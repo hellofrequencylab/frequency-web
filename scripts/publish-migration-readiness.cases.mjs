@@ -38,6 +38,14 @@ test('no-SQL success is posted to candidate head with trusted base/source identi
   assert.equal(receipt.sources['scripts/publish-migration-readiness.mjs'], f.options.publisherSha256)
   assert.ok(!JSON.stringify(f.writes).includes('DO_NOT_SERIALIZE_SECRET'))
 })
+test('no-SQL success does not need the PR base to be the live main tip', async () => {
+  const f = fixture(); f.options.env.GITHUB_SHA = 'e'.repeat(40); await publishReadiness(f.options)
+  assert.equal(f.writes.at(-1).payload.conclusion, 'success')
+})
+test('a SQL result still fails closed when the run is not on the PR base', async () => {
+  const f = fixture('registered_pending_apply'); f.options.env.GITHUB_SHA = 'e'.repeat(40)
+  await assert.rejects(() => publishReadiness(f.options)); assert.equal(f.writes.at(-1).payload.conclusion, 'failure')
+})
 test('registered migration result binds policy, registration and staging run/attempt to exact candidate-head check', async () => {
   const f = fixture('registered_pending_apply'); await publishReadiness(f.options)
   const receipt = JSON.parse(f.writes.at(-1).payload.output.summary.split('\n\n')[1])
@@ -51,7 +59,7 @@ for (const [name, mutate] of [
   ['draft', f => { f.pr.draft = true }],
   ['closed PR', f => { f.pr.state = 'closed' }],
   ['stale event head', f => { f.options.event.pull_request.head.sha = 'e'.repeat(40) }],
-  ['stale main checkout', f => { f.options.env.GITHUB_SHA = 'e'.repeat(40) }],
+  ['checkout that is not the PR base', f => { const git = f.options.git; f.options.git = (args, ...rest) => args[0] === 'rev-parse' ? 'e'.repeat(40) : git(args, ...rest) }],
   ['publisher source mismatch', f => { f.options.publisherSha256 = 'e'.repeat(64) }],
   ['unrecognized workflow ref', f => { f.options.env.GITHUB_WORKFLOW_REF = `${repo}/.github/workflows/migration-readiness.yml@refs/heads/candidate` }],
 ]) test(`refuses ${name} before provider facts or check publication`, async () => { const f = fixture(); mutate(f); await assert.rejects(() => publishReadiness(f.options)); assert.equal(f.evaluateCalls, 0); assert.equal(f.writes.length, 0) })

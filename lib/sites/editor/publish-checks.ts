@@ -74,16 +74,52 @@ export function sampleSections(doc: Data): number {
   return count
 }
 
+/** A figure with no real number in it: empty, words only, or the kit's "000" placeholder. "0" alone is a real number. */
+export function needsNumber(value: unknown): boolean {
+  const v = typeof value === 'string' ? value.trim() : typeof value === 'number' && Number.isFinite(value) ? String(value) : ''
+  return !/\d/.test(v) || /^0{2,}$/.test(v)
+}
+
+/** The lists of figures a role draws as numbers (BLD-204): the figures row, and the figures beside a quote. */
+const NUMBER_LISTS: Record<string, string> = { RoleStats: 'items', RoleProof: 'stats' }
+
+/** Figures on one section that carry what they count but no number. A sample section is counted as sample words,
+ *  not here, and a figures row that draws the Space's own numbers (`liveFigures`) has nothing to fill. */
+export function sectionNullNumbers(block: { type: string; props: Record<string, unknown> }, options: { liveFigures?: boolean } = {}): number {
+  const key = NUMBER_LISTS[block.type]
+  if (!key || block.props.sample === true) return 0
+  if (block.type === 'RoleStats' && block.props.live !== false && options.liveFigures) return 0
+  const items = block.props[key]
+  if (!Array.isArray(items)) return 0
+  return items.filter((item) => !!item && typeof item === 'object' && typeof (item as Record<string, unknown>).label === 'string' && ((item as Record<string, unknown>).label as string).trim() !== '' && needsNumber((item as Record<string, unknown>).value)).length
+}
+
+/** Figures across a document (nested blocks too) that still need a number. */
+export function nullNumbers(doc: Data, options: { liveFigures?: boolean } = {}): number {
+  let count = 0
+  const visit = (blocks: unknown[], seen: Set<unknown>) => {
+    for (const block of blocks) {
+      if (!isBlock(block) || seen.has(block)) continue
+      seen.add(block)
+      count += sectionNullNumbers(block, options)
+      for (const value of Object.values(block.props)) if (Array.isArray(value) && value.some(isBlock)) visit(value, seen)
+    }
+  }
+  visit(doc.content as unknown[], new Set())
+  return count
+}
+
 export interface PublishCheck {
   ok: boolean
   text: string
 }
 
 /** The modal's checks over every page in the draft, in the design's words when they pass. */
-export function publishChecks(pages: { label: string; doc: Data; seo: { title: string; description: string } }[], config: Config, options: { otherChanged?: string[] } = {}): PublishCheck[] {
+export function publishChecks(pages: { label: string; doc: Data; seo: { title: string; description: string } }[], config: Config, options: { otherChanged?: string[]; liveFigures?: boolean } = {}): PublishCheck[] {
   const altMissing = pages.reduce((sum, p) => sum + missingAltText(p.doc, config), 0)
   // A blank title falls back to "Page | Site" on the live page, so only a missing description is a gap.
   const sampleCount = pages.reduce((sum, p) => sum + sampleSections(p.doc), 0)
+  const numberCount = pages.reduce((sum, p) => sum + nullNumbers(p.doc, { liveFigures: options.liveFigures }), 0)
   const noSeo = pages.filter((p) => !p.seo.description.trim()).map((p) => p.label)
   return [
     altMissing === 0
@@ -94,6 +130,8 @@ export function publishChecks(pages: { label: string; doc: Data; seo: { title: s
       : { ok: false, text: `Add a search description to ${noSeo.length <= 3 ? noSeo.join(', ') : `${noSeo.length} pages`}` },
     // A kit's pages start as sample words. Said once, as a warning: the owner may keep them on purpose.
     ...(sampleCount > 0 ? [{ ok: false, text: `${sampleCount} ${sampleCount === 1 ? 'section still has' : 'sections still have'} sample words from a starter kit` }] : []),
+    // A figure with no number reads as a gap on the live page (BLD-204): the new builder holds Publish until it is filled.
+    ...(numberCount > 0 ? [{ ok: false, text: `${numberCount} ${numberCount === 1 ? 'figure needs' : 'figures need'} a number` }] : []),
     // The design's third check: publishing sends the whole website, so OTHER pages' unpublished changes go live
     // too. Said as a warning, never a gate. Only when the caller names them (the Frequency modal).
     ...(options.otherChanged?.length ? [{ ok: false, text: `${options.otherChanged.length <= 3 ? options.otherChanged.join(', ') : `${options.otherChanged.length} other pages`} ${options.otherChanged.length === 1 ? 'page has' : 'have'} unpublished changes that go live too` }] : []),

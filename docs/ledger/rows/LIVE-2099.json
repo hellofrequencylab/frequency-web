@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2099",
+  "title": "Visual sweep part two, second batch: Circle page crash on a profile-less member, phone-width clipping, ten axe misses",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/circles/store.ts",
+    "ref": "Visual sweep 2026-11-03, signed-in member app, Space and Circle consoles and admin at 1280 and 390 (Daniel 2026-11-03: implement all recommended options). Report: /mnt/project-files/visual-sweep-2026-11-03/REPORT.md"
+  },
+  "detail": "Second batch after LIVE-2091. Crash: a Circle membership whose profile join came back empty threw 'Cannot read properties of undefined (reading id)' in CircleHomePage, the members tab and the Space circles page, taking the whole page down for every signed-in viewer; loadCircleShell now drops such a row once, at the source, where MemberRow already promises a profile. Phone width (390): FormSection's grid columns had min-width auto, so the roles matrix pushed the Area permissions section past the screen edge instead of scrolling inside its wrapper (/admin/roles); the member and contact sort chip groups were shrink-0 and clipped three buttons (/circles/<slug>/manage, /admin/crm/contacts). Duplicate React keys: the phone drawer's Frequency group concatenated the site links and the about links, which share About and Guidelines (since #4546), and two QR destinations share /crew. axe serious/critical: aria-pressed on filter links (/network Online now, /spaces/directory Has events and Following) is now aria-current; the At a glance <dl> held icons between its terms and is a list; the help search input named a results panel that only renders after a search; four body links on /pages/sequences were colour-only (1.23:1 against the text) and are underlined; the member listbox wrapped its options in a real <ul>/<li> (presentational now); the menu manager's drag and pinned handles carried aria-label on a bare span (role=img); the admin Banner body was text-text/80, 4.44:1 on the info tone (/admin/pricing), and reads full ink; a labelled MapLibre pin that opens nothing (the event page map) carried aria-label on a bare div and is role=img. Read and left: admin pill strips, stat strips, kit tables and the Space tab strip scroll inside their wrappers at 390 by design; the Space calendar showed one event under one key twice only because the mock answers every events read with the same fixture. Probe: node scripts/probes/sweep-part-two-console.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/sweep-part-two-console.mjs"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

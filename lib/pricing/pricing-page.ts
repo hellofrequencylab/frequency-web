@@ -258,7 +258,7 @@ const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
   business: { label: 'Start with Business', href: OPERATOR_START_HREF },
   collective: { label: 'Start a Collective', href: OPERATOR_START_HREF },
   nonprofit: { label: 'Get verified', href: OPERATOR_START_HREF },
-  network: networkCheckoutOpen() ? { label: 'Start a Network', href: OPERATOR_START_HREF } : { label: 'Talk to us', href: '/networks' },
+  network: networkCheckoutOpen() ? { label: 'Start a Network', href: OPERATOR_START_HREF } : { label: 'Talk to us', href: '/for/networks' },
 }
 
 /** Build the public Space tier columns: Free Space FIRST (the first level of Space, where the core

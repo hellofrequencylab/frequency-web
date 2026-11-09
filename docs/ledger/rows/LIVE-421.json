@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-421",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst rd=(f)=>{try{return fs.readFileSync(f,\"utf8\")}catch(e){return null}}\nconst code=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\" \").replace(/^\\s*\\/\\/.*$/gm,\" \")\nconst W=rd(\"app/(main)/spaces/[slug]/(profile)/community/page.tsx\")\nif(W===null)fail(\"the Space Community wall is gone, so the Space has no conversation\")\nif(!/<CommunityWallFeed[\\s/>]/.test(code(W)))fail(\"the Community page no longer renders the wall feed, which is the whole substance of this row\")\nconst R=rd(\"components/spaces/community-wall-feed.tsx\")\nif(R===null||code(R).indexOf(\"space_wall_feed\")<0)fail(\"the wall feed no longer reads space_wall_feed, the gated reader\")\nconst N=rd(\"lib/spaces/profile-nav.ts\")\nif(N===null||!/label: .Community./.test(code(N)))fail(\"the Space menu has no Community row, so the conversation has no door\")\nconst F=rd(\"app/(main)/spaces/[slug]/(profile)/discussion/page.tsx\")\nif(F===null)fail(\"the discussion segment is gone: a reserved slug already sent out in notifications would 404\")\nconsole.log(\"LIVE-421 ok\")'",
+      "note": "Passes when the Space Community page renders the gated wall feed, the menu has a Community row, and the discussion slug still resolves."
+    }
+  },
+  "append": {
+    "detail": " Pin rewritten 2026-11-03 with the owner's own phrase (Daniel 17:46Z, ADR-1938 Community wall): the probe no longer forbids a Space menu row named Community; NAMING.md was amended by ADR-1938 and the Community wall is that row. Pin rewrite 2026-11-03 (ADR-1938, LIVE-2078, owner's phrase Daniel 20:38Z): the Space Circle readers this probe named were deleted with the Space Circle; the probe now measures the Community wall that replaced them."
+  }
+}

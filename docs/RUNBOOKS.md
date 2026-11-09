@@ -122,6 +122,14 @@ minutes and reads `GET /api/status/queue-lag`. It only reads, so it never compet
 red run (GitHub emails it) means the oldest due job has waited over 15 minutes or the read failed: check
 the Vercel Cron page first, then run the stopgap above.
 
+**The free pager for the unmonitored crons (SEC-022).** Healthchecks' free plan holds 20 checks, so the
+jobs in `CRON_UNMONITORED` (`lib/observability/slos.ts`) have no check. Each one stamps its last success
+into `cron_run_markers` (key `cron-ok:<job>`), and the same workflow reads
+`GET /api/status/cron-freshness` right after the queue read. A red run names the stale jobs: open the
+Vercel runtime logs for that job (`cron.run`, `cron.failed`), fix the cause, and the next healthy run
+turns it green. A job listed under `unreported` simply has not run since the stamp shipped (a weekly job
+can take up to a week); it does not fail the run. No env var or Healthchecks account change is needed.
+
 ---
 
 ## 2. Queue backlog
@@ -703,6 +711,8 @@ The guided launch ships dark behind two on/off switches, both read through `envF
 
 **The come-back emails** (VLS-26, VLS-27) run from `/api/cron/launch-reminders` every 15 minutes, behind `LAUNCH_SYSTEM_ENABLED` (no switch of their own). One hour, one day and three days after a person stops, at most three, only 8am to 8pm in their own time zone (their profile zone, then their Space's, else the email is held, never guessed), ending when they resume, launch, cancel or opt out of the lifecycle category. Each claim is a `launch_email_log` row (`comeback_1h`, `comeback_1d`, `comeback_3d`; a `message_ref` starting `skipped:` is an opt-out or a missing address). Gate for stage two: the run line `[launch-reminders] run` shows `failed: 0`, and a staff launch left idle for an hour inside the person's own 8am to 8pm got one email with the time left and a button to `/launch`. Check one: `select trigger_kind, message_ref, sent_at from launch_email_log order by sent_at desc limit 20`. It needs `space_launch.clock_active_ms` and `clock_last_beat_at` from the clock change to show the time left; without them the email leaves the number out and measures "stopped" from `updated_at`.
 
+**Create a Space draft reminders** (LIVE-1968, ADR-1933) run from `/api/cron/create-space-draft-reminders` every 15 minutes, behind `CREATE_SPACE_DRAFT_REMINDERS_ENABLED` (blank = dark; the page, the save and the resume link need no switch). A signed-out visitor who gives an address at step 3 of `/create-a-space` has their draft kept in `create_space_drafts`; one hour, one day and three days after the last save, at most three, only 8am to 8pm in the zone their browser reported (no zone, no email, never guessed), ending when they save again, launch or unsubscribe. Each claim is a `create_space_draft_email_log` row (`draft_1h`, `draft_1d`, `draft_3d`; a `message_ref` starting `skipped:` is a suppressed address or a taken handle). The same run deletes drafts past `purge_after` (90 days). Activation gate: the migration `20270346028600` and `20270346028700` are in the ledger, `UNSUBSCRIBE_SECRET` (or `CREATE_SPACE_DRAFT_SECRET`) is set so the resume and unsubscribe links sign, one staff draft saved from a browser with a zone and left for an hour inside 8am to 8pm got the one-hour email with a working resume link and a working "Turn these off" link, and the run line `[create-space-draft-reminders] run` shows `failed: 0`. Check one: `select trigger_kind, message_ref, sent_at from create_space_draft_email_log order by sent_at desc limit 20`. Test-send only to a staff address; never to a lead.
+
 **The lightbox and the Setup list** (LIVE-1913 to LIVE-1926) ride `LAUNCH_SYSTEM_ENABLED`, with no switch of their own. Every entry opens the same full-screen launch; Pause (X or Esc) returns to the page the person came from and leaves the Finish setup pill. After Publish the pill opens the Setup list: the launch steps, one item per Space tool (`lib/launch/setup-items.ts`, kept honest by `setup-coverage.test.ts`) and a Personal group built from the Founder tasks. Hiding the pill takes two confirms and is undone in Settings (`showSetupFromSettings`). Gate for stage one: a staff walk that pauses, resumes, publishes, sees the Setup list and the Personal group, hides the pill and restores it from Settings. The personal-only Spotlight path (`/launch/personal`) has no launch row, so no pill shows for it yet. Member help: `content/help/spaces/finish-setting-up-your-space.md`.
 
 **Turn it off.** Unset the switch. The box, the step screens and the reminder cron stop; every Spotlight, Space, event and Circle a person made stays live. A launch saved mid-way resumes when the switch is back on.
@@ -851,3 +861,39 @@ Keep `ROOM_ATOMIC_WRITES` blank/off until the CLI-registered staging migration20
 Post-consent callbacks use fixed stages: `token_exchange_failed`, `property_scope_changed`, `provider_property_unverified`, `provider_auth_failed`, `property_provider_unavailable`, `property_provider_invalid_response`, `property_provider_rate_limited`, or `storage_failed`. The optional `provider_status` is limited to400/401/403/404/408/429/500/502/503/504; it is not a provider body, token or raw message. Token approval is not property verification, and property verification is not a successful save. Check these stages before changing account configuration.
 
 The pinned API transport intentionally discards non-2xx bodies: HTTP400 alone cannot establish InvalidToken, and missing fetch instrumentation cannot establish that no API request ran. Bing uses documented Bearer authentication with JSON/HTTP; do not add an API-key fallback, management scope, or relaxed property/state gate to mask a provider failure. Preserve only the fixed stage and bounded status in receipts; never log raw responses or callback parameters.
+
+## New site builder
+
+`BUILDER_V3` (blank by default) makes the new builder (docs/EDITOR-NEXT.md, BLD-101 onward) the website editor for every owner. Off, the current editor renders and any owner can open the new one at `/admin/editor?builder=v3`; `?builder=classic` always forces the current one. Both read and write the same draft, so switching back loses nothing. Turn it off by unsetting it.
+
+The cutover runs in three steps (BLD-108, shadow render and cutover):
+1. **Shadow.** Both editors read the same document; `lib/builder/shadow.ts` compares what each shows (sections, names, hidden per device, fields) over the frozen kit corpus (`lib/builder/shadow.test.ts`, zero or explained delta) and, whenever the new builder opens a real draft, logs any unexplained difference as `[builder shadow] <host> ...` in the server log. Gate for step 2: the test is green and the log shows no `[builder shadow]` line for a week of `?builder=v3` use on internal Spaces.
+2. **Cohort.** `BUILDER_V3_SPACES` (blank by default) lists Space slugs, comma separated, that get the new builder as their website editor; start with `danieltyack` and the Frequency-owned demo Spaces, then the owner's cohort. `?builder=classic` still opens the current editor for them. Gate for step 3: the owner has used it on danieltyack.com and said it is ready, and the log stayed clean for the cohort.
+3. **Everyone.** Set `BUILDER_V3`; then clear `BUILDER_V3_SPACES`. Rolling back is unsetting the switch: no data moves, both editors write the same draft.
+
+## PostGIS reference table (`public.spatial_ref_sys`)
+
+Frequency Community (`azsqfeonabsbmemvddqd`), PostGIS 3.3.7 in `public`, not relocatable. Read-only catalog check, 2026-11-09:
+
+- The table is owned by `supabase_admin`, RLS is off, and `anon` and `authenticated` hold INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES and TRIGGER on top of SELECT.
+- Writes are still refused: the production triggers `sec007_rows` and `sec007_truncate` are enabled (SEC-007). The grants are the remaining advisor finding.
+- Do not move the extension, change its owner, or enable RLS. Both would break `st_transform` and every spatial query that reads this table.
+- The `postgres` role cannot revoke these grants because `supabase_admin` issued them. The SQL Editor attempt rolls back with `SEC-007: browser write privileges remain`, changing nothing.
+
+Fix, in order:
+
+1. Send Supabase support the request below. It needs no data change.
+2. After they confirm, run the check query and expect `false, false, true`.
+3. Close SEC-POSTGIS-PUBLIC by making that check pass.
+
+The permission-only SQL they would run is `scripts/ops/secure-postgis-reference-table.sql`. It is not a registered migration. Never put it in `supabase/migrations/`.
+
+Support request text: "Project azsqfeonabsbmemvddqd (Frequency Community). Please run as supabase_admin: REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.spatial_ref_sys FROM PUBLIC, anon, authenticated; keep SELECT for every role and leave service_role unchanged."
+
+Check query:
+
+```sql
+select has_table_privilege('anon','public.spatial_ref_sys','INSERT,UPDATE,DELETE,TRUNCATE') as anon_can_write,
+       has_table_privilege('authenticated','public.spatial_ref_sys','INSERT,UPDATE,DELETE,TRUNCATE') as auth_can_write,
+       has_table_privilege('anon','public.spatial_ref_sys','SELECT') as anon_can_read;
+```

@@ -1,0 +1,20 @@
+{
+  "id": "SEC-023",
+  "title": "Contain four November 3 out-of-band backup tables",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "scripts/ops/secure-frequency-nov03-backups.sql",
+    "ref": "Read-only Frequency Community production catalog review, 2026-11-04"
+  },
+  "detail": "Four specific November 3 public backup tables were found with RLS disabled and effective anonymous and authenticated table or column privileges. Three contain a website_editor column and three contain a preferences column; no backup rows were read and API access was not tested. A permission-only operator transaction targets only these four, refuses unexpected preconditions, preserves postgres, service_role and operator effective table and individual column privileges, and verifies RLS and browser privilege removal. CLOSED 2026-11-04: the exact committed operator transaction was applied once after #4657 merged at 2d5b5493a8d9fe0c3323aee5f8f75f78c6879d45 and production deployment dpl_FnT7McAUs2BjJefeCqgwX2BAfQgG was READY for frequencylocal.com. Postcondition metadata at 18:31:50 UTC verifies all four named backups have RLS enabled, no anon/authenticated table or column privileges, and preserved service/operator SELECT. The transaction compared effective postgres, service_role and operator table and individual-column privileges before and after and would roll back any change. Already applied once: never reapply this operator repair. This is permission metadata proof, not end-to-end private-flow verification. Default privileges can re-expose future backups, which requires separate compatibility-reviewed prevention.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-04",
+    "evidence": "DONE: Frequency Community production permission receipt checked 2026-11-04 18:31:50 UTC after #4657 main SHA 2d5b5493a8d9fe0c3323aee5f8f75f78c6879d45; deployment dpl_FnT7McAUs2BjJefeCqgwX2BAfQgG READY on frequencylocal.com. Executed SQL SHA-256 40e0f3c79426cf67146a1c03efe0304380d23d3b22d38d49b8b4dcaa508abd92 matches the unchanged committed operator file. Targets zz_backup_danieltyack_newworld_20261103, zz_backup_danieltyack_nwblocks_20261103, zz_backup_free_human_heroes_20261103 and zz_backup_vanta_20261103 each report RLS=true; anon/authenticated table privileges=false and column privileges=false; service_select=true and operator_select=true. Transaction verified protected effective table and individual-column privileges unchanged. Metadata only; no backup rows read or changed, API/private-flow access not exercised. Repair executed once, never reapply."
+  },
+  "wave": "W7",
+  "closed": "2026-11-04"
+}

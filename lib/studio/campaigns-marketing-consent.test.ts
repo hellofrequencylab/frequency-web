@@ -7,14 +7,18 @@ import { describe, it, expect, vi } from 'vitest'
 // them by the `.not('profile_id')` filter (no profile). The send-gate re-checks the audience's category per
 // recipient at send time.
 
+const rootScope = vi.hoisted(() => ({ id: 'root-space' as string | null }))
+vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: async () => rootScope.id }))
+
 const contacts = [
-  { id: 'k1', email: 'a@x.com', profile_id: 'p1', consent_state: 'subscribed', source: 'signup' },
+  { id: 'k1', email: 'a@x.com', profile_id: 'p1', consent_state: 'subscribed', source: 'signup', space_id: 'root-space' },
   // Never explicitly opted into marketing — still a member, so IN the member newsletter, OUT of subscribed-only.
-  { id: 'k2', email: 'b@x.com', profile_id: 'p2', consent_state: 'unknown', source: 'signup' },
+  { id: 'k2', email: 'b@x.com', profile_id: 'p2', consent_state: 'unknown', source: 'signup', space_id: null },
   // Unsubscribed — held out of everything.
-  { id: 'k3', email: 'c@x.com', profile_id: 'p3', consent_state: 'unsubscribed', source: 'signup' },
+  { id: 'k3', email: 'c@x.com', profile_id: 'p3', consent_state: 'unsubscribed', source: 'signup', space_id: 'root-space' },
   // No profile (e.g. imported lead) — held out (no profile-based unsubscribe).
-  { id: 'k4', email: 'd@x.com', profile_id: null, consent_state: 'subscribed', source: 'signup' },
+  { id: 'k4', email: 'd@x.com', profile_id: null, consent_state: 'subscribed', source: 'signup', space_id: 'root-space' },
+  { id: 'private', email: 'private@x.com', profile_id: 'p1', consent_state: 'subscribed', source: 'signup', space_id: 'other-space' },
 ]
 
 type Pred = (c: (typeof contacts)[number]) => boolean
@@ -37,9 +41,17 @@ function contactsBuilder() {
       preds.push((c) => (c as Record<string, unknown>)[col] === val)
       return api
     },
+    is(col: string, value: null) {
+      preds.push((c) => (c as Record<string, unknown>)[col] === value)
+      return api
+    },
     or(expr: string) {
       if (expr === 'source.is.null,source.neq.import') {
         preds.push((c) => c.source == null || c.source !== 'import')
+      } else {
+        const scope = /^space_id\.is\.null,space_id\.eq\.(.+)$/.exec(expr)
+        if (!scope) throw new Error(`unexpected or filter ${expr}`)
+        preds.push((c) => c.space_id === null || c.space_id === scope[1])
       }
       return api
     },

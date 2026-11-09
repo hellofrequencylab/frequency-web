@@ -1,0 +1,332 @@
+{
+ "theme": "new-world",
+ "repoThemeId": "new-world",
+ "note": "New World is its own theme, the new mega template and the default every new Space starts in (Daniel 2026-11-03). It is NOT a revision of Services (the 'Good work, done right.' theme, id `services`, untouched). The zip also carries the theme-editor framework handoff, already built in lib/theme/dials.* by LIVE-1997; those files are claimed as built against that code. Same shape as docs/design-systems/services/rules.json.",
+ "tokenSources": [],
+ "baseline": "docs/design-systems/new-world/baseline.json",
+ "tokenMap": [
+  {
+   "from": "--ink-",
+   "to": "--nw-ink-"
+  },
+  {
+   "from": "--graphite-",
+   "to": "--nw-graphite-"
+  },
+  {
+   "from": "--chrome-",
+   "to": "--nw-chrome-"
+  },
+  {
+   "from": "--salt-",
+   "to": "--nw-salt-"
+  },
+  {
+   "from": "--flare-",
+   "to": "--nw-flare-"
+  },
+  {
+   "from": "--swell-",
+   "to": "--nw-swell-"
+  },
+  {
+   "from": "--halo-",
+   "to": "--nw-halo-"
+  },
+  {
+   "from": "--success-",
+   "to": "--nw-success-"
+  },
+  {
+   "from": "--warning-",
+   "to": "--nw-warning-"
+  },
+  {
+   "from": "--danger-",
+   "to": "--nw-danger-"
+  },
+  {
+   "from": "--fw-black",
+   "to": "--nw-fw-heavy"
+  },
+  {
+   "from": "--",
+   "to": "--nw-"
+  }
+ ],
+ "rules": [
+  {
+   "glob": "design_handoff_theme_editor/reference/tokens/frequency.css",
+   "kind": "built",
+   "target": "lib/sites/editor/theme-contract.json",
+   "reason": "The --th-* bridge is published as themes.New World; the site-look attribute rules (data-site-*, data-th, data-type, data-motion) land in components/sites/new-world-css.ts with the chrome (LIVE-1992)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/tokens/base.css",
+   "kind": "built",
+   "target": "components/sites/new-world-effects-css.ts",
+   "reason": "Type voices, image treatments and base element rules (LIVE-1992)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/tokens/effects.css",
+   "kind": "built",
+   "target": "components/sites/new-world-effects-css.ts",
+   "reason": "Orbs, glints, sweep and reveals behind prefers-reduced-motion (LIVE-1992)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/tokens/textures.css",
+   "kind": "built",
+   "target": "components/sites/new-world-effects-css.ts",
+   "reason": "Grain and dot-grid textures (LIVE-1992)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/tokens/core/*.css",
+   "kind": "reference",
+   "reason": "Revision 2: the Frequency Design System core, verbatim and locked. The repo's own app/themes/frequency.css and the Frequency tokens are the authority; New World reads them, it does not redeclare them."
+  },
+  {
+   "glob": "design_handoff_theme_editor/WHATS-NEW.md",
+   "kind": "reference",
+   "reason": "Revision 2 change list; every item it names is checked by the rule for that file."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/site/image-slot.js.txt",
+   "kind": "reference",
+   "reason": "Prototype drop-zone helper; the live site draws image slots through the registry image block."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/tokens/*.css",
+   "kind": "tokens",
+   "reason": "Compared value for value with NEW_WORLD_TOKENS_CSS under tokenMap (every name gains --nw-)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/assets/frequency-logo.png",
+   "kind": "reference",
+   "reason": "Frequency's own mark, drawn in the Space and Templates chrome; the repo already carries it."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/_ds_bundle.js.txt",
+   "kind": "reference",
+   "reason": "Generated bundle; never shipped."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/styles.css",
+   "kind": "reference",
+   "reason": "Entry file that @imports tokens/*.css."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/readme.md",
+   "kind": "reference",
+   "reason": "Voice, colour, type and shape rules; values checked through tokens/*.css."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/HANDOFF.md",
+   "kind": "reference",
+   "reason": "Handoff text; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/components/**",
+   "kind": "reference",
+   "reason": "Prototype primitives; the live site draws the same look through registry blocks styled by components/sites/new-world-*-css.ts."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/site/kits.js.txt",
+   "kind": "built",
+   "target": "lib/sites/kits/new-world-variants.ts",
+   "reason": "The seven niche kits as SiteKit pages (plan step 6). The sixteen trade kits of kits.services.json are Services."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/site/record.js.txt",
+   "kind": "built",
+   "target": "lib/spotlight/new-world-kit-content.ts",
+   "reason": "Builds DOORS from each kit's tools (plan step 7)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/site/controls.jsx.txt",
+   "kind": "built",
+   "target": "components/sites/editor/theme-controls.tsx",
+   "reason": "ThemeControls (plan step 4)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/site/Blocks.jsx.txt",
+   "kind": "built",
+   "target": "components/page-editor/blocks/new-world.tsx",
+   "reason": "The New World blocks (plan step 5)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/site/Chrome.jsx.txt",
+   "kind": "built",
+   "target": "components/sites/new-world-chrome.tsx",
+   "reason": "Header (bar|pill|centered) and footer (full|minimal)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/site/*.jsx.txt",
+   "kind": "reference",
+   "reason": "Page compositions of the New World blocks; the live pages are kit pages of registry blocks."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/products/Spotlight.jsx.txt",
+   "kind": "built",
+   "target": "components/spotlight/new-world-kit-layouts.tsx",
+   "reason": "Six Spotlight layouts (plan step 7)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/products/*.jsx.txt",
+   "kind": "reference",
+   "reason": "Phone frame and shared prototype helpers."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/products/SpacePage.html",
+   "kind": "copy",
+   "targets": [
+    "lib/sites",
+    "components/sites",
+    "components/page-editor/blocks",
+    "components/spotlight",
+    "lib/spotlight",
+    "lib/theme"
+   ]
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/ui_kits/products/EmailPage.html",
+   "kind": "copy",
+   "targets": [
+    "lib/theme",
+    "lib/sites",
+    "components/sites"
+   ]
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/Spotlight Layouts.html",
+   "kind": "copy",
+   "targets": [
+    "components/spotlight",
+    "lib/spotlight",
+    "lib/sites",
+    "lib/theme"
+   ]
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/Web Theme.html",
+   "kind": "copy",
+   "targets": [
+    "lib/sites",
+    "components/sites",
+    "components/page-editor/blocks",
+    "lib/themes"
+   ]
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/Theme Feature Page.html",
+   "kind": "copy",
+   "targets": [
+    "lib/themes",
+    "app/themes",
+    "components/themes"
+   ]
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/Kit Overview.html",
+   "kind": "reference",
+   "reason": "Acceptance page, rebuilt from the manifest functions table at /themes/new-world/overview (plan step 7); its copy is the manifest's."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/Conformance.html",
+   "kind": "reference",
+   "reason": "The ten invariants; implemented as lib/theme/conformance.ts and tests (plan step 8)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/reference/Templates.html",
+   "kind": "reference",
+   "reason": "Template gallery for Claude Design; not a Frequency surface."
+  },
+  {
+   "glob": "design_handoff_theme_editor/frequency/theme-contract.services.json",
+   "kind": "built",
+   "target": "lib/sites/editor/theme-contract.json",
+   "reason": "Merged as themes.New World in lib/sites/editor/theme-contract.json (its own entry; Services keeps themes.Services)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/frequency/kits.services.json",
+   "kind": "built",
+   "target": "lib/sites/kits/new-world-variants.ts"
+  },
+  {
+   "glob": "design_handoff_theme_editor/frequency/README.md",
+   "kind": "reference",
+   "reason": "Install steps."
+  },
+  {
+   "glob": "design_handoff_theme_editor/dials.json",
+   "kind": "built",
+   "target": "lib/theme/dials.json",
+   "reason": "Dial registry (plan step 1)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/manifest.schema.md",
+   "kind": "reference",
+   "reason": "Schema 2 spec; implemented in lib/themes/manifests.test.ts (plan step 2)."
+  },
+  {
+   "glob": "design_handoff_theme_editor/THEME-EDITOR-FRAMEWORK.md",
+   "kind": "reference",
+   "reason": "The framework spec."
+  },
+  {
+   "glob": "design_handoff_theme_editor/IMPLEMENTATION-PLAN.md",
+   "kind": "reference",
+   "reason": "Build order; status lives in the ledger rows, never here."
+  },
+  {
+   "glob": "design_handoff_theme_editor/README.md",
+   "kind": "reference",
+   "reason": "Handoff front page."
+  }
+ ],
+ "tokenDeviations": [
+  {
+   "name": "--n-flare-300",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--n-flare-400",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--n-flare-500",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--n-flare-600",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--n-flare-700",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--d-flare-300",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--d-flare-400",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--d-flare-500",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--d-flare-600",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--d-flare-700",
+   "reason": "Daniel 2026-11-03: Tide teal is the starting accent, so the flare ramp is Tide, not the zip violet (also inside the retired violet family, ADR-1792)."
+  },
+  {
+   "name": "--grad-sunset",
+   "reason": "The zip core sweep carries violet stops; the repo no-violet sweep (app/themes/frequency.css --fq-iridescent-sweep) is used."
+  }
+ ]
+}

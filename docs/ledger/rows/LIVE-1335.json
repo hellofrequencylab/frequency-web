@@ -1,0 +1,8 @@
+{
+  "id": "LIVE-1335",
+  "patch": {},
+  "append": {
+    "detail": "2026-11-09 premise re-test. The 'no default live reader, saved consent resolver, owner UI or provider connection is wired' sentence above is stale. On main today: the saved consent resolver and owner consent switch (lib/spaces/private-state.ts, discovery-actions.ts), the owner review panel (components/spaces/discovery-coaching-panel.tsx), sealed provider connections and the OAuth callback (lib/ai/discovery-connection-store.ts, app/api/integrations/discovery/[provider]/callback), and the on-demand Google and Bing reviewers (lib/ai/discovery-search-runtime.ts) are all wired, tracked by LIVE-1350 and LIVE-1378. Production has public.space_discovery_connections and the 20270346025300 ledger entry (read-only check, 2026-11-09). Reviews are on demand with a cooldown; there is no scheduled refresh by design (docs/RUNBOOKS.md, Connected search evidence). What is left is not code: DISCOVERY_OAUTH_ENCRYPTION_KEY and the Bing client id and secret in the production environment, the Google OAuth verification (parked by the owner), and one authenticated live acceptance with an owner who holds a verified property. Row stays open until that acceptance is recorded."
+  },
+  "wave": "W7"
+}

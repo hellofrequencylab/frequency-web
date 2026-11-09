@@ -3,7 +3,10 @@ import type { Metadata } from 'next'
 import { getPublishedSpotlight, listPublishedSpotlightHandles } from '@/lib/spotlight/data'
 import { SpotlightShell } from '@/components/spotlight/spotlight-shell'
 import { TEMPLE_FONT_CLASS } from '@/components/sites/temple-fonts'
-import { isFreeHumanLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { isCyberWitchKitLayout, isFreeHumanLayout, isNewWorldKitLayout, isServicesKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { NEW_WORLD_FONT_CLASS } from '@/components/sites/new-world-fonts'
+import { SERVICES_FONT_CLASS } from '@/components/sites/services-fonts'
+import { CYBERWITCH_FONT_CLASS } from '@/components/sites/cyberwitch-fonts'
 import { FREE_HUMAN_FONT_CLASS } from '@/components/sites/free-human-fonts'
 import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
 import { JsonLd } from '@/components/json-ld'
@@ -123,7 +126,7 @@ export default async function SpotlightRoute({
         ]}
       />
       {/* The Temple kit's four faces ride a wrapper here, not the shell: next/font needs Next's compiler, and the shell is rendered by the suite. */}
-      <div className={data.theme.layout && isTempleKitLayout(data.theme.layout) ? TEMPLE_FONT_CLASS : data.theme.layout && isFreeHumanLayout(data.theme.layout) ? FREE_HUMAN_FONT_CLASS : undefined}>
+      <div className={data.theme.layout && isTempleKitLayout(data.theme.layout) ? TEMPLE_FONT_CLASS : data.theme.layout && isFreeHumanLayout(data.theme.layout) ? FREE_HUMAN_FONT_CLASS : data.theme.layout && isNewWorldKitLayout(data.theme.layout) ? NEW_WORLD_FONT_CLASS : data.theme.layout && isServicesKitLayout(data.theme.layout) ? SERVICES_FONT_CLASS : data.theme.layout && isCyberWitchKitLayout(data.theme.layout) ? CYBERWITCH_FONT_CLASS : undefined}>
         <SpotlightShell data={data} showJoinCta showBio={false}>
           <MemberProfileModules member={data} grid={publicSpotlightGrid(data.grid, data.layout.blocks)} />
         </SpotlightShell>

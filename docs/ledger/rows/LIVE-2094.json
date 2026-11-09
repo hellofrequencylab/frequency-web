@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2094",
+  "title": "Services kit chrome and quote form: the kit's header and footer on Services sites, and the three-step quote block, on govanta.pro",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/sites/services-quote-form.tsx",
+    "ref": "Daniel 2026-11-03: build Vanta out fully from its design system; the design's Quote.jsx three-step form had no block (LIVE-2069 shipped a contact card in its place)"
+  },
+  "detail": "Adds the ServicesQuote block (components/page-editor/blocks/services.tsx) and its client form (components/sites/services-quote-form.tsx): services and how often, then the place (address, property type, window count, inside and outside glass), then contact. It sends through submitContactForm (anonymous lead door, honeypot, rate limit) with every choice folded into the message. Styled in the Services sheet (sv-qf, tokens only). Vanta's /quote page uses it. The live Vanta document is updated to match once this deploys. Probe: node scripts/probes/services-quote-form.mjs. Also mounts the kit's chrome (Vanta design Chrome.jsx) for siteStyle.theme services: the full-width ink header with its glow hairline, the wordmark, the menu in a glass capsule with the flare dot, the phone from the footer's contact column and the accent button, lying on a photo hero; the footer leads with the closing band, prints contact lines with icons and ends on the dim wordmark. Vanta's menu becomes the design's About, Services, How it works, FAQ (owner: 'that's not the menu for Services', 2026-11-03).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/services-quote-form.mjs"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

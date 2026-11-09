@@ -1,5 +1,6 @@
 import { articleTemplate, type ArticleSpec } from '@/lib/page-editor/templates/article'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
+import type { Data } from '@/lib/page-editor/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HOW TO BUILD COMMUNITY — the SECOND seeker article enrolled in the page editor
@@ -331,4 +332,84 @@ export const spec: ArticleSpec = {
   },
 }
 
-export const data = articleTemplate(spec)
+// ── THE PLAYBOOK LAYOUT (owner 2026-11-04: "they are all really flat and text based. Make each a
+// different layout"). The article generator owns the grammar and is shared with every seeker article, so
+// this page's skeleton is laid over its output here, block by block, and never in article.ts:
+//   · the Hero becomes a PlaybookCover: the same H1, eyebrow and subtitle beside a photo, with the
+//     chapter index on glass over it (each entry is a section's own question, linking to its anchor);
+//   · each section's Heading becomes a PlaybookChapter: the same H2, a chapter number over it and the
+//     signal line above, anchored so the index can reach it;
+//   · the four jobs section gains a ToolStack panel under its words: the four jobs, scattered across apps
+//     against held in one Space, in the nouns the section's own body uses.
+// Every other block (the answer, the beats, the three HowTo steps blocks, the FAQ, the close) passes
+// through untouched, so the Article, HowTo and FAQPage nodes are the generator's. If the generator's
+// shape changes (no Hero, no Heading), the matching step is skipped and the plain article renders.
+const COVER = {
+  image: '/images/site/breathwork-circle-friends.jpg',
+  alt: 'A loose circle of friends standing together on a seaside deck at dusk',
+}
+const TOOLS_QUESTION = 'What tools does a community builder need?'
+
+type Block = { type: string; props: Record<string, unknown> }
+
+function playbook(doc: Data): Data {
+  if (!Array.isArray(doc?.content)) return doc
+  const total = (doc.content as Block[]).filter((b) => b.type === 'Heading').length
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const chapters: { label: string; href: string }[] = []
+  const content: Block[] = []
+  let n = 0
+  for (const b of doc.content as Block[]) {
+    if (b.type === 'Heading') {
+      n += 1
+      const anchor = `chapter-${n}`
+      chapters.push({ label: String(b.props.title ?? ''), href: `#${anchor}` })
+      content.push({
+        type: 'PlaybookChapter',
+        props: { id: b.props.id, anchor, number: pad(n), total: pad(total), title: b.props.title, layout: b.props.layout },
+      })
+      continue
+    }
+    content.push(b)
+    const prev = content.at(-2)
+    if (b.type === 'Text' && prev?.type === 'PlaybookChapter' && prev.props.title === TOOLS_QUESTION) {
+      content.push({
+        type: 'ToolStack',
+        props: {
+          id: `${String(b.props.id)}-stack`,
+          scatteredLabel: 'Stitched together',
+          togetherLabel: 'One free Space',
+          jobs: [
+            { icon: 'door', job: 'A way in', scattered: 'A private group chat', together: 'A page in Discover' },
+            { icon: 'event', job: 'A place to gather', scattered: 'A calendar', together: 'Circles and Events on the calendar your town reads' },
+            { icon: 'message', job: 'Stay in touch', scattered: 'A chat app', together: 'A message to everyone who came' },
+            { icon: 'award', job: 'Recognition', scattered: 'A spreadsheet of members', together: 'Check-in at the door that notices the regulars' },
+          ],
+          note: '',
+          layout: { spaceTop: 'none', spaceBottom: 'default', visibility: 'all' },
+        },
+      })
+    }
+  }
+  const hero = content.findIndex((b) => b.type === 'Hero')
+  if (hero >= 0) {
+    const h = content[hero]!.props
+    content[hero] = {
+      type: 'PlaybookCover',
+      props: {
+        id: h.id,
+        eyebrow: h.eyebrow,
+        title: h.title,
+        subtitle: h.subtitle,
+        image: COVER.image,
+        alt: COVER.alt,
+        indexLabel: 'In this playbook',
+        chapters,
+        layout: h.layout,
+      },
+    }
+  }
+  return { ...doc, content } as Data
+}
+
+export const data = playbook(articleTemplate(spec))

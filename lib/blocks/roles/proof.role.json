@@ -2,6 +2,11 @@
   "role": "Proof",
   "type": "RoleProof",
   "label": "Proof (all themes)",
+  "intent": "Show what members say",
+  "why": "Words from the people who already come.",
+  "group": "Trust",
+  "icon": "message",
+  "live": true,
   "replaces": [
     "Quote",
     "CardGrid(testimonial)",
@@ -37,23 +42,48 @@
           "label": "text<=40"
         }
       }
+    },
+    "labels": {
+      "items": {
+        "label": "Quotes",
+        "hint": "Words from members, with their names. Filled from your reviews when you have them."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "stats": {
+        "label": "Figures",
+        "hint": "Up to four numbers beside the quotes."
+      }
     }
   },
   "variants": {
     "quote": {
       "label": "Large quotes",
-      "max": 3
+      "max": 3,
+      "thumb": "quote"
     },
     "wall": {
       "label": "Wall of quotes",
       "min": 3,
-      "max": 12
+      "max": 12,
+      "thumb": "wall"
     },
     "stats": {
       "label": "Quote beside figures",
       "needs": [
         "stats"
-      ]
+      ],
+      "thumb": "figures"
     }
   },
   "default": "wall",
@@ -153,5 +183,11 @@
     "stats",
     "title",
     "who"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "draw"
+  }
 }

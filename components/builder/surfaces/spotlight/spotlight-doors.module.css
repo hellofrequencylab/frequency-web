@@ -1,0 +1,34 @@
+/* THE SPOTLIGHT DOORS (BLD-215): the live Spotlight's one-column door list, in Frequency tokens and the builder's shape
+   tokens. The Space's accent reaches the tile through the canvas variables the frame sets. */
+
+.root { display: grid; gap: 20px; padding: 32px 20px 40px; max-width: 720px; margin: 0 auto; width: 100%; color: var(--fq-text-strong); font-family: var(--fq-font-sans); }
+.head { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.logo { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--fq-surface-raised); }
+.initials {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--fq-surface-raised); color: var(--fq-text-strong);
+  font: 600 22px/1 var(--fq-font-display);
+}
+.name { margin: 0; font: 600 24px/1.15 var(--fq-font-display); }
+.sub { margin: 0; font-size: 13px; color: var(--fq-text-muted); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.door {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 60px; padding: 0 14px;
+  border: 1px solid var(--fq-border-hair); border-radius: var(--r-card);
+  background: var(--fq-surface-raised); color: inherit; font: inherit; text-align: left; cursor: pointer;
+  box-shadow: var(--fq-shadow-1);
+}
+.door:hover { border-color: var(--fq-border-strong); }
+.door:focus-visible { outline: 2px solid var(--fq-text-strong); outline-offset: 2px; }
+.door[aria-pressed="true"] { border-color: var(--fq-text-strong); }
+.tile {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 36px; height: 36px; border-radius: var(--r-control);
+  background: var(--fq-bg-sunken); color: var(--fq-text-strong);
+}
+.text { flex: 1; min-width: 0; display: grid; }
+.text b { font-weight: 600; font-size: 16px; line-height: 1.15; }
+.text small { font-size: 12px; color: var(--fq-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arrow { color: var(--fq-text-muted); }
+.empty { margin: 0; padding: 16px; border: 1px dashed var(--fq-border-strong); border-radius: var(--r-card); color: var(--fq-text-muted); font-size: 14px; line-height: 1.5; }

@@ -30,6 +30,7 @@ import {
 } from '@/lib/calendar/admin-views'
 import { parseTimeView, timeViewCookieName } from '@/lib/calendar/time-views'
 import { asksForPublicCalendar } from '@/lib/calendar/audience'
+import { CALENDAR_NAME } from '@/lib/calendar/name'
 
 // THE MERGED CALENDAR AND EVENTS PAGE (Events EC2, ADR-1385, ADR-1464, ADR-1467; merged by
 // LIVE-520 on the owner's ask, "Calendar & Events should be all one page").
@@ -54,7 +55,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const base = await spaceProfileMetadata(slug, {
     segment: 'calendar',
-    label: 'Calendar & Events',
+    label: CALENDAR_NAME,
     describe: (brandName) => `What's happening at ${brandName}: upcoming events with dates and times, on one calendar you can add to Google or Apple Calendar.`,
   })
   // The feed is the machine-readable twin of this page; point calendar apps and crawlers at it.

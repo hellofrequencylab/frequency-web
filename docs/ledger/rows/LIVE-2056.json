@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2056",
+  "title": "New World kits: Your place, Coaches, Studios, Hosts, Venues, Non-profits, Networks",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/design-systems/new-world/rules.json",
+    "ref": "Daniel 2026-11-03: New World is the new mega template, default theme for every new Space"
+  },
+  "detail": "Per-niche starter kits from kits.js with tools[] and copy overrides, in house voice (voice guide wins over the design's words). The seven kits already exist in lib/sites/kits/services-variants.ts (#4508, built from the New World design): move them under new-world when the theme is registered (after the Services thread's LIVE-2040 merges); Services rebuilds its own 16 trade kits.\n\n2026-11-03: the seven niche kits (Your place, Coaches, Studios, Hosts, Venues, Non-profits, Networks) moved from lib/sites/kits/services-variants.ts to new-world-variants.ts as new-world-<niche> with the NewWorld theme (registered by LIVE-2054). Their pages still use the Services block family until LIVE-2055 supplies New World's own blocks, so swap the block types then. Services keeps one General template (services-general, wrapping the same builder) so every Mega Theme still names a General kit, until the Services thread lands its sixteen trade kits.\n\nEvery page of the seven New World kits now composes New World's own blocks: Home (LIVE-2055) plus Ways in (page title, one row per way in with cost and when, plans, always true here, questions, closer), Our story (portrait opening with three facts, the whole story, the owner's line, three promises, team, notes, closer) and Book (what a booking holds, the ways in and next open times as real links, the contact form). No Services block remains in lib/sites/kits/new-world-variants.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/sites/kits/new-world-variants.ts','utf8');process.exit(/type: 'Services/.test(s)?1:0)\""
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

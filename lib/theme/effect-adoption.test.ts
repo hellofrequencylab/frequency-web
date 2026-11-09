@@ -67,7 +67,6 @@ const RECORDED_ORPHANS = [
   'animate-glow',
   'animate-warmup',
   'grain',
-  'halo',
   'slat-fade',
 ] as const
 

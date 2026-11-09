@@ -869,6 +869,8 @@ function spaceOffersContactTab(preferences: unknown): boolean {
  *                      reader's accepted-SHARE half, which needs a per-Space read: this emits a
  *                      SUBSET, so a Space whose only upcoming events are shared in loses a URL it
  *                      could have had, and no Space ever gains one it should not.
+ *   · `community`    — not root, the wall not members-only, and >= 1 visible top-level wall post
+ *                      (the same rows `space_wall_feed` returns; ADR-1938).
  *   · `circles`      — the `circles` function ON, type is not root (the tab redirects there), and
  *                      >= 1 listed, joinable-status circle.
  *   · `collaborators`— >= 1 ACCEPTED collaboration, either direction.
@@ -933,7 +935,7 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
       )
     )).then(groups => new Set(groups.flatMap(group => [...group])))
 
-    const [withEvents, withCircles, withReviews, withTiers, withAsks, collabHost, collabPartner] = await Promise.all([
+    const [withEvents, withCircles, withReviews, withTiers, withAsks, collabHost, collabPartner, withWallPosts, membersOnlyWalls] = await Promise.all([
       eventPresence,
       presenceIds(
         // AXIS 1 in SQL, exactly as listPublicSpaceCircles spells it: `unlisted` is nullable and a
@@ -984,6 +986,21 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
         'collaborator_space_id',
         (r) => (typeof r.collaborator_space_id === 'string' ? r.collaborator_space_id : null),
       ),
+      // COMMUNITY WALL (ADR-1938, LIVE-2079). The same posts `space_wall_feed` returns: top-level,
+      // not hidden, on this Space's wall.
+      presenceIds(
+        (q) => q.is('parent_id', null).is('hidden_at', null).eq('visibility', 'cluster').in('scope_space_id', ids),
+        'posts',
+        'scope_space_id',
+        (r) => (typeof r.scope_space_id === 'string' ? r.scope_space_id : null),
+      ),
+      // A wall the owner made members-only is a locked page to a crawler, so it gets no URL.
+      presenceIds(
+        (q) => q.eq('read_access', 'members').in('space_id', ids),
+        'space_wall_settings',
+        'space_id',
+        (r) => (typeof r.space_id === 'string' ? r.space_id : null),
+      ),
     ])
 
     const shopDef = spaceFunctionDef('shop')
@@ -1023,6 +1040,9 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
             : ctaKind !== undefined
       if (bookShowsSomething) push('book')
       if (withEvents.has(r.id)) push('calendar')
+      // COMMUNITY (ADR-1938, LIVE-2079). Every non-root Space has the wall; it is advertised when a
+      // visitor can read it (not members-only) and it has at least one post (the LIVE-184 rule).
+      if (type !== 'root' && withWallPosts.has(r.id) && !membersOnlyWalls.has(r.id)) push('community')
       if (enabled(circlesDef) && type !== 'root' && withCircles.has(r.id)) push('circles')
       if (collabHost.has(r.id) || collabPartner.has(r.id)) push('collaborators')
       if (enabled(reviewsDef) && withReviews.has(r.id)) push('reviews')

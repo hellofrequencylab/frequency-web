@@ -12,7 +12,7 @@ import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
 import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
-import { SITE_THEMES } from '@/lib/theme/site-style'
+import { SITE_THEMES, SITE_THEME_DEFS } from '@/lib/theme/site-style'
 import { THEME_LOOK_CONTROLS, THEME_TOOLS, themeLibraryEntry } from '@/lib/themes/library'
 import { ThemePicture } from './theme-picture'
 
@@ -21,7 +21,9 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
 }
 
 /** The themes that get this template. Nocturne keeps its own richer page at /themes/nocturne. */
-export const THEME_KIT_PAGE_IDS = SITE_THEMES.map((t) => t.id).filter((id) => id !== 'midnight')
+// Midnight (Nocturne), New World, Services and CyberWitch keep their own static pages (/themes/nocturne, /themes/new-world, /themes/services, /themes/cyberwitch), which the generic kit page never draws.
+// The theme pages keep the library's definition order; only the pickers lead with New World and Designer.
+export const THEME_KIT_PAGE_IDS = SITE_THEME_DEFS.filter((d) => SITE_THEMES.some((t) => t.id === d.id)).map((t) => t.id).filter((id) => id !== 'midnight' && id !== 'new-world' && id !== 'services' && id !== 'cyberwitch')
 
 const THEME_KIT_FAQ: { q: string; a: (name: string) => string }[] = [
   {

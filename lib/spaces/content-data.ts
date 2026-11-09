@@ -37,6 +37,7 @@ import { listPublicSpaceCircles } from '@/lib/circles/store'
 import { getMyProfileId } from '@/lib/auth'
 import { spaceRoleRank } from '@/lib/spaces/membership'
 import { computeReviewAggregate, type RatingDistribution } from '@/lib/spaces/reviews-aggregate'
+import { getPublicSpaceBookingTimezone, listPublicOpenSlots } from '@/lib/spaces/booking'
 
 // ── Shapes the blocks render (plain data, no server imports leak into the block components) ──────
 
@@ -133,7 +134,18 @@ export type SpaceEventItem = {
 /** Whether the Space is currently taking bookings, for the SpaceBooking block. Honest: `enabled` is
  *  true only when the Space actually publishes availability windows, so the block is a real entry, not
  *  an empty promise. `href` is the slug-relative booking tab. */
-export type SpaceBookingInfo = { enabled: boolean; href: string | null }
+export type SpaceBookingInfo = {
+  enabled: boolean
+  href: string | null
+  /** The next open slots a visitor could book (soonest first, at most six), for the Booking role (BLD-213): the
+   *  same open instants the public booking door offers, never who booked anything. Empty when none. */
+  openings?: SpaceBookingOpening[]
+  /** The Space's booking timezone, so a surface can label an opening in the Space's own clock. */
+  timezone?: string
+}
+
+/** One open slot the Booking role can show: the absolute instant and its length. */
+export type SpaceBookingOpening = { startsAt: string; slotMinutes: number }
 
 /** One live practice OR journey the SpacePractices block lists, from the Space's OWN rows (the same
  *  readers the profile Practices surfaces use: listPracticesForSpace + listJourneyPlansForSpace). Plain
@@ -189,8 +201,6 @@ export type SpaceCircleItem = {
   imageUrl: string | null
   /** The place line. Null for an online circle, where the card says "Online" on its own. */
   neighborhood: string | null
-  /** The Space Circle (ADR-1391/1393) — it leads the list, and the card can say so. */
-  isSpacePrimary: boolean
 }
 
 /** A Space-admin reply published under a member review (Reviews redesign). Null on a review with no
@@ -729,6 +739,9 @@ export async function getSpaceSeriesRows(spaceId: string): Promise<SpaceEventIte
  *  (space_availability row), so the block is a real entry, never an empty promise. Reads the count via
  *  the untyped admin handle (the table is not in the generated types yet, ADR-246). FAIL-SAFE to a
  *  disabled state. */
+/** How many openings the Booking role lists. */
+const BOOKING_OPENINGS_CAP = 6
+
 export async function getSpaceBookingInfo(
   spaceId: string,
   slug: string | null,
@@ -746,7 +759,10 @@ export async function getSpaceBookingInfo(
       .from('space_availability')
       .select('id', { count: 'exact', head: true })
       .eq('space_id', spaceId)
-    return { enabled: (count ?? 0) > 0, href }
+    if ((count ?? 0) === 0) return { enabled: false, href, openings: [], timezone: 'UTC' }
+    // The next openings, from the same reader the public booking door uses (fail-safe to none).
+    const [slots, timezone] = await Promise.all([listPublicOpenSlots(spaceId), getPublicSpaceBookingTimezone(spaceId)])
+    return { enabled: true, href, openings: slots.slice(0, BOOKING_OPENINGS_CAP).map((o) => ({ startsAt: o.startsAt, slotMinutes: o.slotMinutes })), timezone }
   } catch {
     return { enabled: false, href }
   }
@@ -940,7 +956,6 @@ export async function getSpaceCommunity(spaceId: string): Promise<SpaceCircleIte
       access: c.access ?? null,
       imageUrl: c.image_url ?? null,
       neighborhood: c.neighborhood ?? null,
-      isSpacePrimary: c.is_space_primary === true,
     }))
   } catch {
     return []

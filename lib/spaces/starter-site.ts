@@ -41,10 +41,14 @@ export async function publishStarterSite(spaceId: string, theme: string | null |
     if (!kit) return false
     const applied = applyKit({ theme: kit.theme, pages: [] }, kit, 'replace', (type) => config.components[type]?.defaultProps)
     if (!applied.ok) { console.error(`[starter-site] ${kit.id}: ${applied.error}`); return false }
-    const state = nextWebsiteState({ v: 1, revision: 0, draft: applied.snapshot, published: null, versions: [] }, applied.snapshot, true, 'Frequency')
+    const space = await getSpaceById(spaceId)
+    // CyberWitch's wall and founder are shot in each neon: the site opens on the Space's own (ONE ACCENT, 2026-11-05).
+    const cw = theme === 'cyberwitch' ? await import('@/lib/theme/cyberwitch') : null
+    const neon = cw?.cyberwitchAccentId(space?.brandAccent) ?? null
+    const snapshot = cw && neon ? cw.withCyberWitchAccentPhotos(applied.snapshot, neon) : applied.snapshot
+    const state = nextWebsiteState({ v: 1, revision: 0, draft: snapshot, published: null, versions: [] }, snapshot, true, 'Frequency')
     const landed = await saveStarterWebsiteState(spaceId, state)
     if (landed) {
-      const space = await getSpaceById(spaceId)
       if (space) {
         refreshSite(space.slug)
         await attachStarterAddress(space.slug)

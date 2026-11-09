@@ -82,7 +82,7 @@ function routes() {
   assert.equal(evaluate(read('app/(main)/default.tsx')).default(), null)
 }
 function editor() {
-  const { editorBlockMeta } = evaluate(read('lib/sites/editor/block-meta.ts'))
+  const { editorBlockMeta } = evaluate(read('lib/sites/editor/block-meta.ts'), {}, { '@/lib/blocks/roles/roles': { ROLES: {}, roleOfType: () => null } })
   for (const type of ['NetworkHero', 'NetworkEvents', 'NetworkCircles']) { const meta = editorBlockMeta({ categories: {} }, type); assert.equal(meta.group, 'Live'); assert.equal(meta.live, true) }
   const css = evaluate(selected('components/sites/editor/canvas.tsx', ['CANVAS_CSS', 'FQ_CANVAS_CSS']) + '\nexports.css = [CANVAS_CSS, FQ_CANVAS_CSS];').css
   const coarse = css.map((sheet) => [...sheet.matchAll(/@media\(pointer:coarse\)\{((?:[^{}]|\{[^{}]*\})*)\}/g)].map((match) => match[1]).join('\n'))

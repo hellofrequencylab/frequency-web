@@ -57,6 +57,18 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   // Generic by design: props.surface (event, membership, booking, journey, product), props.action and
   // props.scope (space or personal) only, never what the event or practice is.
   { name: 'pricing.upgrade_moment', category: 'feature', description: 'A host met the upgrade moment on a price surface (props.surface, props.action, props.scope).', clientEmittable: true },
+  // ── Create a Space, signed out (LIVE-1970, ADR-1933). Anonymous: no actor, one row per tab and event, posted to
+  // the builder's own sink (app/api/create-space/signal), which admits only these nine with closed props
+  // (lib/create-space/signal.ts). Never typed text: a kit id, a step id, an accent index, flags, intent ids.
+  { name: 'createspace.view', category: 'lifecycle', description: 'A visitor opened the Create a Space builder (props.kit, props.chosen).', clientEmittable: false },
+  { name: 'createspace.name_started', category: 'lifecycle', description: 'A visitor typed the first letter of a name.', clientEmittable: false },
+  { name: 'createspace.accent_picked', category: 'lifecycle', description: 'A visitor picked an accent (props.accent, an index).', clientEmittable: false },
+  { name: 'createspace.step_done', category: 'lifecycle', description: 'A builder step was saved (props.step, props.seconds since the first letter).', clientEmittable: false },
+  { name: 'createspace.offer', category: 'lifecycle', description: 'A visitor mocked up the site from a sentence (props.example_used, props.intents).', clientEmittable: false },
+  { name: 'createspace.lead', category: 'lifecycle', description: 'A visitor saved the draft to an address (props.has_phone, props.has_where).', clientEmittable: false },
+  { name: 'createspace.photos', category: 'lifecycle', description: 'A visitor finished the photos step (props.uploaded, props.kept_theme).', clientEmittable: false },
+  { name: 'createspace.resume', category: 'lifecycle', description: 'A visitor picked a draft back up (props.source: local or email).', clientEmittable: false },
+  { name: 'createspace.dock_click', category: 'lifecycle', description: 'A visitor used the sticky dock to get back to the builder.', clientEmittable: false },
 ] as const
 
 const BY_NAME = new Map(ANALYTICS_EVENTS.map((e) => [e.name, e]))

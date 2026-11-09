@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-2201",
+  "title": "The /themes page remembers the last kit in view, so the 12 minute launch starts from it",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-04",
+  "detail": "use-kit-showcase.ts calls rememberKit (lib/create-space/last-kit.ts, #4642) for the kit section in the middle of the window; a kit the builder does not offer is skipped.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/themes-remember-kit.mjs",
+    "checked": "2026-11-04",
+    "evidence": "Fails on main (no fold rules, old wording), passes on the branch. Measured in a browser: every kit's button and devices end inside the window at the four desktop sizes."
+  },
+  "source": {
+    "file": "components/frequency/site/pages/themes/kit-showcase/use-kit-showcase.ts",
+    "ref": "Owner, 2026-11-04: whoever reaches the launch has the theme they were looking at"
+  },
+  "wave": "W7"
+}

@@ -20,8 +20,12 @@ describe('vercel-ignore-build (HYG-162)', () => {
     expect(decide([]).skip).toBe(false)
   })
 
-  it('classifies paths, not names: a .md anywhere is documentation, a docs/ script is too', () => {
-    expect(isDocOnly('content/help/thing.md')).toBe(true)
+  it('builds when only a bundled help article changes', () => {
+    expect(decide(['content/help/spaces/menu-and-logo.md']).skip).toBe(false)
+  })
+
+  it('classifies bundled help separately from ordinary documentation', () => {
+    expect(isDocOnly('content/help/thing.md')).toBe(false)
     expect(isDocOnly('docs/research/findings/2026-10-05.md')).toBe(true)
     expect(isDocOnly('lib/readme.ts')).toBe(false)
     expect(isDocOnly('docs.ts')).toBe(false)

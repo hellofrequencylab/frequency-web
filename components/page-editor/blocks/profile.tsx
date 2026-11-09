@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { InlineText } from '@/components/sites/inline-text'
 import {
   Building2,
   MapPin,
@@ -1197,7 +1198,7 @@ export function SpaceCTABlock({
   if (!heading && !hasCta) return null
   return (
     <InfoCard ink={ink} className={`text-center${accent ? ' border-primary/30 bg-primary-bg/30' : ''}`}>
-      {heading && <h2 className={`font-section text-lead font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>}
+      {heading && <h2 className={`font-section text-lead font-bold ${ink ? 'text-on-ink' : 'text-text'}`}><InlineText text={heading} /></h2>}
       {body && <p className={`mx-auto mt-2 max-w-xl text-body-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
       {hasCta && (
         <div className="mt-5 flex justify-center">

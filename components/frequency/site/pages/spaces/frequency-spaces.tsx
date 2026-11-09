@@ -13,8 +13,15 @@
 // THE HYBRID: one section the design lacks is kept from the DAWN page, the four builder guides, restyled
 // as the design's feature cards. The questions carry FAQPage JSON-LD. Motion is the shell's FX loop and
 // the closing band is the shell's <KeepGoing>.
+//
+// THE SHOWCASE (owner 2026-11-04, "make each a different layout that speaks to the service"): the path is
+// four full-bleed photo chapters with the words on glass; the first one shows a Space page in a real
+// theme (the Nocturne kit renders in public/themes/midnight, the same pictures the theme page shows); the
+// five kinds of Space are photo cards on a scroll-snap rail; the features read as a tool sheet. Layout
+// styles: .pa-show in site-pages-showcase.css.
 
 import '@/app/themes/active/site-pages-a'
+import '@/app/themes/active/site-pages-showcase'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getRankedSpaces } from '../shared/data'
@@ -22,16 +29,17 @@ import { feature, SITE } from '../shared/links'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
-import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
+import { themePagePath } from '@/lib/themes/library'
+import { Acts, type Act, aura, LocPill, photo, photoBg, photoImg, WhatsOnList } from '../shared/parts'
 
 /** Each kind links to its door (SCAN-1017): under the Frequency design nothing else on the site reached
  *  the /for pages. Venues have no door of their own, so their card opens the Spaces directory. */
-const TYPES: { icon: FqIconName; kind: string; line: string; href: string }[] = [
-  { icon: 'breath', kind: 'Studios', line: 'Share your next class.', href: '/for/studios' },
-  { icon: 'contacts', kind: 'Coaches + practitioners', line: 'A client list you keep.', href: '/for/coaches-and-healers' },
-  { icon: 'ticket', kind: 'Event hosts', line: 'Invite guests to the next date.', href: '/for/event-hosts' },
-  { icon: 'space', kind: 'Cafés + venues', line: 'A place for local groups to meet.', href: '/discover/spaces' },
-  { icon: 'gem', kind: 'Non Profits', line: 'Supporters, programs and donations.', href: '/for/nonprofits' },
+const TYPES: { icon: FqIconName; kind: string; line: string; href: string; photo: string; alt: string }[] = [
+  { icon: 'breath', kind: 'Studios', line: 'Share your next class.', href: '/for/studios', photo: photo('gathering-05.jpg'), alt: 'A full outdoor class on a lawn between houses' },
+  { icon: 'contacts', kind: 'Coaches + practitioners', line: 'A client list you keep.', href: '/for/coaches-and-healers', photo: '/images/site/sound-healing.jpg', alt: 'A practitioner smiling among singing bowls on the sand' },
+  { icon: 'ticket', kind: 'Event hosts', line: 'Invite guests to the next date.', href: '/for/event-hosts', photo: '/brand/frequency/broll/yoga-rave-glowsticks-web.jpg', alt: 'A crowd with glowsticks at a night event' },
+  { icon: 'space', kind: 'Cafés + venues', line: 'A place for local groups to meet.', href: '/discover/spaces', photo: '/images/site/community-dinner.jpg', alt: 'Friends sharing a dinner on a patio under heaters' },
+  { icon: 'gem', kind: 'Non Profits', line: 'Supporters, programs and donations.', href: '/for/nonprofits', photo: '/images/site/group-of-friends.jpg', alt: 'A group posing together after a community session' },
 ]
 
 const FEATURES: { id: string; icon: FqIconName; title: string; body: string }[] = [
@@ -61,12 +69,83 @@ const QUESTIONS: [string, string][] = [
   ['How do I rank higher?', 'Gather more often. Standing comes from how often you meet and who’s in the room, never from money.'],
 ]
 
+/** One full-bleed photo chapter: the photo fills the band, the words sit on glass on one side. */
+function ShowChapter({
+  label,
+  n,
+  title,
+  body,
+  acts,
+  src,
+  alt,
+  rev,
+  aside,
+}: {
+  label: string
+  n: string
+  title: string
+  body: string
+  acts: Act[]
+  src: string
+  alt: string
+  rev?: boolean
+  aside?: React.ReactNode
+}) {
+  return (
+    <div className={rev ? 'show-ch rev' : 'show-ch'} data-screen-label={label}>
+      <div className="show-ph">
+        {/* eslint-disable-next-line @next/next/no-img-element -- the band sizes its own img (object-fit cover) */}
+        <img loading="lazy" decoding="async" {...photoImg(src, '100vw')} alt={alt} />
+        <span className="show-scrim" />
+        <span className="fq-grain" />
+      </div>
+      <div className="wrap show-in">
+        <div className="show-panel fq-panel fq-iri-rim">
+          <span className="n">{n}</span>
+          <h2 className="h-l">{title}</h2>
+          <p className="body-l">{body}</p>
+          <Acts items={acts} />
+        </div>
+        {aside}
+      </div>
+    </div>
+  )
+}
+
+/** A Space page in a real theme: the Nocturne kit's website and Spotlight renders, in the design system's
+ *  browser frame and iPhone 390 by 844 frame. Pictures that already ship on the theme page; nothing drawn. */
+function ThemePreview() {
+  return (
+    <figure className="show-prev">
+      <div className="show-dv">
+        <div className="show-bar" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <u>yourstudio.com</u>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element -- sized by the frame */}
+        <img loading="lazy" decoding="async" {...photoImg('/themes/midnight/shots/studios-site.jpg', '(max-width: 860px) 90vw, 40vw')} alt="A studio’s website in the Nocturne theme" />
+      </div>
+      <div className="show-ios" aria-hidden="true">
+        <div className="show-ios-scr">
+          {/* eslint-disable-next-line @next/next/no-img-element -- sized by the frame */}
+          <img loading="lazy" decoding="async" {...photoImg('/themes/midnight/shots/studios-spot.jpg', '(max-width: 860px) 40vw, 16vw')} alt="" />
+        </div>
+      </div>
+      <figcaption>
+        <Link href={themePagePath('midnight')}>Nocturne theme →</Link>
+      </figcaption>
+    </figure>
+  )
+}
+
 export async function FrequencySpaces() {
   const ranked = await getRankedSpaces(6)
   return (
-    <div className="pa-page pa-spaces" data-pa-side="e" data-motion-scope style={{ display: 'contents' }}>
+    <div className="pa-page pa-spaces pa-show" data-pa-side="e" data-motion-scope style={{ display: 'contents' }}>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={{ backgroundImage: `url('${photo('gathering-09.jpg')}')` }} />
+        <div className="bg" style={photoBg(photo('night-string-lights-web.jpg'))} />
         <div className="fq-aura" style={aura(0.3)} />
         <div className="shade" />
         <div className="fq-grain" />
@@ -84,8 +163,8 @@ export async function FrequencySpaces() {
             Give your community a place to find the next class, Circle or event. Share your dates on the local calendar and keep in touch with people who come.
           </p>
           <div className="ctas">
-            <Link className="btn fq-iri-btn" href={SITE.join}>
-              Join to open your Space
+            <Link className="btn fq-iri-btn" href={SITE.createSpace}>
+              Open your Space
             </Link>
             <Link className="btn btn-ghost fq-iri-rim" href={SITE.people}>
               I’m looking for a community →
@@ -94,7 +173,7 @@ export async function FrequencySpaces() {
         </div>
       </section>
 
-      <section className="sec" style={{ paddingBottom: 0 }} data-screen-label="02 Your path">
+      <section className="sec show-path" data-screen-label="02 Your path">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -104,73 +183,60 @@ export async function FrequencySpaces() {
           </div>
         </div>
 
-        <Chapter label="02a Be found">
-          <div>
-            <span className="n">01 · Be found</span>
-            <h2 className="h-l">Help people find your next gathering.</h2>
-            <p className="body-l">
-              Open your Space and add your next gathering. People can find the date on the local calendar and visit your page to learn more.
-            </p>
-            <Acts
-              items={[
-                { href: feature('f-page'), icon: 'page', title: 'Set up your page', sub: 'Change it yourself, anytime' },
-                { href: feature('f-events-s'), icon: 'event', title: 'Post your first experience', sub: 'A Circle, an event or a program' },
-              ]}
-            />
-          </div>
-          <ChapPhoto sheen src={photo('gathering-04.jpg')} alt="A Space set up for guests" />
-        </Chapter>
+        <ShowChapter
+          label="02a Be found"
+          n="01 · Be found"
+          title="Help people find your next gathering."
+          body="Open your Space and add your next gathering. People can find the date on the local calendar and visit your page to learn more."
+          acts={[
+            { href: feature('f-page'), icon: 'page', title: 'Set up your page', sub: 'Change it yourself, anytime' },
+            { href: feature('f-events-s'), icon: 'event', title: 'Post your first experience', sub: 'A Circle, an event or a program' },
+          ]}
+          src={photo('gathering-04.jpg')}
+          alt="A Space set up for guests on a garden lawn"
+          aside={<ThemePreview />}
+        />
 
-        <Chapter label="02b Open the door" rev>
-          <ChapPhoto src={photo('gathering-07.jpg')} alt="Guests arriving at a venue" />
-          <div>
-            <span className="n">02 · Open the door</span>
-            <h2 className="h-l">Know who came.</h2>
-            <p className="body-l">
-              Invite people to scan your QR code when they arrive. See who checked in and who is new, so you can welcome first-timers by name.
-            </p>
-            <Acts
-              items={[
-                { href: feature('f-doorqr'), icon: 'qr', title: 'Print your door QR', sub: 'One code for every experience' },
-                { href: feature('f-firsttimers'), icon: 'nudge', title: 'Greet first-timers', sub: 'See eligible first-time check-ins' },
-              ]}
-            />
-          </div>
-        </Chapter>
+        <ShowChapter
+          label="02b Open the door"
+          rev
+          n="02 · Open the door"
+          title="Know who came."
+          body="Invite people to scan your QR code when they arrive. See who checked in and who is new, so you can welcome first-timers by name."
+          acts={[
+            { href: feature('f-doorqr'), icon: 'qr', title: 'Print your door QR', sub: 'One code for every experience' },
+            { href: feature('f-firsttimers'), icon: 'nudge', title: 'Greet first-timers', sub: 'See eligible first-time check-ins' },
+          ]}
+          src={photo('gathering-02.jpg')}
+          alt="Guests arriving at a beach gathering, arms up"
+        />
 
-        <Chapter label="02c Bring them back">
-          <div>
-            <span className="n">03 · Bring them back</span>
-            <h2 className="h-l">Give them a rhythm.</h2>
-            <p className="body-l">
-              Plan regular Circles and programs, or offer a recurring Space membership. Check the membership’s included benefits and linked Circle.
-            </p>
-            <Acts
-              items={[
-                { href: feature('f-programs-s'), icon: 'program', title: 'Build a program', sub: 'A path your Circle walks together' },
-                { href: feature('f-memberships'), icon: 'membership', title: 'Sell memberships', sub: 'Set out membership benefits' },
-              ]}
-            />
-          </div>
-          <ChapPhoto sheen src={photo('gathering-09.jpg')} alt="A regular group mid-session" />
-        </Chapter>
+        <ShowChapter
+          label="02c Bring them back"
+          n="03 · Bring them back"
+          title="Give them a rhythm."
+          body="Plan regular Circles and programs, or offer a recurring Space membership. Check the membership’s included benefits and linked Circle."
+          acts={[
+            { href: feature('f-programs-s'), icon: 'program', title: 'Build a program', sub: 'A path your Circle walks together' },
+            { href: feature('f-memberships'), icon: 'membership', title: 'Sell memberships', sub: 'Set out membership benefits' },
+          ]}
+          src={photo('gathering-09.jpg')}
+          alt="A regular group in a big hug mid-session"
+        />
 
-        <Chapter label="02d Grow" rev>
-          <ChapPhoto src={photo('night-yoga-rave-web.jpg')} alt="People gathering at night" />
-          <div>
-            <span className="n">04 · Grow</span>
-            <h2 className="h-l">Share the hosting with a regular.</h2>
-            <p className="body-l">
-              Invite a regular to host under your Space. Keep a way to see the gatherings you run together.
-            </p>
-            <Acts
-              items={[
-                { href: feature('f-standing'), icon: 'standing', title: 'How standing works', sub: 'Earned, never bought' },
-                { href: SITE.pricing, icon: 'tip', title: 'See pricing', sub: '0% on your regulars, plus card processing' },
-              ]}
-            />
-          </div>
-        </Chapter>
+        <ShowChapter
+          label="02d Grow"
+          rev
+          n="04 · Grow"
+          title="Share the hosting with a regular."
+          body="Invite a regular to host under your Space. Keep a way to see the gatherings you run together."
+          acts={[
+            { href: feature('f-standing'), icon: 'standing', title: 'How standing works', sub: 'Earned, never bought' },
+            { href: SITE.pricing, icon: 'tip', title: 'See pricing', sub: '0% on your regulars, plus card processing' },
+          ]}
+          src={photo('night-yoga-rave-web.jpg')}
+          alt="People gathering at night under pink light"
+        />
       </section>
 
       <section className="sec" id="map" data-screen-label="02x On the map">
@@ -186,7 +252,7 @@ export async function FrequencySpaces() {
             title={ranked.city ? `Spaces near you in ${ranked.city}` : 'Spaces on Frequency'}
             spaces={ranked.spaces}
             ok={ranked.ok}
-            emptyHref={SITE.join}
+            emptyHref={SITE.createSpace}
             style={{ height: 'min(620px,78vh)' }}
           />
           <p className="body-l" style={{ marginTop: 20 }}>
@@ -204,11 +270,16 @@ export async function FrequencySpaces() {
             </div>
             <h2 className="h-l">Built for the way you already gather.</h2>
           </div>
-          <div className="g5">
+          <div className="g5 show-types">
             {TYPES.map((t) => (
               <Link className="pop" key={t.kind} href={t.href}>
                 <span className="pglow" />
                 <article className="pc">
+                  <div className="ph">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .pc .ph img itself (object-fit cover) */}
+                    <img loading="lazy" decoding="async" {...photoImg(t.photo, '(max-width: 860px) 70vw, 20vw')} alt={t.alt} />
+                    <span className="fq-grain" />
+                  </div>
                   <span className="ic">
                     <FqIcon name={t.icon} />
                   </span>
@@ -221,7 +292,9 @@ export async function FrequencySpaces() {
         </div>
       </section>
 
-      <section className="sec sec-next" data-screen-label="Features">
+      <section className="sec sec-next show-kit" data-screen-label="Features">
+        <span className="rings" aria-hidden="true" />
+        <div className="fq-grain" />
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -229,16 +302,18 @@ export async function FrequencySpaces() {
             </div>
             <h2 className="h-l">Everything you need to run it.</h2>
           </div>
-          <div className="g4f">
+          <div className="show-sheet fq-panel">
             {FEATURES.map((f) => (
-              <Link className="pop" key={f.id} href={feature(f.id)}>
-                <span className="pglow" />
-                <span className="pc">
-                  <span className="ic">
-                    <FqIcon name={f.icon} />
-                  </span>
+              <Link key={f.id} href={feature(f.id)}>
+                <span className="ic">
+                  <FqIcon name={f.icon} />
+                </span>
+                <div>
                   <h3>{f.title}</h3>
                   <p>{f.body}</p>
+                </div>
+                <span className="ar" aria-hidden="true">
+                  →
                 </span>
               </Link>
             ))}
@@ -253,7 +328,7 @@ export async function FrequencySpaces() {
 
       <section className="sec sec-next" data-screen-label="05 Questions">
         <div className="fq-aura" style={aura(0.22)} />
-        <div className="wrap">
+        <div className="wrap show-qa">
           <div className="sh">
             <div className="label">
               <b>Questions</b>The ones owners ask
@@ -300,7 +375,7 @@ export async function FrequencySpaces() {
       <KeepGoing
         title="Open your Space. It’s free."
         body="Start with your name and next gathering. See the plan details before you start charging."
-        primary={{ href: SITE.join, label: 'Open your Space →' }}
+        primary={{ href: SITE.createSpace, label: 'Open your Space →' }}
         secondary={{ href: SITE.pricing, label: 'See pricing' }}
       />
     </div>

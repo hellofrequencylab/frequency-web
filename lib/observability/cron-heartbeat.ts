@@ -29,6 +29,7 @@ import * as Sentry from '@sentry/nextjs'
 import { setObservabilityTags } from '@/lib/observability/tags'
 import { isCronMonitored } from '@/lib/observability/slos'
 import { log } from '@/lib/log'
+import { isStampedCron, recordCronSuccess } from '@/lib/observability/cron-last-success'
 
 // A Next.js route handler: takes the Request and returns a Response. Generic over
 // the request type `R` so handlers typed with the narrower `NextRequest` are
@@ -294,6 +295,9 @@ export function withCronHeartbeat<R extends Request = Request>(
         await pingHeartbeat(jobName, { fail: true })
       } else if (res.status < 400) {
         await pingHeartbeat(jobName)
+        // A job with no Healthchecks check stamps its success instead (SEC-022), so
+        // /api/status/cron-freshness can page for it through the queue-watch workflow.
+        if (isStampedCron(jobName)) await recordCronSuccess(jobName)
       }
       return res
     } catch (err) {

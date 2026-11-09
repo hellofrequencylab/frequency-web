@@ -1,0 +1,19 @@
+{
+ "id": "LIVE-2054",
+ "title": "Register New World as its own theme: id new-world, --nw-* tokens, theme contract entry, hidden",
+ "lane": "live",
+ "priority": "P1",
+ "size": "M",
+ "status": "done",
+ "source": {
+  "file": "docs/design-systems/new-world/rules.json",
+  "ref": "Daniel 2026-11-03: New World is the new mega template, default theme for every new Space"
+ },
+ "detail": "Separate from Services (id `services`, untouched). Adds NEW_WORLD_TOKENS_CSS (three tiers: Frequency core verbatim, alias tier, scoped data-th night|day registers, OKLCH accents with vividness), themes.New World in theme-contract.json, the editor theme, the manifest at schema 2, and the SiteThemeId. Coordinate with the Services thread, which edits site-style.ts registration. Theme fence: tokens scoped to [data-house-theme=\"new-world\"], stand-alone site render only.\n\nRegistered on top of the Services registration (#4513). Tokens are --nw-* as the intake rules map them (Network's own --nw-* names live under a different scope, [data-house-theme=\"network\"], so they never meet). Daniel's ruling 2026-11-03 01:53Z: the starting accent is Tide teal, so the flare ramps (--n-flare, --d-flare) are Tide, not the zip's violet; the Stage inks are Frequency's slate, not the zip's violet-tinted scale, because the violet family is retired (ADR-1792, scripts/probes/violet-family.mjs). Both are named as deviations in docs/design-systems/new-world/rules.json. Hidden from every picker (RETIRED_FROM_PICKERS) until chrome and blocks ship (LIVE-2055) and the default flips (LIVE-2058). Fonts (Unbounded, Hanken Grotesk, Instrument Serif) register with LIVE-2055. Extra accents wait on Daniel.",
+ "verify": {
+  "kind": "cmd",
+  "cmd": "node -e \"const f=require('fs');const ok=/NEW_WORLD_TOKENS_CSS/.test(f.readFileSync('lib/theme/new-world.ts','utf8'))&&/id: 'new-world'/.test(f.readFileSync('lib/theme/mega-theme.ts','utf8'))&&/\\\"NewWorld\\\"/.test(f.readFileSync('lib/sites/editor/theme-contract.json','utf8'))&&f.existsSync('lib/themes/manifests/new-world.manifest.json');process.exit(ok?0:1)\""
+ },
+ "wave": "W7",
+ "closed": "2026-11-03"
+}

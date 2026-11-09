@@ -69,9 +69,14 @@ const RHYTHM_IMAGE = '/images/site/community-1.jpg'
 const AWKWARD_IMAGE = '/images/site/song-circle.jpg'
 const SOBER_IMAGE = '/images/site/group-singing.jpg'
 const ROOM_IMAGE = '/images/site/community-dinner.jpg'
+// A second tile for two of the tips bentos (the path layout). Not in the Article node.
+const PATIO_IMAGE = '/images/site/breathwork-circle-friends.jpg'
+const CLAP_IMAGE = '/images/site/kirtan-song-circle.jpg'
 
 export const spec: ArticleSpec = {
   slug: 'how-to-be-more-social',
+  // Practical and step by step: numbered sections on a dotted path, the steps as a path, tips as a bento.
+  design: 'path',
   eyebrow: 'Wanting to get out more',
   title: 'How to be more social',
   subtitle:
@@ -101,6 +106,8 @@ export const spec: ArticleSpec = {
         kind: 'media',
         image: RHYTHM_IMAGE,
         alt: 'People gathered together outdoors at a community gathering, talking in small groups',
+        image2: PATIO_IMAGE,
+        alt2: 'Friends standing in a loose circle on a seaside patio on a grey morning',
         eyebrow: 'What actually works',
         title: 'Beat the nightly decision with a fixed rhythm.',
         body: 'The single change that makes people more social is not confidence, it is a calendar. A recurring thing on a set day removes the part you keep losing: the choice. You are not deciding whether to go out tonight, you are just going to the thing you already do on Tuesdays.\n\nSo pick one room that meets again. Not a vague intention to see people more, but a specific group, class, or gathering with a time attached. Once it is a standing fixture, showing up stops being an act of will and starts being a habit, which is the whole game.',
@@ -154,6 +161,8 @@ export const spec: ArticleSpec = {
         kind: 'media',
         image: AWKWARD_IMAGE,
         alt: 'People sitting in a circle singing together, at ease',
+        image2: CLAP_IMAGE,
+        alt2: 'Hands clapping in the foreground of a song circle, people singing together on cushions',
         eyebrow: 'What actually works',
         title: 'Let the activity do the talking.',
         body: 'The advice to "just be confident" is useless, because confidence is the result, not the lever. The lever is picking a setting with a built-in thing to do, so there is always an answer to "what now," and it is never "make small talk with a stranger."\n\nA walk, a class, a song circle, a shared table: each one hands you something to look at and do with your hands, so the conversation happens sideways, off the back of the activity, instead of head-on. Give your hands a job, hold a cup, help set up chairs, watch whoever is talking instead of scanning the room, and most of the awkwardness quietly goes with them.',

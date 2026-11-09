@@ -61,7 +61,7 @@ const FREQUENCY = SITE_DESIGN === 'frequency'
 
 /** The site-nav routes that exist only on a Frequency build (404 under DAWN, ADR-1737): their rows
  *  appear only there, and the test skips them on a DAWN tree. */
-export const FREQUENCY_ONLY_PATHS: ReadonlySet<string> = new Set(['/features', '/vision', '/networks'])
+export const FREQUENCY_ONLY_PATHS: ReadonlySet<string> = new Set(['/features'])
 
 /** A block-backed row for an enrolled slug, or null when the slug is not (or no longer) in
  *  EDITABLE_PAGES, so a retired page drops out of the index with its enrolment. */
@@ -89,11 +89,9 @@ const SITE: IndexedPage[] = present([
   blocks('spaces', 'For spaces'),
   // Frequency-only routes (404 under DAWN): their rows show only on a Frequency build.
   FREQUENCY ? { label: 'Features', path: '/features', editor: 'coded' } : null,
-  { label: 'The whole system', path: '/system', editor: 'coded', note: 'Every Theme Kit as one system.' },
   { label: 'Create a Space', path: '/create-a-space', editor: 'coded', note: 'The live preview and the builder; ?kit= preselects a Theme Kit.' },
   blocks('pricing', 'Pricing', 'Prices come from the Pricing console.'),
   blocks('about', 'About'),
-  FREQUENCY ? { label: 'Vision', path: '/vision', editor: 'coded' } : null,
   blocks('circles', 'Circles'),
   { label: 'Discover', path: '/discover', editor: 'live' },
   { label: 'What’s happening near you', path: '/discover/events', editor: 'live' },
@@ -108,12 +106,10 @@ const LEAD: IndexedPage[] = present([
   blocks('loneliness'),
   blocks('friendship-as-an-adult'),
   blocks('how-to-be-more-social'),
-  blocks('calm-down-fast'),
   blocks('how-to-start-a-circle'),
   blocks('how-to-build-community'),
   blocks('tools-for-community-builders'),
   blocks('what-is-frequency'),
-  FREQUENCY ? { label: 'Networks', path: '/networks', editor: 'coded', note: 'The Network plan.' } : null,
   { label: 'Mindless', path: '/mindless', editor: 'coded', note: 'The breathing timer.' },
   {
     label: 'Frequency vs the rest',

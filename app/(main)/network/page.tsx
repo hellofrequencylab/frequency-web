@@ -422,7 +422,7 @@ export default async function CommunityPage({
           trailing={
             <Link
               href={filterHref({ ...base, online: onlineFilter ? undefined : '1' })}
-              aria-pressed={!!onlineFilter}
+              aria-current={onlineFilter ? 'true' : undefined}
               className={
                 onlineFilter ? 'chip on' : 'chip'
               }

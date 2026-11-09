@@ -44,7 +44,7 @@ declare
   sid uuid;
   owner_id uuid;
   ent uuid;
-  circ uuid;
+  reg uuid;
   ok boolean;
   events jsonb := '${lit(FREE_HUMAN_SEED_EVENTS)}'::jsonb;
   programs jsonb := '${lit(PROGRAM)}'::jsonb;
@@ -75,8 +75,10 @@ begin
   select public.save_website_editor(sid, 0, state, true) into ok;
   if not ok then raise exception 'the website could not be saved - rolled back'; end if;
 
-  -- The Space's own Circle (the spaces_ensure_space_circle trigger makes it with the Space) holds the gatherings; a Space without one keeps them standalone.
-  select id into circ from circles where space_id = sid order by is_space_primary desc nulls last, created_at limit 1;
+  -- The gatherings are Space events (a Space has no built-in Circle since ADR-1938): scope public + the owner's
+  -- nexus region, else the top region, the shape the event builder writes (lib/events/event-drafts.ts resolveRegionScopeId).
+  select coalesce((select nexus_region_id from profiles where id = owner_id),
+                  (select id from nexus_regions where parent_id is null order by depth asc, id asc limit 1)) into reg;
 
   -- The year-round program: one row (a Space holds one), with the four seasons in its description.
   insert into space_programs (space_id, name, description, schedule, is_published)
@@ -87,7 +89,7 @@ begin
     insert into events (title, description, host_id, scope_type, scope_id, scope_circle_id, space_id, host_space_id, slug, status, visibility,
                         starts_at, ends_at, time_zone, attendance_mode, recurrence_type, recurrence_rule, recurrence_until, join_mode,
                         published_at, posted_by_profile_id, source)
-    values (ev->>'title', ev->>'summary', owner_id, case when circ is null then 'standalone' else 'circle' end, coalesce(circ, owner_id), circ, sid, sid,
+    values (ev->>'title', ev->>'summary', owner_id, 'public', reg, null, sid, sid,
             'fh-' || (ev->>'id'), 'published', 'public',
             (ev->>'startsAt')::timestamptz, (ev->>'endsAt')::timestamptz, '${FREE_HUMAN_SPACE.timeZone}', ev->>'mode', ev->>'recurrence', ev->>'rule',
             (ev->>'until')::timestamptz, 'rsvp', now(), owner_id, 'manual');

@@ -21,3 +21,14 @@ jobs:
             echo "::error::queue-lag answered $code. Vercel Cron may have stopped; see docs/RUNBOOKS.md, 'If Vercel Cron itself stops'."
             exit 1
           fi
+      # SEC-022: the crons with no Healthchecks check (the free plan holds 20) stamp their last success,
+      # and this route compares each stamp with the job's window. A red run is the page.
+      - name: Read the freshness of the unmonitored crons
+        run: |
+          set -euo pipefail
+          code=$(curl -sS --retry 3 --retry-delay 10 -o cron.json -w '%{http_code}' https://frequencylocal.com/api/status/cron-freshness)
+          cat cron.json; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::cron-freshness answered $code. A cron with no Healthchecks check has gone stale; see the stale list above and docs/RUNBOOKS.md."
+            exit 1
+          fi

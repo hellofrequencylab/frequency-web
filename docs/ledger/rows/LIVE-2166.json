@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2166",
+  "title": "Give /about, /how-to-build-community and /pricing their own layouts: founder chapters, a playbook, photo-led plans",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "components/page-editor/blocks/site-story.tsx",
+    "ref": "Daniel 2026-11-04 on the marketing pages: \"they are all really flat and text based. Make each a different layout that speaks to the feature, program or service.\" Lane D of the marketing evolution."
+  },
+  "detail": "Same words, headings, schema, links and calculator behavior; new layouts on the design system's textures. /about (editor-backed): the four story beats become FounderChapters, photo-led chapters on a dotted spine opening on the founder's arch-cut portrait, and the principles become a PrincipleOrbit, four glass cards held around the design system's orb on a dotted ring (a dotted rail on a phone). /how-to-build-community (editor-backed): the template lays a playbook over the shared article generator's output without touching article.ts: a PlaybookCover (the H1 beside a photo with the chapter index on glass), each question H2 as a numbered PlaybookChapter under the signal line, and a ToolStack panel (four jobs, stitched together against one free Space) in the tools section. The five blocks live in one additive file, registered as a marketing-only Site story group (palette-scope.ts owns it to a name no Space theme carries). /pricing (coded): an arch-cut photo beside the people cards, the Space plans on Stage glass over a night photo (faded on a phone), a tier orb on every card, the signal line over the matrix, the questions beside a held heading and photo. Styles in app/themes/frequency/site-pages-story.css. /what-is-frequency and /tools-for-community-builders are permanent redirects (SCAN-1017), so their templates were left alone.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/marketing-evolution-story.mjs"
+  },
+  "closed": "2026-11-04"
+}

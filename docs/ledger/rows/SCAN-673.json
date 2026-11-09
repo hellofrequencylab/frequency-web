@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-673",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const cfg=fs.readFileSync(\"next.config.ts\",\"utf8\");const files=[\"high-functioning-loneliness\",\"make-friends-as-an-adult\",\"meet-people-in-a-new-city\",\"how-to-stop-doomscrolling\"];const open=files.filter((f)=>{const s=fs.readFileSync(\"content/help/find-your-people/\"+f+\".md\",\"utf8\");return /^status: published/m.test(s)&&!/^canonical:/m.test(s)&&!cfg.includes(\"/help/find-your-people/\"+f)});if(open.length){console.error(\"SCAN-673: \"+open.length+\" help article(s) still compete with a marketing guide for the same query with no ruling taken (published, self-canonical, not redirected): \"+open.join(\", \"));process.exit(1)}'",
+      "note": "Measures the consequence; fails until the fix lands."
+    }
+  },
+  "append": {
+    "detail": "2026-11-03 (LIVE-2093): /calm-down-fast merged into /mindless; the help article no longer competes with a guide, so it leaves the list (Daniel approved the pin 19:35Z)."
+  },
+  "wave": "W7"
+}

@@ -42,13 +42,26 @@ export const CORE_TOKEN_NAMES = [
 export type CoreTokenName = (typeof CORE_TOKEN_NAMES)[number]
 
 /** The ten site themes (lib/theme/site-style.ts SiteThemeId). */
-export const CONTRACT_THEME_IDS = ['frequency', 'bold', 'wildheart', 'network', 'network-kit', 'temple', 'temple-kit', 'midnight', 'designer', 'free-human'] as const
+export const CONTRACT_THEME_IDS = ['frequency', 'bold', 'wildheart', 'network', 'network-kit', 'temple', 'temple-kit', 'midnight', 'designer', 'free-human', 'services', 'new-world', 'cyberwitch'] as const
 
 export type ContractThemeId = (typeof CONTRACT_THEME_IDS)[number]
 
-/** The element each theme's tokens are declared on. Bold's code id is `menswork`; Default (`frequency`) wears the root. */
+/** Frequency declares its aliases on every element that redefines its `--fq-*` tokens (app/themes/frequency.css,
+ *  "one rule, two surfaces"): the root (Commons, and Commons night under `.dark`), each Stage surface, a night section
+ *  and a skinned subtree. A custom property resolves its var() where it is declared, so a contract name declared on
+ *  the root alone would freeze Commons values into a Stage section. The contract rides the same elements (BLD-001). */
+const FREQUENCY_CONTRACT_SCOPE = [
+  ':root[data-design="frequency"]',
+  '[data-design="frequency"] [data-surface="stage"]',
+  '[data-design="frequency"][data-surface="stage"]',
+  '[data-design="frequency"] [data-time="night"]',
+  '[data-design="frequency"] [data-skin]',
+  '[data-design="frequency"][data-skin]',
+] as const
+
+/** The element each theme's tokens are declared on. Bold's code id is `menswork`; Frequency wears its alias elements. */
 const SCOPE: Readonly<Record<ContractThemeId, string>> = {
-  frequency: ':root[data-design="frequency"]',
+  frequency: FREQUENCY_CONTRACT_SCOPE.join(','),
   bold: '[data-house-theme="menswork"]',
   wildheart: '[data-house-theme="wildheart"]',
   network: '[data-house-theme="network"]',
@@ -58,6 +71,9 @@ const SCOPE: Readonly<Record<ContractThemeId, string>> = {
   midnight: '[data-house-theme="midnight"]',
   designer: '[data-house-theme="designer"]',
   'free-human': '[data-house-theme="free-human"]',
+  services: '[data-house-theme="services"]',
+  'new-world': '[data-house-theme="new-world"]',
+  cyberwitch: '[data-house-theme="cyberwitch"]',
 }
 
 type Generated = { themes: Record<string, { names: Record<string, string> }> }
@@ -71,4 +87,48 @@ export function coreTokenMap(theme: ContractThemeId): Readonly<Record<CoreTokenN
 export function coreTokensCss(theme: ContractThemeId): string {
   const map = coreTokenMap(theme)
   return `${SCOPE[theme]}{${CORE_TOKEN_NAMES.map((n) => `${n}:${map[n]}`).join(';')}}`
+}
+
+/** The handoff's editor roles (`--th-*`, design_handoff/frequency/guidelines/element-library.md and
+ *  assets/infographics/theme-pack.json, plus the editor seed lib/sites/editor/theme-contract.json) pointed at the
+ *  contract name that carries the same role (BLD-001). The handoff is read-only, so the retirement lives here: a reader
+ *  of either file looks the name up in this table. `null` marks a role that is one theme's private vocabulary (a season
+ *  colour, a gilt, an arch) and has no contract name; a role block never reads it. */
+export const TH_TO_CONTRACT: Readonly<Record<string, CoreTokenName | null>> = {
+  '--th-bg': '--c-canvas',
+  '--th-surface': '--c-surface',
+  '--th-raised': '--c-raised',
+  '--th-hairline': '--c-line',
+  '--th-text': '--c-text',
+  '--th-muted': '--c-text-muted',
+  '--th-secondary': '--c-text-muted',
+  '--th-accent': '--c-accent',
+  '--th-accent-hover': '--c-accent-hover',
+  '--th-accent-soft': '--c-accent-soft',
+  '--th-accent-bg': '--c-accent-bg',
+  '--th-accent-deep': '--c-accent-deep',
+  '--th-accent-text': '--c-accent-text',
+  '--th-on-accent': '--c-on-accent',
+  '--th-r': '--r-card',
+  '--th-clip-md': '--frame',
+  '--th-display': '--f-display',
+  '--th-dw': '--w-display',
+  '--th-body': '--f-body',
+  '--th-voice': '--f-voice',
+  '--th-quote': '--f-voice',
+  '--th-solid': '--c-accent',
+  '--th-on-solid': '--c-on-accent',
+  '--th-solid-hover': '--c-accent-hover',
+  '--th-hero': '--f-display',
+  '--th-clip-sm': null,
+  '--th-clip-lg': null,
+  '--th-mono': null,
+  '--th-season': null,
+  '--th-on-season': null,
+  '--th-gilt': null,
+  '--th-on-gilt': null,
+  '--th-arch': null,
+  '--th-r-lg': null,
+  '--th-r-sm': null,
+  '--th-scrawl': null,
 }

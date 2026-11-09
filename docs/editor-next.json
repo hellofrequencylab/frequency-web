@@ -1,0 +1,918 @@
+{
+  "plan": "Frequency builder",
+  "version": 1,
+  "date": "2026-11-02",
+  "target": {
+    "repo": "hellofrequencylab/frequency-web",
+    "branch": "main",
+    "design": "Builder Audit and Proposal.dc.html"
+  },
+  "rules": [
+    "One pass is one PR, under the repo's 40-file gate.",
+    "Every pass runs the loop: build, validate, repair, record. A pass is done only when every gate it names is green.",
+    "No raw CSS, no raw colour or size literals. Everything resolves to contract token names (ADR-976 D-1).",
+    "No hand-written per-block UI. Panels, chips, labels and icons are read from role.json and defineBlock.",
+    "Every pass ships dark behind the render_path flag and is reversible by flipping it.",
+    "Baselines only shrink. A rise needs --allow-raise and a written reason, and stays flagged.",
+    "Zero editor bytes on the public render. The builder runtime never reaches a visitor.",
+    "Every pass also runs G-LEDGER and closes its own row in the same PR, as a fragment (pnpm ledger:close). Never edit docs/BUILD-BACKLOG.json or docs/DECISIONS.md directly.",
+    "No new planning-named markdown. The spec lives in docs/EDITOR-NEXT.md; status lives only in docs/BUILD-BACKLOG.json."
+  ],
+  "loop": [
+    {
+      "step": "Build",
+      "do": "Read the pass's inputs, write only the files in its scope, add or update the probes it lists."
+    },
+    {
+      "step": "Validate",
+      "do": "Run every gate the pass names, in order: static, unit, contract, render, visual, budget. Stop at the first red gate."
+    },
+    {
+      "step": "Repair",
+      "do": "Classify the failure, fix inside the pass scope, re-run from the failed gate. Up to 3 cycles."
+    },
+    {
+      "step": "Record",
+      "do": "Write the pass receipt: gates run, results, baseline changes, files touched, open items. Tick the backlog row."
+    }
+  ],
+  "repair": {
+    "maxCycles": 3,
+    "classes": [
+      {
+        "id": "contract",
+        "symptom": "check:blocks, role schema or fields projection fails",
+        "fix": "Fix the role.json or defineBlock entry, never the gate. Fields must equal content keys."
+      },
+      {
+        "id": "token",
+        "symptom": "check:tokens or theme conformance names a raw value or an unknown token",
+        "fix": "Replace with a contract name. If no token can express it, file a token request and stop."
+      },
+      {
+        "id": "render",
+        "symptom": "Golden markup or equivalence diff",
+        "fix": "If the diff is the intended change, re-baseline with a dated changelog line. Otherwise revert the render change."
+      },
+      {
+        "id": "behavior",
+        "symptom": "Interaction probe fails (selection, undo, rails, ⌘K)",
+        "fix": "Fix in the editor state module, not in components. One document drives every panel."
+      },
+      {
+        "id": "a11y",
+        "symptom": "a11y ratchet rises, focus lost, missing label",
+        "fix": "Fix the control. Never recapture a ratchet to clear it."
+      },
+      {
+        "id": "budget",
+        "symptom": "Build budget, shell weight or public-render bytes rise",
+        "fix": "Lazy-load the editor code path or move it behind the editor route."
+      },
+      {
+        "id": "data",
+        "symptom": "Doc-safety round trip loses a field or an unknown block",
+        "fix": "Stop. Revert the pass. Data loss is never repaired forward."
+      }
+    ],
+    "escalate": "After 3 failed cycles, revert the pass branch, record the failing gate and the last diff, and raise it as a blocker on the backlog row. Do not start dependent passes."
+  },
+  "gates": [
+    {
+      "id": "G-STATIC",
+      "name": "tsc --noEmit and lint",
+      "status": "live"
+    },
+    {
+      "id": "G-UNIT",
+      "name": "vitest suite (required test job)",
+      "status": "live"
+    },
+    {
+      "id": "G-DOC",
+      "name": "check:node-document-safety",
+      "status": "live",
+      "note": "Frozen corpus of real documents round-trips with zero loss"
+    },
+    {
+      "id": "G-EMAIL",
+      "name": "check:email-blocks",
+      "status": "live",
+      "note": "Email palette and renderer locked 1:1"
+    },
+    {
+      "id": "G-STORED",
+      "name": "check:stored-blocks",
+      "status": "live",
+      "note": "Stored page data names only known types"
+    },
+    {
+      "id": "G-TOKENS",
+      "name": "check:tokens",
+      "status": "live"
+    },
+    {
+      "id": "G-BUDGET",
+      "name": "check:build-budget and check:shell-weight",
+      "status": "live"
+    },
+    {
+      "id": "G-BLOCKS",
+      "name": "check:blocks",
+      "status": "live",
+      "note": "Script is in package.json (check:blocks). Every adopted block resolves a renderer per declared surface, toText present, migrations contiguous"
+    },
+    {
+      "id": "G-ROLES",
+      "name": "check:roles (new)",
+      "status": "new in BLD-201",
+      "note": "Every role.json validates, including intent, icon, thumb and slot labels"
+    },
+    {
+      "id": "G-THEME",
+      "name": "check:theme-conformance",
+      "status": "live",
+      "note": "Script is in package.json (check:theme-conformance)"
+    },
+    {
+      "id": "G-AUDIT",
+      "name": "audit:themes render matrix",
+      "status": "live",
+      "note": "Script is in package.json (audit:themes)"
+    },
+    {
+      "id": "G-PUBLIC",
+      "name": "editor-bytes-on-public-render ratchet",
+      "status": "new in BLD-101",
+      "note": "Must read 0 for builder code"
+    },
+    {
+      "id": "G-RAWCSS",
+      "name": "raw-css-paths ratchet",
+      "status": "planned",
+      "note": "Must stay 0"
+    },
+    {
+      "id": "G-VIS",
+      "name": "pr-compare visual suite",
+      "status": "advisory",
+      "note": "Becomes required in the PR that recaptures its baselines"
+    },
+    {
+      "id": "G-A11Y",
+      "name": "a11y ratchet",
+      "status": "live"
+    },
+    {
+      "id": "G-FLAG",
+      "name": "check:render-path and render_path flag-off test",
+      "status": "live",
+      "note": "check:render-path exact-match ratchet, plus a flag-off render test written in the pass"
+    },
+    {
+      "id": "G-DS",
+      "name": "Design system adherence check",
+      "status": "live in the design project"
+    },
+    {
+      "id": "G-PROBE",
+      "name": "Pass probes",
+      "status": "per pass",
+      "note": "The pass's own Done-when tests, written in the pass"
+    },
+    {
+      "id": "G-SURFACE",
+      "name": "check:surface-binding",
+      "status": "live",
+      "note": "Every surface an App declares resolves to a component"
+    },
+    {
+      "id": "G-CONTRAST",
+      "name": "check:contrast",
+      "status": "live"
+    },
+    {
+      "id": "G-LEDGER",
+      "name": "check:backlog, check:one-list, check:adr, check:id-collisions",
+      "status": "live",
+      "note": "Runs on every pass: the row fragment and its probe must agree with the tree"
+    }
+  ],
+  "phases": [
+    {
+      "id": "B0",
+      "name": "Align",
+      "size": "S",
+      "goal": "Settle the nine design-system conflicts so every later pass reads one vocabulary.",
+      "passes": [
+        {
+          "id": "BLD-001",
+          "title": "Token map to the 45 contract names",
+          "where": "design system + lib/theme",
+          "moves": [
+            "conflict 3"
+          ],
+          "build": [
+            "Generate one map from Frequency tokens (Commons, Commons night, Stage) to the contract groups: ground, ink, accent, line, status, band, shape, depth, type, rhythm, motion.",
+            "Retire --th-* in element-library.md and theme-pack.json; point them at contract names."
+          ],
+          "gates": [
+            "G-TOKENS",
+            "G-THEME",
+            "G-DS",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Pin test: every contract name resolves on Commons, Commons night and Stage",
+            "Computed values equal today's on the 31 design pages"
+          ]
+        },
+        {
+          "id": "BLD-002",
+          "title": "Radius, breakpoints and editor tokens",
+          "where": "design system tokens",
+          "moves": [
+            "conflicts 2, 6, 8"
+          ],
+          "build": [
+            "Five radius steps (10, 14, 18, 24, 32) plus pill, mapped to --r-control, --r-card, --r-panel, --r-media.",
+            "Breakpoints 600, 840, 1200, 1600 as tokens.",
+            "--editor-canvas, --editor-thumb, --editor-ring, --editor-select in Commons and night."
+          ],
+          "gates": [
+            "G-TOKENS",
+            "G-DS",
+            "G-VIS",
+            "G-PROBE",
+            "G-CONTRAST",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "No radius literal outside tokens in templates/admin",
+            "Thermal renders from night tokens, no invert filter"
+          ]
+        },
+        {
+          "id": "BLD-003",
+          "title": "Build icon group in the sprite",
+          "where": "assets/icons",
+          "moves": [
+            "conflict 9"
+          ],
+          "build": [
+            "Add about 14 icons on the 24px grid, 1.75 stroke: undo, redo, eye, eye-off, device desktop/tablet/phone, outline, pin, unpin, fold, history, surface, variant, sample."
+          ],
+          "gates": [
+            "G-DS",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Every icon id referenced by role.json resolves in the sprite"
+          ]
+        },
+        {
+          "id": "BLD-004",
+          "title": "Copy canon",
+          "where": "guidelines + repo strings",
+          "moves": [
+            "conflicts 1, 4, 5, 7"
+          ],
+          "build": [
+            "Primary action on Commons: --pa for the one primary, ink for secondary, no violet. Update site-themes.md.",
+            "Calendar name: apply the owner's pick everywhere, including the Circle tab.",
+            "Scope banned words to Frequency's own copy; exempt owner and theme names.",
+            "Record the Vera authority decision (drafts as diffs, or coaching only)."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-DS",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Text pin: the chosen calendar name appears, the other does not",
+            "Voice lint passes with owner names exempt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1",
+      "name": "Shell",
+      "size": "M",
+      "goal": "The new frame on today's document model, single writer, dark behind render_path.",
+      "passes": [
+        {
+          "id": "BLD-101",
+          "title": "Frame, top bar and public-bytes ratchet",
+          "where": "components/builder/shell, lib/builder/state",
+          "moves": [
+            "frame"
+          ],
+          "depends": [
+            "BLD-002"
+          ],
+          "build": [
+            "Full-window canvas, top bar (Space and page, surface switcher placeholder, ⌘K trigger, Publish).",
+            "One editor state module; components hold no section state.",
+            "Add the editor-bytes-on-public-render ratchet at 0."
+          ],
+          "gates": [
+            "G-STATIC",
+            "G-UNIT",
+            "G-PUBLIC",
+            "G-BUDGET",
+            "G-FLAG",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Flag off renders the current editor",
+            "Visitor bundle contains no builder module"
+          ]
+        },
+        {
+          "id": "BLD-102",
+          "title": "Rail state machine",
+          "where": "lib/builder/rails",
+          "moves": [
+            "rails"
+          ],
+          "depends": [
+            "BLD-101"
+          ],
+          "build": [
+            "States per rail: hidden, strip, overlay, pinned. Pinned pushes the canvas; overlay closes on canvas click and Esc.",
+            "Width 300 to 420 for the right rail, persisted per person with pin state.",
+            "Breakpoint table from BLD-002. Focus mode hides both rails."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-A11Y",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Table test of every state at 1600, 1200, 900, 700, 390",
+            "Focus returns to the trigger on close"
+          ]
+        },
+        {
+          "id": "BLD-103",
+          "title": "Spine and outline",
+          "where": "components/builder/spine",
+          "moves": [
+            "outline"
+          ],
+          "depends": [
+            "BLD-102"
+          ],
+          "build": [
+            "Spine reads the node tree: one thumbnail per section, selected state, drag to reorder, + between.",
+            "Outline drawer: section names from role intent and the title slot, hidden-on-device dimming."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-DOC",
+            "G-A11Y",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Reorder by drag and by keyboard produces the same document",
+            "Doc-safety corpus round-trips after reorder"
+          ]
+        },
+        {
+          "id": "BLD-104",
+          "title": "Selection and parts overlay",
+          "where": "components/builder/canvas",
+          "moves": [
+            "move 04"
+          ],
+          "depends": [
+            "BLD-101"
+          ],
+          "build": [
+            "Hover outlines a data-part; click selects section or part.",
+            "Inline text editing on text parts; image part opens the media picker with focal point.",
+            "Section toolbar: move, duplicate, hide on this device, delete with undo toast."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-A11Y",
+            "G-VIS",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Canvas edit updates Tune rail and back",
+            "Every action is one undo step"
+          ]
+        },
+        {
+          "id": "BLD-105",
+          "title": "Generated Tune rail, two layers",
+          "where": "components/builder/tune",
+          "moves": [
+            "move 03"
+          ],
+          "depends": [
+            "BLD-104"
+          ],
+          "build": [
+            "Layer 1 renders slots.required then slots.optional, from role.json, with counts from slot limits.",
+            "Layer 2 (More): tone, width, spacing, columns, devices, anchor, reveal, density per surface, from defineBlock.fields.",
+            "'Always show more' per person."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-BLOCKS",
+            "G-A11Y",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "For every adopted role, rendered fields equal the projection, no more and no fewer",
+            "No component file names a block type"
+          ]
+        },
+        {
+          "id": "BLD-106",
+          "title": "Command bar",
+          "where": "components/builder/command",
+          "moves": [
+            "move 09"
+          ],
+          "depends": [
+            "BLD-101"
+          ],
+          "build": [
+            "⌘K and Ctrl+K, plus a visible button on touch.",
+            "Three groups: Go to (sections, pages), Do (every action in the action registry), Ask Vera.",
+            "Each row shows its shortcut; recent commands first."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-A11Y",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Every toolbar and rail action is reachable from ⌘K",
+            "Focus trapped while open, returned on close"
+          ]
+        },
+        {
+          "id": "BLD-107",
+          "title": "Mobile sheets",
+          "where": "components/builder/mobile",
+          "moves": [
+            "rails under 600"
+          ],
+          "depends": [
+            "BLD-105",
+            "BLD-106"
+          ],
+          "build": [
+            "Bottom bar: Outline, Add, Tune, Vera.",
+            "Bottom sheet with the same two layers; 44px targets."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-A11Y",
+            "G-VIS",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Every Layer 1 and Layer 2 control is reachable at 390 wide"
+          ]
+        },
+        {
+          "id": "BLD-108",
+          "title": "Shadow render and cutover",
+          "where": "flag config",
+          "moves": [
+            "cutover"
+          ],
+          "depends": [
+            "BLD-103",
+            "BLD-105",
+            "BLD-107"
+          ],
+          "build": [
+            "Render old and new editors on the same documents; log deltas.",
+            "Turn on for internal Spaces, then a cohort."
+          ],
+          "gates": [
+            "G-DOC",
+            "G-STORED",
+            "G-FLAG",
+            "G-VIS",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Zero or explained delta on the frozen corpus"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B2",
+      "name": "Roles",
+      "size": "M",
+      "goal": "Add by intent, layout chips and readiness, read straight from the role registry.",
+      "passes": [
+        {
+          "id": "BLD-201",
+          "title": "Role contract additions and check:roles",
+          "where": "lib/blocks/roles",
+          "moves": [
+            "contract additions"
+          ],
+          "depends": [
+            "BLD-003"
+          ],
+          "build": [
+            "Add intent, icon, variants[x].thumb and slots[x].label / hint to all role.json files (21 roles once BLD-210 lands; 17 today).",
+            "Extend RoleDefinition; add check:roles validating every file.",
+            "Replace the regex tables in block-meta.ts with role fields; keep a fallback for legacy types."
+          ],
+          "gates": [
+            "G-STATIC",
+            "G-UNIT",
+            "G-ROLES",
+            "G-BLOCKS",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "block-meta.ts has no type-name regex for role blocks",
+            "Every role icon resolves in the sprite"
+          ]
+        },
+        {
+          "id": "BLD-202",
+          "title": "Add by intent",
+          "where": "components/builder/add",
+          "moves": [
+            "move 01"
+          ],
+          "depends": [
+            "BLD-201",
+            "BLD-103"
+          ],
+          "build": [
+            "+ opens 'What should this part do?' with the intents, grouped (21 roles in builder v3).",
+            "Previews render each role's default variant with the Space's own data where role.data is set, else the flagged sample.",
+            "Insert at the chosen index; select it; one undo step."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-THEME",
+            "G-A11Y",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Only roles legal for the current kind and surface are offered",
+            "Preview uses Space data when present"
+          ]
+        },
+        {
+          "id": "BLD-203",
+          "title": "Layout chips with needs and pins",
+          "where": "components/builder/canvas/variants",
+          "moves": [
+            "move 02"
+          ],
+          "depends": [
+            "BLD-201",
+            "BLD-104"
+          ],
+          "build": [
+            "Chips from variants with thumb; a chip whose needs are unmet shows why and a shortcut to fill the slot.",
+            "Picking a chip sets variant and variantSet: true and shows a pin. Unpin restores the theme default via roleVariant()."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-AUDIT",
+            "G-VIS",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "roleVariant priority holds: owner, then theme, then role default",
+            "Every variant renders non-empty with sample content on every theme"
+          ]
+        },
+        {
+          "id": "BLD-204",
+          "title": "Readiness",
+          "where": "components/builder/readiness, lib/sites/editor/publish-checks.ts",
+          "moves": [
+            "move 07"
+          ],
+          "depends": [
+            "BLD-104"
+          ],
+          "build": [
+            "Publish ring with a count: sample words, null numbers, missing alt text, missing SEO.",
+            "Canvas tags: 'not yours yet' on sample slots, 'needs a number' on null figures.",
+            "Click the count to step through each item."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-A11Y",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "A page with sample: true content cannot publish without an explicit keep",
+            "Null number blocks publish"
+          ]
+        },
+        {
+          "id": "BLD-205",
+          "title": "Update to new layouts",
+          "where": "components/builder/legacy",
+          "moves": [
+            "legacy"
+          ],
+          "depends": [
+            "BLD-203"
+          ],
+          "build": [
+            "Surface LIVE-1860's per-page action: preview the role version of each legacy block with a diff, apply as one undo step."
+          ],
+          "gates": [
+            "G-DOC",
+            "G-STORED",
+            "G-UNIT",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Legacy page renders identically before the action and after undo"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B3",
+      "name": "Lenses",
+      "size": "M",
+      "goal": "One edit across surfaces, themes tried on over real content.",
+      "passes": [
+        {
+          "id": "BLD-301",
+          "title": "Surface switcher",
+          "where": "components/builder/surfaces",
+          "moves": [
+            "move 05"
+          ],
+          "depends": [
+            "BLD-108"
+          ],
+          "build": [
+            "Site, Profile, Spotlight, Email in the top bar; selection persists across switches.",
+            "Canvas renders at the surface's declared density; sections the surface cannot show are listed with the reason."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-BLOCKS",
+            "G-VIS",
+            "G-PROBE",
+            "G-SURFACE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Per block and surface, golden markup matches",
+            "Hidden-on-surface list equals blocks without that surface"
+          ]
+        },
+        {
+          "id": "BLD-302",
+          "title": "Email lens",
+          "where": "components/builder/surfaces/email",
+          "moves": [
+            "move 05"
+          ],
+          "depends": [
+            "BLD-301"
+          ],
+          "build": [
+            "Email preview through compileEmailDoc; live blocks show their resolveAt: 'send' snapshot."
+          ],
+          "gates": [
+            "G-EMAIL",
+            "G-UNIT",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "The 7 draft campaigns and 7 templates render byte-identical to before"
+          ]
+        },
+        {
+          "id": "BLD-303",
+          "title": "Theme lens",
+          "where": "components/builder/theme",
+          "moves": [
+            "move 06"
+          ],
+          "depends": [
+            "BLD-108"
+          ],
+          "build": [
+            "Hover a theme: swap the static theme stylesheet and data-theme on the canvas; prefetch on hover.",
+            "Unpinned sections show the theme's default variant; commit is one undo step."
+          ],
+          "gates": [
+            "G-THEME",
+            "G-AUDIT",
+            "G-BUDGET",
+            "G-PROBE",
+            "G-CONTRAST",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Switching makes no document request once cached",
+            "Pinned variants never change on switch"
+          ]
+        },
+        {
+          "id": "BLD-304",
+          "title": "View as",
+          "where": "components/builder/view-as",
+          "moves": [
+            "move 10"
+          ],
+          "depends": [
+            "BLD-108"
+          ],
+          "build": [
+            "Visitor, member and host previews using the existing viewer gates."
+          ],
+          "gates": [
+            "G-UNIT",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Host-only blocks are absent in the visitor preview"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B4",
+      "name": "Together",
+      "size": "L",
+      "goal": "Presence, Vera as a collaborator, and history. Starts after E0 lands.",
+      "passes": [
+        {
+          "id": "BLD-401",
+          "title": "Presence",
+          "where": "components/builder/presence",
+          "moves": [
+            "move 08"
+          ],
+          "depends": [
+            "E0 CRDT"
+          ],
+          "build": [
+            "Faces in the top bar, cursors and selections from Yjs awareness. Awareness never touches the document."
+          ],
+          "gates": [
+            "G-DOC",
+            "G-PUBLIC",
+            "G-UNIT",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Two clients converge to the same tree",
+            "Undo reverts only the local client's edit"
+          ]
+        },
+        {
+          "id": "BLD-402",
+          "title": "Vera collaborator",
+          "where": "components/builder/vera, lib/ai",
+          "moves": [
+            "move 08"
+          ],
+          "depends": [
+            "BLD-401",
+            "BLD-004"
+          ],
+          "build": [
+            "Vera joins as a client. Tools: read_page, plan_page, apply_edits, validate.",
+            "Proposals show as ghosted diffs, accepted per section, one transaction each.",
+            "Speaks first only at page creation; after that, only from ⌘K or her rail."
+          ],
+          "gates": [
+            "G-RAWCSS",
+            "G-UNIT",
+            "G-ROLES",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Vera output names only tokens and known slot keys",
+            "Accept and undo are one step each"
+          ]
+        },
+        {
+          "id": "BLD-403",
+          "title": "History scrubber",
+          "where": "components/builder/history",
+          "moves": [
+            "move 10"
+          ],
+          "depends": [
+            "E0 page_versions"
+          ],
+          "build": [
+            "Timeline of versions; drag to preview; restore one section or the whole page. Publish is a pointer swap."
+          ],
+          "gates": [
+            "G-DOC",
+            "G-UNIT",
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Restore produces a document equal to the chosen version"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BZ",
+      "name": "Hardening",
+      "size": "M",
+      "goal": "Repeat the full matrix and fix anything that drifted across passes.",
+      "passes": [
+        {
+          "id": "BLD-901",
+          "title": "Full matrix",
+          "where": "all builder paths",
+          "moves": [
+            "all"
+          ],
+          "depends": [
+            "BLD-303",
+            "BLD-205"
+          ],
+          "build": [
+            "Render every role × variant × theme × surface × device (1600, 1200, 900, 390). Fix overflow, zero-height and contrast findings."
+          ],
+          "gates": [
+            "G-AUDIT",
+            "G-THEME",
+            "G-VIS",
+            "G-A11Y",
+            "G-BUDGET",
+            "G-PUBLIC",
+            "G-RAWCSS",
+            "G-CONTRAST",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Coverage 1.00 on declared roles",
+            "No horizontal overflow at 390"
+          ]
+        },
+        {
+          "id": "BLD-902",
+          "title": "Owner walk-through",
+          "where": "staging",
+          "moves": [
+            "all"
+          ],
+          "depends": [
+            "BLD-901"
+          ],
+          "build": [
+            "Five owners each build a page from a blank Space while we watch. Log every hesitation and failed find.",
+            "Promote any Layer 2 control used by 3 of 5 into Layer 1."
+          ],
+          "gates": [
+            "G-PROBE",
+            "G-LEDGER"
+          ],
+          "probes": [
+            "Every owner publishes without help",
+            "No control is searched for in ⌘K by more than 2 owners"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2101",
+  "title": "Bold design system: intake the handoff and close its gaps as a general website for men (no Hearts on Fire content)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/design-systems/bold/rules.json",
+    "ref": "Daniel 2026-11-03 18:06Z uploaded the Bold design handoff (the Hearts on Fire system); 17:19Z: base Bold on it, use none of its content, make it a general website geared to men"
+  },
+  "detail": "Intake ran per docs/DESIGN-SYSTEM-INTAKE.md: 180 files snapshotted in docs/design-systems/bold/ and the design-system test now checks MENSWORK_TOKENS_CSS (Bold's code id stays menswork). Every Hearts on Fire page, photo, logo, calendar and overview is a look reference only, so nothing of the program ships. The colours already match (neutrals and the four seasons). Baseline froze 62 token gaps: the teal primary set, the semantic layer (fill, focus, link, on-fill), the chamfer clips and 60 degree angle, the patterns (lattice, chevron, contour, brushed, grain), motion, spacing, tracking and the type scale. Bold also needs a general photo set of its own (owner asset list). Next: retoken, then pages with general starter copy. The row closes when the baseline is empty. CLOSED by the retoken: lib/theme/menswork.ts declares the teal set, chamfer clips and angle, patterns (24px lattice, chevron, brushed, contour), motion, spacing, radii, borders, measure and tracking under --mw-*; the rules map the design's semantic names onto them. Two named deviations: the grain (same noise, the snapshot parser cuts base64 at its semicolon) and the type scale (applied per element in menswork-css.ts). Baseline empty.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"process.exit(require('./docs/design-systems/bold/baseline.json').ids.length===0?0:1)\""
+  },
+  "wave": "W7",
+  "closed": "2026-11-03"
+}

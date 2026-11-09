@@ -226,6 +226,10 @@ export default function MapLibreCanvas({
       if (label) {
         el.setAttribute('aria-label', label)
         el.setAttribute('title', label)
+        // A labelled pin that opens nothing is an image to a screen reader; a bare div may not carry
+        // aria-label (axe aria-prohibited-attr on the event page, visual sweep 2026-11-03). A pin with
+        // a click handler becomes role=button in makeMarkerActivatable below.
+        el.setAttribute('role', 'img')
       }
 
       if (isDraggablePin) {

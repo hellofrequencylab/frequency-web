@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "id": "new-world",
+  "status": "hidden",
+  "lineage": {
+    "designSystem": "docs/design-systems/new-world",
+    "version": 1
+  },
+  "roles": {
+    "chapters": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "contact": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "cta": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "faq": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "gallery": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "gatherings": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "hero": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "letter": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "library": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "membership": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "offerings": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "people": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "proof": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "shop": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "statement": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "stats": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    },
+    "steps": {
+      "level": "missing",
+      "variants": [],
+      "default": null
+    }
+  }
+}

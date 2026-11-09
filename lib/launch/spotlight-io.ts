@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
 import { nextSpotlightPreferences } from '@/lib/spaces/spotlight'
+import { kitAccentFill } from '@/lib/create-space/preview-site'
 import { createSpace, type CreateSpaceInput } from '@/lib/spaces/provision'
 import { getSpaceById, getSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
 import { recordLaunchEvent } from './events'
@@ -35,14 +36,15 @@ async function makeSpace(profileId: string, input: CreateSpaceInput): Promise<{ 
 
 /** Make the Space (or reuse this launch's), publish its Spotlight, and mark the step. The handle is the person's
  *  name, or the one a visitor claimed on /create-a-space (`carry`); a taken one is retried with a suffix. The Theme Kit
- *  they picked dresses the new Space. Returns the Space's handle, or the line to show. */
+ *  and the accent they picked dress the new Space (the accent becomes its brand colour, which the Space page, this
+ *  Spotlight and the website all wear). Returns the Space's handle, or the line to show. */
 export async function publishSpotlightStep(profileId: string, launch: LaunchSnapshot, answers: SpotlightAnswers, carry: LaunchCarry = {}): Promise<{ slug: string } | { error: string }> {
   let space = launch.spaceId ? await getSpaceById(launch.spaceId) : null
 
   if (!space) {
     let last = 'We could not make your Space. Try again.'
     for (let attempt = 0; attempt < HANDLE_TRIES && !space; attempt++) {
-      const made = await makeSpace(profileId, { type: 'business', name: answers.name, slug: handleCandidate(answers.name, attempt, carry.handle), niche: launch.niche, intents: launch.intents, theme: carry.theme })
+      const made = await makeSpace(profileId, { type: 'business', name: answers.name, slug: handleCandidate(answers.name, attempt, carry.handle), niche: launch.niche, intents: launch.intents, theme: carry.theme, accent: kitAccentFill(carry.theme, carry.accent) })
       if ('error' in made) {
         last = made.error
         if (!/already taken/i.test(made.error)) return { error: made.error }

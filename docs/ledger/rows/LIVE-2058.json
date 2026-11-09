@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2058",
+  "title": "Make New World the default theme every new Space starts in, with the first-selection picker",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/design-systems/new-world/rules.json",
+    "ref": "Daniel 2026-11-03: New World is the new mega template, default theme for every new Space"
+  },
+  "detail": "New Spaces start on New World; the picker (LIVE-2043) lets them choose Kit, Accent, Register and Look first. Existing Spaces keep their theme. Never offered in a way that restyles a member or console area. 2026-11-03 prerequisite found by a full vitest run with DEFAULT_SITE_THEME flipped to new-world: 16 pinned tests fail beyond the picker pins (site-style.test.ts 6, email-colors.test.ts 5, style-action.test.ts 1, surface.test.ts 1, spotlight-surface.test.ts 1, backlog-contract.test.ts 2). The email-colors ones need real New World email defaults first (LIVE-2057 email types), so this row waits on them and then re-runs the pin list for the owner's phrases. Un-hiding the picker alone is LIVE-2059 and needs only two pin rewrites plus the /themes/new-world page.\n\ncreateSpace dresses a Space with no explicit pick in NEW_SPACE_THEME (new-world) at birth: website, megaTheme (New World email surface), and the Tide accent on the Space page. A write at creation, not a read fallback, so existing Spaces keep their look and no pinned test moved. The default does not auto-publish a starter site; an explicit pick still does. The first-selection picker stays LIVE-2043.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/new-world-theme.mjs default"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { readSitePageStyle, siteLook, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
+import { readSitePageStyle, servicesDials, siteRootDials, siteLook, siteDials, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
+import { themeEditor } from '@/lib/themes/editor-dials'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
@@ -32,9 +33,16 @@ import { DESIGNER_FONT_CLASS } from '@/components/sites/designer-fonts'
 import { DESIGNER_CSS } from '@/components/sites/designer-css'
 import { FREE_HUMAN_FONT_CLASS } from '@/components/sites/free-human-fonts'
 import { FREE_HUMAN_CSS } from '@/components/sites/free-human-css'
+import { NEW_WORLD_CSS } from '@/components/sites/new-world-css'
+import { NEW_WORLD_DIALS_CSS } from '@/components/sites/new-world-dials-css'
+import { NEW_WORLD_FONT_CLASS } from '@/components/sites/new-world-fonts'
+import { CYBERWITCH_CSS } from '@/components/sites/cyberwitch-css'
+import { CYBERWITCH_FONT_CLASS } from '@/components/sites/cyberwitch-fonts'
+import { SERVICES_SITE_CSS } from '@/components/sites/services-css'
+import { SERVICES_FONT_CLASS } from '@/components/sites/services-fonts'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
 import { contractSkinCss } from '@/components/sites/contract-skin-css'
-import { skinFamiliesIn } from '@/lib/sites/skin-family'
+import { isForeignFamily, skinFamiliesIn } from '@/lib/sites/skin-family'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -73,6 +81,8 @@ import { config } from '@/lib/page-editor/config'
 import { publishedWebsitePage, publishedWebsiteSnapshot, resolveWebsiteChrome, resolveWebsiteChromeCta } from '@/lib/sites/editor/state'
 import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
 import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
+import { docHasNewWorldBlocks, docHasNewWorldWall } from '@/lib/sites/new-world-live'
+import { loadNewWorldLive } from '@/lib/sites/new-world-live-load'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { getSpaceContentData, getSpaceSeriesRows } from '@/lib/spaces/content-data'
 import { WebsiteDocument } from '@/components/sites/website-document'
@@ -216,6 +226,12 @@ export async function SitePage({
   const designerSite = siteStyle.theme === 'designer'
   // The Free Human Theme Kit (lib/theme/free-human.ts): limewash, gilt and candle-dark with one madder accent.
   const freeHumanSite = siteStyle.theme === 'free-human'
+  // New World (lib/theme/new-world.ts): the Frequency house look, Night or Day, Tide to start. Its faces ride the website root.
+  const newWorldSite = siteStyle.theme === 'new-world'
+  // Services (lib/theme/services.ts): the Vanta design system's night-first, glossy look with a Day register; Tide to start.
+  const servicesSite = siteStyle.theme === 'services'
+  // CyberWitch (lib/theme/cyberwitch.ts): iron and bone, one neon accent, dark only. Its faces ride the website root.
+  const cyberwitchSite = siteStyle.theme === 'cyberwitch'
   // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
   const theme = render.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
@@ -239,8 +255,14 @@ export async function SitePage({
               ? { theme: 'designer' as const, season: mensworkSeason(new Date()) }
               : freeHumanSite
                 ? { theme: 'free-human' as const, season: mensworkSeason(new Date()) }
-                : null
-  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : undefined
+                : newWorldSite
+                  ? { theme: 'new-world' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const), dials: siteRootDials(siteDials(siteStyle, themeEditor('new-world').own)) }
+                  : cyberwitchSite
+                    ? { theme: 'cyberwitch' as const, season: mensworkSeason(new Date()) }
+                  : servicesSite
+                    ? { theme: 'services' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const), dials: servicesDials(siteDials(siteStyle, themeEditor('services').own)) }
+                    : null
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : newWorldSite ? NEW_WORLD_FONT_CLASS : servicesSite ? SERVICES_FONT_CLASS : cyberwitchSite ? CYBERWITCH_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
   const lookOverrides = siteLookOverrides(render.lookStyle)
   const fullFooter = siteLook(render.lookStyle).footer === 'full'
@@ -257,8 +279,8 @@ export async function SitePage({
     return (
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
-          <div data-house-theme={skin.theme} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
-            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : MENSWORK_CSS}</style>
+          <div data-house-theme={skin.theme} data-th={skin.theme === 'new-world' || skin.theme === 'services' ? skin.register ?? 'night' : undefined} data-type={skin.dials?.type} data-motion={skin.dials?.motion} data-image={skin.dials?.image} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : newWorldSite ? NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS : cyberwitchSite ? CYBERWITCH_CSS : servicesSite ? SERVICES_SITE_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
@@ -339,7 +361,7 @@ export async function SitePage({
   const mwPlan = mwBlocks ? planMensworkPage(mwBlocks) : null
   // The live rows, the bound domain, the editor content and its feature data are independent reads, so
   // they run together: a cache miss after every owner save pays for the slowest one, not the sum.
-  const [mwLive, boundDomain, websiteContent, websiteFeatures] = await Promise.all([
+  const [mwLive, boundDomain, websiteContent, websiteFeatures, newWorldLive] = await Promise.all([
     skin || websitePage || mwPlan
       ? loadMensworkLive(space.id, {
           events: true,
@@ -356,7 +378,10 @@ export async function SitePage({
         })
       : null,
     websitePage ? loadWebsiteFeatures(space.id, [websitePage.doc]) : {},
+    // The New World plans, shop and posts blocks read the Space's memberships, shop and library (LIVE-2053); read only when the page draws one.
+    websitePage && docHasNewWorldBlocks(websitePage.doc) ? loadNewWorldLive(space.id, space.slug, docHasNewWorldWall(websitePage.doc)) : null,
   ])
+  const websiteSpace = websiteContent ? (newWorldLive ? { ...websiteContent, newWorld: newWorldLive } : websiteContent) : undefined
   // Bold's season bar names the module now and the next Circle Night; Wildheart's date line names the sky
   // and the Space's next event, whatever it is called.
   const seasonNow = boldSite
@@ -419,7 +444,7 @@ export async function SitePage({
   ) : null
 
   // Theme-named block families on a site that does not wear that theme (the contract skin sheet below).
-  const foreignFamilies = [...skinFamiliesIn(websitePage?.doc ?? mwBlocks)].filter((family) => family !== siteStyle.theme)
+  const foreignFamilies = [...skinFamiliesIn(websitePage?.doc ?? mwBlocks)].filter((family) => isForeignFamily(family, siteStyle.theme))
 
   return (
     // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578), so the site wears the
@@ -457,7 +482,7 @@ export async function SitePage({
         admin={netSite ? siteAdminLinks(origin, space.slug, siteBase, null, 'network') : siteAdminLinks(origin, space.slug, siteBase, null, wildSite ? 'wildheart' : undefined)}
       >
         {website && websitePage && mwLive ? (
-          <WebsiteDocument doc={websitePage.doc} theme={editorTheme} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
+          <WebsiteDocument doc={websitePage.doc} theme={editorTheme} config={config} metadata={{ space: websiteSpace, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
         ) : model ? (
           <>
             <HouseHome model={model} />

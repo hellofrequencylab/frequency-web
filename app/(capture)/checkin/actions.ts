@@ -9,8 +9,8 @@ import type { CaptureSubmitResult } from '@/components/crm/leads/capture-form'
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 /**
- * FRONT DOOR #3 — event / attendance capture. Seals an attendee as a lead and records the attendance
- * tier so the Space can map tier -> lifecycle stage. Attendance is NOT marketing consent, so the lead
+ * FRONT DOOR #3 — event contact capture. Seals a guest as a lead with an event label and tier;
+ * this does not write an event attendance receipt. Attendance is NOT marketing consent, so the lead
  * stays sealed 'unknown' (the engine enforces this). Public + unauthenticated: honeypot, rate limit,
  * anti-enumeration. Space + event come only from the signed token.
  */
@@ -34,8 +34,8 @@ export async function captureCheckIn(input: {
 
   const done: CaptureSubmitResult = {
     ok: true,
-    heading: "You're checked in.",
-    message: 'Thanks for coming. Good to have you here.',
+    heading: 'Thanks for coming.',
+    message: 'The host has your contact information. Ask your host if you need attendance confirmation.',
   }
 
   // Honeypot: same success, no write.
@@ -46,20 +46,31 @@ export async function captureCheckIn(input: {
     return { ok: false, error: 'This check-in link is no longer valid. Ask a host for a fresh one.' }
   }
 
-  const hdrs = await headers()
-  const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown'
-  if (!(await rateLimitOk('lead_checkin', ip, 12, '10 m'))) {
-    return { ok: false, error: 'Too many tries. Give it a few minutes and try again.' }
+  const unavailable: CaptureSubmitResult = {
+    ok: false,
+    error: "We couldn't save your details. Please try again or ask the host for help.",
   }
 
-  await captureEventLead({
-    spaceId: payload.s,
-    email,
-    phone,
-    displayName: name,
-    eventTitle: payload.w ?? payload.l ?? null,
-    tier: payload.tr ?? 'attended',
-  }).catch(() => null)
+  try {
+    const hdrs = await headers()
+    const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown'
+    if (!(await rateLimitOk('lead_checkin', ip, 12, '10 m'))) {
+      return { ok: false, error: 'Too many tries. Give it a few minutes and try again.' }
+    }
 
-  return done
+    const captured = await captureEventLead({
+      spaceId: payload.s,
+      email,
+      phone,
+      displayName: name,
+      eventTitle: payload.w ?? payload.l ?? null,
+      tier: payload.tr ?? 'attended',
+    })
+
+    // A null result includes storage/capacity failures. A contact receipt is not an attendance ledger.
+    return captured ? done : unavailable
+  } catch {
+    // Keep infrastructure failures generic, without revealing whether this address already exists.
+    return unavailable
+  }
 }

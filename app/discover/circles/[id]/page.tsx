@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { getPublicCircle, getPublicCircles } from '@/lib/discover'
+import { retiredSpaceCircleHome } from '@/lib/circles/retired-space-circle'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
@@ -64,7 +65,12 @@ export default async function CirclePage({
 }) {
   const { id } = await params
   const circle = await getPublicCircle(id)
-  if (!circle) notFound()
+  if (!circle) {
+    // A retired Space Circle (archived by the cutover, ADR-1938) forwards to its Space's wall.
+    const home = await retiredSpaceCircleHome(id)
+    if (home) permanentRedirect(home)
+    notFound()
+  }
 
   // 🔴 THE UUID FORM 308s TO THE SLUG (LIVE-182). Both resolve — a printed QR code, a pasted link
   // and an existing citation must all keep working — but exactly one of them is the URL, and a

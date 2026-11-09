@@ -1,0 +1,80 @@
+{
+ "backyard-class": {
+  "w": 1086,
+  "h": 724,
+  "avg": "#9b8a78",
+  "alt": "A yoga class on mats on a sunny backyard patio"
+ },
+ "beach-dance": {
+  "w": 1096,
+  "h": 717,
+  "avg": "#d2c4ba",
+  "alt": "A group dancing together on the beach"
+ },
+ "beach-gong": {
+  "w": 1086,
+  "h": 724,
+  "avg": "#c6c0b8",
+  "alt": "A beach gathering on mats around a gong at the water"
+ },
+ "beach-joy": {
+  "w": 1600,
+  "h": 1068,
+  "avg": "#a79283",
+  "alt": "Women laughing and dancing with their hands in the air"
+ },
+ "beach-move": {
+  "w": 1047,
+  "h": 751,
+  "avg": "#89796a",
+  "alt": "Three people dancing on the sand below a sandstone bluff"
+ },
+ "cafe-table": {
+  "w": 1261,
+  "h": 1600,
+  "avg": "#91846e",
+  "alt": "Three people talking at a small table in a cafe"
+ },
+ "circle-sunrise": {
+  "w": 1024,
+  "h": 768,
+  "avg": "#8b8e8b",
+  "alt": "A wide circle of people seated on a plaza at sunrise"
+ },
+ "fire-circle": {
+  "w": 1024,
+  "h": 768,
+  "avg": "#61473e",
+  "alt": "People sitting quietly around a fire pit in the evening"
+ },
+ "fire-crew": {
+  "w": 1024,
+  "h": 768,
+  "avg": "#37251d",
+  "alt": "A group of men standing together around a fire pit at night"
+ },
+ "garden-picnic": {
+  "w": 1086,
+  "h": 724,
+  "avg": "#6d6351",
+  "alt": "People gathered on rugs and cushions in a leafy backyard garden"
+ },
+ "group-hug": {
+  "w": 665,
+  "h": 1182,
+  "avg": "#a99688",
+  "alt": "A tight group hugging on a seaside deck"
+ },
+ "hands-up": {
+  "w": 1086,
+  "h": 724,
+  "avg": "#948981",
+  "alt": "A large circle of people with their arms raised together"
+ },
+ "workshop-table": {
+  "w": 768,
+  "h": 1024,
+  "avg": "#74695f",
+  "alt": "A group working together around a long craft table in a bright room"
+ }
+}
