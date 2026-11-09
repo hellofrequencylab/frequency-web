@@ -646,7 +646,7 @@
         {
           "file": "supabase/tests/space_wall_bans.test.sql",
           "status": "added",
-          "sha256": "e94b8cfdc66466bd8783fb4b026a27ebf4c943bf07c23981229bce5d694505a8",
+          "sha256": "a7e565481c5a20eb745cab83f2bf94dcc7d2017c74b5b39b23e15b62191cb6fa",
           "baseMode": "000000",
           "headMode": "100644"
         }
