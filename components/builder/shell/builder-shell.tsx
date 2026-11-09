@@ -22,6 +22,9 @@ import { tuneProjection } from '@/lib/builder/tune'
 import { focalFieldFor, pictureFieldFor } from '@/lib/builder/parts'
 import { CommandBar } from '@/components/builder/command/command-bar'
 import { AddSheet } from '@/components/builder/add/add-sheet'
+import { ProfileFrame } from '@/components/builder/surfaces/profile/profile-frame'
+import { SpotlightDoors } from '@/components/builder/surfaces/spotlight/spotlight-doors'
+import { profileFrame, spotlightDoors } from '@/lib/builder/surface-view'
 import { LayoutChips } from '@/components/builder/canvas/variants/layout-chips'
 import { addCards, insertSection, type AddCard } from '@/lib/builder/add'
 import { makeItem } from '@/components/page-editor/mobile/data-ops'
@@ -150,6 +153,10 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   const render = useMemo(() => (style ? siteRenderStyle(sitePageStyle(style, page.slug), brand.accent, defaultAccent ?? null) : null), [style, page.slug, brand.accent, defaultAccent])
   const canvasVars = useMemo(() => (render ? siteCanvasVars(render) : undefined), [render])
   const canvasTheme = render?.editorTheme ?? (style ? EDITOR_THEME_OF[style.theme] : state.draft.theme)
+  // SURFACE PARITY (BLD-215): the profile wears the Space page's own frame (fonts and accent, no site theme) and the
+  // Spotlight is its doors. Read only while that surface is showing; the site keeps the live site's resolver above.
+  const profile = useMemo(() => (state.surface === 'profile' ? profileFrame(render, brand.accent) : null), [state.surface, render, brand.accent])
+  const doors = useMemo(() => (state.surface === 'spotlight' ? spotlightDoors(page.doc, config, links.siteBase, page.slug) : null), [state.surface, page.doc, config, links.siteBase, page.slug])
 
   const edit = useCallback((next: WebsiteSnapshot, burst?: string) => dispatch({ type: 'edit', draft: next, burst }), [])
   const editDoc = useCallback((change: (doc: Data) => Data, burst?: string) => {
@@ -334,6 +341,9 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
     else if (event.key === '\\') { event.preventDefault(); dispatch({ type: 'preview', on: !state.preview }) }
   }
 
+  // The page canvas, drawn once: alone on the site, inside the member shell on the profile.
+  const pageCanvas = <WebsiteCanvas key={`${page.slug}:${state.surface}`} pageSlug={page.slug} doc={page.doc} theme={profile ? profile.theme : canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={profile ? profile.vars : canvasVars} spaceTheme={profile ? profile.fonts : render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={state.preview ? undefined : tags} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+
   return (
     <div className={`${styles.root} ${fontClass ?? ''}`} data-builder="v3" data-preview={state.preview} data-focus={rails.focus} data-phone={phone || undefined} style={gridVars} onKeyDown={keys}>
       <header className={styles.top}>
@@ -389,8 +399,8 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       </nav>
 
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
-        <div className={styles.frame} style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)` }}>
-          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={state.preview ? undefined : tags} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+        <div className={styles.frame} data-surface={state.surface} style={{ width: `min(100%, ${doors ? 720 : profile ? Math.min(840, BUILDER_DEVICE_WIDTH[state.device]) : BUILDER_DEVICE_WIDTH[state.device]}px)` }}>
+          {doors ? <SpotlightDoors doors={doors} brandName={brandName} logo={brand.logo ?? null} selectedId={state.selectedId} onSelect={(id) => dispatch({ type: 'select', id })} /> : profile ? <ProfileFrame brandName={brandName}>{pageCanvas}</ProfileFrame> : pageCanvas}
         </div>
       </main>
 
