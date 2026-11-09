@@ -2,7 +2,7 @@
 
 Two agents build and land work in this repo. They check in on one GitHub issue so neither merges blind: [Agent coordination: Claude and ChatGPT](https://github.com/hellofrequencylab/frequency-web/issues/4306). What is done lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never here.
 
-**Status: proposed, effective when Daniel approves it in writing.** Until then the merge freeze he set on 2026-11-09 stands: nothing merges, auto-merge is not armed and no SQL is applied.
+**Status: approved by Daniel on 2026-11-09** (all ten recommended decisions). The merge freeze is lifted for the slot queue only: nothing merges, arms auto-merge or applies SQL except under a slot Claude grants.
 
 ## Roles
 
