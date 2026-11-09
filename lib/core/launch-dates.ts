@@ -18,9 +18,6 @@ export const BETA_ENDS_DAY_LABEL = 'December 31'
 /** The launch day as members read it, no year. */
 const LAUNCH_DAY_LABEL = 'January 1'
 
-/** The launch day with its year. */
-const LAUNCH_DATE_LABEL = 'January 1, 2027'
-
 /** What a member who joins during the beta is called. Recognition is for taking part before launch;
  *  it is not a paid tier and it does not touch any personal paid clock. */
 const FOUNDING_MEMBER_NAME = 'Founding Member'
