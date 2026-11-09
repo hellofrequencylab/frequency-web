@@ -923,6 +923,13 @@ export function roleHasSpaceRows(id: RoleId, metadata: Props | undefined, now: D
   }
 }
 
+/** The visitor gate as one question (BLD-304): does this role block draw nothing for a visitor? True for the sample copy
+ *  of a live role on a live page when the Space has no rows of its own to put in its place (the `emptyLive` rule every
+ *  live role renderer applies). The host still sees it on the canvas, flagged as sample. */
+export function roleDrawsNothingForVisitor(id: RoleId, props: Props, metadata: Props | undefined, now = new Date()): boolean {
+  return emptyLive(props, metadata, roleHasSpaceRows(id, metadata, now))
+}
+
 /** The metadata an Add-sheet preview renders with (BLD-202): the Space's own rows when this role is live and the Space has
  *  some, else no Space at all, so the block draws its flagged sample instead of an empty live section. */
 export function rolePreviewMetadata(id: RoleId, metadata: Props | undefined, now = new Date()): Props | undefined {

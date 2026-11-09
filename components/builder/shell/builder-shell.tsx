@@ -22,6 +22,8 @@ import { tuneProjection } from '@/lib/builder/tune'
 import { focalFieldFor, pictureFieldFor } from '@/lib/builder/parts'
 import { CommandBar } from '@/components/builder/command/command-bar'
 import { AddSheet } from '@/components/builder/add/add-sheet'
+import { ViewAsNotes, ViewAsSwitch } from '@/components/builder/view-as/view-as'
+import { viewerDoc, viewerLens, type ViewAs } from '@/lib/builder/view-as'
 import { LayoutChips } from '@/components/builder/canvas/variants/layout-chips'
 import { addCards, insertSection, type AddCard } from '@/lib/builder/add'
 import { makeItem } from '@/components/page-editor/mobile/data-ops'
@@ -185,6 +187,14 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   const liveFigures = useMemo(() => roleHasSpaceRows('stats', metadata as Record<string, unknown> | undefined, new Date()), [metadata])
   const ready = useMemo(() => readiness(state.draft.pages, config, { liveFigures }), [state.draft.pages, config, liveFigures])
   const tags = useMemo(() => readinessTags(ready, page.slug), [ready, page.slug])
+  // VIEW AS (BLD-304): the host edits; a visitor or a member sees the page in preview without the sections they never
+  // meet (the renderers' own gates), listed under the canvas. Esc leaves preview, which is the host's view again.
+  const [picked, setPicked] = useState<ViewAs>('host')
+  // Derived, never synced: out of preview the view is the host's, whatever was picked before Esc.
+  const view: ViewAs = state.preview ? (picked === 'host' ? 'visitor' : picked) : 'host'
+  const viewAs = (next: ViewAs) => { setPicked(next); dispatch({ type: 'preview', on: next !== 'host' }) }
+  const lens = useMemo(() => viewerLens(view, metadata), [view, metadata])
+  const viewed = useMemo(() => viewerDoc(page.doc, config, view, metadata), [page.doc, config, view, metadata])
   const issuesOf = useMemo(() => {
     const n = new Map<string, number>()
     for (const item of ready.items) if (item.pageSlug === page.slug && item.sectionId) n.set(item.sectionId, (n.get(item.sectionId) ?? 0) + 1)
@@ -307,6 +317,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         else setToast({ say: 'No layout updates are available for this page. Your sections stay as they are.', undo: false })
         break
       case 'device-desktop': case 'device-tablet': case 'device-phone': dispatch({ type: 'device', device: id.slice(7) as BuilderDevice }); break
+      case 'view-host': case 'view-member': case 'view-visitor': viewAs(id.slice(5) as ViewAs); break
       case 'rail-left': case 'rail-right': toggleRail(id === 'rail-left' ? 'left' : 'right'); break
       case 'pin-left': case 'pin-right': railDispatch({ type: 'pin', side: id === 'pin-left' ? 'left' : 'right', pinned: true }); break
       case 'section-up': case 'section-down': case 'section-copy': case 'section-hide': case 'section-delete':
@@ -355,7 +366,8 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <button type="button" className={`${styles.btn} ${styles.wide}`} aria-haspopup="menu" disabled title="Show as: the other surfaces arrive with the surface switcher">Site · Visitor</button>
         <button id="builder-command" type="button" className={`${styles.btn} ${styles.wide}`} aria-label="Find, do or ask. Shortcut: command K" aria-haspopup="dialog" aria-expanded={commandOpen} onClick={() => setCommandOpen(true)}><span>Find</span><span className={styles.kbd}>⌘K</span></button>
         <button type="button" data-action="focus" className={`${styles.btn} ${styles.icon}`} aria-label="Focus: hide both side panels" title="Focus (Esc to leave)" aria-pressed={rails.focus} onClick={() => railDispatch({ type: 'focus', on: !rails.focus })}><Maximize2 size={16} aria-hidden /></button>
-        <button type="button" data-action="preview" className={`${styles.btn} ${styles.icon}`} aria-label="Preview" title="Preview" aria-pressed={state.preview} onClick={() => dispatch({ type: 'preview', on: !state.preview })}><Eye size={16} aria-hidden /></button>
+        <span className={styles.wide}><ViewAsSwitch view={view} onChange={viewAs} /></span>
+        <button type="button" data-action="preview" className={`${styles.btn} ${styles.icon}`} aria-label="Preview" title="Preview" aria-pressed={state.preview} onClick={() => viewAs(state.preview ? 'host' : 'visitor')}><Eye size={16} aria-hidden /></button>
         <PublishRing readiness={ready} dirty={dirty} saving={state.save === 'saving'} onStep={stepReadiness} onPublish={() => publish()} />
       </header>
 
@@ -390,8 +402,9 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
 
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
         <div className={styles.frame} style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)` }}>
-          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={state.preview ? undefined : tags} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+          <WebsiteCanvas key={`${page.slug}:${view}`} pageSlug={page.slug} doc={viewed.doc} theme={canvasTheme} device={state.device} config={config} metadata={lens.metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={lens.tags && !state.preview ? tags : undefined} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
         </div>
+        <div style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)`, margin: '12px auto 0' }}><ViewAsNotes view={view} hostOnly={viewed.hostOnly} onSelect={(id) => dispatch({ type: 'select', id })} /></div>
       </main>
 
       <aside className={styles.panel} aria-label="Section settings" data-mode={modes.right}>
@@ -426,7 +439,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       {plan && <UpdateLayoutsSheet plan={plan} pageLabel={page.label} preview={previewBlock} onApply={applyLayouts} onClose={() => setLayoutsOpen(false)} focusFallbackId="builder-undo" />}
       {sheetOpen && <PublishSheet readiness={ready} onFix={(item) => { setSheetOpen(false); goTo(item) }} onPublish={(keep) => { if (canPublish(ready, keep)) { setSheetOpen(false); void save(true) } }} onClose={() => setSheetOpen(false)} />}
       {commandOpen && <CommandBar sections={spine} pages={state.draft.pages} selected={!!state.selectedId} onRun={runCommand} onClose={() => setCommandOpen(false)} />}
-      {state.preview && <div className={styles.previewPill} role="status">Previewing as a visitor · press Esc to edit</div>}
+      {state.preview && <div className={styles.previewPill} role="status">Viewing as a {view === 'member' ? 'member' : 'visitor'} · press Esc to edit</div>}
     </div>
   )
 }
