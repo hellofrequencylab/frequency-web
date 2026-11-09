@@ -36,6 +36,7 @@ export function themeShowcaseLinks(): ShowcaseLinks {
       use: k.theme && isPreviewKit(k.theme) ? (launch ? freeSpotlightHref('themes', k.slug, k.theme) : createSpaceHref(k.theme)) : null,
       page: k.theme ? themePagePath(k.theme) : null,
       kit: k.theme && isPreviewKit(k.theme) ? k.theme : null,
+      theme: k.theme,
     }
   }
   return { start: launch ? freeSpotlightHref('themes') : createSpaceHref(), plans: '/pricing', kits }

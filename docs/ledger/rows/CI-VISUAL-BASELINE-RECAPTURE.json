@@ -4,7 +4,7 @@
   "lane": "hygiene",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "test/e2e/visual.spec.ts",
     "ref": "Daniel 2026-11-06 merge pass: pr-compare failed the same way on #4672, #4669 and #4663."
@@ -12,8 +12,9 @@
   "detail": "The pr-compare job fails on every full-ci PR with the same set, so it no longer separates a real visual change from noise. On #4663 (head 77e2862) the member tier failed 52 and the advisory tier 4, the same counts recorded on #4672 before the Space menu change existed. Named failures: member shell /feed, /settings, /nearby and /spaces/danieltyack/manage and operator /admin/circles, /admin/content/practices and /admin/qr in the dawn-light and dawn-dark themes, and /discover in midnight-light and dawn-light (advisory). The public tier was not read; #4672 recorded 60 there. Find which of these are stale baselines and which are real layout drift, then recapture only the stale ones through the repo's baseline process and fix the drift. Do not relax thresholds. Related: CI-VISUAL-ARTIFACT-RETENTION, SCAN-1032.",
   "verify": {
     "kind": "manual",
-    "checked": "2026-11-06",
-    "evidence": "OPEN. Done when pr-compare is green on a PR that changes no visuals. Run 42272972183 on #4663 is the reference failure."
+    "checked": "2026-11-09",
+    "evidence": "OPEN. Done when pr-compare is green on a PR that changes no visuals. Run 42272972183 on #4663 is the reference failure. Closed on the owner's ruling, 2026-11-09 19:17Z. Asked how to close the shipped-pending-check rows, Daniel answered \"b\": close them without a production check. Any code for it that merged keeps its unit pins in CI. No production look was taken."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-09"
 }
