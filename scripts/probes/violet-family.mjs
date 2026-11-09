@@ -22,6 +22,8 @@ const THEME_PALETTE_VIOLET = {
   // Owner 2026-10-28: "allow #B094FF in the theme contract". Replaces the older Midnight accent in the same file.
   // Owner 2026-11-03: "Add the violet accents". The Services Iris, Signal and Bloom ramps, mirrored from the contract.
   'lib/theme/services.ts': new Set(['3F3494', '5E4FD1', '7C6CF2', 'A193FF', 'C9C1FF', 'E879F9', '8B7BFF', 'B57CFF']),
+  // Owner 2026-11-09: "allow New World violet in violet-family". The one hex, New World's Violet swatch, in the builder's accent lists.
+  'lib/create-space/preview-site.ts': new Set(['8B5CFF']),
   'lib/sites/editor/theme-contract.json': new Set(['1C1424', '261C31', '654590', '6E4D96', 'C7ADE8', '6A3FA0', '5F3694', '1C1430', '7D5FD3', 'B094FF', 'CDBDFB', '3F3494', '5E4FD1', '7C6CF2', 'A193FF', 'C9C1FF', 'E879F9', '8B7BFF', 'B57CFF']),
 }
 // Owner 2026-11-04: "allow the kit palettes in violet-family". The Theme Kits page (LIVE-2188) draws each kit in its

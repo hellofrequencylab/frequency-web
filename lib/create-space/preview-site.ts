@@ -256,8 +256,7 @@ const KIT_ACCENTS: Record<MegaThemeId, readonly PreviewAccent[]> = {
 /** The accents the kit's /themes page offers that the builder's own list lacks (the Theme Kits design's swatches), added
  *  after the kit's own so its default stays first. Picking one on /themes and pressing Use lands on that colour. */
 const THEMES_PAGE_ACCENTS: Partial<Record<MegaThemeId, readonly PreviewAccent[]>> = {
-  // New World's Violet swatch is left out: the violet-family probe (LIVE-962) bars the hex outside the files it names.
-  'new-world': [{ name: 'Magenta', fill: '#FF3DAE', text: null }, { name: 'Sun', fill: '#FFC46B', text: null }, { name: 'Ember bright', fill: '#FF6A2B', text: null }],
+  'new-world': [{ name: 'Violet', fill: '#8B5CFF', text: null }, { name: 'Magenta', fill: '#FF3DAE', text: null }, { name: 'Sun', fill: '#FFC46B', text: null }, { name: 'Ember bright', fill: '#FF6A2B', text: null }],
   'network-kit': [{ name: 'Lagoon', fill: '#22796E', text: null }, { name: 'Ink', fill: '#22303A', text: null }],
   designer: [{ name: 'Moss', fill: '#6F7A3E', text: '#5A6332' }, { name: 'Slate', fill: '#4E6E71', text: null }, { name: 'Denim', fill: '#4F6A8A', text: null }],
   bold: [{ name: 'Fall', fill: '#D4703E', text: null }, { name: 'Cyan', fill: '#00A6C8', text: null }, { name: 'Spring', fill: '#93B57A', text: null }, { name: 'Summer', fill: '#DDB24E', text: null }, { name: 'Winter', fill: '#97A3D4', text: null }],
