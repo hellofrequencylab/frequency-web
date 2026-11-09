@@ -37,6 +37,7 @@ import { prepareEmailLayoutWrite } from '@/lib/email-studio/layout-write'
 import type { EmailRenderLayout } from '@/lib/email-studio/render-layout'
 import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { renderPathEnabled } from '@/lib/platform-flags'
+import { loadCampaignPurpose, saveCampaignPurpose, type CampaignPurpose } from '@/lib/email-studio/campaign-purpose'
 import { sanitizeFromName, loadCampaignFromName, loadCampaignReplyMode, resolveCampaignFromHeader } from '@/lib/email-studio/send'
 import { buildUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
@@ -111,6 +112,9 @@ export interface LoadedEmailCampaign {
    *  Defaults to `broadcast`; a 1:1 member message defaults to `conversation`. Omitted where the surface
    *  offers no toggle. */
   replyMode?: 'broadcast' | 'conversation'
+  /** What this email is: a promotion (`marketing`, needs marketing permission) or a member newsletter. Kept
+   *  apart from the audience. Absent = the audience decides, as before. */
+  purpose?: CampaignPurpose
   layout: EntityLayout
   /** The campaign as a node document, present only while render_path_email is on. The canvas editor runs on it. */
   nodeLayout?: NodeLayout
@@ -360,6 +364,7 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
     preheader: data.preheader ?? '',
     fromName,
     replyMode,
+    purpose: (await loadCampaignPurpose(id)) ?? undefined,
     layout,
     ...(nodeLayout ? { nodeLayout } : {}),
     // STEP CONTEXT is `null` and `kind` is always 'broadcast' today, so every email in the Studio reads
@@ -409,6 +414,7 @@ export async function saveEmailCampaign(
     preheader?: string
     fromName?: string
     replyMode?: 'broadcast' | 'conversation'
+    purpose?: CampaignPurpose
   },
 ): Promise<{ error?: string }> {
   const gate = await writerGate()
@@ -454,6 +460,11 @@ export async function saveEmailCampaign(
       .update({ reply_mode: patch.replyMode } as unknown as Database['public']['Tables']['campaigns']['Update'])
       .eq('id', id)
     if (error) return { error: 'Could not save the reply setting. Try again.' }
+  }
+
+  // Purpose (promotion vs member newsletter) rides `audience_filter.purpose`; a refused write is returned.
+  if (patch.purpose === 'marketing' || patch.purpose === 'lifecycle') {
+    if (!(await saveCampaignPurpose(id, patch.purpose))) return { error: 'Could not save the email type. Try again.' }
   }
 
   if (patch.layout) {
