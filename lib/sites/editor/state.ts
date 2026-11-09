@@ -1,6 +1,7 @@
 import type { Data } from '@/lib/page-editor/types'
 import { isDialAccent, isSiteDialValue, SITE_DIAL_KEYS, type SiteDialKey } from '@/lib/theme/dials'
 import { isSiteLookValue, SITE_LOOK_OPTIONS, siteTheme, type SiteLookKey, type SiteThemeId } from '@/lib/theme/site-style'
+import { networkKitPickedAccent } from '@/lib/theme/network-kit'
 
 // Website-only documents. Never written to pageDocs/profileLayout; public readers
 // consume only published. Bounded snapshots until E0's shared document store lands.
@@ -53,9 +54,11 @@ function validWebsiteLogo(value: string): boolean {
 /** Undefined inherits the original website; explicit null clears its override. */
 export function resolveWebsiteBrand(snapshot: WebsiteSnapshot | null, original: { logo?: string | null; accent?: string | null }): { logo: string | null; accent: string | null } {
   const brand = snapshot?.brand
+  const picked = snapshot?.theme === 'NetworkKit' ? networkKitPickedAccent(snapshot.look?.accent) : null
+  const inherited = brand && Object.prototype.hasOwnProperty.call(brand, 'accent') ? brand.accent ?? null : original.accent ?? null
   return {
     logo: brand && Object.prototype.hasOwnProperty.call(brand, 'logo') ? brand.logo ?? null : original.logo ?? null,
-    accent: brand && Object.prototype.hasOwnProperty.call(brand, 'accent') ? brand.accent ?? null : original.accent ?? null,
+    accent: picked ?? inherited,
   }
 }
 
