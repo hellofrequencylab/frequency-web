@@ -148,13 +148,13 @@ export function ComposeToolbar({
         )}
         {onPurpose && (
           <div className="block sm:col-span-2">
-            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Email type</span>
-            <div className="inline-flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-meta">
+            <span className="mb-1 block eyebrow text-muted">Email type</span>
+            <div className="inline-flex items-center gap-1 rounded-control bg-surface-elevated p-0.5 text-meta">
               <button
                 type="button"
                 onClick={() => onPurpose('lifecycle')}
                 aria-pressed={purpose !== 'marketing'}
-                className={`rounded-md px-2.5 py-1 font-semibold transition-colors ${
+                className={`rounded-control px-2.5 py-1 font-semibold transition-colors ${
                   purpose !== 'marketing' ? 'bg-surface text-primary-strong lift-1' : 'text-muted'
                 }`}
               >
@@ -164,7 +164,7 @@ export function ComposeToolbar({
                 type="button"
                 onClick={() => onPurpose('marketing')}
                 aria-pressed={purpose === 'marketing'}
-                className={`rounded-md px-2.5 py-1 font-semibold transition-colors ${
+                className={`rounded-control px-2.5 py-1 font-semibold transition-colors ${
                   purpose === 'marketing' ? 'bg-surface text-primary-strong lift-1' : 'text-muted'
                 }`}
               >
