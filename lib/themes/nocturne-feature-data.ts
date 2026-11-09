@@ -2,8 +2,8 @@
 // system (handoff/frequency/kits.nocturne.json) into nocturne-feature-data.json, trimmed to what the page reads
 // (JSON because the kit accents are colour data). The id of each kit equals the Wizard niche
 // (lib/theme/mega-theme.ts), so every adopt button goes to /spaces/new?niche=<id>.
-import contract from '../sites/editor/theme-contract.json'
-import data from './nocturne-feature-data.json'
+import contract from '../sites/editor/theme-contract.json' with { type: 'json' }
+import data from './nocturne-feature-data.json' with { type: 'json' }
 
 export interface NocturneKit {
   id: string

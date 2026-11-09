@@ -38,5 +38,99 @@
       { "id": "paper", "label": "Paper", "dials": { "register": "day", "type": "editorial", "motion": "off", "image": "mono", "corners": "square", "spacing": "balanced" } },
       { "id": "trade", "label": "Trade", "dials": { "register": "night", "type": "caps", "motion": "calm", "header": "bar", "image": "grain", "corners": "subtle", "spacing": "compact" } }
     ]
+  },
+  "midnight": {
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "accent": "supported",
+      "register": "fixed"
+    },
+    "looks": [
+      {
+        "id": "general",
+        "label": "Business",
+        "dials": {
+          "accent": "general",
+          "corners": "square",
+          "spacing": "balanced",
+          "header": "bar",
+          "footer": "full"
+        }
+      },
+      {
+        "id": "coaches",
+        "label": "Coaches and healers",
+        "dials": {
+          "accent": "coaches",
+          "corners": "subtle",
+          "spacing": "airy",
+          "header": "bar",
+          "footer": "full"
+        }
+      },
+      {
+        "id": "studios",
+        "label": "Studios and instructors",
+        "dials": {
+          "accent": "studios",
+          "corners": "soft",
+          "spacing": "balanced",
+          "header": "pill",
+          "footer": "full"
+        }
+      },
+      {
+        "id": "hosts",
+        "label": "Event hosts",
+        "dials": {
+          "accent": "hosts",
+          "corners": "square",
+          "spacing": "airy",
+          "header": "bar",
+          "footer": "full"
+        }
+      }
+    ],
+    "functions": {
+      "booking": [],
+      "services": [
+        "MidnightOfferings",
+        "MidnightService"
+      ],
+      "reviews": [
+        "MidnightProof"
+      ],
+      "posts": [
+        "MidnightLibrary",
+        "MidnightArchive"
+      ],
+      "events": [
+        "MidnightGatherings",
+        "MidnightEventRows"
+      ],
+      "shop": [
+        "MidnightShop"
+      ],
+      "circles": [],
+      "firstnight": [],
+      "plans": [
+        "MidnightMembership"
+      ],
+      "letter": [
+        "MidnightLetter",
+        "MidnightSignup"
+      ],
+      "gallery": [],
+      "team": [
+        "MidnightHost"
+      ],
+      "locations": [],
+      "forms": [
+        "MidnightContact"
+      ]
+    }
   }
 }
