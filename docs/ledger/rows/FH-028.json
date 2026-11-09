@@ -6,7 +6,7 @@
   "size": "S",
   "status": "open",
   "source": {
-    "file": "docs/hunts/README.md",
+    "file": "docs/BUILD-LIST.md",
     "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 3, Collective. Owner asked 2026-11-09 to build the program into the site."
   },
   "detail": "Define acceptance, terms, hours, staffing, data roles, fallback and exit responsibilities. Done when: A real operator can explain who owns claims, prize stock, cancellations and support per venue. Requires: FH-004, FH-027. Owner role: Partnerships.",

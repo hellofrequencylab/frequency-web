@@ -6,7 +6,7 @@
   "size": "S",
   "status": "open",
   "source": {
-    "file": "docs/hunts/README.md",
+    "file": "docs/BUILD-LIST.md",
     "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 5, Extended rules. Owner asked 2026-11-09 to build the program into the site."
   },
   "detail": "Support immutable choice and bounded server-only answer verification, fallback hints and alternative path. Done when: All valid choices can finish and serialized choice race accepts one branch. Requires: FH-030, FH-033. Owner role: Game systems.",

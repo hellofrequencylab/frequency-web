@@ -6,7 +6,7 @@
   "size": "S",
   "status": "open",
   "source": {
-    "file": "docs/hunts/README.md",
+    "file": "docs/BUILD-LIST.md",
     "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 4, Merchandise. Owner asked 2026-11-09 to build the program into the site."
   },
   "detail": "Deep link approved SKU and preserve checkout, stock, receipts and fulfillment. Apply entitlement only if offer requires it. Done when: Order retry never duplicates benefit, shipping remains store-owned and refunded SKU revokes unused benefit. Requires: FH-035, FH-037. Owner role: Commerce.",

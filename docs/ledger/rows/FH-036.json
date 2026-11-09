@@ -6,7 +6,7 @@
   "size": "M",
   "status": "open",
   "source": {
-    "file": "docs/hunts/README.md",
+    "file": "docs/BUILD-LIST.md",
     "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 4, Checkout. Owner asked 2026-11-09 to build the program into the site."
   },
   "detail": "Configure immutable tier benefit codes, canonical price and seats, purchase origin and attendee claim. Done when: Unauthenticated callback, forged price, wrong tier and unclaimed guest email cannot open benefit. Requires: FH-031, FH-035. Owner role: Events and billing.",

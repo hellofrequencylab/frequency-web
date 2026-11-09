@@ -6,7 +6,7 @@
   "size": "S",
   "status": "open",
   "source": {
-    "file": "docs/hunts/README.md",
+    "file": "docs/BUILD-LIST.md",
     "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 4, Paid governance. Owner asked 2026-11-09 to build the program into the site."
   },
   "detail": "Define seller, payee, taxes, charges/refund allocation, ticket terms, capacity, support and provider readiness. Done when: D7 signed and live payment evidence gaps listed by payment path with owners. Requires: FH-001, FH-031, FH-033. Owner role: Finance and legal.",

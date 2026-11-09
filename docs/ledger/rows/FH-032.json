@@ -6,7 +6,7 @@
   "size": "S",
   "status": "open",
   "source": {
-    "file": "docs/hunts/README.md",
+    "file": "docs/BUILD-LIST.md",
     "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 3, Collective. Owner asked 2026-11-09 to build the program into the site."
   },
   "detail": "Show stall points, alternate use, approved merchant metrics, open/closed placements and broadcast status. Done when: Organizer views route aggregates while partners cannot reconstruct participant trails. Requires: FH-025, FH-026, FH-029, FH-031. Owner role: Operations and analytics.",
