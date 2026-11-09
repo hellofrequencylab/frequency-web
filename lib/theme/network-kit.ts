@@ -101,6 +101,14 @@ export const NETWORK_KIT_SCHEMES: Record<NetworkKitSchemeId, NetworkKitScheme> =
 export const NETWORK_KIT_SCHEME_ORDER: readonly NetworkKitSchemeId[] = ['marigold', 'coral', 'ocean', 'lagoon']
 const DEFAULT_SCHEME: NetworkKitSchemeId = 'marigold'
 
+/** The style picker's named schemes and custom colors use the same brand color as the published site. */
+export function networkKitPickedAccent(value: string | null | undefined): string | null {
+  if (!value) return null
+  if (HEX_ACCENT.test(value)) return value
+  const scheme = NETWORK_KIT_SCHEME_ORDER.find((id) => id === value)
+  return scheme ? NETWORK_KIT_SCHEMES[scheme].accent : null
+}
+
 /** The thirteen profiles (the design's `data-kit` values) and the scheme each wears (tokens/colors.css and the
  *  contract's profiles{}). The type system is the same for all of them. */
 export const NETWORK_KIT_PROFILES = ['general', 'networks', 'clubs', 'markets', 'hosts', 'creators', 'wellness', 'studios', 'nonprofits', 'schools', 'coaches', 'venues', 'faith'] as const

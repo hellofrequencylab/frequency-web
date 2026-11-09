@@ -5,7 +5,7 @@ import { readSiteAdminAuthor } from '@/lib/sites/site-admin'
 import { authorizeWebsiteEditor } from './authorization'
 import { shareWebsiteAbout } from './share-about'
 import { refreshSite } from '@/lib/sites/site-cache'
-import { readWebsiteEditor, nextWebsiteState, validWebsiteSnapshot, type WebsiteSnapshot, type WebsiteEditorState } from './state'
+import { readWebsiteEditor, nextWebsiteState, resolveWebsiteBrand, validWebsiteSnapshot, type WebsiteSnapshot, type WebsiteEditorState } from './state'
 import { readWebsiteVeraFacts } from './vera-guide'
 import { VERA_DESIGN_SETTINGS, parseWebsiteVeraLayout, readWebsiteVeraStyleMenu, type WebsiteVeraChange, type WebsiteVeraSection } from './vera-layout'
 
@@ -67,7 +67,7 @@ export async function saveWebsiteDraft(host: string, expectedRevision: number, d
     // ONE ACCENT (owner, 2026-11-05): the accent picked for the website becomes the Space's accent, so the Space page,
     // the emails and a themed Spotlight (lib/spotlight/space-accent.ts) wear the same colour. A token or "theme accent"
     // pick leaves the Space's own colour as it is.
-    const picked = draft.brand?.accent?.trim()
+    const picked = resolveWebsiteBrand(draft, {}).accent?.trim()
     if (picked && /^#[0-9a-f]{6}$/i.test(picked)) {
       const spaces = auth.db as unknown as { from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> } } }
       const { error } = await spaces.from('spaces').update({ brand_accent: picked }).eq('id', auth.space.id)
