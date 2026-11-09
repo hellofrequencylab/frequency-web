@@ -23,7 +23,7 @@ async function corpus(): Promise<WebsiteSnapshot[]> {
   return drafts
 }
 
-const live: SiteStyle = { theme: 'services', fonts: 'services', synced: true, spaceFonts: 'services', look: { corners: 'soft', spacing: null, header: null, footer: null }, dials: { register: 'day' } } as SiteStyle
+const live: SiteStyle = { theme: 'services', fonts: 'services', synced: true, spaceFonts: 'services', look: { corners: 'soft', spacing: null, header: null, footer: null }, dials: { register: 'day' } } as unknown as SiteStyle
 
 describe('theme lens (BLD-303)', () => {
   it('maps every editor theme back to its site theme', () => {
