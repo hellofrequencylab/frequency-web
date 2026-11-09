@@ -85,3 +85,6 @@ test/e2e/.degraded-capture.jsonl
 # working directory. A reading belongs in OBSERVABILITY-BASELINES §2b with its data volume and region,
 # never as a committed file.
 load-soak-*.json
+
+# Built static website theme CSS pilot
+/public/_site-theme-assets/
