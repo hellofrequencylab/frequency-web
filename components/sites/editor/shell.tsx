@@ -192,7 +192,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     const theme = siteThemeOf(draft.theme)
     const same = theme === style.theme
     const own = draftLook(draft.look) as SiteStyle['look'] | undefined
-    const dials = draftDials(draft.look) ?? (same ? style.dials : undefined)
+    const dials = draft.look ? draftDials(draft.look) : same ? style.dials : undefined
     return { ...style, theme, fonts: same ? style.fonts : SITE_THEME_DEFS.find((t) => t.id === theme)!.defaultFonts, look: own ?? (same ? style.look : { corners: null, spacing: null, header: null, footer: null }), dials }
   }, [style, draft.theme, draft.look])
   async function saveStyle(patch: Parameters<NonNullable<WebsiteEditorShellProps['onStyle']>>[0], optimistic: SiteStyle) {
@@ -530,6 +530,10 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   function changeDials(patch: Record<string, string | null>, drop: readonly string[] = [], label = 'Style') {
     commit({ ...draft, look: lookWith(patch, drop) }, { label })
   }
+  function setBrandAccent(accent: string | null, burst?: string) {
+    const look = accentInLooks && draft.look?.accent ? lookWith({}, ['accent']) : draft.look
+    commit({ ...draft, look, brand: { ...draft.brand, accent } }, { label: 'Accent', burst })
+  }
   // THEME DRAFTS: several themes over the same pages. A switch is one undo step; when the theme differs the element
   // positions reset to that theme's layout (Undo restores them), exactly as picking a theme does.
   const [draftError, setDraftError] = useState('')
@@ -616,15 +620,16 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const { accent: _ownAccent, ...ownDials } = siteDials({ ...lookStyle, dials: undefined }, themeUi.own)
   const { accent: dialAccent, ...nowDials } = siteDials(lookStyle, themeUi.own)
   void _ownAccent
-  const dialOwn: Record<string, string> = { ...THEME_LOOK[lookStyle.theme], ...ownDials }
-  const dialNow: Record<string, string> = { ...siteLook(lookStyle), ...nowDials }
+  const accentInLooks = themeUi.looks.some((look) => 'accent' in look.dials)
+  const dialOwn: Record<string, string> = { ...THEME_LOOK[lookStyle.theme], ...ownDials, ...(accentInLooks ? { accent: '' } : {}) }
+  const dialNow: Record<string, string> = { ...siteLook(lookStyle), ...nowDials, ...(accentInLooks ? { accent: dialAccent ?? '' } : {}) }
   const dialIds = themeUi.dials.map((d) => d.id)
   // VERA'S STYLE MENU (LIVE-2098): exactly what the Style panel offers this theme, the four global styles and every
   // dial the theme declares, its named accents and its Looks. Vera can only pick from it; nothing else is storable.
   const veraStyleMenu: WebsiteVeraStyleMenu = {
     dials: [
       ...(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => ({ id: key as string, label: LOOK_LABEL[key], options: SITE_LOOK_OPTIONS[key].map((o) => ({ id: o.id, label: o.label })), current: dialNow[key] ?? '', own: dialOwn[key] ?? '' })),
-      ...themeUi.dials.filter((d) => d.id !== 'accent' && d.options.length > 0 && !(d.id in SITE_LOOK_OPTIONS)).map((d) => ({ id: d.id, label: d.label, options: d.options.map((o) => ({ id: o.id, label: o.label })), current: dialNow[d.id] ?? '', own: dialOwn[d.id] ?? '' })),
+      ...themeUi.dials.filter((d) => (d.id !== 'accent' || accentInLooks) && d.options.length > 0 && !(d.id in SITE_LOOK_OPTIONS)).map((d) => ({ id: d.id, label: d.label, options: d.options.map((o) => ({ id: o.id, label: o.label })), current: dialNow[d.id] ?? '', own: dialOwn[d.id] ?? '' })),
     ],
     accents: themeAccents(draft.theme).map((a) => ({ id: a.id, label: a.label })),
     accent: dialAccent ?? null,
@@ -753,7 +758,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const themeControlProps = { dials: themeUi.dials, values: dialNow, own: dialOwn, looks: themeUi.looks, accents: themeAccents(draft.theme), accent: dialAccent,
     onChange: (id: string, value: string | null) => changeDials({ [id]: value }),
     onAccent: (value: string | null) => changeDials({ accent: value }),
-    onPreset: (look: LookPreset) => changeDials(Object.fromEntries(Object.entries(look.dials).filter(([id, v]) => v !== dialOwn[id])), dialIds.filter((id) => id !== 'accent'), 'Look'),
+    onPreset: (look: LookPreset) => changeDials(Object.fromEntries(Object.entries(look.dials).filter(([id, v]) => v !== dialOwn[id])), dialIds.filter((id) => id !== 'accent' || accentInLooks), 'Look'),
     onReset: () => changeDials({}, [...dialIds, 'accent'], 'Style') }
   const themeControls = <ThemeControls {...themeControlProps} variant="panel" />
   // LIVE-2031: the same controls as a compact bar floated over the preview, calling the same handlers (null for a theme with only the legacy dials).
@@ -777,9 +782,9 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <KitLibrary onApply={applyKitChoice} onPreview={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />
     <div className="cap">Accent</div>
     <div className="swatches" role="group" aria-label="Accent">
-      <button type="button" className={on(!draft.brand?.accent).trim() || undefined} aria-pressed={!draft.brand?.accent} aria-label="Theme accent" title="Theme accent" data-swatch="theme" onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } }, { label: 'Accent' })} />
-      {spaceAccent && <button type="button" className={on(draft.brand?.accent?.toLowerCase() === spaceAccent.toLowerCase()).trim() || undefined} aria-pressed={draft.brand?.accent?.toLowerCase() === spaceAccent.toLowerCase()} aria-label="Your Space's brand colour" title="Your Space's brand colour" style={{ background: spaceAccent }} onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: spaceAccent } }, { label: 'Accent' })} />}
-      <label className="swatch-pick" title="Pick a colour"><span className="sr-only">Pick an accent colour</span><Input type="color" value={colorInputValue} onChange={(event) => commit({ ...draft, brand: { ...draft.brand, accent: event.target.value } }, { label: 'Accent', burst: 'accent' })} /></label>
+      <button type="button" className={on(!draft.brand?.accent).trim() || undefined} aria-pressed={!draft.brand?.accent} aria-label="Theme accent" title="Theme accent" data-swatch="theme" onClick={() => setBrandAccent(null)} />
+      {spaceAccent && <button type="button" className={on(draft.brand?.accent?.toLowerCase() === spaceAccent.toLowerCase()).trim() || undefined} aria-pressed={draft.brand?.accent?.toLowerCase() === spaceAccent.toLowerCase()} aria-label="Your Space's brand colour" title="Your Space's brand colour" style={{ background: spaceAccent }} onClick={() => setBrandAccent(spaceAccent)} />}
+      <label className="swatch-pick" title="Pick a colour"><span className="sr-only">Pick an accent colour</span><Input type="color" value={colorInputValue} onChange={(event) => setBrandAccent(event.target.value, 'accent')} /></label>
     </div>
     <div className="cap">Type</div>
     <div className="row on" role="note"><span className="ic type-aa" aria-hidden>Aa</span><span className="t">{themeFonts}{bodyFont && bodyFont !== themeFonts ? ` + ${bodyFont}` : ''}<small>Comes with the {WEBSITE_THEME_LABEL[draft.theme]} theme</small></span></div>
@@ -793,15 +798,16 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // PICK YOUR LOOK (LIVE-2043): the Theme tab's own parts on one sheet, each pick through the Theme tab's own handler.
   // New World offers its five accents as the brand colour (Tide is its own, so it stores nothing); a theme with named
   // accents offers those. Night or Day shows for the themes that carry both registers.
+  const selectedPickerAccent = accentInLooks ? websiteBrand.accent : draft.brand?.accent
   const pickAccents: FirstPickAccent[] = draft.theme === 'NewWorld'
     ? Object.entries(NEW_WORLD_ACCENTS).map(([id, a], index) => ({ id, label: a.label, swatch: a.accent, value: index === 0 ? null : a.accent, on: index === 0 ? !draft.brand?.accent || draft.brand.accent.toUpperCase() === a.accent : draft.brand?.accent?.toUpperCase() === a.accent }))
-    : themeAccents(draft.theme).map((a) => ({ id: a.id, label: a.label, swatch: a.swatch, value: a.swatch, on: draft.brand?.accent?.toLowerCase() === a.swatch.toLowerCase() }))
+    : themeAccents(draft.theme).map((a) => ({ id: a.id, label: a.label, swatch: a.swatch, value: accentInLooks ? a.id : a.swatch, on: selectedPickerAccent?.toLowerCase() === a.swatch.toLowerCase() }))
   const twoRegisters = lookStyle.theme === 'new-world' || lookStyle.theme === 'services'
   const firstPickSheet = <ThemeFirstPick
     themes={SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return { id: t.id, label: WEBSITE_THEME_LABEL[theme], description: t.description, swatch: websiteThemeVars(theme), on: draft.theme === theme } })}
     onTheme={(id) => { const t = SITE_THEMES.find((x) => x.id === id); if (t) pickTheme(t) }}
     accents={pickAccents}
-    onAccent={(value) => commit({ ...draft, brand: { ...draft.brand, accent: value } }, { label: 'Accent' })}
+    onAccent={(value) => accentInLooks ? changeDials({ accent: value }, [], 'Accent') : setBrandAccent(value)}
     register={twoRegisters ? (dialNow.register === 'day' ? 'day' : 'night') : null}
     onRegister={(value) => changeDials({ register: value === dialOwn.register ? null : value })}
     looks={(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => ({ key, label: LOOK_LABEL[key], options: SITE_LOOK_OPTIONS[key].map((o) => ({ id: o.id, label: o.label, on: siteLook(lookStyle)[key] === o.id })) }))}
@@ -843,7 +849,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       {themeControls}
       <div className="we-caption">Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
       <div className="we-actions"><button type="button" className="we-action secondary" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } })}>Remove logo</button>}</div>
-      <div className="we-caption">Brand accent</div><label className="we-field">Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => commit({ ...draft, brand: { ...draft.brand, accent: event.target.value } })} /></label><button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } })}>Use theme accent</button><div className="we-swatch-list"><span className="we-swatch" style={{ background: 'var(--th-accent)' }} /><span className="we-swatch" style={{ background: 'var(--th-season)' }} /><span className="we-swatch" style={{ background: 'var(--th-text)' }} /></div>
+      <div className="we-caption">Brand accent</div><label className="we-field">Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => setBrandAccent(event.target.value)} /></label><button type="button" className="we-action secondary" onClick={() => setBrandAccent(null)}>Use theme accent</button><div className="we-swatch-list"><span className="we-swatch" style={{ background: 'var(--th-accent)' }} /><span className="we-swatch" style={{ background: 'var(--th-season)' }} /><span className="we-swatch" style={{ background: 'var(--th-text)' }} /></div>
       <div className="we-caption">Type</div>{['display', 'body', 'mono'].map((role) => <div className="we-note" key={role} style={canvasVars}>{role}<strong className="we-type-sample" data-role={role}>{String(canvasVars[`--th-${role}` as keyof React.CSSProperties]).split(',')[0].replaceAll("'", '')}</strong></div>)}
       <div className="we-note">The editor wears the theme it edits. The theme and global styles change your live site as soon as you pick them, here or in Identity and branding. Words and photos stay; blocks take on the new colors and type. Switching themes resets element positions to the new layout; Undo restores them.</div></>
   const railBody = <>
