@@ -54,6 +54,18 @@ const checks = {
   conformance() {
     need('lib/theme/conformance.ts', /contrast/, 'the ten invariants as pure checks')
   },
+  // LIVE-2052: Daniel Tyack's website wears the New World General kit with his own words carried over. The builder and its
+  // generator live in the repo; the row closes only once the generated SQL has run in production and the apply record says so.
+  danieltyack() {
+    need('lib/sites/new-world-site.ts', /export function newWorldSiteFor/, 'the kit apply that carries the owner words')
+    need('scripts/new-world-site-sql.mjs', /NEW_WORLD_SITE_INPUT/, 'the SQL generator')
+    const record = 'docs/design-systems/new-world/danieltyack-site.json'
+    need(record, /"applied"/, 'the apply record')
+    if (existsSync(record)) {
+      const applied = JSON.parse(read(record)).applied
+      if (!applied || typeof applied.revision !== 'number' || !applied.date) bad.push(`${record}: applied is empty (the SQL has not run in production yet)`)
+    }
+  },
 }
 if (!checks[area]) {
   console.error(`unknown area "${area}"`)

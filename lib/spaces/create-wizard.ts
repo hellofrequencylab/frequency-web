@@ -100,7 +100,7 @@ export function withLookStep(steps: CreateWizardStep[]): CreateWizardStep[] {
 export const WIZARD_INTENTS = [
   { id: 'bookings', label: 'Take bookings', hint: '1:1 sessions and appointments', mode: 'business:appointments' },
   { id: 'classes', label: 'Run classes or memberships', hint: 'A studio, gym, or recurring group', mode: 'business:membership' },
-  { id: 'programs', label: 'Teach programs or courses', hint: 'Courses and journeys you run', mode: 'business:cohort' },
+  { id: 'programs', label: 'Teach programs or courses', hint: 'Courses and programs you run', mode: 'business:cohort' },
   { id: 'events', label: 'Host events', hint: 'Workshops, gatherings, ticketed nights', mode: 'business:ticketed' },
   { id: 'products', label: 'Sell products', hint: 'A catalog and a storefront', mode: 'business:product' },
   { id: 'community', label: 'Build a community', hint: 'Circles for your people', mode: null },
@@ -145,6 +145,8 @@ export function suggestModeForIntents(picks: readonly string[], available: reado
 
 /** The one-line pitch of a theme the library (lib/themes/library.ts) has no page for yet. */
 const WIZARD_HINTS: Partial<Record<MegaThemeId, string>> = {
+  // The Create a Space prototype's own pitch for Designer (docs/design-systems/create-a-space), richer than the library tagline.
+  designer: 'Limewash and daylight. Plaster, walnut and one ochre accent.',
   'new-world': 'Night and Day in one look. Tide teal to start.',
   services: 'Night-first and glossy. Built for bookings.',
   cyberwitch: 'Concrete, chain-link and blackletter under one neon accent. Dark only.',
@@ -158,7 +160,7 @@ export const WIZARD_THEMES: readonly { id: MegaThemeId; label: string; hint: str
   id,
   // The site theme's own label, so Midnight reads as Nocturne (its saved id stays `midnight`).
   label: id === 'frequency' ? 'Default' : id === 'network-kit' ? 'Network' : id === 'temple-kit' ? 'Temple' : id === 'new-world' ? 'New World' : (SITE_THEMES.find((t) => t.id === id)?.label ?? id.charAt(0).toUpperCase() + id.slice(1)),
-  hint: THEME_LIBRARY.find((t) => t.id === id)?.tagline ?? WIZARD_HINTS[id] ?? '',
+  hint: WIZARD_HINTS[id] ?? THEME_LIBRARY.find((t) => t.id === id)?.tagline ?? '',
 }))
 
 /** The theme the wizard sends: the owner's pick, else the one a /themes page named, else none. Total. PURE. */

@@ -96,7 +96,61 @@
     "lib/seo/frequency-pages.ts",
     "lib/spaces/create-wizard.ts",
     "lib/theme/preview-tokens.ts",
-    "lib/themes"
+    "lib/themes",
+    "lib/frequency/site-nav.ts",
+    "components/frequency/site/shell/site-header.tsx",
+    "components/frequency/site/shell/site-footer.tsx"
+   ],
+   "reason": "The prototype carries the site chrome (menu, footer) too; those words live in the shared header, nav and footer."
+  }
+ ],
+ "copyRulings": [
+  {
+   "owner": "Daniel, 2026-11-09",
+   "phrase": "rule out the activate state on create-a-space",
+   "reason": "The Space is made on the launch page when the Spotlight is published, so this page cannot say public or activate; the prototype's activate and Live states and its Google-saved copy stay out.",
+   "ids": [
+    "copy:Create a Space.dc.html#dcee4e1f",
+    "copy:Create a Space.dc.html#8f182272",
+    "copy:Create a Space.dc.html#d8395751",
+    "copy:Create a Space.dc.html#a7cb7cd5",
+    "copy:Create a Space.dc.html#ef8dffe4",
+    "copy:Create a Space.dc.html#d064ec25",
+    "copy:Create a Space.dc.html#d1c78f40",
+    "copy:Create a Space.dc.html#713ab484",
+    "copy:Create a Space.dc.html#71c96855",
+    "copy:Create a Space.dc.html#f9959fdf"
+   ]
+  },
+  {
+   "owner": "Daniel, 2026-11-09",
+   "phrase": "rule out the prototype chrome on create-a-space",
+   "reason": "The header and footer follow the menu contract and the Nov 3 overhaul, not this prototype: four retired menu labels, the footer blurb, the copyright line with a fixed year, the title tag (owner ruling 2026-10-19 keeps the search words), and two prototype-only controls.",
+   "ids": [
+    "copy:Create a Space.dc.html#ca8a6067",
+    "copy:Create a Space.dc.html#a23c4571",
+    "copy:Create a Space.dc.html#31e6dcde",
+    "copy:Create a Space.dc.html#022f23d7",
+    "copy:Create a Space.dc.html#d5c68e9b",
+    "copy:Create a Space.dc.html#2ad8a480",
+    "copy:Create a Space.dc.html#ac4bcad9"
+   ]
+  },
+  {
+   "owner": "Daniel, 2026-11-09",
+   "phrase": "rule out the money and time lines on create-a-space",
+   "reason": "Live pricing: selling opens at Business and card processing is extra; the repo says launch page where the prototype says setup walk.",
+   "ids": [
+    "copy:Create a Space.dc.html#7c5ff581",
+    "copy:Create a Space.dc.html#2c69e4d7"
+   ]
+  },
+  {
+   "owner": "Daniel, 2026-11-09",
+   "phrase": "rule out the house look pitch on create-a-space",
+   "reason": "The prototype (Oct 28) pitched the Frequency kit; New World is the house look now and keeps its own pitch.",
+   "ids": [
+    "copy:Create a Space.dc.html#8cc88c2d"
    ]
   }
  ]
