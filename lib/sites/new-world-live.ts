@@ -28,7 +28,7 @@ export interface NewWorldLiveRow {
 }
 
 /** A function's live state: `on` is the Space's own switch (a kit with the function off renders nothing), `rows` its rows. */
-export interface NewWorldLiveList {
+interface NewWorldLiveList {
   on: boolean
   rows: NewWorldLiveRow[]
 }
