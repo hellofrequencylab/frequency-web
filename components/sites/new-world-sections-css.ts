@@ -125,6 +125,9 @@ ${N} .nw-photo--hero{aspect-ratio:4/5;box-shadow:0 0 0 1px color-mix(in oklab,va
 ${N} .nw-photo--feature{aspect-ratio:4/5;box-shadow:0 50px 100px -50px color-mix(in oklab,var(--nw-flare-500) 55%,transparent)}
 ${N} .nw-photo--feature::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,color-mix(in oklab,var(--nw-ink-950) 85%,transparent))}
 ${N} .nw-photo--person{aspect-ratio:3/4}
+${N} .nw-photo--offer{aspect-ratio:16/10;border-radius:var(--nw-radius-lg)}
+${N} .nw-person figcaption a{color:inherit;text-decoration:none}
+${N} .nw-person figcaption a:hover b{text-decoration:underline}
 ${N} .nw-photo--map{aspect-ratio:4/3;background:var(--nw-spread-tl),var(--nw-spread-br),var(--nw-ink-800)}
 ${N} .nw-photo--tile{min-height:220px}
 ${N} .nw-chip{position:absolute;top:18px;left:18px;z-index:2;display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--nw-radius-pill);${MONO};font-size:10px;color:var(--nw-chrome-50);background:color-mix(in oklab,var(--nw-ink-950) 55%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}

@@ -11,7 +11,7 @@
 
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { ChevronLeft, Eye, ListTree, Maximize2, Monitor, PanelLeft, PanelRight, Pin, PinOff, Plus, Redo2, SlidersHorizontal, Smartphone, Sparkles, Tablet, Undo2 } from 'lucide-react'
+import { ChevronLeft, Eye, Palette, ListTree, Maximize2, Monitor, PanelLeft, PanelRight, Pin, PinOff, Plus, Redo2, SlidersHorizontal, Smartphone, Sparkles, Tablet, Undo2 } from 'lucide-react'
 import { BREAKPOINTS } from '@/lib/theme/breakpoints'
 import type { WebsiteEditorShellProps } from '@/components/sites/editor/shell'
 import { SectionIcon } from '@/components/sites/editor/section-icon'
@@ -24,6 +24,10 @@ import { CommandBar } from '@/components/builder/command/command-bar'
 import { AddSheet } from '@/components/builder/add/add-sheet'
 import { ViewAsNotes, ViewAsSwitch } from '@/components/builder/view-as/view-as'
 import { viewerDoc, viewerLens, type ViewAs } from '@/lib/builder/view-as'
+import { ThemeLens } from '@/components/builder/theme/theme-lens'
+import { commitTheme, lensStyle } from '@/lib/builder/theme-lens'
+import { useTryItOnSkin } from '@/components/sites/theme-preview-swap'
+import type { SiteThemeId } from '@/lib/theme/site-style'
 import { ProfileFrame } from '@/components/builder/surfaces/profile/profile-frame'
 import { SpotlightDoors } from '@/components/builder/surfaces/spotlight/spotlight-doors'
 import { profileFrame, spotlightDoors } from '@/lib/builder/surface-view'
@@ -152,8 +156,19 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
     return () => { window.removeEventListener('online', sync); window.removeEventListener('offline', sync) }
   }, [])
 
-  // The canvas wears the live site's own resolver, so the page here is the page visitors get.
-  const style: SiteStyle | undefined = siteStyle
+  // THE THEME LENS (BLD-303): the canvas wears the draft's theme over the live site's style, or the theme under the
+  // pointer while one is tried on. Both go through the live site's own resolver, so the page here is the page visitors
+  // get. The contract skin dresses legacy theme-named blocks in the worn theme, as the published page does.
+  const [trying, setTrying] = useState<SiteThemeId | null>(null)
+  const [themeOpen, setThemeOpen] = useState(false)
+  // The profile uses the Space frame's existing style even while a site theme is being tried.
+  const style: SiteStyle | undefined = useMemo(
+    () => (siteStyle && state.surface !== 'profile' ? lensStyle(siteStyle, state.draft, trying) : siteStyle),
+    [siteStyle, state.draft, state.surface, trying],
+  )
+  const pageDocs = useMemo(() => state.draft.pages.map((p) => p.doc), [state.draft.pages])
+  const skin = useTryItOnSkin(pageDocs, style?.theme ?? null)
+  const trySkin = state.surface === 'site' && style && typeof skin === 'string' && skin ? { css: skin, themeId: style.theme } : null
   const brand = resolveWebsiteBrand(state.draft, { logo, accent: brandAccent })
   const render = useMemo(() => (style ? siteRenderStyle(sitePageStyle(style, page.slug), brand.accent, defaultAccent ?? null) : null), [style, page.slug, brand.accent, defaultAccent])
   const canvasVars = useMemo(() => (render ? siteCanvasVars(render) : undefined), [render])
@@ -174,6 +189,13 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   // The section toolbar (BLD-104): move, duplicate, hide on this device and delete, each one edit and one undo.
   // A delete says so in a toast with Undo; the toast leaves on its own after a few seconds.
   const [toast, setToast] = useState<{ say: string; undo: boolean } | null>(null)
+  // A theme pick (BLD-303) is one edit of the draft, so one undo step; the live site changes only on publish.
+  const pickTheme = (id: SiteThemeId) => {
+    const next = commitTheme(latest.current.draft, id)
+    if (next === latest.current.draft) return
+    edit(next)
+    setToast({ say: 'Theme changed in this draft. Publish to make it live.', undo: true })
+  }
   useEffect(() => {
     if (!toast) return
     const timer = window.setTimeout(() => setToast(null), 6000)
@@ -333,6 +355,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         break
       case 'device-desktop': case 'device-tablet': case 'device-phone': dispatch({ type: 'device', device: id.slice(7) as BuilderDevice }); break
       case 'view-host': case 'view-member': case 'view-visitor': viewAs(id.slice(5) as ViewAs); break
+      case 'theme': setThemeOpen(true); break
       case 'surface-site': case 'surface-profile': case 'surface-spotlight': case 'surface-email': dispatch({ type: 'surface', surface: id.slice(8) as BuilderSurface }); break
       case 'rail-left': case 'rail-right': toggleRail(id === 'rail-left' ? 'left' : 'right'); break
       case 'pin-left': case 'pin-right': railDispatch({ type: 'pin', side: id === 'pin-left' ? 'left' : 'right', pinned: true }); break
@@ -362,7 +385,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   }
 
   // The page canvas, drawn once: alone on the site, inside the member shell on the profile.
-  const pageCanvas = <WebsiteCanvas key={`${page.slug}:${state.surface}:${view}`} pageSlug={page.slug} doc={canvasDoc} theme={profile ? profile.theme : canvasTheme} device={state.device} config={config} metadata={lens.metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={profile ? profile.vars : canvasVars} spaceTheme={profile ? profile.fonts : render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={lens.tags && !state.preview ? tags : undefined} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+  const pageCanvas = <WebsiteCanvas key={`${page.slug}:${state.surface}:${view}`} pageSlug={page.slug} doc={canvasDoc} theme={profile ? profile.theme : canvasTheme} trySkin={trySkin} device={state.device} config={config} metadata={lens.metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={profile ? profile.vars : canvasVars} spaceTheme={profile ? profile.fonts : render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={lens.tags && !state.preview ? tags : undefined} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
 
   return (
     <div className={`${styles.root} ${fontClass ?? ''}`} data-builder="v3" data-preview={state.preview} data-focus={rails.focus} data-phone={phone || undefined} style={gridVars} onKeyDown={keys}>
@@ -383,6 +406,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <button type="button" data-action="undo" id="builder-undo" className={`${styles.btn} ${styles.icon}`} aria-label="Undo" title="Undo" disabled={!state.past.length} onClick={() => dispatch({ type: 'undo' })}><Undo2 size={16} aria-hidden /></button>
         <button type="button" data-action="redo" className={`${styles.btn} ${styles.icon}`} aria-label="Redo" title="Redo" disabled={!state.future.length} onClick={() => dispatch({ type: 'redo' })}><Redo2 size={16} aria-hidden /></button>
         <span className={styles.wide}><SurfaceSwitcher surface={state.surface} onChange={(surface) => dispatch({ type: 'surface', surface })} /></span>
+        <button type="button" data-action="theme" className={`${styles.btn} ${styles.icon}`} aria-label="Change the theme" title="Theme" aria-haspopup="dialog" aria-expanded={themeOpen} onClick={() => setThemeOpen(true)}><Palette size={16} aria-hidden /></button>
         <button id="builder-command" type="button" className={`${styles.btn} ${styles.wide}`} aria-label="Find, do or ask. Shortcut: command K" aria-haspopup="dialog" aria-expanded={commandOpen} onClick={() => setCommandOpen(true)}><span>Find</span><span className={styles.kbd}>⌘K</span></button>
         <button type="button" data-action="focus" className={`${styles.btn} ${styles.icon}`} aria-label="Focus: hide both side panels" title="Focus (Esc to leave)" aria-pressed={rails.focus} onClick={() => railDispatch({ type: 'focus', on: !rails.focus })}><Maximize2 size={16} aria-hidden /></button>
         <span className={styles.wide}><ViewAsSwitch view={view} onChange={viewAs} /></span>
@@ -455,6 +479,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <button type="button" data-action="rail-right" aria-pressed={modes.right === 'overlay'} onClick={() => toggleRail('right')}><SlidersHorizontal size={20} aria-hidden /><span>Tune</span></button>
         <button type="button" onClick={() => setCommandOpen(true)}><Sparkles size={20} aria-hidden /><span>Vera</span></button>
       </nav>}
+      {themeOpen && <ThemeLens draft={state.draft} trying={trying} onTry={setTrying} onPick={pickTheme} onClose={() => setThemeOpen(false)} />}
       {addAt !== null && <AddSheet cards={cards} doc={page.doc} at={addAt} onPick={pickSection} onAsk={() => { setAddAt(null); setToast({ say: 'Vera arrives in the builder with BLD-402. Your question is kept for her.', undo: false }) }} onClose={() => setAddAt(null)} preview={previewOf} />}
       {plan && <UpdateLayoutsSheet plan={plan} pageLabel={page.label} preview={previewBlock} onApply={applyLayouts} onClose={() => setLayoutsOpen(false)} focusFallbackId="builder-undo" />}
       {sheetOpen && <PublishSheet readiness={ready} onFix={(item) => { setSheetOpen(false); goTo(item) }} onPublish={(keep) => { if (canPublish(ready, keep)) { setSheetOpen(false); void save(true) } }} onClose={() => setSheetOpen(false)} />}
