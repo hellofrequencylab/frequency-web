@@ -7,7 +7,7 @@
 // 410 Gone or 404 from the push service means the user revoked the
 // subscription — we prune the row so the table stays small.
 
-import webpush from 'web-push'
+import * as webpush from 'web-push'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { envString } from '@/lib/env/string'
 import { resolveSendGate, type SendCategory } from '@/lib/comms/send-gate'
