@@ -450,10 +450,16 @@ const CONTRACT_OF: Partial<Record<WebsiteTheme, ContractThemeId>> = {
   DAWN: 'frequency', Menswork: 'bold', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Midnight: 'midnight', Designer: 'designer', FreeHuman: 'free-human', Services: 'services', NewWorld: 'new-world', CyberWitch: 'cyberwitch',
 }
 
+// Services applies its type voice to shared headings as well as its own blocks.
+const SERVICES_ROLE_VOICES = `
+[data-house-theme="services"][data-type="quiet"] [data-role] [data-part="title"]{font-weight:600;letter-spacing:-.03em;text-transform:none}
+[data-house-theme="services"][data-type="editorial"] [data-role] [data-part="title"]{font-family:var(--sv-font-accent,var(--f-display));font-weight:500;letter-spacing:-.02em;text-transform:none}
+`
+
 /** The sheet for a page that carries role blocks: the active theme's contract mapping, then the structure. */
 export function roleBlocksCss(theme: WebsiteTheme): string {
   const id = CONTRACT_OF[theme] ?? CONTRACT_THEME_IDS[0]
-  return `${coreTokensCss(id)}\n${Object.values(ROLE_CSS_CHUNKS).join('')}`
+  return `${coreTokensCss(id)}\n${Object.values(ROLE_CSS_CHUNKS).join('')}${id === 'services' ? SERVICES_ROLE_VOICES : ''}`
 }
 
 /** Does a page document carry a role block anywhere (nested slots included)? */

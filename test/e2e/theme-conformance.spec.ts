@@ -101,6 +101,22 @@ test.describe(`theme conformance: ${THEME}`, () => {
     if (faces.size < 2) test.info().annotations.push({ type: 'inert-dial', description: 'The type dial changes no block title face in this render, so the height check passed without a voice to test.' })
   })
 
+  test('the Services type voice changes a shared role heading', async ({ page }) => {
+    test.skip(THEME !== 'services', 'This assertion covers the Services role style.')
+    await open(page, 1440)
+    const title = page.locator(`${ROOT} [data-role] [data-part="title"]`).first()
+    await expect(title).toBeVisible()
+    const styles = new Set<string>()
+    for (const type of ['caps', 'quiet', 'editorial']) {
+      await setDials(page, { type })
+      styles.add(await title.evaluate((el) => {
+        const { fontFamily, fontWeight, letterSpacing } = getComputedStyle(el)
+        return JSON.stringify({ fontFamily, fontWeight, letterSpacing })
+      }))
+    }
+    expect(styles.size).toBe(3)
+  })
+
   test('reduced motion stops every animation', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await open(page, 1440)
