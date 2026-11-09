@@ -24,7 +24,7 @@ import {
 } from "@/components/sites/new-world-forms";
 import type { ComponentConfig } from "@/lib/page-editor/types";
 import type { SiteLinkMap } from "@/lib/sites/house-theme";
-import { readNewWorldLive, type NewWorldLiveRow } from "@/lib/sites/new-world-live";
+import { readNewWorldLive, type NewWorldLiveRow, type NewWorldWallPost } from "@/lib/sites/new-world-live";
 import type { SpaceCircleItem, SpaceTeamMember } from "@/lib/spaces/content-data";
 import type { SpaceProfileData } from "@/lib/spaces/profile-data";
 import { storedWallClock } from "@/lib/sites/site-events";
@@ -662,6 +662,53 @@ function Reviews({ p, metadata, pad, vis }: Common) {
                 {r.what && <small>{r.what}</small>}
               </figcaption>
             </figure>
+          ))}
+        </div>
+      </div>
+    </Sec>
+  );
+}
+
+// ── The community wall (LIVE-2108) ─────────────────────────────────────────────────────────────
+// The Space's wall, read-only: the newest posts anyone may read, and one door into the app to join in. The live render attaches
+// `metadata.space.newWorld.wall` from an ANONYMOUS read of space_wall_feed (lib/sites/new-world-live-load.ts), so the site shows
+// exactly what a stranger sees; a members-only wall comes back off and the block draws nothing. With no bag (the editor canvas, a
+// preview) the sample posts draw so the owner can see the shape. The member wall itself is never styled by the site (theme fence).
+const SAMPLE_WALL: NewWorldWallPost[] = [
+  { id: "s1", name: "Maya Torres", role: "From the team", date: "Nov 2", body: "Saturday's flow moves to the courtyard because of the marine layer. Bring a layer, we start at 8.", meta: "14 high fives · 3 replies", announcement: true },
+  { id: "s2", name: "Jonah Park", role: "Member", date: "Nov 1", body: "New member intro: I moved here in September and this is the first place that felt like a room I could walk into alone.", meta: "9 high fives · 5 replies", announcement: false },
+  { id: "s3", name: "Priya Shah", role: "Member", date: "Oct 30", body: "Thank you to everyone who came to the sunset sit. Same time next month.", meta: "6 high fives · 1 reply", announcement: false },
+];
+
+function Wall({ p, metadata, pad, vis }: Common) {
+  const wall = readNewWorldLive(bagOf(metadata))?.wall;
+  if (wall && !wall.on) return null;
+  const rows = wall ? wall.rows : SAMPLE_WALL;
+  // App-relative: hrefOf (through Btn) sends /spaces/... links out of the site to the app, the way every New World door does.
+  const href = wall ? wall.href : "~/community";
+  return (
+    <Sec id="wall" p={p} glow="br" pad={pad} vis={vis}>
+      <div className="nw-wrap">
+        <Head p={p} action={href && str(p.buttonLabel) ? <Btn label={str(p.buttonLabel)} href={href} kind="ghost" metadata={metadata} /> : undefined} />
+        <div className="nw-reviews nw-wall">
+          {rows.map((r, i) => (
+            <article key={r.id} className={cls("nw-review", "nw-wall-post", i === 0 && "is-first")}>
+              <header className="nw-wall-who">
+                <span className="nw-wall-face" aria-hidden="true">
+                  {r.name.trim().charAt(0).toUpperCase() || "·"}
+                </span>
+                <span>
+                  <b>{r.name}</b>
+                  <small>{[r.role, r.date].filter(Boolean).join(" · ")}</small>
+                </span>
+              </header>
+              <p className={cls(i === 0 && "nw-display")}>{r.body}</p>
+              {r.meta && (
+                <footer className="nw-wall-meta">
+                  <small>{r.meta}</small>
+                </footer>
+              )}
+            </article>
           ))}
         </div>
       </div>
@@ -1566,6 +1613,12 @@ export const newWorldBlocks: Record<string, ComponentConfig> = {
     { ...head, proof: text("Line beside the stars"), rows: rows({ quote: area("Quote"), who: text("Who"), what: text("What they come to") }), register },
     { index: "05", eyebrow: "In their words", title: "In their *words.*", lede: "", proof: "", rows: [], register: "auto" },
     Reviews,
+  ),
+  NewWorldSpaceWall: block(
+    "New World community wall (live)",
+    { ...head, buttonLabel: text("Button", "The door into the wall in the app. Empty hides it."), register },
+    { index: "", eyebrow: "On the wall", title: "What people are *saying.*", lede: "The latest from the community wall. Members post, everyone reads.", buttonLabel: "Join the conversation", register: "auto" },
+    Wall,
   ),
   NewWorldTeam: block(
     "New World team",
