@@ -159,10 +159,14 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   // get. The contract skin dresses legacy theme-named blocks in the worn theme, as the published page does.
   const [trying, setTrying] = useState<SiteThemeId | null>(null)
   const [themeOpen, setThemeOpen] = useState(false)
-  const style: SiteStyle | undefined = useMemo(() => (siteStyle ? lensStyle(siteStyle, state.draft, trying) : undefined), [siteStyle, state.draft, trying])
+  // The profile uses the Space frame's existing style even while a site theme is being tried.
+  const style: SiteStyle | undefined = useMemo(
+    () => (siteStyle && state.surface !== 'profile' ? lensStyle(siteStyle, state.draft, trying) : siteStyle),
+    [siteStyle, state.draft, state.surface, trying],
+  )
   const pageDocs = useMemo(() => state.draft.pages.map((p) => p.doc), [state.draft.pages])
   const skin = useTryItOnSkin(pageDocs, style?.theme ?? null)
-  const trySkin = style && typeof skin === 'string' && skin ? { css: skin, themeId: style.theme } : null
+  const trySkin = state.surface === 'site' && style && typeof skin === 'string' && skin ? { css: skin, themeId: style.theme } : null
   const brand = resolveWebsiteBrand(state.draft, { logo, accent: brandAccent })
   const render = useMemo(() => (style ? siteRenderStyle(sitePageStyle(style, page.slug), brand.accent, defaultAccent ?? null) : null), [style, page.slug, brand.accent, defaultAccent])
   const canvasVars = useMemo(() => (render ? siteCanvasVars(render) : undefined), [render])
