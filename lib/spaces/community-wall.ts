@@ -102,10 +102,10 @@ export function standingCanPost(standing: WallStanding, settings: WallSettings):
 }
 
 /**
- * Is this person banned from this wall? A ban is only ever what the table says: a broken read
- * (including a deploy that lands before the migration) answers "not banned", because the other
- * answer would lock every wall's replies and reactions for everyone, and the posts policy still
- * refuses a banned person's posts on its own.
+ * Is this person banned from this wall? Fail-closed: a broken read answers "banned", so a reply or a
+ * reaction never slips through while the table cannot be read. The migration that creates the table
+ * is applied before the build that reads it ships (ADR-1111 order), and the database refuses a banned
+ * person's posts and reactions on its own, so this gate is the app's word, not the only word.
  */
 async function isBannedFromWall(spaceId: string, profileId: string): Promise<boolean> {
   try {
@@ -115,10 +115,10 @@ async function isBannedFromWall(spaceId: string, profileId: string): Promise<boo
       .eq('space_id', spaceId)
       .eq('profile_id', profileId)
       .maybeSingle()
-    if (error) return false
+    if (error) return true
     return data != null
   } catch {
-    return false
+    return true
   }
 }
 
