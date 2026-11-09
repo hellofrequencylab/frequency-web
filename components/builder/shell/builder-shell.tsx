@@ -22,6 +22,9 @@ import { tuneProjection } from '@/lib/builder/tune'
 import { focalFieldFor, pictureFieldFor } from '@/lib/builder/parts'
 import { CommandBar } from '@/components/builder/command/command-bar'
 import { AddSheet } from '@/components/builder/add/add-sheet'
+import { SurfaceSwitcher } from '@/components/builder/surfaces/surface-switcher'
+import { SurfaceNotes } from '@/components/builder/surfaces/surface-notes'
+import { surfaceFrame, surfaceSections, type BuilderSurface } from '@/lib/builder/surfaces'
 import { LayoutChips } from '@/components/builder/canvas/variants/layout-chips'
 import { addCards, insertSection, type AddCard } from '@/lib/builder/add'
 import { makeItem } from '@/components/page-editor/mobile/data-ops'
@@ -195,6 +198,11 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   const sections = page.doc.content
   // The spine and outline (BLD-103): one list, reordered by drag or by Alt and an arrow, through one pure move.
   const spine = useMemo(() => spineItems(page.doc, config, state.device), [page.doc, config, state.device])
+  // SHOW AS (BLD-301): the canvas draws what this surface can show, framed at the surface's declared density and width;
+  // the rest is listed above it with the reason. The document itself keeps every section.
+  const surfaced = useMemo(() => surfaceSections(page.doc, config, state.surface), [page.doc, config, state.surface])
+  const frame = surfaceFrame(state.surface, BUILDER_DEVICE_WIDTH[state.device])
+  const canvasDoc = useMemo(() => (surfaced.hidden.length ? { ...page.doc, content: surfaced.shown } : page.doc), [page.doc, surfaced])
   const dragId = useRef<string | null>(null)
   const [dropAt, setDropAt] = useState<number | null>(null)
   const [moved, setMoved] = useState('')
@@ -307,6 +315,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         else setToast({ say: 'No layout updates are available for this page. Your sections stay as they are.', undo: false })
         break
       case 'device-desktop': case 'device-tablet': case 'device-phone': dispatch({ type: 'device', device: id.slice(7) as BuilderDevice }); break
+      case 'surface-site': case 'surface-profile': case 'surface-spotlight': case 'surface-email': dispatch({ type: 'surface', surface: id.slice(8) as BuilderSurface }); break
       case 'rail-left': case 'rail-right': toggleRail(id === 'rail-left' ? 'left' : 'right'); break
       case 'pin-left': case 'pin-right': railDispatch({ type: 'pin', side: id === 'pin-left' ? 'left' : 'right', pinned: true }); break
       case 'section-up': case 'section-down': case 'section-copy': case 'section-hide': case 'section-delete':
@@ -352,7 +361,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         </div>
         <button type="button" data-action="undo" id="builder-undo" className={`${styles.btn} ${styles.icon}`} aria-label="Undo" title="Undo" disabled={!state.past.length} onClick={() => dispatch({ type: 'undo' })}><Undo2 size={16} aria-hidden /></button>
         <button type="button" data-action="redo" className={`${styles.btn} ${styles.icon}`} aria-label="Redo" title="Redo" disabled={!state.future.length} onClick={() => dispatch({ type: 'redo' })}><Redo2 size={16} aria-hidden /></button>
-        <button type="button" className={`${styles.btn} ${styles.wide}`} aria-haspopup="menu" disabled title="Show as: the other surfaces arrive with the surface switcher">Site · Visitor</button>
+        <span className={styles.wide}><SurfaceSwitcher surface={state.surface} onChange={(surface) => dispatch({ type: 'surface', surface })} /></span>
         <button id="builder-command" type="button" className={`${styles.btn} ${styles.wide}`} aria-label="Find, do or ask. Shortcut: command K" aria-haspopup="dialog" aria-expanded={commandOpen} onClick={() => setCommandOpen(true)}><span>Find</span><span className={styles.kbd}>⌘K</span></button>
         <button type="button" data-action="focus" className={`${styles.btn} ${styles.icon}`} aria-label="Focus: hide both side panels" title="Focus (Esc to leave)" aria-pressed={rails.focus} onClick={() => railDispatch({ type: 'focus', on: !rails.focus })}><Maximize2 size={16} aria-hidden /></button>
         <button type="button" data-action="preview" className={`${styles.btn} ${styles.icon}`} aria-label="Preview" title="Preview" aria-pressed={state.preview} onClick={() => dispatch({ type: 'preview', on: !state.preview })}><Eye size={16} aria-hidden /></button>
@@ -389,8 +398,9 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       </nav>
 
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
-        <div className={styles.frame} style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)` }}>
-          <WebsiteCanvas key={page.slug} pageSlug={page.slug} doc={page.doc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={state.preview ? undefined : tags} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+        <div style={{ width: `min(100%, ${frame.width}px)`, margin: '0 auto' }}><SurfaceNotes surface={state.surface} sections={surfaced} onSelect={(id) => dispatch({ type: 'select', id })} /></div>
+        <div className={`${styles.frame} ${frame.stackClass}`} data-surface={state.surface} data-density={frame.density} style={{ width: `min(100%, ${frame.width}px)` }}>
+          <WebsiteCanvas key={`${page.slug}:${state.surface}`} pageSlug={page.slug} doc={canvasDoc} theme={canvasTheme} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={canvasVars} spaceTheme={render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={state.preview ? undefined : tags} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
         </div>
       </main>
 
