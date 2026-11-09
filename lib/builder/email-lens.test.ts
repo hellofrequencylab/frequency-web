@@ -58,7 +58,7 @@ describe('email lens (BLD-302)', () => {
       const layout = emailLayoutOf(blocks.map((b) => ({ id: `s-${id}`, ...b })))
       const { html, text } = renderEmailLayout(layout)
       expect(html.length, id).toBeGreaterThan(0)
-      expect(text, id).toContain((ROLES[id].sample as { title: string }).title.replace(/\*/g, ''))
+      expect(text, id).toContain((ROLES[id].sample as unknown as { title: string }).title.replace(/\*/g, ''))
     }
   })
 
