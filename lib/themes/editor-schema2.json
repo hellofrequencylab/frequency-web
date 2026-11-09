@@ -80,43 +80,43 @@
     ],
     "functions": {
       "booking": [],
-      "services": [
-        "TempleKitOfferings",
-        "TempleKitInnerService"
-      ],
-      "reviews": [
-        "TempleKitProof"
-      ],
-      "posts": [
-        "TempleKitInnerLibrary"
+      "circles": [
+        "TempleKitRooms"
       ],
       "events": [
         "TempleKitGatherings",
         "TempleKitInnerGatherings"
       ],
-      "shop": [
-        "TempleKitInnerShop"
-      ],
-      "circles": [
-        "TempleKitRooms"
-      ],
       "firstnight": [],
-      "plans": [
-        "TempleKitMembership",
-        "TempleKitInnerTiers"
-      ],
-      "letter": [
-        "TempleKitLetter"
+      "forms": [
+        "TempleKitInnerContact"
       ],
       "gallery": [
         "TempleKitGallery"
       ],
-      "team": [
-        "TempleKitInnerTeam"
+      "letter": [
+        "TempleKitLetter"
       ],
       "locations": [],
-      "forms": [
-        "TempleKitInnerContact"
+      "plans": [
+        "TempleKitMembership",
+        "TempleKitInnerTiers"
+      ],
+      "posts": [
+        "TempleKitInnerLibrary"
+      ],
+      "reviews": [
+        "TempleKitProof"
+      ],
+      "services": [
+        "TempleKitOfferings",
+        "TempleKitInnerService"
+      ],
+      "shop": [
+        "TempleKitInnerShop"
+      ],
+      "team": [
+        "TempleKitInnerTeam"
       ]
     }
   }
