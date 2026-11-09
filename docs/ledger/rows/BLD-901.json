@@ -4,16 +4,16 @@
   "lane": "program",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/EDITOR-NEXT.md",
     "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-901."
   },
-  "detail": "BZ Hardening, pass BLD-901 (spec: docs/EDITOR-NEXT.md#bld-901). Full matrix. Scope: all builder paths. Build: Render every role × variant × theme × surface × device (1600, 1200, 900, 390). Fix overflow, zero-height and contrast findings. Done when: Coverage 1.00 on declared roles; No horizontal overflow at 390. Gates: audit:themes render matrix, check:theme-conformance, pr-compare visual suite, a11y ratchet, check:build-budget and check:shell-weight, editor-bytes-on-public-render ratchet, raw-css-paths ratchet, check:contrast, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-303, BLD-205. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "detail": "BZ Hardening, pass BLD-901 (spec: docs/EDITOR-NEXT.md#bld-901). Full matrix. Scope: all builder paths. Build: Render every role × variant × theme × surface × device (1600, 1200, 900, 390). Fix overflow, zero-height and contrast findings. Done when: Coverage 1.00 on declared roles; No horizontal overflow at 390. Gates: audit:themes render matrix, check:theme-conformance, pr-compare visual suite, a11y ratchet, check:build-budget and check:shell-weight, editor-bytes-on-public-render ratchet, raw-css-paths ratchet, check:contrast, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-303, BLD-205. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nFull matrix: lib/builder/matrix.ts declares every role x variant x theme (13, New World in both modes) x surface x device (1600, 1200, 900, 390), 13,728 cells; pnpm audit:builder-matrix draws each role variant in its theme's own sheet and measures it at the six widths the surfaces give those devices. Reading on main: coverage 1.00, no horizontal overflow at any width (390 included), no zero-height section. Contrast: 3 themes had small-text misses of one token each. New World Day fixed (muted ink #6E6862, the Commons day value frequency.css already uses). Temple kit and Free Human held as BLD-903, because fixing them rewrites two hash pins. Scope is block roles in the theme sheets; the shell chrome is not in this matrix.",
   "verify": {
-    "kind": "manual",
-    "checked": "2026-11-02",
-    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-901.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-901.mjs"
   },
+  "closed": "2026-11-09",
   "wave": "W7"
 }

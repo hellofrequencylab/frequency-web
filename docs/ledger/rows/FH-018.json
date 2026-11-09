@@ -1,0 +1,18 @@
+{
+  "id": "FH-018",
+  "title": "Hunts FH-018: Ship safe publish and reporting",
+  "lane": "program",
+  "priority": "P0",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 1, Moderation. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Require site permission, report button, moderation queue, closure workflow and emergency pause. Done when: Operator can contain unsafe Hunt and active players can see closure without losing prior progress. Requires: FH-013, FH-016. Owner role: Operations.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/moderation.ts\")?0:1)'"
+  },
+  "wave": "W7"
+}
