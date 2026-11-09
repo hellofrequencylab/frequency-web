@@ -9,7 +9,7 @@
     "date": "2026-11-09",
     "fromRevision": 68,
     "generator": "node scripts/new-world-site-sql.mjs <input.json> <out.sql>",
-    "sql": "/mnt/project-files/new-world/danieltyack-site/apply-2026-11-09.sql"
+    "sql": "docs/design-systems/new-world/danieltyack-apply-2026-11-09.sql"
   },
   "applied": null
 }
