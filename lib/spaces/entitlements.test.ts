@@ -357,6 +357,15 @@ describe('capabilities (owner + member role)', () => {
     expect(caps.isAdmin).toBe(false)
   })
 
+  it('canModerateWall is the owner, admin and moderator rungs only (LIVE-2095)', () => {
+    expect(spaceCapabilitiesFor(true, null).canModerateWall).toBe(true)
+    expect(spaceCapabilitiesFor(false, 'admin').canModerateWall).toBe(true)
+    expect(spaceCapabilitiesFor(false, 'moderator').canModerateWall).toBe(true)
+    expect(spaceCapabilitiesFor(false, 'editor').canModerateWall).toBe(false)
+    expect(spaceCapabilitiesFor(false, 'viewer').canModerateWall).toBe(false)
+    expect(spaceCapabilitiesFor(false, null).canModerateWall).toBe(false)
+  })
+
   it('no role (stranger) gets nothing', () => {
     const caps = spaceCapabilitiesFor(false, null)
     expect(caps).toMatchObject({ isOwner: false, isAdmin: false, role: null, canEditProfile: false, canManageMembers: false, canInvite: false })
