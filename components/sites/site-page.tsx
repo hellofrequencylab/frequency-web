@@ -81,6 +81,8 @@ import { config } from '@/lib/page-editor/config'
 import { publishedWebsitePage, publishedWebsiteSnapshot, resolveWebsiteChrome, resolveWebsiteChromeCta } from '@/lib/sites/editor/state'
 import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
 import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
+import { docHasNewWorldBlocks } from '@/lib/sites/new-world-live'
+import { loadNewWorldLive } from '@/lib/sites/new-world-live-load'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { getSpaceContentData, getSpaceSeriesRows } from '@/lib/spaces/content-data'
 import { WebsiteDocument } from '@/components/sites/website-document'
@@ -359,7 +361,7 @@ export async function SitePage({
   const mwPlan = mwBlocks ? planMensworkPage(mwBlocks) : null
   // The live rows, the bound domain, the editor content and its feature data are independent reads, so
   // they run together: a cache miss after every owner save pays for the slowest one, not the sum.
-  const [mwLive, boundDomain, websiteContent, websiteFeatures] = await Promise.all([
+  const [mwLive, boundDomain, websiteContent, websiteFeatures, newWorldLive] = await Promise.all([
     skin || websitePage || mwPlan
       ? loadMensworkLive(space.id, {
           events: true,
@@ -376,7 +378,10 @@ export async function SitePage({
         })
       : null,
     websitePage ? loadWebsiteFeatures(space.id, [websitePage.doc]) : {},
+    // The New World plans, shop and posts blocks read the Space's memberships, shop and library (LIVE-2053); read only when the page draws one.
+    websitePage && docHasNewWorldBlocks(websitePage.doc) ? loadNewWorldLive(space.id, space.slug) : null,
   ])
+  const websiteSpace = websiteContent ? (newWorldLive ? { ...websiteContent, newWorld: newWorldLive } : websiteContent) : undefined
   // Bold's season bar names the module now and the next Circle Night; Wildheart's date line names the sky
   // and the Space's next event, whatever it is called.
   const seasonNow = boldSite
@@ -477,7 +482,7 @@ export async function SitePage({
         admin={netSite ? siteAdminLinks(origin, space.slug, siteBase, null, 'network') : siteAdminLinks(origin, space.slug, siteBase, null, wildSite ? 'wildheart' : undefined)}
       >
         {website && websitePage && mwLive ? (
-          <WebsiteDocument doc={websitePage.doc} theme={editorTheme} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
+          <WebsiteDocument doc={websitePage.doc} theme={editorTheme} config={config} metadata={{ space: websiteSpace, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
         ) : model ? (
           <>
             <HouseHome model={model} />
