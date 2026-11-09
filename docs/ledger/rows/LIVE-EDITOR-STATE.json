@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-EDITOR-STATE",
+  "patch": {
+    "status": "done",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-11-09",
+      "evidence": "After the pending migration is applied, exercise authenticated own-domain draft save, revision conflict, scoped original-media upload and explicit publishing. Confirm anonymous public profile reads omit private website drafts and review threads. State, authorization, media, scheduler and privacy consequences have focused regression tests; actual website-host integration remains the acceptance gate. Closed on the owner's ruling, 2026-11-09 19:17Z. Asked how to close the shipped-pending-check rows, Daniel answered \"b\": close them without a production check. Any code for it that merged keeps its unit pins in CI. No production look was taken."
+    },
+    "closed": "2026-11-09"
+  },
+  "wave": null
+}

@@ -4,16 +4,16 @@
   "lane": "program",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/EDITOR-NEXT.md",
     "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-304."
   },
-  "detail": "B3 Lenses, pass BLD-304 (spec: docs/EDITOR-NEXT.md#bld-304). View as. Scope: components/builder/view-as. Build: Visitor, member and host previews using the existing viewer gates. Done when: Host-only blocks are absent in the visitor preview. Gates: vitest suite (required test job), Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-108. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "detail": "B3 Lenses, pass BLD-304 (spec: docs/EDITOR-NEXT.md#bld-304). View as. Scope: components/builder/view-as. Build: Visitor, member and host previews using the existing viewer gates. Done when: Host-only blocks are absent in the visitor preview. Gates: vitest suite (required test job), Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-108. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nView as (components/builder/view-as, lib/builder/view-as.ts): Host, Member, Visitor in the top bar as one kit segmented control (the three actions in the command bar; the eye button is Visitor, Esc is Host again). The host sees the editing canvas with placeholders, tags and sample copy. A visitor or a member sees the page in preview through the renderers' existing gates: puck.isEditing off, tags off, a live role's sample copy with no Space rows left out (roles.tsx emptyLive, exposed as roleDrawsNothingForVisitor), an unknown block type left out; what the view never meets is listed under the canvas with the reason and stays in the document. A member is a signed-in visitor: the same page today, with metadata.viewer { signedIn, member } as the seam for a block that wants to read it (no website block does yet). Test: host-only sections are absent in the visitor and member previews and present for the host; a live role with real rows is not host-only; over the kit corpus on a live Space with no rows every authored section stays.",
   "verify": {
-    "kind": "manual",
-    "checked": "2026-11-02",
-    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-304.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-304.mjs"
   },
+  "closed": "2026-11-09",
   "wave": "W7"
 }
