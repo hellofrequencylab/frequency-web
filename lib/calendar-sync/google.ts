@@ -1,6 +1,6 @@
 type DatePoint = { date: string } | { dateTime: string; timeZone?: string }
 
-export type GoogleChange =
+type GoogleChange =
   | { id: string; kind: 'cancelled' }
   | { id: string; kind: 'event'; etag: string; start: DatePoint; end: DatePoint }
 
