@@ -38,7 +38,7 @@ it('renders every role variant in every theme', async () => {
       return `<section data-cell="${id}:${variant}">${renderToStaticMarkup(render({ ...props, variant, puck: { metadata: { theme: base } } }))}</section>`
     })).join('\n')
     const attr = theme === 'NewWorldDay' ? ' data-th="day"' : ''
-    writeFileSync(`${out}/${theme}.html`, `<!doctype html><html data-design="frequency"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${theme === 'DAWN' ? app : ''}${css[base]}${roleBlocksCss(base)}*,*::before,*::after{box-sizing:border-box}body{margin:0}</style></head><body><div data-house-theme="${SCOPE_ID[theme] ?? ''}"${attr} style="background:var(--c-canvas);color:var(--c-text)">${body}</div></body></html>`)
+    writeFileSync(`${out}/${theme}.html`, `<!doctype html><html data-design="frequency"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${theme === 'DAWN' ? app : ''}${css[base]}${roleBlocksCss(base as Parameters<typeof roleBlocksCss>[0])}*,*::before,*::after{box-sizing:border-box}body{margin:0}</style></head><body><div data-house-theme="${SCOPE_ID[theme] ?? ''}"${attr} style="background:var(--c-canvas);color:var(--c-text)">${body}</div></body></html>`)
   }
   writeFileSync(`${out}/cells.json`, JSON.stringify(matrixCells()))
 })
