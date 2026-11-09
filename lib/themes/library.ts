@@ -11,19 +11,19 @@
 // PURE data: no React, no Supabase.
 
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
-import boldManifest from './manifests/bold.manifest.json'
-import cyberwitchManifest from './manifests/cyberwitch.manifest.json'
-import designerManifest from './manifests/designer.manifest.json'
-import freeHumanManifest from './manifests/free-human.manifest.json'
-import frequencyManifest from './manifests/frequency.manifest.json'
-import midnightManifest from './manifests/midnight.manifest.json'
-import networkKitManifest from './manifests/network-kit.manifest.json'
-import networkManifest from './manifests/network.manifest.json'
-import newWorldManifest from './manifests/new-world.manifest.json'
-import servicesManifest from './manifests/services.manifest.json'
-import templeKitManifest from './manifests/temple-kit.manifest.json'
-import templeManifest from './manifests/temple.manifest.json'
-import wildheartManifest from './manifests/wildheart.manifest.json'
+import boldManifest from './manifests/bold.manifest.json' with { type: 'json' }
+import cyberwitchManifest from './manifests/cyberwitch.manifest.json' with { type: 'json' }
+import designerManifest from './manifests/designer.manifest.json' with { type: 'json' }
+import freeHumanManifest from './manifests/free-human.manifest.json' with { type: 'json' }
+import frequencyManifest from './manifests/frequency.manifest.json' with { type: 'json' }
+import midnightManifest from './manifests/midnight.manifest.json' with { type: 'json' }
+import networkKitManifest from './manifests/network-kit.manifest.json' with { type: 'json' }
+import networkManifest from './manifests/network.manifest.json' with { type: 'json' }
+import newWorldManifest from './manifests/new-world.manifest.json' with { type: 'json' }
+import servicesManifest from './manifests/services.manifest.json' with { type: 'json' }
+import templeKitManifest from './manifests/temple-kit.manifest.json' with { type: 'json' }
+import templeManifest from './manifests/temple.manifest.json' with { type: 'json' }
+import wildheartManifest from './manifests/wildheart.manifest.json' with { type: 'json' }
 
 type SurfaceId = 'spotlight' | 'website' | 'email' | 'space'
 type SurfaceStatus = 'ready' | 'soon'
