@@ -56,6 +56,8 @@ import { resolveWebsiteBrand, setSectionVisibility, updateSectionDisplay, type S
 import { sitePageStyle, siteLook, siteLookOverrides, type SiteStyle } from '@/lib/theme/site-style'
 import { EDITOR_THEME_OF } from '@/lib/sites/site-render-style'
 import { Select } from '@/components/ui/select'
+import { VeraRail } from '@/components/builder/vera/vera-rail'
+import { acceptGroup, readPage, validateProposal, veraGhost, veraGroups, veraMaySpeak, veraMenu, veraOpening, type VeraProposal } from '@/lib/builder/vera'
 import styles from './builder-shell.module.css'
 // The editor sheet declares the builder's shape and editor tokens (BLD-002) on [data-builder].
 import '@/app/themes/active/editor-shell'
@@ -89,7 +91,7 @@ function useWindowWidth() {
   return width
 }
 
-export function BuilderShell({ host, brandName, logo, brandAccent, initial, config, metadata, live, links, origin, onSave, siteStyle, defaultAccent, fontClass }: WebsiteEditorShellProps) {
+export function BuilderShell({ host, brandName, logo, brandAccent, initial, config, metadata, live, links, origin, onSave, onLayout, siteStyle, defaultAccent, fontClass }: WebsiteEditorShellProps) {
   const [state, dispatch] = useReducer(builderReducer, initial, builderInit)
   const page = builderPage(state)
   const latest = useRef(state)
@@ -248,7 +250,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   // the rest is listed above it with the reason. The document itself keeps every section.
   const surfaced = useMemo(() => surfaceSections(viewed.doc, config, state.surface), [viewed.doc, config, state.surface])
   const frame = surfaceFrame(state.surface, BUILDER_DEVICE_WIDTH[state.device])
-  const canvasDoc = useMemo(() => (surfaced.hidden.length ? { ...viewed.doc, content: surfaced.shown } : viewed.doc), [viewed.doc, surfaced])
+  const surfaceDoc = useMemo(() => (surfaced.hidden.length ? { ...viewed.doc, content: surfaced.shown } : viewed.doc), [viewed.doc, surfaced])
   const doors = useMemo(() => (state.surface === 'spotlight' ? spotlightDoors(viewed.doc, config, links.siteBase, page.slug) : null), [state.surface, viewed.doc, config, links.siteBase, page.slug])
   const dragId = useRef<string | null>(null)
   const [dropAt, setDropAt] = useState<number | null>(null)
@@ -347,6 +349,64 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
     setToast({ say: `Updated ${ids.size} ${ids.size === 1 ? 'section' : 'sections'} to the new layouts.`, undo: true })
   }
 
+  // VERA (BLD-402): one more client of the draft. She never speaks first except on an empty page; otherwise only
+  // from ⌘K, the Vera button or the Add sheet. A proposal is grouped by section, drawn as a ghost, and each Accept is
+  // one edit of the draft (one undo step). Her output is parsed again here against this page before a line shows.
+  const [veraOn, setVeraOn] = useState(() => veraOpening(builderPage(state).doc) !== null)
+  const [veraSeed, setVeraSeed] = useState('')
+  const [veraBusy, setVeraBusy] = useState(false)
+  const [veraStatus, setVeraStatus] = useState('')
+  const [veraProposal, setVeraProposal] = useState<VeraProposal | null>(null)
+  const [veraPreview, setVeraPreview] = useState<string | null>(null)
+  const veraMenuNow = useMemo(() => veraMenu(page.doc, config, cards.filter((c) => !c.disabled).map((c) => ({ type: c.type, label: c.intent }))), [page.doc, config, cards])
+  const veraProposalHere = veraProposal && veraProposal.slug === page.slug ? veraProposal : null
+  const groups = useMemo(() => (veraProposalHere ? veraGroups(veraProposalHere, page.doc, config, veraMenuNow) : []), [veraProposalHere, page.doc, config, veraMenuNow])
+  const ghost = useMemo(() => {
+    if (!veraProposalHere || !veraPreview) return null
+    const group = veraPreview === 'all' ? 'all' : groups.find((g) => g.id === veraPreview)
+    return group ? veraGhost(veraProposalHere, group, page.doc, config) : null
+  }, [veraProposalHere, veraPreview, groups, page.doc, config])
+  const openVera = (ask?: string) => {
+    if (!veraMaySpeak(ask === undefined ? 'rail' : 'command')) return
+    setVeraSeed(ask ?? '')
+    setVeraOn(true)
+    if (modes.right !== 'pinned' && modes.right !== 'overlay') toggleRail('right')
+    if (ask?.trim()) void askVera(ask.trim())
+  }
+  async function askVera(request: string) {
+    if (!onLayout) { setVeraStatus('Vera is not available in this editor yet.'); return }
+    const slug = builderPage(latest.current).slug
+    setVeraBusy(true); setVeraStatus(''); setVeraProposal(null); setVeraPreview(null)
+    try {
+      const doc = builderPage(latest.current).doc
+      const result = await onLayout(request, readPage(doc, config), veraMenuNow)
+      if (!result.ok) { setVeraStatus(result.error); return }
+      const here = builderPage(latest.current)
+      if (here.slug !== slug) { setVeraStatus('That proposal was for another page. Ask again here.'); return }
+      const proposal = validateProposal(result, here.doc, slug, veraMenuNow)
+      if (!proposal.changes.length && !proposal.refused.length) { setVeraStatus(proposal.note || 'Vera had no change for that. Try naming the section.'); return }
+      setVeraProposal(proposal)
+      if (!proposal.changes.length) setVeraStatus(proposal.note)
+    } catch { setVeraStatus('Vera could not reply. Try again in a moment.') }
+    finally { setVeraBusy(false) }
+  }
+  const acceptVera = (groupId: string | 'all') => {
+    const now = builderPage(latest.current)
+    if (!veraProposal || veraProposal.slug !== now.slug) return
+    const picked = groupId === 'all' ? groups : groups.filter((g) => g.id === groupId)
+    if (!picked.length) return
+    // Every picked group applies to one document, so Accept (one group or all) is one edit and one undo.
+    const joined = { id: groupId, title: '', lines: picked.flatMap((g) => g.lines) }
+    const result = acceptGroup(veraProposal, joined, now.doc, config)
+    if (result.applied) editDoc(() => result.doc)
+    setVeraProposal(result.rest.changes.length || result.rest.refused.length ? result.rest : null)
+    setVeraPreview(null)
+    setVeraStatus(result.applied ? `Applied ${result.applied} ${result.applied === 1 ? 'change' : 'changes'} to your draft. Undo takes ${result.applied === 1 ? 'it' : 'them'} back in one step.${result.missed.length ? ` Left alone: ${result.missed.join('; ')}.` : ''}` : `Nothing changed. ${result.missed.join('; ')}`)
+  }
+  // The canvas draws Vera's ghost while a proposal is being previewed, otherwise what this surface shows of the draft.
+  const canvasDoc = ghost ? ghost.doc : surfaceDoc
+  const opening = useMemo(() => (veraMaySpeak('page-created') ? veraOpening(page.doc) : null), [page.doc])
+
   // The command bar (BLD-106): every action by its registry id, so ⌘K reaches everything a button does.
   const [commandOpen, setCommandOpen] = useState(false)
   function runAction(id: BuilderActionId) {
@@ -364,6 +424,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       case 'device-desktop': case 'device-tablet': case 'device-phone': dispatch({ type: 'device', device: id.slice(7) as BuilderDevice }); break
       case 'view-host': case 'view-member': case 'view-visitor': viewAs(id.slice(5) as ViewAs); break
       case 'theme': setThemeOpen(true); break
+      case 'vera': openVera(); break
       case 'surface-site': case 'surface-profile': case 'surface-spotlight': case 'surface-email': dispatch({ type: 'surface', surface: id.slice(8) as BuilderSurface }); break
       case 'rail-left': case 'rail-right': toggleRail(id === 'rail-left' ? 'left' : 'right'); break
       case 'pin-left': case 'pin-right': railDispatch({ type: 'pin', side: id === 'pin-left' ? 'left' : 'right', pinned: true }); break
@@ -372,12 +433,12 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         break
     }
   }
-  function runCommand(rowId: string) {
+  function runCommand(rowId: string, query = '') {
     setCommandOpen(false)
     if (rowId.startsWith('do:')) runAction(rowId.slice(3) as BuilderActionId)
     else if (rowId.startsWith('go-section:')) { const id = rowId.slice(11); dispatch({ type: 'select', id }); requestAnimationFrame(() => document.querySelector(`[data-spine-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' })) }
     else if (rowId.startsWith('go-page:')) dispatch({ type: 'page', slug: rowId.slice(8) })
-    else if (rowId === 'ask') setToast({ say: 'Vera arrives in the builder with BLD-402. Your question is kept for her.', undo: false })
+    else if (rowId === 'ask') openVera(query)
   }
 
   function keys(event: KeyboardEvent<HTMLDivElement>) {
@@ -415,6 +476,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <button type="button" data-action="redo" className={`${styles.btn} ${styles.icon}`} aria-label="Redo" title="Redo" disabled={!state.future.length} onClick={() => dispatch({ type: 'redo' })}><Redo2 size={16} aria-hidden /></button>
         <span className={styles.wide}><SurfaceSwitcher surface={state.surface} onChange={(surface) => dispatch({ type: 'surface', surface })} /></span>
         <button type="button" data-action="theme" className={`${styles.btn} ${styles.icon}`} aria-label="Change the theme" title="Theme" aria-haspopup="dialog" aria-expanded={themeOpen} onClick={() => setThemeOpen(true)}><Palette size={16} aria-hidden /></button>
+        <button type="button" data-action="vera" className={`${styles.btn} ${styles.icon}`} aria-label="Ask Vera" title="Ask Vera" aria-pressed={veraOn} onClick={() => openVera()}><Sparkles size={16} aria-hidden /></button>
         <button id="builder-command" type="button" className={`${styles.btn} ${styles.wide}`} aria-label="Find, do or ask. Shortcut: command K" aria-haspopup="dialog" aria-expanded={commandOpen} onClick={() => setCommandOpen(true)}><span>Find</span><span className={styles.kbd}>⌘K</span></button>
         <button type="button" data-action="focus" className={`${styles.btn} ${styles.icon}`} aria-label="Focus: hide both side panels" title="Focus (Esc to leave)" aria-pressed={rails.focus} onClick={() => railDispatch({ type: 'focus', on: !rails.focus })}><Maximize2 size={16} aria-hidden /></button>
         <span className={styles.wide}><ViewAsSwitch view={view} onChange={viewAs} /></span>
@@ -453,6 +515,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
 
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
         <div style={{ width: `min(100%, ${frame.width}px)`, margin: '0 auto' }}><SurfaceNotes surface={state.surface} sections={surfaced} onSelect={(id) => dispatch({ type: 'select', id })} /></div>
+        {ghost && <p className={styles.ghostNote} role="status">Previewing Vera&apos;s {ghost.changed === 1 ? 'change' : 'changes'}. Nothing is on your draft until you accept.</p>}
         <div className={`${styles.frame} ${frame.stackClass}`} data-surface={state.surface} data-density={frame.density} style={{ width: `min(100%, ${frame.width}px)` }}>
           {email ? <EmailLens lens={email} from={brandName} onSelect={(id) => dispatch({ type: 'select', id: id || null })} /> : doors ? <SpotlightDoors doors={doors} brandName={brandName} logo={brand.logo ?? null} selectedId={state.selectedId} onSelect={(id) => dispatch({ type: 'select', id })} /> : profile ? <ProfileFrame brandName={brandName}>{pageCanvas}</ProfileFrame> : pageCanvas}
         </div>
@@ -467,7 +530,11 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
           {modes.right === 'pinned' && <button type="button" data-action="rail-right" className={`${styles.btn} ${styles.icon}`} aria-label="Let the settings float" title="Unpin" onClick={() => railDispatch({ type: 'pin', side: 'right', pinned: false })}><PinOff size={16} aria-hidden /></button>}
         </div>
         <div className={styles.panelBody}>
-        {selected ? <>
+        {veraOn && <>
+          <VeraRail opening={opening} proposal={veraProposalHere} groups={groups} previewing={veraPreview} busy={veraBusy} status={veraStatus} seed={veraSeed} onAsk={(q) => void askVera(q)} onPreview={setVeraPreview} onAccept={acceptVera} onAcceptAll={() => acceptVera('all')} onDismiss={() => { setVeraProposal(null); setVeraPreview(null); setVeraStatus('') }} />
+          <button type="button" className={styles.btn} onClick={() => { setVeraOn(false); setVeraPreview(null) }}>Back to section settings</button>
+        </>}
+        {!veraOn && (selected ? <>
           <h2>{config.components[selected.type]?.label ?? selected.type}</h2>
           <LayoutChips type={selected.type} props={selected.props as Record<string, unknown>} theme={canvasTheme}
             onChange={(patch) => { const id = String(selected.props.id); editDoc((doc) => updateBlockPropsDeep(doc, config, id, patch)) }}
@@ -476,7 +543,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         </> : <>
           <h2>Nothing selected</h2>
           <p>Click a section on the page, or pick one in the outline.</p>
-        </>}
+        </>)}
         </div>
       </aside>
 
@@ -485,10 +552,10 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <button type="button" data-action="rail-left" aria-pressed={modes.left === 'overlay'} onClick={() => toggleRail('left')}><ListTree size={20} aria-hidden /><span>Outline</span></button>
         <button type="button" data-action="add" aria-haspopup="dialog" onClick={() => openAdd()}><Plus size={20} aria-hidden /><span>Add</span></button>
         <button type="button" data-action="rail-right" aria-pressed={modes.right === 'overlay'} onClick={() => toggleRail('right')}><SlidersHorizontal size={20} aria-hidden /><span>Tune</span></button>
-        <button type="button" onClick={() => setCommandOpen(true)}><Sparkles size={20} aria-hidden /><span>Vera</span></button>
+        <button type="button" data-action="vera" onClick={() => openVera()}><Sparkles size={20} aria-hidden /><span>Vera</span></button>
       </nav>}
       {themeOpen && <ThemeLens draft={state.draft} trying={trying} onTry={setTrying} onPick={pickTheme} onClose={() => setThemeOpen(false)} />}
-      {addAt !== null && <AddSheet cards={cards} doc={page.doc} at={addAt} onPick={pickSection} onAsk={() => { setAddAt(null); setToast({ say: 'Vera arrives in the builder with BLD-402. Your question is kept for her.', undo: false }) }} onClose={() => setAddAt(null)} preview={previewOf} />}
+      {addAt !== null && <AddSheet cards={cards} doc={page.doc} at={addAt} onPick={pickSection} onAsk={(q) => { setAddAt(null); openVera(q) }} onClose={() => setAddAt(null)} preview={previewOf} />}
       {plan && <UpdateLayoutsSheet plan={plan} pageLabel={page.label} preview={previewBlock} onApply={applyLayouts} onClose={() => setLayoutsOpen(false)} focusFallbackId="builder-undo" />}
       {sheetOpen && <PublishSheet readiness={ready} onFix={(item) => { setSheetOpen(false); goTo(item) }} onPublish={(keep) => { if (canPublish(ready, keep)) { setSheetOpen(false); void save(true) } }} onClose={() => setSheetOpen(false)} />}
       {commandOpen && <CommandBar sections={spine} pages={state.draft.pages} selected={!!state.selectedId} onRun={runCommand} onClose={() => setCommandOpen(false)} />}
