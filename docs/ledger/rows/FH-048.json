@@ -1,0 +1,18 @@
+{
+  "id": "FH-048",
+  "title": "Hunts FH-048: Review broader rollout and retirement",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 5, Expansion. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Compare cohorts, operational cost, merchant benefit and field risks. Define optional team/branch/fundraiser launches independently. Done when: Each chosen expansion has its own approvals, flag, monitoring and rollback. Legacy retirement needs active use and obligations inventory. Requires: FH-034, FH-041, FH-042, FH-043, FH-044, FH-046, FH-047. Owner role: Product and release.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"docs/hunts/EXPANSION-REVIEW.md\")?0:1)'"
+  },
+  "wave": "W7"
+}

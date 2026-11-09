@@ -1,0 +1,18 @@
+{
+  "id": "FH-029",
+  "title": "Hunts FH-029: Implement invite acceptance and withdrawal",
+  "lane": "program",
+  "priority": "P0",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 3, Collective. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Scope to named Space steward, pin terms and guard publish/claim with live partner state. Done when: Forwarded invite does not confer rights. Withdrawn venue blocks new proof and preserves historic credit. Requires: FH-008, FH-013, FH-028. Owner role: Web and database.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/partners.ts\")?0:1)'"
+  },
+  "wave": "W7"
+}

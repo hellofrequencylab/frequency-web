@@ -1,0 +1,18 @@
+{
+  "id": "FH-031",
+  "title": "Hunts FH-031: Connect canonical Event finale",
+  "lane": "program",
+  "priority": "P0",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 3, Rally. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Project host Event, capacity, RSVP and A3 attendance evidence at the correct Event. Done when: Completing Hunt never grants admission when an Event is full or ticket absent. Requires: FH-020, FH-029, FH-030. Owner role: Events and web.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/rally-finale.ts\")?0:1)'"
+  },
+  "wave": "W7"
+}
