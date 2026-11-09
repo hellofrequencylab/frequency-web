@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const MAX_PATCH = 64_000
 const MAX_FINDINGS = 5
@@ -73,7 +73,7 @@ async function publish(outputPath) {
   execFileSync('gh', ['issue', 'create', '--repo', repo, '--title', `Sentinel review for ${head.slice(0, 8)}`, '--body-file', '-'], { input: body, stdio: ['pipe', 'inherit', 'inherit'] })
 }
 
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+if (invokedDirectly(import.meta.url)) {
   const [mode, outputPath] = process.argv.slice(2)
   if (!outputPath || !['sweep', 'publish'].includes(mode)) throw new Error('Usage: sentinel-sweep.mjs sweep|publish report.json')
   await (mode === 'sweep' ? sweep(outputPath) : publish(outputPath))
