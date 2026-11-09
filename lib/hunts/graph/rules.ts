@@ -22,7 +22,7 @@ export function distinctMembers(g: RuleGroup): string[] {
  * ALL: every member credited. ANY: at least one. COUNT: at least `min_count`
  * distinct buckets among credited members.
  */
-export function groupSatisfied(g: RuleGroup, buckets: ReadonlyMap<string, string>): boolean {
+function groupSatisfied(g: RuleGroup, buckets: ReadonlyMap<string, string>): boolean {
   const members = distinctMembers(g)
   if (g.logic === 'all') return members.length > 0 && members.every((k) => buckets.has(k))
   const seen = new Set<string>()
