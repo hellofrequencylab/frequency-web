@@ -45,7 +45,7 @@ export function commitTheme(draft: WebsiteSnapshot, id: SiteThemeId): WebsiteSna
   return { ...draft, theme, look: undefined, pages: draft.pages.map((page) => ({ ...page, doc: resetDocumentPlacements(page.doc) })) }
 }
 
-export interface ThemeCard {
+interface ThemeCard {
   id: SiteThemeId
   theme: WebsiteTheme
   label: string
@@ -64,7 +64,7 @@ export function themeCards(draft: Pick<WebsiteSnapshot, 'theme' | 'pages'>): The
   }))
 }
 
-export interface SectionLayout {
+interface SectionLayout {
   id: string
   role: RoleId
   /** The layout the section draws on this theme. */
