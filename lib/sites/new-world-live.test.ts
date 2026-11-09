@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { docHasNewWorldBlocks, newWorldLiveFrom, planPriceLabel, readNewWorldLive, type NewWorldLiveInput } from './new-world-live'
+import { docHasNewWorldBlocks, docHasNewWorldWall, newWorldLiveFrom, planPriceLabel, readNewWorldLive, wallPostsFrom, type NewWorldLiveInput, type NewWorldWallSource } from './new-world-live'
 import type { MembershipTier } from '@/lib/spaces/memberships'
 import type { CommerceProduct } from '@/lib/commerce/types'
 
@@ -65,5 +65,36 @@ describe('readNewWorldLive and docHasNewWorldBlocks', () => {
     expect(readNewWorldLive({ newWorld: bag })).toEqual(bag)
     expect(docHasNewWorldBlocks({ content: [{ type: 'NewWorldPlans', props: {} }] })).toBe(true)
     expect(docHasNewWorldBlocks({ content: [{ type: 'ServicesPlans', props: {} }] })).toBe(false)
+  })
+})
+
+// LIVE-2108: the community wall block reads the rows an anonymous reader gets from space_wall_feed.
+describe('wallPostsFrom', () => {
+  const src = (o: Partial<NewWorldWallSource>): NewWorldWallSource => ({ id: 'p1', body: 'Hello wall', post_type: 'feed', created_at: '2026-11-02T18:00:00Z', reaction_count: 14, comment_count: 3, author: { display_name: 'Maya Torres' }, ...o })
+
+  it('shapes the newest three posts with words, names the team on an announcement and prints the counts', () => {
+    const wall = wallPostsFrom([src({ post_type: 'announcement' }), src({ id: 'p2', body: '  ', reaction_count: 0 }), src({ id: 'p3', reaction_count: 1, comment_count: 1, author: null }), src({ id: 'p4', reaction_count: 0, comment_count: 0 }), src({ id: 'p5' })], 'danieltyack')
+    expect(wall.on).toBe(true)
+    expect(wall.href).toBe('/spaces/danieltyack/community')
+    expect(wall.rows.map((r) => [r.id, r.name, r.role, r.meta, r.announcement])).toEqual([
+      ['p1', 'Maya Torres', 'From the team', '14 high fives · 3 replies', true],
+      ['p3', 'A member', 'Member', '1 high five · 1 reply', false],
+      ['p4', 'Maya Torres', 'Member', '', false],
+    ])
+    expect(wall.rows[0].date).toMatch(/^Nov [12]$/)
+  })
+
+  it('is off when the read failed or nobody outside may read the wall', () => {
+    expect(wallPostsFrom(null, 'x')).toEqual({ on: false, href: '/spaces/x/community', rows: [] })
+    expect(wallPostsFrom([], null)).toEqual({ on: false, href: null, rows: [] })
+    expect(wallPostsFrom([src({ body: null })], 'x').on).toBe(false)
+  })
+
+  it('only reads the wall for a page that draws the wall block, and carries the wall through the bag', () => {
+    expect(docHasNewWorldWall({ content: [{ type: 'NewWorldSpaceWall', props: {} }] })).toBe(true)
+    expect(docHasNewWorldWall({ content: [{ type: 'NewWorldReviews', props: {} }] })).toBe(false)
+    const lists = { plans: { on: true, rows: [] }, shop: { on: true, rows: [] }, posts: { on: true, rows: [] } }
+    expect(readNewWorldLive({ newWorld: lists })?.wall).toBeUndefined()
+    expect(readNewWorldLive({ newWorld: { ...lists, wall: { on: true, href: '/spaces/x/community', rows: [] } } })?.wall).toEqual({ on: true, href: '/spaces/x/community', rows: [] })
   })
 })

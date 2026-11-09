@@ -4,13 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "S",
-  "status": "open",
-  "source": { "file": "lib/create-space/preview-site.ts", "ref": "Daniel 2026-11-09: \"allow New World violet in violet-family\"." },
+  "status": "done",
+  "source": {
+    "file": "lib/create-space/preview-site.ts",
+    "ref": "Daniel 2026-11-09: \"allow New World violet in violet-family\"."
+  },
   "detail": "#4677 left New World's Violet swatch out of the builder's accent list because the violet-family probe (LIVE-962) bars the hex outside the files it names. On Daniel's phrase the probe allows that one colour, 8B5CFF, in lib/create-space/preview-site.ts, and the swatch is back in the list.",
   "verify": {
     "kind": "manual",
     "checked": "2026-11-09",
-    "evidence": "node scripts/probes/violet-family.mjs passes; preview-site.test.ts resolves every theme-page swatch, Violet included."
+    "evidence": "node scripts/probes/violet-family.mjs passes; preview-site.test.ts resolves every theme-page swatch, Violet included. Closed on the owner's ruling, 2026-11-09 19:17Z. Asked how to close the shipped-pending-check rows, Daniel answered \"b\": close them without a production check. Any code for it that merged keeps its unit pins in CI. No production look was taken."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-09"
 }

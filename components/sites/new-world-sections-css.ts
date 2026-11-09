@@ -251,6 +251,15 @@ ${N} .nw-review blockquote.nw-display{font-size:26px;line-height:1.2}
 ${N} .nw-review figcaption{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:18px;border-top:1px solid var(--nw-border-subtle)}
 ${N} .nw-review figcaption small{${MONO};font-size:10px;color:var(--nw-text-muted)}
 @media (max-width:899px){${N} .nw-review:nth-child(2){margin-top:0}}
+${N} .nw-wall .nw-wall-post{gap:14px}
+${N} .nw-wall-who{display:flex;align-items:center;gap:12px}
+${N} .nw-wall-who span:last-child{display:flex;flex-direction:column;line-height:1.25}
+${N} .nw-wall-who small{font-size:12px;color:var(--nw-text-muted)}
+${N} .nw-wall-face{flex:none;width:40px;height:40px;border-radius:999px;display:grid;place-items:center;font-weight:700;background:color-mix(in oklab,var(--color-primary) 22%,transparent);color:var(--color-primary)}
+${N} .nw-wall-post p{margin:0;flex:1;font-size:18px;line-height:1.5;color:var(--nw-text-primary);text-wrap:pretty}
+${N} .nw-wall-post p.nw-display{font-size:26px;line-height:1.2}
+${N} .nw-wall-meta{padding-top:18px;border-top:1px solid var(--nw-border-subtle)}
+${N} .nw-wall-meta small{${MONO};font-size:10px;color:var(--nw-text-muted)}
 ${N} .nw-team{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))}
 ${N} .nw-person{margin:0;display:flex;flex-direction:column;gap:12px}
 ${N} .nw-person:nth-child(even){margin-top:36px}
