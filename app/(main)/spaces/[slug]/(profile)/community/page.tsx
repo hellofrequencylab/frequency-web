@@ -9,6 +9,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import {
+  readWallArrivals,
   readWallSettings,
   readWallStanding,
   standingCanPost,
@@ -78,6 +79,11 @@ export default async function SpaceCommunityPage({ params }: { params: Promise<{
   const canManage = caps?.canEditProfile === true
   const canRead = canManage || standingCanRead(standing, settings, visibility === 'private')
   const canPost = canManage || standingCanPost(standing, settings)
+  // Announce is for the Space team: the owner and the staff ladder, the rungs private.is_space_member
+  // admits. The database re-checks on write (LIVE-2095).
+  const canAnnounce = standing === 'owner' || standing === 'team' || caps?.isOwner === true || caps?.role != null
+  // Who joined this week, for the strip above the box. Read only when there is a box to put it on.
+  const arrivals = canPost ? await readWallArrivals(space.id) : []
 
   return (
     <div className="space-y-6">
@@ -97,7 +103,13 @@ export default async function SpaceCommunityPage({ params }: { params: Promise<{
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <section aria-label="The wall" className="min-w-0 space-y-4">
             {canPost ? (
-              <WallComposer spaceId={space.id} slug={space.slug} spaceName={brandName} />
+              <WallComposer
+                spaceId={space.id}
+                slug={space.slug}
+                spaceName={brandName}
+                canAnnounce={canAnnounce}
+                arrivals={arrivals}
+              />
             ) : (
               <ClosedToPost standing={standing} brandName={brandName} slug={space.slug} />
             )}
