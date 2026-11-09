@@ -1,0 +1,21 @@
+/* THE PROFILE FRAME (BLD-215): the member shell's chrome around the Space page, in Frequency tokens only. The page inside
+   wears the Space's fonts and accent through its own canvas variables; nothing here is a site theme. */
+
+.root { display: grid; background: var(--fq-bg-sunken); color: var(--fq-text-strong); font-family: var(--fq-font-sans); }
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--fq-border-hair);
+  background: var(--fq-surface-raised);
+  font-size: 13px;
+  color: var(--fq-text-muted);
+}
+.mark { width: 18px; height: 18px; border-radius: 50%; background: var(--fq-text-strong); flex: none; }
+.crumb { white-space: nowrap; }
+.crumb b { color: var(--fq-text-strong); font-weight: 600; }
+.tabs { display: flex; gap: 14px; margin-left: auto; white-space: nowrap; }
+.tabOn { color: var(--fq-text-strong); font-weight: 600; text-decoration: underline; text-underline-offset: 6px; }
+.column { max-width: 840px; margin: 0 auto; width: 100%; }
