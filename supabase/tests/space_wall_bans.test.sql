@@ -129,18 +129,18 @@ select lives_ok(
 -- ── REACT ─────────────────────────────────────────────────────────────────────────────────────────
 select throws_ok(
   $$ insert into post_reactions (post_id, profile_id, reaction_type)
-     values ('00000000-0000-4000-f401-000000000011', '00000000-0000-4000-b401-000000000004', 'heart') $$,
+     values ('00000000-0000-4000-f401-000000000011', '00000000-0000-4000-b401-000000000004', '❤️') $$,
   '42501', null, 'a banned member cannot react on that wall''s posts');
 select lives_ok(
   $$ insert into post_reactions (post_id, profile_id, reaction_type)
-     values ('00000000-0000-4000-f401-000000000012', '00000000-0000-4000-b401-000000000004', 'heart') $$,
+     values ('00000000-0000-4000-f401-000000000012', '00000000-0000-4000-b401-000000000004', '❤️') $$,
   'and still reacts on another Space''s wall');
 
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a401-000000000003', 'role', 'authenticated')::text, true);
 select lives_ok(
   $$ insert into post_reactions (post_id, profile_id, reaction_type)
-     values ('00000000-0000-4000-f401-000000000011', '00000000-0000-4000-b401-000000000003', 'heart') $$,
+     values ('00000000-0000-4000-f401-000000000011', '00000000-0000-4000-b401-000000000003', '❤️') $$,
   'an unbanned member reacts on the wall');
 
 -- ── KINDS ─────────────────────────────────────────────────────────────────────────────────────────
