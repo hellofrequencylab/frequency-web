@@ -11,6 +11,7 @@ import { NodeLinkListBuilder } from '@/components/entity-blocks/node-link-list-b
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { Switch } from '@/components/ui/switch'
 import { buttonClasses } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { SPACE_SPOTLIGHT_BLOCK_IDS } from '@/lib/spaces/spotlight'
 import {
@@ -170,7 +171,7 @@ export function SpaceSpotlightEditor({
                     onClick={() => onLook(o.look)}
                     disabled={readOnly || pending}
                     aria-pressed={look === o.look}
-                    className={`rounded-card border px-3 py-2 text-left transition-colors disabled:opacity-60 ${look === o.look ? 'border-primary bg-primary-bg' : 'border-border hover:border-primary'}`}
+                    className={choiceTileClasses(look === o.look, 'rounded-card px-3 py-2 text-left')}
                   >
                     <span className="block text-body-sm font-semibold text-text">{o.label}</span>
                     <span className="block text-meta text-muted">{o.blurb}</span>

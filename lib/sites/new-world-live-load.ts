@@ -5,7 +5,9 @@ import { spaceFunctionDef, spaceFunctionEnabled, type SpaceFunctionKey } from '@
 import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { listPublicSpaceCatalog } from '@/lib/commerce/products'
 import { getSpacePractices } from '@/lib/spaces/content-data'
-import { newWorldLiveFrom, type NewWorldLive } from './new-world-live'
+import { createPublicClient } from '@/lib/supabase/public'
+import { readFeedRpc } from '@/lib/feed/load-feed'
+import { newWorldLiveFrom, wallPostsFrom, type NewWorldLive, type NewWorldWallSource } from './new-world-live'
 
 // The server half of lib/sites/new-world-live.ts (LIVE-2053): the Space's memberships, shop and library through the readers
 // the Space page already uses, each FAIL-SAFE to empty, plus the four function switches read through the pure resolver
@@ -14,7 +16,20 @@ import { newWorldLiveFrom, type NewWorldLive } from './new-world-live'
 
 const EMPTY: NewWorldLive = { plans: { on: false, rows: [] }, shop: { on: false, rows: [] }, posts: { on: false, rows: [] } }
 
-export const loadNewWorldLive = cache(async (spaceId: string, slug: string | null): Promise<NewWorldLive> => {
+/** The wall as an ANONYMOUS reader sees it (LIVE-2108): the public client, never the cookie one, so the site shows exactly
+ *  what a stranger may read. `space_wall_feed` is gated in the database (private.can_read_space_wall); a members-only or
+ *  private wall comes back empty and the block draws nothing. Fail-safe to off. */
+async function readPublicWall(spaceId: string, slug: string | null) {
+  try {
+    const res = await createPublicClient().rpc('space_wall_feed', { _space_id: spaceId, _limit: 6 })
+    const loaded = readFeedRpc<NewWorldWallSource>('space_wall_feed', res)
+    return wallPostsFrom(loaded.kind === 'ok' ? loaded.items : null, slug)
+  } catch {
+    return wallPostsFrom(null, slug)
+  }
+}
+
+export const loadNewWorldLive = cache(async (spaceId: string, slug: string | null, wall = false): Promise<NewWorldLive> => {
   try {
     const space = await getSpaceById(spaceId)
     if (!space) return EMPTY
@@ -23,12 +38,14 @@ export const loadNewWorldLive = cache(async (spaceId: string, slug: string | nul
       return def ? spaceFunctionEnabled(space, def) : false
     }
     const switches = { memberships: on('memberships'), shop: on('shop'), journeys: on('journeys'), practices: on('practices') }
-    const [tiers, products, practices] = await Promise.all([
+    const [tiers, products, practices, wallList] = await Promise.all([
       switches.memberships ? listMembershipTiers(spaceId) : Promise.resolve([]),
       switches.shop ? listPublicSpaceCatalog(spaceId).catch(() => []) : Promise.resolve([]),
       switches.journeys || switches.practices ? getSpacePractices(spaceId).catch(() => null) : Promise.resolve(null),
+      wall ? readPublicWall(spaceId, slug) : Promise.resolve(null),
     ])
-    return newWorldLiveFrom({ slug, switches, tiers, products, practices })
+    const live = newWorldLiveFrom({ slug, switches, tiers, products, practices })
+    return wallList ? { ...live, wall: wallList } : live
   } catch {
     return EMPTY
   }

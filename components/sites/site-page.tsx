@@ -81,7 +81,7 @@ import { config } from '@/lib/page-editor/config'
 import { publishedWebsitePage, publishedWebsiteSnapshot, resolveWebsiteChrome, resolveWebsiteChromeCta } from '@/lib/sites/editor/state'
 import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
 import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
-import { docHasNewWorldBlocks } from '@/lib/sites/new-world-live'
+import { docHasNewWorldBlocks, docHasNewWorldWall } from '@/lib/sites/new-world-live'
 import { loadNewWorldLive } from '@/lib/sites/new-world-live-load'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { getSpaceContentData, getSpaceSeriesRows } from '@/lib/spaces/content-data'
@@ -379,7 +379,7 @@ export async function SitePage({
       : null,
     websitePage ? loadWebsiteFeatures(space.id, [websitePage.doc]) : {},
     // The New World plans, shop and posts blocks read the Space's memberships, shop and library (LIVE-2053); read only when the page draws one.
-    websitePage && docHasNewWorldBlocks(websitePage.doc) ? loadNewWorldLive(space.id, space.slug) : null,
+    websitePage && docHasNewWorldBlocks(websitePage.doc) ? loadNewWorldLive(space.id, space.slug, docHasNewWorldWall(websitePage.doc)) : null,
   ])
   const websiteSpace = websiteContent ? (newWorldLive ? { ...websiteContent, newWorld: newWorldLive } : websiteContent) : undefined
   // Bold's season bar names the module now and the next Circle Night; Wildheart's date line names the sky

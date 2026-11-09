@@ -205,7 +205,7 @@ const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
 
 type SiteCorners = 'soft' | 'subtle' | 'square'
 type SiteSpacing = 'airy' | 'balanced' | 'compact'
-type SiteHeader = 'pill' | 'bar'
+type SiteHeader = 'pill' | 'bar' | 'centered'
 type SiteFooter = 'full' | 'minimal'
 
 /** The global style choices, in the order the editors offer them, each option with its owner-facing label. */
@@ -223,6 +223,7 @@ export const SITE_LOOK_OPTIONS = {
   header: [
     { id: 'pill', label: 'Floating pill' },
     { id: 'bar', label: 'Full-width bar' },
+    { id: 'centered', label: 'Centered' },
   ],
   footer: [
     { id: 'full', label: 'Full' },

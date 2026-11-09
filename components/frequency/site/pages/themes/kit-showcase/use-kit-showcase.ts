@@ -5,6 +5,9 @@
 // design's template reads, so the view (kit-showcase-view.tsx) stays the design's own markup.
 import { useCallback, useEffect, useState } from 'react'
 import { rememberKit } from '@/lib/create-space/last-kit'
+import { themePagePath } from '@/lib/themes/library'
+import { myThemeAction } from '@/app/(marketing)/themes/actions'
+import { READY_FILTERS, REGISTER_FILTERS, kitFacts, kitMatches, type ReadyFilter, type RegisterFilter } from './filters'
 import { useCyberWitchPick, writeAccent as writeCyberWitchAccent } from '../cyberwitch-accent'
 import { FILTERS, LAY, SPD, SURF, THEMES, type Any } from './data'
 import { BASE, SKIN, lum, onA, resolveDeco } from './skins'
@@ -14,7 +17,7 @@ export interface ShowcaseLinks {
   start: string
   plans: string
   /** Per design kit id: where "Use <kit>" goes, and the kit's own page (null when it has none yet). */
-  kits: Record<string, { use: string | null; page: string | null; /** The builder's kit id, for rememberKit() (lib/create-space/last-kit.ts) when this kit's section is in view. */ kit: string | null }>
+  kits: Record<string, { use: string | null; page: string | null; /** The builder's kit id, for rememberKit() (lib/create-space/last-kit.ts) when this kit's section is in view. */ kit: string | null; /** The Mega Theme id behind this design kit (its manifest), or null. */ theme: string | null }>
 }
 
 const SN: Record<string, string> = { website: 'Website', email: 'Email', spotlight: 'Spotlight', space: 'Space page' }
@@ -37,6 +40,15 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
   // CyberWitch's neon is one pick on this device: the theme page's dial and this section read and write the same one.
   const cwPick = useCyberWitchPick()
   const [filter, setFilter] = useState('all')
+  const [register, setRegister] = useState<RegisterFilter>('all')
+  const [ready, setReady] = useState<ReadyFilter>('all')
+  // The theme the signed-in person's own site wears (null signed out, or until the read lands): the "your site" chip.
+  const [mine, setMine] = useState<{ theme: string; slug: string } | null>(null)
+  useEffect(() => {
+    let on = true
+    myThemeAction().then((m) => { if (on) setMine(m) }).catch(() => {})
+    return () => { on = false }
+  }, [])
   const [lb, setLb] = useState<{ id: string; surf: string } | null>(null)
   const [feat, setFeat] = useState<Record<string, any>>({})
   const [left, setLeft] = useState(false)
@@ -169,7 +181,8 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
             : [],
         })
       : undefined
-    const readyCount = SURF.filter((s) => th.status[s[0]]).length
+    const facts = kitFacts(th, props.links.kits[th.id]?.theme ?? null)
+    const readyCount = SURF.filter((s) => facts.ready[s[0] as keyof typeof facts.ready]).length
     const d = (SPD as Any)[th.id]
     const sp = {
       photo: th.id === 'cyberwitch' ? `/themes-index/cyberwitch/hero-${a.id}.webp` : d[0].startsWith('/') ? d[0] : '/themes-index/photos/' + d[0],
@@ -183,6 +196,7 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
     const link = props.links.kits[th.id]
     return {
       ...th,
+      facts,
       biz,
       pos,
       click,
@@ -225,7 +239,7 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
         },
       })),
       surfaces: SURF.map((s) => {
-        const r = !!th.status[s[0]]
+        const r = facts.ready[s[0] as keyof typeof facts.ready]
         return {
           name: s[1],
           device: s[2],
@@ -242,7 +256,7 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
 
   const N = THEMES.length
   const all = THEMES.map((th, i) => build(th, i, N))
-  const scenes = all.filter((th) => filter === 'all' || th.reg === filter || th.temp === filter)
+  const scenes = all.filter((th) => (filter === 'all' || th.reg === filter || th.temp === filter) && kitMatches(th.facts, { register, ready }))
   scenes.forEach((th, i) => {
     ;(th as Any).textOrder = (props.alternate ?? true) && i % 2 === 1 ? 2 : 0
     const a = th.accents[accAt(th)]
@@ -339,7 +353,8 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
       })),
     }
   }
-  const ready = THEMES.reduce((n, t) => n + SURF.filter((s) => t.status[s[0]]).length, 0)
+  const readyAll = all.reduce((n, t) => n + SURF.filter((s) => t.facts.ready[s[0] as keyof typeof t.facts.ready]).length, 0)
+  const mineKit = mine ? all.find((t) => props.links.kits[t.id]?.theme === mine.theme) : undefined
   return {
     hero,
     scenes,
@@ -347,10 +362,14 @@ export function useKitShowcase(props: { heroKit?: string; alternate?: boolean; l
     kitTotal: String(N),
     kitWord: WORDS[N] ?? String(N),
     accentTotal: THEMES.reduce((n, t) => n + t.accents.length, 0),
-    readyTotal: String(ready),
+    readyTotal: String(readyAll),
     readyLabel: `Of ${N * 4} surfaces ready today`,
     countLabel: `${scenes.length} of ${N}`,
     links: props.links,
     filters: FILTERS.map(([id, label]) => ({ label, pressed: filter === id ? 'true' : 'false', bg: filter === id ? '#F6F0FF' : 'transparent', color: filter === id ? '#140B22' : '#D9CFEA', onClick: () => setFilter(id) })),
+    // Register and Ready (LIVE-1866): a pressed chip pressed again clears its group.
+    registerFilters: REGISTER_FILTERS.map(([id, label]) => ({ label, pressed: register === id ? 'true' : 'false', bg: register === id ? '#F6F0FF' : 'transparent', color: register === id ? '#140B22' : '#D9CFEA', onClick: () => setRegister((r) => (r === id ? 'all' : id)) })),
+    readyFilters: READY_FILTERS.map(([id, label]) => ({ label, pressed: ready === id ? 'true' : 'false', bg: ready === id ? '#F6F0FF' : 'transparent', color: ready === id ? '#140B22' : '#D9CFEA', onClick: () => setReady((r) => (r === id ? 'all' : id)) })),
+    yourTheme: mineKit ? { label: mineKit.label, accent: mineKit.accent, href: themePagePath(mine!.theme) } : null,
   }
 }

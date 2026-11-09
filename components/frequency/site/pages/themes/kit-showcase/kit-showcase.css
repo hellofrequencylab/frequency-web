@@ -35,6 +35,8 @@
 #kits nav { flex: 1 1 0; min-width: 0; flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; justify-content: flex-start }
 #kits nav::-webkit-scrollbar { display: none }
 #kits nav a { flex: none }
+/* The Register and Ready groups (LIVE-1866) keep one row where there is room and wrap their chips on a phone, so no chip leaves the screen. */
+@media (max-width: 699px) { #kits > div > div[data-wrap] { flex-wrap: wrap !important } }
 
 /* Stacked (phones and small tablets): the kit's name, line and Use theme button come first, the specimen rows after them,
    so the way in is in the first screen of each kit. */

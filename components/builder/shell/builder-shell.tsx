@@ -22,6 +22,10 @@ import { tuneProjection } from '@/lib/builder/tune'
 import { focalFieldFor, pictureFieldFor } from '@/lib/builder/parts'
 import { CommandBar } from '@/components/builder/command/command-bar'
 import { AddSheet } from '@/components/builder/add/add-sheet'
+import { EmailLens } from '@/components/builder/surfaces/email/email-lens'
+import { emailLens } from '@/lib/builder/email-lens'
+import { ViewAsNotes, ViewAsSwitch } from '@/components/builder/view-as/view-as'
+import { viewerDoc, viewerLens, type ViewAs } from '@/lib/builder/view-as'
 import { ThemeLens } from '@/components/builder/theme/theme-lens'
 import { commitTheme, lensStyle } from '@/lib/builder/theme-lens'
 import { useTryItOnSkin } from '@/components/sites/theme-preview-swap'
@@ -174,7 +178,6 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   // SURFACE PARITY (BLD-215): the profile wears the Space page's own frame (fonts and accent, no site theme) and the
   // Spotlight is its doors. Read only while that surface is showing; the site keeps the live site's resolver above.
   const profile = useMemo(() => (state.surface === 'profile' ? profileFrame(render, brand.accent) : null), [state.surface, render, brand.accent])
-  const doors = useMemo(() => (state.surface === 'spotlight' ? spotlightDoors(page.doc, config, links.siteBase, page.slug) : null), [state.surface, page.doc, config, links.siteBase, page.slug])
 
   const edit = useCallback((next: WebsiteSnapshot, burst?: string) => dispatch({ type: 'edit', draft: next, burst }), [])
   const editDoc = useCallback((change: (doc: Data) => Data, burst?: string) => {
@@ -217,6 +220,14 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   const liveFigures = useMemo(() => roleHasSpaceRows('stats', metadata as Record<string, unknown> | undefined, new Date()), [metadata])
   const ready = useMemo(() => readiness(state.draft.pages, config, { liveFigures }), [state.draft.pages, config, liveFigures])
   const tags = useMemo(() => readinessTags(ready, page.slug), [ready, page.slug])
+  // VIEW AS (BLD-304): the host edits; a visitor or a member sees the page in preview without the sections they never
+  // meet (the renderers' own gates), listed under the canvas. Esc leaves preview, which is the host's view again.
+  const [picked, setPicked] = useState<ViewAs>('host')
+  // Derived, never synced: out of preview the view is the host's, whatever was picked before Esc.
+  const view: ViewAs = state.preview ? (picked === 'host' ? 'visitor' : picked) : 'host'
+  const viewAs = (next: ViewAs) => { setPicked(next); dispatch({ type: 'preview', on: next !== 'host' }) }
+  const lens = useMemo(() => viewerLens(view, metadata), [view, metadata])
+  const viewed = useMemo(() => viewerDoc(page.doc, config, view, metadata), [page.doc, config, view, metadata])
   const issuesOf = useMemo(() => {
     const n = new Map<string, number>()
     for (const item of ready.items) if (item.pageSlug === page.slug && item.sectionId) n.set(item.sectionId, (n.get(item.sectionId) ?? 0) + 1)
@@ -227,11 +238,18 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   const sections = page.doc.content
   // The spine and outline (BLD-103): one list, reordered by drag or by Alt and an arrow, through one pure move.
   const spine = useMemo(() => spineItems(page.doc, config, state.device), [page.doc, config, state.device])
+  // THE EMAIL LENS (BLD-302): on the email surface the canvas is the email the page would send, compiled by compileEmailDoc
+  // itself, so what the owner sees is the send. Read only while that surface is showing.
+  const email = useMemo(() => (state.surface === 'email'
+    ? emailLens(page.doc, config, { subject: page.label, brand: { wordmark: brandName, logoUrl: brand.logo && /^https?:\/\//.test(brand.logo) ? brand.logo : undefined, baseUrl: origin }, origin, metadata: metadata as Record<string, unknown> | undefined })
+    : null), [state.surface, page.doc, page.label, config, brandName, brand.logo, origin, metadata])
+
   // SHOW AS (BLD-301): the canvas draws what this surface can show, framed at the surface's declared density and width;
   // the rest is listed above it with the reason. The document itself keeps every section.
-  const surfaced = useMemo(() => surfaceSections(page.doc, config, state.surface), [page.doc, config, state.surface])
+  const surfaced = useMemo(() => surfaceSections(viewed.doc, config, state.surface), [viewed.doc, config, state.surface])
   const frame = surfaceFrame(state.surface, BUILDER_DEVICE_WIDTH[state.device])
-  const canvasDoc = useMemo(() => (surfaced.hidden.length ? { ...page.doc, content: surfaced.shown } : page.doc), [page.doc, surfaced])
+  const canvasDoc = useMemo(() => (surfaced.hidden.length ? { ...viewed.doc, content: surfaced.shown } : viewed.doc), [viewed.doc, surfaced])
+  const doors = useMemo(() => (state.surface === 'spotlight' ? spotlightDoors(viewed.doc, config, links.siteBase, page.slug) : null), [state.surface, viewed.doc, config, links.siteBase, page.slug])
   const dragId = useRef<string | null>(null)
   const [dropAt, setDropAt] = useState<number | null>(null)
   const [moved, setMoved] = useState('')
@@ -344,6 +362,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         else setToast({ say: 'No layout updates are available for this page. Your sections stay as they are.', undo: false })
         break
       case 'device-desktop': case 'device-tablet': case 'device-phone': dispatch({ type: 'device', device: id.slice(7) as BuilderDevice }); break
+      case 'view-host': case 'view-member': case 'view-visitor': viewAs(id.slice(5) as ViewAs); break
       case 'theme': setThemeOpen(true); break
       case 'surface-site': case 'surface-profile': case 'surface-spotlight': case 'surface-email': dispatch({ type: 'surface', surface: id.slice(8) as BuilderSurface }); break
       case 'rail-left': case 'rail-right': toggleRail(id === 'rail-left' ? 'left' : 'right'); break
@@ -374,7 +393,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   }
 
   // The page canvas, drawn once: alone on the site, inside the member shell on the profile.
-  const pageCanvas = <WebsiteCanvas key={`${page.slug}:${state.surface}`} pageSlug={page.slug} doc={canvasDoc} theme={profile ? profile.theme : canvasTheme} trySkin={trySkin} device={state.device} config={config} metadata={metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={profile ? profile.vars : canvasVars} spaceTheme={profile ? profile.fonts : render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={state.preview ? undefined : tags} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
+  const pageCanvas = <WebsiteCanvas key={`${page.slug}:${state.surface}:${view}`} pageSlug={page.slug} doc={canvasDoc} theme={profile ? profile.theme : canvasTheme} trySkin={trySkin} device={state.device} config={config} metadata={lens.metadata} live={live} nav={state.draft.pages} links={{ ...links, pages: state.draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={brand.logo ?? null} brandAccent={render?.accent ?? brand.accent} themeVars={profile ? profile.vars : canvasVars} spaceTheme={profile ? profile.fonts : render?.fonts} selectedId={state.selectedId} preview={state.preview} comments={page.comments} chrome={state.draft.chrome} onSelect={(id) => dispatch({ type: 'select', id })} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={sectionAction} onInsert={openAdd} onDisplay={setDisplay} onVisibility={setVisible} parts onImage={openPicture} tags={lens.tags && !state.preview ? tags : undefined} onReorder={(sources, target) => { const to = page.doc.content.findIndex((b) => b.props.id === target); if (to >= 0) for (const id of sources) reorder(id, to) }} look={render ? siteLookOverrides(render.lookStyle) : {}} fullFooter={render ? siteLook(render.lookStyle).footer === 'full' : true} />
 
   return (
     <div className={`${styles.root} ${fontClass ?? ''}`} data-builder="v3" data-preview={state.preview} data-focus={rails.focus} data-phone={phone || undefined} style={gridVars} onKeyDown={keys}>
@@ -398,7 +417,8 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         <button type="button" data-action="theme" className={`${styles.btn} ${styles.icon}`} aria-label="Change the theme" title="Theme" aria-haspopup="dialog" aria-expanded={themeOpen} onClick={() => setThemeOpen(true)}><Palette size={16} aria-hidden /></button>
         <button id="builder-command" type="button" className={`${styles.btn} ${styles.wide}`} aria-label="Find, do or ask. Shortcut: command K" aria-haspopup="dialog" aria-expanded={commandOpen} onClick={() => setCommandOpen(true)}><span>Find</span><span className={styles.kbd}>⌘K</span></button>
         <button type="button" data-action="focus" className={`${styles.btn} ${styles.icon}`} aria-label="Focus: hide both side panels" title="Focus (Esc to leave)" aria-pressed={rails.focus} onClick={() => railDispatch({ type: 'focus', on: !rails.focus })}><Maximize2 size={16} aria-hidden /></button>
-        <button type="button" data-action="preview" className={`${styles.btn} ${styles.icon}`} aria-label="Preview" title="Preview" aria-pressed={state.preview} onClick={() => dispatch({ type: 'preview', on: !state.preview })}><Eye size={16} aria-hidden /></button>
+        <span className={styles.wide}><ViewAsSwitch view={view} onChange={viewAs} /></span>
+        <button type="button" data-action="preview" className={`${styles.btn} ${styles.icon}`} aria-label="Preview" title="Preview" aria-pressed={state.preview} onClick={() => viewAs(state.preview ? 'host' : 'visitor')}><Eye size={16} aria-hidden /></button>
         <PublishRing readiness={ready} dirty={dirty} saving={state.save === 'saving'} onStep={stepReadiness} onPublish={() => publish()} />
       </header>
 
@@ -434,8 +454,9 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
         <div style={{ width: `min(100%, ${frame.width}px)`, margin: '0 auto' }}><SurfaceNotes surface={state.surface} sections={surfaced} onSelect={(id) => dispatch({ type: 'select', id })} /></div>
         <div className={`${styles.frame} ${frame.stackClass}`} data-surface={state.surface} data-density={frame.density} style={{ width: `min(100%, ${frame.width}px)` }}>
-          {doors ? <SpotlightDoors doors={doors} brandName={brandName} logo={brand.logo ?? null} selectedId={state.selectedId} onSelect={(id) => dispatch({ type: 'select', id })} /> : profile ? <ProfileFrame brandName={brandName}>{pageCanvas}</ProfileFrame> : pageCanvas}
+          {email ? <EmailLens lens={email} from={brandName} onSelect={(id) => dispatch({ type: 'select', id: id || null })} /> : doors ? <SpotlightDoors doors={doors} brandName={brandName} logo={brand.logo ?? null} selectedId={state.selectedId} onSelect={(id) => dispatch({ type: 'select', id })} /> : profile ? <ProfileFrame brandName={brandName}>{pageCanvas}</ProfileFrame> : pageCanvas}
         </div>
+        <div style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)`, margin: '12px auto 0' }}><ViewAsNotes view={view} hostOnly={viewed.hostOnly} onSelect={(id) => dispatch({ type: 'select', id })} /></div>
       </main>
 
       <aside className={styles.panel} aria-label="Section settings" data-mode={modes.right}>
@@ -471,7 +492,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       {plan && <UpdateLayoutsSheet plan={plan} pageLabel={page.label} preview={previewBlock} onApply={applyLayouts} onClose={() => setLayoutsOpen(false)} focusFallbackId="builder-undo" />}
       {sheetOpen && <PublishSheet readiness={ready} onFix={(item) => { setSheetOpen(false); goTo(item) }} onPublish={(keep) => { if (canPublish(ready, keep)) { setSheetOpen(false); void save(true) } }} onClose={() => setSheetOpen(false)} />}
       {commandOpen && <CommandBar sections={spine} pages={state.draft.pages} selected={!!state.selectedId} onRun={runCommand} onClose={() => setCommandOpen(false)} />}
-      {state.preview && <div className={styles.previewPill} role="status">Previewing as a visitor · press Esc to edit</div>}
+      {state.preview && <div className={styles.previewPill} role="status">Viewing as a {view === 'member' ? 'member' : 'visitor'} · press Esc to edit</div>}
     </div>
   )
 }

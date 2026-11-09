@@ -34,7 +34,7 @@ const GROUP_OF_CATEGORY: Record<string, EditorBlockGroup> = {
 }
 
 /** Legacy blocks whose rows come from the Space at render time (the design's `live: 1`). Role blocks say so themselves. */
-const LIVE = /^(Live\w+|SpaceEvents|SpaceCommunity|SpaceTeam|SpaceStats|SpaceOfferings|SpaceReviews|SpaceFAQ|SpacePractices|SpaceBooking|CirclesGrid|CirclesFeatured|CirclesMap|Network(Hero|Events|Circles)|NetworkKit(Hero|Live|Journeys|Gatherings|Proof|FAQ|Featured|Calendar|Stats)|Midnight(Live|Journeys|Gatherings|Proof|FAQ)|Designer(FAQ)|FreeHuman(Workshops|Events|Calendar|YearWheel)|Wildheart(YearJourney|SkyMap|NowLine|MoonPath|Modules|FirstNight|MoonStrip)|NewWorld(Calendar|Openings|Reviews|Faq|Book))$/
+const LIVE = /^(Live\w+|SpaceEvents|SpaceCommunity|SpaceTeam|SpaceStats|SpaceOfferings|SpaceReviews|SpaceFAQ|SpacePractices|SpaceBooking|CirclesGrid|CirclesFeatured|CirclesMap|Network(Hero|Events|Circles)|NetworkKit(Hero|Live|Journeys|Gatherings|Proof|FAQ|Featured|Calendar|Stats)|Midnight(Live|Journeys|Gatherings|Proof|FAQ)|Designer(FAQ)|FreeHuman(Workshops|Events|Calendar|YearWheel)|Wildheart(YearJourney|SkyMap|NowLine|MoonPath|Modules|FirstNight|MoonStrip)|NewWorld(Calendar|Openings|Reviews|Faq|Book|SpaceWall))$/
 
 /** Legacy type-name patterns → the design's icon for the same kind of block, first match wins. */
 const ICONS: [RegExp, FqIconName | FqEditorIconName][] = [

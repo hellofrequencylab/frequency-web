@@ -37,6 +37,41 @@ export interface NewWorldLive {
   plans: NewWorldLiveList
   shop: NewWorldLiveList
   posts: NewWorldLiveList
+  /** The community wall (LIVE-2108): present only when the page draws the wall block. */
+  wall?: NewWorldWallList
+}
+
+/** One wall post as the site block draws it: words only, no markup, no avatar image (the site is anonymous). */
+export interface NewWorldWallPost {
+  id: string
+  name: string
+  /** "From the team" on an announcement, "Member" otherwise. */
+  role: string
+  /** "Nov 2". */
+  date: string
+  body: string
+  /** "14 high fives · 3 replies", or '' when the post has neither. */
+  meta: string
+  announcement: boolean
+}
+
+/** The wall as the block reads it: `on` is whether anyone may read this wall (the anon read returned rows), `href` the
+ *  wall page in the app. A wall nobody outside may read comes back off, and the block draws nothing. */
+interface NewWorldWallList {
+  on: boolean
+  href: string | null
+  rows: NewWorldWallPost[]
+}
+
+/** The row shape `space_wall_feed` returns, as much of it as the block reads. */
+export interface NewWorldWallSource {
+  id: string
+  body: string | null
+  post_type: string
+  created_at: string
+  reaction_count: number | null
+  comment_count: number | null
+  author: { display_name?: string | null } | null
 }
 
 export interface NewWorldLiveInput {
@@ -59,6 +94,43 @@ export function planPriceLabel(tier: Pick<MembershipTier, 'priceCents' | 'interv
 /** Does this doc (a page doc or a block list) carry a New World block? Cheap string test, like docHasNetworkBlocks. */
 export function docHasNewWorldBlocks(doc: unknown): boolean {
   return /"type":"NewWorld[A-Z]/.test(JSON.stringify(doc ?? null))
+}
+
+/** Does this doc carry the community wall block? The wall read runs only then (LIVE-2108). */
+export function docHasNewWorldWall(doc: unknown): boolean {
+  return /"type":"NewWorldSpaceWall"/.test(JSON.stringify(doc ?? null))
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+const shortDate = (iso: string): string => {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+/** PURE: the wall posts the block draws from the rows `space_wall_feed` returned to an anonymous reader. `rows` null means
+ *  the read failed or returned nothing anyone may see, so the wall is off and the block draws nothing. Posts with no words
+ *  (a photo alone) are skipped; the newest three with words draw. */
+export function wallPostsFrom(rows: readonly NewWorldWallSource[] | null, slug: string | null, limit = 3): NewWorldWallList {
+  const href = slug ? `/spaces/${slug}/community` : null
+  if (!rows) return { on: false, href, rows: [] }
+  const posts: NewWorldWallPost[] = rows
+    .filter((r) => (r.body ?? '').trim())
+    .slice(0, limit)
+    .map((r) => {
+      const announcement = r.post_type === 'announcement'
+      const reactions = r.reaction_count ?? 0
+      const replies = r.comment_count ?? 0
+      return {
+        id: r.id,
+        name: (r.author?.display_name ?? '').trim() || 'A member',
+        role: announcement ? 'From the team' : 'Member',
+        date: shortDate(r.created_at),
+        body: (r.body ?? '').trim(),
+        meta: [reactions > 0 ? plural(reactions, 'high five', 'high fives') : '', replies > 0 ? plural(replies, 'reply', 'replies') : ''].filter(Boolean).join(' · '),
+        announcement,
+      }
+    })
+  return { on: posts.length > 0, href, rows: posts }
 }
 
 /** PURE: the three lists from the Space's rows and switches. The first active tier the owner sorted to the top is the
@@ -125,5 +197,7 @@ export function readNewWorldLive(space: unknown): NewWorldLive | null {
   const shop = list(b.shop)
   const posts = list(b.posts)
   if (!plans || !shop || !posts) return null
-  return { plans, shop, posts }
+  const w = b.wall
+  const wall = w && typeof w === 'object' && typeof w.on === 'boolean' && Array.isArray(w.rows) ? { on: w.on, href: typeof w.href === 'string' ? w.href : null, rows: w.rows } : undefined
+  return wall ? { plans, shop, posts, wall } : { plans, shop, posts }
 }

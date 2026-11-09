@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
-  "wave": "W7",
+  "status": "done",
   "source": {
     "file": "docs/ledger/adr/ADR-1938.md",
     "ref": "Split from LIVE-2079 (W4) 2026-11-03"
   },
-  "detail": "A new additive site block key that renders the Space's public wall read-only (latest posts, a link into the app to join the conversation), available to sites and the builder. SpaceCommunity stays the topic Circles list. The site theme never styles the member wall (theme fence), the block reads through space_wall_feed as anon, and only walls anyone may read render it. Needs a design render before code (current vs proposed).",
+  "detail": "A new additive site block key that renders the Space's public wall read-only (latest posts, a link into the app to join the conversation), available to sites and the builder. SpaceCommunity stays the topic Circles list. The site theme never styles the member wall (theme fence), the block reads through space_wall_feed as anon, and only walls anyone may read render it. Needs a design render before code (current vs proposed).\n\nBuilt 2026-11-09 from the draft Daniel approved at 18:28Z: NewWorldSpaceWall (components/page-editor/blocks/new-world.tsx) draws the newest three posts with words from an ANONYMOUS space_wall_feed read (lib/sites/new-world-live-load.ts, public client, never the cookie one), with one ghost door into the app wall; a wall nobody outside may read comes back off and the block draws nothing; with no bag (editor canvas) three sample posts draw. block-meta marks it live. The member wall keeps its own look (theme fence). Rendered through the real SiteChrome on New World at 390 to 2000: no new overflow.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const s=require('fs').readFileSync('lib/sites/editor/block-meta.ts','utf8');process.exit(/SpaceWall/.test(s)?0:1)\"",
-    "note": "Passes when the site block registry carries a SpaceWall block."
-  }
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/sites/editor/block-meta.ts','utf8');process.exit(/SpaceWall/.test(s)?0:1)\""
+  },
+  "closed": "2026-11-09",
+  "wave": "W7"
 }

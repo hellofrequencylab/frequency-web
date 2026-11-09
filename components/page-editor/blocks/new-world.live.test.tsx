@@ -74,6 +74,20 @@ describe('the New World blocks read the Space rows', () => {
     expect(draw('NewWorldPlans', { rows: [{ name: 'Owner plan' }] }, {})).toContain('Owner plan')
   })
 
+  it('draws the community wall from the anonymous wall read, nothing when nobody outside may read it, and the samples with no bag (LIVE-2108)', () => {
+    const post = { id: 'w1', name: 'Maya Torres', role: 'From the team', date: 'Nov 2', body: 'Saturday moves to the courtyard.', meta: '14 high fives · 3 replies', announcement: true }
+    const live = { plans: list(true), shop: list(true), posts: list(true), wall: { on: true, href: '/spaces/danieltyack/community', rows: [post] } }
+    const html = draw('NewWorldSpaceWall', {}, { newWorld: live })
+    expect(html).toContain('Maya Torres')
+    expect(html).toContain('Saturday moves to the courtyard.')
+    expect(html).toContain('From the team · Nov 2')
+    expect(html).toContain('14 high fives · 3 replies')
+    expect(html).toContain('href="https://frequency.example/spaces/danieltyack/community"')
+    expect(html).not.toContain('Jonah Park')
+    expect(draw('NewWorldSpaceWall', {}, { newWorld: { ...live, wall: { on: false, href: null, rows: [] } } })).toBe('')
+    expect(draw('NewWorldSpaceWall', {}, {})).toContain('Jonah Park')
+  })
+
   it('draws nothing for the book page when booking is switched off and the owner wrote no ways in', () => {
     expect(draw('NewWorldBook', {}, { booking: { enabled: false, href: null }, events: [] })).toBe('')
     expect(draw('NewWorldBook', { ways: [{ name: 'First visit' }] }, { booking: { enabled: false, href: null } })).toContain('First visit')
