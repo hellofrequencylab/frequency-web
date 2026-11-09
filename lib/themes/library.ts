@@ -149,7 +149,7 @@ export const THEME_TOOLS: readonly { name: string; body: string }[] = [
 export const THEME_LOOK_CONTROLS: readonly { name: string; options: string }[] = [
   { name: 'Corners', options: 'Soft, subtle or square' },
   { name: 'Spacing', options: 'Airy, balanced or compact' },
-  { name: 'Header', options: 'Floating pill or full-width bar' },
+  { name: 'Header', options: 'Floating pill, full-width bar or centered' },
   { name: 'Footer', options: 'Full or minimal' },
   { name: 'Fonts', options: 'Seven font sets' },
   { name: 'Accent', options: 'Your own brand color' },
