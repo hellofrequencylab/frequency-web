@@ -9,11 +9,10 @@
     "file": "docs/EDITOR-NEXT.md",
     "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-902."
   },
-  "detail": "BZ Hardening, pass BLD-902 (spec: docs/EDITOR-NEXT.md#bld-902). Owner walk-through. Scope: staging. Build: Five owners each build a page from a blank Space while we watch. Log every hesitation and failed find. Promote any Layer 2 control used by 3 of 5 into Layer 1. Done when: Every owner publishes without help; No control is searched for in ⌘K by more than 2 owners. Gates: Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-901. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "detail": "BZ Hardening, pass BLD-902 (spec: docs/EDITOR-NEXT.md#bld-902). Owner walk-through. Scope: staging. Build: Five owners each build a page from a blank Space while we watch. Log every hesitation and failed find. Promote any Layer 2 control used by 3 of 5 into Layer 1. Done when: Every owner publishes without help; No control is searched for in ⌘K by more than 2 owners. Gates: Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-901. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nTooling is built (2026-11-09): the observer logs one session per owner in docs/builder-walkthrough/sessions.json (shape in session.example.json) and `pnpm walkthrough:builder` prints the verdict: who published without help, any control searched for in ⌘K by more than two owners, and the Layer 2 controls used by three of five owners, which move into Layer 1 (lib/builder/walkthrough.ts). The row stays open: it closes when five real owners have been watched and the log passes. It needs the owner's choice of the five people and a staging session; an agent cannot stand in for them.",
   "verify": {
-    "kind": "manual",
-    "checked": "2026-11-02",
-    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-902.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-902.mjs"
   },
   "wave": "W7"
 }
