@@ -1,6 +1,7 @@
 // The design-system intake routine (docs/DESIGN-SYSTEM-INTAKE.md): its pure functions, then the repo measured
 // against every committed theme snapshot. The snapshot (inventory, tokens, copy) comes from `ds-intake --write`;
 // this file needs no copy of the design system, so it runs in CI like any other test.
+import { createHash } from 'node:crypto'
 import { readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -72,5 +73,24 @@ describe.each(THEMES)('design system: %s', (theme) => {
     }
     expect(report.fresh.map((v: { id: string; detail: string }) => `${v.id} — ${v.detail}`)).toEqual([])
     expect(report.healed).toEqual([])
+  })
+})
+
+describe('copy rulings (the owner rules a prototype sentence out)', () => {
+  const rules = [{ glob: 'p.html', kind: 'copy', targets: ['x.ts'] }]
+  const copy = { 'p.html': ['Shipped line', 'Prototype only control'] }
+  const base = { rules, inventory: [{ path: 'p.html', sha256: 'a' }], copy, read: () => 'shipped line here', bytes: () => null, exists: () => true }
+  const idOf = (s: string) => `copy:p.html#${createHash('sha256').update(s).digest('hex').slice(0, 8)}`
+
+  it('fires for a missing sentence until a ruling with a phrase names it', () => {
+    const before = repoViolations(base as unknown as Parameters<typeof repoViolations>[0])
+    expect(before.all.map((v) => v.id)).toEqual([idOf('Prototype only control')])
+    const ruled = repoViolations({ ...base, copyRulings: [{ phrase: 'rule it out', reason: 'never shipped', ids: [idOf('Prototype only control')] }] } as unknown as Parameters<typeof repoViolations>[0])
+    expect(ruled.all).toEqual([])
+  })
+
+  it('rules nothing out without the owner phrase', () => {
+    const r = repoViolations({ ...base, copyRulings: [{ phrase: '', reason: 'x', ids: [idOf('Prototype only control')] }] } as unknown as Parameters<typeof repoViolations>[0])
+    expect(r.all).toHaveLength(1)
   })
 })

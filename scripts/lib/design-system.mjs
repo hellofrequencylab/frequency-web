@@ -195,7 +195,7 @@ export function flatDeclarations(css) {
  * `baseline` lists known violations as `kind:key`; one that no longer fires is itself a violation ("healed"),
  * so the list can only shrink.
  */
-export function repoViolations({ rules, inventory, tokens, copy, tokenMap = [], tokenDeviations = [], skipFontAliases = false, repoTokenCss, read, bytes, exists, baseline = [] }) {
+export function repoViolations({ rules, inventory, tokens, copy, tokenMap = [], tokenDeviations = [], skipFontAliases = false, repoTokenCss, read, bytes, exists, baseline = [], copyRulings = [] }) {
   const v = []
   const add = (kind, key, detail) => v.push({ kind, key, id: `${kind}:${key}`, detail })
   for (const f of inventory) {
@@ -243,7 +243,11 @@ export function repoViolations({ rules, inventory, tokens, copy, tokenMap = [], 
       else if (normValue(got) !== normValue(value) && !(repoPlain[mapped] !== undefined && dsPlain[name] !== undefined && normValue(repoPlain[mapped] ?? repoPlain[name]) === normValue(dsPlain[name])) && !deviations.has(name)) add('token', name, `${mapped} is ${got}, design system says ${value}`)
     }
   }
-  // Copy: every sentence of every copy-checked source must appear in one of its rule's targets.
+  // Copy: every sentence of every copy-checked source must appear in one of its rule's targets, unless the owner
+  // ruled it out: `copyRulings` in the rule file names the ids, the owner's own phrase and the reason (a prototype
+  // control never shipped, chrome the menu contract owns, a line live pricing contradicts). Without a phrase a ruling
+  // rules nothing out.
+  const ruledOut = new Set(copyRulings.filter((r) => typeof r.phrase === 'string' && r.phrase.trim()).flatMap((r) => r.ids ?? []))
   if (copy) {
     const hay = new Map()
     const hayFor = (rule, path) => {
@@ -256,7 +260,10 @@ export function repoViolations({ rules, inventory, tokens, copy, tokenMap = [], 
       const rule = ruleFor(rules, path)
       if (!rule || !rule.targets) continue
       const h = hayFor(rule, path)
-      for (const s of sentences) if (!h.includes(squash(s))) add('copy', `${path}#${sha256(s).slice(0, 8)}`, s)
+      for (const s of sentences) {
+        const id = `${path}#${sha256(s).slice(0, 8)}`
+        if (!h.includes(squash(s)) && !ruledOut.has(`copy:${id}`)) add('copy', id, s)
+      }
     }
   }
   const set = new Set(baseline)
