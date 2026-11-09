@@ -11,5 +11,9 @@
     "generator": "node scripts/new-world-site-sql.mjs <input.json> <out.sql>",
     "sql": "docs/design-systems/new-world/danieltyack-apply-2026-11-09.sql"
   },
-  "applied": null
+  "applied": {
+    "date": "2026-11-09",
+    "revision": 69,
+    "how": "The generated SQL ran in the Frequency Community project after the LIVE-2053 build (#4692) reached production; the Space now reads websiteEditor revision 69 and siteStyle.theme new-world."
+  }
 }
