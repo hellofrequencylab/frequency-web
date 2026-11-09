@@ -661,6 +661,70 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4751,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346031000_hunts_schema.sql",
+          "sha256": "ef5a0b60da1e52e763d264aed34c0f2cf43e05eec3c5ac825ed5107efc8639c5"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/FH-005.json",
+          "status": "modified",
+          "sha256": "089117d13bf5d62b3a1f07ac37344bc848c60878107ce6762ab9add9bc65d814",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/schema.test.ts",
+          "status": "added",
+          "sha256": "9ee6d91221c536ebdf679495bc566e4f14ce2679e6d860302e75d8a016408f6c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "137fa91affadcd9aea4cd5824e83b2630b9990fd56636d447023d43ddf53379f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "d5b9e0f49268b293326e87768cc71f8b5a5ce1c117b92d9a0e6ce62098130c52",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346031000_hunts_schema.sql",
+          "status": "added",
+          "sha256": "ef5a0b60da1e52e763d264aed34c0f2cf43e05eec3c5ac825ed5107efc8639c5",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunts_schema.test.sql",
+          "status": "added",
+          "sha256": "63fe0bd10802a525786f809ffcdfbaeb67c9c7039a5b47cde19faddd18635eb1",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
