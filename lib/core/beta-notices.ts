@@ -3,7 +3,7 @@
 // While the Beta is open (BETA_OPEN_ACCESS, lib/core/beta.ts) everyone is granted the paid Crew tier, so
 // every "here is the permission / here is the price" notice on the site should lead with "the Beta is
 // open, this is free right now" and frame the paid rule as what changes AT LAUNCH. When BETA_OPEN_ACCESS
-// flips to false (launch day, December 1: owner ruling 2026-10-19, matching the beta_grace window) this module returns the LIVE (paid) copy instead, so a
+// flips to false (launch day, January 1, 2027, after the beta runs through December 31: owner ruling 2026-11-04, lib/core/launch-dates.ts) this module returns the LIVE (paid) copy instead, so a
 // single switch swaps every notice that reads from here. No per-surface edit needed for the ones wired in.
 //
 // The FULL registry of beta announcements site-wide (including older hardcoded strings not yet routed
@@ -14,10 +14,11 @@
 // builder and trivially testable. Voice per docs/CONTENT-VOICE: plain, warm, no em or en dashes.
 
 import { BETA_OPEN_ACCESS } from './beta'
+import { BETA_ENDS_DAY_LABEL } from './launch-dates'
 
 /** The date the Beta open-access window closes (copy only; the real switch is BETA_OPEN_ACCESS). Update
  *  here if the launch date moves, and the whole site's beta copy follows. */
-export const BETA_ENDS_LABEL = 'December 1'
+export const BETA_ENDS_LABEL = BETA_ENDS_DAY_LABEL
 
 /** Is the Beta open-access window on? Re-exported so notice code depends on this module, not the raw flag. */
 export const betaOpen = BETA_OPEN_ACCESS

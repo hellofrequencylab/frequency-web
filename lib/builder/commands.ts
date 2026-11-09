@@ -11,6 +11,7 @@ export const BUILDER_ACTIONS = {
   publish: { label: 'Publish', keys: null, needs: null },
   add: { label: 'Add a section', keys: null, needs: null },
   theme: { label: 'Change the theme', keys: null, needs: null },
+  vera: { label: 'Ask Vera', keys: null, needs: null },
   'update-layouts': { label: 'Update this page to the new layouts', keys: null, needs: null },
   'device-desktop': { label: 'Show the desktop size', keys: null, needs: null },
   'device-tablet': { label: 'Show the tablet size', keys: null, needs: null },
