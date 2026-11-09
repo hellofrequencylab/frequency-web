@@ -75,12 +75,13 @@ import { join, dirname, normalize } from 'node:path'
 
 const ADMIN = 'lib/supabase/admin.ts'
 const ROOTS = ['app', 'components', 'lib', 'hooks']
-/** Non-triviality floors (ADR-962). Client floor retains the initial 2026-09-04 basis.
- * Module floor tightened 2026-10-26 to ~69% of the measured 4798-module graph (4802 on CI merge).
+/** Non-triviality floors (ADR-962). Client floor tightened 2026-11-09 to ~69% of the measured
+ * 1160 client entry points (LIVE-2095); the 2026-09-04 floor of 580 had become exactly half of the
+ * live reading, which the test treats as a vacuous pass. Module floor tightened 2026-10-26 to ~69% of the measured 4798-module graph (4802 on CI merge).
  * This retains the stricter discovery-branch floor while incorporating main's independent
  * correction that the old 2400 floor fell below half of the current graph.
  * Lower them only beside a real deletion, and name it — never to go green. */
-const MIN_CLIENT_ENTRYPOINTS = 580
+const MIN_CLIENT_ENTRYPOINTS = 800
 const MIN_MODULES = 3300
 const QUIET = process.argv.includes('--probe')
 
