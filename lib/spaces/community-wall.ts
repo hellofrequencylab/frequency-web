@@ -99,8 +99,10 @@ export function standingCanPost(standing: WallStanding, settings: WallSettings):
 }
 
 /**
- * Is this person banned from this wall? Fail-CLOSED on a broken read, so a database hiccup never
- * lets a banned person back in for a moment.
+ * Is this person banned from this wall? A ban is only ever what the table says: a broken read
+ * (including a deploy that lands before the migration) answers "not banned", because the other
+ * answer would lock every wall's replies and reactions for everyone, and the posts policy still
+ * refuses a banned person's posts on its own.
  */
 async function isBannedFromWall(spaceId: string, profileId: string): Promise<boolean> {
   try {
@@ -110,10 +112,10 @@ async function isBannedFromWall(spaceId: string, profileId: string): Promise<boo
       .eq('space_id', spaceId)
       .eq('profile_id', profileId)
       .maybeSingle()
-    if (error) return true
+    if (error) return false
     return data != null
   } catch {
-    return true
+    return false
   }
 }
 
