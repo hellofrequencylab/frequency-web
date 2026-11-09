@@ -966,3 +966,23 @@ export function rolePreviewMetadata(id: RoleId, metadata: Props | undefined, now
   const { space: _space, ...rest } = metadata
   return rest
 }
+
+/** The rows a role would send in an email (BLD-302): the Space's own rows when the role is live and the Space has some,
+ *  else the rows the owner wrote. The same precedence the send-time data-block resolver uses (a live value wins, the
+ *  stored snapshot stays when the row is gone), read once so the email lens shows what the send will fix. */
+export function roleRowsAtSend(id: RoleId, p: Props, metadata: Props | undefined, now = new Date()): Props[] {
+  const stored = arr(p.items)
+  if (!ROLES[id].live || !liveAsked(p)) return stored
+  const live: Props[] = (() => {
+    switch (id) {
+      case 'gatherings': return liveEvents(metadata, now, Math.max(1, Math.min(12, Number(p.count) || 6)))
+      case 'offerings': return liveOfferings(metadata)
+      case 'proof': return liveReviews(metadata)
+      case 'stats': return liveStats(metadata)
+      case 'people': return liveTeam(metadata)
+      case 'chapters': return liveChapters(metadata)
+      default: return []
+    }
+  })()
+  return live.length ? live : stored
+}
