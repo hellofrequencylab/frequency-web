@@ -1,0 +1,52 @@
+/* THE EMAIL LENS (BLD-302): Commons tokens and the builder's shape tokens (BLD-002) only. The frame is the send's own
+   document; nothing here reaches inside it. */
+
+.root { display: grid; gap: 12px; }
+.inbox {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--fq-border);
+  border-radius: var(--r-card);
+  background: var(--fq-surface);
+  color: var(--fq-text-strong);
+  font-size: 14px;
+}
+.inbox > div { display: grid; grid-template-columns: 64px 1fr; gap: 8px; }
+.inbox dt { color: var(--fq-text-muted); }
+.inbox dd { margin: 0; overflow-wrap: anywhere; }
+.muted { color: var(--fq-text-muted); }
+.frame {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--fq-border);
+  border-radius: var(--r-card);
+  background: var(--fq-surface);
+}
+.notes { display: grid; gap: 8px; }
+.list, .text {
+  border: 1px solid var(--fq-border);
+  border-radius: var(--r-card);
+  background: var(--fq-surface);
+  color: var(--fq-text-strong);
+  font-size: 14px;
+}
+.list summary, .text summary { padding: 10px 16px; cursor: pointer; font-weight: 600; }
+.list ul { list-style: none; margin: 0; padding: 0 8px 8px; display: grid; gap: 2px; }
+.list button {
+  display: grid;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.list button:hover { background: var(--fq-bg-sunken); }
+.list button:focus-visible { outline: 2px solid var(--fq-text-strong); outline-offset: 2px; }
+.list button span { color: var(--fq-text-muted); }
+.text pre { margin: 0; padding: 0 16px 16px; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; color: var(--fq-text-muted); }

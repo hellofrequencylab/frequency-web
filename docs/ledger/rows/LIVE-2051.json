@@ -1,18 +1,19 @@
 {
  "id": "LIVE-2051",
- "title": "Convert Default to the style-picker model (schema 2 manifest, dials, accents, Looks)",
+ "title": "Retire the Default theme conversion now that New World is the default",
  "lane": "live",
  "priority": "P2",
  "size": "M",
- "status": "open",
+ "status": "done",
  "source": {
   "file": "docs/design-systems/services/rules.json",
   "ref": "Daniel 2026-11-02 New World thread"
  },
- "detail": "Plan step 9 for Default: (1) manifest to schema 2 declaring today's four dials supported with THEME_LOOK defaults (owners see no change); (2) register, accent swatches, type voice, motion, hero/header/footer variants, image treatment, Looks, theme dials as the style system allows; (3) functions table mapping existing blocks to the twelve functions; conformance suite green before any dial flips to supported. NEEDS FROM DANIEL: Updated Default style system, or confirmation it is the fallback and stays fixed.",
+ "detail": "Plan step 9 for Default: (1) manifest to schema 2 declaring today's four dials supported with THEME_LOOK defaults (owners see no change); (2) register, accent swatches, type voice, motion, hero/header/footer variants, image treatment, Looks, theme dials as the style system allows; (3) functions table mapping existing blocks to the twelve functions; conformance suite green before any dial flips to supported. NEEDS FROM DANIEL: Updated Default style system, or confirmation it is the fallback and stays fixed.\n\nRETIRED 2026-11-09 by Daniel. LIVE-2058 sets New World when a new Space has no explicit choice, and LIVE-2059 removes Default from the picker. The legacy theme remains available to existing sites that saved it. No style-picker conversion is needed for Default.",
  "verify": {
   "kind": "cmd",
-  "cmd": "node -e \"const s=require('./lib/themes/editor-schema2.json');const m=require('./lib/theme/mega-theme');process.exit(Object.keys(s).length&&s['frequency']?0:1)\""
+  "cmd": "node scripts/probes/new-world-theme.mjs default && node scripts/probes/new-world-theme.mjs picker"
  },
- "wave": "W7"
+ "wave": "W7",
+ "closed": "2026-11-09"
 }
