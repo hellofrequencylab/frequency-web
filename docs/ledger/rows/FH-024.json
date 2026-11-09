@@ -1,0 +1,18 @@
+{
+  "id": "FH-024",
+  "title": "Hunts FH-024: Build consent ledger and scoped projection",
+  "lane": "program",
+  "priority": "P0",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 2, Consent. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Append grant/withdraw, upsert tenant-scoped lead, check latest state and suppression, implement privacy request handling. Done when: Replay after opt-out cannot re-subscribe or send. Merchant A never sees B consent or private profile history. Requires: FH-008, FH-009, FH-023. Owner role: CRM engineering.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/consent.ts\")?0:1)'"
+  },
+  "wave": "W7"
+}

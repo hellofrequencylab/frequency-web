@@ -1,0 +1,18 @@
+{
+  "id": "FH-001",
+  "title": "Hunts FH-001: Pin source and release evidence",
+  "lane": "program",
+  "priority": "P0",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 0, Evidence. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Record exact main and production alias identities, merged ledger status, migrations, routes, owners and flags for the two existing engines. Done when: Evidence table distinguishes source, CI, live, provider and owner-dependent checks and links the current LIVE-234 record. Requires: none. Owner role: Architecture.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"docs/hunts/EVIDENCE.md\")?0:1)'"
+  },
+  "wave": "W7"
+}

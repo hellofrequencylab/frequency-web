@@ -1,0 +1,18 @@
+{
+  "id": "FH-027",
+  "title": "Hunts FH-027: Run single-business pilot",
+  "lane": "program",
+  "priority": "P0",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 2, Pilot. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Train staff, inspect signage and test closure, lost connection, duplicate redemption and consent withdrawal. Done when: Field report proves staffed finish and merchant-only opt-ins with no stock discrepancies. Requires: FH-022, FH-024, FH-026. Owner role: Operations and QA.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"docs/hunts/PILOT-SINGLE-BUSINESS.md\")?0:1)'"
+  },
+  "wave": "W7"
+}

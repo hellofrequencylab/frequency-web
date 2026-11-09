@@ -1,0 +1,18 @@
+{
+  "id": "FH-005",
+  "title": "Hunts FH-005: Add versioned Hunt schema",
+  "lane": "program",
+  "priority": "P0",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 0, Engine. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Create isolated Hunt, role, partner, version, mission, group and placement relations with tenant-aware composite FKs. Done when: Cross-Hunt ref and enum violation fail and user roles lack raw write access. Requires: FH-003, FH-004. Owner role: Database.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/schema.test.ts\")?0:1)'"
+  },
+  "wave": "W7"
+}
