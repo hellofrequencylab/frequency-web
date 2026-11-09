@@ -353,7 +353,7 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
   // Reply mode rides its own additive column, read fail-safe (→ 'broadcast' pre-migration).
   const replyMode = await loadCampaignReplyMode(id)
   // Purpose is imported where it is used, so the draft actions above never load it.
-  const purpose = (await (await import('@/lib/email-studio/campaign-purpose')).loadCampaignPurpose(id)) ?? undefined
+  const purpose = (await (await import('@/lib/email-studio/campaign-purpose')).loadCampaignPurpose(db, id)) ?? undefined
 
   const layout = layoutFromBlockJson(data.block_json)
   // Behind render_path_email the canvas edits a node document: a stored one as it is, a legacy one upgraded
@@ -467,7 +467,7 @@ export async function saveEmailCampaign(
   // Purpose (promotion vs member newsletter) rides `audience_filter.purpose`; a refused write is returned.
   if (patch.purpose === 'marketing' || patch.purpose === 'lifecycle') {
     const { saveCampaignPurpose } = await import('@/lib/email-studio/campaign-purpose')
-    if (!(await saveCampaignPurpose(id, patch.purpose))) return { error: 'Could not save the email type. Try again.' }
+    if (!(await saveCampaignPurpose(db, id, patch.purpose))) return { error: 'Could not save the email type. Try again.' }
   }
 
   if (patch.layout) {

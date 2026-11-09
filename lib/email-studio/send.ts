@@ -754,7 +754,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
     // `subscribed_members` is the opt-IN marketing audience → 'marketing' (email_marketing, opt-in);
     // `members` / `site_signups` / trait / place / event / direct-set are the operator's own
     // account-holders → 'lifecycle' (opt-OUT member newsletter each member can still unsubscribe from).
-    const sendCategory = sendCategoryForPurpose(row.segment, await loadCampaignPurpose(campaignId))
+    const sendCategory = sendCategoryForPurpose(row.segment, await loadCampaignPurpose(db, campaignId))
     // Root space id for the profile-less path (the `all_contacts` audience). Resolved once: profile-less
     // imported leads are suppression-gated against the root space and unsubscribe via a root-space token.
     const rootSpaceId = await loadRootSpaceId()
