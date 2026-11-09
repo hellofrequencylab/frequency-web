@@ -6,17 +6,22 @@ import { createClient } from '@/lib/supabase/server'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { consoleBackFor } from '@/lib/spaces/console-back'
-import { readWallSettings } from '@/lib/spaces/community-wall'
+import { listWallBans, listWallReports, readWallSettings } from '@/lib/spaces/community-wall'
+import { relativeTime } from '@/lib/utils'
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { WallSettingsForm } from './wall-settings-form'
 import { WallModerationRow } from './wall-moderation-controls'
+import { BanButton, BannedRow, ReportRow } from './wall-ban-controls'
 
 // THE OWNER'S COMMUNITY WALL CONSOLE (ADR-1938, LIVE-2077). Two jobs: the wall's three settings
 // (who reads, who posts, whether followers join in) and moderation of recent posts (pin, hide,
 // bring back). Lives under /manage like every Space console, outside the (profile) group, so it
-// never wears the profile chrome.
+// never wears the profile chrome. LIVE-2095 adds the moderation rung's two lists: the people
+// banned from the wall and the open reports on its posts. Both show only to a viewer who moderates
+// (owner, admin, moderator: caps.canModerateWall, the rung private.can_moderate_space_wall admits);
+// an editor sees the settings and the posts and nothing more.
 //
 // GATE: notFound() for a missing or hidden Space and for a viewer who cannot edit it (no existence
 // leak, the same owner-only pattern the other consoles use). Moderation writes run on the session
@@ -33,6 +38,7 @@ type WallRow = {
   created_at: string
   is_pinned: boolean | null
   hidden_at: string | null
+  author_id: string
   author: { display_name: string | null } | null
 }
 
@@ -46,25 +52,33 @@ export default async function ManageCommunityPage({ params }: { params: Promise<
   const caps = await getSpaceCapabilities(space, viewerProfileId)
   if (!caps.canEditProfile) notFound()
 
+  const canModerate = caps.canModerateWall
   const supabase = await createClient()
-  const [settings, recent] = await Promise.all([
+  const [settings, recent, bans, reports] = await Promise.all([
     readWallSettings(space.id),
     supabase
       .from('posts')
-      .select('id, body, created_at, is_pinned, hidden_at, author:profiles!author_id ( display_name )')
+      .select('id, body, created_at, is_pinned, hidden_at, author_id, author:profiles!author_id ( display_name )')
       .eq('scope_space_id', space.id)
       .is('parent_id', null)
       .order('created_at', { ascending: false })
       .limit(RECENT),
+    canModerate ? listWallBans(space.id) : Promise.resolve([]),
+    canModerate ? listWallReports(space.id) : Promise.resolve([]),
   ])
   const posts = (recent.data ?? []) as unknown as WallRow[]
+  const bannedIds = new Set(bans.map((b) => b.profileId))
 
   return (
     <ConsoleFocusTemplate
       back={consoleBackFor(space, 'programs')}
       eyebrow={space.brandName ?? space.name}
       title="Community wall"
-      description="Choose who reads and posts on your wall, and keep it the way you want it."
+      description={
+        canModerate
+          ? 'Choose who reads and posts on your wall, review what people report, and keep it the way you want it.'
+          : 'Choose who reads and posts on your wall, and keep it the way you want it.'
+      }
       actions={
         <Link href={`/spaces/${space.slug}/community`} className={buttonClasses('secondary', 'sm')}>
           <Eye className="h-4 w-4" aria-hidden />
@@ -101,13 +115,84 @@ export default async function ManageCommunityPage({ params }: { params: Promise<
                     </p>
                     <p className="line-clamp-2 text-body-sm text-muted">{p.body ?? ''}</p>
                   </div>
-                  <WallModerationRow slug={space.slug} postId={p.id} pinned={!!p.is_pinned} hidden={!!p.hidden_at} />
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <WallModerationRow slug={space.slug} postId={p.id} pinned={!!p.is_pinned} hidden={!!p.hidden_at} />
+                    {canModerate && p.author_id !== viewerProfileId && p.author_id !== space.ownerProfileId ? (
+                      bannedIds.has(p.author_id) ? (
+                        <span className="text-meta text-muted">Banned</span>
+                      ) : (
+                        <BanButton slug={space.slug} profileId={p.author_id} name={firstName(p.author?.display_name)} />
+                      )
+                    ) : null}
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </section>
+
+        {canModerate ? (
+          <section aria-labelledby="wall-reports" className="space-y-3">
+            <h2 id="wall-reports" className="font-section text-lead font-bold text-text">
+              Reports
+            </h2>
+            <p className="text-body-sm text-muted">
+              What people on the wall have flagged. Hide the post and close the report, or dismiss it and leave the post up.
+            </p>
+            {reports.length === 0 ? (
+              <EmptyState title="Nothing reported" description="When someone reports a post on your wall, it lands here for you to decide." />
+            ) : (
+              <ul className="divide-y divide-border rounded-card border border-border bg-surface">
+                {reports.map((r) => (
+                  <ReportRow
+                    key={r.id}
+                    slug={space.slug}
+                    reportId={r.id}
+                    reason={r.reason}
+                    details={r.details}
+                    excerpt={r.excerpt}
+                    authorName={r.authorName}
+                    when={relativeTime(r.createdAt)}
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
+        ) : null}
+
+        {canModerate ? (
+          <section aria-labelledby="wall-bans" className="space-y-3">
+            <h2 id="wall-bans" className="font-section text-lead font-bold text-text">
+              Banned from the wall
+            </h2>
+            <p className="text-body-sm text-muted">
+              A ban keeps someone from posting, replying and reacting here. Their membership stays as it is. Lift it any time.
+            </p>
+            {bans.length === 0 ? (
+              <EmptyState title="Nobody is banned" description="Ban a person from a post of theirs above, and they show up here." />
+            ) : (
+              <ul className="divide-y divide-border rounded-card border border-border bg-surface">
+                {bans.map((b) => (
+                  <BannedRow
+                    key={b.profileId}
+                    slug={space.slug}
+                    profileId={b.profileId}
+                    name={b.displayName}
+                    handle={b.handle}
+                    avatarUrl={b.avatarUrl}
+                    since={relativeTime(b.createdAt)}
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
+        ) : null}
       </div>
     </ConsoleFocusTemplate>
   )
+}
+
+function firstName(name: string | null | undefined): string {
+  const first = (name ?? '').trim().split(/\s+/)[0]
+  return first || 'this person'
 }

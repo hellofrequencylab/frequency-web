@@ -1,0 +1,18 @@
+{
+  "id": "FH-015",
+  "title": "Hunts FH-015: Make QR and NFC placement kit",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 1, Physical entry. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Reuse rendering/printing, NDEF URL writing and tag readback. Add short code, accessible fallback and replacement process. Done when: Printed sign and tag both work on target devices. Revoked sign stops granting. Requires: FH-014. Owner role: Local operations.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"docs/hunts/PLACEMENT-KIT.md\")?0:1)'"
+  },
+  "wave": "W7"
+}

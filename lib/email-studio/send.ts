@@ -19,7 +19,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
-import { resolveSegment, sendCategoryForSegment, type SegmentKey } from '@/lib/studio/campaigns'
+import { resolveSegment, type SegmentKey } from '@/lib/studio/campaigns'
+import { loadCampaignPurpose, sendCategoryForPurpose } from '@/lib/email-studio/campaign-purpose'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
@@ -748,11 +749,12 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   try {
     const recipients = await resolveSegment(row.segment)
     const names = await loadContactNames(recipients.map((r) => r.contactId))
-    // The send-gate category depends on the AUDIENCE (lib/studio/campaigns sendCategoryForSegment):
+    // The send-gate category depends on the campaign's PURPOSE first (a promotion is marketing whoever it is
+    // addressed to, lib/email-studio/campaign-purpose), then on the AUDIENCE (sendCategoryForSegment):
     // `subscribed_members` is the opt-IN marketing audience → 'marketing' (email_marketing, opt-in);
     // `members` / `site_signups` / trait / place / event / direct-set are the operator's own
     // account-holders → 'lifecycle' (opt-OUT member newsletter each member can still unsubscribe from).
-    const sendCategory = sendCategoryForSegment(row.segment)
+    const sendCategory = sendCategoryForPurpose(row.segment, await loadCampaignPurpose(db, campaignId))
     // Root space id for the profile-less path (the `all_contacts` audience). Resolved once: profile-less
     // imported leads are suppression-gated against the root space and unsubscribe via a root-space token.
     const rootSpaceId = await loadRootSpaceId()
