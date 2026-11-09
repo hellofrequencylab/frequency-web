@@ -20,7 +20,7 @@ export function CommandBar({ sections, pages, selected, onRun, onClose }: {
   sections: { id: string; name: string; title: string }[]
   pages: { slug: string; label: string }[]
   selected: boolean
-  onRun: (id: string) => void
+  onRun: (id: string, query: string) => void
   onClose: () => void
 }) {
   const [query, setQuery] = useState('')
@@ -40,7 +40,7 @@ export function CommandBar({ sections, pages, selected, onRun, onClose }: {
   const run = (row: CommandRow | undefined) => {
     if (!row) return
     try { window.localStorage.setItem(RECENT_KEY, JSON.stringify(rememberCommand(recent, row.id))) } catch { /* private mode */ }
-    onRun(row.id)
+    onRun(row.id, query)
   }
   const at = Math.min(active, Math.max(0, rows.length - 1))
 

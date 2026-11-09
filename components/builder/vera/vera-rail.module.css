@@ -1,0 +1,17 @@
+/* VERA'S RAIL (BLD-402): Commons tokens and the builder's shape tokens only. */
+
+.root { display: grid; gap: 12px; padding: 4px 0; color: var(--fq-text-strong); }
+.root h2 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 15px; }
+.root form { display: grid; gap: 8px; }
+.say { margin: 0; padding: 10px 12px; border-radius: var(--r-2); background: var(--fq-bg-sunken); }
+.status { margin: 0; font-size: 13px; color: var(--fq-text-muted); }
+.group { display: grid; gap: 8px; margin: 0 0 10px; padding: 10px 12px; border: 1px dashed var(--editor-select); border-radius: var(--r-2); background: color-mix(in oklab, var(--editor-select) 6%, transparent); }
+.group legend { padding: 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--fq-text-muted); }
+.group ul { margin: 0; padding-left: 18px; }
+.refused { margin: 0 0 10px; padding-left: 18px; font-size: 13px; color: var(--fq-text-muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { min-height: 36px; padding: 0 12px; border: 1px solid var(--fq-border-hair); border-radius: var(--r-2); background: var(--fq-surface-raised); color: inherit; font: inherit; cursor: pointer; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn[aria-pressed='true'] { box-shadow: inset 0 0 0 2px var(--editor-select); }
+.primary { border-color: transparent; background: var(--editor-select); color: var(--fq-text-on-accent); }
+.btn:focus-visible { outline: 2px solid var(--editor-select); outline-offset: 2px; }
