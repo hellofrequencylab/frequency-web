@@ -107,40 +107,40 @@
     ],
     "functions": {
       "booking": [],
-      "services": [
-        "MidnightOfferings",
-        "MidnightService"
+      "circles": [],
+      "events": [
+        "MidnightGatherings",
+        "MidnightEventRows"
       ],
-      "reviews": [
-        "MidnightProof"
+      "firstnight": [],
+      "forms": [
+        "MidnightContact"
+      ],
+      "gallery": [],
+      "letter": [
+        "MidnightLetter",
+        "MidnightSignup"
+      ],
+      "locations": [],
+      "plans": [
+        "MidnightMembership"
       ],
       "posts": [
         "MidnightLibrary",
         "MidnightArchive"
       ],
-      "events": [
-        "MidnightGatherings",
-        "MidnightEventRows"
+      "reviews": [
+        "MidnightProof"
+      ],
+      "services": [
+        "MidnightOfferings",
+        "MidnightService"
       ],
       "shop": [
         "MidnightShop"
       ],
-      "circles": [],
-      "firstnight": [],
-      "plans": [
-        "MidnightMembership"
-      ],
-      "letter": [
-        "MidnightLetter",
-        "MidnightSignup"
-      ],
-      "gallery": [],
       "team": [
         "MidnightHost"
-      ],
-      "locations": [],
-      "forms": [
-        "MidnightContact"
       ]
     }
   },
