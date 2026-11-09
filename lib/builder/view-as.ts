@@ -15,7 +15,7 @@ import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 
 export type ViewAs = 'visitor' | 'member' | 'host'
 
-export interface ViewAsSpec {
+interface ViewAsSpec {
   id: ViewAs
   label: string
   says: string
@@ -29,7 +29,7 @@ export const VIEW_AS: readonly ViewAsSpec[] = [
 
 export const VIEW_AS_IDS = VIEW_AS.map((v) => v.id) as readonly ViewAs[]
 
-export interface ViewerLens {
+interface ViewerLens {
   /** The canvas edits (host) or previews (visitor, member). */
   editing: boolean
   /** Readiness tags on the canvas: host only. */
