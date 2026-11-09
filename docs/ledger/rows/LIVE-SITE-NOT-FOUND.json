@@ -1,7 +1,7 @@
 {
   "id": "LIVE-SITE-NOT-FOUND",
   "title": "A missing page on a Space's own domain shows the website's own not-found, not Frequency's platform header",
-  "status": "open",
+  "status": "done",
   "lane": "live",
   "priority": "P2",
   "size": "XS",
@@ -9,10 +9,11 @@
     "file": "app/hosted/[host]/[page]/page.tsx",
     "ref": "Daniel 2026-11-09: wildheart.frequencylocal.com/events landed on wildheart.academy/events and showed the Frequency header (Feed, Discover, Pricing)"
   },
-  "detail": "A page the site does not declare 404s inside SitePage, and app/hosted had no not-found of its own, so the root not-found rendered Frequency's platform shell on the Space's domain. ADR-1723: a visitor on a website is never sent back to the main site. The 404 status is right (Wildheart has no /events page; its calendar is /calendar). Fix: app/hosted/[host]/not-found.tsx, no platform chrome, one link to the site's own home. Done when the file exists, reads no platform shell, and a dead path on a custom domain renders it.",
+  "detail": "A page the site does not declare 404s inside SitePage, and app/hosted had no not-found of its own, so the root not-found rendered Frequency's platform shell on the Space's domain. ADR-1723: a visitor on a website is never sent back to the main site. The 404 status is right (Wildheart has no /events page; its calendar is /calendar). Fix: app/hosted/[host]/not-found.tsx, no platform chrome, one link to the site's own home. Done when the file exists, reads no platform shell, and a dead path on a custom domain renders it.\n\n── 2026-11-09: merged in #4708. The probe passes on main, so the row is done; the one look at wildheart.academy/events after the deploy is READY stays with the owner and does not hold the row open.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"node:fs\");const p=\"app/hosted/[host]/not-found.tsx\";if(!fs.existsSync(p)){console.error(\"no site-own not-found: a dead page on a custom domain falls through to the platform shell\");process.exit(1)}const s=fs.readFileSync(p,\"utf8\");if(/site-shell|SiteShell/.test(s)){console.error(\"the site not-found wears the platform shell\");process.exit(1)}'"
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-09"
 }

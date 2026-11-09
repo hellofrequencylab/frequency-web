@@ -951,6 +951,13 @@ export function roleHasSpaceRows(id: RoleId, metadata: Props | undefined, now: D
   }
 }
 
+/** The visitor gate as one question (BLD-304): does this role block draw nothing for a visitor? True for the sample copy
+ *  of a live role on a live page when the Space has no rows of its own to put in its place (the `emptyLive` rule every
+ *  live role renderer applies). The host still sees it on the canvas, flagged as sample. */
+export function roleDrawsNothingForVisitor(id: RoleId, props: Props, metadata: Props | undefined, now = new Date()): boolean {
+  return emptyLive(props, metadata, roleHasSpaceRows(id, metadata, now))
+}
+
 /** The metadata an Add-sheet preview renders with (BLD-202): the Space's own rows when this role is live and the Space has
  *  some, else no Space at all, so the block draws its flagged sample instead of an empty live section. */
 export function rolePreviewMetadata(id: RoleId, metadata: Props | undefined, now = new Date()): Props | undefined {
@@ -958,4 +965,24 @@ export function rolePreviewMetadata(id: RoleId, metadata: Props | undefined, now
   if (!metadata || !('space' in metadata)) return metadata
   const { space: _space, ...rest } = metadata
   return rest
+}
+
+/** The rows a role would send in an email (BLD-302): the Space's own rows when the role is live and the Space has some,
+ *  else the rows the owner wrote. The same precedence the send-time data-block resolver uses (a live value wins, the
+ *  stored snapshot stays when the row is gone), read once so the email lens shows what the send will fix. */
+export function roleRowsAtSend(id: RoleId, p: Props, metadata: Props | undefined, now = new Date()): Props[] {
+  const stored = arr(p.items)
+  if (!ROLES[id].live || !liveAsked(p)) return stored
+  const live: Props[] = (() => {
+    switch (id) {
+      case 'gatherings': return liveEvents(metadata, now, Math.max(1, Math.min(12, Number(p.count) || 6)))
+      case 'offerings': return liveOfferings(metadata)
+      case 'proof': return liveReviews(metadata)
+      case 'stats': return liveStats(metadata)
+      case 'people': return liveTeam(metadata)
+      case 'chapters': return liveChapters(metadata)
+      default: return []
+    }
+  })()
+  return live.length ? live : stored
 }
