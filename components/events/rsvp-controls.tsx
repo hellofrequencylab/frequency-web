@@ -16,6 +16,7 @@ import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { DeviceNudge } from '@/components/push/device-nudge'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
+import { chipClasses } from '@/components/ui/chip'
 
 // Detail-page RSVP controls (event Detail template). Three warm states a member
 // can move between — Going · Interested (maybe) · (Join waitlist when full) —
@@ -623,11 +624,7 @@ function MultiSelectAnswer({
             type="button"
             onClick={() => toggle(opt)}
             aria-pressed={on}
-            className={`rounded-pill px-3 py-1 text-body-sm font-medium transition-colors ${
-              on
-                ? 'bg-primary-bg text-primary-strong'
-                : 'border border-border text-muted hover:bg-surface-elevated hover:text-text'
-            }`}
+            className={chipClasses(on, 'px-3 py-1 text-body-sm')}
           >
             {opt}
           </button>

@@ -1,0 +1,18 @@
+{
+  "id": "FH-044",
+  "title": "Hunts FH-044: Release seasonal versions and migration tools",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-LIST.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 5, Living editions. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Pin runs, maintain routes and crosswalk, support draft import from both legacy formats and old grant reads. Done when: Existing runs keep rules, imports carry no real credits and printed URLs resolve as intended. Requires: FH-013, FH-030, FH-033. Owner role: Game systems and web.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/editions.ts\")?0:1)'"
+  },
+  "wave": "W7"
+}

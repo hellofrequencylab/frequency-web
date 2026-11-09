@@ -193,7 +193,13 @@ jobs:
         with:
           path: tsconfig.tsbuildinfo
           key: tsbuildinfo-${{ hashFiles('pnpm-lock.yaml', 'tsconfig.json') }}-${{ github.sha }}
-          restore-keys: tsbuildinfo-${{ hashFiles('pnpm-lock.yaml', 'tsconfig.json') }}-
+          # A lockfile change (every Dependabot PR) changes the key above, so the first restore key misses and tsc
+          # starts cold: 2026-11-09 that peaked past the 6 GB heap and died with SIGABRT on #4728 to #4731. The
+          # second key takes the newest buildinfo from any lockfile. tsc checks each file's version against the
+          # buildinfo itself, so a stale one only costs a re-check, never a wrong answer.
+          restore-keys: |
+            tsbuildinfo-${{ hashFiles('pnpm-lock.yaml', 'tsconfig.json') }}-
+            tsbuildinfo-
       - name: Install
         run: pnpm install --frozen-lockfile
       # PR SIZE RULES (docs/WORKFLOW.md §PR size and merge rules, owner-directed 2026-08-18).
