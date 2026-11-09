@@ -1,0 +1,6 @@
+{
+  "id": "SCAN-1032",
+  "append": {
+    "detail": "2026-11-09: added scripts/audit/route-family-audit.mjs, a runnable route-family audit. It visits 25 public route families at 390 and 1280 and records HTTP status, page and console errors, horizontal overflow, axe WCAG A/AA serious and critical violations and a full-page screenshot, writing report.json, report.md and shots/. Checked against a static page where it caught overflow and a missing image alt. It could not run against the app from the cloud sandbox: next dev needs NEXT_PUBLIC_SUPABASE_URL and the sandbox has no credentials. Run it with BASE_URL=http://localhost:3000 (a local pnpm dev) or a preview URL, then file each finding as its own row. Signed-in, admin, API, security-boundary, SEO and performance proof are not covered by this script. Row stays OPEN."
+  }
+}
