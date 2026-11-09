@@ -22,6 +22,8 @@ import { tuneProjection } from '@/lib/builder/tune'
 import { focalFieldFor, pictureFieldFor } from '@/lib/builder/parts'
 import { CommandBar } from '@/components/builder/command/command-bar'
 import { AddSheet } from '@/components/builder/add/add-sheet'
+import { EmailLens } from '@/components/builder/surfaces/email/email-lens'
+import { emailLens } from '@/lib/builder/email-lens'
 import { ViewAsNotes, ViewAsSwitch } from '@/components/builder/view-as/view-as'
 import { viewerDoc, viewerLens, type ViewAs } from '@/lib/builder/view-as'
 import { ThemeLens } from '@/components/builder/theme/theme-lens'
@@ -236,6 +238,12 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
   const sections = page.doc.content
   // The spine and outline (BLD-103): one list, reordered by drag or by Alt and an arrow, through one pure move.
   const spine = useMemo(() => spineItems(page.doc, config, state.device), [page.doc, config, state.device])
+  // THE EMAIL LENS (BLD-302): on the email surface the canvas is the email the page would send, compiled by compileEmailDoc
+  // itself, so what the owner sees is the send. Read only while that surface is showing.
+  const email = useMemo(() => (state.surface === 'email'
+    ? emailLens(page.doc, config, { subject: page.label, brand: { wordmark: brandName, logoUrl: brand.logo && /^https?:\/\//.test(brand.logo) ? brand.logo : undefined, baseUrl: origin }, origin, metadata: metadata as Record<string, unknown> | undefined })
+    : null), [state.surface, page.doc, page.label, config, brandName, brand.logo, origin, metadata])
+
   // SHOW AS (BLD-301): the canvas draws what this surface can show, framed at the surface's declared density and width;
   // the rest is listed above it with the reason. The document itself keeps every section.
   const surfaced = useMemo(() => surfaceSections(viewed.doc, config, state.surface), [viewed.doc, config, state.surface])
@@ -446,7 +454,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
       <main className={styles.canvas} aria-label="Page canvas" onPointerDown={() => { if (rails.open) railDispatch({ type: 'close' }) }}>
         <div style={{ width: `min(100%, ${frame.width}px)`, margin: '0 auto' }}><SurfaceNotes surface={state.surface} sections={surfaced} onSelect={(id) => dispatch({ type: 'select', id })} /></div>
         <div className={`${styles.frame} ${frame.stackClass}`} data-surface={state.surface} data-density={frame.density} style={{ width: `min(100%, ${frame.width}px)` }}>
-          {doors ? <SpotlightDoors doors={doors} brandName={brandName} logo={brand.logo ?? null} selectedId={state.selectedId} onSelect={(id) => dispatch({ type: 'select', id })} /> : profile ? <ProfileFrame brandName={brandName}>{pageCanvas}</ProfileFrame> : pageCanvas}
+          {email ? <EmailLens lens={email} from={brandName} onSelect={(id) => dispatch({ type: 'select', id: id || null })} /> : doors ? <SpotlightDoors doors={doors} brandName={brandName} logo={brand.logo ?? null} selectedId={state.selectedId} onSelect={(id) => dispatch({ type: 'select', id })} /> : profile ? <ProfileFrame brandName={brandName}>{pageCanvas}</ProfileFrame> : pageCanvas}
         </div>
         <div style={{ width: `min(100%, ${BUILDER_DEVICE_WIDTH[state.device]}px)`, margin: '12px auto 0' }}><ViewAsNotes view={view} hostOnly={viewed.hostOnly} onSelect={(id) => dispatch({ type: 'select', id })} /></div>
       </main>
