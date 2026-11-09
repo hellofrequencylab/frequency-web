@@ -80,7 +80,9 @@ import {
   type StrengthPresetKind,
   type YogaPresetKind,
 } from '@/lib/movement'
-import type { RevealPayload } from '@/lib/on-air'
+import type { OnAirPrefs, RevealPayload } from '@/lib/on-air'
+import { MINUTE_MAX, clampMemberMinutes } from '@/lib/on-air/timer-settings'
+import { useSaveOnChange, useTimerSettings } from './use-timer-settings'
 import {
   loadLiveSession,
   saveLiveSession,
@@ -107,35 +109,11 @@ interface MovementSetup {
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 
-// FREE PRACTICE MEMORY (PRACTICE-TIMER-CONTINUITY P3, mirrors the sit's fq_mindless_setup): the
-// member's last-run movement configuration. Written on every start; read only when the launch is
-// the UNATTACHED Free Practice, so a bare Get Moving open pops back up in the last known
-// configuration while an authored practice still opens on its creator's preset.
-const SAVED_MOVEMENT_SETUP_KEY = 'fq_movement_setup'
-
-/** Read the last-saved movement config once. Null when absent, on the server, or unparsable. */
-function readSavedMovementSetup(): MovementConfig | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(SAVED_MOVEMENT_SETUP_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<MovementConfig> | null
-    if (!parsed || typeof parsed !== 'object') return null
-    if (!MOVEMENT_MODES.some((m) => m.mode === parsed.mode)) return null
-    return parsed as MovementConfig
-  } catch {
-    return null
-  }
-}
-
-/** Persist the movement config a run just started with. Best-effort; never throws. */
-function writeSavedMovementSetup(config: MovementConfig): void {
-  try {
-    window.localStorage.setItem(SAVED_MOVEMENT_SETUP_KEY, JSON.stringify(config))
-  } catch {
-    // storage full / privacy mode: memory is a nicety, never a blocker
-  }
-}
+// FREE PRACTICE MEMORY (PRACTICE-TIMER-CONTINUITY P3): the member's last-run movement configuration
+// lives in the ONE timer settings model (lib/on-air/timer-settings.ts `move`, LIVE-2232), saved
+// the moment the setup changes and read only when the launch is the UNATTACHED Free Practice, so
+// a bare Get Moving open pops back up in the last known configuration while an authored practice
+// still opens on its creator's preset. The engine owns no storage key of its own any more.
 
 // The bell voice is fixed to the tuned default for Movement (the sit's voice
 // picker is the place to choose one; here the cues are functional beats).
@@ -233,6 +211,7 @@ export function MovementSession({
   journeyLegs = [],
   autoStart = false,
   warmupSec: warmupSecProp,
+  prefs,
   warmupMessageOverride,
   queuePosition,
   onCompleted,
@@ -243,6 +222,8 @@ export function MovementSession({
   onModeChange,
 }: {
   minutesOverride?: number
+  /** The member's server prefs; the settings model lays the local copy over them (LIVE-2232). */
+  prefs?: Partial<OnAirPrefs> | null
   practices: OnAirPractice[]
   defaultPracticeId: string | null
   /** The Movement mode this session opens on (from a practice's movement_config, or Walk). */
@@ -345,8 +326,8 @@ export function MovementSession({
   // back up in the last known configuration. Authored practices keep the creator's preset.
   const launched = practices.find((p) => p.id === initialId)
   const isFreeLaunch = launched != null && launched.id === findFreeMove(practices)?.id
-  const savedSetup = useState(() => (isFreeLaunch ? readSavedMovementSetup() : null))[0]
-  const initialCfg = (isFreeLaunch ? (savedSetup ?? launched?.movementConfig) : launched?.movementConfig) ?? null
+  const { initial: settings, save: saveSettings } = useTimerSettings(prefs)
+  const initialCfg = (isFreeLaunch ? (settings.move ?? launched?.movementConfig) : launched?.movementConfig) ?? null
 
   const [practiceId, setPracticeId] = useState(initialId)
   const [mode, setMode] = useState<MovementMode>(defaultMode ?? initialCfg?.mode ?? 'walk')
@@ -356,7 +337,7 @@ export function MovementSession({
   // to pick here — the primary button always STARTS the resolved practice.
   // The per-mode duration default, overridden to the resumed practice's TARGET length so the plan
   // total matches and the live screen runs exactly the remaining time. A fresh sit uses the preset.
-  const customMin = !launched?.durationLocked && typeof minutesOverride === 'number' && Number.isFinite(minutesOverride) ? Math.max(1, Math.min(120, Math.round(minutesOverride))) : null
+  const customMin = !launched?.durationLocked && typeof minutesOverride === 'number' && Number.isFinite(minutesOverride) ? clampMemberMinutes(minutesOverride) : null
   const resumeMin = initialResume ? Math.max(1, Math.round(initialResume.targetSec / 60)) : 0
   // Walk
   const [walkMinutes, setWalkMinutes] = useState(defaultMode === 'walk' && resumeMin ? resumeMin : (customMin ?? initialCfg?.walkMinutes ?? 20))
@@ -411,6 +392,9 @@ export function MovementSession({
     restSec,
     rounds,
   ])
+  // Remember the composed setup the moment it changes (LIVE-2232), never on mount and never while
+  // a resume is dictating the length, so a cancelled setup still carries its choices to the next open.
+  useSaveOnChange({ move: config }, saveSettings, stage === 'setup' && !initialResume)
 
   const plan = useMemo<MovementPlan>(() => buildPlan(config), [config])
 
@@ -856,7 +840,7 @@ export function MovementSession({
     setStartedAt(now)
     setElapsed(0)
     // Remember this run's configuration (P3): the next UNATTACHED Free Practice open seeds from it.
-    writeSavedMovementSetup(config)
+    saveSettings({ move: config })
     // Open ARMED with the warm-up pre-roll (item #10): paused from the first millisecond, the
     // countdown ticks, then begin() unpauses. Same shape as the sit.
     setPausedAt(now)
@@ -1355,7 +1339,7 @@ export function MovementSession({
                 className="mt-2"
                 label={`${walkMinutes}m`}
                 onLess={() => setWalkMinutes((m) => Math.max(1, m - 1))}
-                onMore={() => setWalkMinutes((m) => Math.min(240, m + 1))}
+                onMore={() => setWalkMinutes((m) => Math.min(MINUTE_MAX, m + 1))}
               />
             </Group>
             <Group label="Reminders">
@@ -1385,7 +1369,7 @@ export function MovementSession({
                 className="mt-2"
                 label={`${runMinutes}m`}
                 onLess={() => setRunMinutes((m) => Math.max(1, m - 1))}
-                onMore={() => setRunMinutes((m) => Math.min(240, m + 1))}
+                onMore={() => setRunMinutes((m) => Math.min(MINUTE_MAX, m + 1))}
               />
             </Group>
             <Group label="Split cues">
@@ -1430,7 +1414,7 @@ export function MovementSession({
                 className="mt-2"
                 label={`${stretchMinutes}m`}
                 onLess={() => setStretchMinutes((m) => Math.max(1, m - 1))}
-                onMore={() => setStretchMinutes((m) => Math.min(240, m + 1))}
+                onMore={() => setStretchMinutes((m) => Math.min(MINUTE_MAX, m + 1))}
               />
             </Group>
             <Group label="Switch sides">

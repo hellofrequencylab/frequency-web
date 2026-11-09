@@ -45,12 +45,12 @@ import {
   ambientTrackBySlug,
   bellToneBySlug,
   bellVolumeScale,
-  coerceBellVolume,
-  coerceAmbientVolume,
   breathPositionAt,
   buildCustomPattern,
   clampMinutes,
   clampWarmupSec,
+  coerceAmbientVolume,
+  coerceBellVolume,
   engineForMode,
   isBreathMode,
   modeForMindless,
@@ -65,6 +65,7 @@ import {
   type SessionMode,
 } from '@/lib/on-air'
 import { findFreeSit, shouldRunFreeSit } from '@/lib/on-air/free-sit'
+import { useSaveOnChange, useTimerSettings } from './use-timer-settings'
 import { createAmbient, type AmbientHandle } from '@/lib/on-air-ambient'
 import { liveDepthCue } from '@/lib/practices/tiers'
 import { BreathVisualizer } from './visualizer'
@@ -152,35 +153,11 @@ export interface OnAirPractice {
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 
-// --- saved setup (localStorage) ----------------------------------------------
-// Remembers the member's last Mindless choices so re-opening the launcher picks
-// up where they left off, even without finishing a sit. A best-effort nicety:
-// any read/parse failure falls back to the prefs prop, never throws.
-const SAVED_SETUP_KEY = 'fq_mindless_setup'
-
-interface SavedSetup {
-  mode: SessionMode
-  patternSlug: string
-  minutes: number
-  customIn: number
-  customHold: number
-  customOut: number
-}
-
-/** Read the member's last-saved setup once. Returns null when absent, on the
- *  server, or when the stored value can't be parsed. */
-function readSavedSetup(): Partial<SavedSetup> | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(SAVED_SETUP_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    if (parsed && typeof parsed === 'object') return parsed as Partial<SavedSetup>
-    return null
-  } catch {
-    return null
-  }
-}
+// --- saved setup --------------------------------------------------------------
+// The member's choices (pattern, open length, custom phases, every cue) live in the ONE timer
+// settings model (lib/on-air/timer-settings.ts, LIVE-2232): local copy over server copy on
+// mount, and every change saved the moment it is made (useSaveOnChange below). The engine owns
+// no storage key of its own any more.
 
 // The interval bell + closing double-strike (chime / endChime) are the shared
 // Web Audio cue engine in lib/timer-audio.ts — a soft bell/bowl voice with a
@@ -396,9 +373,9 @@ export function OnAirSession({
     return resolved
   }
   const [practiceId, setPracticeId] = useState(initialId)
-  // Last-saved setup (localStorage) seeds the initial choices, falling back to the prefs prop.
-  // Read once on mount (lazy initializer); the WRITE happens in an effect below.
-  const [saved] = useState(readSavedSetup)
+  // The member's settings seed the initial choices (local copy over the prefs prop), read once on
+  // mount; every later change is saved by useSaveOnChange below.
+  const { initial: settings, save: saveSettings } = useTimerSettings(prefs)
   // The opening mode is routed by the initial practice's timer_kind (item #2). A resume always
   // opens the silent timer to run the remaining time.
   const [mode, setMode] = useState<SessionMode>(
@@ -414,7 +391,7 @@ export function OnAirSession({
       return clampMinutes(minutesOverride)
     }
     if (d && d > 0) return clampMinutes(d)
-    return saved?.minutes != null ? clampMinutes(saved.minutes) : prefs.minutes
+    return settings.still.minutes
   })
   // The optional free-text note: Journal shows it on the live screen (write while you sit), Just
   // Log on the setup screen (capture the interaction before logging). Captured client-side and
@@ -425,22 +402,22 @@ export function OnAirSession({
   // practice ships Box, P4), then the member's last-saved choice, then their pref. The member can
   // still switch patterns in setup.
   const [patternSlug, setPatternSlug] = useState(
-    practices.find((p) => p.id === initialId)?.breathPattern ?? saved?.patternSlug ?? prefs.pattern,
+    practices.find((p) => p.id === initialId)?.breathPattern ?? settings.still.patternSlug,
   )
-  const [customIn, setCustomIn] = useState(saved?.customIn ?? prefs.customIn ?? 4)
-  const [customHold, setCustomHold] = useState(saved?.customHold ?? prefs.customHold ?? 4)
-  const [customOut, setCustomOut] = useState(saved?.customOut ?? prefs.customOut ?? 6)
-  const [bell, setBell] = useState(prefs.bell ?? false)
-  const [bellToneSlug, setBellToneSlug] = useState(prefs.bellTone ?? 'soft')
-  // Bell + ambient loudness are 0..1 sliders now (coerce migrates a legacy quiet/medium/loud pref).
-  const [bellVolume, setBellVolume] = useState<number>(coerceBellVolume(prefs.bellVolume))
-  const [endBell, setEndBell] = useState(prefs.endBell ?? true)
-  const [bellEveryMin, setBellEveryMin] = useState(prefs.bellEveryMin ?? 1)
-  const [haptics, setHaptics] = useState(prefs.haptics ?? false)
-  const [ambientSlug, setAmbientSlug] = useState<string | null>(prefs.ambientTrack ?? null)
-  const [ambientVolume, setAmbientVolume] = useState<number>(coerceAmbientVolume(prefs.ambientVolume))
-  // The warm-up countdown length (3 / 5 / 10s), selectable on setup. Seeds from prefs.
-  const [warmupSec, setWarmupSec] = useState(() => clampWarmupSec(prefs.warmupSec))
+  const [customIn, setCustomIn] = useState(settings.still.customIn)
+  const [customHold, setCustomHold] = useState(settings.still.customHold)
+  const [customOut, setCustomOut] = useState(settings.still.customOut)
+  const [bell, setBell] = useState(settings.cues.bell)
+  const [bellToneSlug, setBellToneSlug] = useState(settings.cues.bellTone)
+  // Bell + ambient loudness are 0..1 sliders (the model migrates a legacy quiet/medium/loud pref).
+  const [bellVolume, setBellVolume] = useState<number>(settings.cues.bellVolume)
+  const [endBell, setEndBell] = useState(settings.cues.endBell)
+  const [bellEveryMin, setBellEveryMin] = useState(settings.cues.bellEveryMin)
+  const [haptics, setHaptics] = useState(settings.cues.haptics)
+  const [ambientSlug, setAmbientSlug] = useState<string | null>(settings.cues.ambientTrack)
+  const [ambientVolume, setAmbientVolume] = useState<number>(settings.cues.ambientVolume)
+  // The warm-up countdown length (3 / 5 / 10s), selectable on setup. Seeds from the settings.
+  const [warmupSec, setWarmupSec] = useState(settings.cues.warmupSec)
   // Mobile-only: the cue settings collapse so the primary controls (mode, minutes, Tune out) stay
   // above the fold on a phone. Always expanded on desktop (the two-column layout has the room).
   const [cuesOpen, setCuesOpen] = useState(false)
@@ -580,17 +557,18 @@ export function OnAirSession({
   // could never enter it reliably; the dvh takeover above covers any device that
   // denies (iOS Safari). On leave, exitAppFullscreen drops it.
 
-  // Remember the member's setup choices for next time (localStorage). Best-effort:
-  // a write is the only side effect here, so it never trips set-state-in-effect.
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const setup: SavedSetup = { mode, patternSlug, minutes, customIn, customHold, customOut }
-      window.localStorage.setItem(SAVED_SETUP_KEY, JSON.stringify(setup))
-    } catch {
-      // saving setup is a nicety, never a blocker
-    }
-  }, [mode, patternSlug, minutes, customIn, customHold, customOut])
+  // Remember every choice the moment it changes (LIVE-2232): the pattern, the custom phases and
+  // every cue always; the OPEN length only when the member chose it for a practice with no length
+  // of its own, never a resume's remaining minutes or an authored length, so the remembered
+  // default is always the member's own number.
+  const ownLength = (practices.find((p) => p.id === practiceId)?.durationMin ?? 0) > 0
+  useSaveOnChange(
+    {
+      still: { patternSlug, customIn, customHold, customOut, ...(resuming || ownLength ? {} : { minutes }) },
+      cues: { bell, bellTone: bellToneSlug, bellVolume, endBell, bellEveryMin, haptics, ambientTrack: ambientSlug, ambientVolume, warmupSec },
+    },
+    saveSettings,
+  )
 
   // --- the clock --------------------------------------------------------------
 

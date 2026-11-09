@@ -9,6 +9,8 @@
 // inhale, holds, settles on the exhale. Counts are member-adjustable later
 // (P3 custom slider); these three cover the daily cases.
 
+import type { MovementConfig } from '@/lib/movement'
+
 type BreathKind = 'in' | 'hold' | 'out'
 
 export interface BreathPhase {
@@ -424,6 +426,9 @@ export interface OnAirPrefs {
   /** The warm-up countdown before a sit begins, in seconds: 3 | 5 | 10. Default 5
    *  (the original pre-roll). Drives the armed pre-roll on the live screen. */
   warmupSec?: number
+  /** The last Get Moving configuration the member ran unattached (Free Practice memory), kept
+   *  beside the sit's choices so another device opens the same way (LIVE-2232). */
+  move?: MovementConfig | null
 }
 
 /** The selectable warm-up lengths (seconds). The setup selector offers these three. */

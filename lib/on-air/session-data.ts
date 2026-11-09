@@ -285,6 +285,7 @@ export async function loadOnAirSessionData(
     ambientTrack: stored.ambientTrack,
     ambientVolume: coerceAmbientVolume(stored.ambientVolume),
     warmupSec: stored.warmupSec ?? DEFAULT_PREFS.warmupSec,
+    move: stored.move ?? null,
   }
 
   // What the timer auto-resolves to when it opens. The manual "Select practice" step is GONE
