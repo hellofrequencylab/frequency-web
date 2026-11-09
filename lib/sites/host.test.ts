@@ -10,6 +10,9 @@ import {
   normalizeHost,
   parseAppHosts,
   routeSiteHost,
+  attributionQuery,
+  siteDomainApiPath,
+  subdomainAttributionHop,
   siteSlugFromSubdomain,
   siteSubdomainHost,
   spotlightHostDomain,
@@ -351,5 +354,48 @@ describe('chapter subdomains on a Network domain', () => {
   it('routes a chapter host to the site route like any custom-domain site', () => {
     expect(routeSiteHost('encinitas.thegrouplocal.com', '/', '')).toEqual({ kind: 'rewrite', pathname: '/hosted/encinitas.thegrouplocal.com' })
     expect(routeSiteHost('encinitas.thegrouplocal.com', '/sitemap.xml', '')).toEqual({ kind: 'rewrite', pathname: '/hosted/encinitas.thegrouplocal.com/site-sitemap' })
+  })
+})
+
+describe('the campaign tags that survive the subdomain hop (LIVE-SUBDOMAIN-ATTRIBUTION)', () => {
+  const sub = `danieltyack.${SITE_BASE_DOMAIN}`
+
+  it('keeps only the supported utm tags, re-encoded, and nothing private', () => {
+    expect(attributionQuery('?utm_source=ig&utm_medium=bio&token=SECRET&code=123')).toBe('?utm_source=ig&utm_medium=bio')
+    expect(attributionQuery('utm_campaign=spring%20launch&x=1')).toBe('?utm_campaign=spring+launch')
+    expect(attributionQuery('?utm_term=&utm_content=a')).toBe('?utm_content=a')
+    expect(attributionQuery(`?utm_source=${'a'.repeat(201)}`)).toBe('')
+    expect(attributionQuery('?x=1')).toBe('')
+    expect(attributionQuery('')).toBe('')
+    expect(attributionQuery(null)).toBe('')
+  })
+
+  it('names the Space, the site page and the tags for a tagged page visit on a slug subdomain', () => {
+    expect(subdomainAttributionHop(sub, '/', '?utm_source=ig')).toEqual({ slug: 'danieltyack', path: '/', query: '?utm_source=ig' })
+    expect(subdomainAttributionHop(`${sub}:443`, '/book', '?utm_source=ig&token=x')).toEqual({ slug: 'danieltyack', path: '/book', query: '?utm_source=ig' })
+  })
+
+  it('stays out of every other case', () => {
+    expect(subdomainAttributionHop(sub, '/book', '?x=1')).toBeNull()
+    expect(subdomainAttributionHop(sub, '/book', '')).toBeNull()
+    expect(subdomainAttributionHop('danieltyack.com', '/book', '?utm_source=ig')).toBeNull()
+    expect(subdomainAttributionHop(SITE_BASE_DOMAIN, '/book', '?utm_source=ig')).toBeNull()
+    expect(subdomainAttributionHop(sub, '/book', '?utm_source=ig', new Set([sub]))).toBeNull()
+    expect(subdomainAttributionHop(sub, '/robots.txt', '?utm_source=ig')).toBeNull()
+    expect(subdomainAttributionHop(sub, '/_s/enter', '?utm_source=ig')).toBeNull()
+    expect(subdomainAttributionHop(sub, '/admin', '?utm_source=ig')).toBeNull()
+    expect(subdomainAttributionHop(sub, '/spaces/danieltyack/book', '?utm_source=ig')).toBeNull()
+    expect(subdomainAttributionHop(sub, '/Book', '?utm_source=ig')).toBeNull()
+  })
+
+  it('carries the tags onto the live domain through subdomainSiteRedirect, and never off a bound domain', () => {
+    const hop = subdomainAttributionHop(sub, '/book', '?utm_source=ig&utm_campaign=x&token=no')!
+    expect(subdomainSiteRedirect(sub, hop.path, hop.query, 'danieltyack.com')).toBe('https://danieltyack.com/book?utm_source=ig&utm_campaign=x')
+    expect(subdomainSiteRedirect(sub, hop.path, hop.query, null)).toBeNull()
+    expect(subdomainSiteRedirect(sub, hop.path, hop.query, `other.${SITE_BASE_DOMAIN}`)).toBeNull()
+  })
+
+  it('names the cached route the proxy asks', () => {
+    expect(siteDomainApiPath('DanielTyack')).toBe('/api/site-domain/danieltyack')
   })
 })

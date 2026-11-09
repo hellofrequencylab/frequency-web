@@ -2,6 +2,11 @@
   "role": "CTA",
   "type": "RoleCta",
   "label": "Closing call (all themes)",
+  "intent": "Invite people in",
+  "why": "One clear invitation to end the page on.",
+  "group": "Answer",
+  "icon": "arrow",
+  "live": false,
   "replaces": [
     "CallToAction",
     "MidnightCTA",
@@ -17,17 +22,42 @@
       "lead": "text<=280",
       "primary": "link",
       "secondary": "link"
+    },
+    "labels": {
+      "title": {
+        "label": "Headline",
+        "hint": "The one line people read first."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "primary": {
+        "label": "Main button",
+        "hint": "The one thing you most want people to do next."
+      },
+      "secondary": {
+        "label": "Second button",
+        "hint": "A softer next step. You can leave it out."
+      }
     }
   },
   "variants": {
     "center": {
-      "label": "Centred"
+      "label": "Centred",
+      "thumb": "center"
     },
     "split": {
-      "label": "Words beside the buttons"
+      "label": "Words beside the buttons",
+      "thumb": "split"
     },
     "band": {
-      "label": "Full-width band"
+      "label": "Full-width band",
+      "thumb": "band"
     }
   },
   "default": "center",
@@ -88,5 +118,11 @@
     "inner",
     "lead",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "draw"
+  }
 }

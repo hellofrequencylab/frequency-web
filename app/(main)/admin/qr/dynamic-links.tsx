@@ -554,7 +554,7 @@ export function LinkForm({
               {groupedDestinations().map((g) => (
                 <optgroup key={g.group} label={g.group}>
                   {g.items.map((d) => (
-                    <option key={d.path} value={d.path}>
+                    <option key={`${d.path} ${d.label}`} value={d.path}>
                       {d.label}
                     </option>
                   ))}

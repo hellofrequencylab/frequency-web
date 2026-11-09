@@ -23,6 +23,8 @@
  *  pages (/store, /market) stay members-only and carry their own noindex, and any deeper sub-route
  *  (/manage, /edit) must never match. */
 export const PUBLIC_DETAIL_PATTERNS: readonly RegExp[] = [
+  // Reserved Space portal destination; no owner route or user-defined page can match this shape.
+  /^\/spaces\/[^/]+\/-\/program$/,
   /^\/store\/[^/]+$/, // Frequency Store product (Product JSON-LD)
   /^\/market\/[^/]+$/, // Global Market listing (Product JSON-LD)
   /^\/housing\/[^/]+$/, // Housing listing

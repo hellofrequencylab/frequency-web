@@ -11,6 +11,7 @@ import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { readSpaceSpotlight, spaceSpotlightGrid, spotlightSiteGrid } from '@/lib/spaces/spotlight'
 import { markSpotlightRender } from '@/lib/spaces/spotlight-site'
+import { spotlightWearsTheme, ThemedSpaceSpotlight } from '@/components/spotlight/themed-space-spotlight'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 
 // THE SPACE SPOTLIGHT PAGE: a Space's one-column link page (lib/spaces/spotlight.ts). The identity header
@@ -72,6 +73,18 @@ export async function SpaceSpotlight({
   markSpotlightRender()
   const saved = spaceSpotlightGrid(readSpaceSpotlight(space.preferences))
   const grid = appOrigin ? spotlightSiteGrid(saved) : saved
+
+  // A Space on a theme with whole-page layouts wears its owner's pick (default: the theme's Stack). The console preview draws
+  // the very same component, so the editor and this page cannot disagree.
+  if (spotlightWearsTheme(space)) {
+    return (
+      <SpotlightAccent space={space}>
+        <div className="min-h-screen bg-canvas">
+          <ThemedSpaceSpotlight space={space} tagline={tagline} saved={saved} appOrigin={appOrigin} />
+        </div>
+      </SpotlightAccent>
+    )
+  }
 
   return (
     <SpotlightAccent space={space}>

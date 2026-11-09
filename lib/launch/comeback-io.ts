@@ -164,9 +164,9 @@ export async function runLaunchComebacks(opts: ComebackRunOptions): Promise<Come
   return result
 }
 
-/** The owner's address, first name and time zone. The zone is the person's own, then their Space's, else null: the rule
+/** The owner's address, first name and time zone (the launched welcome, lib/launch/launched-io.ts, reads it too). The zone is the person's own, then their Space's, else null: the rule
  *  then holds the email rather than guess an hour. */
-async function readOwner(admin: ReturnType<typeof createAdminClient>, ownerId: string, spaceId: string | null) {
+export async function readOwner(admin: ReturnType<typeof createAdminClient>, ownerId: string, spaceId: string | null) {
   const { data: p } = await admin.from('profiles').select('display_name, auth_user_id, home_timezone').eq('id', ownerId).maybeSingle()
   let email: string | null = null
   if (p?.auth_user_id) {

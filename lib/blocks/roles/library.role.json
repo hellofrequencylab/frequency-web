@@ -2,6 +2,11 @@
   "role": "Library",
   "type": "RoleLibrary",
   "label": "Library (all themes)",
+  "intent": "Share what you write",
+  "why": "Posts, guides and recordings you have made.",
+  "group": "Trust",
+  "icon": "lesson",
+  "live": false,
   "replaces": [
     "MidnightLibrary",
     "NetworkKitLibrary"
@@ -26,17 +31,42 @@
       "heading": "text<=120",
       "lead": "text<=280",
       "action": "link"
+    },
+    "labels": {
+      "items": {
+        "label": "Pieces",
+        "hint": "Posts, guides or recordings people can open."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "action": {
+        "label": "Link under the section",
+        "hint": "Where people go to see more."
+      }
     }
   },
   "variants": {
     "grid": {
-      "label": "Grid"
+      "label": "Grid",
+      "thumb": "grid"
     },
     "list": {
-      "label": "List"
+      "label": "List",
+      "thumb": "list"
     },
     "featured": {
-      "label": "One feature, the rest beside it"
+      "label": "One feature, the rest beside it",
+      "thumb": "featured"
     }
   },
   "default": "grid",
@@ -131,5 +161,11 @@
     "name",
     "text",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "draw"
+  }
 }

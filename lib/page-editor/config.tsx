@@ -19,6 +19,7 @@ import { primitivesComponents } from '@/components/page-editor/blocks/primitives
 import { dynamicComponents } from '@/components/page-editor/blocks/dynamic'
 import { marketingComponents } from '@/components/page-editor/blocks/marketing'
 import { dawnComponents } from '@/components/page-editor/blocks/dawn'
+import { articleComponents, ARTICLE_BLOCK_TYPES } from '@/components/page-editor/blocks/article'
 import { productStoryComponents } from '@/components/page-editor/blocks/product-story'
 import { circlesComponents } from '@/components/page-editor/blocks/circles'
 import { linktreeComponents, LINKTREE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/linktree'
@@ -40,9 +41,12 @@ import { midnightComponents, MIDNIGHT_CATEGORY_COMPONENTS } from '@/components/p
 import { midnightPracticeComponents, MIDNIGHT_PRACTICE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/midnight-practice'
 import { designerComponents, DESIGNER_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/designer'
 import { freeHumanBlocks } from '@/components/page-editor/blocks/free-human'
+import { servicesBlocks } from '@/components/page-editor/blocks/services'
+import { newWorldBlocks } from '@/components/page-editor/blocks/new-world'
 import { freeHumanCalendarBlocks } from '@/components/page-editor/blocks/free-human-calendar'
 import { freeHumanWheelBlocks } from '@/components/page-editor/blocks/free-human-wheel'
 import { rolesComponents, ROLE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/roles'
+import { siteStoryComponents, SITE_STORY_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/site-story'
 import { DESIGN_BLOCK_TYPES } from '@/lib/page-editor/block-limits'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteBlocks } from '@/components/page-editor/site-blocks'
@@ -75,6 +79,7 @@ export const config: Config = {
     ...mediaComponents,
     ...marketingComponents,
     ...dawnComponents,
+    ...articleComponents,
     ...productStoryComponents,
     ...dynamicComponents,
     ...circlesComponents,
@@ -97,9 +102,12 @@ export const config: Config = {
     ...midnightPracticeComponents,
     ...designerComponents,
     ...freeHumanBlocks,
+    ...servicesBlocks,
+    ...newWorldBlocks,
     ...freeHumanCalendarBlocks,
     ...freeHumanWheelBlocks,
     ...rolesComponents,
+    ...siteStoryComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -230,11 +238,37 @@ export const config: Config = {
       title: 'Free Human sections',
       components: [...Object.keys(freeHumanBlocks), ...Object.keys(freeHumanCalendarBlocks), ...Object.keys(freeHumanWheelBlocks)],
     },
+    // The Services Theme Kit's section family (the Services design system): website pages only.
+    services: {
+      title: 'Services sections',
+      components: Object.keys(servicesBlocks),
+    },
+    // The New World theme's own section family (the New World design system, LIVE-2055): website pages only.
+    newWorld: {
+      title: 'New World sections',
+      components: Object.keys(newWorldBlocks),
+    },
     // The role blocks (docs/THEME-COHESION.md, ADR-1923): Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ and CTA,
     // three layouts each, built on the core token contract so they wear every theme. Website pages only; opt-in.
     roles: {
       title: 'Sections for any theme',
       components: [...ROLE_CATEGORY_COMPONENTS],
+    },
+    // The site story blocks (components/page-editor/blocks/site-story.tsx, owner 2026-11-04 "make each a
+    // different layout"): the founder chapters, the principle orbit and the playbook's cover, chapters and
+    // tool stack. Drawn in the Frequency public site kit, so the marketing editor offers them and no Space
+    // website theme does (lib/page-editor/palette-scope.ts).
+    siteStory: {
+      title: 'Site story',
+      components: [...SITE_STORY_CATEGORY_COMPONENTS],
+    },
+    // The seeker-article layouts (components/page-editor/blocks/article.tsx, owner 2026-11-04 "make each a
+    // different layout"): a question, a line, a story, steps. Drawn in the Frequency public site kit
+    // (site-blocks.css §7), so the marketing editor offers them and no Space website theme does
+    // (lib/page-editor/palette-scope.ts).
+    article: {
+      title: 'Article layouts',
+      components: [...ARTICLE_BLOCK_TYPES],
     },
   },
 }

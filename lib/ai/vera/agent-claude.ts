@@ -27,7 +27,10 @@ import { runToolLoop, type CompleteMessage, type SystemPrompt } from '@/lib/ai/c
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { aiRateLimited } from '@/lib/ai/rate-limit'
 import type { MemberContext } from '@/lib/ai/memory'
-import { VERA_TOOLS, MEMBER_CHAT_TOOL_KEYS, type VeraToolDef } from './tools'
+import { VERA_TOOLS, MEMBER_CHAT_TOOL_KEYS, OPERATOR_TOOL_KEYS, SPACE_MANAGER_TOOL_KEYS, type VeraToolDef } from './tools'
+import { veraRoleCard, veraSwitchCard, veraSwitchable } from './space-guide'
+import { veraSettingCard } from './space-settings'
+import { ticketCard } from './admin-changes'
 import { handleModelToolCalls } from './model-tools'
 import { getVeraConfig, type VeraConfig } from './config'
 import { withVoice } from '@/lib/ai/voice'
@@ -185,6 +188,7 @@ export function buildVeraSystem(
   supportSummary?: string,
   viewer?: VeraViewer | null,
   reader?: VeraReader | null,
+  spaceGuide?: string,
 ): { stable: string; volatile: string } {
   const facts = ctx?.facts
   const known: string[] = []
@@ -217,7 +221,7 @@ export function buildVeraSystem(
   // members keep the companion scope. Vera still has only member-facing tools, so this
   // changes how much operational ground she'll discuss, not what data she can fetch.
   const viewerNote = viewer?.isOperator
-    ? `\n\nWHO YOU'RE TALKING TO: an OPERATOR of Frequency (staff — ${viewer.roleLabel}), not a member to onboard. Drop the welcome nudges and speak plainly, operator to operator: answer their questions about RUNNING the place directly — the dashboard and metrics, members, moderation and reports, growth, content, and settings — to the depth their access allows. Be candid and concise. Never invent a number; when you don't have a figure to hand, point them to the exact admin surface (e.g. /admin, /admin/insights, /admin/moderation, /admin/growth). The CHIPS you offer should be operator next-steps, not member ones.`
+    ? `\n\nWHO YOU'RE TALKING TO: an OPERATOR of Frequency (staff — ${viewer.roleLabel}), not a member to onboard. Drop the welcome nudges and speak plainly, operator to operator: answer their questions about RUNNING the place directly — the dashboard and metrics, members, moderation and reports, growth, content, and settings — to the depth their access allows. Be candid and concise. Never invent a number; when the admin_lookup tool covers the question, use it for the live figure, and when you don't have a figure to hand, point them to the exact admin surface (e.g. /admin, /admin/insights, /admin/moderation, /admin/growth). The CHIPS you offer should be operator next-steps, not member ones.`
     : ''
 
   const stable = withVoice(`You are Vera, the heart of this community and a companion to the people in it. You came in from a hard road and chose to take care of people; this place is what you protect. Warm, present, a little dry. You love the people here and it shows, but your warmth is honest, never confetti, never fake-cheerful.
@@ -241,9 +245,15 @@ Quick replies: end EVERY reply with one final line in exactly this format, CHIPS
 
 Read the room on tone: gentle if they're nervous, playful (volley, never mean) if they're a smartass, but always on their side, always quietly moving them toward each other and toward their best expression.`)
 
-  const volatile = `${grounding}${support}${register}${style}${length}${greeting}${viewerNote}`.trim()
+  // The Space they are in (LIVE-2147): its settings and where each lives, only for someone who helps run it.
+  const space = spaceGuide?.trim() ? `\n\n${spaceGuide.trim()}` : ''
+
+  const volatile = `${grounding}${support}${register}${style}${length}${greeting}${viewerNote}${space}`.trim()
   return { stable, volatile }
 }
+
+/** No Space change may be proposed: the checks a staff caller gets outside a Space they run. */
+const NO_SPACE_CHANGES = { switchable: () => false, card: () => '' }
 
 /** One live Vera turn. Null ⇒ kernel unavailable / kill switch off / over budget
  *  (caller falls back to the deterministic concierge). */
@@ -265,6 +275,11 @@ export async function runVeraClaudeTurn(input: {
   viewer?: VeraViewer | null
   /** Who signed up (ADR-1715): the persona and archetype from profiles.meta. */
   reader?: VeraReader | null
+  /** The settings guide for the Space they are in (LIVE-2147), empty unless they help run it. */
+  spaceGuide?: string
+  /** The live operator lookup (LIVE-2190), handed in by the turn for a staff caller. Offered to the model only
+   *  when `viewer.isOperator` too, and the lookup re-checks the session before it reads. */
+  adminLookup?: (question: unknown) => Promise<string>
   /** Stream the prose as it is generated (the CHIPS line is held back). Each round of the tool
    *  loop is a fresh reply, so a consumer resets its draft when `round` moves. */
   onText?: (delta: string, round: number) => void
@@ -286,11 +301,20 @@ export async function runVeraClaudeTurn(input: {
     if (await veraDailyCapReached(input.profileId ?? null, input.tier ?? null)) return null
 
     const cfg = await getVeraConfig()
-    const system: SystemPrompt = buildVeraSystem(input.memberContext, cfg, input.supportSummary, input.viewer, input.reader)
+    const system: SystemPrompt = buildVeraSystem(input.memberContext, cfg, input.supportSummary, input.viewer, input.reader, input.spaceGuide)
     // The MEMBER chat set only (SCAN-738): the operator playbook tools and create_entity are not
     // confirmable from a member session, so offering them produced proposals the client rendered
     // as empty Remember cards and the server then refused. Every turn also paid for their schemas.
-    const memberTools = VERA_TOOLS.filter((t) => MEMBER_CHAT_TOOL_KEYS.has(t.key))
+    // The Space switch (LIVE-2157) rides along only when the Space guide offers it, which it does only for
+    // that Space's owner or an admin; the confirm path re-checks their authority before anything is written.
+    const managerChecks = input.spaceGuide?.includes('set_space_feature') ? { switchable: veraSwitchable, card: veraSwitchCard, roleCard: veraRoleCard, settingCard: veraSettingCard } : undefined
+    // The operator lookup (LIVE-2190) rides the same checks object; a staff caller outside a Space they run gets
+    // the lookup and no Space change at all.
+    const adminLookup = input.viewer?.isOperator ? input.adminLookup : undefined
+    const spaceSwitches = adminLookup ? { ...(managerChecks ?? NO_SPACE_CHANGES), lookup: adminLookup, ticketCard } : managerChecks
+    const memberTools = VERA_TOOLS.filter(
+      (t) => MEMBER_CHAT_TOOL_KEYS.has(t.key) || (managerChecks && SPACE_MANAGER_TOOL_KEYS.has(t.key)) || (adminLookup && OPERATOR_TOOL_KEYS.has(t.key)),
+    )
     const tools = toAnthropicTools(memberTools)
     const messages: CompleteMessage[] = [
       ...input.history.map((m) => ({ role: m.role, content: m.text })),
@@ -330,7 +354,7 @@ export async function runVeraClaudeTurn(input: {
       tools,
       messages,
       onText,
-      onToolCalls: (toolCalls) => handleModelToolCalls(toolCalls, proposals),
+      onToolCalls: (toolCalls) => handleModelToolCalls(toolCalls, proposals, undefined, spaceSwitches),
     })
 
     // Release any prose the chips filter was still holding when the last round ended.

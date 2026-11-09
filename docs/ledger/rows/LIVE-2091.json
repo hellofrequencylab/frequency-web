@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2091",
+  "title": "Visual sweep part two: admin events table hydration, wizard progressbar name, calendar-token round trip",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/admin/events/posted-events-table.tsx",
+    "ref": "Visual sweep 2026-11-03, signed-in half (Daniel 2026-11-02: full visual sweep of every page; 2026-11-03: implement all recommended options). Report: /mnt/project-files/visual-sweep-2026-11-03/REPORT.md"
+  },
+  "detail": "Signed-in sweep of the member app, admin console and forms at 1280 and 390 against a mocked Supabase. Three fixes: (1) /admin/events rendered each row's claim-link DangerModal as a sibling of <tr>, so the closed Dialog's hidden <span> sat directly in <tbody>; React logged 'In HTML, <span> cannot be a child of <tbody>' and rebuilt the whole table on the client on every load. The modal now renders inside the actions cell. (2) WizardProgress (components/templates) put role=progressbar on the step strip with no accessible name; axe aria-progressbar-name on /admin/business-seeder. It carries aria-label=Progress now, like every other progressbar in the app. (3) CalendarSubscribe (the Subscribe to calendar menu on /events) called the authenticated-only ensure_calendar_token RPC for signed-out visitors too: one wasted round trip per anonymous render, each ending as 'permission denied for function ensure_calendar_token' in the Postgres log several times a minute under crawl (2026-11-02 log). It reads the cached user first and renders nothing when there is none. Also read in this pass, no change: the 43 'public_events ... statement timeout' errors of 2026-10-27 to 11-02 came in two bursts (06:14 and 11:01 on 11-02, every concurrent call cancelled in the same second) with none since; the events table's indexes are reported unused by the performance advisor, so a partial index would not have helped. Probe: node scripts/probes/sweep-part-two-fixes.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/sweep-part-two-fixes.mjs"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

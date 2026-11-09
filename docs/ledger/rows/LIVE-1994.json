@@ -1,18 +1,10 @@
 {
-  "id": "LIVE-1994",
-  "title": "Services Spotlight: six layouts and doors from each kit's functions",
-  "lane": "live",
-  "priority": "P1",
-  "size": "M",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/services/rules.json",
-    "ref": "ds-intake services"
-  },
-  "detail": "Plan step 7a: Stack, Card wall, Story, Calendar first, Shop front, Profile, registered as services-kit:* beside network-kit-layouts. Every pin a theme addition trips (layouts none-for-others, CONTRACT_THEME_IDS) is batched into one phrase ask.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node scripts/probes/services-theme.mjs spotlight"
-  },
-  "wave": "W7"
+ "id": "LIVE-1994",
+ "patch": {
+  "status": "done",
+  "closed": "2026-11-03"
+ },
+ "append": {
+  "detail": "\n\n2026-11-03: the six layouts (Stack, Card wall, Story, Calendar first, Shop front, Profile) are built for all sixteen Services trade kits: components/spotlight/services-kit-layouts.tsx and services-kit-layouts-css.ts (--sv-* tokens, six owner accents on Night and Day) and lib/spotlight/services-kit-content.ts (doors built as the design's record.js builds DOORS, from each kit's tools; prices, open times, reviews and the quote are sample-only, so a live page gets none). Registered in lib/spotlight/layouts.ts as `services-kit:*`, drawn by the Spotlight shell and given Services' faces on the public Spotlight page. Not yet: the Services Spotlight preset starting on Stack, which needs the owner's phrase for the 'none for others' pin in components/spotlight/network-kit-layouts.test.tsx; until then an owner picks a layout in the Spotlight editor.\n\n2026-11-04: the Services Spotlight preset starts on services-kit:stack (lib/spotlight/theme.ts), the way Network, Temple, Free Human and New World start on their own Stack. The two 'no layout for other presets' pins (network-kit-layouts.test.tsx, scripts/probes/network-kit-spotlight.mjs for LIVE-1712) admit services, on the owner's phrase."
+ }
 }

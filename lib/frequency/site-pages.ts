@@ -70,14 +70,14 @@ export const DEFAULT_PAGE: SitePageState = { mood: 'page', energy: 'flow', hues:
 export const SITE_PAGES: Record<string, SitePageState> = {
   [ROUTES.home]: { mood: 'home', energy: 'charge', hues: ['a', 'v', 'm'], side: 'p', locked: false },
   [ROUTES.people]: { mood: 'people', energy: 'flow', hues: ['a', 'v', 'c'], side: 'p', locked: true },
-  // The design's Spaces header sends its CTA to Join.html#spaces: the visitor is already on Spaces.
+  // The design's Spaces header sent its CTA to Join.html#spaces; an operator door opens the wizard now (LIVE-1969).
   [ROUTES.spaces]: {
     mood: 'spaces',
     energy: 'flow',
     hues: ['s', 'm', 'v'],
     side: 'e',
     locked: true,
-    cta: { href: ROUTES.join, label: 'Open your Space' },
+    cta: { href: ROUTES.createSpace, label: 'Open your Space' },
   },
   // Features: flow, violet / aqua / sun. Each half sets its own side colour (People aqua, Spaces sun).
   ...(ROUTES.features
@@ -102,14 +102,6 @@ export const SITE_PAGES: Record<string, SitePageState> = {
     cta: { href: ROUTES.join, label: 'Get started' },
     surface: 'stage',
     innerSurface: 'commons',
-  },
-  [ROUTES.vision]: {
-    mood: 'vision',
-    energy: 'still',
-    hues: ['v', 'c', 'l'],
-    side: 'p',
-    locked: true,
-    cta: { href: `${ROUTES.vision}#partner`, label: 'Talk to us' },
   },
 }
 

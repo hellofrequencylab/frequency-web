@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-// LIVE-1864: a theme change expires that one Space's cached site and nothing else.
+// LIVE-1864: a theme change expires that one Space's cached site and nothing else. Since
+// LIVE-SUBDOMAIN-ATTRIBUTION "its site" includes the proxy's cached answer for where it lives.
 
 const revalidatePath = vi.fn()
 const updateTag = vi.fn()
@@ -21,18 +22,19 @@ beforeEach(() => {
 })
 
 describe('refreshSite (what saveWebsiteStyle calls on a theme change)', () => {
-  it("expires only the Space's own site tag and its /sites tree", () => {
+  it("expires only the Space's own site tag, its /sites tree and its live-domain answer", () => {
     refreshSite('Garden-Circle')
     expect(updateTag).toHaveBeenCalledTimes(1)
     expect(updateTag).toHaveBeenCalledWith(siteCacheTag('Garden-Circle'))
-    expect(revalidatePath).toHaveBeenCalledTimes(1)
+    expect(revalidatePath).toHaveBeenCalledTimes(2)
     expect(revalidatePath).toHaveBeenCalledWith('/sites/garden-circle', 'layout')
+    expect(revalidatePath).toHaveBeenCalledWith('/api/site-domain/garden-circle')
   })
 
   it('never touches the root or another Space', () => {
     refreshSite('one')
     const paths = revalidatePath.mock.calls.map((c) => String(c[0]))
     expect(paths).not.toContain('/')
-    expect(paths.every((p) => p.startsWith('/sites/one'))).toBe(true)
+    expect(paths.every((p) => p.startsWith('/sites/one') || p === '/api/site-domain/one')).toBe(true)
   })
 })

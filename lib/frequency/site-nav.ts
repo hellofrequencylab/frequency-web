@@ -30,20 +30,12 @@ export const ROUTES = {
    *  app/(marketing)/stories is kept, and next.config.ts sends /stories to /the-community with a
    *  temporary 302 meanwhile. Set this back to '/stories' and drop that rule to bring it back. */
   stories: null as string | null,
-  /** Vision.html, the third-space vision (footer and search only, per the website strategy): a
-   *  Frequency-only route, app/(marketing)/vision, which also carries the Lab's plan and FAQ since
-   *  /the-lab merged into it (2026-10-14). */
-  vision: '/vision',
   join: '/join',
   help: '/help',
   privacy: '/privacy',
   terms: '/terms',
-  /** The Network plan's page (SCAN-961), Frequency-only like /vision. */
-  networks: '/networks',
   /** Build a Space before signing in (the marketing funnel's second step). Linked from the Theme Kit pages, /for and /pricing. */
   createSpace: '/create-a-space',
-  /** The whole system in one story (LIVE-1562), Frequency-only like /themes. */
-  system: '/system',
   /** The accessibility statement, a page of its own (app/accessibility). */
   accessibility: '/accessibility' as string | null,
   /** "What we believe" in the footer. */
@@ -133,12 +125,6 @@ export function featureHref(id: string): string {
   return ROUTES.features ? `${ROUTES.features}#f-${id}` : (FEATURE_FALLBACK[id] ?? ROUTES.help)
 }
 
-/** Features.html#people / #spaces, or the wing's own page if /features has no route. */
-export function featuresWingHref(side: Side): string {
-  if (ROUTES.features) return `${ROUTES.features}#${side === 'e' ? 'spaces' : 'people'}`
-  return side === 'e' ? ROUTES.spaces : ROUTES.people
-}
-
 interface FeatureJob {
   /** The job the visitor is doing: Find, Show up, Come back, … */
   job: string
@@ -157,7 +143,7 @@ export const FEATURE_JOURNEYS: FeatureSide[] = [
     side: 'p',
     label: 'For people',
     jobs: [
-      { job: 'Find', features: [{ id: 'calendar', label: 'What’s happening' }, { id: 'circles', label: 'Circles' }, { id: 'events', label: 'Events' }, { id: 'programs', label: 'Programs' }] },
+      { job: 'Find', features: [{ id: 'calendar', label: 'What’s Happening' }, { id: 'circles', label: 'Circles' }, { id: 'events', label: 'Events' }, { id: 'programs', label: 'Programs' }] },
       { job: 'Show up', features: [{ id: 'checkin', label: 'Check-in' }, { id: 'reminders', label: 'Reminders' }] },
       { job: 'Come back', features: [{ id: 'zaps', label: 'Zaps' }, { id: 'seasons', label: 'Seasons' }, { id: 'meter', label: 'Circle meter' }, { id: 'membership-p', label: 'Memberships' }] },
       { job: 'Pass it on', features: [{ id: 'invites', label: 'Invites' }, { id: 'host', label: 'Host an experience' }] },
@@ -197,23 +183,23 @@ const PHOTO = '/brand/frequency/photos/'
 
 export const WING_MENUS: WingMenu[] = [
   {
+    // The People menu is "Discover" (menu strategy 2026-11-03): where to go and what to expect. Every link
+    // appears once across the header (Business Spaces rides the plain links after the menus, owner 2026-10-16).
     key: 'people',
-    label: 'For people',
+    label: 'Discover',
     cols: [
+      {
+        heading: 'Find',
+        links: [
+          { href: ROUTES.happening, label: 'What’s Happening near you', hint: 'This week in your town', icon: 'pin' },
+          { href: '/discover/circles', label: 'Circles', hint: 'Small groups that meet near you', icon: 'circle' },
+        ],
+      },
       {
         heading: 'Start',
         links: [
           { href: ROUTES.people, label: 'Find your Circle', hint: 'How Frequency works for you', icon: 'circle' },
           { href: FIRST_NIGHT, label: 'Your first gathering', hint: 'What to expect, no pressure', icon: 'checkin' },
-          { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
-        ],
-      },
-      {
-        heading: 'Play + lead',
-        links: [
-          { href: featureHref('zaps'), label: 'The game', hint: 'Only showing up earns Zaps', icon: 'zap' },
-          { href: ROUTES.spaces, label: 'Host an experience', hint: 'Your living room, garden or park counts', icon: 'host' },
-          { href: ROUTES.stories, label: 'Host stories', hint: 'Regulars who became Hosts', icon: 'message' },
         ],
       },
     ],
@@ -225,23 +211,29 @@ export const WING_MENUS: WingMenu[] = [
     foot: { line: 'A hundred contacts. No one to call on a Tuesday.', cta: { href: ROUTES.people, label: 'Find your Circle' } },
   },
   {
+    // The Spaces menu carries the operator doors (menu strategy 2026-11-03): the six core niches, then /for
+    // for the rest. Features and Theme Kits live here now that the Features menu is gone.
     key: 'spaces',
-    label: 'For spaces',
+    label: 'For Spaces',
     cols: [
       {
-        heading: 'Start',
+        heading: 'Grow',
         links: [
           { href: ROUTES.spaces, label: 'Grow your community', hint: 'What the network does for you', icon: 'space' },
-          { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, hosts, venues, Non Profits', icon: 'contacts' },
-          { href: featureHref('doorqr'), label: 'Remember who came', hint: 'Door QR and contacts', icon: 'qr' },
+          { href: ROUTES.features, label: 'Features', hint: 'Everything a Space can do', icon: 'program' },
+          { href: '/themes', label: 'Theme Kits', hint: 'A website that looks like you', icon: 'page' },
         ],
       },
       {
-        heading: 'Trust',
+        heading: 'Find your door',
         links: [
-          { href: featureHref('standing'), label: 'Standing', hint: 'Earned by gathering, never sold', icon: 'standing' },
-          { href: `${ROUTES.pricing}#spaces`, label: 'Pricing', hint: 'Free, Business, Collective, Network', icon: 'tip' },
-          { href: ROUTES.stories, label: 'Space stories', hint: 'In their own words', icon: 'message' },
+          { href: '/for/coaches-and-healers', label: 'Coaches and healers', icon: 'host' },
+          { href: '/for/studios', label: 'Studios', icon: 'space' },
+          { href: '/for/event-hosts', label: 'Event hosts', icon: 'event' },
+          { href: '/for/venues', label: 'Venues', icon: 'pin' },
+          { href: '/for/nonprofits', label: 'Non Profits', icon: 'contacts' },
+          { href: '/for/networks', label: 'Networks', icon: 'space' },
+          { href: '/for', label: 'All doors', hint: 'Clubs, schools, faith and more', icon: 'contacts' },
         ],
       },
     ],
@@ -249,7 +241,7 @@ export const WING_MENUS: WingMenu[] = [
       { href: featureHref('doorqr'), photo: `${PHOTO}gathering-04.jpg`, kicker: 'Door QR', title: 'Remember everyone who walked in' },
       { href: featureHref('standing'), photo: `${PHOTO}day-park-yoga.jpg`, kicker: 'Standing', title: 'Nobody can buy their way up' },
     ],
-    foot: { line: 'Host free. We only earn when we help your community grow.', cta: { href: ROUTES.spaces, label: 'Open your Space' } },
+    foot: { line: 'Host free. We only earn when we help your community grow.', cta: { href: ROUTES.createSpace, label: 'Open your Space' } },
   },
 ]
 
@@ -261,7 +253,6 @@ export const DIRECT_LINKS: SiteLink[] = [
   // Owner, 2026-10-16: the Business Spaces directory is prominent in every navigation.
   { href: ROUTES.directory, label: 'Business Spaces' },
   { href: ROUTES.pricing, label: 'Pricing' },
-  { href: ROUTES.stories, label: 'Stories' },
   { href: ROUTES.help, label: 'Help' },
 ]
 
@@ -281,11 +272,11 @@ const PAGE_INDEX: SiteLink[] = [
   { href: ROUTES.spaces, label: 'For spaces', hint: 'Open your Space', icon: 'space' },
   { href: ROUTES.pricing, label: 'Pricing', hint: 'Free, Business, Collective, Network', icon: 'tip' },
   { href: ROUTES.stories, label: 'Stories', hint: 'Hosts and Spaces', icon: 'message' },
-  { href: ROUTES.vision, label: 'Vision', hint: 'Third spaces, 2028', icon: 'breath' },
+  { href: ROUTES.about, label: 'The Lab', hint: 'Third spaces, 2028', icon: 'breath' },
   { href: FIRST_NIGHT, label: 'Your first gathering', hint: 'What to expect', icon: 'checkin' },
-  { href: ROUTES.happening, label: 'What’s happening near you', hint: 'This week in your town', icon: 'pin' },
+  { href: ROUTES.happening, label: 'What’s Happening near you', hint: 'This week in your town', icon: 'pin' },
   { href: `${ROUTES.spaces}#types`, label: 'For your type', hint: 'Studios, coaches, venues, Non Profits', icon: 'contacts' },
-  { href: ROUTES.networks, label: 'Networks', hint: 'One organization, every chapter', icon: 'space' },
+  { href: '/for/networks', label: 'Networks', hint: 'One organization, every chapter', icon: 'space' },
 ]
 
 /** IDX: the pages, then every feature as "<side> · <job>", in megamenu.js order. Routed items only. */
@@ -319,7 +310,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: ROUTES.people, label: 'Find your Circle' },
       { href: ROUTES.directory, label: 'Business Spaces' },
       { href: FIRST_NIGHT, label: 'Your first gathering' },
-      { href: ROUTES.happening, label: 'What’s happening near you' },
+      { href: ROUTES.happening, label: 'What’s Happening near you' },
       { href: ROUTES.features ? `${ROUTES.features}#people` : null, label: 'Features for people' },
     ],
   },
@@ -330,9 +321,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: `${ROUTES.spaces}#types`, label: 'For your type' },
       { href: ROUTES.features ? `${ROUTES.features}#spaces` : null, label: 'Features for Spaces' },
       { href: ROUTES.pricing, label: 'Pricing' },
-      { href: ROUTES.system, label: 'The whole system' },
       { href: '/themes', label: 'Theme Kits' },
-      { href: ROUTES.networks, label: 'Networks' },
     ],
   },
   // The six doors (SCAN-1140): each /for page was linked only from inside the funnel, so the footer gives
@@ -373,7 +362,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: '/how-to-start-a-circle', label: 'Start a Circle' },
       { href: '/how-to-build-community', label: 'Build community' },
       { href: '/how-to-be-more-social', label: 'Be more social' },
-      { href: '/calm-down-fast', label: 'Calm down fast' },
+      { href: '/mindless', label: 'Calm down fast' },
       { href: '/vs', label: 'Frequency vs the rest' },
     ],
   },
@@ -381,7 +370,6 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
     heading: 'Frequency',
     links: [
       { href: ROUTES.stories, label: 'Stories' },
-      { href: ROUTES.vision, label: 'Vision' },
       { href: ROUTES.join, label: 'Get started' },
       { href: ROUTES.about, label: 'What we believe' },
       { href: ROUTES.help, label: 'Help' },

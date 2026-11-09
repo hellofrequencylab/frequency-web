@@ -1,5 +1,6 @@
 import type { RoleId } from '@/lib/blocks/roles/roles'
 import type { WebsiteTheme } from '@/lib/sites/editor/state'
+import cyberwitch from './cyberwitch'
 import dawn from './dawn'
 import designer from './designer'
 import freeHuman from './free-human'
@@ -7,6 +8,8 @@ import menswork from './menswork'
 import midnight from './midnight'
 import network from './network'
 import networkKit from './network-kit'
+import services from './services'
+import newWorld from './new-world'
 import temple from './temple'
 import templeKit from './temple-kit'
 import wildheart from './wildheart'
@@ -20,7 +23,7 @@ export type PresentationDefaults = Partial<Record<RoleId, string>>
 
 const BY_THEME: Record<WebsiteTheme, PresentationDefaults> = {
   DAWN: dawn, Menswork: menswork, Midnight: midnight, Wildheart: wildheart, Network: network, NetworkKit: networkKit,
-  Temple: temple, TempleKit: templeKit, Designer: designer, FreeHuman: freeHuman,
+  Temple: temple, TempleKit: templeKit, Designer: designer, FreeHuman: freeHuman, Services: services, NewWorld: newWorld, CyberWitch: cyberwitch,
 }
 
 /** The layout this theme draws a role in when the owner has not picked one, or undefined for the role's own default. */

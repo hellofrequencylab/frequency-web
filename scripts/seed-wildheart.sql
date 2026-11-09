@@ -89,7 +89,7 @@ on conflict (circle_id) do update set meetup = excluded.meetup, updated_at = now
 
 
 -- 2b. The three local circles beside it (the handoff's Circles page), real rows the Circles block draws:
---     a Space circle each (type space, cap 12, the owner as host until a trained host takes it), with
+--     a circle each (the founding circle's type, cap 12, the owner as host until a trained host takes it), with
 --     the meeting line on its profile. Deterministic ids, so a re-run updates the same rows.
 insert into circles (id, name, slug, about, type, member_cap, member_count, status, host_id, space_id, neighborhood, primary_pillar, timezone)
 select 'd8f79bb8-272f-03d7-95cc-400a8ee545a5', 'Eastside', 'wildheart-eastside', 'One seat from seeding a second circle.', (select type from circles where id = '242927ed-1ebf-4f7b-91e4-0d6a373d0b10'), 12, 0, 'active', 'c1d40f58-318b-4c7b-a331-21788d632fc9', '5c7c46d1-a2ba-4e58-a942-c1fe6a68e74b', 'East', 'body', 'America/Los_Angeles'
@@ -106,8 +106,8 @@ select '22bf471f-811d-7684-59a3-c7eca7760cc1', 'Riverside', 'wildheart-riverside
 on conflict (id) do update set name = excluded.name, slug = excluded.slug, about = excluded.about, member_cap = excluded.member_cap, status = excluded.status, host_id = excluded.host_id, space_id = excluded.space_id, neighborhood = excluded.neighborhood, primary_pillar = excluded.primary_pillar, timezone = excluded.timezone;
 insert into circle_profiles (circle_id, meetup) values ('22bf471f-811d-7684-59a3-c7eca7760cc1', '{"text":"Forming","length":"90 minutes"}'::jsonb) on conflict (circle_id) do update set meetup = excluded.meetup, updated_at = now();
 
--- VERIFY: select name, slug, neighborhood, member_cap, status, is_space_primary from circles where space_id = '5c7c46d1-a2ba-4e58-a942-c1fe6a68e74b' order by is_space_primary desc, name;
--- EXPECT: 4 rows: Primary Circle (Central, t), Eastside (East), Foothills (North), Riverside (West, forming)
+-- VERIFY: select name, slug, neighborhood, member_cap, status from circles where space_id = '5c7c46d1-a2ba-4e58-a942-c1fe6a68e74b' order by (slug = 'wildheart-primary-circle') desc, name;
+-- EXPECT: 4 rows: the founding circle (Central), Eastside (East), Foothills (North), Riverside (West, forming)
 
 -- ============================================================================================
 -- 4. Journeys (before events, so the Foundation sessions can carry journey_id). Columns are the

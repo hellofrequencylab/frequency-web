@@ -1,0 +1,19 @@
+{
+  "id": "BLD-004",
+  "title": "Builder BLD-004: Copy canon",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-004."
+  },
+  "detail": "B0 Align, pass BLD-004 (spec: docs/EDITOR-NEXT.md#bld-004). Copy canon. Scope: guidelines + repo strings. Build: Primary action on Commons: --pa for the one primary, ink for secondary, no violet. Update site-themes.md. Calendar name: apply the owner's pick everywhere, including the Circle tab. Scope banned words to Frequency's own copy; exempt owner and theme names. Record the Vera authority decision (drafts as diffs, or coaching only). Done when: Text pin: the chosen calendar name appears, the other does not; Voice lint passes with owner names exempt. Gates: vitest suite (required test job), Design system adherence check, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: nothing. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\n2026-11-04 (ADR-1939): the calendar is \"What's Happening\" wherever a person reads its name (the Space tab, the Space function, the Space calendar page title, the Circle tab and its title), all from one constant, lib/calendar/name.ts; routes, the .ics feed and code keys keep calendar. lintVoice takes exempt names (owner and theme names are names, not phrases) and author: 'owner', which softens a banned-word finding into a suggestion; Frequency's own copy stays held to the list. ADR-1939 records the primary action on Commons (--pa for the one primary, ink for secondary, no violet; supersedes the handoff's site-themes.md row, which is read-only) and Vera's authority (questions only, no drafts as diffs; BLD-402 builds to it).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-004.mjs"
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

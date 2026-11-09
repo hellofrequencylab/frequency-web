@@ -9,6 +9,8 @@
 // confirms, the code executes. This file is the contract that makes that enforceable.
 
 import { createEntityToolDef } from './create-tools'
+import { adminQuestionList } from './admin-questions'
+import { ticketChangeGuide } from './admin-changes'
 
 type ToolMode = 'read' | 'write'
 export type ParamType = 'string' | 'number' | 'boolean'
@@ -180,6 +182,66 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
     ],
   },
 
+  // ── Space settings (LIVE-2157, Vera assistants V3) ──────────────────────────
+  // Offered ONLY on a turn whose Space guide says the caller is that Space's owner or an admin. It proposes;
+  // the person taps the card; the Module Manager's own guarded action (setSpaceFeatureEnabled) re-checks
+  // their authority and writes. Money, the plan, the team list and deleting are never switchable here
+  // (veraSwitchable in space-guide.ts).
+  {
+    key: 'set_space_feature',
+    description:
+      'Propose turning one area of the Space they run on or off. Use only a feature key from the "Switches you may propose" list and the space slug the guide names. The person confirms on a card; nothing changes until they do.',
+    mode: 'write',
+    confirmLabel: 'Change this setting',
+    params: [
+      { name: 'space', type: 'string', required: true, description: 'The Space slug from the guide.' },
+      { name: 'feature', type: 'string', required: true, description: 'A feature key from the switches list.' },
+      { name: 'on', type: 'boolean', required: true, description: 'true to turn it on, false to turn it off.' },
+    ],
+  },
+  {
+    key: 'set_space_role',
+    description:
+      'Propose the lowest role that can use one area of the Space they run. Use only a feature key from the "Switches you may propose" list, a role from the guide\'s role ladder, and the space slug the guide names. The person confirms on a card; nothing changes until they do.',
+    mode: 'write',
+    confirmLabel: 'Change who can use this',
+    params: [
+      { name: 'space', type: 'string', required: true, description: 'The Space slug from the guide.' },
+      { name: 'feature', type: 'string', required: true, description: 'A feature key from the switches list.' },
+      { name: 'role', type: 'string', required: true, description: 'The lowest role: viewer, editor, moderator or admin.' },
+    ],
+  },
+  {
+    key: 'set_space_setting',
+    description:
+      'Propose one setting of the Space they run, from the settings list the guide names, with a value of the kind it says. The person confirms on a card; nothing changes until they do.',
+    mode: 'write',
+    confirmLabel: 'Change this setting',
+    params: [
+      { name: 'space', type: 'string', required: true, description: 'The Space slug from the guide.' },
+      { name: 'setting', type: 'string', required: true, description: 'A setting id from the settings list.' },
+      { name: 'value', type: 'string', required: true, description: 'The new value, of the kind the list says.' },
+    ],
+  },
+
+  {
+    key: 'admin_lookup',
+    description: `Look up one live number for a Frequency team member, from this closed list only: ${adminQuestionList()}. Only for questions about running Frequency. Use the answer as given; if it says it could not look it up, point them to the admin page it names.`,
+    mode: 'read',
+    params: [{ name: 'question', type: 'string', required: true, description: 'One question id from the list.' }],
+  },
+  {
+    key: 'set_ticket',
+    description: `Propose one change to a support ticket for a Frequency team member: ${ticketChangeGuide()}. Use a ticket number they named or a lookup returned. The team member confirms on a card; nothing changes until they do.`,
+    mode: 'write',
+    confirmLabel: 'Change this ticket',
+    params: [
+      { name: 'ticket', type: 'string', required: true, description: 'The ticket number, such as 1001.' },
+      { name: 'field', type: 'string', required: true, description: 'status or priority.' },
+      { name: 'value', type: 'string', required: true, description: 'A value from that field list.' },
+    ],
+  },
+
   // ── Studio creation (ADR-988) ────────────────────────────────────────────────
   // The ONE governed create tool, BUILT from the Studio catalog (lib/studio/registry.ts) rather
   // than re-listed here: a tool that could name an entity the catalog does not know is exactly
@@ -205,6 +267,14 @@ export const MEMBER_CHAT_TOOL_KEYS: ReadonlySet<string> = new Set([
   'draft_intro',
   'join_circle',
 ])
+
+/** The Space-settings tools (LIVE-2157): offered on top of the member set only when the Space guide names
+ *  them, which it does only for that Space's owner or an admin. */
+export const SPACE_MANAGER_TOOL_KEYS: ReadonlySet<string> = new Set(['set_space_feature', 'set_space_role', 'set_space_setting'])
+
+/** The operator tools (LIVE-2190, LIVE-2191): offered only when the caller's own session is staff. The lookup
+ *  re-checks that before it reads, and a ticket change goes through the support console's own guarded action. */
+export const OPERATOR_TOOL_KEYS: ReadonlySet<string> = new Set(['admin_lookup', 'set_ticket'])
 
 export function getTool(key: string): VeraToolDef | undefined {
   return BY_KEY.get(key)

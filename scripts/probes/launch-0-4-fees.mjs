@@ -35,7 +35,9 @@ const FILES = [
   ...walk('app/(marketing)/pricing').filter(isSource),
   ...walk('lib/pricing').filter(isSource),
   // The Frequency website's bodies (Home, Spaces, Features, Join, Pricing): they make the same claims.
-  ...walk('components/frequency/site').filter(isSource),
+  // Owner 2026-11-04: "skip kit-showcase in launch-0-4-fees". The Theme Kits page (LIVE-2188) holds CSS values such as
+  // calc(100% - 22px), never a money claim.
+  ...walk('components/frequency/site').filter(isSource).filter((p) => !p.includes('/themes/kit-showcase/')),
   ...walk('lib/page-editor/templates').filter(isSource).filter((p) => !OTHER_LANES.has(p.split('/').pop())),
   'app/llms-full.txt/route.ts',
 ]

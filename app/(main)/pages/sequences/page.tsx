@@ -499,7 +499,7 @@ export default async function SplashFunnelsPage({
             <span className="font-semibold text-text">3. The cohort is tagged.</span> On
             completion the member is stamped with the funnel&rsquo;s marketing tag, so you can
             segment the founding cohort by entry path forever. See{' '}
-            <Link href="/admin/segments" className="text-primary-strong hover:underline">
+            <Link href="/admin/segments" className="text-primary-strong underline">
               Segments
             </Link>
             .
@@ -510,11 +510,11 @@ export default async function SplashFunnelsPage({
           <code className="font-mono">{SITE_URL.replace(/^https?:\/\//, '')}</code>), so they&rsquo;re
           safe to print and share before launch. For codes with scan analytics or a swappable
           destination, use the{' '}
-          <Link href="/admin/qr" className="text-primary-strong hover:underline">
+          <Link href="/admin/qr" className="text-primary-strong underline">
             QR Studio
           </Link>{' '}
           instead. Funnel 1&rsquo;s copy is edited in{' '}
-          <Link href={TAB_DEFAULT} className="text-primary-strong hover:underline">
+          <Link href={TAB_DEFAULT} className="text-primary-strong underline">
             the Default Funnel tab
           </Link>
           ; a tag only stamps if it&rsquo;s registered in{' '}
@@ -565,7 +565,7 @@ function RolePromotionTours() {
           lib/walkthroughs/role-promotion.ts
         </code>
         . For evergreen walkthroughs you author and target yourself, use{' '}
-        <Link href="/admin/walkthroughs" className="text-primary-strong hover:underline">
+        <Link href="/admin/walkthroughs" className="text-primary-strong underline">
           Walkthroughs
         </Link>
         .

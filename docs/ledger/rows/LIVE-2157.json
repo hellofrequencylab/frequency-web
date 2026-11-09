@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2157",
+  "title": "Vera proposes turning an area of a Space on or off, and the owner or an admin confirms it on a card",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner ask 2026-11-03 16:38Z (an Admin Assistant that makes the changes the user directs, always confirming before it writes) and 20:39Z (I approve everything, get this done); Vera assistants plan /mnt/project-files/vera-assistants-2026-11-03/REPORT.md, phase V3 (Space Assistant: settings change, role-checked)."
+  },
+  "detail": "After LIVE-2147 Vera could explain a Space's settings but had to send the person to the Module Manager for every switch. Now, for the Space's owner or an admin (canManageMembers, the same authority the Module Manager switch checks), her Space guide lists each switch with its state and offers the set_space_feature tool. She proposes; the chat shows a card in the catalog's own words, naming every area that rides the same switch; nothing changes until the person taps Change it, which runs the Module Manager's guarded setSpaceFeatureEnabled (it re-resolves the Space and re-checks the caller), and she then says it is done and where to switch it back. Money paths, the plan, the team list and deleting are never switchable from chat (refused in the guide, the model chokepoint and the confirm path). An editor stays on explain only.\n\nShipped: veraSwitchable, veraSwitchCard and veraSwitchName in lib/ai/vera/space-guide.ts, the tool in lib/ai/vera/tools.ts, the switch check in lib/ai/vera/model-tools.ts, the confirm route in app/onboarding/vera-actions.ts, the card words and done line in components/vera/vera-chat.tsx, tests and probe.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/vera/space-switch.mjs"
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

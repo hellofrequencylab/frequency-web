@@ -2,6 +2,11 @@
   "role": "Chapters",
   "type": "RoleChapters",
   "label": "Chapters (all themes)",
+  "intent": "Show your groups",
+  "why": "Every group you run, and where each one meets.",
+  "group": "Show up",
+  "icon": "circle",
+  "live": true,
   "replaces": [
     "CirclesGrid",
     "NetworkKitChapters",
@@ -29,17 +34,46 @@
       "heading": "text<=120",
       "lead": "text<=280",
       "action": "link"
+    },
+    "labels": {
+      "items": {
+        "label": "Groups",
+        "hint": "Each group with its name and where it meets. Filled from your Space when it has groups."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "action": {
+        "label": "Link under the section",
+        "hint": "Where people go to see more."
+      }
     }
   },
   "variants": {
     "grid": {
-      "label": "Cards"
+      "label": "Cards",
+      "thumb": "grid"
     },
     "finder": {
-      "label": "Places to find yours"
+      "label": "Places to find yours",
+      "thumb": "map"
     },
     "list": {
-      "label": "List"
+      "label": "List",
+      "thumb": "list"
+    },
+    "timetable": {
+      "label": "Photo and timetable",
+      "thumb": "timetable"
     }
   },
   "default": "grid",
@@ -127,5 +161,11 @@
     "name",
     "text",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "freeze"
+  }
 }

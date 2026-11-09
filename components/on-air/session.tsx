@@ -489,6 +489,7 @@ export function OnAirSession({
     startedIso: string | null
     practiceIdOverride?: string
     modeOverride?: SessionMode
+    attended: boolean
   } | null>(null)
   const audio = useRef<AudioContext | null>(null)
   const ambient = useRef<AmbientHandle | null>(null)
@@ -1179,7 +1180,7 @@ export function OnAirSession({
   ) {
     // Remember this attempt's exact args so an error-screen retry replays the SAME proof-valid
     // claim (real seconds + started_at), never a recomputed null-anchored one.
-    lastFinishArgs.current = { seconds, startedIso, practiceIdOverride, modeOverride }
+    lastFinishArgs.current = { seconds, startedIso, practiceIdOverride, modeOverride, attended }
     // The sit is ending: drop the crash-recovery cache + the server active session (completeSession
     // also clears the row server-side as the authoritative end).
     clearLiveSession('mindless')
@@ -1407,7 +1408,7 @@ export function OnAirSession({
             // Replay the failed attempt's exact args (real seconds + started_at) so the timer-proof
             // passes; fall back to a live recompute only if none was captured.
             const a = lastFinishArgs.current
-            if (a) void finishWith(a.seconds, a.startedIso, a.practiceIdOverride, a.modeOverride)
+            if (a) void finishWith(a.seconds, a.startedIso, a.practiceIdOverride, a.modeOverride, a.attended)
             else void finishWith(Math.round((Date.now() - startedAt) / 1000), new Date(startedAt).toISOString())
           }}
         >

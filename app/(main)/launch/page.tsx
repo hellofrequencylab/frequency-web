@@ -11,6 +11,7 @@ import { recordLaunchEvent } from '@/lib/launch/events'
 import { readPendingLaunch } from '@/lib/launch/pending-io'
 import { resumeView } from '@/lib/launch/resume'
 import { completeLaunch, getLaunchForOwner, startLaunch } from '@/lib/launch/store'
+import { sendLaunchedWelcome } from '@/lib/launch/launched-io'
 import { launchStepHref } from '@/lib/launch/steps'
 import Link from 'next/link'
 import { LaunchOverview } from '@/components/launch/launch-overview'
@@ -80,7 +81,10 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
     const known = await loadKnownProfile(profileId)
     const progress = overviewProgress(inventory.sections)
     // Every item ticked is the finish line: mark it once, so the box, the clock and the emails stand down for good.
-    if (!launch.completedAt && progress.total > 0 && progress.done === progress.total) await completeLaunch(launch)
+    if (!launch.completedAt && progress.total > 0 && progress.done === progress.total && (await completeLaunch(launch))) {
+      // The one welcome note, with where people find them (LIVE-2064). Claimed per launch, so a second tab cannot send twice.
+      await sendLaunchedWelcome(launch, { slug: inventory.space.slug, name: inventory.space.name })
+    }
     const who = (known?.displayName ?? '').trim().split(/\s+/)[0] || 'friend'
     return (
       <FocusTemplate title={justPublished ? 'Published' : 'Your launch'} description={justPublished ? 'Here is everything, ticked as it went live.' : `You stopped at ${view.label}. Saved ${view.savedAgo}.`} width="narrow">

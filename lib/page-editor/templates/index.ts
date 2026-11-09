@@ -12,7 +12,6 @@ import { data as howToStartACircle } from './how-to-start-a-circle'
 import { data as howToBuildCommunity } from './how-to-build-community'
 import { data as loneliness } from './loneliness'
 import { data as friendshipAsAnAdult } from './friendship-as-an-adult'
-import { data as calmDownFast } from './calm-down-fast'
 import { data as howToBeMoreSocial } from './how-to-be-more-social'
 import { data as toolsForCommunityBuilders } from './tools-for-community-builders'
 import { data as whatIsFrequency } from './what-is-frequency'
@@ -52,7 +51,6 @@ const TEMPLATES: Record<string, Data> = {
   'how-to-build-community': howToBuildCommunity,
   loneliness,
   'friendship-as-an-adult': friendshipAsAnAdult,
-  'calm-down-fast': calmDownFast,
   'how-to-be-more-social': howToBeMoreSocial,
   'tools-for-community-builders': toolsForCommunityBuilders,
   'what-is-frequency': whatIsFrequency,

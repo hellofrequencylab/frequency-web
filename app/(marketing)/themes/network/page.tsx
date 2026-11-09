@@ -2,6 +2,7 @@
 // /themes/nocturne: a static segment wins over /themes/[theme], and app/sitemap.ts already lists the address.
 // Static: no request data.
 import type { Metadata } from 'next'
+import { RememberKit } from '@/components/frequency/site/pages/themes/remember-kit'
 import { JsonLd } from '@/components/json-ld'
 import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '@/lib/seo/frequency-pages'
 import { FrequencyNetwork } from '@/components/frequency/site/pages/themes/frequency-network'
@@ -14,6 +15,7 @@ export default function NetworkThemePage() {
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.network)} />
+      <RememberKit kit="network-kit" />
       <FrequencyNetwork />
     </>
   )

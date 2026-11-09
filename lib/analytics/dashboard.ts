@@ -5,6 +5,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics, type PracticeMetrics } from './practice'
+import { createSpaceFunnel, median, nameToSavedMs } from '@/lib/create-space/funnel'
 
 export interface EventTypeCount {
   eventType: string
@@ -31,6 +32,10 @@ interface EngagementDashboard {
   funnel: FunnelStep[]
   /** The new-member journey: induction → Vera → first circle → first practice. */
   activationFunnel: FunnelStep[]
+  /** The signed-out Create a Space builder: view → name → accent → offer → lead → photos → launch (LIVE-1970). */
+  createSpaceFunnel: FunnelStep[]
+  /** The median from the first letter of a name to the hand-over, over the window's handed-over drafts; null when none. */
+  createSpaceMedianMs: number | null
 }
 
 const FUNNEL: ReadonlyArray<{ step: string; eventType: string }> = [
@@ -67,11 +72,13 @@ function mapProps(data: unknown): PropCount[] {
 
 export async function getEngagementDashboard(windowDays = 30): Promise<EngagementDashboard> {
   const db = createAdminClient()
-  const [practice, byTypeRes, pagesRes, featuresRes] = await Promise.all([
+  const [practice, byTypeRes, pagesRes, featuresRes, draftsRes] = await Promise.all([
     getPracticeMetrics(),
     db.rpc('engagement_event_counts', { _days: windowDays }),
     db.rpc('engagement_prop_counts', { _event: 'nav.page_view', _prop: 'path', _days: windowDays, _limit: 10 }),
     db.rpc('engagement_prop_counts', { _event: 'feature.used', _prop: 'feature', _days: windowDays, _limit: 10 }),
+    // The handed-over drafts of the window: two timestamps, nothing a person typed (LIVE-1970).
+    db.from('create_space_drafts').select('started_at, converted_at').not('converted_at', 'is', null).gte('converted_at', new Date(Date.now() - windowDays * 86_400_000).toISOString()).limit(5000),
   ])
 
   const byType = ((byTypeRes.data ?? []) as Array<{ event_type: string; events: number; actors: number }>).map((r) => ({
@@ -91,5 +98,7 @@ export async function getEngagementDashboard(windowDays = 30): Promise<Engagemen
     topFeatures: mapProps(featuresRes.data),
     funnel,
     activationFunnel,
+    createSpaceFunnel: createSpaceFunnel(byType),
+    createSpaceMedianMs: median(nameToSavedMs(draftsRes.data ?? [])),
   }
 }

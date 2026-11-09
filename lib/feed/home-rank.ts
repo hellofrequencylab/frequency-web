@@ -62,7 +62,7 @@ export interface RankedHomeEvent extends HomeEventInput {
   score: number
   why: string
   badge: string | null
-  /** "Tonight 8pm" / "Tue 6am" / "until 7pm". */
+  /** "This morning 9am" / "Tonight 8pm" / "Tue 6am" / "until 7pm". */
   when: string
   /** The short day index from today (0 = today) for Your week style grouping. */
   dayOffset: number
@@ -167,10 +167,17 @@ export function slotFor(startsAt: string, endsAt: string | null, nowWall: number
   return { slot: 'week', live: false, dayOffset }
 }
 
+/** The part of today a wall-clock start falls in (LIVE-FEED-DAYTIME): a 9am class later today is "This morning",
+ *  not "Tonight". Morning before noon, afternoon until 5pm, tonight from 5pm. */
+function dayPart(iso: string): 'This morning' | 'This afternoon' | 'Tonight' {
+  const h = new Date(iso).getUTCHours()
+  return h < 12 ? 'This morning' : h < 17 ? 'This afternoon' : 'Tonight'
+}
+
 function whenLabel(e: HomeEventInput, slot: HomeSlot, live: boolean, dayOffset: number): string {
   if (live) return e.endsAt ? `until ${clockLabel(e.endsAt)}` : 'on now'
   const clock = clockLabel(e.startsAt)
-  if (dayOffset === 0) return slot === 'now' ? `Today ${clock}` : `Tonight ${clock}`
+  if (dayOffset === 0) return slot === 'now' ? `Today ${clock}` : `${dayPart(e.startsAt)} ${clock}`
   if (dayOffset === 1) return `Tomorrow ${clock}`
   return `${WEEKDAY_SHORT[new Date(e.startsAt).getUTCDay()]} ${clock}`
 }

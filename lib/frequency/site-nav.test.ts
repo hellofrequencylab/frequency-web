@@ -90,8 +90,8 @@ describe('the copy follows guidelines/messaging.md', () => {
   it('never promises "every week" or "weekly"', () => {
     expect(words).not.toMatch(/every week|weekly/i)
   })
-  it('calls the town calendar "What’s happening", never "What’s on"', () => {
-    expect(words).toContain('What’s happening')
+  it('calls the town calendar "What’s Happening", never "What’s on"', () => {
+    expect(words).toContain('What’s Happening')
     expect(words).not.toMatch(/What['’]s on\b/)
   })
 })
@@ -114,7 +114,6 @@ describe('the page table', () => {
   })
   it('gives Stories, Vision, Join and Help their rows, and every help article the Help row', () => {
     expect(resolveSitePage('/stories').mood).toBe('stories')
-    expect(resolveSitePage('/vision').mood).toBe('vision')
     expect(resolveSitePage('/join').mood).toBe('join')
     expect(resolveSitePage('/help/getting-started/what-happens-at-a-gathering')).toMatchObject({ mood: 'help', quiet: 2 })
   })

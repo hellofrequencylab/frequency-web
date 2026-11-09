@@ -45,6 +45,24 @@ describe('slots', () => {
   })
 })
 
+describe('the when label (LIVE-FEED-DAYTIME)', () => {
+  const MORNING = Date.UTC(2026, 9, 12, 7, 0) // Monday 7:00am
+  const when = (h: number, now = MORNING) => rankHomeEvents([ev({ id: 'w', startsAt: at(0, h) })], empty, now)[0]!.when
+
+  it('names the part of today a later-today event falls in, not Tonight for a 10am class', () => {
+    expect(when(10)).toBe('This morning 10am')
+    expect(when(14)).toBe('This afternoon 2pm')
+    expect(when(17)).toBe('Tonight 5pm')
+    expect(when(20)).toBe('Tonight 8pm')
+  })
+
+  it('keeps Today for the two-hour window, Tomorrow and the weekday beyond', () => {
+    expect(when(8)).toBe('Today 8am')
+    expect(rankHomeEvents([ev({ id: 't', startsAt: at(1, 9) })], empty, MORNING)[0]!.when).toBe('Tomorrow 9am')
+    expect(rankHomeEvents([ev({ id: 'd', startsAt: at(3, 9) })], empty, MORNING)[0]!.when).toBe('Thu 9am')
+  })
+})
+
 describe('signals', () => {
   it('Can’t go removes an event; maybe keeps it', () => {
     const r = rankHomeEvents([ev({ id: 'a', myStatus: 'not_going' }), ev({ id: 'b', myStatus: 'maybe' })], empty, NOW)

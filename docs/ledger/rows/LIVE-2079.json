@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2079",
+  "title": "W4 Public surface: redirects, sitemap, OG, JSON-LD, wall site block",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1938.md",
+    "ref": "Daniel 2026-11-03: Space circles become a Community wall; thread plan /mnt/project-files/community-wall/PLAN.md"
+  },
+  "detail": "/spaces/:slug/community stops redirecting to /circles and becomes the page; /discussion and every archived Space Circle URL (/circles/<slug>, /discover/circles/<slug|id>) 308 to the Community page, only after the page exists for every non-root Space; sitemap, OG image and JSON-LD name the Space as event host; new additive wall block key for sites and the builder (read-only feed with a link into the app), SpaceCommunity kept as the topic Circles list; the site theme never styles the wall. CLOSED 2026-11-03: the /community 308 was removed in #4550; the sitemap now emits /spaces/<slug>/community for every networked non-root Space whose wall has a visible post and is not members-only (listNetworkedSpaceProfileTabs); OG comes from spaceProfileMetadata; the page carries CollectionPage JSON-LD about the Space when anyone may read the wall. Split out: the wall site block to LIVE-2108; the archived Space Circle URL 308s to W5 (LIVE-2080), since they can only land after the archive.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-community-wall.mjs w4"
+  },
+  "wave": "W7",
+  "closed": "2026-11-03"
+}

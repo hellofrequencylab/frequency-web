@@ -16,12 +16,12 @@ if (FREE_SPOTLIGHT_LABEL !== 'Get a Free Spotlight') bad.push('the button label 
 const u = new URL(freeSpotlightHref('door', 'coaches-and-healers'), 'https://x.test')
 if (u.pathname !== '/launch/start' || u.searchParams.get('utm_campaign') !== 'free-spotlight' || u.searchParams.get('utm_medium') !== 'door' || u.searchParams.get('utm_content') !== 'coaches-and-healers') bad.push('the button address does not land on /launch/start with its utm values')
 
+if (!/freeSpotlightHref\('themes'/.test(read('components/frequency/site/pages/themes/frequency-themes.tsx'))) bad.push('the Theme Kits page main buttons do not use the doorway')
 const button = read('components/marketing/free-spotlight-button.tsx')
 if (!/if \(!launchEntryEnabled\(\)\) return null/.test(button)) bad.push('the button shows while the doorway is off')
 for (const [file, tag] of [
   ['components/frequency/site/pages/home/frequency-home.tsx', 'surface="home"'],
   ['components/frequency/site/pages/funnel/niche/niche-door.tsx', 'surface="door"'],
-  ['components/frequency/site/pages/themes/frequency-themes.tsx', 'surface="themes"'],
   ['components/frequency/site/pages/themes/frequency-theme-kit.tsx', 'surface="theme"'],
 ]) if (!read(file).includes(`<FreeSpotlightButton ${tag}`)) bad.push(`${file} has no Get a Free Spotlight button`)
 if (!/spotlightHref/.test(read('components/frequency/site/pages/themes/frequency-midnight.tsx')) || !/freeSpotlightHref\('theme', 'nocturne'\)/.test(read('app/(marketing)/themes/nocturne/page.tsx'))) bad.push('the Nocturne page has no Get a Free Spotlight button')

@@ -244,15 +244,25 @@
             "HYG-205",
             "HYG-215",
             "LIVE-1335",
-            "LIVE-1628",
-            "LIVE-1655",
-            "LIVE-1657",
             "LIVE-1766",
             "LIVE-1862",
             "LIVE-1866",
-            "LIVE-1912",
             "LIVE-1961",
-            "OWN-109"
+            "OWN-109",
+            "LIVE-1967",
+            "LIVE-1968",
+            "LIVE-1969",
+            "LIVE-1970",
+            "LIVE-1971",
+            "LIVE-1992",
+            "LIVE-1993",
+            "LIVE-1994",
+            "LIVE-1995",
+            "LIVE-1996",
+            "LIVE-1998",
+            "LIVE-2031",
+            "LIVE-2040",
+            "LIVE-2041"
           ]
         },
         {
@@ -3268,7 +3278,7 @@
         "file": "scripts/backlog-contract.test.ts",
         "ref": "LIVE-034 / ADR-1063 follow-up; observed 2026-08-18"
       },
-      "detail": "OBSERVED 2026-08-18, once, in a full `pnpm test` run: 'check:backlog took 23.8s, over its 20s budget. Something added expensive work to a probe.' Nothing had. MEASURED on the same tree, unloaded: origin/main 13.38s and 13.39s, the branch under test 13.49s and 13.50s. Three probes added that day (OWN-029, LIVE-029, LIVE-035, all single-file reads) cost about 110 ms between them, 0.8%, against 6.5s of headroom. A second full run of the identical tree passed. THE ASSERTION MEASURES THE WRONG QUANTITY. It spawns check:backlog and times its WALL CLOCK, from inside a suite that is at that moment running 838 test files across 4 cores. What it reads is contention, and contention is not a property of any probe. Its own message then sends the next reader hunting for expensive work that does not exist, and tells them - correctly, for the failure it was designed for - that raising the number is not the fix. So the honest failure mode and the noisy one are indistinguishable, on the one gate whose whole job is telling those two apart. The budget itself is right and should stay: LIVE-034 closed a real 24s regression and the ceiling is what stopped it recurring. What needs to change is the CLOCK. Measure the guard's CPU time rather than its elapsed time, or run this one assertion outside the parallel pool. NOT A FIX: raising GUARD_BUDGET_MS, which would blind the gate to the growth it exists to catch. CLOSED 2026-08-19. The clock is now CPU time, read from /proc/self/stat cutime+cstime, which is the CPU of REAPED CHILDREN and therefore captures the guard AND all ~60 probe subprocesses. process.cpuUsage() would NOT have worked: it reports only the measuring process, which is asleep inside execFileSync the whole time. MEASURED on a 4-core box with and without six spinning cores: wall 9.26s/9.61s unloaded vs 18.57s/17.29s loaded (nearly double), childCPU 12.04s/12.54s unloaded vs 12.50s/12.11s loaded (flat within 4%). 18.6s of wall against the old 20s ceiling is exactly how a green tree failed at 23.8s. Budget kept at 20s, now of CPU, against a measured 12.1-12.5s baseline. Linux-only, and it SKIPS elsewhere rather than falling back to the wall clock: asserting the wrong quantity is what produced the false failure, and a gate that cannot measure honestly on a platform should say nothing there (ADR-970). The probe sentinel moved from GUARD_BUDGET_MS to GUARD_BUDGET, because the constant is GUARD_BUDGET_CPU_MS now and the old sentinel would have exited 79 (cannot look) on the fixed tree.2026-10-23: replace obsolete source-text matching with execution of the actual reaped-child CPU parser. Independent Linux field fixtures cover nested command names, clock tick rates and unavailable measurement; AST checks preserve the executable full sweep and both unchanged CPU ceilings. Positive probe and six assertion-level regression controls pass. Corrected a comment naming proc fields 16/17. This does not claim the expensive cost contract passes locally or on CI.",
+      "detail": "OBSERVED 2026-08-18, once, in a full `pnpm test` run: 'check:backlog took 23.8s, over its 20s budget. Something added expensive work to a probe.' Nothing had. MEASURED on the same tree, unloaded: origin/main 13.38s and 13.39s, the branch under test 13.49s and 13.50s. Three probes added that day (OWN-029, LIVE-029, LIVE-035, all single-file reads) cost about 110 ms between them, 0.8%, against 6.5s of headroom. A second full run of the identical tree passed. THE ASSERTION MEASURES THE WRONG QUANTITY. It spawns check:backlog and times its WALL CLOCK, from inside a suite that is at that moment running 838 test files across 4 cores. What it reads is contention, and contention is not a property of any probe. Its own message then sends the next reader hunting for expensive work that does not exist, and tells them - correctly, for the failure it was designed for - that raising the number is not the fix. So the honest failure mode and the noisy one are indistinguishable, on the one gate whose whole job is telling those two apart. The budget itself is right and should stay: LIVE-034 closed a real 24s regression and the ceiling is what stopped it recurring. What needs to change is the CLOCK. Measure the guard's CPU time rather than its elapsed time, or run this one assertion outside the parallel pool. NOT A FIX: raising GUARD_BUDGET_MS, which would blind the gate to the growth it exists to catch. CLOSED 2026-08-19. The clock is now CPU time, read from /proc/self/stat cutime+cstime, which is the CPU of REAPED CHILDREN and therefore captures the guard AND all ~60 probe subprocesses. process.cpuUsage() would NOT have worked: it reports only the measuring process, which is asleep inside execFileSync the whole time. MEASURED on a 4-core box with and without six spinning cores: wall 9.26s/9.61s unloaded vs 18.57s/17.29s loaded (nearly double), childCPU 12.04s/12.54s unloaded vs 12.50s/12.11s loaded (flat within 4%). 18.6s of wall against the old 20s ceiling is exactly how a green tree failed at 23.8s. Budget kept at 20s, now of CPU, against a measured 12.1-12.5s baseline. Linux-only, and it SKIPS elsewhere rather than falling back to the wall clock: asserting the wrong quantity is what produced the false failure, and a gate that cannot measure honestly on a platform should say nothing there (ADR-970). The probe sentinel moved from GUARD_BUDGET_MS to GUARD_BUDGET, because the constant is GUARD_BUDGET_CPU_MS now and the old sentinel would have exited 79 (cannot look) on the fixed tree.2026-10-23: replace obsolete source-text matching with execution of the actual reaped-child CPU parser. Independent Linux field fixtures cover nested command names, clock tick rates and unavailable measurement; AST checks preserve the executable full sweep and both unchanged CPU ceilings. Positive probe and six assertion-level regression controls pass. Corrected a comment naming proc fields 16/17. This does not claim the expensive cost contract passes locally or on CI.2026-11-02 (HYG-219): the probe's vitest-timeout pin on the sweep case moved from 90s to 360s on the owner's phrase (\"LIVE-047: raise the sweep timeout pin from 90s to 360s\"). The sweep had grown to 2,158 probes at 314s of CPU, which on the 4-core runner is 88.8s of wall on a green tree (#4481), and the next PR (#4482) timed out at 90s with nothing in it touching a probe's cost. The CPU ceilings this row guards (PER_PROBE_CEILING_MS, BASE_CPU_MS, PER_PROBE_ALLOWANCE_MS, guardCpuMs against budget) are unchanged and still asserted by the same probe.",
       "verify": {
         "kind": "cmd",
         "cmd": "node scripts/probes/backlog-cpu-clock.mjs",
@@ -40178,17 +40188,19 @@
       "lane": "live",
       "priority": "P2",
       "size": "S",
-      "status": "open",
+      "status": "done",
       "source": {
         "file": "lib/sites/editor/theme-contract.json",
         "ref": "Owner 2026-10-28: allow #B094FF in the theme contract; rewrite midnight accent test pins"
       },
       "detail": "The Midnight (Nocturne) --th-accent in the editor contract moves from #A68BF2 to #B094FF. House of Fates stores its own accent (#B377AF) and is unchanged. The violet guard allows the hex in the contract file only, and the two accent pins in lib/theme/midnight.test.ts follow.",
       "verify": {
-        "kind": "manual",
-        "checked": "2026-10-28",
-        "evidence": "Contract --th-accent reads #B094FF and lib/theme/midnight.test.ts and the violet-family probe pass."
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"process.exit(require('fs').readFileSync('lib/sites/editor/theme-contract.json','utf8').includes('\\\"--th-accent\\\": \\\"#B094FF\\\"')?0:1)\"",
+        "checked": "2026-11-02",
+        "evidence": "Nocturne contract accent reads #B094FF; verified 2026-11-02."
+      },
+      "closed": "2026-11-02"
     },
     {
       "id": "LIVE-1629",
@@ -40430,17 +40442,19 @@
       "lane": "live",
       "priority": "P1",
       "size": "S",
-      "status": "open",
+      "status": "done",
       "source": {
         "file": "components/frequency/site/pages/themes/nocturne-feature.css",
         "ref": "Daniel screenshot 2026-10-28 17:47Z"
       },
       "detail": "At about 1500px and wider the Nocturne headline was sized by viewport width (up to 112px) and ran under the preview window. It is now sized from its own column (17cqw, capped at 112px), so a real gutter stays between the columns at every width from 1280 to 2560. Renders at 1280, 1440, 1536, 1920, 2000, 2560 and 390 are in /mnt/project-files/nocturne-ios/wide/.",
       "verify": {
-        "kind": "manual",
-        "checked": "2026-10-28",
-        "evidence": "Measured gap between the headline text and the preview: 71px at 1280, 78 at 1440, 82 at 1536, 92 at 1920, 2000 and 2560."
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"process.exit(require('fs').readFileSync('components/frequency/site/pages/themes/nocturne-feature.css','utf8').includes('17cqw')?0:1)\"",
+        "checked": "2026-11-02",
+        "evidence": "Headline is sized from its own column (17cqw, capped at 112px); verified in the tree 2026-11-02."
+      },
+      "closed": "2026-11-02"
     },
     {
       "id": "LIVE-1657",
@@ -40448,17 +40462,19 @@
       "lane": "live",
       "priority": "P2",
       "size": "S",
-      "status": "open",
+      "status": "done",
       "source": {
         "file": "components/frequency/site/pages/themes/frequency-midnight.tsx",
         "ref": "Daniel 2026-10-28 18:41Z"
       },
       "detail": "The /themes/nocturne surface sections read 'Spotlight (Link Page)' and 'Space (Profile)' at full headline size. The title is now just Spotlight or Space, with Link Page or Profile as a small label beside it. The pill above each picture still carries the full label.",
       "verify": {
-        "kind": "manual",
-        "checked": "2026-10-28",
-        "evidence": "Renders at 390, 1280, 1440, 1920 and 2000 in /mnt/project-files/nocturne-ios/tags/."
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"process.exit(require('fs').readFileSync('components/frequency/site/pages/themes/frequency-midnight.tsx','utf8').includes('nf-q')?0:1)\"",
+        "checked": "2026-11-02",
+        "evidence": "Surface title renders the qualifier as a small label (nf-q); verified 2026-11-02."
+      },
+      "closed": "2026-11-02"
     },
     {
       "id": "LIVE-1670",
@@ -42609,17 +42625,19 @@
       "lane": "live",
       "priority": "P2",
       "size": "S",
-      "status": "open",
+      "status": "done",
       "source": {
         "file": "supabase/migrations/20270346027500_public_header_merge_second_community_tab.sql",
         "ref": "Owner report, 2026-10-29: two community tabs in the menu"
       },
       "detail": "The live public header menu had a second parentless tab labelled The Community holding two rows (Partners, The Quest) that duplicate rows in the Community tab. The migration moves both rows into the Spaces tab and deletes the stray tab. Code defaults already have one community tab.",
       "verify": {
-        "kind": "manual",
-        "checked": "2026-10-29",
-        "evidence": "Read-only production query of the header menu showed tabs Community (pos 1), Spaces (5), About (6) and a second The Community (7). After the migration is applied, the same query shows three parentless tabs."
-      }
+        "kind": "cmd",
+        "cmd": "node -e \"process.exit(require('fs').readFileSync('supabase/migrations/20270346027500_public_header_merge_second_community_tab.sql','utf8').includes('The Community')?0:1)\"",
+        "checked": "2026-11-02",
+        "evidence": "Migration 20270346027500 is recorded in production schema_migrations (checked 2026-11-02 read-only)."
+      },
+      "closed": "2026-11-02"
     },
     {
       "id": "LIVE-1913",
@@ -43868,6 +43886,867 @@
         "note": "Fails before the fix: setSpaceStatus never calls refreshSite."
       },
       "detail": "A Space website is cached under the tag site:<slug> and served from ISR. setSpaceStatus (staff suspend or archive, the moderation takedown) wrote spaces.status and repainted admin paths but never expired that tag, so the public site kept serving until the cache window ran out. The site reads getPublicSpaceBySlugOrThrow, which returns null for a non-active Space, so expiring the tag is the whole fix. Expected lift: a takedown is immediate, not minutes to an hour later. Other writers without a refresh (admin spaces/[id]/actions.ts, manage/modules, manage/mode, shop-actions, domain-purchase, space-beta-grant) are listed in the audit for a follow-up check of what each changes on the site."
+    },
+    {
+      "id": "HYG-219",
+      "title": "Keep the backlog sweep's vitest timeout clear of its CI wall time so a green tree stops timing out",
+      "lane": "hygiene",
+      "priority": "P1",
+      "size": "XS",
+      "status": "done",
+      "source": {
+        "file": "scripts/backlog-contract.test.ts",
+        "ref": "#4481 test job 2026-11-02: sweep case passed at 88,829ms against a 90,000ms timeout; #4482 re-run timed out at 90s on the same tree"
+      },
+      "detail": "The real-tree sweep case in backlog-contract.test.ts carried a 90s vitest timeout set when one full run took 20s. The list has since grown to 2,158 probes for 314s of CPU, which on the 4-core runner is about 80s of wall with nothing else running (HYG-184 already moved the file off the shared workers). On 2026-11-02 the sweep read 88.8s on CI (#4481, green by 1.2s) and timed out on the next PR (#4482) with nothing in that PR touching a probe's cost. The file's own doctrine (LIVE-047, ADR-1107) says wall time is not a property of any probe and the budget is CPU: guardCpuMs against BASE + allowance x n, which passed. So the wall clock had quietly become the gate. Fix: the sweep case's timeout goes to 360s, documented as a hang detector, with the CPU assertions untouched. The per-PR case stays at 90s (53s measured; HYG-184's probe pins that literal). The probe reads the sweep timeout and fails when it is under 2x the wall measured that day.\n\n Fixed 2026-11-02.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/sweep-timeout-clear-of-wall.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "HYG-220",
+      "title": "Stripe moves to 23.1.0 and the API version pin moves to 2026-10-28.endive as a deliberate decision",
+      "lane": "hygiene",
+      "priority": "P2",
+      "size": "XS",
+      "status": "done",
+      "source": {
+        "file": "lib/billing/stripe.ts",
+        "ref": "#4486 test job 2026-11-02: the minor-and-patch bump took stripe to 23.1.0 and stripe-api-version.test.ts failed on the pin"
+      },
+      "detail": "stripe 23.1.0 bakes in API version 2026-10-28.endive; the pin was 2026-09-30.endive and stripe-api-version.test.ts makes a drift a decision. Stripe's changelog says every Endive version after 2026-09-30 is additive only, and the repo's calls were already moved to the Endive shapes (payment_method_types removal) at the first Endive version, so nothing a call sends or reads changes. Owner chose to take it now (2026-11-02). Retest: lib/billing, app/api/stripe and app/api/webhooks vitest sets, 888 tests, green. No real-card run (owner declined manual payment tests). The probe holds the pin and the installed SDK at 2026-10-28.endive. Fixed 2026-11-02.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/stripe-api-version-2026-10-28.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1954",
+      "title": "Show a member how many times each link on their personal Spotlight was pressed",
+      "lane": "live",
+      "priority": "P2",
+      "size": "M",
+      "status": "done",
+      "source": {
+        "file": "lib/spotlight/link-clicks.ts",
+        "ref": "Follow-up named in LIVE-1953; Daniel said go 2026-11-02"
+      },
+      "detail": "A press on a link of a personal Spotlight sends one identity-free beacon to the existing /api/spotlight/click route, which writes a row to the new member_spotlight_link_clicks table (service role only, no visitor data) after checking the Spotlight is published and the link is on the page. The editor shows each link's presses over the last 30 days. Migration 20270346028500 must be applied to production before merge.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/spotlight-link-clicks.mjs",
+        "checked": "2026-11-02",
+        "evidence": "Beacon, route branch, table migration, counted public links and the editor count are present."
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1955",
+      "title": "Add a Look tab to Edit your Spotlight so theme, fonts and background sit beside the links",
+      "lane": "live",
+      "priority": "P2",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "components/spotlight/spotlight-page-editor.tsx",
+        "ref": "Follow-up named in LIVE-1953; Daniel said go 2026-11-02"
+      },
+      "detail": "Theme, header, fonts and background lived only in the Appearance rail, away from the page editor. The editor now has a Look tab that hosts the same Appearance module (same owner-gated actions, no new writer), and the live preview follows the chosen theme at once.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/spotlight-look-tab.mjs",
+        "checked": "2026-11-02",
+        "evidence": "The Look tab and the themed preview are present."
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1956",
+      "title": "Warn before leaving Edit your Spotlight with unsaved changes, add Copy link and a 30-day click total",
+      "lane": "live",
+      "priority": "P3",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "components/spotlight/spotlight-page-editor.tsx",
+        "ref": "Spotlight evolution pass 2026-11-02"
+      },
+      "detail": "Edits stay local until Save, and closing the tab dropped them silently. The editor now asks the browser to confirm when there are unsaved edits, offers a Copy link button once published, and shows the page's 30-day click total above the links.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/spotlight-editor-basics.mjs",
+        "checked": "2026-11-02",
+        "evidence": "The guard, the copy button and the click total are present."
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1957",
+      "title": "Give each social link on a personal Spotlight its own icon instead of one globe",
+      "lane": "live",
+      "priority": "P3",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "components/spotlight/link-in-bio.tsx",
+        "ref": "Spotlight evolution pass 2026-11-02"
+      },
+      "detail": "Every social pill showed the same globe (email aside), so the row did not read at a glance. Each network now has its own neutral glyph from the icon set (the set carries no brand marks); the label stays beside it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/spotlight-social-icons.mjs",
+        "checked": "2026-11-02",
+        "evidence": "SOCIAL_ICONS is present and the globe ternary is gone."
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1958",
+      "title": "Show per-day clicks over the last 30 days in Edit your Spotlight",
+      "lane": "live",
+      "priority": "P3",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "lib/spotlight/link-clicks.ts",
+        "ref": "Spotlight evolution pass 2026-11-02"
+      },
+      "detail": "The editor showed only totals. The press read now also folds the same rows into a 30-day series (no extra query) and the Links tab draws it as a small bar strip with a text label, so a member sees whether a post or a mention moved anything.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/spotlight-daily-clicks.mjs",
+        "checked": "2026-11-02",
+        "evidence": "The fold and the per-day chart are present."
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1962",
+      "title": "Rebuild every share card in the dark Frequency marketing style",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "lib/og/stage-card.tsx",
+        "ref": "Owner request 2026-11-02: marketing-style share cards, header image, pills, key facts, RSVP on events"
+      },
+      "detail": "One shared Stage card in a new marketing layout: full-bleed header image under angled pink and blue washes, mirrored orbs, uniform white-text pills (type top left, badge top right, tags bottom left), title and one subtitle, one small details line on an angled dark gradient, and a drawn action button (RSVP, Join, View). PR 1 rebuilds the shared component and wires events, Spaces and listings. Later PRs wire the remaining routes (Circles, Journeys, Spotlights, cities, practices, help, claim cards, theme and marketing pages) and the in-app share panel previews. No persona, Journey, Circle topic or wellness data on any card.\n\nAll share cards drawn in the dark Frequency style with their action button (#4456, #4461, #4464), share panel previews the card (#4468, #4474). Validated on production 2026-11-02: site-wide, event, space and help cards serve JPEGs.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/share-card-cta.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1963",
+      "title": "Intake the Create a Space v3 handoff and record the pre-account lead rule",
+      "lane": "live",
+      "priority": "P1",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "docs/design-systems/create-a-space/rules.json",
+        "ref": "Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+      },
+      "detail": "Re-point the design-system rules to the flat v3 folder, re-snapshot, re-freeze the baseline against the build rows, and write the ADR that amends the v1 rule (the draft leaves the browser once) for step-3 lead capture.\n\nRules re-pointed to the flat v3 folder, snapshot and baseline re-frozen against LIVE-1965, ADR-1933 written, nine phase rows added.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');process.exit(f.readFileSync('docs/design-systems/create-a-space/rules.json','utf8').includes('DRAFT-RECOVERY-EMAILS.md')&&f.existsSync('docs/ledger/adr/ADR-1933.md')?0:1)\""
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1964",
+      "title": "Create a Space v3 pure core: draft v2, offer to intents, carry keys, preview inputs",
+      "lane": "live",
+      "priority": "P1",
+      "size": "M",
+      "status": "done",
+      "source": {
+        "file": "docs/design-systems/create-a-space/rules.json",
+        "ref": "design_handoff create-a-space v3 README sections 3, 5, 6; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+      },
+      "detail": "Draft shape v2 with v1 upgrade, intentsFromOffer, progressOf weights, deriveSite offer and reach, kitImagery covers and portraits, carry keys line phone where cover logo profile with validators, holdFor mapping. All tested.\n\nPure core landed: intentsFromOffer, carry keys line phone where cover logo profile, deriveSite offer and reach, kitImagery covers and portraits, formatClock shared. The draft v2 shape and holdFor mapping ship with the hero (LIVE-1965), since the v1 builder component reads the v1 shape until then.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('lib/create-space/intents-from-offer.ts')&&f.readFileSync('lib/launch/carry.ts','utf8').includes('phone?')?0:1)\""
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1965",
+      "title": "Create a Space v3 hero builder: intro and building states, name, accent lock, offer mock-up",
+      "lane": "live",
+      "priority": "P1",
+      "size": "L",
+      "status": "done",
+      "source": {
+        "file": "docs/design-systems/create-a-space/rules.json",
+        "ref": "design_handoff create-a-space v3 README sections 2, 3 steps 1 and 2, 4; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+      },
+      "detail": "One hero holds the builder: FLIP morph, clock in the H1, saved-step pills, accent-locked Next, offer step with the mock-up moment, preview v2 with ghost state.\n\nHero builder shipped: intro and building modes, name card with handle check and accent lock, offer mock-up moment, contact and photos cards, save and saved cards, steps bar, dock, closing call, FAQ copy. Rendered locally at 390 to 2000 through every step.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');process.exit(f.readFileSync('components/frequency/site/pages/create-space/create-space-studio.tsx','utf8').includes('cs-hero-building')?0:1)\""
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1966",
+      "title": "Create a Space v3 steps 3 to 5: contact, photos, save, saved state, finish dock, FAQ",
+      "lane": "live",
+      "priority": "P1",
+      "size": "L",
+      "status": "done",
+      "source": {
+        "file": "docs/design-systems/create-a-space/rules.json",
+        "ref": "design_handoff create-a-space v3 README sections 3 steps 3 to 5, 8; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+      },
+      "detail": "Contact step, photo step with browser-only uploads, save step on the existing claim actions, saved state, finish dock, closing CTA and FAQ copy.\n\nContact, save, saved state, dock and FAQ shipped with the hero (LIVE-1965); this adds their own pictures: a cover, a logo and a host photo picked in the browser, checked against the avatars bucket limits, kept in IndexedDB fq-create-space-uploads, worn by the preview, never in the hold (carry keeps the choice up). The launch's Use the photos you picked hook is listed under LIVE-1971 hardening.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('components/frequency/site/pages/create-space/create-space-photos.tsx')?0:1)\""
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1967",
+      "title": "Create a Space lead capture: saveDraftLead, create_space_drafts, autosave and resume by token",
+      "lane": "live",
+      "priority": "P1",
+      "size": "L",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/create-a-space/rules.json",
+        "ref": "design_handoff create-a-space v3 README section 5; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+      },
+      "detail": "Migration for create_space_drafts (RLS deny-all), saveDraftLead with throttles and honeypot through captureLead, debounced autosave and pagehide beacon, ?draft= restore.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');process.exit(f.readdirSync('supabase/migrations').some(n=>n.includes('create_space_drafts'))?0:1)\"",
+        "checked": "2026-11-02",
+        "evidence": "Fails today: the file or change the probe names is not on main."
+      }
+    },
+    {
+      "id": "LIVE-1968",
+      "title": "Create a Space abandon recovery: three draft emails on a dedicated cron",
+      "lane": "live",
+      "priority": "P1",
+      "size": "L",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/create-a-space/rules.json",
+        "ref": "design_handoff create-a-space v3 DRAFT-RECOVERY-EMAILS.md; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+      },
+      "detail": "Pure timing rule, email log, runner, cron route with heartbeat and vercel.json entry, runbook gate, conversion hook that ends Track A.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('app/api/cron/create-space-draft-reminders/route.ts')?0:1)\"",
+        "checked": "2026-11-02",
+        "evidence": "Fails today: the file or change the probe names is not on main."
+      }
+    },
+    {
+      "id": "LIVE-1969",
+      "title": "Every signed-out way in opens the Create a Space wizard",
+      "lane": "live",
+      "priority": "P1",
+      "size": "M",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/create-a-space/rules.json",
+        "ref": "Daniel 2026-11-02: this should launch for anybody not logged in; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+      },
+      "detail": "Signed-out /spaces/new, the operator CTA, /go and /for doors and theme-kit CTAs go to /create-a-space with kit, mode and niche hints. Signed-in stays on /launch.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');process.exit(f.readFileSync('app/(main)/spaces/new/page.tsx','utf8').includes('/create-a-space')?0:1)\"",
+        "checked": "2026-11-02",
+        "evidence": "Fails today: the file or change the probe names is not on main."
+      }
+    },
+    {
+      "id": "LIVE-1970",
+      "title": "Create a Space funnel: anonymous signals, lead score, median name-to-saved time",
+      "lane": "live",
+      "priority": "P2",
+      "size": "M",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/create-a-space/rules.json",
+        "ref": "design_handoff create-a-space v3 README section 5 analytics; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+      },
+      "detail": "Anonymous first-party signal route and taxonomy entries, no typed text and no pixel, lead score in contacts.meta, a funnel read in admin analytics.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('app/api/create-space/signal/route.ts')?0:1)\"",
+        "checked": "2026-11-02",
+        "evidence": "Fails today: the file or change the probe names is not on main."
+      }
+    },
+    {
+      "id": "LIVE-1971",
+      "title": "Create a Space v3 hardening: walking tests, e2e, renders at five widths, budget gates",
+      "lane": "live",
+      "priority": "P2",
+      "size": "M",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/create-a-space/rules.json",
+        "ref": "design_handoff create-a-space v3 README section 9; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+      },
+      "detail": "Every button and form walked, e2e from name to save, signed in and out renders at 390 1280 1440 1920 2000, theme fence and the postbuild gates green.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('test/e2e/create-space.spec.ts')?0:1)\"",
+        "checked": "2026-11-02",
+        "evidence": "Fails today: the file or change the probe names is not on main."
+      }
+    },
+    {
+      "id": "LIVE-1972",
+      "title": "Stop the marketing hero effects from breaking hydration on about 25 pages",
+      "lane": "live",
+      "priority": "P1",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "components/frequency/site/shell/site-fx.tsx",
+        "ref": "Visual sweep 2026-11-02: a real browser logs 'Hydration failed' on /pricing, /themes, /themes/*, /for, /help, /features, /stories, /discover, /discover/*, /spaces, /spaces/directory, /networks, /circles, /the-community and /system"
+      },
+      "detail": "SiteFx decorated the page on mount (a .tx-field with halos and jewels inside every hero and section, a transform on the hero photo). A page behind a loading.tsx or Suspense boundary hydrates after the layout island commits, so React met server HTML with extra nodes, threw away the server render of that page and rebuilt it on the client. Cost: wasted work, a possible flash of the hero, and no streaming benefit on every marketing page. Fix: SiteFx waits until the nodes it decorates carry a React fiber (hydrated), with a 2.5 second limit so the effect is late at worst and never missing.\n\n Fixed 2026-11-02: SiteFx waits for hydrated nodes (2.5 s limit). Verified in a browser: no hydration error on /pricing, /for, /help, /discover, /circles, /themes/nocturne; 9 .tx-field still decorate /pricing.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/site-fx-waits-for-hydration.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1973",
+      "title": "Make the ghost button and breadcrumbs readable on the Discover and not-found photo heroes",
+      "lane": "live",
+      "priority": "P1",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "app/themes/frequency/kit-site.css",
+        "ref": "Visual sweep 2026-11-02: /discover, /discover/circles, /discover/spaces, /discover/journeys, /discover/events and every not-found page under Discover"
+      },
+      "detail": "The Discover pages and the not-found page open on a dark photo hero but sit on the Commons (light) surface. Two Commons rules re-inked the hero's chrome: members-ui.css paints every .btn in a Commons body with ink at (0,6,0) specificity, beating the kit's light .hero .btn-ghost rule, and site-shell.css paints every crumb in a Commons main with the muted and body ink. Result: 'Browse all', 'Browse the Circles', 'Just browse', 'What's happening' and 'Browse by town' were ink on near-black, as was the 'Discover' crumb. Fix: the kit's light ghost rule also covers .phero and carries a Commons-body selector that outranks the members rule; the crumb re-ink skips crumbs inside a .phero. No new colour literals.\n\n Fixed 2026-11-02; browser check: all five Discover ghost pills and the not-found pills compute to rgb(242,245,250), crumb links to rgb(201,211,224).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/photo-hero-ghost-ink.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1974",
+      "title": "Close the screen-tall empty gap under More in Events on /events",
+      "lane": "live",
+      "priority": "P1",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "app/themes/frequency/members-shell.css",
+        "ref": "Visual sweep 2026-11-02: /events at 1280 and 390 signed out; the same row renders on /network, /people, Circles, Marketplace, Crew and Settings"
+      },
+      "detail": "HubLinks renders its 'More in ...' chip row as a nav carrying data-kit=\"members\" so the kit's .sec and .chips classes keep their meaning on a site-kit page. The members shell's root rule matches any element with that attribute, so the nav inherited the shell's own frame: min-height 100dvh, a flex column. On /events signed out that is 900px of nothing between the row and the Host panel (837px of it empty). Fix: a nested members-kit island gets min-height 0. Measured after: the nav is 63px and the page 2267px instead of about 3100.\n\n Fixed 2026-11-02; browser check on /events: the More in Events row is 63px, the page 2267px.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/hub-links-not-a-shell.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1975",
+      "title": "Stop the duplicate-key warnings on a Space website whose menu items share a link",
+      "lane": "live",
+      "priority": "P3",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "components/sites/house-header.tsx",
+        "ref": "Visual sweep 2026-11-02: /themes/nocturne/demo logs 'Encountered two children with the same key' on every load; /themes/nocturne embeds it"
+      },
+      "detail": "The Space website chrome keyed its header nav links, mobile menu entries and footer link list on href alone. The Nocturne demo site points its four menu items (Offerings, Gatherings, Journeys, Membership) at the demo home, so React saw four children with one key, warned on every render and can drop or duplicate entries on update. Any real site with two menu items on one page would do the same. Keys now carry href and label.\n\n Fixed 2026-11-02; browser check: /themes/nocturne/demo logs no duplicate-key warning.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/site-chrome-link-keys.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1976",
+      "title": "Theme pages: give the comparison grid real rows and fix Nocturne off-card contrast",
+      "lane": "live",
+      "priority": "P2",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "components/frequency/site/pages/themes/frequency-midnight.tsx",
+        "ref": "Visual sweep 2026-11-02: axe WCAG 2.1 AA crawl of /themes/nocturne, /themes/network, /themes/designer, /themes/temple"
+      },
+      "detail": "The 'What carries to each surface' grid carried role=\"table\" with no row children on all four pages (aria-required-children), and on Nocturne the column headers sat outside any row (aria-required-parent). Each page now wraps the header cells in a row and marks body rows, row headers and cells. The row wrappers stay display:contents so the layout is unchanged. Nocturne's 'off' cards (the Kit inspector) dimmed whole cards with opacity .55, which failed colour contrast on five labels; they now use a transparent card with a hairline instead.\n\n Fixed 2026-11-02.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/theme-pages-comparison-rows.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1977",
+      "title": "Serve the public site's photos at the slot's width instead of the 1600px original",
+      "lane": "live",
+      "priority": "P1",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "components/frequency/site/pages/shared/parts.tsx",
+        "ref": "Visual sweep 2026-11-02 crawl (image weight per route at 1280x900): / 1734KB, /for 2653KB, /features 1645KB, /events/drafts 693KB of images"
+      },
+      "detail": "The brand photos are 1600px JPEGs of 250 to 430KB each and the site pages rendered them with a raw <img src>, so every chapter photo, path door, feature job photo and story card downloaded the full original into a 400 to 500px slot. Fix: photoImg() in shared/parts.tsx builds src, srcSet and sizes from next/image's getImageProps (the optimizer already serves the wordmark), ChapPhoto and the ten raw photo imgs on /, /features, /stories and the Discover chapters use it, and the footer wordmark gets sizes=\"176px\" so next/image stops choosing its 1920px rendition on every page. The kit keeps sizing the element. Measured after at 1280: /features 1645KB -> 523KB; / 1734KB -> 1407KB (each chapter photo 25KB instead of 250KB; the rest of / is the hero's two broll backgrounds and the wordmark mask, set in CSS, which a srcset cannot reach).\n\n Fixed 2026-11-02; browser check on / and /features at 1280: the chapter photos load as 640px AVIF/WebP renditions.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/site-photos-have-srcset.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1978",
+      "title": "Underline the map list's text link and keep the Create a Space progressbar off the Start over button",
+      "lane": "live",
+      "priority": "P2",
+      "size": "XS",
+      "status": "done",
+      "source": {
+        "file": "app/themes/frequency/site-pages-a.css",
+        "ref": "Visual sweep 2026-11-02 axe crawl (wcag2a, wcag2aa, wcag21aa) on 62 public routes at 1280x900: link-in-text-block on /, /spaces, /stories; nested-interactive on /create-a-space"
+      },
+      "detail": "Two serious axe findings on the public site. The What's happening map list shows 'Nothing is on the calendar yet. Host the first one.' with the link told apart by colour only (WCAG 1.4.1); it is now underlined in body ink. The Create a Space meter put role=progressbar on the block that also holds the Start over button, so a control sat inside a progressbar (WCAG 4.1.2); the role and its aria-value attributes moved to the ring that draws the percentage. The other axe hits on main were the /themes comparison tables (handed to the theme pages thread) and the contrast of a scaled site preview marked role=img, which is a picture of the Space's own kit colours, not UI text.\n\n Fixed 2026-11-02; axe re-run: / and /spaces clean, /create-a-space down to the preview picture's own contrast.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/sweep-axe-fixes.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1979",
+      "title": "Send a signed-out visitor to /journeys/mine, /journeys/library, /journeys/new or /practices/new to sign-in, not a Discover 404",
+      "lane": "live",
+      "priority": "P1",
+      "size": "XS",
+      "status": "done",
+      "source": {
+        "file": "lib/nav/public-twin.ts",
+        "ref": "Visual sweep 2026-11-02, signed-out render at 1280 and 390: /journeys/library, /journeys/mine, /journeys/new and /practices/new all landed on the 'We couldn't find that' page"
+      },
+      "detail": "The public-twin table maps /journeys/<slug> to /discover/journeys/<slug> (and /practices/<id> to its twin) with a one-segment pattern, and the (main) layout's signed-out branch redirects there. The member pages one segment under those prefixes (journeys/library, journeys/mine, journeys/new, practices/new; circles/new, circles/starter, circles/templates go through the lookup rule) matched as if they were slugs, so a share or email link to them dead-ended on a Discover 404 for anyone signed out. Fix: a RESERVED_SEGMENTS set in matchPublicTwin returns no twin for those names, so proxy.ts keeps them protected and bounces to /sign-in with next=<the page>. Entity slugs still twin; the vitest file covers both.\n\n Fixed 2026-11-02; curl on the branch: /journeys/mine signed out 307s to /sign-in?next=%2Fjourneys%2Fmine.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/probes/twin-skips-reserved-segments.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1980",
+      "title": "Stop the hero departure fade from washing out and sliding a section-tall hero (/themes/nocturne's fog band)",
+      "lane": "live",
+      "priority": "P1",
+      "size": "XS",
+      "status": "done",
+      "source": {
+        "file": "components/frequency/site/shell/site-fx.tsx",
+        "ref": "Visual sweep 2026-11-02, scrolled frames of /themes/nocturne at 1280: the Website and Email template sections rendered at a tenth of their opacity, then a full viewport of fog with one orb before 'Five tools. Five logins.'"
+      },
+      "detail": "SiteFx fades a .phero's wrap to 10% and slides it up by a quarter of the scroll as the hero leaves the screen. That assumes a one-screen photo hero. Nocturne's hero carries the four-surface cascade (Spotlight, Space, Website, Email) and is 3480px tall at 1280x900, so by the Email section the wrap sat at opacity 0.1 translated 675px up its own box: the content read as fog and the box's last 675px were empty. Measured in the browser at scrollY 2700: .nf-hero > .wrap style opacity 0.1, transform translate3d(0,-675px,0). Fix: the departure runs only on a hero no taller than 1.5 viewports (PHERO_MAX_SCREENS); the one-screen heroes on Discover, People, Spaces and the rest are unchanged.\n\n Fixed 2026-11-02; browser check on the branch: /themes/nocturne at scrollY 2700 shows the Email template section at full opacity with no fog band; /discover's hero still fades on the way out.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/phero-departure-one-screen.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1990",
+      "title": "Intake the Services design system: rules, snapshot and baseline for every file of the zip",
+      "lane": "live",
+      "priority": "P1",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "Daniel: 'Fan out and install a new theme called Services.'"
+      },
+      "detail": "Services arrived as a zip (design_handoff_theme_editor: a theme-editor framework plus the Services kit, 96 files). Every file is claimed by a rule in docs/design-systems/services/rules.json, snapshotted, and the 84 known gaps (75 copy lines, 9 unbuilt targets) are frozen in baseline.json; they only shrink. Intake note: the zip is not a plain theme. It ships a generic Theme Editor (dials, ThemeControls, schema 2 manifest, ten conformance invariants) and says to build that first, then Services on it. The lanes below follow the handoff's own plan steps 1-8.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/services-theme.mjs intake"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1991",
+      "title": "Services foundation: token block, theme contract and ledger of what is built",
+      "lane": "live",
+      "priority": "P1",
+      "size": "M",
+      "status": "done",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "ds-intake services"
+      },
+      "detail": "Plan step 3 and the token half of step 5. Done in this row: SERVICES_TOKENS_CSS and SERVICES_DAY_CSS (lib/theme/services.ts, every name --sv-*, compared value for value by the intake), themes.Services in theme-contract.json (Night root, day{}, six accents). Deviation written down: the handoff's contract file says --th-on-accent #FFFFFF but its README, plan and tokens say ink; white on Tide is under 3:1, so the contract carries ink #0B0F13. Fonts load with the chrome (LIVE-1992) through next/font. Theme fence: tokens are scoped to [data-house-theme=\"services\"] and only the stand-alone site render emits them.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/services-theme.mjs foundation"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1992",
+      "title": "Services chrome and blocks: header, footer, hero variants and the function blocks",
+      "lane": "live",
+      "priority": "P1",
+      "size": "L",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "ds-intake services"
+      },
+      "detail": "Plan step 5: ServicesHero (glow|photo|split|minimal), Trust, Services, Booking, Story, Steps, Reviews, Gallery, Plans, Events, Shop, Team, Library, Locations, Contact, Letter, FAQ, Band; header bar|pill|centered and footer full|minimal. Live blocks read Frequency rows like NetworkEvents; empty copy on every list block; tokens only, no literal colours. Two PRs under the 40-file gate.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/services-theme.mjs chrome"
+      }
+    },
+    {
+      "id": "LIVE-1993",
+      "title": "Services kits: sixteen starter kits in house voice",
+      "lane": "live",
+      "priority": "P1",
+      "size": "M",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "ds-intake services"
+      },
+      "detail": "Plan step 6: services-variants.ts and the profile index from kits.services.json, each kit carrying tools[]. Sample numbers stay prompts via slot tokens, never live copy. Copy follows docs/marketing/voice-and-language-guide.md where the design disagrees; differences written on this row.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/services-theme.mjs kits"
+      }
+    },
+    {
+      "id": "LIVE-1994",
+      "title": "Services Spotlight: six layouts and doors from each kit's functions",
+      "lane": "live",
+      "priority": "P1",
+      "size": "M",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "ds-intake services"
+      },
+      "detail": "Plan step 7a: Stack, Card wall, Story, Calendar first, Shop front, Profile, registered as services-kit:* beside network-kit-layouts. Every pin a theme addition trips (layouts none-for-others, CONTRACT_THEME_IDS) is batched into one phrase ask.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/services-theme.mjs spotlight"
+      }
+    },
+    {
+      "id": "LIVE-1995",
+      "title": "Services email and Space page: eleven email types and the Space face",
+      "lane": "live",
+      "priority": "P1",
+      "size": "M",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "ds-intake services"
+      },
+      "detail": "Plan step 7b: eleven email templates (confirm, reminder, welcome, review, receipt, post, event, order, member, letter, inquiry) following register, accent, type voice and corners; Space page follows fonts, accent and register while synced inside Frequency's own frame (only the Space area wears the kit).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/services-theme.mjs email"
+      }
+    },
+    {
+      "id": "LIVE-1996",
+      "title": "Offer Services in the theme picker and add /themes/services on the Nocturne page layout",
+      "lane": "live",
+      "priority": "P1",
+      "size": "M",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "Daniel 2026-10-29 theme page rule"
+      },
+      "detail": "The picker entry once the surfaces are real (never an empty box), plus /themes/services built to the live Nocturne page's section order with the Website/Spotlight/Space/Email switcher, coordinated with the theme pages thread, drift-tested against Nocturne. Design checks at 390, 1280, 1440, 1920 and 2000, signed in and out.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/services-theme.mjs picker"
+      }
+    },
+    {
+      "id": "LIVE-1997",
+      "title": "Theme editor framework: dial registry, schema 2 manifests and ThemeControls",
+      "lane": "live",
+      "priority": "P1",
+      "size": "L",
+      "status": "done",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "ds-intake services"
+      },
+      "detail": "Plan steps 1, 2 and 4: dials.json and typed accessors, SiteStyle look keys (register, type, motion, hero, image, centered header, accent) stored sparsely so every existing site reads back identically, manifest schema 2 with schema 1 still valid, and the generic ThemeControls (Simple bar, Advanced sheet, Looks). Services is the first theme on it; converting the other themes (plan step 9) is separate rows.\n\nDial registry (lib/theme/dials.json + dials.ts), five sparse SiteStyle dials plus accent that read back identically for every existing site, schema 2 manifest support via lib/themes/editor-schema2.json (a theme with no entry stays schema 1 and shows its four dials), and the generic ThemeControls mounted in the editor Theme tab. It draws nothing until a theme declares a dial beyond the four legacy ones, so no live site's editor changed. Kit and the Look a person picked are not stored: the kit applies through the starter-kit flow and the Look is derived from the dial values. The centered header and the floating preview bar are LIVE-2031.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/services-theme.mjs dials"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-1998",
+      "title": "Theme conformance: the ten invariants as tests across the dial matrix",
+      "lane": "live",
+      "priority": "P1",
+      "size": "M",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "ds-intake services"
+      },
+      "detail": "Plan step 8: lib/theme/conformance.ts and Playwright specs for contrast, no literal colours, type height stability, motion additive, reduced motion, empty states, hidden functions, reset total, surface parity and repaint budget, run for Services first.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/services-theme.mjs conformance"
+      }
+    },
+    {
+      "id": "LIVE-1999",
+      "title": "Give the check-in, exchange, intro and unlock link pages their site shell",
+      "lane": "live",
+      "priority": "P2",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "app/(capture)/layout.tsx",
+        "ref": "Visual sweep 2026-11-02: /checkin, /exchange, /intro and /unlock at 1280 and 390"
+      },
+      "detail": "The four lead-capture doors (a printed QR at the door, a warm intro, a share-back, a resource unlock) render FrequencyCaptureShell, the funnel stage whose .fn-* classes are styled only under the site kit root. The (capture) route group had no layout, so every door, valid token or not, was unstyled: system font, ink on a blank canvas, flush to the top-left corner. Fix: a group layout that wraps the doors in the chrome-free SiteShell, as the other funnel doors use (ADR-591). Measured after: the kit root is present, the h1 wears Unbounded, the card sits centred on the stage at 1280 and 390.\n\n Fixed 2026-11-02; browser check on /intro, /checkin and /unlock: kit root present, Unbounded h1, card centred on the stage.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/capture-doors-in-site-shell.mjs"
+      },
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "LIVE-2031",
+      "title": "Theme editor: centered header and the floating Simple bar",
+      "lane": "live",
+      "priority": "P2",
+      "size": "S",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "LIVE-1997 follow-up"
+      },
+      "detail": "Two pieces of plan steps 3 and 4 that LIVE-1997 left out on purpose. (1) The `centered` header option is in dials.json but held out of the options (NOT_YET_STORABLE in lib/theme/dials.ts) because adding it to SITE_LOOK_OPTIONS.header would show it in every theme's existing Style rows before any renderer draws it; add it together with the first theme whose header does. (2) Mount ThemeControls variant=\"bar\" as the compact bar floated over the live preview, beside the Theme tab panel, calling the same handlers.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/theme/dials.ts','utf8');if(/NOT_YET_STORABLE/.test(s))process.exit(1)\""
+      }
+    },
+    {
+      "id": "LIVE-2040",
+      "title": "Register Services as a theme (hidden): theme id, editor theme, manifest",
+      "lane": "live",
+      "priority": "P1",
+      "size": "M",
+      "status": "open",
+      "source": {
+        "file": "docs/design-systems/services/rules.json",
+        "ref": "ds-intake services"
+      },
+      "detail": "Adds 'services' to MEGA_THEMES, SiteThemeId and THEME_LOOK, 'Services' to WebsiteTheme and every Record keyed by it, the generated services.manifest.json, and the pinned counts a registry addition trips (CONTRACT_THEME_IDS and the layouts none-for-others tests: one batched phrase ask). Private like House of Fates: out of every picker. Starts after the Theme Editor lane's look-keys PR merges, because both edit lib/theme/site-style.ts. The manifest is generated from MEGA_THEMES, so it cannot land earlier (a stray manifest fails manifests.test.ts).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/services-theme.mjs register"
+      }
+    },
+    {
+      "id": "LIVE-2041",
+      "title": "Services accents Signal, Bloom and Iris: ship them once the owner allows their violet hexes",
+      "lane": "live",
+      "priority": "P2",
+      "size": "S",
+      "status": "open",
+      "source": {
+        "file": "scripts/probes/violet-family.mjs",
+        "ref": "LIVE-962 probe bars the violet band; Services Iris and the Signal and Bloom third glows fall in it"
+      },
+      "detail": "The handoff's six accents include Iris (#7C6CF2 family) and third glows #8B7BFF (Signal) and #B57CFF (Bloom). violet-family.mjs allows violet per hex with an owner phrase (ADR-1885 pattern), and editing a probe needs Daniel's own phrase. Foundation shipped Tide, Ember and Fern. Closes by adding the three accents to themes.Services and SERVICES_ACCENTS after the phrase, batched into the single probe-pin ask with the other Services pins.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const c=require('./lib/sites/editor/theme-contract.json').themes.Services; process.exit(c.accents.iris&&c.accents.signal&&c.accents.bloom?0:1)\""
+      }
+    },
+    {
+      "id": "SCAN-1196",
+      "title": "Remove the five unused create-next-app starter SVGs from public/",
+      "lane": "live",
+      "priority": "P3",
+      "size": "XS",
+      "status": "done",
+      "closed": "2026-11-02",
+      "source": {
+        "file": "scripts/probes/next-scaffold-svgs-gone.mjs",
+        "ref": "Image cleanup 2026-11-02 (owner: clean up old images, delete nothing active)"
+      },
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/next-scaffold-svgs-gone.mjs",
+        "note": "Fails before the change: the five starter files exist."
+      },
+      "detail": "Full image sweep of public/ (607 files). Everything else is active: referenced by code, built by a path helper (theme shots, Alli Rae, Temple, Network kit, email heroes), or listed in the library_assets table (nine /images/site photos have no code reference but are live photo-library rows). Deleted only file.svg, globe.svg, next.svg, vercel.svg, window.svg: no reference in code, scripts, manifest, service worker, docs-as-code, or any text/json column in the database. Kept on purpose, unreferenced but possibly hotlinked from sent email or external pages: public/images/Frequency-Logo-Round-Icon.png and public/brand/wildheart/wildheart-figure.svg. Kept because LIVE-1671 requires them byte for byte: the Network kit placeholder PNGs."
+    },
+    {
+      "id": "SCAN-1197",
+      "title": "Resize the Alli Rae bath hero (1.3 MB) and the House of Fates path photo (0.5 MB)",
+      "lane": "live",
+      "priority": "P3",
+      "size": "XS",
+      "status": "done",
+      "closed": "2026-11-02",
+      "source": {
+        "file": "scripts/probes/heavy-site-images-resized.mjs",
+        "ref": "Rescan 2026-11-02 (audits/rescan-2026-11-02.md); owner said do it 2026-11-02"
+      },
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/heavy-site-images-resized.mjs",
+        "note": "Fails before the change: bath-hero.webp is 1.3 MB and path-logo.jpg 0.5 MB."
+      },
+      "detail": "Both files are referenced, so they are resized in place: same path, same aspect ratio, 1600 px wide. bath-hero.webp 2500x3269 (1.32 MB) to 1600x2092 (0.42 MB); path-logo.jpg 1920x1080 (0.51 MB) to 1600x900 (0.15 MB). Next's image optimizer already serves smaller widths, so this trims the source and the fallback, not what a visitor downloads on a normal render."
+    },
+    {
+      "id": "SCAN-1198",
+      "title": "Seven unreferenced Network kit placeholder PNGs (7.5 MB) stop shipping in public",
+      "lane": "live",
+      "priority": "P3",
+      "size": "XS",
+      "status": "done",
+      "closed": "2026-11-02",
+      "source": {
+        "file": "scripts/probes/network-kit-no-dead-png.mjs",
+        "ref": "Rescan 2026-11-02 (audits/rescan-2026-11-02.md); owner phrase 2026-11-02 retired the LIVE-1671 placeholder pin"
+      },
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/network-kit-no-dead-png.mjs",
+        "note": "Fails before the change: the seven placeholder-0N.png files exist."
+      },
+      "detail": "public/sites/network-kit/photos carried placeholder-01..07.png (0.7 to 1.5 MB each, 7.5 MB). Nothing in lib, components, app or scripts references them (the Designer kit's placeholder-0N keys resolve to dz-*.webp through lib/themes/designer-kits.json). LIVE-1671's probe pinned them byte for byte; the owner retired that pin in his own words on 2026-11-02, and the probe now pins the twelve photos only."
+    },
+    {
+      "id": "SCAN-1201",
+      "title": "A Space with no rating shows no \"Ratings, coming soon\" box on its Spotlight or website",
+      "lane": "live",
+      "priority": "P2",
+      "size": "XS",
+      "status": "done",
+      "source": {
+        "file": "components/widgets/space-profile/reviews.tsx",
+        "ref": "Live-surface audit 2026-11-02 (audits/live-surface-audit-2026-11-02.md); govanta.pro renders the box"
+      },
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/reviews-block-no-coming-soon.mjs",
+        "note": "Fails before the fix: the block's fallback is an EmptyState reading Ratings, coming soon."
+      },
+      "detail": "Member reviews are off by owner decision, so every Space without an operator-entered rating published an empty on-the-way box (seen live on govanta.pro). The block now renders nothing until a rating exists.",
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "SEC-018",
+      "title": "The home time zone is defined once, so a second region is a one-line change",
+      "lane": "live",
+      "priority": "P3",
+      "size": "S",
+      "status": "done",
+      "closed": "2026-11-02",
+      "source": {
+        "file": "lib/time/home-zone.ts",
+        "ref": "Systems audit 2026-11-02, config-over-hard-coding scan (audits/systems-audit-2026-11-02.md)"
+      },
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/home-zone-single-source.mjs",
+        "note": "Fails before the change: eleven code sites carry the literal America/Los_Angeles."
+      },
+      "detail": "HOME_TZ existed in lib/time/zone.ts and HOME_TIME_ZONE in lib/events/time-zones.ts, yet eleven code sites (discovery search, Free Human events, site-events siteToday, device tag targets, browser-zone, day-grid-nav, calendar settings, feed, offer) repeated the literal. The same bug class as SCAN-1037, 1126 and 1191 comes from each site choosing its own zone. Now lib/time/home-zone.ts (no imports, so client files can take it) holds the one value; zone.ts keeps its own copy because a pinned dependency allowlist (event-zone-postgres probe) forbids a new import there. The Postgres default on events.time_zone and the zone label table stay as they are. Expected lift: opening a second region changes one value, and the next 'today' bug has one place to fix."
+    },
+    {
+      "id": "SEC-019",
+      "title": "The runbook says what to do when Vercel Cron itself stops",
+      "lane": "live",
+      "priority": "P3",
+      "size": "S",
+      "status": "done",
+      "closed": "2026-11-02",
+      "source": {
+        "file": "docs/RUNBOOKS.md",
+        "ref": "Systems audit 2026-11-02, AUD-3 (audits/systems-audit-2026-11-02.md)"
+      },
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/runbook-single-scheduler.mjs",
+        "note": "Fails before the change: no runbook section covers the scheduler itself."
+      },
+      "detail": "Vercel Cron is the only scheduler for 40 jobs. A scheduler outage looks like many separate job failures. Added a section to the cron runbook: how to recognise it, where to confirm, the manual call order, and why a second scheduler needs idempotent claims first."
+    },
+    {
+      "id": "SEC-020",
+      "title": "A follow-up that goes quiet raises an alarm",
+      "lane": "live",
+      "priority": "P2",
+      "size": "M",
+      "status": "done",
+      "source": {
+        "file": "lib/cron/follow-up-stall.ts",
+        "ref": "Systems audit 2026-11-02, AUD-2 (audits/systems-audit-2026-11-02.md)"
+      },
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/probes/follow-up-silence-alarm.mjs",
+        "note": "Fails before the change: the drip crons never reported a pass that found work due and delivered none."
+      },
+      "detail": "The drip crons ping their heartbeat when they run, so a pass with work due and nothing delivered looked the same as an idle one. lib/cron/follow-up-stall.ts names the states (idle, ok, stalled) and the space-drips and journey-drips crons report each pass; a stalled pass logs cron.<job>.stalled and captures a Sentry error. Checked production 2026-11-02: no break behind the quiet. Space drips have zero sequences (nobody has built one), and the journey drip's only open enrolments are either fully sent (the 28-day reset, phases 1 to 3) or not yet due (Hearts on Fire, 30-day interval, next phase 2026-11-06). The last send on 2026-08-13 was real; nothing has been owed since.",
+      "closed": "2026-11-02"
+    },
+    {
+      "id": "SEC-021",
+      "title": "A second clock watches the queue from outside Vercel, so a stopped scheduler pages someone",
+      "lane": "hygiene",
+      "priority": "P3",
+      "size": "S",
+      "status": "done",
+      "source": {
+        "file": "docs/RUNBOOKS.md",
+        "ref": "AUD-3 in the 2026-11-02 systems audit; Daniel asked for every recommendation built 2026-11-02"
+      },
+      "detail": "GET /api/status/queue-lag reports how long the oldest due queued job has waited (503 past 15 minutes or when the read fails). The queue-watch GitHub workflow reads it every 20 minutes on GitHub's scheduler; a red run is emailed. It only reads, so it never competes with Vercel Cron. Runbook section updated.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('app/api/status/queue-lag/route.ts')&&f.readFileSync('.github/workflows/queue-watch.yml','utf8').includes('queue-lag')?0:1)\"",
+        "checked": "2026-11-02",
+        "evidence": "Route, test and workflow are present; the route test pins 200 inside the window and 503 past it or on a failed read."
+      },
+      "closed": "2026-11-02"
     }
   ]
 }

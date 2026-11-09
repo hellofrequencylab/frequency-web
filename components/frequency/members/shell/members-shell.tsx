@@ -39,7 +39,7 @@ import { launchSystemEnabled } from '@/lib/launch/enabled'
 import type { AccountToolsProps } from './account-tools'
 import { FqAmbient } from './ambient'
 import { FqRailLayout } from './rail-layout'
-import { RailFold, RailVaultTab, RailYouTab } from './rail-tabs'
+import { RailVaultTab, RailYouTab } from './rail-tabs'
 import { FqToastHost } from './toast-host'
 import {
   FQ_ACCOUNT_MENU,
@@ -249,6 +249,20 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           ))}
         </div>
       )}
+      {/* Role sections (menu strategy 2026-11-03): Your Spaces, Create, Leadership and the Admin console are
+          drawn only for the roles that hold them, open in the rail instead of folded under the You tab. */}
+      {workGroups.map((g) => (
+        <div className="fqm-group" key={g.label}>
+          <span className="fqm-group-h">{g.label}</span>
+          {g.rows.map((r) => (
+            <Link key={r.key} href={r.href ?? '#'} className="rl-row">
+              <FqIcon name={FQ_WORK_GROUP_ICON[g.label] ?? 'more'} />
+              <span>{r.label}</span>
+              <DraftsCount href={r.href} count={r.count} />
+            </Link>
+          ))}
+        </div>
+      ))}
       <Suspense fallback={null}>
         <WithStats stats={stats}>
           {(d) =>
@@ -284,6 +298,12 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           )
         })}
       </nav>
+      {workGroups.length > 0 && <span className="fqm-divider" aria-hidden />}
+      {workGroups.map((g) => (
+        <Link key={g.label} href={g.rows[0]?.href ?? '#'} className="fqm-mi" aria-label={g.label} data-tip={g.label}>
+          <FqIcon name={FQ_WORK_GROUP_ICON[g.label] ?? 'more'} />
+        </Link>
+      ))}
       {circles.length > 0 && <span className="fqm-divider" aria-hidden />}
       {circles.slice(0, 5).map((c) => (
         <Link key={c.key} href={c.href} className="fqm-circle-orb" data-live={c.notices > 0 ? '' : undefined} aria-label={c.label} data-tip={c.label} data-tip-sub={c.notices > 0 ? `${c.notices} new` : ''}>
@@ -332,33 +352,6 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           </small>
         </span>
       </Link>
-      {workGroups.length > 0 && (
-        <nav className="fqm-work" aria-label="Your work">
-          {workGroups.map((g) => {
-            const icon = <FqIcon name={FQ_WORK_GROUP_ICON[g.label] ?? 'more'} />
-            // A one-row group is a plain row; a group of several opens as the kit's fold.
-            if (g.rows.length === 1 && g.rows[0]!.href) {
-              return (
-                <Link key={g.label} href={g.rows[0]!.href} className="rl-row">
-                  {icon}
-                  <span>{g.rows[0]!.label}</span>
-                  <DraftsCount href={g.rows[0]!.href} count={g.rows[0]!.count} />
-                </Link>
-              )
-            }
-            return (
-              <RailFold key={g.label} label={g.label} icon={icon}>
-                {g.rows.map((r) => (
-                  <Link key={r.key} href={r.href ?? '#'} className="rl-sub">
-                    {r.label}
-                    <DraftsCount href={r.href} count={r.count} />
-                  </Link>
-                ))}
-              </RailFold>
-            )
-          })}
-        </nav>
-      )}
       {/* The critical doors first, then the full map (LIVE-1011, owner 2026-10-19: "add critical links like
           Home | Account | Etc before Site Map"). Signed-out stand-ins get no Account door. */}
       <nav className="fqm-you-foot" aria-label="Quick links">
@@ -366,6 +359,10 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
         {!props.anonymous && <Link href="/settings">Account</Link>}
         <Link href="/notifications">Notifications</Link>
         <Link href="/help">Help</Link>
+        {/* The business pages stay one click away for everyone signed in (owner, 2026-11-03). */}
+        <Link href="/about">About</Link>
+        <Link href="/pricing">Pricing</Link>
+        <Link href="/guidelines">Guidelines</Link>
         <Link href="/site-map">Site map</Link>
       </nav>
     </>

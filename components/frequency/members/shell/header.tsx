@@ -615,7 +615,9 @@ function Drawer({
       })}
       <div className="rl-g">
         <span className="rl-h">Frequency</span>
-        {[...FQ_SITE_LINKS, ...FQ_ABOUT_LINKS].map((l) => (
+        {/* One link per destination: About and Guidelines sit in both lists, and the duplicate keys made
+            React warn and drop rows (visual sweep 2026-11-03, after #4546). */}
+        {[...FQ_SITE_LINKS, ...FQ_ABOUT_LINKS].filter((l, i, all) => all.findIndex((o) => o.href === l.href) === i).map((l) => (
           <Link key={l.href} href={l.href} className="rl-sub">
             {l.label}
           </Link>

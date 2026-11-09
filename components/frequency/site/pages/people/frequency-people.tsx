@@ -12,16 +12,24 @@
 //
 // Motion (pop-in reveals, parallax, the hero lift) is the shell's FX loop; the closing band is the
 // shell's <KeepGoing>. The questions carry FAQPage JSON-LD, as the DAWN body's accordion does.
+//
+// PEOPLE AND PLACES (owner 2026-11-04, "make each a different layout that speaks to the program"): the
+// hero is a collage of real gatherings, a photo marquee runs under it, a stat band shows the network's
+// real numbers (and nothing when the read fails), the path is a dotted timeline with each step's photo
+// in a Circle, and "Your first gathering" sits on glass over a photo. Layout styles: .pa-folk in
+// site-pages-showcase.css.
 
 import '@/app/themes/active/site-pages-a'
+import '@/app/themes/active/site-pages-showcase'
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
-import { getWhatsOn } from '../shared/data'
+import { getActiveCircleCount, getWhatsOn } from '../shared/data'
 import { feature, SITE } from '../shared/links'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
-import { Acts, aura, ChapPhoto, Chapter, LocPill, photo, WhatsOnList } from '../shared/parts'
+import { Acts, aura, LocPill, photo, photoImg, WhatsOnList } from '../shared/parts'
 
 const FIRST_GATHERING: { icon: FqIconName; title: string; body: string }[] = [
   { icon: 'host', title: 'The Host at the door', body: 'Check the listing for arrival details, and ask the Host if you have a question.' },
@@ -47,41 +55,126 @@ const QUESTIONS: [string, string][] = [
   ['Is it free?', 'Joining Frequency is free. Hosts can charge for tickets or membership benefits. Read the listing’s price, access details and applicable fees before you pay.'],
 ]
 
-export async function FrequencyPeople() {
-  const on = await getWhatsOn(12)
-  const weekLine = on.thisWeek > 0 ? `${on.thisWeek} ${on.thisWeek === 1 ? 'event' : 'events'} this week` : null
+/** The hero collage: four real gatherings, two of them in a Circle. */
+const COLLAGE: { src: string; alt: string }[] = [
+  { src: photo('day-meditation-circle.jpg'), alt: 'A circle of people sitting together on a clifftop' },
+  { src: photo('gathering-11.jpg'), alt: 'Friends dancing together at an outdoor gathering' },
+  { src: '/images/site/song-circle.jpg', alt: 'A song circle with a guitar on a rooftop' },
+  { src: '/images/site/hula-hoop-party.jpg', alt: 'Hula hooping on a clifftop lawn' },
+]
+
+/** The marquee: people and places, decorative (every one of them is also said in words on the page). */
+const MARQUEE = [
+  photo('gathering-12.jpg'),
+  '/images/site/kirtan-song-circle.jpg',
+  '/images/site/breathwork-circle.jpg',
+  '/images/site/adult-play.jpg',
+  '/images/site/group-singing.jpg',
+  '/images/site/mens-group.jpg',
+  '/images/site/outdoor-group.jpg',
+  '/images/site/hand-stand.jpg',
+]
+
+/** One stop on the timeline: the node on the dotted line, the words, and the step's picture. */
+function Step({ label, n, children, media }: { label: string; n: string; children: ReactNode; media: ReactNode }) {
   return (
-    <div className="pa-page pa-people" data-pa-side="p" data-motion-scope style={{ display: 'contents' }}>
+    <div className="folk-step" data-screen-label={label}>
+      <span className="folk-node" aria-hidden="true">
+        {n}
+      </span>
+      <div className="folk-tx">{children}</div>
+      <div className="folk-media">{media}</div>
+    </div>
+  )
+}
+
+function Orb({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div className="folk-orb fq-iri-rim" data-px=".08">
+      {/* eslint-disable-next-line @next/next/no-img-element -- the orb sizes its own img (object-fit cover) */}
+      <img loading="lazy" decoding="async" {...photoImg(src, '(max-width: 860px) 80vw, 34vw')} alt={alt} />
+      <span className="fq-grain" />
+    </div>
+  )
+}
+
+export async function FrequencyPeople() {
+  const [on, circles] = await Promise.all([getWhatsOn(12), getActiveCircleCount()])
+  const weekLine = on.thisWeek > 0 ? `${on.thisWeek} ${on.thisWeek === 1 ? 'event' : 'events'} this week` : null
+  const showCircles = circles !== null && circles > 0
+  return (
+    <div className="pa-page pa-people pa-folk" data-pa-side="p" data-motion-scope style={{ display: 'contents' }}>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={{ backgroundImage: `url('${photo('day-meditation-circle.jpg')}')` }} />
-        <div className="fq-aura" style={aura(0.3)} />
-        <div className="shade" />
+        <div className="fq-aura" style={aura(0.24)} />
         <div className="fq-grain" />
-        <div className="wrap">
-          <nav className="crumbs" aria-label="Breadcrumb">
-            <Link href="/">Home</Link>
-            <span aria-hidden="true">/</span>
-            <span>For people</span>
-          </nav>
-          <LocPill href="#near" city={on.city} line={weekLine} />
-          <h1 className="h-xl">
-            A hundred contacts. <em className="fq-iri-text">No one to call on a Tuesday.</em>
-          </h1>
-          <p>
-            Find local groups and community events around something you like doing. Try a walk, a class or a regular Circle. Free to join.
-          </p>
-          <div className="ctas">
-            <a className="btn fq-iri-btn" href="#near">
-              Find your Circle
-            </a>
-            <Link className="btn btn-ghost fq-iri-rim" href={SITE.spaces}>
-              I run a Space →
-            </Link>
+        <div className="wrap folk-hero">
+          <div>
+            <nav className="crumbs" aria-label="Breadcrumb">
+              <Link href="/">Home</Link>
+              <span aria-hidden="true">/</span>
+              <span>For people</span>
+            </nav>
+            <LocPill href="#near" city={on.city} line={weekLine} />
+            <h1 className="h-xl">
+              A hundred contacts. <em className="fq-iri-text">No one to call on a Tuesday.</em>
+            </h1>
+            <p>
+              Find local groups and community events around something you like doing. Try a walk, a class or a regular Circle. Free to join.
+            </p>
+            <div className="ctas">
+              <a className="btn fq-iri-btn" href="#near">
+                Find your Circle
+              </a>
+              <Link className="btn btn-ghost fq-iri-rim" href={SITE.spaces}>
+                I run a Space →
+              </Link>
+            </div>
+          </div>
+          <div className="folk-collage">
+            {COLLAGE.map((c, i) => (
+              <figure key={c.src} className={`fc fc${i + 1}${i === 0 ? ' fq-iri-rim' : ''}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- the collage sizes its own img */}
+                <img decoding="async" {...photoImg(c.src, '(max-width: 860px) 50vw, 26vw')} alt={c.alt} />
+                <span className="fq-grain" />
+              </figure>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="sec" style={{ paddingBottom: 0 }} data-screen-label="02 Your path">
+      <div className="folk-marq" aria-hidden="true">
+        {/* The track runs past both edges by design; it carries aria-hidden itself so the @overflow gate
+            (test/e2e/overflow.spec.ts) reads it as the decorative bleed it is, not a clipped box. */}
+        <div className="folk-marq-track" aria-hidden="true">
+          {[...MARQUEE, ...MARQUEE].map((src, i) => (
+            // eslint-disable-next-line @next/next/no-img-element -- decorative strip, sized by .folk-marq img
+            <img key={`${src}-${i}`} loading="lazy" decoding="async" {...photoImg(src, '240px')} alt="" />
+          ))}
+        </div>
+      </div>
+
+      {(showCircles || on.thisWeek > 0) && (
+        <section className="folk-stats" data-screen-label="01x Stats">
+          <div className="wrap">
+            {showCircles && (
+              <div className="folk-stat">
+                <b>{circles.toLocaleString('en-US')}</b>
+                <span>active Circles on Frequency right now</span>
+              </div>
+            )}
+            {on.thisWeek > 0 && (
+              <div className="folk-stat">
+                <b>{on.thisWeek.toLocaleString('en-US')}</b>
+                <span>
+                  {on.thisWeek === 1 ? 'event' : 'events'} this week{on.city ? ` in ${on.city}` : ''}
+                </span>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      <section className="sec folk-path" data-screen-label="02 Your path">
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -89,81 +182,80 @@ export async function FrequencyPeople() {
             </div>
             <h2 className="h-l">Find community around a walk, a class, a shared meal.</h2>
           </div>
+
+          <div className="folk-line">
+            <Step
+              label="02a Find"
+              n="01"
+              media={
+                <div className="chap-map">
+                  <WhatsOnList
+                    mode="people"
+                    title={on.city ? `This week in ${on.city}` : 'Coming up'}
+                    events={on.events.slice(0, 6)}
+                    ok={on.ok}
+                    emptyHref={SITE.spaces}
+                  />
+                </div>
+              }
+            >
+              <span className="n">01 · Find</span>
+              <h2 className="h-l">See what’s happening near you.</h2>
+              <p className="body-l">
+                One calendar for your town. Circles you can keep coming back to, events, programs, experiences. Pick
+                something you like doing and a time you’re free.
+              </p>
+              <Acts
+                items={[
+                  { href: '#near', icon: 'pin', title: 'Set your town', sub: 'See what meets near you' },
+                  { href: '#near', icon: 'circle', title: 'Pick a Circle', sub: 'Same people, same time' },
+                ]}
+              />
+            </Step>
+
+            <Step label="02b Show up" n="02" media={<Orb src={photo('day-parachute-play.jpg')} alt="Adults playing with a parachute" />}>
+              <span className="n">02 · Show up</span>
+              <h2 className="h-l">Walk in. Check in.</h2>
+              <p className="body-l">Scan an eligible QR code when you arrive and follow the check-in confirmation.</p>
+              <Acts
+                items={[
+                  { href: '#first-night', icon: 'ticket', title: 'Your first gathering', sub: 'What to expect' },
+                  { href: feature('f-zaps'), icon: 'checkin', title: 'Why check-in counts', sub: 'Rewards for eligible check-ins' },
+                ]}
+              />
+            </Step>
+
+            <Step label="02c Come back" n="03" media={<Orb src={photo('gathering-06.jpg')} alt="A regular group dancing together on a lawn" />}>
+              <span className="n">03 · Come back</span>
+              <h2 className="h-l">Same people, same time.</h2>
+              <p className="body-l">
+                A regular Circle gives you a time and place to meet again. Take your time getting to know the people there.
+              </p>
+              <Acts items={[{ href: feature('f-zaps'), icon: 'zap', title: 'Play the season', sub: 'Zaps for showing up again' }]} />
+            </Step>
+
+            <Step label="02d Pass it on" n="04" media={<Orb src={photo('day-beach-hoop.jpg')} alt="Someone dancing on the beach" />}>
+              <span className="n">04 · Pass it on</span>
+              <h2 className="h-l">Bring someone. Then host.</h2>
+              <p className="body-l">
+                Send a friend an invitation. If you want to host, start with a walk, a shared meal or a Circle of your own.
+              </p>
+              <Acts
+                items={[
+                  { href: SITE.spaces, icon: 'host', title: 'Host an experience', sub: 'Your living room counts' },
+                  { href: '/how-to-start-a-circle', icon: 'message', title: 'Host a Circle', sub: 'The playbook we hand new Hosts' },
+                ]}
+              />
+            </Step>
+          </div>
         </div>
-
-        <Chapter label="02a Find">
-          <div>
-            <span className="n">01 · Find</span>
-            <h2 className="h-l">See what’s happening near you.</h2>
-            <p className="body-l">
-              One calendar for your town. Circles you can keep coming back to, events, programs, experiences. Pick
-              something you like doing and a time you’re free.
-            </p>
-            <Acts
-              items={[
-                { href: '#near', icon: 'pin', title: 'Set your town', sub: 'See what meets near you' },
-                { href: '#near', icon: 'circle', title: 'Pick a Circle', sub: 'Same people, same time' },
-              ]}
-            />
-          </div>
-          <div className="chap-map">
-            <WhatsOnList
-              mode="people"
-              title={on.city ? `This week in ${on.city}` : 'Coming up'}
-              events={on.events.slice(0, 6)}
-              ok={on.ok}
-              emptyHref={SITE.spaces}
-            />
-          </div>
-        </Chapter>
-
-        <Chapter label="02b Show up" rev>
-          <ChapPhoto src={photo('day-parachute-play.jpg')} alt="Adults playing with a parachute" />
-          <div>
-            <span className="n">02 · Show up</span>
-            <h2 className="h-l">Walk in. Check in.</h2>
-            <p className="body-l">Scan an eligible QR code when you arrive and follow the check-in confirmation.</p>
-            <Acts
-              items={[
-                { href: '#first-night', icon: 'ticket', title: 'Your first gathering', sub: 'What to expect' },
-                { href: feature('f-zaps'), icon: 'checkin', title: 'Why check-in counts', sub: 'Rewards for eligible check-ins' },
-              ]}
-            />
-          </div>
-        </Chapter>
-
-        <Chapter label="02c Come back">
-          <div>
-            <span className="n">03 · Come back</span>
-            <h2 className="h-l">Same people, same time.</h2>
-            <p className="body-l">
-              A regular Circle gives you a time and place to meet again. Take your time getting to know the people there.
-            </p>
-            <Acts items={[{ href: feature('f-zaps'), icon: 'zap', title: 'Play the season', sub: 'Zaps for showing up again' }]} />
-          </div>
-          <ChapPhoto sheen src={photo('day-meditation-circle.jpg')} alt="A circle of people outdoors" />
-        </Chapter>
-
-        <Chapter label="02d Pass it on" rev>
-          <ChapPhoto src={photo('day-beach-hoop.jpg')} alt="Someone dancing on the beach" />
-          <div>
-            <span className="n">04 · Pass it on</span>
-            <h2 className="h-l">Bring someone. Then host.</h2>
-            <p className="body-l">
-              Send a friend an invitation. If you want to host, start with a walk, a shared meal or a Circle of your own.
-            </p>
-            <Acts
-              items={[
-                { href: SITE.spaces, icon: 'host', title: 'Host an experience', sub: 'Your living room counts' },
-                { href: '/how-to-start-a-circle', icon: 'message', title: 'Host a Circle', sub: 'The playbook we hand new Hosts' },
-              ]}
-            />
-          </div>
-        </Chapter>
       </section>
 
-      <section className="sec" id="first-night" data-screen-label="03 Your first gathering">
-        <div className="fq-aura" style={aura(0.22)} />
+      <section className="sec folk-first" id="first-night" data-screen-label="03 Your first gathering">
+        {/* eslint-disable-next-line @next/next/no-img-element -- the band sizes its own img (object-fit cover) */}
+        <img className="folk-first-bg" loading="lazy" decoding="async" {...photoImg(photo('gathering-03.jpg'), '100vw')} alt="Friends on blankets and rugs at an evening picnic" />
+        <div className="folk-first-scrim" />
+        <div className="fq-grain" />
         <div className="wrap">
           <div className="sh">
             <div className="label">
@@ -175,7 +267,7 @@ export async function FrequencyPeople() {
             {FIRST_GATHERING.map((c) => (
               <div className="pop" key={c.title}>
                 <span className="pglow" />
-                <article className="pc">
+                <article className="pc fq-panel">
                   <span className="ic">
                     <FqIcon name={c.icon} />
                   </span>
@@ -224,17 +316,16 @@ export async function FrequencyPeople() {
             </div>
             <h2 className="h-l">Everything you need to show up.</h2>
           </div>
-          <div className="g4f">
+          <div className="folk-chips">
             {FEATURES.map((f) => (
-              <Link className="pop" key={f.id} href={feature(f.id)}>
-                <span className="pglow" />
-                <span className="pc">
-                  <span className="ic">
-                    <FqIcon name={f.icon} />
-                  </span>
+              <Link key={f.id} href={feature(f.id)}>
+                <span className="ic">
+                  <FqIcon name={f.icon} />
+                </span>
+                <div>
                   <h3>{f.title}</h3>
                   <p>{f.body}</p>
-                </span>
+                </div>
               </Link>
             ))}
           </div>

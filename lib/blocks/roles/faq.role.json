@@ -2,6 +2,11 @@
   "role": "FAQ",
   "type": "RoleFaq",
   "label": "Questions (all themes)",
+  "intent": "Answer questions",
+  "why": "Answers to what people ask before they come.",
+  "group": "Answer",
+  "icon": "help",
+  "live": true,
   "replaces": [
     "Accordion",
     "SpaceFAQ",
@@ -26,17 +31,38 @@
       "eyebrow": "text<=40",
       "heading": "text<=120",
       "lead": "text<=280"
+    },
+    "labels": {
+      "items": {
+        "label": "Questions",
+        "hint": "The questions people ask before they come. Filled from your Space when it has answers."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      }
     }
   },
   "variants": {
     "split": {
-      "label": "Heading beside the questions"
+      "label": "Heading beside the questions",
+      "thumb": "split"
     },
     "stack": {
-      "label": "One column"
+      "label": "One column",
+      "thumb": "stack"
     },
     "grid": {
-      "label": "Two columns of cards"
+      "label": "Two columns of cards",
+      "thumb": "cards"
     }
   },
   "default": "split",
@@ -110,5 +136,11 @@
     "list",
     "question",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "hide"
+  }
 }

@@ -8,7 +8,7 @@
 .cs-pv-fit{position:relative;width:100%;aspect-ratio:1/.72}
 .cs-pv *{box-sizing:border-box}
 .cs-pv-site,.cs-pv-screen{background:var(--pv-bg);color:var(--pv-ink);font-family:var(--pv-font-body);transition:background .48s,color .48s}
-.cs-pv-site{position:absolute;left:0;top:0;width:84%;height:94%;border-radius:2.2cqi;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 50px 110px -50px color-mix(in oklab,var(--fq-bg-canvas) 85%,transparent),0 0 0 1px color-mix(in oklab,var(--fq-text-strong) 10%,transparent)}
+.cs-pv-site{position:absolute;left:0;top:0;width:84%;height:94%;border-radius:2.2cqi;overflow:hidden;display:flex;flex-direction:column;background-image:var(--pv-art);box-shadow:0 50px 110px -50px color-mix(in oklab,var(--fq-bg-canvas) 85%,transparent),0 0 0 1px color-mix(in oklab,var(--fq-text-strong) 10%,transparent)}
 .cs-pv-bar{height:4.6cqi;flex:none;display:flex;align-items:center;gap:.9cqi;padding:0 2cqi;background:var(--pv-chrome)}
 .cs-pv-bar i{width:1.2cqi;height:1.2cqi;border-radius:50%;background:var(--pv-line)}
 .cs-pv-url{margin-left:2cqi;flex:1;max-width:44cqi;height:2.7cqi;border-radius:999px;background:var(--pv-card);display:flex;align-items:center;padding:0 1.6cqi;font:500 1.4cqi/1 var(--pv-font-body);color:var(--pv-muted);white-space:nowrap;overflow:hidden}
@@ -23,7 +23,7 @@
 .cs-pv-eyebrow{display:flex;align-items:center;gap:1.2cqi;font-size:1.15cqi;letter-spacing:var(--pv-label-track);text-transform:uppercase;color:var(--pv-accent-ink);font-weight:500;transition:color .48s}
 .cs-pv-rule{width:var(--pv-rule-w);height:1px;background:var(--pv-accent);transition:background .48s}
 .cs-pv-h1{font-family:var(--pv-font-display);font-weight:var(--pv-display-weight);text-transform:var(--pv-display-case);font-size:5.4cqi;line-height:.98;letter-spacing:var(--pv-display-track);overflow-wrap:anywhere}
-.cs-pv em{font-style:italic;color:var(--pv-em-ink)}
+.cs-pv em{font-family:var(--pv-font-em);font-style:italic;font-weight:400;color:var(--pv-em-ink)}
 .cs-pv[data-long="1"] .cs-pv-h1{font-size:4.3cqi}
 .cs-pv[data-long="1"] .cs-pv-pname{font-size:2cqi}
 .cs-pv-lead{font-size:1.6cqi;line-height:1.6;font-weight:300;color:var(--pv-muted);max-width:34ch}
@@ -55,7 +55,8 @@
 
 /* Preview additions (v3): the logo slot, the host photo slot, the contact strip, the ghost state and the mock-up shimmer. */
 .cs-pv-logo{flex:1;min-width:0;display:flex;align-items:center;gap:1.1cqi;height:3.4cqi}
-.cs-pv-mono{width:3.4cqi;height:3.4cqi;flex:none;border-radius:50%;background:var(--pv-accent);color:var(--pv-on-accent);display:flex;align-items:center;justify-content:center;font-family:var(--pv-font-display);font-size:1.6cqi;transition:background .48s}
+.cs-pv-mono,.cs-pv-badge{width:3.4cqi;height:3.4cqi;flex:none;border-radius:50%;background:var(--pv-accent);color:var(--pv-on-accent);display:flex;align-items:center;justify-content:center;font-family:var(--pv-font-display);font-size:1.6cqi;transition:background .48s}
+.cs-pv-badge{display:var(--pv-badge)}
 .cs-pv-logo-img{position:relative;height:3.4cqi;width:16cqi}
 .cs-pv-logo-img img{object-fit:contain;object-position:left center}
 .cs-pv-initials{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--pv-accent);color:var(--pv-on-accent);font-family:var(--pv-font-display);font-size:5cqi;transition:background .48s}
@@ -112,7 +113,7 @@
 .cs-pill-tick,.cs-tick{width:24px;height:24px;flex:none;border-radius:50%;background:var(--fq-pa);color:var(--fq-bg-canvas);display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px color-mix(in oklab,var(--fq-accent-2) 35%,transparent)}
 .cs-pill-tick svg,.cs-tick svg{width:12px;height:12px;stroke-width:3}
 .cs-pill-dot{width:10px;height:10px;flex:none;border-radius:50%}
-@media (pointer:coarse){.cs-pill{height:44px}}
+@media (pointer:coarse){.cs-pill{height:44px}.cs-chip-btn{min-height:44px}}
 
 /* Step cards. */
 .cs-card{border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:0 30px 80px -40px color-mix(in oklab,var(--fq-accent-2) 32%,transparent);padding:clamp(18px,2vw,24px);display:flex;flex-direction:column;gap:14px;animation:cs-pop .42s var(--fq-ease-out) both}
@@ -347,3 +348,93 @@ section.cs-close h2.cs-close-h{margin:0;font:700 clamp(36px,5vw,72px)/1.02 var(-
 @media (prefers-reduced-motion:reduce){.cs-pain,.cs-tool{transition:none}}
 .cs-free-link .fq-icon{width:16px;height:16px}
 .cs-close .cs-go .fq-icon{width:18px;height:18px}
+
+/* ---- Below the builder, each section its own shape (marketing evolution, lane B) ----
+   Sound familiar: a photo collage, the first pain large with the iridescent rim, each line on glass over its
+   photo; a scroll-snap rail on a phone. Day one: the heading holds still on the left while the tools scroll on
+   the right, under a signal line. Free to operate: the rimmed glass panel over a full-bleed photo with grain.
+   Questions: the heading holds still beside the list. Closing: a night still under the aura. */
+.cs-pains{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);grid-auto-rows:minmax(300px,auto);gap:20px}
+.cs-pain{position:relative;display:block;min-height:300px;border-radius:var(--fq-radius-xl)}
+.cs-pain-lead{grid-row:span 2;min-height:620px}
+.cs-pain-pic{position:absolute;inset:0;aspect-ratio:auto;border-radius:inherit}
+.cs-pain-fade{inset:0;height:auto;background:linear-gradient(180deg,transparent 35%,color-mix(in oklab,var(--fq-bg-canvas) 78%,transparent) 100%)}
+.cs-pain-text{position:absolute;left:14px;right:14px;bottom:14px;z-index:1;padding:18px 20px;border-radius:var(--fq-radius-l);gap:8px}
+.cs-pain-lead .cs-pain-text{left:20px;right:auto;bottom:20px;max-width:440px;padding:24px 26px}
+article.cs-pain-lead h3.cs-pain-h{font-size:clamp(24px,2.4vw,32px)}
+.cs-pain-text .cs-pain-p{color:var(--fq-text-strong)}
+
+.cs-signal{position:absolute;left:0;right:0;top:-1px;height:2px;z-index:2;background:linear-gradient(90deg,transparent,var(--fq-side,var(--fq-accent-2)) 30%,var(--fq-accent-2) 70%,transparent);opacity:.75}
+.cs-signal i{position:absolute;left:30%;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--fq-ig-orb);box-shadow:var(--fq-ig-glow);animation:fq-breath var(--fq-pulse) var(--fq-ease-breath) infinite}
+.cs-dayone-in{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:40px clamp(40px,6vw,88px);align-items:start}
+.cs-dayone-top{position:sticky;top:120px;grid-template-columns:minmax(0,1fr);align-items:start}
+.cs-tools{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cs-tool{display:grid;grid-template-columns:48px minmax(0,1fr);gap:4px 16px;align-items:start}
+.cs-tool .fq-icon-tile{grid-row:span 2}
+.cs-tool-h{align-self:end}
+
+.cs-free-sec{position:relative;overflow:hidden;isolation:isolate;padding:clamp(80px,11vw,150px) clamp(18px,4vw,40px)}
+.cs-band-pic{position:absolute;inset:0;z-index:-1}
+.cs-band-shade{position:absolute;inset:0;background:linear-gradient(180deg,var(--fq-bg-canvas) 0%,color-mix(in oklab,var(--fq-bg-canvas) 62%,transparent) 28%,color-mix(in oklab,var(--fq-bg-canvas) 62%,transparent) 72%,var(--fq-bg-canvas) 100%)}
+.cs-band-pic .fq-grain{opacity:.16}
+.cs-free{background:var(--fq-surface-glass);box-shadow:0 40px 80px -40px var(--fq-uv-void)}
+.cs-close .cs-band-shade{background:radial-gradient(ellipse 70% 80% at center,color-mix(in oklab,var(--fq-bg-canvas) 55%,transparent),var(--fq-bg-canvas) 82%)}
+.cs-close .fq-aura{opacity:.3}
+
+.cs-faq{grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr)}
+.cs-faq .cs-sec-intro{position:sticky;top:120px}
+
+@media (max-width:980px){
+.cs-dayone-in,.cs-faq{grid-template-columns:minmax(0,1fr)}
+.cs-dayone-top,.cs-faq .cs-sec-intro{position:static}}
+@media (max-width:700px){
+.cs-pains{display:grid;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:84%;grid-auto-rows:auto;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;margin:0 calc(-1 * clamp(18px,4vw,40px));padding:0 clamp(18px,4vw,40px) 8px;scroll-padding:0 clamp(18px,4vw,40px);scrollbar-width:none}
+.cs-pains::-webkit-scrollbar{display:none}
+.cs-pain,.cs-pain-lead{grid-row:auto;min-height:440px;scroll-snap-align:start}
+.cs-pain-lead .cs-pain-text{right:14px;left:14px;bottom:14px;padding:18px 20px}
+.cs-tools{grid-template-columns:minmax(0,1fr);gap:8px}
+.cs-tool{padding:14px 16px}}
+@media (prefers-reduced-motion:reduce){.cs-signal i{animation:none}}
+
+/* ---- CyberWitch: the preview wears the theme's own look (owner, 2026-11-05: "all the applications of the theme look like
+   the template page"). The neon wall is the website's full-bleed hero with an iron scrim, the headline is blackletter
+   over the sprayed marker phrase, the buttons are a tilted sticker and a double-ruled placard, the offers are riveted
+   plates; the phone has the arch portrait, the sticker and plate rows of its Spotlight. Still only --pv-* tokens. */
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-site{border-radius:1.4cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-nav{position:relative;z-index:2;background:color-mix(in oklab,var(--pv-bg) 92%,transparent);box-shadow:inset 0 -1px 0 color-mix(in oklab,var(--pv-accent) 30%,transparent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-brand{font-size:2.6cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-badge{display:none}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-btn{font-family:var(--pv-font-em);text-transform:uppercase;letter-spacing:.04em;font-weight:400;border-radius:0;transform:rotate(-2deg);clip-path:polygon(0 6%,100% 0,98% 100%,2% 94%);box-shadow:0 0 2.4cqi color-mix(in oklab,var(--pv-accent) 45%,transparent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-btn-o{font-family:var(--pv-font-body);transform:none;clip-path:none;background:none;color:var(--pv-ink);box-shadow:inset 0 0 0 1px var(--pv-ink),inset 0 0 0 .35cqi var(--pv-bg),inset 0 0 0 calc(.35cqi + 1px) color-mix(in oklab,var(--pv-ink) 55%,transparent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-hero{position:relative;display:flex;align-items:flex-end;padding:3cqi 3.6cqi 3cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-pic{position:absolute;inset:0;width:auto;height:auto;min-height:0;max-height:none;aspect-ratio:auto;justify-self:stretch;align-self:stretch}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-pic::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,color-mix(in oklab,var(--pv-bg) 88%,transparent) 0%,color-mix(in oklab,var(--pv-bg) 55%,transparent) 42%,transparent 72%),linear-gradient(0deg,color-mix(in oklab,var(--pv-bg) 70%,transparent),transparent 40%)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-photo{border-radius:0;box-shadow:none}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-ring{display:none}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-copy{position:relative;z-index:1;max-width:60%;gap:1.6cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-eyebrow{align-self:flex-start;padding:.7cqi 1.2cqi;background:var(--pv-ink);color:var(--pv-bg);font-size:1.05cqi;transform:rotate(-1.5deg)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-rule{display:none}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-h1{font-size:5cqi;line-height:1.05;text-shadow:0 .3cqi 1.4cqi var(--pv-bg)}
+.cs-pv[data-preview-theme="cyberwitch"] em{font-style:normal;text-transform:uppercase;color:var(--pv-accent-ink);text-shadow:0 0 1.6cqi color-mix(in oklab,var(--pv-accent) 70%,transparent);display:inline-block;transform:rotate(-2deg);font-size:.82em}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-lead{color:color-mix(in oklab,var(--pv-ink) 80%,transparent);font-weight:400}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offers{padding-top:1.8cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer{position:relative;border-radius:0;padding:.6cqi;background:linear-gradient(180deg,var(--pv-card),var(--pv-bg));box-shadow:inset 0 0 0 1px var(--pv-line),inset 0 1px 0 color-mix(in oklab,var(--pv-accent) 35%,transparent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer::before,.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer::after{content:"";position:absolute;top:.6cqi;width:.5cqi;height:.5cqi;border-radius:50%;background:var(--pv-muted);z-index:1}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer::before{left:.6cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer::after{right:.6cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer-pic{border-radius:0}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-num{border-radius:0;font-style:normal}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-offer-t{font-family:var(--pv-font-body);text-transform:uppercase;letter-spacing:.1em;font-size:1.25cqi;font-weight:600}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-screen{background:radial-gradient(120% 60% at 50% 0%,color-mix(in oklab,var(--pv-accent) 14%,var(--pv-bg)),var(--pv-bg) 70%)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-portrait{width:13cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-portrait .cs-pv-photo{border-radius:50% 50% 0 0/38% 38% 0 0}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-host{order:3;margin-top:0;color:var(--pv-ink);opacity:.85;display:flex;align-items:center;gap:.8cqi}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-host::before,.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-host::after{content:"";width:1.4cqi;height:.4cqi;border-radius:999px;background:var(--pv-accent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-pname{order:2;font-size:2.7cqi;text-shadow:0 .3cqi 1cqi var(--pv-bg)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-pname em{display:none}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-links{order:4}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-handle{order:5}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-link{position:relative;border-radius:0;justify-content:flex-start;padding:0 1.6cqi;background:linear-gradient(180deg,var(--pv-card),var(--pv-bg));box-shadow:inset 0 0 0 1px var(--pv-line),inset 0 1px 0 color-mix(in oklab,var(--pv-accent) 35%,transparent);font:600 .95cqi/1 var(--pv-font-body);letter-spacing:.12em;text-transform:uppercase}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-link::after{content:"→";margin-left:auto;color:var(--pv-muted)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-link-p{justify-content:center;background:var(--pv-btn-bg);color:var(--pv-btn-ink);font:400 1.15cqi/1 var(--pv-font-em);letter-spacing:.04em;transform:rotate(-2deg);clip-path:polygon(0 8%,100% 0,98% 100%,2% 92%);box-shadow:0 0 1.6cqi color-mix(in oklab,var(--pv-accent) 50%,transparent)}
+.cs-pv[data-preview-theme="cyberwitch"] .cs-pv-link-p::after{content:none}

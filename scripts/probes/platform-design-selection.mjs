@@ -23,7 +23,8 @@ export async function verifyPlatformSelection(designSource,configSource){
  for(const raw of [undefined,'','unknown','dawn','frequency']){
   const frequency=resolveDesign(raw)==='frequency'
   const rules=await redirect(select(resolveDesign,{env:{NEXT_PUBLIC_SITE_DESIGN:raw}}))()
-  for(const [source,destination]of [['/practice',frequency?'/features#f-zaps':'/help/the-quest'],['/the-quest',frequency?'/features#f-zaps':'/help/the-quest'],['/the-lab',frequency?'/vision':'/about']])assert.deepEqual(rules.find(rule=>rule.source===source),{source,destination,permanent:frequency},`${source}:${String(raw)}`)
+  for(const [source,destination]of [['/practice',frequency?'/features#f-zaps':'/help/the-quest'],['/the-quest',frequency?'/features#f-zaps':'/help/the-quest'],])assert.deepEqual(rules.find(rule=>rule.source===source),{source,destination,permanent:frequency},`${source}:${String(raw)}`)
+  assert.deepEqual(rules.find(rule=>rule.source==='/the-lab'),{source:'/the-lab',destination:'/about',permanent:true},`/the-lab:${String(raw)}`)
   const others=rules.filter(rule=>!['/practice','/the-quest','/the-lab'].includes(rule.source))
   if(unrelated)assert.deepEqual(others,unrelated,'unrelated redirects unchanged across selections');else unrelated=others
  }

@@ -2,6 +2,11 @@
   "role": "Steps",
   "type": "RoleSteps",
   "label": "Steps (all themes)",
+  "intent": "Explain how it works",
+  "why": "How it works, in a few short steps.",
+  "group": "Show up",
+  "icon": "program",
+  "live": false,
   "replaces": [
     "DawnHowToSteps",
     "BuildTimeline",
@@ -27,17 +32,38 @@
       "eyebrow": "text<=40",
       "heading": "text<=120",
       "lead": "text<=280"
+    },
+    "labels": {
+      "items": {
+        "label": "Steps",
+        "hint": "How it works, in order."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      }
     }
   },
   "variants": {
     "grid": {
-      "label": "Three cards"
+      "label": "Three cards",
+      "thumb": "cards"
     },
     "timeline": {
-      "label": "Timeline"
+      "label": "Timeline",
+      "thumb": "timeline"
     },
     "strip": {
-      "label": "Ruled strip"
+      "label": "Ruled strip",
+      "thumb": "strip"
     }
   },
   "default": "grid",
@@ -110,5 +136,11 @@
     "list",
     "name",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "draw"
+  }
 }

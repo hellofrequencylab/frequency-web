@@ -1,0 +1,60 @@
+/* THE TUNE RAIL (BLD-105): Commons tokens and the builder's shape tokens (BLD-002) only. */
+
+.tune { display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; border-radius: var(--r-control); }
+/* A picture clicked on the canvas lights its field and the focal point beside it (BLD-104). */
+.field[data-lit] { outline: 2px solid var(--editor-select); outline-offset: 6px; }
+.fieldLabel { font-size: 12px; font-weight: 600; color: var(--fq-text-strong); }
+.req { margin-left: 4px; color: var(--editor-select); }
+.input {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--fq-border-hair);
+  border-radius: var(--r-control);
+  background: var(--fq-surface-raised);
+  color: var(--fq-text-strong);
+  font: inherit;
+  line-height: 1.45;
+  resize: vertical;
+}
+.input:focus-visible, .more:focus-visible, .add:focus-visible, .icon:focus-visible {
+  outline: 2px solid var(--fq-text-strong);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--editor-ring);
+}
+.count { justify-self: end; font-size: 11px; color: var(--fq-text-muted); }
+.count[data-over] { color: var(--fq-text-strong); font-weight: 600; }
+.list { display: grid; gap: 8px; }
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: start;
+  padding: 8px;
+  border-radius: var(--r-2);
+  background: var(--fq-bg-sunken);
+}
+.item > :not(.icon) { grid-column: 1; }
+.item > .icon { grid-column: 2; grid-row: 1; }
+.sub { display: grid; gap: 4px; font-size: 12px; color: var(--fq-text-muted); }
+.icon, .add, .more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--fq-border-hair);
+  border-radius: var(--r-control);
+  background: var(--fq-surface-raised);
+  color: var(--fq-text-strong);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.icon { width: 32px; padding: 0; }
+.icon:disabled, .add:disabled { opacity: .45; cursor: default; }
+.more { justify-self: start; }
+.layer2 { display: grid; gap: 14px; padding-top: 4px; border-top: 1px solid var(--fq-border-hair); }
+.always { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fq-text-muted); }

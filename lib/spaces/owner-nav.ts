@@ -70,6 +70,7 @@ export function spaceCrumbs(
   const [a, b] = segs
 
   if (segs.length === 0) return [spaces, profile] // the profile itself
+  if (a === '-' && b === 'program' && segs.length === 2) return [spaces, profile, { href: `${base}/-/program`, label: 'Program' }]
   if (a === 'edit-page') return [] // the full-width Puck editor owns the viewport
   if (a === 'book') return [spaces, profile, { href: `${base}/book`, label: 'Book' }]
 

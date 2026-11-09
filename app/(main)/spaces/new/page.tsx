@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { envFlag } from '@/lib/env/string'
+import { createSpaceDoorHref } from '@/lib/create-space/door'
 import { launchHomeHref } from '@/lib/launch/destination'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
 import { getActiveLaunch } from '@/lib/launch/store'
@@ -38,17 +39,13 @@ export default async function NewSpacePage({
   searchParams: Promise<{ mode?: string | string[]; plan?: string | string[]; name?: string | string[]; intents?: string | string[]; niche?: string | string[]; theme?: string | string[] }>
 }) {
   // Gate: only an authenticated member may create a space (the action re-checks server-side).
-  // A signed-out operator makes an account and lands back here with the same hints (door mode, plan).
+  // A signed-out operator opens the wizard that needs no account, /create-a-space, carrying what the door knew (its
+  // kit, mode, niche, name and picks; lib/create-space/door.ts). They build there and make the account at the end,
+  // and its hand-over lands them on the launch like any member (LIVE-1969, ADR-1933). Until 2026-11-02 this bounced
+  // them to /sign-in first, a form before the thing they asked for.
   const profileId = await getMyProfileId()
   const params = await searchParams
-  if (!profileId) {
-    const back = new URLSearchParams()
-    for (const [k, v] of Object.entries(params)) {
-      const value = Array.isArray(v) ? v[0] : v
-      if (value) back.set(k, value)
-    }
-    redirect(`/sign-in?next=${encodeURIComponent(`/spaces/new${back.size ? `?${back}` : ''}`)}`)
-  }
+  if (!profileId) redirect(createSpaceDoorHref(params))
 
   // One front door (LIVE-1913). With the launch on, this page is only ever the way in: someone with a launch under way
   // goes home to it, and everyone else starts one, so a first-timer never lands on this form inside the rail.

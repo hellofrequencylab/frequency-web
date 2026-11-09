@@ -184,6 +184,27 @@ to any of them fails CI exactly as a new hand‑rolled menu would.
   the system it belongs to**, or put `// menu-ok: <reason>` on the declaration line. Never grow
   `FROZEN_MENU_DEBT` — that list only shrinks, except the OWN-058 raise recorded in §Frozen debt.
 
+## Frequency Space public navigation (owner decision, 2026-11-04)
+
+The Frequency Space menu is **Home · Community · Calendar · Program**, with the existing
+role-gated **Manage** control separate. The platform root tenant has no Community wall and omits
+that destination. Primary links navigate to pages and never contain section fragments. Existing
+functions remain reachable from contextual Home links and their existing direct addresses.
+
+Program collects the Space's public Programs, Journeys and Practices. It lives at
+`/spaces/<slug>/-/program`: the reserved `-` segment cannot be a custom profile-page slug, so an
+existing `/spaces/<slug>/program` page is preserved. Catalog reads are bounded, tenant-filtered,
+explicitly public/published and subject to the request client's RLS, even for owners. Unlisted
+content remains reachable only through its existing authorized or curated surfaces.
+
+The website keeps its independent custom pages, menu settings and plan entitlement. Stored menu
+configuration and page documents are retained. Saved Space URL, dropdown and feature links retain their
+existing plan and viewer gates as contextual Home links; website-only visibility stays website-only.
+Changing the Frequency navigation does not migrate,
+delete or overwrite them. The old role/function gates continue to determine contextual doors and
+management access. Primary selection follows the current public section; a management workspace
+never marks Home active at the same time.
+
 ## Do not
 
 - Do not hand‑roll a per‑scope menu array in a page/component — renaming the variable no longer helps.

@@ -57,7 +57,15 @@ export const MEGA_THEMES: readonly MegaThemeDef[] = [
   { id: 'midnight', editor: 'Midnight', site: 'midnight' },
   { id: 'designer', editor: 'Designer', site: 'designer' },
   { id: 'free-human', editor: 'FreeHuman', site: 'free-human' },
+  { id: 'services', editor: 'Services', site: 'services' },
+  { id: 'new-world', editor: 'NewWorld', site: 'new-world' },
+  { id: 'cyberwitch', editor: 'CyberWitch', site: 'cyberwitch' },
 ]
+
+/** THE THEME EVERY NEW SPACE STARTS IN (LIVE-2058, owner 2026-11-03: "New World is the new mega template"). A Space created
+ *  without an explicit pick is dressed in this one at birth. It is a WRITE at creation, never a read fallback: a Space that
+ *  already exists and never saved a theme keeps reading as Frequency (lib/theme/existing-sites-keep-their-theme.test.ts). */
+export const NEW_SPACE_THEME: MegaThemeId = 'new-world'
 
 export interface MegaThemeChoice {
   /** The theme the owner picked, or null when they never did. */

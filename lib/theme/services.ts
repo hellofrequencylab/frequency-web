@@ -1,3 +1,5 @@
+import { HEX_ACCENT, contrastRatio, type AccentVars } from "@/lib/spaces/accent";
+import type { ThemeSurface } from "@/lib/theme/surface-vars";
 // THE SERVICES THEME (code id `services`, editor theme `Services`), built from the Services design system
 // (docs/design-systems/services). PURE. Night is the default register; Day (`data-th="day"`) is the salt-and-cream
 // light register. Six accent presets change only the flare, swell and halo ramps. The raw ramps are --sv-* so they
@@ -6,7 +8,7 @@
 // Scope: these tokens live under [data-house-theme="services"] and are only ever emitted by the stand-alone site
 // render. A site theme never styles a member, Space console or admin area (ADR-1906).
 
-/** The owner accent presets that ship now (Tide, Ember, Fern; Signal, Bloom and Iris wait on LIVE-2041). Id to the steps the site engine reads. */
+/** The owner accent presets that ship now (Tide, Signal, Bloom, Ember, Fern, Iris). Id to the steps the site engine reads. */
 export const SERVICES_ACCENTS = {
   tide: {
     label: "Tide",
@@ -38,6 +40,36 @@ export const SERVICES_ACCENTS = {
     glow2: "#2BB3A6",
     glow3: "#8FD94A",
   },
+  signal: {
+    label: "Signal",
+    accent: "#2F7CF6",
+    hover: "#1F60CC",
+    text: "#6AA2FF",
+    soft: "#164593",
+    deep: "#A9C8FF",
+    glow2: "#22B8D6",
+    glow3: "#8B7BFF",
+  },
+  bloom: {
+    label: "Bloom",
+    accent: "#F05A73",
+    hover: "#CC3F58",
+    text: "#FF8398",
+    soft: "#8F2A3C",
+    deep: "#FFB8C3",
+    glow2: "#FF9466",
+    glow3: "#B57CFF",
+  },
+  iris: {
+    label: "Iris",
+    accent: "#7C6CF2",
+    hover: "#5E4FD1",
+    text: "#A193FF",
+    soft: "#3F3494",
+    deep: "#C9C1FF",
+    glow2: "#3CC6D8",
+    glow3: "#E879F9",
+  },
 } as const;
 
 export type ServicesAccentId = keyof typeof SERVICES_ACCENTS;
@@ -61,6 +93,7 @@ export const SERVICES_TOKENS_CSS = `
 --sv-text-on-light:var(--sv-ink-900);--sv-text-on-light-muted:var(--sv-salt-700);
 --sv-border-subtle:color-mix(in oklab,var(--sv-chrome-50) 8%,transparent);--sv-border-default:color-mix(in oklab,var(--sv-chrome-50) 16%,transparent);--sv-border-strong:color-mix(in oklab,var(--sv-chrome-50) 50%,transparent);--sv-border-light:color-mix(in oklab,var(--sv-ink-900) 12%,transparent);
 --sv-accent:var(--sv-flare-500);--sv-accent-hover:var(--sv-flare-600);--sv-accent-text:#0B0F13;--sv-accent-tint:color-mix(in oklab,var(--sv-flare-500) 12%,transparent);
+--sv-grad-lit:linear-gradient(100deg,var(--sv-halo-300) 0%,var(--sv-chrome-50) 30%,var(--sv-swell-300) 55%,var(--sv-flare-400) 78%,var(--sv-halo-300) 100%);
 --sv-action-primary:var(--sv-chrome-50);--sv-action-primary-text:var(--sv-ink-900);
 --sv-focus-ring:var(--sv-flare-400);
 --sv-grad-sunset:linear-gradient(115deg,var(--sv-flare-500) 0%,var(--sv-swell-300) 100%);
@@ -106,7 +139,7 @@ export const SERVICES_TOKENS_CSS = `
 --sv-fw-bold:700;
 --sv-fw-heavy:800;
 }
-`
+`;
 
 /** The Day register: flips the ink and chrome scales so every surface follows. Kept apart so the intake compares Night alone. */
 export const SERVICES_DAY_CSS = `
@@ -114,3 +147,48 @@ export const SERVICES_DAY_CSS = `
 --sv-glow-sunset:linear-gradient(to top left,color-mix(in oklab,var(--sv-flare-500) 18%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-flare-500) 10%,var(--sv-ink-900)) 22%,color-mix(in oklab,var(--sv-flare-500) 4%,var(--sv-ink-900)) 48%,transparent 72%);--sv-spread-tr:linear-gradient(to bottom left,color-mix(in oklab,var(--sv-flare-500) 14%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-flare-500) 8%,var(--sv-ink-900)) 22%,color-mix(in oklab,var(--sv-flare-500) 3%,var(--sv-ink-900)) 48%,transparent 72%);--sv-spread-tl:linear-gradient(to bottom right,color-mix(in oklab,var(--sv-flare-500) 10%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-flare-500) 6%,var(--sv-ink-900)) 22%,color-mix(in oklab,var(--sv-flare-500) 2%,var(--sv-ink-900)) 48%,transparent 72%);--sv-spread-br:linear-gradient(to top left,color-mix(in oklab,var(--sv-halo-500) 10%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-halo-500) 6%,var(--sv-ink-900)) 22%,color-mix(in oklab,var(--sv-halo-500) 2%,var(--sv-ink-900)) 48%,transparent 72%);--sv-spread-bl:linear-gradient(to top right,color-mix(in oklab,var(--sv-swell-500) 9%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-swell-500) 5%,var(--sv-ink-900)) 22%,color-mix(in oklab,var(--sv-swell-500) 2%,var(--sv-ink-900)) 48%,transparent 72%);--sv-spread-bottom:linear-gradient(to top,color-mix(in oklab,var(--sv-flare-500) 16%,var(--sv-ink-900)) 0%,color-mix(in oklab,var(--sv-flare-500) 6%,var(--sv-ink-900)) 30%,transparent 62%);--sv-spread-top:linear-gradient(to bottom,color-mix(in oklab,var(--sv-flare-500) 8%,var(--sv-ink-900)) 0%,transparent 55%);--sv-ink-950:#ECE6DC;--sv-ink-900:#F5F1EA;--sv-ink-850:#FFFFFF;--sv-ink-800:#FBF9F5;--sv-ink-700:#E2DACD;--sv-ink-600:#CBC1B2;--sv-graphite-400:#6A645B;--sv-chrome-50:#15181C;--sv-chrome-200:#3A3F46;--sv-chrome-400:#5B6168;--sv-sheen:linear-gradient(180deg,rgba(255,255,255,.8) 0%,rgba(255,255,255,0) 38%);--sv-border-subtle:color-mix(in oklab,var(--sv-chrome-50) 10%,transparent);--sv-border-default:color-mix(in oklab,var(--sv-chrome-50) 18%,transparent);--sv-grad-lit:linear-gradient(100deg,var(--sv-flare-600) 0%,var(--sv-chrome-50) 30%,var(--sv-flare-500) 55%,var(--sv-halo-500) 78%,var(--sv-flare-600) 100%);--sv-shadow-sm:0 1px 2px rgba(60,40,20,.06);--sv-shadow-md:0 1px 2px rgba(60,40,20,.05),0 18px 40px -20px rgba(60,40,20,.22);--sv-shadow-lg:0 2px 4px rgba(60,40,20,.05),0 40px 80px -30px rgba(60,40,20,.3);color-scheme:light
 }
 `;
+
+/** The flat token set the Spaces, mail and previews wear for Services: the Night register, the Tide accent, ink on filled accent
+ *  buttons. A Space's own picked accent still wins over `accent`. Literal hex, because a mail client reads no variable. */
+export const SERVICES_SURFACE = {
+  canvas: "#0B0F13",
+  raised: "#10161B",
+  elevated: "#161D24",
+  border: "rgba(245,246,247,.16)",
+  text: "#F5F6F7",
+  muted: "#D3D9DE",
+  subtle: "#A3ACB4",
+  solid: "#1AA7C0",
+  onSolid: SERVICES_ON_ACCENT,
+  dark: true,
+  accent: {
+    accent: "#1AA7C0",
+    text: "#3FC1D6",
+    on: SERVICES_ON_ACCENT,
+    bg: "#0C5F70",
+  },
+  semantic: { success: "#4CC38A", info: "#3FC1D6", danger: "#FF5A5F" },
+} as const satisfies ThemeSurface;
+
+/** The Space's --color-primary* family on a Services website (Night). No accent, or Tide itself: the measured Tide. Any other hex:
+ *  that hex, a lighter text shade, and a label (ink or white) that reads on it. */
+export function servicesAccentVars(brandAccent: string | null | undefined): AccentVars {
+  const accent = brandAccent?.trim() || null;
+  const t = SERVICES_ACCENTS.tide;
+  if (!accent || !HEX_ACCENT.test(accent) || accent.toUpperCase() === t.accent) {
+    return {
+      "--color-primary": t.accent,
+      "--color-primary-hover": t.text,
+      "--color-primary-strong": t.text,
+      "--color-primary-bg": t.soft,
+      "--color-text-on-primary": SERVICES_ON_ACCENT,
+    };
+  }
+  return {
+    "--color-primary": accent,
+    "--color-primary-hover": `color-mix(in srgb, ${accent} 80%, white)`,
+    "--color-primary-strong": `color-mix(in srgb, ${accent} 70%, white)`,
+    "--color-primary-bg": `color-mix(in srgb, ${accent} 22%, ${SERVICES_SURFACE.canvas})`,
+    "--color-text-on-primary": contrastRatio(SERVICES_ON_ACCENT, accent) >= 4.5 ? SERVICES_ON_ACCENT : "#FFFFFF",
+  };
+}

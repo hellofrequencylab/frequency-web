@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2187",
+  "title": "Vera proposes the Space page look: cover style, logo backdrop, top of page height and top buttons",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner ask 2026-11-03 16:38Z (Vera answers any question about functions and settings and makes the changes the user directs, always confirming before it writes), 20:39Z (I approve everything, get this done) and 2026-11-04 05:40Z (any theme styles and layout, with content coaching and guidance); Vera assistants plan /mnt/project-files/vera-assistants-2026-11-03/REPORT.md, phase V3."
+  },
+  "detail": "LIVE-2186 gave Vera a typed list of Space settings she may propose, starting with the calendar. Now the list also holds the Space page's look from the page look settings (/spaces/<slug>/manage/layout): cover style (none, shade, blend), logo backdrop (plate, none), top of page height (short, standard, tall) and top buttons (row, stacked), each from the closed values the page itself accepts, with plain card words. The turn reads each value now from the Space's preferences. A tap goes through the page's own setSpaceCoverScrim, setSpaceLogoBackdrop and setSpaceHeroLook, which re-check the caller; the confirm path maps each id to its writer and writes nothing for an id off the map.\n\nShipped: the look entries in lib/ai/vera/space-settings.ts, pageLookNow in lib/ai/vera/turn.ts, the SETTING_WRITERS map in app/onboarding/vera-actions.ts, tests and probe.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/vera/space-look.mjs"
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

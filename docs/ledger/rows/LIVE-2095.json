@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2095",
+  "title": "Community wall polish: arrivals strip, Poll/Ask/Announce posts, ban from the wall, Space report queue",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1938.md",
+    "ref": "Split from LIVE-2077 on 2026-11-03: the wall, composer, settings, moderation (pin/hide), What's Happening and About ship there; these pieces of the Circles handoff remain."
+  },
+  "detail": "On /spaces/[slug]/community: the arrivals strip (new members this week), composer kinds Poll, Ask and Announce (Announce team-only), ban a person from the wall, and a Space report queue in /manage/community. New space.* capabilities for the team ladder if moderation needs to go below canEditProfile. Render at 390, 1280, 1440, 1920 and 2000 before merge.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/spaces/[slug]/manage/community/page.tsx','utf8');process.exit(/report/i.test(s)&&/ban/i.test(s)?0:1)\""
+  },
+  "wave": "W7"
+}

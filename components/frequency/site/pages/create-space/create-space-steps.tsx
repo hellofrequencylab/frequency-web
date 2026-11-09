@@ -13,6 +13,9 @@ import type { HandleStatus } from '@/lib/create-space/handle'
 import { suggestHandle } from '@/lib/create-space/handle'
 import { OFFER_MAX } from '@/lib/create-space/intents-from-offer'
 
+/** The first question, as the prototype asks it (a plain string so the apostrophe stays an apostrophe). */
+const NAME_QUESTION = "What's your business called?"
+
 /** Which field the last Next tripped over; the card shows the matching line. */
 export type StepError = 'name' | 'slug' | 'accent' | 'offer' | 'fullName' | 'email' | null
 
@@ -61,7 +64,7 @@ export function NameCard({ draft, patch, intro, status, accents, err, onNext, re
   const showErr = err === 'name' || err === 'slug' || err === 'accent'
   return (
     <div data-morph="name" className={intro ? 'cs-card-name' : 'cs-card-name fq-iri-rim'}>
-      <label htmlFor="cs-name" className="cs-label">What&apos;s your business called?</label>
+      <label htmlFor="cs-name" className="cs-label">{NAME_QUESTION}</label>
       <div className="cs-name-wrap">
         <input
           id="cs-name"
@@ -200,6 +203,7 @@ export function ContactCard({ draft, patch, err, onNext, inputRef, onTrap }: Con
         <label className="cs-honey" aria-hidden="true"><span>Website</span><input tabIndex={-1} autoComplete="off" name="website" onChange={(e) => onTrap(e.target.value.length > 0)} /></label>
       </div>
       {err === 'fullName' || err === 'email' ? <p role="alert" className="cs-err">{ERROR_TEXT[err]}</p> : null}
+      <p className="cs-fine">We save your draft to this address, so you can pick it up on any device. It stays private.</p>
       <div className="cs-foot">
         <button type="button" className="cs-next" onClick={onNext}>Add to my site<Arrow /></button>
       </div>

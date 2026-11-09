@@ -1,18 +1,14 @@
 {
   "id": "LIVE-2031",
-  "title": "Theme editor: centered header and the floating Simple bar",
-  "lane": "live",
-  "priority": "P2",
-  "size": "S",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/services/rules.json",
-    "ref": "LIVE-1997 follow-up"
+  "append": {
+    "detail": " PROGRESS (2026-11-03): piece 2 built: ThemeControls variant=bar is mounted as a compact bar floated over the preview in both editor skins (shell.tsx, editor.css, kit editor-shell.css), calling the same handlers as the Theme tab; it draws only for a theme that declares dials beyond the legacy four, so nothing changes in any editor today. Still open: piece 1, the centered header, which needs a header design the handoff does not ship.\n\nPiece 1 built 2026-11-09: centered is a stored header option (SITE_LOOK_OPTIONS.header, dials.ts no longer holds it back) and components/sites/site-look-css.ts draws it on the house header from 940px up (name centred, menu centred beneath, button right); under 940px the stacked phone header stays, because a phone cannot centre a name between two buttons without one covering the other (the 2026-11-09 draft showed that overlap at 390). Owner approved the draft 2026-11-09 18:28Z. Rendered through the real SiteChrome on New World at 390, 1280, 1440, 1920, 2000: no new overflow."
   },
-  "detail": "Two pieces of plan steps 3 and 4 that LIVE-1997 left out on purpose. (1) The `centered` header option is in dials.json but held out of the options (NOT_YET_STORABLE in lib/theme/dials.ts) because adding it to SITE_LOOK_OPTIONS.header would show it in every theme's existing Style rows before any renderer draws it; add it together with the first theme whose header does. (2) Mount ThemeControls variant=\"bar\" as the compact bar floated over the live preview, beside the Theme tab panel, calling the same handlers.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node -e \"const s=require('fs').readFileSync('lib/theme/dials.ts','utf8');if(/NOT_YET_STORABLE/.test(s))process.exit(1)\""
-  },
-  "wave": "W7"
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-09",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const s=require('fs').readFileSync('lib/theme/dials.ts','utf8');if(/NOT_YET_STORABLE/.test(s))process.exit(1)\""
+    }
+  }
 }

@@ -90,6 +90,12 @@ space_function_type_defaults
 space_member_benefits
 member_spotlight_link_clicks
 space_spotlight_clicks
+
+# LIVE-1967 (ADR-1933): a signed-out visitor's private Create a Space draft, keyed by a token hash. Written and read
+# only by lib/create-space/draft-io.ts through the admin client, behind the rate-limited public action and beacon.
+create_space_drafts
+# LIVE-1968: the reminder claim log, one row per (draft, kind); written only by the reminder cron through the admin client.
+create_space_draft_email_log
 space_standing
 space_tier_benefits
 space_venue_holds
@@ -168,3 +174,6 @@ share_link_opens
 
 # SEC-016: operator switches; every reader uses the service role, anon and authenticated are revoked.
 platform_flags
+
+# ADR-1938 (LIVE-2081): retired Space Circle slugs for the old-link redirect; read by the service role only.
+retired_space_circles

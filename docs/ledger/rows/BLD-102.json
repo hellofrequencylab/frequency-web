@@ -1,0 +1,19 @@
+{
+  "id": "BLD-102",
+  "title": "Builder BLD-102: Rail state machine",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-102."
+  },
+  "detail": "B1 Shell, pass BLD-102 (spec: docs/EDITOR-NEXT.md#bld-102). Rail state machine. Scope: lib/builder/rails. Build: States per rail: hidden, strip, overlay, pinned. Pinned pushes the canvas; overlay closes on canvas click and Esc. Width 300 to 420 for the right rail, persisted per person with pin state. Breakpoint table from BLD-002. Focus mode hides both rails. Done when: Table test of every state at 1600, 1200, 900, 700, 390; Focus returns to the trigger on close. Gates: vitest suite (required test job), a11y ratchet, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-101. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nOne rail state machine (lib/builder/rails.ts): hidden, strip, overlay, pinned per rail from the shared breakpoints; table test at 1600/1200/900/700/390; pins and the right rail width (300 to 420) kept per person; canvas click and Esc close an overlay and focus returns to its trigger; focus mode hides both rails.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-102.mjs"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

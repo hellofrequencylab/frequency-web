@@ -13,8 +13,10 @@ interface Doc { content?: Block[]; zones?: Record<string, Block[]>; [k: string]:
 
 interface Rule {
   role: RoleId
-  /** Legacy field name → role field name. Fields not named here are dropped (look-only fields). */
+  /** Legacy field name → role field name. Any omitted meaningful content keeps the legacy block. */
   fields: Record<string, string>
+  /** Explicitly reviewed presentation-only keys for this legacy type, never a global name allowance. */
+  presentation?: readonly string[]
   /** The role variant that draws closest to the old block, or empty for "the theme's default". */
   variant?: string
   /** Extra props the role needs, such as `live: true` for a block that read the Space's own rows. */
@@ -27,29 +29,29 @@ const LETTER = { title: 'title', lead: 'lead', buttonLabel: 'primaryLabel' }
 const EVENTS = { eyebrow: 'eyebrow', title: 'title', lead: 'lead', actionLabel: 'actionLabel', actionHref: 'actionHref', count: 'count', image: 'image', alt: 'alt', empty: 'empty' }
 
 const LEGACY_RULES: Readonly<Record<string, Rule>> = {
-  Hero: { role: 'hero', fields: { eyebrow: 'eyebrow', title: 'title', subtitle: 'lead', image: 'image', ctaPrimaryLabel: 'primaryLabel', ctaPrimaryHref: 'primaryHref', ctaSecondaryLabel: 'secondaryLabel', ctaSecondaryHref: 'secondaryHref' } },
-  PhotoHero: { role: 'hero', variant: 'full', fields: { eyebrow: 'eyebrow', title: 'title', subtitle: 'lead', image: 'image', alt: 'alt', actionPrimaryLabel: 'primaryLabel', actionPrimaryHref: 'primaryHref', actionSecondaryLabel: 'secondaryLabel', actionSecondaryHref: 'secondaryHref' } },
-  MidnightHero: { role: 'hero', fields: HERO },
-  NetworkKitHero: { role: 'hero', fields: HERO },
-  NetworkHero: { role: 'hero', fields: HERO },
-  DesignerHero: { role: 'hero', fields: HERO },
+  Hero: { role: 'hero', fields: { eyebrow: 'eyebrow', title: 'title', subtitle: 'lead', image: 'image', ctaPrimaryLabel: 'primaryLabel', ctaPrimaryHref: 'primaryHref', ctaSecondaryLabel: 'secondaryLabel', ctaSecondaryHref: 'secondaryHref' }, presentation: ['variant', 'tone', 'focal', 'minHeight', 'align'] },
+  PhotoHero: { role: 'hero', variant: 'full', fields: { eyebrow: 'eyebrow', title: 'title', subtitle: 'lead', image: 'image', alt: 'alt', actionPrimaryLabel: 'primaryLabel', actionPrimaryHref: 'primaryHref', actionSecondaryLabel: 'secondaryLabel', actionSecondaryHref: 'secondaryHref' }, presentation: ['variant', 'height', 'display'] },
+  MidnightHero: { role: 'hero', fields: HERO, presentation: ['frame', 'glow', 'pos', 'tone'] },
+  NetworkKitHero: { role: 'hero', fields: HERO, presentation: ['variant', 'pos', 'flip'] },
+  NetworkHero: { role: 'hero', fields: HERO, presentation: ['focus', 'crop'] },
+  DesignerHero: { role: 'hero', fields: HERO, presentation: ['size'] },
   TempleHero: { role: 'hero', fields: HERO },
-  TempleKitHero: { role: 'hero', fields: HERO },
-  CallToAction: { role: 'cta', fields: { eyebrow: 'eyebrow', heading: 'title', body: 'lead', ctaPrimaryLabel: 'primaryLabel', ctaPrimaryHref: 'primaryHref', ctaSecondaryLabel: 'secondaryLabel', ctaSecondaryHref: 'secondaryHref' } },
-  MidnightCTA: { role: 'cta', fields: BUTTON },
-  NetworkKitCTA: { role: 'cta', fields: BUTTON },
+  TempleKitHero: { role: 'hero', fields: HERO, presentation: ['pos'] },
+  CallToAction: { role: 'cta', fields: { eyebrow: 'eyebrow', heading: 'title', body: 'lead', ctaPrimaryLabel: 'primaryLabel', ctaPrimaryHref: 'primaryHref', ctaSecondaryLabel: 'secondaryLabel', ctaSecondaryHref: 'secondaryHref' }, presentation: ['tone', 'align'] },
+  MidnightCTA: { role: 'cta', fields: BUTTON, presentation: ['frame'] },
+  NetworkKitCTA: { role: 'cta', fields: BUTTON, presentation: ['variant'] },
   DesignerClosing: { role: 'cta', fields: { title: 'title', buttonLabel: 'primaryLabel', buttonHref: 'primaryHref' } },
-  NetworkBand: { role: 'statement', fields: { eyebrow: 'eyebrow', title: 'title', body: 'lead', primaryLabel: 'primaryLabel', primaryHref: 'primaryHref', secondaryLabel: 'secondaryLabel', secondaryHref: 'secondaryHref' } },
-  MidnightBand: { role: 'statement', fields: BUTTON },
+  NetworkBand: { role: 'statement', fields: { eyebrow: 'eyebrow', title: 'title', body: 'lead', primaryLabel: 'primaryLabel', primaryHref: 'primaryHref', secondaryLabel: 'secondaryLabel', secondaryHref: 'secondaryHref' }, presentation: ['focus'] },
+  MidnightBand: { role: 'statement', fields: BUTTON, presentation: ['frame'] },
   DesignerStatement: { role: 'statement', fields: { eyebrow: 'eyebrow', title: 'title', lead: 'lead', linkLabel: 'primaryLabel', linkHref: 'primaryHref' } },
-  MidnightLetter: { role: 'letter', fields: LETTER },
-  NetworkKitLetter: { role: 'letter', fields: LETTER },
+  MidnightLetter: { role: 'letter', fields: LETTER, presentation: ['frame'] },
+  NetworkKitLetter: { role: 'letter', fields: LETTER, presentation: ['variant'] },
   TempleFollow: { role: 'letter', fields: { eyebrow: 'eyebrow', title: 'title', lead: 'lead', buttonLabel: 'primaryLabel' } },
   SpaceJoinList: { role: 'letter', fields: { eyebrow: 'eyebrow', title: 'title', body: 'lead', submitLabel: 'primaryLabel' } },
   LiveEvents: { role: 'gatherings', fields: {}, set: { live: true } },
   SpaceEvents: { role: 'gatherings', fields: { eyebrow: 'eyebrow', heading: 'title', max: 'count' }, set: { live: true } },
-  MidnightGatherings: { role: 'gatherings', fields: EVENTS, set: { live: true } },
-  NetworkKitGatherings: { role: 'gatherings', fields: EVENTS, set: { live: true } },
+  MidnightGatherings: { role: 'gatherings', fields: EVENTS, set: { live: true }, presentation: ['frame'] },
+  NetworkKitGatherings: { role: 'gatherings', fields: EVENTS, set: { live: true }, presentation: ['variant'] },
   NetworkEvents: { role: 'gatherings', fields: { eyebrow: 'eyebrow', title: 'title', lead: 'lead', actionLabel: 'actionLabel', actionHref: 'actionHref', empty: 'empty' }, set: { live: true } },
   TempleEvents: { role: 'gatherings', fields: { eyebrow: 'eyebrow', title: 'title', lead: 'lead', actionLabel: 'actionLabel', actionHref: 'actionHref', count: 'count' }, set: { live: true } },
   TempleKitGatherings: { role: 'gatherings', fields: { eyebrow: 'eyebrow', title: 'title', lead: 'lead', actionLabel: 'actionLabel', actionHref: 'actionHref', count: 'count', empty: 'empty' }, set: { live: true } },
@@ -59,17 +61,36 @@ const ROLE_BY_TYPE = new Map((Object.keys(ROLES) as RoleId[]).map((r) => [ROLES[
 const LEGACY_TYPES = new Set((Object.keys(ROLES) as RoleId[]).flatMap((r) => ROLES[r].replaces))
 const isLegacyType = (type: unknown): type is string => typeof type === 'string' && LEGACY_TYPES.has(type)
 
+// Only named presentation settings may be replaced by the role's look. An omitted author field,
+// including a list, image, link or a deliberate false/zero, must never be called "look-only".
+function meaningful(value: unknown): boolean {
+  if (value == null) return false
+  if (typeof value === 'string') return value.trim() !== ''
+  if (Array.isArray(value)) return value.some(meaningful)
+  if (typeof value === 'object') return Object.values(value).some(meaningful)
+  return true
+}
+
+function keepsAuthoredContent(block: Block, rule: Rule): boolean {
+  return Object.entries(block.props ?? {}).every(([key, value]) =>
+    key === 'id' || key === 'layout' || (key === 'sample' && typeof value === 'boolean') || Object.hasOwn(rule.fields, key) ||
+    (rule.set && Object.hasOwn(rule.set, key) && Object.is(value, rule.set[key])) ||
+    (rule.presentation?.includes(key) && typeof value !== 'object') || !meaningful(value),
+  )
+}
+
 /** The block as its role stands in for it, or null when this map does not convert it. The block keeps its id, so
  *  comments, layout positions and anchors still find it. */
 function upgradeBlock(block: Block): Block | null {
   const rule = LEGACY_RULES[block?.type]
-  if (!rule) return null
+  if (!rule || !keepsAuthoredContent(block, rule)) return null
   const props: Props = { id: block.props?.id }
   for (const [from, to] of Object.entries(rule.fields)) {
     const v = block.props?.[from]
     if (v != null && (typeof v !== 'string' || v.trim())) props[to] = v
   }
-  if (block.props?.layout) props.layout = block.props.layout
+  if (block.props?.layout != null) props.layout = block.props.layout
+  if (typeof block.props?.sample === 'boolean') props.sample = block.props.sample
   if (rule.variant) props.variant = rule.variant
   Object.assign(props, rule.set)
   return { type: ROLES[rule.role].type, props }

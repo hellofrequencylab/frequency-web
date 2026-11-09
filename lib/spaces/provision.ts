@@ -40,7 +40,7 @@ import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-l
 import { postCreateLanding } from '@/lib/spaces/setup'
 import { startSpaceFromNiche } from '@/lib/spaces/niche-start'
 import { resolvePicker } from '@/lib/spaces/space-picker'
-import { isMegaThemeId, withMegaTheme } from '@/lib/theme/mega-theme'
+import { NEW_SPACE_THEME, isMegaThemeId, withMegaTheme } from '@/lib/theme/mega-theme'
 import { parseIntents, parsePlanHint, planWantsBilling } from '@/lib/spaces/create-wizard'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { sendOperatorEmailForSpace } from '@/lib/marketing/operator-lifecycle'
@@ -76,6 +76,10 @@ export interface CreateSpaceInput {
   /** The Mega Theme a /themes page named. The new Space is dressed in it once it exists (applyMegaTheme: website,
    *  fonts, accent). An unknown value does nothing. */
   theme?: string | null
+  /** The accent the owner picked beside the theme (#rrggbb), from the signed-out builder (lib/create-space/preview-site.ts
+   *  kitAccents). Written as the Space's brand colour, which the Space page, its Spotlight and the website all read, before
+   *  the theme's default would fill that blank. Anything else writes nothing. */
+  accent?: string | null
   /** The picker's other answers (lib/spaces/space-picker.ts, ADR-1883): the one thing people should do, a
    *  feel id, and an optional existing site. Each is re-validated here and an invalid one stores nothing. */
   action?: string | null
@@ -327,7 +331,19 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   if (!birth.presetId) await startSpaceFromNiche(spaceId, picked.niche)
   // The theme the owner chose on /themes dresses the new Space (LIVE-SYS-7). Best-effort and logged: a failed
   // theme write never blocks the Space, and the owner can pick the theme again from the editor.
-  if (isMegaThemeId(input.theme)) {
+  // No pick ("Pick later", a door with no theme) starts the Space in New World (LIVE-2058): website, email, Spotlight
+  // and the Tide accent. Only an explicit pick also publishes a starter website and adds the welcome sequence; the
+  // default dresses the Space and leaves publishing to the owner. Existing Spaces are never touched.
+  if (!isMegaThemeId(input.theme)) {
+    const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
+    const applied = await applyMegaTheme(spaceId, NEW_SPACE_THEME).catch(() => null)
+    if (!applied?.ok) console.error('[createSpace] could not start the new space in the default theme')
+  } else {
+    // Their own accent first: applyMegaTheme fills the brand colour only while it is blank, so the pick must land before it.
+    if (typeof input.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(input.accent)) {
+      const { fillSpaceBrandAccent } = await import('@/lib/spaces/store')
+      if (!(await fillSpaceBrandAccent(spaceId, input.accent).catch(() => false))) console.error('[createSpace] could not write the chosen accent to the new space')
+    }
     const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
     const applied = await applyMegaTheme(spaceId, input.theme).catch(() => null)
     if (!applied?.ok) console.error('[createSpace] could not apply the chosen theme to the new space')

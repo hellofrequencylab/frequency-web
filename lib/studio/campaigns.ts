@@ -129,17 +129,24 @@ export interface Recipient {
   profileId: string | null
 }
 
+/** Platform campaigns read only Frequency's own contact book. A private contact captured by
+ * another Space is not a platform audience, even when it names an existing member. Keep legacy
+ * null-scoped platform contacts; a missing root never broadens the query to other tenants. */
+function platformContacts(db: ReturnType<typeof createAdminClient>, rootId: string | null) {
+  const q = db.from('contacts').select('id, email, profile_id, consent_state, source')
+  return rootId ? q.or(`space_id.is.null,space_id.eq.${rootId}`) : q.is('space_id', null)
+}
+
 /** Map a set of profile ids onto their member contacts (the send-seam shape), excluding
  *  unsubscribed contacts. The SAME query the trait / place / event / ad-hoc-profile paths all
  *  share: a contact must carry both a profile id and an email to be reachable. Fail-safe to []. */
 async function recipientsForProfileIds(
   db: ReturnType<typeof createAdminClient>,
   profileIds: string[],
+  rootId: string | null,
 ): Promise<Recipient[]> {
   if (!profileIds.length) return []
-  const { data } = await db
-    .from('contacts')
-    .select('id, email, profile_id, consent_state')
+  const { data } = await platformContacts(db, rootId)
     .in('profile_id', profileIds)
     .neq('consent_state', 'unsubscribed')
   return (data ?? [])
@@ -153,6 +160,9 @@ async function recipientsForProfileIds(
 export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> {
   const db = createAdminClient()
   const parsed = parseSegmentKey(segment)
+  // A typo or retired built-in must not turn into a broadcast to all members.
+  if (parsed.kind === 'builtin' && !BUILTIN_SEGMENTS.some((s) => s.key === parsed.slug)) return []
+  const rootId = await loadRootSpaceId()
 
   // Place-tree selector (CRM Phase 5): a Circle / Hub / Nexus resolves through its memberships to
   // the profile ids of its active members, then maps onto member contacts EXACTLY like a trait
@@ -160,7 +170,7 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
   // worlds. FAIL-SAFE: an empty / unresolvable place is nobody, never everybody.
   if (parsed.kind === 'place') {
     const profileIds = await resolvePlaceTreeProfileIds({ type: parsed.place, id: parsed.id })
-    return recipientsForProfileIds(db, profileIds)
+    return recipientsForProfileIds(db, profileIds, rootId)
   }
 
   // Event RSVP audience (Resonance CRM composer): the event's non-muted guests + its hosting Circle,
@@ -170,21 +180,19 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
   if (parsed.kind === 'event') {
     if (!parsed.id) return []
     const profileIds = await resolveEventDispatchAudience(parsed.id)
-    return recipientsForProfileIds(db, profileIds)
+    return recipientsForProfileIds(db, profileIds, rootId)
   }
 
   // Direct member set (`profile:<id>` / `profiles:<id,...>`): map the given profile ids onto contacts.
   if (parsed.kind === 'profiles') {
-    return recipientsForProfileIds(db, parsed.ids)
+    return recipientsForProfileIds(db, parsed.ids, rootId)
   }
 
   // Direct contact set (`contact:<id>` / `contacts:<id,...>`): resolve the contacts by id. A contact
   // must still carry a profile id + email to be reachable (the profile drives the unsubscribe link).
   if (parsed.kind === 'contacts') {
     if (!parsed.ids.length) return []
-    const { data } = await db
-      .from('contacts')
-      .select('id, email, profile_id, consent_state')
+    const { data } = await platformContacts(db, rootId)
       .in('id', parsed.ids)
       .neq('consent_state', 'unsubscribed')
     return (data ?? [])
@@ -194,7 +202,7 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
 
   if (parsed.kind === 'trait') {
     const profileIds = await resolveSegmentProfileIds(parsed.slug)
-    return recipientsForProfileIds(db, profileIds)
+    return recipientsForProfileIds(db, profileIds, rootId)
   }
 
   // ENTIRE CONTACT LIST (`all_contacts`) — the one builtin that reaches PROFILE-LESS leads. It skips the
@@ -206,14 +214,10 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
   // confirm/signup, i.e. once it has a profile). So the audience is: (member/account-holder → has a profile_id)
   // OR (the imported list → source='import'). Scoped to the root space, still excludes unsubscribed.
   if (parsed.slug === 'all_contacts') {
-    const rootId = await loadRootSpaceId()
-    let allq = db
-      .from('contacts')
-      .select('id, email, profile_id, consent_state, source')
+    const allq = platformContacts(db, rootId)
       .neq('consent_state', 'unsubscribed')
       // (has an account) OR (is the owned imported list) — NEVER a profile-less capture lead.
       .or('profile_id.not.is.null,source.eq.import')
-    allq = rootId ? allq.or(`space_id.is.null,space_id.eq.${rootId}`) : allq.is('space_id', null)
     const { data } = await allq
     return (data ?? [])
       .filter((c) => c.email)
@@ -224,22 +228,16 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
   // else. The mirror of `site_signups`. Reached as opt-out subscribers exactly like the all_contacts
   // import rows (suppression-gated at send). Scoped to the root space, excludes unsubscribed.
   if (parsed.slug === 'imported_contacts') {
-    const rootId = await loadRootSpaceId()
-    let impq = db
-      .from('contacts')
-      .select('id, email, profile_id, consent_state, source')
+    const impq = platformContacts(db, rootId)
       .eq('source', 'import')
       .neq('consent_state', 'unsubscribed')
-    impq = rootId ? impq.or(`space_id.is.null,space_id.eq.${rootId}`) : impq.is('space_id', null)
     const { data } = await impq
     return (data ?? [])
       .filter((c) => c.email)
       .map((c) => ({ contactId: c.id, email: c.email as string, profileId: (c.profile_id as string) ?? null }))
   }
 
-  let q = db
-    .from('contacts')
-    .select('id, email, profile_id, consent_state')
+  let q = platformContacts(db, rootId)
     .not('profile_id', 'is', null)
     .neq('consent_state', 'unsubscribed')
   // AUDIENCE CONSENT TIERS. `members` and `site_signups` are the operator's OWN account-holders, so they

@@ -1,0 +1,19 @@
+{
+  "id": "CARD-STAFF-LINK",
+  "title": "Staff can change any member's tap card link from the CyberUnicorn console",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/member-cards/staff-card-link.tsx",
+    "ref": "Daniel, 2026-11-06: easy way to change a member's card link, search site pages or any external URL."
+  },
+  "detail": "Card links box on /admin/cyberunicorn: find a member, see where their card opens, pick a site page or paste any https link, save. Staff only (consoleStaffGate); same normalizer as the member's own editor.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('lib/member-cards/staff-actions.ts')&&f.readFileSync('app/(main)/admin/cyberunicorn/page.tsx','utf8').includes('StaffCardLinkBox')?0:1)\""
+  },
+  "wave": "W7",
+  "closed": "2026-11-06"
+}

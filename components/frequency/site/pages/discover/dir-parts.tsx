@@ -14,7 +14,7 @@ import '@/app/themes/active/site-discover'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
-import { aura } from '../shared/parts'
+import { aura, photoBg } from '../shared/parts'
 
 export { photo } from '../shared/parts'
 
@@ -53,7 +53,7 @@ export function DirHero({
 }) {
   return (
     <section className="phero dd-hero" data-energy="flow" data-screen-label="01 Hero">
-      {image && <div className="bg" style={{ backgroundImage: `url('${image}')` }} />}
+      {image && <div className="bg" style={photoBg(image)} />}
       <div className="fq-aura" style={aura(0.28)} />
       <div className="shade" />
       <div className="fq-grain" />

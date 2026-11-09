@@ -7,16 +7,20 @@ import { describe, it, expect, vi } from 'vitest'
 // source='import', which no signup path overwrites), which the profile-based rules alone miss.
 
 // In-memory contacts spanning every case that matters for the hold-out.
+const rootScope = vi.hoisted(() => ({ id: 'root-space' as string | null }))
+vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: async () => rootScope.id }))
+
 const contacts = [
-  { id: 'k1', email: 'a@x.com', profile_id: 'p1', consent_state: 'subscribed', source: 'signup' },
-  { id: 'k2', email: 'b@x.com', profile_id: 'p2', consent_state: 'subscribed', source: 'backfill' },
-  { id: 'k3', email: 'c@x.com', profile_id: 'p3', consent_state: 'subscribed', source: null },
+  { id: 'k1', email: 'a@x.com', profile_id: 'p1', consent_state: 'subscribed', source: 'signup', space_id: 'root-space' },
+  { id: 'k2', email: 'b@x.com', profile_id: 'p2', consent_state: 'subscribed', source: 'backfill', space_id: null },
+  { id: 'k3', email: 'c@x.com', profile_id: 'p3', consent_state: 'subscribed', source: null, space_id: 'root-space' },
   // Imported list, later joined (has a profile now) — must STILL be held out by source.
-  { id: 'k4', email: 'd@x.com', profile_id: 'p4', consent_state: 'subscribed', source: 'import' },
+  { id: 'k4', email: 'd@x.com', profile_id: 'p4', consent_state: 'subscribed', source: 'import', space_id: 'root-space' },
   // Imported, not joined — no profile, excluded by the profile rule too.
-  { id: 'k5', email: 'e@x.com', profile_id: null, consent_state: 'unknown', source: 'import' },
+  { id: 'k5', email: 'e@x.com', profile_id: null, consent_state: 'unknown', source: 'import', space_id: 'root-space' },
   // Unsubscribed organic — excluded.
-  { id: 'k6', email: 'f@x.com', profile_id: 'p6', consent_state: 'unsubscribed', source: 'signup' },
+  { id: 'k6', email: 'f@x.com', profile_id: 'p6', consent_state: 'unsubscribed', source: 'signup', space_id: 'root-space' },
+  { id: 'private', email: 'private@x.com', profile_id: 'p1', consent_state: 'subscribed', source: 'signup', space_id: 'other-space' },
 ]
 
 type Pred = (c: (typeof contacts)[number]) => boolean
@@ -40,10 +44,17 @@ function contactsBuilder() {
       preds.push((c) => (c as Record<string, unknown>)[col] === val)
       return api
     },
+    is(col: string, value: null) {
+      preds.push((c) => (c as Record<string, unknown>)[col] === value)
+      return api
+    },
     or(expr: string) {
-      // Only the site_signups hold-out is exercised here: source.is.null,source.neq.import
       if (expr === 'source.is.null,source.neq.import') {
         preds.push((c) => c.source == null || c.source !== 'import')
+      } else {
+        const scope = /^space_id\.is\.null,space_id\.eq\.(.+)$/.exec(expr)
+        if (!scope) throw new Error(`unexpected or filter ${expr}`)
+        preds.push((c) => c.space_id === null || c.space_id === scope[1])
       }
       return api
     },

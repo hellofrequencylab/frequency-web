@@ -485,9 +485,9 @@ describe('accessModeOptions — the list a picker renders', () => {
   })
 
   it('keeps a mode the circle is ALREADY on, even once this picker no longer offers it', () => {
-    // A Space Circle only offers two doors. A hub already sitting on `tier` keeps that mode
-    // listed so the select does not claim the circle is something it is not.
-    expect(accessModeOptions(FREE_BIZ, 'tier', { isSpaceCircle: true })).toContain('tier')
+    // A personal Circle cannot be offered a Space mode, but one already sitting on it keeps that
+    // mode listed so the select does not claim the circle is something it is not.
+    expect(accessModeOptions(ROOT, 'space_members')).toContain('space_members')
   })
 
   it('lists in the canonical order, so an added mode never lands in a different slot per Space', () => {

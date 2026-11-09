@@ -7,6 +7,7 @@ import { MIDNIGHT_ACCENT } from '@/lib/theme/midnight'
 import { TEMPLE_KIT_ACCENT } from '@/lib/theme/temple-kit'
 import { FREE_HUMAN_ACCENT } from '@/lib/theme/free-human'
 import { DESIGNER_ACCENT } from '@/lib/theme/designer'
+import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteFacesId } from '@/lib/theme/site-faces'
 import { readMegaTheme } from '@/lib/theme/mega-theme'
@@ -59,7 +60,7 @@ import { SITE_DIAL_KEYS, isDialAccent, isSiteDialValue, type SiteDialKey } from 
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
-export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human'
+export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'services' | 'new-world' | 'cyberwitch'
 
 interface SiteThemeDef {
   id: SiteThemeId
@@ -159,18 +160,52 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
     description: 'Limewash and honey light: a gilt arch, a madder accent and a candle-dark night, for movement, ritual and the village around it.',
     defaultFonts: 'classic',
   },
+  {
+    // THE SERVICES THEME (id `services`, lib/theme/services.ts): night-first and glossy with a day register, for people who
+    // book, sell and show up for clients. Private like House of Fates until its surfaces ship (LIVE-1992 to 1996).
+    id: 'services',
+    label: 'Services',
+    description: 'Night-first and glossy, with a day register: for people who book, sell and show up for clients. Six accents, sixteen starter kits.',
+    defaultFonts: 'modern',
+  },
+  {
+    // THE NEW WORLD THEME (id `new-world`, lib/theme/new-world.ts): the mega template every new Space starts in. Private until its
+    // chrome, blocks and kits ship (LIVE-2055 to 2057), then it becomes the default (LIVE-2058). Separate from Services.
+    id: 'new-world',
+    label: 'New World',
+    description: 'The Frequency house look: Night and Day in one theme, Tide teal to start, and a kit for every kind of gathering.',
+    defaultFonts: 'modern',
+  },
+  {
+    // THE CYBERWITCH THEME (id `cyberwitch`, lib/theme/cyberwitch.ts): industrial street-punk witch, dark only, one neon accent, blackletter,
+    // marker and Spectral. Hidden from every picker until its pages, emails, Spotlight and Space page ship, then it leaves RETIRED_FROM_PICKERS.
+    id: 'cyberwitch',
+    label: 'CyberWitch',
+    description: 'Concrete and chain-link under a blackletter grimoire, one neon accent sprayed over everything. Dark only, five accents, six starter kits.',
+    defaultFonts: 'classic',
+  },
 ]
 
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
+ *  `frequency` ("Default") left the pickers 2026-11-03: New World is the default (LIVE-2058); sites that saved it keep it.
  *  `free-human` is held back until its pages, emails and starter kits ship (LIVE-1910); then it leaves this set. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['network', 'temple', 'free-human'])
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple', 'free-human'])
+/** New World is the default, so it leads every picker, and Designer comes second (owner 2026-11-04); the rest keep their
+ *  definition order. The create-a-space look step follows this order. */
+const PICKER_LEAD: readonly SiteThemeId[] = ['new-world', 'designer']
+function pickerRank(id: SiteThemeId): number {
+  const at = PICKER_LEAD.indexOf(id)
+  return at < 0 ? PICKER_LEAD.length : at
+}
 export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
+  .slice()
+  .sort((a, b) => pickerRank(a.id) - pickerRank(b.id))
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
 
 type SiteCorners = 'soft' | 'subtle' | 'square'
 type SiteSpacing = 'airy' | 'balanced' | 'compact'
-type SiteHeader = 'pill' | 'bar'
+type SiteHeader = 'pill' | 'bar' | 'centered'
 type SiteFooter = 'full' | 'minimal'
 
 /** The global style choices, in the order the editors offer them, each option with its owner-facing label. */
@@ -188,6 +223,7 @@ export const SITE_LOOK_OPTIONS = {
   header: [
     { id: 'pill', label: 'Floating pill' },
     { id: 'bar', label: 'Full-width bar' },
+    { id: 'centered', label: 'Centered' },
   ],
   footer: [
     { id: 'full', label: 'Full' },
@@ -209,6 +245,9 @@ export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
   midnight: { corners: 'square', spacing: 'airy', header: 'bar', footer: 'full' },
   designer: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   'free-human': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  services: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  'new-world': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  cyberwitch: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
 }
 
 export interface SiteLook {
@@ -224,7 +263,7 @@ type SiteDialStore = Partial<Record<SiteDialKey | 'accent', string>>
 /** What the new dials resolve to before the owner changes anything. A theme's manifest default beats these. */
 const THEME_DIAL_FALLBACK: Record<SiteDialKey, string> = { register: 'day', type: 'caps', motion: 'full', hero: 'glow', image: 'glow' }
 /** Themes whose own register is night. */
-const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight'])
+const NIGHT_THEMES: ReadonlySet<SiteThemeId> = new Set(['midnight', 'new-world', 'services', 'cyberwitch'])
 
 export interface SiteStyle {
   theme: SiteThemeId
@@ -249,7 +288,7 @@ const MAX_PAGE_THEMES = 30
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 export function isSiteThemeId(v: unknown): v is SiteThemeId {
-  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human'
+  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human' || v === 'services' || v === 'new-world' || v === 'cyberwitch'
 }
 
 export function readSiteStyle(preferences: unknown): SiteStyle {
@@ -280,6 +319,12 @@ export function siteDials(style: SiteStyle, own: Partial<Record<SiteDialKey, str
   const base = { ...THEME_DIAL_FALLBACK, ...(NIGHT_THEMES.has(style.theme) ? { register: 'night' } : {}), ...own }
   return { register: style.dials?.register ?? base.register, type: style.dials?.type ?? base.type, motion: style.dials?.motion ?? base.motion, hero: style.dials?.hero ?? base.hero, image: style.dials?.image ?? base.image, accent: style.dials?.accent ?? null }
 }
+
+/** The three root switches a schema 2 theme's sheet reads (data-type, data-motion, data-image), from resolved dial values.
+ *  Shared by every theme that draws them: Services (LIVE-2210) and New World (LIVE-2175). */
+export const siteRootDials = (d: Record<SiteDialKey, string>): { type: string; motion: string; image: string } => ({ type: d.type, motion: d.motion, image: d.image })
+/** Services' name for the same switches (LIVE-2210). */
+export const servicesDials = siteRootDials
 
 function readPageThemes(raw: unknown): Record<string, SiteThemeId> {
   if (!record(raw)) return {}
@@ -394,5 +439,6 @@ export function spacePageDefaultAccent(preferences: unknown, typeDefault: string
   if (style.theme === 'midnight') return MIDNIGHT_ACCENT.accent
   if (style.theme === 'designer') return DESIGNER_ACCENT.accent
   if (style.theme === 'free-human') return FREE_HUMAN_ACCENT.accent
+  if (style.theme === 'new-world') return NEW_WORLD_ACCENTS.tide.accent
   return style.theme === 'bold' ? MENSWORK_PALETTE.teal : style.theme === 'wildheart' ? WILDHEART_PALETTE.violet : typeDefault
 }

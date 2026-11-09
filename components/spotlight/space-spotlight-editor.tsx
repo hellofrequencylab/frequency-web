@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useTransition, type ReactNode } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ExternalLink, QrCode } from 'lucide-react'
 import { EntityLayoutProvider, type SaveLayout } from '@/components/entity-blocks/profile-layout-context'
 import { EntityPageBuilder, type BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
@@ -10,11 +11,13 @@ import { NodeLinkListBuilder } from '@/components/entity-blocks/node-link-list-b
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { Switch } from '@/components/ui/switch'
 import { buttonClasses } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { SPACE_SPOTLIGHT_BLOCK_IDS } from '@/lib/spaces/spotlight'
 import {
   connectSpotlightDomain,
   saveSpaceSpotlightLayout,
+  setSpaceSpotlightLook,
   setSpaceSpotlightPublished,
 } from '@/app/(main)/spaces/[slug]/manage/spotlight/actions'
 
@@ -37,6 +40,7 @@ export function SpaceSpotlightEditor({
   upgrade,
   ownLinks,
   clicks,
+  looks,
 }: {
   slug: string
   /** The builder seed: the Spotlight layout plus the Space's locked blocks and picker data. Null when the
@@ -55,7 +59,11 @@ export function SpaceSpotlightEditor({
   ownLinks?: { paid: string | null; domain: string | null; cname: string }
   /** Link card presses over the last 30 days, most pressed first (LIVE-856). Absent for a staff previewer. */
   clicks?: { label: string; count: number }[]
+  /** The whole-page looks the Space's theme offers, and the one it wears. Absent for a theme with none. */
+  looks?: { options: readonly { look: string; label: string; blurb: string }[]; current: string }
 }) {
+  const router = useRouter()
+  const [look, setLook] = useState(looks?.current ?? 'stack')
   const save = useCallback<SaveLayout>((payload) => saveSpaceSpotlightLayout(slug, payload), [slug])
   const saveNodes = useCallback<SaveNodeLayout>(
     (layout) => saveSpaceSpotlightLayout(slug, layout as unknown as BuilderLayout),
@@ -76,6 +84,21 @@ export function SpaceSpotlightEditor({
     startConnect(async () => {
       const res = await connectSpotlightDomain(slug)
       setDomainState(res.error ?? 'connected')
+    })
+  }
+
+  const onLook = (next: string) => {
+    const prev = look
+    setLook(next)
+    setError(null)
+    startTransition(async () => {
+      const res = await setSpaceSpotlightLook(slug, next)
+      if (res.error) {
+        setLook(prev)
+        setError(res.error)
+        return
+      }
+      router.refresh()
     })
   }
 
@@ -135,6 +158,28 @@ export function SpaceSpotlightEditor({
               </p>
             )}
           </section>
+
+          {looks && looks.options.length > 0 && (
+            <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Look">
+              <p className="text-body-sm font-bold text-text">Look</p>
+              <p className="text-meta text-muted">How your theme lays out this page. The preview shows the one you pick.</p>
+              <div className="grid grid-cols-2 gap-2">
+                {looks.options.map((o) => (
+                  <button
+                    key={o.look}
+                    type="button"
+                    onClick={() => onLook(o.look)}
+                    disabled={readOnly || pending}
+                    aria-pressed={look === o.look}
+                    className={choiceTileClasses(look === o.look, 'rounded-card px-3 py-2 text-left')}
+                  >
+                    <span className="block text-body-sm font-semibold text-text">{o.label}</span>
+                    <span className="block text-meta text-muted">{o.blurb}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           {published && ownLinks && (ownLinks.paid || ownLinks.domain) && (
             <section className="space-y-3 rounded-card border border-border bg-surface p-4" aria-label="Your own links">

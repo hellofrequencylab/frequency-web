@@ -9,7 +9,7 @@ await db.exec(`create role anon;create role authenticated;create role service_ro
 create table profiles(id uuid primary key);
 create table spaces(id uuid primary key,owner_profile_id uuid ${canonicalOwnerFk?'references profiles(id) on delete set null':''},plan text,status text check(status in ('active','suspended','archived')),visibility text,parent_id uuid,type text default 'business');
 create table journey_plans(id uuid primary key,space_id uuid,title text,slug text,status text,visibility text,created_at timestamptz);
-create table circles(id uuid primary key,space_id uuid,name text,slug text,status text,unlisted boolean,is_space_primary boolean,created_at timestamptz);`)
+create table circles(id uuid primary key,space_id uuid,name text,slug text,status text,unlisted boolean,created_at timestamptz);`)
 await db.exec(migrationSql)
 const id=n=>`00000000-0000-0000-0000-${String(n).padStart(12,'0')}`
 const source=id(1),target=id(2),other=id(3),owner=id(4),receiver=id(5),nextOwner=id(6),journey=id(7),circle=id(8)

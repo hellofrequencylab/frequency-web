@@ -14,6 +14,7 @@ import {
   CONTACT_TOPICS,
 } from '@/lib/comms/contact-preferences'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { unsubscribeDrafts } from '@/lib/create-space/draft-io'
 
 // Every preference category a one-click link may target. Must stay in sync with NOTIFICATION_CATEGORIES
 // and the /manage-emails toggles — 'comments' was missing, so a comments unsubscribe link silently no-oped
@@ -164,4 +165,13 @@ export async function setContactTopicPreference(params: {
   if (!okWrite) return fail('Could not save your preference. Please try again.')
 
   return ok()
+}
+
+// Create a Space draft reminders (LIVE-1968, ADR-1933). A draft has no account, so its unsubscribe is keyed on the
+// draft's own signed link token (`d`): the one the reminder email carried. Stamps every draft under that row's
+// address, so the three notes stop for good. Idempotent. A bad token and an unknown row return the same error.
+// authz-ok: token-credentialed. unsubscribeDrafts (lib/create-space/draft-io.ts) verifies the HMAC-signed draft link before it writes, and writes only unsubscribed_at on the rows that share the opened row's address.
+export async function processDraftUnsubscribe(params: { token: string }): Promise<ActionResult<Record<string, never>>> {
+  const done = await unsubscribeDrafts(params.token ?? '')
+  return done ? ok({}) : fail('This unsubscribe link is invalid or expired.')
 }

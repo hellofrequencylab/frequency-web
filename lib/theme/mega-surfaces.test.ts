@@ -15,7 +15,8 @@ describe('mega theme surfaces', () => {
     for (const [id, s] of Object.entries(MEGA_SURFACES)) {
       expect(contrastRatio(s!.text, s!.canvas), `${id} text`).toBeGreaterThanOrEqual(4.5)
       expect(contrastRatio(s!.muted, s!.canvas), `${id} muted`).toBeGreaterThanOrEqual(4.5)
-      expect(contrastRatio(s!.accent.on, s!.accent.accent), `${id} accent label`).toBeGreaterThanOrEqual(4.5)
+      // New World carries white on Tide teal (Daniel 2026-11-04, 'White labels everywhere'): 2.9:1, named here rather than hidden.
+      expect(contrastRatio(s!.accent.on, s!.accent.accent), `${id} accent label`).toBeGreaterThanOrEqual(id === 'new-world' ? 2.8 : 4.5)
       expect(contrastRatio(s!.onSolid, s!.solid), `${id} solid label`).toBeGreaterThanOrEqual(4.5)
     }
   })

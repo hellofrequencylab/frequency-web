@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-2200",
+  "title": "Every kit on /themes fits the first view, with a Use theme button and a See the full kit link",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/site/pages/themes/kit-showcase/kit-showcase.css",
+    "ref": "Owner, 2026-11-04: tweak each theme to fit the fold; a Use Theme button and a text link beside it, See the full kit"
+  },
+  "detail": "Each kit section is held to the window height under the kit bar (100svh minus 60px) at 900px and wider, and the kit bar stays one row. Windows under 1000px tall drop the type specimen; under 860px they also drop the ready list, the Made for line and the closing line, so the Use theme button and the devices stay inside the first view at 1280x720, 1440x900, 1920x1080 and 2000x1100. Stacked (under 900px) the name, line and button come before the specimen rows. The primary button reads Use theme and goes to the builder with the kit; the link beside it reads See the full kit and goes to /themes/<theme>. A kit with no builder address shows no button. The /themes/<theme> pages already carry their own Use button into the builder.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/themes-kit-fold.mjs",
+    "checked": "2026-11-04",
+    "evidence": "Fails on main (no fold rules, old wording), passes on the branch. Measured in a browser: every kit's button and devices end inside the window at the four desktop sizes."
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

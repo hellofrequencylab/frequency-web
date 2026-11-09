@@ -1,0 +1,19 @@
+{
+  "id": "BLD-301",
+  "title": "Builder BLD-301: Surface switcher",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-301."
+  },
+  "detail": "B3 Lenses, pass BLD-301 (spec: docs/EDITOR-NEXT.md#bld-301). Surface switcher. Scope: components/builder/surfaces. Build: Site, Profile, Spotlight, Email in the top bar; selection persists across switches. Canvas renders at the surface's declared density; sections the surface cannot show are listed with the reason. Done when: Per block and surface, golden markup matches; Hidden-on-surface list equals blocks without that surface. Gates: vitest suite (required test job), check:blocks, pr-compare visual suite, Pass probes, check:surface-binding, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-108. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nShow as in the top bar (components/builder/surfaces): Site, Profile, Spotlight, Email as one kit segmented control, the four actions in the command bar. lib/builder/surfaces.ts (pure) frames the canvas at the surface's declared E3 density and widest width (email 600, profile 840, Spotlight 1200, site the device) and splits the page by what the surface can show: a role block follows its own role.json surfaces table (draw, door, freeze, hide); a block with no role is site-only until Update to new layouts moves it. Hidden sections are listed above the canvas with the reason and stay in the document and the Tune rail; doors and send-time freezes are noted. Tests: over the kit corpus the hidden-on-surface list equals the blocks without that surface, nothing is lost, the site hides nothing; the selection persists across switches and a switch is not an edit. Golden per-block markup on each surface waits for the surface renderers (BLD-215 open items), so the gate here is the list and the density frame.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-301.mjs"
+  },
+  "closed": "2026-11-09",
+  "wave": "W7"
+}

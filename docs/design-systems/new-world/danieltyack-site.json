@@ -1,0 +1,19 @@
+{
+  "_note": "LIVE-2052 apply record for the danieltyack Space. The generated SQL ran in the Frequency Community project on 2026-11-09 (revision 68 to 69); the probe `node scripts/probes/services-theme.mjs danieltyack` reads `applied`.",
+  "space": "danieltyack",
+  "spaceId": "9f58e07e-8912-4c3e-8551-d15b275dc768",
+  "kit": "new-world-general",
+  "accent": "tide",
+  "register": "night",
+  "generated": {
+    "date": "2026-11-09",
+    "fromRevision": 68,
+    "generator": "node scripts/new-world-site-sql.mjs <input.json> <out.sql>",
+    "sql": "docs/design-systems/new-world/danieltyack-apply-2026-11-09.sql"
+  },
+  "applied": {
+    "revision": 69,
+    "date": "2026-11-09",
+    "by": "Daniel (SQL editor, Frequency Community)"
+  }
+}

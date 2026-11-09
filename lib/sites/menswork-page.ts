@@ -173,6 +173,8 @@ function planOne(type: string, p: Record<string, unknown>, at: number): MwPlan {
   if (type.startsWith('Midnight')) return { kind: 'own', at, hero: type === 'MidnightHero' }
   if (type.startsWith('FreeHuman')) return { kind: 'own', at, hero: type === 'FreeHumanHero' || type === 'FreeHumanCalendarHero' }
   if (type.startsWith('Designer')) return { kind: 'own', at, hero: type === 'DesignerHero' }
+  if (type.startsWith('Services')) return { kind: 'own', at, hero: type === 'ServicesHero' }
+  if (type.startsWith('NewWorld')) return { kind: 'own', at, hero: type === 'NewWorldHero' || type === 'NewWorldAboutHero' || type === 'NewWorldPageHead' }
   switch (type) {
     case 'PhotoHero':
     case 'Hero':

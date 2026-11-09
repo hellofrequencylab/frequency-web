@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2196",
+  "title": "New World sites: no page-rhythm band under the menu or gaps between sections",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/sites/new-world-sections-css.ts",
+    "ref": "Services thread 2026-11-04 15:17Z: WebsiteDocument wraps every block in py-8 sm:py-10; Services zeroed it in #4633, New World had no reset"
+  },
+  "detail": "A Space website wraps each block in the page rhythm (py-8 sm:py-10 from the root render in lib/page-editor/config.tsx). New World's sections pad themselves and run flush, so the wrapper drew an ink band under the absolute header and gaps between sections. The New World section sheet now zeroes [data-mw-own]>div padding and its child's margins inside the New World scope, as Free Human, the Temple kit and Services do.\n\nThe New World section sheet zeroes the page rhythm around its own sections (components/sites/new-world-sections-css.ts THE DOCUMENT WRAPPER), held by components/sites/new-world-sections-css.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/sites/new-world-sections-css.ts','utf8');process.exit(/\\[data-mw-own\\]>div\\{padding-block:0\\}/.test(s)?0:1)\""
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

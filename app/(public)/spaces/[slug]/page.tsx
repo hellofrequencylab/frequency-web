@@ -19,6 +19,7 @@ import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout } from '@/lib/entity-blocks/layout'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { SpaceProfileMenuView } from '@/components/spaces/space-profile-menu-view'
+import { SpaceContextLinks } from '@/components/spaces/space-context-links'
 import { buildPublicSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { SpaceFrontDoor } from '@/components/spaces/space-front-door'
@@ -161,7 +162,7 @@ export default async function PublicSpacePage({
   // `buildPublicSpaceProfileNav` is the cookie-free entry point: reading a caller here would make
   // this route dynamic and cost the share URL its ISR (ADR-1465 / ADR-1526). profile-nav.public
   // .test.ts makes getCallerProfile throw and proves this call still resolves.
-  const { tabs } = await buildPublicSpaceProfileNav(space)
+  const { tabs, contextLinks } = await buildPublicSpaceProfileNav(space)
 
   const structuredData = (
     <JsonLd
@@ -216,6 +217,7 @@ export default async function PublicSpacePage({
         <CardholderPerkNote spaceId={space.id} />
       </Suspense>
       <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
+      <SpaceContextLinks catalog={contextLinks} />
       {/* THE VISITOR'S FRONT DOOR (LIVE-524), and it sits BELOW the operator's blocks on purpose.
           LIVE-500's probe fails if `<SpaceProfileModules` appears after `<SignInCta` in this
           file, because a sign-in card in front of the content is the exact defect ADR-1526

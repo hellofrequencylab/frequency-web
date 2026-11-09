@@ -11,7 +11,7 @@ import { PROFILE_KIT_INDEX, loadKit } from './registry'
 describe('profile kits', () => {
   it('every theme has a kit for every profile, with id <prefix>-<niche>', () => {
     // The Network, Temple and Free Human Theme Kits carry their thirteen kits in their own index.
-    const withKits = MEGA_THEMES.filter((t) => t.id !== 'network-kit' && t.id !== 'temple-kit' && t.id !== 'free-human')
+    const withKits = MEGA_THEMES.filter((t) => t.id !== 'network-kit' && t.id !== 'temple-kit' && t.id !== 'free-human' && t.id !== 'services' && t.id !== 'new-world' && t.id !== 'cyberwitch')
     expect(PROFILE_KIT_INDEX).toHaveLength(withKits.length * MEGA_PROFILE_NICHES.length)
     for (const niche of MEGA_PROFILE_NICHES) expect(PROFILE_KIT_INDEX.filter((k) => k.niche === niche)).toHaveLength(withKits.length)
     expect(new Set(PROFILE_KIT_INDEX.map((k) => k.id)).size).toBe(PROFILE_KIT_INDEX.length)

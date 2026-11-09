@@ -35,7 +35,8 @@ export default async function CrmSignupLeadsPage({
   await requireAdmin('janitor', { staff: 'marketing' })
   const { days } = await searchParams
   const sinceDays = parseWindow(days)
-  const leads = await listAbandonedSignupLeads({ sinceDays, limit: 500 })
+  // Hot leads first (a Create a Space score of 60 and up, LIVE-1970), then newest activity first as before.
+  const leads = (await listAbandonedSignupLeads({ sinceDays, limit: 500 })).sort((a, b) => Number(b.hot) - Number(a.hot))
   const byStep = countByStep(leads)
 
   return (

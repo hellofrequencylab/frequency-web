@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2059",
+  "title": "Offer New World in the theme picker and add /themes/new-world on the Nocturne page layout",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/design-systems/new-world/rules.json",
+    "ref": "Daniel 2026-11-03: New World is the new mega template, default theme for every new Space"
+  },
+  "detail": "Real renders on all four surfaces, switcher in the hero preview, drift-tested against Nocturne, design checks at 390, 1280, 1440, 1920 and 2000.\n\nPicker half shipped in #4540 (New World left RETIRED_FROM_PICKERS); the page half shipped as LIVE-2065. The probe script the row named did not exist until LIVE-2058 wrote it.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/new-world-theme.mjs picker"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

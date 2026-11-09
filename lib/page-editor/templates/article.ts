@@ -161,6 +161,9 @@ type ArticleBeat =
       text: string
       /** A substring of `text` to lift in the brand accent (fields.tsx `accentize`). */
       accent?: string
+      /** A designed article only (`design`): set the line over this real-gathering photo. */
+      image?: string
+      alt?: string
     }
   | {
       kind: 'media'
@@ -183,6 +186,10 @@ type ArticleBeat =
        *  buttons than the single `cta` slot holds. Rendered as a `Buttons` block in
        *  the SAME tone directly under the MediaText, so no label or link is dropped. */
       links?: ArticleLink[]
+      /** A designed article only (`design`): a second real-gathering photo, for the layouts that
+       *  pair two (overlapping cards, the tips bento). Ignored by the plain layout. */
+      image2?: string
+      alt2?: string
     }
 
 /** An in-section button row. Internal links inside the pillar cluster, kept as
@@ -274,9 +281,20 @@ type ArticleHowTo = {
   steps: { name: string; text: string; image?: string; alt?: string }[]
 }
 
+/** The layout an article is composed in. Unset is the plain grammar every article shipped with
+ *  (Heading + Text bands), byte-identical to before. Set, the SAME words are composed from the article
+ *  blocks (components/page-editor/blocks/article.tsx) in a layout fitted to the subject:
+ *   · quiet        — spacious centred columns, full-bleed photo chapters, lines over photos.
+ *   · conversation — the question asked and the answer replied, overlapping photo cards.
+ *   · path         — numbered sections on a dotted path, steps with connectors, a tips bento.
+ *   · manual       — sticky side headings beside checklist panels, a timeline of steps. */
+type ArticleDesign = 'quiet' | 'conversation' | 'path' | 'manual'
+
 export type ArticleSpec = {
   /** The article's slug. Only used to key block ids, so they stay stable per page. */
   slug: string
+  /** The layout (see ArticleDesign). Optional: unset keeps the plain grammar. */
+  design?: ArticleDesign
   eyebrow: string
   title: string
   /** The standfirst under the title. */
@@ -314,6 +332,11 @@ export type ArticleSpec = {
 
 /** The seeker-article document for one spec, composed only from registered blocks. */
 export function articleTemplate(spec: ArticleSpec): Data {
+  // A designed layout has no seat for a price ladder or link cards yet, so an article carrying either
+  // stays on the plain grammar rather than dropping them (the silent-loss shape).
+  if (spec.design && !spec.sections.some((s) => s.tiers?.length || s.cards?.length)) {
+    return designedArticle(spec, spec.design)
+  }
   const id = (suffix: string) => `${spec.slug}-${suffix}`
   const content: ContentItem[] = []
 
@@ -656,6 +679,226 @@ export function articleTemplate(spec: ArticleSpec): Data {
   // would merge the beat into the FAQ's band instead of giving it its own moment
   // (canvas also always contrasts with the ink CallToAction below).
   if (spec.closingBeat) pushBeat(spec.closingBeat, 'beat-close', 'canvas')
+
+  content.push({
+    type: 'CallToAction',
+    props: {
+      id: id('cta'),
+      eyebrow: '',
+      heading: spec.close.heading,
+      headingAccent: '',
+      body: spec.close.body,
+      ctaPrimaryLabel: spec.close.ctaLabel ?? BETA_CTA_LABEL,
+      ctaPrimaryHref: spec.close.ctaHref ?? BETA_CTA_HREF,
+      ctaSecondaryLabel: '',
+      ctaSecondaryHref: '',
+      emphasis: EMPHASIS,
+      tone: 'ink',
+      width: 'default',
+      align: 'center',
+      layout: L,
+    },
+  })
+
+  return { root: {}, content }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE DESIGNED LAYOUTS (2026-11-04). Same spec, same words, same order, same schema; a different
+// composition per subject. What does NOT change, by construction:
+//   · the Hero opens the document with the title and subtitle (the Article node derives from it);
+//   · every section question is an H2, in spec order, and each answer follows its question;
+//   · the FAQ is the same `Accordion` (FAQPage) and the close the same `CallToAction`;
+//   · a `howTo` still emits exactly one HowTo node per track, from the visible steps (ArticleSteps runs
+//     DawnHowToSteps' own builder); plain `steps` still emit none.
+// An article with `tiers` or `cards` stays on the plain grammar (see articleTemplate).
+// ─────────────────────────────────────────────────────────────────────────────
+
+type DesignRecipe = {
+  question: 'quiet' | 'talk' | 'path' | 'panel'
+  lede: 'quiet' | 'talk' | 'panel'
+  line: 'quiet' | 'bubble' | 'signpost'
+  story: 'chapter' | 'overlap' | 'bento' | 'pinned'
+  steps: 'trail' | 'stack' | 'path' | 'timeline'
+  hero: { variant: 'image' | 'split'; minHeight: 'auto' | 'screen' }
+  /** Alternate bands (a conversation, a manual) or stay on one canvas (a quiet read, a path). */
+  alternate: boolean
+  numbered: boolean
+}
+
+const RECIPES: Record<ArticleDesign, DesignRecipe> = {
+  quiet: { question: 'quiet', lede: 'quiet', line: 'quiet', story: 'chapter', steps: 'trail', hero: { variant: 'image', minHeight: 'screen' }, alternate: false, numbered: false },
+  conversation: { question: 'talk', lede: 'talk', line: 'bubble', story: 'overlap', steps: 'stack', hero: { variant: 'image', minHeight: 'auto' }, alternate: true, numbered: false },
+  path: { question: 'path', lede: 'quiet', line: 'signpost', story: 'bento', steps: 'path', hero: { variant: 'split', minHeight: 'auto' }, alternate: false, numbered: true },
+  manual: { question: 'panel', lede: 'panel', line: 'quiet', story: 'pinned', steps: 'timeline', hero: { variant: 'image', minHeight: 'auto' }, alternate: true, numbered: true },
+}
+
+function designedArticle(spec: ArticleSpec, design: ArticleDesign): Data {
+  const r = RECIPES[design]
+  const id = (suffix: string) => `${spec.slug}-${suffix}`
+  const content: ContentItem[] = []
+  let band = 0
+  const nextTone = () => (r.alternate ? (band++ % 2 === 0 ? 'surface' : 'canvas') : 'surface')
+  const links = (ls?: ArticleLink[]) => (ls ?? []).map((l) => ({ label: l.label, href: l.href, variant: l.variant ?? 'secondary' }))
+
+  const pushBeat = (beat: ArticleBeat, key: string) => {
+    if (beat.kind === 'statement') {
+      const photo = beat.image ? 'photo' : r.line
+      content.push({
+        type: 'ArticleLine',
+        props: {
+          id: id(key),
+          variant: photo,
+          text: beat.text,
+          accent: beat.accent ?? '',
+          image: beat.image ?? '',
+          alt: beat.alt ?? '',
+          focal: 'center',
+          tone: nextTone(),
+          layout: L,
+        },
+      })
+      return
+    }
+    content.push({
+      type: 'ArticleStory',
+      props: {
+        id: id(key),
+        variant: r.story,
+        image: beat.image,
+        alt: beat.alt,
+        image2: beat.image2 ?? '',
+        alt2: beat.alt2 ?? '',
+        focal: 'center',
+        eyebrow: beat.eyebrow ?? '',
+        title: beat.title,
+        titleAccent: beat.titleAccent ?? '',
+        kicker: beat.kicker ?? '',
+        body: beat.body,
+        ctaLabel: beat.ctaLabel ?? '',
+        ctaHref: beat.ctaHref ?? '',
+        links: links(beat.links),
+        side: beat.side ?? 'left',
+        tone: nextTone(),
+        layout: L,
+      },
+    })
+  }
+
+  const pushSteps = (key: string, schema: 'howto' | 'none', s: { name?: string; intro?: string; totalTime?: string; totalTimeLabel?: string; steps: { name: string; text: string; image?: string; alt?: string }[] }) => {
+    content.push({
+      type: 'ArticleSteps',
+      props: {
+        id: id(key),
+        variant: r.steps,
+        schema,
+        eyebrow: schema === 'howto' ? 'How to' : '',
+        name: s.name ?? '',
+        intro: s.intro ?? '',
+        totalTimeLabel: s.totalTimeLabel ?? '',
+        totalTime: s.totalTime ?? '',
+        steps: s.steps.map((x) => ({ name: x.name, text: x.text, image: x.image ?? '', alt: x.alt ?? '' })),
+        tone: nextTone(),
+        layout: L,
+      },
+    })
+  }
+
+  content.push({
+    type: 'Hero',
+    props: {
+      id: id('hero'),
+      variant: spec.image ? r.hero.variant : 'minimal',
+      eyebrow: spec.eyebrow,
+      title: spec.title,
+      titleAccent: '',
+      subtitle: spec.subtitle,
+      image: spec.image ?? '',
+      focal: 'center',
+      minHeight: r.hero.minHeight,
+      facts: [],
+      ctaPrimaryLabel: spec.heroCtaLabel ?? '',
+      ctaPrimaryHref: spec.heroCtaHref ?? '',
+      ctaSecondaryLabel: '',
+      ctaSecondaryHref: '',
+      note: '',
+      tone: 'surface',
+      width: 'default',
+      align: 'center',
+      layout: L,
+    },
+  })
+
+  // The answer, first: the lede is an ArticleQuestion with no question.
+  content.push({
+    type: 'ArticleQuestion',
+    props: {
+      id: id('answer'),
+      variant: r.lede,
+      number: '',
+      question: '',
+      answer: spec.answer,
+      body: spec.intro ?? '',
+      links: [],
+      note: '',
+      tone: nextTone(),
+      layout: L,
+    },
+  })
+
+  if (spec.openingBeat) pushBeat(spec.openingBeat, 'beat-0')
+
+  const howToAfter = spec.howToAfter ?? spec.sections.length
+  const howToProps = (h: ArticleHowTo) => ({ name: h.name, intro: h.intro, totalTime: h.totalTime, totalTimeLabel: h.totalTimeLabel, steps: h.steps })
+
+  spec.sections.forEach((section, i) => {
+    content.push({
+      type: 'ArticleQuestion',
+      props: {
+        id: id(`q${i + 1}`),
+        variant: r.question,
+        number: r.numbered ? String(i + 1).padStart(2, '0') : '',
+        question: section.question,
+        answer: section.answer,
+        body: section.body ?? '',
+        links: links(section.links),
+        note: section.note ?? '',
+        tone: nextTone(),
+        layout: L,
+      },
+    })
+    if (section.steps && section.steps.length > 0) pushSteps(`steps${i + 1}`, 'none', { steps: section.steps })
+    if (spec.howTo && i + 1 === howToAfter) pushSteps('howto', 'howto', howToProps(spec.howTo))
+    if (section.howTo) pushSteps(`howto-${i + 1}`, 'howto', howToProps(section.howTo))
+    if (section.afterSteps) {
+      content.push({
+        type: 'ArticleQuestion',
+        props: { id: id(`after${i + 1}`), variant: r.lede, number: '', question: '', answer: '', body: section.afterSteps, links: [], note: '', tone: nextTone(), layout: L },
+      })
+    }
+    const beats = section.beats ?? (section.beat ? [section.beat] : [])
+    beats.forEach((b, j) => pushBeat(b, j === 0 ? `beat-${i + 1}` : `beat-${i + 1}-${j + 1}`))
+  })
+
+  if (spec.howTo && howToAfter > spec.sections.length) pushSteps('howto', 'howto', howToProps(spec.howTo))
+
+  content.push({
+    type: 'Accordion',
+    props: {
+      id: id('faq'),
+      eyebrow: '',
+      title: 'Common questions',
+      titleAccent: '',
+      items: spec.faq.map((f) => ({ q: f.q, a: f.a })),
+      emphasis: EMPHASIS,
+      tone: 'surface',
+      width: 'default',
+      align: 'left',
+      layout: L,
+    },
+  })
+
+  if (spec.closingBeat) pushBeat(spec.closingBeat, 'beat-close')
 
   content.push({
     type: 'CallToAction',

@@ -1,5 +1,6 @@
 import 'server-only'
 import { revalidatePath } from 'next/cache'
+import { siteDomainApiPath } from '@/lib/sites/host'
 import { crossRequestCached, invalidateCacheTag, siteCacheTag } from '@/lib/cross-request-cache'
 import { getPublicSpaceBySlugOrThrow, getSpaceHostRow } from '@/lib/spaces/store'
 import { isNetworkPlan } from '@/lib/collective/member-spaces'
@@ -53,4 +54,6 @@ export function refreshSite(slug: string): void {
   invalidateCacheTag(siteCacheTag(slug))
   // Belt and braces for the /sites tree, the path the owner's "View site" link opens.
   revalidatePath(`/sites/${slug.trim().toLowerCase()}`, 'layout')
+  // The proxy's cached answer for where this website lives (LIVE-SUBDOMAIN-ATTRIBUTION).
+  revalidatePath(siteDomainApiPath(slug))
 }

@@ -2,6 +2,11 @@
   "role": "Gallery",
   "type": "RoleGallery",
   "label": "Gallery (all themes)",
+  "intent": "Show the room",
+  "why": "Photos of the room and the people in it.",
+  "group": "Trust",
+  "icon": "camera",
+  "live": false,
   "replaces": [
     "Gallery",
     "PhotoTrio",
@@ -30,17 +35,42 @@
       "heading": "text<=120",
       "lead": "text<=280",
       "action": "link"
+    },
+    "labels": {
+      "items": {
+        "label": "Photos",
+        "hint": "Pictures of the room and the people in it."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "action": {
+        "label": "Link under the section",
+        "hint": "Where people go to see more."
+      }
     }
   },
   "variants": {
     "grid": {
-      "label": "Even grid"
+      "label": "Even grid",
+      "thumb": "grid"
     },
     "mosaic": {
-      "label": "Mosaic"
+      "label": "Mosaic",
+      "thumb": "mosaic"
     },
     "carousel": {
-      "label": "Sideways strip"
+      "label": "Sideways strip",
+      "thumb": "carousel"
     }
   },
   "default": "grid",
@@ -118,5 +148,11 @@
     "list",
     "media",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "hide"
+  }
 }

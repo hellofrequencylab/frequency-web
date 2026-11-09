@@ -2,6 +2,11 @@
   "role": "Letter",
   "type": "RoleLetter",
   "label": "Letter (all themes)",
+  "intent": "Collect emails",
+  "why": "A sign-up so people hear from you.",
+  "group": "Answer",
+  "icon": "send",
+  "live": false,
   "replaces": [
     "SpaceJoinList",
     "MidnightLetter",
@@ -17,17 +22,42 @@
       "lead": "text<=280",
       "primary": "link",
       "note": "text<=160"
+    },
+    "labels": {
+      "title": {
+        "label": "Headline",
+        "hint": "The one line people read first."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "primary": {
+        "label": "Main button",
+        "hint": "The one thing you most want people to do next."
+      },
+      "note": {
+        "label": "Small print",
+        "hint": "A short note under the button."
+      }
     }
   },
   "variants": {
     "band": {
-      "label": "Full band"
+      "label": "Full band",
+      "thumb": "band"
     },
     "card": {
-      "label": "Card"
+      "label": "Card",
+      "thumb": "card"
     },
     "inline": {
-      "label": "Words beside the button"
+      "label": "Words beside the button",
+      "thumb": "inline"
     }
   },
   "default": "card",
@@ -90,5 +120,11 @@
     "side",
     "text",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "draw"
+  }
 }

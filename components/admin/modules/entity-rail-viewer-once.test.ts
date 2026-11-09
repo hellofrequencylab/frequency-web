@@ -48,7 +48,6 @@ const CIRCLE = {
   access: 'open',
   space_id: null,
   topical_channel_id: null,
-  is_space_primary: false,
   circle_channels: [],
   host_id: 'p-host',
   hub_id: 'hub-1',
@@ -188,7 +187,7 @@ describe('one entity rail bundle resolves the viewer once', () => {
     expect(count('admin', 'entitlement_grants')).toBe(1)
     expect(count('admin', 'stewardships')).toBe(1)
     // The circle's capability rows are read once for the whole bundle, not once per getter.
-    expect(count('admin', 'circles', capabilityRead('host_id, hub_id, space_id, is_space_primary'))).toBe(1)
+    expect(count('admin', 'circles', capabilityRead('host_id, hub_id, space_id'))).toBe(1)
     expect(count('admin', 'memberships', capabilityRead('status, volunteer_role'))).toBe(1)
   })
 

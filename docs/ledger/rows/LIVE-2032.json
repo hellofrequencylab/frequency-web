@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2032",
+  "title": "Theme conformance: run the matrix against a rendered theme (Services first)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/design-systems/services/rules.json",
+    "ref": "LIVE-1998 follow-up"
+  },
+  "detail": "LIVE-1998 shipped the ten checks as pure functions over data. This row collects the data: a Playwright spec (test/e2e/theme-conformance.spec.ts) that walks conformanceMatrix() against a themed site, measures block heights per type voice at 1440 and 390, toggles motion and reduced motion, hides each function in turn, resets, and times a dial change, then feeds every result to lib/theme/conformance.ts. It runs for each theme that declares dials in lib/themes/editor-schema2.json, Services first, and must be green on every theme PR. Needs the Services render (LIVE-1991 to 1993) and the renderer's root attributes.\n\nBuilt as a spec that runs against a static render (CONFORMANCE_FIXTURE, from builder-roles-themes.render.tsx) or a themed page (CONFORMANCE_URL) and skips with neither. Covers contrast, type-voice height stability, reduced motion, reset and repaint budget on Services; ran green locally. Not covered: motion-additive, empty states, hidden functions, surface parity (need a live Space and the editor). Finding: the type dial changes no role-block title face in the Services render, so height stability passed without a voice to test. Wiring into CI against a preview Space is the follow-up row LIVE-2120.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const f='test/e2e/theme-conformance.spec.ts';if(!require('fs').existsSync(f)||!/conformanceMatrix/.test(require('fs').readFileSync(f,'utf8')))process.exit(1)\""
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

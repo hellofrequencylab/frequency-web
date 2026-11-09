@@ -2,6 +2,11 @@
   "role": "Statement",
   "type": "RoleStatement",
   "label": "Statement (all themes)",
+  "intent": "Say what you stand for",
+  "why": "One line about what you believe.",
+  "group": "More",
+  "icon": "flag",
+  "live": false,
   "replaces": [
     "Statement",
     "ValueBand",
@@ -27,17 +32,46 @@
       },
       "primary": "link",
       "secondary": "link"
+    },
+    "labels": {
+      "title": {
+        "label": "Headline",
+        "hint": "The one line people read first."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "items": {
+        "label": "Short phrases",
+        "hint": "A handful of words that run in a line."
+      },
+      "primary": {
+        "label": "Main button",
+        "hint": "The one thing you most want people to do next."
+      },
+      "secondary": {
+        "label": "Second button",
+        "hint": "A softer next step. You can leave it out."
+      }
     }
   },
   "variants": {
     "band": {
-      "label": "Full band"
+      "label": "Full band",
+      "thumb": "band"
     },
     "pull": {
-      "label": "Pull statement"
+      "label": "Pull statement",
+      "thumb": "pull"
     },
     "ticker": {
-      "label": "Short phrases in a line"
+      "label": "Short phrases in a line",
+      "thumb": "ticker"
     }
   },
   "default": "band",
@@ -110,5 +144,11 @@
     "item",
     "list",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "draw"
+  }
 }

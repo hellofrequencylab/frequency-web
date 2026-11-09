@@ -234,6 +234,7 @@ resonance_density_cells              internal
 resonance_edges                      internal
 resonance_embeddings                 internal
 resonance_matches                    internal
+retired_space_circles                internal
 reward_grants                        authenticated
 room_members                         authenticated
 room_messages                        authenticated
@@ -255,7 +256,6 @@ space_bookings                       authenticated
 space_calendar_day_notes             authenticated
 space_calendar_entries               authenticated
 space_calendar_private_feeds         authenticated
-space_circle_optouts                 authenticated
 space_collaborations                 internal
 space_donation_asks                  authenticated
 space_domain_purchases               internal
@@ -377,3 +377,6 @@ launch_list_attestations              authenticated
 launch_email_log                      internal
 share_links                           internal
 share_link_opens                      internal
+create_space_drafts                   internal
+create_space_draft_email_log         internal
+space_wall_settings                   public

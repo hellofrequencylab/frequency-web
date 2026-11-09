@@ -1,0 +1,19 @@
+{
+  "id": "BLD-108",
+  "title": "Builder BLD-108: Shadow render and cutover",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-108."
+  },
+  "detail": "B1 Shell, pass BLD-108 (spec: docs/EDITOR-NEXT.md#bld-108). Shadow render and cutover. Scope: flag config. Build: Render old and new editors on the same documents; log deltas. Turn on for internal Spaces, then a cohort. Done when: Zero or explained delta on the frozen corpus. Gates: check:node-document-safety, check:stored-blocks, check:render-path and render_path flag-off test, pr-compare visual suite, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-103, BLD-105, BLD-107. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nShadow render: lib/builder/shadow.ts projects both editors' readings of a document (sections, names, hidden per device, fields) to one shape and diffs them; lib/builder/shadow.test.ts proves zero or explained delta over the frozen kit corpus (explained: the layout object owned by the per-device controls, BLD-104; object fields the Tune rail has no kind for, BLD-105). When the new builder opens a real draft, unexplained deltas are logged as [builder shadow] lines. Cutover: BUILDER_V3_SPACES names the cohort of Space slugs (internal Spaces, then a cohort) that get the new builder while BUILDER_V3 stays blank; ?builder=classic still wins. Three-step gate in docs/RUNBOOKS.md (New site builder).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-108.mjs"
+  },
+  "closed": "2026-11-09",
+  "wave": "W7"
+}

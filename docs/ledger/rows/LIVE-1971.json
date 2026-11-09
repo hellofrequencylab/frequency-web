@@ -1,20 +1,15 @@
 {
   "id": "LIVE-1971",
-  "title": "Create a Space v3 hardening: walking tests, e2e, renders at five widths, budget gates",
-  "lane": "live",
-  "priority": "P2",
-  "size": "M",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/create-a-space/rules.json",
-    "ref": "design_handoff create-a-space v3 README section 9; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+  "patch": {
+    "status": "done",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/create-space-hardening.mjs"
+    },
+    "closed": "2026-11-02"
   },
-  "detail": "Every button and form walked, e2e from name to save, signed in and out renders at 390 1280 1440 1920 2000, theme fence and the postbuild gates green.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node -e \"const f=require('fs');process.exit(f.existsSync('test/e2e/create-space.spec.ts')?0:1)\"",
-    "checked": "2026-11-02",
-    "evidence": "Fails today: the file or change the probe names is not on main."
+  "append": {
+    "detail": "\n\nShipped: test/e2e/create-space.spec.ts walks the door hop, the name/accent/offer steps and the two anonymous sinks (green on a dev server, 10/10 with funnel.spec.ts); proxy.ts makes the signed-out /spaces/new hop before the (main) layout; 44px phone targets on pills and chips; renders at 390/1280/1440/1920/2000 signed out and mocked signed in. The six postbuild gates run on the production build after merge (Vercel skips preview builds on this branch); a local build cannot reach them, it stops at the /discover/cities prerender without a reachable database.\n\nProbe: node scripts/probes/create-space-hardening.mjs (static reads, spawns nothing)."
   },
   "wave": "W7"
 }

@@ -12,8 +12,20 @@ import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
 import { NetworkKitSpotlightLayout } from './network-kit-layouts'
 import { networkKitSpotlightContent } from '@/lib/spotlight/network-kit-content'
 import { DesignerKitSpotlightLayout } from './designer-kit-layouts'
-import { designerKitSpotlightContent } from '@/lib/spotlight/designer-kit-content'
-import { isDesignerKitLayout, isFreeHumanLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { designerKitSpotlightContent, designerProfileForAccent } from '@/lib/spotlight/designer-kit-content'
+import { isCyberWitchKitLayout, isDesignerKitLayout, isFreeHumanLayout, isNewWorldKitLayout, isServicesKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { ServicesKitSpotlightLayout } from './services-kit-layouts'
+import { CyberWitchKitSpotlightLayout } from './cyberwitch-kit-layouts'
+import { cyberwitchKitSpotlightContent } from '@/lib/spotlight/cyberwitch-kit-content'
+import { presetForAccent } from '@/lib/spotlight/space-accent'
+import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
+import { SERVICES_ACCENTS } from '@/lib/theme/services'
+import { NETWORK_KIT_SCHEMES } from '@/lib/theme/network-kit'
+import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
+import { FREE_HUMAN_PROFILES } from '@/lib/theme/free-human'
+import { servicesKitSpotlightContent } from '@/lib/spotlight/services-kit-content'
+import { NewWorldKitSpotlightLayout } from './new-world-kit-layouts'
+import { newWorldKitSpotlightContent } from '@/lib/spotlight/new-world-kit-content'
 import { TempleKitSpotlightLayout } from './temple-kit-layouts'
 import { templeKitSpotlightContent } from '@/lib/spotlight/temple-kit-content'
 import { FreeHumanSpotlightLayout } from './free-human-layouts'
@@ -56,7 +68,7 @@ export function SpotlightShell({
   if (theme.layout) {
     if (isDesignerKitLayout(theme.layout)) {
       // The Designer kit draws its own full-width plaster page and keeps the column inside it.
-      const content = designerKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+      const content = designerKitSpotlightContent(designerProfileForAccent(theme.accent) ?? theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
       return (
         <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
           <DesignerKitSpotlightLayout layout={theme.layout} content={content} />
@@ -65,7 +77,7 @@ export function SpotlightShell({
     }
     if (isFreeHumanLayout(theme.layout)) {
       // The Free Human kit draws its own page inside the same wrapper and footer.
-      const content = freeHumanSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+      const content = freeHumanSpotlightContent(presetForAccent(FREE_HUMAN_PROFILES, theme.accent) ?? theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
       return (
         <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
           <main className="relative mx-auto max-w-xl">
@@ -74,9 +86,42 @@ export function SpotlightShell({
         </div>
       )
     }
+    if (isNewWorldKitLayout(theme.layout)) {
+      // The New World kit draws its own page inside the same wrapper and footer (LIVE-2057).
+      const content = newWorldKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, accent: presetForAccent(NEW_WORLD_ACCENTS, theme.accent) ?? undefined, photo: profile.header_image_url ?? undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <main className="relative mx-auto max-w-xl">
+            <NewWorldKitSpotlightLayout layout={theme.layout} content={content} />
+          </main>
+        </div>
+      )
+    }
+    if (isCyberWitchKitLayout(theme.layout)) {
+      // The CyberWitch theme draws its own page inside the same wrapper and footer.
+      const content = cyberwitchKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, accent: theme.accent ?? undefined, photo: profile.header_image_url ?? undefined, portrait: profile.avatar_url ? avatarSrc(profile.avatar_url) : undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <main className="relative mx-auto max-w-xl">
+            <CyberWitchKitSpotlightLayout layout={theme.layout} content={content} />
+          </main>
+        </div>
+      )
+    }
+    if (isServicesKitLayout(theme.layout)) {
+      // The Services theme draws its own page inside the same wrapper and footer (LIVE-1994).
+      const content = servicesKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, accent: presetForAccent(SERVICES_ACCENTS, theme.accent) ?? undefined, photo: profile.header_image_url ?? undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <main className="relative mx-auto max-w-xl">
+            <ServicesKitSpotlightLayout layout={theme.layout} content={content} />
+          </main>
+        </div>
+      )
+    }
     if (isTempleKitLayout(theme.layout)) {
       // The Temple kit draws its own page inside the same wrapper and footer.
-      const content = templeKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+      const content = templeKitSpotlightContent(presetForAccent(TEMPLE_KIT_PROFILES, theme.accent) ?? theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
       return (
         <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
           <main className="relative mx-auto max-w-xl">
@@ -85,7 +130,8 @@ export function SpotlightShell({
         </div>
       )
     }
-    const content = networkKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+    const base = networkKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })
+    const content = { ...base, scheme: presetForAccent(NETWORK_KIT_SCHEMES, theme.accent) ?? base.scheme }
     return (
       <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
         <main className="relative mx-auto max-w-xl">

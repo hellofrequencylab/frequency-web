@@ -41,3 +41,29 @@ describe('lintVoice — soft warnings', () => {
     expect(r.violations.some((v) => v.rule === 'exclamation')).toBe(false)
   })
 })
+
+// BLD-004 (BLD-000 ruling 3): the banned words are Frequency's rule for Frequency's own copy. Owner and theme names
+// are exempt, and what an owner writes gets the same findings as suggestions, never as bans.
+describe('lintVoice: owner and theme names are exempt (BLD-004)', () => {
+  it('reads a banned word inside a named Space or theme as a name, not a phrase', () => {
+    expect(lintVoice('Tribe Collective meets on Thursday.').violations.some((v) => v.rule === 'banned-phrase')).toBe(true)
+    expect(lintVoice('Tribe Collective meets on Thursday.', { exempt: ['Tribe Collective'] }).violations).toHaveLength(0)
+    expect(lintVoice('Elevate Studio opens its doors.', { exempt: ['Elevate Studio', 'New World'] }).violations).toHaveLength(0)
+  })
+
+  it('still flags the phrase when it appears outside the name', () => {
+    const r = lintVoice('Tribe Collective will help you level up.', { exempt: ['Tribe Collective'] })
+    expect(r.violations.map((v) => v.detail).join(' ')).toContain('level up')
+    expect(r.violations.map((v) => v.detail).join(' ')).not.toContain('"tribe"')
+  })
+
+  it('softens the finding into a suggestion when an owner wrote the copy', () => {
+    const r = lintVoice('Come level up with us.', { author: 'owner' })
+    expect(r.violations.some((v) => v.rule === 'banned-phrase')).toBe(false)
+    expect(r.violations.some((v) => v.rule === 'suggestion')).toBe(true)
+  })
+
+  it('keeps Frequency\'s own copy on the banned list by default', () => {
+    expect(lintVoice('Come level up with us.').violations.some((v) => v.rule === 'banned-phrase')).toBe(true)
+  })
+})

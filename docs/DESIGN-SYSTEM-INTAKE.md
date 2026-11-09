@@ -17,6 +17,7 @@ system is revised. Later themes (Designer, Temple, Wildheart and the rest) go th
 | `.../tokens.json` | Every custom property the design's token files declare, by selector. |
 | `.../copy.json` | Every sentence a visitor can read in the prototypes, per source file. |
 | `.../baseline.json` | Known gaps as `kind:key`, with the ledger row that closes them. It may only shrink. |
+| `rules.json` → `copyRulings` | Prototype sentences the owner ruled out, each group with the owner's own phrase, the reason and the `copy:` ids. A ruling without a phrase rules nothing out. Only the owner's phrase adds one. |
 | `scripts/lib/design-system.mjs` | The pure functions: walk, rules, token and copy extraction, comparison. |
 | `scripts/ds-intake.mjs` | The command: re-snapshot, diff against the last snapshot, run the repo side. |
 | `scripts/design-system.test.ts` | The repo side as a test, so CI runs it with no copy of the design system. |

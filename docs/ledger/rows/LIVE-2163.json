@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2163",
+  "title": "Give the four seeker articles their own layouts: /loneliness, /friendship-as-an-adult, /how-to-be-more-social, /how-to-start-a-circle",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "wave": "W7",
+  "source": {
+    "file": "lib/page-editor/templates/article.ts",
+    "ref": "Daniel 2026-11-04 on the marketing pages: \"they are all really flat and text based. Make each a different layout that speaks to the feature, program or service.\" Lane C of the marketing evolution."
+  },
+  "detail": "Same words, same question H2s in the same order, the same FAQPage and HowTo nodes, the same Article images and links; new layouts composed from four new registered page-editor blocks (components/page-editor/blocks/article.tsx: ArticleQuestion, ArticleLine, ArticleStory, ArticleSteps) picked by an optional `design` on the article spec. An article with no `design` (how-to-build-community, tools-for-community-builders, what-is-frequency) is composed exactly as before. /loneliness is quiet: a full-screen photo hero, centred serif answers under signal-line dividers, lines on a breathing orb or over a photo, the media beats as full-bleed photo chapters with the heading on glass, the steps as a serif trail. /friendship-as-an-adult is a conversation: each question asked in a glass bubble and answered in the mood wash, overlapping photo cards with a glass text card, the steps as stacked notes. /how-to-be-more-social is a path: numbered nodes on a dotted rail, signposts for the lines, the HowTo as a path with dotted connectors, the media beats as tips bentos. /how-to-start-a-circle is a manual: sticky numbered side headings beside checklist panels, the HowTo as a timeline on a signal spine, photos beside checklist panels. The look is the Stage scope in app/themes/frequency/site-blocks.css section 7. Route files are unchanged (check:render-path). Eight more real-gathering photos are added as second cards and line backdrops, none repeated on a page.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/marketing-evolution-articles.mjs"
+  },
+  "closed": "2026-11-04"
+}

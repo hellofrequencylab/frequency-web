@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
+import { retiredSpaceCircleIds } from '@/lib/circles/retired-space-circle'
 import Link from 'next/link'
-import { UsersRound, Users, Route, PlayCircle, Eye } from 'lucide-react'
+import { UsersRound, Users, Route, PlayCircle, Eye, MessagesSquare } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -13,7 +14,6 @@ import { buttonClasses } from '@/components/ui/button'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SpaceCirclesManager } from '@/components/spaces/space-circles-manager'
-import { SpaceCircleCard } from '@/components/spaces/space-circle-card'
 
 // SPACE-SCOPED Circles manager (ADR-842): the Circles this Space runs, and the Journey each one is
 // moving through. A Space Circle is a Circle stamped with this space_id, so it belongs to the Space
@@ -46,14 +46,14 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
   if (!caps.canEditProfile) notFound()
 
   // The Circles this Space owns (with any active Run), and the Journeys it can start a Run of.
-  const [allCircles, offered] = await Promise.all([
+  const [allCircles, offered, retired] = await Promise.all([
     listSpaceCirclesWithRuns(space.id, 50),
     journeysOfferedBySpace(space.id),
+    retiredSpaceCircleIds(space.id),
   ])
-  // The Space Circle (ADR-1391) has its own card: it is always attached, so the move, hand-off and
-  // Run controls of the list below do not apply to it. Every other Circle is listed as before.
-  const spaceCircle = allCircles.find((c) => c.is_space_primary) ?? null
-  const circles = allCircles.filter((c) => !c.is_space_primary)
+  // The retired Space Circle (ADR-1938) is archived, not a room the owner runs: the Space's
+  // conversation is its Community wall now.
+  const circles = allCircles.filter((c) => !retired.has(c.id))
 
   // A pending handoff BLOCKS the circle: `circle_transfer_offers` carries a unique partial index
   // allowing one pending offer per circle (migration 20261230000000), and the failure text tells
@@ -91,19 +91,13 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
           <StatCard bordered size="sm" icon={Route} label="Journeys offered" value={offered.length} />
         </div>
 
-        {spaceCircle && (
-          <SpaceCircleCard
-            spaceSlug={space.slug}
-            spaceName={space.brandName ?? space.name}
-            circle={{
-              slug: spaceCircle.slug,
-              name: spaceCircle.name,
-              status: spaceCircle.status,
-              memberCount: spaceCircle.member_count ?? 0,
-              memberCap: spaceCircle.member_cap ?? 300,
-            }}
-          />
-        )}
+        <p className="flex flex-wrap items-center gap-2 text-body-sm text-muted">
+          <MessagesSquare className="h-4 w-4" aria-hidden />
+          Your space&apos;s conversation lives on its Community wall.
+          <Link href={`/spaces/${space.slug}/manage/community`} className="font-semibold text-text underline underline-offset-2">
+            Wall settings
+          </Link>
+        </p>
 
         <SpaceCirclesManager
           spaceSlug={space.slug}

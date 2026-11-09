@@ -29,6 +29,14 @@
 // and the Nightshade palette under `[data-mode="nightshade"]`. NO UI sets that attribute yet: the owner has
 // not ruled on a member toggle versus a device setting, so nothing here reads prefers-color-scheme.
 //
+// TOKENS V4 (the revised design system, 2026-11-03, intake docs/design-systems/wildheart, LIVE-2084): the violet
+// family moves to #6E4D96 / pressed #5A3D7E / text #654590 / light stop #7D5BA8 (owner 2026-11-03 moved
+// LIVE-1363's pin; vellum on the violet 6.21:1, on the pressed 8.18:1; violet text on parchment 6.49:1, on
+// lavender 4.86:1), the opal stops and the stars take the design's named soft fills and alphas, and the bloom
+// texture, logo ground and wordmark tracking are added. Kept from v3 on purpose, each named with its reason in
+// the rules file's tokenDeviations: muted #6B5B51, the madder gradient's AA light stop, the flat pressed violet,
+// and the vellum and dusk gradients built from tokens. The v3 figures below for the violet family are the old values.
+//
 // Rules the design system sets and this module keeps (the pass-1 contrast audit, measured by
 // lib/theme/wildheart.test.ts with lib/spaces/accent's contrastRatio): never pure black or white; text on a
 // violet or madder fill is vellum (vellum on violet 6.94:1, on its light stop 5.39:1, on pressed violet
@@ -60,10 +68,10 @@ export const WILDHEART_PALETTE = {
   muted: '#6B5B51',
   secondary: '#5E5048',
   ink: '#3A2E29',
-  violet: '#6A3FA0',
-  violetPressed: '#55308A',
-  violetText: '#5F3694',
-  violetTop: '#7A52AE',
+  violet: '#6E4D96',
+  violetPressed: '#5A3D7E',
+  violetText: '#654590',
+  violetTop: '#7D5BA8',
   lavender: '#D9CBE6',
   mist: '#ECE4F1',
   nightshade: '#2E2138',
@@ -74,6 +82,9 @@ export const WILDHEART_PALETTE = {
   madderSoft: '#F0DEDA',
   blush: '#EBD3C8',
   blushTop: '#F3E2DA',
+  honeySoft: '#EFE6CF',
+  sageSoft: '#E3EBDA',
+  winterSoft: '#E3E6F3',
   blushDeep: '#B9786A',
 } as const
 
@@ -115,7 +126,7 @@ const GRADIENTS = {
   nightshade: 'linear-gradient(160deg,var(--wh-nightshade-top) 0%,var(--wh-nightshade) 100%)',
   twilight: 'linear-gradient(170deg,var(--wh-violet-top) 0%,var(--wh-violet) 45%,var(--wh-madder) 100%)',
   blush: 'linear-gradient(160deg,var(--wh-blush-top) 0%,var(--wh-blush) 100%)',
-  opal: 'conic-gradient(from 200deg at 60% 40%,var(--wh-mist),var(--wh-madder-soft),var(--wh-aged),var(--wh-season-spring-top),var(--wh-season-winter-top),var(--wh-mist))',
+  opal: 'conic-gradient(from 200deg at 60% 40%,var(--wh-mist),var(--wh-madder-soft),var(--wh-honey-soft),var(--wh-sage-soft),var(--wh-winter-soft),var(--wh-mist))',
 } as const
 
 /** Nightshade's own shapes for the gradients whose stops are not a simple re-point. */
@@ -130,8 +141,8 @@ const ALPHA = {
   ink04: 'rgba(58,46,41,.04)',
   ink06: 'rgba(58,46,41,.06)',
   ink12: 'rgba(58,46,41,.12)',
-  violet12: 'rgba(106,63,160,.12)',
-  violet35: 'rgba(106,63,160,.35)',
+  violet12: 'rgba(110,77,150,.12)',
+  violet35: 'rgba(110,77,150,.35)',
   madder35: 'rgba(148,80,94,.35)',
   symbol70: 'rgba(101,69,144,.7)',
   symbol32: 'rgba(101,69,144,.32)',
@@ -141,12 +152,19 @@ const ALPHA = {
   sage18: 'rgba(157,186,134,.18)',
   mist90: 'rgba(236,228,241,.9)',
   blush55: 'rgba(235,211,200,.55)',
+  blush60: 'rgba(235,211,200,.6)',
+  mist95: 'rgba(236,228,241,.95)',
+  star55: 'rgba(101,69,144,.55)',
+  star45: 'rgba(101,69,144,.45)',
+  star50: 'rgba(101,69,144,.5)',
+  star40: 'rgba(101,69,144,.4)',
+  starMadder: 'rgba(148,80,94,.5)',
   honey14: 'rgba(216,179,94,.14)',
   starHoney: 'rgba(216,179,94,.6)',
   vellum0: 'rgba(251,247,239,0)',
   vellum85: 'rgba(251,247,239,.85)',
   vellum12: 'rgba(251,247,239,.12)',
-  violet13: 'rgba(106,63,160,.13)',
+  violet13: 'rgba(110,77,150,.13)',
   madder05: 'rgba(148,80,94,.05)',
   madder16: 'rgba(148,80,94,.16)',
   nightshade28: 'rgba(46,33,56,.28)',
@@ -164,18 +182,25 @@ const NIGHT_ALPHA = {
   lilac32: 'rgba(199,173,232,.32)',
   lilac20: 'rgba(199,173,232,.2)',
   lilac25: 'rgba(199,173,232,.25)',
-  violet28: 'rgba(106,63,160,.28)',
+  lilac55: 'rgba(199,173,232,.55)',
+  lilac45: 'rgba(199,173,232,.45)',
+  lilac50: 'rgba(199,173,232,.5)',
+  lilac40: 'rgba(199,173,232,.4)',
+  rose50: 'rgba(222,154,168,.5)',
+  violet28: 'rgba(110,77,150,.28)',
   madder22: 'rgba(148,80,94,.22)',
   rose35: 'rgba(222,154,168,.35)',
 } as const
 
 /** The textures: low contrast, felt more than seen. Grain goes over every large field; the night grain is a
  *  light noise at 5% that reads on a dark field. */
-const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .23 0 0 0 0 .18 0 0 0 0 .16 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
-const GRAIN_NIGHT = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .85 0 0 0 0 .95 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
-const FIBRE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .09' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .3 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E")`
-const SMOKE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .012' numOctaves='4' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .43 0 0 0 0 .30 0 0 0 0 .59 0 0 0 .32 -.08'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E")`
-const STARS = 'radial-gradient(1px 1px at 12% 18%,var(--wh-symbol-line),transparent 60%),radial-gradient(1.5px 1.5px at 38% 62%,var(--wh-symbol-line-soft),transparent 60%),radial-gradient(1px 1px at 71% 27%,var(--wh-a-madder-35),transparent 60%),radial-gradient(1px 1px at 86% 78%,var(--wh-symbol-line),transparent 60%),radial-gradient(2px 2px at 55% 12%,var(--wh-a-star-honey),transparent 60%),radial-gradient(1px 1px at 22% 86%,var(--wh-symbol-line-soft),transparent 60%)'
+const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .23 0 0 0 0 .18 0 0 0 0 .16 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23n%29'/%3E%3C/svg%3E")`
+const GRAIN_NIGHT = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .85 0 0 0 0 .95 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23n%29'/%3E%3C/svg%3E")`
+const FIBRE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .09' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .3 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23f%29'/%3E%3C/svg%3E")`
+const SMOKE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .012' numOctaves='4' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .43 0 0 0 0 .30 0 0 0 0 .59 0 0 0 .32 -.08'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23s%29'/%3E%3C/svg%3E")`
+const STARS = 'radial-gradient(1px 1px at 12% 18%,var(--wh-a-star-55),transparent 60%),radial-gradient(1.5px 1.5px at 38% 62%,var(--wh-a-star-45),transparent 60%),radial-gradient(1px 1px at 71% 27%,var(--wh-a-star-madder),transparent 60%),radial-gradient(1px 1px at 86% 78%,var(--wh-a-star-50),transparent 60%),radial-gradient(2px 2px at 55% 12%,var(--wh-a-star-honey),transparent 60%),radial-gradient(1px 1px at 22% 86%,var(--wh-a-star-40),transparent 60%)'
+const BLOOM = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='500'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='turbulence' baseFrequency='.008' numOctaves='3' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .58 0 0 0 0 .31 0 0 0 0 .37 0 0 0 .22 -.04'/%3E%3CfeGaussianBlur stdDeviation='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url%28%23b%29'/%3E%3C/svg%3E")`
+const LOGO_GROUND = 'radial-gradient(42% 38% at 50% 34%,var(--wh-a-mist-95),transparent 72%),radial-gradient(55% 40% at 55% 92%,var(--wh-a-blush-55),transparent 70%)'
 const WASHES = {
   violet: 'radial-gradient(60% 50% at 20% 25%,var(--wh-a-wash-violet),transparent 70%)',
   madder: 'radial-gradient(50% 45% at 80% 70%,var(--wh-a-wash-madder),transparent 70%)',
@@ -256,27 +281,28 @@ export const WILDHEART_TOKENS_CSS = `
 --wh-parchment:${P.parchment};--wh-vellum:${P.vellum};--wh-aged:${P.aged};--wh-hairline:${P.hairline};--wh-muted:${P.muted};--wh-secondary:${P.secondary};--wh-ink:${P.ink};--wh-border-strong:var(--wh-muted);
 --wh-violet:${P.violet};--wh-violet-pressed:${P.violetPressed};--wh-violet-text:${P.violetText};--wh-violet-top:${P.violetTop};--wh-lavender:${P.lavender};--wh-mist:${P.mist};--wh-nightshade:${P.nightshade};--wh-nightshade-top:${P.nightshadeTop};--wh-witch:var(--wh-nightshade);
 --wh-madder:${P.madder};--wh-madder-top:${P.madderTop};--wh-madder-deep:${P.madderDeep};--wh-madder-soft:${P.madderSoft};--wh-blush:${P.blush};--wh-blush-top:${P.blushTop};--wh-blush-deep:${P.blushDeep};--wh-secondary-accent:var(--wh-madder);
+--wh-honey-soft:${P.honeySoft};--wh-sage-soft:${P.sageSoft};--wh-winter-soft:${P.winterSoft};
 --wh-danger:var(--wh-madder);--wh-danger-soft:var(--wh-madder-soft);
 --wh-symbol-ink:var(--wh-violet-text);--wh-symbol-line:${ALPHA.symbol70};--wh-symbol-line-soft:${ALPHA.symbol32};--wh-symbol-ghost:${ALPHA.symbol20};--wh-symbol-stroke:1.5px;--wh-watermark:.07;
 --wh-a-ink-04:${ALPHA.ink04};--wh-a-ink-06:${ALPHA.ink06};--wh-a-ink-12:${ALPHA.ink12};--wh-a-violet-12:${ALPHA.violet12};--wh-a-violet-35:${ALPHA.violet35};--wh-a-madder-35:${ALPHA.madder35};
---wh-a-wash-violet:${ALPHA.lavender55};--wh-a-wash-madder:${ALPHA.madderSoft70};--wh-a-wash-moon:${ALPHA.mist90};--wh-a-wash-blush:${ALPHA.blush55};--wh-a-sage-18:${ALPHA.sage18};--wh-a-honey-14:${ALPHA.honey14};--wh-a-star-honey:${ALPHA.starHoney};--wh-a-veil-0:${ALPHA.vellum0};--wh-a-veil-85:${ALPHA.vellum85};
+--wh-a-wash-violet:${ALPHA.lavender55};--wh-a-wash-madder:${ALPHA.madderSoft70};--wh-a-wash-moon:${ALPHA.mist90};--wh-a-wash-blush:${ALPHA.blush60};--wh-a-blush-55:${ALPHA.blush55};--wh-a-mist-95:${ALPHA.mist95};--wh-a-star-55:${ALPHA.star55};--wh-a-star-45:${ALPHA.star45};--wh-a-star-50:${ALPHA.star50};--wh-a-star-40:${ALPHA.star40};--wh-a-star-madder:${ALPHA.starMadder};--wh-a-sage-18:${ALPHA.sage18};--wh-a-honey-14:${ALPHA.honey14};--wh-a-star-honey:${ALPHA.starHoney};--wh-a-veil-0:${ALPHA.vellum0};--wh-a-veil-85:${ALPHA.vellum85};
 --wh-a-vellum-12:${ALPHA.vellum12};--wh-a-violet-13:${ALPHA.violet13};--wh-a-madder-05:${ALPHA.madder05};--wh-a-madder-16:${ALPHA.madder16};--wh-a-night-28:${ALPHA.nightshade28};--wh-a-lavender-75:${ALPHA.lavender75};--wh-a-moonlight:${ALPHA.moonlight50};
 --wh-col:1216px;--wh-col-pad:48px;--wh-header-h:72px;--wh-header-total:116px;
 ${SEASON_TOKENS};
 --wh-season:var(--color-primary);--wh-season-top:var(--wh-violet-top);--wh-season-ink:var(--color-primary-strong);--wh-gradient-season:${GRADIENTS.lavender};--wh-text-on-season:${P.ink};--wh-text-on-fill:${P.vellum};
 --wh-gradient-violet:${GRADIENTS.violet};--wh-gradient-violet-pressed:${GRADIENTS.violetPressed};--wh-gradient-madder:${GRADIENTS.madder};--wh-gradient-lavender:${GRADIENTS.lavender};--wh-gradient-vellum:${GRADIENTS.vellum};--wh-gradient-dusk:${GRADIENTS.dusk};--wh-gradient-nightshade:${GRADIENTS.nightshade};--wh-gradient-twilight:${GRADIENTS.twilight};--wh-gradient-blush:${GRADIENTS.blush};--wh-gradient-opal:${GRADIENTS.opal};
 ${SEASON_GRADIENTS};
---wh-grain:${GRAIN};--wh-fibre:${FIBRE};--wh-smoke:${SMOKE};--wh-stars:${STARS};--wh-stars-size:220px 220px;--wh-veil:${VEIL};
+--wh-grain:${GRAIN};--wh-fibre:${FIBRE};--wh-smoke:${SMOKE};--wh-stars:${STARS};--wh-stars-size:220px 220px;--wh-veil:${VEIL};--wh-bloom:${BLOOM};--wh-logo-ground:${LOGO_GROUND};--wh-logo-ink:var(--wh-nightshade);
 --wh-wash-violet:${WASHES.violet};--wh-wash-madder:${WASHES.madder};--wh-wash-sage:${WASHES.sage};--wh-wash-moon:${WASHES.moon};--wh-wash-honey:${WASHES.honey};--wh-wash-blush:${WASHES.blush};
 --wh-page:var(--wh-wash-violet),var(--wh-wash-madder),var(--wh-grain),var(--wh-parchment);
---wh-shadow-soft:0 1px 2px var(--wh-a-ink-04),0 8px 28px var(--wh-a-ink-06);--wh-shadow-lift:0 2px 4px var(--wh-a-ink-04),0 16px 40px var(--wh-a-ink-12);--wh-aura:0 0 0 1px var(--wh-a-violet-12),0 10px 30px -8px var(--wh-a-violet-35);--wh-aura-madder:0 10px 30px -8px var(--wh-a-madder-35);
+--wh-shadow-none:none;--wh-shadow-soft:0 1px 2px var(--wh-a-ink-04),0 8px 28px var(--wh-a-ink-06);--wh-shadow-lift:0 2px 4px var(--wh-a-ink-04),0 16px 40px var(--wh-a-ink-12);--wh-aura:0 0 0 1px var(--wh-a-violet-12),0 10px 30px -8px var(--wh-a-violet-35);--wh-aura-madder:0 10px 30px -8px var(--wh-a-madder-35);
 --wh-focus-ring:var(--wh-violet);--wh-focus-halo:var(--wh-vellum);--wh-ring-focus:0 0 0 2px var(--wh-focus-halo),0 0 0 4px var(--wh-focus-ring);
 --wh-petal-sm:${WILDHEART_SHAPE.petalSm};--wh-petal-md:${WILDHEART_SHAPE.petalMd};--wh-petal-lg:${WILDHEART_SHAPE.petalLg};--wh-arch:${WILDHEART_SHAPE.arch};--wh-pill:${WILDHEART_SHAPE.pill};
 ${SPACE_TOKENS};--wh-gutter:${WILDHEART_SPACE.gutter};--wh-gutter-desktop:${WILDHEART_SPACE.gutterDesktop};--wh-content-max:${WILDHEART_SPACE.contentMax};
 --wh-control-sm:${WILDHEART_SPACE.controlSm};--wh-control-md:${WILDHEART_SPACE.controlMd};--wh-control-lg:${WILDHEART_SPACE.controlLg};--wh-touch-min:${WILDHEART_SPACE.touchMin};--wh-border-w:1px;--wh-border-w-active:2px;
 --wh-dur-fast:${WILDHEART_MOTION.fast};--wh-dur-base:${WILDHEART_MOTION.base};--wh-dur-slow:${WILDHEART_MOTION.slow};--wh-breath:${WILDHEART_MOTION.breath};--wh-ease:${WILDHEART_MOTION.ease};--wh-rise-y:${WILDHEART_MOTION.rise};--wh-hover-rise:${WILDHEART_MOTION.hoverRise};
 --wh-display:var(--font-wh-fell),'IM Fell English',Georgia,serif;--wh-body:var(--font-wh-garamond),'EB Garamond',Garamond,Georgia,serif;--wh-ui:var(--font-wh-hanken),'Hanken Grotesk',system-ui,sans-serif;--wh-symbol:var(--font-wh-symbols),'Noto Sans Symbols','Noto Sans Symbols 2','Segoe UI Symbol',serif;
---wh-tracking-label:.16em;--wh-tracking-display:-.005em;--wh-measure:64ch;
+--wh-tracking-label:.16em;--wh-tracking-display:-0.005em;--wh-tracking-wordmark:0.08em;--wh-measure:64ch;
 --color-canvas:var(--wh-parchment);--color-marketing-canvas:var(--wh-parchment);--color-surface:var(--wh-vellum);--color-surface-elevated:var(--wh-aged);--color-surface-post:var(--wh-vellum);
 --color-chrome:var(--wh-vellum);--color-chrome-border:var(--wh-hairline);--color-chrome-hover:var(--wh-mist);
 --color-border:var(--wh-hairline);--color-border-strong:var(--wh-border-strong);
@@ -285,9 +311,9 @@ ${SPACE_TOKENS};--wh-gutter:${WILDHEART_SPACE.gutter};--wh-gutter-desktop:${WILD
 --color-on-ink:${P.vellum};--color-on-ink-muted:${P.lavender};--color-on-ink-subtle:${P.lavender};
 --color-signal:var(--wh-secondary-accent);--color-signal-strong:var(--wh-secondary-accent);--color-signal-bg:var(--wh-madder-soft);--color-text-on-signal:${P.vellum};
 --color-broadcast:var(--wh-violet);--color-broadcast-strong:var(--wh-violet-text);--color-broadcast-bg:var(--wh-mist);--color-text-on-broadcast:${P.vellum};
---color-success:var(--wh-season-spring-ink);--color-success-bg:#E3EBDA;--color-text-on-success:${P.vellum};
+--color-success:var(--wh-season-spring-ink);--color-success-bg:var(--wh-sage-soft);--color-text-on-success:${P.vellum};
 --color-info:var(--wh-violet-text);--color-info-bg:var(--wh-mist);
---color-warning:var(--wh-season-summer-ink);--color-warning-bg:#EFE6CF;--color-text-on-warning:${P.ink};
+--color-warning:var(--wh-season-summer-ink);--color-warning-bg:var(--wh-honey-soft);--color-text-on-warning:${P.ink};
 --color-danger:var(--wh-danger);--color-danger-bg:var(--wh-danger-soft);--color-text-on-danger:${P.vellum};
 --color-focus-ring:var(--wh-focus-ring);
 --font-display:var(--wh-display);--font-heading:var(--wh-display);--font-body:var(--wh-body);
@@ -298,7 +324,7 @@ ${WILDHEART_SEASON_ORDER.map((s) => `[data-house-theme="wildheart"] [data-season
 --wh-violet-text:${N.lilac};--wh-lavender:${N.lavender};--wh-mist:${N.mist};--wh-witch:${N.witch};
 --wh-madder-top:${N.madderTop};--wh-madder-soft:${N.madderSoft};--wh-blush:${N.blush};--wh-blush-top:${N.blushTop};--wh-blush-deep:${N.blushDeep};--wh-rose:${N.rose};--wh-secondary-accent:var(--wh-rose);
 --wh-danger:var(--wh-rose);
---wh-symbol-line:${NIGHT_ALPHA.lilac70};--wh-symbol-line-soft:${NIGHT_ALPHA.lilac32};--wh-symbol-ghost:${NIGHT_ALPHA.lilac20};
+--wh-symbol-line:${NIGHT_ALPHA.lilac70};--wh-a-star-55:${NIGHT_ALPHA.lilac55};--wh-a-star-45:${NIGHT_ALPHA.lilac45};--wh-a-star-50:${NIGHT_ALPHA.lilac50};--wh-a-star-40:${NIGHT_ALPHA.lilac40};--wh-a-star-madder:${NIGHT_ALPHA.rose50};--wh-symbol-line-soft:${NIGHT_ALPHA.lilac32};--wh-symbol-ghost:${NIGHT_ALPHA.lilac20};
 --wh-a-ink-04:${NIGHT_ALPHA.night25};--wh-a-ink-06:${NIGHT_ALPHA.night45};--wh-a-ink-12:${NIGHT_ALPHA.night45};--wh-a-violet-12:${NIGHT_ALPHA.lilac12};--wh-a-violet-35:${NIGHT_ALPHA.lilac35};--wh-a-madder-35:${NIGHT_ALPHA.rose35};
 --wh-a-wash-violet:${NIGHT_ALPHA.violet28};--wh-a-wash-madder:${NIGHT_ALPHA.madder22};--wh-a-wash-moon:${NIGHT_ALPHA.lilac25};--wh-a-wash-blush:${NIGHT_ALPHA.madder22};--wh-a-veil-0:${NIGHT_ALPHA.night0};--wh-a-veil-85:${NIGHT_ALPHA.night85};
 ${SEASON_NIGHT_INKS};

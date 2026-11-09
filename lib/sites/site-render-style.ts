@@ -9,6 +9,9 @@ import { templeKitAccentVars } from '@/lib/theme/temple-kit'
 import { freeHumanAccentVars } from '@/lib/theme/free-human'
 import { midnightAccentVars } from '@/lib/theme/midnight'
 import { designerAccentVars } from '@/lib/theme/designer'
+import { newWorldAccentVars } from '@/lib/theme/new-world'
+import { cyberwitchAccentVars } from '@/lib/theme/cyberwitch'
+import { servicesAccentVars } from '@/lib/theme/services'
 import { SPACE_THEMES, SPACE_THEME_FONT_VARS, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SiteStyle, SiteThemeId } from '@/lib/theme/site-style'
 import { websiteThemeVars } from '@/lib/sites/editor/theme'
@@ -24,7 +27,7 @@ import type { WebsiteTheme } from '@/lib/sites/editor/state'
 // default accent.
 
 /** The editor's stored theme id for each site theme (ADR-1726): Bold is Menswork, Frequency is DAWN. */
-export const EDITOR_THEME_OF: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', 'network-kit': 'NetworkKit', temple: 'Temple', 'temple-kit': 'TempleKit', midnight: 'Midnight', designer: 'Designer', 'free-human': 'FreeHuman' }
+export const EDITOR_THEME_OF: Record<SiteThemeId, WebsiteTheme> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', 'network-kit': 'NetworkKit', temple: 'Temple', 'temple-kit': 'TempleKit', midnight: 'Midnight', designer: 'Designer', 'free-human': 'FreeHuman', services: 'Services', 'new-world': 'NewWorld', cyberwitch: 'CyberWitch' }
 
 /** The editor's id for any site theme (the same table as EDITOR_THEME_OF). */
 export const editorThemeOf = (theme: SiteThemeId): WebsiteTheme => EDITOR_THEME_OF[theme]
@@ -69,7 +72,13 @@ export function siteRenderStyle(pageStyle: SiteStyle, accent: string | null | un
                   ? designerAccentVars(brandAccent)
                   : theme === 'free-human'
                     ? freeHumanAccentVars(brandAccent)
-                    : resolveAccentVars(brandAccent, typeDefaultAccent)
+                    : theme === 'cyberwitch'
+                      ? cyberwitchAccentVars(brandAccent)
+                    : theme === 'new-world'
+                      ? newWorldAccentVars(brandAccent)
+                      : theme === 'services'
+                        ? servicesAccentVars(brandAccent)
+                        : resolveAccentVars(brandAccent, typeDefaultAccent)
   return {
     theme,
     editorTheme: editorThemeOf(theme),
