@@ -38,5 +38,46 @@
       { "id": "paper", "label": "Paper", "dials": { "register": "day", "type": "editorial", "motion": "off", "image": "mono", "corners": "square", "spacing": "balanced" } },
       { "id": "trade", "label": "Trade", "dials": { "register": "night", "type": "caps", "motion": "calm", "header": "bar", "image": "grain", "corners": "subtle", "spacing": "compact" } }
     ]
+  },
+  "free-human": {
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "register": "fixed",
+      "hero": "fixed",
+      "motion": "fixed",
+      "image": "fixed",
+      "accent": "fixed"
+    },
+    "looks": [],
+    "functions": {
+      "booking": [
+        "FreeHumanSpeaking"
+      ],
+      "services": [
+        "FreeHumanWorkshops"
+      ],
+      "reviews": [],
+      "posts": [],
+      "events": [
+        "FreeHumanEvents",
+        "FreeHumanCalendar"
+      ],
+      "shop": [
+        "FreeHumanBooks"
+      ],
+      "circles": [],
+      "firstnight": [],
+      "plans": [],
+      "letter": [],
+      "gallery": [],
+      "team": [
+        "FreeHumanLineage"
+      ],
+      "locations": [],
+      "forms": []
+    }
   }
 }

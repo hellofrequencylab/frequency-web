@@ -1,9 +1,9 @@
-import SCHEMA2 from './editor-schema2.json'
+import SCHEMA2 from './editor-schema2.json' with { type: 'json' }
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
 import { dialsFor, declaredDefault, looksFor, type Dial, type LookPreset, type ThemeEditorDecl } from '@/lib/theme/dials'
 import { SITE_DIAL_KEYS, type SiteDialKey } from '@/lib/theme/dials'
 import type { SiteThemeId } from '@/lib/theme/site-style'
-import CONTRACT from '@/lib/sites/editor/theme-contract.json'
+import CONTRACT from '@/lib/sites/editor/theme-contract.json' with { type: 'json' }
 import type { AccentChoice } from '@/components/sites/editor/theme-controls'
 import type { WebsiteTheme } from '@/lib/sites/editor/state'
 
