@@ -92,7 +92,7 @@ export const VERA = {
   },
   place: {
     heading: 'Where are you?',
-    body: 'We open in North County San Diego on December 1. Tell us your town and we will show you what is near you first.',
+    body: 'We open in North County San Diego on January 1. Tell us your town and we will show you what is near you first.',
     intentLabel: 'What are you hoping to find here?',
     intentPlaceholder: 'A running group, a place to teach, people to hang with. Say it plainly.',
   },
