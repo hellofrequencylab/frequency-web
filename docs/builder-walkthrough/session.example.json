@@ -1,0 +1,15 @@
+{
+  "sessions": [
+    {
+      "owner": "Owner A (an example, not a real session)",
+      "published": true,
+      "helped": false,
+      "used": [
+        { "id": "hero.title", "layer": 1 },
+        { "id": "gatherings.variant", "layer": 2 }
+      ],
+      "searched": ["theme"],
+      "notes": ["0:04 looked for where to change the look, opened the Theme button on the second try"]
+    }
+  ]
+}
