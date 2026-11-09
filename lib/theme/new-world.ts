@@ -268,10 +268,11 @@ export const NEW_WORLD_DAY_CSS = `
 --nw-ink-800:#FDFCFA;
 --nw-ink-700:#EFECE7;
 --nw-ink-600:#DDD8D0;
---nw-graphite-400:#7C766F;
+/* BLD-901: Commons muted ink at day (#7C766F) reads 4.49:1 on white, under AA for small text; the deeper step is the one frequency.css already standardised (5.50:1 on white). */
+--nw-graphite-400:#6E6862;
 --nw-chrome-50:#34312E;
 --nw-chrome-200:#4D4945;
---nw-chrome-400:#7C766F;
+--nw-chrome-400:#6E6862;
 --nw-flare-300:var(--nw-d-flare-300);
 --nw-flare-400:var(--nw-d-flare-400);
 --nw-flare-500:var(--nw-d-flare-500);
