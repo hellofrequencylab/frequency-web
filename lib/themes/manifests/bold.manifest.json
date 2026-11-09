@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "id": "bold",
   "legacyIds": {
     "editor": "Menswork",
@@ -49,6 +49,40 @@
       "path": [
         "themes",
         "Menswork"
+      ]
+    },
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "register": "fixed",
+      "hero": "fixed",
+      "accent": "fixed"
+    },
+    "looks": [],
+    "functions": {
+      "booking": [
+        "SpaceBooking"
+      ],
+      "services": [
+        "SpaceOfferings"
+      ],
+      "reviews": [],
+      "posts": [],
+      "events": [
+        "SpaceEvents"
+      ],
+      "shop": [],
+      "circles": [],
+      "firstnight": [],
+      "plans": [],
+      "letter": [],
+      "gallery": [],
+      "team": [],
+      "locations": [],
+      "forms": [
+        "SpaceContact"
       ]
     }
   },
