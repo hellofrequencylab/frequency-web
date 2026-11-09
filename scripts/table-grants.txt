@@ -379,4 +379,5 @@ share_links                           internal
 share_link_opens                      internal
 create_space_drafts                   internal
 create_space_draft_email_log         internal
+space_wall_bans                       authenticated
 space_wall_settings                   public

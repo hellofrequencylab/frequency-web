@@ -2,10 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { normalizePollOptions } from '@/lib/feed/compose-kinds'
+import { attachWallPollOptions } from '@/lib/spaces/community-wall'
 
 // WRITE TO A SPACE'S COMMUNITY WALL (ADR-1938, LIVE-2077, LIVE-2095).
 //
@@ -21,9 +21,10 @@ import { normalizePollOptions } from '@/lib/feed/compose-kinds'
 // derive the Space arc on purpose (existing space_update posts already use scope_id = Space id and
 // must keep the old policy arms), so the writer states it.
 //
-// A poll's options go in on the service role after the post lands, the same way createPost does
-// it: the options table has no member INSERT policy. If the options fail, the post is removed so
-// no question is left standing without its answers.
+// A poll's options go in on the service role after the post lands (lib/spaces/community-wall.ts
+// attachWallPollOptions), the same way createPost does it: the options table has no member INSERT
+// policy. If the options fail, the post is removed so no question is left standing without its
+// answers.
 
 const MAX_BODY = 5000
 
@@ -82,16 +83,8 @@ export async function createWallPost(input: {
     return fail('Could not save your post. Please try again.')
   }
 
-  if (kind === 'poll') {
-    const admin = createAdminClient()
-    const { error: optErr } = await admin
-      .from('post_poll_options')
-      .insert(pollOptions.map((label, position) => ({ post_id: inserted.id, label, position })))
-    if (optErr) {
-      await admin.from('posts').delete().eq('id', inserted.id)
-      console.error('[createWallPost] poll options', { code: optErr.code ?? null, message: optErr.message })
-      return fail('Could not save the poll options. Please try again.')
-    }
+  if (kind === 'poll' && !(await attachWallPollOptions(inserted.id, pollOptions))) {
+    return fail('Could not save the poll options. Please try again.')
   }
 
   revalidatePath(`/spaces/${input.slug}/community`)

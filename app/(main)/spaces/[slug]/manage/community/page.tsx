@@ -6,8 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { consoleBackFor } from '@/lib/spaces/console-back'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { listWallBans, readWallSettings } from '@/lib/spaces/community-wall'
+import { listWallBans, listWallReports, readWallSettings } from '@/lib/spaces/community-wall'
 import { relativeTime } from '@/lib/utils'
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { buttonClasses } from '@/components/ui/button'
@@ -43,56 +42,6 @@ type WallRow = {
   author: { display_name: string | null } | null
 }
 
-type ReportView = {
-  id: string
-  reason: string
-  details: string | null
-  createdAt: string
-  excerpt: string
-  authorName: string
-}
-
-const REPORT_SCAN = 500
-
-/** The open reports on posts (and replies) that live on this wall. Service role, after the gate:
- *  reports has no Space-team read policy. Fail-safe to an empty list. */
-async function readWallReports(spaceId: string): Promise<ReportView[]> {
-  try {
-    const admin = createAdminClient()
-    const { data: posts } = await admin
-      .from('posts')
-      .select('id, body, author:profiles!author_id ( display_name )')
-      .eq('scope_space_id', spaceId)
-      .order('created_at', { ascending: false })
-      .limit(REPORT_SCAN)
-    const byId = new Map(
-      ((posts ?? []) as unknown as { id: string; body: string | null; author: { display_name: string | null } | null }[]).map((p) => [p.id, p]),
-    )
-    if (byId.size === 0) return []
-    const { data: reports } = await admin
-      .from('reports')
-      .select('id, reason, details, created_at, target_id')
-      .eq('status', 'pending')
-      .in('target_type', ['post', 'comment'])
-      .in('target_id', [...byId.keys()])
-      .order('created_at', { ascending: false })
-      .limit(50)
-    return ((reports ?? []) as { id: string; reason: string; details: string | null; created_at: string | null; target_id: string }[]).map((r) => {
-      const post = byId.get(r.target_id)
-      return {
-        id: r.id,
-        reason: r.reason,
-        details: r.details,
-        createdAt: r.created_at ?? new Date().toISOString(),
-        excerpt: (post?.body ?? '').slice(0, 240),
-        authorName: post?.author?.display_name ?? 'A member',
-      }
-    })
-  } catch {
-    return []
-  }
-}
-
 export default async function ManageCommunityPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const caller = await getCallerProfile()
@@ -115,7 +64,7 @@ export default async function ManageCommunityPage({ params }: { params: Promise<
       .order('created_at', { ascending: false })
       .limit(RECENT),
     canModerate ? listWallBans(space.id) : Promise.resolve([]),
-    canModerate ? readWallReports(space.id) : Promise.resolve([]),
+    canModerate ? listWallReports(space.id) : Promise.resolve([]),
   ])
   const posts = (recent.data ?? []) as unknown as WallRow[]
   const bannedIds = new Set(bans.map((b) => b.profileId))

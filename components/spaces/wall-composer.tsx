@@ -5,7 +5,7 @@ import { Hand } from 'lucide-react'
 import { Composer } from '@/components/feed/composer'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { arrivalsSentence, type WallArrival } from '@/lib/spaces/community-wall'
+import { arrivalsSentence, type WallArrival } from '@/lib/spaces/community-wall-core'
 import { createWallPost } from '@/app/(main)/spaces/[slug]/(profile)/community/actions'
 
 // The Community wall's composer: the same box the Circle feed uses, posting through the wall's own

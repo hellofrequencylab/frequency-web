@@ -10,6 +10,9 @@
 // post, followers may not interact.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { type WallArrival } from './community-wall-core'
+
+export { arrivalsSentence, type WallArrival } from './community-wall-core'
 
 type WallReadAccess = 'anyone' | 'members'
 type WallPostAccess = 'team' | 'members'
@@ -255,14 +258,6 @@ export async function liftWallBan(spaceId: string, profileId: string): Promise<b
 // reason to say hello. Paying memberships only (space_memberships, active, started this week); the
 // team ladder is staff, not an arrival. Fail-safe to an empty list, which hides the strip.
 
-export type WallArrival = {
-  profileId: string
-  displayName: string
-  handle: string | null
-  avatarUrl: string | null
-  joinedAt: string
-}
-
 const ARRIVALS_WINDOW_DAYS = 7
 
 export async function readWallArrivals(spaceId: string, limit = 6): Promise<WallArrival[]> {
@@ -289,12 +284,123 @@ export async function readWallArrivals(spaceId: string, limit = 6): Promise<Wall
   }
 }
 
-/** "Sunny and Jonah just joined" / "Sunny, Jonah and 3 others just joined". PURE. */
-export function arrivalsSentence(names: readonly string[]): string {
-  const first = names.map((n) => n.trim().split(/\s+/)[0] || 'Someone').filter(Boolean)
-  if (first.length === 0) return ''
-  if (first.length === 1) return `${first[0]} just joined`
-  if (first.length === 2) return `${first[0]} and ${first[1]} just joined`
-  if (first.length === 3) return `${first[0]}, ${first[1]} and ${first[2]} just joined`
-  return `${first[0]}, ${first[1]} and ${first.length - 2} others just joined`
+// ── Service-role writes the wall's actions hand over (LIVE-2095) ────────────────────────────────
+// The three app files that need the service role (poll options, the report queue) call these, so
+// the RLS bypass lives in one module (check:admin-client) and every caller has already passed its
+// own gate: createWallPost has a post the policy admitted, the console has canModerateWall.
+
+/** Attach a poll's options to a wall post that the posts policy already admitted. On failure the
+ *  post is removed so no question stands without its answers. Returns false on failure. */
+export async function attachWallPollOptions(postId: string, options: readonly string[]): Promise<boolean> {
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('post_poll_options')
+    .insert(options.map((label, position) => ({ post_id: postId, label, position })))
+  if (!error) return true
+  await admin.from('posts').delete().eq('id', postId)
+  console.error('[attachWallPollOptions]', { code: error.code ?? null, message: error.message })
+  return false
+}
+
+type WallReport = {
+  id: string
+  reason: string
+  details: string | null
+  createdAt: string
+  excerpt: string
+  authorName: string
+}
+
+const REPORT_SCAN = 500
+
+/** The open reports on posts (and replies) that live on this wall. The reports table has no
+ *  Space-team read policy, so this runs on the service role AFTER the caller's canModerateWall
+ *  gate. Fail-safe to an empty list. */
+export async function listWallReports(spaceId: string): Promise<WallReport[]> {
+  try {
+    const admin = createAdminClient()
+    const { data: posts } = await admin
+      .from('posts')
+      .select('id, body, author:profiles!author_id ( display_name )')
+      .eq('scope_space_id', spaceId)
+      .order('created_at', { ascending: false })
+      .limit(REPORT_SCAN)
+    const byId = new Map(
+      ((posts ?? []) as unknown as { id: string; body: string | null; author: { display_name: string | null } | null }[]).map((p) => [p.id, p]),
+    )
+    if (byId.size === 0) return []
+    const { data: reports } = await admin
+      .from('reports')
+      .select('id, reason, details, created_at, target_id')
+      .eq('status', 'pending')
+      .in('target_type', ['post', 'comment'])
+      .in('target_id', [...byId.keys()])
+      .order('created_at', { ascending: false })
+      .limit(50)
+    return ((reports ?? []) as { id: string; reason: string; details: string | null; created_at: string | null; target_id: string }[]).map((r) => {
+      const post = byId.get(r.target_id)
+      return {
+        id: r.id,
+        reason: r.reason,
+        details: r.details,
+        createdAt: r.created_at ?? new Date().toISOString(),
+        excerpt: (post?.body ?? '').slice(0, 240),
+        authorName: post?.author?.display_name ?? 'A member',
+      }
+    })
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Close one pending report on a post (or reply) of THIS wall. 'hide' soft-hides the post and marks
+ * the report actioned; 'dismiss' leaves the post and marks it dismissed. The report must point at
+ * a post with this Space's scope, read before anything is written, so a Space team can never close
+ * a report that belongs to another wall or to the platform queue. The CALLER has checked
+ * canModerateWall. Returns an error sentence for a person, or null when done.
+ */
+export async function resolveWallReport(args: {
+  spaceId: string
+  reportId: string
+  decision: 'hide' | 'dismiss'
+  reviewerId: string
+}): Promise<string | null> {
+  const admin = createAdminClient()
+  const { data: report } = await admin
+    .from('reports')
+    .select('id, target_type, target_id, status')
+    .eq('id', args.reportId)
+    .maybeSingle()
+  if (!report || (report.target_type !== 'post' && report.target_type !== 'comment')) return 'That report could not be found.'
+  if (report.status !== 'pending') return 'That report was already reviewed.'
+
+  const { data: post } = await admin
+    .from('posts')
+    .select('id')
+    .eq('id', report.target_id)
+    .eq('scope_space_id', args.spaceId)
+    .maybeSingle()
+  if (!post) return 'That report is not about this wall.'
+
+  if (args.decision === 'hide') {
+    const { error: hideErr } = await admin
+      .from('posts')
+      .update({ hidden_at: new Date().toISOString(), hidden_by: args.reviewerId })
+      .eq('id', post.id)
+      .eq('scope_space_id', args.spaceId)
+    if (hideErr) return 'That post could not be hidden.'
+  }
+
+  const { error } = await admin
+    .from('reports')
+    .update({
+      status: args.decision === 'hide' ? 'actioned' : 'dismissed',
+      reviewed_by: args.reviewerId,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', report.id)
+    .eq('status', 'pending')
+  if (error) return 'That report could not be closed.'
+  return null
 }

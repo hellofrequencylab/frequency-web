@@ -38,6 +38,7 @@ revoke all on public.space_wall_bans from anon;
 grant select on public.space_wall_bans to authenticated;
 
 create index if not exists space_wall_bans_profile_idx on public.space_wall_bans (profile_id);
+create index if not exists space_wall_bans_banned_by_idx on public.space_wall_bans (banned_by) where banned_by is not null;
 
 -- ── 2. a banned person may not post ─────────────────────────────────────────────────────────────
 create or replace function private.can_post_space_wall(p_space_id uuid)
