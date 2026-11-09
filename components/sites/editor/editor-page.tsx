@@ -20,6 +20,8 @@ import { readSiteStyle } from '@/lib/theme/site-style'
 import { readMegaTheme } from '@/lib/theme/mega-theme'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { ConnectedWebsiteEditor } from './website-editor'
+import { shadowLogLines, shadowReport } from '@/lib/builder/shadow'
+import { config as editorConfig } from '@/lib/page-editor/config'
 import { NETWORK_FONT_CLASS } from '../network-fonts'
 import { TEMPLE_FONT_CLASS } from '../temple-fonts'
 import { MIDNIGHT_FONT_CLASS } from '../midnight-fonts'
@@ -52,6 +54,9 @@ export async function WebsiteEditorPage({ host, space: cached, token, builder }:
   }
   initial = { ...initial, draft: { ...initial.draft, pages: await Promise.all(initial.draft.pages.map(async (page) => ({ ...page, doc: await refreshAssetRefUrls(page.doc, { websiteSpaceId: space.id }) }))) } }
   const websiteFeatures = await loadWebsiteFeatures(space.id, initial.draft.pages.map((page) => page.doc))
+  // THE SHADOW RENDER (BLD-108): when the new builder opens a real draft, both editors' readings of it are compared
+  // and any difference neither pass explains is logged, so the cohort rollout (BUILDER_V3_SPACES) has evidence.
+  if (builder === 'v3') for (const line of shadowLogLines(host, shadowReport(initial.draft.pages, editorConfig))) console.warn(line)
   const websiteChrome = {
     cta: chrome.cta, tagline: chrome.tagline,
     seasonNow: { ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()), next: live.events.find((event) => /circle night/i.test(event.title))?.startsAt ?? null },

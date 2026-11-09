@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { builderInit, builderReducer, builderDirty, builderSaveLabel, builderV3Requested, BUILDER_HISTORY_DEPTH, type BuilderState } from './state'
+import { builderInit, builderReducer, builderDirty, builderSaveLabel, builderV3Cohort, builderV3Requested, BUILDER_HISTORY_DEPTH, type BuilderState } from './state'
 import type { WebsiteEditorState, WebsiteSnapshot } from '@/lib/sites/editor/state'
 
 const snap = (title: string): WebsiteSnapshot => ({ theme: 'NewWorld', pages: [{ slug: 'home', label: 'Home', seo: { title: '', description: '' }, comments: [], doc: { root: { props: {} }, content: [{ type: 'PhotoHero', props: { id: 'a', title } }, { type: 'SpaceFAQ', props: { id: 'b' } }] } }, { slug: 'about', label: 'About', seo: { title: '', description: '' }, comments: [], doc: { root: { props: {} }, content: [{ type: 'Zigzag', props: { id: 'c' } }] } }] } as unknown as WebsiteSnapshot)
@@ -48,6 +48,20 @@ describe('builder state', () => {
     expect(builderV3Requested('v3', false)).toBe(true)
     expect(builderV3Requested(undefined, true)).toBe(true)
     expect(builderV3Requested('classic', true)).toBe(false)
+  })
+
+  it('opens for a Space in the cohort, and classic still wins there (BLD-108)', () => {
+    const cohort = builderV3Cohort(' danieltyack, Frequency\nmoflow ')
+    expect([...cohort]).toEqual(['danieltyack', 'frequency', 'moflow'])
+    expect(builderV3Cohort(undefined).size).toBe(0)
+    expect(builderV3Cohort('   ').size).toBe(0)
+    expect(builderV3Requested(undefined, false, cohort, 'danieltyack')).toBe(true)
+    expect(builderV3Requested(undefined, false, cohort, 'Frequency')).toBe(true)
+    expect(builderV3Requested(undefined, false, cohort, 'someone-else')).toBe(false)
+    expect(builderV3Requested(undefined, false, cohort, null)).toBe(false)
+    expect(builderV3Requested('classic', false, cohort, 'danieltyack')).toBe(false)
+    // The flag off and no cohort: the current editor, exactly as before.
+    expect(builderV3Requested(undefined, false, builderV3Cohort(null), 'danieltyack')).toBe(false)
   })
 })
 
