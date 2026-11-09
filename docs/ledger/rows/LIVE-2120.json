@@ -4,15 +4,16 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "test/e2e/theme-conformance.spec.ts",
     "ref": "LIVE-2032 follow-up"
   },
-  "detail": "LIVE-2032 built test/e2e/theme-conformance.spec.ts against a static render. Two things remain. (1) Run it in CI against a published Space whose theme is Services (CONFORMANCE_URL) and add the four checks a static render cannot give: motion-additive, empty-states, hidden-functions, surface-parity. (2) The spec found that data-type changes no role-block title face in the Services render (role blocks use --f-display, not .sv-display), so the three type voices have nothing to test there; the role skin needs to follow the voice.",
+  "detail": "LIVE-2032 built test/e2e/theme-conformance.spec.ts against a static render. Two things remain. (1) Run it in CI against a published Space whose theme is Services (CONFORMANCE_URL) and add the four checks a static render cannot give: motion-additive, empty-states, hidden-functions, surface-parity. (2) The spec found that data-type changes no role-block title face in the Services render (role blocks use --f-display, not .sv-display), so the three type voices have nothing to test there; the role skin needs to follow the voice.\n\nBuilds a disposable Services preview with actual role blocks, fonts, theme CSS, and representative website, Space, Spotlight, and receipt renders. GitHub CI serves the fixture on loopback and runs the full Chromium suite without a published customer Space, production data, or a message send. The original conformance thresholds remain in force.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e \"const s=require('fs').readFileSync('.github/workflows/ci.yml','utf8');if(!/CONFORMANCE_URL/.test(s))process.exit(1)\""
   },
+  "closed": "2026-11-09",
   "wave": "W7"
 }
