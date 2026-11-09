@@ -3,9 +3,25 @@ import { HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { appOrigin } from '@/lib/sites/host'
 import { MENSWORK_SEASON_INFO, type MensworkSeason } from '@/lib/theme/menswork'
 import { dateLabel } from '@/lib/sites/menswork-page'
+import { HOUSE_CSS } from './house-css'
+import { MENSWORK_CSS } from './menswork-css'
+import { MENSWORK_PAGE_CSS } from './menswork-page-css'
+import { FREQUENCY_PAGE_CSS } from './frequency-page-css'
+import { WILDHEART_CSS } from './wildheart-css'
+import { NETWORK_CSS } from './network-css'
+import { TEMPLE_CSS } from './temple-css'
+import { MIDNIGHT_CSS } from './midnight-css'
+import { TEMPLE_KIT_CSS } from './temple-kit-css'
+import { NETWORK_KIT_CSS } from './network-kit-css'
 import { NetworkKitLogo } from './network-kit-logo'
 import { NetworkKitBar } from './network-kit-bar'
 import { NetworkKitHeaderState } from './network-kit-header-state'
+import { DESIGNER_CSS } from './designer-css'
+import { FREE_HUMAN_CSS } from './free-human-css'
+import { NEW_WORLD_CSS } from './new-world-css'
+import { CYBERWITCH_CSS } from './cyberwitch-css'
+import { NEW_WORLD_DIALS_CSS } from './new-world-dials-css'
+import { SERVICES_SITE_CSS } from './services-css'
 import { Clock, Mail, MapPin, Phone } from 'lucide-react'
 import { InlineText } from './inline-text'
 import { DesignerFooterTop, DesignerUtilityBar, phoneMenuFoot } from './designer-chrome'
@@ -33,7 +49,7 @@ import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
 import { sky } from '@/lib/theme/astrology-wheel'
 import type { SiteFooter } from '@/lib/sites/site-footer'
 import type { FooterBadgeMode } from '@/lib/sites/site-badge'
-import { siteSkinCss, type SiteSkinName } from './site-skin-css'
+import { SITE_LOOK_CSS } from './site-look-css'
 import type { SiteLook } from '@/lib/theme/site-style'
 import { HouseHeader, type HouseHeaderLink, type SiteLogoMode } from './house-header'
 import { SiteFooterAdmin, type SiteAdminNavLink } from './site-admin-bar'
@@ -84,7 +100,7 @@ export type SiteLink = HouseHeaderLink
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: SiteSkinName
+  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'new-world' | 'services' | 'cyberwitch'
   season: MensworkSeason
   /** Network and Network Theme Kit: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
@@ -92,6 +108,25 @@ interface SiteSkin {
   register?: 'night' | 'day'
   /** New World and Services: the Type voice, Motion and Images dials (LIVE-1997 schema 2), written as data-type, data-motion and data-image. */
   dials?: { type: string; motion: string; image: string }
+}
+
+/** The inline sheet. components/sites/site-skin-css.ts composes the same bytes for the preview-only static file
+ *  (site-theme-stylesheet.test.ts pins the two together), so a new skin lands in both. */
+export function skinCss(skin: SiteSkin | null, look = ''): string {
+  if (!skin) return HOUSE_CSS
+  if (skin.theme === 'wildheart') return HOUSE_CSS + FREQUENCY_PAGE_CSS + WILDHEART_CSS
+  if (skin.theme === 'network') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NETWORK_CSS
+  // The kit's sheet goes AFTER the owner's look sheet, so its shapes follow the --nk-radius-* tokens the axes re-point.
+  if (skin.theme === 'network-kit') return HOUSE_CSS + FREQUENCY_PAGE_CSS + look + NETWORK_KIT_CSS
+  if (skin.theme === 'temple') return HOUSE_CSS + FREQUENCY_PAGE_CSS + TEMPLE_CSS
+  if (skin.theme === 'temple-kit') return HOUSE_CSS + FREQUENCY_PAGE_CSS + TEMPLE_KIT_CSS
+  if (skin.theme === 'midnight') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MIDNIGHT_CSS
+  if (skin.theme === 'designer') return HOUSE_CSS + FREQUENCY_PAGE_CSS + DESIGNER_CSS
+  if (skin.theme === 'free-human') return HOUSE_CSS + FREQUENCY_PAGE_CSS + FREE_HUMAN_CSS
+  if (skin.theme === 'new-world') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS
+  if (skin.theme === 'cyberwitch') return HOUSE_CSS + FREQUENCY_PAGE_CSS + CYBERWITCH_CSS
+  if (skin.theme === 'services') return HOUSE_CSS + FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS
+  return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
 
 export function SiteChrome({
@@ -128,8 +163,9 @@ export function SiteChrome({
   /** True when the Space picked a page theme, so its faces replace the house serif and sans. */
   themeFonts: boolean
   /** A full website skin from the Space's page theme (only Menswork has one), with its season. */
-  themeStylesheet?: string
   skin?: SiteSkin | null
+  /** Preview-only hashed stylesheet (LIVE-1862). Absent in production, which keeps the inline sheet. */
+  themeStylesheet?: string
   /** The Space's logo. The house look sets it as a round photo beside the name (or alone, logoMode
    *  'logo'); a skinned site draws it as a one-colour mark beside the name. */
   logoUrl?: string | null
@@ -265,7 +301,7 @@ export function SiteChrome({
       data-site-header={look.header}
       className="hs-root"
     >
-      {themeStylesheet ? <link rel="stylesheet" href={themeStylesheet} /> : <style>{siteSkinCss(skin?.theme, look)}</style>}
+      {themeStylesheet ? <link rel="stylesheet" href={themeStylesheet} /> : <style>{nk ? skinCss(skin, look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '') : skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>}
       {designer && <DesignerHeaderState />}
       {nk && <NetworkKitHeaderState />}
       {tk && <TempleKitHeaderState />}
