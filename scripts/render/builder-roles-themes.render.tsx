@@ -31,7 +31,7 @@ it('renders the builder roles in every theme', async () => {
   const { roleBlocksCss } = await import('@/components/sites/role-blocks-css')
   const { presentationDefault } = await import('@/components/sites/presentation')
   const { SERVICES_SITE_CSS } = await import('@/components/sites/services-css')
-    const { servicesAccentVars, SERVICES_ACCENTS } = await import('@/lib/theme/services')
+  const { servicesAccentVars, SERVICES_ACCENTS } = await import('@/lib/theme/services')
   const css = {
     Menswork: (await import('@/components/sites/menswork-css')).MENSWORK_CSS, Midnight: (await import('@/components/sites/midnight-css')).MIDNIGHT_CSS,
     Wildheart: (await import('@/components/sites/wildheart-css')).WILDHEART_CSS, Network: (await import('@/components/sites/network-css')).NETWORK_CSS,
@@ -61,14 +61,14 @@ it('renders the builder roles in every theme', async () => {
     const { servicesKitSpotlightContent } = await import('@/lib/spotlight/services-kit-content')
     const { servicesKitEmail } = await import('@/lib/theme/services-kit-email')
     const { formatServiceDuration, formatServicePrice } = await import('@/lib/spaces/profile-data')
-    const Hero = servicesBlocks.ServicesHero.render as (props: unknown) => React.ReactElement
+    const renderHero = servicesBlocks.ServicesHero.render as (props: unknown) => React.ReactElement
     const service = { title: 'Fixture window cleaning', price: 85, durationMinutes: 45, visibility: 'listed' as const }
     const offer = { name: service.title, price: formatServicePrice(service)!, dur: formatServiceDuration(service.durationMinutes)!, icon: 'tag' as const }
-    const hero = renderToStaticMarkup(<Hero {...servicesBlocks.ServicesHero.defaultProps} look="glow" image="" offers={[{ ...offer, meta: offer.dur }]} puck={{ metadata: { theme } }} />)
-    const photoEmpty = renderToStaticMarkup(<Hero {...servicesBlocks.ServicesHero.defaultProps} look="split" image="" areas={[]} puck={{ metadata: { theme } }} />)
+    const hero = renderToStaticMarkup(renderHero({ ...servicesBlocks.ServicesHero.defaultProps, look: 'glow', image: '', offers: [{ ...offer, meta: offer.dur }], puck: { metadata: { theme } } }))
+    const photoEmpty = renderToStaticMarkup(renderHero({ ...servicesBlocks.ServicesHero.defaultProps, look: 'split', image: '', areas: [], puck: { metadata: { theme } } }))
     const gatherings = ROLES.gatherings
-    const Gatherings = rolesComponents[gatherings.type].render as (props: unknown) => React.ReactElement
-    const empty = renderToStaticMarkup(<Gatherings {...gatherings.sample} sample={false} items={[]} image="" empty="No dates are scheduled." puck={{ metadata: { theme, space: { spaceId: 'services-fixture', events: [] } } }} />)
+    const renderGatherings = rolesComponents[gatherings.type].render as (props: unknown) => React.ReactElement
+    const empty = renderToStaticMarkup(renderGatherings({ ...gatherings.sample, sample: false, items: [], image: '', empty: 'No dates are scheduled.', puck: { metadata: { theme, space: { spaceId: 'services-fixture', events: [] } } } }))
     const profile = renderToStaticMarkup(<SpaceOfferingsBlock items={[service]} />)
     const privateProfile = renderToStaticMarkup(<SpaceOfferingsBlock items={[{ ...service, visibility: 'private' }]} />)
     const spotlight = renderToStaticMarkup(<ServicesKitSpotlightLayout layout="services-kit:shop-front" content={{ ...servicesKitSpotlightContent('general', { sample: false }), offers: [offer] }} />)
