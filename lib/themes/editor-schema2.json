@@ -38,5 +38,86 @@
       { "id": "paper", "label": "Paper", "dials": { "register": "day", "type": "editorial", "motion": "off", "image": "mono", "corners": "square", "spacing": "balanced" } },
       { "id": "trade", "label": "Trade", "dials": { "register": "night", "type": "caps", "motion": "calm", "header": "bar", "image": "grain", "corners": "subtle", "spacing": "compact" } }
     ]
+  },
+  "temple-kit": {
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "accent": "supported",
+      "register": "fixed"
+    },
+    "looks": [
+      {
+        "id": "general",
+        "label": "Temple",
+        "dials": {
+          "accent": "general"
+        }
+      },
+      {
+        "id": "coaches",
+        "label": "Coaches and healers",
+        "dials": {
+          "accent": "coaches"
+        }
+      },
+      {
+        "id": "studios",
+        "label": "Studios and instructors",
+        "dials": {
+          "accent": "studios"
+        }
+      },
+      {
+        "id": "hosts",
+        "label": "Event hosts",
+        "dials": {
+          "accent": "hosts"
+        }
+      }
+    ],
+    "functions": {
+      "booking": [],
+      "services": [
+        "TempleKitOfferings",
+        "TempleKitInnerService"
+      ],
+      "reviews": [
+        "TempleKitProof"
+      ],
+      "posts": [
+        "TempleKitInnerLibrary"
+      ],
+      "events": [
+        "TempleKitGatherings",
+        "TempleKitInnerGatherings"
+      ],
+      "shop": [
+        "TempleKitInnerShop"
+      ],
+      "circles": [
+        "TempleKitRooms"
+      ],
+      "firstnight": [],
+      "plans": [
+        "TempleKitMembership",
+        "TempleKitInnerTiers"
+      ],
+      "letter": [
+        "TempleKitLetter"
+      ],
+      "gallery": [
+        "TempleKitGallery"
+      ],
+      "team": [
+        "TempleKitInnerTeam"
+      ],
+      "locations": [],
+      "forms": [
+        "TempleKitInnerContact"
+      ]
+    }
   }
 }
