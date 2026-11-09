@@ -85,25 +85,25 @@
       "booking": [
         "SpaceBooking"
       ],
-      "services": [
-        "SpaceOfferings"
-      ],
-      "reviews": [],
-      "posts": [],
+      "circles": [],
       "events": [
         "SpaceEvents"
       ],
-      "shop": [],
-      "circles": [],
       "firstnight": [],
-      "plans": [],
-      "letter": [],
-      "gallery": [],
-      "team": [],
-      "locations": [],
       "forms": [
         "SpaceContact"
-      ]
+      ],
+      "gallery": [],
+      "letter": [],
+      "locations": [],
+      "plans": [],
+      "posts": [],
+      "reviews": [],
+      "services": [
+        "SpaceOfferings"
+      ],
+      "shop": [],
+      "team": []
     }
   }
 }
