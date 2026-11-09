@@ -11,6 +11,6 @@
     }
   },
   "append": {
-    "detail": "\n\nLibrary website code (the website editor seed and the website menu catalog) now resolves rows as kind site, safe because a Site and a Space resolve identical rows (site-kind.test.ts). A Site-only surface filter and the zero-visual-diff picture remain future work and are not claimed here."
+    "detail": "\n\nLibrary website code (the website editor seed and the website menu catalog) now resolves rows as kind site, safe because a Site and a Space resolve identical rows (site-kind.test.ts). A Site-only surface filter and the zero-visual-diff picture are split into LIVE-2232, which stays open with a failing probe."
   }
 }
