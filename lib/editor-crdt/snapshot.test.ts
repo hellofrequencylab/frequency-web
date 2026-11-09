@@ -22,7 +22,7 @@ describe('snapshotForStorage', () => {
 describe('readPresence', () => {
   it('clamps an untrusted payload', () => {
     const p = readPresence({ userId: 'u1', name: 'x'.repeat(200), color: 'red', selectedNid: '<script>' })
-    expect(p).toEqual({ userId: 'u1', name: 'x'.repeat(40), color: '#888888', selectedNid: null })
+    expect(p).toEqual({ userId: 'u1', name: 'x'.repeat(40), color: 'currentColor', selectedNid: null })
   })
   it('rejects junk', () => {
     expect(readPresence(null)).toBeNull()

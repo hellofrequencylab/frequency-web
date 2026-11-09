@@ -20,7 +20,7 @@ export function readPresence(raw: unknown): PresenceState | null {
   const r = raw as Record<string, unknown>
   if (typeof r.userId !== 'string' || !r.userId) return null
   const name = typeof r.name === 'string' ? r.name.slice(0, MAX_NAME) : ''
-  const color = typeof r.color === 'string' && COLOR_RE.test(r.color) ? r.color : '#888888'
+  const color = typeof r.color === 'string' && COLOR_RE.test(r.color) ? r.color : 'currentColor'
   const selectedNid = typeof r.selectedNid === 'string' && /^n[0-9a-z]{6,12}$/i.test(r.selectedNid) ? r.selectedNid : null
   return { userId: r.userId, name, color, selectedNid }
 }
