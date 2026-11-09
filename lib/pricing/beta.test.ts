@@ -93,7 +93,7 @@ describe('the Collective Founding intro end date (LIVE-995)', () => {
     expect(new Date(COLLECTIVE_FOUNDING_ENDS_AT).getUTCMonth()).toBe(0)
   })
 
-  it('the shared note names both dates: price to January 1, founder badge to December 1', () => {
+  it('the shared note names both dates: price to January 1, founder badge to December 31', () => {
     expect(FOUNDING_RATE_NOTE).toContain(COLLECTIVE_FOUNDING_ENDS_LABEL)
     expect(FOUNDING_RATE_NOTE).toContain(FOUNDER_BADGE_ENDS_LABEL)
     expect(FOUNDING_RATE_NOTE).toMatch(/Grandfathered/)

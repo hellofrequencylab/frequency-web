@@ -20,6 +20,7 @@ import {
   type CatalogItemKey,
 } from '@/lib/billing/pricing-keys'
 import type { SpacePlan } from './plans'
+import { BETA_ENDS_DAY_LABEL } from '@/lib/core/launch-dates'
 
 /** The instant the beta window closes. Owner-editable: moving this one constant shifts the whole
  *  auto-revert (checkout price + every pricing surface).
@@ -82,7 +83,7 @@ export function effectiveCatalogAmounts(amounts: CatalogAmounts, betaActive: boo
 
 /** The instant the Collective Founding intro closes: midnight Pacific at the start of January 1, 2027
  *  (owner ruling 2026-10-20: "make sure people realize the beta pricing offer on Collective ends Jan 1").
- *  This is NOT the site-wide beta end (BETA_ENDS_LABEL, December 1, the `beta_grace` window): the intro is
+ *  This is NOT the site-wide beta end (BETA_ENDS_LABEL, December 31): the intro is
  *  its own offer and does not read `beta_grace`. Moving this one constant moves the checkout, every price
  *  surface and every end-date caption, because all of them read it. */
 export const COLLECTIVE_FOUNDING_ENDS_AT = '2027-01-01T08:00:00.000Z'
@@ -93,10 +94,10 @@ export const COLLECTIVE_FOUNDING_ENDS_LABEL = 'January 1'
 
 /** The day the founder BADGE stops being granted: the `beta_grace` window end, which the badge grant reads
  *  (lib/billing/beta-founding.ts). The Founding PRICE runs past it to COLLECTIVE_FOUNDING_ENDS_AT, but the
- *  badge does not (owner 2026-10-20: "Badge till December 1 for founders"). Kept equal to BETA_ENDS_LABEL
+ *  badge does not (owner 2026-10-20: "Badge till the beta ends for founders"). Kept equal to BETA_ENDS_LABEL
  *  (lib/core/beta-notices.ts, which imports this module, so it cannot be imported here); beta.test.ts pins
  *  the two together. */
-export const FOUNDER_BADGE_ENDS_LABEL = 'December 1'
+export const FOUNDER_BADGE_ENDS_LABEL = BETA_ENDS_DAY_LABEL
 
 /** Is the standing Founding intro still open at `now`? False on/after the end instant, and false when the
  *  constant cannot be parsed (charge list, never under-charge). PURE. */
