@@ -1,0 +1,19 @@
+{
+  "id": "CI-IGNORE-HELP-CONTENT",
+  "title": "Build Vercel deployments when bundled help Markdown changes",
+  "lane": "hygiene",
+  "priority": "P2",
+  "size": "XS",
+  "status": "done",
+  "source": {
+    "file": "scripts/vercel-ignore-build.mjs",
+    "ref": "Work Order 1, issue #4306 comment 6744059312"
+  },
+  "detail": "Vercel treated help Markdown as documentation even though Next.js bundles content/help into route artifacts. A help-only diff now requests a build and ordinary documentation still skips. The canceled deployment for #4684 did not publish the edited article. The article needs a successful build before it can be verified live.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --input-type=module -e \"import { decide } from './scripts/vercel-ignore-build.mjs'; if (decide(['content/help/spaces/menu-and-logo.md']).skip || !decide(['docs/DEPLOY-SAFETY.md', 'README.md']).skip) process.exit(1)\""
+  },
+  "wave": "W7",
+  "closed": "2026-11-09"
+}

@@ -124,10 +124,17 @@ export function builderSaveLabel(save: BuilderSave): string {
   }
 }
 
-/** Opt in to the new builder: the `?builder=v3` address on the editor, or the BUILDER_V3 switch for everyone.
- *  Off, the current editor renders unchanged (BLD-101 done-when). */
-export function builderV3Requested(param: string | string[] | undefined, envOn: boolean): boolean {
+/** Opt in to the new builder: the `?builder=v3` address on the editor, the BUILDER_V3 switch for everyone, or a Space
+ *  in the BUILDER_V3_SPACES cohort (BLD-108: internal Spaces first, then a cohort, then everyone). `?builder=classic`
+ *  always wins, so an owner in the cohort can still open the current editor. Off, the current editor renders
+ *  unchanged (BLD-101 done-when). */
+export function builderV3Requested(param: string | string[] | undefined, envOn: boolean, cohort: ReadonlySet<string> = new Set(), spaceSlug?: string | null): boolean {
   const value = Array.isArray(param) ? param[0] : param
   if (value === 'classic') return false
-  return envOn || value === 'v3'
+  return envOn || value === 'v3' || (!!spaceSlug && cohort.has(spaceSlug.trim().toLowerCase()))
+}
+
+/** The BUILDER_V3_SPACES cohort: Space slugs, comma or space separated, any case. Blank is nobody. */
+export function builderV3Cohort(raw: string | null | undefined): ReadonlySet<string> {
+  return new Set((raw ?? '').split(/[\s,]+/).map((s) => s.trim().toLowerCase()).filter(Boolean))
 }
