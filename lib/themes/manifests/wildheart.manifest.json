@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "id": "wildheart",
   "legacyIds": {
     "editor": "Wildheart",
@@ -49,6 +49,49 @@
       "path": [
         "themes",
         "Wildheart"
+      ]
+    },
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "motion": "fixed",
+      "accent": "fixed",
+      "register": "fixed"
+    },
+    "looks": [],
+    "functions": {
+      "booking": [
+        "SpaceBooking"
+      ],
+      "services": [
+        "SpaceOfferings"
+      ],
+      "reviews": [
+        "SpaceReviews"
+      ],
+      "posts": [],
+      "events": [
+        "SpaceEvents",
+        "WildheartRetreatBand"
+      ],
+      "shop": [],
+      "circles": [
+        "SpaceCommunity"
+      ],
+      "firstnight": [
+        "WildheartFirstNight"
+      ],
+      "plans": [],
+      "letter": [],
+      "gallery": [
+        "WildheartPhoto"
+      ],
+      "team": [],
+      "locations": [],
+      "forms": [
+        "SpaceContact"
       ]
     }
   },

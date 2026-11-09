@@ -38,5 +38,50 @@
       { "id": "paper", "label": "Paper", "dials": { "register": "day", "type": "editorial", "motion": "off", "image": "mono", "corners": "square", "spacing": "balanced" } },
       { "id": "trade", "label": "Trade", "dials": { "register": "night", "type": "caps", "motion": "calm", "header": "bar", "image": "grain", "corners": "subtle", "spacing": "compact" } }
     ]
+  },
+  "wildheart": {
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "motion": "fixed",
+      "accent": "fixed",
+      "register": "fixed"
+    },
+    "looks": [],
+    "functions": {
+      "booking": [
+        "SpaceBooking"
+      ],
+      "services": [
+        "SpaceOfferings"
+      ],
+      "reviews": [
+        "SpaceReviews"
+      ],
+      "posts": [],
+      "events": [
+        "SpaceEvents",
+        "WildheartRetreatBand"
+      ],
+      "shop": [],
+      "circles": [
+        "SpaceCommunity"
+      ],
+      "firstnight": [
+        "WildheartFirstNight"
+      ],
+      "plans": [],
+      "letter": [],
+      "gallery": [
+        "WildheartPhoto"
+      ],
+      "team": [],
+      "locations": [],
+      "forms": [
+        "SpaceContact"
+      ]
+    }
   }
 }
