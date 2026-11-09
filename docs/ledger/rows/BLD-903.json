@@ -4,15 +4,16 @@
   "lane": "program",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/EDITOR-NEXT.md",
     "ref": "BLD-901 full matrix finding, 2026-11-09"
   },
-  "detail": "pnpm audit:builder-matrix (BLD-901) found 71 small-text contrast misses, all one token each. Temple kit: umber 500 #8C7059 is the text-subtle ink and reads 4.05:1 on plaster (4.48:1 on the card). Free Human: taupe 500 #85664E reads 4.48:1 on cream 100. Fix is a deeper ink for text only, the way lib/theme/temple.ts already does (#7C624D, 4.55:1) and Free Human taupe to #84654D (4.55:1); the palette steps stay for decoration. Held because lib/theme/block-contract-tokens.test.ts pins the resolved value of every core token by hash: the change needs UPDATE_CONTRACT_MAP=1 and the owner's own phrase for each of the two pin rewrites (temple-kit and free-human).",
+  "detail": "pnpm audit:builder-matrix (BLD-901) found 71 small-text contrast misses, all one token each. Temple kit: umber 500 #8C7059 is the text-subtle ink and reads 4.05:1 on plaster (4.48:1 on the card). Free Human: taupe 500 #85664E reads 4.48:1 on cream 100. Fix is a deeper ink for text only, the way lib/theme/temple.ts already does (#7C624D, 4.55:1) and Free Human taupe to #84654D (4.55:1); the palette steps stay for decoration. Held because lib/theme/block-contract-tokens.test.ts pins the resolved value of every core token by hash: the change needs UPDATE_CONTRACT_MAP=1 and the owner's own phrase for each of the two pin rewrites (temple-kit and free-human). Closed 2026-11-09: Daniel gave both phrases (\"rewrite temple-kit pin\", \"rewrite free-human pin\"); Temple kit text-subtle and text-muted now #7C624D, Free Human #84654D, and the two pins in lib/theme/block-contract-map.json were regenerated with UPDATE_CONTRACT_MAP=1 (two lines changed, nothing else).",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/builder/BLD-903.mjs"
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-09"
 }
