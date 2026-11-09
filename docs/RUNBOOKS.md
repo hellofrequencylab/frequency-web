@@ -864,4 +864,9 @@ The pinned API transport intentionally discards non-2xx bodies: HTTP400 alone ca
 
 ## New site builder
 
-`BUILDER_V3` (blank by default) makes the new builder (docs/EDITOR-NEXT.md, BLD-101 onward) the website editor for every owner. Off, the current editor renders and any owner can open the new one at `/admin/editor?builder=v3`; `?builder=classic` always forces the current one. Both read and write the same draft, so switching back loses nothing. Gate: BLD-108 (shadow render and cutover) done, and the owner has used `?builder=v3` on danieltyack.com and said it is ready. Turn it off by unsetting it.
+`BUILDER_V3` (blank by default) makes the new builder (docs/EDITOR-NEXT.md, BLD-101 onward) the website editor for every owner. Off, the current editor renders and any owner can open the new one at `/admin/editor?builder=v3`; `?builder=classic` always forces the current one. Both read and write the same draft, so switching back loses nothing. Turn it off by unsetting it.
+
+The cutover runs in three steps (BLD-108, shadow render and cutover):
+1. **Shadow.** Both editors read the same document; `lib/builder/shadow.ts` compares what each shows (sections, names, hidden per device, fields) over the frozen kit corpus (`lib/builder/shadow.test.ts`, zero or explained delta) and, whenever the new builder opens a real draft, logs any unexplained difference as `[builder shadow] <host> ...` in the server log. Gate for step 2: the test is green and the log shows no `[builder shadow]` line for a week of `?builder=v3` use on internal Spaces.
+2. **Cohort.** `BUILDER_V3_SPACES` (blank by default) lists Space slugs, comma separated, that get the new builder as their website editor; start with `danieltyack` and the Frequency-owned demo Spaces, then the owner's cohort. `?builder=classic` still opens the current editor for them. Gate for step 3: the owner has used it on danieltyack.com and said it is ready, and the log stayed clean for the cohort.
+3. **Everyone.** Set `BUILDER_V3`; then clear `BUILDER_V3_SPACES`. Rolling back is unsetting the switch: no data moves, both editors write the same draft.
