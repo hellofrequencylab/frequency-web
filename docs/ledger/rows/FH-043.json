@@ -1,0 +1,18 @@
+{
+  "id": "FH-043",
+  "title": "Hunts FH-043: Implement Expedition teams",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-LIST.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 5, Extended rules. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Invite and roster lock, scoped progress and deterministic award allocation. Add departure recovery. Done when: Outsider and departed participant cannot mutate team run. Duplicate member claim yields one team credit. Requires: FH-008, FH-030, FH-033. Owner role: Identity and game systems.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/teams.ts\")?0:1)'"
+  },
+  "wave": "W7"
+}
