@@ -311,6 +311,9 @@ interface SpaceCapabilities {
   canManageMembers: boolean
   /** May they invite teammates? owner / admin / moderator. */
   canInvite: boolean
+  /** May they moderate the community wall (hide, pin, ban, review reports)? owner / admin /
+   *  moderator, the same rungs private.can_moderate_space_wall admits (ADR-1938, LIVE-2095). */
+  canModerateWall: boolean
 }
 
 const NO_CAPABILITIES: SpaceCapabilities = {
@@ -320,6 +323,7 @@ const NO_CAPABILITIES: SpaceCapabilities = {
   canEditProfile: false,
   canManageMembers: false,
   canInvite: false,
+  canModerateWall: false,
 }
 
 // Platform STAFF (a janitor / admin web_role) may edit + manage ANY Space even without a per-Space role.
@@ -333,6 +337,7 @@ const STAFF_CAPABILITIES: SpaceCapabilities = {
   canEditProfile: true,
   canManageMembers: true,
   canInvite: true,
+  canModerateWall: true,
 }
 
 /** Build the capability set from the resolved owner-ness + an effective space role. Pure (no IO),
@@ -348,6 +353,7 @@ export function spaceCapabilitiesFor(isOwner: boolean, memberRole: SpaceRole | n
     canEditProfile: isOwner || atLeastSpaceRole(role, 'editor'),
     canManageMembers: isAdmin,
     canInvite: isOwner || atLeastSpaceRole(role, 'moderator'),
+    canModerateWall: isOwner || atLeastSpaceRole(role, 'moderator'),
   }
 }
 

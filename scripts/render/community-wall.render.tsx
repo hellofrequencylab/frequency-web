@@ -7,7 +7,7 @@ import { prerenderToNodeStream } from 'react-dom/static'
 import { writeFileSync } from 'node:fs'
 import { it, vi } from 'vitest'
 
-type State = 'member' | 'signed-out' | 'closed' | 'empty-manager' | 'follower'
+type State = 'member' | 'signed-out' | 'closed' | 'empty-manager' | 'follower' | 'team'
 const state: { v: State } = { v: 'member' }
 const P = '/brand/frequency/photos/'
 
@@ -20,13 +20,21 @@ vi.mock('@/lib/spaces/store', () => ({
   getVisibleSpaceBySlug: async () => ({ id: 's1', slug: 'bird-rock-yoga', name: 'Bird Rock Yoga', brandName: 'Bird Rock Yoga', type: 'business', ownerProfileId: 'owner' }),
   getSpaceVisibility: async () => 'network',
 }))
-vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: async () => ({ canEditProfile: state.v === 'empty-manager' }) }))
+vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: async () => ({ canEditProfile: state.v === 'empty-manager' || state.v === 'team', isOwner: state.v === 'empty-manager', role: state.v === 'team' ? 'moderator' : state.v === 'empty-manager' ? 'admin' : null }) }))
 vi.mock('@/lib/spaces/active-space', () => ({ setActiveSpace: () => undefined }))
 vi.mock('@/lib/spaces/profile-metadata', () => ({ spaceProfileMetadata: async () => ({}) }))
 vi.mock('@/lib/spaces/community-wall', async (orig) => ({
   ...(await orig<object>()),
   readWallSettings: async () => ({ readAccess: state.v === 'closed' ? 'members' : 'anyone', postAccess: 'members', followersInteract: false }),
-  readWallStanding: async () => (state.v === 'signed-out' || state.v === 'closed' ? (state.v === 'closed' ? 'signed-out' : 'signed-out') : state.v === 'follower' ? 'follower' : state.v === 'empty-manager' ? 'owner' : 'member'),
+  readWallStanding: async () => (state.v === 'signed-out' || state.v === 'closed' ? (state.v === 'closed' ? 'signed-out' : 'signed-out') : state.v === 'follower' ? 'follower' : state.v === 'empty-manager' ? 'owner' : state.v === 'team' ? 'team' : 'member'),
+  // LIVE-2095: the arrivals strip. Two faces for the member view, one for the team view, none on an empty wall.
+  readWallArrivals: async () =>
+    state.v === 'empty-manager' || state.v === 'follower'
+      ? []
+      : [
+          { profileId: 'a1', displayName: 'Sunny Alvarez', handle: 'sunny', avatarUrl: `${P}gathering-06.jpg`, joinedAt: '2026-11-07T18:00:00Z' },
+          { profileId: 'a2', displayName: 'Jonah Park', handle: 'jonah', avatarUrl: `${P}gathering-04.jpg`, joinedAt: '2026-11-06T18:00:00Z' },
+        ],
 }))
 vi.mock('@/lib/calendar/public-month', () => ({ loadSpaceUpcomingFeed: async () => state.v === 'empty-manager' ? [] : [
   { id: 'e1', slug: 'sunrise-flow-nov-8', title: 'Sunrise flow in the courtyard', starts_at: '2026-11-08T08:00:00', location: 'Bird Rock courtyard' },
@@ -55,7 +63,8 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 vi.mock('@/app/(main)/spaces/[slug]/(profile)/community/actions', () => ({ createWallPost: async () => ({ data: undefined }) }))
-vi.mock('@/components/feed/composer', () => ({ Composer: (p: { placeholder?: string }) => createElement('div', { className: 'rounded-card border border-border bg-surface p-4' }, createElement('textarea', { placeholder: p.placeholder, rows: 2, className: 'w-full bg-transparent text-body-sm' }), createElement('div', { className: 'mt-2 flex justify-end' }, createElement('button', { className: 'btn ink' }, 'Post'))) }))
+vi.mock('next/dynamic', () => ({ default: () => () => null }))
+vi.mock('@/app/(main)/feed/actions', () => ({ createPost: async () => ({ data: undefined }), uploadPostImage: async () => null }))
 vi.mock('@/components/feed/post-replies', () => ({ PostReplies: () => createElement('div', { className: 'px-4 pb-3 text-meta text-muted' }, 'High five · 14   Reply') }))
 vi.mock('@/components/feed/post-poll', () => ({ PostPoll: () => null }))
 vi.mock('@/components/context-actions', () => ({ ContextActions: () => null }))
@@ -73,7 +82,7 @@ const page = (body: string) =>
 it('renders the Community wall states', async () => {
   if (!out) throw new Error('set RENDER_OUT')
   const mod = await import('@/app/(main)/spaces/[slug]/(profile)/community/page')
-  const states: State[] = ['member', 'signed-out', 'closed', 'empty-manager', 'follower']
+  const states: State[] = ['member', 'signed-out', 'closed', 'empty-manager', 'follower', 'team']
   for (const s of states) {
     state.v = s
     const el = await mod.default({ params: Promise.resolve({ slug: 'bird-rock-yoga' }) })

@@ -14,7 +14,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
-import { writeWallSettings, wallSettingsFromRow } from '@/lib/spaces/community-wall'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { banFromWall, liftWallBan, writeWallSettings, wallSettingsFromRow } from '@/lib/spaces/community-wall'
 
 function revalidateWall(slug: string) {
   revalidatePath(`/spaces/${slug}/community`)
@@ -75,6 +76,102 @@ export async function moderateWallPost(input: {
     .eq('scope_space_id', ctx.space.id)
     .select('id')
   if (error || !data?.length) return fail('That post could not be changed.')
+  revalidateWall(input.slug)
+  return ok()
+}
+
+// ── LIVE-2095: bans and the Space's report queue ────────────────────────────────────────────────
+// These need the MODERATION rung (owner, admin, moderator), the rungs private.can_moderate_space_wall
+// admits; an editor runs the settings above but does not put people out. Bans and report reviews
+// write on the service role (neither table takes member writes), so the gate here is the rule, and it
+// mirrors the database's.
+
+async function resolveModerator(slug: string) {
+  const caller = await getCallerProfile()
+  if (!caller) return null
+  const space = await getVisibleSpaceBySlug(slug, caller.id)
+  if (!space) return null
+  const caps = await getSpaceCapabilities(space, caller.id)
+  if (!caps.canModerateWall) return null
+  return { space, caller }
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const MAX_REASON = 500
+
+export async function banWallMember(input: { slug: string; profileId: string; reason?: string }): Promise<ActionResult> {
+  if (!UUID_RE.test(input.profileId)) return fail('That person could not be found.')
+  const ctx = await resolveModerator(input.slug)
+  if (!ctx) return fail('Only the people who moderate this Space can ban someone from its wall.')
+  if (input.profileId === ctx.caller.id) return fail('You cannot ban yourself from your own wall.')
+  if (input.profileId === ctx.space.ownerProfileId) return fail('The owner of a Space cannot be banned from its wall.')
+  const reason = (input.reason ?? '').trim().slice(0, MAX_REASON) || null
+  const saved = await banFromWall({ spaceId: ctx.space.id, profileId: input.profileId, bannedBy: ctx.caller.id, reason })
+  if (!saved) return fail('That did not save. Try again in a moment.')
+  revalidateWall(input.slug)
+  return ok()
+}
+
+export async function liftWallBanAction(input: { slug: string; profileId: string }): Promise<ActionResult> {
+  if (!UUID_RE.test(input.profileId)) return fail('That person could not be found.')
+  const ctx = await resolveModerator(input.slug)
+  if (!ctx) return fail('Only the people who moderate this Space can lift a ban.')
+  const lifted = await liftWallBan(ctx.space.id, input.profileId)
+  if (!lifted) return fail('That did not save. Try again in a moment.')
+  revalidateWall(input.slug)
+  return ok()
+}
+
+export type WallReportDecision = 'hide' | 'dismiss'
+
+/**
+ * Close one report on a post (or a reply) that lives on this wall. 'hide' soft-hides the post and
+ * marks the report actioned; 'dismiss' leaves the post and marks the report dismissed. The report
+ * must point at a post on THIS Space's wall, read on the service role before anything is written, so
+ * a Space team can never close a report that belongs to another wall or to the platform queue.
+ */
+export async function reviewWallReport(input: { slug: string; reportId: string; decision: WallReportDecision }): Promise<ActionResult> {
+  if (!UUID_RE.test(input.reportId)) return fail('That report could not be found.')
+  if (input.decision !== 'hide' && input.decision !== 'dismiss') return fail('That is not a choice here.')
+  const ctx = await resolveModerator(input.slug)
+  if (!ctx) return fail('Only the people who moderate this Space can review its reports.')
+
+  const admin = createAdminClient()
+  const { data: report } = await admin
+    .from('reports')
+    .select('id, target_type, target_id, status')
+    .eq('id', input.reportId)
+    .maybeSingle()
+  if (!report || (report.target_type !== 'post' && report.target_type !== 'comment')) return fail('That report could not be found.')
+  if (report.status !== 'pending') return fail('That report was already reviewed.')
+
+  const { data: post } = await admin
+    .from('posts')
+    .select('id')
+    .eq('id', report.target_id)
+    .eq('scope_space_id', ctx.space.id)
+    .maybeSingle()
+  if (!post) return fail('That report is not about this wall.')
+
+  if (input.decision === 'hide') {
+    const { error: hideErr } = await admin
+      .from('posts')
+      .update({ hidden_at: new Date().toISOString(), hidden_by: ctx.caller.id })
+      .eq('id', post.id)
+      .eq('scope_space_id', ctx.space.id)
+    if (hideErr) return fail('That post could not be hidden.')
+  }
+
+  const { error } = await admin
+    .from('reports')
+    .update({
+      status: input.decision === 'hide' ? 'actioned' : 'dismissed',
+      reviewed_by: ctx.caller.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', report.id)
+    .eq('status', 'pending')
+  if (error) return fail('That report could not be closed.')
   revalidateWall(input.slug)
   return ok()
 }

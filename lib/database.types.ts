@@ -17483,6 +17483,52 @@ export type Database = {
           },
         ]
       }
+      space_wall_bans: {
+        Row: {
+          banned_by: string | null
+          created_at: string
+          profile_id: string
+          reason: string | null
+          space_id: string
+        }
+        Insert: {
+          banned_by?: string | null
+          created_at?: string
+          profile_id: string
+          reason?: string | null
+          space_id: string
+        }
+        Update: {
+          banned_by?: string | null
+          created_at?: string
+          profile_id?: string
+          reason?: string | null
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_wall_bans_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_wall_bans_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_wall_bans_banned_by_fkey"
+            columns: ["banned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_wall_settings: {
         Row: {
           followers_interact: boolean

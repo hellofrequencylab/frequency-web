@@ -13,13 +13,39 @@ vi.mock('next/cache', () => ({ revalidatePath: () => undefined }))
 vi.mock('@/lib/theme/design', async (orig) => ({ ...(await orig<object>()), SITE_DESIGN: 'frequency' }))
 vi.mock('@/lib/auth', () => ({ getCallerProfile: async () => ({ id: 'owner' }) }))
 vi.mock('@/lib/spaces/store', () => ({ getVisibleSpaceBySlug: async () => ({ id: 's1', slug: 'bird-rock-yoga', name: 'Bird Rock Yoga', brandName: 'Bird Rock Yoga', type: 'business', ownerProfileId: 'owner' }) }))
-vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: async () => ({ canEditProfile: true }) }))
-vi.mock('@/lib/spaces/community-wall', async (orig) => ({ ...(await orig<object>()), readWallSettings: async () => ({ readAccess: 'anyone', postAccess: 'members', followersInteract: false }) }))
-vi.mock('@/app/(main)/spaces/[slug]/manage/community/actions', () => ({ saveWallSettings: async () => ({ data: undefined }), moderateWallPost: async () => ({ data: undefined }) }))
+vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: async () => ({ canEditProfile: true, canModerateWall: true, isOwner: true, role: 'admin' }) }))
+vi.mock('@/lib/spaces/community-wall', async (orig) => ({
+  ...(await orig<object>()),
+  readWallSettings: async () => ({ readAccess: 'anyone', postAccess: 'members', followersInteract: false }),
+  // LIVE-2095: one banned person on the posts state, nobody on the empty state.
+  listWallBans: async () => (state.v === 'posts' ? [{ profileId: 'u9', displayName: 'Sam Lee', handle: 'samlee', avatarUrl: null, reason: null, createdAt: '2026-11-08T10:00:00Z' }] : []),
+}))
+vi.mock('@/app/(main)/spaces/[slug]/manage/community/actions', () => ({ saveWallSettings: async () => ({ data: undefined }), moderateWallPost: async () => ({ data: undefined }), banWallMember: async () => ({ data: undefined }), liftWallBanAction: async () => ({ data: undefined }), reviewWallReport: async () => ({ data: undefined }) }))
+// LIVE-2095: the report queue reads on the service role: two open reports on the posts state.
+vi.mock('@/lib/supabase/admin', () => {
+  const table = (name: string) => {
+    const q: Record<string, unknown> = {}
+    for (const k of ['select', 'eq', 'is', 'in', 'order']) q[k] = () => q
+    q.limit = async () => ({
+      error: null,
+      data:
+        state.v !== 'posts'
+          ? []
+          : name === 'posts'
+            ? rows.map((r) => ({ id: r.id, body: r.body, author: r.author }))
+            : [
+                { id: 'r1', reason: 'spam', details: 'Selling gear on the wall again.', created_at: '2026-11-08T21:00:00Z', target_id: 'p3' },
+                { id: 'r2', reason: 'harassment', details: null, created_at: '2026-11-07T09:30:00Z', target_id: 'p2' },
+              ],
+    })
+    return q
+  }
+  return { createAdminClient: () => ({ from: table }) }
+})
 const rows = [
-  { id: 'p1', body: 'Saturday’s flow moves to the courtyard because of the marine layer. Bring a layer, we start at 8.', created_at: '2026-11-02T16:00:00Z', is_pinned: true, hidden_at: null, author: { display_name: 'Maya Torres' } },
-  { id: 'p2', body: 'New member intro: I moved here in September and this is the first place that felt like a room I could walk into alone.', created_at: '2026-11-01T19:30:00Z', is_pinned: false, hidden_at: null, author: { display_name: 'Jonah Park' } },
-  { id: 'p3', body: 'Selling my old mat, DM me.', created_at: '2026-10-30T02:10:00Z', is_pinned: false, hidden_at: '2026-10-30T03:00:00Z', author: { display_name: 'Sam Lee' } },
+  { id: 'p1', body: 'Saturday’s flow moves to the courtyard because of the marine layer. Bring a layer, we start at 8.', created_at: '2026-11-02T16:00:00Z', is_pinned: true, hidden_at: null, author_id: 'owner', author: { display_name: 'Maya Torres' } },
+  { id: 'p2', body: 'New member intro: I moved here in September and this is the first place that felt like a room I could walk into alone.', created_at: '2026-11-01T19:30:00Z', is_pinned: false, hidden_at: null, author_id: 'u2', author: { display_name: 'Jonah Park' } },
+  { id: 'p3', body: 'Selling my old mat, DM me.', created_at: '2026-10-30T02:10:00Z', is_pinned: false, hidden_at: '2026-10-30T03:00:00Z', author_id: 'u9', author: { display_name: 'Sam Lee' } },
 ]
 vi.mock('@/lib/supabase/server', () => {
   const q: Record<string, unknown> = {}

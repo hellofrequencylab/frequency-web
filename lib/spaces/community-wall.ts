@@ -99,6 +99,25 @@ export function standingCanPost(standing: WallStanding, settings: WallSettings):
 }
 
 /**
+ * Is this person banned from this wall? Fail-CLOSED on a broken read, so a database hiccup never
+ * lets a banned person back in for a moment.
+ */
+async function isBannedFromWall(spaceId: string, profileId: string): Promise<boolean> {
+  try {
+    const { data, error } = await createAdminClient()
+      .from('space_wall_bans')
+      .select('profile_id')
+      .eq('space_id', spaceId)
+      .eq('profile_id', profileId)
+      .maybeSingle()
+    if (error) return true
+    return data != null
+  } catch {
+    return true
+  }
+}
+
+/**
  * May this person reply or react on a post that lives on a Space's wall? `null` scope means the post
  * is not a wall post and the caller's existing rules apply untouched. Replies and reactions are
  * written by server code that does not pass through the posts INSERT policy, so this is the rule for
@@ -119,10 +138,12 @@ export async function canInteractOnWall(args: {
       .eq('id', wallSpaceId)
       .maybeSingle()
     if (!space) return false
-    const [settings, standing] = await Promise.all([
+    const [settings, standing, banned] = await Promise.all([
       readWallSettings(wallSpaceId),
       readWallStanding({ spaceId: wallSpaceId, ownerProfileId: space.owner_profile_id, viewerProfileId: profileId }),
+      isBannedFromWall(wallSpaceId, profileId),
     ])
+    if (banned) return false
     if (standing === 'owner' || standing === 'team' || standing === 'member') return true
     if (standing === 'follower') return settings.followersInteract
     return false
@@ -154,4 +175,124 @@ export async function writeWallSettings(spaceId: string, settings: WallSettings)
   } catch {
     return false
   }
+}
+
+// ── Bans ─────────────────────────────────────────────────────────────────────────────────────────
+// A ban puts one person out of one wall: no posts, replies or reactions there. It leaves their
+// membership alone. The database refuses writes from anon and authenticated, so these run on the
+// service role, and the CALLER must already have checked that the viewer moderates this wall
+// (the manage/community actions do, through getSpaceCapabilities().canModerateWall).
+
+type WallBan = {
+  profileId: string
+  displayName: string
+  handle: string | null
+  avatarUrl: string | null
+  reason: string | null
+  createdAt: string
+}
+
+type ProfileBits = { display_name: string | null; handle: string | null; avatar_url: string | null } | null
+
+export async function listWallBans(spaceId: string): Promise<WallBan[]> {
+  try {
+    const { data, error } = await createAdminClient()
+      .from('space_wall_bans')
+      .select('profile_id, reason, created_at, person:profiles!profile_id ( display_name, handle, avatar_url )')
+      .eq('space_id', spaceId)
+      .order('created_at', { ascending: false })
+      .limit(200)
+    if (error || !data) return []
+    return (data as unknown as { profile_id: string; reason: string | null; created_at: string; person: ProfileBits }[]).map((b) => ({
+      profileId: b.profile_id,
+      displayName: b.person?.display_name?.trim() || 'Someone',
+      handle: b.person?.handle ?? null,
+      avatarUrl: b.person?.avatar_url ?? null,
+      reason: b.reason,
+      createdAt: b.created_at,
+    }))
+  } catch {
+    return []
+  }
+}
+
+export async function banFromWall(args: {
+  spaceId: string
+  profileId: string
+  bannedBy: string
+  reason?: string | null
+}): Promise<boolean> {
+  try {
+    const { error } = await createAdminClient()
+      .from('space_wall_bans')
+      .upsert(
+        { space_id: args.spaceId, profile_id: args.profileId, banned_by: args.bannedBy, reason: args.reason?.trim() || null },
+        { onConflict: 'space_id,profile_id' },
+      )
+    return !error
+  } catch {
+    return false
+  }
+}
+
+export async function liftWallBan(spaceId: string, profileId: string): Promise<boolean> {
+  try {
+    const { error } = await createAdminClient()
+      .from('space_wall_bans')
+      .delete()
+      .eq('space_id', spaceId)
+      .eq('profile_id', profileId)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+// ── Arrivals ─────────────────────────────────────────────────────────────────────────────────────
+// The people who joined this week, for the strip above the composer: a face, a first name and a
+// reason to say hello. Paying memberships only (space_memberships, active, started this week); the
+// team ladder is staff, not an arrival. Fail-safe to an empty list, which hides the strip.
+
+export type WallArrival = {
+  profileId: string
+  displayName: string
+  handle: string | null
+  avatarUrl: string | null
+  joinedAt: string
+}
+
+const ARRIVALS_WINDOW_DAYS = 7
+
+export async function readWallArrivals(spaceId: string, limit = 6): Promise<WallArrival[]> {
+  const since = new Date(Date.now() - ARRIVALS_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  try {
+    const { data, error } = await createAdminClient()
+      .from('space_memberships')
+      .select('member_profile_id, started_at, created_at, person:profiles!member_profile_id ( display_name, handle, avatar_url )')
+      .eq('space_id', spaceId)
+      .eq('status', 'active')
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error || !data) return []
+    return (data as unknown as { member_profile_id: string; started_at: string | null; created_at: string; person: ProfileBits }[]).map((m) => ({
+      profileId: m.member_profile_id,
+      displayName: m.person?.display_name?.trim() || 'A new member',
+      handle: m.person?.handle ?? null,
+      avatarUrl: m.person?.avatar_url ?? null,
+      joinedAt: m.started_at ?? m.created_at,
+    }))
+  } catch {
+    return []
+  }
+}
+
+/** "Sunny and Jonah just joined" / "Sunny, Jonah and 3 others just joined". PURE. */
+export function arrivalsSentence(names: readonly string[]): string {
+  const first = names.map((n) => n.trim().split(/\s+/)[0] || 'Someone').filter(Boolean)
+  if (first.length === 0) return ''
+  if (first.length === 1) return `${first[0]} just joined`
+  if (first.length === 2) return `${first[0]} and ${first[1]} just joined`
+  if (first.length === 3) return `${first[0]}, ${first[1]} and ${first[2]} just joined`
+  return `${first[0]}, ${first[1]} and ${first.length - 2} others just joined`
 }

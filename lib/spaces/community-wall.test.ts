@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_WALL_SETTINGS,
+  arrivalsSentence,
   standingCanPost,
   standingCanRead,
   wallSettingsFromRow,
@@ -60,5 +61,18 @@ describe('standingCanPost', () => {
   it('a visitor and a signed-out viewer never post', () => {
     expect(standingCanPost('visitor', followersIn)).toBe(false)
     expect(standingCanPost('signed-out', followersIn)).toBe(false)
+  })
+})
+
+describe('arrivalsSentence (LIVE-2095)', () => {
+  it('names one, two or three first names and counts the rest', () => {
+    expect(arrivalsSentence([])).toBe('')
+    expect(arrivalsSentence(['Sunny Day'])).toBe('Sunny just joined')
+    expect(arrivalsSentence(['Sunny Day', 'Jonah K'])).toBe('Sunny and Jonah just joined')
+    expect(arrivalsSentence(['Sunny', 'Jonah', 'Mara'])).toBe('Sunny, Jonah and Mara just joined')
+    expect(arrivalsSentence(['Sunny', 'Jonah', 'Mara', 'Lee', 'Ivy'])).toBe('Sunny, Jonah and 3 others just joined')
+  })
+  it('never prints an empty name', () => {
+    expect(arrivalsSentence(['  ', 'Jonah'])).toBe('Someone and Jonah just joined')
   })
 })
