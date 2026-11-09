@@ -80,30 +80,30 @@
     ],
     "functions": {
       "booking": [],
-      "services": [
-        "DesignerServices"
-      ],
-      "reviews": [
-        "DesignerTestimonials",
-        "DesignerQuote"
-      ],
-      "posts": [],
-      "events": [],
-      "shop": [],
       "circles": [],
+      "events": [],
       "firstnight": [],
-      "plans": [],
-      "letter": [],
+      "forms": [
+        "DesignerInquiry"
+      ],
       "gallery": [
         "DesignerPortfolio",
         "DesignerGallery"
       ],
+      "letter": [],
+      "locations": [],
+      "plans": [],
+      "posts": [],
+      "reviews": [
+        "DesignerTestimonials",
+        "DesignerQuote"
+      ],
+      "services": [
+        "DesignerServices"
+      ],
+      "shop": [],
       "team": [
         "DesignerFounder"
-      ],
-      "locations": [],
-      "forms": [
-        "DesignerInquiry"
       ]
     }
   }
