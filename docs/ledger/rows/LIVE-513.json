@@ -1,0 +1,9 @@
+{
+  "id": "LIVE-513",
+  "patch": {
+    "source": {
+      "file": "test/e2e/surfaces.ts",
+      "ref": "pr-compare on #2906, 2026-09-27; the ADR-1522 treatment on the operator side (source file moved here from components/admin/admin-rail-drawer-column.tsx, retired by HYG-215)"
+    }
+  }
+}
