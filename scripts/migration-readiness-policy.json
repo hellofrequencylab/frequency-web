@@ -499,6 +499,168 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4703,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346030000_space_wall_bans_and_kinds.sql",
+          "sha256": "54e1a7788193f5129d1c3431c0fc1ff70297743df4fc8a18c1d24c73634883fe"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/spaces/[slug]/(profile)/community/actions.ts",
+          "status": "modified",
+          "sha256": "2436da935e1e10230f1278ec6b2412366f2464d4e18355c4b5adf7d18d74031d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/(profile)/community/page.tsx",
+          "status": "modified",
+          "sha256": "f33f7a75814d900f11d59ab9f2e8cadf2ffa387da1200d6876d3e51ba066a745",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/manage/community/actions.ts",
+          "status": "modified",
+          "sha256": "598bc493fce321adf6af5aafb727a8f66e8f2a281285a3c851ff5eca445a88b5",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/manage/community/page.tsx",
+          "status": "modified",
+          "sha256": "1376dc09db18e1c6a064da46c670f93a520323bd1ffd75fe39500ba5fdfe9e8d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/manage/community/wall-ban-controls.tsx",
+          "status": "added",
+          "sha256": "ee473935d9e7cf6ce96d3c667a87660a26c5ee5980c51ff44427d7c37924d95c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/feed/composer.tsx",
+          "status": "modified",
+          "sha256": "6c1144a27e3f65ac19be95496a4930a98eff66b88f8f1e5790731123c535d901",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/spaces/wall-composer.tsx",
+          "status": "modified",
+          "sha256": "af397d05b02de2d7356a66b7aca5edfbb6bcf3672e19d1ce72de92dbf4e901e5",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2095.json",
+          "status": "modified",
+          "sha256": "814ce838ca08171223fc0d5def6b829e291d49436890e389ae2553b1c8ff680e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "f5b8edb398a2482347b733a26593dad7095afdbd786f958b151f20105dba88c9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/community-wall-core.ts",
+          "status": "added",
+          "sha256": "cee7b2cc54bd5f66323e032310873b127a78a4d68d33b1980529e1416c0a2be4",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/community-wall.test.ts",
+          "status": "modified",
+          "sha256": "990802cf6246369d326b139111ed28d627ed2f39ce18057e2c8bb5c81222bb8e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/community-wall.ts",
+          "status": "modified",
+          "sha256": "05ce04d6b979be7705d498dd48ea1b6804587cde87ca5fd46e07abbde3b176e6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/entitlements.test.ts",
+          "status": "modified",
+          "sha256": "d7bd1fe527c74bae5318aea3562d071371a9b6b63995b1d0ae64114dd7428f8f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/entitlements.ts",
+          "status": "modified",
+          "sha256": "b72594e6afc0d2c642e0bf22257c431eaea225220a156f52ad0e094ae14fc1ff",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "c6971ec048a0c1aebc01f68f1e05e3162ed36b26e6f8a52c6e81479bdcbeb483",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/render/community-wall-manage.render.tsx",
+          "status": "modified",
+          "sha256": "6a55608b67e9e30d60d75540a003aced316e48495827c81c65f021b5f5e3e9f8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/render/community-wall.render.tsx",
+          "status": "modified",
+          "sha256": "cbf7eac75860a15820c24049af9a31f66c85af44515292e0769dd86f50c6891e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "45d50756147b5e00121e50608ba336cef91849e2e7fb6315133961d8f19f1e44",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346030000_space_wall_bans_and_kinds.sql",
+          "status": "added",
+          "sha256": "54e1a7788193f5129d1c3431c0fc1ff70297743df4fc8a18c1d24c73634883fe",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/space_wall_bans.test.sql",
+          "status": "added",
+          "sha256": "a7e565481c5a20eb745cab83f2bf94dcc7d2017c74b5b39b23e15b62191cb6fa",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
