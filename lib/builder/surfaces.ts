@@ -16,7 +16,7 @@ import type { Config, Data } from '@/lib/page-editor/types'
 
 export type BuilderSurface = 'site' | 'profile' | 'spotlight' | 'email'
 
-export interface SurfaceSpec {
+interface SurfaceSpec {
   id: BuilderSurface
   label: string
   /** One line for the switcher's title: what the owner is looking at. */
@@ -48,7 +48,7 @@ export function surfaceFrame(surface: BuilderSurface, deviceWidth: number): { wi
 }
 
 /** How a block type appears on a surface: as the role declares, or `legacy` for a block with no role off the site. */
-export type SurfaceShowing = 'draw' | 'door' | 'freeze' | 'hide' | 'legacy'
+type SurfaceShowing = 'draw' | 'door' | 'freeze' | 'hide' | 'legacy'
 
 export function surfaceShowing(type: string, surface: BuilderSurface): SurfaceShowing {
   const role = roleOfType(type)
@@ -56,7 +56,7 @@ export function surfaceShowing(type: string, surface: BuilderSurface): SurfaceSh
   return surface === 'site' ? 'draw' : 'legacy'
 }
 
-export interface HiddenOnSurface {
+interface HiddenOnSurface {
   id: string
   type: string
   /** The block's label, as the outline names it. */
