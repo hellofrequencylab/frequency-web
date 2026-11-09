@@ -65,34 +65,34 @@
       "booking": [
         "SpaceBooking"
       ],
-      "services": [
-        "SpaceOfferings"
+      "circles": [
+        "SpaceCommunity"
       ],
-      "reviews": [
-        "SpaceReviews"
-      ],
-      "posts": [],
       "events": [
         "SpaceEvents",
         "WildheartRetreatBand"
       ],
-      "shop": [],
-      "circles": [
-        "SpaceCommunity"
-      ],
       "firstnight": [
         "WildheartFirstNight"
       ],
-      "plans": [],
-      "letter": [],
+      "forms": [
+        "SpaceContact"
+      ],
       "gallery": [
         "WildheartPhoto"
       ],
-      "team": [],
+      "letter": [],
       "locations": [],
-      "forms": [
-        "SpaceContact"
-      ]
+      "plans": [],
+      "posts": [],
+      "reviews": [
+        "SpaceReviews"
+      ],
+      "services": [
+        "SpaceOfferings"
+      ],
+      "shop": [],
+      "team": []
     }
   },
   "core": {
