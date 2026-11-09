@@ -356,7 +356,7 @@ export function MemberViewer({
             <div
               role="group"
               aria-label="Sort members"
-              className="inline-flex shrink-0 flex-wrap items-center gap-0.5 rounded-card border border-border bg-surface p-0.5"
+              className="inline-flex min-w-0 flex-wrap items-center gap-0.5 rounded-card border border-border bg-surface p-0.5"
             >
               {options.map((o) => {
                 const active = o.key === sortKey
@@ -463,7 +463,7 @@ export function MemberViewer({
                     ))}
                   </div>
                 ) : (
-                  <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
+                  <ul role="presentation" className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
                     {visible.map((m) => (
                       <ListRow
                         key={m.id}
@@ -655,7 +655,7 @@ function ListRow({
   rich?: boolean
 }) {
   return (
-    <li>
+    <li role="presentation">
       <button
         type="button"
         role="option"

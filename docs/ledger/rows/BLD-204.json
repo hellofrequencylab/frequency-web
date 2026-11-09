@@ -1,0 +1,19 @@
+{
+  "id": "BLD-204",
+  "title": "Builder BLD-204: Readiness",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-204."
+  },
+  "detail": "B2 Roles, pass BLD-204 (spec: docs/EDITOR-NEXT.md#bld-204). Readiness. Scope: components/builder/readiness, lib/sites/editor/publish-checks.ts. Build: Publish ring with a count: sample words, null numbers, missing alt text, missing SEO. Canvas tags: 'not yours yet' on sample slots, 'needs a number' on null figures. Click the count to step through each item. Done when: A page with sample: true content cannot publish without an explicit keep; Null number blocks publish. Gates: vitest suite (required test job), a11y ratchet, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-104. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nReadiness: one model (lib/builder/readiness.ts) feeds the Publish ring and count, canvas tags, outline dots and the Publish sheet. Sample words publish only through an explicit keep; a figure with no number holds Publish; the count steps through each item; editing a sample section clears sample.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-204.mjs"
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

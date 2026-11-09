@@ -1,0 +1,19 @@
+{
+  "id": "BLD-201",
+  "title": "Builder BLD-201: Role contract additions and check:roles",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-201."
+  },
+  "detail": "B2 Roles, pass BLD-201 (spec: docs/EDITOR-NEXT.md#bld-201). Role contract additions and check:roles. Scope: lib/blocks/roles. Build: Add intent, icon, variants[x].thumb and slots[x].label / hint to all role.json files (21 roles once BLD-210 lands; 17 today). Extend RoleDefinition; add check:roles validating every file. Replace the regex tables in block-meta.ts with role fields; keep a fallback for legacy types. Done when: block-meta.ts has no type-name regex for role blocks; Every role icon resolves in the sprite. Gates: tsc --noEmit and lint, vitest suite (required test job), check:roles (new), check:blocks, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-003. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nEvery role file names intent, group, icon, live, variant thumbs (ROLE_THUMBS) and slots.labels (label and hint per slot; slot specs stay strings so lib/builder/tune.ts reads them unchanged). check:roles (scripts/check-roles.mjs, CI guard) proves each icon is a symbol in the Frequency or editor sprite. block-meta.ts presents role blocks from roleOfType() and the role fields; its regexes are the legacy fallback only. Role FAQ and CTA now get their own Vera suggestion sets (they fell to the general set before because the regex was case-sensitive). Statement, which the v3 table lacks, sits under More with the intent 'Say what you stand for'.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-201.mjs"
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

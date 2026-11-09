@@ -384,6 +384,9 @@ const nextConfig: NextConfig = {
       { source: '/themes/network-kit', destination: '/themes/network', permanent: true },
       // The Temple Theme Kit's address is /themes/temple.
       { source: '/themes/temple-kit', destination: '/themes/temple', permanent: true },
+      // "Default doesn't exist; New World is the default" (owner, 2026-11-03). The old `frequency` id stays in code so
+      // sites that saved it render unchanged; its sales page is retired.
+      { source: '/themes/frequency', destination: '/themes/new-world', permanent: true },
       // The Quest help category was renamed from the-game -> the-quest (naming canon:
       // the year-round game is "The Quest"). Redirect old help links + bookmarks.
       { source: '/help/the-game', destination: '/help/the-quest', permanent: false },
@@ -448,6 +451,16 @@ const nextConfig: NextConfig = {
       { source: '/for/event-spaces', destination: '/pricing', permanent: false },
       { source: '/for/service-businesses', destination: '/pricing', permanent: false },
       { source: '/for/product-businesses', destination: '/pricing', permanent: false },
+      // LIVE-2093 (menu overhaul, owner ruling 2026-11-03): thirteen doors cut to nine. Each retired door lands
+      // on the survivor that sells the same Space Mode; Search Console showed no impressions on any of the four.
+      { source: '/for/creators', destination: '/for/coaches-and-healers', permanent: true },
+      { source: '/for/wellness-and-retreats', destination: '/for/studios', permanent: true },
+      { source: '/for/markets-and-festivals', destination: '/for/event-hosts', permanent: true },
+      { source: '/for/schools-and-programs', destination: '/for/clubs-and-groups', permanent: true },
+      // /calm-down-fast MERGED into /mindless (LIVE-2093): the guide's promise was five quiet minutes, and the
+      // timer is that promise kept. The member help twin is self-canonical now. The /go/calm-down-fast
+      // campaign door (lib/marketing/launch-doors.ts) is a separate route and keeps working.
+      { source: '/calm-down-fast', destination: '/mindless', permanent: true },
       // Founder-pricing retirement: the founders marketing funnel is gone and the beta
       // price framing is "Opening Beta" on /pricing. Permanent — the routes are deleted
       // for good, so inbound links + old emails should transfer straight to /pricing.
@@ -532,27 +545,11 @@ const nextConfig: NextConfig = {
       // Sending it through the wildcard would land on the nonexistent /join/operator-calendar.
       { source: '/onboarding/beta/operator-calendar', destination: '/join', permanent: true },
       { source: '/onboarding/beta/:path*', destination: '/join/:path*', permanent: true },
-      // Circles C3.3 (ADR-1091, LIVE-059): Space Communities is removed and a Space's community
-      // is its Circles, which live on the Space's own page. The old Community tab URL carries to
-      // the Space root. Permanent (308): the URL resolves for all 20 live Spaces, carries its own
-      // canonical, and old notification emails already sent cannot be rewritten, so bookmarks and
-      // indexed links should transfer their signals for good. Query strings ride through
-      // automatically, same as the Funnels rules above.
-      //
-      // C3.3 shipped BEFORE C3.4 deleted app/(main)/spaces/[slug]/(profile)/community/page.tsx,
-      // never with it, so there was no window where the URL 404d: while the route still existed,
-      // this rule shadowed it, because redirects are checked before the filesystem router
-      // (node_modules/next/dist/docs/.../next-config-js/redirects.md: "Redirects are checked
-      // before the filesystem which includes pages and /public files" — the same mechanism
-      // lib/marketing/funnel-redirects.test.ts guards against when it is unintended). Since C3.4
-      // the rule shadows nothing; it is the only thing keeping the old URL alive. No :path* pair:
-      // the community segment had no nested routes, and proxy.ts carries no carve-out for it.
-      //
-      // RE-POINTED 2026-08-21 (ADR-1094). The destination was the Space ROOT because in C3.3 there was
-      // no circles surface to send anyone to; there is one now, and it is the page this URL always
-      // meant. Still 308: the same bookmarks and the same already-sent notification emails, now
-      // landing on the list of circles instead of one scroll away from a teaser.
-      { source: '/spaces/:slug/community', destination: '/spaces/:slug/circles', permanent: true },
+      // /spaces/:slug/community is a PAGE again (ADR-1938, LIVE-2077): a Space's Community wall. The
+      // 308 that used to send it to /circles (C3.3, ADR-1091, re-pointed ADR-1094) is gone, because a
+      // redirect is checked before the filesystem and would shadow the page. Browsers that cached the
+      // old 308 keep landing on /circles until their cache clears; that is the Circles tab, which is
+      // still a real page, so nothing dead-ends.
 
       // ── HYG-043 / HYG-044: 41 redirect-only route files become config rules (ADR-1199) ──────────
       //
@@ -695,12 +692,18 @@ const nextConfig: NextConfig = {
       FREQUENCY_DESIGN
         ? { source: '/the-quest', destination: '/features#f-zaps', permanent: true }
         : { source: '/the-quest', destination: '/help/the-quest', permanent: false },
-      // /the-lab MERGED into /vision (owner ruling 2026-10-14): its dated plan and FAQ moved there first.
-      // The printed QR destination keeps working through this rule. /vision is Frequency-only, so a DAWN
-      // build sends it to /about with a temporary 307.
+      // /the-lab MERGED into /vision (2026-10-14), and /vision MERGED into /about (LIVE-2103, owner ruling
+      // 2026-11-03): the Lab's dated plan and short answers are blocks on the About page, which both
+      // designs serve, so both rules are permanent. The printed QR destination keeps working through them.
+      { source: '/the-lab', destination: '/about', permanent: true },
+      { source: '/vision', destination: '/about', permanent: true },
+      // /networks MERGED into its /for door (LIVE-2103): one Network page, the door that already sells it.
+      { source: '/networks', destination: '/for/networks', permanent: true },
+      // /system MERGED into /features (LIVE-2103). /features is Frequency-only, so a DAWN build sends the
+      // old URL to /pricing with a temporary 307, never a cached 308 that would block a later switch.
       FREQUENCY_DESIGN
-        ? { source: '/the-lab', destination: '/vision', permanent: true }
-        : { source: '/the-lab', destination: '/about', permanent: false },
+        ? { source: '/system', destination: '/features', permanent: true }
+        : { source: '/system', destination: '/pricing', permanent: false },
       // /start (the Build / Practice / Spread picker) MERGED into /join, the one front door, whose own
       // picker replaced it. EXACT source: /start/[flow] stays live, because printed QR codes and the
       // lead flows (lib/entry-points/templates.ts) point at /start/welcome, /start/event, /start/partner.

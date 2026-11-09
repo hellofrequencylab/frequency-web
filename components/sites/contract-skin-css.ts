@@ -3,6 +3,7 @@ import { MIDNIGHT_TOKENS_CSS } from '@/lib/theme/midnight'
 import { NETWORK_KIT_TOKENS_CSS } from '@/lib/theme/network-kit'
 import { TEMPLE_TOKENS_CSS } from '@/lib/theme/temple'
 import { TEMPLE_KIT_TOKENS_CSS } from '@/lib/theme/temple-kit'
+import { SERVICES_TOKENS_CSS } from '@/lib/theme/services'
 import { WILDHEART_TOKENS_CSS } from '@/lib/theme/wildheart'
 import type { SkinFamily } from '@/lib/sites/skin-family'
 import { DESIGNER_BLOCKS_CSS } from './designer-blocks-css'
@@ -12,6 +13,7 @@ import { NETWORK_KIT_BLOCKS_CSS } from './network-kit-blocks-css'
 import { NETWORK_KIT_MORE_CSS } from './network-kit-more-css'
 import { TEMPLE_BLOCKS_CSS } from './temple-blocks-css'
 import { TEMPLE_KIT_BLOCKS_CSS } from './temple-kit-blocks-css'
+import { SERVICES_CSS } from './services-css'
 import { WILDHEART_CSS } from './wildheart-css'
 
 // THE CONTRACT SKIN (docs/THEME-COHESION.md, ADR-1923, LIVE-1853). A theme-named block family keeps its own shapes,
@@ -156,10 +158,26 @@ const WILDHEART: Overrides = {
   '--wh-a-violet-12': mix('accent', 12), '--wh-a-violet-13': mix('accent', 13), '--wh-a-violet-35': mix('accent', 35),
   '--wh-a-madder-05': mix('accent', 5), '--wh-a-madder-16': mix('accent', 16), '--wh-a-madder-35': mix('accent', 35),
   '--wh-a-lavender-75': mix('accent', 45), '--wh-a-honey-14': mix('accent', 14), '--wh-a-star-honey': ACCENT, '--wh-a-sage-18': mix('accent', 18),
+  '--wh-a-star-55': mix('ink', 55), '--wh-a-star-45': mix('ink', 45), '--wh-a-star-50': mix('ink', 50), '--wh-a-star-40': mix('ink', 40), '--wh-a-star-madder': mix('accent', 50),
+  '--wh-a-mist-95': mix('accent', 10), '--wh-a-blush-55': mix('accent', 8), '--wh-honey-soft': mix('accent', 10), '--wh-sage-soft': mix('accent', 10), '--wh-winter-soft': mix('accent', 10),
   '--wh-a-night-28': mix('band', 28), '--wh-a-veil-0': 'color-mix(in srgb,var(--sk-canvas) 0%,transparent)', '--wh-a-veil-85': mix('canvas', 85),
   '--wh-a-wash-violet': mix('accent', 10), '--wh-a-wash-madder': mix('accent', 8), '--wh-a-wash-moon': mix('accent', 6), '--wh-a-wash-blush': mix('accent', 8),
   '--wh-text-on-fill': ON_ACCENT, '--wh-text-on-season': INK,
   '--wh-display': 'var(--font-display)', '--wh-ui': 'var(--font-body)', '--wh-body': 'var(--font-body)',
+}
+
+/** The Services sheet carries its own bridge to the shared block contract (`--color-*`, `--radius-*`, `--font-*` on its root). On a foreign
+ *  host those belong to the host, so every rule that declares a `--color-*` is left out. */
+const NO_HOST_BRIDGE = /^(?![^{]*\{[^}]*--color-[a-z0-9-]+\s*:)/
+
+const SERVICES: Overrides = {
+  '--sv-ink-950': CANVAS, '--sv-ink-900': CANVAS, '--sv-ink-850': SURFACE, '--sv-ink-800': RAISED, '--sv-ink-700': LINE, '--sv-ink-600': LINE_STRONG,
+  '--sv-graphite-400': SUBTLE, '--sv-chrome-50': INK, '--sv-chrome-200': MUTED, '--sv-chrome-400': SUBTLE,
+  '--sv-salt-50': CANVAS, '--sv-salt-100': SURFACE, '--sv-salt-300': LINE_STRONG, '--sv-salt-700': MUTED,
+  '--sv-flare-300': mix('accent', 55), '--sv-flare-400': ACCENT, '--sv-flare-500': ACCENT, '--sv-flare-600': ACCENT_DEEP, '--sv-flare-700': ACCENT_DEEP,
+  '--sv-swell-300': mix('accent', 55), '--sv-swell-500': ACCENT, '--sv-swell-700': ACCENT_DEEP, '--sv-halo-300': mix('accent', 55), '--sv-halo-500': ACCENT,
+  '--sv-accent-text': ON_ACCENT, '--sv-action-primary': INK, '--sv-action-primary-text': CANVAS,
+  '--sv-font-display': 'var(--font-display)', '--sv-font-accent': 'var(--font-display)', '--sv-font-body': 'var(--font-body)', '--sv-font-mono': 'var(--font-body)',
 }
 
 /** The generic names a family's token block sets for its own site. Dropped from the island copy so the host's flow
@@ -185,6 +203,7 @@ const FAMILIES: Readonly<Record<SkinFamily, Family>> = {
   'network-kit': { id: 'network-kit', tokens: NETWORK_KIT_TOKENS_CSS, sheets: [NETWORK_KIT_BLOCKS_CSS, NETWORK_KIT_MORE_CSS], overrides: NETWORK_KIT, keep: ['--nk-amber-500', '--nk-green-500', '--nk-info-500', '--nk-red-500'] },
   temple: { id: 'temple', tokens: TEMPLE_TOKENS_CSS, sheets: [TEMPLE_BLOCKS_CSS], overrides: TEMPLE },
   'temple-kit': { id: 'temple-kit', tokens: TEMPLE_KIT_TOKENS_CSS, sheets: [TEMPLE_KIT_BLOCKS_CSS], overrides: TEMPLE_KIT, keep: ['--danger-100', '--danger-600'] },
+  services: { id: 'services', tokens: SERVICES_TOKENS_CSS, sheets: [SERVICES_CSS], only: NO_HOST_BRIDGE, overrides: SERVICES, keep: ['--sv-success-500', '--sv-warning-500', '--sv-danger-500'] },
   wildheart: { id: 'wildheart', tokens: WILDHEART_TOKENS_CSS, sheets: [WILDHEART_CSS], only: /\.wh-|@keyframes wh-/, overrides: WILDHEART,
     keep: ['--wh-season-spring', '--wh-season-spring-top', '--wh-season-spring-ink', '--wh-season-summer', '--wh-season-summer-top', '--wh-season-summer-ink',
       '--wh-season-fall', '--wh-season-fall-top', '--wh-season-fall-ink', '--wh-season-winter', '--wh-season-winter-top', '--wh-season-winter-ink'] },

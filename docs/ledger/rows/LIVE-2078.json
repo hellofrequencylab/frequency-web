@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2078",
+  "title": "W3 Reader rewires: Circles tab, calendar, launch, Spotlight, digest, notifications, QR, journeys, meters",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1938.md",
+    "ref": "Daniel 2026-11-03: Space circles become a Community wall; thread plan /mnt/project-files/community-wall/PLAN.md"
+  },
+  "detail": "Circles tab and side panel list topic Circles only; Space calendar moves to the Community page; front-door CTA, launch rows, Menswork finder, Spotlight showCircles, Email Studio blocks, digest and dispatch audiences, notification mutes, QR resolver (destination_type circle for a Space Circle), Journeys run-gate (Space steward runs the Space's Journeys), meters and pricing copy rewired off is_space_primary. Space Circle readers deleted: space-discussion.ts, space-circle-card.tsx, circle-space-info widget. Coordinate rail and menu rows with the menu overhaul thread. CLOSED 2026-11-03: the Circles tab lists topic Circles only (a legacy Space Circle is filtered out) and no longer mounts a feed; /spaces/<slug>/discussion forwards to /community (307); the owner Circles console drops the Space Circle card and links Wall settings; space-discussion.ts, space-circle-card.tsx and the circle-space-info widget are deleted and leave the registry, module catalog, default layout and admin-client baseline. The other readers (launch rows, Menswork finder, Home circles block, cross-listing, calendar arm, capabilities) already exclude or special-case is_space_primary; they stop seeing Space Circles when W5 (LIVE-2080) archives them and lose the column in W6 (LIVE-2081).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-community-wall.mjs w3"
+  },
+  "wave": "W7",
+  "closed": "2026-11-03"
+}

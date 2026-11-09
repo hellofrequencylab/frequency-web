@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-2081",
+  "title": "W6 Retire: drop the guards, the 300 cap special case, circles.is_space_primary and the Space Circle code and tests",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1938.md",
+    "ref": "Daniel 2026-11-03: Space circles become a Community wall; thread plan /mnt/project-files/community-wall/PLAN.md"
+  },
+  "detail": "Last. Drops circles_space_primary_guard, circles_one_space_primary, the cap branch, the column and its type, space_circle_optouts, the Space Circle code paths, pgTAP tests and probes (owner phrases per pinned probe, one code block, run all probes first). Never before W5 is verified in production.\n\nW6 retire: 20270346029600 (additive, run first) copies every retired Space Circle slug to public.retired_space_circles for the old-link redirect and rewrites the two Collective cross-listing functions without the flag. 20270346029700 (run after the code is live) drops circles.is_space_primary, circles_space_primary_guard, circles_one_space_primary, the 300 cap arm, ensure_space_circle, enrol_in_space_circle, sync_space_circle_roster, the three trigger functions and space_circle_optouts. App: no Circle lists its Space's calendar (arm 3 retired), no Space Circle shelf, kind, carve, cap, host line, handoff or delete guard; the Menswork finder leads with the founding circle.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-community-wall.mjs w6"
+  }
+}

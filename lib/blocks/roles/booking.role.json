@@ -1,0 +1,163 @@
+{
+  "role": "Booking",
+  "type": "RoleBooking",
+  "label": "Save a spot (all themes)",
+  "intent": "Let people save a spot",
+  "why": "Times people can save without a back and forth.",
+  "group": "Show up",
+  "icon": "ticket",
+  "live": true,
+  "replaces": [
+    "SpaceBooking",
+    "NetworkKitInnerBook"
+  ],
+  "slots": {
+    "required": {
+      "items": {
+        "type": "list",
+        "min": 1,
+        "max": 6,
+        "item": {
+          "title": "text<=80",
+          "day": "text<=24",
+          "time": "text<=24?",
+          "note": "text<=60?",
+          "href": "link?"
+        }
+      }
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280",
+      "action": "link"
+    },
+    "labels": {
+      "items": {
+        "label": "Times to book",
+        "hint": "Each one a day and time people can save."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "action": {
+        "label": "Link under the section",
+        "hint": "Where people go to see more."
+      }
+    }
+  },
+  "variants": {
+    "board": {
+      "label": "Board",
+      "thumb": "board"
+    },
+    "cards": {
+      "label": "Cards",
+      "thumb": "cards"
+    }
+  },
+  "default": "board",
+  "sample": {
+    "sample": true,
+    "eyebrow": "Open this week",
+    "title": "Save a *spot*",
+    "lead": "The next times with room. One tap to hold yours.",
+    "actionLabel": "See every time",
+    "actionHref": "~/book",
+    "items": [
+      {
+        "day": "Replace",
+        "time": "with a time",
+        "title": "Your first open session",
+        "note": "Spots left",
+        "href": "~/book"
+      },
+      {
+        "day": "Replace",
+        "time": "with a time",
+        "title": "Your second open session",
+        "note": "Spots left",
+        "href": "~/book"
+      },
+      {
+        "day": "Replace",
+        "time": "with a time",
+        "title": "Your third open session",
+        "note": "Spots left",
+        "href": "~/book"
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "actions",
+    "cta",
+    "day",
+    "eyebrow",
+    "go",
+    "heading",
+    "inner",
+    "item",
+    "lead",
+    "list",
+    "meta",
+    "name",
+    "text",
+    "time",
+    "title",
+    "when"
+  ],
+  "data": null,
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "freeze"
+  }
+}

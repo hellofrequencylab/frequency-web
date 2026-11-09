@@ -5,6 +5,7 @@ import { SURFACE_PANELS, isPanelId } from '@/components/spaces/workspace/surface
 import type { SpaceProfileTab } from '@/lib/spaces/profile-tab'
 import { SpaceMenuDropdown } from '@/components/spaces/space-menu-dropdown'
 import { SITE_DESIGN } from '@/lib/theme/design'
+import { spacePrimarySection } from '@/lib/spaces/primary-nav'
 
 // THE SPACE MENU'S MARKUP, WITH NO HOOKS (LIVE-522).
 //
@@ -69,12 +70,16 @@ export function SpaceProfileMenuView({
   // the "You are editing X" affordance — that cue is only for the narrower single-surface panels.
   const openPanelLabel =
     canManage && isPanelId(rawPanel) && rawPanel !== 'manage' ? SURFACE_PANELS[rawPanel].label : null
-  const manageActive = canManage && rawPanel === 'manage'
 
   // Home is found by its menu key: a saved menu (lib/spaces/site-menu.ts) may move or drop it, and the
   // Manage pin below hangs off the Space's index either way.
   const indexHref = homeHref ?? tabs.find((t) => t.key === 'home')?.href ?? tabs[0]?.href
+  const ownerPath = indexHref && pathname.startsWith(`${indexHref}/`) ? pathname.slice(indexHref.length) : ''
+  const manageActive = canManage && (rawPanel === 'manage' || /^\/(?:manage|settings|crm)(?:\/|$)/.test(ownerPath))
+  const primary = tabs.some((tab) => tab.key === 'feature:program')
+  const section = indexHref ? spacePrimarySection(pathname, indexHref) : null
   const isActive = (tab: SpaceProfileTab): boolean => {
+    if (primary) return !manageActive && openPanelLabel == null && tab.key === section
     if (tab.href.includes('#')) return false
     if (tab.href === indexHref) return pathname === tab.href && openPanelLabel == null
     return pathname === tab.href || pathname.startsWith(`${tab.href}/`)

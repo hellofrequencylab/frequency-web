@@ -18,7 +18,7 @@ import { asSpotlightLayoutId, type SpotlightLayoutId } from '@/lib/spotlight/lay
 // exposed as CSS variables on <html> (so they cascade to the public Spotlight route); each
 // stack references its variable with a system fallback. No member @font-face — the set is
 // a closed allowlist. ──
-type SpotlightFontId = 'sans' | 'serif' | 'rounded' | 'mono' | 'display' | 'script' | 'grotesk'
+type SpotlightFontId = 'sans' | 'serif' | 'rounded' | 'mono' | 'display' | 'script' | 'grotesk' | 'condensed' | 'barlow'
 export const SPOTLIGHT_FONTS: { id: SpotlightFontId; label: string; stack: string }[] = [
   { id: 'sans', label: 'Clean sans', stack: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
   { id: 'serif', label: 'Elegant serif', stack: 'var(--font-playfair), Georgia, Cambria, "Times New Roman", serif' },
@@ -31,13 +31,17 @@ export const SPOTLIGHT_FONTS: { id: SpotlightFontId; label: string; stack: strin
   { id: 'display', label: 'Bold display', stack: 'var(--font-display, var(--design-font-display, var(--font-anton))), "Arial Black", Impact, system-ui, sans-serif' },
   { id: 'script', label: 'Handwritten', stack: 'var(--font-caveat), "Bradley Hand", "Comic Sans MS", cursive' },
   { id: 'grotesk', label: 'Modern grotesk', stack: 'var(--font-grotesk), "Helvetica Neue", system-ui, sans-serif' },
+  // Bold's two faces (the Bold design system: Sofia Sans Extra Condensed over Barlow). Both load on <html> already (app/layout.tsx), so a Spotlight
+  // can wear them. The 2026-11-04 audit found the Bold preset on Anton or Unbounded and the system sans, not the design's faces.
+  { id: 'condensed', label: 'Condensed caps', stack: 'var(--font-sofia-xc), "Arial Narrow", Impact, sans-serif' },
+  { id: 'barlow', label: 'Workmanlike sans', stack: 'var(--font-barlow), system-ui, sans-serif' },
 ]
 const FONT_BY_ID = new Map(SPOTLIGHT_FONTS.map((f) => [f.id, f.stack]))
 
-type CardRadius = 'sm' | 'md' | 'lg' | 'xl'
+type CardRadius = 'none' | 'sm' | 'md' | 'lg' | 'xl'
 type CardShadow = 'none' | 'soft' | 'strong'
 type CardStyle = 'solid' | 'glass'
-const RADIUS_PX: Record<CardRadius, string> = { sm: '6px', md: '12px', lg: '18px', xl: '28px' }
+const RADIUS_PX: Record<CardRadius, string> = { none: '0px', sm: '6px', md: '12px', lg: '18px', xl: '28px' }
 const SHADOW_CSS: Record<CardShadow, string> = {
   none: 'none',
   soft: '0 1px 3px rgba(0,0,0,0.08)',
@@ -101,7 +105,7 @@ export const EMPTY_THEME: SpotlightTheme = {
 }
 
 /** A Spotlight preset read from a Mega Theme's flat token set. */
-function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple-kit' | 'free-human', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
+function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple-kit' | 'free-human' | 'services' | 'new-world' | 'cyberwitch', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
   const s = MEGA_SURFACES[id]!
   return {
     accent: s.accent.accent.toLowerCase(), surface: s.raised.toLowerCase(), text: s.text.toLowerCase(), font, card,
@@ -145,7 +149,7 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   // Spotlight, the email and the website agree. Faces are the nearest of the allowlist (a theme's own faces load on
   // its website only); Bold and Network keep square and soft cards the way their websites do.
   { id: 'frequency', label: 'Default', theme: EMPTY_THEME },
-  { id: 'bold', label: 'Bold', theme: surfacePreset('bold', { heading: 'display', body: 'sans' }, { radius: 'sm', shadow: 'none', style: 'solid' }) },
+  { id: 'bold', label: 'Bold', theme: surfacePreset('bold', { heading: 'condensed', body: 'barlow' }, { radius: 'none', shadow: 'none', style: 'solid' }) },
   { id: 'wildheart', label: 'Wildheart', theme: surfacePreset('wildheart', { heading: 'serif', body: 'serif' }, { radius: 'xl', shadow: 'soft', style: 'solid' }) },
   // The Network Theme Kit (lib/theme/network-kit.ts): the Marigold scheme as a basic preset; its Spotlight layouts come with the kit.
   { id: 'network-kit', label: 'Network', theme: { ...surfacePreset('network-kit', { heading: 'rounded', body: 'rounded' }, { radius: 'xl', shadow: 'soft', style: 'solid' }), layout: 'network-kit:stack', kit: 'general' } },
@@ -156,6 +160,13 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   // The Free Human Theme Kit (lib/theme/free-human.ts): limewash ground, umber type, one madder accent, soft cards. Cormorant and
   // Hanken Grotesk load on websites and on its Spotlight layouts only, so the nearest allowlisted faces stand in for the block body.
   { id: 'free-human', label: 'Free Human', theme: { ...surfacePreset('free-human', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'free-human:stack', kit: 'general' } },
+  // Services (lib/theme/services.ts): the Night register, one Tide accent, soft cards, starting on its own Stack Spotlight layout (LIVE-1994).
+  { id: 'services', label: 'Services', theme: { ...surfacePreset('services', { heading: 'display', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'services-kit:stack', kit: 'general' } },
+  // New World (lib/theme/new-world.ts): the Night register, one Tide accent, soft cards. Its own Spotlight layouts follow with LIVE-2057.
+  { id: 'new-world', label: 'New World', theme: { ...surfacePreset('new-world', { heading: 'display', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'new-world-kit:stack', kit: 'general' } },
+  // CyberWitch (lib/theme/cyberwitch.ts): iron and bone, one Hex accent, square plate cards. Spectral and UnifrakturCook load on websites only,
+  // so the nearest allowlisted faces stand in.
+  { id: 'cyberwitch', label: 'CyberWitch', theme: { ...surfacePreset('cyberwitch', { heading: 'display', body: 'serif' }, { radius: 'sm', shadow: 'strong', style: 'solid' }), layout: 'cyberwitch-kit:stack', kit: 'general' } },
   {
     id: 'mono', label: 'Mono',
     theme: { accent: '#111111', surface: '#ffffff', text: '#111111', font: { heading: 'sans', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },
@@ -229,7 +240,7 @@ export function validateSpotlightTheme(raw: unknown): SpotlightTheme {
       body: oneOf(font.body, SPOTLIGHT_FONTS.map((f) => f.id), 'sans'),
     },
     card: {
-      radius: oneOf(card.radius, ['sm', 'md', 'lg', 'xl'] as const, 'lg'),
+      radius: oneOf(card.radius, ['none', 'sm', 'md', 'lg', 'xl'] as const, 'lg'),
       shadow: oneOf(card.shadow, ['none', 'soft', 'strong'] as const, 'soft'),
       style: oneOf(card.style, ['solid', 'glass'] as const, 'solid'),
     },

@@ -55,7 +55,7 @@ export function SiteNotFound() {
         Back home
       </Link>
       <Link className="btn btn-ghost fq-iri-rim" href="/the-community#near">
-        What’s happening
+        What’s Happening
       </Link>
       <Link className="btn btn-ghost fq-iri-rim" href="/help">
         Help

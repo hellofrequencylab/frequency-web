@@ -67,6 +67,12 @@ const P = MENSWORK_PALETTE
 /** The triangle lattice, 48px pitch, hairline: the theme's one background pattern. */
 const LATTICE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='83.138' viewBox='0 0 48 83.138'%3E%3Cpath d='M0 0H48M0 41.569H48M0 83.138H48M0 0L48 83.138M48 0L0 83.138' fill='none' stroke='%232E3642' stroke-width='1'/%3E%3C/svg%3E")`
 
+/** The same lattice at 24px pitch, for small fields (the Bold design system, 2026-11-03). */
+const LATTICE_24 = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='41.569' viewBox='0 0 24 41.569'%3E%3Cpath d='M0 0H24M0 20.785H24M0 41.569H24M0 0L24 41.569M24 0L0 41.569' fill='none' stroke='%232E3642' stroke-width='1'/%3E%3C/svg%3E")`
+
+/** Contour lines: topographic rings, hairline, low contrast. */
+const CONTOUR = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Cg fill='none' stroke='%232E3642' stroke-width='1'%3E%3Cellipse cx='420' cy='180' rx='40' ry='26'/%3E%3Cellipse cx='415' cy='184' rx='85' ry='58'/%3E%3Cellipse cx='408' cy='190' rx='135' ry='92'/%3E%3Cellipse cx='398' cy='198' rx='190' ry='128'/%3E%3Cellipse cx='385' cy='208' rx='250' ry='168'/%3E%3Cellipse cx='370' cy='220' rx='315' ry='212'/%3E%3Cellipse cx='355' cy='232' rx='385' ry='258'/%3E%3C/g%3E%3C/svg%3E")`
+
 /** Grain, 4% monochrome noise, over the large charcoal fields. */
 const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
 
@@ -106,6 +112,14 @@ export const MENSWORK_TOKENS_CSS = `
 --mw-pressed:color-mix(in srgb,var(--color-primary) 79%,black);
 --mw-accent:${MENSWORK_SEASONS.fall};--mw-winter:${MENSWORK_SEASONS.winter};--mw-spring:${MENSWORK_SEASONS.spring};--mw-summer:${MENSWORK_SEASONS.summer};--mw-fall:${MENSWORK_SEASONS.fall};
 --mw-lattice:${LATTICE};--mw-grain:${GRAIN};
+--mw-teal:${P.teal};--mw-teal-pressed:${P.tealPressed};--mw-teal-text:${P.tealText};
+--mw-lattice-24:${LATTICE_24};--mw-chevron:repeating-linear-gradient(-60deg,var(--mw-hairline) 0 2px,transparent 2px 12px);--mw-brushed:repeating-linear-gradient(0deg,rgba(233,236,241,0.025) 0 1px,transparent 1px 3px);--mw-contour:${CONTOUR};
+--mw-angle:60deg;--mw-chamfer-sm:8px;--mw-chamfer-md:12px;--mw-chamfer-lg:20px;
+--mw-clip-chamfer-sm:polygon(0 0,calc(100% - 8px) 0,100% 13.86px,100% 100%,0 100%);--mw-clip-chamfer-md:polygon(0 0,calc(100% - 12px) 0,100% 20.78px,100% 100%,0 100%);--mw-clip-chamfer-lg:polygon(0 0,calc(100% - 20px) 0,100% 34.64px,100% 100%,0 100%);
+--mw-dur-fast:150ms;--mw-dur-base:200ms;--mw-dur-slow:250ms;--mw-ease:linear;--mw-slide-60-x:6px;--mw-slide-60-y:-10.39px;--mw-shadow-none:none;
+--mw-space-1:4px;--mw-space-2:8px;--mw-space-3:12px;--mw-space-4:16px;--mw-space-5:24px;--mw-space-6:32px;--mw-space-7:48px;--mw-space-8:64px;--mw-space-9:96px;
+--mw-radius-none:0;--mw-radius-xs:2px;--mw-radius-person:50%;--mw-border-1:1px;--mw-border-2:2px;--mw-focus-ring-width:2px;
+--mw-measure:68ch;--mw-tracking-display:0.005em;--mw-tracking-display-sm:0.03em;--mw-tracking-label:0.12em;
 --mw-display:var(--font-sofia-xc),'Arial Narrow',sans-serif;--mw-body:var(--font-barlow),system-ui,sans-serif;--mw-mono:var(--font-plex-mono),ui-monospace,monospace;
 --color-canvas:${P.charcoal};--color-marketing-canvas:${P.surface};--color-surface:${P.surface};--color-surface-elevated:${P.raised};--color-surface-post:${P.surface};
 --color-chrome:${P.charcoal};--color-chrome-border:${P.hairline};--color-chrome-hover:${P.raised};

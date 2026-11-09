@@ -5,37 +5,46 @@
 // column while the preview on the right fills in; saved steps collapse to pills; the steps bar reads "built", never
 // "live". One state object feeds all of it. The kit arrives as ?kit=<MegaThemeId> from the Theme Kit pages; no param
 // starts on the house look. Server markup is the cold-traffic render (the intro), so the page reads without script.
-// The draft lives in the visitor's own browser until the hand-over (create-space-claim.tsx). Styles: create-space.css.
+// The draft lives in the visitor's own browser, and from step 3 (an address) also on the server (ADR-1933): every
+// change after that is sent, debounced, to saveDraftLead, the tab's last changes go by beacon on pagehide, and a
+// ?draft= link reads it back as a "Welcome back" the visitor picks up. The hand-over is create-space-claim.tsx.
+// Styles: create-space.css.
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
+import { restoreDraft, saveDraftLead } from '@/app/(marketing)/create-a-space/actions'
 import { SaveCard, SavedCard } from '@/components/frequency/site/pages/create-space/create-space-claim'
 import type { Saved } from '@/components/frequency/site/pages/create-space/create-space-claim'
 import { PhotosCard } from '@/components/frequency/site/pages/create-space/create-space-photos'
 import type { UploadUrls } from '@/components/frequency/site/pages/create-space/create-space-photos'
-import { ContactCard, MOCKUP_LINES, NameCard, OfferCard } from '@/components/frequency/site/pages/create-space/create-space-steps'
+import { ContactCard, MOCKUP_LINES, NameCard, OFFER_EXAMPLES, OfferCard } from '@/components/frequency/site/pages/create-space/create-space-steps'
 import type { StepError } from '@/components/frequency/site/pages/create-space/create-space-steps'
 import { SpacePreview } from '@/components/frequency/site/pages/create-space/space-preview'
 import { useHandleStatus } from '@/components/frequency/site/pages/create-space/use-handle-status'
 import {
-  BUILDER_MOVES, DRAFT_KEY, STEP_SEGMENTS, claimedHandle, emptyDraft, handleOf, hasProgress, initialOf, nextOpenMove, progressOf,
+  BUILDER_MOVES, DRAFT_KEY, STEP_SEGMENTS, claimedHandle, emptyDraft, handleOf, hasProgress, initialOf, nextOpenMove, parseDraft, progressOf,
   readStoredDraft, serializeDraft, startingModeFor, stepPrompt,
 } from '@/lib/create-space/builder'
 import type { BuilderDraft, BuilderMove } from '@/lib/create-space/builder'
+import { doorArrival } from '@/lib/create-space/door'
+import { lastKitFrom } from '@/lib/create-space/last-kit'
+import type { MegaThemeId } from '@/lib/theme/mega-theme'
+import type { DoorArrival } from '@/lib/create-space/door'
 import { isHandleShape } from '@/lib/create-space/handle'
 import { intentsFromOffer } from '@/lib/create-space/intents-from-offer'
-import { PREVIEW_KITS, deriveSite, isPreviewKit, joinList, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
+import { browserZone, leadEmailOf } from '@/lib/create-space/lead'
+import { SIGNAL_URL, visitorKeyFrom } from '@/lib/create-space/signal'
+import type { CreateSpaceSignal } from '@/lib/create-space/signal'
+import { PREVIEW_KITS, deriveSite, joinList, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
 import { acceptUpload, getUploads, putUpload } from '@/lib/create-space/uploads'
 import type { UploadKind } from '@/lib/create-space/uploads'
 import { CLOCK_BUDGET_MS, formatClock } from '@/lib/launch/clock'
-import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import { PREVIEW_FONT_SHEET, previewAccentVars, previewTokens } from '@/lib/theme/preview-tokens'
 import './create-space.css'
 
-const COLD_KIT: MegaThemeId = 'frequency'
 /** The hero wears its mode as a class too, so a probe and a test can read it off the markup. */
 const HERO_CLASS = { intro: 'cs-hero cs-hero-intro', building: 'cs-hero cs-hero-building' } as const
 const ROW_LABELS = ['Name', 'Offer', 'Contact', 'Photos'] as const
@@ -51,12 +60,10 @@ const MOCKUP_MIN_MS = 2600
 const MOCKUP_LINE_MS = 600
 const TOAST_MS = 3200
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-/** The kit a visit starts on, and whether the visitor arrived having chosen it. Total. */
-export function arrivalFromParam(param: string | null): { kit: MegaThemeId; chosen: boolean } {
-  if (param && isPreviewKit(param)) return { kit: param, chosen: true }
-  return { kit: COLD_KIT, chosen: false }
-}
+/** How long after the last change the draft goes to the server (ADR-1933). */
+const SERVER_SAVE_MS = 1500
+/** Where the tab's last changes go on pagehide (app/api/create-space/draft/route.ts). */
+const BEACON_URL = '/api/create-space/draft'
 
 const lightGround = (hex: string) => {
   const n = parseInt(hex.replace('#', ''), 16)
@@ -73,8 +80,14 @@ const slotSrc = (slot: string, list: readonly string[], fallback: string, own?: 
 
 type Phase = 'build' | 'saved'
 
-function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } }) {
-  const [draft, setDraft] = useState<BuilderDraft>(() => emptyDraft(arrival.kit, arrival.chosen))
+function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: string | null }) {
+  // A door's hints (lib/create-space/door.ts) prime the start: the name is typed in, the goals light the preview's
+  // offer cards before a sentence is written, and the niche rides to the launch. Nothing is marked done for them.
+  // The accent picked beside the kit's Use button arrives picked: they chose it there, so it is not asked again.
+  const [draft, setDraft] = useState<BuilderDraft>(() => ({
+    ...emptyDraft(arrival.kit, arrival.chosen), name: arrival.name, goals: arrival.goals, niche: arrival.niche,
+    ...(arrival.accentAt !== undefined ? { accentAt: arrival.accentAt, accentPicked: true } : {}),
+  }))
   const [step, setStep] = useState(0)
   const [phase, setPhase] = useState<Phase>('build')
   const [busyLine, setBusyLine] = useState<number | null>(null)
@@ -89,6 +102,8 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   const [contentKey, setContentKey] = useState(0)
   const [uploads, setUploads] = useState<UploadUrls>({})
   const [uploadError, setUploadError] = useState<string | null>(null)
+  /** The address the server holds the draft under, once it does. */
+  const [savedTo, setSavedTo] = useState<string | null>(null)
 
   const heroRef = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -98,7 +113,23 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   const restored = useRef(false)
   // Once the draft has been handed to the launch it is not kept here any more.
   const sealed = useRef(false)
-  const timers = useRef<{ toast?: number; save?: number; mock?: number; line?: number; focus?: number }>({})
+  const timers = useRef<{ toast?: number; save?: number; mock?: number; line?: number; focus?: number; server?: number }>({})
+  // The server save reads the latest draft from here, so a debounced timer and the pagehide beacon never send stale state.
+  const latest = useRef(draft)
+  const trappedRef = useRef(false)
+  const ownRef = useRef(false)
+  /** The draft as last sent to the server (its token left out), so a token write-back does not send it again. */
+  const lastSent = useRef('')
+  /** The tab's own key for the funnel signals (lib/create-space/signal.ts): minted on the first signal, never a cookie. */
+  const visitor = useRef<string | null>(null)
+
+  // ── The funnel signals (LIVE-1970): nine closed events, no typed text, one per tab and event. A count, never a blocker.
+  const signal = useCallback((event: CreateSpaceSignal, props: Record<string, string | number | boolean> = {}) => {
+    try {
+      visitor.current ??= visitorKeyFrom(window.sessionStorage, () => crypto.randomUUID())
+      void fetch(SIGNAL_URL, { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ v: visitor.current, event, props }) }).catch(() => {})
+    } catch { /* no fetch, no storage: the page is still the page */ }
+  }, [])
 
   // ── The browser's own draft: read back once after mount (server markup is the cold render), kept on every change.
   useEffect(() => {
@@ -108,7 +139,20 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
       if (back && hasProgress(back)) setResume(back)
     } catch { /* storage blocked: the page works without it */ }
     restored.current = true
-  }, [arrival])
+    signal('createspace.view', { kit: arrival.kit, chosen: arrival.chosen })
+  }, [arrival, signal])
+
+  // ── A ?draft= link: the server copy comes back as a "Welcome back", never restored by itself (ADR-1933).
+  useEffect(() => {
+    if (!draftToken) return
+    let live = true
+    restoreDraft(draftToken).then(({ draft: json }) => {
+      if (!live || !json) return
+      const back = parseDraft(json, null)
+      if (back && hasProgress(back)) setResume(back)
+    }).catch(() => { /* the link opened nothing: the page is still the page */ })
+    return () => { live = false }
+  }, [draftToken])
 
   useEffect(() => {
     if (!restored.current || sealed.current) return
@@ -117,6 +161,52 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
     window.clearTimeout(timers.current.save)
     timers.current.save = window.setTimeout(() => setSaveState('saved'), 700)
   }, [draft])
+
+  // ── The moment a name and a full address are typed, the draft also goes to the server (the owner's rule, 2026-11-03:
+  // capture before Save, so an abandoned draft gets its come-back email): debounced after every change, and by beacon
+  // when the tab goes. Not gated on the contact step's Continue.
+  const flashRef = useRef<((text: string) => void) | null>(null)
+  /** The contact step was just finished: the next successful server save says so in its toast. */
+  const contactToast = useRef(false)
+  const sendable = (d: BuilderDraft) => Boolean(leadEmailOf(d) && d.name.trim()) && !trappedRef.current && !sealed.current
+  const fingerprint = (d: BuilderDraft) => serializeDraft({ ...d, leadToken: null })
+  const sendToServer = useCallback(async () => {
+    const d = latest.current
+    if (!sendable(d) || fingerprint(d) === lastSent.current) return
+    lastSent.current = fingerprint(d)
+    const form = new FormData()
+    form.set('draft', serializeDraft(d))
+    if (d.leadToken) form.set('token', d.leadToken)
+    const tz = browserZone()
+    if (tz) form.set('tz', tz)
+    if (ownRef.current) form.set('own', '1')
+    setSaveState('saving')
+    const r = await saveDraftLead(form).catch(() => ({ ok: false as const }))
+    if (!r.ok) { lastSent.current = ''; setSaveState('saved'); return }
+    setSavedTo(leadEmailOf(d))
+    setSaveState('saved')
+    if (contactToast.current) { contactToast.current = false; flashRef.current?.('Contact section added. Draft saved to your email.') }
+    if (r.token !== d.leadToken) setDraft((cur) => ({ ...cur, leadToken: r.token }))
+    if (r.handleTaken) { setErr('slug'); flashRef.current?.('That handle was just taken. Pick another.') }
+  }, [])
+  useEffect(() => {
+    if (!restored.current || !sendable(draft)) return
+    window.clearTimeout(timers.current.server)
+    timers.current.server = window.setTimeout(() => { void sendToServer() }, SERVER_SAVE_MS)
+  }, [draft, sendToServer])
+  useEffect(() => {
+    const flush = () => {
+      const d = latest.current
+      if (!sendable(d) || fingerprint(d) === lastSent.current || !('sendBeacon' in navigator)) return
+      lastSent.current = fingerprint(d)
+      const body = JSON.stringify({ draft: serializeDraft(d), token: d.leadToken, tz: browserZone(), own: ownRef.current ? 1 : 0 })
+      navigator.sendBeacon(BEACON_URL, new Blob([body], { type: 'application/json' }))
+    }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush() }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => { window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', onVisibility) }
+  }, [])
 
   // ── Their own pictures, kept in IndexedDB between visits; object URLs for this one.
   useEffect(() => {
@@ -149,7 +239,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
 
   useEffect(() => {
     const t = timers.current
-    return () => { window.clearTimeout(t.toast); window.clearTimeout(t.save); window.clearTimeout(t.mock); window.clearInterval(t.line); window.clearTimeout(t.focus) }
+    return () => { window.clearTimeout(t.toast); window.clearTimeout(t.save); window.clearTimeout(t.mock); window.clearInterval(t.line); window.clearTimeout(t.focus); window.clearTimeout(t.server) }
   }, [])
 
   // ── The morph: anything marked data-morph slides from where it was to where it is (FLIP), unless motion is reduced.
@@ -187,7 +277,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   const kitLabel = PREVIEW_KITS.find((k) => k.id === draft.kit)?.label ?? draft.kit
   const tokens = previewTokens(draft.kit)
   const vars = { ...tokens, ...previewAccentVars(accent.fill, accent.text, !lightGround(tokens['--pv-bg'])) }
-  const imagery = kitImagery(draft.kit)
+  const imagery = kitImagery(draft.kit, draft.accentAt)
   const building = phase === 'build'
   const hasName = draft.name.trim().length > 0
   const intro = building && step === 0 && !hasName
@@ -196,7 +286,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   const handle = claimedHandle(draft)
   const status = useHandleStatus(handle, building && step === 0 && hasName)
   const site = deriveSite({
-    name: draft.name, handle: handleOf(draft), hostName: draft.hostName, intents: draft.goals, kit: draft.kit,
+    name: draft.name, handle: handleOf(draft), hostName: draft.hostName, intents: draft.goals, kit: draft.kit, accentAt: draft.accentAt,
     offer: draft.done.offer ? draft.offer : undefined, reach: { email: draft.email, phone: draft.phone, where: draft.where }, ghost: !draft.done.offer,
   })
   const coverSrc = slotSrc(draft.cover, imagery.covers, imagery.hero, uploads.cover)
@@ -217,7 +307,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   const sub = intro ? INTRO_SUB : building ? `Step ${step + 1} of 5 · ${stepPrompt(step, kitLabel)}` : `We sent your link to ${saved?.email ?? draft.email.trim()}. It stays a private draft until you open it.`
   const rowValue = [`${siteName} · /${handle || 'yourspace'}`, draft.offer.trim(), `${draft.hostName.trim()} · ${draft.email.trim()}`, ownCount ? `${ownCount} of yours, the rest from ${kitLabel}` : `${kitLabel} photos for now`]
   const doneRows = building ? BUILDER_MOVES.map((k, i) => ({ k, i })).filter(({ k, i }) => draft.done[k] && i !== step) : []
-  const saveLabel = saveState === 'saving' ? 'Saving' : 'Draft saved'
+  const saveLabel = saveState === 'saving' ? 'Saving' : savedTo ? `Saved to ${savedTo}` : 'Draft saved'
   const stepsHead = intro ? 'Five steps to live' : `${pct}% built`
   const chip = vars as CSSProperties
 
@@ -227,6 +317,8 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
     setToast((t) => ({ text, key: (t?.key ?? 0) + 1 }))
     timers.current.toast = window.setTimeout(() => setToast(null), TOAST_MS)
   }
+  // What the server save and the beacon read at their own time: the latest of these, after each render.
+  useEffect(() => { latest.current = draft; trappedRef.current = trapped; ownRef.current = ownCount > 0; flashRef.current = flash })
   const edit = useCallback((fn: (d: BuilderDraft) => BuilderDraft) => {
     setDraft(fn)
     setSaveState('saving')
@@ -234,9 +326,17 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   }, [])
   const patch = (p: Partial<BuilderDraft>) => {
     if (typeof p.name === 'string' && building && step === 0 && hasName !== p.name.trim().length > 0) capture()
+    if (!draft.startedAt && typeof p.name === 'string' && p.name.trim()) signal('createspace.name_started')
+    if (p.accentPicked === true) signal('createspace.accent_picked', { accent: p.accentAt ?? draft.accentAt })
     edit((d) => ({ ...d, ...p, startedAt: d.startedAt ?? (typeof p.name === 'string' && p.name.trim() ? new Date().toISOString() : null) }))
   }
-  const markDone = (move: BuilderMove, p?: Partial<BuilderDraft>) => edit((d) => ({ ...d, ...p, done: { ...d.done, [move]: true } }))
+  /** Whole seconds since the first letter, for the step signal, off the clock's own tick; 0 before a name or a tick. */
+  const secondsIn = () => (draft.startedAt && now ? Math.max(0, Math.min(86_400, Math.round((now - Date.parse(draft.startedAt)) / 1000))) : 0)
+  const markDone = (move: BuilderMove, p?: Partial<BuilderDraft>) => {
+    signal('createspace.step_done', { step: move, seconds: secondsIn() })
+    if (move === 'photos') signal('createspace.photos', { uploaded: ownCount > 0, kept_theme: ownCount === 0 })
+    edit((d) => ({ ...d, ...p, done: { ...d.done, [move]: true } }))
+  }
   const focusStep = (i: number) => {
     window.clearTimeout(timers.current.focus)
     timers.current.focus = window.setTimeout(() => { ([nameRef, offerRef, contactRef] as const)[i]?.current?.focus({ preventScroll: true }) }, 420)
@@ -261,6 +361,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
     window.clearInterval(timers.current.line)
     timers.current.line = window.setInterval(() => setBusyLine((l) => Math.min((l ?? 0) + 1, MOCKUP_LINES.length - 1)), MOCKUP_LINE_MS)
     const goals = intentsFromOffer(offer)
+    signal('createspace.offer', { example_used: (OFFER_EXAMPLES as readonly string[]).includes(offer.trim()), intents: goals.join(',') })
     timers.current.mock = window.setTimeout(() => {
       window.clearInterval(timers.current.line)
       const done = { ...draft.done, offer: true }
@@ -284,7 +385,10 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
     } else if (step === 2) {
       if (!draft.hostName.trim()) { setErr('fullName'); return }
       if (!EMAIL.test(draft.email.trim())) { setErr('email'); return }
+      signal('createspace.lead', { has_phone: draft.phone.trim().length > 0, has_where: draft.where.trim().length > 0 })
       markDone('contact')
+      // The toast names the save once the server has it (sendToServer); until then only the step is announced.
+      contactToast.current = true
       flash('Contact section added.')
       advance({ ...draft.done, contact: true }, 2)
     } else if (step === 3) {
@@ -311,6 +415,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
     const d = resume
     if (!d) return
     capture()
+    signal('createspace.resume', { source: draftToken ? 'email' : 'local' })
     setResume(null)
     edit(() => ({ ...d, startedAt: new Date().toISOString(), endedAt: null }))
     const n = nextOpenMove(d.done, -1) ?? 4
@@ -329,6 +434,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
     flash(`/${handle} is saved as a draft`)
   }
   const toTop = () => {
+    signal('createspace.dock_click')
     window.scrollTo({ top: 0, behavior: 'smooth' })
     if (building) focusStep(step)
   }
@@ -445,7 +551,7 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
             <span className="cs-dock-thumb"><Image src={coverSrc} alt="" fill sizes="42px" unoptimized={coverSrc.startsWith('blob:')} style={{ objectFit: 'cover' }} /></span>
             <span className="cs-dock-text"><b>{siteName}</b><span>{building ? `${pct}% built · still a draft` : 'Saved · still a draft'}</span></span>
             {!building && saved?.keepBuildingHref ? (
-              <Link className="fq-iri-btn cs-dock-go" href={saved.keepBuildingHref}>Keep building<FqIcon name="arrow" size={16} /></Link>
+              <Link className="fq-iri-btn cs-dock-go" href={saved.keepBuildingHref} onClick={() => signal('createspace.dock_click')}>Keep building<FqIcon name="arrow" size={16} /></Link>
             ) : (
               <button type="button" className="fq-iri-btn cs-dock-go" onClick={toTop}>Finish my launch<FqIcon name="arrow" size={16} /></button>
             )}
@@ -456,14 +562,21 @@ function Island({ arrival }: { arrival: { kit: MegaThemeId; chosen: boolean } })
   )
 }
 
+const noopSubscribe = () => () => {}
+
 function FromUrl() {
-  const arrival = arrivalFromParam(useSearchParams().get('kit'))
-  return <Island key={`${arrival.kit}:${arrival.chosen}`} arrival={arrival} />
+  const params = useSearchParams()
+  const asked = doorArrival((k) => params.get(k))
+  // No kit in the address: start on the one they last looked at (lib/create-space/last-kit.ts). Read after mount,
+  // because this page is static. An explicit ?kit= wins.
+  const last = useSyncExternalStore(noopSubscribe, () => lastKitFrom(document.cookie), () => null as MegaThemeId | null)
+  const arrival = asked.chosen || !last ? asked : { ...asked, kit: last, chosen: true }
+  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.accentAt ?? ''}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} draftToken={params.get('draft')} />
 }
 
 export function CreateSpaceStudio() {
   return (
-    <Suspense fallback={<Island arrival={arrivalFromParam(null)} />}>
+    <Suspense fallback={<Island arrival={doorArrival(() => null)} draftToken={null} />}>
       <FromUrl />
     </Suspense>
   )

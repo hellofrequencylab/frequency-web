@@ -1,18 +1,15 @@
 {
   "id": "LIVE-1995",
-  "title": "Services email and Space page: eleven email types and the Space face",
-  "lane": "live",
-  "priority": "P1",
-  "size": "M",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/services/rules.json",
-    "ref": "ds-intake services"
+  "append": {
+    "detail": "2026-11-02: the email half is built as lib/theme/services-kit-email.ts (servicesKitEmail, eleven types, tested), against New World / Services revision 2 (Unbounded, Instrument Serif, Hanken Grotesk; accent steps are passed in already resolved per register, so the revision 2 hue maths stays in the theme). Nothing is wired to the catalog yet. Still open: the Space page faces and default accent in lib/theme/site-style.ts, which the probe checks and which moves to the theme-registration row (LIVE-2040); lib/email-samples/catalog.ts wiring rides with it.\n\nEmail (eleven types) and the Space face are wired: site-style.ts and the email catalog carry Services (LIVE-2040)."
   },
-  "detail": "Plan step 7b: eleven email templates (confirm, reminder, welcome, review, receipt, post, event, order, member, letter, inquiry) following register, accent, type voice and corners; Space page follows fonts, accent and register while synced inside Frequency's own frame (only the Space area wears the kit).",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node scripts/probes/services-theme.mjs email"
-  },
-  "wave": "W7"
+  "wave": "W7",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-03",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/services-theme.mjs email"
+    }
+  }
 }

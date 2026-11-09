@@ -187,17 +187,14 @@ export function homeFeedItem(pathname: string): { label: 'Home' | 'Feed'; href: 
     : { label: 'Feed', href: FEED_HREF, icon: 'page' }
 }
 
-/** The primary website pages, shown on every section of the member mega menu (owner, 2026-10-13) so a
- *  signed-in member can always get back to Home and the site. Routes come from the site nav (ROUTES). */
+/** The core business pages, shown on every section of the member mega menu: About, Pricing, Help and
+ *  Guidelines. The sales row (Home, For people, For spaces, Features, Vision) is gone from the logged-in
+ *  app (owner, 2026-11-03: "more depth and less sales"). Routes come from the site nav (ROUTES). */
 export const FQ_SITE_LINKS: readonly { label: string; href: string }[] = [
-  { label: 'Home', href: MEMBER_HOME_HREF },
-  { label: 'For people', href: ROUTES.people },
-  { label: 'For spaces', href: ROUTES.spaces },
-  ...(ROUTES.features ? [{ label: 'Features', href: ROUTES.features }] : []),
+  { label: 'About', href: ROUTES.about },
   { label: 'Pricing', href: ROUTES.pricing },
-  ...(ROUTES.stories ? [{ label: 'Stories', href: ROUTES.stories }] : []),
-  { label: 'Vision', href: ROUTES.vision },
   { label: 'Help Center', href: ROUTES.help },
+  { label: 'Guidelines', href: '/guidelines' },
 ]
 
 /** The left rail's shortcuts (Members.dc.html `shortcuts`), at most six. `badge` names the live count
@@ -299,6 +296,7 @@ export const FQ_ACCOUNT_MENU: readonly FqMenuRow[] = [
  *  in the phone drawer's website group. */
 export const FQ_ABOUT_LINKS: readonly { label: string; href: string }[] = [
   { label: 'About', href: '/about' },
+  { label: 'How it works', href: ROUTES.people },
   { label: 'Compare', href: '/vs' },
   { label: 'Guidelines', href: '/guidelines' },
   { label: 'Privacy', href: '/privacy' },

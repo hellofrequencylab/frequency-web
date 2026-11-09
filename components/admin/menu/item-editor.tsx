@@ -140,6 +140,7 @@ export function ItemEditor({
       <div className="flex items-center gap-2 px-2.5 py-2">
         {pinned ? (
           <span
+            role="img"
             className="shrink-0 text-subtle"
             aria-label="Pinned, cannot be moved"
             title="Pinned beside Feed"
@@ -149,6 +150,7 @@ export function ItemEditor({
         ) : (
           <span
             {...dragHandlers}
+            role="img"
             className="shrink-0 cursor-grab text-subtle active:cursor-grabbing"
             aria-label="Drag to reorder or move between groups"
             title="Drag to reorder or move between groups"

@@ -125,11 +125,12 @@ describe('marketing door destinations agree with the onboarding side (one source
     }
   })
 
-  it('every door covers every destination row, so no row is unreachable from a door', () => {
-    const fromDoors = funnelSlugs()
-      .map((slug) => getFunnelConfig(slug)!.niche)
-      .sort()
-    expect(fromDoors).toEqual(Object.keys(NICHE_FUNNEL_DESTINATIONS).sort())
+  it('every door has a destination row, so no door ends on the waitlist', () => {
+    // LIVE-2093: the creators, schools, wellness and markets doors folded into survivors (13 to 9), but
+    // their rows stay so an old ?seq= link still lands in the right Space type. So a row may outlive
+    // its door; a door may never lack a row.
+    const rows = new Set(Object.keys(NICHE_FUNNEL_DESTINATIONS))
+    for (const slug of funnelSlugs()) expect(rows, slug).toContain(getFunnelConfig(slug)!.niche)
   })
 
   it('a door whose niche has no destination row falls back to the directory instead of the waitlist', () => {

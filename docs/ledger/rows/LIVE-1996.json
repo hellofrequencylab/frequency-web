@@ -1,18 +1,10 @@
 {
-  "id": "LIVE-1996",
-  "title": "Offer Services in the theme picker and add /themes/services on the Nocturne page layout",
-  "lane": "live",
-  "priority": "P1",
-  "size": "M",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/services/rules.json",
-    "ref": "Daniel 2026-10-29 theme page rule"
-  },
-  "detail": "The picker entry once the surfaces are real (never an empty box), plus /themes/services built to the live Nocturne page's section order with the Website/Spotlight/Space/Email switcher, coordinated with the theme pages thread, drift-tested against Nocturne. Design checks at 390, 1280, 1440, 1920 and 2000, signed in and out.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node scripts/probes/services-theme.mjs picker"
-  },
-  "wave": "W7"
+ "id": "LIVE-1996",
+ "patch": {
+  "status": "done",
+  "closed": "2026-11-04"
+ },
+ "append": {
+  "detail": "\n\n2026-11-03: /themes/services shipped as LIVE-2130 at app/(marketing)/themes/services/page.tsx. This row's probe still looks for app/themes/services/page.tsx; repointing it waits on the owner's phrase. The picker entry stays hidden like House of Fates until Services is offered.\n\n2026-11-04: owner: \"Put services in the theme picker.\" Services leaves RETIRED_FROM_PICKERS (lib/theme/site-style.ts), so the gallery, the editor's Theme tab and the create wizard offer it (after New World and the others, in SITE_THEME_DEFS order). The /themes gallery card shows the real website and Spotlight renders and counts the sixteen trade kits; /themes/services is indexed and in the sitemap. The probe now checks the real route, the picker set and the sitemap."
+ }
 }

@@ -1,0 +1,19 @@
+{
+  "id": "BLD-105",
+  "title": "Builder BLD-105: Generated Tune rail, two layers",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-105."
+  },
+  "detail": "B1 Shell, pass BLD-105 (spec: docs/EDITOR-NEXT.md#bld-105). Generated Tune rail, two layers. Scope: components/builder/tune. Build: Layer 1 renders slots.required then slots.optional, from role.json, with counts from slot limits. Layer 2 (More): tone, width, spacing, columns, devices, anchor, reveal, density per surface, from defineBlock.fields. 'Always show more' per person. Done when: For every adopted role, rendered fields equal the projection, no more and no fewer; No component file names a block type. Gates: vitest suite (required test job), check:blocks, a11y ratchet, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-104. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nGenerated Tune rail: lib/builder/tune.ts projects any block into layer 1 (role slots, required first, with character and list limits; or a non-role block's text, list and picture fields) and layer 2 under More (variant, tone, look, live). Test: for every adopted role the drawn fields equal the declared fields, no more and no fewer. components/builder/tune names no block type; Always show more is kept per person; typing in one field is one undo step (burst in lib/builder/state.ts). Canvas and Tune edit the same draft.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-105.mjs"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

@@ -297,6 +297,55 @@ function subdomainKeepsPath(pathname: string): boolean {
   return pathname === SPOTLIGHT_CLICK_PATH || SITE_CRAWLER_FILES.has(pathname)
 }
 
+// CAMPAIGN TAGS SURVIVE THE HOP (LIVE-SUBDOMAIN-ATTRIBUTION). A Space's free subdomain whose website is
+// live on its own domain 308s to the same page there from the ISR page (lib/sites/hosted.ts), which
+// cannot see the query string, so `?utm_source=ig` was lost on the hop. The proxy now makes the hop
+// itself for the one case that matters: a page request on a slug subdomain that carries a supported
+// campaign tag. It keeps ONLY the tags named here, each value capped, so a token, a code or anything
+// private in the query never follows the visitor to another host. Everything else is unchanged: the
+// proxy still never reads the database (the live domain comes from a cached JSON route, see
+// lib/sites/live-domain-lookup.ts), and a subdomain with no live domain keeps serving its own pages.
+const ATTRIBUTION_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id'] as const
+const ATTRIBUTION_VALUE_MAX = 200
+
+/** The supported campaign tags of a query string, re-encoded, as `?k=v&k=v`; '' when it carries none. PURE. */
+export function attributionQuery(search: string | null | undefined): string {
+  const raw = (search ?? '').trim()
+  if (!raw) return ''
+  const params = new URLSearchParams(raw.startsWith('?') ? raw.slice(1) : raw)
+  const kept = new URLSearchParams()
+  for (const key of ATTRIBUTION_KEYS) {
+    const value = params.get(key)
+    if (value && value.length <= ATTRIBUTION_VALUE_MAX) kept.set(key, value)
+  }
+  const out = kept.toString()
+  return out ? `?${out}` : ''
+}
+
+/** The cached JSON route the proxy asks for a Space website's live custom domain (app/api/site-domain/[slug]). */
+export const siteDomainApiPath = (slug: string): string => `/api/site-domain/${encodeURIComponent(slug.trim().toLowerCase())}`
+
+/** A tagged page request on a slug subdomain: which Space, which site page, and the tags to carry. Null for
+ *  any other host, for a path that is not a site page (crawler files, the visitor and admin routes, a deeper
+ *  Space path), for a path subdomainKeepsPath names, and for a query with no supported tag. PURE. */
+export function subdomainAttributionHop(
+  host: string | null | undefined,
+  pathname: string,
+  search: string | null | undefined,
+  appHosts: Set<string> = new Set(),
+): { slug: string; path: string; query: string } | null {
+  const h = normalizeHost(host)
+  if (appHosts.has(h)) return null
+  const slug = siteSlugFromSubdomain(h)
+  if (!slug) return null
+  const query = attributionQuery(search)
+  if (!query) return null
+  const segments = pathname.split('/').filter(Boolean)
+  const path = segments.length === 0 ? '/' : segments.length === 1 && /^[a-z0-9][a-z0-9-]*$/.test(segments[0]) ? `/${segments[0]}` : null
+  if (!path || subdomainKeepsPath(path)) return null
+  return { slug, path, query }
+}
+
 /** ONE SITE, ONE ADDRESS (SCAN-896, owner 2026-10-14: "Once a user has established a custom domain, their
  *  subdomain site should redirect to their main site."). Where a request on a Space's free subdomain
  *  (`<slug>.frequencylocal.com`) should go permanently, given the domain its site is live on

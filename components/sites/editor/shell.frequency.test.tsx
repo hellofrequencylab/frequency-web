@@ -340,7 +340,7 @@ it('keeps several theme drafts over the same pages and switches between them wit
 it('maps the Theme and Site tabs onto the real site settings', () => {
   const { node } = mount({ start: clean })
   act(() => (Array.from(node.querySelectorAll('.rail .tabs button')).find((b) => b.textContent === 'Theme') as HTMLButtonElement).click())
-  expect(Array.from(node.querySelectorAll('.rail .theme b')).map((b) => b.textContent)).toEqual(['Default', 'Bold', 'Wildheart', 'Network', 'Temple', 'Midnight', 'Designer'])
+  expect(Array.from(node.querySelectorAll('.rail .theme b')).map((b) => b.textContent)).toEqual(['New World', 'Designer', 'Bold', 'Wildheart', 'Network', 'Temple', 'Midnight', 'Services', 'CyberWitch'])
   expect(node.querySelector('.rail .theme[aria-pressed=true] b')?.textContent).toBe('Bold')
   expect(node.querySelector('.rail .type-aa + .t small')?.textContent).toBe('Comes with the Bold theme')
   act(() => (Array.from(node.querySelectorAll('.rail .tabs button')).find((b) => b.textContent === 'Site') as HTMLButtonElement).click())
@@ -370,4 +370,20 @@ it('starts with Vera away when this device put it away last time', () => {
   expect(node.querySelector('.stage .vera')).toBeNull()
   expect(node.querySelector('.stage .vera-orb')).toBeTruthy()
   window.localStorage.removeItem('fq.editor.vera-hidden')
+})
+
+it('docks Vera as a tab at the bottom right that opens and closes', () => {
+  window.localStorage.removeItem('fq.editor.vera-hidden')
+  const { node, click } = mount()
+  const panel = node.querySelector<HTMLElement>('.stage section.vera[aria-label="Vera"]')!
+  expect(panel.firstElementChild?.className).toBe('vera-head')
+  expect(panel.querySelector('.vera-head [aria-label="Hide Vera"]')?.getAttribute('aria-expanded')).toBe('true')
+  expect(panel.querySelector('.bar [aria-label="Hide Vera"]')).toBeNull()
+  click('Hide Vera')
+  const tab = node.querySelector<HTMLButtonElement>('.stage .vera-tab')!
+  expect(tab.textContent).toBe('Vera')
+  expect(tab.getAttribute('aria-expanded')).toBe('false')
+  click('Show Vera')
+  expect(node.querySelector('.stage .vera-tab')).toBeNull()
+  expect(document.activeElement?.getAttribute('aria-label')).toBe('Ask Vera')
 })

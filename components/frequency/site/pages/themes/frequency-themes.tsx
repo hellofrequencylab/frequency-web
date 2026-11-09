@@ -1,168 +1,54 @@
-// /themes on the Frequency design (LIVE-1460, rebuilt LIVE-1514): the theme library index. Two columns, one
-// card per Mega Theme with its full-kit picture, read from the theme list, the library catalog and the kit
-// index so the page never drifts from what the editor offers. Built from the template kit only (phero, sec,
-// sh, tg-card, KeepGoing); no page CSS of its own. Copy follows docs/marketing/voice-and-language-guide.md:
-// pain point first, plain words, no claims we cannot stand behind.
+// /themes: the Theme Kits page (LIVE-2188), rebuilt to Daniel's Theme Kits design (design_handoff_theme_kits). A device cloud
+// of the nine kits, a sticky look filter, and one full-bleed section per kit drawn in that kit's own design system, each with an
+// accent picker and four surfaces (Website, Email, Spotlight, Space page) you can bring to the front or open full size.
+// Lead links: the main buttons start the 12 minute launch (the builder while the launch is off), "See the kit" opens that
+// kit's own /themes/<theme> page. The page markup and per-kit skins live in ./kit-showcase; Frequency's header and footer come
+// from the site shell. Copy follows docs/marketing/voice-and-language-guide.md.
 import { createSpaceHref } from '@/lib/create-space/href'
-import { FreeSpotlightButton } from '@/components/marketing/free-spotlight-button'
-import Image from 'next/image'
-import Link from 'next/link'
-import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
-import '@/app/themes/active/site-pages-b'
-import { ROUTES } from '@/lib/frequency/site-nav'
-import { KIT_INDEX, PROFILE_KIT_INDEX } from '@/lib/sites/kits/registry'
-import { ThemePicture } from './theme-picture'
-import './theme-index-shots.css'
-import { MEGA_THEMES } from '@/lib/theme/mega-theme'
-import { SITE_THEMES } from '@/lib/theme/site-style'
-import { THEME_LIBRARY, themePagePath } from '@/lib/themes/library'
+import { isPreviewKit } from '@/lib/create-space/preview-site'
+import { launchEntryEnabled } from '@/lib/launch/enabled'
+import { freeSpotlightHref } from '@/lib/launch/entry'
+import { themePagePath } from '@/lib/themes/library'
+import { LastKitLink } from './last-kit-link'
+import { KitShowcase } from './kit-showcase/kit-showcase'
+import type { ShowcaseLinks } from './kit-showcase/use-kit-showcase'
 
-function vars(v: Record<string, string | number>): React.CSSProperties {
-  return v as React.CSSProperties
+/** The design's nine kits, each against the theme id the product knows it by. Every kit has its own page now. */
+const KIT_THEMES: Record<string, { theme: string | null; slug: string }> = {
+  'new-world': { theme: 'new-world', slug: 'new-world' },
+  network: { theme: 'network-kit', slug: 'network' },
+  services: { theme: 'services', slug: 'services' },
+  designer: { theme: 'designer', slug: 'designer' },
+  bold: { theme: 'bold', slug: 'bold' },
+  temple: { theme: 'temple-kit', slug: 'temple' },
+  cyberwitch: { theme: 'cyberwitch', slug: 'cyberwitch' },
+  wildheart: { theme: 'wildheart', slug: 'wildheart' },
+  nocturne: { theme: 'midnight', slug: 'nocturne' },
 }
 
-export interface ThemeGalleryCard {
-  id: string
-  label: string
-  tagline: string
-  description: string
-  kits: { niche: string; label: string; href: string }[]
-  /** How many kits the theme has in all: the six doors plus a kit per profile (general, creators, ...). */
-  kitCount: number
-  href: string
-}
-
-/** One card per theme, in the order the editor lists them. */
-export const THEME_GALLERY: ThemeGalleryCard[] = SITE_THEMES.map((t) => {
-  const editor = MEGA_THEMES.find((m) => m.id === t.id)?.editor
-  return {
-    id: t.id,
-    label: t.label,
-    tagline: THEME_LIBRARY.find((l) => l.id === t.id)?.tagline ?? t.description,
-    description: t.description,
-    kits: KIT_INDEX.filter((k) => k.theme === editor).map((k) => ({ niche: k.niche, label: k.label, href: createSpaceHref(t.id) })),
-    kitCount: [...KIT_INDEX, ...PROFILE_KIT_INDEX].filter((k) => k.theme === editor).length,
-    href: themePagePath(t.id),
+export function themeShowcaseLinks(): ShowcaseLinks {
+  const launch = launchEntryEnabled()
+  const kits: ShowcaseLinks['kits'] = {}
+  for (const [id, k] of Object.entries(KIT_THEMES)) {
+    kits[id] = {
+      // null: the builder does not offer this kit (hidden, or no theme yet), so "Use" is hidden rather than start the
+      // visitor on a different look.
+      use: k.theme && isPreviewKit(k.theme) ? (launch ? freeSpotlightHref('themes', k.slug, k.theme) : createSpaceHref(k.theme)) : null,
+      page: k.theme ? themePagePath(k.theme) : null,
+      kit: k.theme && isPreviewKit(k.theme) ? k.theme : null,
+      theme: k.theme,
+    }
   }
-})
+  return { start: launch ? freeSpotlightHref('themes') : createSpaceHref(), plans: '/pricing', kits }
+}
 
 export function FrequencyThemes() {
   return (
     <>
-      <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
-        <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.3 })} />
-        <div className="shade" />
-        <div className="fq-grain" />
-        <div className="wrap">
-          <nav className="crumbs" aria-label="Breadcrumb">
-            <Link href="/">Home</Link>
-            <span aria-hidden="true">/</span>
-            <Link href="/spaces">For Spaces</Link>
-            <span aria-hidden="true">/</span>
-            <span aria-current="page">Theme Kits</span>
-          </nav>
-          <h1 className="h-xl">
-            Your site should look like you. <em className="fq-iri-text">Pick a feel.</em>
-          </h1>
-          <p>
-            Seven looks for your website, with matching Spotlight and email surfaces where available. Pick a feel, then check what is ready
-            and what is on the way.
-          </p>
-          <div className="ctas">
-            <a className="btn fq-iri-btn" href={ROUTES.createSpace}>
-              Start free
-            </a>
-            <Link className="btn btn-ghost fq-iri-rim" href="#themes">
-              See the Theme Kits
-            </Link>
-            <FreeSpotlightButton surface="themes" />
-          </div>
-        </div>
-      </section>
-
-      <section className="sec pb-sec" id="themes" data-screen-label="02 Themes">
-        <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
-        <div className="wrap">
-          <div className="sh">
-            <div className="label">
-              <b>The Theme Kits</b>Seven to start from
-            </div>
-            <h2 className="h-l">One look. A clear place to start.</h2>
-            <p className="pb-note">
-              Choose a Theme Kit for your website and see which matching Spotlight and email surfaces are ready. Each Theme Kit page labels what
-              ships now and what is on the way. Switch on the tools you need, and use Change theme in your editor when you want a
-              different feel.
-            </p>
-          </div>
-          <div className="tg-row two">
-            {THEME_GALLERY.map((t) => (
-              <div className="tg-card" key={t.id} id={t.id}>
-                {t.id === 'designer' ? (
-                  <Link href={t.href} className="tg-shots" aria-label={`See the ${t.label} kit`}>
-                    <Image src="/themes/designer/shots/general-site.jpg" alt="Designer website" width={1280} height={800} sizes="(max-width: 960px) 50vw, 25vw" />
-                    <Image src="/themes/designer/shots/general-spot.jpg" alt="Designer Spotlight" width={740} height={1648} sizes="(max-width: 960px) 25vw, 12vw" />
-                    <Image src="/themes/designer/shots/general-email.jpg" alt="Designer email" width={900} height={1140} sizes="(max-width: 960px) 25vw, 12vw" />
-                  </Link>
-                ) : t.id === 'network-kit' ? (
-                  <Link href={t.href} className="tg-shots two" aria-label={`See the ${t.label} kit`}>
-                    <Image src="/themes/network-kit/shots/general-site.jpg" alt="Network website" width={1280} height={800} sizes="(max-width: 960px) 50vw, 25vw" />
-                    <Image src="/themes/network-kit/shots/general-spot.jpg" alt="Network Spotlight" width={740} height={1648} sizes="(max-width: 960px) 25vw, 12vw" />
-                  </Link>
-                ) : t.id === 'temple-kit' ? (
-                  <Link href={t.href} className="tg-shots two" aria-label={`See the ${t.label} kit`}>
-                    <Image src="/themes/temple-kit/shots/general-site.jpg" alt="Temple website" width={1280} height={800} sizes="(max-width: 960px) 50vw, 25vw" />
-                    <Image src="/themes/temple-kit/shots/general-spot.jpg" alt="Temple Spotlight" width={740} height={1648} sizes="(max-width: 960px) 25vw, 12vw" />
-                  </Link>
-                ) : (
-                  <Link href={t.href} aria-label={`See the ${t.label} kit`}>
-                    <ThemePicture theme={t.id} label={t.label} slot="kit" />
-                  </Link>
-                )}
-                {t.id === 'midnight' && (
-                  <div className="tg-shots">
-                    <Image
-                      src="/themes/midnight/shots/general-site.jpg"
-                      alt="Nocturne website"
-                      width={924}
-                      height={540}
-                      sizes="(max-width: 960px) 50vw, 25vw"
-                    />
-                    <Image
-                      src="/themes/midnight/shots/general-space.jpg"
-                      alt="Nocturne Space page"
-                      width={740}
-                      height={1648}
-                      sizes="(max-width: 960px) 25vw, 12vw"
-                    />
-                    <Image
-                      src="/themes/midnight/shots/general-spot.jpg"
-                      alt="Nocturne Spotlight"
-                      width={740}
-                      height={1648}
-                      sizes="(max-width: 960px) 25vw, 12vw"
-                    />
-                  </div>
-                )}
-                <h3>{t.label}</h3>
-                <p>{t.tagline}</p>
-                <p>
-                  <b>{t.kitCount} starter kits.</b> {t.description}
-                </p>
-                <p>
-                  <Link href={t.href}>See the {t.label} kit →</Link>
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <KeepGoing
-        title="Start with your Spotlight."
-        body="Free to start. Pick a theme now or change it later."
-        primary={{ href: ROUTES.createSpace, label: 'Start free →' }}
-        secondary={{ href: '/pricing', label: 'See every plan' }}
-      />
+      <KitShowcase links={themeShowcaseLinks()} />
+      <LastKitLink />
     </>
   )
 }
+
+

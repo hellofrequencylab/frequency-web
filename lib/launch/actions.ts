@@ -206,8 +206,12 @@ export async function publishReviewFormAction(formData: FormData): Promise<void>
   if ('error' in edits) redirect(reviewUrl(edits.error))
   const launch = await store.getActiveLaunch(profileId)
   if (!launch) redirect('/launch')
-  const done = await publishReview(profileId, launch, edits)
+  // The hold's carry (handle, Theme Kit, accent from /create-a-space) dresses the Space this makes, as on the Spotlight
+  // step; the hold is cleared once the Space exists, so a return visit cannot replay it.
+  const held = await readPendingLaunch()
+  const done = await publishReview(profileId, launch, edits, readCarry(held?.answers.spotlight))
   if ('error' in done) redirect(reviewUrl('retry'))
+  if (held) await clearPendingLaunch()
   redirect(PUBLISHED_HREF)
 }
 

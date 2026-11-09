@@ -29,7 +29,7 @@ describe('what a theme shows', () => {
     const d = dialsFor(null)
     expect(d.map((x) => x.id)).toEqual(['corners', 'spacing', 'header', 'footer'])
     expect(hasNewDials(d)).toBe(false)
-    expect(d.find((x) => x.id === 'header')!.options.map((o) => o.id)).toEqual(['bar', 'pill'])
+    expect(d.find((x) => x.id === 'header')!.options.map((o) => o.id)).toEqual(['bar', 'pill', 'centered'])
   })
   it('hides a fixed dial instead of drawing a one-option control', () => {
     const d = dialsFor({ dials: { ...ALL, hero: 'fixed', motion: { supported: false } } })
@@ -40,8 +40,8 @@ describe('what a theme shows', () => {
     const d = dialsFor({ dials: ALL, themeDials: [{ id: 'arch', label: 'Arch shape', group: 'Shape', options: [['round', 'Round'], ['pointed', 'Pointed']] }] }, 'Temple')
     expect(d.at(-1)).toMatchObject({ id: 'arch', tier: 'theme', fromTheme: 'Temple' })
   })
-  it('never offers the centered header before a renderer draws it', () => {
-    expect(dialsFor({ dials: ALL }).find((x) => x.id === 'header')!.options.map((o) => o.id)).not.toContain('centered')
+  it('offers the centered header now that the house header draws it (LIVE-2031)', () => {
+    expect(dialsFor({ dials: ALL }).find((x) => x.id === 'header')!.options.map((o) => o.id)).toContain('centered')
   })
 })
 

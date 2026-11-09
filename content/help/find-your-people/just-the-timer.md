@@ -25,4 +25,4 @@ No. Your minutes are logged as Airtime, and you'll earn Zaps whether you look at
 
 ## Is there any evidence behind this?
 
-Slow breathing and short sits are some of the most studied simple practices around. Our longer articles cite the research inside the page, like [How to calm down fast](/calm-down-fast). Read what's there and decide for yourself.
+Slow breathing and short sits are some of the most studied simple practices around. Our longer articles cite the research inside the page, like [How to calm down fast](/help/find-your-people/how-to-calm-down-fast). Read what's there and decide for yourself.

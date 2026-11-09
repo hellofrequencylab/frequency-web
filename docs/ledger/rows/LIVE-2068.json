@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2068",
+  "title": "Wire the New World Spotlight layouts into the live Spotlight",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/spotlight/layouts.ts",
+    "ref": "Theme readiness audit 2026-11-03: the six New World layouts (LIVE-2057) were drawn only on /themes/new-world"
+  },
+  "detail": "layouts.ts registers `new-world-kit:*`, the Spotlight shell draws them inside the same wrapper as the other kits, and the public Spotlight page loads New World's faces for them. The New World preset does not carry a default layout yet: the pin in components/spotlight/network-kit-layouts.test.tsx ('layouts none-for-others') needs the owner's own phrase before it can name new-world, Daniel approved the pin rewrite (2026-11-03 15:21Z), so the New World preset now starts on the Stack layout.\n\nWired; the default-layout pin awaits the owner's phrase",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/new-world-spotlight-wiring.mjs"
+  },
+  "closed": "2026-11-03"
+}

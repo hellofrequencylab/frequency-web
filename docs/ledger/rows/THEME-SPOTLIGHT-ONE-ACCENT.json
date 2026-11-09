@@ -1,0 +1,20 @@
+{
+  "id": "THEME-SPOTLIGHT-ONE-ACCENT",
+  "title": "A themed Spotlight wears the accent its owner picked, in every theme, not only CyberWitch",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/spotlight/data.ts",
+    "ref": "Daniel 2026-11-05: audit every theme's Use path; the accent must carry to Spotlight."
+  },
+  "detail": "The one-accent rule (#4673) read the owner's Space accent only for CyberWitch Spotlight layouts. New World, Services, Temple, Free Human and Network Spotlights now read it too: New World and Services match the hex to a preset, Temple and Free Human to the profile that wears it, Network to the scheme. A colour that matches no preset leaves the kit's own accent. Designer follows too: the profile whose accent ramp has that colour as its base.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-09",
+    "evidence": "lib/spotlight/space-accent-themes.test.ts: layout to theme map and hex to preset lookup. Closed on the owner's ruling, 2026-11-09 19:17Z. Asked how to close the shipped-pending-check rows, Daniel answered \"b\": close them without a production check. Any code for it that merged keeps its unit pins in CI. No production look was taken."
+  },
+  "wave": "W7",
+  "closed": "2026-11-09"
+}

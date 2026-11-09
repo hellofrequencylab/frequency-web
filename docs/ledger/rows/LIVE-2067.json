@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2067",
+  "title": "Create a Space builder: New World (preselected) and Services join the signed-out picker with their own previews",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/theme/preview-tokens.ts",
+    "ref": "Daniel 2026-11-03: New World is the default every Space starts in and Services is a public theme; both offered in the signed-out picker, New World preselected"
+  },
+  "detail": "The signed-out builder offered seven kits and started cold visits on Default. It now leads with New World (the cold kit, preselected) and Services, each with its own preview shape (Bricolage, Lora italic for the one-word voice, the kits' 20px cards and pill buttons on the Night register), its surface from MEGA_SURFACES and its pictures: New World wears its own gathering library (LIVE-2060); Services wears the New World pictures of people at work together until it has a library of its own. WIZARD_THEMES stops hiding the two (Free Human stays private) and gives New World its label; the library has no page for either yet, so the wizard carries their one-line pitch. New World offers one accent (Tide) until the owner adds more. Gated on the one hidden flag: PREVIEW_KIT_ORDER, WIZARD_THEMES and COLD_KIT read SITE_THEMES (RETIRED_FROM_PICKERS in lib/theme/site-style.ts), so each kit reaches the builder the moment the New World lane un-hides it and never before; until then the builder is unchanged (seven kits, Default on a cold visit). Probe: node scripts/probes/create-space-picker.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/create-space-picker.mjs"
+  },
+  "closed": "2026-11-03"
+}

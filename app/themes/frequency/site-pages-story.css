@@ -1,0 +1,190 @@
+/* SITE PAGES, THE STORY AND PLAYBOOK LAYOUTS (owner 2026-11-04: "they are all really flat and text based.
+   Make each a different layout that speaks to the feature, program or service."). Lane D of the marketing
+   evolution, one skeleton per page, each scoped to its own root class:
+     .st-fc, .st-po              /about                    founder-led photo chapters on a dotted spine, then
+                                                           the four principles held around one orb
+     .st-pb, .st-ch, .st-ts      /how-to-build-community   a playbook: cover with a glass chapter index, numbered
+                                                           chapters under a signal line, the tool-stack panel
+     .pb-people, .pb-photo, .pb-faq, .pb-orb   /pricing    photos beside and behind the plan cards, glass cards
+                                                           over a night photo, a held questions column
+   The about and playbook blocks live in components/page-editor/blocks/site-story.tsx (the page editor's
+   site story group); the pricing hooks in components/frequency/site/pages/pricing/frequency-pricing.tsx.
+   Textures are the design system's (design_handoff/frequency/tokens/base.css, infographics.css): grain on
+   photos, Stage glass over photos, the iridescent rim, the orb, dotted connectors between steps, the signal
+   line between chapters. --fq- tokens only; scrims are the void token mixed to transparent. Sizes read the
+   --fq- scale; an off-scale step (a fluid clamp, a photo aspect) is the layout's own literal (token-ok).
+   Masks paint alpha, so their `black` is not a colour. Every loop stops under prefers-reduced-motion.
+   UNLAYERED on purpose, like site-blocks.css: core.css's .fq-panel and the blocks' Tailwind utilities would
+   otherwise beat these rules outright. Every selector is scoped to a class only these pages render. */
+
+/* ── Shared: Stage glass over a photo, the signal line, the italic kicker ── */
+[data-design="frequency"] [data-kit="site"] :is(.st-fc,.st-po,.st-pb,.st-ts,.pb-photo,.pb-faq) .fq-panel{background:linear-gradient(150deg,color-mix(in oklab,var(--fq-uv-900) 74%,transparent),color-mix(in oklab,var(--fq-uv-900) 48%,transparent));-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);box-shadow:0 30px 70px -40px color-mix(in oklab,var(--fq-uv-void) 90%,transparent),inset 0 0 0 1px color-mix(in oklab,var(--fq-text-strong) 12%,transparent)}
+[data-design="frequency"] [data-kit="site"] .st-sig{position:absolute;left:0;right:0;top:0;height:28px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--fq-side) 20%,var(--fq-x-magenta-neon) 50%,var(--fq-x-sky-neon) 80%,transparent);opacity:.55;-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='28' viewBox='0 0 240 28'><path d='M0 14 H70 C78 14 80 4 86 4 S94 24 100 24 S108 2 114 2 S122 26 128 26 S136 8 142 8 S150 14 158 14 H240' fill='none' stroke='black' stroke-width='1.6'/></svg>") 0 0/240px 28px repeat-x;mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='28' viewBox='0 0 240 28'><path d='M0 14 H70 C78 14 80 4 86 4 S94 24 100 24 S108 2 114 2 S122 26 128 26 S136 8 142 8 S150 14 158 14 H240' fill='none' stroke='black' stroke-width='1.6'/></svg>") 0 0/240px 28px repeat-x}
+[data-design="frequency"] [data-kit="site"] :is(.st-fc,.st-po) .st-kicker{margin:14px 0 0;font:400 italic clamp(20px,1.8vw,26px)/1.25 var(--fq-font-serif);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] :is(.st-fc,.st-po,.st-pb) .h-l em, [data-design="frequency"] [data-kit="site"] .st-pb .h-xl em{font:400 italic 1.02em/1 var(--fq-font-serif);letter-spacing:-0.02em}
+[data-design="frequency"] [data-kit="site"] :is(.st-fc,.st-po,.st-pb,.st-ch,.st-ts){position:relative}
+[data-design="frequency"] [data-kit="site"] :is(.st-fc,.st-pb,.pb-people,.pb-faq) .fq-grain{z-index:1}
+
+/* ══ /about: the founder chapters (.st-fc) ══ */
+[data-design="frequency"] [data-kit="site"] .st-fc{padding-top:clamp(56px,7vw,96px)}
+[data-design="frequency"] [data-kit="site"] .st-fc-list{list-style:none;margin:0;padding:0;position:relative;display:flex;flex-direction:column;gap:clamp(56px,8vw,112px)}
+/* The spine: a dotted line down the middle that the chapter markers sit on (infographics.css .ig-path, upright). */
+[data-design="frequency"] [data-kit="site"] .st-fc-list::before{content:"";position:absolute;left:50%;top:24px;bottom:24px;border-left:2px dotted var(--fq-ig-dash)}
+[data-design="frequency"] [data-kit="site"] .st-fc-ch{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(48px,8vw,128px);align-items:center}
+[data-design="frequency"] [data-kit="site"] .st-fc-ch.is-rev .st-fc-ph{order:2}
+[data-design="frequency"] [data-kit="site"] .st-fc-n{position:absolute;left:50%;top:50%;z-index:3;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:600 var(--fq-text-meta)/1 var(--fq-font-display);letter-spacing:.06em;color:var(--fq-text-strong);background:radial-gradient(circle at 34% 30%,color-mix(in oklab,var(--fq-side) 55%,var(--fq-uv-900)),var(--fq-uv-900) 70%);box-shadow:0 0 0 1px color-mix(in oklab,var(--fq-side) 50%,transparent),0 0 28px -6px var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .st-fc-ph{position:relative;margin:0;aspect-ratio:4/5;border-radius:var(--fq-radius-xl);overflow:hidden;box-shadow:0 50px 100px -40px color-mix(in oklab,var(--fq-uv-void) 95%,transparent)}
+/* The founder's portrait wears the arch (the DS arch-top mask), the rest the card radius. */
+[data-design="frequency"] [data-kit="site"] .st-fc-ph.is-portrait{border-radius:999px 999px var(--fq-radius-xl) var(--fq-radius-xl);max-width:440px;justify-self:center;width:100%}
+[data-design="frequency"] [data-kit="site"] .st-fc-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+[data-design="frequency"] [data-kit="site"] .st-fc-ph figcaption{position:absolute;left:16px;bottom:16px;z-index:3;padding:9px 14px;border-radius:var(--fq-radius-orb);font:600 var(--fq-text-meta)/1.2 var(--fq-font-sans);color:var(--fq-text-strong);background:color-mix(in oklab,var(--fq-uv-void) 55%,transparent)}
+[data-design="frequency"] [data-kit="site"] .st-fc-tx{max-width:540px}
+[data-design="frequency"] [data-kit="site"] .st-fc-ch.is-rev .st-fc-tx{justify-self:end}
+[data-design="frequency"] [data-kit="site"] .st-fc-tx .label{margin-bottom:18px}
+[data-design="frequency"] [data-kit="site"] .st-fc-tx .h-l{font-size:clamp(30px,3.6vw,52px)}
+[data-design="frequency"] [data-kit="site"] .st-fc-tx p{margin:16px 0 0;font:400 16px/1.65 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .st-fc-tx p.st-lead{font-size:clamp(18px,1.5vw,20px);line-height:1.5;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .st-fc-tx p.st-kicker{margin-top:14px}
+@media (max-width:860px){
+[data-design="frequency"] [data-kit="site"] .st-fc-list{gap:64px}
+[data-design="frequency"] [data-kit="site"] .st-fc-list::before{left:25px;top:0}
+[data-design="frequency"] [data-kit="site"] .st-fc-ch{grid-template-columns:1fr;gap:22px;padding-left:64px}
+[data-design="frequency"] [data-kit="site"] .st-fc-ch.is-rev .st-fc-ph{order:0}
+[data-design="frequency"] [data-kit="site"] .st-fc-ch.is-rev .st-fc-tx{justify-self:start}
+[data-design="frequency"] [data-kit="site"] .st-fc-n{left:0;top:0;transform:none}
+[data-design="frequency"] [data-kit="site"] .st-fc-ph{aspect-ratio:4/3}
+[data-design="frequency"] [data-kit="site"] .st-fc-ph.is-portrait{aspect-ratio:4/5;max-width:300px;justify-self:start}}
+@media (max-width:480px){
+[data-design="frequency"] [data-kit="site"] .st-fc-ch{padding-left:0}
+[data-design="frequency"] [data-kit="site"] .st-fc-list::before{display:none}
+[data-design="frequency"] [data-kit="site"] .st-fc-n{position:relative;margin-bottom:-6px}}
+
+/* ══ /about: the principle orbit (.st-po) ══ */
+[data-design="frequency"] [data-kit="site"] .st-po{overflow:hidden;background:var(--fq-bg-sunken);--fq-aura-opacity:.28}
+[data-design="frequency"] [data-kit="site"] .st-po-sh{text-align:center;align-items:center;max-width:760px;margin:0 auto}
+[data-design="frequency"] [data-kit="site"] .st-po-sh .label{justify-content:center}
+[data-design="frequency"] [data-kit="site"] .st-po-field{position:relative;margin-top:clamp(40px,6vw,72px);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:clamp(140px,16vw,220px);row-gap:clamp(96px,10vw,140px)}
+/* The orbit: a dotted ring through the four cards, and the DS orb at its centre (infographics.css .ig-orb). */
+[data-design="frequency"] [data-kit="site"] .st-po-ring{position:absolute;left:50%;top:50%;width:min(64%,640px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:2px dotted var(--fq-ig-dash);pointer-events:none}
+[data-design="frequency"] [data-kit="site"] .st-po-ring::after{content:"";position:absolute;inset:18%;border-radius:50%;border:1px dashed color-mix(in oklab,var(--fq-side) 30%,transparent)}
+[data-design="frequency"] [data-kit="site"] .st-po-core{position:absolute;left:50%;top:50%;width:clamp(96px,10vw,132px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:var(--fq-ig-orb);box-shadow:0 0 0 10px color-mix(in oklab,var(--fq-side) 10%,transparent),0 0 80px -6px var(--fq-side);animation:st-breathe 6s var(--fq-ease-breath) infinite}
+[data-design="frequency"] [data-kit="site"] .st-po-core i{position:absolute;inset:-28%;border-radius:50%;border:1px solid color-mix(in oklab,var(--fq-side) 30%,transparent)}
+[data-design="frequency"] [data-kit="site"] .st-po-card{position:relative;z-index:1;padding:clamp(22px,2.4vw,32px);border-radius:var(--fq-radius-xl)}
+[data-design="frequency"] [data-kit="site"] .st-po-card:nth-of-type(odd){text-align:right}
+[data-design="frequency"] [data-kit="site"] .st-po-card:nth-of-type(odd) .st-po-ic{margin-left:auto}
+[data-design="frequency"] [data-kit="site"] .st-po-ic{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:var(--fq-text-strong);background:var(--fq-uv-900);box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--fq-side) 60%,transparent),0 0 22px -6px var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .st-po-ic .fq-icon{width:22px;height:22px}
+[data-design="frequency"] [data-kit="site"] .st-po-card h3{margin:16px 0 0;font:600 clamp(20px,1.8vw,24px)/1.15 var(--fq-font-display);letter-spacing:-0.02em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .st-po-card p{margin:10px 0 0;font:400 15px/1.6 var(--fq-font-sans);color:var(--fq-text-muted)}
+@media (max-width:860px){
+[data-design="frequency"] [data-kit="site"] .st-po-field{grid-template-columns:1fr;row-gap:14px;column-gap:0;padding-left:30px}
+[data-design="frequency"] [data-kit="site"] .st-po-ring{left:8px;top:0;bottom:0;width:0;aspect-ratio:auto;height:auto;transform:none;border-radius:0;border:0;border-left:2px dotted var(--fq-ig-dash)}
+[data-design="frequency"] [data-kit="site"] .st-po-ring::after{display:none}
+[data-design="frequency"] [data-kit="site"] .st-po-core{position:relative;left:auto;top:auto;transform:none;width:64px;margin:0 0 18px -6px}
+[data-design="frequency"] [data-kit="site"] .st-po-card:nth-of-type(odd){text-align:left}
+[data-design="frequency"] [data-kit="site"] .st-po-card:nth-of-type(odd) .st-po-ic{margin-left:0}
+[data-design="frequency"] [data-kit="site"] .st-po-card::before{content:"";position:absolute;left:-28px;top:36px;width:12px;height:12px;border-radius:50%;background:var(--fq-ig-orb)}}
+
+/* ══ /how-to-build-community: the playbook cover (.st-pb) ══ */
+[data-design="frequency"] [data-kit="site"] .st-pb{overflow:hidden;padding:clamp(128px,14vw,176px) 0 clamp(56px,7vw,96px);--fq-aura-opacity:.3}
+[data-design="frequency"] [data-kit="site"] .st-pb-in{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(32px,5vw,72px);align-items:center}
+[data-design="frequency"] [data-kit="site"] .st-pb-tx .label{margin-bottom:20px}
+[data-design="frequency"] [data-kit="site"] .st-pb-tx .h-xl{font-size:clamp(42px,5.4vw,80px)!important;max-width:12ch}
+[data-design="frequency"] [data-kit="site"] .st-pb-tx .st-lead{margin:24px 0 0;max-width:520px;font:400 italic clamp(19px,1.6vw,23px)/1.4 var(--fq-font-serif);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .st-pb-art{position:relative;padding-bottom:clamp(40px,8vw,120px)}
+[data-design="frequency"] [data-kit="site"] .st-pb-ph{position:relative;margin:0;aspect-ratio:1;border-radius:var(--fq-radius-xl);overflow:hidden;box-shadow:0 50px 100px -40px color-mix(in oklab,var(--fq-uv-void) 95%,transparent)}
+[data-design="frequency"] [data-kit="site"] .st-pb-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* The chapter index: a glass panel over the photo's lower corner, each chapter a dotted-connected stop. */
+[data-design="frequency"] [data-kit="site"] .st-pb-idx{position:absolute;left:-12%;right:12%;bottom:0;z-index:2;padding:18px 20px;border-radius:var(--fq-radius-xl)}
+[data-design="frequency"] [data-kit="site"] .st-pb-idx-h{margin:0 0 8px;font:600 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .st-pb-idx ol{list-style:none;margin:0;padding:0;position:relative}
+[data-design="frequency"] [data-kit="site"] .st-pb-idx ol::before{content:"";position:absolute;left:15px;top:22px;bottom:22px;border-left:2px dotted var(--fq-ig-dash)}
+[data-design="frequency"] [data-kit="site"] .st-pb-idx a{position:relative;display:flex;align-items:center;gap:12px;min-height:44px;padding:4px 6px 4px 0;border-radius:12px;text-decoration:none;font:500 14px/1.25 var(--fq-font-sans);color:var(--fq-text-strong);transition:background var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="site"] .st-pb-idx a:hover{background:color-mix(in oklab,var(--fq-side) 10%,transparent)}
+[data-design="frequency"] [data-kit="site"] .st-pb-n{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:600 var(--fq-text-meta)/1 var(--fq-font-display);background:var(--fq-uv-900);box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--fq-side) 60%,transparent)}
+[data-design="frequency"] [data-kit="site"] .st-pb-idx a:hover .st-pb-n{background:var(--fq-side);color:var(--fq-uv-900)}
+@media (max-width:960px){
+[data-design="frequency"] [data-kit="site"] .st-pb-in{grid-template-columns:1fr}
+[data-design="frequency"] [data-kit="site"] .st-pb-art{padding-bottom:0}
+[data-design="frequency"] [data-kit="site"] .st-pb-idx{position:relative;left:auto;right:auto;margin:-48px 16px 0}}
+@media (max-width:480px){
+[data-design="frequency"] [data-kit="site"] .st-pb{padding-top:112px}
+[data-design="frequency"] [data-kit="site"] .st-pb-idx{margin:-36px 8px 0;padding:14px}
+[data-design="frequency"] [data-kit="site"] .st-pb-idx a{font-size:13px}}
+
+/* ══ /how-to-build-community: the numbered chapters (.st-ch) ══ */
+[data-design="frequency"] [data-kit="site"] .st-ch{padding:clamp(72px,9vw,120px) 0 0;scroll-margin-top:96px}
+[data-design="frequency"] [data-kit="site"] .st-ch-in{max-width:880px}
+[data-design="frequency"] [data-kit="site"] .st-ch-mark{display:flex;align-items:baseline;gap:12px;margin:0 0 14px}
+[data-design="frequency"] [data-kit="site"] .st-ch-num{font:600 clamp(56px,7vw,104px)/.85 var(--fq-font-display);letter-spacing:-0.05em;background:var(--fq-iridescent-sweep);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-design="frequency"] [data-kit="site"] .st-ch-of{font:600 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .st-ch .h-l{font-size:clamp(30px,4vw,54px);max-width:18ch}
+[data-design="frequency"] [data-kit="site"] .st-ch .st-sig{top:clamp(18px,3vw,36px)}
+
+/* ══ /how-to-build-community: the tool stack (.st-ts) ══ */
+[data-design="frequency"] [data-kit="site"] .st-ts{padding:clamp(20px,3vw,36px) 0 clamp(40px,5vw,64px)}
+[data-design="frequency"] [data-kit="site"] .st-ts .wrap{max-width:960px}
+[data-design="frequency"] [data-kit="site"] .st-ts-panel{padding:clamp(14px,2.4vw,28px);border-radius:var(--fq-radius-xl)}
+[data-design="frequency"] [data-kit="site"] .st-ts-t{width:100%;border-collapse:separate;border-spacing:0 8px;font:400 15px/1.4 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="site"] .st-ts-t thead th{padding:0 14px 6px;text-align:left;font:600 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .st-ts-t thead th.st-ts-on{color:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .st-ts-t tbody th{padding:12px 14px;text-align:left;font:600 16px/1.2 var(--fq-font-display);letter-spacing:-0.01em;color:var(--fq-text-strong);white-space:nowrap}
+[data-design="frequency"] [data-kit="site"] .st-ts-t tbody th, [data-design="frequency"] [data-kit="site"] .st-ts-t td{vertical-align:middle}
+[data-design="frequency"] [data-kit="site"] .st-ts-ic{display:inline-grid;place-items:center;width:34px;height:34px;margin-right:10px;border-radius:50%;vertical-align:middle;background:var(--fq-uv-900);box-shadow:inset 0 0 0 1.5px color-mix(in oklab,var(--fq-side) 55%,transparent)}
+[data-design="frequency"] [data-kit="site"] .st-ts-ic .fq-icon{width:17px;height:17px}
+/* Scattered: a dashed, dim chip that stands alone. Together: a lit chip joined to the next by a dotted line. */
+[data-design="frequency"] [data-kit="site"] .st-ts-t td{padding:6px 8px;position:relative}
+[data-design="frequency"] [data-kit="site"] .st-ts-t td span{display:block;padding:12px 14px;border-radius:14px}
+[data-design="frequency"] [data-kit="site"] .st-ts-t td.st-ts-off span{color:var(--fq-text-muted);border:1.5px dashed var(--fq-ig-dash);text-decoration:line-through;text-decoration-color:color-mix(in oklab,var(--fq-text-muted) 50%,transparent)}
+[data-design="frequency"] [data-kit="site"] .st-ts-t td.st-ts-on span{color:var(--fq-text-strong);background:color-mix(in oklab,var(--fq-side) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-side) 45%,transparent)}
+[data-design="frequency"] [data-kit="site"] .st-ts-t tbody tr:not(:last-child) td.st-ts-on::after{content:"";position:absolute;left:28px;bottom:-12px;height:16px;border-left:2px dotted color-mix(in oklab,var(--fq-side) 60%,transparent)}
+@media (max-width:640px){
+[data-design="frequency"] [data-kit="site"] .st-ts-t, [data-design="frequency"] [data-kit="site"] .st-ts-t tbody, [data-design="frequency"] [data-kit="site"] .st-ts-t tr{display:block}
+[data-design="frequency"] [data-kit="site"] .st-ts-t thead{display:none}
+[data-design="frequency"] [data-kit="site"] .st-ts-t tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 0;border-bottom:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .st-ts-t tbody th{grid-column:1/-1;padding:4px 0;white-space:normal}
+[data-design="frequency"] [data-kit="site"] .st-ts-t td{display:block;padding:0}
+[data-design="frequency"] [data-kit="site"] .st-ts-t td span{padding:10px 12px;font-size:14px}
+[data-design="frequency"] [data-kit="site"] .st-ts-t tbody tr:not(:last-child) td.st-ts-on::after{display:none}}
+
+/* ══ /pricing: photos beside and behind the plans, glass cards, a held questions column ══ */
+/* The card's tier orb (infographics.css .ig-orb), tinted by the card's own hue. */
+[data-design="frequency"] [data-kit="site"] .pb-orb{flex:none;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 34% 30%,var(--fq-text-strong) 0,color-mix(in oklab,var(--fq-pc,var(--fq-side)) 70%,var(--fq-text-strong)) 24%,var(--fq-pc,var(--fq-side)) 62%,color-mix(in oklab,var(--fq-pc,var(--fq-side)) 40%,var(--fq-uv-900)) 100%);box-shadow:0 0 22px -4px var(--fq-pc,var(--fq-side))}
+[data-design="frequency"] [data-kit="site"] .pb-plan .pb-top{gap:10px}
+[data-design="frequency"] [data-kit="site"] .pb-plan .pb-top h3{margin-right:auto}
+/* People: the two cards beside an arch-cut photo of a gathering. */
+[data-design="frequency"] [data-kit="site"] .pb-people{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);gap:clamp(24px,4vw,56px);align-items:stretch}
+[data-design="frequency"] [data-kit="site"] .pb-people-ph{position:relative;margin:0;min-height:420px;border-radius:999px 999px var(--fq-radius-xl) var(--fq-radius-xl);overflow:hidden;box-shadow:0 50px 100px -40px color-mix(in oklab,var(--fq-uv-void) 95%,transparent)}
+[data-design="frequency"] [data-kit="site"] .pb-people-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+[data-design="frequency"] [data-kit="site"] .pb-people .pb-row{align-self:center}
+/* Spaces: the plan cards on Stage glass over a night photo. */
+[data-design="frequency"] [data-kit="site"] .pb-photo{position:relative;overflow:hidden}
+[data-design="frequency"] [data-kit="site"] .pb-photo>.pb-bgph{position:absolute;inset:0;z-index:0;background:var(--fq-bg) center/cover no-repeat}
+[data-design="frequency"] [data-kit="site"] .pb-photo>.pb-scrim{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--fq-bg-canvas) 0%,color-mix(in oklab,var(--fq-uv-void) 70%,transparent) 22%,color-mix(in oklab,var(--fq-uv-void) 62%,transparent) 70%,var(--fq-bg-canvas) 100%)}
+[data-design="frequency"] [data-kit="site"] .pb-photo>.fq-grain{z-index:0}
+[data-design="frequency"] [data-kit="site"] .pb-photo .pb-pc{background:linear-gradient(150deg,color-mix(in oklab,var(--fq-uv-900) 72%,transparent),color-mix(in oklab,var(--fq-uv-900) 46%,transparent));-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3)}
+/* Every Space card gets a quiet iridescent sheen on hover; the featured one keeps its rim at rest. */
+[data-design="frequency"] [data-kit="site"] .pb-photo .pb-pc::after{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--fq-iridescent-sweep);background-size:220% 100%;mix-blend-mode:soft-light;opacity:0;transition:opacity var(--fq-dur-base);pointer-events:none}
+[data-design="frequency"] [data-kit="site"] .pb-photo .pb-plan:hover .pb-pc::after, [data-design="frequency"] [data-kit="site"] .pb-photo .pb-plan.is-feat .pb-pc::after{opacity:.35}
+/* Questions: the heading and a photo held in a column while the questions scroll beside them. */
+[data-design="frequency"] [data-kit="site"] .pb-faq{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(28px,5vw,72px);align-items:start}
+[data-design="frequency"] [data-kit="site"] .pb-faq-side{position:sticky;top:110px}
+[data-design="frequency"] [data-kit="site"] .pb-faq-ph{position:relative;margin:28px 0 0;aspect-ratio:4/5;max-width:400px;border-radius:var(--fq-radius-xl);overflow:hidden}
+[data-design="frequency"] [data-kit="site"] .pb-faq-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+[data-design="frequency"] [data-kit="site"] .pb-faq .qa{margin-top:0}
+[data-design="frequency"] [data-kit="site"] #features>.st-sig{top:24px}
+@media (max-width:960px){
+[data-design="frequency"] [data-kit="site"] .pb-people{grid-template-columns:1fr}
+[data-design="frequency"] [data-kit="site"] .pb-people-ph{min-height:0;aspect-ratio:16/10;border-radius:var(--fq-radius-xl)}
+[data-design="frequency"] [data-kit="site"] .pb-faq{grid-template-columns:1fr}
+/* A phone's plan stack runs five cards deep: the photo holds the top of the band and fades out, rather than
+   one frame stretched (and blown up) down the whole column. */
+[data-design="frequency"] [data-kit="site"] .pb-photo>.pb-bgph{bottom:auto;height:min(100%,900px);background-image:var(--fq-bg-sm,var(--fq-bg));-webkit-mask:linear-gradient(180deg,black 55%,transparent);mask:linear-gradient(180deg,black 55%,transparent)}
+[data-design="frequency"] [data-kit="site"] .pb-faq-side{position:static}
+[data-design="frequency"] [data-kit="site"] .pb-faq-ph{aspect-ratio:16/9;max-width:none}}
+
+@keyframes st-breathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.06)}}
+@media (max-width:860px){[data-design="frequency"] [data-kit="site"] .st-po-core{animation:none}}
+@media (prefers-reduced-motion:reduce){
+[data-design="frequency"] [data-kit="site"] .st-po-core{animation:none}
+[data-design="frequency"] [data-kit="site"] :is(.st-pb-idx a,.pb-photo .pb-pc::after){transition:none}}

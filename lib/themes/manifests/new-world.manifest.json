@@ -1,0 +1,115 @@
+{
+  "schema": 2,
+  "id": "new-world",
+  "legacyIds": {
+    "editor": "NewWorld",
+    "site": "new-world"
+  },
+  "offered": false,
+  "site": {
+    "label": "New World",
+    "description": "The Frequency house look: Night and Day in one theme, Tide teal to start, and a kit for every kind of gathering.",
+    "defaultFonts": "modern"
+  },
+  "library": null,
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "NewWorld"
+      ]
+    },
+    "dials": {
+      "register": {
+        "supported": true,
+        "default": "night"
+      },
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "type": {
+        "supported": true,
+        "default": "caps"
+      },
+      "motion": {
+        "supported": true,
+        "default": "full"
+      },
+      "image": {
+        "supported": true,
+        "default": "glow"
+      },
+      "hero": "fixed",
+      "accent": "fixed"
+    },
+    "looks": [
+      {
+        "id": "studio",
+        "label": "Studio",
+        "dials": {
+          "register": "day",
+          "type": "quiet",
+          "motion": "calm",
+          "header": "pill",
+          "image": "clean",
+          "corners": "soft",
+          "spacing": "airy",
+          "footer": "minimal"
+        }
+      },
+      {
+        "id": "nightline",
+        "label": "Nightline",
+        "dials": {
+          "register": "night",
+          "type": "caps",
+          "motion": "full",
+          "header": "bar",
+          "image": "glow",
+          "corners": "soft",
+          "spacing": "airy",
+          "footer": "full"
+        }
+      },
+      {
+        "id": "paper",
+        "label": "Paper",
+        "dials": {
+          "register": "day",
+          "type": "editorial",
+          "motion": "off",
+          "image": "mono",
+          "corners": "square",
+          "spacing": "balanced",
+          "footer": "minimal"
+        }
+      },
+      {
+        "id": "trade",
+        "label": "Trade",
+        "dials": {
+          "register": "night",
+          "type": "caps",
+          "motion": "calm",
+          "header": "bar",
+          "image": "grain",
+          "corners": "subtle",
+          "spacing": "compact",
+          "footer": "full"
+        }
+      }
+    ]
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "new-world",
+        "names"
+      ]
+    }
+  }
+}

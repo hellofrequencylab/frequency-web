@@ -23,6 +23,7 @@
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
+import '@/app/themes/active/site-pages-story'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { NETWORK_PLAN } from '@/lib/pricing/plans'
 import type { AddOnGroups } from '@/lib/pricing/pricing-addons'
@@ -34,6 +35,7 @@ import type { CalcModel } from './calculator-model'
 import { MotionLinks, OwnersMotion, PlanLadderMotion } from './plan-motion'
 import { PricingAddOns } from './pricing-addons'
 import { PricingCalculator } from './pricing-calculator'
+import { photoBg, photoImg } from '../shared/parts'
 
 export { splitPrice }
 
@@ -41,6 +43,17 @@ type Faq = { q: string; a: string }[]
 
 /** The reference's card hues, in ladder order. Tokens only. */
 const HUES = ['var(--fq-x-aqua-neon)', 'var(--fq-x-sun-neon)', 'var(--fq-x-sky-neon)', 'var(--fq-x-magenta-neon)']
+
+/** The page's photos (owner 2026-11-04, "make each a different layout"): real gatherings, each used once,
+ *  none of them the hero's. Layout styles: app/themes/frequency/site-pages-story.css (.pb-people, .pb-photo,
+ *  .pb-faq). The plan cards keep every class the tests pin; they gain only the tier orb. */
+const PHOTOS = {
+  people: '/brand/frequency/photos/gathering-03.jpg',
+  peopleAlt: 'Friends sitting together on blankets and rugs at a backyard gathering',
+  spaces: '/brand/frequency/photos/night-string-lights-web.jpg',
+  faq: '/brand/frequency/photos/gathering-14.jpg',
+  faqAlt: 'A small group sitting on blankets on the beach in a loose circle around a gong',
+}
 
 const COUNT_WORD = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six']
 
@@ -123,6 +136,7 @@ function PlanCard({ view }: { view: PlanCardView }) {
       <article className={`pc pb-pc${view.featured ? ' fq-iri-rim' : ''}`}>
         <header className="pb-head">
           <div className="pb-top">
+            <span className="pb-orb" aria-hidden="true" />
             <h3>{view.name}</h3>
             {view.featured && <span className="pb-flag">Recommended</span>}
           </div>
@@ -204,7 +218,7 @@ export function FrequencyPricing({
   return (
     <>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={{ backgroundImage: "url('/brand/frequency/photos/day-park-yoga.jpg')" }} />
+        <div className="bg" style={photoBg('/brand/frequency/photos/day-park-yoga.jpg')} />
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.3 })} />
         <div className="shade" />
         <div className="fq-grain" />
@@ -243,19 +257,28 @@ export function FrequencyPricing({
               <p className="pb-note">{PLAN_STORY.crew}</p>
             </div>
             <PlanPeriodSwitch note={yearlyNote} />
-            <div className="pb-row">
-              <div className={`pb-plans n${members.length}`}>
-                {members.map((o, i) => (
-                  <PlanCard key={o.id} view={offeringView(o, HUES[(i + 1) % HUES.length]!)} />
-                ))}
+            <div className="pb-people">
+              <figure className="pb-people-ph fq-iri-rim">
+                {/* eslint-disable-next-line @next/next/no-img-element -- optimizer srcset via photoImg; the slot sizes the element */}
+                <img loading="lazy" decoding="async" {...photoImg(PHOTOS.people, '(max-width: 960px) 100vw, 36vw')} alt={PHOTOS.peopleAlt} />
+                <span className="fq-grain" aria-hidden="true" />
+              </figure>
+              <div className="pb-row">
+                <div className={`pb-plans n${members.length}`}>
+                  {members.map((o, i) => (
+                    <PlanCard key={o.id} view={offeringView(o, HUES[(i + 1) % HUES.length]!)} />
+                  ))}
+                </div>
               </div>
             </div>
             <p className="pb-note">{BUYING_NOTE}</p>
           </div>
         </section>
 
-        <section className="sec pb-sec" id="spaces" data-screen-label="02 Plans">
-          <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
+        <section className="sec pb-sec pb-photo" id="spaces" data-screen-label="02 Plans">
+          <div className="pb-bgph" style={photoBg(PHOTOS.spaces)} aria-hidden="true" />
+          <div className="pb-scrim" aria-hidden="true" />
+          <div className="fq-grain" aria-hidden="true" />
           <div className="wrap">
             <div className="sh">
               <div className="label">
@@ -314,6 +337,7 @@ export function FrequencyPricing({
       <PricingAddOns addOns={addOns} spaces={spaces} />
 
       <section className="sec pb-sec" id="features" data-screen-label="03 Features by plan">
+        <span className="st-sig" aria-hidden="true" />
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
         <div className="wrap">
           <div className="sh">
@@ -368,12 +392,19 @@ export function FrequencyPricing({
 
       <section className="sec pb-sec" id="questions" data-screen-label="04 Questions">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.22 })} />
-        <div className="wrap">
-          <div className="sh">
-            <div className="label">
-              <b>Questions</b>Plainly answered
+        <div className="wrap pb-faq">
+          <div className="pb-faq-side">
+            <div className="sh">
+              <div className="label">
+                <b>Questions</b>Plainly answered
+              </div>
+              <h2 className="h-l">Before you ask.</h2>
             </div>
-            <h2 className="h-l">Before you ask.</h2>
+            <figure className="pb-faq-ph fq-iri-rim">
+              {/* eslint-disable-next-line @next/next/no-img-element -- optimizer srcset via photoImg; the slot sizes the element */}
+              <img loading="lazy" decoding="async" {...photoImg(PHOTOS.faq, '(max-width: 960px) 100vw, 32vw')} alt={PHOTOS.faqAlt} />
+              <span className="fq-grain" aria-hidden="true" />
+            </figure>
           </div>
           <div className="qa">
             {faq.map((f) => (

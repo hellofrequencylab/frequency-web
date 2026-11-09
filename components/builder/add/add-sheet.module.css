@@ -1,0 +1,107 @@
+/* ADD A SECTION (BLD-202): Commons tokens and the builder's shape tokens (BLD-002) only. */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  padding: 8vh 16px 16px;
+  background: color-mix(in oklab, var(--fq-text-strong) 28%, transparent);
+}
+.sheet {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  width: min(960px, 100%);
+  max-height: 84vh;
+  border-radius: var(--r-panel);
+  background: var(--fq-surface-raised);
+  color: var(--fq-text-strong);
+  box-shadow: var(--fq-shadow-float);
+  overflow: hidden;
+}
+.head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: 18px 18px 10px; }
+.head h2 { margin: 0; font-size: 20px; }
+.head p { grid-row: 2; margin: 2px 0 0; font-size: 13px; color: var(--fq-text-muted); }
+.head .close { grid-column: 2; grid-row: 1; }
+.search {
+  margin: 0 18px 10px;
+  width: calc(100% - 36px);
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--fq-border-hair);
+  border-radius: var(--r-control);
+  background: var(--fq-bg-sunken);
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+}
+.search:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--editor-select); }
+.body { display: grid; grid-template-columns: minmax(0, 1fr) 420px; min-height: 0; border-top: 1px solid var(--fq-border-hair); }
+.list { overflow: auto; padding: 6px 10px 16px; }
+.list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.cap { margin: 12px 8px 6px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--fq-text-muted); font-weight: 600; }
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.card[aria-current='true'] { background: var(--fq-bg-sunken); }
+.card:focus-visible { outline: 2px solid var(--fq-text-strong); outline-offset: 2px; box-shadow: 0 0 0 5px var(--editor-ring); }
+.card:disabled { cursor: not-allowed; opacity: .55; }
+.tile {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-2);
+  background: var(--fq-bg-sunken);
+}
+.card[aria-current='true'] .tile { background: var(--fq-text-strong); color: var(--fq-surface-raised); }
+.text { display: grid; gap: 2px; min-width: 0; }
+.text b { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.text small { font-size: 13px; color: var(--fq-text-muted); }
+.live {
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: var(--fq-bg-sunken);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fq-text-muted);
+}
+.preview { margin: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px; padding: 12px; border-left: 1px solid var(--fq-border-hair); background: var(--editor-canvas); min-height: 0; }
+.preview figcaption { font-size: 12px; color: var(--fq-text-muted); }
+.frame { overflow: auto; border-radius: var(--r-2); background: var(--fq-surface-raised); pointer-events: none; min-height: 320px; }
+.empty { padding: 14px 8px; color: var(--fq-text-muted); display: grid; gap: 10px; justify-items: start; }
+.empty p { margin: 0; }
+.close {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--fq-border-hair);
+  border-radius: var(--r-control);
+  background: var(--fq-surface-raised);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.close:focus-visible { outline: 2px solid var(--fq-text-strong); outline-offset: 2px; box-shadow: 0 0 0 5px var(--editor-ring); }
+
+/* Under the sm breakpoint the sheet fills the screen and the preview steps aside: the list is the whole job there. */
+@media (max-width: 599px) {
+  .scrim { padding: 0; align-items: end; }
+  .sheet { max-height: 92vh; border-radius: var(--r-panel) var(--r-panel) 0 0; }
+  .body { grid-template-columns: 1fr; }
+  .preview { display: none; }
+}

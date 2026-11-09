@@ -11,7 +11,7 @@
 
 import { carryFields } from '@/lib/launch/carry'
 import type { PendingLaunch } from '@/lib/launch/pending'
-import { launchHomeHref } from '@/lib/launch/destination'
+import { launchStepHref } from '@/lib/launch/steps'
 import { claimedHandle, isValidHandle, parseDraft, type BuilderDraft } from '@/lib/create-space/builder'
 
 /** The draft as the server action receives it: the browser's own JSON, re-parsed by the builder's reader (so it is
@@ -25,7 +25,8 @@ export function parseHandoff(raw: unknown): BuilderDraft | null {
 /** The launch hold for a draft. */
 export function holdFor(draft: BuilderDraft): Omit<PendingLaunch, 'savedAt'> {
   return {
-    niche: null,
+    // The niche a /for or /go door named rides through (lib/create-space/door.ts); the builder never asks for one.
+    niche: draft.niche,
     intents: [...draft.goals],
     answers: {
       spotlight: {
@@ -41,6 +42,7 @@ export function holdFor(draft: BuilderDraft): Omit<PendingLaunch, 'savedAt'> {
           cover: draft.cover,
           logo: draft.logo,
           profile: draft.profile,
+          lead: draft.leadToken ?? undefined,
         }),
       },
     },
@@ -52,7 +54,9 @@ interface Destination {
    *  the hold and lands on /launch. */
   next: string
   /** A page a signed-out visitor can keep going on while the email travels: the Spotlight form, which reads the hold.
-   *  Null when the launch is off, because that page does not open then. */
+   *  Named here on purpose: a cold /launch now opens the wizard (launchHomeHref, LIVE-1969), but someone who has just
+   *  saved IS past the wizard, so they continue on the form. Null when the launch is off, because that page does not
+   *  open then. */
   keepBuildingHref: string | null
 }
 
@@ -60,5 +64,5 @@ interface Destination {
  *  while LAUNCH_SYSTEM_ENABLED is off, so then, and only then, sign-in returns to the signed-in Create a Space form
  *  instead (no hints) and there is no keep-building link: nobody is sent to a 404. */
 export function destinationFor(launchOpen: boolean): Destination {
-  return launchOpen ? { next: '/launch/claim', keepBuildingHref: launchHomeHref({ signedIn: false }) } : { next: '/spaces/new', keepBuildingHref: null }
+  return launchOpen ? { next: '/launch/claim', keepBuildingHref: launchStepHref('spotlight') } : { next: '/spaces/new', keepBuildingHref: null }
 }

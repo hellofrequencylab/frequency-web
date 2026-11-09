@@ -20,6 +20,8 @@ import { readSiteStyle } from '@/lib/theme/site-style'
 import { readMegaTheme } from '@/lib/theme/mega-theme'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { ConnectedWebsiteEditor } from './website-editor'
+import { shadowLogLines, shadowReport } from '@/lib/builder/shadow'
+import { config as editorConfig } from '@/lib/page-editor/config'
 import { NETWORK_FONT_CLASS } from '../network-fonts'
 import { TEMPLE_FONT_CLASS } from '../temple-fonts'
 import { MIDNIGHT_FONT_CLASS } from '../midnight-fonts'
@@ -27,7 +29,7 @@ import { DESIGNER_FONT_CLASS } from '../designer-fonts'
 import { NETWORK_KIT_FONT_CLASS } from '../network-kit-fonts'
 import { WILDHEART_FONT_CLASS } from '../wildheart-fonts'
 
-export async function WebsiteEditorPage({ host, space: cached, token }: { host: string; space: Space; token: string }) {
+export async function WebsiteEditorPage({ host, space: cached, token, builder }: { host: string; space: Space; token: string; builder?: 'v3' }) {
   const pass = readSiteAdminPass(token)
   // A staff preview pass is intentionally not a website editing credential.
   if (!pass || pass.staff) notFound()
@@ -52,10 +54,13 @@ export async function WebsiteEditorPage({ host, space: cached, token }: { host: 
   }
   initial = { ...initial, draft: { ...initial.draft, pages: await Promise.all(initial.draft.pages.map(async (page) => ({ ...page, doc: await refreshAssetRefUrls(page.doc, { websiteSpaceId: space.id }) }))) } }
   const websiteFeatures = await loadWebsiteFeatures(space.id, initial.draft.pages.map((page) => page.doc))
+  // THE SHADOW RENDER (BLD-108): when the new builder opens a real draft, both editors' readings of it are compared
+  // and any difference neither pass explains is logged, so the cohort rollout (BUILDER_V3_SPACES) has evidence.
+  if (builder === 'v3') for (const line of shadowLogLines(host, shadowReport(initial.draft.pages, editorConfig))) console.warn(line)
   const websiteChrome = {
     cta: chrome.cta, tagline: chrome.tagline,
     seasonNow: { ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()), next: live.events.find((event) => /circle night/i.test(event.title))?.startsAt ?? null },
     admin: siteAdminLinks(chrome.origin, space.slug, '', 'editor', readSiteStyle(space.preferences).theme === 'network' ? 'network' : readSiteStyle(space.preferences).theme === 'wildheart' ? 'wildheart' : undefined),
   }
-  return <ConnectedWebsiteEditor host={host} brandName={brandName} logo={space.brandLogoUrl} brandAccent={space.brandAccent} author={person?.name ?? 'You'} initial={initial} metadata={{ space: content, websiteFeatures, websiteChrome, niche: readMegaTheme(space.preferences).niche }} live={live} links={chrome.siteLinks} origin={chrome.origin} siteStyle={readSiteStyle(space.preferences)} defaultAccent={defaultAccentForType(space.type)} domain={space.domain ?? null} fontClass={`${NETWORK_FONT_CLASS} ${WILDHEART_FONT_CLASS} ${TEMPLE_FONT_CLASS} ${MIDNIGHT_FONT_CLASS} ${DESIGNER_FONT_CLASS} ${NETWORK_KIT_FONT_CLASS}`} />
+  return <ConnectedWebsiteEditor builder={builder} host={host} brandName={brandName} logo={space.brandLogoUrl} brandAccent={space.brandAccent} author={person?.name ?? 'You'} initial={initial} firstOpen={initial.revision === 0 && !initial.published} metadata={{ space: content, websiteFeatures, websiteChrome, niche: readMegaTheme(space.preferences).niche }} live={live} links={chrome.siteLinks} origin={chrome.origin} siteStyle={readSiteStyle(space.preferences)} defaultAccent={defaultAccentForType(space.type)} domain={space.domain ?? null} fontClass={`${NETWORK_FONT_CLASS} ${WILDHEART_FONT_CLASS} ${TEMPLE_FONT_CLASS} ${MIDNIGHT_FONT_CLASS} ${DESIGNER_FONT_CLASS} ${NETWORK_KIT_FONT_CLASS}`} />
 }

@@ -8,9 +8,8 @@ updated: 2026-10-06
 audience: member
 featureKeys: [practices, on-air]
 status: published
-canonical: /calm-down-fast
 ---
-Read the full guide first: [How to calm down fast](/calm-down-fast). This page is the short version for members, with the Frequency features that help.
+Want to try it right now? [Start the five-minute breathing timer](/mindless), no account needed. Below is how it works and the Frequency features that help.
 
 It is late, you are exhausted, and you still cannot switch off. Your body is
 running like there is a deadline when the only thing in front of you is bed. Wired

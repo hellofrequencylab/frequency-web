@@ -5,8 +5,8 @@ import { FrequencyThemeKit, THEME_KIT_PAGE_IDS } from '@/components/frequency/si
 import { THEME_TOOLS } from '@/lib/themes/library'
 
 describe('the theme kit page', () => {
-  it('covers every theme except Midnight, which keeps its own page', () => {
-    expect(THEME_KIT_PAGE_IDS).toEqual(['frequency', 'bold', 'wildheart', 'network-kit', 'temple-kit', 'designer'])
+  it('covers every offered theme except Midnight, which keeps its own page (Default is retired, LIVE-2121)', () => {
+    expect(THEME_KIT_PAGE_IDS).toEqual(['bold', 'wildheart', 'network-kit', 'temple-kit', 'designer'])
   })
 
   it.each(THEME_KIT_PAGE_IDS)('draws %s with every tool, thirteen kits, no em dash and no inline colour', (id) => {

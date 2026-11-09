@@ -290,4 +290,10 @@
 /* THEME CONTROLS (LIVE-1997): the radios mirror the pressed state the other editor choices read from aria-pressed. */
 .we-choice-row .we-action[role=radio][aria-checked=true]{color:var(--text-strong);box-shadow:inset 0 0 0 2px var(--x-violet-deep)}
 .we-swatch-list .we-swatch[role=radio][aria-checked=true]{box-shadow:0 0 0 3px var(--text-strong)}
+.we-float-bar{position:absolute;z-index:8;left:50%;bottom:16px;transform:translateX(-50%);max-width:calc(100% - 32px);padding:6px 10px;border:0;border-radius:999px;background:var(--surface-raised);box-shadow:inset 0 0 0 1px var(--border-hair),0 14px 30px -14px color-mix(in srgb,var(--text-strong) 40%,transparent);overflow-x:auto}
+.we-float-bar .we-theme-controls{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;white-space:nowrap}
+.we-float-bar .we-choice-row{margin-top:0;flex-wrap:nowrap}
 .we-theme-controls [data-changed]{display:inline-block;width:6px;height:6px;margin-left:6px;border-radius:50%;background:var(--x-violet-deep)}
+.we-proposal[data-vera-layout] fieldset{display:grid;gap:6px;margin:0 0 10px;padding:0;border:0}
+/* Vera's ghost preview (LIVE-2141): a strip across the top of the canvas while it draws her ticked lines. */
+.we-stage .vera-ghost{position:absolute;top:16px;left:16px;right:16px;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 6px 6px 14px;border-radius:12px;background:var(--surface-raised);box-shadow:inset 0 0 0 1px var(--border-hair);font:500 13px/1.3 var(--font-ui);color:var(--text-strong)}

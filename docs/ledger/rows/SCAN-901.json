@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-901",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/circles/[slug]/(circle)/layout.tsx','utf8');const l=fs.readFileSync('lib/circles/retired-space-circle.ts','utf8');if(!/retiredSpaceCircleHome\\(slug\\)[\\s\\S]{0,80}permanentRedirect\\(home\\)/.test(s)||!l.includes('retired_space_circles')||!l.includes('/community')){console.error('SCAN-901: a retired Space Circle link no longer forwards to the Space Community wall');process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": " Pin rewrite 2026-11-04 (ADR-1938, LIVE-2080): the Space Circle is retired; its home and every archived Space Circle URL now 308 to the Space Community wall, so the probe checks /community instead of /circles#discussion. Second rewrite the same day (LIVE-2081): the flag column is dropped, so the probe checks that the Circle layout forwards a retired slug (public.retired_space_circles) to /community."
+  }
+}

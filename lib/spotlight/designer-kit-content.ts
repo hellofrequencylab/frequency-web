@@ -157,6 +157,14 @@ function layoutsFor(tools: string[]): LayoutKey[] {
   return out
 }
 
+/** The profile whose accent ramp has this `#rrggbb` as its base (case-blind), else null. A Space that picked one of the Designer
+ *  swatches wears that profile's ramp on its Spotlight. */
+export function designerProfileForAccent(accent: string | null | undefined): string | null {
+  const want = accent?.trim().toLowerCase()
+  if (!want) return null
+  return DATA.kits.find((k) => k.accent.base.toLowerCase() === want)?.id ?? null
+}
+
 /** Everything a Designer layout shows for a profile. `sample` fills the dates, sessions, prices and the quote (the design's
  *  sample page); a live page passes false and gets none of them, so no invented date, price or testimonial ships. */
 export function designerKitSpotlightContent(profile: string, opts: { name?: string; sample?: boolean; photo?: string } = {}): DesignerKitSpotlightContent {

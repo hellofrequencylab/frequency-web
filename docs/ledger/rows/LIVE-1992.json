@@ -1,18 +1,11 @@
 {
   "id": "LIVE-1992",
-  "title": "Services chrome and blocks: header, footer, hero variants and the function blocks",
-  "lane": "live",
-  "priority": "P1",
-  "size": "L",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/services/rules.json",
-    "ref": "ds-intake services"
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-02"
   },
-  "detail": "Plan step 5: ServicesHero (glow|photo|split|minimal), Trust, Services, Booking, Story, Steps, Reviews, Gallery, Plans, Events, Shop, Team, Library, Locations, Contact, Letter, FAQ, Band; header bar|pill|centered and footer full|minimal. Live blocks read Frequency rows like NetworkEvents; empty copy on every list block; tokens only, no literal colours. Two PRs under the 40-file gate.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node scripts/probes/services-theme.mjs chrome"
+  "append": {
+    "detail": "Chrome (3 headers, 2 footers), the 18 blocks and the services skin exist as standalone modules with draw tests. Follow-up in LIVE-2040: register them, inject the skin, and wire the booking, events, shop, plans and posts blocks to Frequency rows."
   },
   "wave": "W7"
 }

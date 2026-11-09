@@ -21,7 +21,6 @@ import {
   circleEventScopeFilter,
   circleEventVisibilities,
   selectUpcomingForCircle,
-  spaceCircleEventScope,
   type CircleEventRow,
 } from '@/lib/events/circle-upcoming'
 
@@ -56,9 +55,6 @@ export const CircleEvents = async () => {
       <CircleUpcomingEvents
         circleId={circle.id}
         insider={isMember || canManage}
-        // Arm 3 (ADR-1393): on a SPACE CIRCLE this box is the Space's calendar. Resolved through
-        // the one resolver, which refuses the root tenant every personal Circle is stamped to.
-        spaceId={spaceCircleEventScope(circle)}
       />
     </Suspense>
   )
@@ -67,19 +63,16 @@ export const CircleEvents = async () => {
 async function CircleUpcomingEvents({
   circleId,
   insider,
-  spaceId,
 }: {
   circleId: string
   /** A member, Host, or steward of this Circle also sees its members-only events. */
   insider: boolean
-  /** A Space Circle's owning Space, so its calendar lands here too. Null on every other Circle. */
-  spaceId: string | null
 }) {
   // ONE clock for the read, the fold and the selection rules. `seriesUpcomingFloor` is midnight
   // TODAY in the community's zone: events.starts_at stores the host's wall clock kept as UTC parts,
   // so a raw `new Date()` cutoff is already tomorrow by 5pm Pacific and drops tonight's gathering.
   const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
-  const filter = circleEventScopeFilter(circleId, spaceId)
+  const filter = circleEventScopeFilter(circleId)
   // A daily series used to occupy all six fetched rows: the block showed five identical cards and
   // "See all events" was permanently lit. Folding without raising the LIMIT is worse (six rows
   // collapse to ONE card), so the read over-fetches first.
@@ -91,7 +84,7 @@ async function CircleUpcomingEvents({
     const { data } = await admin
       .from('events')
       .select(
-        `id, title, slug, location, starts_at, scope_id, scope_type, scope_circle_id, space_id, ${SERIES_COLUMNS}`,
+        `id, title, slug, location, starts_at, scope_id, scope_type, scope_circle_id, ${SERIES_COLUMNS}`,
       )
       // Belongs to THIS Circle: created for it (scope_id) or placed on it (scope_circle_id).
       // Both are equality matches on this circle's own uuid, so the shared sentinel scope_id
@@ -123,7 +116,6 @@ async function CircleUpcomingEvents({
     circleId,
     new Date(floor),
     CIRCLE_UPCOMING_LIMIT,
-    spaceId,
   )
   // Two ways there is more to see, and a block must never hide its own escape hatch: more SERIES
   // than the cap, or a read that came back full. Fifty rows of a daily series hide a sibling one-off

@@ -36,6 +36,13 @@ export function createLineReader(): { push: (chunk: string) => string[]; flush: 
   }
 }
 
+/** Pure: the Space slug when the page is inside a Space (/spaces/<slug>/...), so Vera can explain that Space's
+ *  settings to someone who helps run it (LIVE-2147). Undefined anywhere else, and for anything not slug-shaped. */
+export function spaceSlugFromPath(pathname: string): string | undefined {
+  const slug = /^\/spaces\/([a-z0-9][a-z0-9-]{0,79})(?:\/|$)/.exec(pathname)?.[1]
+  return slug
+}
+
 /** Pure: one NDJSON line to an event, or null for a line we do not recognise (ignored, never fatal). */
 export function parseTurnEvent(raw: string): VeraTurnEvent | null {
   try {
@@ -65,7 +72,7 @@ export async function streamConciergeTurn(
     res = await fetch('/api/vera/turn', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' },
-      body: JSON.stringify({ stage, text, history }),
+      body: JSON.stringify({ stage, text, history, space: spaceSlugFromPath(typeof window === 'undefined' ? '' : window.location.pathname) }),
     })
   } catch {
     return conciergeTurn(stage, text, history)

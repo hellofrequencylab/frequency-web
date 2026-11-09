@@ -1,11 +1,14 @@
 import type { Config } from '@/lib/page-editor/types'
 import type { FqEditorIconName, FqIconName } from '@/components/frequency/icon'
+import { ROLES, roleOfType, type RoleId } from '@/lib/blocks/roles/roles'
 
 // HOW THE FREQUENCY PAGE EDITOR PRESENTS A BLOCK (design_handoff/frequency/templates/admin/editor/editor.js,
 // `TYPES`). The design keys each block to an icon, one of four Add-tab groups (Sections, Content, Live,
 // Media) and a "live" flag (it pulls Space data). Our block registry is lib/page-editor/config.tsx, so this
 // is NOT a second registry: it reads the registry's own category for each type and derives the design's
 // presentation from it, so a new block that joins a registry category is presented with no edit here.
+// A ROLE block (lib/blocks/roles/*.role.json, BLD-201) names its own icon and liveness, so nothing here reads its
+// type name; the regex tables below are the fallback for legacy types only.
 // PURE: no React, no editor state.
 
 type EditorBlockGroup = 'Sections' | 'Content' | 'Live' | 'Media'
@@ -26,14 +29,14 @@ interface EditorBlockMeta {
 const GROUP_OF_CATEGORY: Record<string, EditorBlockGroup> = {
   sections: 'Sections', blocks: 'Sections', productStory: 'Sections',
   content: 'Content', layout: 'Content', profile: 'Content', linkTree: 'Content',
-  dynamic: 'Live', spaceContent: 'Live', wildheart: 'Live', circles: 'Live', midnight: 'Sections', templeKit: 'Sections', designer: 'Sections', freeHuman: 'Sections', networkKit: 'Sections',
+  dynamic: 'Live', spaceContent: 'Live', wildheart: 'Live', circles: 'Live', midnight: 'Sections', templeKit: 'Sections', designer: 'Sections', freeHuman: 'Sections', networkKit: 'Sections', newWorld: 'Sections',
   media: 'Media',
 }
 
-/** Blocks whose rows come from the Space at render time (the design's `live: 1`). */
-const LIVE = /^(Live\w+|SpaceEvents|SpaceCommunity|SpaceTeam|SpaceStats|SpaceOfferings|SpaceReviews|SpaceFAQ|SpacePractices|SpaceBooking|CirclesGrid|CirclesFeatured|CirclesMap|Network(Hero|Events|Circles)|NetworkKit(Hero|Live|Journeys|Gatherings|Proof|FAQ|Featured|Calendar|Stats)|Midnight(Live|Journeys|Gatherings|Proof|FAQ)|Designer(FAQ)|FreeHuman(Workshops|Events|Calendar|YearWheel)|Wildheart(YearJourney|SkyMap|NowLine|MoonPath|Modules|FirstNight|MoonStrip))$/
+/** Legacy blocks whose rows come from the Space at render time (the design's `live: 1`). Role blocks say so themselves. */
+const LIVE = /^(Live\w+|SpaceEvents|SpaceCommunity|SpaceTeam|SpaceStats|SpaceOfferings|SpaceReviews|SpaceFAQ|SpacePractices|SpaceBooking|CirclesGrid|CirclesFeatured|CirclesMap|Network(Hero|Events|Circles)|NetworkKit(Hero|Live|Journeys|Gatherings|Proof|FAQ|Featured|Calendar|Stats)|Midnight(Live|Journeys|Gatherings|Proof|FAQ)|Designer(FAQ)|FreeHuman(Workshops|Events|Calendar|YearWheel)|Wildheart(YearJourney|SkyMap|NowLine|MoonPath|Modules|FirstNight|MoonStrip)|NewWorld(Calendar|Openings|Reviews|Faq|Book|SpaceWall))$/
 
-/** Type-name patterns → the design's icon for the same kind of block, first match wins. */
+/** Legacy type-name patterns → the design's icon for the same kind of block, first match wins. */
 const ICONS: [RegExp, FqIconName | FqEditorIconName][] = [
   [/Hero|Cover|IdentityHeader/, 'photo'],
   [/Event|Calendar|Year|Season|Timeline|NowLine|FirstNight/, 'event'],
@@ -55,11 +58,20 @@ function categoryOf(config: Config, type: string): string | null {
   return null
 }
 
+/** A role's suggestion set, by role id. Roles not named here take the general set. */
+const KIND_OF_ROLE: Partial<Record<RoleId, EditorBlockKind>> = { hero: 'Hero', faq: 'FAQ', cta: 'CTA', letter: 'CTA', story: 'About', statement: 'About' }
+
 /** The design's presentation of a registry block type. */
 export function editorBlockMeta(config: Config, type: string): EditorBlockMeta {
-  const live = LIVE.test(type)
   const category = categoryOf(config, type)
-  const group: EditorBlockGroup = live ? 'Live' : (category && GROUP_OF_CATEGORY[category]) || 'Sections'
+  const groupOf = (live: boolean): EditorBlockGroup => live ? 'Live' : (category && GROUP_OF_CATEGORY[category]) || 'Sections'
+  const role = roleOfType(type)
+  if (role) {
+    const def = ROLES[role]
+    return { icon: def.icon, group: groupOf(def.live), live: def.live, kind: KIND_OF_ROLE[role] ?? '_' }
+  }
+  const live = LIVE.test(type)
+  const group = groupOf(live)
   const icon = ICONS.find(([pattern]) => pattern.test(type))?.[1] ?? GROUP_ICON[group]
   const kind: EditorBlockKind = /Hero|Cover|IdentityHeader/.test(type) ? 'Hero'
     : /FAQ|Accordion/.test(type) ? 'FAQ'

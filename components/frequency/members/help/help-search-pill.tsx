@@ -31,7 +31,7 @@ export function HelpSearchPill({ index }: { index: HelpSearchEntry[] }) {
           }}
           placeholder="Search help"
           aria-label="Search help articles"
-          aria-controls="mc-help-results"
+          aria-controls={asked ? 'mc-help-results' : undefined}
         />
       </label>
       <p className="sr-only" role="status">

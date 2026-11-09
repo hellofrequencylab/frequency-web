@@ -1,0 +1,19 @@
+{
+  "id": "BLD-205",
+  "title": "Builder BLD-205: Update to new layouts",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-205."
+  },
+  "detail": "B2 Roles, pass BLD-205 (spec: docs/EDITOR-NEXT.md#bld-205). Update to new layouts. Scope: components/builder/legacy. Build: Surface LIVE-1860's per-page action: preview the role version of each legacy block with a diff, apply as one undo step. Done when: Legacy page renders identically before the action and after undo. Gates: check:node-document-safety, check:stored-blocks, vitest suite (required test job), Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-203. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nUpdate to new layouts in the builder: the outline prompt and ⌘K open a sheet that shows each convertible section beside its role version with what carries over; the owner's pick applies as one edit, and undo restores the page exactly (lib/builder/legacy.test.ts).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-205.mjs"
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

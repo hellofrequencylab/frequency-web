@@ -241,7 +241,7 @@
   ("In Person" / "Online") as a property of one Circle, never as the line between Circles and
   something else. The retired formula, still widely remembered, was "Circles are the local,
   real-world unit; Channels are the global, topical unit" — say **container vs topic axis** instead.
-- **Space Circle** = the one primary Circle every Space always has ([ADR-1391](DECISIONS.md)). It
+- **Space Circle** = **RETIRING** ([ADR-1938](DECISIONS.md)): a Space gets a Community wall instead, and this entry stays only until the retire wave (LIVE-2081) removes the code. New copy never says it. The one primary Circle every Space always had ([ADR-1391](DECISIONS.md)). It
   is **hosted by the Space** ("Hosted by Royal Temple"), never by the person who owns the Space, holds
   up to 300 members, and can be **turned on or off** but never deleted, moved or handed off. Staff copy
   says "Space Circle"; member-facing pages just show the Circle, named for the Space. **Not "flagship
@@ -257,22 +257,18 @@
   member that their Space membership keeps them in the hub.
   ⚠️ **The cover pill still reads "Circle", not "Space Circle"** — the pill names what the page is and
   the Space's name rides beside it, because "Space Circle" is the staff word, per the rule above.
-- **"Community" is never the name of a Space-level surface — a Space's community is its Circles**
-  ([ADR-1091](DECISIONS.md), OWN-015; [ADR-1013](DECISIONS.md) §3). No Space tab, block label,
-  section anchor, or eyebrow is called "Community": the surface that lists a Space's groups says
-  **Circles**. (Same collision ADR-868 already fixed once in the sidebar; "Community" stays
-  reserved for the canon uses in this doc — the community structure tree, `community_role`,
-  Community Resonance, and the brand's Community Collective.) The stored block TYPE KEY
-  `SpaceCommunity` is an internal identifier and is deliberately not renamed. The Space Circle's
-  conversation is named **Discussion** ([ADR-1469](DECISIONS.md), as amended by
-  [ADR-1534](DECISIONS.md)). It is that Circle's feed, on the Space. Never a second post scope.
-
-  ⚠️ **Discussion is a SECTION of the Circles page, not a tab beside it** (ADR-1534, LIVE-523,
-  owner directive 2026-09-27). A Space's community is ONE page: `/spaces/<slug>/circles` leads with
-  the Space Circle's feed under an `<h2>` named Discussion at the anchor `#discussion`, and indexes
-  the other circles beneath it. A dedicated Discussion row beside Circles was two menu rows over one
-  subject. The WORD is unchanged and still never "Community"; what changed is where it sits.
-  `/spaces/<slug>/discussion` stays a reserved slug and forwards to `…/circles#discussion`.
+- **Community** = a Space's wall and public communications hub ([ADR-1938](DECISIONS.md), owner
+  2026-11-03, superseding ADR-1091, ADR-1469 and ADR-1534). Every Space has a **Community** tab: a
+  wall of posts, replies and reactions scoped to the Space itself (`posts.scope_space_id`), read
+  by anyone or by members only at the owner's choice, posted to by the Space team and members, with the
+  owner choosing whether followers may reply and react. **Circles** is a second tab beside it that lists
+  the topic Circles the Space started. A Space no longer has a built-in Circle: **Space Circle** and
+  `is_space_primary` are retired words (the column goes last, LIVE-2081), and the old name for the
+  conversation, **Discussion**, is retired with them. `/spaces/<slug>/discussion` stays a reserved slug
+  and forwards to the Community tab. The stored block TYPE KEY `SpaceCommunity` is an internal
+  identifier and is deliberately not renamed: it keeps rendering the topic Circles list, and the wall
+  gets its own block key. "Community" keeps its other canon uses in this doc (the community structure
+  tree, `community_role`, Community Resonance, the brand's Community Collective).
 - **Outpost** = the brick-and-mortar home base of a Nexus; one per Nexus; the seed
   toward a Lab. Circles meet in homes/public spaces, never Outposts.
 - **Frequency Lab** = standalone for-profit venue; when a Lab exists in a Nexus, the

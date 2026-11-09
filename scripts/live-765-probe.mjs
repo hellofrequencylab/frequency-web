@@ -17,7 +17,7 @@ function load(file){file=resolve(file);if(modules.has(file))return modules.get(f
  const req=name=>{if(transports.has(name))return transports.get(name);const path=name.startsWith('@/')?name.slice(2)+'.ts':name.startsWith('.')?resolve(dirname(file),name+'.ts'):null;if(path && [...live].some(f=>resolve(f)===resolve(path)))return load(path);return {}}
  new Function('module','exports','require',compiled)(mod,mod.exports,req);return mod.exports}
 const store=load('lib/collective/cross-listing-store.ts')
-state.subjects=Array.from({length:1201},(_,i)=>({id:String(i).padStart(4,'0'),subject:{id:`subject-${i}`,space_id:'source',name:`Circle ${i}`,status:'active',unlisted:false,is_space_primary:false,created_at:`2026-10-${i===1200?'08':'07'}T00:00:00Z`,access:'space_paid_members'}}))
+state.subjects=Array.from({length:1201},(_,i)=>({id:String(i).padStart(4,'0'),subject:{id:`subject-${i}`,space_id:'source',name:`Circle ${i}`,status:'active',unlisted:false,created_at:`2026-10-${i===1200?'08':'07'}T00:00:00Z`,access:'space_paid_members'}}))
 assert.equal((await store.acceptedCrossListingSubjects('circle','target')).length,1201)
 assert.deepEqual(state.ranges,[0,500,1000]);state.failPage=true
 assert.deepEqual(await store.acceptedCrossListingSubjects('circle','target'),[]);state.failPage=false

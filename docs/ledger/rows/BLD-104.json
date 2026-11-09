@@ -1,0 +1,19 @@
+{
+  "id": "BLD-104",
+  "title": "Builder BLD-104: Selection and parts overlay",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-104."
+  },
+  "detail": "B1 Shell, pass BLD-104 (spec: docs/EDITOR-NEXT.md#bld-104). Selection and parts overlay. Scope: components/builder/canvas. Build: Hover outlines a data-part; click selects section or part. Inline text editing on text parts; image part opens the media picker with focal point. Section toolbar: move, duplicate, hide on this device, delete with undo toast. Done when: Canvas edit updates Tune rail and back; Every action is one undo step. Gates: vitest suite (required test job), a11y ratchet, pr-compare visual suite, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-101. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record. 2026-11-03 first half shipped: the section toolbar's move, duplicate, hide on this device and delete run through lib/builder/section-actions.ts as one edit each (test: each is one undo step), delete shows a toast with Undo, and the canvas's own inline text editing writes to the same draft. 2026-11-04 second half: the canvas outlines the innermost part under the pointer (data-part, or a picture), the new builder only; a click on a picture opens that picture's own Tune field, the existing media picker, with its focal point lit beside it (lib/builder/parts.ts finds both, matching the address as stored, decoded, or behind the image proxy). Canvas and Tune draw the one draft, so an edit in either shows in the other.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-104.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-04"
+}

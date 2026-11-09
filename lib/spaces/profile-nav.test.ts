@@ -45,20 +45,6 @@ vi.mock('@/lib/spaces/memberships', () => ({
 }))
 
 const hub = { live: false }
-vi.mock('@/lib/spaces/space-discussion', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./space-discussion')>()),
-  getLiveSpaceCircle: async () =>
-    hub.live
-      ? {
-          id: 'hub',
-          slug: 'ojai-hub',
-          name: 'Ojai',
-          status: 'active',
-          is_space_primary: true,
-          space_id: 's1',
-        }
-      : null,
-}))
 
 import { buildSpaceProfileNav } from './profile-nav'
 
@@ -101,65 +87,65 @@ beforeEach(() => {
 
 describe('the Circles tab', () => {
   it('HIDE AT ZERO: a visitor is never offered a tab over an empty page', async () => {
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).not.toContain('Circles')
   })
 
   it('shows once the Space has a circle the viewer could actually open', async () => {
     presence.circles = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).toContain('Circles')
   })
 
   it('is a real PAGE, not the old #circles anchor into Home', async () => {
     presence.circles = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(hrefFor(tabs, 'Circles')).toBe('/spaces/ojai/circles')
   })
 
   it('and the Home anchor is suppressed, so Circles never appears in the menu twice', async () => {
     presence.circles = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs).filter((l) => l === 'Circles')).toHaveLength(1)
     expect(tabs.filter((t) => t.href.includes('#circles'))).toHaveLength(0)
   })
 
   it('a MANAGER keeps it at zero: the empty state is where "Start your first circle" lives', async () => {
     manage.canManage = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).toContain('Circles')
   })
 
   it('a staff previewer sees it too, so a Space reads as its owner would', async () => {
     manage.staffViewing = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).toContain('Circles')
   })
 
   it('the `circles` FUNCTION being switched off hides it from everyone, manager included', async () => {
     presence.circles = true
     manage.canManage = true
-    const { tabs } = await buildSpaceProfileNav(space({ entitlements: { circles: false } as unknown as Space['entitlements'] }))
+    const { catalog: tabs } = await buildSpaceProfileNav(space({ entitlements: { circles: false } as unknown as Space['entitlements'] }))
     expect(labels(tabs)).not.toContain('Circles')
   })
 
   it('ROOT never offers it: every personal circle on the platform is stamped to that tenant', async () => {
     presence.circles = true
     manage.canManage = true
-    const { tabs } = await buildSpaceProfileNav(space({ type: 'root' }))
+    const { catalog: tabs } = await buildSpaceProfileNav(space({ type: 'root' }))
     expect(labels(tabs)).not.toContain('Circles')
   })
 })
 
 describe('the People tab (LIVE-420)', () => {
   it('hides from a visitor who cannot see the directory', async () => {
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).not.toContain('People')
   })
 
   it('is a real page once the viewer belongs here', async () => {
     showPeople = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).toContain('People')
     expect(hrefFor(tabs, 'People')).toBe('/spaces/ojai/people')
   })
@@ -179,12 +165,12 @@ describe('the Contact tab', () => {
     } as unknown as Partial<Space>)
 
   it('stays closed on a Space that has neither a form nor published facts', async () => {
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).not.toContain('Contact')
   })
 
   it('opens once the operator has authored a contact form', async () => {
-    const { tabs } = await buildSpaceProfileNav(withForm())
+    const { catalog: tabs } = await buildSpaceProfileNav(withForm())
     expect(labels(tabs)).toContain('Contact')
     expect(hrefFor(tabs, 'Contact')).toBe('/spaces/ojai/contact')
   })
@@ -196,12 +182,12 @@ describe('the Contact tab', () => {
         profileData: { phone: '760 555 0100' },
       },
     } as unknown as Partial<Space>)
-    expect(labels((await buildSpaceProfileNav(withFacts)).tabs)).toContain('Contact')
+    expect(labels((await buildSpaceProfileNav(withFacts)).catalog)).toContain('Contact')
   })
 
   it('a manager keeps it at zero, because that is where they set it up', async () => {
     manage.canManage = true
-    expect(labels((await buildSpaceProfileNav(space())).tabs)).toContain('Contact')
+    expect(labels((await buildSpaceProfileNav(space())).catalog)).toContain('Contact')
   })
 
   // 🔴 THE "TWO REVIEWS" BUG, THIRD EDITION. The Home page still renders a `#contact` SECTION (so
@@ -230,7 +216,7 @@ describe('the Contact tab', () => {
       },
     } as unknown as Partial<Space>)
     presence.faqs = true
-    const { tabs } = await buildSpaceProfileNav(withAnchor)
+    const { catalog: tabs } = await buildSpaceProfileNav(withAnchor)
     presence.faqs = false
 
     // THE CONTROL, and it is load-bearing TWICE OVER. `#faq` sits in the same layout row, so its
@@ -251,7 +237,7 @@ describe('the menu is derived from the page that renders (LIVE-517)', () => {
   // ADR-508 U3 moved the Home body to the module engine. These pin that the menu moved with it.
   it('derives an anchor from a block in the saved layout', async () => {
     presence.faqs = true
-    const { tabs } = await buildSpaceProfileNav(
+    const { catalog: tabs } = await buildSpaceProfileNav(
       space({
         preferences: { profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['faq']] }] } },
       } as unknown as Partial<Space>),
@@ -261,22 +247,22 @@ describe('the menu is derived from the page that renders (LIVE-517)', () => {
     expect(tabs.map((t) => t.href)).toContain('/spaces/ojai#faq')
   })
 
-  it('links Book to #booking, the id the section actually mounts under', async () => {
+  it('keeps Book reachable as a contextual page without a section anchor', async () => {
     presence.booking = true
-    const { tabs } = await buildSpaceProfileNav(
+    const { catalog: tabs } = await buildSpaceProfileNav(
       space({
         preferences: { profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['booking']] }] } },
       } as unknown as Partial<Space>),
     )
     presence.booking = false
-    expect(hrefFor(tabs, 'Book')).toBe('/spaces/ojai#booking')
+    expect(hrefFor(tabs, 'Book')).toBe('/spaces/ojai/book')
     // The old map said `#book`, which no block renders.
     expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#book')
   })
 
   it('a stored Puck doc no longer drives the menu, because nothing renders it', async () => {
     presence.practices = true
-    const { tabs } = await buildSpaceProfileNav(
+    const { catalog: tabs } = await buildSpaceProfileNav(
       space({
         preferences: {
           // A doc claiming Practices, on a layout that holds none.
@@ -297,7 +283,7 @@ describe('the menu is derived from the page that renders (LIVE-517)', () => {
     // starter (about / offerings / booking / events / team / reviews / contact) and is not
     // suppressed, so it proves the same thing: the fall-through derives anchors.
     presence.booking = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     presence.booking = false
     // No saved layout: resolveRows falls to the kind starter, which the BODY renders too.
     expect(tabs.map((t) => t.href)).toContain('/spaces/ojai#booking')
@@ -317,7 +303,7 @@ describe('the #events anchor — Calendar and Events are one page (LIVE-520)', (
     const withAnchor = space({
       preferences: { profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['events', 'faq']] }] } },
     } as unknown as Partial<Space>)
-    const { tabs } = await buildSpaceProfileNav(withAnchor)
+    const { catalog: tabs } = await buildSpaceProfileNav(withAnchor)
     hasEvents = false
     presence.events = false
     presence.faqs = false
@@ -331,8 +317,8 @@ describe('the #events anchor — Calendar and Events are one page (LIVE-520)', (
     expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai#events')
     expect(tabs.filter((t) => t.label === 'Events')).toHaveLength(0)
     // ONE row, and it is the merged page.
-    expect(tabs.filter((t) => t.label === 'Calendar')).toHaveLength(1)
-    expect(hrefFor(tabs, 'Calendar')).toBe('/spaces/ojai/calendar')
+    expect(tabs.filter((t) => t.label === "What's Happening")).toHaveLength(1)
+    expect(hrefFor(tabs, "What's Happening")).toBe('/spaces/ojai/calendar')
   })
 })
 
@@ -346,7 +332,7 @@ describe('the #reviews anchor — the original "two Reviews" bug', () => {
     const withAnchor = space({
       preferences: { profileLayout: { rows: [{ id: 'r1', columns: 1, cells: [['reviews', 'faq']] }] } },
     } as unknown as Partial<Space>)
-    const { tabs } = await buildSpaceProfileNav(withAnchor)
+    const { catalog: tabs } = await buildSpaceProfileNav(withAnchor)
     presence.reviews = false
     presence.faqs = false
 
@@ -374,7 +360,7 @@ describe('the #reviews anchor — the original "two Reviews" bug', () => {
 describe('the Space menu carries ONE row for the community', () => {
   it('a live Space Circle adds no second row beside Circles', async () => {
     hub.live = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).not.toContain('Discussion')
     expect(tabs.map((t) => t.href)).not.toContain('/spaces/ojai/discussion')
   })
@@ -383,7 +369,7 @@ describe('the Space menu carries ONE row for the community', () => {
     manage.canManage = true
     for (const live of [false, true]) {
       hub.live = live
-      const { tabs } = await buildSpaceProfileNav(space())
+      const { catalog: tabs } = await buildSpaceProfileNav(space())
       expect(labels(tabs), `hub live: ${live}`).not.toContain('Discussion')
     }
   })
@@ -395,15 +381,18 @@ describe('the Space menu carries ONE row for the community', () => {
     // `circles` presence is what puts the row there at all (ADR-1094); without it this control
     // would pass for the wrong reason, by finding no menu rather than finding one row.
     presence.circles = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).toContain('Circles')
     expect(hrefFor(tabs, 'Circles')).toBe('/spaces/ojai/circles')
   })
 
-  it('is never named Community', async () => {
+  // Rewritten with the owner's own phrase (Daniel 2026-11-03, ADR-1938): the Space Community wall is
+  // its own tab beside Circles, so the menu now carries a Community row that points at /community.
+  it('carries the Community wall tab beside Circles', async () => {
     hub.live = true
-    const { tabs } = await buildSpaceProfileNav(space())
-    expect(labels(tabs)).not.toContain('Community')
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
+    expect(labels(tabs)).toContain('Community')
+    expect(hrefFor(tabs, 'Community')).toBe('/spaces/ojai/community')
   })
 })
 
@@ -417,32 +406,32 @@ describe('the Space menu carries ONE row for the community', () => {
 // what the header button happens to say.
 describe('the Memberships tab', () => {
   it('HIDE AT ZERO: a visitor is never offered a tab over a Space with no tiers', async () => {
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).not.toContain('Memberships')
   })
 
   it('shows once the Space publishes a tier a visitor could join', async () => {
     hasTiers = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).toContain('Memberships')
   })
 
   it('is a real PAGE, so it does not depend on the header CTA pointing anywhere', async () => {
     hasTiers = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(hrefFor(tabs, 'Memberships')).toBe('/spaces/ojai/memberships')
   })
 
   it('a MANAGER keeps it at zero: the empty state is where the tiers get set up', async () => {
     manage.canManage = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs)).toContain('Memberships')
   })
 
   it('the `memberships` FUNCTION switched off hides it from everyone, manager included', async () => {
     hasTiers = true
     manage.canManage = true
-    const { tabs } = await buildSpaceProfileNav(
+    const { catalog: tabs } = await buildSpaceProfileNav(
       space({ entitlements: { memberships: false } as unknown as Space['entitlements'] }),
     )
     expect(labels(tabs)).not.toContain('Memberships')
@@ -451,13 +440,70 @@ describe('the Memberships tab', () => {
   it('ROOT never offers it: the platform tenant sells its own plans at /pricing', async () => {
     hasTiers = true
     manage.canManage = true
-    const { tabs } = await buildSpaceProfileNav(space({ type: 'root' as Space['type'] }))
+    const { catalog: tabs } = await buildSpaceProfileNav(space({ type: 'root' as Space['type'] }))
     expect(labels(tabs)).not.toContain('Memberships')
   })
 
   it('appears exactly once, so it is never a second menu row beside itself', async () => {
     hasTiers = true
-    const { tabs } = await buildSpaceProfileNav(space())
+    const { catalog: tabs } = await buildSpaceProfileNav(space())
     expect(labels(tabs).filter((l) => l === 'Memberships')).toHaveLength(1)
+  })
+})
+
+
+describe('the fixed Frequency Space primary menu', () => {
+  it('keeps four page destinations while the gated catalog keeps every contextual door', async () => {
+    presence.circles = true
+    hasTiers = true
+    const { tabs, catalog, adminTabs } = await buildSpaceProfileNav(space())
+    expect(tabs.map((tab) => tab.label)).toEqual(['Home', 'Community', 'Calendar', 'Program'])
+    expect(tabs.every((tab) => !tab.href.includes('#'))).toBe(true)
+    expect(tabs.find((tab) => tab.label === 'Program')?.href).toBe('/spaces/ojai/-/program')
+    expect(catalog.some((entry) => entry.key === 'feature:circles')).toBe(true)
+    expect(catalog.some((entry) => entry.key === 'feature:memberships')).toBe(true)
+    expect(adminTabs).toEqual([])
+  })
+  it('keeps management separate and leaves stored custom pages untouched', async () => {
+    manage.canManage = true
+    const original = space({ preferences: { pages: [{ slug: 'home', label: 'Home' }, { slug: 'program', label: 'Our program' }] } })
+    const before = JSON.stringify(original.preferences)
+    const { tabs, catalog, adminTabs } = await buildSpaceProfileNav(original)
+    expect(tabs.map((tab) => tab.label)).toEqual(['Home', 'Community', 'Calendar', 'Program'])
+    expect(catalog).toContainEqual({ key: 'page:program', href: '/spaces/ojai/program', label: 'Our program' })
+    expect(adminTabs).toEqual([{ href: '/spaces/ojai/manage', label: 'Manage' }])
+    expect(JSON.stringify(original.preferences)).toBe(before)
+  })
+})
+
+
+describe('legacy saved links remain contextual with their original entitlement and viewer gates', () => {
+  const saved = () => space({ entitlements: { space_full_website: true }, preferences: { siteMenu: { v: 1, known: ['feature:reviews'], items: [
+    { id: 'space', label: 'Support', visibility: 'space', target: { kind: 'url', href: 'https://support.example/help#schedule' } },
+    { id: 'website', label: 'Website only', visibility: 'website', target: { kind: 'url', href: 'https://website.example/' } },
+    { id: 'website-reviews', label: 'Reviews on website', visibility: 'website', target: { kind: 'auto', key: 'feature:reviews' } },
+    { id: 'group', label: 'Resources', visibility: 'both', children: [
+      { label: 'Directory', target: { kind: 'auto', key: 'feature:people' } },
+      { label: 'Guide', target: { kind: 'url', href: 'https://guide.example/#chapter' } },
+    ], feature: { title: 'Contact', target: { kind: 'auto', key: 'feature:contact' } } },
+  ] } } } as unknown as Partial<Space>)
+  it('retains eligible saved URL and dropdown links, but not website-only or viewer-forbidden entries', async () => {
+    const { tabs, contextLinks } = await buildSpaceProfileNav(saved())
+    expect(tabs.map(tab => tab.label)).toEqual(['Home', 'Community', 'Calendar', 'Program'])
+    expect(contextLinks).toContainEqual(expect.objectContaining({ label: 'Support', href: 'https://support.example/help#schedule', external: true }))
+    expect(contextLinks).toContainEqual(expect.objectContaining({ label: 'Guide', href: 'https://guide.example/#chapter', external: true }))
+    expect(contextLinks.some(link => link.href === 'https://website.example/')).toBe(false)
+    expect(contextLinks.some(link => link.href === '/spaces/ojai/reviews')).toBe(false)
+    expect(contextLinks.some(link => link.label === 'Directory')).toBe(false)
+    expect(contextLinks.some(link => link.label === 'Contact')).toBe(false)
+    showPeople = true
+    expect((await buildSpaceProfileNav(saved())).contextLinks.some(link => link.label === 'Directory')).toBe(true)
+  })
+  it('never activates saved paid links without the existing full-website entitlement', async () => {
+    const noEntitlement = saved()
+    noEntitlement.entitlements = {}
+    const { contextLinks } = await buildSpaceProfileNav(noEntitlement)
+    expect(contextLinks.some(link => link.href.startsWith('https://support.example/'))).toBe(false)
+    expect(contextLinks.some(link => link.href.startsWith('https://guide.example/'))).toBe(false)
   })
 })

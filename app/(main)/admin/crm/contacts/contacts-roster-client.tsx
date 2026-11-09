@@ -214,7 +214,7 @@ export function ContactsRosterClient({
             <div
               role="group"
               aria-label="Sort contacts"
-              className="inline-flex shrink-0 flex-wrap items-center gap-0.5 rounded-card border border-border bg-surface p-0.5"
+              className="inline-flex min-w-0 flex-wrap items-center gap-0.5 rounded-card border border-border bg-surface p-0.5"
             >
               {sortOptions.map((o) => {
                 const active = o.key === sortKey

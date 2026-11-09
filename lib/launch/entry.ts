@@ -10,8 +10,13 @@ const FREE_SPOTLIGHT_CAMPAIGN = 'free-spotlight'
 type FreeSpotlightSurface = 'home' | 'door' | 'themes' | 'theme' | 'landing'
 
 /** Where the button lands, with where it was pressed. `detail` is the door or kit (a short slug). */
-export function freeSpotlightHref(surface: FreeSpotlightSurface, detail?: string): string {
+export function freeSpotlightHref(surface: FreeSpotlightSurface, detail?: string, kit?: string | null, accent?: string | null): string {
   const q = new URLSearchParams({ utm_source: 'site', utm_medium: surface, utm_campaign: FREE_SPOTLIGHT_CAMPAIGN })
   if (detail && /^[a-z0-9-]{1,40}$/.test(detail)) q.set('utm_content', detail)
+  // The Theme Kit the button sat on. /launch/start holds it for the launch; signed out, the hop to /create-a-space
+  // carries the query and the builder reads ?kit= (lib/create-space/door.ts).
+  if (kit && /^[a-z0-9-]{1,40}$/.test(kit)) q.set('kit', kit)
+  // The accent picked beside it, by name: /launch/start holds it with the kit, the builder reads ?accent=.
+  if (kit && accent && /^[a-z0-9-]{1,40}$/i.test(accent)) q.set('accent', accent.toLowerCase())
   return `/launch/start?${q.toString()}`
 }

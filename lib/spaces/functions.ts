@@ -26,6 +26,7 @@
 import { atLeastSpaceRole, isSpaceRole, SPACE_ROLES, type SpaceRole } from './membership'
 import { spaceEntitlements, type SpaceLike } from './entitlements'
 import type { SpaceType } from './types'
+import { CALENDAR_NAME } from '@/lib/calendar/name'
 
 /** Every value `spaces.type` can hold (kept in lock-step with SpaceType in ./types). The operator
  *  type-defaults editor and the seed-from-defaults path validate against this list (fail-closed for an
@@ -219,7 +220,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
   },
   {
     key: 'events',
-    label: 'Calendar',
+    label: CALENDAR_NAME,
     description: 'Your space calendar: create and see your events, and share a subscribe link.',
     entitlement: null,
     defaultMinRole: 'editor',

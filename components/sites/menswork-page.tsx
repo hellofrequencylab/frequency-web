@@ -279,7 +279,7 @@ function Hero({ p, ctx, first }: { p: Props; ctx: Ctx; first: boolean }) {
         {copy}
         {layout === 'split' && <Photo v={p.image} alt={str(p.alt)} className="mw-chamfer" eager />}
       </div>
-      {layout === 'stack' && <Photo v={p.image ?? p.imageUrl} alt={str(p.alt)} className="mw-hero-photo" eager />}
+      {layout === 'stack' && <Photo v={p.image ?? p.imageUrl} alt={str(p.alt)} className="mw-hero-photo mw-chamfer" eager />}
     </section>
   )
 }

@@ -4,6 +4,7 @@
 // these render the page between them.
 
 import type { ReactNode } from 'react'
+import { photoBg } from '../shared/photo-bg'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import '@/app/themes/active/site-pages-b'
@@ -17,6 +18,7 @@ export function FnHero({
   meta,
   center,
   full,
+  image,
   children,
 }: {
   kicker?: ReactNode
@@ -24,13 +26,19 @@ export function FnHero({
   lede?: ReactNode
   meta?: ReactNode
   center?: boolean
+  /** A still behind the hero (decorative, so no alt): the shade, grain and aura keep the copy readable. */
+  image?: string
   /** The hero is the whole page (one promise, one button): it takes most of the first screen. */
   full?: boolean
   /** Actions under the lede (a `.ctas` row is the usual child). */
   children?: ReactNode
 }) {
   return (
-    <section className={`fn-hero${center ? ' fn-c' : ''}${full ? ' fn-full' : ''}`} data-screen-label="01 Hero">
+    <section
+      className={`fn-hero${center ? ' fn-c' : ''}${full ? ' fn-full' : ''}${image ? ' fn-photo' : ''}`}
+      data-screen-label="01 Hero"
+    >
+      {image && <FnStill image={image} />}
       <span className="rings" aria-hidden="true" />
       <div className="wrap">
         {kicker && (
@@ -44,6 +52,18 @@ export function FnHero({
         {children}
       </div>
     </section>
+  )
+}
+
+/** A decorative still behind a stage: the photo, a shade toward the page colour, the aura and the grain. */
+function FnStill({ image }: { image: string }) {
+  return (
+    <>
+      <div className="fn-bg" style={photoBg(image)} aria-hidden="true" />
+      <div className="fn-shade" aria-hidden="true" />
+      <div className="fq-aura" style={{ '--fq-aura-opacity': 0.24 } as React.CSSProperties} aria-hidden="true" />
+      <div className="fq-grain" aria-hidden="true" />
+    </>
   )
 }
 
@@ -64,7 +84,7 @@ export function FnPhotoHero({
 }) {
   return (
     <section className="phero" data-energy="flow" data-screen-label="01 Hero">
-      <div className="bg" style={{ backgroundImage: `url('${image}')` }} />
+      <div className="bg" style={photoBg(image)} />
       <div className="fq-aura" style={{ '--fq-aura-opacity': 0.3 } as React.CSSProperties} />
       <div className="shade" />
       <div className="fq-grain" />
@@ -92,12 +112,20 @@ export function FnHead({ label, sub, title, note }: { label: string; sub?: strin
   )
 }
 
-/** The single-action column: a centred card that holds a form, an outcome or a timer. */
-export function FnColumn({ children, label = '02 Action' }: { children: ReactNode; label?: string }) {
+/** The single-action column: a centred card that holds a form, an outcome or a timer. `glass` lifts it
+ *  over the photo hero above as a frosted panel with breath rings behind it. */
+export function FnColumn({ children, label = '02 Action', glass }: { children: ReactNode; label?: string; glass?: boolean }) {
   return (
-    <section className="fn-sec" data-screen-label={label}>
+    <section className={glass ? 'fn-sec fn-lift' : 'fn-sec'} data-screen-label={label}>
       <div className="wrap">
-        <div className="fn-col">{children}</div>
+        {glass && (
+          <span className="fn-halo" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        )}
+        <div className={glass ? 'fn-col fn-glass' : 'fn-col'}>{children}</div>
       </div>
     </section>
   )
@@ -162,21 +190,22 @@ export function FnOutcome({
 }
 
 /** The first screen holding one centred box: a capture door, a confirm step, an outcome. */
-export function FnStage({ children, label = '01 Action' }: { children: ReactNode; label?: string }) {
+export function FnStage({ children, label = '01 Action', image }: { children: ReactNode; label?: string; image?: string }) {
   return (
-    <section className="fn-hero fn-c fn-full" data-screen-label={label}>
+    <section className={image ? 'fn-hero fn-c fn-full fn-photo' : 'fn-hero fn-c fn-full'} data-screen-label={label}>
+      {image && <FnStill image={image} />}
       <span className="rings" aria-hidden="true" />
       <div className="wrap">
-        <div className="fn-col">{children}</div>
+        <div className={image ? 'fn-col fn-glass' : 'fn-col'}>{children}</div>
       </div>
     </section>
   )
 }
 
 /** A whole page that is only an outcome (an invalid token, a finished step): the hero is the outcome. */
-export function FnOutcomePage(props: Omit<Parameters<typeof FnOutcome>[0], 'as'>) {
+export function FnOutcomePage({ image, ...props }: Omit<Parameters<typeof FnOutcome>[0], 'as'> & { image?: string }) {
   return (
-    <FnStage label="01 Outcome">
+    <FnStage label="01 Outcome" image={image}>
       <FnOutcome {...props} as="h1" />
     </FnStage>
   )

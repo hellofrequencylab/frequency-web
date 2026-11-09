@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2064",
+  "title": "Launched welcome email: one note with where people find you, the moment the launch completes",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/launch/launched-email.ts",
+    "ref": "Daniel 2026-11-03 04:42Z: double check that all best practice email follow ups trigger; the survey found no post-launch note"
+  },
+  "detail": "After the come-back notes (VLS-26, VLS-27) and the draft reminders (LIVE-1968), the launch had no email for the person who finished. lib/launch/launched-email.ts says it (brand voice, the Spotlight, Space and console addresses, one button, unsubscribe), lib/launch/launched-io.ts sends it the moment app/(main)/launch/page.tsx marks the launch complete: lifecycle send gate, then a launch_email_log claim (kind launched_welcome, unique per launch), then the outbox with a dedupe key. No migration: the log's kind column takes any lowercase token. Probe: node scripts/probes/launched-welcome.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launched-welcome.mjs"
+  },
+  "closed": "2026-11-03"
+}

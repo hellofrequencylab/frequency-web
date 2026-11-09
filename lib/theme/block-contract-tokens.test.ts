@@ -11,7 +11,10 @@ import { TEMPLE_KIT_TOKENS_CSS } from '@/lib/theme/temple-kit'
 import { MIDNIGHT_TOKENS_CSS } from '@/lib/theme/midnight'
 import { DESIGNER_TOKENS_CSS } from '@/lib/theme/designer'
 import { FREE_HUMAN_TOKENS_CSS } from '@/lib/theme/free-human'
-import { CONTRACT_THEME_IDS, CORE_TOKEN_NAMES, coreTokenMap, coreTokensCss, type ContractThemeId, type CoreTokenName } from '@/lib/theme/block-contract-tokens'
+import { SERVICES_TOKENS_CSS } from '@/lib/theme/services'
+import { NEW_WORLD_TOKENS_CSS } from '@/lib/theme/new-world'
+import { CYBERWITCH_TOKENS_CSS } from '@/lib/theme/cyberwitch'
+import { CONTRACT_THEME_IDS, CORE_TOKEN_NAMES, coreTokenMap, coreTokensCss, TH_TO_CONTRACT, type ContractThemeId, type CoreTokenName } from '@/lib/theme/block-contract-tokens'
 
 // THE PIN (LIVE-1856). The contract adds names; it must move no value. This resolves every contract name against the
 // sheets a live site wears today and compares it with the committed golden (block-contract-map.json). A sheet edit that
@@ -38,12 +41,15 @@ const SHEETS: Record<Exclude<ContractThemeId, 'frequency'>, { css: string; selec
   midnight: { css: MIDNIGHT_TOKENS_CSS, selector: '[data-house-theme="midnight"]' },
   designer: { css: DESIGNER_TOKENS_CSS, selector: '[data-house-theme="designer"]' },
   'free-human': { css: FREE_HUMAN_TOKENS_CSS, selector: '[data-house-theme="free-human"]' },
+  services: { css: SERVICES_TOKENS_CSS, selector: '[data-house-theme="services"]' },
+  'new-world': { css: NEW_WORLD_TOKENS_CSS, selector: '[data-house-theme="new-world"]' },
+  cyberwitch: { css: CYBERWITCH_TOKENS_CSS, selector: '[data-house-theme="cyberwitch"]' },
 }
 
 /** The seed's key for each theme (lib/sites/editor/theme-contract.json). */
 const SEED_KEY: Record<ContractThemeId, string> = {
   frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart', network: 'Network', 'network-kit': 'NetworkKit',
-  temple: 'Temple', 'temple-kit': 'TempleKit', midnight: 'Midnight', designer: 'Designer', 'free-human': 'FreeHuman',
+  temple: 'Temple', 'temple-kit': 'TempleKit', midnight: 'Midnight', designer: 'Designer', 'free-human': 'FreeHuman', services: 'Services', 'new-world': 'NewWorld', cyberwitch: 'CyberWitch',
 }
 
 type Decls = Map<string, string>
@@ -109,7 +115,7 @@ function themeScope(id: ContractThemeId): Decls {
 }
 
 /** Replace every var() in a value, recursively, in the cascade scope the declaring element gives it. */
-function expand(value: string, theme: Decls, inTheme: boolean, depth = 0): string {
+function expand(value: string, theme: Decls, inTheme: boolean, depth = 0, root: Decls = ROOT): string {
   if (depth > 24) throw new Error(`var() chain too deep: ${value}`)
   let out = '', i = 0
   while (i < value.length) {
@@ -126,9 +132,9 @@ function expand(value: string, theme: Decls, inTheme: boolean, depth = 0): strin
     const name = (comma < 0 ? inner : value.slice(at + 4, comma)).trim()
     const fb = comma < 0 ? null : value.slice(comma + 1, j - 1).trim()
     if (isExternal(name, theme)) out += `var(${name})`
-    else if (inTheme && theme.has(name)) out += expand(theme.get(name)!, theme, true, depth + 1)
-    else if (ROOT.has(name)) out += expand(ROOT.get(name)!, theme, false, depth + 1)
-    else if (fb !== null) out += expand(fb, theme, inTheme, depth + 1)
+    else if (inTheme && theme.has(name)) out += expand(theme.get(name)!, theme, true, depth + 1, root)
+    else if (root.has(name)) out += expand(root.get(name)!, theme, false, depth + 1, root)
+    else if (fb !== null) out += expand(fb, theme, inTheme, depth + 1, root)
     else out += `var(${name})`
     i = j
   }
@@ -278,4 +284,77 @@ describe('core token contract (LIVE-1856)', () => {
       })
     })
   }
+})
+
+// BLD-001. Frequency is three rooms, not one: Commons (the root by day), Commons night (the root under `.dark`) and
+// Stage (a `data-surface="stage"` section, the marketing site). Each redefines the `--fq-*` tokens, and
+// app/themes/frequency.css re-declares the aliases on each of those elements so they resolve there. The contract must
+// ride the same elements: a name declared on the root alone inherits the root's computed Commons value into a Stage
+// section. Here every contract name is resolved in each room the way the browser would, and must equal the token it
+// points at, resolved in that same room.
+describe('Frequency contract in every room (BLD-001)', () => {
+  const GLOBAL_ROOT = scopeOf(readFileSync('app/globals.css', 'utf8'), [':root'])
+  const FQ = [readFileSync('app/themes/frequency/core.css', 'utf8'), readFileSync('app/themes/frequency.css', 'utf8')]
+  const fq = (selectors: string[]): Decls => new Map(FQ.flatMap((css) => [...scopeOf(css, selectors)]))
+  const COMMONS = [':root[data-design="frequency"]', ':root[data-design="frequency"]:not(.dark)']
+  const NIGHT = [':root[data-design="frequency"]', '.dark[data-design="frequency"]', ':root.dark[data-design="frequency"]']
+  const STAGE = ['[data-design="frequency"] [data-surface="stage"]', ':root[data-design="frequency"] [data-surface="stage"]']
+  const prelude = coreTokensCss('frequency').slice(0, coreTokensCss('frequency').indexOf('{')).split(',').map((x) => x.trim())
+  const contract = new Map(Object.entries(coreTokenMap('frequency')))
+
+  const ROOMS: Record<string, { root: Decls; element: string[] | null }> = {
+    commons: { root: new Map([...GLOBAL_ROOT, ...fq(COMMONS)]), element: null },
+    'commons night': { root: new Map([...GLOBAL_ROOT, ...fq(NIGHT)]), element: null },
+    stage: { root: new Map([...GLOBAL_ROOT, ...fq(COMMONS)]), element: STAGE },
+  }
+
+  /** The computed value of a contract name in a room: declared on the room's element, or inherited from the root. */
+  function computed(room: { root: Decls; element: string[] | null }, name: CoreTokenName): string {
+    const root = new Map([...room.root, ...(prelude.includes(COMMONS[0]) ? contract : [])])
+    if (!room.element) return expand(root.get(name)!, new Map(), false, 0, root)
+    const element = new Map([...fq(room.element), ...(room.element.some((s) => prelude.includes(s)) ? contract : [])])
+    return element.has(name) ? expand(element.get(name)!, element, true, 0, root) : expand(root.get(name)!, new Map(), false, 0, root)
+  }
+
+  /** What the name points at, resolved where the room's own tokens live. */
+  function today(room: { root: Decls; element: string[] | null }, name: CoreTokenName): string {
+    const element = room.element ? fq(room.element) : new Map<string, string>()
+    return expand(contract.get(name)!, element, room.element !== null, 0, room.root)
+  }
+
+  for (const [label, room] of Object.entries(ROOMS)) {
+    it(`every contract name resolves on ${label} to the value its token has there`, () => {
+      for (const n of CORE_TOKEN_NAMES) {
+        const v = computed(room, n)
+        expect(v, `${label} ${n}`).not.toBe('')
+        expect(v, `${label} ${n}`).toBe(today(room, n))
+      }
+    })
+  }
+
+  it('the three rooms are told apart (Stage and night do not read Commons ground)', () => {
+    const canvas = Object.fromEntries(Object.entries(ROOMS).map(([k, r]) => [k, computed(r, '--c-canvas')]))
+    expect(new Set(Object.values(canvas)).size).toBe(3)
+  })
+})
+
+describe('the handoff\'s --th-* roles point at contract names (BLD-001)', () => {
+  const sources = [
+    'design_handoff/frequency/guidelines/element-library.md',
+    'design_handoff/frequency/assets/infographics/theme-pack.json',
+    'lib/sites/editor/theme-contract.json',
+  ]
+  const used = new Set(sources.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/--th-[a-z0-9]+(?:-[a-z0-9]+)*/g)].map((m) => m[0])))
+
+  it('every --th-* name the handoff or the editor seed uses is mapped or marked theme-private', () => {
+    expect([...used].filter((n) => !(n in TH_TO_CONTRACT)).sort()).toEqual([])
+  })
+
+  it('every mapping lands on one of the forty-five', () => {
+    for (const [th, c] of Object.entries(TH_TO_CONTRACT)) if (c !== null) expect(CORE_TOKEN_NAMES, th).toContain(c)
+  })
+
+  it('the six roles the element library names all carry a contract name', () => {
+    for (const th of ['--th-bg', '--th-text', '--th-muted', '--th-accent', '--th-on-accent', '--th-r']) expect(TH_TO_CONTRACT[th], th).not.toBeNull()
+  })
 })

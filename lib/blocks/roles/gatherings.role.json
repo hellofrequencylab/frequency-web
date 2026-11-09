@@ -2,6 +2,11 @@
   "role": "Gatherings",
   "type": "RoleGatherings",
   "label": "Gatherings (all themes)",
+  "intent": "Show what's happening",
+  "why": "Your next gatherings, straight from your calendar.",
+  "group": "Show up",
+  "icon": "event",
+  "live": true,
   "replaces": [
     "LiveEvents",
     "SpaceEvents",
@@ -35,17 +40,54 @@
       "image": "image",
       "empty": "text<=120",
       "action": "link"
+    },
+    "labels": {
+      "items": {
+        "label": "Gatherings",
+        "hint": "Filled from your calendar when your Space has events."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "image": {
+        "label": "Photo",
+        "hint": "A real photo of your people or your place."
+      },
+      "empty": {
+        "label": "When nothing is planned",
+        "hint": "What people read when the calendar is empty."
+      },
+      "action": {
+        "label": "Link under the section",
+        "hint": "Where people go to see more."
+      }
     }
   },
   "variants": {
     "cards": {
-      "label": "Cards"
+      "label": "Cards",
+      "thumb": "cards"
     },
     "rows": {
-      "label": "Ruled rows"
+      "label": "Ruled rows",
+      "thumb": "rows"
     },
     "split": {
-      "label": "List beside a photo"
+      "label": "List beside a photo",
+      "thumb": "split"
+    },
+    "agenda": {
+      "label": "Date ribbon above ruled rows",
+      "thumb": "agenda"
     }
   },
   "default": "rows",
@@ -130,6 +172,7 @@
   ],
   "parts": [
     "actions",
+    "chip",
     "cta",
     "date",
     "eyebrow",
@@ -140,8 +183,15 @@
     "media",
     "meta",
     "name",
+    "ribbon",
     "side",
     "text",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "freeze"
+  }
 }

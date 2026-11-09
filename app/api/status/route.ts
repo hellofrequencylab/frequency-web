@@ -56,6 +56,12 @@ const ENDPOINTS = [
     description:
       'Live: minutes the oldest due queued job has waited. 503 past 15 minutes. Read by the queue-watch workflow, the second clock.',
   },
+  {
+    path: '/api/status/cron-freshness',
+    method: 'GET',
+    description:
+      'Live: last-success age of the crons with no Healthchecks check. 503 when one is stale. Read by the queue-watch workflow.',
+  },
 ] as const
 
 /** Which build is answering. `dynamic = 'force-static'` means this route is rendered at

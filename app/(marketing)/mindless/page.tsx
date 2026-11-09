@@ -10,6 +10,9 @@ const TITLE = 'A 5-minute breathing timer, no account needed'
 const DESCRIPTION =
   'Five calm minutes, right now. Follow the rings: breathe in for five, out for five. Free, no sign-up, nothing to install.'
 
+// A calm dusk still behind the hero: people watching the sun go down over the water. The timer sits on it in glass.
+const HERO_STILL = '/images/site/nature-viewing-sunset.jpg'
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
@@ -23,11 +26,12 @@ export default function MindlessPublicPage() {
     <>
       <FnHero
         center
+        image={HERO_STILL}
         kicker="Mindless"
         title="Five minutes. Just breathe."
         lede="Breathe in as the rings grow and let go as they settle. When the clock ends, you are done."
       />
-      <FnColumn label="02 Timer">
+      <FnColumn label="02 Timer" glass>
         <FrequencyMindlessTimer />
       </FnColumn>
     </>

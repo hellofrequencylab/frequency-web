@@ -19,6 +19,6 @@ describe('public SSR uses cached visitor-only editable navigation',()=>{
  it('keeps the current Frequency design when cached menu loading rejects',async()=>{
   mock.menu.mockRejectedValue(new Error('private storage details'))
   const html=renderToStaticMarkup(await PublicHeader())
-  expect(html).toContain('For people');expect(html).toContain('For spaces');expect(html).not.toContain('private storage details')
+  expect(html).toContain('Discover');expect(html).toContain('For Spaces');expect(html).not.toContain('private storage details')
  })
 })

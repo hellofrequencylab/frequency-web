@@ -4,6 +4,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { SpaceProfileMenuView } from './space-profile-menu-view'
 import type { SpaceProfileTab } from '@/lib/spaces/profile-tab'
+import { primarySpaceTabs } from '@/lib/spaces/primary-nav'
 
 // THE SPACE MENU RAIL, MEASURED IN A DOM (LIVE-744).
 //
@@ -139,3 +140,17 @@ vi.mock('@/lib/theme/design', async (original) => ({
   ...(await original<typeof import('@/lib/theme/design')>()),
   SITE_DESIGN: 'dawn',
 }))
+
+
+describe('fixed primary destinations and separate management', () => {
+  it('marks Community on a Circle subpage with one active primary destination', () => {
+    const el = mount(<SpaceProfileMenuView tabs={primarySpaceTabs('temple')} pathname={`${base}/circles`} />)
+    expect(railHrefs(el)).toEqual([base, `${base}/community`, `${base}/calendar`, `${base}/-/program`])
+    expect([...el.querySelectorAll('[aria-current="page"]')].map((a) => a.getAttribute('href'))).toEqual([`${base}/community`])
+  })
+  it('marks Manage alone when the manager opens its workspace', () => {
+    const el = mount(<SpaceProfileMenuView tabs={primarySpaceTabs('temple')} pathname={base} panel="manage" canManage />)
+    expect([...el.querySelectorAll('[aria-current="page"]')].map((a) => a.getAttribute('href'))).toEqual([`${base}?panel=manage`])
+    expect(rail(el).textContent).not.toContain('Manage')
+  })
+})

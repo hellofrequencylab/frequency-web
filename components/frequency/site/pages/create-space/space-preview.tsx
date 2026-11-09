@@ -86,7 +86,7 @@ export function SpacePreview(props: SpacePreviewProps) {
             <span className="cs-pv-logo">
               {logo === 'mono' ? <span className="cs-pv-mono">{initial}</span> : null}
               {typeof logo === 'object' ? <span className="cs-pv-logo-img"><Image src={logo.src} alt="" fill sizes="120px" unoptimized /></span> : null}
-              {logo === 'word' ? <span className="cs-pv-brand">{site.name}</span> : null}
+              {logo === 'word' ? <><span className="cs-pv-badge">{initial}</span><span className="cs-pv-brand">{site.name}</span></> : null}
             </span>
             <span className="cs-pv-label">{site.nav1}</span>
             <span className="cs-pv-label">About</span>

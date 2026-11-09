@@ -63,6 +63,13 @@ import { envString } from '@/lib/env/string'
 import { designerKitDatesEmail, designerKitNoteEmail, designerKitReceiptEmail, designerKitWelcomeEmail, type DesignerKitEmailBrand } from '@/lib/theme/designer-kit-email'
 import { networkKitDatesEmail, networkKitNoteEmail, networkKitReceiptEmail, networkKitWelcomeEmail, type NetworkKitEmailBrand } from '@/lib/theme/network-kit-email'
 import { templeKitDatesEmail, templeKitNoteEmail, templeKitReceiptEmail, templeKitWelcomeEmail, type TempleKitEmailBrand } from '@/lib/theme/temple-kit-email'
+import { nocturneKitDatesEmail, nocturneKitNoteEmail, nocturneKitReceiptEmail, nocturneKitWelcomeEmail, type NocturneKitEmailBrand } from '@/lib/theme/nocturne-kit-email'
+import { SERVICES_SURFACE } from '@/lib/theme/services'
+import { SERVICES_EMAIL_TYPES, servicesKitEmail, type ServicesKitEmailBrand } from '@/lib/theme/services-kit-email'
+import { CYBERWITCH_SURFACE } from '@/lib/theme/cyberwitch'
+import { CYBERWITCH_EMAIL_TYPES, cyberwitchKitEmail, type CyberWitchKitEmailBrand } from '@/lib/theme/cyberwitch-kit-email'
+import { NEW_WORLD_EMAIL_TIDE, NEW_WORLD_EMAIL_TYPES, newWorldKitEmail, newWorldKitEmailFrom } from '@/lib/theme/new-world-kit-email'
+import { newWorldKitSpotlightContent } from '@/lib/spotlight/new-world-kit-content'
 import { freeHumanDatesEmail, freeHumanNoteEmail, freeHumanReceiptEmail, freeHumanWelcomeEmail, type FreeHumanEmailBrand } from '@/lib/theme/free-human-email'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
@@ -232,6 +239,25 @@ const TEMPLE_DATES = [
   { lead: '7', title: 'Breath at the fire circle', sub: '5:00 PM · The fire circle' },
 ]
 
+/** The Nocturne Theme Kit's four emails (code id midnight): one fixture house in the general kit, the violet. */
+const NOCTURNE_BRAND: NocturneKitEmailBrand = {
+  profile: 'general',
+  spaceName: 'Lantern Hall',
+  mastheadNote: 'Evenings · Asheville',
+  city: 'Asheville, North Carolina',
+  postalLine: PLATFORM_POSTAL_LINE,
+  siteUrl: 'https://lanternhall.example',
+  siteLabel: 'lanternhall.example',
+  unsubscribeUrl: `${SITE}/unsubscribe/s`,
+  manageUrl: `${SITE}/manage-emails`,
+}
+const NOCTURNE_COVER = `${SITE}/sites/midnight/photos/nature-grain.jpg`
+const NOCTURNE_DATES = [
+  { lead: '14', title: 'Full moon listening room', sub: '8:00 PM · The back room · 3 left' },
+  { lead: '21', title: 'Candle and breath', sub: '7:30 PM · The hall' },
+  { lead: '28', title: 'Late supper and stories', sub: '8:30 PM · The long table' },
+]
+
 /** The Free Human Theme Kit's four emails: one fixture studio in the default madder profile. */
 const FREE_HUMAN_BRAND: FreeHumanEmailBrand = {
   profile: 'general',
@@ -242,6 +268,16 @@ const FREE_HUMAN_BRAND: FreeHumanEmailBrand = {
   siteLabel: 'freehumanmovement.example',
   unsubscribeUrl: `${SITE}/unsubscribe/s`,
   manageUrl: `${SITE}/manage-emails`,
+}
+const SERVICES_BRAND: ServicesKitEmailBrand = {
+  name: 'Harbor Home Care', descriptor: 'Home repair & maintenance', owner: 'Alex Rivera', role: 'Owner', city: 'San Diego', phone: '(619) 555-0100',
+  accent: { fill: SERVICES_SURFACE.accent.accent, text: SERVICES_SURFACE.accent.text }, register: 'night', postalLine: PLATFORM_POSTAL_LINE,
+  siteUrl: 'https://harborhomecare.example', siteLabel: 'harborhomecare.example', unsubscribeUrl: `${SITE}/unsubscribe/s`,
+}
+const CYBERWITCH_BRAND: CyberWitchKitEmailBrand = {
+  name: 'Ash & Ember', descriptor: 'Readings, ritual and spellwork', owner: 'Mara Quill', role: 'Reader', city: 'San Diego', phone: '(619) 555-0100',
+  accent: { fill: CYBERWITCH_SURFACE.accent.accent, text: CYBERWITCH_SURFACE.accent.text }, postalLine: PLATFORM_POSTAL_LINE,
+  siteUrl: 'https://ashandember.example', siteLabel: 'ashandember.example', unsubscribeUrl: `${SITE}/unsubscribe/s`,
 }
 const FREE_HUMAN_COVER = `${SITE}/sites/free-human/email/place-sea-sunset.jpg`
 const FREE_HUMAN_DATES = [
@@ -342,9 +378,17 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'temple-kit-welcome', group: 'Spaces and campaigns', run: () => { const out = templeKitWelcomeEmail(TEMPLE_BRAND, { coverUrl: TEMPLE_COVER, coverAlt: 'A white stone house with an arched door, olive trees and a pool.', ctaLabel: 'See what is open', ctaUrl: 'https://olivehouse.example/gatherings', steps: [{ title: 'Come to one thing', sub: 'Pick a date from the calendar and show up. No account needed.' }, { title: 'The next few dates', sub: 'Gatherings' }, { title: 'Say hello', sub: 'Reply to this letter. It goes to a person, not a robot.' }], quote: { text: 'We were married under the olive trees. Everyone heard every word.', who: 'Maya and Theo', role: 'Married at the house' } }); return { to: TO, ...out } } },
   { id: 'temple-kit-dates', group: 'Spaces and campaigns', run: () => { const out = templeKitDatesEmail(TEMPLE_BRAND, { dates: TEMPLE_DATES, ctaUrl: 'https://olivehouse.example/gatherings' }); return { to: TO, ...out } } },
   { id: 'temple-kit-receipt', group: 'Spaces and campaigns', run: () => { const out = templeKitReceiptEmail(TEMPLE_BRAND, { what: 'New moon sound bath', when: 'Thursday, November 20 · 7:00 PM', where: 'The great room', who: 'One place', whoNote: 'Reserved under your name', paid: '$45', paidNote: 'Card ending 4242 · Receipt no. 1047', calendarUrl: 'https://olivehouse.example/calendar.ics', manageUrl: 'https://olivehouse.example/bookings' }); return { to: TO, ...out } } },
+  // ── The Nocturne Theme Kit's emails (code id midnight) ─────────────────────────────────────────────
+  { id: 'nocturne-kit-note', group: 'Spaces and campaigns', run: () => { const out = nocturneKitNoteEmail(NOCTURNE_BRAND, { subject: 'This week, in one note', title: 'Good things happen', em: 'when people show up.', lead: 'The listening room is back on the full moon, and the long table returns at the end of the month. Come to one evening and see how it feels.', ctaLabel: 'See what is on', ctaUrl: 'https://lanternhall.example/evenings', coverUrl: NOCTURNE_COVER, coverAlt: 'Dark wood grain, lit from one side.', feature: { kicker: 'Evenings', title: 'The next few dates', rows: NOCTURNE_DATES, ctaLabel: 'See all dates', ctaUrl: 'https://lanternhall.example/evenings' }, quote: { text: 'I came for one evening and stayed for the winter. It is the quietest room in town.', who: 'Ruth A.', role: 'Comes in the evenings' } }); return { to: TO, ...out } } },
+  { id: 'nocturne-kit-welcome', group: 'Spaces and campaigns', run: () => { const out = nocturneKitWelcomeEmail(NOCTURNE_BRAND, { coverUrl: NOCTURNE_COVER, coverAlt: 'Dark wood grain, lit from one side.', ctaLabel: 'See what is on', ctaUrl: 'https://lanternhall.example/evenings', steps: [{ title: 'Come to one thing', sub: 'Pick a date from the calendar and show up. No account needed.' }, { title: 'The next few dates', sub: 'Evenings' }, { title: 'Say hello', sub: 'Reply to this letter. It goes to a person, not a robot.' }], quote: { text: 'I came for one evening and stayed for the winter. It is the quietest room in town.', who: 'Ruth A.', role: 'Comes in the evenings' } }); return { to: TO, ...out } } },
+  { id: 'nocturne-kit-dates', group: 'Spaces and campaigns', run: () => { const out = nocturneKitDatesEmail(NOCTURNE_BRAND, { dates: NOCTURNE_DATES, ctaUrl: 'https://lanternhall.example/evenings', kicker: 'Evenings' }); return { to: TO, ...out } } },
+  { id: 'nocturne-kit-receipt', group: 'Spaces and campaigns', run: () => { const out = nocturneKitReceiptEmail(NOCTURNE_BRAND, { what: 'Full moon listening room', when: 'Saturday, November 14 · 8:00 PM', where: 'The back room', who: 'One place', whoNote: 'Reserved under your name', paid: '$25', paidNote: 'Card ending 4242 · Receipt no. 1047', calendarUrl: 'https://lanternhall.example/calendar.ics', manageUrl: 'https://lanternhall.example/bookings' }); return { to: TO, ...out } } },
   // ── The Free Human Theme Kit's emails (code id free-human) ──────────────────────────────────────────
   { id: 'free-human-note', group: 'Spaces and campaigns', run: () => { const out = freeHumanNoteEmail(FREE_HUMAN_BRAND, { subject: 'This week, in one note', title: 'Come back to', em: 'your body.', lead: 'The new moon is close. Seats for the circle open this week and the long supper returns in December. Come to one thing and see how it feels.', ctaLabel: 'See what is open', ctaUrl: 'https://freehumanmovement.example/calendar', coverUrl: FREE_HUMAN_COVER, coverAlt: 'The sea at sunset, warm and wide.', feature: { kicker: 'Gatherings', title: 'The next few dates', rows: FREE_HUMAN_DATES, ctaLabel: 'See what is open', ctaUrl: 'https://freehumanmovement.example/calendar' }, quote: { text: 'I walked in carrying everything and walked out lighter.', who: 'A member', role: 'Came to the new moon circle' } }); return { to: TO, ...out } } },
   { id: 'free-human-welcome', group: 'Spaces and campaigns', run: () => { const out = freeHumanWelcomeEmail(FREE_HUMAN_BRAND, { coverUrl: FREE_HUMAN_COVER, coverAlt: 'The sea at sunset, warm and wide.', ctaLabel: 'See what is open', ctaUrl: 'https://freehumanmovement.example/calendar', steps: [{ title: 'Come to one thing', sub: 'Pick a date from the calendar and show up. No account needed.' }, { title: 'See the next few dates', sub: 'Circles, suppers and wheels, all on the calendar.' }, { title: 'Say hello', sub: 'Reply to this letter. It goes to a person, not a robot.' }], quote: { text: 'I walked in carrying everything and walked out lighter.', who: 'A member', role: 'Came to the new moon circle' } }); return { to: TO, ...out } } },
   { id: 'free-human-dates', group: 'Spaces and campaigns', run: () => { const out = freeHumanDatesEmail(FREE_HUMAN_BRAND, { dates: FREE_HUMAN_DATES, ctaUrl: 'https://freehumanmovement.example/calendar' }); return { to: TO, ...out } } },
   { id: 'free-human-receipt', group: 'Spaces and campaigns', run: () => { const out = freeHumanReceiptEmail(FREE_HUMAN_BRAND, { what: 'New moon circle', when: 'Thursday, November 20 · 7:00 PM', where: 'The long room', who: 'One place', whoNote: 'Reserved under your name', paid: '$25', paidNote: 'Card ending 4242 · Receipt no. 1047', calendarUrl: 'https://freehumanmovement.example/calendar.ics', manageUrl: 'https://freehumanmovement.example/bookings' }); return { to: TO, ...out } } },
+  ...NEW_WORLD_EMAIL_TYPES.map((type) => ({ id: `new-world-${type}`, group: 'Spaces and campaigns' as const, run: () => { const k = newWorldKitEmailFrom(newWorldKitSpotlightContent('general')); return { to: TO, ...newWorldKitEmail(type, { ...SERVICES_BRAND, ...k.brand, accent: NEW_WORLD_EMAIL_TIDE }, k.facts) } } })),
+  ...CYBERWITCH_EMAIL_TYPES.map((type) => ({ id: `cyberwitch-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...cyberwitchKitEmail(type, CYBERWITCH_BRAND) }) })),
+  ...SERVICES_EMAIL_TYPES.map((type) => ({ id: `services-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...servicesKitEmail(type, SERVICES_BRAND) }) })),
 ]

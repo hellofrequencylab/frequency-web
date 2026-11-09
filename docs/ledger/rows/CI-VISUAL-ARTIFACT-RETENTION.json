@@ -1,0 +1,20 @@
+{
+  "id": "CI-VISUAL-ARTIFACT-RETENTION",
+  "title": "Preserve every visual tier failure artifact through the final CI upload",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": ".github/workflows/e2e.yml",
+    "ref": "Visual compare public/member/advisory steps and final Upload report + diffs"
+  },
+  "detail": "Read-only audit of exact control run41904712802 found112 blocking public/member visual failures in logs, but its final official artifact13361658194 contains only6 final advisory Discover cases:4failed and2skipped. Independent Playwright invocations reuse default test-results and playwright-report, so later tiers erase earlier screenshots/reports before the single final upload. Isolate both output and HTML report directories per tier without changing selectors, thresholds, baselines, timeouts, secrets or blocking/advisory semantics. Preserve initial smoke/root evidence too. Related broader audit SCAN-1032 remains open. This repair preserves evidence only; it does not resolve visual differences, demonstrate a visual/performance pass or authorize baseline recapture.\n\nVerified the shipped workflow retained all five stages and their attachment references. Keep the visual baseline work and broader audit open.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-09",
+    "evidence": "After #4672 merged as 558e4bd1, inspected official GitHub Actions archives 13527322660 (run 42260968344), 13530156351 (run 42263523801), and 13533793449 (run 42272972183). Each contained CRC-verified HTML reports for smoke, public production contracts, public visuals, member/operator visuals and advisory visuals. Every report attachment reference resolved in the archive index. All three retained 60 public, 52 member/operator and 4 advisory failures. Evidence locations and artifact links are recorded in issue #4306 comment 6744236623. This closes evidence retention only. Visual failures remain open."
+  },
+  "closed": "2026-11-09",
+  "wave": "W7"
+}

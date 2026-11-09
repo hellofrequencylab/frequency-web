@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-NOTIFICATION-GRID",
+  "title": "Notification setting controls align and expose their descriptions accessibly",
+  "status": "done",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "source": {
+    "file": "app/(main)/settings/notifications/form.tsx",
+    "ref": "Daniel 2026-11-04 audit and approved improvement scope"
+  },
+  "detail": "Local source-only candidate75ec93a85 adds alignment and description association. Existing 11 tests and focused lint passed in prior candidate evidence. Reconcile current main before publication; no old branch overwrite. Built 2026-11-09 fresh on main (PR pending the merge queue; the candidate 75ec93a85 is not in the repository or on any remote): the rows declared a sixth grid column nothing filled, so every switch sat one track left of its heading; header and rows now share one track (topic, Email, In-app, Push, SMS). Each switch is named \"<Channel> for <Topic>\" and described by the topic's own line through aria-describedby, and the follower-reminder switch is named and described the same way. The wired-pair guard, the dash placeholder and the kit `.sw` switches are untouched (lib/notifications/wired.test.ts and components/settings/settings-switches.test.ts still pass). New render test app/(main)/settings/notifications/form.test.tsx pins the shared track and the names. No renders were taken on this box; the manual acceptance (390 and desktop alignment, a screen reader reading channel, topic and description, save and reload) stays with the owner.\n\n2026-11-09: closed on the owner's ruling (\"4. B\": close without a manual check) after the build merged to main the same day. No production look was taken; the row's unit pins stay green in CI.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-09",
+    "evidence": "Closed on the owner's ruling, 2026-11-09 18:16Z. Asked \"Production checks for #4698, #4700 and #4701: A. We give you a 3-item checklist with links once they're live. B. Close them without a manual check\", Daniel answered \"4. B\". The build merged to main the same day (#4701); its unit pins stay green in CI. No production look was taken."
+  },
+  "closed": "2026-11-09",
+  "wave": "W7"
+}

@@ -261,10 +261,6 @@
 # Converging this onto the session client is not an effort question, it would mean giving pricing
 # rules and a redemption ledger client-readable policies. The write re-gates canEditProfile plus the
 # per-Space memberships function gate before it touches a row.
-# Added 2026-09-20 (LIVE-421, ADR-1469): lib/spaces/space-discussion.ts. Looks up the live Space
-# Circle the same way the Circles tab already does (admin client, fail-closed). The app-layer
-# gate is the door: ROOT never, visitors only when the hub is on, managers keep the tab to
-# turn it on. A session client cannot see another Space's primary circle row under RLS.
 # Added 2026-09-17 (ADR-1397, selling a Journey). Five files, and the reason is one table:
 #                                     CALLER through getSpaceCapabilities before it answers
 #                                     all: the caller is Stripe, and it must write an enrolment
@@ -427,12 +423,15 @@
 # member_cards are service-role only. store.ts scopes every read and write to the signed-in member's own profile id
 # or runs behind the Space owner gate (loyaltyOwnerGate); the tap lookup reads one card by its token hash.
 # rewards.ts calls card_meet() and the capped award_zaps_atomic for the two members of one verified tap.
+# lib/member-cards/staff-actions.ts (added 2026-11-06, CARD-STAFF-LINK): the CyberUnicorn console's Card links box. card_faces is service-role only; every call runs behind consoleStaffGate (platform staff) and writes only mode and link_url for the named member.
 # LIVE-1347: lib/ai/discovery-guidance-store.ts serves a strict-secret cron and stores only public guidance digests/status in the service-role-only platform_settings key. It has no user/tenant query or session-authorized surface.
 # lib/notifications/inapp.ts (added 2026-10-26, SCAN-1151): the 'inapp' outbox handler that writes the bell row. The caller is the QUEUE DRAIN (lib/queue/handlers.ts, run by the process-queue cron), so there is no session client to prefer and no cookie to run under. The row is addressed to ANOTHER member than whoever triggered it, and `notifications` has no insert policy for anybody. It writes exactly one `notifications` row from ids the router already gated (inapp_<category> switch, suppression, per-subject mute) and reads nothing.
 # LIVE-1510 (the Circle page, new Circles design): three reads that the member session cannot serve, all behind the circle page's own member gate, all aggregate or already-visible-to-members. NOT a wider surface than the DAWN circle tab-facts / feed it replaces.
 #   lib/circles/page-facts.ts: the meetup "going" count and (only when the circle shows faces) first names of members going, the viewer's own RSVP, and the count of members who practiced this week; event_rsvps and practice_logs are RLS-readable only to their owner, the same case as lib/events/going-counts.ts. Circle meeting text, agreements and channel names are public circle fields. Writes nothing.
 #   lib/circles/circle-weeks.ts: per-week "did this circle meet quorum" over members' practice_logs for the Stats weeks strip. Reads profile_id and day only, returns booleans per week, never who practiced.
 #   components/frequency/members/circle/circle-nudges.tsx: hands the admin client to loadMatesAtRisk (components/widgets/leaderboard/leaderboard-consistency.tsx, already on this list) scoped to one circle the viewer belongs to; the nudge itself still goes through nudgeStreakMate's own checks.
+# lib/spaces/community-wall.ts (added 2026-11-03, LIVE-2077, ADR-1938): NOT a new read surface. It resolves the VIEWER'S OWN standing on one Space wall (owner, team, member, follower) from space_members, space_memberships and space_follows, so reply and high-five writes, which sit on crew-plus policies, can be gated by the owner's followers_interact setting. Rows RLS cannot serve: a follower or a team seat cannot read other tenants' roster tables. It returns one enum for one (profile, Space) pair, never a row, and fails closed to "no interaction" on any error. Reading the wall itself and posting to it run under the session client and RLS.
+# LIVE-2080 (ADR-1938): lib/circles/retired-space-circle.ts reads one ARCHIVED Space Circle's Space slug and type so its old /circles and /discover URLs 308 to the Space Community page; it must find the archived row for a signed-out visitor whatever the circle's access setting, and the read returns only a path to a public page. Writes nothing.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -778,6 +777,7 @@ lib/ai/memory.ts
 lib/ai/poster-observer.ts
 lib/ai/room-search.ts
 lib/ai/usage.ts
+lib/ai/vera/admin-lookups.ts
 lib/ai/vera/autonomous-send.ts
 lib/ai/vera/autonomy-config.ts
 lib/ai/vera/circuit-breaker.ts
@@ -848,6 +848,7 @@ lib/circles/join.ts
 lib/circles/next-meetups.ts
 lib/circles/page-facts.ts
 lib/circles/remix.ts
+lib/circles/retired-space-circle.ts
 lib/circles/sister.ts
 lib/circles/social-fuel.ts
 lib/circles/store.ts
@@ -908,6 +909,8 @@ lib/connections/welcomes.ts
 lib/consent/consent.ts
 lib/consent/retention.ts
 lib/core/load-capabilities.ts
+lib/create-space/draft-io.ts
+lib/create-space/draft-recovery-io.ts
 lib/crew/boost.ts
 lib/crew/circle-tasks.ts
 lib/crew/verification-queue.ts
@@ -1064,6 +1067,7 @@ lib/journeys/sell-gate.ts
 lib/journeys/tier-gate.ts
 lib/keystone/store.ts
 lib/launch/comeback-io.ts
+lib/launch/launched-io.ts
 lib/layout/chrome-sources.ts
 lib/layout/content-cascade.ts
 lib/layout/page-chrome.ts
@@ -1106,6 +1110,7 @@ lib/match/prefs.ts
 lib/match/romance.ts
 lib/meet/store.ts
 lib/member-cards/rewards.ts
+lib/member-cards/staff-actions.ts
 lib/member-cards/store.ts
 lib/member-cards/swap.ts
 lib/member-day.ts
@@ -1122,6 +1127,7 @@ lib/notifications/inapp.ts
 lib/nurture/enroll.ts
 lib/nurture/runner.ts
 lib/nurture/store.ts
+lib/observability/cron-last-success.ts
 lib/offers/operator-offer-server.ts
 lib/on-air/session-data.ts
 lib/onboarding/founder-tasks.ts
@@ -1230,6 +1236,7 @@ lib/spaces/campaigns.ts
 lib/spaces/checkin.ts
 lib/spaces/claim.ts
 lib/spaces/collaborations.ts
+lib/spaces/community-wall.ts
 lib/spaces/completion-analytics.ts
 lib/spaces/content-actions.ts
 lib/spaces/content-data.ts
@@ -1266,10 +1273,8 @@ lib/spaces/provision.ts
 lib/spaces/resonance-roster.ts
 lib/spaces/seats.ts
 lib/spaces/segments.ts
-lib/spaces/space-discussion.ts
 lib/spaces/space-image-store.ts
 lib/spaces/spotlight-clicks.ts
-lib/spotlight/link-clicks.ts
 lib/spaces/standing-rollup.ts
 lib/spaces/store.ts
 lib/spaces/tagline.ts
@@ -1279,6 +1284,7 @@ lib/spaces/type-defaults.ts
 lib/spaces/venue-holds.ts
 lib/spotlight/data.ts
 lib/spotlight/guestbook.ts
+lib/spotlight/link-clicks.ts
 lib/spotlight/programs.ts
 lib/staff.ts
 lib/stewardships.ts

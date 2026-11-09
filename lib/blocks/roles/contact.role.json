@@ -2,6 +2,11 @@
   "role": "Contact",
   "type": "RoleContact",
   "label": "Contact (all themes)",
+  "intent": "Take questions",
+  "why": "An easy way for people to reach you.",
+  "group": "Answer",
+  "icon": "contacts",
+  "live": false,
   "replaces": [
     "SpaceContact",
     "MidnightContact",
@@ -29,17 +34,50 @@
       "primary": "link",
       "secondary": "link",
       "note": "text<=160"
+    },
+    "labels": {
+      "title": {
+        "label": "Headline",
+        "hint": "The one line people read first."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "items": {
+        "label": "Ways to reach you",
+        "hint": "Email, phone or a place, one per line."
+      },
+      "primary": {
+        "label": "Main button",
+        "hint": "The one thing you most want people to do next."
+      },
+      "secondary": {
+        "label": "Second button",
+        "hint": "A softer next step. You can leave it out."
+      },
+      "note": {
+        "label": "Small print",
+        "hint": "A short note under the button."
+      }
     }
   },
   "variants": {
     "split": {
-      "label": "Words beside the details"
+      "label": "Words beside the details",
+      "thumb": "split"
     },
     "card": {
-      "label": "Details in a card"
+      "label": "Details in a card",
+      "thumb": "card"
     },
     "center": {
-      "label": "Centred"
+      "label": "Centred",
+      "thumb": "center"
     }
   },
   "default": "split",
@@ -124,5 +162,11 @@
     "side",
     "title",
     "value"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "hide"
+  }
 }

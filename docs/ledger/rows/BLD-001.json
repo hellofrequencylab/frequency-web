@@ -1,0 +1,19 @@
+{
+  "id": "BLD-001",
+  "title": "Builder BLD-001: Token map to the 45 contract names",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-001."
+  },
+  "detail": "B0 Align, pass BLD-001 (spec: docs/EDITOR-NEXT.md#bld-001). Token map to the 45 contract names. Scope: design system + lib/theme. Build: Generate one map from Frequency tokens (Commons, Commons night, Stage) to the contract groups: ground, ink, accent, line, status, band, shape, depth, type, rhythm, motion. Retire --th-* in element-library.md and theme-pack.json; point them at contract names. Done when: Pin test: every contract name resolves on Commons, Commons night and Stage; Computed values equal today's on the 31 design pages. Gates: check:tokens, check:theme-conformance, Design system adherence check, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: nothing. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\n2026-11-04: the forty-five contract names now ride every element that re-declares Frequency's aliases (root, Stage surfaces, night sections, skinned subtrees), so a Stage section reads Stage values instead of inheriting the root's Commons ones; the pin test resolves every name in Commons, Commons night and Stage and compares it with the token it points at there (it failed on Stage before). The handoff's --th-* roles (element-library.md, theme-pack.json, and the editor seed) point at contract names in TH_TO_CONTRACT; the handoff files are read-only, so the retirement lives in that table. No computed value of an existing token moves; only --c-* names gain declarations.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-001.mjs"
+  },
+  "closed": "2026-11-04",
+  "wave": "W7"
+}

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-SUBDOMAIN-ATTRIBUTION",
+  "title": "Custom-domain redirects retain supported campaign attribution and matching page paths",
+  "status": "done",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "source": {
+    "file": "lib/sites/hosted.ts",
+    "ref": "Daniel 2026-11-04 audit and approved improvement scope"
+  },
+  "detail": "Current custom-domain subdomain308 redirects preserve paths but pass an empty query to subdomainSiteRedirect. Root and /book redirect verified live; ?utm_source is dropped. Prepare a tenant-bound, query-safe fix that preserves ISR/cache behavior, avoids uncached database work per request, does not leak credential/private query values, and does not alter unconfigured/unpublished/custom-domain eligibility. Coordinate with all custom-domain owners. Built 2026-11-09 (PR pending the merge queue): the proxy makes the subdomain-to-live-domain hop itself for a page request that carries a supported campaign tag (utm_source, utm_medium, utm_campaign, utm_term, utm_content, utm_id; values capped at 200 characters; every other key dropped, so a token or a code never follows the visitor). The live domain comes from a new cached JSON route, GET /api/site-domain/<slug> (force-static, an hour, expired by refreshSite beside the site tree), so the proxy still never reads the database; the decision is the same liveSiteDomain the ISR pages make, so eligibility is unchanged. A failed or slow lookup (1.5s) falls through to today's behaviour. Untagged visits, crawler files, the visitor and admin routes, deeper Space paths and bound domains are untouched. Manual acceptance after deploy stays with the owner: HEAD https://danieltyack.frequencylocal.com/book?utm_source=ig&token=x -> 308 https://danieltyack.com/book?utm_source=ig.\n\n2026-11-09: closed on the owner's ruling (\"4. B\": close without a manual check) after the build merged to main the same day. No production look was taken; the row's unit pins stay green in CI.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-09",
+    "evidence": "Closed on the owner's ruling, 2026-11-09 18:16Z. Asked \"Production checks for #4698, #4700 and #4701: A. We give you a 3-item checklist with links once they're live. B. Close them without a manual check\", Daniel answered \"4. B\". The build merged to main the same day (#4698); its unit pins stay green in CI. No production look was taken. Later the same day (19:10Z) a production read through the Vercel deployment fetch confirmed it anyway: danieltyack.frequencylocal.com/book?utm_source=ig&token=x -> 308 https://danieltyack.com/book?utm_source=ig; /book?token=x -> 308 https://danieltyack.com/book; wildheart.frequencylocal.com/calendar?utm_source=ig&utm_campaign=x&code=secret -> 308 https://wildheart.academy/calendar?utm_source=ig&utm_campaign=x (tags kept, sensitive values dropped, no loop)."
+  },
+  "closed": "2026-11-09",
+  "wave": "W7"
+}

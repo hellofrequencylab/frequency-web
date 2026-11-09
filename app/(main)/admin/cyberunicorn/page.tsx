@@ -2,6 +2,7 @@ import { Nfc } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StaffCardLinkBox } from '@/components/member-cards/staff-card-link'
 import { CyberUnicornConsole } from '@/components/spaces/loyalty/cyberunicorn-console'
 import { findSpaceForConsole, listBadgeRequests, listSpacesForConsole } from '@/lib/devices/badges'
 import { scannerDevicesEnabled } from '@/lib/devices/store'
@@ -38,6 +39,11 @@ export default async function CyberUnicornPage({ searchParams }: { searchParams:
           <EmptyState title="The CyberUnicorn is not switched on yet." description="Turn on SCANNER_DEVICES_ENABLED to write placards and badges." />
         )}
       </AdminSection>
+      {on && (
+        <AdminSection title="Card links" description="Change where any member's tap card opens: a page on Frequency or any link.">
+          <StaffCardLinkBox />
+        </AdminSection>
+      )}
     </AdminTemplate>
   )
 }

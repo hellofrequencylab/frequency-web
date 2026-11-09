@@ -15,7 +15,6 @@ export const GUIDE_DATES = {
   'how-to-build-community': { published: '2026-06-24', updated: '2026-07-24' },
   'how-to-start-a-circle': { published: '2026-06-24', updated: '2026-07-24' },
   'how-to-be-more-social': { published: '2026-06-29', updated: '2026-07-24' },
-  'calm-down-fast': { published: '2026-06-29', updated: '2026-06-29' },
   'the-community': { published: '2026-07-28', updated: '2026-08-05' },
   about: { published: '2026-05-30', updated: '2026-09-21' },
   spaces: { published: '2026-06-24', updated: '2026-09-21' },

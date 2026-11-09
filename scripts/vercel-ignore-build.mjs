@@ -7,8 +7,8 @@
 // produces a byte-identical artifact, so the build buys nothing: no gate can fire on it, no
 // route can change, and the e2e suite's path filters already ignore it.
 //
-// THE RULE. Build unless EVERY changed file is documentation: docs/**, any *.md, .claude/**,
-// scripts/planning-docs.txt, LICENSE. Anything else, including .github/** (workflows decide
+// THE RULE. Build unless EVERY changed file is documentation: docs/**, *.md outside content/help/**,
+// .claude/**, scripts/planning-docs.txt, LICENSE. Anything else, including .github/** (workflows decide
 // what runs against the preview), test/**, and public/**, builds. The decision is made against
 // the last SUCCESSFUL deployment of this branch (VERCEL_GIT_PREVIOUS_SHA), so a push that
 // follows a failed build always builds, and a branch's first deployment always builds.
@@ -44,6 +44,7 @@ export const DOC_ONLY_SUFFIXES = ['.md']
 
 /** True when a changed file cannot change the build output. */
 export function isDocOnly(path) {
+  if (path.startsWith('content/help/')) return false
   if (DOC_ONLY_FILES.includes(path)) return true
   if (DOC_ONLY_PREFIXES.some((p) => path.startsWith(p))) return true
   return DOC_ONLY_SUFFIXES.some((s) => path.endsWith(s))

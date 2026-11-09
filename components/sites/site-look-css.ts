@@ -5,6 +5,9 @@
 // this sheet never meets it. Each rule names its value, so it reads the same in either theme. The footer
 // choice needs no CSS: it picks whether the full footer is drawn (components/sites/site-chrome.tsx).
 // Tokens only; the theme's palette paints every surface.
+// The centered header (LIVE-2031): the name in the middle, the menu centered under it, the button on the right, from 940px up.
+// Under 940px it keeps the stacked phone header (name left, button right, menu below), because a phone has no room to centre a
+// name between two buttons without one covering the other.
 
 const R = '[data-house-site]'
 
@@ -43,4 +46,5 @@ ${R}[data-site-header="bar"] .hs-pill{max-width:none;margin:0;border-radius:0;pa
 ${R}[data-site-header="pill"] .hs-header{padding:12px clamp(10px,3vw,32px) 0;background:transparent;border-bottom:0}
 ${R}[data-site-header="pill"] .hs-pill{max-width:1240px;margin:0 auto;padding:6px 8px 6px clamp(14px,2vw,20px);border-radius:28px;background:var(--color-surface);border:1px solid var(--color-border)}
 @media (min-width:940px){${R}[data-site-header="pill"] .hs-pill{border-radius:999px}}
+@media (min-width:940px){${R}[data-site-header="centered"] .hs-pill{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"lead logo cta" "nav nav nav";row-gap:12px;column-gap:16px}${R}[data-site-header="centered"] .hs-brand{justify-self:center}${R}[data-site-header="centered"] .hs-header-actions{justify-self:end}${R}[data-site-header="centered"] .hs-nav{justify-self:center}}
 `

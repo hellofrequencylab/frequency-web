@@ -28,6 +28,7 @@ const KIT: Record<string, string> = {
   'we-presence': 'faces',
   'we-tabs': 'tabs',
   'we-caption': 'cap',
+  'we-float-bar': 'float-bar',
   'we-row': 'row',
   'we-field': 'fld',
   'we-note': 'note',

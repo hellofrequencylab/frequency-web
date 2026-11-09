@@ -13,7 +13,7 @@ import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 export interface Inventory {
   sections: InventorySection[]
   /** Where a photo upload lands: the same Space record the items read. */
-  space: { id: string; slug: string }
+  space: { id: string; slug: string; name: string }
 }
 
 export async function loadInventory(spaceId: string | null, ownerProfileId: string, skippedPhotos: readonly string[] = [], extended = false): Promise<Inventory | null> {
@@ -30,7 +30,7 @@ export async function loadInventory(spaceId: string | null, ownerProfileId: stri
       const founder = await getFounderTasks(ownerProfileId).catch(() => null)
       if (founder) sections.push(personalSection(founder.tasks))
     }
-    return { sections, space: { id: space.id, slug: space.slug } }
+    return { sections, space: { id: space.id, slug: space.slug, name: space.name } }
   } catch {
     return null
   }

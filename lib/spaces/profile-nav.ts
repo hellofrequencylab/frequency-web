@@ -1,9 +1,10 @@
+import { cache } from 'react'
 import { collectiveNetworkOpen } from '@/lib/collective/network'
 import { spacePlanTab } from '@/lib/collective/partners'
 import { getCallerProfile } from '@/lib/auth'
 import type { WebRole } from '@/lib/core/roles'
 import { resolveSpaceManageAccess, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
-import { dedupeMenuLinks, readSiteMenu, resolveSiteMenu, type MenuCatalogEntry } from '@/lib/spaces/site-menu'
+import { readSiteMenu, resolveSiteMenu, type MenuCatalogEntry } from '@/lib/spaces/site-menu'
 import { isConsoleSpaceType, spaceManageHref, type Space } from '@/lib/spaces/types'
 import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
@@ -13,6 +14,7 @@ import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
 import { deriveModuleSectionNav } from '@/lib/spaces/module-section-nav'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { spaceHasPublicUpcomingEvents } from '@/lib/events/store'
+import { CALENDAR_NAME } from '@/lib/calendar/name'
 import { spaceHasCollaborators } from '@/lib/spaces/collaborations'
 import { viewerCanSeeSpaceMemberDirectory } from '@/lib/spaces/member-directory'
 import { canSeeSpaceContactTab, readContactFormContent } from '@/lib/spaces/contact-tab'
@@ -20,6 +22,7 @@ import { canSeeSpaceMembershipsTab } from '@/lib/spaces/memberships-tab'
 import { spaceHasActiveMembershipTiers } from '@/lib/spaces/memberships'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import type { SpaceProfileTab } from '@/lib/spaces/profile-tab'
+import { primarySpaceTabs } from '@/lib/spaces/primary-nav'
 
 // THE ONE Space profile sub-nav model — the tab set + the operator's admin links — resolved from the
 // Space itself, so the SAME menu renders on the public profile chrome AND on the owner surfaces
@@ -29,20 +32,21 @@ import type { SpaceProfileTab } from '@/lib/spaces/profile-tab'
 // it without a full reload (the "persistent shell" model). Server-only; the active-tab state stays
 // client-side in SpaceProfileMenu (usePathname), so nothing here can go stale across soft navigation.
 interface SpaceProfileNav {
-  /** Home + one anchor per live Home section + the operator's custom sub-pages. */
+  /** Fixed Frequency portal destinations; custom website navigation is independent. */
   tabs: SpaceProfileTab[]
   /** The operator's back-end links (Manage / CRM), empty for a visitor. */
   adminTabs: SpaceProfileTab[]
   /** Every tab this viewer could get automatically, keyed for the menu editor (lib/spaces/site-menu.ts). */
   catalog: MenuCatalogEntry[]
+  /** Existing automatic and saved Space links, for contextual doors below Home. */
+  contextLinks: SpaceProfileTab[]
 }
 
 /**
- * Build the profile sub-nav for `space`, given the viewer. The tabs are PRE-POPULATED from the page
- * itself (feature-block model): Home, then one anchor per Home section that actually renders (derived
- * from the Home doc + live presence, so a link never scrolls to an empty spot), then any custom pages.
- * The admin links (Manage + CRM for console types) show ONLY to a manager / staff previewer. Reads the
- * caller internally (request-cached) so both the chrome layout and the owner shells can call it plainly.
+ * Build the fixed portal navigation and the complete contextual catalog. The latter retains the
+ * existing publication/function/viewer gates and supplies website-menu choices and Home's doors.
+ * Management stays separate and uses the existing server capability decision. The public entry
+ * point below never reads a caller, preserving the anonymous Space home render contract.
  */
 /** Whether the Space published any way to reach it. Pure, and read from the SAME node the Contact
  *  card renders from (readProfileData), so the tab and the card can never disagree about whether
@@ -67,10 +71,12 @@ interface SpaceNavViewer {
 /**
  * The menu for the SIGNED-IN member surfaces. Reads the caller itself, as it always has.
  */
-export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNav> {
+// The chrome and Home contextual links receive the same request-cached Space object. Share their
+// presence/capability work within this render; no result or viewer state survives the request.
+export const buildSpaceProfileNav = cache(async (space: Space): Promise<SpaceProfileNav> => {
   const caller = await getCallerProfile()
   return buildNavFor(space, { profileId: caller?.id ?? null, webRole: caller?.webRole ?? null })
-}
+})
 
 /**
  * The menu for the SIGNED-OUT share URL (LIVE-522), and the reason this split exists.
@@ -185,15 +191,16 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
   const planTab = spacePlanTab(space)
   const autoTabs: (SpaceProfileTab & { key: string })[] = [
     { key: 'home', href: base, label: pages[0]?.label ?? 'Home' },
+    ...(presence.booking ? [{ key: 'feature:book', href: `${base}/book`, label: 'Book' }] : []),
     ...sections.map((s) => ({ key: `anchor:${s.anchor}`, href: `${base}#${s.anchor}`, label: s.label })),
-    // The Calendar tab — THE MERGED CALENDAR AND EVENTS PAGE (LIVE-520). The Up next feed, the month
-    // grid, the agenda, and the subscribable feed, on one page and behind ONE menu row; the `#events`
-    // anchor that used to sit beside it is suppressed above. The label stays "Calendar" because the
-    // URL, the `.ics` feed, the page metadata and every operator deep link (`?view=`, `?console=1`)
-    // all say calendar, and a menu word that disagreed with all of them would be a second name for
-    // one thing. Shown only when the Space has upcoming PUBLIC events (the exact set the grid
-    // renders), so the tab never opens onto an empty calendar.
-    ...(hasCalendarEvents ? [{ key: 'feature:calendar', href: `${base}/calendar`, label: 'Calendar' }] : []),
+    // The What's Happening tab: THE MERGED CALENDAR AND EVENTS PAGE (LIVE-520). The Up next feed, the
+    // month grid, the agenda, and the subscribable feed, on one page and behind ONE menu row; the
+    // `#events` anchor that used to sit beside it is suppressed above. The owner named it "What's
+    // Happening" everywhere (BLD-000 ruling 2, applied by BLD-004): the tab, the Space function and the
+    // page title say it; the URL, the `.ics` feed and the operator deep links keep `calendar`, which a
+    // visitor reads as an address, not a name. Shown only when the Space has upcoming PUBLIC events
+    // (the exact set the grid renders), so the tab never opens onto an empty calendar.
+    ...(hasCalendarEvents ? [{ key: 'feature:calendar', href: `${base}/calendar`, label: CALENDAR_NAME }] : []),
     // The plan decides one tab, never both (SCAN-982): a Collective is many owners, so it shows
     // Partners; a Network is one owner's chapters, so it shows Network.
     ...(planTab === 'partners' ? [{ key: 'feature:partners', href: `${base}/partners`, label: 'Partners' }] : []),
@@ -214,6 +221,9 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     // The Collaborators tab (ADR-799 B1): the businesses that operate together with this space. Shown
     // only when there is at least one accepted collaboration.
     ...(hasCollaborators ? [{ key: 'feature:collaborators', href: `${base}/collaborators`, label: 'Collaborators' }] : []),
+    // Community (ADR-1938): the Space's wall, its public communications hub. Every Space that is not the
+    // platform root has one, so it needs no presence read; Circles sits beside it as the second tab.
+    ...(space.type !== 'root' ? [{ key: 'feature:community', href: `${base}/community`, label: 'Community' }] : []),
     // Circles: a Space's community IS its Circles (NAMING.md, ADR-1091), and this is where they are.
     // A manager sees it even at zero, because the empty state is where "Start your first circle"
     // lives; a visitor only sees it once there is a circle they could actually open.
@@ -251,20 +261,6 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
       .map((p) => ({ key: `page:${p.slug}`, href: `${base}/${p.slug}`, label: p.label })),
   ]
 
-  // THE SAVED MENU (lib/spaces/site-menu.ts): a Business Space that saved a menu gets that list, in its
-  // order, with its dropdowns and custom links, filtered to the items shown on the Space page. Items
-  // whose feature or page is not available to THIS viewer drop out (resolved against the tabs above), and
-  // a feature or page newer than the save joins the end. Free Spaces and Spaces that never saved keep
-  // the automatic tabs above, unchanged.
-  const saved = resolveSiteMenu(readSiteMenu(space.preferences), autoTabs, 'space', { canEdit: spaceCanUseFullWebsite(space) })
-  // One row per destination and per word (dedupeMenuLinks): a menu saved before a feature existed
-  // otherwise lists it twice, once where the owner put it and once where new features join the end.
-  const tabs = dedupeMenuLinks<SpaceProfileTab>(
-    saved
-      ? saved.map((l) => ({ href: l.href, label: l.label, ...(l.external ? { external: true } : {}), ...(l.mega ? { mega: l.mega } : {}), ...(l.href === base ? { key: 'home' } : {}) }))
-      : autoTabs,
-  )
-
   // Just "Manage" now: the CRM has no separate menu item (it lives inside the Manage dashboard's
   // Community area). `spaceManageHref` is the full-page console; the profile menu instead opens the
   // in-place `?panel=manage` dashboard, but this Manage tab still backs the /manage + shell layouts.
@@ -272,5 +268,21 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     ? [{ href: spaceManageHref(space.type, space.slug), label: 'Manage' }]
     : []
 
-  return { tabs, adminTabs, catalog: autoTabs.map(({ key, label, href }) => ({ key, label, href })) }
+  // Resolve legacy Space links under their original plan, visibility and viewer gates. Dropdown
+  // children and feature cards become individual contextual doors; none can replace the primary row.
+  // Website-only rows remain website-only, and unavailable automatic targets are still refused.
+  const saved = resolveSiteMenu(readSiteMenu(space.preferences), autoTabs, 'space', { canEdit: spaceCanUseFullWebsite(space) })
+  const savedLinks: SpaceProfileTab[] = (saved ?? []).flatMap((entry, index) => {
+    const links = entry.mega
+      ? [...entry.mega.links, ...(entry.mega.feature ? [{ href: entry.mega.feature.href, label: entry.mega.feature.title }] : [])]
+      : [entry]
+    return links.map((link, child) => ({ key: `saved:${index}:${child}`, href: link.href, label: link.label, ...(/^https:\/\//i.test(link.href) ? { external: true } : {}) }))
+  })
+  return {
+    tabs: primarySpaceTabs(space.slug, space.type === 'root'),
+    adminTabs,
+    catalog: autoTabs.map(({ key, label, href }) => ({ key, label, href })),
+    // Do not re-add automatic entries the owner already removed or kept website-only.
+    contextLinks: saved === null ? autoTabs : [autoTabs[0], ...savedLinks],
+  }
 }

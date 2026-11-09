@@ -1,0 +1,350 @@
+{
+ "theme": "cyberwitch",
+ "repoThemeId": "cyberwitch",
+ "note": "Same shape as docs/design-systems/services/rules.json. First match wins. Deviations: Volt (#8A70FF) is a violet and is dropped (ADR-1792), so five accents ship; Blood's fill is #F2184C, not #F0164A, so ink on it reaches 4.5:1.",
+ "tokenSources": [
+  "CYBERWITCH_TOKENS_CSS"
+ ],
+ "baseline": "docs/design-systems/cyberwitch/baseline.json",
+ "tokenMap": [
+  {
+   "from": "--ink-",
+   "to": "--cw-ink-"
+  },
+  {
+   "from": "--chrome-",
+   "to": "--cw-chrome-"
+  },
+  {
+   "from": "--flare-",
+   "to": "--cw-flare-"
+  },
+  {
+   "from": "--clash-",
+   "to": "--cw-clash-"
+  },
+  {
+   "from": "--surface-",
+   "to": "--cw-surface-"
+  },
+  {
+   "from": "--text-",
+   "to": "--cw-text-"
+  },
+  {
+   "from": "--border-",
+   "to": "--cw-border-"
+  },
+  {
+   "from": "--accent",
+   "to": "--cw-accent"
+  },
+  {
+   "from": "--on-accent",
+   "to": "--cw-on-accent"
+  },
+  {
+   "from": "--spray",
+   "to": "--cw-spray"
+  },
+  {
+   "from": "--clash",
+   "to": "--cw-clash"
+  },
+  {
+   "from": "--success",
+   "to": "--cw-success"
+  },
+  {
+   "from": "--warning",
+   "to": "--cw-warning"
+  },
+  {
+   "from": "--danger",
+   "to": "--cw-danger"
+  },
+  {
+   "from": "--font-",
+   "to": "--cw-font-"
+  },
+  {
+   "from": "--fs-",
+   "to": "--cw-fs-"
+  },
+  {
+   "from": "--lh-",
+   "to": "--cw-lh-"
+  },
+  {
+   "from": "--ls-",
+   "to": "--cw-ls-"
+  },
+  {
+   "from": "--space-",
+   "to": "--cw-space-"
+  },
+  {
+   "from": "--glow-",
+   "to": "--cw-glow-"
+  },
+  {
+   "from": "--shadow-",
+   "to": "--cw-shadow-"
+  },
+  {
+   "from": "--tex-",
+   "to": "--cw-tex-"
+  },
+  {
+   "from": "--haze-",
+   "to": "--cw-haze-"
+  },
+  {
+   "from": "--dur-",
+   "to": "--cw-dur-"
+  },
+  {
+   "from": "--ease-",
+   "to": "--cw-ease-"
+  },
+  {
+   "from": "--radius-",
+   "to": "--cw-radius-"
+  },
+  {
+   "from": "--plate-",
+   "to": "--cw-plate-"
+  },
+  {
+   "from": "--gutter",
+   "to": "--cw-gutter"
+  },
+  {
+   "from": "--container-",
+   "to": "--cw-container-"
+  }
+ ],
+ "rules": [
+  {
+   "glob": "assets/imagery/*-volt.jpg",
+   "kind": "skip",
+   "reason": "Volt (#8A70FF) is a violet and the violet family is retired (ADR-1792); five accents ship, so its photos do not."
+  },
+  {
+   "glob": "assets/imagery/*.jpg",
+   "kind": "asset",
+   "target": "public/sites/cyberwitch/photos/{base}"
+  },
+  {
+   "glob": "tokens/colors.css",
+   "kind": "tokens"
+  },
+  {
+   "glob": "tokens/effects.css",
+   "kind": "tokens"
+  },
+  {
+   "glob": "tokens/spacing.css",
+   "kind": "tokens"
+  },
+  {
+   "glob": "tokens/typography.css",
+   "kind": "tokens"
+  },
+  {
+   "glob": "tokens/frequency.css",
+   "kind": "built",
+   "target": "lib/sites/editor/theme-contract.json",
+   "reason": "The --th-* bridge is published as themes.CyberWitch; the dial attributes (data-site-*, data-type, data-motion, data-image) are written by components/sites/cyberwitch-css.ts and lib/theme/cyberwitch.ts (CYBERWITCH_DIALS_CSS)."
+  },
+  {
+   "glob": "tokens/fonts.css",
+   "kind": "built",
+   "target": "components/sites/cyberwitch-fonts.ts",
+   "reason": "UnifrakturCook, Permanent Marker and Spectral, self-hosted through next/font (app/fonts), never from a root layout."
+  },
+  {
+   "glob": "tokens/base.css",
+   "kind": "built",
+   "target": "components/sites/cyberwitch-css.ts",
+   "reason": "Type voices, plates, tape labels and base element rules."
+  },
+  {
+   "glob": "styles.css",
+   "kind": "reference",
+   "reason": "Entry file that @imports tokens/*.css."
+  },
+  {
+   "glob": "frequency/theme-contract.cyberwitch.json",
+   "kind": "built",
+   "target": "lib/sites/editor/theme-contract.json",
+   "reason": "Merged as themes.CyberWitch; theme.test.ts checks every string value."
+  },
+  {
+   "glob": "frequency/manifest.cyberwitch.json",
+   "kind": "built",
+   "target": "lib/themes/manifests/cyberwitch.manifest.json"
+  },
+  {
+   "glob": "frequency/kits.cyberwitch.json",
+   "kind": "built",
+   "target": "lib/sites/kits/cyberwitch-variants.ts",
+   "reason": "The six kits as SiteKit pages."
+  },
+  {
+   "glob": "frequency/blocks.cyberwitch.json",
+   "kind": "built",
+   "target": "lib/theme/block-contract-map.json",
+   "reason": "The block editor registry; the blocks are registered in the contract map and drawn with the borrowed Services block sheet (components/sites/cyberwitch-blocks-css.ts)."
+  },
+  {
+   "glob": "dials.json",
+   "kind": "built",
+   "target": "lib/theme/dials.json",
+   "reason": "Dial registry; CyberWitch locks the register to night."
+  },
+  {
+   "glob": "manifest.schema.md",
+   "kind": "reference",
+   "reason": "Schema 2 spec; implemented in lib/themes/manifests.test.ts."
+  },
+  {
+   "glob": "ui_kits/site/kits.js",
+   "kind": "built",
+   "target": "lib/sites/kits/cyberwitch-variants.ts",
+   "reason": "The six kits."
+  },
+  {
+   "glob": "ui_kits/site/record.js",
+   "kind": "built",
+   "target": "lib/spotlight/cyberwitch-kit-content.ts",
+   "reason": "Builds DOORS from each kit's tools."
+  },
+  {
+   "glob": "ui_kits/site/controls.jsx",
+   "kind": "built",
+   "target": "components/sites/editor/theme-controls.tsx",
+   "reason": "ThemeControls."
+  },
+  {
+   "glob": "ui_kits/site/Chrome.jsx",
+   "kind": "built",
+   "target": "components/sites/cyberwitch-css.ts",
+   "reason": "Header and footer skin (chain-link footer, sticker button)."
+  },
+  {
+   "glob": "ui_kits/site/*.jsx",
+   "kind": "reference",
+   "reason": "Page compositions of the blocks; the live pages are kit pages of registry blocks."
+  },
+  {
+   "glob": "ui_kits/site/index.html",
+   "kind": "reference",
+   "reason": "Prototype shell for the website; side-by-side passes compare it with the build."
+  },
+  {
+   "glob": "ui_kits/products/Spotlight.html",
+   "kind": "built",
+   "target": "components/spotlight/cyberwitch-kit-layouts.tsx",
+   "reason": "Six Spotlight layouts."
+  },
+  {
+   "glob": "ui_kits/products/EmailPage.html",
+   "kind": "built",
+   "target": "lib/theme/cyberwitch-kit-email.ts",
+   "reason": "The eleven emails."
+  },
+  {
+   "glob": "ui_kits/products/SpacePage.html",
+   "kind": "built",
+   "target": "lib/theme/mega-surfaces.ts",
+   "reason": "The Space page wears CYBERWITCH_SURFACE like every Mega Theme."
+  },
+  {
+   "glob": "ui_kits/products/ThemeFeature.html",
+   "kind": "built",
+   "target": "lib/themes/theme-feature-data.ts",
+   "reason": "The /themes/cyberwitch page, on the Nocturne page's layout."
+  },
+  {
+   "glob": "ui_kits/products/KitOverview.html",
+   "kind": "reference",
+   "reason": "Acceptance page, rebuilt from the manifest functions table."
+  },
+  {
+   "glob": "ui_kits/products/Conformance.html",
+   "kind": "reference",
+   "reason": "The invariants; implemented as lib/theme/conformance.ts and tests."
+  },
+  {
+   "glob": "ui_kits/products/*.jsx",
+   "kind": "reference",
+   "reason": "Phone frame and shared prototype helpers."
+  },
+  {
+   "glob": "guidelines/**",
+   "kind": "reference",
+   "reason": "Foundation cards; their values are checked through tokens/*.css."
+  },
+  {
+   "glob": "components/**",
+   "kind": "reference",
+   "reason": "Prototype primitives; the live site draws the same look through registry blocks styled by components/sites/cyberwitch-*-css.ts."
+  },
+  {
+   "glob": "uploads/**",
+   "kind": "reference",
+   "reason": "The New World kit CyberWitch was built against; New World's own intake (docs/design-systems/new-world) owns it."
+  },
+  {
+   "glob": "HANDOFF.md",
+   "kind": "reference",
+   "reason": "Handoff text or generated bundle; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "readme.md",
+   "kind": "reference",
+   "reason": "Handoff text or generated bundle; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "SKILL.md",
+   "kind": "reference",
+   "reason": "Handoff text or generated bundle; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "Audit.md",
+   "kind": "reference",
+   "reason": "Handoff text or generated bundle; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "_ds_manifest.json",
+   "kind": "reference",
+   "reason": "Handoff text or generated bundle; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "_ds_bundle.js",
+   "kind": "reference",
+   "reason": "Handoff text or generated bundle; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "cyberwitch.js",
+   "kind": "reference",
+   "reason": "Handoff text or generated bundle; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "_adherence.oxlintrc.json",
+   "kind": "reference",
+   "reason": "Handoff text or generated bundle; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": "thumbnail.html",
+   "kind": "reference",
+   "reason": "Handoff text or generated bundle; every file it names is checked by the rule for that file."
+  },
+  {
+   "glob": ".thumbnail",
+   "kind": "skip",
+   "reason": "Thumbnail for the design tool."
+  }
+ ]
+}

@@ -1,0 +1,169 @@
+{
+  "role": "Locations",
+  "type": "RoleLocations",
+  "label": "Where we meet (all themes)",
+  "intent": "Say where you meet",
+  "why": "Your address, your hours and how to get there.",
+  "group": "Answer",
+  "icon": "pin",
+  "live": true,
+  "replaces": [
+    "NetworkKitVenue"
+  ],
+  "slots": {
+    "required": {
+      "address": "text<=160"
+    },
+    "optional": {
+      "eyebrow": "text<=40",
+      "heading": "text<=120",
+      "lead": "text<=280",
+      "items": {
+        "type": "list",
+        "min": 0,
+        "max": 8,
+        "item": {
+          "label": "text<=40",
+          "value": "text<=120"
+        }
+      },
+      "areas": "text<=240",
+      "image": "image",
+      "alt": "text<=120",
+      "primary": "link"
+    },
+    "labels": {
+      "address": {
+        "label": "Address",
+        "hint": "Where people find you."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      },
+      "items": {
+        "label": "Details",
+        "hint": "Parking, hours, what to bring."
+      },
+      "areas": {
+        "label": "Areas you serve",
+        "hint": "The towns or neighborhoods you reach, in a line."
+      },
+      "image": {
+        "label": "Photo",
+        "hint": "A real photo of your people or your place."
+      },
+      "alt": {
+        "label": "Photo description",
+        "hint": "Say what is in the photo for people who cannot see it."
+      },
+      "primary": {
+        "label": "Main button",
+        "hint": "The one thing you most want people to do next."
+      }
+    }
+  },
+  "variants": {
+    "split": {
+      "label": "Details beside a photo",
+      "thumb": "split"
+    },
+    "card": {
+      "label": "Card",
+      "thumb": "card"
+    }
+  },
+  "default": "split",
+  "sample": {
+    "sample": true,
+    "eyebrow": "Where we meet",
+    "title": "Find the *door*",
+    "lead": "",
+    "address": "Replace with your street address",
+    "areas": "Replace with the neighbourhoods people come from",
+    "primaryLabel": "Get directions",
+    "primaryHref": "~/contact",
+    "items": [
+      {
+        "label": "Hours",
+        "value": "Replace with your hours"
+      },
+      {
+        "label": "Phone",
+        "value": "Replace with your phone"
+      },
+      {
+        "label": "Email",
+        "value": "Replace with your email"
+      }
+    ]
+  },
+  "tokens": [
+    "c-accent",
+    "c-accent-bg",
+    "c-accent-hover",
+    "c-accent-text",
+    "c-band",
+    "c-canvas",
+    "c-focus",
+    "c-line",
+    "c-line-strong",
+    "c-on-accent",
+    "c-on-band",
+    "c-raised",
+    "c-sunken",
+    "c-surface",
+    "c-text",
+    "c-text-muted",
+    "c-text-subtle",
+    "case-heading",
+    "dur-fast",
+    "ease",
+    "f-body",
+    "f-display",
+    "f-label",
+    "f-voice",
+    "frame",
+    "lead-display",
+    "measure",
+    "r-card",
+    "r-control",
+    "r-media",
+    "shadow-card",
+    "sp-gap",
+    "sp-gutter",
+    "sp-section",
+    "track-display",
+    "w-display"
+  ],
+  "parts": [
+    "actions",
+    "address",
+    "copy",
+    "cta",
+    "eyebrow",
+    "heading",
+    "inner",
+    "item",
+    "list",
+    "meta",
+    "note",
+    "title",
+    "value"
+  ],
+  "data": null,
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "hide"
+  }
+}

@@ -390,7 +390,7 @@ function networkOffering(takeRate: string, networkRateBps: number, trial: string
     featured: false,
     cta: networkCheckoutOpen()
       ? { label: 'Start a Network', href: operatorStartHref('network') }
-      : { label: NETWORK_PLAN.quoteLabel, href: '/networks' },
+      : { label: NETWORK_PLAN.quoteLabel, href: '/for/networks' },
   }
 }
 

@@ -97,7 +97,7 @@ describe('The Group custom tab blocks: every key a renderer reads is a field', (
   const configs = { ...designComponents, ...profileComponents } as unknown as Record<string, Config>
   const live: MwLive = {
     events: [{ id: 'event-1', slug: 'sample', title: `${SAMPLE} morning`, description: 'A morning.', startsAt: '2026-10-20T09:30:00', endsAt: null, location: 'Encinitas' }],
-    circles: [{ id: 'circle-1', slug: 'sample', name: SAMPLE, about: 'A circle.', memberCount: 3, memberCap: 8, status: 'open', imageUrl: null, neighborhood: 'Encinitas', meets: 'Mondays', host: 'June', hostAvatar: null, isSpacePrimary: false }],
+    circles: [{ id: 'circle-1', slug: 'sample', name: SAMPLE, about: 'A circle.', memberCount: 3, memberCap: 8, status: 'open', imageUrl: null, neighborhood: 'Encinitas', meets: 'Mondays', host: 'June', hostAvatar: null }],
     journeys: [],
   }
   const puck = { isEditing: false, metadata: { space: { events: [{ id: 'event-1', slug: 'sample', title: SAMPLE, startsAt: '2026-10-20T09:30:00' }], community: [{ id: 'circle-1', slug: 'sample', name: SAMPLE, memberCount: 3 }] }, links } }

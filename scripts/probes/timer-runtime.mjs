@@ -45,6 +45,7 @@ try {
       ...common, 'next/link': Link,
       '@/components/frequency/icon': loadProbeModule('components/frequency/icon.tsx', { 'react/jsx-runtime': jsx }),
       '@/app/themes/active/site-pages-b': {}, '@/app/themes/active/site-funnel': {},
+      '../shared/photo-bg': loadProbeModule('components/frequency/site/pages/shared/photo-bg.ts'),
     })
     const frequency = loadProbeModule('components/frequency/site/pages/funnel/mindless-timer.tsx', {
       ...common, 'next/link': Link, '@/lib/on-air': math,

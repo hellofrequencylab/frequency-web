@@ -31,6 +31,8 @@ export interface FrequencyPageSeo {
   lede: string
   /** The visible breadcrumb trail after Home, as the page labels it. Empty on the home page. */
   crumbs: { name: string; path: string }[]
+  /** A page's own 1200x630 share card under public/ (a theme page's: lib/themes/share-cards.ts draws it, and its test pins these paths). Absent: the root card. */
+  shareImage?: string
 }
 
 export const FREQUENCY_PAGE_SEO = {
@@ -72,8 +74,8 @@ export const FREQUENCY_PAGE_SEO = {
     lede: 'Give your community a place to find the next class, Circle or event. Share your dates on the local calendar and keep in touch with people who come.',
     crumbs: [{ name: 'For spaces', path: '/spaces' }],
   },
-  // The three Frequency-only routes (DAWN answers 404 on each). /features and /vision keep the titles
-  // and descriptions they shipped with; the entry adds the WebPage node their visible hero supports.
+  // The Frequency-only routes (DAWN answers 404 on each). /features keeps the title and description it
+  // shipped with; the entry adds the WebPage node its visible hero supports.
   features: {
     path: '/features',
     // Not the bare word (SCAN-678): 'Features · Frequency' names nothing a query contains.
@@ -98,37 +100,14 @@ export const FREQUENCY_PAGE_SEO = {
     lede: 'Host a Circle or run a community Space? Tell us what happened. We have no published stories here yet.',
     crumbs: [{ name: 'Stories', path: '/stories' }],
   },
-  vision: {
-    path: '/vision',
-    title: 'Vision: plans for community spaces where people can meet',
-    description:
-      'Plans for community groups to meet in shared Frequency third spaces. The first Lab is planned for 2028. No building is open or bookable yet.',
-    shareTitle: 'Vision: plans for community spaces where people can meet',
-    headline: 'A community needs places to meet. Here’s what we’re planning.',
-    lede: 'For partners, investors, civic leaders and press. The vision for Frequency third spaces: the first is planned to open in 2028, and nothing is bookable yet.',
-    crumbs: [{ name: 'Vision', path: '/vision' }],
-  },
-  networks: {
-    path: '/networks',
-    title: 'Networks: run every chapter as one organization',
-    description:
-      'For organizations with chapters: shared membership, central admins, chapter leaders, one calendar and a roll-up report. Check plan and access details.',
-    shareTitle: 'Frequency Networks: run every chapter as one organization',
-    headline: 'Every chapter has its own day. Keep them connected.',
-    lede: 'For community groups with chapters or local teams. Share a calendar, give chapter leaders their own tools, and see the network together.',
-    crumbs: [
-      { name: 'Pricing', path: '/pricing' },
-      { name: 'Networks', path: '/networks' },
-    ],
-  },
   themes: {
     path: '/themes',
     title: 'Theme Kits: pick the look for your Spotlight, Space and website',
     description:
-      'Seven looks for your website, with matching Spotlight and email surfaces where available. See what is ready and what is on the way.',
+      'Nine looks for your website, with matching Spotlight and email surfaces where available. See what is ready and what is on the way.',
     shareTitle: 'Frequency Theme Kits: pick a feel for your whole site',
     headline: 'Your site should look like you. Pick a feel.',
-    lede: 'Seven looks for your website, with matching Spotlight and email surfaces where available. Pick a feel, then check what is ready and what is on the way.',
+    lede: 'Nine looks for your website, with matching Spotlight and email surfaces where available. Pick a feel, then check what is ready and what is on the way.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Theme Kits', path: '/themes' },
@@ -138,26 +117,13 @@ export const FREQUENCY_PAGE_SEO = {
     path: '/create-a-space',
     title: 'Create a Space: build your website, Spotlight and Space page',
     description:
-      'Name it, pick a Theme Kit, switch on the tools you need and watch your website and Spotlight come together. Free to start, and no account until the last step.',
+      'Build your website and Spotlight while you watch. Name it, say what you offer, add a few photos. Free, and a private draft until you activate it.',
     shareTitle: 'Create a Space on Frequency',
     headline: 'Your whole business, live in 12 minutes.',
     lede: 'You have a practice, a studio, a gathering or a group, and the tools are scattered. Build one home for all of it: your website, Spotlight, bookings and people.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Create a Space', path: '/create-a-space' },
-    ],
-  },
-  system: {
-    path: '/system',
-    title: 'One system for your website, Spotlight, people, events and payments',
-    description:
-      'Design it once. Your website, Spotlight, emails and sign-ups from one Theme Kit, and your people, events, tickets, payments and Circles behind one login.',
-    shareTitle: 'Frequency: the whole system, one account',
-    headline: 'Design it once. Launch when you like.',
-    lede: 'Your website, your Spotlight, your emails and your sign-ups, all from one theme. Your people, events, tickets, payments, Circles and teaching, all behind one login. Everything you run, with one account.',
-    crumbs: [
-      { name: 'For Spaces', path: '/spaces' },
-      { name: 'The system', path: '/system' },
     ],
   },
   // components/frequency/site/pages/launch/free-spotlight.tsx (VLS-05). Dark until LAUNCH_ENTRY_ENABLED is on.
@@ -179,6 +145,7 @@ export const FREQUENCY_PAGE_SEO = {
     shareTitle: 'Nocturne: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
     lede: 'One complete theme for any business that gathers people. Your link in bio, your Space on Frequency, your own website and your emails, all reading one profile. Change it once and every surface follows.',
+    shareImage: '/brand/theme-share/midnight.jpg',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
@@ -193,6 +160,7 @@ export const FREQUENCY_PAGE_SEO = {
     shareTitle: 'Designer: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
     lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Designer Theme Kit gives studios, interiors, architecture, gardens and brands one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
+    shareImage: '/brand/theme-share/designer.jpg',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
@@ -207,6 +175,7 @@ export const FREQUENCY_PAGE_SEO = {
     shareTitle: 'Network: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
     lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Network Theme Kit gives networking groups, clubs, mixers, coworking spaces and the people who run them one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
+    shareImage: '/brand/theme-share/network-kit.jpg',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
@@ -221,10 +190,26 @@ export const FREQUENCY_PAGE_SEO = {
     shareTitle: 'Temple: design it once, same theme everywhere',
     headline: 'Design it once. Same theme everywhere.',
     lede: 'Your link in bio, your Space, your website and your emails each look a little different. The Temple Theme Kit gives temples, studios, retreats, clubs, markets and anyone who brings people together one look to wear on all of them, read from one profile. Change it once and the surfaces marked ready follow.',
+    shareImage: '/brand/theme-share/temple-kit.jpg',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
       { name: 'Themes', path: '/themes' },
       { name: 'Temple', path: '/themes/temple' },
+    ],
+  },
+  newWorld: {
+    path: '/themes/new-world',
+    title: 'New World: design it once, wear it on every surface',
+    description:
+      'New World is the theme every new Space starts in. Your Spotlight, Space, website and emails wear one look, changed once.',
+    shareTitle: 'New World: design it once, same theme everywhere',
+    headline: 'Design it once. Same theme everywhere.',
+    lede: 'Your link in bio, your Space, your website and your emails each look a little different. New World is the theme every new Space starts in: studios, coaches, hosts, venues, non-profits and networks, one look to wear on all four, read from one profile. Night to start, Day when you want it. Change it once and every surface follows.',
+    shareImage: '/brand/theme-share/new-world.jpg',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Themes', path: '/themes' },
+      { name: 'New World', path: '/themes/new-world' },
     ],
   },
 } as const satisfies Record<string, FrequencyPageSeo>
@@ -239,13 +224,18 @@ export function frequencyPageMetadata(seo: FrequencyPageSeo): Metadata {
     alternates: { canonical: seo.path },
     openGraph: {
       ...OG_SITE,
-      images: ROOT_OG_IMAGES,
+      images: seo.shareImage ? [{ url: seo.shareImage, width: 1200, height: 630, alt: seo.shareTitle }] : ROOT_OG_IMAGES,
       title: seo.shareTitle,
       description: seo.description,
       url: seo.path,
       type: 'website',
     },
-    twitter: { card: 'summary_large_image', title: seo.shareTitle, description: seo.description },
+    twitter: {
+      card: 'summary_large_image',
+      title: seo.shareTitle,
+      description: seo.description,
+      ...(seo.shareImage ? { images: [seo.shareImage] } : {}),
+    },
   }
 }
 

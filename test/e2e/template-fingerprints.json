@@ -19,60 +19,56 @@
   ],
   "surfaces": {
     "about": {
-      "fingerprint": "a2f5c727ca889f92",
-      "capturedIn": "7b60b4e31"
-    },
-    "calm-down-fast": {
-      "fingerprint": "3ac4537173839343",
-      "capturedIn": "7b60b4e31"
+      "fingerprint": "9035f59a7ffd84be",
+      "capturedIn": "484a16986"
     },
     "friendship-as-an-adult": {
-      "fingerprint": "7bc12d8fe89670ae",
-      "capturedIn": "7b60b4e31"
+      "fingerprint": "ae2d1c942151a5e1",
+      "capturedIn": "95938cdd6"
     },
     "how-to-be-more-social": {
-      "fingerprint": "3d9237ff8e1ab0ef",
-      "capturedIn": "7b60b4e31"
+      "fingerprint": "35718cc1046e27f7",
+      "capturedIn": "95938cdd6"
     },
     "how-to-build-community": {
-      "fingerprint": "5236ed4432b3e0bf",
-      "capturedIn": "7b60b4e31"
+      "fingerprint": "67e16e8df7bcbd91",
+      "capturedIn": "484a16986"
     },
     "how-to-start-a-circle": {
-      "fingerprint": "f5d0ff6b3cb2dc5b",
-      "capturedIn": "7b60b4e31"
+      "fingerprint": "f1cc3891659fa9ed",
+      "capturedIn": "95938cdd6"
     },
     "loneliness": {
-      "fingerprint": "bd06c8f544618a19",
-      "capturedIn": "7b60b4e31"
+      "fingerprint": "910665d821b4ac8e",
+      "capturedIn": "95938cdd6"
     },
     "pricing": {
       "fingerprint": "e48221f842c6be74",
-      "capturedIn": "7b60b4e31"
+      "capturedIn": "31a238f2f"
     },
     "spaces": {
       "fingerprint": "3e397b837eb813a9",
-      "capturedIn": "7b60b4e31"
+      "capturedIn": "31a238f2f"
     },
     "the-community": {
       "fingerprint": "d8e183dd69b3bf05",
-      "capturedIn": "7b60b4e31"
+      "capturedIn": "31a238f2f"
     },
     "the-lab": {
       "fingerprint": "d1064ec768d7bf22",
-      "capturedIn": "7b60b4e31"
+      "capturedIn": "31a238f2f"
     },
     "the-quest": {
       "fingerprint": "5e72bb7336f65720",
-      "capturedIn": "7b60b4e31"
+      "capturedIn": "31a238f2f"
     },
     "tools-for-community-builders": {
       "fingerprint": "81ec8892e81160f8",
-      "capturedIn": "7b60b4e31"
+      "capturedIn": "31a238f2f"
     },
     "what-is-frequency": {
       "fingerprint": "8ad032ae34b0564d",
-      "capturedIn": "7b60b4e31"
+      "capturedIn": "31a238f2f"
     }
   }
 }

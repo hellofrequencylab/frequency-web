@@ -76,3 +76,17 @@ describe('POST /api/vera/turn', () => {
     expect(state.turns).toBe(0)
   })
 })
+
+describe('POST /api/vera/turn passes the Space page along (LIVE-2147)', () => {
+  it('forwards a slug-shaped space to the turn, which checks the role itself', async () => {
+    const { runConciergeTurn } = await import('@/lib/ai/vera/turn')
+    await lines(await post({ text: 'hi', space: 'sunrise' }))
+    expect(vi.mocked(runConciergeTurn).mock.calls.at(-1)![3]).toMatchObject({ space: 'sunrise' })
+  })
+
+  it('refuses a space that is not slug-shaped before any model call', async () => {
+    const res = await post({ text: 'hi', space: '../admin' })
+    expect(res.status).toBe(400)
+    expect(state.turns).toBe(0)
+  })
+})

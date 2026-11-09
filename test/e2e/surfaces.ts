@@ -179,8 +179,9 @@ export const LAUNCH_DOOR_PATHS: readonly string[] = [
 
 /**
  * The launch routes that need a session, so they are NOT public surfaces: a signed-out visitor is sent
- * to /sign-in with `next` set, and the try-first journey (funnel.spec.ts) proves that hop for each.
- * `/offer` is the full-screen 72-hour offer, `/spaces/new` is Create-a-Space, `/rewards` is Regulars.
+ * on, to /sign-in with `next` set (`/offer`, the full-screen 72-hour offer, and `/rewards`, Regulars; the
+ * try-first journey in funnel.spec.ts proves the /offer hop) or, for `/spaces/new`, to the Create a Space
+ * wizard that needs no account (LIVE-1969; create-space.spec.ts proves that hop).
  */
 export const LAUNCH_SESSION_ROUTES: readonly string[] = ['/spaces/new', '/offer', '/rewards']
 

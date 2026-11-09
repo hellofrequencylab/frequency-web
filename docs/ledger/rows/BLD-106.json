@@ -1,0 +1,19 @@
+{
+  "id": "BLD-106",
+  "title": "Builder BLD-106: Command bar",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-106."
+  },
+  "detail": "B1 Shell, pass BLD-106 (spec: docs/EDITOR-NEXT.md#bld-106). Command bar. Scope: components/builder/command. Build: ⌘K and Ctrl+K, plus a visible button on touch. Three groups: Go to (sections, pages), Do (every action in the action registry), Ask Vera. Each row shows its shortcut; recent commands first. Done when: Every toolbar and rail action is reachable from ⌘K; Focus trapped while open, returned on close. Gates: vitest suite (required test job), a11y ratchet, Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-101. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nCommand bar: ⌘K, Ctrl+K or the Find button opens a modal with Go to (sections and pages), Do (every action in lib/builder/commands.ts, which the top bar and rail buttons carry as data-action) and Ask Vera; each row shows its shortcut, recent commands first. Focus is trapped while open and returned on close. Test proves every button id is in the registry and every registry action is listed and runnable.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-106.mjs"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

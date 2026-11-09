@@ -53,10 +53,6 @@ vi.mock('@/lib/spaces/collaborations', () => ({ spaceHasCollaborators: async () 
 // appears and the assertion below catches it. A `false` mock would hide exactly that regression.
 vi.mock('@/lib/spaces/member-directory', () => ({ viewerCanSeeSpaceMemberDirectory: async () => true }))
 vi.mock('@/lib/spaces/memberships', () => ({ spaceHasActiveMembershipTiers: async () => false }))
-vi.mock('@/lib/spaces/space-discussion', () => ({
-  getLiveSpaceCircle: async () => null,
-  canSeeSpaceDiscussionTab: () => false,
-}))
 
 const { buildPublicSpaceProfileNav, buildSpaceProfileNav } = await import('@/lib/spaces/profile-nav')
 
@@ -76,13 +72,13 @@ describe('the signed-out share URL builds a menu without reading a cookie', () =
   })
 
   it('the public path resolves a menu anyway', async () => {
-    const { tabs } = await buildPublicSpaceProfileNav(space())
+    const { catalog: tabs } = await buildPublicSpaceProfileNav(space())
     expect(tabs.length).toBeGreaterThan(0)
     expect(tabs[0]?.href).toBe('/spaces/royaltemple')
   })
 
   it('still derives the section anchors of the page that renders', async () => {
-    const { tabs } = await buildPublicSpaceProfileNav(space())
+    const { catalog: tabs } = await buildPublicSpaceProfileNav(space())
     // 🔴 `#faq`, NOT `#events`, and the swap is the point. LIVE-520 (#2916) added `events` to
     // DEDICATED_TAB_ANCHORS, because Calendar is a real tab and an `#events` anchor beside it is
     // the "two Reviews" bug again. A suppressed anchor can never appear here, so asserting it
@@ -94,14 +90,14 @@ describe('the signed-out share URL builds a menu without reading a cookie', () =
   })
 
   it('offers the visitor the doors a visitor can use', async () => {
-    const { tabs } = await buildPublicSpaceProfileNav(space())
-    expect(tabs.map((t) => t.label)).toContain('Calendar')
+    const { catalog: tabs } = await buildPublicSpaceProfileNav(space())
+    expect(tabs.map((t) => t.label)).toContain("What's Happening")
   })
 
   it('never offers People, even though the directory reader would say yes', async () => {
     // The mock above returns TRUE. A public build that reached it would both add the tab AND
     // throw on the caller read inside it, so this pins the short-circuit rather than the answer.
-    const { tabs } = await buildPublicSpaceProfileNav(space())
+    const { catalog: tabs } = await buildPublicSpaceProfileNav(space())
     expect(tabs.map((t) => t.label)).not.toContain('People')
   })
 
@@ -144,22 +140,22 @@ describe('the menu the share URL mounts can survive a static prerender', () => {
 describe('Collective network navigation', () => {
   it('shows the Network door only for an active connected Network', async () => {
     const network = { plan: 'network', status: 'active', networkConnected: true, ownerProfileId: 'owner' } as Partial<Space>
-    const tabs = (await buildPublicSpaceProfileNav(space(network))).tabs
+    const tabs = (await buildPublicSpaceProfileNav(space(network))).catalog
     expect(tabs).toContainEqual({ key: 'feature:network', href: '/spaces/royaltemple/network', label: 'Network' })
     expect(tabs.some(tab => tab.label === 'Partners')).toBe(false)
     for (const change of [{ plan: 'business' }, { status: 'suspended' }, { networkConnected: false }]) {
-      expect((await buildPublicSpaceProfileNav(space({ ...network, ...change } as Partial<Space>))).tabs.some(tab => tab.label === 'Network')).toBe(false)
+      expect((await buildPublicSpaceProfileNav(space({ ...network, ...change } as Partial<Space>))).catalog.some(tab => tab.label === 'Network')).toBe(false)
     }
   })
   it('shows the Partners door, never Network, for an active Collective', async () => {
     for (const plan of ['collective', 'nonprofit_collective']) {
       const collective = { plan, status: 'active', networkConnected: true, ownerProfileId: 'owner' } as Partial<Space>
-      const tabs = (await buildPublicSpaceProfileNav(space(collective))).tabs
+      const tabs = (await buildPublicSpaceProfileNav(space(collective))).catalog
       expect(tabs).toContainEqual({ key: 'feature:partners', href: '/spaces/royaltemple/partners', label: 'Partners' })
       expect(tabs.some(tab => tab.label === 'Network')).toBe(false)
     }
     for (const change of [{ plan: 'business' }, { status: 'suspended' }, { ownerProfileId: null }]) {
-      expect((await buildPublicSpaceProfileNav(space({ plan: 'collective', status: 'active', ownerProfileId: 'owner', ...change } as Partial<Space>))).tabs.some(tab => tab.label === 'Partners')).toBe(false)
+      expect((await buildPublicSpaceProfileNav(space({ plan: 'collective', status: 'active', ownerProfileId: 'owner', ...change } as Partial<Space>))).catalog.some(tab => tab.label === 'Partners')).toBe(false)
     }
   })
 })
@@ -169,4 +165,12 @@ it('passes the known Space zone to the calendar-tab reader without reading the v
   const ownerSpace = space({ timeZone: 'Asia/Tokyo' })
   await buildPublicSpaceProfileNav(ownerSpace)
   expect(upcoming).toHaveBeenCalledWith(ownerSpace.id, 'Asia/Tokyo')
+})
+
+
+it('the anonymous primary menu stays four pages without reading the caller', async () => {
+  const { tabs, adminTabs } = await buildPublicSpaceProfileNav(space())
+  expect(tabs.map((tab) => tab.label)).toEqual(['Home', 'Community', 'Calendar', 'Program'])
+  expect(tabs.every((tab) => !tab.href.includes('#'))).toBe(true)
+  expect(adminTabs).toEqual([])
 })

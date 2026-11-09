@@ -19,16 +19,14 @@ const BODIES: Record<keyof typeof FREQUENCY_PAGE_SEO, string> = {
   spaces: 'components/frequency/site/pages/spaces/frequency-spaces.tsx',
   features: 'components/frequency/site/pages/features/frequency-features.tsx',
   stories: 'components/frequency/site/pages/stories/frequency-stories.tsx',
-  vision: 'components/frequency/site/pages/vision/frequency-vision.tsx',
-  networks: 'components/frequency/site/pages/networks/frequency-networks.tsx',
   midnight: 'components/frequency/site/pages/themes/frequency-midnight.tsx',
-  themes: 'components/frequency/site/pages/themes/frequency-themes.tsx',
+  themes: 'components/frequency/site/pages/themes/kit-showcase/kit-showcase-view.tsx',
   designer: 'components/frequency/site/pages/themes/frequency-designer.tsx',
   createSpace: 'components/frequency/site/pages/create-space/create-space-studio.tsx',
   network: 'components/frequency/site/pages/themes/frequency-network.tsx',
   temple: 'components/frequency/site/pages/themes/frequency-temple.tsx',
-  system: 'components/frequency/site/pages/system/frequency-system.tsx',
   freeSpotlight: 'components/frequency/site/pages/launch/free-spotlight.tsx',
+  newWorld: 'components/frequency/site/pages/themes/frequency-new-world.tsx',
 }
 
 /** The body's source as the reader sees it: JSX tags and braces removed, whitespace collapsed. */

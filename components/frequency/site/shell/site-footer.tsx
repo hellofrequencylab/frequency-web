@@ -6,7 +6,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { FOOTER_COLUMNS, FOOTER_LEGAL, ROUTES, SIDE_CTA } from '@/lib/frequency/site-nav'
+import { FOOTER_COLUMNS, FOOTER_LEGAL, ROUTES } from '@/lib/frequency/site-nav'
 import { JsonLd } from '@/components/json-ld'
 import { MotionPause } from '@/components/frequency/site/shell/motion-pause'
 import { siteNavigationSchema } from '@/lib/jsonld'
@@ -19,6 +19,14 @@ const WORDMARK = '/brand/frequency/frequency-wordmark.png'
 const INDEX = [
   ...FOOTER_COLUMNS.map((c) => ({ title: c.heading, links: c.links.filter((l) => l.href).map((l) => ({ label: l.label, href: l.href! })) })),
   { title: 'Legal', links: FOOTER_LEGAL.map((l) => ({ label: l.label, href: l.href! })) },
+]
+
+const QUICK_LINKS = [
+  { label: 'Discover', href: ROUTES.happening },
+  { label: 'For Spaces', href: ROUTES.spaces },
+  { label: 'Pricing', href: ROUTES.pricing },
+  { label: 'Help', href: ROUTES.help },
+  { label: 'About', href: ROUTES.about },
 ]
 
 export function SiteFooter() {
@@ -36,28 +44,40 @@ export function SiteFooter() {
               {SITE_SIGNOFF} Find community around a walk, a class or a gathering near you.
             </p>
             <div className="ctas">
-              <Link className="btn fq-iri-btn" href={SIDE_CTA.p.href!}>
-                {SIDE_CTA.p.label}
-              </Link>
-              <Link className="btn btn-ghost fq-iri-rim" href={SIDE_CTA.e.href!}>
-                {SIDE_CTA.e.label}
+              <Link className="btn fq-iri-btn" href={ROUTES.join}>
+                Get started
               </Link>
             </div>
           </div>
-          <nav className="ft2-cols" aria-label="Footer">
-            {FOOTER_COLUMNS.map((col) => (
-              <div key={col.heading}>
-                <b role="heading" aria-level={2}>{col.heading}</b>
-                {col.links
-                  .filter((l) => l.href)
-                  .map((l) => (
-                    <Link key={l.label} href={l.href!}>
-                      {l.label}
-                    </Link>
-                  ))}
-              </div>
-            ))}
-          </nav>
+          <div className="ft2-main">
+            {/* The five links that matter, always visible. Everything else sits behind a native fold: it is
+                in the HTML for crawlers and keyboard users, and a click away for a person (menu strategy
+                2026-11-03). The SiteNavigationElement JSON-LD above still lists every column. */}
+            <nav className="ft2-quick" aria-label="Footer quick links">
+              {QUICK_LINKS.map((l) => (
+                <Link key={l.label} href={l.href}>
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+            <details className="ft2-more">
+              <summary>More from Frequency</summary>
+              <nav className="ft2-cols" aria-label="Footer">
+                {FOOTER_COLUMNS.map((col) => (
+                  <div key={col.heading}>
+                    <b role="heading" aria-level={2}>{col.heading}</b>
+                    {col.links
+                      .filter((l) => l.href)
+                      .map((l) => (
+                        <Link key={l.label} href={l.href!}>
+                          {l.label}
+                        </Link>
+                      ))}
+                  </div>
+                ))}
+              </nav>
+            </details>
+          </div>
         </div>
         <div className="ft2-bot">
           <span>© {new Date().getFullYear()} Frequency Community Collective</span>

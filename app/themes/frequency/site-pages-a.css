@@ -12,8 +12,9 @@
 [data-design="frequency"] [data-kit="site"] .pa-home .sw.big button{height:44px;padding:0 20px;font-size:var(--fq-text-body-s);flex-direction:column;gap:6px}
 [data-design="frequency"] [data-kit="site"] .pa-home .sw.big button small{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);opacity:.75}
 [data-design="frequency"] [data-kit="site"] .pa-home .hero .bg{transition:opacity 1s var(--fq-ease-out)}
-[data-design="frequency"] [data-kit="site"] .pa-home .hero .bg.p{background-image:url('/brand/frequency/photos/day-meditation-circle.jpg')}
-[data-design="frequency"] [data-kit="site"] .pa-home .hero .bg.e{background-image:url('/brand/frequency/broll/yoga-rave-uv-swirl-web.jpg')}
+[data-design="frequency"] [data-kit="site"] .pa-home .hero .bg.p{background-image:url('/_next/image?url=%2Fbrand%2Ffrequency%2Fphotos%2Fday-meditation-circle.jpg&w=1920&q=75')}
+[data-design="frequency"] [data-kit="site"] .pa-home .hero .bg.e{background-image:url('/_next/image?url=%2Fbrand%2Ffrequency%2Fbroll%2Fyoga-rave-uv-swirl-web.jpg&w=1920&q=75')}
+@media (max-width:860px){[data-design="frequency"] [data-kit="site"] .pa-home .hero .bg.p{background-image:url('/_next/image?url=%2Fbrand%2Ffrequency%2Fphotos%2Fday-meditation-circle.jpg&w=1080&q=75')}[data-design="frequency"] [data-kit="site"] .pa-home .hero .bg.e{background-image:url('/_next/image?url=%2Fbrand%2Ffrequency%2Fbroll%2Fyoga-rave-uv-swirl-web.jpg&w=1080&q=75')}}
 [data-design="frequency"] [data-kit="site"][data-side="p"] .pa-home .hero .bg.e, [data-design="frequency"] [data-kit="site"][data-side="e"] .pa-home .hero .bg.p{opacity:0}
 [data-design="frequency"] [data-kit="site"] .pa-home .hero .h-xl{max-width:15ch;font-size:clamp(44px,6.4vw,94px)}
 [data-design="frequency"] [data-kit="site"] .pa-home .hero .eyebrow{margin:34px 0 18px;font:400 italic clamp(22px,2.2vw,30px)/1 var(--fq-font-serif);color:var(--fq-text-body)}

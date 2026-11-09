@@ -2,6 +2,11 @@
   "role": "People",
   "type": "RolePeople",
   "label": "People (all themes)",
+  "intent": "Introduce your hosts",
+  "why": "The faces people will meet when they show up.",
+  "group": "Trust",
+  "icon": "host",
+  "live": true,
   "replaces": [
     "SpaceTeam",
     "NetworkFounder",
@@ -27,17 +32,38 @@
       "eyebrow": "text<=40",
       "heading": "text<=120",
       "lead": "text<=280"
+    },
+    "labels": {
+      "items": {
+        "label": "People",
+        "hint": "Your hosts, with a few words each. Filled from your team when it has people."
+      },
+      "eyebrow": {
+        "label": "Small line above",
+        "hint": "A few words that set the scene. You can leave it out."
+      },
+      "heading": {
+        "label": "Heading",
+        "hint": "What this section is about, in your own words."
+      },
+      "lead": {
+        "label": "Intro",
+        "hint": "A sentence or two under the heading."
+      }
     }
   },
   "variants": {
     "founder": {
-      "label": "One person, in full"
+      "label": "One person, in full",
+      "thumb": "profile"
     },
     "grid": {
-      "label": "Team grid"
+      "label": "Team grid",
+      "thumb": "grid"
     },
     "list": {
-      "label": "List"
+      "label": "List",
+      "thumb": "list"
     }
   },
   "default": "grid",
@@ -121,5 +147,11 @@
     "role",
     "text",
     "title"
-  ]
+  ],
+  "surfaces": {
+    "site": "draw",
+    "profile": "draw",
+    "spotlight": "door",
+    "email": "draw"
+  }
 }

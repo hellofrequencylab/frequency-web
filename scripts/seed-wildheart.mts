@@ -30,7 +30,7 @@ import { pathToFileURL } from 'node:url'
 // ── Fixed ids (read from production on 2026-10-12) ─────────────────────────────────────────────
 const SPACE_ID = '5c7c46d1-a2ba-4e58-a942-c1fe6a68e74b'
 const OWNER_ID = 'c1d40f58-318b-4c7b-a331-21788d632fc9' // spaces.owner_profile_id, also the circle host
-const CIRCLE_ID = '242927ed-1ebf-4f7b-91e4-0d6a373d0b10' // the Space's primary circle (is_space_primary)
+const CIRCLE_ID = '242927ed-1ebf-4f7b-91e4-0d6a373d0b10' // the founding circle (a Space Circle until the ADR-1938 cutover kept it as a topic circle)
 const OLD_SLUG = 'wilheart' // the typo the Space was created with
 export const SLUG = 'wildheart'
 const TZ = 'America/Los_Angeles'
@@ -891,7 +891,7 @@ function renderSql(): string {
     '',
     '',
     '-- 2b. The three local circles beside it (the handoff\'s Circles page), real rows the Circles block draws:',
-    '--     a Space circle each (type space, cap 12, the owner as host until a trained host takes it), with',
+    '--     a circle each (the founding circle\'s type, cap 12, the owner as host until a trained host takes it), with',
     '--     the meeting line on its profile. Deterministic ids, so a re-run updates the same rows.',
     ...CIRCLES_MORE.flatMap((c) => [
       `insert into circles (id, name, slug, about, type, member_cap, member_count, status, host_id, space_id, neighborhood, primary_pillar, timezone)`,
@@ -900,8 +900,8 @@ function renderSql(): string {
       `insert into circle_profiles (circle_id, meetup) values (${q(c.id)}, ${qj(c.meetup)}) on conflict (circle_id) do update set meetup = excluded.meetup, updated_at = now();`,
       '',
     ]),
-    `-- VERIFY: select name, slug, neighborhood, member_cap, status, is_space_primary from circles where space_id = '${SPACE_ID}' order by is_space_primary desc, name;`,
-    '-- EXPECT: 4 rows: Primary Circle (Central, t), Eastside (East), Foothills (North), Riverside (West, forming)',
+    `-- VERIFY: select name, slug, neighborhood, member_cap, status from circles where space_id = '${SPACE_ID}' order by (slug = 'wildheart-primary-circle') desc, name;`,
+    '-- EXPECT: 4 rows: the founding circle (Central), Eastside (East), Foothills (North), Riverside (West, forming)',
     '',
     '-- ============================================================================================',
     '-- 4. Journeys (before events, so the Foundation sessions can carry journey_id). Columns are the',

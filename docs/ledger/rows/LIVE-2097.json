@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2097",
+  "title": "Vera proposes layout changes in the website editor: move, show or hide per device, duplicate, background and width, applied to the draft as one undo step",
+  "lane": "program",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/EDITOR-NEXT.md",
+    "ref": "Owner choice 2026-11-03 16:43Z (Web editor first) on the Vera assistants plan, /mnt/project-files/vera-assistants-2026-11-03/REPORT.md. First live slice of BLD-402 on the current editor."
+  },
+  "detail": "Today the editor's Vera only returns coaching questions for one selected text field. Build a closed layout vocabulary (lib/sites/editor/vera-layout.ts), a server action proposeWebsiteLayout that asks the model through one forced tool and parses the reply against the page outline, and a proposal list in the Vera bar: every line ticked by default, Apply writes only the ticked lines to the DRAFT as one labelled undo step, Dismiss changes nothing. No change kind carries words; a reply that tries to set text is refused line by line with a reason. Tone and width come from the theme's own options; no colour, font or CSS value. Publish stays the owner's button. Chips and selected text keep the questions-only coaching path.\n\nVera's layout proposals ship in the live website editor: structure only, ticked lines applied to the draft as one undo step, word-writing lines refused.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/vera-layout.mjs"
+  },
+  "closed": "2026-11-03",
+  "wave": "W7"
+}

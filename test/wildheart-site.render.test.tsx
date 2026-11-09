@@ -99,8 +99,8 @@ const SEATS: Record<string, { members: number; host: string }> = { 'wildheart-pr
 const live: MwLive = {
   events: liveEvents(),
   circles: [
-    { id: 'circle-1', slug: CIRCLE.slug, name: CIRCLE.name, about: CIRCLE.about, memberCount: SEATS[CIRCLE.slug].members, memberCap: CIRCLE.memberCap, status: 'active', imageUrl: null, neighborhood: CIRCLE.neighborhood, meets: CIRCLE.meetup.text, host: SEATS[CIRCLE.slug].host, hostAvatar: null, isSpacePrimary: true },
-    ...CIRCLES_MORE.map((c) => ({ id: c.id, slug: c.slug, name: c.name, about: c.about, memberCount: SEATS[c.slug].members, memberCap: CIRCLE.memberCap, status: c.status, imageUrl: null, neighborhood: c.neighborhood, meets: c.meetup.text, host: SEATS[c.slug].host, hostAvatar: null, isSpacePrimary: false })),
+    { id: 'circle-1', slug: CIRCLE.slug, name: CIRCLE.name, about: CIRCLE.about, memberCount: SEATS[CIRCLE.slug].members, memberCap: CIRCLE.memberCap, status: 'active', imageUrl: null, neighborhood: CIRCLE.neighborhood, meets: CIRCLE.meetup.text, host: SEATS[CIRCLE.slug].host, hostAvatar: null },
+    ...CIRCLES_MORE.map((c) => ({ id: c.id, slug: c.slug, name: c.name, about: c.about, memberCount: SEATS[c.slug].members, memberCap: CIRCLE.memberCap, status: c.status, imageUrl: null, neighborhood: c.neighborhood, meets: c.meetup.text, host: SEATS[c.slug].host, hostAvatar: null })),
   ],
   journeys: liveJourneys(),
 }

@@ -1,20 +1,15 @@
 {
   "id": "LIVE-1969",
-  "title": "Every signed-out way in opens the Create a Space wizard",
-  "lane": "live",
-  "priority": "P1",
-  "size": "M",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/create-a-space/rules.json",
-    "ref": "Daniel 2026-11-02: this should launch for anybody not logged in; Daniel asked for the signed-out Space creation wizard 2026-11-02; plan /mnt/project-files/create-a-space-wizard/PLAN.md"
+  "patch": {
+    "status": "done",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/create-space-doors.mjs"
+    },
+    "closed": "2026-11-02"
   },
-  "detail": "Signed-out /spaces/new, the operator CTA, /go and /for doors and theme-kit CTAs go to /create-a-space with kit, mode and niche hints. Signed-in stays on /launch.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node -e \"const f=require('fs');process.exit(f.readFileSync('app/(main)/spaces/new/page.tsx','utf8').includes('/create-a-space')?0:1)\"",
-    "checked": "2026-11-02",
-    "evidence": "Fails today: the file or change the probe names is not on main."
+  "append": {
+    "detail": "\n\nNo door moved: every way in still opens /spaces/new, and that page now sends a visitor with no account to /create-a-space carrying the door's kit, mode, niche, name and picks (lib/create-space/door.ts, pure, read back by the studio so the builder starts primed; the niche rides to the launch hold). Signed in still lands on the launch. The /for doors' Start free already built the /spaces/new path, so they are covered without an ADR-1238 change. Probe reads the page, the studio and the doors and runs door.test.ts over the real doors.\n\nOwner 2026-11-02 22:20Z: every logged-out click on launch, build a Space, Spotlight or website opens the wizard. Inventory: the operator CTAs already converge on /spaces/new (lib/site.ts OPERATOR_CTA_HREF, pricing, /for, /go, themes, footer). Three more doors bypassed it and now open the wizard too: the /spaces page and the home operator cards went to /join (SITE.createSpace now), and the Free Spotlight buttons (/launch/start) plus a cold /launch went to the Spotlight sign-in form (proxy hop and launchHomeHref({ signedIn: false })). /launch/claim, /launch/resume and the step pages stay the account's own. SCAN-885's probe admits the wizard for an operator act; LIVE-1871's probe reads the new rule."
   },
   "wave": "W7"
 }

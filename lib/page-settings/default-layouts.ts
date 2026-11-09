@@ -22,15 +22,10 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
   //      relevant, so it leads. It sits here AND on the What's On tab, deliberately: the tab is the
   //      full calendar, this is the next thing. On a SPACE CIRCLE it is the Space's own calendar
   //      (ADR-1393), which is what finally gives that box something to say.
-  //   2. circle-space-info — what this Space is, where it is, and the way back to it. SPACE CIRCLES
-  //      ONLY: it self-hides everywhere else, so on the other Circles this slot costs nothing and
-  //      the order below reads exactly as it did. It sits this high because on a Space's hub it is
-  //      ORIENTATION for a first-time visitor, and orientation that arrives after the roster has
-  //      arrived too late to orient anyone.
-  //   3. circle-members    — who is actually in the room. The roster tab still exists and still
+  //   2. circle-members    — who is actually in the room. The roster tab still exists and still
   //      carries the browse/manage affordances; this is the at-a-glance.
-  //   4. circle-practice   — this week's practice with its log button. The one member ACTION here.
-  //   5. circle-meeting    — how and where we meet. Evergreen orientation, so it goes last.
+  //   3. circle-practice   — this week's practice with its log button. The one member ACTION here.
+  //   4. circle-meeting    — how and where we meet. Evergreen orientation, so it goes last.
   // The three below it are PLACED BUT OFF, not deleted: an operator turns any of them back on with
   // one toggle in the Layout editor, and the id stays in the circle module set so the editor keeps
   // offering it. Why each is off by default:
@@ -63,9 +58,8 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
       main: { order: ['circle-challenges', 'circle-feed'], hidden: [], roles: {} },
       side: {
         order: [
-          // The five that render (circle-space-info only ever paints on a Space Circle).
+          // The four that render.
           'circle-events',
-          'circle-space-info',
           'circle-members',
           'circle-practice',
           'circle-meeting',

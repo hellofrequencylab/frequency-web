@@ -25,7 +25,8 @@ const INTENTS: [HomeIntent | 'all', string][] = [
 ]
 const SLOTS: [HomeSlot, string][] = [
   ['now', 'Now'],
-  ['tonight', 'Tonight'],
+  // Everything later today, whatever the hour: a 9am class is not "Tonight" (LIVE-FEED-DAYTIME). Each card says its part of the day.
+  ['tonight', 'Later today'],
   ['tomorrow', 'Tomorrow'],
   ['week', 'This week'],
 ]

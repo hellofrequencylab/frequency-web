@@ -19,6 +19,8 @@ const state = vi.hoisted(() => {
 
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn(), captureMessage: vi.fn(), setTag: vi.fn() }))
 vi.mock('@/lib/observability/tags', () => ({ setObservabilityTags: () => {} }))
+// The free last-success stamp (SEC-022) is covered in lib/observability; keep it off this test's client.
+vi.mock('@/lib/observability/cron-last-success', () => ({ isStampedCron: () => false, recordCronSuccess: async () => {} }))
 vi.mock('@/lib/log', () => ({
   log: {
     info: (event: string, fields?: Record<string, unknown>) => { state.infos.push({ event, fields }) },

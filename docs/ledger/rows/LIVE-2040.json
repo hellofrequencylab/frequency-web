@@ -1,18 +1,14 @@
 {
   "id": "LIVE-2040",
-  "title": "Register Services as a theme (hidden): theme id, editor theme, manifest",
-  "lane": "live",
-  "priority": "P1",
-  "size": "M",
-  "status": "open",
-  "source": {
-    "file": "docs/design-systems/services/rules.json",
-    "ref": "ds-intake services"
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-03",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/services-theme.mjs register"
+    }
   },
-  "detail": "Adds 'services' to MEGA_THEMES, SiteThemeId and THEME_LOOK, 'Services' to WebsiteTheme and every Record keyed by it, the generated services.manifest.json, and the pinned counts a registry addition trips (CONTRACT_THEME_IDS and the layouts none-for-others tests: one batched phrase ask). Private like House of Fates: out of every picker. Starts after the Theme Editor lane's look-keys PR merges, because both edit lib/theme/site-style.ts. The manifest is generated from MEGA_THEMES, so it cannot land earlier (a stray manifest fails manifests.test.ts).",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node scripts/probes/services-theme.mjs register"
-  },
-  "wave": "W7"
+  "append": {
+    "detail": "\n\nRegistered hidden: MEGA_THEMES, SiteThemeId, editor theme, manifest, SERVICES_SURFACE, Spotlight preset (own layouts follow with LIVE-1994), email catalog, kit loaders, blocks in the page editor. Pinned tests still need the owner's phrases (profile-kits, library, preview-tokens, block contract, conformance)."
+  }
 }

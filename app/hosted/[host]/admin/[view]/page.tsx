@@ -21,6 +21,8 @@ import { loadMensworkLive } from '@/lib/sites/menswork-data'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import type { ReactNode } from 'react'
 import { WebsiteEditorPage } from '@/components/sites/editor/editor-page'
+import { builderV3Cohort, builderV3Requested } from '@/lib/builder/state'
+import { envFlag, envStringOrNull } from '@/lib/env/string'
 
 // THE WEBSITE'S ADMIN PAGES (LIVE-864, owner ruling 2026-10-07: "Those are Admin display pages on the
 // site. Make them look exactly like the design system."). `/admin/overview` and `/admin/calendar` on a
@@ -39,7 +41,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 
-export default async function SiteAdminPage({ params }: { params: Promise<{ host: string; view: string }> }) {
+export default async function SiteAdminPage({ params, searchParams }: { params: Promise<{ host: string; view: string }>; searchParams: Promise<{ builder?: string | string[] }> }) {
   const { host: hostParam, view: viewParam } = await params
   const view = siteAdminView(viewParam)
   const host = normalizeHost(decodeURIComponent(hostParam))
@@ -50,7 +52,7 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
   const token = (await cookies()).get(SITE_ADMIN_COOKIE)?.value
   if (!(await siteAdminAllowed(token, host, space))) redirect(`${appOrigin()}${siteAdminHandoffPath(space.slug, view)}`)
 
-  if (view === 'editor') return <WebsiteEditorPage host={host} space={space} token={token!} />
+  if (view === 'editor') return <WebsiteEditorPage host={host} space={space} token={token!} builder={builderV3Requested((await searchParams).builder, envFlag('BUILDER_V3'), builderV3Cohort(envStringOrNull('BUILDER_V3_SPACES')), space.slug) ? 'v3' : undefined} />
 
   const brandName = space.brandName?.trim() || space.name
   const now = new Date()

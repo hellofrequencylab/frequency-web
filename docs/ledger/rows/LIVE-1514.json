@@ -1,0 +1,11 @@
+{
+  "id": "LIVE-1514",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "checked": "2026-11-04",
+      "evidence": "Probe passes. /themes is now the Theme Kits page (LIVE-2188): its kit map reads themePagePath from lib/themes/library.ts instead of listing THEME_LIBRARY (owner phrase 2026-11-04).",
+      "cmd": "node -e 'const f=require(\"fs\");for(const p of [\"app/(marketing)/themes/[theme]/page.tsx\",\"lib/themes/library.ts\",\"lib/themes/library-assets.ts\"])if(!f.existsSync(p)){console.error(p+\" is gone\");process.exit(1)};if(!f.readFileSync(\"components/frequency/site/pages/themes/frequency-themes.tsx\",\"utf8\").includes(\"themePagePath\")){console.error(\"index no longer reads the catalog\");process.exit(1)}'"
+    }
+  }
+}

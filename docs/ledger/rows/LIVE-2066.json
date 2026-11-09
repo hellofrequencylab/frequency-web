@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2066",
+  "title": "Create a Space builder: the Temple kit preview wears its own accents, surface, shape and pictures; no kit falls back to Temple's",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/create-space/preview-site.ts",
+    "ref": "Daniel 2026-11-03 05:47Z: finish everything; the gap named in LIVE-2063 (Temple kit, Free Human and Services accents fell back to Temple's four)"
+  },
+  "detail": "The Temple kit was the one kit in the signed-out picker whose preview was not its own: kitAccents, kitImagery and surfaceOf all fell back to Temple (classic), so a Temple kit pick showed Temple's four accents, the gathering photos and Temple's canvas, and the accent carried to the Space was Temple's. The preview now reads the kit's audience profiles from lib/theme/temple-kit.ts (six distinct families, the clay first), wears the kit's photo library, its surface (TEMPLE_KIT_SURFACE) and a shape of its own (Marcellus, Jost, the arched picture, the clay on the emphasised word). Free Human, Services and New World are not in the picker (lib/spaces/create-wizard.ts), but each now has its own accent family too, read from its theme module, so KIT_ACCENTS is total and the Temple fallback is gone. Probe: node scripts/probes/create-space-kit-accents.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/create-space-kit-accents.mjs"
+  },
+  "closed": "2026-11-03"
+}

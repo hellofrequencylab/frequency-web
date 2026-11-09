@@ -18,6 +18,12 @@ import { NetworkKitBar } from './network-kit-bar'
 import { NetworkKitHeaderState } from './network-kit-header-state'
 import { DESIGNER_CSS } from './designer-css'
 import { FREE_HUMAN_CSS } from './free-human-css'
+import { NEW_WORLD_CSS } from './new-world-css'
+import { CYBERWITCH_CSS } from './cyberwitch-css'
+import { NEW_WORLD_DIALS_CSS } from './new-world-dials-css'
+import { SERVICES_SITE_CSS } from './services-css'
+import { Clock, Mail, MapPin, Phone } from 'lucide-react'
+import { InlineText } from './inline-text'
 import { DesignerFooterTop, DesignerUtilityBar, phoneMenuFoot } from './designer-chrome'
 import { DesignerHeaderState } from './designer-header-state'
 import { FreeHumanBar } from './free-human-bar'
@@ -94,10 +100,14 @@ export type SiteLink = HouseHeaderLink
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human'
+  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'new-world' | 'services' | 'cyberwitch'
   season: MensworkSeason
   /** Network and Network Theme Kit: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
+  /** New World: the register the owner's Register dial picked (Night by default). */
+  register?: 'night' | 'day'
+  /** New World and Services: the Type voice, Motion and Images dials (LIVE-1997 schema 2), written as data-type, data-motion and data-image. */
+  dials?: { type: string; motion: string; image: string }
 }
 
 function skinCss(skin: SiteSkin | null, look = ''): string {
@@ -111,6 +121,9 @@ function skinCss(skin: SiteSkin | null, look = ''): string {
   if (skin.theme === 'midnight') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MIDNIGHT_CSS
   if (skin.theme === 'designer') return HOUSE_CSS + FREQUENCY_PAGE_CSS + DESIGNER_CSS
   if (skin.theme === 'free-human') return HOUSE_CSS + FREQUENCY_PAGE_CSS + FREE_HUMAN_CSS
+  if (skin.theme === 'new-world') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS
+  if (skin.theme === 'cyberwitch') return HOUSE_CSS + FREQUENCY_PAGE_CSS + CYBERWITCH_CSS
+  if (skin.theme === 'services') return HOUSE_CSS + FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
 
@@ -207,6 +220,14 @@ export function SiteChrome({
   // Free Human draws the gilt arch lockup, an announce bar, a vellum header with four mega menus and Calendar, the bag and account
   // tools, and the sky footer with the letter (components/sites/free-human-*.tsx).
   const fh = skin?.theme === 'free-human'
+  // Services draws the kit's header (ui_kits/site/Chrome.jsx): a full-width ink bar with a glow hairline, the name as a wordmark, the
+  // menu in a glass capsule on the right, the phone from the footer's contact column, and the accent button. Over a photo hero it lies
+  // on the picture. The footer leads with the closing band, prints contact lines with their icons, and ends on the dim wordmark.
+  const sv = skin?.theme === 'services'
+  // New World's footer is the same kit footer (handoff ui_kits/site/Chrome.jsx SiteFooter): closing line and button, contact lines with
+  // their icons, the dim wordmark. Without a closing band of its own it closes on the blurb and the site's own button.
+  const kitFoot = sv || skin?.theme === 'new-world'
+  const svPhone = sv ? footer?.columns.flatMap((c) => c.links).find((l) => /^tel:/i.test(l.href)) ?? null : null
   const fhShop = fh ? templeKitShopHref(links) : null
   const fhLinks: HouseHeaderLink[] | null = fh ? freeHumanNavLinks(links, homeHref) : null
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
@@ -224,31 +245,49 @@ export function SiteChrome({
       skinned={!!skin}
       fadeOnPause={fadeOnPause}
       member={member}
-      tools={tk ? <TempleKitTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={tkShop} /> : fh ? <FreeHumanTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={fhShop} /> : tools}
+      tools={sv && svPhone ? <a className="sv-head-phone" href={svPhone.href}><Phone size={14} strokeWidth={2} aria-hidden="true" />{svPhone.label}</a> : tk ? <TempleKitTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={tkShop} /> : fh ? <FreeHumanTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={fhShop} /> : tools}
       megaChevron={fh ? <FreeHumanGlyph name="chevron-down" size={14} /> : null}
       defaultMega={fh ? previewMega : null}
       menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}
-      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? FREE_HUMAN_CHROME_COPY.wordmark.tagline} logoUrl={logoUrl} /> : null}
+      brandMark={sv ? <span className="sv-wordmark" style={{ ['--sv-wm-len' as string]: brandName.length }}>{brandName}</span> : wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? FREE_HUMAN_CHROME_COPY.wordmark.tagline} logoUrl={logoUrl} /> : null}
     />
   )
   const year = new Date().getFullYear()
   const tkColumns = tk ? templeKitFooterColumns(links, null) : []
-  const footerColumn = (col: { title: string; links: { label: string; href: string }[] }) => (
-    <nav key={col.title} aria-label={col.title} className="hs-footer-col">
-      <span className="hs-footer-col-title">{col.title}</span>
-      {col.links.map((l) => (
-        <a key={`${l.href}:${l.label}`} href={l.href}>
-          {l.label}
-        </a>
-      ))}
-    </nav>
-  )
+  const svIcon = (href: string | null, text: string) => {
+    const Icon = href && /^tel:/i.test(href) ? Phone : href && /^mailto:/i.test(href) ? Mail : /\d\s*[ap]\b|\d:\d\d|\b(am|pm)\b/i.test(text) ? Clock : MapPin
+    return <span className="sv-foot-icon" aria-hidden="true"><Icon size={16} strokeWidth={2} /></span>
+  }
+  const footerColumn = (col: { title: string; links: { label: string; href: string }[]; lines?: string[] }) => {
+    const contact = kitFoot && col.links.some((l) => /^(tel|mailto):/i.test(l.href))
+    return (
+      <nav key={col.title} aria-label={col.title} className="hs-footer-col">
+        <span className="hs-footer-col-title">{col.title}</span>
+        {col.links.map((l) => (
+          <a key={`${l.href}:${l.label}`} href={l.href}>
+            {contact && svIcon(l.href, l.label)}
+            {l.label}
+          </a>
+        ))}
+        {kitFoot && col.lines?.map((line) => (
+          <span key={line} className="sv-foot-line">
+            {contact && svIcon(null, line)}
+            {line}
+          </span>
+        ))}
+      </nav>
+    )
+  }
   return (
     <div
       data-site-root=""
       data-house-site=""
       data-house-fonts={themeFonts ? 'theme' : 'house'}
       data-house-theme={skin?.theme}
+      data-th={skin?.theme === 'new-world' || skin?.theme === 'services' ? skin.register ?? 'night' : undefined}
+      data-type={skin?.dials?.type}
+      data-motion={skin?.dials?.motion}
+      data-image={skin?.dials?.image}
       data-season={net || nk ? undefined : skin?.season}
       data-scheme={net || nk ? skin?.scheme : undefined}
       data-sign={skin?.theme === 'wildheart' ? sky(new Date()).sign : undefined}
@@ -316,11 +355,31 @@ export function SiteChrome({
                 <MidnightLogo name={brandName} tagline={tagline} />
               ) : tk ? (
                 <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} />
+              ) : kitFoot && (footer?.band || !sv) ? (
+                <span className="sv-wordmark">{brandName}</span>
               ) : (
                 brandName
               )}
             </a>
-            {(tk ? footer?.blurb : footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
+            {kitFoot && footer?.band ? (
+              <>
+                <h3 className="sv-display sv-foot-band"><InlineText text={footer.band.title} /></h3>
+                {footer.band.ctas.map((c) => (
+                  <a key={c.href} className="sv-btn sv-btn--accent" href={c.href}>
+                    <span>{c.label}</span>
+                  </a>
+                ))}
+              </>
+            ) : (
+              <>
+                {(tk ? footer?.blurb : footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
+                {kitFoot && !sv && cta && (
+                  <a className="sv-btn sv-btn--accent" href={cta.href} {...(cta.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                    <span>{cta.label}</span>
+                  </a>
+                )}
+              </>
+            )}
             {tk && <TempleKitLetter slug={spaceSlug ?? null} subscribe={footer?.subscribe ?? null} />}
             {midnight && footer?.subscribe && (
               <div className="mn-footer-subscribe">
@@ -344,6 +403,7 @@ export function SiteChrome({
           ) : null}
         </div>
       )}
+      {kitFoot && (showBrandFooter ?? !!skin) && <div className="sv-foot-mark" aria-hidden="true">{brandName}</div>}
       {adminLinks && <SiteFooterAdmin links={adminLinks.menu} console={adminLinks.console} check={adminLinks.check} />}
       {wild && (
         <div className="hs-footer-ornament">

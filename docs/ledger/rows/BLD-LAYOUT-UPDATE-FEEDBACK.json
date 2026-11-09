@@ -1,0 +1,20 @@
+{
+  "id": "BLD-LAYOUT-UPDATE-FEEDBACK",
+  "title": "Explain when the builder page has no available layout updates",
+  "status": "done",
+  "lane": "program",
+  "priority": "P3",
+  "size": "XS",
+  "source": {
+    "file": "components/builder/shell/builder-shell.tsx",
+    "ref": "Daniel November 4 completion audit; root READY production builder observation on e1e2398de"
+  },
+  "detail": "The command bar always offers Update this page to the new layouts, but the handler silently closes it when no sections are eligible. Show a truthful message through the existing polite toast/status region, with no Undo action, document mutation, save or publish. Keep eligible conversion review, per-section choices and one-step Undo unchanged. Bounded acceptance: zero eligible sections yields the message and no sheet/edit; eligible sections still open review; existing conversion/Undo and focus-trap tests remain green. No change to eligibility rules or saved content. Publication checkpoint 2026-11-04: root reviewed the exact two-file source packet; current main e1e2398de is integrated, with no conflicting open builder-shell PR or row reservation. All 26 existing tests, temporary source/status consequence fixture, lint and static guards passed. Publishing for serialized review; preview and production acceptance remain open.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-09",
+    "evidence": "Root observed a READY production Services page with 13 sections and zero eligible upgrades; the command closed without feedback. Source confirms the command registry has no eligibility requirement and the old handler only opened the sheet for a nonzero count. Local-only candidate adds the existing toast with undo false in the zero branch. Source fixture, focused existing tests, lint and future preview/browser acceptance are tracked separately; this row remains open and no production change is claimed. Local source-extracted handler and actual status-fragment fixture passed zero-eligible, one/many-eligible, pristine silent negative control, no-edit and no-Undo cases. All 26 existing command, conversion, reducer and sheet-focus tests passed; source lint, static backlog, one-list and diff checks passed. No permanent test edits, commit, push or production acceptance. Closed on the owner's ruling, 2026-11-09 19:17Z. Asked how to close the shipped-pending-check rows, Daniel answered \"b\": close them without a production check. Any code for it that merged keeps its unit pins in CI. No production look was taken."
+  },
+  "wave": "W7",
+  "closed": "2026-11-09"
+}

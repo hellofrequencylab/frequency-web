@@ -2533,7 +2533,6 @@ export type Database = {
           id: string
           image_url: string | null
           is_demo: boolean
-          is_space_primary: boolean
           latitude: number | null
           longitude: number | null
           member_cap: number
@@ -2566,7 +2565,6 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_demo?: boolean
-          is_space_primary?: boolean
           latitude?: number | null
           longitude?: number | null
           member_cap?: number
@@ -2599,7 +2597,6 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_demo?: boolean
-          is_space_primary?: boolean
           latitude?: number | null
           longitude?: number | null
           member_cap?: number
@@ -4079,6 +4076,100 @@ export type Database = {
             columns: ["migrated_to_room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      create_space_drafts: {
+        Row: {
+          converted_at: string | null
+          created_at: string
+          draft: Json
+          email: string
+          handle: string | null
+          id: string
+          purge_after: string
+          saved_at: string
+          signup_lead_id: string | null
+          started_at: string | null
+          step_reached: number
+          token_hash: string
+          tz: string | null
+          unsubscribed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string
+          draft?: Json
+          email: string
+          handle?: string | null
+          id?: string
+          purge_after?: string
+          saved_at?: string
+          signup_lead_id?: string | null
+          started_at?: string | null
+          step_reached?: number
+          token_hash: string
+          tz?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string
+          draft?: Json
+          email?: string
+          handle?: string | null
+          id?: string
+          purge_after?: string
+          saved_at?: string
+          signup_lead_id?: string | null
+          started_at?: string | null
+          step_reached?: number
+          token_hash?: string
+          tz?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "create_space_drafts_signup_lead_id_fkey"
+            columns: ["signup_lead_id"]
+            isOneToOne: false
+            referencedRelation: "signup_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      create_space_draft_email_log: {
+        Row: {
+          draft_id: string
+          id: string
+          message_ref: string | null
+          sent_at: string
+          trigger_kind: string
+        }
+        Insert: {
+          draft_id: string
+          id?: string
+          message_ref?: string | null
+          sent_at?: string
+          trigger_kind: string
+        }
+        Update: {
+          draft_id?: string
+          id?: string
+          message_ref?: string | null
+          sent_at?: string
+          trigger_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "create_space_draft_email_log_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "create_space_drafts"
             referencedColumns: ["id"]
           },
         ]
@@ -12027,6 +12118,7 @@ export type Database = {
           scope_event_id: string | null
           scope_id: string | null
           scope_profile_id: string | null
+          scope_space_id: string | null
           updated_at: string | null
           visibility: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -12051,6 +12143,7 @@ export type Database = {
           scope_event_id?: string | null
           scope_id?: string | null
           scope_profile_id?: string | null
+          scope_space_id?: string | null
           updated_at?: string | null
           visibility?: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -12075,6 +12168,7 @@ export type Database = {
           scope_event_id?: string | null
           scope_id?: string | null
           scope_profile_id?: string | null
+          scope_space_id?: string | null
           updated_at?: string | null
           visibility?: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -12119,6 +12213,13 @@ export type Database = {
             columns: ["scope_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_scope_space_id_fkey"
+            columns: ["scope_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -13945,6 +14046,42 @@ export type Database = {
           },
         ]
       }
+      retired_space_circles: {
+        Row: {
+          circle_id: string
+          retired_at: string
+          slug: string
+          space_id: string
+        }
+        Insert: {
+          circle_id: string
+          retired_at?: string
+          slug: string
+          space_id: string
+        }
+        Update: {
+          circle_id?: string
+          retired_at?: string
+          slug?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retired_space_circles_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: true
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retired_space_circles_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reward_grants: {
         Row: {
           amount: number
@@ -15100,39 +15237,6 @@ export type Database = {
           },
           {
             foreignKeyName: "space_calendar_private_feeds_space_id_fkey"
-            columns: ["space_id"]
-            isOneToOne: false
-            referencedRelation: "spaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      space_circle_optouts: {
-        Row: {
-          left_at: string
-          profile_id: string
-          space_id: string
-        }
-        Insert: {
-          left_at?: string
-          profile_id: string
-          space_id: string
-        }
-        Update: {
-          left_at?: string
-          profile_id?: string
-          space_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "space_circle_optouts_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "space_circle_optouts_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
@@ -17375,6 +17479,38 @@ export type Database = {
             columns: ["undo_of"]
             isOneToOne: false
             referencedRelation: "space_vera_changes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_wall_settings: {
+        Row: {
+          followers_interact: boolean
+          post_access: string
+          read_access: string
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          followers_interact?: boolean
+          post_access?: string
+          read_access?: string
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          followers_interact?: boolean
+          post_access?: string
+          read_access?: string
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_wall_settings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -19790,18 +19926,7 @@ export type Database = {
           value: string
         }[]
       }
-      enrol_in_space_circle: {
-        Args: { p_profile_id: string; p_space_id: string }
-        Returns: boolean
-      }
       ensure_calendar_token: { Args: never; Returns: string }
-      ensure_space_circle: {
-        Args: {
-          p_space_id: string
-          p_status: Database["public"]["Enums"]["group_status"]
-        }
-        Returns: string
-      }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       event_calendar_feed: {
         Args: { _token: string }
@@ -20704,6 +20829,25 @@ export type Database = {
           visibility: string
         }[]
       }
+      space_wall_feed: {
+        Args: { _before?: string; _limit?: number; _space_id: string }
+        Returns: {
+          author: Json
+          body: string
+          comment_count: number
+          created_at: string
+          engagement_score: number
+          id: string
+          is_demo: boolean
+          is_pinned: boolean
+          media_urls: string[]
+          post_type: string
+          reaction_count: number
+          reactions: Json
+          scope_id: string
+          visibility: string
+        }[]
+      }
       search_handles_public: {
         Args: { q: string }
         Returns: {
@@ -21378,10 +21522,6 @@ export type Database = {
       st_wrapx: {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
-      }
-      sync_space_circle_roster: {
-        Args: { p_space_id: string }
-        Returns: number
       }
       transition_space_plan_stage: {
         Args: { p_plan_id: string; p_space_id: string; p_stage: string }

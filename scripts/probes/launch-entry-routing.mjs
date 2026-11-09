@@ -12,7 +12,8 @@ const must = (name, text, re) => { if (!re.test(text)) bad.push(name) }
 const mustNot = (name, text, re) => { if (re.test(text)) bad.push(name) }
 
 if (launchHomeHref({ signedIn: true }) !== '/launch') bad.push('a signed-in member does not land on /launch')
-if (launchHomeHref({ signedIn: false }) !== '/launch/step/spotlight') bad.push('a visitor is not held by the Spotlight form')
+// Owner 2026-11-02 (LIVE-1969): a visitor with no account opens the Create a Space wizard, not the Spotlight form.
+if (launchHomeHref({ signedIn: false }) !== '/create-a-space') bad.push('a visitor is not sent to the Create a Space wizard')
 if (launchHomeHref({ signedIn: true, lid: 'a&b' }) !== '/launch') bad.push('the helper lets text into the address')
 if (!spotlightArrivalGoesHome({ hasLaunch: true }) || spotlightArrivalGoesHome({ hasLaunch: true, go: '1' })) bad.push('the cold-arrival rule is wrong')
 if (inFlowHref('/launch/step/spotlight') !== '/launch/step/spotlight?go=1') bad.push('inFlowHref does not mark the step')
