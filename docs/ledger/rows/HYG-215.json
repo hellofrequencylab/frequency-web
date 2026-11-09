@@ -1,0 +1,6 @@
+{
+  "id": "HYG-215",
+  "append": {
+    "detail": "2026-11-09 retirement scan: the original patch (f6dd66168) naming the eight modules is not in the repo, so I scanned components/ and lib/ for navigation, menu, rail, dock, header, footer and tab modules that nothing imports. One is truly dead: components/frequency/members/route-tabs.tsx (33 lines, no importer, test or probe); it is deleted here. The other candidates are live (lib/nav/prefetch-fuse.ts is installed from instrumentation-client.ts, lib/nav/marker-cookie and the two rewrite modules from proxy.ts, marketing-header/footer from app/page.tsx), or are guard targets (admin-rail-drawer-column, header-offset). Seven of the eight retirements are still unidentified, so the row stays OPEN."
+  }
+}
