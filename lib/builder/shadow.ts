@@ -15,7 +15,7 @@ import { tuneProjection } from './tune'
 // difference; an unexplained delta fails lib/builder/shadow.test.ts over the frozen kit corpus and is logged when a
 // real draft opens in the builder (components/sites/editor/editor-page.tsx), so the cohort rollout has evidence.
 
-export interface ShadowSection {
+interface ShadowSection {
   id: string
   type: string
   /** What the editor calls the section in its outline. */
@@ -26,11 +26,11 @@ export interface ShadowSection {
   fields: string[]
 }
 
-export interface ShadowView { sections: ShadowSection[] }
+interface ShadowView { sections: ShadowSection[] }
 
-export type ShadowDeltaKind = 'section' | 'name' | 'hidden' | 'field'
+type ShadowDeltaKind = 'section' | 'name' | 'hidden' | 'field'
 
-export interface ShadowDelta {
+interface ShadowDelta {
   id: string
   type: string
   kind: ShadowDeltaKind
@@ -70,7 +70,7 @@ export function builderView(doc: Data, config: Config, device: Device): ShadowVi
 }
 
 /** Why a field the current inspector offers is not in the Tune rail, or null when nothing explains it. */
-export function explainField(type: string, key: string, config: Config, side: 'classic' | 'builder'): string | null {
+function explainField(type: string, key: string, config: Config, side: 'classic' | 'builder'): string | null {
   const field = fieldsOf(config, type)[key]
   if (!field) return null
   if (side === 'classic') {
@@ -106,7 +106,7 @@ export function shadowDeltas(doc: Data, config: Config, device: Device): ShadowD
   return deltas
 }
 
-export interface ShadowReport {
+interface ShadowReport {
   /** Sections compared, over every page and device. */
   sections: number
   deltas: ShadowDelta[]
