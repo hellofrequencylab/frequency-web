@@ -6,7 +6,7 @@
   "why": "Times people can save without a back and forth.",
   "group": "Show up",
   "icon": "ticket",
-  "live": false,
+  "live": true,
   "replaces": [
     "SpaceBooking",
     "NetworkKitInnerBook"
