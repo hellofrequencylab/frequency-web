@@ -52,6 +52,7 @@ export interface CueSettings {
   ambientTrack: string | null
   ambientVolume: number
   warmupSec: number
+  showBreathCount: boolean
 }
 
 export interface TimerSettings {
@@ -123,6 +124,7 @@ export function settingsFromPrefs(prefs: Partial<OnAirPrefs> | null | undefined)
       ambientTrack: p.ambientTrack === undefined ? (DEFAULT_PREFS.ambientTrack ?? null) : p.ambientTrack,
       ambientVolume: coerceAmbientVolume(p.ambientVolume),
       warmupSec: clampWarmupSec(p.warmupSec),
+      showBreathCount: typeof p.showBreathCount === 'boolean' ? p.showBreathCount : true,
     },
   }
 }
@@ -164,6 +166,7 @@ export function sanitizePrefsPatch(input: unknown): Partial<OnAirPrefs> | null {
   else if (typeof input.ambientTrack === 'string' && input.ambientTrack.length > 0 && input.ambientTrack.length <= 20) out.ambientTrack = input.ambientTrack
   if (typeof input.ambientVolume === 'number' && Number.isFinite(input.ambientVolume)) out.ambientVolume = Math.min(1, Math.max(0, input.ambientVolume))
   if (input.warmupSec === 3 || input.warmupSec === 5 || input.warmupSec === 10) out.warmupSec = input.warmupSec
+  if (typeof input.showBreathCount === 'boolean') out.showBreathCount = input.showBreathCount
   if (input.move === null) out.move = null
   else if (isRecord(input.move)) out.move = sanitizeMovementConfig(input.move)
   return Object.keys(out).length > 0 ? out : null
@@ -273,4 +276,27 @@ export function diffSettings(prev: TimerSettingsPatch, next: TimerSettingsPatch)
   }
   if (next.move !== undefined && JSON.stringify(next.move) !== JSON.stringify(prev.move)) out.move = next.move
   return Object.keys(out).length ? out : null
+}
+
+/** The one-line value summaries the door's collapsed sub-menu rows show (LIVE-2233), so a member
+ *  never has to open a row to know its state. Pure; the names come from the pattern and voice lists. */
+export function describeSections(
+  s: TimerSettings,
+  names: { pattern: string; voice: string; ambient: string | null },
+  opts: { breathMode: boolean },
+): { breath: string; sound: string; ambient: string; feel: string } {
+  const custom = `${s.still.customIn}-${s.still.customHold}-${s.still.customOut}`
+  const breath = s.still.patternSlug === 'custom' ? `Custom ${custom}` : names.pattern
+  const sound = !s.cues.bell
+    ? 'Off'
+    : [
+        names.voice,
+        !opts.breathMode && s.cues.bellEveryMin > 0 ? `every ${s.cues.bellEveryMin} min` : null,
+        s.cues.endBell ? 'end bell' : 'no end bell',
+      ]
+        .filter(Boolean)
+        .join(', ')
+  const ambient = s.cues.ambientTrack && names.ambient ? `${names.ambient}, ${Math.round(s.cues.ambientVolume * 100)}%` : 'Off'
+  const feel = `${s.cues.warmupSec} s countdown, vibration ${s.cues.haptics ? 'on' : 'off'}`
+  return { breath, sound, ambient, feel }
 }

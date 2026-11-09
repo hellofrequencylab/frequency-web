@@ -426,6 +426,8 @@ export interface OnAirPrefs {
   /** The warm-up countdown before a sit begins, in seconds: 3 | 5 | 10. Default 5
    *  (the original pre-roll). Drives the armed pre-roll on the live screen. */
   warmupSec?: number
+  /** Show the per-phase breath count on the Breathe visualizer. Default on (LIVE-2233). */
+  showBreathCount?: boolean
   /** The last Get Moving configuration the member ran unattached (Free Practice memory), kept
    *  beside the sit's choices so another device opens the same way (LIVE-2232). */
   move?: MovementConfig | null

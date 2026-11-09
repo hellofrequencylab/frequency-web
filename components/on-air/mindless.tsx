@@ -29,6 +29,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import type { SessionMode } from '@/lib/on-air'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { loadOnAirSession } from '@/app/(main)/on-air/actions'
 import { getActiveTimerSession } from '@/app/(main)/on-air/timer-session-actions'
@@ -142,6 +143,9 @@ type OverlayState =
       phase: 'ready'
       setup?: boolean
       minutesOverride?: number
+      /** The Be Still sub-mode and breath pattern the door chose (LIVE-2233); the engine seeds from them. */
+      stillMode?: SessionMode
+      patternSlug?: string
       data: OnAirSessionData
       /** The mode the door is showing (auto-routed from the practice / entry; member-togglable). */
       mode: TimerMode
@@ -412,6 +416,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   function configured(choice: SetupChoice, advanced = false) {
     setState((s) => s.phase !== 'ready' ? s : ({ ...s, setup: false, mode: choice.mode,
       practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, autoStart: !advanced,
+      stillMode: choice.stillMode, patternSlug: choice.patternSlug,
       movementMode: choice.mode === 'move' ? s.data.practices.find((p) => p.id === choice.practiceId)?.movementConfig?.mode : undefined,
       data: { ...s.data, defaultPracticeId: choice.practiceId } }))
   }
@@ -447,7 +452,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
           </div>
         </MindlessShell>
       )}
-      {state.phase === 'ready' && state.setup && <CompactSetup practices={state.data.practices} initialMode={state.mode} initialPracticeId={state.practiceId ?? state.data.defaultPracticeId ?? undefined} rememberedMinutes={state.data.prefs.minutes} onStart={configured} onAdvanced={(choice) => configured(choice, true)} onClose={close} />}
+      {state.phase === 'ready' && state.setup && <CompactSetup practices={state.data.practices} initialMode={state.mode} initialPracticeId={state.practiceId ?? state.data.defaultPracticeId ?? undefined} prefs={state.data.prefs} explicitPracticeId={state.practiceId} journeyLegs={state.data.journeyLegs ?? []} practicedToday={state.data.practicedToday} onStart={configured} onAdvanced={(choice) => configured(choice, true)} onClose={close} />}
       {state.phase === 'ready' && !state.setup &&
         (state.data.practices.length === 0 ? (
           <MindlessShell onClose={close}>
@@ -511,6 +516,9 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             // practice opens the Just Log note screen; a generic open still lands on Meditate.
             explicitPracticeId={state.practiceId}
             prefs={state.data.prefs}
+            // The door's Be Still choices (LIVE-2233): the sub-mode and breath pattern it was set to.
+            initialMode={state.stillMode}
+            initialPattern={state.patternSlug}
             practicedToday={state.data.practicedToday}
             journeyLegs={state.data.journeyLegs ?? []}
             resumeFromSec={state.resume?.resumeFromSec}

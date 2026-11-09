@@ -252,9 +252,16 @@ export function OnAirSession({
   mode: doorMode,
   onModeChange,
   minutesOverride,
+  initialMode,
+  initialPattern,
 }: {
   practices: OnAirPractice[]
   defaultPracticeId: string | null
+  /** The Be Still sub-mode the door chose (LIVE-2233). Wins over the practice's flavour for a fresh
+   *  sit; a resume still runs the silent timer. Absent everywhere else, so the routing is unchanged. */
+  initialMode?: SessionMode
+  /** The breath pattern the door chose. Wins over the practice's authored pattern and the saved one. */
+  initialPattern?: string
   /** The practice this open EXPLICITLY requested (a practice-button launch), if any. An explicit
    *  log-only ('none') practice opens the Just Log note screen; a generic/daily open still lands
    *  on Meditate (owner directive) even when a log-only practice is due. */
@@ -379,7 +386,7 @@ export function OnAirSession({
   // The opening mode is routed by the initial practice's timer_kind (item #2). A resume always
   // opens the silent timer to run the remaining time.
   const [mode, setMode] = useState<SessionMode>(
-    resuming ? 'timer' : modeForPractice(initialId),
+    resuming ? 'timer' : (initialMode ?? modeForPractice(initialId)),
   )
   // A resume runs the REMAINING time; otherwise a practice's own length wins, then the saved
   // minutes, then the remembered open length. A locked practice always uses its length.
@@ -402,7 +409,7 @@ export function OnAirSession({
   // practice ships Box, P4), then the member's last-saved choice, then their pref. The member can
   // still switch patterns in setup.
   const [patternSlug, setPatternSlug] = useState(
-    practices.find((p) => p.id === initialId)?.breathPattern ?? settings.still.patternSlug,
+    initialPattern ?? practices.find((p) => p.id === initialId)?.breathPattern ?? settings.still.patternSlug,
   )
   const [customIn, setCustomIn] = useState(settings.still.customIn)
   const [customHold, setCustomHold] = useState(settings.still.customHold)
@@ -1451,7 +1458,7 @@ export function OnAirSession({
                 {showBreath ? (
                   // The visualizer keeps breathing past the target (auto-continue) so the deeper
                   // time still has its rhythm; only a real pause stops it.
-                  <BreathVisualizer pattern={pattern} startedAt={startedAt} paused={paused} />
+                  <BreathVisualizer pattern={pattern} startedAt={startedAt} paused={paused} showCount={settings.cues.showBreathCount} />
                 ) : (
                   <p
                     className={`text-8xl font-semibold tabular-nums ${ended ? 'text-primary-strong' : 'text-text/60'}`}
