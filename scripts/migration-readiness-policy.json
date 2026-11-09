@@ -560,20 +560,6 @@
           "headMode": "100644"
         },
         {
-          "file": "components/spotlight/space-spotlight-editor.tsx",
-          "status": "modified",
-          "sha256": "f3bcd9fd7aca5ca759dc431c0288dbb477b141496e7e1e069a0a2d57aef663f9",
-          "baseMode": "100644",
-          "headMode": "100644"
-        },
-        {
-          "file": "docs/ledger/rows/LIVE-1335.json",
-          "status": "removed",
-          "sha256": "aef268bceae273806c09860f685c45b57ebf201fe6a81f4e9f8312ed47eb9125",
-          "baseMode": "100644",
-          "headMode": "000000"
-        },
-        {
           "file": "docs/ledger/rows/LIVE-2095.json",
           "status": "modified",
           "sha256": "814ce838ca08171223fc0d5def6b829e291d49436890e389ae2553b1c8ff680e",
