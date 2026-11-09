@@ -166,6 +166,8 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
   // capture before Save, so an abandoned draft gets its come-back email): debounced after every change, and by beacon
   // when the tab goes. Not gated on the contact step's Continue.
   const flashRef = useRef<((text: string) => void) | null>(null)
+  /** The contact step was just finished: the next successful server save says so in its toast. */
+  const contactToast = useRef(false)
   const sendable = (d: BuilderDraft) => Boolean(leadEmailOf(d) && d.name.trim()) && !trappedRef.current && !sealed.current
   const fingerprint = (d: BuilderDraft) => serializeDraft({ ...d, leadToken: null })
   const sendToServer = useCallback(async () => {
@@ -183,6 +185,7 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
     if (!r.ok) { lastSent.current = ''; setSaveState('saved'); return }
     setSavedTo(leadEmailOf(d))
     setSaveState('saved')
+    if (contactToast.current) { contactToast.current = false; flashRef.current?.('Contact section added. Draft saved to your email.') }
     if (r.token !== d.leadToken) setDraft((cur) => ({ ...cur, leadToken: r.token }))
     if (r.handleTaken) { setErr('slug'); flashRef.current?.('That handle was just taken. Pick another.') }
   }, [])
@@ -384,7 +387,9 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
       if (!EMAIL.test(draft.email.trim())) { setErr('email'); return }
       signal('createspace.lead', { has_phone: draft.phone.trim().length > 0, has_where: draft.where.trim().length > 0 })
       markDone('contact')
-      flash('Contact section added. Saving your draft to your email.')
+      // The toast names the save once the server has it (sendToServer); until then only the step is announced.
+      contactToast.current = true
+      flash('Contact section added.')
       advance({ ...draft.done, contact: true }, 2)
     } else if (step === 3) {
       markDone('photos')

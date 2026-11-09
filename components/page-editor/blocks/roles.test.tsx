@@ -262,9 +262,10 @@ describe('live rows', () => {
     practices: { practices: [{ id: 'p1', title: 'Morning breath', summary: 'Five quiet minutes' }], journeys: [{ slug: 'j1', title: 'Thirty days of walking', summary: null }] },
     community: [{ slug: 'c1', name: 'Sunrise circle', about: 'Meets on the beach' }],
     profile: { address: '12 Pier Road', hours: 'Mon to Fri 9-5\nSat 10-2', phone: '555 0100', email: 'hi@demo.test' },
+    booking: { enabled: true, href: '/spaces/demo/book', timezone: 'America/Los_Angeles', openings: [{ startsAt: '2026-11-12T17:00:00.000Z', slotMinutes: 45 }] },
   }
-  const empty = { spaceId: 's1', stats: [], reviews: { latest: [] }, team: [], chapters: [], practices: { practices: [], journeys: [] }, community: [], profile: {} }
-  const cases: [RoleId, string, string][] = [['stats', '1,234', 'People here'], ['proof', 'It felt like coming home.', 'Maya R.'], ['people', 'Jo Lee', 'Admin'], ['chapters', 'North County', 'Encinitas'], ['offerings', 'Morning breath', 'Sunrise circle'], ['locations', '12 Pier Road', 'Mon to Fri 9-5 · Sat 10-2']]
+  const empty = { spaceId: 's1', stats: [], reviews: { latest: [] }, team: [], chapters: [], practices: { practices: [], journeys: [] }, community: [], profile: {}, booking: { enabled: false, href: null, openings: [] } }
+  const cases: [RoleId, string, string][] = [['stats', '1,234', 'People here'], ['proof', 'It felt like coming home.', 'Maya R.'], ['people', 'Jo Lee', 'Admin'], ['chapters', 'North County', 'Encinitas'], ['offerings', 'Morning breath', 'Sunrise circle'], ['locations', '12 Pier Road', 'Mon to Fri 9-5 · Sat 10-2'], ['booking', 'Thu, Nov 12', '45 minute session']]
   it.each(cases)('%s draws the Space\'s rows', (id, a, b) => {
     const html = render(id, sampleOf(id), { space })
     expect(html).toContain(a)
@@ -275,9 +276,11 @@ describe('live rows', () => {
     expect(render(id, sampleOf(id), { space: empty })).toBe('')
     expect(render(id, sampleOf(id), undefined)).toContain('data-role="' + id + '"')
   })
-  it('Booking draws nothing on a live page while it only holds the sample times', () => {
-    expect(render('booking', sampleOf('booking'), { space: empty })).toBe('')
-    expect(render('booking', sampleOf('booking'), undefined)).toContain('data-role="booking"')
+  it('Booking labels an opening in the Space\'s own clock and links it to the booking tab', () => {
+    const html = render('booking', sampleOf('booking'), { space })
+    expect(html).toContain('9:00 AM')
+    expect(html).toContain('/spaces/demo/book')
+    expect(html).not.toContain('Your first open session')
   })
   it('a block the owner has written stays when the Space has no rows, and live can be turned off', () => {
     const own = { ...sampleOf('stats'), sample: false, items: [{ value: '40', label: 'Years in practice' }] }

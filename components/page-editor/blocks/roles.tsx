@@ -248,6 +248,31 @@ function liveOfferings(metadata: Props | undefined) {
   return rows.filter((r) => r.title).slice(0, 6).map((r) => ({ ...r, image: '', price: '' }))
 }
 
+/** The Space's next open booking slots as rows (BLD-213): the public door's open instants, each labelled in the Space's own
+ *  clock. A row's title is the slot's length; its link is the booking tab. Nothing about who booked anything is read. */
+function liveBooking(metadata: Props | undefined) {
+  const booking = spaceOf(metadata)?.booking as { href?: unknown; timezone?: unknown; openings?: unknown } | undefined
+  if (!booking || !Array.isArray(booking.openings)) return []
+  const timeZone = typeof booking.timezone === 'string' && booking.timezone ? booking.timezone : 'UTC'
+  const href = typeof booking.href === 'string' ? booking.href : ''
+  const rows: { day: string; time: string; title: string; note: string; href: string }[] = []
+  for (const o of booking.openings as Array<{ startsAt?: unknown; slotMinutes?: unknown }>) {
+    if (typeof o?.startsAt !== 'string') continue
+    const at = new Date(o.startsAt)
+    if (Number.isNaN(at.getTime())) continue
+    let day = ''
+    let time = ''
+    try {
+      day = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short', month: 'short', day: 'numeric' }).format(at)
+      time = new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit' }).format(at)
+    } catch { continue }
+    const minutes = Number(o.slotMinutes)
+    rows.push({ day, time, title: Number.isFinite(minutes) && minutes > 0 ? `${minutes} minute session` : 'Open session', note: 'Open', href })
+    if (rows.length >= 6) break
+  }
+  return rows
+}
+
 // ── Gatherings ─────────────────────────────────────────────────────────────────────────────
 
 interface EventRow { id: string; slug?: string; title: string; startsAt: string; location?: string | null; isCancelled?: boolean }
@@ -670,9 +695,11 @@ function FirstVisitBlock({ p, metadata }: Ctx) {
 
 function BookingBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('booking', p.variant, metadata)
-  // Openings are not a stored thing yet: a live page with only the sample copy draws nothing, and the owner's own typed times stay.
-  if (emptyLive(p, metadata, false)) return null
-  const items = arr(p.items).filter((s) => str(s.title)).slice(0, 6)
+  // The Space's own openings when it publishes availability (BLD-213); else the owner's typed times; a live page holding only
+  // the sample copy draws nothing.
+  const live = liveAsked(p) ? liveBooking(metadata) : []
+  if (emptyLive(p, metadata, live.length > 0)) return null
+  const items = (live.length ? live : arr(p.items).filter((s) => str(s.title))).slice(0, 6) as Props[]
   return (
     <Frame role="booking" p={p} variant={variant}>
       <Heading p={p}>{ctaOf(p, metadata)}</Heading>
@@ -918,6 +945,7 @@ export function roleHasSpaceRows(id: RoleId, metadata: Props | undefined, now: D
     case 'stats': return liveStats(metadata).length > 0
     case 'people': return liveTeam(metadata).length > 0
     case 'chapters': return liveChapters(metadata).length > 0
+    case 'booking': return liveBooking(metadata).length > 0
     case 'locations': return liveLocation(metadata) !== null
     default: return false
   }

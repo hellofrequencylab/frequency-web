@@ -117,7 +117,7 @@ export const FREQUENCY_PAGE_SEO = {
     path: '/create-a-space',
     title: 'Create a Space: build your website, Spotlight and Space page',
     description:
-      'Name it, pick a Theme Kit, switch on the tools you need and watch your website and Spotlight come together. Free to start, and no account until the last step.',
+      'Build your website and Spotlight while you watch. Name it, say what you offer, add a few photos. Free, and a private draft until you activate it.',
     shareTitle: 'Create a Space on Frequency',
     headline: 'Your whole business, live in 12 minutes.',
     lede: 'You have a practice, a studio, a gathering or a group, and the tools are scattered. Build one home for all of it: your website, Spotlight, bookings and people.',
