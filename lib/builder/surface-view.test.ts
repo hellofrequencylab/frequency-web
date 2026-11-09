@@ -42,6 +42,13 @@ describe('surface parity (BLD-215)', () => {
     expect(frame.vars).toHaveProperty('--th-accent')
   })
 
+  it('profile with a font set the Space themes do not know: the house theme, never a throw', () => {
+    const render = siteRenderStyle({ ...newWorld, fonts: 'new-world' as never }, '#5B3FD0', null)
+    const frame = profileFrame(render, '#5B3FD0')
+    expect(frame.theme).toBe('DAWN')
+    expect(frame.fonts).toBeUndefined()
+  })
+
   it('spotlight: one door per role section, in page order, with the role glyph and intent', () => {
     const doc = page()
     const doors = spotlightDoors(doc, config, '/spaces/demo/site', 'home')

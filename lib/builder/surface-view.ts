@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import { ROLES, roleOfType, type RoleId } from '@/lib/blocks/roles/roles'
 import { websiteThemeVars } from '@/lib/sites/editor/theme'
 import { siteCanvasVars } from '@/lib/sites/site-render-style'
-import type { SpaceThemeId } from '@/lib/theme/space-themes'
+import { SPACE_THEME_FONT_VARS, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { Config, Data } from '@/lib/page-editor/types'
 
 // SURFACE PARITY (BLD-215; spec docs/EDITOR-NEXT.md#bld-215, audit docs/design/frequency-builder-v3/v3-review-and-needs.md
@@ -33,7 +33,8 @@ export interface ProfileFrame {
 /** The profile surface's frame for a page: the Space page's own resolver with the site skin switched off. With no
  *  stored style, the house theme with the brand accent. */
 export function profileFrame(render: ProfileSource | null | undefined, accent: string | null | undefined, date = new Date()): ProfileFrame {
-  if (!render) return { theme: 'DAWN', fonts: undefined, vars: websiteThemeVars('DAWN', accent ?? null, date) }
+  // A font set the Space themes do not know (a stale or foreign id) falls back to the house theme rather than throwing.
+  if (!render || !(render.fonts in SPACE_THEME_FONT_VARS)) return { theme: 'DAWN', fonts: undefined, vars: websiteThemeVars('DAWN', render?.accent ?? accent ?? null, date) }
   return { theme: 'DAWN', fonts: render.fonts, vars: siteCanvasVars({ ...render, skinned: false, editorTheme: 'DAWN' }, date) }
 }
 
