@@ -13,7 +13,7 @@
   "verify": {
     "kind": "manual",
     "checked": "2026-11-09",
-    "evidence": "Closed on the owner's ruling, 2026-11-09 18:16Z. Asked \"Production checks for #4698, #4700 and #4701: A. We give you a 3-item checklist with links once they're live. B. Close them without a manual check\", Daniel answered \"4. B\". The build merged to main the same day (#4698); its unit pins stay green in CI. No production look was taken."
+    "evidence": "Closed on the owner's ruling, 2026-11-09 18:16Z. Asked \"Production checks for #4698, #4700 and #4701: A. We give you a 3-item checklist with links once they're live. B. Close them without a manual check\", Daniel answered \"4. B\". The build merged to main the same day (#4698); its unit pins stay green in CI. No production look was taken. Later the same day (19:10Z) a production read through the Vercel deployment fetch confirmed it anyway: danieltyack.frequencylocal.com/book?utm_source=ig&token=x -> 308 https://danieltyack.com/book?utm_source=ig; /book?token=x -> 308 https://danieltyack.com/book; wildheart.frequencylocal.com/calendar?utm_source=ig&utm_campaign=x&code=secret -> 308 https://wildheart.academy/calendar?utm_source=ig&utm_campaign=x (tags kept, sensitive values dropped, no loop)."
   },
   "closed": "2026-11-09",
   "wave": "W7"

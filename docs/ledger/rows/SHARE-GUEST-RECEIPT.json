@@ -4,7 +4,7 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "app/(capture)/checkin/actions.ts",
     "ref": "Sharing-system audit QR-NFC-03, rechecked on main 21f1e340, 2026-11-04."
@@ -12,8 +12,9 @@
   "detail": "The public signed event contact door previously returned success after null or rejected captureEventLead. Its CRM engine can return null for capacity or storage failures and its non-null result proves a Space-scoped contact exists, not an event attendance receipt. Local candidate returns a generic retry result for null, rejected capture, header and rate-store exceptions, keeps the intentional honeypot uniform success before token/storage, and describes the host contact receipt without claiming attendance. Signed Space/event-label/tier binding and CRM consent/suppression behavior are unchanged. Acceptance: successful existing/new contacts share one truthful receipt; null/rejected failures never confirm saving; honeypot skips token/headers/storage; invalid and wrong-door tokens remain refused; no marketing opt-in, event attendance ledger or reward write is introduced. Daniel specifically approved the exact regression review patch on 2026-11-04; its 11 permanent action checks are applied. Still open pending required exact-head CI/preview, release integration and production verification.",
   "verify": {
     "kind": "manual",
-    "checked": "2026-11-04",
-    "evidence": "On isolated 21f1e340 candidate, all 85 tests across seven focused suites pass, including the exact 11-test regression patch Daniel approved. The temporary pristine-base negative control fails the five targeted defects while six controls pass. Focused lint/diff and static backlog checks pass. No real capture or production write was performed; no production proof is claimed."
+    "checked": "2026-11-09",
+    "evidence": "On isolated 21f1e340 candidate, all 85 tests across seven focused suites pass, including the exact 11-test regression patch Daniel approved. The temporary pristine-base negative control fails the five targeted defects while six controls pass. Focused lint/diff and static backlog checks pass. No real capture or production write was performed; no production proof is claimed. Closed on the owner's ruling, 2026-11-09 19:17Z. Asked how to close the shipped-pending-check rows, Daniel answered \"b\": close them without a production check. Any code for it that merged keeps its unit pins in CI. No production look was taken."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-09"
 }
