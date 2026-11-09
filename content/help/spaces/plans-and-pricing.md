@@ -45,7 +45,7 @@ Two more plans sit beside the ladder:
 
 The price you start on is yours for as long as you keep the plan. Collective has a Founding price
 under its list price while the intro is open (the offer ends January 1), and a Collective that starts on it keeps it, grandfathered, and with the
-founder badge if it starts before December 1. Paying yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
+founder badge if it starts before December 31. Paying yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
 
 ## What a free Space gives you
 
@@ -119,10 +119,10 @@ and take Business.
 
 You can change plans whenever you like. See [Billing](/help/spaces/billing) for how that works.
 
-## Open access until 1 December
+## Open access until 31 December
 
-Frequency is in open beta, so the free allowances are switched **off until 1 December 2026**. Until
+Frequency is in open beta, so the free allowances are switched **off until 31 December 2026**. Until
 then a Space can use every hosting tool with no limits, whatever plan it is on. Selling still opens at
 Business during the beta, and QR codes keep their published limit throughout.
 
-From 1 December the allowances apply as written, and we will tell you what changes before it changes.
+From 1 January the allowances apply as written, and we will tell you what changes before it changes.
