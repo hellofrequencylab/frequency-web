@@ -1,0 +1,18 @@
+{
+  "id": "FH-003",
+  "title": "Hunts FH-003: Approve evidence and legacy strategy",
+  "lane": "program",
+  "priority": "P0",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 0, Evidence. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Select transactional engagement append or durable inbox, define retained legacy paths, reserve URL namespace and classify assurance. Done when: D1 approved and decision demonstrates fresh Hunt proof after prior same-day visit without double Regulars credit. Requires: FH-001, FH-002. Owner role: Architecture.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"docs/hunts/DECISIONS-D1.md\")?0:1)'"
+  },
+  "wave": "W7"
+}
