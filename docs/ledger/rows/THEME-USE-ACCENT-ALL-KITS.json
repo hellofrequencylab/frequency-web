@@ -4,13 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
-  "source": { "file": "lib/create-space/preview-site.ts", "ref": "Daniel 2026-11-05: Use this theme on CyberWitch dropped the picked accent; audit every other kit the same way." },
+  "status": "done",
+  "source": {
+    "file": "lib/create-space/preview-site.ts",
+    "ref": "Daniel 2026-11-05: Use this theme on CyberWitch dropped the picked accent; audit every other kit the same way."
+  },
   "detail": "CyberWitch's accent carry (#4675) matches the /themes swatch by name or hex against the builder's kit list. Eight other kits sent ids like general, venues, fall that matched nothing, and their swatches (Violet, Magenta, Moss, Slate, Fall, Olive, Madder, Mint and more) were not in the builder's list. The /themes Use button now sends the swatch hex, and the builder's kit lists include every swatch the kit's /themes page offers, after the kit's own accents. A test fails if any swatch on any kit page does not resolve.",
   "verify": {
     "kind": "manual",
-    "checked": "2026-11-05",
-    "evidence": "preview-site.test.ts: every swatch of every kit page resolves by hex, and no kit lists a name or colour twice."
+    "checked": "2026-11-09",
+    "evidence": "preview-site.test.ts: every swatch of every kit page resolves by hex, and no kit lists a name or colour twice. Closed on the owner's ruling, 2026-11-09 19:17Z. Asked how to close the shipped-pending-check rows, Daniel answered \"b\": close them without a production check. Any code for it that merged keeps its unit pins in CI. No production look was taken."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-09"
 }

@@ -870,3 +870,30 @@ The cutover runs in three steps (BLD-108, shadow render and cutover):
 1. **Shadow.** Both editors read the same document; `lib/builder/shadow.ts` compares what each shows (sections, names, hidden per device, fields) over the frozen kit corpus (`lib/builder/shadow.test.ts`, zero or explained delta) and, whenever the new builder opens a real draft, logs any unexplained difference as `[builder shadow] <host> ...` in the server log. Gate for step 2: the test is green and the log shows no `[builder shadow]` line for a week of `?builder=v3` use on internal Spaces.
 2. **Cohort.** `BUILDER_V3_SPACES` (blank by default) lists Space slugs, comma separated, that get the new builder as their website editor; start with `danieltyack` and the Frequency-owned demo Spaces, then the owner's cohort. `?builder=classic` still opens the current editor for them. Gate for step 3: the owner has used it on danieltyack.com and said it is ready, and the log stayed clean for the cohort.
 3. **Everyone.** Set `BUILDER_V3`; then clear `BUILDER_V3_SPACES`. Rolling back is unsetting the switch: no data moves, both editors write the same draft.
+
+## PostGIS reference table (`public.spatial_ref_sys`)
+
+Frequency Community (`azsqfeonabsbmemvddqd`), PostGIS 3.3.7 in `public`, not relocatable. Read-only catalog check, 2026-11-09:
+
+- The table is owned by `supabase_admin`, RLS is off, and `anon` and `authenticated` hold INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES and TRIGGER on top of SELECT.
+- Writes are still refused: the production triggers `sec007_rows` and `sec007_truncate` are enabled (SEC-007). The grants are the remaining advisor finding.
+- Do not move the extension, change its owner, or enable RLS. Both would break `st_transform` and every spatial query that reads this table.
+- The `postgres` role cannot revoke these grants because `supabase_admin` issued them. The SQL Editor attempt rolls back with `SEC-007: browser write privileges remain`, changing nothing.
+
+Fix, in order:
+
+1. Send Supabase support the request below. It needs no data change.
+2. After they confirm, run the check query and expect `false, false, true`.
+3. Close SEC-POSTGIS-PUBLIC by making that check pass.
+
+The permission-only SQL they would run is `scripts/ops/secure-postgis-reference-table.sql`. It is not a registered migration. Never put it in `supabase/migrations/`.
+
+Support request text: "Project azsqfeonabsbmemvddqd (Frequency Community). Please run as supabase_admin: REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.spatial_ref_sys FROM PUBLIC, anon, authenticated; keep SELECT for every role and leave service_role unchanged."
+
+Check query:
+
+```sql
+select has_table_privilege('anon','public.spatial_ref_sys','INSERT,UPDATE,DELETE,TRUNCATE') as anon_can_write,
+       has_table_privilege('authenticated','public.spatial_ref_sys','INSERT,UPDATE,DELETE,TRUNCATE') as auth_can_write,
+       has_table_privilege('anon','public.spatial_ref_sys','SELECT') as anon_can_read;
+```
