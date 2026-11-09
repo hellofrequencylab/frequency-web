@@ -1,0 +1,19 @@
+{
+  "id": "FH-007",
+  "title": "Build the pure Hunt graph validator and evaluator",
+  "lane": "program",
+  "priority": "P0",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/BUILD-LIST.md",
+    "ref": "Graph semantics; backlog/tasks.json FH-007"
+  },
+  "detail": "Frequency Hunts slice FH-007. A dependency-free module at lib/hunts/graph/ (no DB, no Next, no network). validateGraph(graph) returns actionable blockers (cycles, missing refs, impossible count thresholds, impossible windows, unreachable finish, no free path, 30-mission and 100-edge limits) and never throws. evaluate(graph, credits, now) returns sorted eligible, unlocked and credited mission keys plus whether the finish is reached: ALL, ANY, N-of-M over distinct buckets, [open, close) UTC windows, one credit bucket per mission, keys only (no locked content), same output whatever the input order. Exclusive branches (choice_group, fallback_group) are a documented TODO for FH-042.\n\nShipped in this PR: lib/hunts/graph/ with 32 vitest cases (Trail, Passport 3-of-5, Rally fixtures, order independence).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/hunts/FH-007.mjs"
+  },
+  "closed": "2026-11-09",
+  "wave": "W7"
+}

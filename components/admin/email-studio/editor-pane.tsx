@@ -44,6 +44,7 @@ type SaveCampaign = (
     preheader?: string
     fromName?: string
     replyMode?: 'broadcast' | 'conversation'
+    purpose?: 'marketing' | 'lifecycle'
   },
 ) => Promise<{ error?: string }>
 
@@ -65,17 +66,19 @@ const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : use
 const SAVE_DEBOUNCE_MS = 600
 
 /** The compose fields whose autosave result is tracked (what is on file vs. what is typed). */
-type SavedFields = { subject: string; preheader: string; fromName: string; replyMode: 'broadcast' | 'conversation' }
+type SavedFields = { subject: string; preheader: string; fromName: string; replyMode: 'broadcast' | 'conversation'; purpose: 'marketing' | 'lifecycle' }
 type SavedFieldKey = keyof SavedFields
 const FIELD_LABELS: Record<SavedFieldKey, string> = {
   subject: 'Subject',
   preheader: 'Preheader',
   fromName: 'From name',
   replyMode: 'Replies',
+  purpose: 'Email type',
 }
 /** The on-file value as the toolbar names it: the reply mode by its button label, a blank field as such. */
 function fieldDisplay(key: SavedFieldKey, value: string): string {
   if (key === 'replyMode') return value === 'conversation' ? 'Conversation' : 'Announcement'
+  if (key === 'purpose') return value === 'marketing' ? 'Promotion' : 'Newsletter'
   return value.trim() ? value : '(blank)'
 }
 
@@ -144,6 +147,7 @@ export function EmailEditorPane({
   const [preheader, setPreheader] = useState(campaign.preheader)
   const [fromName, setFromName] = useState(campaign.fromName ?? '')
   const [replyMode, setReplyMode] = useState<'broadcast' | 'conversation'>(campaign.replyMode ?? 'broadcast')
+  const [purpose, setPurpose] = useState<'marketing' | 'lifecycle'>(campaign.purpose ?? 'lifecycle')
   const [previewOpen, setPreviewOpen] = useState(false)
 
   // 2026-09-05 (scan2 L5-11): the field autosaves used to discard the action's { error }, so a failed save
@@ -156,6 +160,7 @@ export function EmailEditorPane({
     preheader: campaign.preheader,
     fromName: campaign.fromName ?? '',
     replyMode: campaign.replyMode ?? 'broadcast',
+    purpose: campaign.purpose ?? 'lifecycle',
   })
   const [saveFailure, setSaveFailure] = useState<{ message: string; keys: SavedFieldKey[] } | null>(null)
 
@@ -179,11 +184,11 @@ export function EmailEditorPane({
   )
   const retryFieldSave = useCallback(() => {
     if (!saveFailure) return
-    const current: SavedFields = { subject, preheader, fromName, replyMode }
+    const current: SavedFields = { subject, preheader, fromName, replyMode, purpose }
     const patch: Partial<SavedFields> = {}
     for (const k of saveFailure.keys) Object.assign(patch, { [k]: current[k] })
     void persistFields(patch)
-  }, [saveFailure, persistFields, subject, preheader, fromName, replyMode])
+  }, [saveFailure, persistFields, subject, preheader, fromName, replyMode, purpose])
   const saveNote = useMemo(
     () =>
       saveFailure
@@ -255,6 +260,14 @@ export function EmailEditorPane({
     },
     [persistFields],
   )
+  // Email type (a promotion or a member newsletter) is a discrete toggle too, so it saves at once.
+  const onPurpose = useCallback(
+    (value: 'marketing' | 'lifecycle') => {
+      setPurpose(value)
+      void persistFields({ purpose: value })
+    },
+    [persistFields],
+  )
 
   // The pre-fetched seed for the builder (skips its own rail fetch): matches this campaign so the owner/kind
   // gate opens. Rows/hidden come straight off the loaded layout; the LayoutSeeder above carries content/style.
@@ -295,6 +308,8 @@ export function EmailEditorPane({
             onFromName={onFromName}
             replyMode={replyMode}
             onReplyMode={onReplyMode}
+            purpose={purpose}
+            onPurpose={onPurpose}
             saveNote={saveNote}
             previewOpen
             onTogglePreview={() => {}}
@@ -327,6 +342,8 @@ export function EmailEditorPane({
             onFromName={onFromName}
             replyMode={replyMode}
             onReplyMode={onReplyMode}
+            purpose={purpose}
+            onPurpose={onPurpose}
             saveNote={saveNote}
             previewOpen
             onTogglePreview={() => {}}
@@ -360,6 +377,8 @@ export function EmailEditorPane({
             onFromName={onFromName}
             replyMode={replyMode}
             onReplyMode={onReplyMode}
+            purpose={purpose}
+            onPurpose={onPurpose}
             saveNote={saveNote}
             previewOpen
             onTogglePreview={() => {}}
@@ -398,6 +417,8 @@ export function EmailEditorPane({
           onFromName={onFromName}
           replyMode={replyMode}
           onReplyMode={onReplyMode}
+          purpose={purpose}
+          onPurpose={onPurpose}
           saveNote={saveNote}
           previewOpen={previewOpen}
           onTogglePreview={() => setPreviewOpen((v) => !v)}

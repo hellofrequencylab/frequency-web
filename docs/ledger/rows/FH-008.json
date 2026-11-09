@@ -1,0 +1,18 @@
+{
+  "id": "FH-008",
+  "title": "Hunts FH-008: Enforce tenant authorization",
+  "lane": "program",
+  "priority": "P0",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 0, Engine. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Guard server admin-client operations, DB grants and RLS, revocation checks and private view exposure. Done when: Two-Space test matrix proves player, staff, partner, owner and anonymous scopes and immediate staff revocation. Requires: FH-004, FH-005, FH-006. Owner role: Security.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"supabase/tests/hunt_tenant_wall.test.sql\")?0:1)'"
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "SPEED-MENU-LOADING",
+  "title": "Member menu clicks paint a loading face at once on routes that had none",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/loading.tsx",
+    "ref": "Daniel 2026-11-09: menu clicks have always been slow. Speed pass 1, route boundary review."
+  },
+  "detail": "About fifty member routes had no loading.tsx, so a menu click kept the old screen until the next page's server reads finished, which feels like a stall. The (main) group now has a shared skeleton boundary under the shell; routes with their own loading face are unchanged. This fixes the feel, not the server time of any one page; per-page read waterfalls remain separate rows.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/menu-loading-boundary.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-09"
+}
