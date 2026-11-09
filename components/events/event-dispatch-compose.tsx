@@ -5,6 +5,7 @@ import { Radio, MessageSquare, Smartphone, Megaphone, Mail } from 'lucide-react'
 import { postEventDispatch } from '@/app/(main)/events/[slug]/social-actions'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 
 // EventDispatchCompose (ADR-255 / EVENTS-DESIGN B2) — the host's "post an update"
 // box on the event page. The base action ALWAYS posts to the event page; the host
@@ -116,11 +117,7 @@ export function EventDispatchCompose({
           onClick={() => setToDispatch((v) => !v)}
           disabled={pending}
           aria-pressed={toDispatch}
-          className={`inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
-            toDispatch
-              ? 'bg-primary-bg text-primary-strong'
-              : 'border border-border text-muted hover:border-border-strong hover:text-text'
-          }`}
+          className={chipClasses(toDispatch, 'inline-flex items-center gap-1.5 px-2.5 py-1.5 text-2xs disabled:opacity-50')}
         >
           <Radio className="h-3.5 w-3.5" />
           Send as a Dispatch
@@ -132,11 +129,7 @@ export function EventDispatchCompose({
           disabled={pending}
           aria-pressed={toEmail}
           title="Also email this update to your guest list."
-          className={`inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
-            toEmail
-              ? 'bg-primary-bg text-primary-strong'
-              : 'border border-border text-muted hover:border-border-strong hover:text-text'
-          }`}
+          className={chipClasses(toEmail, 'inline-flex items-center gap-1.5 px-2.5 py-1.5 text-2xs disabled:opacity-50')}
         >
           <Mail className="h-3.5 w-3.5" />
           Email guests
@@ -151,11 +144,7 @@ export function EventDispatchCompose({
             disabled={pending}
             aria-pressed={toSms}
             title="Marks this update to also go out by text."
-            className={`inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
-              toSms
-                ? 'bg-primary-bg text-primary-strong'
-                : 'border border-dashed border-border text-muted hover:border-border-strong hover:text-text'
-            }`}
+            className={chipClasses(toSms, 'inline-flex items-center gap-1.5 px-2.5 py-1.5 text-2xs disabled:opacity-50')}
           >
             <Smartphone className="h-3.5 w-3.5" />
             Text the group
