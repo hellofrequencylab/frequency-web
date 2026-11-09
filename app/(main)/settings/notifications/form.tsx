@@ -145,12 +145,14 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
 
         <div className="divide-y divide-border">
           {CATEGORIES.filter(({ key }) => VISIBLE_CATEGORIES.includes(key)).map(({ key, label, description }) => (
-            <div key={key} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 items-center px-4 py-3.5">
+            // One track for header and rows (LIVE-NOTIFICATION-GRID): topic, three channels, SMS. The rows used to
+            // declare a sixth column that nothing filled, so the cells sat left of their headings.
+            <div key={key} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-3 items-center px-4 py-3.5">
               <div className="min-w-0">
-                <p className="text-body-sm font-medium text-text">{label}</p>
-                <p className="text-meta text-muted mt-0.5">{description}</p>
+                <p id={`notif-${key}-label`} className="text-body-sm font-medium text-text">{label}</p>
+                <p id={`notif-${key}-desc`} className="text-meta text-muted mt-0.5">{description}</p>
               </div>
-              {CHANNELS.map(({ key: channel, disabled }) => {
+              {CHANNELS.map(({ key: channel, label: channelLabel, disabled }) => {
                 // Not wired: a dash, never a switch (see NOT_WIRED_TITLE above).
                 if (!isPreferenceWired(channel, key)) {
                   return (
@@ -169,7 +171,9 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
                       disabled={disabled}
                       role="switch"
                       aria-checked={checked}
-                      aria-label={`${channel} ${key}`}
+                      // Read as "Email for Events: RSVP changes and reminders…", not "email events" (LIVE-NOTIFICATION-GRID).
+                      aria-label={`${channelLabel} for ${label}`}
+                      aria-describedby={`notif-${key}-desc`}
                       title={disabled ? 'Not yet available' : undefined}
                       className={(checked ? 'sw on' : 'sw')}
                     >
@@ -190,7 +194,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
       <div className="flex items-start justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3.5 lift-1">
         <div className="min-w-0">
           <p className="text-body-sm font-medium text-text">Events from Spaces you follow</p>
-          <p className="text-meta text-muted mt-0.5">
+          <p id="notif-follow-desc" className="text-meta text-muted mt-0.5">
             Remind me about upcoming events from Spaces I follow that I have not RSVP&apos;d to. Public
             events only, by email. Off unless you turn it on.
           </p>
@@ -200,7 +204,8 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
           onClick={toggleFollowerReminders}
           role="switch"
           aria-checked={settings.space_event_reminders === true}
-          aria-label="Remind me about events from Spaces I follow"
+          aria-label="Email for events from Spaces I follow"
+          aria-describedby="notif-follow-desc"
           className={(settings.space_event_reminders === true ? 'sw on' : 'sw')}
         >
         </button>

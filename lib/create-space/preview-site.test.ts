@@ -117,7 +117,6 @@ describe('the /themes page accents reach the builder', () => {
       const kit = KIT_OF[th.id as string]
       if (!kit) continue
       for (const a of th.accents as { label: string; hex: string }[]) {
-        if (th.id === 'new-world' && a.label === 'Violet') continue // barred by the violet-family probe until the owner allows it
         expect(kitAccentIndex(kit, a.hex.replace('#', '')), `${th.id} ${a.label}`).not.toBeNull()
       }
     }
