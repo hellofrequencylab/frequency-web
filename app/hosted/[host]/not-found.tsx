@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import { NOT_FOUND_METADATA } from '@/lib/seo/not-found-metadata'
 
 // A page that is not on a Space's website, on the website's own domain (LIVE-SITE-NOT-FOUND). It used to fall
@@ -15,12 +16,9 @@ export default function SiteNotFound() {
         <p className="text-body-sm text-muted leading-relaxed mb-8">
           It may have moved, or the link&apos;s broken. Start from the front door.
         </p>
-        <Link
-          href="/"
-          className="inline-flex items-center rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-        >
-          Back home
-        </Link>
+        <Button asChild>
+          <Link href="/">Back home</Link>
+        </Button>
       </div>
     </main>
   )
