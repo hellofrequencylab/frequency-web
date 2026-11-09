@@ -4,7 +4,7 @@
   "lane": "live",
   "priority": "P1",
   "size": "XS",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "app/themes/frequency/admin-pages.css",
     "ref": "UXJ-01, 2026-11-04 production comparison: the full Daniel Space console retains the approved sky and ink control; the same overview inside ?panel=manage falls back to white on Lagoon. Daniel already approved fixed sky and dark ink for this control."
@@ -12,8 +12,9 @@
   "detail": "The overview has one New event producer, .btn.pa.ad-overview-new-event. Its existing approved sky/ink rule was limited to the admin shell even though the overview is also embedded under the member Space profile. Scope the same token values to that unique anchor in either shell, with enough specificity to beat the Space accent in either stylesheet order. Keep other Space accents, site buttons, website theme sheets, tests and probes unchanged; only the Frequency admin stylesheet selector changes. The local candidate requires preview and production acceptance before this row can close.",
   "verify": {
     "kind": "manual",
-    "checked": "2026-11-04",
-    "evidence": "Production baseline checked by the audit: /spaces/danieltyack/manage New event is sky and ink at 10.95:1; /spaces/danieltyack?panel=manage is white on Lagoon at 2.46:1. Independent local Cua CSS-fixture verification passed eight before/after, stylesheet-order and 390/1280 iframe combinations: both candidate shells use ink rgb(30,27,24) on sky rgb(163,212,255), and the unrelated member accent button stays white/Lagoon. Hover was not observed yet; its CSS rule shares the same approved values. Actual phone/desktop application-route, exact READY preview and production verification remain pending. No production fix is claimed here."
+    "checked": "2026-11-09",
+    "evidence": "Production baseline checked by the audit: /spaces/danieltyack/manage New event is sky and ink at 10.95:1; /spaces/danieltyack?panel=manage is white on Lagoon at 2.46:1. Independent local Cua CSS-fixture verification passed eight before/after, stylesheet-order and 390/1280 iframe combinations: both candidate shells use ink rgb(30,27,24) on sky rgb(163,212,255), and the unrelated member accent button stays white/Lagoon. Hover was not observed yet; its CSS rule shares the same approved values. Actual phone/desktop application-route, exact READY preview and production verification remain pending. No production fix is claimed here. Closed on the owner's ruling, 2026-11-09 19:17Z. Asked how to close the shipped-pending-check rows, Daniel answered \"b\": close them without a production check. Any code for it that merged keeps its unit pins in CI. No production look was taken."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-09"
 }

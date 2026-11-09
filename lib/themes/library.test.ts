@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
-import { THEME_ASSET_SLOTS, THEME_LIBRARY, themeAssetPath, themeIdFromSlug, themePagePath } from './library'
+import { THEME_ASSET_SLOTS, THEME_LIBRARY, themeAssetPath, themeCatalogFacts, themeIdFromSlug, themePagePath } from './library'
 import { THEME_ASSETS_READY } from './library-assets'
 
 describe('theme library', () => {
@@ -36,5 +36,18 @@ describe('theme library', () => {
       }
     }
     if (existsSync('public/themes')) expect(readdirSync('public/themes').filter((d) => !THEME_LIBRARY.some((t) => t.id === d))).toEqual([])
+  })
+})
+
+// LIVE-1866: the catalog reads the manifests.
+describe('themeCatalogFacts', () => {
+  it('answers readiness from the manifest library entry and both registers from a supported register dial', () => {
+    expect(themeCatalogFacts('wildheart')).toEqual({ ready: { spotlight: false, website: true, email: false, space: true }, registers: null })
+    expect(themeCatalogFacts('new-world')).toEqual({ ready: null, registers: 'both' })
+    expect(themeCatalogFacts('midnight')?.ready).toEqual({ spotlight: true, website: true, email: true, space: true })
+  })
+  it('agrees with the library for every theme that has an entry, and knows nothing about an id with no manifest', () => {
+    for (const t of THEME_LIBRARY) expect(themeCatalogFacts(t.id)?.ready, t.id).toEqual(Object.fromEntries(t.surfaces.map((s) => [s.id, s.status === 'ready'])))
+    expect(themeCatalogFacts('nope')).toBeNull()
   })
 })

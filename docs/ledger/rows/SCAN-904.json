@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-904",
+  "patch": {
+    "status": "done",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-11-09",
+      "evidence": "SCAN-935 migrated remaining geographic renderers to MapCanvas; 101 focused map tests passed. The old direct-basemap probe no longer measures those adapters. Google browser key is absent locally, so actual Google rendering and provider activation remain unverified; MapLibre fallback stays active. No provider configuration was changed. Closed on the owner's ruling, 2026-11-09 19:17Z. Asked how to close the shipped-pending-check rows, Daniel answered \"b\": close them without a production check. Any code for it that merged keeps its unit pins in CI. No production look was taken."
+    },
+    "closed": "2026-11-09"
+  },
+  "wave": null
+}
