@@ -6,7 +6,7 @@
 const MAX_NAME = 40
 const COLOR_RE = /^#[0-9a-f]{6}$/i
 
-export interface PresenceState {
+interface PresenceState {
   userId: string
   name: string
   color: string

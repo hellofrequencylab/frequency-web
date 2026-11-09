@@ -12,7 +12,7 @@ import type { NodeLayout } from '../entity-blocks/node-tree'
 import { sanitizeNodeLayout } from '../entity-blocks/node-ops'
 import { serializeLayout } from './node-ydoc'
 
-export interface DraftSnapshot {
+interface DraftSnapshot {
   /** The sanitized tree, safe to store as the draft or to freeze into a page version. */
   tree: NodeLayout
 }
