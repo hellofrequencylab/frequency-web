@@ -66,7 +66,7 @@ const FAQ = [
   },
   {
     q: 'Can I come back later?',
-    a: 'Yes. Your draft saves in this browser as you go. Once you save it with your email, the link brings you back to it on any device.',
+    a: 'Yes. Your draft saves as you go. Once you add your email, we keep it there too, so you can pick up on any device.',
   },
   {
     q: 'Can I change the look later?',

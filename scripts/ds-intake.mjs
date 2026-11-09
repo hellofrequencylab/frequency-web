@@ -103,6 +103,7 @@ export function repoReport(theme, tokenCss = '') {
     bytes,
     exists,
     baseline: t.baseline,
+    copyRulings: t.rules.copyRulings,
   })
 }
 

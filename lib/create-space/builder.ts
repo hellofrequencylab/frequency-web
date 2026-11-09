@@ -109,7 +109,7 @@ export function nextOpenMove(done: Record<BuilderMove, boolean>, from: number): 
 
 /** The five segments of the steps bar, in order, with the short label each shows in the intro. */
 export const STEP_SEGMENTS: readonly { label: string; short: string }[] = [
-  { label: 'Name and accent', short: '01 Name it' },
+  { label: 'Name it and pick an accent', short: '01 Name it' },
   { label: 'What you offer', short: '02 What you offer' },
   { label: 'How clients find you', short: '03 Get found' },
   { label: 'Photos', short: '04 Photos' },
