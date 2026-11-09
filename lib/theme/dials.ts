@@ -50,13 +50,11 @@ export interface ThemeEditorDecl {
 const ELSEWHERE = new Set(['kit', 'order', 'variant'])
 const RAW = (REGISTRY.dials as unknown as RawDial[]).filter((d) => !ELSEWHERE.has(d.id))
 
-/** `centered` is in the registry but no renderer draws it yet: it is offered once a theme's header does (a row on LIVE-1997). */
-const NOT_YET_STORABLE: Record<string, readonly string[]> = { header: ['centered'] }
-
-const toOptions = (id: string, options: readonly Option[] | string) => (typeof options === 'string' ? [] : options).filter(([v]) => !NOT_YET_STORABLE[id]?.includes(v)).map(([v, label]) => ({ id: v, label }))
+// Every option in the registry is storable: the house header draws `centered` (components/sites/site-look-css.ts, LIVE-2031).
+const toOptions = (options: readonly Option[] | string) => (typeof options === 'string' ? [] : options).map(([v, label]) => ({ id: v, label }))
 
 /** The enumerated core dials, in registry order, each with its option list. `accent` has none (a named swatch or a hex). */
-const CORE: readonly Dial[] = RAW.map((d) => ({ id: d.id, tier: d.tier, group: d.group ?? null, label: d.label, options: toOptions(d.id, d.options), ...(d.note ? { note: d.note } : {}) }))
+const CORE: readonly Dial[] = RAW.map((d) => ({ id: d.id, tier: d.tier, group: d.group ?? null, label: d.label, options: toOptions(d.options), ...(d.note ? { note: d.note } : {}) }))
 
 /** The five new enumerated dials a site style stores sparsely. */
 export const SITE_DIAL_KEYS = ['register', 'type', 'motion', 'hero', 'image'] as const
