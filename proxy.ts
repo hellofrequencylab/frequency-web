@@ -32,7 +32,8 @@ import {
   MARKETPLACE_ENTRY_MAX_AGE,
   stampMarketplaceView,
 } from '@/lib/commerce/marketplace-entry'
-import { SITE_CRAWLER_FILES, parseAppHosts, routeSiteHost } from '@/lib/sites/host'
+import { SITE_CRAWLER_FILES, parseAppHosts, routeSiteHost, subdomainAttributionHop, subdomainSiteRedirect } from '@/lib/sites/host'
+import { lookupLiveSiteDomain } from '@/lib/sites/live-domain-lookup'
 
 // Extra app hosts beyond Frequency's own domains (PROG-E10 phase 2, lib/sites/host.ts), parsed once.
 const APP_HOSTS = parseAppHosts(process.env.APP_HOSTS)
@@ -103,6 +104,14 @@ export async function proxy(request: NextRequest) {
   // path a website does not have.
   if (site.kind === 'not-found') return new NextResponse('Not found', { status: 404 })
   if (site.kind === 'rewrite') {
+    // A tagged visit to a slug subdomain whose website lives on its own domain hops there WITH its
+    // campaign tags (LIVE-SUBDOMAIN-ATTRIBUTION): the ISR page's own redirect cannot see the query. One
+    // cached JSON read on Frequency's origin, never the database; a null answer falls through to the page.
+    const hop = subdomainAttributionHop(request.headers.get('host'), pathname, request.nextUrl.search, APP_HOSTS)
+    if (hop) {
+      const target = subdomainSiteRedirect(request.headers.get('host'), hop.path, hop.query, await lookupLiveSiteDomain(hop.slug))
+      if (target) return NextResponse.redirect(target, 308)
+    }
     const url = request.nextUrl.clone()
     url.pathname = site.pathname
     return NextResponse.rewrite(url)

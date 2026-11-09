@@ -24,6 +24,9 @@ import {
 } from "@/components/sites/new-world-forms";
 import type { ComponentConfig } from "@/lib/page-editor/types";
 import type { SiteLinkMap } from "@/lib/sites/house-theme";
+import { readNewWorldLive, type NewWorldLiveRow } from "@/lib/sites/new-world-live";
+import type { SpaceCircleItem, SpaceTeamMember } from "@/lib/spaces/content-data";
+import type { SpaceProfileData } from "@/lib/spaces/profile-data";
 import { storedWallClock } from "@/lib/sites/site-events";
 import {
   LINK_HINT,
@@ -62,9 +65,11 @@ import {
 // registers come from the design's REG map: a block's Register is "auto" by default, which keeps the site's register except where the
 // design turns a section to Commons (the regulars' words, the questions) or Stage (the closer); the owner can pin either.
 //
-// Live where the Space has the data: the hero card, the calendar and the open spots read the Space's upcoming events, the regulars'
-// words read its reviews and the questions read its own answers; with none, each shows the rows the owner wrote. A list with no rows
-// says so in its own words and never draws an empty box.
+// Live where the Space has the data (LIVE-2053): the hero card, the calendar, the open spots and the book page read the Space's
+// upcoming events, the regulars' words read its reviews, the questions read its own answers, the hosts read its team, the groups read
+// its circles, where-to-find-us reads its business info, and the plans, the shop and the posts read its memberships, its shop and its
+// library through lib/sites/new-world-live.ts; with none, each shows the rows the owner wrote. A block for a function the Space has
+// switched off renders nothing at all. A list with no rows says so in its own words and never draws an empty box.
 
 const ICONS: Record<string, LucideIcon> = {
   users: Users,
@@ -239,6 +244,49 @@ function Empty({ what }: { what: string }) {
 }
 
 const two = (n: number) => String(n + 1).padStart(2, "0");
+
+// ── The Space's own rows (LIVE-2053) ───────────────────────────────────────────────────────────
+// Each reader returns the live rows shaped as the owner's rows, or [] when the bag has none, so every block keeps one render path.
+// `appHref` turns an app-relative link into one that leaves the site for the app, the way eventHref does.
+type LiveBag = { team?: SpaceTeamMember[]; community?: SpaceCircleItem[]; profile?: SpaceProfileData; booking?: { enabled: boolean; href: string | null } };
+const bagOf = (metadata: Props | undefined) => (metadata?.space ?? undefined) as LiveBag | undefined;
+const appHref = (path: string | null, metadata: Props | undefined): string | null => {
+  if (!path) return null;
+  const origin = (metadata?.links as SiteLinkMap | undefined)?.origin;
+  return origin ? `${origin}${path}` : path;
+};
+const liveTeam = (metadata: Props | undefined): Props[] =>
+  (bagOf(metadata)?.team ?? []).filter((m) => m.name?.trim()).map((m) => ({ name: m.name, role: m.role === "admin" ? "Host" : m.role === "moderator" ? "Moderator" : m.role === "editor" ? "Editor" : "", image: m.avatarUrl ?? "", alt: m.name, href: appHref(m.handle ? `/people/${m.handle}` : null, metadata) ?? "" }));
+const liveGroups = (metadata: Props | undefined): Props[] =>
+  (bagOf(metadata)?.community ?? [])
+    .filter((c) => c.name?.trim())
+    .map((c) => ({
+      day: c.type === "online" ? "Online" : c.neighborhood ?? "",
+      time: c.memberCap > 0 ? `${c.memberCount}/${c.memberCap}` : String(c.memberCount),
+      name: c.name,
+      body: c.about ?? "",
+      people: c.memberCount > 0 ? `${c.memberCount} ${c.memberCount === 1 ? "member" : "members"}` : "",
+      open: c.access !== "closed" && (c.memberCap <= 0 || c.memberCount < c.memberCap),
+      href: `/circles/${c.slug}`,
+    }));
+/** Business info lines, one per line, as "Days: hours" rows; a line with no colon is a day with no hours written. */
+const hoursRows = (hours: string | undefined): Props[] =>
+  (hours ?? "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const at = l.indexOf(":");
+      return at > 0 ? { day: l.slice(0, at).trim(), time: l.slice(at + 1).trim() } : { day: l, time: "" };
+    });
+// App-relative links stay relative here: hrefOf prefixes the site origin for /spaces, /circles, /events and /market paths.
+const liveRows = (rows: NewWorldLiveRow[]): Props[] =>
+  rows.map((r) => ({ icon: "", meta: r.meta, name: r.name, title: r.name, kind: r.meta, body: r.body, price: r.price, image: r.image ?? "", alt: r.name, href: r.href ?? "", featured: r.featured, buttonLabel: "" }));
+/** The live list for a function, or null when the render attached none (the owner's rows then draw). */
+function liveList(metadata: Props | undefined, fn: "plans" | "shop" | "posts") {
+  const live = readNewWorldLive(metadata?.space);
+  return live ? live[fn] : null;
+}
 const lines = (v: unknown) => (Array.isArray(v) ? (v as unknown[]).map(str).filter(Boolean) : []);
 
 function Tap({ to, className, children, label }: { to: string | null; className: string; children: ReactNode; label?: string }) {
@@ -434,7 +482,9 @@ function Story({ p, metadata, pad, vis }: Common) {
 }
 
 function Groups({ p, metadata, pad, vis }: Common) {
-  const rows = arr(p.rows).filter((r) => str(r.name));
+  const own = arr(p.rows).filter((r) => str(r.name));
+  const live = liveGroups(metadata);
+  const rows = live.length ? live : own;
   return (
     <Sec id="circles" p={p} glow="tr" pad={pad} vis={vis}>
       <div className="nw-wrap nw-cols nw-cols--5-7">
@@ -619,8 +669,10 @@ function Reviews({ p, metadata, pad, vis }: Common) {
   );
 }
 
-function Team({ p, pad, vis }: Common) {
-  const rows = arr(p.rows).filter((r) => str(r.name));
+function Team({ p, metadata, pad, vis }: Common) {
+  const own = arr(p.rows).filter((r) => str(r.name));
+  const live = liveTeam(metadata);
+  const rows = live.length ? live : own;
   return (
     <Sec id="team" p={p} glow="br" pad={pad} vis={vis}>
       <div className="nw-wrap nw-cols nw-cols--4-8">
@@ -634,7 +686,13 @@ function Team({ p, pad, vis }: Common) {
             <figure key={i} className="nw-person">
               <Photo src={img(t.image)} alt={str(t.alt)} className="nw-photo--person" />
               <figcaption>
-                <b>{str(t.name)}</b>
+                {str(t.href) ? (
+                  <a href={str(t.href)} {...rel(str(t.href))}>
+                    <b>{str(t.name)}</b>
+                  </a>
+                ) : (
+                  <b>{str(t.name)}</b>
+                )}
                 {str(t.role) && <small>{str(t.role)}</small>}
               </figcaption>
             </figure>
@@ -645,17 +703,18 @@ function Team({ p, pad, vis }: Common) {
   );
 }
 
-function Offers({ p, metadata, pad, vis }: Common) {
-  const rows = arr(p.rows).filter((r) => str(r.name));
+function Offers({ p, metadata, pad, vis, id = "services", live }: Common & { id?: string; live?: Props[] }) {
+  const own = arr(p.rows).filter((r) => str(r.name));
+  const rows = live && live.length ? live : own;
   return (
-    <Sec id="services" p={p} glow="tl" pad={pad} vis={vis}>
+    <Sec id={id} p={p} glow="tl" pad={pad} vis={vis}>
       <div className="nw-wrap">
         <Head p={p} action={<Btn label={str(p.buttonLabel)} href={str(p.buttonHref)} metadata={metadata} kind="secondary" arrow />} />
         <div className="nw-grid">
           {rows.length === 0 && <Empty what="way in" />}
           {rows.map((s, i) => (
             <Tap key={i} to={hrefOf(str(s.href), metadata)} className="nw-card nw-offer">
-              <Icon name={str(s.icon) || "users"} tile />
+              {img(s.image) ? <Photo src={img(s.image)} alt={str(s.alt)} className="nw-photo--offer" /> : <Icon name={str(s.icon) || "users"} tile />}
               <span className="nw-offer-top">
                 <small>{str(s.meta)}</small>
                 <small>{two(i)}</small>
@@ -676,8 +735,18 @@ function Offers({ p, metadata, pad, vis }: Common) {
   );
 }
 
+/** The shop: the ways-in cards wearing the Space's active products. A Space with the Sell tool off draws nothing here. */
+function Shop(a: Common) {
+  const live = liveList(a.metadata, "shop");
+  if (live && !live.on) return null;
+  return <Offers {...a} id="shop" live={live ? liveRows(live.rows) : undefined} />;
+}
+
 function Plans({ p, metadata, pad, vis }: Common) {
-  const rows = arr(p.rows).filter((r) => str(r.name));
+  const own = arr(p.rows).filter((r) => str(r.name));
+  const live = liveList(metadata, "plans");
+  if (live && !live.on) return null;
+  const rows = live && live.rows.length ? liveRows(live.rows) : own;
   return (
     <Sec id="plans" p={p} glow="tr" pad={pad} vis={vis}>
       <div className="nw-wrap">
@@ -761,7 +830,10 @@ function Gallery({ p, pad, vis }: Common) {
 }
 
 function Posts({ p, metadata, pad, vis }: Common) {
-  const rows = arr(p.rows).filter((r) => str(r.title));
+  const own = arr(p.rows).filter((r) => str(r.title));
+  const live = liveList(metadata, "posts");
+  if (live && !live.on) return null;
+  const rows = live && live.rows.length ? liveRows(live.rows) : own;
   return (
     <Sec id="posts" p={p} glow="tl" pad={pad} vis={vis}>
       <div className="nw-wrap">
@@ -809,13 +881,15 @@ function Process({ p, pad, vis }: Common) {
   );
 }
 
-function Where({ p, pad, vis }: Common) {
-  const hours = arr(p.hours).filter((h) => str(h.day));
+function Where({ p, metadata, pad, vis }: Common) {
+  const info = bagOf(metadata)?.profile;
+  const ownHours = arr(p.hours).filter((h) => str(h.day));
+  const hours = ownHours.length ? ownHours : hoursRows(info?.hours);
   const hoods = lines(p.areas);
   const facts = [
-    ["pin", str(p.address)],
-    ["phone", str(p.phone)],
-    ["mail", str(p.email)],
+    ["pin", str(p.address) || str(info?.address)],
+    ["phone", str(p.phone) || str(info?.phone)],
+    ["mail", str(p.email) || str(info?.email)],
   ].filter(([, t]) => t);
   return (
     <Sec id="locations" p={p} glow="bl" pad={pad} vis={vis}>
@@ -1220,6 +1294,8 @@ function Book({ p, metadata, now = new Date(), pad, vis }: Common) {
   const ways = arr(p.ways).filter((w) => str(w.name));
   const facts = arr(p.facts).filter((f) => str(f.label));
   const next = dated(p, metadata, now, 4);
+  // The Space has booking switched off and the owner wrote no ways in: there is nothing honest to book, so the block draws nothing.
+  if (bagOf(metadata)?.booking?.enabled === false && ways.length === 0 && next.length === 0) return null;
   return (
     <Sec id="book" p={p} glow="tr" className="nw-book" pad={pad} vis={vis}>
       <div className="nw-wrap nw-cols nw-cols--5-7">
@@ -1527,7 +1603,7 @@ export const newWorldBlocks: Record<string, ComponentConfig> = {
       rows: [],
       register: "auto",
     },
-    Offers,
+    Shop,
   ),
   NewWorldPlans: block(
     "New World plans",
