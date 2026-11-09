@@ -9,7 +9,7 @@
     "file": "docs/RUNBOOKS.md",
     "ref": "Daniel 2026-11-04 audit and approved improvement scope"
   },
-  "detail": "Read-only metadata identified public.spatial_ref_sys owned by supabase_admin, RLS disabled and broad browser-role privileges. Supabase November4 guidance treats exposed PostGIS objects as a real advisor issue; extension relocation/permission repair needs provider-compatible staging, impact inventory and rollback. This is separate from backup-table containment; do not change extension ownership or apply SQL speculatively.",
+  "detail": "Read-only metadata identified public.spatial_ref_sys owned by supabase_admin, RLS disabled and broad browser-role privileges. Supabase November4 guidance treats exposed PostGIS objects as a real advisor issue; extension relocation/permission repair needs provider-compatible staging, impact inventory and rollback. This is separate from backup-table containment; do not change extension ownership or apply SQL speculatively. 2026-11-09: re-checked read-only on Frequency Community. Grants still present (anon and authenticated hold INSERT, UPDATE, DELETE, TRUNCATE; RLS off; owner supabase_admin) and triggers sec007_rows and sec007_truncate are enabled, so writes are refused. The postgres role cannot revoke grants issued by supabase_admin, so the one step left is a Supabase support request run as supabase_admin. Plan, request text and check query: docs/RUNBOOKS.md (PostGIS reference table). The SQL stays at scripts/ops/secure-postgis-reference-table.sql and is never a registered migration. Row stays open until the check query returns false, false, true.",
   "verify": {
     "kind": "manual",
     "checked": "2026-11-04",
