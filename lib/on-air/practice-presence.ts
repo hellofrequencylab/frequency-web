@@ -18,8 +18,13 @@ interface PresenceClient {
 }
 
 /** Count members with a practice log on the supplied member-local day.
- *  Returns zero on an incomplete read rather than presenting a misleading partial count. */
-export async function countPracticedToday(client: PresenceClient, day: string): Promise<number> {
+ *  Returns zero on an incomplete read rather than presenting a misleading partial count, unless the caller
+ *  asks for `throwOnError` (the cached path, which must not store a failure as a count). */
+export async function countPracticedToday(
+  client: PresenceClient,
+  day: string,
+  opts: { throwOnError?: boolean } = {},
+): Promise<number> {
   const profiles = new Set<string>()
   for (let from = 0; ; from += PRACTICE_PRESENCE_PAGE_SIZE) {
     const { data, error } = await client
@@ -29,7 +34,11 @@ export async function countPracticedToday(client: PresenceClient, day: string): 
       .order('id', { ascending: true })
       .range(from, from + PRACTICE_PRESENCE_PAGE_SIZE - 1)
 
-    if (error || !data) return 0
+    if (error || !data) {
+      // A caller that caches the total passes throwOnError so a failed read is never stored as zero.
+      if (opts.throwOnError) throw new Error('practice presence read failed')
+      return 0
+    }
     for (const row of data) {
       if (row.profile_id) profiles.add(row.profile_id)
     }
