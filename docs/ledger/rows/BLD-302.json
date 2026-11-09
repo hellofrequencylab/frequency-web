@@ -4,16 +4,16 @@
   "lane": "program",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/EDITOR-NEXT.md",
     "ref": "Owner approval 2026-11-02: build the next-gen builder from the role and block contracts. BLD-302."
   },
-  "detail": "B3 Lenses, pass BLD-302 (spec: docs/EDITOR-NEXT.md#bld-302). Email lens. Scope: components/builder/surfaces/email. Build: Email preview through compileEmailDoc; live blocks show their resolveAt: 'send' snapshot. Done when: The 7 draft campaigns and 7 templates render byte-identical to before. Gates: check:email-blocks, vitest suite (required test job), Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-301. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.",
+  "detail": "B3 Lenses, pass BLD-302 (spec: docs/EDITOR-NEXT.md#bld-302). Email lens. Scope: components/builder/surfaces/email. Build: Email preview through compileEmailDoc; live blocks show their resolveAt: 'send' snapshot. Done when: The 7 draft campaigns and 7 templates render byte-identical to before. Gates: check:email-blocks, vitest suite (required test job), Pass probes, check:backlog, check:one-list, check:adr, check:id-collisions. After: BLD-301. Loop: build, validate, repair (3 cycles, classes in EDITOR-NEXT.md), record.\n\nEmail lens: the email surface compiles the page through compileEmailDoc from email-palette blocks (roles draw, freeze or hide per role.json; send-resolved blocks show the picked snapshot the send refreshes); the test holds the bytes to compileEmailDoc's and compiles the three starter templates through the same seam.",
   "verify": {
-    "kind": "manual",
-    "checked": "2026-11-02",
-    "evidence": "Filed from the builder spec. The pass writes scripts/probes/builder/BLD-302.mjs, proves it fails before the change and passes after, and switches this row to kind cmd in the same PR."
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/BLD-302.mjs"
   },
+  "closed": "2026-11-09",
   "wave": "W7"
 }

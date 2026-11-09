@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "id": "network-kit",
   "legacyIds": {
     "editor": "NetworkKit",
@@ -49,6 +49,88 @@
       "path": [
         "themes",
         "NetworkKit"
+      ]
+    },
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "accent": "supported"
+    },
+    "looks": [
+      {
+        "id": "marigold",
+        "label": "Marigold",
+        "dials": {
+          "accent": "marigold"
+        }
+      },
+      {
+        "id": "coral",
+        "label": "Coral",
+        "dials": {
+          "accent": "coral"
+        }
+      },
+      {
+        "id": "ocean",
+        "label": "Ocean",
+        "dials": {
+          "accent": "ocean"
+        }
+      },
+      {
+        "id": "lagoon",
+        "label": "Lagoon",
+        "dials": {
+          "accent": "lagoon"
+        }
+      }
+    ],
+    "functions": {
+      "booking": [
+        "NetworkKitInnerBook"
+      ],
+      "services": [
+        "NetworkKitOfferings",
+        "NetworkKitInnerServices"
+      ],
+      "reviews": [
+        "NetworkKitProof"
+      ],
+      "posts": [
+        "NetworkKitLibrary"
+      ],
+      "events": [
+        "NetworkKitGatherings",
+        "NetworkKitCalendar",
+        "NetworkKitFeatured",
+        "NetworkKitInnerIndex"
+      ],
+      "shop": [
+        "NetworkKitShop",
+        "NetworkKitMerch"
+      ],
+      "circles": [
+        "NetworkKitCircles"
+      ],
+      "firstnight": [],
+      "plans": [
+        "NetworkKitMembership"
+      ],
+      "letter": [
+        "NetworkKitLetter"
+      ],
+      "gallery": [],
+      "team": [
+        "NetworkKitInnerTeam"
+      ],
+      "locations": [
+        "NetworkKitVenue"
+      ],
+      "forms": [
+        "NetworkKitContact"
       ]
     }
   },
