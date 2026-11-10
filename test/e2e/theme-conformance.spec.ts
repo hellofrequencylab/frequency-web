@@ -1,22 +1,20 @@
 import { test, expect } from './fixtures'
 import { pathToFileURL } from 'node:url'
 import { resolve } from 'node:path'
-import { conformanceMatrix, contrast, heightStability, reducedMotion, repaintBudget, resetTotal } from '../../lib/theme/conformance'
+import { conformanceMatrix, contrast, emptyStates, heightStability, hiddenFunctions, motionAdditive, reducedMotion, repaintBudget, resetTotal, surfaceParity } from '../../lib/theme/conformance'
 
 // THEME CONFORMANCE RUN (LIVE-2032, rules in docs/design-systems/services/rules.json). LIVE-1998 shipped the ten checks
 // as pure functions; this spec collects their data from a RENDERED theme and feeds every case of conformanceMatrix() to
 // them. It needs a page that carries the theme's root attributes, from either source:
 //
 //   CONFORMANCE_FIXTURE=<file.html>   a static render (scripts/render/builder-roles-themes.render.tsx writes one per theme)
-//   CONFORMANCE_URL=<url>             a themed page: a published Space site whose theme is the one under test
+//   CONFORMANCE_URL=<url>             a themed page, including the Services preview fixture served by CI
 //
 // With neither set the spec skips itself, like every other spec here. CONFORMANCE_THEME names the theme (default
 // `services`, the first to declare dials); its root is `[data-house-theme="<theme>"]`.
 //
-// COVERED HERE: contrast (1), type-height-stability (3), reduced-motion (5), reset-total (8), repaint-budget (10).
-// NOT COVERED, because they need what a static render cannot give: motion-additive (4) and empty-states (6) need a live
-// Space with and without content, hidden-functions (7) and surface-parity (9) need the editor's hide toggles and the
-// profile, Spotlight and email renders; no-literal-colours (2) is source analysis (block-contract-tokens.test.ts).
+// The generated preview includes populated and empty roles, a private service, and four offering surfaces.
+// No-literal-colours (2) remains a source check in block-contract-tokens.test.ts.
 
 const THEME = process.env.CONFORMANCE_THEME ?? 'services'
 const FIXTURE = process.env.CONFORMANCE_FIXTURE
@@ -51,6 +49,8 @@ test.describe(`theme conformance: ${THEME}`, () => {
     await page.setViewportSize({ width, height: 900 })
     await page.goto(target!)
     await expect(page.locator(ROOT).first()).toBeVisible()
+    if (process.env.CONFORMANCE_REQUIRE_PREVIEW === '1') await expect(page.locator('[data-conformance-preview]')).toBeVisible()
+    await page.evaluate(async () => { await document.fonts.ready })
   }
   const setDials = (page: import('@playwright/test').Page, dials: Record<string, string>) =>
     page.evaluate(({ root, dials, attr }) => {
@@ -101,12 +101,101 @@ test.describe(`theme conformance: ${THEME}`, () => {
     if (faces.size < 2) test.info().annotations.push({ type: 'inert-dial', description: 'The type dial changes no block title face in this render, so the height check passed without a voice to test.' })
   })
 
+  test('the Services type voice changes a shared role heading', async ({ page }) => {
+    test.skip(THEME !== 'services', 'This assertion covers the Services role style.')
+    await open(page, 1440)
+    const title = page.locator(`${ROOT} [data-role] [data-part="title"]`).first()
+    await expect(title).toBeVisible()
+    const styles = new Set<string>()
+    for (const type of ['caps', 'quiet', 'editorial']) {
+      await setDials(page, { type })
+      styles.add(await title.evaluate((el) => {
+        const { fontFamily, fontWeight, letterSpacing } = getComputedStyle(el)
+        return JSON.stringify({ fontFamily, fontWeight, letterSpacing })
+      }))
+    }
+    expect(styles.size).toBe(3)
+  })
+
   test('reduced motion stops every animation', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await open(page, 1440)
     await setDials(page, { motion: 'full' })
     const effects = await page.evaluate((root) => [...document.querySelectorAll(`${root} *`)].filter((e) => e.getAnimations().length > 0).map((e, i) => ({ id: `${e.getAttribute('data-role') ?? e.tagName}#${i}`, animating: e.getAnimations().some((a) => a.playState === 'running') })), ROOT)
     expect(reducedMotion(effects)).toEqual([])
+  })
+
+  test('turning off Services motion leaves content in place', async ({ page }) => {
+    await open(page, 1440)
+    const preview = page.locator('[data-conformance-preview]')
+    test.skip(await preview.count() === 0, 'Requires the generated Services preview with a motion effect.')
+    const effect = preview.locator('[data-preview-hero] .sv-orb').first()
+    await expect(effect).toHaveCSS('animation-name', 'sv-drift')
+    const measure = () => preview.locator('[data-preview-hero] h1, main [data-role]').evaluateAll((items) => items.map((item, i) => {
+      const { x, y, width, height } = item.getBoundingClientRect()
+      return { id: `${item.getAttribute('data-role') ?? 'hero'}-${i}`, x, y, w: width, h: height }
+    }))
+    const full = await measure()
+    expect(full.length).toBeGreaterThan(1)
+    await setDials(page, { motion: 'off' })
+    await expect(effect).toHaveCSS('animation-name', 'none')
+    expect(motionAdditive(full, await measure())).toEqual([])
+  })
+
+  test('empty Services slots show a list message and image placeholder', async ({ page }) => {
+    await open(page, 390)
+    const preview = page.locator('[data-conformance-preview]')
+    test.skip(await preview.count() === 0, 'Requires the generated Services preview with empty data.')
+    const events = preview.locator('[data-preview-empty] [data-role="gatherings"]')
+    await expect(events).toBeVisible()
+    const line = events.locator('[data-part="empty"]')
+    await expect(line).toBeVisible()
+    await expect(line).toHaveText('No dates are scheduled.')
+    await expect(events.locator('[data-part="item"]')).toHaveCount(0)
+    const photo = preview.locator('[data-preview-empty] .sv-photo')
+    await expect(photo.locator('.sv-dotgrid')).toBeVisible()
+    await expect(photo.locator('figcaption')).toHaveText('Your work in action')
+    await expect(photo.locator('img')).toHaveCount(0)
+    expect(emptyStates([
+      { id: 'gatherings', kind: 'list', empty: await line.isVisible() ? 'line' : 'blank' },
+      { id: 'hero photo', kind: 'image', empty: await photo.isVisible() ? 'placeholder' : 'blank' },
+    ])).toEqual([])
+  })
+
+  test('a private service leaves no offering block or empty wrapper', async ({ page }) => {
+    await open(page, 390)
+    test.skip(await page.locator('[data-conformance-preview]').count() === 0, 'Requires the generated Services preview.')
+    await expect(page.locator('[data-preview-profile] [data-fn="services"]')).toBeVisible()
+    const hidden = page.locator('[data-preview-private]')
+    await expect(hidden).toBeEmpty()
+    expect(hiddenFunctions(await hidden.innerHTML(), 'services')).toEqual([])
+  })
+
+  test('site, profile, Spotlight and email render the same service details', async ({ page }) => {
+    await open(page, 1440)
+    test.skip(await page.locator('[data-conformance-preview]').count() === 0, 'Requires the generated Services preview.')
+    const fields = ['Fixture window cleaning', '$85', '45 min']
+    const values = async (selector: string) => Promise.all(fields.map(async (field) => {
+      const text = page.locator(selector).getByText(field, { exact: true }).first()
+      await expect(text).toBeVisible()
+      return (await text.innerText()).trim()
+    }))
+    const site = await values('[data-preview-hero]')
+    const profile = await values('[data-preview-profile]')
+    const spotlight = await values('[data-preview-spotlight]')
+    await page.route('https://fonts.googleapis.com/**', (route) => route.abort())
+    await page.goto(new URL('ServicesPreviewEmail.html', target!).href)
+    // Email rows keep the main value as a text node next to a nested description.
+    const email = await page.locator('body').evaluate((body, expected) => {
+      const found = new Set<string>()
+      const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT)
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const value = node.textContent?.trim()
+        if (value && node.parentElement?.getClientRects().length) found.add(value)
+      }
+      return expected.filter((value) => found.has(value))
+    }, fields)
+    expect(surfaceParity({ site, profile, spotlight, email }, 'services')).toEqual([])
   })
 
   test('removing every dial returns the render to its own look', async ({ page }) => {

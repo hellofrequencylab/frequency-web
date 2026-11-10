@@ -4,15 +4,16 @@
   "lane": "program",
   "priority": "P0",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/hunts/README.md",
     "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 0, Engine. Owner asked 2026-11-09 to build the program into the site."
   },
-  "detail": "Introduce claim, progress, command key, run, audit and compensation records with unique keys and indexed scope. Done when: Parallel credit and reused idempotency key with a different payload yield only one credit and a conflict respectively. Requires: FH-005. Owner role: Database.",
+  "detail": "Introduce claim, progress, command key, run, audit and compensation records with unique keys and indexed scope. Done when: Parallel credit and reused idempotency key with a different payload yield only one credit and a conflict respectively. Requires: FH-005. Owner role: Database.\n\nMigration 20270346032000 adds hunt_runs, hunt_claims, hunt_progress, hunt_command_keys, hunt_audit and hunt_compensations (service role only, composite FKs keep every child inside its Hunt and run). One credit per (run, mission) by primary key, one claim per (run, mission, evidence), one command per (actor, action, key) with request_hash kept so a reused key with another payload collides. pgTAP in supabase/tests/hunt_runs.test.sql (sequential path only; the concurrent race belongs to the claim RPC, FH-010), source-shape guard in lib/hunts/runs-schema.test.ts. Append-only enforcement of hunt_audit and compensations is not in this migration.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"supabase/tests/hunt_runs.test.sql\")?0:1)'"
+    "cmd": "node -e 'const f=require(\"fs\");process.exit(f.existsSync(\"lib/hunts/runs-schema.test.ts\")&&f.existsSync(\"supabase/migrations/20270346032000_hunt_runs.sql\")&&f.existsSync(\"supabase/tests/hunt_runs.test.sql\")?0:1)'"
   },
+  "closed": "2026-11-09",
   "wave": "W7"
 }
