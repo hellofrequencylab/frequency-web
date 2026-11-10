@@ -1,0 +1,6 @@
+{
+  "id": "LIVE-1335",
+  "append": {
+    "detail": "\n\n2026-11-10 evidence refresh. The production environment already holds DISCOVERY_OAUTH_ENCRYPTION_KEY, BING_WEBMASTER_CLIENT_ID and BING_WEBMASTER_CLIENT_SECRET (Production and Preview, set 2026-10-26), plus the Google client id and secret. Names checked in the Vercel project, no values read. The keys are not a blocker. What remains is one live Bing acceptance with a verified custom-domain root (owner answered 'Bing acceptance later', 2026-11-10) and the parked Google OAuth verification."
+  }
+}

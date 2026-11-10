@@ -3,6 +3,7 @@
 // Each stage measures a consequence that is false today and true once its wave ships. Reads files under node, never a test runner.
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { loadDecisions } from '../lib/ledger.mjs'
 
 const stage = process.argv[2]
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')
@@ -11,7 +12,8 @@ const bad = []
 
 if (stage === 'w0') {
   if (/never the name of a Space-level surface/i.test(read('docs/NAMING.md'))) bad.push('NAMING.md still forbids "Community" as a Space-level surface (ADR-1091)')
-  const adrs = readdirSync('docs/ledger/adr').map((f) => read(join('docs/ledger/adr', f)))
+  // The merged ADR ledger (folded file plus any fragments), never the fragment folder: compaction empties it.
+  const adrs = loadDecisions().split(/^(?=#{2,3} ADR-)/m)
   if (!adrs.some((a) => /Community wall/i.test(a) && /Supersedes/i.test(a))) bad.push('no ADR records the Community wall decision and the ADRs it supersedes')
 } else if (stage === 'w1') {
   const m = migrations().filter(([, sql]) => /space_wall_settings/.test(sql) && /scope_space_id/.test(sql) && /can_read_space_wall/.test(sql))

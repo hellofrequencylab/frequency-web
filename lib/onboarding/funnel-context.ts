@@ -1,6 +1,6 @@
 // Smart funnel context (LIVE-2233): what an invite link tells a /start page about the person it was
 // sent to. FlowWeb's neighborhood-activation flow builds every invite as
-//   /start/<funnel>?persona=&region=&area=&channel=&src=&utm_source=flowweb&utm_medium=&utm_campaign=
+//   /start/<funnel>?persona=&region=&area=&channel=&src=&utm_source=flowweb&utm_medium=&utm_campaign=&utm_content=
 // (contract: flows/neighborhood-activation/config.json and funnelOf() in hellofrequencylab/flowweb).
 // This module reads those params into one validated record the page adapts to and the lead stores.
 //
@@ -115,7 +115,8 @@ export interface FunnelContext {
   /** The known subject the Channel slug names, when it names one (drives the "what you host" pick). */
   channelSubject: SubjectKey | null
   src: FunnelSource | null
-  utm: { source: string | null; medium: string | null; campaign: string | null }
+  /** utm_content is the FlowWeb draft id (LIVE-2255), so each outcome traces back to one message. */
+  utm: { source: string | null; medium: string | null; campaign: string | null; content: string | null }
   /** True when the link came from Daniel's personal first invite. */
   founderInvite: boolean
 }
@@ -130,6 +131,8 @@ interface FunnelRecord {
   utm_source: string | null
   utm_medium: string | null
   utm_campaign: string | null
+  /** The FlowWeb draft id; present only when the link carried one, so older records keep their shape. */
+  utm_content?: string
 }
 
 /** Every param an invite link may carry; the page passes on these and nothing else. */
@@ -142,6 +145,7 @@ export const FUNNEL_PARAM_KEYS = [
   'utm_source',
   'utm_medium',
   'utm_campaign',
+  'utm_content',
 ] as const
 
 type ParamReader = { get(key: string): string | null | undefined }
@@ -196,6 +200,7 @@ export function parseFunnelContext(params: ParamReader | ParamBag): FunnelContex
     source: one(params, 'utm_source'),
     medium: one(params, 'utm_medium'),
     campaign: one(params, 'utm_campaign'),
+    content: one(params, 'utm_content'),
   }
 
   return {
@@ -221,6 +226,7 @@ export function funnelRecord(ctx: FunnelContext): FunnelRecord {
     utm_source: ctx.utm.source,
     utm_medium: ctx.utm.medium,
     utm_campaign: ctx.utm.campaign,
+    ...(ctx.utm.content ? { utm_content: ctx.utm.content } : {}),
   }
 }
 
