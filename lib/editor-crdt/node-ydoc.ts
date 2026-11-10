@@ -21,7 +21,7 @@ import type { BlockNode, NodeLayout } from '../entity-blocks/node-tree'
 
 const ROOT = 'layout'
 /** Origin tag for transactions applied from a remote peer, so the undo manager ignores them. */
-const REMOTE_ORIGIN = 'remote'
+export const REMOTE_ORIGIN = 'remote'
 /** Origin tag for a local edit. Only this origin is undoable. */
 const LOCAL_ORIGIN = 'local'
 
