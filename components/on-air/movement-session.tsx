@@ -110,7 +110,7 @@ interface MovementSetup {
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 
 // FREE PRACTICE MEMORY (PRACTICE-TIMER-CONTINUITY P3): the member's last-run movement configuration
-// lives in the ONE timer settings model (lib/on-air/timer-settings.ts `move`, LIVE-2232), saved
+// lives in the ONE timer settings model (lib/on-air/timer-settings.ts `move`, LIVE-2240), saved
 // the moment the setup changes and read only when the launch is the UNATTACHED Free Practice, so
 // a bare Get Moving open pops back up in the last known configuration while an authored practice
 // still opens on its creator's preset. The engine owns no storage key of its own any more.
@@ -222,7 +222,7 @@ export function MovementSession({
   onModeChange,
 }: {
   minutesOverride?: number
-  /** The member's server prefs; the settings model lays the local copy over them (LIVE-2232). */
+  /** The member's server prefs; the settings model lays the local copy over them (LIVE-2240). */
   prefs?: Partial<OnAirPrefs> | null
   /** The plan the door composed (LIVE-2234): wins for a fresh run so Start on the door runs exactly
    *  what its sub-menus showed. A resume still overrides the length; a crash recovery still applies
@@ -401,7 +401,7 @@ export function MovementSession({
     restSec,
     rounds,
   ])
-  // Remember the composed setup the moment it changes (LIVE-2232), never on mount and never while
+  // Remember the composed setup the moment it changes (LIVE-2240), never on mount and never while
   // a resume is dictating the length, so a cancelled setup still carries its choices to the next open.
   useSaveOnChange({ move: config }, saveSettings, stage === 'setup' && !initialResume)
 

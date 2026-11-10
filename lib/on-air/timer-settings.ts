@@ -1,4 +1,4 @@
-// The Mindless timer's ONE settings model (LIVE-2232). Every member-chosen setting of both
+// The Mindless timer's ONE settings model (LIVE-2240). Every member-chosen setting of both
 // engines (the Be Still sit and the Get Moving run) lives here, in one shape, saved the moment
 // it changes: to localStorage at once, and to profiles.meta.onAir through saveOnAirPrefs
 // (app/(main)/on-air/actions.ts) so another device opens the same way.
@@ -278,7 +278,7 @@ export function diffSettings(prev: TimerSettingsPatch, next: TimerSettingsPatch)
   return Object.keys(out).length ? out : null
 }
 
-/** The one-line value summaries the door's collapsed sub-menu rows show (LIVE-2233), so a member
+/** The one-line value summaries the door's collapsed sub-menu rows show (LIVE-2241), so a member
  *  never has to open a row to know its state. Pure; the names come from the pattern and voice lists. */
 export function describeSections(
   s: TimerSettings,

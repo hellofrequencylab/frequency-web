@@ -143,7 +143,7 @@ type OverlayState =
       phase: 'ready'
       setup?: boolean
       minutesOverride?: number
-      /** The Be Still sub-mode and breath pattern the door chose (LIVE-2233); the engine seeds from them. */
+      /** The Be Still sub-mode and breath pattern the door chose (LIVE-2241); the engine seeds from them. */
       stillMode?: SessionMode
       patternSlug?: string
       /** The Get Moving plan the door composed (LIVE-2234); the engine seeds from it. */
@@ -494,7 +494,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             autoStart={state.autoStart}
             // The member's warm-up length pref, shared with the sit (item #10).
             warmupSec={state.data.prefs.warmupSec}
-            // The member's prefs: the settings model lays the local copy over them (LIVE-2232).
+            // The member's prefs: the settings model lays the local copy over them (LIVE-2240).
             prefs={state.data.prefs}
             // The plan the door composed (LIVE-2234): Start runs exactly what the sub-menus showed.
             initialConfig={state.moveConfig}
@@ -522,7 +522,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             // practice opens the Just Log note screen; a generic open still lands on Meditate.
             explicitPracticeId={state.practiceId}
             prefs={state.data.prefs}
-            // The door's Be Still choices (LIVE-2233): the sub-mode and breath pattern it was set to.
+            // The door's Be Still choices (LIVE-2241): the sub-mode and breath pattern it was set to.
             initialMode={state.stillMode}
             initialPattern={state.patternSlug}
             practicedToday={state.data.practicedToday}

@@ -1,4 +1,4 @@
-// LIVE-2233: every Be Still setting the sit engine owns is reachable from the Mindless door itself,
+// LIVE-2241: every Be Still setting the sit engine owns is reachable from the Mindless door itself,
 // as sub-menus that expand in place, never a second screen. Source contract; the render test is
 // components/on-air/compact-setup.test.tsx in the test job.
 import { readFileSync, existsSync } from 'node:fs'
@@ -19,4 +19,4 @@ for (const control of ['BREATH_PATTERNS', 'BELL_TONES', 'BELL_INTERVALS', 'AMBIE
 const engine = read('components/on-air/session.tsx')
 assert.ok(/initialMode\?: SessionMode/.test(engine), 'the sit engine must accept the door sub-mode')
 assert.ok(engine.includes('showCount={settings.cues.showBreathCount}'), 'the breath count toggle must reach the visualizer')
-console.log('The Be Still door contract holds (LIVE-2233).')
+console.log('The Be Still door contract holds (LIVE-2241).')

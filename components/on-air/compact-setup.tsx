@@ -1,6 +1,6 @@
 'use client'
 
-// THE MINDLESS DOOR (LIVE-2233, LIVE-2234): one screen, two levels. The primary stack is Mode,
+// THE MINDLESS DOOR (LIVE-2241, LIVE-2242): one screen, two levels. The primary stack is Mode,
 // What (a practice), How (a sub-mode), How long, Go. Under it, the sub-menus expand in place
 // (Be Still: Breath, Sound, Ambient, Feel; Get Moving: Plan, Cues, Sound, Feel) and a read-only
 // Session footer. Nothing either engine can do sits behind a second screen any more; every
@@ -55,10 +55,10 @@ export type SetupChoice = {
   mode: TimerMode
   /** A Be Still open length the member typed or tapped (never for Get Moving: the config carries it). */
   minutesOverride?: number
-  /** The Be Still sub-mode and breath pattern the member set on the door (LIVE-2233). */
+  /** The Be Still sub-mode and breath pattern the member set on the door (LIVE-2241). */
   stillMode?: SessionMode
   patternSlug?: string
-  /** The Get Moving configuration the member composed on the door (LIVE-2234). */
+  /** The Get Moving configuration the member composed on the door (LIVE-2242). */
   moveConfig?: MovementConfig
 }
 

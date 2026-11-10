@@ -1,4 +1,4 @@
-// LIVE-2232: the Mindless timer has ONE settings model, saved on change. Source contract: the
+// LIVE-2240: the Mindless timer has ONE settings model, saved on change. Source contract: the
 // model exists, completeSession no longer derives prefs from the sit that ended, both engines read
 // and write through the model and keep no storage key of their own, and the member minute band
 // is one constant. The unit tests in lib/on-air/timer-settings.test.ts run in the test job.
@@ -21,4 +21,4 @@ for (const file of ['components/on-air/session.tsx', 'components/on-air/movement
   assert.ok(text.includes("from './use-timer-settings'"), `${file}: must read and save through the settings model`)
 }
 assert.ok(!read('components/on-air/movement-session.tsx').includes('Math.min(240,'), 'movement steppers must use the one minute band')
-console.log('Timer settings model contract holds (LIVE-2232).')
+console.log('Timer settings model contract holds (LIVE-2240).')

@@ -1,6 +1,6 @@
 'use client'
 
-// A sub-menu row on the Mindless door (LIVE-2233): icon, name, the current value in one line, a
+// A sub-menu row on the Mindless door (LIVE-2241): icon, name, the current value in one line, a
 // chevron; tap to expand in place. Several may be open at once and the open set is remembered per
 // viewer (a convenience, so localStorage), never anything the member chose about their practice.
 // The design (/mnt/project-files/mindless-timer/02-INTERFACE-PLAN.md) has no second screen: every
