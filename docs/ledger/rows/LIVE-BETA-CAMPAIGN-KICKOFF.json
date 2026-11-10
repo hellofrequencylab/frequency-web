@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-BETA-CAMPAIGN-KICKOFF",
+  "title": "Get the Founding Member campaign ready to start on November 11",
+  "status": "open",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/rows/LIVE-BETA-LAUNCH-CAMPAIGN.json",
+    "ref": "Daniel, 2026-11-10: put the campaign plan on the Daniel Tyack Space calendar and the backlog; it should be ready by the 11th and start on the 11th."
+  },
+  "detail": "Preparation checklist for LIVE-BETA-LAUNCH-CAMPAIGN, to finish by November 11, 2026 so work starts that day. Drafts live in /mnt/project-files/campaign/ (FOUNDING-MEMBER-DRAFTS.md, AUDIENCE-FUNNELS-DRAFTS.md); 10 unsent Email Studio drafts and 2 draft Funnels (casual-browsers, web-followers) sit under danieltyack in Frequency Community. TO DO: (1) Daniel reviews the 10 drafts and 2 funnels and approves or edits copy. (2) Daniel approves audience lists: launch emails go to opted-in members (almost all free, only a couple paid); the pricing email leaves out current payers; casual browsers need on-site consent; people Daniel meets get a personal note first and marketing only after a yes. (3) Schedule launch emails: Nov 17, Dec 8, Dec 22 and Jan 1 at 10am Pacific; member re-engagement starts Nov 17 and skips anyone who got a launch email in the past 7 days. (4) Publish the two Funnels after review. (5) Settle the date conflict: SCAN-885 pins December 1 in the onboarding North County opening copy while the campaign says beta ends December 31; a probe change needs Daniel's own phrase. (6) Confirm the stay-in-the-loop capture carries a consent line and no persona or wellness data reaches pixels or click parameters. The shipped come-back emails (lib/launch/comeback-email.ts) are unchanged. Nothing is sent until Daniel approves recipients, content and schedule.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-10",
+    "evidence": "Fails today: no campaign email is scheduled and the two funnels are drafts. Passes when Daniel has approved the lists, the Nov 17 launch email and Nov 17 re-engagement are scheduled in Email Studio, and the funnels are published, with the date conflict settled."
+  },
+  "wave": "W7"
+}
