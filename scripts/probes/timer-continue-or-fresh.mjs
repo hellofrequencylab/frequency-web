@@ -6,10 +6,10 @@ import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
 const read = (p) => readFileSync(p, 'utf8')
 const door = read('components/on-air/compact-setup.tsx')
-assert.ok(door.includes('aria-label="Continue or start fresh"'), 'the door must offer Continue or Start fresh')
+assert.ok(door.includes("'Continue or start fresh'"), 'the door must offer Continue or Start fresh')
 assert.ok(door.includes('partialToday'), 'the door must read the partial today')
 assert.ok(door.includes('fresh: true'), 'the door must forward Start fresh')
-assert.ok(door.includes("'Continue practice'"), 'Go must read Continue practice while continuing')
+assert.ok(door.includes('`Continue, ${remainingMin} min left`'), 'Go must read Continue, N min left while continuing')
 const provider = read('components/on-air/mindless.tsx')
 assert.ok(provider.includes('fresh: choice.fresh'), 'the provider must carry the door choice')
 assert.ok((provider.match(/fresh=\{state\.fresh\}/g) ?? []).length === 2, 'both engines must receive fresh')

@@ -157,6 +157,9 @@ type OverlayState =
       moveConfig?: MovementConfig
       /** The door's Start fresh (LIVE-2243): the engine ignores today's partial on the practice. */
       fresh?: boolean
+      /** The door's note and its Log it (LIVE-2245); the sit engine seeds its note and logs at once. */
+      note?: string
+      logNow?: boolean
       data: OnAirSessionData
       /** The mode the door is showing (auto-routed from the practice / entry; member-togglable). */
       mode: TimerMode
@@ -433,6 +436,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     setState((s) => s.phase !== 'ready' ? s : ({ ...s, setup: false, mode: choice.mode,
       practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, autoStart: true,
       stillMode: choice.stillMode, patternSlug: choice.patternSlug, moveConfig: choice.moveConfig, fresh: choice.fresh,
+      note: choice.note, logNow: choice.mode === 'still' && choice.stillMode === 'log',
       movementMode: choice.mode === 'move' ? (choice.moveConfig?.mode ?? s.data.practices.find((p) => p.id === choice.practiceId)?.movementConfig?.mode) : undefined,
       data: { ...s.data, defaultPracticeId: choice.practiceId } }))
   }
@@ -540,6 +544,9 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             initialMode={state.stillMode}
             initialPattern={state.patternSlug}
             fresh={state.fresh}
+            // The door's note and Log it (LIVE-2245).
+            initialNote={state.note}
+            logNow={state.logNow}
             practicedToday={state.data.practicedToday}
             journeyLegs={state.data.journeyLegs ?? []}
             resumeFromSec={state.resume?.resumeFromSec}

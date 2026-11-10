@@ -36,7 +36,7 @@ describe('adopted practice direct launch', () => {
     live.mockImplementation((kind) => kind === 'movement' ? { kind: 'movement' } : null)
     await act(async () => host.querySelector('button')!.click())
     expect(moving).toHaveBeenCalled()
-    expect(host.textContent).not.toContain('Custom minutes')
+    expect(host.querySelector('[aria-label^="Minutes"]')).toBeNull()
   })
   it('generic overlay opens the shared setup, then hands its selected custom duration to the engine', async () => {
     const practice = { id: 'chosen', title: 'My practice', durationMin: 17, timerKind: 'mindless' }
@@ -45,9 +45,9 @@ describe('adopted practice direct launch', () => {
     await act(async () => host.querySelector('button')!.click())
     expect(still).not.toHaveBeenCalled()
     // The door is a `dynamic()` chunk since 2026-11-10 (check:shell-weight), so it lands a tick later.
-    for (let i = 0; i < 20 && !host.textContent?.includes('Custom minutes'); i++) await act(async () => { await new Promise((r) => setTimeout(r, 5)) })
-    expect(host.textContent).toContain('Custom minutes')
-    const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
+    for (let i = 0; i < 100 && !host.querySelector('[aria-label^="Minutes"]'); i++) await act(async () => { await new Promise((r) => setTimeout(r, 10)) })
+    expect(host.querySelector('[aria-label^="Minutes"]')).not.toBeNull()
+    const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.startsWith('Start timer'))!
     await act(async () => begin.click())
     expect(still.mock.calls.at(-1)![0]).toMatchObject({ defaultPracticeId: 'chosen', autoStart: true, minutesOverride: 17 })
     expect(load).toHaveBeenCalledTimes(1)

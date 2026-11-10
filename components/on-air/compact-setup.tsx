@@ -1,27 +1,34 @@
 'use client'
 
-// THE MINDLESS DOOR (LIVE-2241, LIVE-2242): one screen, two levels. The primary stack is Mode,
-// What (a practice), How (a sub-mode), How long, Go. Under it, the sub-menus expand in place
-// (Be Still: Breath, Sound, Ambient, Feel; Get Moving: Plan, Cues, Sound, Feel) and a read-only
-// Session footer. Nothing either engine can do sits behind a second screen any more; every
-// setting is written to the one timer settings model (lib/on-air/timer-settings.ts) so the
-// engine mounts with it. The look is the compact door the owner kept (2026-11-09); the new design
-// drops onto the same props.
+// THE MINDLESS DOOR (LIVE-2241, LIVE-2242, LIVE-2243; redesigned under LIVE-2245 from the Claude
+// Design handoff of 2026-11-10). One door, two layouts on the same props and the same choice:
+//
+//   • under 840px, a full-screen sheet: the Be Still | Get Moving pill, the breathing orb that IS
+//     the length field (minus / plus beside it, presets under it), the Practice and How pickers,
+//     the settings rows (Breath, Plan, Cues, Note, Sound, Ambient, Feel; one open at a time) and a
+//     docked Go with the "Logs as" line;
+//   • from 840px, a dialog: a Today rail of practices on the left, the main column (title, Style
+//     tiles, Length, Breath pattern / Plan / Note, Sound and feel) and a footer with the summary,
+//     Cancel and Go. Esc closes, Enter starts, the arrows change the minutes.
+//
+// Nothing either engine can do sits behind a second screen; every setting is written to the one
+// timer settings model (lib/on-air/timer-settings.ts) so the engine mounts with it. Tokens only
+// (docs/THEME.md); the one action fill is Go.
 
-import { useId, useRef, useState } from 'react'
-import { Check } from 'lucide-react'
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { BookOpen, Check, ChevronDown, Dumbbell, Flower2, Footprints, Lock, Minus, Moon, Plus, Rabbit, Sparkles, StretchHorizontal, Volleyball, X } from 'lucide-react'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/field'
-import { chipClasses } from '@/components/ui/chip'
+import { BoltIcon, BreatheIcon, DialIcon, LotusIcon } from '@/components/on-air/icons'
 import { unlockTimerAudio } from '@/lib/on-air/timer-audio-unlock'
 import {
   BREATH_DURATION_PRESETS,
   DURATION_PRESETS,
   SESSION_MODE_META,
   SESSION_MODE_ORDER,
+  bellToneBySlug,
   engineForMode,
   modeForMindless,
+  modeHasNote,
   type OnAirPrefs,
   type SessionMode,
 } from '@/lib/on-air'
@@ -35,8 +42,9 @@ import {
   type MovementMode,
 } from '@/lib/movement'
 import {
+  MINUTE_MAX,
+  clampMemberMinutes,
   defaultMoveConfig,
-  describeMovePlan,
   isValidMemberMinutes,
   mergeTimerSettings,
   moveMinutes,
@@ -45,9 +53,11 @@ import {
   type TimerSettingsPatch,
 } from '@/lib/on-air/timer-settings'
 import { useTimerSettings } from './use-timer-settings'
-import { StillSections } from './door/still-sections'
-import { MoveSections } from './door/move-sections'
-import { MindlessMasthead } from './mode-toggle'
+import { Keycap, Segmented, Tiles } from './door/door-section'
+import { SoundAndFeel, useDoorAudio, type CueScope } from './door/cue-sections'
+import { BreathWebSection, NoteField, StillSections } from './door/still-sections'
+import { MoveSections, PlanWebSection, clock, describePlan, moveCue } from './door/move-sections'
+import { MINDLESS_TAGLINE } from './mode-toggle'
 import type { TimerMode } from './mindless'
 import type { OnAirPractice } from './session'
 
@@ -63,6 +73,8 @@ export type SetupChoice = {
   moveConfig?: MovementConfig
   /** Start fresh (LIVE-2243): ignore today's partial on the practice and run the chosen length from zero. */
   fresh?: boolean
+  /** The note typed on the door for Journal or Just Log (LIVE-2245); the engine carries it into the log. */
+  note?: string
 }
 
 export function setupPractices(practices: OnAirPractice[], mode: TimerMode) {
@@ -88,8 +100,16 @@ function stillModeFor(p: OnAirPractice | undefined, explicit: boolean): SessionM
 /** The Get Moving config a practice opens on: its creator's preset, or for the Free Practice the
  *  member's remembered configuration (the saved Get Moving memory), else a 20 min walk. */
 function moveConfigFor(p: OnAirPractice | undefined, remembered: MovementConfig | null): MovementConfig {
-  if (p && !p.logsAs && p.movementConfig) return sanitizeMovementConfig(p.movementConfig)
+  if (p && !p.logsAs && p.movementConfig) {
+    const config = sanitizeMovementConfig(p.movementConfig)
+    // A practice whose config names no length of its own runs its authored minutes.
+    return p.durationMin && p.durationMin > 0 && moveMinutes(config) !== null && !hasOwnMinutes(p.movementConfig) ? withMoveMinutes(config, p.durationMin) : config
+  }
   return remembered ? sanitizeMovementConfig(remembered) : defaultMoveConfig('walk', null)
+}
+
+function hasOwnMinutes(c: MovementConfig): boolean {
+  return c.walkMinutes != null || c.runMinutes != null || c.stretchMinutes != null
 }
 
 const MOVE_PRESETS: Record<MovementMode, readonly number[]> = {
@@ -100,6 +120,57 @@ const MOVE_PRESETS: Record<MovementMode, readonly number[]> = {
   strength: [],
   play: [],
 }
+
+const ICON = 'h-[18px] w-[18px]'
+const STILL_ICON: Record<SessionMode, ReactNode> = {
+  timer: <LotusIcon className={ICON} />,
+  breath: <BreatheIcon className={ICON} />,
+  journal: <BookOpen className={ICON} aria-hidden />,
+  stillness: <Moon className={ICON} aria-hidden />,
+  ritual: <Sparkles className={ICON} aria-hidden />,
+  log: <BoltIcon className={ICON} />,
+}
+const MOVE_ICON: Record<MovementMode, ReactNode> = {
+  walk: <Footprints className={ICON} aria-hidden />,
+  run: <Rabbit className={ICON} aria-hidden />,
+  yoga: <Flower2 className={ICON} aria-hidden />,
+  strength: <Dumbbell className={ICON} aria-hidden />,
+  stretch: <StretchHorizontal className={ICON} aria-hidden />,
+  play: <Volleyball className={ICON} aria-hidden />,
+}
+
+/** The web dialog from 840px; the sheet under it. The server snapshot is the sheet (the door is a
+ *  client chunk, so this only decides the first client paint). */
+const WEB_QUERY = '(min-width: 840px)'
+function useWebLayout(): boolean {
+  return useSyncExternalStore(
+    (notify) => {
+      const m = typeof window.matchMedia === 'function' ? window.matchMedia(WEB_QUERY) : null
+      m?.addEventListener?.('change', notify)
+      return () => m?.removeEventListener?.('change', notify)
+    },
+    () => (typeof window.matchMedia === 'function' ? !!window.matchMedia(WEB_QUERY).matches : false),
+    () => false,
+  )
+}
+
+/** What the member has set in one mode; kept apart so switching Be Still | Get Moving and back loses nothing. */
+interface ModeState {
+  pickedId: string | undefined
+  stillPick: SessionMode | null
+  movePick: { practiceId: string | undefined; config: MovementConfig } | null
+  /** A length the member chose on the door (NaN while the typed number is not a real one). */
+  custom: number | null
+  /** The raw text in the minutes field while they type it. */
+  typed: string | null
+  freshFor: string | null
+  /** A breath pattern the member picked on the door; until then an authored practice shows its own. */
+  patternPick: string | null
+}
+const blank = (pickedId?: string): ModeState => ({ pickedId, stillPick: null, movePick: null, custom: null, typed: null, freshFor: null, patternPick: null })
+
+const MINUTES_LABEL = `Minutes, 1 to ${MINUTE_MAX}`
+const INVALID_LINE = `Choose 1 to ${MINUTE_MAX} minutes.`
 
 /** Shared route/overlay setup. The existing engines own running, recovery, sound and logging. */
 export function CompactSetup({
@@ -126,34 +197,51 @@ export function CompactSetup({
   onClose: () => void
 }) {
   const panel = useRef<HTMLDivElement>(null)
-  const headingId = useId()
-  const howId = useId()
+  const titleId = useId()
   useDialogFocusTrap(true, panel)
+  const web = useWebLayout()
   const { initial, save } = useTimerSettings(prefs)
-  const [settings, setSettings] = useState<TimerSettings>(initial)
-  const set = (patch: TimerSettingsPatch) => {
-    setSettings((s) => mergeTimerSettings(s, patch))
-    save(patch)
-  }
+  const [saved, setSaved] = useState<TimerSettings>(initial)
+  const audio = useDoorAudio()
   const [mode, setMode] = useState(initialMode)
-  const [pickedId, setPickedId] = useState(initialPracticeId)
-  const [custom, setCustom] = useState<number | null>(null)
+  const [states, setStates] = useState<Record<TimerMode, ModeState>>(() => ({ still: blank(initialMode === 'still' ? initialPracticeId : undefined), move: blank(initialMode === 'move' ? initialPracticeId : undefined) }))
+  const cur = states[mode]
+  const patch = (o: Partial<ModeState>) => setStates((s) => ({ ...s, [mode]: { ...s[mode], ...o } }))
+  const set = (p: TimerSettingsPatch) => {
+    setSaved((s) => mergeTimerSettings(s, p))
+    save(p)
+    if (p.still?.patternSlug) patch({ patternPick: p.still.patternSlug })
+  }
+  const [note, setNote] = useState('')
+  // The mobile pickers and settings rows: one thing open at a time.
+  const [picker, setPicker] = useState<'practice' | 'how' | null>(null)
+  const [openRow, setOpenRow] = useState<string | null>(null)
+  const togglePicker = (k: 'practice' | 'how') => {
+    setPicker((p) => (p === k ? null : k))
+    setOpenRow(null)
+  }
+  const toggleRow = (id: string) => {
+    setOpenRow((r) => (r === id ? null : id))
+    setPicker(null)
+  }
+
   const available = setupPractices(practices, mode)
-  const practice = available.find((p) => p.id === pickedId) ?? available.find((p) => p.logsAs) ?? available[0]
+  const practice = available.find((p) => p.id === cur.pickedId) ?? available.find((p) => p.logsAs) ?? available[0]
+  // A practice that ships its own breath pattern (a Box breathing practice ships Box) shows and runs
+  // it until the member picks another; the member's remembered pattern is never overwritten by it.
+  const authoredPattern = mode === 'still' && !cur.patternPick && practice && !practice.logsAs ? practice.breathPattern : null
+  const settings: TimerSettings = authoredPattern ? { ...saved, still: { ...saved.still, patternSlug: authoredPattern } } : saved
   const isFree = !!practice?.logsAs
   const explicit = practice?.id === explicitPracticeId
 
   // Be Still: the sub-mode, pre-set by the practice until the member picks one.
-  const [stillPick, setStillPick] = useState<SessionMode | null>(null)
-  const stillMode: SessionMode = stillPick ?? stillModeFor(practice, explicit)
+  const stillMode: SessionMode = cur.stillPick ?? stillModeFor(practice, explicit)
 
   // Get Moving: the composed configuration, pre-set by the practice (or the Free memory) until the
-  // member changes it. Keyed by practice so a chip tap re-seeds.
-  const [movePick, setMovePick] = useState<{ practiceId: string | undefined; config: MovementConfig } | null>(null)
-  const moveConfig: MovementConfig =
-    movePick && movePick.practiceId === practice?.id ? movePick.config : moveConfigFor(practice, settings.move)
+  // member changes it. Keyed by practice so a practice pick re-seeds.
+  const moveConfig: MovementConfig = cur.movePick && cur.movePick.practiceId === practice?.id ? cur.movePick.config : moveConfigFor(practice, settings.move)
   const setMoveConfig = (next: MovementConfig) => {
-    setMovePick({ practiceId: practice?.id, config: next })
+    patch({ movePick: { practiceId: practice?.id, config: next } })
     // The Free Practice memory is what the member last composed unattached; an authored practice
     // keeps its creator's preset and is never remembered over it.
     if (isFree) set({ move: next })
@@ -161,212 +249,478 @@ export function CompactSetup({
 
   // Continue or Start fresh (LIVE-2243): a practice with a partial today continues by default, as the
   // engines always did silently; the door now says so and offers the fresh start beside it.
-  const [freshFor, setFreshFor] = useState<string | null>(null)
   const partial = practice?.partialToday ?? null
   const remainingSec = partial && partial.targetSec > 0 ? Math.max(0, partial.targetSec - partial.bankedSec) : 0
   const hasPartial = remainingSec > 0 && practice?.timerKind !== 'none'
-  const fresh = hasPartial && freshFor === practice?.id
+  const fresh = hasPartial && cur.freshFor === practice?.id
   const continuing = hasPartial && !fresh
   const remainingMin = Math.max(1, Math.ceil(remainingSec / 60))
+  const bankedMin = partial ? Math.round(partial.bankedSec / 60) : 0
+  const targetMin = partial ? Math.round(partial.targetSec / 60) : 0
   const lockedByAuthor = !!practice?.durationLocked && !isFree
-  const structured = mode === 'move' && (moveConfig.mode === 'yoga' || moveConfig.mode === 'strength')
+  const plan = mode === 'move' ? describePlan(moveConfig) : null
+  const structured = !!plan
   const openCount = mode === 'move' && moveConfig.mode === 'play'
   const logOnly = mode === 'still' ? stillMode === 'log' : practice?.timerKind === 'none'
-  const locked = (lockedByAuthor && ((practice?.durationMin ?? 0) > 0 || mode === 'move')) || structured || logOnly || openCount || continuing
+  const authored = lockedByAuthor && ((practice?.durationMin ?? 0) > 0 || mode === 'move')
+  const locked = authored || structured || logOnly || openCount || continuing
+  const editable = !locked
   const configuredStill = practice?.durationMin ?? null
-  const minutes = continuing ? remainingMin : mode === 'move' ? (moveMinutes(moveConfig) ?? 0) : (custom ?? configuredStill ?? settings.still.minutes)
-  // Get Moving keeps an unfinished typed length (say "0" on the way to "10") out of the plan, so the
-  // field alone decides whether Go is live until the number is a real one.
-  const valid = isValidMemberMinutes(minutes) && (mode !== 'move' || custom === null || isValidMemberMinutes(custom))
+  const minutes = continuing ? remainingMin : mode === 'move' ? (moveMinutes(moveConfig) ?? 0) : (cur.custom ?? configuredStill ?? settings.still.minutes)
+  // A typed length (say "0" on the way to "10") stays out of the plan: the field alone decides
+  // whether Go is live until the number is a real one.
+  const valid = isValidMemberMinutes(minutes) && (cur.custom === null || isValidMemberMinutes(cur.custom))
+  const invalid = editable && !valid
   const presets: readonly number[] = mode === 'move' ? MOVE_PRESETS[moveConfig.mode] : stillMode === 'breath' ? BREATH_DURATION_PRESETS : DURATION_PRESETS
-  const choice = (p = practice): SetupChoice =>
-    mode === 'move'
-      ? { practiceId: p!.id, mode, moveConfig: p === practice ? moveConfig : moveConfigFor(p, settings.move), ...(fresh && p === practice ? { fresh: true } : {}) }
-      : {
-          practiceId: p!.id,
-          mode,
-          ...(!locked && p === practice && valid ? { minutesOverride: minutes } : {}),
-          ...(fresh && p === practice ? { fresh: true } : {}),
-          stillMode: p === practice ? stillMode : stillModeFor(p, p?.id === explicitPracticeId),
-          patternSlug: settings.still.patternSlug,
-        }
+  const raw = cur.typed ?? String(minutes)
+
   const pickLength = (m: number) => {
     if (mode === 'move') {
       if (isValidMemberMinutes(m)) {
-        setCustom(null)
+        patch({ custom: null, typed: null })
         setMoveConfig(withMoveMinutes(moveConfig, m))
-      } else setCustom(m)
+      } else patch({ custom: m })
       return
     }
-    setCustom(m)
+    patch({ custom: m, typed: null })
     // The open length is the member's own number: remembered the moment they choose it, never an
     // authored length and never a locked one.
     if (!locked && configuredStill == null && isValidMemberMinutes(m)) set({ still: { minutes: m } })
   }
-  const shownMinutes = mode === 'move' && custom !== null && !isValidMemberMinutes(custom) ? custom : minutes
-  const goLabel = logOnly ? 'Open practice' : continuing ? 'Continue practice' : 'Start timer'
+  const typeLength = (text: string) => {
+    const v = text.replace(/[^\d]/g, '').slice(0, 3)
+    const n = Number(v)
+    if (v && isValidMemberMinutes(n)) {
+      pickLength(n)
+      patch({ typed: v })
+    } else patch({ custom: NaN, typed: v })
+  }
+  const stepLength = (d: number) => {
+    if (!editable) return
+    const base = valid ? minutes : mode === 'move' ? (moveMinutes(moveConfig) ?? 20) : (configuredStill ?? settings.still.minutes)
+    pickLength(clampMemberMinutes(base + d))
+  }
+
+  const pickPractice = (p: OnAirPractice) => {
+    patch({ ...blank(p.id) })
+    if (!web) setPicker(null)
+  }
+  const pickStill = (m: SessionMode) => {
+    // A style on a practice with no length of its own seeds that style's default minutes.
+    patch({ stillPick: m, typed: null, custom: configuredStill == null && m !== 'log' ? SESSION_MODE_META[m].defaultMin : null })
+    if (!web) setPicker(null)
+  }
+  const pickMove = (m: MovementMode) => {
+    patch({ custom: null, typed: null })
+    setMoveConfig(defaultMoveConfig(m, settings.move))
+    if (!web) setPicker(null)
+  }
+  const switchMode = (next: TimerMode) => {
+    setMode(next)
+    setPicker(null)
+    setOpenRow(null)
+  }
+
+  const choice = (): SetupChoice =>
+    mode === 'move'
+      ? { practiceId: practice!.id, mode, moveConfig, ...(fresh ? { fresh: true } : {}) }
+      : {
+          practiceId: practice!.id,
+          mode,
+          ...(!locked && valid ? { minutesOverride: minutes } : {}),
+          ...(fresh ? { fresh: true } : {}),
+          stillMode,
+          patternSlug: settings.still.patternSlug,
+          ...(modeHasNote(stillMode) && note.trim() ? { note: note.trim() } : {}),
+        }
+  const goDisabled = !practice || (!locked && !valid)
+  const go = () => {
+    if (goDisabled) return
+    unlockTimerAudio()
+    onStart(choice())
+  }
+  const goLabel = logOnly ? 'Log it' : continuing ? `Continue, ${remainingMin} min left` : 'Start timer'
+  const goIcon = logOnly ? <BoltIcon className="h-[18px] w-[18px]" /> : <DialIcon className="h-[18px] w-[18px]" />
+  const startFresh = () => patch({ freshFor: practice?.id ?? null, custom: null, typed: null })
+
+  // Keyboard: Esc closes; on the web Enter starts (unless a field or button has focus) and the arrows
+  // change the minutes while they are editable.
+  const keys = useRef({ go, stepLength, editable, web, onClose })
+  useEffect(() => {
+    keys.current = { go, stepLength, editable, web, onClose }
+  })
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const k = keys.current
+      const tag = (e.target as HTMLElement | null)?.tagName ?? ''
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        k.onClose()
+        return
+      }
+      if (!k.web || /INPUT|TEXTAREA|SELECT/.test(tag)) return
+      if (e.key === 'Enter' && tag !== 'BUTTON') {
+        e.preventDefault()
+        k.go()
+      } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && k.editable) {
+        e.preventDefault()
+        k.stepLength(e.key === 'ArrowRight' ? 1 : -1)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
+  // --- The words -----------------------------------------------------------------------------
+  const styleLabel = mode === 'move' ? (MOVEMENT_MODES.find((m) => m.mode === moveConfig.mode)?.label ?? 'Walk') : SESSION_MODE_META[stillMode].label
+  const styleIcon = mode === 'move' ? MOVE_ICON[moveConfig.mode] : STILL_ICON[stillMode]
+  const styleNote = mode === 'move' ? (lockedByAuthor ? 'Set by your practice.' : (MOVEMENT_MODES.find((m) => m.mode === moveConfig.mode)?.blurb ?? '')) : SESSION_MODE_META[stillMode].subline
+  const styleLocked = lockedByAuthor
+  const logsAs = practice?.logsAs ? (practices.find((p) => p.id === practice.logsAs)?.title ?? practice.title) : practice?.title ?? ''
   const runPractice = practice && !practice.logsAs ? practice : null
-  const lengthNote = logOnly ? 'Just Log' : continuing ? `${remainingMin} min left` : structured ? 'Authored sequence' : openCount ? 'Open count-up' : locked ? 'Fixed duration' : 'Timer length'
-  return (
-    <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={headingId} tabIndex={-1} className="fixed inset-0 z-50 overflow-y-auto bg-canvas">
-      <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <div>
-          <MindlessMasthead
-            mode={mode}
-            onModeChange={(next) => {
-              setMode(next)
-              setPickedId(undefined)
-              setStillPick(null)
-              setMovePick(null)
-              setCustom(null)
-            }}
-            onClose={onClose}
-          />
-        </div>
-        <div className="flex items-center gap-5">
-          <span className="fq-breathe h-16 w-16 shrink-0 rounded-pill bg-primary-bg motion-reduce:animate-none" aria-hidden style={{ background: 'var(--design-practice-orb)' }} />
-          <div>
-            <h1 id={headingId} className="text-display-card font-semibold text-text">{mode === 'move' ? 'Get Moving' : 'Tune out'}</h1>
-            <p className="mt-1 text-body-sm text-muted">Your practice. A little room to begin.</p>
-          </div>
-        </div>
-        <section aria-label="Your practices" className="space-y-2">
-          <h2 className="text-body-sm font-semibold text-text">Quick start a practice</h2>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {available.map((p) => (
-              <Button
-                variant={p.id === practice?.id ? 'primarySoft' : 'secondary'}
-                key={p.id}
-                type="button"
-                aria-label={`Start ${p.title}`}
-                aria-pressed={p.id === practice?.id}
-                className={`min-h-11 shrink-0 flex-col items-start rounded-control border px-3 py-2 text-left text-body-sm ${p.id === practice?.id ? 'border-primary text-text' : 'border-border text-muted'}`}
-                onClick={() => onStart(mode === 'move' ? { practiceId: p.id, mode, moveConfig: p.id === practice?.id ? moveConfig : moveConfigFor(p, settings.move) } : { practiceId: p.id, mode, stillMode: stillModeFor(p, p.id === explicitPracticeId), patternSlug: settings.still.patternSlug })}
-              >
-                <span className="block font-semibold">{p.title}</span>
-                <span className="block text-meta">{[p.durationMin ? `${p.durationMin} min` : null, p.loggedToday ? 'Done today · Start again' : null].filter(Boolean).join(' · ') || 'Start now'}</span>
-              </Button>
-            ))}
-          </div>
+  const journey = runPractice && journeyLegs.length > 0 ? journeyLegs[0] : null
+  const journeyLabel = journey ? (journey.week != null ? `Week ${journey.week} of ${journey.weeks}` : `${journey.title}, all weeks open`) : null
+  const extra = journeyLabel ?? (runPractice?.loggedToday ? 'already counted today, this one is extra' : practicedToday >= 3 ? `${practicedToday} practiced today` : null)
+  const sessionLine = `Logs as ${logsAs}${extra ? ` · ${extra}` : ''}`
+  const lengthText = continuing ? `${remainingMin} min left` : plan ? `${clock(plan.total)} ${plan.short}` : openCount ? 'Open count-up' : logOnly ? 'No timer' : `${valid ? minutes : settings.still.minutes} min`
+  const headline = [styleLabel, logOnly ? null : lengthText, journeyLabel ?? (runPractice?.loggedToday ? 'Done today, this one is extra' : null)].filter(Boolean).join(' · ')
+  const soundOn = mode === 'move' ? settings.cues.moveBell : settings.cues.bell
+  const intervalBell = mode === 'still' && engineForMode(stillMode) === 'timer'
+  const summary = logOnly
+    ? `Logs as ${logsAs} now. No countdown.`
+    : `${settings.cues.warmupSec} s countdown, then ${lengthText} of ${styleLabel}. ${soundOn ? `${bellToneBySlug(settings.cues.bellTone).name} bell${intervalBell && settings.cues.bellEveryMin ? ` every ${settings.cues.bellEveryMin} min` : ''}. ` : ''}Logs as ${logsAs}.`
+  const scope: CueScope = {
+    flag: mode === 'move' ? 'moveBell' : 'bell',
+    accent: mode,
+    intervalBell,
+    endBell: mode === 'still',
+    breathCount: mode === 'still' && stillMode === 'breath',
+    ambient: mode === 'still',
+    cue: mode === 'move' && !lockedByAuthor ? moveCue(moveConfig, setMoveConfig) : undefined,
+  }
+  const orbLine: { text: string; role: 'alert' | 'note'; lock?: boolean; live?: boolean } | null = invalid
+    ? { text: INVALID_LINE, role: 'alert', live: true }
+    : continuing
+      ? { text: `${bankedMin} of ${targetMin} min banked today`, role: 'note' }
+      : authored
+        ? { text: `Fixed length, set by ${practice?.title}`, role: 'note', lock: true }
+        : plan
+          ? { text: plan.short, role: 'note' }
+          : openCount
+            ? { text: 'Stop whenever you are done.', role: 'note' }
+            : null
+  const orbValue = editable ? raw : continuing ? String(remainingMin) : plan ? clock(plan.total) : openCount ? 'Open' : logOnly ? 'Log' : String(minutes)
+  const orbUnit = continuing ? 'min left' : plan ? 'total' : openCount ? 'counts up' : logOnly ? 'no timer' : 'min'
+  const orbSize = openCount || logOnly ? 'text-display-h3' : plan ? 'text-display-h2' : 'text-display-h1'
+  const readout = !editable && (continuing || authored || openCount)
+  const readoutText = continuing ? `${remainingMin} min left of ${targetMin}. ${bankedMin} min banked today.` : authored ? `${minutes} min, set by ${practice?.title}` : 'Open. It counts up until you stop.'
+  const readoutIcon = continuing ? <DialIcon className="h-[17px] w-[17px]" /> : openCount ? <Volleyball className="h-[17px] w-[17px]" aria-hidden /> : <Lock className="h-[17px] w-[17px]" aria-hidden />
+
+  const practiceRows = available.map((p) => {
+    const on = p.id === practice?.id
+    const pPartial = p.partialToday && p.partialToday.targetSec > 0 && p.timerKind !== 'none' ? Math.max(0, p.partialToday.targetSec - p.partialToday.bankedSec) : 0
+    const left = pPartial > 0 ? Math.max(1, Math.ceil(pPartial / 60)) : 0
+    const style = mode === 'move' ? moveConfigFor(p, settings.move) : null
+    const styleName = p.logsAs ? null : mode === 'move' ? (MOVEMENT_MODES.find((m) => m.mode === style!.mode)?.label ?? 'Walk') : SESSION_MODE_META[stillModeFor(p, p.id === explicitPracticeId)].label
+    const length = p.logsAs ? null : mode === 'move' ? (style && describePlan(style)?.short) || (p.durationMin ? `${p.durationMin} min` : null) : p.durationMin ? `${p.durationMin} min` : null
+    const meta = p.logsAs ? 'Any style, any length' : [styleName, length, p.durationLocked ? 'fixed' : null].filter(Boolean).join(', ')
+    const tag = left ? { text: `${left} min left`, look: 'bg-primary-bg text-text' } : p.loggedToday ? { text: 'Done', look: 'bg-presence-bg text-presence', done: true } : on && journeyLabel ? { text: journeyLabel, look: 'bg-primary-bg text-primary-strong' } : p.durationLocked && !p.logsAs ? { text: 'Fixed', look: 'bg-surface-elevated text-text' } : null
+    const sheetMeta = left ? `${left} min left` : p.loggedToday ? `Done today · ${meta}` : meta
+    return { p, on, meta, sheetMeta, tag, icon: p.logsAs ? <Sparkles className="h-[17px] w-[17px]" aria-hidden /> : mode === 'move' ? MOVE_ICON[style!.mode] : STILL_ICON[stillModeFor(p, p.id === explicitPracticeId)] }
+  })
+
+  const stillTiles = SESSION_MODE_ORDER.map((m) => ({ value: m, label: SESSION_MODE_META[m].label, icon: STILL_ICON[m], disabled: (practice?.timerKind === 'none' && m !== 'log') || (styleLocked && m !== stillMode) }))
+  const moveTiles = MOVEMENT_MODES.map((m) => ({ value: m.mode, label: m.label, icon: MOVE_ICON[m.mode], disabled: styleLocked && m.mode !== moveConfig.mode }))
+  const accentBtn = mode === 'move' ? 'bg-move text-on-move' : 'bg-primary text-on-primary'
+  const orbFill = mode === 'move' ? 'radial-gradient(circle at 35% 30%, var(--color-surface) 0, var(--color-presence-bg) 34%, color-mix(in oklab, var(--color-move) 45%, var(--color-surface)) 100%)' : 'var(--design-practice-orb)'
+
+  const goButton = (size: 'sheet' | 'web') => (
+    <button
+      type="button"
+      onClick={go}
+      disabled={goDisabled}
+      className={`flex items-center justify-center gap-2.5 rounded-pill font-semibold lift-2 transition-opacity disabled:opacity-40 ${accentBtn} ${size === 'sheet' ? 'h-14 w-full text-body' : 'h-12 min-w-[220px] px-[22px] text-body-sm'}`}
+    >
+      {goIcon}
+      {goLabel}
+      {size === 'web' && <Keycap className="ml-1 opacity-55">Enter</Keycap>}
+    </button>
+  )
+  const styleTiles = mode === 'move' ? <Tiles label="Style" columns={web ? 6 : 3} value={moveConfig.mode} options={moveTiles} onChange={pickMove} /> : <Tiles label="Style" columns={web ? 6 : 3} value={stillMode} options={stillTiles} onChange={pickStill} />
+  const minutesInput = (className: string) => (
+    <input
+      type="text"
+      inputMode="numeric"
+      aria-label={MINUTES_LABEL}
+      aria-invalid={invalid || undefined}
+      value={raw}
+      onChange={(e) => typeLength(e.target.value)}
+      className={className}
+    />
+  )
+  const webMain = mode === 'still' ? (
+    <>
+      {stillMode === 'breath' && <BreathWebSection settings={settings} set={set} accent="still" />}
+      {modeHasNote(stillMode) && (
+        <section className="flex flex-col gap-2.5">
+          <span className="text-body-sm font-semibold text-text">Note</span>
+          <NoteField value={note} onChange={setNote} variant="web" />
         </section>
-        <section aria-labelledby={howId} className="space-y-2">
-          <h2 id={howId} className="text-body-sm font-semibold text-text">How</h2>
-          {mode === 'still' ? (
-            <>
-              <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Sub-mode">
-                {SESSION_MODE_ORDER.map((m) => (
+      )}
+    </>
+  ) : (
+    plan && <PlanWebSection config={moveConfig} onConfig={setMoveConfig} locked={lockedByAuthor} />
+  )
+
+  // --- Web dialog (from 840px) ---------------------------------------------------------------
+  if (web) {
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-canvas">
+        <div className="flex min-h-dvh items-center justify-center bg-surface-elevated/55 p-8">
+          <div ref={panel} role="dialog" aria-modal="true" aria-label="Mindless timer setup" tabIndex={-1} className="flex h-[min(780px,calc(100dvh-64px))] w-full max-w-[1060px] flex-col overflow-hidden rounded-[28px] bg-surface ring-1 ring-inset ring-border lift-3 outline-none">
+            <header className="flex h-[68px] shrink-0 items-center gap-9 border-b border-border pl-7 pr-5">
+              <span className="flex items-center gap-2.5 text-meta font-bold uppercase tracking-[0.32em] text-text">
+                <LotusIcon className="h-[22px] w-[22px]" /> Mindless
+              </span>
+              <div role="tablist" aria-label="Timer mode" className="flex gap-7 self-stretch">
+                {(['still', 'move'] as const).map((m) => (
                   <button
                     key={m}
                     type="button"
-                    aria-pressed={m === stillMode}
-                    disabled={practice?.timerKind === 'none' && m !== 'log'}
-                    onClick={() => setStillPick(m)}
-                    className={chipClasses(m === stillMode, 'min-h-11 shrink-0 disabled:opacity-50')}
+                    role="tab"
+                    aria-selected={mode === m}
+                    onClick={() => switchMode(m)}
+                    className={`flex items-center gap-2 px-0.5 text-body-sm font-semibold ${mode === m ? `text-text ${m === 'move' ? 'shadow-[inset_0_-2px_0_var(--color-move)]' : 'shadow-[inset_0_-2px_0_var(--color-text)]'}` : 'text-muted hover:text-text'}`}
                   >
-                    {SESSION_MODE_META[m].label}
+                    {m === 'still' ? <LotusIcon className="h-[17px] w-[17px]" /> : <Footprints className="h-[17px] w-[17px]" aria-hidden />}
+                    {m === 'still' ? 'Be Still' : 'Get Moving'}
                   </button>
                 ))}
               </div>
-              <p className="text-meta text-muted">{SESSION_MODE_META[stillMode].subline}</p>
-            </>
-          ) : (
-            <>
-              <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Sub-mode">
-                {MOVEMENT_MODES.map((m) => (
-                  <button
-                    key={m.mode}
-                    type="button"
-                    aria-pressed={m.mode === moveConfig.mode}
-                    disabled={lockedByAuthor && m.mode !== moveConfig.mode}
-                    onClick={() => {
-                      setCustom(null)
-                      setMoveConfig(defaultMoveConfig(m.mode, settings.move))
-                    }}
-                    className={chipClasses(m.mode === moveConfig.mode, 'min-h-11 shrink-0 disabled:opacity-50')}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-meta text-muted">{lockedByAuthor ? 'Set by your practice.' : MOVEMENT_MODES.find((m) => m.mode === moveConfig.mode)?.blurb}</p>
-            </>
-          )}
-        </section>
-        <section className="space-y-3" aria-label="Custom timer">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-body-sm font-semibold text-text">{practice?.title ?? 'Custom timer'}</h2>
-            <span className="text-meta text-muted">{lengthNote}</span>
-          </div>
-          {hasPartial && !logOnly && (
-            <div className="flex gap-2" role="group" aria-label="Continue or start fresh">
-              <button type="button" aria-pressed={continuing} onClick={() => setFreshFor(null)} className={chipClasses(continuing, 'min-h-11 flex-1')}>
-                Continue, {remainingMin} min left
+              <span className="flex-1" />
+              <span className="text-body-sm text-subtle">{MINDLESS_TAGLINE}</span>
+              <button type="button" aria-label="Close" onClick={onClose} className="flex h-10 items-center gap-2 rounded-pill pl-3 pr-2.5 text-meta font-medium text-muted hover:text-text">
+                <Keycap className="ring-border-strong">Esc</Keycap>
+                <X className="h-[18px] w-[18px]" aria-hidden />
               </button>
-              <button type="button" aria-pressed={fresh} onClick={() => { setCustom(null); setFreshFor(practice?.id ?? null) }} className={chipClasses(fresh, 'min-h-11 flex-1')}>
+            </header>
+            <div className="grid min-h-0 flex-1 grid-cols-[264px_minmax(0,1fr)] min-[1200px]:grid-cols-[300px_minmax(0,1fr)]">
+              <aside aria-label="Your practices" className="flex min-h-0 flex-col gap-3 overflow-y-auto border-r border-border bg-surface-elevated px-3.5 pb-[18px] pt-[22px]">
+                <span className="px-2.5 font-display text-2xs font-medium uppercase tracking-[0.14em] text-muted">Today</span>
+                <div className="flex flex-col gap-1">
+                  {practiceRows.map(({ p, on, meta, tag, icon }) => (
+                    <button key={p.id} type="button" aria-pressed={on} aria-label={`${p.title}`} onClick={() => pickPractice(p)} className={`flex min-h-[60px] items-center gap-3 rounded-[16px] px-3 py-2.5 text-left transition-colors ${on ? 'bg-surface ring-[1.5px] ring-inset ring-text lift-1' : 'hover:bg-surface/60'}`}>
+                      <span className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[11px] text-text ${on ? 'bg-surface-elevated' : 'bg-surface'}`}>{icon}</span>
+                      <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                        <span className="truncate text-body-sm font-semibold text-text">{p.title}</span>
+                        <span className="truncate text-meta text-muted">{meta}</span>
+                      </span>
+                      {tag && (
+                        <span className={`flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-pill px-[9px] text-2xs font-semibold ${tag.look}`}>
+                          {tag.done && <Check className="h-[11px] w-[11px]" strokeWidth={2.6} aria-hidden />}
+                          {tag.text}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <span className="flex-1" />
+                {practicedToday >= 3 && (
+                  <span className="flex items-center gap-2 px-2.5 text-meta text-muted">
+                    <span className="h-[7px] w-[7px] rounded-pill bg-primary" aria-hidden />
+                    {practicedToday} members practiced today
+                  </span>
+                )}
+              </aside>
+              <main className="flex min-h-0 flex-col gap-[26px] overflow-y-auto px-9 pb-7 pt-[26px]">
+                <div className="flex items-center gap-4">
+                  <span className="fq-breathe h-12 w-12 shrink-0 rounded-pill ring-1 ring-inset ring-surface/70 lift-2 motion-reduce:animate-none" aria-hidden style={{ background: orbFill }} />
+                  <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
+                    <h2 id={titleId} className="m-0 font-display text-display-card font-medium leading-tight tracking-[-0.04em] text-text">{practice?.title}</h2>
+                    <span className="text-body-sm text-muted">{headline}</span>
+                  </div>
+                </div>
+                <section className="flex flex-col gap-2.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-body-sm font-semibold text-text">Style</span>
+                    {styleLocked && (
+                      <span className="flex items-center gap-1.5 text-meta font-medium text-muted">
+                        <Lock className="h-3 w-3" aria-hidden /> Set by your practice
+                      </span>
+                    )}
+                  </div>
+                  {styleTiles}
+                  <span className="text-body-sm text-muted">{styleNote}</span>
+                </section>
+                {editable && (
+                  <section className="flex flex-col gap-2.5">
+                    <span className="text-body-sm font-semibold text-text">Length</span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Segmented label="Length presets" className="flex-[1_1_320px]" value={minutes} options={presets.map((m) => ({ value: m, label: `${m} min` }))} onChange={pickLength} />
+                      <div className={`flex h-12 shrink-0 items-center rounded-control bg-surface ring-inset ${invalid ? 'ring-[1.5px] ring-danger' : 'ring-1 ring-border-strong'}`}>
+                        <button type="button" aria-label="One minute less" onClick={() => stepLength(-1)} className="flex h-12 w-10 items-center justify-center text-text">
+                          <Minus className="h-[15px] w-[15px]" aria-hidden />
+                        </button>
+                        {minutesInput('h-10 w-11 border-0 bg-transparent text-center text-card-title font-semibold tabular-nums text-text outline-none')}
+                        <span className="text-body-sm font-medium text-muted">min</span>
+                        <button type="button" aria-label="One minute more" onClick={() => stepLength(1)} className="flex h-12 w-10 items-center justify-center text-text">
+                          <Plus className="h-[15px] w-[15px]" aria-hidden />
+                        </button>
+                      </div>
+                    </div>
+                    {invalid && <span role="alert" className="text-body-sm font-medium text-danger">{INVALID_LINE}</span>}
+                  </section>
+                )}
+                {readout && (
+                  <section className="flex flex-col gap-2.5">
+                    <span className="text-body-sm font-semibold text-text">Length</span>
+                    <div role="group" aria-label={continuing ? 'Continue or start fresh' : 'Length'} className="flex min-h-[52px] items-center gap-3 rounded-control bg-surface-elevated px-4">
+                      <span className="text-muted">{readoutIcon}</span>
+                      <span className="flex-1 text-body font-semibold text-text">{readoutText}</span>
+                      {continuing && (
+                        <button type="button" onClick={startFresh} className="h-9 rounded-pill bg-surface px-3.5 text-body-sm font-semibold text-text ring-1 ring-inset ring-border-strong">
+                          Start fresh
+                        </button>
+                      )}
+                    </div>
+                  </section>
+                )}
+                {webMain}
+                <SoundAndFeel cues={settings.cues} set={set} audio={audio} scope={scope} />
+              </main>
+            </div>
+            <footer className="flex shrink-0 items-center gap-4 border-t border-border bg-surface py-4 pl-7 pr-5">
+              <span className="min-w-0 flex-1 text-body-sm text-muted">{summary}</span>
+              <button type="button" onClick={onClose} className="h-12 rounded-pill px-5 text-body-sm font-semibold text-text ring-1 ring-inset ring-border-strong">Cancel</button>
+              {goButton('web')}
+            </footer>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // --- The sheet (under 840px) ---------------------------------------------------------------
+  const pickerField = (open: boolean) => `flex h-14 min-w-0 items-center gap-2 rounded-[16px] bg-surface pl-3.5 pr-3 text-left ${open ? 'ring-[1.5px] ring-inset ring-text' : 'ring-1 ring-inset ring-border lift-1'}`
+  return (
+    <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="fixed inset-0 z-50 overflow-y-auto bg-canvas outline-none">
+      <div className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col px-5">
+        <div className="flex items-center justify-between pt-[max(14px,env(safe-area-inset-top))]">
+          <span id={titleId} className="flex items-center gap-2.5 text-meta font-bold uppercase tracking-[0.32em] text-text">
+            <LotusIcon className="h-[22px] w-[22px]" /> Mindless
+          </span>
+          <button type="button" aria-label="Close" onClick={onClose} className="-mr-2.5 flex h-11 w-11 items-center justify-center rounded-pill text-muted hover:text-text">
+            <X className="h-[18px] w-[18px]" aria-hidden />
+          </button>
+        </div>
+        <div role="tablist" aria-label="Timer mode" className="mb-[22px] mt-2 grid grid-cols-2 gap-1 rounded-pill bg-surface-elevated p-1">
+          {(['still', 'move'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              onClick={() => switchMode(m)}
+              className={`flex h-11 items-center justify-center gap-[7px] rounded-pill text-body-sm font-semibold transition-colors ${mode === m ? `${m === 'move' ? 'bg-move text-on-move' : 'bg-primary text-on-primary'} lift-2` : 'text-muted'}`}
+            >
+              {m === 'still' ? <LotusIcon className="h-4 w-4" /> : <Footprints className="h-4 w-4" aria-hidden />}
+              {m === 'still' ? 'Be Still' : 'Get Moving'}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-col items-center gap-4">
+          <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+            <button type="button" aria-label="One minute less" disabled={!editable} onClick={() => stepLength(-1)} className="flex h-12 w-12 items-center justify-center justify-self-center rounded-pill bg-surface text-text ring-1 ring-inset ring-border lift-1 disabled:opacity-30">
+              <Minus className="h-[18px] w-[18px]" aria-hidden />
+            </button>
+            <div className="relative flex h-[164px] w-[164px] items-center justify-center">
+              <span className="fq-breathe absolute -inset-[8%] rounded-pill opacity-50 blur-[22px] motion-reduce:animate-none" aria-hidden style={{ background: orbFill }} />
+              <span className="fq-breathe absolute inset-0 rounded-pill ring-1 ring-inset ring-surface/70 motion-reduce:animate-none" aria-hidden style={{ background: orbFill }} />
+              {/* The number sits on the pale orb in both day and night, so it reads in the fixed ink. */}
+              <div className="relative flex flex-col items-center gap-1.5 text-ink">
+                {editable ? (
+                  minutesInput(`w-[110px] border-0 bg-transparent p-0 text-center font-display font-medium leading-none tracking-[-0.05em] outline-none ${orbSize} ${invalid ? 'text-danger' : 'text-ink'}`)
+                ) : (
+                  <span className={`font-display font-medium leading-none tracking-[-0.05em] tabular-nums ${orbSize}`}>{orbValue}</span>
+                )}
+                <span className="font-display text-2xs font-medium uppercase tracking-[0.14em] opacity-70">{orbUnit}</span>
+              </div>
+            </div>
+            <button type="button" aria-label="One minute more" disabled={!editable} onClick={() => stepLength(1)} className="flex h-12 w-12 items-center justify-center justify-self-center rounded-pill bg-surface text-text ring-1 ring-inset ring-border lift-1 disabled:opacity-30">
+              <Plus className="h-[18px] w-[18px]" aria-hidden />
+            </button>
+          </div>
+          {editable && <Segmented label="Length presets in minutes" size="lg" className="w-full" value={minutes} options={presets.map((m) => ({ value: m, label: String(m), aria: `${m} minutes` }))} onChange={pickLength} />}
+          {orbLine && (
+            <p role={orbLine.role} className={`m-0 flex items-center gap-1.5 text-center text-body-sm font-medium ${orbLine.live ? 'text-danger' : 'text-muted'}`}>
+              {orbLine.lock && <Lock className="h-[13px] w-[13px]" aria-hidden />}
+              {orbLine.text}
+            </p>
+          )}
+          {mode === 'still' && stillMode === 'log' && <NoteField value={note} onChange={setNote} variant="sheet" />}
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <button type="button" aria-expanded={picker === 'practice'} onClick={() => togglePicker('practice')} className={pickerField(picker === 'practice')}>
+            <span className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="text-2xs font-medium text-muted">Practice</span>
+              <span className="truncate text-body font-semibold text-text">{practice?.title}</span>
+            </span>
+            <ChevronDown className={`h-[15px] w-[15px] shrink-0 text-muted transition-transform ${picker === 'practice' ? 'rotate-180' : ''}`} aria-hidden />
+          </button>
+          <button type="button" aria-expanded={picker === 'how'} onClick={() => togglePicker('how')} className={pickerField(picker === 'how')}>
+            <span className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="flex items-center gap-1 text-2xs font-medium text-muted">
+                How {styleLocked && <Lock className="h-[11px] w-[11px]" aria-hidden />}
+              </span>
+              <span className="flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-body font-semibold text-text">
+                <span className="[&>svg]:h-[15px] [&>svg]:w-[15px]">{styleIcon}</span>
+                {styleLabel}
+              </span>
+            </span>
+            <ChevronDown className={`h-[15px] w-[15px] shrink-0 text-muted transition-transform ${picker === 'how' ? 'rotate-180' : ''}`} aria-hidden />
+          </button>
+        </div>
+        {picker === 'practice' && (
+          <div role="group" aria-label="Your practices" className="mt-2 flex flex-col gap-0.5 rounded-[20px] bg-surface p-1.5 ring-1 ring-inset ring-border lift-2">
+            {practiceRows.map(({ p, on, sheetMeta }) => (
+              <button key={p.id} type="button" aria-pressed={on} onClick={() => pickPractice(p)} className={`flex min-h-[52px] items-center gap-3 rounded-control px-3 py-2 text-left ${on ? 'bg-surface-elevated' : ''}`}>
+                <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                  <span className="text-body font-semibold text-text">{p.title}</span>
+                  <span className="text-meta text-muted">{sheetMeta}</span>
+                </span>
+                {on && <Check className="h-[18px] w-[18px] text-text" aria-hidden />}
+              </button>
+            ))}
+          </div>
+        )}
+        {picker === 'how' && (
+          <div className="mt-2 flex flex-col gap-2 rounded-[20px] bg-surface p-2 ring-1 ring-inset ring-border lift-2">
+            {styleTiles}
+            <span className="px-1.5 pb-1 pt-0.5 text-body-sm text-muted">{styleNote}</span>
+          </div>
+        )}
+
+        <div className="mt-3">
+          {mode === 'still' ? (
+            <StillSections settings={settings} set={set} audio={audio} scope={scope} breathMode={stillMode === 'breath'} journal={stillMode === 'journal'} note={note} onNote={setNote} openRow={openRow} onToggleRow={toggleRow} />
+          ) : (
+            !logOnly && <MoveSections config={moveConfig} onConfig={setMoveConfig} settings={settings} set={set} audio={audio} scope={scope} locked={lockedByAuthor} openRow={openRow} onToggleRow={toggleRow} />
+          )}
+        </div>
+
+        <div className="min-h-4 flex-1" />
+        <div className="sticky bottom-0 z-[2] flex flex-col gap-1.5 bg-gradient-to-t from-canvas from-72% to-transparent pb-[max(12px,env(safe-area-inset-bottom))] pt-2.5">
+          {goButton('sheet')}
+          <div role={continuing ? 'group' : undefined} aria-label={continuing ? 'Continue or start fresh' : undefined} className="flex min-h-[22px] items-center justify-center gap-2.5 text-center text-body-sm text-muted">
+            <span>{sessionLine}</span>
+            {continuing && (
+              <button type="button" onClick={startFresh} className="h-8 px-1 text-body-sm font-semibold text-text underline underline-offset-[3px]">
                 Start fresh
               </button>
-            </div>
-          )}
-          {continuing && <p className="text-meta text-muted">Picks up where the practice stopped today. Start fresh runs the length you choose from zero.</p>}
-          {!logOnly && !structured && !openCount && !continuing && (
-            <>
-              <div className={`grid gap-2 ${presets.length === 3 ? 'grid-cols-3' : presets.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}>
-                {presets.map((m) => (
-                  <button key={m} type="button" disabled={locked} aria-pressed={m === minutes} onClick={() => pickLength(m)} className="min-h-11 rounded-control border border-border px-2 text-body-sm text-text disabled:opacity-50">
-                    {m} min
-                  </button>
-                ))}
-              </div>
-              <label className="flex items-center justify-between gap-3 text-body-sm text-text">
-                Custom minutes
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={120}
-                  step={1}
-                  disabled={locked}
-                  value={Number.isFinite(shownMinutes) ? shownMinutes : ''}
-                  onChange={(e) => pickLength(e.target.value === '' ? NaN : Number(e.target.value))}
-                  className="min-h-11 max-w-24 text-body"
-                />
-              </label>
-              {!isValidMemberMinutes(shownMinutes) && <p role="alert" className="text-meta text-muted">Choose 1 to 120 minutes.</p>}
-            </>
-          )}
-          {structured && <p className="text-body-sm text-text">{describeMovePlan(moveConfig)}</p>}
-          {openCount && <p className="text-body-sm text-muted">An open count-up. Start, move, stop when you are done.</p>}
-          {logOnly && <p className="text-body-sm text-muted">Opens your practice note. Logging stays your choice.</p>}
-        </section>
-        {mode === 'still' && stillMode !== 'log' && (
-          <StillSections settings={settings} set={set} breathMode={stillMode === 'breath'} timerMode={engineForMode(stillMode) === 'timer'} />
-        )}
-        {mode === 'move' && !logOnly && <MoveSections config={moveConfig} onConfig={setMoveConfig} settings={settings} set={set} locked={lockedByAuthor} />}
-        {(runPractice || practicedToday >= 3) && (
-          <section aria-label="Session" className="space-y-1 text-meta text-muted">
-            {runPractice && journeyLegs.length > 0 && (
-              <p className="inline-flex max-w-full items-center gap-1.5 rounded-pill border border-primary/30 bg-primary-bg/20 px-2.5 py-0.5 text-meta font-semibold text-primary-strong">
-                <span className="truncate">
-                  {journeyLegs[0].week != null ? `Week ${journeyLegs[0].week} of ${journeyLegs[0].weeks} · ${journeyLegs[0].title}` : `${journeyLegs[0].title} · all weeks open`}
-                  {journeyLegs.length > 1 ? ` +${journeyLegs.length - 1} more` : ''}
-                </span>
-              </p>
             )}
-            {runPractice && (
-              <p className="flex min-w-0 items-center gap-1.5 text-body-sm text-text">
-                <span className="shrink-0 text-subtle">Logs as</span>
-                <span className="truncate font-semibold">{runPractice.title}</span>
-                {runPractice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden />}
-              </p>
-            )}
-            {runPractice?.loggedToday && <p>Already counted today. This one is extra.</p>}
-            {practicedToday >= 3 && <p>{practicedToday} members practiced today.</p>}
-          </section>
-        )}
-        <div className="mt-auto space-y-2 pt-2">
-          <Button type="button" disabled={!practice || (!locked && !valid)} className="min-h-11 w-full rounded-control px-4 py-3 text-body-sm font-semibold disabled:opacity-50" onClick={() => { unlockTimerAudio(); onStart(choice()) }}>
-            {goLabel}
-          </Button>
+          </div>
         </div>
       </div>
     </div>

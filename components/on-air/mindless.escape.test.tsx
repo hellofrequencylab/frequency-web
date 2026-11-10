@@ -62,9 +62,11 @@ describe('Mindless escape ownership', () => {
     const trigger = container.querySelector('button')!
     trigger.focus()
     await act(async () => trigger.click())
+    // The door is a `dynamic()` chunk (check:shell-weight), so it lands a tick after the load.
+    for (let i = 0; i < 100 && !container.querySelector('[role="dialog"]'); i++) await act(async () => { await new Promise((r) => setTimeout(r, 10)) })
     const dialog = container.querySelector<HTMLElement>('[role="dialog"]')!
     expect(dialog.getAttribute('aria-modal')).toBe('true')
-    expect(document.getElementById(dialog.getAttribute('aria-labelledby')!)?.textContent).toBe('Tune out')
+    expect(document.getElementById(dialog.getAttribute('aria-labelledby')!)?.textContent?.trim()).toBe('Mindless')
     expect(dialog.contains(document.activeElement)).toBe(true)
     expect(document.body.style.overflow).toBe('hidden')
     const controls = Array.from(dialog.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled])'))
