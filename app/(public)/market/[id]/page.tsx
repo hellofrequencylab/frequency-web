@@ -24,6 +24,8 @@ import { listingMetadata } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { getHighestOfferCents } from '@/lib/marketplace/listing-offers'
 import { BuyButton } from '@/app/(main)/marketplace/buy-button'
+import { AddToCartButton } from '@/app/(main)/marketplace/add-to-cart-button'
+import { cartEnabled } from '@/lib/commerce/cart-flag'
 import { JourneySalesBody } from '@/components/marketplace/journey-sales-body'
 import { AtAGlanceCard, journeyFacts } from '@/components/journey/discovery-widgets'
 import { getPlanById } from '@/lib/journey-plans'
@@ -285,7 +287,14 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
           />
         ) : undefined
       }
-      heroBuy={buyInHero ? <BuyButton productId={product.id} priceLabel={priceLabel} /> : undefined}
+      heroBuy={
+        buyInHero ? (
+          <div className="flex flex-wrap items-start gap-2">
+            <BuyButton productId={product.id} priceLabel={priceLabel} />
+            {cartEnabled() ? <AddToCartButton productId={product.id} /> : null}
+          </div>
+        ) : undefined
+      }
       heroMeta={trust}
       comments={comments}
       canComment={false}

@@ -918,6 +918,12 @@ Use the [D7 dinner draft](hunts/PRODUCT-DRAFTS-D4-D7-D8.md), the [Experience Pas
 
 Keep FH-041 open until the pilot gate has named sign-offs and the parent probe passes.
 
+## Persistent cart
+
+`COMMERCE_CART_ENABLED` (blank by default, `lib/commerce/cart-flag.ts`) turns on the saved cart: an Add to cart control beside Buy now on `/market/<id>` and the cart server actions in `app/(main)/marketplace/cart-actions.ts`. Off, every action answers `off`, nothing renders and no row is written. The cart stores lines only (product, variant, quantity); price and seller are read fresh at checkout.
+
+Gate to turn it on: migration 20270346038000 (`commerce_carts`) is applied in Frequency Community, a signed-in member can add a product, reload and see it saved, and a signed-out visitor is told to sign in rather than shown an error. Checkout from a saved cart is a later slice, so turning this on only saves lines. Turn it off by unsetting it: no data moves.
+
 ## Live co-editing
 
 `EDITOR_COLLAB` (blank by default) makes the Space page builder join a private Realtime channel (`editor:space:<id>`) so two people editing the same Space see each other's changes. Needs `render_path_space_profile` on (the node builder) and migration 20270346033000 applied (it is). Off, each owner edits alone as before.
