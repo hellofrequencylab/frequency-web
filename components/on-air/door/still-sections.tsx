@@ -11,6 +11,7 @@ import { Info, Music, Wind } from 'lucide-react'
 import { AMBIENT_TRACKS, BREATH_PATTERNS, CUSTOM_PHASE_MIN, bellToneBySlug, buildCustomPattern, type BreathPattern } from '@/lib/on-air'
 import { describeSections, type TimerSettings, type TimerSettingsPatch } from '@/lib/on-air/timer-settings'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
+import { Input } from '@/components/ui/field'
 import { DoorSection, OptionRow, ToggleRow, VolumeRange, useDoorSections } from './door-section'
 import { FeelSection, SoundSection, useDoorAudio } from './cue-sections'
 
@@ -108,7 +109,7 @@ function PhaseRange({ label, min, value, onChange }: { label: string; min: numbe
         <span>{label}</span>
         <span className="font-semibold tabular-nums text-text">{value === 0 ? 'off' : `${value}s`}</span>
       </span>
-      <input type="range" min={min} max={CUSTOM_PHASE_MAX} step={1} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-primary" />
+      <Input variant="seamless" type="range" min={min} max={CUSTOM_PHASE_MAX} step={1} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-primary" />
     </label>
   )
 }
