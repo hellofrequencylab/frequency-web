@@ -25,6 +25,7 @@ function row(over: Partial<ContactRosterRow> = {}): ContactRosterRow {
     status: 'lead',
     consentState: 'unknown',
     source: null,
+    funnelOrigin: null,
     communityRole: null,
     isBusiness: false,
     activeThisWeek: false,

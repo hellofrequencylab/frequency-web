@@ -36,6 +36,18 @@ export interface RosterSpace {
   name: string
 }
 
+/** Allowlisted invite attribution for the platform staff roster. */
+export interface ContactFunnelOrigin {
+  region: string | null
+  area: string | null
+  channel: string | null
+  source: string | null
+  utmSource: string | null
+  utmMedium: string | null
+  utmCampaign: string | null
+  utmContent: string | null
+}
+
 /** One row in the contacts roster: the presentation-neutral, classifier-backed contact. */
 export interface ContactRosterRow {
   contactId: string
@@ -52,9 +64,9 @@ export interface ContactRosterRow {
    *  separately: it is what the roster's consent control writes and the `consent:` facet filters on.
    *  Retired with /admin/marketing/contacts (LIVE-239) and landed here, where the roster already is. */
   consentState: ContactConsentState
-  /** Where the contact came in from (`beta_waitlist`, an import label, a scan): the `source` column,
-   *  null when unrecorded. Drives the data-driven Source facet. */
+  /** The intake source stored on the contact. The Source facet also includes its invite source. */
   source: string | null
+  funnelOrigin: ContactFunnelOrigin | null
   /** The community trust rung (member/host/guide/mentor/…), null for a non-member. */
   communityRole: string | null
   isBusiness: boolean

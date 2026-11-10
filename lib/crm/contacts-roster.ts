@@ -31,6 +31,7 @@ import type { ContactConsentState } from '@/lib/crm/contact-consent'
 import { RELATIONSHIP_KINDS, relationshipLabel } from '@/lib/crm/relationship-kinds'
 import { scoreUpgradeCandidates } from '@/lib/crm/upgrade-signal'
 import { ROLE_LABEL } from '@/lib/community-roles'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import type { Facet } from '@/lib/people/member-viewer'
 import { sourceLabel } from '@/lib/crm/contacts-roster-core'
 import type { ContactRosterRow, ContactsRoster, RosterSpace } from '@/lib/crm/contacts-roster-core'
@@ -72,7 +73,7 @@ export async function loadContactsRoster(opts: { limit?: number } = {}): Promise
   const limit = Math.max(1, Math.min(1000, opts.limit ?? 500))
 
   // 1. The capped contacts (members + subscribers + leads), most-recent first.
-  const contacts = await searchContacts('', limit)
+  const contacts = await searchContacts('', limit, await loadRootSpaceId())
   if (contacts.length === 0) return emptyRoster()
 
   const contactIds = contacts.map((c) => c.id)
@@ -121,6 +122,7 @@ export async function loadContactsRoster(opts: { limit?: number } = {}): Promise
     // This is the read the retired /admin/marketing/contacts table owned (LIVE-239).
     const consentState: ContactConsentState =
       c.consentState === 'subscribed' || c.consentState === 'unsubscribed' ? c.consentState : 'unknown'
+    const funnelOrigin = c.funnelOrigin ?? null
     const source = c.source?.trim() || null
 
     // Facet tokens: namespaced so a status value can never match a role or a Space value.
@@ -130,7 +132,7 @@ export async function loadContactsRoster(opts: { limit?: number } = {}): Promise
       activeThisWeek ? 'active:yes' : 'active:no',
       `consent:${consentState}`,
     ]
-    if (source) badges.push(`source:${source}`)
+    for (const value of contactSources({ source, funnelOrigin })) badges.push(`source:${value}`)
     if (communityRole && (ROLE_FACET_KEYS as readonly string[]).includes(communityRole)) {
       badges.push(`role:${communityRole}`)
     }
@@ -148,6 +150,7 @@ export async function loadContactsRoster(opts: { limit?: number } = {}): Promise
       status,
       consentState,
       source,
+      funnelOrigin,
       communityRole,
       isBusiness,
       activeThisWeek,
@@ -245,6 +248,10 @@ async function loadOwnedSpaces(profileIds: string[]): Promise<Map<string, Roster
   return out
 }
 
+function contactSources({ source, funnelOrigin }: Pick<ContactRosterRow, 'source' | 'funnelOrigin'>): string[] {
+  return [...new Set([source, funnelOrigin?.source].filter((value): value is string => Boolean(value)))]
+}
+
 // ── Registry-driven facets (the extensibility seam) ──────────────────────────────────────────────
 // Every facet's OPTIONS come from a REGISTRY or the CLASSIFIER, never a hand-listed per-kind array —
 // so a new relationship kind added to RELATIONSHIP_KINDS (or a new Space that shows up in the data)
@@ -317,11 +324,11 @@ export function buildContactFacets(rows: ContactRosterRow[]): Facet[] {
   ])
   if (consentOptions.length > 0) facets.push({ key: 'consent', label: 'Consent', options: consentOptions })
 
-  // Source — DATA-DRIVEN, the same seam as Space: one option per distinct `source` in the set, so the
-  // beta-waitlist cohort the retired table hand-listed as a segment is a filter here with no per-value
-  // code, and so is the next import label nobody has thought of yet.
+  // One option per distinct intake or invite source, so adding attribution keeps existing segments.
   const sourceByToken = new Map<string, string>()
-  for (const r of rows) if (r.source) sourceByToken.set(`source:${r.source}`, sourceLabel(r.source))
+  for (const row of rows) {
+    for (const value of contactSources(row)) sourceByToken.set(`source:${value}`, sourceLabel(value))
+  }
   const sourceOptions = [...sourceByToken.entries()]
     .map(([value, label]) => ({ value, label }))
     .sort((a, b) => a.label.localeCompare(b.label))

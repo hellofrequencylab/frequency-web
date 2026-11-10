@@ -1,0 +1,7 @@
+{
+  "id": "LIVE-2250",
+  "patch": { "status": "done" },
+  "append": {
+    "detail": "The staff-gated platform Contacts roster displays allowlisted funnel origin for root Space leads, including contacts without a member profile. Its existing Source facet includes the validated invite source alongside the intake source and deduplicates them when they match. Other Spaces and unscoped readers do not receive the root attribution. Browser acceptance is recorded with the release evidence."
+  }
+}
