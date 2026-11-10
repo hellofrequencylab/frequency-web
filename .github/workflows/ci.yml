@@ -151,6 +151,21 @@ jobs:
       # the unrelated test worker pool, then run it with the same coverage and budgets.
       - name: Test
         run: node scripts/ci-test-suites.mjs
+      - name: Test Services theme conformance against the generated preview
+        env:
+          CONFORMANCE_URL: http://127.0.0.1:4173/ServicesPreview.html
+          CONFORMANCE_REQUIRE_PREVIEW: '1'
+        run: |
+          set -euo pipefail
+          export RENDER_OUT
+          RENDER_OUT="$(mktemp -d)"
+          pnpm exec playwright install --with-deps chromium
+          pnpm exec vitest run -c scripts/render/vitest.render.config.ts scripts/render/builder-roles-themes.render.tsx
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory "$RENDER_OUT" &
+          server=$!
+          trap 'kill "$server"; rm -rf "$RENDER_OUT"' EXIT
+          curl --retry 10 --retry-connrefused --retry-delay 1 --fail --silent --output /dev/null "$CONFORMANCE_URL"
+          pnpm exec playwright test theme-conformance.spec.ts --project=desktop --workers=1
 
   # Typecheck plus every contract guard: about a minute of real work in total.
   checks:

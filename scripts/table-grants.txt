@@ -381,3 +381,21 @@ create_space_drafts                   internal
 create_space_draft_email_log         internal
 space_wall_bans                       authenticated
 space_wall_settings                   public
+# FH-005 Frequency Hunts authoring tables: service role only, the app writes after its own gate
+hunts                                internal
+hunt_versions                        internal
+hunt_roles                           internal
+hunt_partners                        internal
+hunt_missions                        internal
+hunt_rule_groups                     internal
+hunt_rule_group_members              internal
+hunt_nodes                           internal
+hunt_placements                      internal
+hunt_mission_placements              internal
+# FH-006 Frequency Hunts transactional records: service role only, written by lib/hunts after its own gate
+hunt_runs                             internal
+hunt_claims                           internal
+hunt_progress                         internal
+hunt_command_keys                     internal
+hunt_audit                            internal
+hunt_compensations                    internal
