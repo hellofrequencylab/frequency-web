@@ -14,5 +14,8 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/staff-review.ts\")?0:1)'"
+  },
+  "append": {
+    "detail": "\n\nPacket F UI slice: components/hunts/staff-proof-screens.tsx supplies Focus scan and Stream held-claim review shells. Claude owns route authorization, nonce storage, review actions and audit."
   }
 }
