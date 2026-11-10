@@ -35,14 +35,23 @@ export default async function OnAirPage({
   // entering Mindless means no app chrome at all. The Focus shell only hosts
   // the empty "adopt a practice first" state.
   if (practices.length === 0) {
-  return <MindlessEmpty />
+  return (
+      <>
+        <h1 className="sr-only">Mindless</h1>
+        <MindlessEmpty />
+      </>
+    )
   }
   const initialId =
     defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
   return (
-    <MindlessDoor
-      session={{ practices, defaultPracticeId, prefs, practicedToday, journeyLegs }}
-      initialPracticeId={initialId}
-    />
+    <>
+      {/* SCAN-1032: the takeover has only an h2 for its practice, so the page names itself for screen readers. */}
+      <h1 className="sr-only">Mindless</h1>
+      <MindlessDoor
+        session={{ practices, defaultPracticeId, prefs, practicedToday, journeyLegs }}
+        initialPracticeId={initialId}
+      />
+    </>
   )
 }

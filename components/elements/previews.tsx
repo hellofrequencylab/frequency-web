@@ -170,7 +170,9 @@ export function ElementPreview({ elementKey }: { elementKey: ElementKey }) {
   return (
     <div className="mt-4 rounded-card border border-border bg-surface-elevated/40 p-3">
       <p className={capsLabel('mb-2 text-2xs font-semibold text-muted')}>Preview</p>
-      {body}
+      {/* SCAN-1032: the previews are the live hero components, each with its own h1. `inert` takes the sample out of
+          the accessibility tree and the tab order, so the admin page keeps one h1 and its Preview stays a picture. */}
+      <div inert>{body}</div>
     </div>
   )
 }
