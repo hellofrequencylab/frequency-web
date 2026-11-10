@@ -1,0 +1,6 @@
+{
+  "id": "PROG-E0",
+  "append": {
+    "detail": "\n\nPacket G pure slice: planDraftSnapshot checks the proposed base revision against the supplied current revision, validates the existing node snapshot, and returns a candidate without writes. Table tests cover stable node IDs, opaque unknown content and style, and local-only undo with a newer peer edit. The eventual writer must still compare and write atomically. This leaves E0 and its manual phase gate open."
+  }
+}

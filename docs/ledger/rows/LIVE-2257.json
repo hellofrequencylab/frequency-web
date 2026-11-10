@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2257",
+  "title": "FlowWeb drafts carry short Frequency links instead of long tracked ones",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/api/webhooks/flowweb-link/route.ts",
+    "ref": "Daniel (2026-11-10): Can you use the Frequency link shortener and re do all the links in the draft emails."
+  },
+  "detail": "FlowWeb's outreach drafts end with a long frequencylocal.com/start/host link carrying persona, region and five utm params, which reads like a tracking link in a personal note. Fix: POST /api/webhooks/flowweb-link, signed with FLOWWEB_OUTCOMES_SECRET (same scheme as the outcomes pull and the CRM post), takes { url, title } and answers a /q/<slug> short link. The link is an ordinary managed url code in qr_codes (destination_type url, source_tag = utm_campaign), so it shows in the admin link list, counts scans, and redirects to the full tracked URL with every utm param kept, so the outcomes pull still traces a signup to its draft. Only https pages on this site that carry utm_source=flowweb qualify, and the same url always answers the same short link. No schema change. FlowWeb side: the daemon asks for a short link per draft and keeps the long link when Frequency does not answer.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/flowweb-link.mjs"
+  },
+  "closed": "2026-11-10",
+  "wave": "W7"
+}

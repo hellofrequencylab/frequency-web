@@ -1,6 +1,10 @@
 {
   "id": "PROG-E7",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  },
   "append": {
-    "detail": "Packet E verifies the existing non-money Space contact form through its registry contract, Studio fields, plain-text output and disabled Studio renderer. Commerce and tax gates remain open."
+    "detail": "\n\nBUILT DARK 2026-11-10: the open gap this row's probe measured, tax/1099, now has a path: lib/billing/connect-tax.ts reads the tax-identity gap off a mirrored Stripe account (taxInfoState), classifies calendar-year earnings against the advisory 1099-K threshold (form1099Status) and words a plain notice (taxNotice), all behind CONNECT_TAX_REPORTING_ENABLED, off by default, no money moved. Stripe is the filer of record; the platform opt-in to Stripe's 1099 reporting for Connect is an owner step in the Stripe Dashboard (docs/RUNBOOKS.md, Member Connect tax reporting). The remaining E7 scope, the placeable tickets, membership and enroll blocks with checkout gated on a connected account, moved to PROG-E7B so this row does not close over open work."
   }
 }

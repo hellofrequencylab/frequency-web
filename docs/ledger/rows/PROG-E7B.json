@@ -1,0 +1,20 @@
+{
+  "id": "PROG-E7B",
+  "title": "Editor E7: the five transactional widgets are placeable and their checkouts are gated on a connected account (premise re-tested: already true)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "program",
+  "size": "L",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E7"
+  },
+  "detail": "RE-TESTED 2026-11-10 (ADR-1082, premise first), same day this row was filed. The row asked for placeable tickets, membership and enroll blocks. That premise is stale: `tickets` and `enroll` are RETIRED function keys (lib/spaces/functions.ts RETIRED_SPACE_FUNCTIONS, LIVE-226) that fold into `events` and `journeys`. All five widgets of BUSINESS-MODEL-PLAN section 116 are placeable today: Booking (booking), Membership (memberships), Donate (donate), Tickets (the events block, with the features block's tickets source) and Enroll (the journeys block). Each checkout already refuses without payouts live and a ready connected account: lib/billing/tickets.ts (payoutsLive), space-donation-checkout.ts (payoutsLive + getConnectStatus on the Space owner), space-membership-checkout.ts (getConnectStatus on the owner), lib/spaces/booking.ts (payoutsLive). Nothing is left to build for E7B; the probe now measures that, so a regression (a block removed, a gate dropped) reopens the row. The E7 detail line that named tickets, membership and enroll as missing is superseded by this.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=fs.readFileSync(\"lib/entity-blocks/registry.ts\",\"utf8\");const miss=[\"booking\",\"memberships\",\"donate\",\"events\",\"journeys\"].filter(id=>!new RegExp(\"id: .\"+id+\".,\").test(r));const gates=[[\"lib/billing/tickets.ts\",/payoutsLive/],[\"lib/billing/space-donation-checkout.ts\",/getConnectStatus/],[\"lib/billing/space-membership-checkout.ts\",/getConnectStatus/],[\"lib/spaces/booking.ts\",/payoutsLive/]].filter(([f,re])=>!re.test(fs.readFileSync(f,\"utf8\")));if(miss.length||gates.length){console.error(\"PROG-E7B: missing blocks \"+miss.join(\",\")+\"; ungated checkouts \"+gates.map(g=>g[0]).join(\",\"));process.exit(1)}'",
+    "note": "Premise re-tested 2026-11-10: tickets and enroll are retired function keys folded into events and journeys. Passes while all five widgets have a registry block and every checkout reads Connect readiness or payoutsLive."
+  },
+  "wave": "W7",
+  "closed": "2026-11-10"
+}

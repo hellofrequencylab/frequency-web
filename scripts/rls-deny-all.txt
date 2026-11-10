@@ -213,3 +213,5 @@ hunt_donation_gifts
 hunt_sponsor_agreements
 hunt_sponsor_snapshots
 hunt_sponsor_settlements
+# FH-020S Hunt staff-proof nonces: service role only; spent by hunt_staff_nonce_consume.
+hunt_staff_nonces

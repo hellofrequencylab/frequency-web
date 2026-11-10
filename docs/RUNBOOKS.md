@@ -752,6 +752,10 @@ FlowWeb's weekly review learns which hunts, messages and regions bring members. 
 
 **Turn it off.** Unset the secret. Every request answers 401 and FlowWeb's review keeps its last numbers.
 
+### FlowWeb short links (LIVE-2257)
+
+FlowWeb's daemon asks `/api/webhooks/flowweb-link` for a short link for each draft it writes, signed with `FLOWWEB_OUTCOMES_SECRET` (same scheme as the outcomes pull). Frequency stores it as a managed url code in `qr_codes` titled `FlowWeb draft: <organizer>` and answers `https://frequencylocal.com/q/<slug>`, which redirects to the full tracked link, so utm_campaign and utm_content still reach the outcomes pull. Only https pages on this site carrying `utm_source=flowweb` qualify. If drafts show long links again, check the daemon's log for `flowweb-link` and that the secret matches; the daemon falls back to the long link and never blocks a draft. To retire one link, set its code inactive in /admin/qr. Logic: `lib/flowweb/short-link.ts`.
+
 ### FlowWeb leads in the CRM (LIVE-2256)
 
 Every person FlowWeb drafts a note to can be followed in Frequency's CRM. FlowWeb's daemon posts each draft's state to `/api/webhooks/flowweb-crm` after the founder marks it (I sent it, They replied, They said no) and once a day, signed with `FLOWWEB_OUTCOMES_SECRET` (the outcomes pull's secret, same scheme). Frequency keeps one root-Space contact per address (`source = 'flowweb'`, consent `unknown`, where FlowWeb found them in `contacts.meta.flowweb`) and one CRM conversation per lead in /admin/crm/conversations. A draft is an internal note, a send is an outbound message on the contact's timeline, a reply is an inbound message (or a note when only marked), and the thread status is where the lead is: Open (drafted), Waiting (sent), In progress (replied), Resolved (signed up, by email or by the draft's link), Closed (said no; the address joins the root Space's opt-outs). FlowWeb only moves a thread forward, so a status set by hand is kept. Every message is keyed on the draft, so a repeat post adds nothing. Frequency never sends any of it. Logic: `lib/flowweb/crm.ts`, `lib/flowweb/crm-io.ts`.
@@ -904,6 +908,8 @@ The cutover runs in three steps (BLD-108, shadow render and cutover):
 
 Six switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on): `HUNTS_ENABLED` (browse, entry, the player's own run), `HUNTS_CLAIMS_ENABLED` (a scan may credit a mission), `HUNTS_REWARDS_ENABLED` (a credit may grant a reward), `HUNTS_AUTHORING_ENABLED` (creators draft and publish), `HUNTS_WORKER_ENABLED` (the outbox worker delivers), `HUNTS_COMMERCE_ENABLED` (paid Experience Passes, store-item benefits, the finance view; activation gate: the D7 funds-flow sign-off on FH-035 and a green `hunt_commerce_state` kill switch drill). Each is on only when its parent is: claims, authoring, the worker and commerce need `HUNTS_ENABLED`; rewards need claims. Setting a lower rung alone never opens a higher one.
 
+`HUNTS_CLAIMS_ENABLED` also opens the staff door (`POST /api/hunts/staff/verify`, FH-020S), which signs and checks one-time player codes with `HUNTS_PROOF_SECRET`. Set that secret in Production before turning claims on: production refuses to fall back to the service-role key and the door answers 500 until it is set. A held claim is decided through `hunt_claim_review` (approve, reject or an audited override); an approval resumes it exactly once.
+
 Gate to turn one on: every Hunt migration up to the rung is applied in Frequency Community (hunt_outbox for the worker, hunt_claim_apply for claims), the legacy check-in, reward and commerce paths show no change with all switches off, and the rung below has run clean. Order: enabled, claims, authoring, worker, rewards. Rollback is unsetting the switch: no data moves, claims already credited stay credited, and outbox rows wait for the worker to return.
 
 ### Stripe and progressive-dinner pilot gate
@@ -917,6 +923,14 @@ Use the [D7 dinner draft](hunts/PRODUCT-DRAFTS-D4-D7-D8.md), the [Experience Pas
 - [ ] If any gate fails, hold new sales through the agreed pilot control. Keep incoming payment and refund reconciliation active and route unresolved obligations to the commerce owner. Record the hold and the evidence required to resume.
 
 Keep FH-041 open until the pilot gate has named sign-offs and the parent probe passes.
+
+## Site token requests
+
+`SITE_TOKEN_REQUESTS_ENABLED` (`1` / `true` / `on`) opens the token-request path (PROG-E10, ADR-976 D-1: nobody writes raw CSS). A Space asks for a theme token in words; the request files a support ticket of type `idea` (`lib/sites/token-request.ts`). Activation gate: the owner and the answer time for these tickets (EDITOR-ARCHITECTURE O-4) are named, and the "Need a look the theme does not have?" form in the site builder's Theme tab (`components/sites/editor/token-request-panel.tsx`, drawn only while the flag is on) is the only door. Off, the form is not drawn and the action refuses and files nothing.
+
+## Member Connect tax reporting
+
+`CONNECT_TAX_REPORTING_ENABLED` (`1` / `true` / `on`) lets payout settings show a plain notice when Stripe still needs a member's tax details or their calendar-year earnings near the 1099-K threshold (`lib/billing/connect-tax.ts`, PROG-E7). Stripe files the forms; Frequency only reads and words. Activation gate, owner steps in this order: (1) in the Stripe Dashboard, turn on tax form reporting for Connect (Settings, Connect, tax reporting) and confirm the platform's own tax details; (2) confirm the thresholds in `FORM_1099_THRESHOLDS` against Stripe's current guidance; (3) the notice is the note under the Receive payments card in Settings (`app/(main)/settings/billing/section.tsx`, read by `lib/billing/connect-tax-read.ts`); it only appears for a member with a connected account. Federal 1099-K is $20,000 and 200 transactions; some states set lower thresholds, so the notice is a heads up that points to Stripe, which applies the state rules. Money still moves only behind `host_payouts_enabled`; this flag moves none.
 
 ## Live co-editing
 

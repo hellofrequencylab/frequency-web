@@ -246,6 +246,7 @@ export function StartImportForm() {
         type="file"
         accept="image/*"
         multiple
+        aria-label="Add photos"
         className="hidden"
         onChange={(e) => {
           const files = Array.from(e.target.files ?? [])

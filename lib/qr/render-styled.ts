@@ -42,6 +42,11 @@ export function renderStyledQrSvg(
   size = 256,
   opts?: { transparent?: boolean },
 ): string {
+  // SCAN-1032: several QR codes inline on one page (Entry points) shared one clipPath id, so the ids are
+  // keyed by the text each one encodes. Deterministic, so server and client render the same markup.
+  let h = 5381
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0
+  const idSuffix = h.toString(36)
   const ecc = style.logo ? 'H' : 'M'
   const qr = QRCode.create(text, { errorCorrectionLevel: ecc })
   const N = qr.modules.size
@@ -163,7 +168,7 @@ export function renderStyledQrSvg(
         : `<rect x="${round(cx - padBox / 2)}" y="${round(cy - padBox / 2)}" width="${round(padBox)}" height="${round(padBox)}" rx="1" fill="${style.bg}"/>`,
     )
 
-    const clipId = 'qrlogoclip'
+    const clipId = `qrlogoclip-${idSuffix}`
     parts.push(
       `<clipPath id="${clipId}">` +
         (circle
@@ -184,7 +189,7 @@ export function renderStyledQrSvg(
       // Recolor: use the logo's alpha as a mask, fill with the module color or the
       // (cohesive) module gradient. Great for monochrome / transparent marks.
       const tintFill = style.logoTint === 'gradient' && style.gradient ? 'url(#qrgrad)' : style.fg
-      const maskId = 'qrlogomask'
+      const maskId = `qrlogomask-${idSuffix}`
       parts.push(`<mask id="${maskId}" mask-type="alpha">${img}</mask>`)
       parts.push(
         `<rect x="${lx}" y="${ly}" width="${lwR}" height="${lwR}" fill="${tintFill}" mask="url(#${maskId})" clip-path="url(#${clipId})"/>`,

@@ -35,6 +35,7 @@ import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsi
 import type { MwLive } from '@/lib/sites/menswork-data'
 import { SITE_LOOK_OPTIONS, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK, servicesDials, siteDials, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { ThemeControls } from './theme-controls'
+import { TokenRequestPanel, type TokenRequestSend } from './token-request-panel'
 import { themeAccents, themeEditor } from '@/lib/themes/editor-dials'
 import { hasNewDials, type LookPreset } from '@/lib/theme/dials'
 import { EDITOR_THEME_OF, siteCanvasVars, siteRenderStyle } from '@/lib/sites/site-render-style'
@@ -92,6 +93,8 @@ export interface WebsiteEditorShellProps {
   siteStyle?: SiteStyle
   /** The website has never been saved or published: open on Pick your look (LIVE-2043). */
   firstOpen?: boolean
+  /** The token-request path (PROG-E10, D-1): present only while it is open; the panel is not drawn without it. */
+  onTokenRequest?: TokenRequestSend
   onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>>; pages?: Record<string, SiteThemeId | null> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
   /** The Space type's default accent (defaultAccentForType): what the live site paints when no brand accent is set. */
   defaultAccent?: string | null
@@ -167,7 +170,7 @@ function Icon({ label, hint, children, className = '', ...props }: { label: stri
   return <button type="button" className={k(`we-icon ${className}`)} aria-label={label} title={hint ?? label} {...props}>{children}</button>
 }
 
-export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onLayout, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain, firstOpen = false }: WebsiteEditorShellProps) {
+export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onLayout, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain, firstOpen = false, onTokenRequest }: WebsiteEditorShellProps) {
   const [people, setPeople] = useState<WebsitePresence[]>([])
   const cursor = useRef<WebsitePresence['cursor']>(null)
   useEffect(() => {
@@ -761,6 +764,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     onPreset: (look: LookPreset) => changeDials(Object.fromEntries(Object.entries(look.dials).filter(([id, v]) => v !== dialOwn[id])), dialIds.filter((id) => id !== 'accent' || accentInLooks), 'Look'),
     onReset: () => changeDials({}, [...dialIds, 'accent'], 'Style') }
   const themeControls = <ThemeControls {...themeControlProps} variant="panel" />
+  const tokenRequest = onTokenRequest ? <TokenRequestPanel onSend={onTokenRequest} /> : null
   // LIVE-2031: the same controls as a compact bar floated over the preview, calling the same handlers (null for a theme with only the legacy dials).
   const themeBar = hasNewDials(themeUi.dials) && !preview ? <div className={k('we-float-bar')} role="region" aria-label="Quick style"><ThemeControls {...themeControlProps} variant="bar" /></div> : null
   const themeFonts = String(canvasVars['--th-display' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
@@ -791,6 +795,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     <div className="cap">Style</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="fld"><span className="l">{LOOK_LABEL[key]}</span><div className="seg wrap" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className={on(siteLook(lookStyle)[key] === o.id).trim() || undefined} aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; setLook(key, stored) }}>{o.label}</button>)}</div></div>)}
     {styleError && <p role="alert" className="note err">{styleError}</p>}
     {themeControls}
+    {tokenRequest}
     <div className="cap">Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
     <div className="acts"><button type="button" className="btn sm" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="btn sm" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } }, { label: 'Logo' })}>Remove logo</button>}</div>
     <div className="note">A theme or style you pick changes this draft only. Visitors see it when you publish. Words and photos stay; blocks take on the new colors and type.</div>
@@ -847,6 +852,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <div className="we-caption">Global styles</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="we-field">{LOOK_LABEL[key]}<div className="we-choice-row" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className="we-action secondary" aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; setLook(key, stored) }}>{o.label}</button>)}</div></div>)}
       {styleError && <p role="alert" className="we-note">{styleError}</p>}
       {themeControls}
+      {tokenRequest}
       <div className="we-caption">Logo</div>{activeLogo && <img className="we-logo-preview" src={activeLogo} alt={`${brandName} logo`} />}
       <div className="we-actions"><button type="button" className="we-action secondary" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } })}>Remove logo</button>}</div>
       <div className="we-caption">Brand accent</div><label className="we-field">Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => setBrandAccent(event.target.value)} /></label><button type="button" className="we-action secondary" onClick={() => setBrandAccent(null)}>Use theme accent</button><div className="we-swatch-list"><span className="we-swatch" style={{ background: 'var(--th-accent)' }} /><span className="we-swatch" style={{ background: 'var(--th-season)' }} /><span className="we-swatch" style={{ background: 'var(--th-text)' }} /></div>
