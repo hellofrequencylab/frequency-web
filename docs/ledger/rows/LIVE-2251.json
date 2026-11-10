@@ -13,6 +13,6 @@
   "detail": "account.created was mirrored to GA4 as account_created on EVERY sign-in (the ledger deduped, the mirror did not) and with the profile id as client_id, so no event joined an ad-click session. Fix: the auth callback hands track() the browser's _ga client_id and session_id; track() sends GA4 sign_up (method) once, only when the ledger row is new and only when the visitor carries a _ga cookie. Owner steps: link GA4 to Google Ads, mark sign_up a key event, import it into Ads as the conversion. Gate in docs/RUNBOOKS.md (Google Ads conversion).",
   "verify": {
     "kind": "cmd",
-    "cmd": "grep -q readGaIdentity app/auth/callback/route.ts && grep -q \"'sign_up'\" lib/analytics/track.ts"
+    "cmd": "node -e \"const fs=require('fs');process.exit(fs.readFileSync('app/auth/callback/route.ts','utf8').includes('readGaIdentity')&&fs.readFileSync('lib/analytics/track.ts','utf8').includes(\\\"'sign_up'\\\")?0:1)\""
   }
 }
