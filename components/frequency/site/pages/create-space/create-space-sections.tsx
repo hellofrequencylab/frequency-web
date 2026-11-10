@@ -86,7 +86,7 @@ export function SoundFamiliar() {
           <span className="cs-sec-eyebrow">Sound familiar</span>
           <h2 id="cs-familiar-h" className="cs-sec-h">Good with people. Tired of the <em className="fq-iri-text">tabs.</em></h2>
         </div>
-        <div className="cs-pains">
+        <div className="cs-pains" role="region" aria-label="Why people leave their tabs behind" tabIndex={0}>
           {PAINS.map((c, i) => (
             <article key={c.pain} className={i === 0 ? 'cs-pain cs-pain-lead fq-iri-rim' : 'cs-pain'}>
               <div className="cs-pain-pic">
