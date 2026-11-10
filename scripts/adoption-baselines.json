@@ -758,14 +758,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 162,
+      "baseline": 146,
       "frozen": {
-        "at": "2026-11-09",
-        "value": 162,
+        "at": "2026-11-10",
+        "value": 146,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice: event dispatch toggles and RSVP multi-select pills moved to the kit chip; 166 to 162",
-        "from": 166
+        "reason": "SCAN-1133 slice: on-air setup tiles and Journey editor pills and tiles moved to the kit chip and choice tile; 162 to 146",
+        "from": 162
       },
       "history": [
         {
@@ -1012,6 +1012,13 @@
           "to": 162,
           "direction": "lowered",
           "reason": "SCAN-1133 slice: event dispatch toggles and RSVP multi-select pills moved to the kit chip; 166 to 162"
+        },
+        {
+          "at": "2026-11-10",
+          "from": 162,
+          "to": 146,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice: on-air setup tiles and Journey editor pills and tiles moved to the kit chip and choice tile; 162 to 146"
         }
       ]
     },

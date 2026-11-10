@@ -24,6 +24,8 @@ import type { PlanStatus, PlanVisibility, StoredVeraReview } from '@/lib/journey
 import { Toggle } from '@/components/admin/toggle'
 import { JourneyEventLink } from './journey-event-link'
 import { Input, Textarea } from '@/components/ui/field'
+import { chipClasses } from '@/components/ui/chip'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 const DIFFICULTIES = ['gentle', 'standard', 'deep'] as const
 // Meeting formats (ADR-302): how a Circle gathers around the Journey. Icon + label per option.
@@ -243,9 +245,7 @@ export function JourneySettings(props: JourneySettingsProps) {
                     type="button"
                     onClick={() => { setOverlayStyle(v); meta({ headerOverlayStyle: v }) }}
                     aria-pressed={active}
-                    className={`rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors ${
-                      active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-canvas text-muted hover:border-border-strong'
-                    }`}
+                    className={choiceTileClasses(active, 'rounded-control px-3 py-1.5 text-body-sm font-medium')}
                   >
                     {label}
                   </button>
@@ -384,7 +384,7 @@ export function JourneySettings(props: JourneySettingsProps) {
                 type="button"
                 onClick={() => { const next = difficulty === d ? '' : d; setDifficulty(next); attrs({ difficulty: next || null }) }}
                 aria-pressed={difficulty === d}
-                className={`rounded-pill border px-2.5 py-1 text-meta font-medium capitalize transition-colors ${difficulty === d ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
+                className={chipClasses(difficulty === d, 'px-2.5 py-1 text-meta capitalize')}
               >
                 {d}
               </button>
@@ -605,7 +605,7 @@ function TouchpointForm({
               type="button"
               onClick={() => onCommit({ format: format === value ? null : value })}
               aria-pressed={format === value}
-              className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-1 text-meta font-medium transition-colors ${format === value ? 'border-primary/40 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:text-text'}`}
+              className={chipClasses(format === value, 'inline-flex items-center gap-1.5 px-2.5 py-1 text-meta')}
             >
               <Icon className="h-3.5 w-3.5" /> {label}
             </button>
