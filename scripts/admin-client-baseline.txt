@@ -15,6 +15,7 @@
 # EMAIL-022: the Space inbox address module provisions and routes mail from the Resend webhook and the settings action after their own authorization (owner guard on the action, signed webhook on inbound); it reads and writes only space_inbox_addresses and the conversation rows it opens, under service role because no member session exists on the inbound path.
 # EMAIL-013: trusted compose authorizes the conversation; inbound webhook verifies signature then alias HMAC/live Space mapping before service lookup. Quarantine stores fingerprints only.
 # LIVE-902: the Space brand a conversation email wears is read at the batch flush (a cron with no session) and at compose after the caller authorized the Space; it reads five public branding columns of one spaces row and writes nothing.
+# LIVE-2235: app/(main)/admin/growth/flowweb-metrics/route.ts is a requireAdmin (marketing read) CSV of four per-region counts for FlowWeb; it reads published events and last-seen profiles across every region (profiles RLS is in-region only), writes nothing, and returns totals only.
 # LIVE-766: private Collective owner report revalidates parent plan and same-owner attachment before bounded member/event/finance reads.
 # check:admin-client baseline — every file allowed to import the RLS-bypassing service-role
 # client (lib/supabase/admin.ts). Frozen by the tenancy-walls ratchet (ADR-923): a new
@@ -463,6 +464,7 @@ app/(main)/admin/events/load-posted.ts
 app/(main)/admin/events/posted-actions.ts
 app/(main)/admin/gamification/award-launcher.tsx
 app/(main)/admin/gamification/reward-actions.ts
+app/(main)/admin/growth/flowweb-metrics/route.ts
 app/(main)/admin/growth/funnels/actions.ts
 app/(main)/admin/growth/links/actions.ts
 app/(main)/admin/hubs/page.tsx

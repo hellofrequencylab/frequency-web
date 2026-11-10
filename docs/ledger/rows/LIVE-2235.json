@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2235",
+  "title": "Download FlowWeb's region numbers: a staff CSV of hosts, events, covered sub-areas and weekly members per region, in the format FlowWeb's metrics upload takes",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/admin/growth/flowweb-metrics/route.ts",
+    "ref": "FlowWeb host funnel contract, read-back section: fwd never calls Frequency; it reads POST /v1/flows/neighborhood-activation/metrics with header territory_id,hosts_active_28d,events_next_14d,sub_areas_covered_14d,wam. Daniel, 2026-11-10: 'looks good, let's implement it'."
+  },
+  "detail": "GET /admin/growth/flowweb-metrics (requireAdmin, marketing read) downloads one row per FlowWeb region. hosts_active_28d: distinct hosts of a live event that started in the last 28 days or starts in the next 14. events_next_14d: live events in the next 14 days. sub_areas_covered_14d: sub-areas whose next-14-day events span 4 or more Channels (an event's Circle's Channel, else its category). wam: members seen in the last 7 days. Place: the area a host or member chose (profiles.meta.host.area, then meta.funnel.area) wins, else the row's city against per-area city lists; plain 'San Diego' counts toward the region only. A failed read answers 500 with the reason instead of a CSV of zeros. The Funnels admin page (/admin/growth/funnels) has the download button. Pure logic in lib/onboarding/region-metrics.ts. Probe: scripts/probes/flowweb-region-metrics.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/flowweb-region-metrics.mjs"
+  },
+  "closed": "2026-11-10",
+  "wave": "W7"
+}
