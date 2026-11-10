@@ -61,7 +61,7 @@ export function assembleTrail(missions: readonly MissionRow[], groups: readonly 
   return { graph, content }
 }
 
-export type PublishedTrail = {
+type PublishedTrail = {
   huntId: string
   slug: string
   versionId: string
@@ -116,7 +116,7 @@ export async function loadPublishedTrail(slug: string): Promise<PublishedTrail |
   }
 }
 
-export type PlayerRun = { runId: string; state: string }
+type PlayerRun = { runId: string; state: string }
 
 /**
  * Start or resume the signed-in player's run on this version. A second tab or device finds the same

@@ -1,4 +1,5 @@
 {
   "id": "FH-016",
-  "append": { "detail": "\n\nSlice 2 shipped (lib/hunts/run-store.ts): load the published Trail by slug (never the open draft; live and paused Hunts only; private Hunts are not found), start or resume a run with a lost-race re-read, and read a run's credited stops scoped to its owner. The play page (app/(main)/hunts/[slug]/play/page.tsx), the claim action wiring hunt_claim_apply, list/map and hints remain open." }
+  "patch": { "status": "done" },
+  "append": { "detail": "\n\nShipped in three slices: the projection (lib/hunts/player.ts), the store (lib/hunts/run-store.ts) and the read-only player page (app/(main)/hunts/[slug]/play/page.tsx: sign-in, start or resume, clue projection, progress, paused and closed banner). The claim action, list/map and hints moved to FH-016S." }
 }

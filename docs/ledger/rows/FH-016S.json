@@ -1,0 +1,18 @@
+{
+  "id": "FH-016S",
+  "title": "Hunts FH-016S: Player claim action, list/map and hints",
+  "lane": "program",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-016 (2026-11-10): the read-only player page shipped; claiming and the map need the claim action and a map view."
+  },
+  "detail": "Add the claim action on the player page (server action through applyClaim and hunt_claim_apply, gated by the claims switch), the list/map view of visited stops and the hint reveal. Done when: a player completes a Trail end to end from the page, a second device shows the same revision, and a hidden clue never reaches the page source. Requires: FH-016, FH-020. Owner role: Web.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"app/(main)/hunts/[slug]/play/actions.ts\")?0:1)'"
+  },
+  "wave": "W7"
+}
