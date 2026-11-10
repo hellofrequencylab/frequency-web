@@ -2,7 +2,7 @@
   "id": "FH-040",
   "title": "Hunts FH-040: Build reconciling view and kill switch",
   "lane": "program",
-  "priority": "P0",
+  "priority": "P2",
   "size": "M",
   "status": "open",
   "source": {

@@ -2,7 +2,7 @@
   "id": "FH-029",
   "title": "Hunts FH-029: Implement invite acceptance and withdrawal",
   "lane": "program",
-  "priority": "P0",
+  "priority": "P2",
   "size": "S",
   "status": "open",
   "source": {

@@ -2,7 +2,7 @@
   "id": "FH-022",
   "title": "Hunts FH-022: Build merchant redemption station",
   "lane": "program",
-  "priority": "P0",
+  "priority": "P1",
   "size": "M",
   "status": "open",
   "source": {
