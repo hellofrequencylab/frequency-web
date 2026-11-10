@@ -342,3 +342,5 @@ hunt_claim_apply internal
 hunt_staff_nonce_consume internal
 hunt_claim_review internal
 hunt_claim_appeal internal
+# Hunt reward grant (FH-021): service role only.
+hunt_reward_grant internal
