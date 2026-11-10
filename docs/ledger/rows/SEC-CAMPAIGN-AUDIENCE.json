@@ -1,0 +1,10 @@
+{
+  "id": "SEC-CAMPAIGN-AUDIENCE",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  },
+  "append": {
+    "detail": "\n\nClosed 2026-11-10 on the merged evidence: #4668 (root scoping, unknown selectors rejected) and #4711 (message purpose carried on the campaign, promotions sent under the marketing gate). Daniel chose on 2026-11-09 to close shipped rows without manual browser checks and delegated best-practice calls on his blockers."
+  }
+}
