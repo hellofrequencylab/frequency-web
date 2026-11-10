@@ -1,0 +1,4 @@
+{
+  "id": "FH-016",
+  "append": { "detail": "\n\nSlice 1 shipped (lib/hunts/player.ts): the pure player projection. A locked stop shows only its position and optional teaser, a playable stop shows its clue but not its place, a visited stop shows both; the same input gives the same output on any device and carries hunts.revision; paused or closed stops granting and keeps progress. Still open: the play page (app/(main)/hunts/[slug]/play/page.tsx), the run store (start, resume, claim through hunt_claim_apply), list/map and hints. Public address is /hunts/<slug>/play; the title is read from the published version's content until a hunts.title column or view exists." }
+}
