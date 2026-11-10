@@ -1,0 +1,5 @@
+{
+  "id": "FH-017",
+  "patch": { "status": "done", "closed": "2026-11-10" },
+  "append": { "detail": "\n\nThe test script and pass rules are in docs/hunts/ACCESSIBILITY-REPORT.md. It records no results; running it on real devices is FH-017S." }
+}
