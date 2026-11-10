@@ -1,0 +1,18 @@
+{
+  "id": "FH-011S",
+  "title": "Hunts FH-011S: Prove legacy check-in, reward and commerce paths are unchanged with every Hunt switch off",
+  "lane": "program",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-011 (2026-11-10): the switches shipped; the legacy regression proof needs them wired into routes (FH-014 onward)."
+  },
+  "detail": "Seed synthetic legacy rows, then show on an exact SHA that with every Hunt switch off the existing check-in, reward and commerce paths behave as before, plus observability and rollback proof. Done when: a test that exercises those three paths with all five switches off exists and passes, and the staging note records the SHA. Requires: FH-011, FH-014. Owner role: Release engineering.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/legacy-regression.test.ts\")?0:1)'"
+  },
+  "wave": "W7"
+}

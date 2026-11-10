@@ -892,6 +892,12 @@ The cutover runs in three steps (BLD-108, shadow render and cutover):
 2. **Cohort.** `BUILDER_V3_SPACES` (blank by default) lists Space slugs, comma separated, that get the new builder as their website editor; start with `danieltyack` and the Frequency-owned demo Spaces, then the owner's cohort. `?builder=classic` still opens the current editor for them. Gate for step 3: the owner has used it on danieltyack.com and said it is ready, and the log stayed clean for the cohort.
 3. **Everyone.** Set `BUILDER_V3`; then clear `BUILDER_V3_SPACES`. Rolling back is unsetting the switch: no data moves, both editors write the same draft.
 
+## Frequency Hunts switches
+
+Five switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on): `HUNTS_ENABLED` (browse, entry, the player's own run), `HUNTS_CLAIMS_ENABLED` (a scan may credit a mission), `HUNTS_REWARDS_ENABLED` (a credit may grant a reward), `HUNTS_AUTHORING_ENABLED` (creators draft and publish), `HUNTS_WORKER_ENABLED` (the outbox worker delivers). Each is on only when its parent is: claims and authoring and the worker need `HUNTS_ENABLED`; rewards need claims. Setting a lower rung alone never opens a higher one.
+
+Gate to turn one on: every Hunt migration up to the rung is applied in Frequency Community (hunt_outbox for the worker, hunt_claim_apply for claims), the legacy check-in, reward and commerce paths show no change with all switches off, and the rung below has run clean. Order: enabled, claims, authoring, worker, rewards. Rollback is unsetting the switch: no data moves, claims already credited stay credited, and outbox rows wait for the worker to return.
+
 ## Live co-editing
 
 `EDITOR_COLLAB` (blank by default) makes the Space page builder join a private Realtime channel (`editor:space:<id>`) so two people editing the same Space see each other's changes. Needs `render_path_space_profile` on (the node builder) and migration 20270346033000 applied (it is). Off, each owner edits alone as before.
