@@ -17,6 +17,7 @@ export const ACQUISITION_CHANNELS = [
   'video',        // a video on-ramp (YouTube etc. — the early-adopter sequence's path)
   'social',       // social platforms (IG, TikTok, X, Facebook, LinkedIn, Reddit…)
   'ai_answer',    // an AI answer engine sent them (ChatGPT, Perplexity, Gemini, Copilot, Claude...)
+  'paid_search',  // clicked a search ad (Google Ads gclid/gbraid/wbraid, or cpc/ppc from a search engine)
   'search',       // search engines (organic)
   'email',        // an email / newsletter link
   'organic',      // an external site referrer that isn't search/social
@@ -34,6 +35,7 @@ export const CHANNEL_LABEL: Record<AcquisitionChannel, string> = {
   video: 'Video',
   social: 'Social',
   ai_answer: 'AI answer',
+  paid_search: 'Paid search',
   search: 'Search',
   email: 'Email',
   organic: 'Organic',
@@ -64,6 +66,9 @@ const SOCIAL_HOSTS = [
 ]
 const VIDEO_HOSTS = ['youtube.', 'youtu.be']
 
+const SEARCH_SOURCES = ['google', 'bing', 'duckduckgo', 'yahoo', 'ecosia', 'baidu', 'yandex']
+const PAID_MEDIUMS = ['cpc', 'ppc', 'paid', 'paid_search', 'paid-search', 'sem']
+
 function hostMatches(host: string, needles: string[]): boolean {
   return needles.some((n) => host.includes(n))
 }
@@ -77,6 +82,8 @@ export function deriveChannel(touch: {
   landing?: string | null
   ref?: string | null
   utm?: { source?: string | null; medium?: string | null } | null
+  /** Google Ads click id. Auto-tagging adds it with no utm, and the referrer is plain google.com. */
+  gclid?: string | null
 }): AcquisitionChannel {
   const landing = (touch.landing ?? '').toLowerCase()
   // Entry route is the strongest signal — they literally arrived on it.
@@ -91,6 +98,10 @@ export function deriveChannel(touch: {
 
   const medium = (touch.utm?.medium ?? '').toLowerCase()
   const source = (touch.utm?.source ?? '').toLowerCase()
+  // A Google Ads click. Without this it read as organic 'search' (auto-tagging sends a gclid and
+  // a google.com referrer, no utm), so ad spend had no channel to land on.
+  if (touch.gclid) return 'paid_search'
+  if (PAID_MEDIUMS.includes(medium) && SEARCH_SOURCES.includes(source)) return 'paid_search'
   if (medium === 'email' || source.includes('newsletter') || source.includes('email')) return 'email'
   if (medium === 'video' || source.includes('youtube') || source === 'yt') return 'video'
   if (['social', 'cpc', 'paid-social', 'paid_social', 'ppc'].includes(medium)) return 'social'
@@ -98,7 +109,7 @@ export function deriveChannel(touch: {
   if (medium === 'referral') return 'referral'
   // ChatGPT appends utm_source=chatgpt.com to the links it cites; the others are what operators type.
   if (['chatgpt.com', 'chatgpt', 'openai', 'perplexity', 'perplexity.ai', 'gemini', 'copilot', 'claude', 'claude.ai'].includes(source)) return 'ai_answer'
-  if (['google', 'bing', 'duckduckgo', 'yahoo', 'ecosia', 'baidu', 'yandex'].includes(source)) return 'search'
+  if (SEARCH_SOURCES.includes(source)) return 'search'
 
   const host = referrerHost(touch.ref)
   if (host) {
