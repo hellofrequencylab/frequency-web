@@ -1136,7 +1136,7 @@
         {
           "file": ".env.example",
           "status": "modified",
-          "sha256": "80ce86bbbb2c1900a7ae69a22da2e8255fa05145db0fab9c1278c3f73100e809",
+          "sha256": "f8bb7d463833de39ee7cb6bc1de769fe5d0c6431f24489462dd0fd54b90e56c4",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -1157,7 +1157,7 @@
         {
           "file": "app/(main)/marketplace/cart-actions.ts",
           "status": "added",
-          "sha256": "3e03118b24f900415e73c7b3808ddc320a9b38551ae801ee25bf0c382095217e",
+          "sha256": "2f54ff3dbea53e0eebe30efd6eb907d290b700a21700db0ca88bc7e134a6c389",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -1171,7 +1171,7 @@
         {
           "file": "docs/RUNBOOKS.md",
           "status": "modified",
-          "sha256": "6e1a5a7906d0ce890a4245cd2b4e0b2aee80a34d8fed21b9b0647d09afb23359",
+          "sha256": "faa812b37a5cb1a1e0966399c30059c06dbe05ec78c703c4c6b656db0d084396",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -1206,28 +1206,28 @@
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "33fc1edc0d0ef2ae046a004782fe464d5330c89c54738985f7998832938973a2",
+          "sha256": "eeb76007fb9459ce970f192f510258cb0f8e721f28e086ea39f6f63257c5377a",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "f9bd66388264958147d52ac864bce34f9b9c732a1777fc14e4cb87e667956d56",
+          "sha256": "cd6be6726b3518ee0270f59a5fc1f98460d90d8d05ce138d643c5da6e91b16bf",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/rls-deny-all.txt",
           "status": "modified",
-          "sha256": "e14e9ee55a221f13cd6947971e8e94948d3aeed9f39c789b654d8da638590659",
+          "sha256": "b80b0286b498b3c4bc61e06795c90aec8bcb1f892d511c96ad08244b6063933c",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/table-grants.txt",
           "status": "modified",
-          "sha256": "497bd0f0d5b6bcdee447f6d605fec5525f541628724856d3428d56856c2710c1",
+          "sha256": "75530ceb7edd39a54d7a20f11f417c208efb7d2b7c63fa5e35cb70b54f1bcdd3",
           "baseMode": "100644",
           "headMode": "100644"
         },

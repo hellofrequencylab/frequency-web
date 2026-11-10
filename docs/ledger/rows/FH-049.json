@@ -1,0 +1,19 @@
+{
+  "id": "FH-049",
+  "title": "Hunts FH-049: Server-side claim adapter for the scan landing and the player claim action",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-10",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Unblocks FH-014S (scan route) and FH-016S (player claim action): hunt_claim_apply is service role only, so the route and action need an authorized adapter."
+  },
+  "detail": "lib/hunts/claim-guard.ts decides (pure): placement exists and is not revoked, the run belongs to the signed-in actor and is active, the run's Hunt is the placement's Hunt, and the claim token is unexpired and bound to that run and placement; the credit is at assurance signed_node, so a staff-verified mission still answers assurance_too_low. lib/hunts/claim-store.ts loads the facts fresh and calls it: loadScanPlacement(placementId) for resolvePlacement, openClaim(actorId, placementId, nowEpoch) for the signed-in landing (run plus a claim token), claimAsPlayer(actorId, {placementId, missionKey, token, idempotencyKey, nowEpoch}) for the POST. Dark behind HUNTS_CLAIMS_ENABLED; signing key HUNTS_PROOF_SECRET. The route and action are FH-014S and FH-016S.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/claim-store.ts\")&&require(\"fs\").existsSync(\"lib/hunts/claim-guard.ts\")?0:1)'"
+  },
+  "wave": "W7"
+}
