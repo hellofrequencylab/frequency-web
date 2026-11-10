@@ -981,6 +981,147 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4849,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346038000_hunt_staff_review.sql",
+          "sha256": "b3bdc09766e31b6b2af99893196b289eb65a52b3584f69ee1cf64a79e5039aa0"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": ".env.example",
+          "status": "modified",
+          "sha256": "0b1bc09af55e71dfd1475dc7e7740c2002f6eaf69ee443ac7547d39a27260ddf",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/api/hunts/staff/verify/route.ts",
+          "status": "added",
+          "sha256": "2a3fe27563a834a41c0dd541a761516bd2e4f1fb6131456d57d0138c1c96e0d6",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "8430f53d69f342f3a1386af29cec47bb6d0c613d6072d14fddc048f33c8647cf",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/FH-020S.json",
+          "status": "modified",
+          "sha256": "f1e47a48c15800c80d350b4779ec2cacb0862056477a87801dfe9df69e07ad70",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/FH-020T.json",
+          "status": "added",
+          "sha256": "790828e2db7da1520364c32edbee6662f108b54a99d06f9bfd079783c9ad6835",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/staff-proof.test.ts",
+          "status": "modified",
+          "sha256": "2c0dfc885b083c49730303fb1a341870067800251073cccd9e57d2c3bb7ba8a6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/staff-proof.ts",
+          "status": "modified",
+          "sha256": "007ba216be8c42670787e142e64cbe0aad18b973cbcd17e6a7a8720bb0cc606f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/staff-review.test.ts",
+          "status": "added",
+          "sha256": "853ee99635ae016e4412824dbbffd700fc458c71acc2035f20943bc019b0f765",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/staff-review.ts",
+          "status": "added",
+          "sha256": "a88f02ce797d212048610f73084e61c88a04a576addf01c69d93703c030b566b",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/staff-store.ts",
+          "status": "added",
+          "sha256": "6ef71e3e307d3a1d6686afd3decb8c42ef30c8c5d6c841943d368d69eae7aaf9",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "5e26591c50f9e634237bd1827d6748c7fa02ffda33083bf0ff0b72873f1270be",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "b73823f5a59ca6ff40e9268457003579fd72f73d2a5109135e3180d3ca30603b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "b64a6d9cb295c2479b12bc194f4c09bb8133a02d46fb8e03b38fd323d57a2c59",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "db9d468aa5996b3be1c4cfc93f1991bb0b2312c6460988e2a00a4d93ac7d5739",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "96bef670e398eba16e4e8741a98e31df58513e186b469336205276caac14b510",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346038000_hunt_staff_review.sql",
+          "status": "added",
+          "sha256": "b3bdc09766e31b6b2af99893196b289eb65a52b3584f69ee1cf64a79e5039aa0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunt_staff_review.test.sql",
+          "status": "added",
+          "sha256": "0545f94d1fd1b6d7ea2718a316b83236abc1e4d08ed68eb49949649ff7820a9f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
