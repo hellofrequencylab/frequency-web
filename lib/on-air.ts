@@ -427,7 +427,7 @@ export interface OnAirPrefs {
    *  (the original pre-roll). Drives the armed pre-roll on the live screen. */
   warmupSec?: number
   /** The last Get Moving configuration the member ran unattached (Free Practice memory), kept
-   *  beside the sit's choices so another device opens the same way (LIVE-2232). */
+   *  beside the sit's choices so another device opens the same way (LIVE-2240). */
   move?: MovementConfig | null
 }
 

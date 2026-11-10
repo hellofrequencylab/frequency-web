@@ -1,6 +1,6 @@
 'use client'
 
-// The client half of the one timer settings model (LIVE-2232, lib/on-air/timer-settings.ts):
+// The client half of the one timer settings model (LIVE-2240, lib/on-air/timer-settings.ts):
 // read the member's copy once on mount (local over server), and save every change the moment it
 // happens: localStorage at once, the server after a short quiet gap, flushed on unmount so a
 // setting changed just before Close still lands. Both engines and the door use this and nothing
