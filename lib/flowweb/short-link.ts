@@ -4,7 +4,7 @@
 
 import { normalizeUtmValue } from '@/lib/growth/link-compose'
 
-export interface FlowwebLinkRequest {
+interface FlowwebLinkRequest {
   /** The full tracked link, kept as the short link's destination. */
   url: string
   /** The qr_codes title the link is filed under in the admin link list. */
