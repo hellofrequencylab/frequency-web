@@ -1,0 +1,14 @@
+{
+  "id": "FH-015",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"docs/hunts/PLACEMENT-KIT.md\")?0:1)'"
+    }
+  },
+  "append": {
+    "detail": "\n\nKit doc written (docs/hunts/PLACEMENT-KIT.md): reuses lib/qr render, scannability, short code and NFC write/readback; adds accessible fallback and replace/revoke steps. Hand test on a real sign and tag is part of the FH-019 pilot."
+  }
+}
