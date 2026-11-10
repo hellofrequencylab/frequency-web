@@ -31,7 +31,7 @@ describe('versioned website CSS pilot', () => {
     for (const theme of SITE_SKIN_NAMES) {
       const skin = { theme, season: 'spring' } as Parameters<typeof skinCss>[0]
       expect(siteSkinCss(theme, {})).toBe(skinCss(skin))
-      const look = { corners: 'square' }
+      const look: Parameters<typeof siteSkinCss>[1] = { corners: 'square' }
       const inline = theme === 'network-kit' ? skinCss(skin, SITE_LOOK_CSS) : skinCss(skin) + SITE_LOOK_CSS
       expect(siteSkinCss(theme, look)).toBe(inline)
     }
