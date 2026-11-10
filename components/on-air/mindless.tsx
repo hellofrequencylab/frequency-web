@@ -1,6 +1,6 @@
 'use client'
 
-import { CompactSetup, type SetupChoice } from './compact-setup'
+import type { SetupChoice } from './compact-setup'
 
 // Mindless — the ONE practice-timer door (ADR-229, docs/ON-AIR.md). The same On
 // Air session, launchable from anywhere via the header / Zap menu / practice
@@ -45,6 +45,10 @@ import { showLaneNotice } from '@/components/zap-toast'
 // engine code on every page for a door most visits never open.
 const OnAirSession = dynamic(() => import('@/components/on-air/session').then((m) => m.OnAirSession), { ssr: false })
 const MovementSession = dynamic(() => import('@/components/on-air/movement-session').then((m) => m.MovementSession), { ssr: false })
+// LIVE-2241/2242 put every timer setting on the door as sub-menus, which pushed the shell's eager
+// first-load JS past check:shell-weight (1110 KB against 1100). The door renders only after a tap,
+// so it loads on demand like the engines; check-shell-weight.mjs carries its fingerprint.
+const CompactSetup = dynamic(() => import('./compact-setup').then((m) => m.CompactSetup), { ssr: false })
 
 /** The two member-facing modes of the one timer: the sit ('still', "Be Still") and
  *  the movement timer ('move', "Get Moving"). */
