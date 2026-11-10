@@ -1,5 +1,0 @@
-{
-  "id": "LIVE-2041",
-  "patch": { "status": "done", "closed": "2026-11-03" },
-  "append": { "detail": "\n\nOwner approved the eight violet hexes for the theme contract (2026-11-03). Signal, Bloom and Iris are in themes.Services in theme-contract.json. SERVICES_ACCENTS in lib/theme/services.ts stays at Tide, Ember and Fern: the approval named the theme contract only, so adding the three there needs its own phrase for lib/theme/services.ts." }
-}

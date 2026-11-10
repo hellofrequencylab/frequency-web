@@ -1,6 +1,0 @@
-{
-  "id": "SCAN-1133",
-  "append": {
-    "detail": "2026-11-09 slice: the three event dispatch channel toggles (components/events/event-dispatch-compose.tsx) and the RSVP multi-select pills (components/events/rsvp-controls.tsx) moved onto chipClasses, selected state as the kit .chip.on. raw-button-bg 166 to 162, baseline re-frozen with the ratchet's own --update. Left: the yes/no segmented buttons in rsvp-controls (a segmented control), and the remaining ~162 sites. Row stays OPEN; rendered acceptance of the full area is still unproved."
-  }
-}
