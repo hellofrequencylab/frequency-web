@@ -8,6 +8,7 @@ import { isError, type ActionResult } from '@/lib/action-result'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Input, Textarea, Label, labelClasses } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { HeaderImageField } from '@/components/ui/header-image-field'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
@@ -399,10 +400,7 @@ export function SpaceBrandingForm({
                       }}
                       aria-pressed={active}
                       title={b.tagline}
-                      className={cn(
-                        'rounded-control border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
-                        active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
-                      )}
+                      className={choiceTileClasses(active, cn('rounded-control px-3 py-2 text-body-sm font-semibold disabled:cursor-default disabled:opacity-100', active ? 'text-text' : 'text-muted'))}
                     >
                       <span className="flex items-center justify-center gap-1.5">
                         {b.label}
@@ -432,10 +430,7 @@ export function SpaceBrandingForm({
                       run(() => setSpaceHeroLook(slug, { height: h.value }))
                     }}
                     aria-pressed={active}
-                    className={cn(
-                      'rounded-control border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
-                      active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
-                    )}
+                    className={choiceTileClasses(active, cn('rounded-control px-3 py-2 text-body-sm font-semibold disabled:cursor-default disabled:opacity-100', active ? 'text-text' : 'text-muted'))}
                   >
                     <span className="flex items-center justify-center gap-1.5">
                       {h.label}
@@ -476,10 +471,7 @@ export function SpaceBrandingForm({
                     run(() => setSpaceHeroLook(slug, { buttonOrientation: b.value }))
                   }}
                   aria-pressed={active}
-                  className={cn(
-                    'rounded-control border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
-                    active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
-                  )}
+                  className={choiceTileClasses(active, cn('rounded-control px-3 py-2 text-body-sm font-semibold disabled:cursor-default disabled:opacity-100', active ? 'text-text' : 'text-muted'))}
                 >
                   <span className="flex items-center justify-center gap-1.5">
                     {b.label}
@@ -508,10 +500,7 @@ export function SpaceBrandingForm({
                   }}
                   aria-pressed={active}
                   title={c.tagline}
-                  className={cn(
-                    'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                    active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
-                  )}
+                  className={choiceTileClasses(active, 'rounded-control px-3 py-2 text-left disabled:cursor-default disabled:opacity-100')}
                 >
                   <span className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
                     {c.label}
@@ -557,12 +546,7 @@ export function SpaceBrandingForm({
                     }
                   }}
                   aria-pressed={active}
-                  className={cn(
-                    'rounded-control border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
-                    active
-                      ? 'border-primary bg-primary-bg text-text'
-                      : 'border-border bg-surface text-muted hover:border-border-strong',
-                  )}
+                  className={choiceTileClasses(active, cn('rounded-control px-3 py-2 text-body-sm font-semibold disabled:cursor-default disabled:opacity-100', active ? 'text-text' : 'text-muted'))}
                 >
                   <span className="flex items-center justify-center gap-1.5">
                     {m.label}
@@ -596,12 +580,7 @@ export function SpaceBrandingForm({
                       }}
                       aria-pressed={active}
                       title={f.hint}
-                      className={cn(
-                        'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                        active
-                          ? 'border-primary bg-primary-bg'
-                          : 'border-border bg-surface hover:border-border-strong',
-                      )}
+                      className={choiceTileClasses(active, 'rounded-control px-3 py-2 text-left disabled:cursor-default disabled:opacity-100')}
                     >
                       <span className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
                         {f.label}
@@ -813,10 +792,9 @@ function StyleChoiceCards<T extends string>({
             onClick={() => onPick(c.id)}
             aria-pressed={active}
             data-space-theme={c.preview}
-            className={cn(
-              'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-              active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
-              c.soon && 'cursor-not-allowed opacity-50 hover:border-border',
+            className={choiceTileClasses(
+              active,
+              cn('rounded-control px-3 py-2 text-left disabled:cursor-default disabled:opacity-100', c.soon && 'cursor-not-allowed opacity-50 hover:border-border'),
             )}
           >
             <span className="flex items-center gap-1.5 font-display text-body-sm font-semibold text-text">
