@@ -175,7 +175,7 @@ export function SiteRoot({ children, surface: fallback = 'stage' }: { children: 
         style={moodStyle(page) as React.CSSProperties}
       >
         {/* Always rendered, so the server and client trees have the same shape whatever pathname each resolved
-            (SCAN-1205: a conditional child here made hydration throw #418). The script skips a locked root itself. */}
+            (SCAN-1205: a conditional child here made hydration throw the React hydration error). The script skips a locked root itself. */}
         {
           // THE SIDE BEFORE THE FIRST PAINT (SCAN-895). The server renders the page's default side, and the stored
           // choice (URL hash, else localStorage) used to arrive only after hydration, so a returning Host visitor
