@@ -359,6 +359,7 @@ const nextConfig: NextConfig = {
         source,
         headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }],
       })),
+      { source: '/_site-theme-assets/:file([a-f0-9]{24}\\.css)', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
       { source: notCameraRoute, headers: [{ key: 'Permissions-Policy', value: PERMISSIONS_POLICY_DEFAULT }] },
       ...CAMERA_ROUTES.map((source) => ({
         source,

@@ -1,3 +1,4 @@
+import { siteThemeStylesheet } from './site-theme-stylesheet'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { readSitePageStyle, servicesDials, siteRootDials, siteLook, siteDials, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
@@ -467,6 +468,7 @@ export async function SitePage({
         cta={netSite ? null : chromeCta}
         themeFonts={!!website || hasChosenTheme(space.preferences)}
         skin={skin}
+        themeStylesheet={siteThemeStylesheet(skin?.theme, lookOverrides)}
         logoUrl={skin ? (website ? websiteBrand.logo : space.brandLogoUrl) : headerLogo.logoUrl}
         logoMode={headerLogo.logoMode}
         tagline={website ? websiteChrome.tagline : fullFooter ? tagline : null}
