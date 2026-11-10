@@ -1,0 +1,10 @@
+{
+  "id": "FH-001",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  },
+  "append": {
+    "detail": "\n\nEvidence pinned 2026-11-10 in docs/hunts/EVIDENCE.md. It records exact GitHub main and serving production identities, the merged ledger, legacy and new engine authority, routes and controls, and dated migration observations. Reviewed CI, public live responses, existing provider evidence and owner-dependent checks are tracked separately. The row changes no runtime, flags, migrations or existing probes."
+  }
+}
