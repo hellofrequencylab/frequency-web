@@ -13,6 +13,7 @@ import { PastDueBanner } from '@/components/billing/past-due-banner'
 import { MembershipPastDueList } from '@/components/spaces/membership-past-due-banner'
 import { listMyPastDueSpaceMemberships } from '@/lib/spaces/memberships'
 import { ManageBillingButton } from './manage-button'
+import { memberTaxNotice } from '@/lib/billing/connect-tax-read'
 import { StartPayoutButton, ManagePayoutButton } from '@/components/billing/payout-controls'
 import { BundleSeatsSection } from './bundle-seats-section'
 import { TipsReceivedSection } from './tips-received-section'
@@ -66,6 +67,8 @@ export async function PlanSection({
   if (showPayouts) {
     payout = payouts === 'return' ? await syncConnectedAccount(me.id) : await getConnectStatus(me.id)
   }
+  // PROG-E7: a plain 1099 / tax-details heads up. Null (and no query) until CONNECT_TAX_REPORTING_ENABLED is on.
+  const taxNote = showPayouts && payout?.accountId ? await memberTaxNotice(payout.accountId) : null
 
   return (
     <div>
@@ -157,6 +160,11 @@ export async function PlanSection({
                 <StartPayoutButton label={payout.accountId ? 'Finish payout setup' : 'Set up payouts'} />
               </div>
             </>
+          )}
+          {taxNote && (
+            <p role="note" className="mt-4 rounded-card border border-border bg-surface-elevated p-3 text-body-sm leading-relaxed text-muted">
+              {taxNote}
+            </p>
           )}
         </div>
       )}

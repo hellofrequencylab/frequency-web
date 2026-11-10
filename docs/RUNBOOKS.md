@@ -908,6 +908,8 @@ The cutover runs in three steps (BLD-108, shadow render and cutover):
 
 Five switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on): `HUNTS_ENABLED` (browse, entry, the player's own run), `HUNTS_CLAIMS_ENABLED` (a scan may credit a mission), `HUNTS_REWARDS_ENABLED` (a credit may grant a reward), `HUNTS_AUTHORING_ENABLED` (creators draft and publish), `HUNTS_WORKER_ENABLED` (the outbox worker delivers). Each is on only when its parent is: claims and authoring and the worker need `HUNTS_ENABLED`; rewards need claims. Setting a lower rung alone never opens a higher one.
 
+`HUNTS_CLAIMS_ENABLED` also opens the staff door (`POST /api/hunts/staff/verify`, FH-020S), which signs and checks one-time player codes with `HUNTS_PROOF_SECRET`. Set that secret in Production before turning claims on: production refuses to fall back to the service-role key and the door answers 500 until it is set. A held claim is decided through `hunt_claim_review` (approve, reject or an audited override); an approval resumes it exactly once.
+
 Gate to turn one on: every Hunt migration up to the rung is applied in Frequency Community (hunt_outbox for the worker, hunt_claim_apply for claims), the legacy check-in, reward and commerce paths show no change with all switches off, and the rung below has run clean. Order: enabled, claims, authoring, worker, rewards. Rollback is unsetting the switch: no data moves, claims already credited stay credited, and outbox rows wait for the worker to return.
 
 ### Stripe and progressive-dinner pilot gate
@@ -922,13 +924,19 @@ Use the [D7 dinner draft](hunts/PRODUCT-DRAFTS-D4-D7-D8.md), the [Experience Pas
 
 Keep FH-041 open until the pilot gate has named sign-offs and the parent probe passes.
 
+## Persistent cart
+
+`COMMERCE_CART_ENABLED` (blank by default, `lib/commerce/cart-flag.ts`) turns on the saved cart: an Add to cart control beside Buy now on `/market/<id>` and the cart server actions in `app/(main)/marketplace/cart-actions.ts`. Off, every action answers `off`, nothing renders and no row is written. The cart stores lines only (product, variant, quantity); price and seller are read fresh at checkout.
+
+Gate to turn it on: migration 20270346039000 (`commerce_carts`) is applied in Frequency Community, a signed-in member can add a product, reload and see it saved, and a signed-out visitor is told to sign in rather than shown an error. Checkout from a saved cart is a later slice, so turning this on only saves lines. Turn it off by unsetting it: no data moves.
+
 ## Site token requests
 
-`SITE_TOKEN_REQUESTS_ENABLED` (`1` / `true` / `on`) opens the token-request path (PROG-E10, ADR-976 D-1: nobody writes raw CSS). A Space asks for a theme token in words; the request files a support ticket of type `idea` (`lib/sites/token-request.ts`). Activation gate: the owner and the answer time for these tickets (EDITOR-ARCHITECTURE O-4) are named, and the builder form that calls `requestWebsiteThemeTokens` has shipped. Off, the call refuses and files nothing.
+`SITE_TOKEN_REQUESTS_ENABLED` (`1` / `true` / `on`) opens the token-request path (PROG-E10, ADR-976 D-1: nobody writes raw CSS). A Space asks for a theme token in words; the request files a support ticket of type `idea` (`lib/sites/token-request.ts`). Activation gate: the owner and the answer time for these tickets (EDITOR-ARCHITECTURE O-4) are named, and the "Need a look the theme does not have?" form in the site builder's Theme tab (`components/sites/editor/token-request-panel.tsx`, drawn only while the flag is on) is the only door. Off, the form is not drawn and the action refuses and files nothing.
 
 ## Member Connect tax reporting
 
-`CONNECT_TAX_REPORTING_ENABLED` (`1` / `true` / `on`) lets payout settings show a plain notice when Stripe still needs a member's tax details or their calendar-year earnings near the 1099-K threshold (`lib/billing/connect-tax.ts`, PROG-E7). Stripe files the forms; Frequency only reads and words. Activation gate, owner steps in this order: (1) in the Stripe Dashboard, turn on tax form reporting for Connect (Settings, Connect, tax reporting) and confirm the platform's own tax details; (2) confirm the thresholds in `FORM_1099_THRESHOLDS` against Stripe's current guidance; (3) a settings card calls `taxNotice`. Money still moves only behind `host_payouts_enabled`; this flag moves none.
+`CONNECT_TAX_REPORTING_ENABLED` (`1` / `true` / `on`) lets payout settings show a plain notice when Stripe still needs a member's tax details or their calendar-year earnings near the 1099-K threshold (`lib/billing/connect-tax.ts`, PROG-E7). Stripe files the forms; Frequency only reads and words. Activation gate, owner steps in this order: (1) in the Stripe Dashboard, turn on tax form reporting for Connect (Settings, Connect, tax reporting) and confirm the platform's own tax details; (2) confirm the thresholds in `FORM_1099_THRESHOLDS` against Stripe's current guidance; (3) the notice is the note under the Receive payments card in Settings (`app/(main)/settings/billing/section.tsx`, read by `lib/billing/connect-tax-read.ts`); it only appears for a member with a connected account. Federal 1099-K is $20,000 and 200 transactions; some states set lower thresholds, so the notice is a heads up that points to Stripe, which applies the state rules. Money still moves only behind `host_payouts_enabled`; this flag moves none.
 
 ## Live co-editing
 

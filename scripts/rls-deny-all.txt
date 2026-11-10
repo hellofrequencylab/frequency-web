@@ -198,3 +198,7 @@ hunt_compensations
 # FH-009 Frequency Hunts durable outbox and receipts: service role only; drained by the worker through the hunt_outbox_* functions.
 hunt_outbox
 hunt_deliveries
+# DEF-ETSY P5 persistent cart: service role only; the cart server actions read the profile from the session.
+commerce_carts
+# FH-020S Hunt staff-proof nonces: service role only; spent by hunt_staff_nonce_consume.
+hunt_staff_nonces

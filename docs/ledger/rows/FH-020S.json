@@ -4,18 +4,19 @@
   "lane": "program",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "wave": "W7",
   "source": {
     "file": "docs/hunts/README.md",
     "ref": "Split from FH-020 (2026-11-10): the proof core shipped in lib/hunts/staff-proof.ts; the stateful and screen halves need a migration and screens."
   },
-  "detail": "Add the single-use nonce table (service role, unique insert backing consumeNonce), the staff scan route and screen, the audited override, the support appeal, and the held-claim review that resumes once after authorized review. Done when: cross-Space staff, replay, expired proof and a paused placement reject through the route, and an authorized review resumes a held claim exactly once. Requires: FH-020, FH-010, FH-019. Owner role: Game systems.",
+  "detail": "Add the single-use nonce table (service role, unique insert backing consumeNonce), the staff scan route and screen, the audited override, the support appeal, and the held-claim review that resumes once after authorized review. Done when: cross-Space staff, replay, expired proof and a paused placement reject through the route, and an authorized review resumes a held claim exactly once. Requires: FH-020, FH-010, FH-019. Owner role: Game systems.\n\nBuilt 2026-11-10: migration 20270346038000_hunt_staff_review.sql adds hunt_staff_nonces and three service-role functions: hunt_staff_nonce_consume (a unique insert spends a nonce once), hunt_claim_review (approve, reject or override a held claim; the claim and run locks make an approval resume exactly once, an override needs a written reason and is audited as claim_override) and hunt_claim_appeal (one open appeal per claim). lib/hunts/staff-review.ts verifyAtDoor runs decide('verify_claim'), the proof, the nonce spend and hunt_claim_apply at assurance staff; app/api/hunts/staff/verify/route.ts is the POST, dark behind HUNTS_CLAIMS_ENABLED, signed with HUNTS_PROOF_SECRET. supabase/tests/hunt_staff_review.test.sql proves nonce, resume-once, key conflict, rejection, appeal and override on the sequential path; two live sessions racing is carried by the claim lock, the run lock and the nonce primary key. Staff of a venue Space means canEditProfile there. The screens that call the route are FH-020T. The migration is NOT applied in production until the owner runs it.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/staff-review.ts\")?0:1)'"
   },
   "append": {
     "detail": "\n\nPacket F UI slice: components/hunts/staff-proof-screens.tsx supplies Focus scan and Stream held-claim review shells. Claude owns route authorization, nonce storage, review actions and audit."
-  }
+  },
+  "closed": "2026-11-10"
 }
