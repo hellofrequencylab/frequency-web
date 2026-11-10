@@ -3,7 +3,7 @@
 // reads (JSON because each kit accent is colour data, the way Nocturne's is). Every picture is a render of the
 // design system's own kit surfaces, stored under public/themes/designer (shots and layouts). The id of each
 // profile equals the Wizard niche (lib/theme/mega-theme.ts).
-import data from './designer-feature-data.json'
+import data from './designer-feature-data.json' with { type: 'json' }
 
 interface DesignerKit {
   id: string

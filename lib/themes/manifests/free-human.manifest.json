@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "id": "free-human",
   "legacyIds": {
     "editor": "FreeHuman",
@@ -19,6 +19,45 @@
         "themes",
         "FreeHuman"
       ]
+    },
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "register": "fixed",
+      "hero": "fixed",
+      "motion": "fixed",
+      "image": "fixed",
+      "accent": "fixed"
+    },
+    "looks": [],
+    "functions": {
+      "booking": [
+        "FreeHumanSpeaking"
+      ],
+      "services": [
+        "FreeHumanWorkshops"
+      ],
+      "reviews": [],
+      "posts": [],
+      "events": [
+        "FreeHumanEvents",
+        "FreeHumanCalendar"
+      ],
+      "shop": [
+        "FreeHumanBooks"
+      ],
+      "circles": [],
+      "firstnight": [],
+      "plans": [],
+      "letter": [],
+      "gallery": [],
+      "team": [
+        "FreeHumanLineage"
+      ],
+      "locations": [],
+      "forms": []
     }
   },
   "core": {

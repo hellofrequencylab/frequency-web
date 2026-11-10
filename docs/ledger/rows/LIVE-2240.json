@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2240",
+  "title": "Mindless timer: one settings model for both engines, saved the moment a setting changes",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/on-air/timer-settings.ts",
+    "ref": "Daniel 2026-11-09: the timer had full Mindless and Get Moving settings; the newer door hid them and the saved setup kept breaking. Inventory in /mnt/project-files/mindless-timer/01-INVENTORY-AND-RESTORE-PLAN.md."
+  },
+  "detail": "Before: each engine kept its own localStorage key, and profiles.meta.onAir was written only when a sit completed, from the sit's own numbers. A Just Log stored a remembered length of 1 minute, a Get Moving finish reset the saved breath pattern to Box and the remembered minutes to the walk length, cue changes were lost on Cancel, resume remainders polluted the remembered length, prefs.mode was written and never read, and the minute cap was 120, 240 or 600 depending on the control. After: lib/on-air/timer-settings.ts is the one typed model (still, move, cues) with one localStorage key that folds the two legacy keys in, saveOnAirPrefs merges only the onAir key on every change (debounced, flushed on unmount), completeSession keeps only the lifetime airtime counter, the Get Moving memory rides the same model and reaches the server, and MINUTE_MAX is the one member band. The door and any future UI render from this model (LIVE-2241 to LIVE-2244 build on it).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/timer-settings-model.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-09"
+}

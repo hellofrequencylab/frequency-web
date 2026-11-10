@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "id": "temple-kit",
   "legacyIds": {
     "editor": "TempleKit",
@@ -49,6 +49,85 @@
       "path": [
         "themes",
         "TempleKit"
+      ]
+    },
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "accent": "supported",
+      "register": "fixed"
+    },
+    "looks": [
+      {
+        "id": "general",
+        "label": "Temple",
+        "dials": {
+          "accent": "general"
+        }
+      },
+      {
+        "id": "coaches",
+        "label": "Coaches and healers",
+        "dials": {
+          "accent": "coaches"
+        }
+      },
+      {
+        "id": "studios",
+        "label": "Studios and instructors",
+        "dials": {
+          "accent": "studios"
+        }
+      },
+      {
+        "id": "hosts",
+        "label": "Event hosts",
+        "dials": {
+          "accent": "hosts"
+        }
+      }
+    ],
+    "functions": {
+      "booking": [],
+      "circles": [
+        "TempleKitRooms"
+      ],
+      "events": [
+        "TempleKitGatherings",
+        "TempleKitInnerGatherings"
+      ],
+      "firstnight": [],
+      "forms": [
+        "TempleKitInnerContact"
+      ],
+      "gallery": [
+        "TempleKitGallery"
+      ],
+      "letter": [
+        "TempleKitLetter"
+      ],
+      "locations": [],
+      "plans": [
+        "TempleKitMembership",
+        "TempleKitInnerTiers"
+      ],
+      "posts": [
+        "TempleKitInnerLibrary"
+      ],
+      "reviews": [
+        "TempleKitProof"
+      ],
+      "services": [
+        "TempleKitOfferings",
+        "TempleKitInnerService"
+      ],
+      "shop": [
+        "TempleKitInnerShop"
+      ],
+      "team": [
+        "TempleKitInnerTeam"
       ]
     }
   },
