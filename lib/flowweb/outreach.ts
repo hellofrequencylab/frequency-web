@@ -15,7 +15,8 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
 export const CLAIM_SLOT = '{{claim_url}}'
-const EMAIL_RE = /^[^@\s<>"]+@[^@\s<>"]+\.[^@\s<>"]+$/
+// Domain labels hold no dot, so every character has one place to match: linear time on any input.
+const EMAIL_RE = /^[^@\s<>"]+@[^@\s<>".]+(?:\.[^@\s<>".]+)+$/
 const MAX_SKEW_MS = 5 * 60_000
 
 export interface OutreachItem {
