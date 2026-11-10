@@ -42,7 +42,7 @@ interface StillSetup {
 }
 
 /** Cues shared by both engines: sound, feel and the warm-up. */
-interface CueSettings {
+export interface CueSettings {
   bell: boolean
   /** Get Moving's own on/off for its cue sound; it shares the voice and volume with the sit. */
   moveBell: boolean
