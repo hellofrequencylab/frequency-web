@@ -37,6 +37,11 @@ export function issueChallenge(input: { secret: string; scope: Scope; now: numbe
   return `${VERSION}.${body}.${sign(input.secret, `${VERSION}.${body}`)}`
 }
 
+/** The expiry (epoch seconds) a challenge token claims, or null when it does not parse. Unverified: only for storing alongside a spent nonce, after verifyStaffProof has accepted the token. */
+export function challengeExpiry(token: string): number | null {
+  return parse(token)?.payload.exp ?? null
+}
+
 type Refusal = 'malformed' | 'bad_signature' | 'expired' | 'wrong_scope' | 'cross_space_staff' | 'placement_paused' | 'replay'
 
 type Verdict = { ok: true; nonce: string; venueSpaceId: string } | { ok: false; reason: Refusal }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { Check, Lock, MapPin } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
+import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
 import { FocusTemplate } from '@/components/templates'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { projectForPlayer } from '@/lib/hunts/player'
@@ -43,11 +44,7 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
       width="default"
     >
       <div className="space-y-4">
-        {view.banner !== 'none' && (
-          <p role="status" className="rounded-card border border-border bg-surface p-4 text-body-sm text-muted">
-            {view.banner === 'paused' ? 'This Trail is paused. Your progress is safe.' : 'This Trail has closed. Your progress stays here.'}
-          </p>
-        )}
+        <HuntPlayerSafety banner={view.banner} />
         <ol className="space-y-2">
           {view.stops.map((s) => (
             <li key={s.key} className="flex items-start gap-3 rounded-card border border-border bg-surface px-4 py-3">
