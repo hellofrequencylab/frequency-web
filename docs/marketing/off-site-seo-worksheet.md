@@ -2,7 +2,7 @@
 
 > Status lives in [`BUILD-BACKLOG.json`](../BUILD-BACKLOG.json) (run `pnpm backlog`). This document is the how-to and the rationale. It does not record what is done. The owner rows are OWN-098 to OWN-108; the build rows are LIVE-1134 to LIVE-1137 (the footer, profile links, verification tags and instant page notice) and LIVE-1138 (a help article on getting found).
 
-Written 2026-10-22 for the North County San Diego launch on 1 December 2026. Every action is free. Items tagged "Your account" need the owner's own login. Ties to the six launch doors: coaches and guides, studios and instructors, event hosts, venues, nonprofits and The Network.
+Written 2026-10-22 for the North County San Diego launch on 1 January 2027. Every action is free. Items tagged "Your account" need the owner's own login. Ties to the six launch doors: coaches and guides, studios and instructors, event hosts, venues, nonprofits and The Network.
 
 ## The answer
 
@@ -102,7 +102,7 @@ Tags: Free, Your account, Before 1 Dec, Coaches, Studios, Event hosts, Networks
 4. Use the category line "Local groups that keep meeting." and the three price lines from the pricing page. Say "plus card processing" next to any 0% claim.
 5. After launch, ask the first happy operators for a review. Reviews here are off-site, so they do not break your no-testimonials rule on the site.
 
-### 6 · Get the 1 December launch into North County calendars and news
+### 6 · Get the 1 January launch into North County calendars and news
 
 Tags: Free, Your account, Mid November, Event hosts, Venues
 
@@ -214,13 +214,13 @@ Tags: Free, Mid to late November, Coaches, Studios, Nonprofits
 **Steps**
 
 1. List 10 local newsletters: studio newsletters, nonprofit updates, neighborhood and chamber digests, local food and events lists.
-2. Write to each: "I'm launching a free tool for local groups on 1 December. I can feature your next event on Frequency and ask for one line in your next issue."
+2. Write to each: "I'm launching a free tool for local groups on 1 January. I can feature your next event on Frequency and ask for one line in your next issue."
 3. Give them the right /for link for their audience and a ready two-sentence blurb.
 4. Offer the same in return: a listing for their events on Frequency.
 
 ### 14 · Hand every Space owner a one-page "get found" guide
 
-Tags: Free, Before 1 December, Studios, Venues, Coaches
+Tags: Free, Before 1 January, Studios, Venues, Coaches
 
 **Why.** Every Space owner is a link source. If each one links their Frequency page from their own Google profile, Instagram and website, the whole network is lifted together. This is the cheapest multiplier you have.
 
@@ -260,7 +260,7 @@ Tags: Free, Your account, December onward, Coaches, Networks
 
 ### 17 · Appear on "alternatives to" comparison sites
 
-Tags: Free, Your account, Before 1 December, Event hosts, Networks
+Tags: Free, Your account, Before 1 January, Event hosts, Networks
 
 **Why.** People and AI tools both search "alternative to Mighty Networks" or "Skool alternative". These lists are where the answer comes from, and Frequency is a local-first option none of them mention yet.
 
@@ -285,7 +285,7 @@ Tags: Free, Your account, Late November, Networks, Nonprofits
 
 ### 19 · Register with Google Postmaster Tools so launch emails reach inboxes
 
-Tags: Free, Your account, Before 1 December, All six doors
+Tags: Free, Your account, Before 1 January, All six doors
 
 **Why.** Your funnel depends on the Day 0, 1, 3 and 7 emails arriving. Gmail decides inbox or spam by domain reputation, and Postmaster Tools is the only place that shows it. A spam-foldered welcome email loses the sign-up you just paid effort to earn.
 
@@ -313,7 +313,7 @@ Tags: Free, Start now, All six doors
 
 **Limit.** The tag is saved on a visitor's first page only, and only after they accept tracking where consent is required. A first visit that declines is not recorded, so treat the counts as a floor. Tags are kept as typed up to 200 characters.
 
-## Schedule to 1 December
+## Schedule to 1 January
 
 | When | Do | Time |
 |---|---|---|
@@ -322,7 +322,7 @@ Tags: Free, Start now, All six doors
 | Week of 9 Nov | Items 7, 13, 14 and 15 outreach; check Search Console for crawl errors | About 3 hours |
 | Week of 16 Nov | Item 6 press note and calendar posts; first social posts (item 12) | About 2 hours |
 | Week of 23 Nov | Items 8, 11 and 18; first run of item 10 as the baseline; schedule Product Hunt | About 2 hours |
-| 1 December and after | Product Hunt launch; items 9 and 12 weekly; item 10 every Monday; item 16 pitches; check Postmaster Tools weekly | About 3 hours a week |
+| 1 January and after | Product Hunt launch; items 9 and 12 weekly; item 10 every Monday; item 16 pitches; check Postmaster Tools weekly | About 3 hours a week |
 
 ## Not recommended
 
