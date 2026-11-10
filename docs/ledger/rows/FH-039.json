@@ -1,6 +1,10 @@
 {
   "id": "FH-039",
   "append": {
-    "detail": "\n\nPacket F design slice: docs/hunts/REFUNDS-AND-DISPUTES.md records the canonical authority, integration boundaries and acceptance cases. Runtime implementation, prerequisites and the existing verify probe remain the full row gate."
+    "detail": "\n\nPacket F design slice: docs/hunts/REFUNDS-AND-DISPUTES.md records the canonical authority, integration boundaries and acceptance cases. Runtime implementation, prerequisites and the existing verify probe remain the full row gate.\n\nBuilt 2026-11-10: lib/hunts/refunds.ts decides a reversal from canonical events: full refund and lost dispute revoke unused benefits, a partial refund revokes only the named units, an unmapped partial opens a review case and never guesses a unit from an amount, a dispute suspends and a won one restores only while canonical state is still paid. hunt_entitlement_reverse and hunt_entitlement_consume take the same row lock, so a refund and a staff scan cannot both win, a consumed benefit opens a case and never frees stock, and a repeated reversal reference does nothing twice. The Stripe refund and dispute hook moved to FH-037S."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
   }
 }
