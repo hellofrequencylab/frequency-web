@@ -21,7 +21,8 @@ import { getNextGathering } from '@/lib/quest/next-gathering'
 import { buildSessionDispatch, fallbackSessionDispatch, modeHasNote, statSessionLabel } from '@/lib/on-air'
 import { MOVEMENT_MODES } from '@/lib/movement'
 import { loadOnAirSessionData, type OnAirSessionData } from '@/lib/on-air/session-data'
-import { mergeProfileMeta } from '@/lib/profiles/meta'
+import { mergeProfileMeta, mergeProfileMetaPath } from '@/lib/profiles/meta'
+import { sanitizePrefsPatch } from '@/lib/on-air/timer-settings'
 import type { DispatchKind, OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
 
 /** Map a completed session to the Dispatch opener kind (task D). A Movement sit
@@ -76,23 +77,6 @@ export interface CompleteSessionInput {
    *  in history; the economy + timer-proof path is unchanged (Movement still claims a timed sit
    *  via mode 'timer'). Omitted for a plain Mindless sit. */
   movementMode?: string | null
-  /** Custom-pattern seconds + cue toggles, remembered with the rest of the setup (P3). */
-  customIn?: number
-  customHold?: number
-  customOut?: number
-  bell?: boolean
-  bellTone?: string
-  /** Bell loudness as a 0..1 slider fraction (was the quiet/medium/loud presets). */
-  bellVolume?: number
-  endBell?: boolean
-  bellEveryMin?: number
-  haptics?: boolean
-  /** Ambient loop slug, null = none. */
-  ambientTrack?: string | null
-  /** Ambient loop loudness as a 0..1 slider fraction. */
-  ambientVolume?: number
-  /** The warm-up countdown length (3 | 5 | 10s), remembered with the rest of the setup. */
-  warmupSec?: number
   /** The optional free-text reflection from a Journal / Just Log session. Trimmed + capped
    *  server-side; empty becomes null. Stored on the session history row, never the economy. */
   note?: string | null
@@ -209,61 +193,26 @@ export async function completeSession(
     // clearing the active-session row is a safety net, never a blocker
   }
 
-  // Remember the setup so tomorrow opens ready (zero-config repeat), and keep
-  // the lifetime airtime counter (hosted PostgREST has aggregates off, so the
-  // running total lives in meta; the sessions table can always recompute it).
-  // The lifetime airtime counter adds only THIS sit's incremental airtime (sessionSeconds), never
-  // the cumulative a resume reports, so a resumed sit doesn't inflate the running total either.
+  // Keep the lifetime airtime counter (hosted PostgREST has aggregates off, so the running
+  // total lives in meta; the sessions table can always recompute it). It adds only THIS sit's
+  // incremental airtime (sessionSeconds), never the cumulative a resume reports, so a resumed sit
+  // doesn't inflate the running total either.
+  //
+  // The member's setup is NOT written here any more (LIVE-2240). It used to be derived from the
+  // sit that just ended, which stored a Just Log as a 1-minute remembered length and let a Get
+  // Moving finish reset the saved breath pattern. Every setting now saves the moment it changes
+  // through saveOnAirPrefs, below, from the one settings model (lib/on-air/timer-settings.ts).
   let totalSeconds = sessionSeconds
   try {
     const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
     const meta = ((prof as { meta: Record<string, unknown> | null } | null)?.meta ?? {}) as Record<string, unknown>
     totalSeconds = Number((meta.onAirTotalSeconds as number | undefined) ?? 0) + sessionSeconds
-    // Merge over what's already stored: a timer session must not wipe the
-    // member's custom-pattern sliders or cue toggles (and old prefs without
-    // the P3 keys keep working untouched).
-    const prior = (meta.onAir ?? {}) as Partial<OnAirPrefs>
-    const phaseSec = (v: number | undefined, lo: number) =>
-      typeof v === 'number' && Number.isFinite(v)
-        ? Math.min(8, Math.max(lo, Math.round(v)))
-        : undefined
-    const prefs: OnAirPrefs = {
-      mode: input.mode,
-      pattern: input.pattern ?? 'box',
-      minutes: Math.max(1, Math.round(seconds / 60)) || 5,
-      customIn: phaseSec(input.customIn, 3) ?? prior.customIn,
-      customHold: phaseSec(input.customHold, 0) ?? prior.customHold,
-      customOut: phaseSec(input.customOut, 3) ?? prior.customOut,
-      bell: typeof input.bell === 'boolean' ? input.bell : prior.bell,
-      bellTone: typeof input.bellTone === 'string' ? input.bellTone : prior.bellTone,
-      bellVolume:
-        typeof input.bellVolume === 'number' && Number.isFinite(input.bellVolume)
-          ? Math.min(1, Math.max(0, input.bellVolume))
-          : prior.bellVolume,
-      endBell: typeof input.endBell === 'boolean' ? input.endBell : prior.endBell,
-      bellEveryMin:
-        typeof input.bellEveryMin === 'number' && Number.isFinite(input.bellEveryMin)
-          ? Math.max(0, Math.round(input.bellEveryMin))
-          : prior.bellEveryMin,
-      haptics: typeof input.haptics === 'boolean' ? input.haptics : prior.haptics,
-      // null = the member turned it off (persist that); undefined = keep prior.
-      ambientTrack: input.ambientTrack === undefined ? prior.ambientTrack : input.ambientTrack,
-      ambientVolume:
-        typeof input.ambientVolume === 'number' && Number.isFinite(input.ambientVolume)
-          ? Math.min(1, Math.max(0, input.ambientVolume))
-          : prior.ambientVolume,
-      // The warm-up length (3 | 5 | 10s), clamped to a valid preset; keep prior otherwise.
-      warmupSec:
-        input.warmupSec === 3 || input.warmupSec === 5 || input.warmupSec === 10
-          ? input.warmupSec
-          : prior.warmupSec,
-    }
-    // 2026-09-05 (scan2 L6-09, ADR-1212): merge only this writer's two keys; the whole-blob update
+    // 2026-09-05 (scan2 L6-09, ADR-1212): merge only this writer's key; the whole-blob update
     // clobbered whatever another writer (streak, check-in) had put in meta a moment earlier.
-    const { error: prefsErr } = await mergeProfileMeta(admin, profileId, { onAir: prefs, onAirTotalSeconds: totalSeconds })
+    const { error: prefsErr } = await mergeProfileMeta(admin, profileId, { onAirTotalSeconds: totalSeconds })
     if (prefsErr) serverLog.warn('on_air.prefs_merge_failed', { profileId, error: prefsErr })
   } catch {
-    // prefs + counter are a nicety, never a blocker
+    // the counter is a nicety, never a blocker
   }
 
   // 2. The log — the one and only economy entry point.
@@ -437,4 +386,21 @@ export async function completeSession(
     },
     dispatch,
   })
+}
+
+/** Save a change to the member's Mindless settings the moment it is made (LIVE-2240). The one
+ *  settings model (lib/on-air/timer-settings.ts) sends only prefs keys; this clamps every value
+ *  and merges ONLY the onAir key so no other writer of profiles.meta is clobbered (ADR-1212).
+ *  Nothing here touches the economy: a setting is remembered, never paid for. */
+export async function saveOnAirPrefs(patch: Partial<OnAirPrefs>): Promise<ActionResult<null>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const safe = sanitizePrefsPatch(patch)
+  if (!safe) return ok(null)
+  const { error } = await mergeProfileMetaPath(db(), profileId, ['onAir'], safe as Record<string, unknown>)
+  if (error) {
+    serverLog.warn('on_air.prefs_save_failed', { profileId, error })
+    return fail('Could not save your settings')
+  }
+  return ok(null)
 }

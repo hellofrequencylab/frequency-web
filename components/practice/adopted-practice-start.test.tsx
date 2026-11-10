@@ -44,6 +44,8 @@ describe('adopted practice direct launch', () => {
     await act(async () => root.render(<MindlessProvider><OpenSetup /></MindlessProvider>))
     await act(async () => host.querySelector('button')!.click())
     expect(still).not.toHaveBeenCalled()
+    // The door is a `dynamic()` chunk since 2026-11-10 (check:shell-weight), so it lands a tick later.
+    for (let i = 0; i < 20 && !host.textContent?.includes('Custom minutes'); i++) await act(async () => { await new Promise((r) => setTimeout(r, 5)) })
     expect(host.textContent).toContain('Custom minutes')
     const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
     await act(async () => begin.click())

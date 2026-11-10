@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2241",
+  "title": "Mindless door: every Be Still setting on the one screen as sub-menus (sub-mode, breath, sound, ambient, feel)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-11-09",
+  "source": {
+    "file": "components/on-air/compact-setup.tsx",
+    "ref": "Daniel 2026-11-09: boil the functions down into the smartest interface possible with primary and sub-menu (dropdown expand) functions; keep the current door look. Plan in /mnt/project-files/mindless-timer/02-INTERFACE-PLAN.md."
+  },
+  "detail": "Since #3434 and #3483 the door showed a mode toggle, practice chips, four lengths and Start; Meditate / Breathe / Stillness / Ritual / Journal / Just Log, the breath patterns and custom phases, sound, bell voice and volume, interval and end bell, ambient loops and volume, countdown and vibration all sat behind a ghost More settings link that mounted the engine's old setup screen. The door now has a How row of the six sub-modes (pre-set by the practice), mode-aware length presets, and four rows that expand in place with their current value on the row: Breath (pattern, custom in/hold/out, how it works, breath count), Sound (on/off, voice with preview, volume, interval bell, end bell), Ambient (loop with audition, volume) and Feel (countdown, vibration). A read-only Session footer carries logs-as, the Journey chip, already counted and the presence line. Every change writes the one settings model (LIVE-2240) so the engine mounts with it; the chosen sub-mode and pattern travel as initialMode and initialPattern. Just Log opens the practice note. More settings remains only for Get Moving until LIVE-2242.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/timer-door-be-still.mjs"
+  },
+  "wave": "W7"
+}
