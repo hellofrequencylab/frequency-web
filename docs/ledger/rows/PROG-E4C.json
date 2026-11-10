@@ -1,0 +1,19 @@
+{
+  "id": "PROG-E4C",
+  "title": "Editor E4 remainder: put the canvas on the live channel and build the RSC parity harness",
+  "status": "open",
+  "priority": "P2",
+  "lane": "program",
+  "size": "L",
+  "wave": "W4",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E4"
+  },
+  "detail": "Split from PROG-E4B on 2026-11-10. /pages/canvas edits a page-local Y.Doc. Still owed: the canvas joins lib/editor-crdt/provider for a real entity so two browsers converge on one page, and the RSC-canvas parity harness. Dark.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const d=\"components/builder/canvas\";const ok=fs.readdirSync(d).filter(f=>/\\.tsx$/.test(f)&&!/\\.test\\./.test(f)).some(f=>/editor-crdt\\/provider/.test(fs.readFileSync(d+\"/\"+f,\"utf8\")));if(!ok){console.error(\"PROG-E4C: no canvas component joins the live channel (lib/editor-crdt/provider)\");process.exit(1)}'",
+    "note": "Fails on main: the canvas uses a page-local doc. Passes once a canvas component connects through lib/editor-crdt/provider."
+  }
+}
