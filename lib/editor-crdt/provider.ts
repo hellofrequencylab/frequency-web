@@ -30,7 +30,7 @@ export interface EditorClientLike {
   removeChannel(channel: EditorChannelLike): Promise<unknown>
 }
 
-export type EditorLinkStatus = 'connecting' | 'live' | 'offline'
+type EditorLinkStatus = 'connecting' | 'live' | 'offline'
 
 interface ConnectOptions {
   doc: Y.Doc
@@ -40,7 +40,7 @@ interface ConnectOptions {
   onStatus?: (status: EditorLinkStatus) => void
 }
 
-export interface EditorLink {
+interface EditorLink {
   disconnect(): void
 }
 
