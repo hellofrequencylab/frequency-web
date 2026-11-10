@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { funnelQuery, funnelRecord, hostFunnelCopy, parseFunnelContext } from './funnel-context'
+import { funnelLocalNote, funnelQuery, funnelRecord, hostFunnelCopy, parseFunnelContext } from './funnel-context'
 
 // The exact link FlowWeb's funnelOf() builds for a host lead (hellofrequencylab/flowweb).
 const FLOWWEB_LINK =
@@ -74,5 +74,17 @@ describe('funnelQuery', () => {
   it('carries ids only on to the next step', () => {
     const rec = funnelRecord(parseFunnelContext(new URLSearchParams(FLOWWEB_LINK)))
     expect(funnelQuery(rec)).toBe('region=north-county-sd&area=oceanside&channel=movement&src=event_listings')
+  })
+})
+
+describe('funnelLocalNote', () => {
+  it('names the place, sounds early in the seed region, and adds the founder line', () => {
+    const note = funnelLocalNote(parseFunnelContext({ region: 'north-county-sd', area: 'vista', utm_medium: 'founder_email' }))
+    expect(note).toBe('Frequency is just opening in Vista, so you are early. Daniel, who started Frequency, invited you personally.')
+  })
+
+  it('is plain in a later region and empty with no link', () => {
+    expect(funnelLocalNote(parseFunnelContext({ region: 'orange-county' }))).toBe('Frequency is opening in Orange County.')
+    expect(funnelLocalNote(parseFunnelContext({}))).toBeNull()
   })
 })

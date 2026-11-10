@@ -398,5 +398,41 @@
       "shop": [],
       "team": []
     }
+  },
+  "bold": {
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "register": "fixed",
+      "hero": "fixed",
+      "accent": "fixed"
+    },
+    "looks": [],
+    "functions": {
+      "booking": [
+        "SpaceBooking"
+      ],
+      "circles": [],
+      "events": [
+        "SpaceEvents"
+      ],
+      "firstnight": [],
+      "forms": [
+        "SpaceContact"
+      ],
+      "gallery": [],
+      "letter": [],
+      "locations": [],
+      "plans": [],
+      "posts": [],
+      "reviews": [],
+      "services": [
+        "SpaceOfferings"
+      ],
+      "shop": [],
+      "team": []
+    }
   }
 }
