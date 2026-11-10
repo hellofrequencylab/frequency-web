@@ -18,7 +18,7 @@ export async function loadCart(profileId: string): Promise<Cart> {
   return parseCart((data as { lines?: unknown } | null)?.lines)
 }
 
-export async function saveCart(profileId: string, cart: Cart): Promise<void> {
+async function saveCart(profileId: string, cart: Cart): Promise<void> {
   const { error } = await db()
     .from('commerce_carts')
     .upsert({ profile_id: profileId, lines: parseCart(cart), updated_at: new Date().toISOString() }, { onConflict: 'profile_id' })
