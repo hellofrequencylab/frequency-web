@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import * as Y from 'yjs'
 import { upgradeLayout, type NodeLayout } from '../entity-blocks/node-tree'
 import {
-  applyRemote, createClientUndo, editLocal, encodeState, serializeLayout, toYDoc,
+  applyRemote, createClientUndo, editLocal, encodeState, reconcileDoc, serializeLayout, toYDoc,
 } from './node-ydoc'
 
 type Row = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -76,5 +76,64 @@ describe('two clients', () => {
     const metaB = b.getMap('layout').get('meta') as Y.Map<unknown>
     expect(metaB.get('template')).toBeUndefined()
     expect(metaB.get('other')).toBe('from-b')
+  })
+})
+
+describe('reconcileDoc', () => {
+  const rich = LAYOUTS.find((l) => l.rows.length > 1 && l.rows.some((r) => r.cells.flat().length > 1)) ?? LAYOUTS[0]
+  const clone = (l: NodeLayout): NodeLayout => JSON.parse(JSON.stringify(l))
+
+  it('writes any corpus document onto an empty doc and onto a different one', () => {
+    for (const l of LAYOUTS) {
+      const d = new Y.Doc()
+      reconcileDoc(d, l)
+      expect(canon(serializeLayout(d))).toBe(canon(l))
+      reconcileDoc(d, rich)
+      expect(canon(serializeLayout(d))).toBe(canon(rich))
+    }
+  })
+  it('is a no-op for an unchanged layout', () => {
+    const d = toYDoc(rich)
+    let updates = 0
+    d.on('update', () => { updates++ })
+    reconcileDoc(d, clone(rich))
+    expect(updates).toBe(0)
+  })
+  it('reorders, removes and adds rows', () => {
+    const d = toYDoc(rich)
+    const next = clone(rich)
+    next.rows.reverse()
+    reconcileDoc(d, next)
+    expect(canon(serializeLayout(d))).toBe(canon(next))
+    next.rows = next.rows.slice(1)
+    reconcileDoc(d, next)
+    expect(canon(serializeLayout(d))).toBe(canon(next))
+    reconcileDoc(d, rich)
+    expect(canon(serializeLayout(d))).toBe(canon(rich))
+  })
+  it('handles bench changes and the template', () => {
+    const d = toYDoc(rich)
+    const next = clone(rich)
+    next.bench = []
+    next.template = 'other'
+    reconcileDoc(d, next)
+    expect(canon(serializeLayout(d))).toBe(canon(next))
+  })
+  it('keeps a peer edit to a field the local change did not touch', () => {
+    const a = toYDoc(rich)
+    const b = new Y.Doc()
+    applyRemote(b, encodeState(a))
+    // peer b restyles the first node
+    const node = (d: Y.Doc) => ((d.getMap('layout').get('rows') as Y.Array<Y.Map<any>>).get(0).get('cells') as Y.Array<Y.Array<Y.Map<any>>>).get(0).get(0) // eslint-disable-line @typescript-eslint/no-explicit-any
+    node(b).set('hidden', true)
+    // local a changes only the template
+    const next = clone(rich)
+    next.template = 'changed'
+    reconcileDoc(a, next)
+    applyRemote(a, encodeState(b))
+    applyRemote(b, encodeState(a))
+    expect(canon(serializeLayout(a))).toBe(canon(serializeLayout(b)))
+    expect(node(a).get('hidden')).toBe(true)
+    expect(serializeLayout(a).template).toBe('changed')
   })
 })
