@@ -336,3 +336,5 @@ hunt_outbox_lease internal
 hunt_outbox_complete internal
 hunt_outbox_fail internal
 hunt_outbox_replay internal
+# Hunt claim command (FH-010): service role only.
+hunt_claim_apply internal

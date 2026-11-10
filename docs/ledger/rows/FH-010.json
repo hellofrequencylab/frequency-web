@@ -1,0 +1,10 @@
+{
+  "id": "FH-010",
+  "append": {
+    "detail": "\n\nBuilt 2026-11-10: migration 20270346037000_hunt_claim_apply.sql adds public.hunt_claim_apply (service role only). One transaction: it serialises retries of one (actor, key) on an advisory lock, locks the run row, checks run state, Hunt live, current published version, Hunt and mission windows, a live (unrevoked) placement bound to the mission, and the assurance class, then writes the claim, the progress credit, the audit row, one hunt_outbox row (consumer 'projection', semantic key credit:<run>:<mission>) and the idempotency record together. The same key with the same request hash replays the stored answer; the same key with another hash answers key_conflict; a refusal (run_not_found, run_not_active, hunt_not_live, version_superseded, outside_window, mission_closed, placement_not_valid, assurance_too_low, already_credited, duplicate_evidence) writes nothing. Run completion and rule groups stay in the application graph engine. supabase/tests/hunt_claim_apply.test.sql proves each answer on the sequential path; two live sessions racing is carried by the advisory lock and the run lock, with the FH-006 keys as backstop. Depends on FH-009 (hunt_outbox) being applied in production before the claim path is called. The Regulars/Zaps projection of a claim is a later consumer of the outbox row, so a same-day check-in stamp and a Hunt credit stay independent (FH-003 acceptance case)."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  }
+}
