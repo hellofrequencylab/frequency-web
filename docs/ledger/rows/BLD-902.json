@@ -1,1 +1,6 @@
-{"id":"BLD-902","append":{"detail":"\n\n2026-11-10 owner answer (Daniel, project thread decision card): Claude drafted the owner invite (/mnt/project-files/walkthrough/BLD-902-invite.md); Daniel sends it to four non-team owners with a live Space and reports names back. Roster still open: owner 1 House of Fates, owners 2 to 5 pending replies."}}
+{
+  "id": "BLD-902",
+  "append": {
+    "detail": "\n\n2026-11-10 owner answer (Daniel, project thread): owners 2 to 5 are not chosen yet; pick them tomorrow (2026-11-11). Recommended: four owners with a live production Space who are not on the team. Row stays open.\n\n2026-11-10 owner answer (Daniel, project thread decision card): Claude drafted the owner invite (/mnt/project-files/walkthrough/BLD-902-invite.md); Daniel sends it to four non-team owners with a live Space and reports names back. Roster still open: owner 1 House of Fates, owners 2 to 5 pending replies."
+  }
+}
