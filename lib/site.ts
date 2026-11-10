@@ -327,6 +327,7 @@ export const FOUNDING_CITIES = ["Oceanside", "Carlsbad", "Encinitas", "Vista", "
 export const SOCIAL_PROFILES = [
   "https://www.instagram.com/frequencylocal",
   "https://www.tiktok.com/@frequencylocal",
+  "https://www.youtube.com/@frequencylocal",
 ];
 
 /** The name a visitor reads for a profile URL in a footer link (LIVE-1135). A host this map does not

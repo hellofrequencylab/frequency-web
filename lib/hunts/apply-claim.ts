@@ -10,9 +10,9 @@
  */
 import { createHash } from 'node:crypto'
 
-type Assurance = 'none' | 'signed_node' | 'staff' | 'event_door'
+export type Assurance = 'none' | 'signed_node' | 'staff' | 'event_door'
 
-type ClaimInput = {
+export type ClaimInput = {
   actorId: string
   runId: string
   missionKey: string

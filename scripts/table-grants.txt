@@ -417,5 +417,7 @@ hunt_donation_gifts                   internal
 hunt_sponsor_agreements               internal
 hunt_sponsor_snapshots                internal
 hunt_sponsor_settlements              internal
+# DEF-ETSY P5 persistent cart: one row of lines per buyer, service role only; the cart server actions read the profile from the session
+commerce_carts                        internal
 # FH-020S Hunt staff-proof nonces: service role only; spent by hunt_staff_nonce_consume
 hunt_staff_nonces                     internal

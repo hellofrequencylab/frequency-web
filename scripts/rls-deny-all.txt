@@ -213,5 +213,7 @@ hunt_donation_gifts
 hunt_sponsor_agreements
 hunt_sponsor_snapshots
 hunt_sponsor_settlements
+# DEF-ETSY P5 persistent cart: service role only; the cart server actions read the profile from the session.
+commerce_carts
 # FH-020S Hunt staff-proof nonces: service role only; spent by hunt_staff_nonce_consume.
 hunt_staff_nonces
