@@ -1,0 +1,10 @@
+{
+  "id": "FH-012",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  },
+  "append": {
+    "detail": "\n\nDesigned 2026-11-10: docs/hunts/CREATOR-FLOW.md defines the five-step free creator flow (name it, add stops, choose the Trail shape, preview, publish), resident ownership with no Space required, a preview that writes nothing real, a six-item publish checklist tied to validateGraph, and the copy states. Editor screens are FH-013."
+  }
+}
