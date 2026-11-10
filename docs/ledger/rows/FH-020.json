@@ -1,0 +1,6 @@
+{
+  "id": "FH-020",
+  "append": {
+    "detail": "\n\nSlice 1, 2026-11-10: lib/hunts/staff-proof.ts is the pure core. issueChallenge makes an HMAC-signed, expiring token bound to one Hunt, placement, venue Space and run; verifyStaffProof refuses malformed, bad signature, expired or not-yet-valid, wrong scope, staff of another Space, a paused placement and a replay (the injected consumeNonce resolves true once per nonce), and never burns the nonce on a refusal so a corrected retry still works. lib/hunts/staff-proof.test.ts covers each. Still open: the nonce table and its unique insert (migration, service role), the route and screen staff use to scan, the audited override and support appeal, and the held-claim review that resumes once after authorized review. FH-020 stays open until those land."
+  }
+}
