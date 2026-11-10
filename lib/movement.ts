@@ -181,9 +181,9 @@ export const RUN_INTERVAL_PRESETS = [
 // --- builders ---------------------------------------------------------------
 
 /** Walk = a single timed block (one work phase); the shared pre-roll warm-up is the count-in.
- *  Interval reminders are a cue the live screen fires on the minute (intervalMin), not extra
- *  phases, so the block stays one clean countdown. */
-export function buildWalk(opts: { minutes: number; intervalMin?: number }): MovementPlan {
+ *  Interval reminders are a cue the live screen fires on the minute (the config's walkIntervalMin),
+ *  not extra phases, so the block stays one clean countdown. */
+export function buildWalk(opts: { minutes: number }): MovementPlan {
   const seconds = clampSeconds(opts.minutes * 60)
   return {
     mode: 'walk',
@@ -195,9 +195,9 @@ export function buildWalk(opts: { minutes: number; intervalMin?: number }): Move
 }
 
 /** Run = a single brisk timed block (one work phase); the shared pre-roll warm-up is the count-in.
- *  Same shape as Walk; split cues fire on the minute (intervalMin) as a live-screen cue,
- *  not extra phases, so the block stays one clean countdown. */
-function buildRun(opts: { minutes: number; intervalMin?: number }): MovementPlan {
+ *  Same shape as Walk; split cues fire on the minute (the config's runIntervalMin) as a live-screen
+ *  cue, not extra phases, so the block stays one clean countdown. */
+function buildRun(opts: { minutes: number }): MovementPlan {
   const seconds = clampSeconds(opts.minutes * 60)
   return {
     mode: 'run',
@@ -230,9 +230,9 @@ export function buildYoga(preset: YogaPreset): MovementPlan {
 }
 
 /** Stretch = a steady, gentle mobility block: one timed work phase; the pre-roll warm-up is
- *  the count-in. Soft "switch sides" cues fire on the minute (intervalMin) as a
+ *  the count-in. Soft "switch sides" cues fire on the minute (the config's stretchIntervalMin) as a
  *  live-screen cue, not extra phases, so the block stays one calm countdown. */
-function buildStretch(opts: { minutes: number; intervalMin?: number }): MovementPlan {
+function buildStretch(opts: { minutes: number }): MovementPlan {
   const seconds = clampSeconds(opts.minutes * 60)
   return {
     mode: 'stretch',
@@ -312,13 +312,13 @@ export function buildPlan(config: MovementConfig): MovementPlan {
   const mode: MovementMode = (config.mode as string) === 'workout' ? 'strength' : config.mode
   switch (mode) {
     case 'walk':
-      return buildWalk({ minutes: config.walkMinutes ?? 20, intervalMin: config.walkIntervalMin })
+      return buildWalk({ minutes: config.walkMinutes ?? 20 })
     case 'run':
-      return buildRun({ minutes: config.runMinutes ?? 20, intervalMin: config.runIntervalMin })
+      return buildRun({ minutes: config.runMinutes ?? 20 })
     case 'yoga':
       return buildYoga(yogaPresetByKind(config.yogaKind))
     case 'stretch':
-      return buildStretch({ minutes: config.stretchMinutes ?? 10, intervalMin: config.stretchIntervalMin })
+      return buildStretch({ minutes: config.stretchMinutes ?? 10 })
     case 'play':
       return buildPlay()
     case 'strength': {
@@ -487,14 +487,15 @@ export function phaseAt(plan: MovementPlan, elapsedSec: number): MovementPositio
     acc = end
   }
 
-  // Past the end — the plan is done. Report the final phase, fully elapsed.
+  // Past the end — the plan is done. Report the final phase with its elapsed time still growing,
+  // so a Walk / Run / Stretch that auto-continues past the target keeps its minute cues (LIVE-2244).
   const lastEntry = sequence[sequence.length - 1]
   const last = lastEntry?.phase ?? block[block.length - 1] ?? phases[0]
   return {
     phase: last,
     round: lastEntry?.round ?? rounds,
     remaining: 0,
-    phaseElapsed: last?.seconds ?? 0,
+    phaseElapsed: (last?.seconds ?? 0) + (t - acc),
     done: true,
     nextLabel: null,
   }

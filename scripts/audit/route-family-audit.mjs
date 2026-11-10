@@ -20,8 +20,8 @@ const ROUTES = (arg('--routes', '') || '').split(',').filter(Boolean)
 export const DEFAULT_ROUTES = [
   '/', '/pricing', '/features', '/about', '/what-is-frequency', '/create-a-space', '/themes', '/start',
   '/stories', '/the-community', '/loneliness', '/friendship-as-an-adult', '/how-to-start-a-circle',
-  '/how-to-build-community', '/how-to-be-more-social', '/tools-for-community-builders', '/free-spotlight',
-  '/discover', '/events', '/calendar', '/podcasts', '/guidelines', '/privacy', '/accessibility', '/auth/login',
+  '/how-to-build-community', '/how-to-be-more-social', '/tools-for-community-builders',
+  '/discover', '/events', '/guidelines', '/privacy', '/accessibility', '/sign-in',
 ]
 const VIEWPORTS = [{ name: '390', width: 390, height: 844 }, { name: '1280', width: 1280, height: 900 }]
 const slug = (r) => (r === '/' ? 'home' : r.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '-'))
@@ -35,7 +35,14 @@ for (const route of ROUTES.length ? ROUTES : DEFAULT_ROUTES) {
     const page = await ctx.newPage()
     const consoleErrors = []
     const pageErrors = []
-    page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 300)) })
+    // axe-core fetches cross-origin stylesheets to read their rules, and the CSP's connect-src blocks that
+    // fetch. The page's own <link> loads fine (SCAN-1204: 0 violations without axe, 1 with), so it is noise.
+    page.on('console', (m) => {
+      if (m.type() !== 'error') return
+      const t = m.text()
+      if (/Connecting to 'https:\/\/fonts\.googleapis\.com\//.test(t)) return
+      consoleErrors.push(t.slice(0, 300))
+    })
     page.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 300)))
     const row = { route, viewport: vp.name, status: null, overflowPx: 0, consoleErrors, pageErrors, axe: [], shot: null, error: null }
     try {

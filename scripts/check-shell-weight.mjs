@@ -238,6 +238,10 @@ export const FINGERPRINTS = [
   // A needle must be a runtime string that SURVIVES minification. ALLOWANCE_NUDGE is an exported
   // const rendered as meter copy, and two tests already pin its text, so a reword cannot land quietly.
   { text: 'Nearly full. Move up a plan for a higher allowance.', source: 'lib/pricing/feature-meters.ts' },
+  // The Mindless door (LIVE-2241..2244): every timer setting as sub-menus, behind `dynamic()` in
+  // components/on-air/mindless.tsx since 2026-11-10, when a static import put it at 1110 KB against
+  // the 1100 KB budget on the first Vercel build that carried it. Runtime copy on the Continue row.
+  { text: 'Picks up where the practice stopped today. Start fresh runs the length you choose from zero.', source: 'components/on-air/compact-setup.tsx' },
 ]
 
 /** The POSITIVE CONTROL. Shell chrome copy that is unconditionally in the shell's eager JS. If this

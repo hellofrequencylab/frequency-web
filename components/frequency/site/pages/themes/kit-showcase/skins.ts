@@ -5,7 +5,9 @@
 import type { Any } from './data'
 
 export const lum=(h:string)=>{const n=parseInt(h.slice(1),16),f=(c:number)=>{c/=255;return c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4)};return .2126*f(n>>16&255)+.7152*f(n>>8&255)+.0722*f(n&255)};
-export const onA=(h:string,dark:string,light:string)=>lum(h)>.3?dark:light;
+// The label colour for text on accent `h`: whichever of the kit's dark and light has the higher contrast ratio, so a mid-tone
+// accent (Bold's Fall, #D4703E: 5.4:1 with charcoal, 3.4:1 with white) gets the readable one instead of a fixed luminance cut.
+export const onA=(h:string,dark:string,light:string)=>{const a=lum(h)+.05,d=lum(dark)+.05,l=lum(light)+.05;return Math.max(a,d)/Math.min(a,d)>=Math.max(a,l)/Math.min(a,l)?dark:light};
 export const RIV=(c:string)=>`radial-gradient(circle,${c} 1.6px,transparent 2.2px) 0 0/7px 7px no-repeat,radial-gradient(circle,${c} 1.6px,transparent 2.2px) 100% 0/7px 7px no-repeat,radial-gradient(circle,${c} 1.6px,transparent 2.2px) 0 100%/7px 7px no-repeat,radial-gradient(circle,${c} 1.6px,transparent 2.2px) 100% 100%/7px 7px no-repeat`;
 export const BASE: Record<string, Any>={fstretch:'100%',grain:.1,blend:'overlay',rivets:'none',eyeBg:'transparent',eyePad:'0',eyeRot:'0deg',eyeClip:'none',markText:'',markW:'0',markH:'0',markBg:'transparent',markR:'0',markClip:'none',markGlow:'none',titleShadow:'none',numShadow:'none',tlh:'1',fvw:'400',tagSize:'21px',bodySize:'15px',numSize:'28px',emW:'400',emCase:'none',emGlow:'none',btnRot:'0deg',btnFilter:'none',btnShadow:'none',btnPadR:'30px',swR:'999px',chipR:'999px',panelShadow:'0 0 0 0 transparent',bdL:'0',bdT:'0',bdW:'0',bdH:'0',bdBg:'none',bdR:'0',bdClip:'none',bdShadow:'none',bdOp:'1',bdFilter:'none',b2L:'0',b2T:'0',b2W:'0',b2H:'0',b2Bg:'none',b2R:'0',b2Shadow:'none',photoFilter:'none',linkTrack:'0',linkCase:'none',labelCase:'uppercase'};
 export const SKIN: Record<string,(A:string,T:string,a:Any)=>Record<string,Any>>={
