@@ -36,7 +36,7 @@ export interface CrmItem {
 }
 
 /** One message the thread should hold, keyed so a repeat post is a no-op. */
-export interface PlannedMessage {
+interface PlannedMessage {
   key: string
   step: 'drafted' | 'sent' | 'replied' | 'declined' | 'signed_up'
   direction: 'outbound' | 'inbound' | 'internal'

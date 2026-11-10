@@ -13,7 +13,7 @@ import { appendConversationMessage, openOrGetConversation, updateConversationFie
 import { suppress } from '@/lib/suppression'
 import { type CrmItem, type LeadStatus, flowwebMeta, leadStatus, nextStatus, planMessages } from '@/lib/flowweb/crm'
 
-export interface CrmSyncResult {
+interface CrmSyncResult {
   status: 'synced'
   contactId: string
   conversationId: string
