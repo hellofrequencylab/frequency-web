@@ -17,9 +17,11 @@ export function connectTaxReportingEnabled(): boolean {
   return envFlag(CONNECT_TAX_FLAG)
 }
 
-/** The US 1099-K threshold (advisory): payment-processor gross above $20,000 AND more than 200 transactions
+/** The US federal 1099-K threshold (advisory): payment-processor gross above $20,000 AND more than 200 transactions
  *  in a calendar year. Member earnings settle through Stripe, so 1099-K is the form in play; NEC/MISC
- *  forms are for a payer that pays directly, which Frequency does not. */
+ *  forms are for a payer that pays directly, which Frequency does not. Some states set LOWER thresholds
+ *  (a few start at $600), so a member can owe a state 1099-K sooner than this says; the notice is a heads
+ *  up that points to Stripe, which applies the state rules. */
 const FORM_1099_THRESHOLDS = {
   kGrossCents: 20_000_00,
   kTransactions: 200,
@@ -40,7 +42,7 @@ export function form1099Status(grossCents: number, transactions: number): Form10
 // Stripe requirement keys that mean "the tax identity is missing" (SSN last 4, full ID number, EIN).
 const TAX_IDENTITY_KEY = /(^|\.)(ssn_last_4|id_number|tax_id|ssn)(\.|$)/
 
-interface TaxInfoState {
+export interface TaxInfoState {
   /** Stripe still needs the member's tax identity before it can report their earnings. */
   needsTaxInfo: boolean
   /** The Stripe requirement keys behind that, for support. */

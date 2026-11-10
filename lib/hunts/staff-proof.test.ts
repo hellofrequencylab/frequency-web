@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { issueChallenge, verifyStaffProof } from './staff-proof'
+import { challengeExpiry, issueChallenge, verifyStaffProof } from './staff-proof'
 
 const secret = 'test-secret'
 const scope = { huntId: 'hunt-1', placementId: 'pl-1', venueSpaceId: 'space-a', runId: 'run-1' }
@@ -80,5 +80,13 @@ describe('staff proof', () => {
     const consumeNonce = seen()
     expect((await check({ token, consumeNonce, placementActive: false })).ok).toBe(false)
     expect((await check({ token, consumeNonce })).ok).toBe(true)
+  })
+})
+
+describe('challengeExpiry', () => {
+  it('reads the expiry a token claims and nothing from a malformed one', () => {
+    const token = issueChallenge({ secret: 's', scope: { huntId: 'h', placementId: 'p', venueSpaceId: 'v', runId: 'r' }, now: 1000, ttlSeconds: 60 })
+    expect(challengeExpiry(token)).toBe(1060)
+    expect(challengeExpiry('nope')).toBeNull()
   })
 })

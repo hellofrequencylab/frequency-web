@@ -338,3 +338,7 @@ hunt_outbox_fail internal
 hunt_outbox_replay internal
 # Hunt claim command (FH-010): service role only.
 hunt_claim_apply internal
+# Hunt staff review (FH-020S): service role only.
+hunt_staff_nonce_consume internal
+hunt_claim_review internal
+hunt_claim_appeal internal

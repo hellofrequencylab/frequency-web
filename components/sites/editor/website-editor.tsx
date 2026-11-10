@@ -9,6 +9,7 @@ import { loadWebsiteMenu, saveWebsiteMenu, resetWebsiteMenu, saveWebsiteHeaderLo
 import { WebsiteFeatureSourceContext } from './feature-source-context'
 import type { WebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { config } from '@/lib/page-editor/config'
+import { requestWebsiteThemeTokens } from '@/lib/sites/editor/token-request-actions'
 import { saveWebsiteDraft, saveWebsiteStyle, proposeWebsiteText, proposeWebsiteLayout, syncWebsitePresence, loadWebsiteFeatureSource } from '@/lib/sites/editor/actions'
 import type { WebsiteSnapshot } from '@/lib/sites/editor/state'
 import { WebsiteEditorShell, type WebsiteEditorShellProps } from './shell'
@@ -16,7 +17,7 @@ import { WebsiteEditorShell, type WebsiteEditorShellProps } from './shell'
 // THE NEW BUILDER (BLD-101): loaded only when asked for, so the current editor's page carries none of it.
 const BuilderShell = dynamic(() => import('@/components/builder/shell/builder-shell').then((m) => m.BuilderShell), { ssr: false, loading: () => <div role="status">Loading the builder…</div> })
 
-export function ConnectedWebsiteEditor({ builder, ...props }: Omit<WebsiteEditorShellProps, 'onSave' | 'onPropose' | 'onLayout' | 'onPresence' | 'onStyle' | 'config'> & { builder?: 'v3' }) {
+export function ConnectedWebsiteEditor({ builder, tokenRequestsOpen = false, ...props }: Omit<WebsiteEditorShellProps, 'onSave' | 'onPropose' | 'onLayout' | 'onPresence' | 'onStyle' | 'onTokenRequest' | 'config'> & { builder?: 'v3'; tokenRequestsOpen?: boolean }) {
   const host = props.host
   const [features, setFeatures] = useState<WebsiteFeatures>(() => (props.metadata?.websiteFeatures as WebsiteFeatures | undefined) ?? {})
   const [sourceError, setSourceError] = useState<string | null>(null)
@@ -44,6 +45,7 @@ export function ConnectedWebsiteEditor({ builder, ...props }: Omit<WebsiteEditor
   const layout = useCallback((request: string, outline: Parameters<typeof proposeWebsiteLayout>[2], styleMenu?: Parameters<typeof proposeWebsiteLayout>[3], facts?: Parameters<typeof proposeWebsiteLayout>[4]) => proposeWebsiteLayout(host, request, outline, styleMenu, facts), [host])
   const style = useCallback((patch: Parameters<NonNullable<WebsiteEditorShellProps['onStyle']>>[0]) => saveWebsiteStyle(host, patch), [host])
   const presence = useCallback((cursor: Parameters<typeof syncWebsitePresence>[1]) => syncWebsitePresence(host, cursor), [host])
+  const tokenRequest = useCallback((requests: { token: string; want: string; why: string }[]) => requestWebsiteThemeTokens(host, requests), [host])
   const media = useMemo(() => ({
     scopes: () => websiteLoomScopes(host),
     scope: (key: string) => websiteLoomScope(host, key),
@@ -57,5 +59,5 @@ export function ConnectedWebsiteEditor({ builder, ...props }: Omit<WebsiteEditor
     saveLogo: (logo: { mode: string; logoUrl: string | null }) => saveWebsiteHeaderLogo(host, logo),
     uploadLogo: (data: FormData) => uploadWebsiteLogo(host, data),
   }), [host])
-  return <SiteMenuActionsProvider actions={menu}><LoomPickerActionsProvider actions={media}><WebsiteFeatureSourceContext.Provider value={sources}>{builder === 'v3' ? <BuilderShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onStyle={style} /> : <WebsiteEditorShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onPropose={propose} onLayout={layout} onPresence={presence} onStyle={style} />}</WebsiteFeatureSourceContext.Provider></LoomPickerActionsProvider></SiteMenuActionsProvider>
+  return <SiteMenuActionsProvider actions={menu}><LoomPickerActionsProvider actions={media}><WebsiteFeatureSourceContext.Provider value={sources}>{builder === 'v3' ? <BuilderShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onStyle={style} /> : <WebsiteEditorShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onPropose={propose} onLayout={layout} onPresence={presence} onStyle={style} onTokenRequest={tokenRequestsOpen ? tokenRequest : undefined} />}</WebsiteFeatureSourceContext.Provider></LoomPickerActionsProvider></SiteMenuActionsProvider>
 }

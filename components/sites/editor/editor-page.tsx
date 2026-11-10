@@ -20,6 +20,7 @@ import { readSiteStyle } from '@/lib/theme/site-style'
 import { readMegaTheme } from '@/lib/theme/mega-theme'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { ConnectedWebsiteEditor } from './website-editor'
+import { tokenRequestsEnabled } from '@/lib/sites/token-request'
 import { shadowLogLines, shadowReport } from '@/lib/builder/shadow'
 import { config as editorConfig } from '@/lib/page-editor/config'
 import { NETWORK_FONT_CLASS } from '../network-fonts'
@@ -62,5 +63,5 @@ export async function WebsiteEditorPage({ host, space: cached, token, builder }:
     seasonNow: { ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()), next: live.events.find((event) => /circle night/i.test(event.title))?.startsAt ?? null },
     admin: siteAdminLinks(chrome.origin, space.slug, '', 'editor', readSiteStyle(space.preferences).theme === 'network' ? 'network' : readSiteStyle(space.preferences).theme === 'wildheart' ? 'wildheart' : undefined),
   }
-  return <ConnectedWebsiteEditor builder={builder} host={host} brandName={brandName} logo={space.brandLogoUrl} brandAccent={space.brandAccent} author={person?.name ?? 'You'} initial={initial} firstOpen={initial.revision === 0 && !initial.published} metadata={{ space: content, websiteFeatures, websiteChrome, niche: readMegaTheme(space.preferences).niche }} live={live} links={chrome.siteLinks} origin={chrome.origin} siteStyle={readSiteStyle(space.preferences)} defaultAccent={defaultAccentForType(space.type)} domain={space.domain ?? null} fontClass={`${NETWORK_FONT_CLASS} ${WILDHEART_FONT_CLASS} ${TEMPLE_FONT_CLASS} ${MIDNIGHT_FONT_CLASS} ${DESIGNER_FONT_CLASS} ${NETWORK_KIT_FONT_CLASS}`} />
+  return <ConnectedWebsiteEditor builder={builder} tokenRequestsOpen={tokenRequestsEnabled()} host={host} brandName={brandName} logo={space.brandLogoUrl} brandAccent={space.brandAccent} author={person?.name ?? 'You'} initial={initial} firstOpen={initial.revision === 0 && !initial.published} metadata={{ space: content, websiteFeatures, websiteChrome, niche: readMegaTheme(space.preferences).niche }} live={live} links={chrome.siteLinks} origin={chrome.origin} siteStyle={readSiteStyle(space.preferences)} defaultAccent={defaultAccentForType(space.type)} domain={space.domain ?? null} fontClass={`${NETWORK_FONT_CLASS} ${WILDHEART_FONT_CLASS} ${TEMPLE_FONT_CLASS} ${MIDNIGHT_FONT_CLASS} ${DESIGNER_FONT_CLASS} ${NETWORK_KIT_FONT_CLASS}`} />
 }
