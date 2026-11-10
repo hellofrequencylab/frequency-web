@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-1202",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10",
+    "verify": {
+      "kind": "manual",
+      "checked": "2026-11-10",
+      "evidence": "Production audit 2026-11-10 (Remote Control session on the owner's Mac, read-only, https://frequencylocal.com): / , /themes, /create-a-space, /pricing and /the-community at 390 and 1280 all returned 200 with 0px overflow, 0 page errors and no axe serious or critical findings."
+    }
+  },
+  "append": {
+    "detail": "\n\nClosed 2026-11-10: the /themes contrast fix verified on production. Production audit 2026-11-10 (Remote Control session on the owner's Mac, read-only, https://frequencylocal.com): / , /themes, /create-a-space, /pricing and /the-community at 390 and 1280 all returned 200 with 0px overflow, 0 page errors and no axe serious or critical findings."
+  }
+}

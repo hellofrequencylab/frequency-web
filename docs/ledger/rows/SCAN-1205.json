@@ -1,0 +1,6 @@
+{
+  "id": "SCAN-1205",
+  "append": {
+    "detail": "\n\n2026-11-10 production audit (read-only, headless Chromium, signed out): / , /pricing and /the-community at 390 and 1280 showed no page errors and no React #418. Daniel's own incognito browser did show #418 on / at ~05:05Z, so it is intermittent or browser-specific (a browser extension or an injected ad/analytics script is the likely cause, since the page is static). Stays open at P3. Next step if it recurs: reproduce in the owner's browser with extensions off to rule that out."
+  }
+}
