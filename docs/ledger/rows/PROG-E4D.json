@@ -1,0 +1,19 @@
+{
+  "id": "PROG-E4D",
+  "title": "Editor E4 remainder: the RSC-canvas parity harness",
+  "status": "open",
+  "priority": "P2",
+  "lane": "program",
+  "size": "M",
+  "wave": "W4",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E4"
+  },
+  "detail": "Split from PROG-E4C on 2026-11-10. The canvas shows client-rendered content in the preview frame; the E4 definition also wants proof that what the frame draws matches what the server renders for the same document (RSC parity), so the editor never shows a page the visitor does not get. Dark.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");process.exit(fs.existsSync(\"components/builder/canvas/rsc-parity.test.tsx\")?0:1)'",
+    "note": "Fails on main: no parity test exists. Passes once components/builder/canvas/rsc-parity.test.tsx exists and the suite is green."
+  }
+}
