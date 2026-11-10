@@ -51,7 +51,7 @@ describe('the Mindless door (LIVE-2245)', () => {
   })
   it('the minus and plus beside the orb step the length by one, and a preset sets it', () => {
     render('still', 'free')
-    act(() => buttons().find((b) => b.getAttribute('aria-label') === 'One minute more')!.click())
+    act(() => buttons().find((b) => b.textContent === 'One minute more')!.click())
     expect(minutesField()!.value).toBe('11')
     act(() => host.querySelector<HTMLButtonElement>('[aria-label="Length presets in minutes"] [aria-label="20 minutes"]')!.click())
     expect(minutesField()!.value).toBe('20')

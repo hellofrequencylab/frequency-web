@@ -134,12 +134,12 @@ export function MoveSections({
   return (
     <div className="overflow-hidden rounded-[20px] bg-surface ring-1 ring-inset ring-border lift-1" aria-label="Settings">
       {plan && (
-        <MenuRow icon={config.mode === 'yoga' ? <Flower2 className="h-[18px] w-[18px]" /> : <Dumbbell className="h-[18px] w-[18px]" />} name="Plan" summary={plan.text} open={openRow === 'plan'} onToggle={() => onToggleRow('plan')}>
+        <MenuRow icon={config.mode === 'yoga' ? <Flower2 className="h-4.5 w-4.5" /> : <Dumbbell className="h-4.5 w-4.5" />} name="Plan" summary={plan.text} open={openRow === 'plan'} onToggle={() => onToggleRow('plan')}>
           <PlanControls config={config} onConfig={onConfig} locked={locked} web={false} />
         </MenuRow>
       )}
       {cue && (
-        <MenuRow icon={<DialIcon className="h-[18px] w-[18px]" />} name="Cues" summary={cue.value ? `${cue.label} every ${cue.value} min` : 'None'} open={openRow === 'cues'} onToggle={() => onToggleRow('cues')}>
+        <MenuRow icon={<DialIcon className="h-4.5 w-4.5" />} name="Cues" summary={cue.value ? `${cue.label} every ${cue.value} min` : 'None'} open={openRow === 'cues'} onToggle={() => onToggleRow('cues')}>
           <fieldset disabled={locked} className="flex min-w-0 flex-col gap-1.5 border-0 p-0 disabled:opacity-60">
             <RowLabel>{cue.label}</RowLabel>
             <Segmented label={cue.label} size="sm" value={cue.value} options={cue.options.map((o) => ({ value: o.value as number, label: o.value ? `${o.value} min` : 'None' }))} onChange={cue.onChange} />

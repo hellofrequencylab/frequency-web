@@ -35,8 +35,8 @@ export function Segmented<V extends string | number | null>({
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }) {
-  const h = size === 'sm' ? 'h-[38px] rounded-[9px] text-body-sm' : size === 'lg' ? 'h-11 rounded-[10px] text-body' : 'h-10 rounded-[10px] text-body-sm'
-  const pad = size === 'sm' ? 'gap-[3px] p-[3px] rounded-[12px]' : 'gap-1 p-1'
+  const h = size === 'sm' ? 'h-9.5 rounded-[9px] text-body-sm' : size === 'lg' ? 'h-11 rounded-[10px] text-body' : 'h-10 rounded-[10px] text-body-sm'
+  const pad = size === 'sm' ? 'gap-0.75 p-0.75 rounded-[12px]' : 'gap-1 p-1'
   return (
     <div role="group" aria-label={label} className={`grid ${TRACK} ${pad} ${className}`} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
       {options.map((o) => (
@@ -64,7 +64,7 @@ export function Tiles<V extends string>({
   options,
   onChange,
   columns,
-  height = 'h-[60px]',
+  height = 'h-15',
   className = '',
 }: {
   label: string
@@ -120,7 +120,7 @@ export function Stepper({
     ? 'flex h-11 w-9 items-center justify-center text-text disabled:opacity-35'
     : 'flex h-9 w-11 items-center justify-center rounded-pill bg-surface-elevated text-text disabled:opacity-35'
   return (
-    <div className={field ? 'flex h-[52px] items-center rounded-control bg-surface pl-3.5 pr-1 ring-1 ring-inset ring-border-strong' : 'flex h-11 items-center'}>
+    <div className={field ? 'flex h-13 items-center rounded-control bg-surface pl-3.5 pr-1 ring-1 ring-inset ring-border-strong' : 'flex h-11 items-center'}>
       <span className={`flex-1 text-body-sm font-medium ${field ? 'text-muted' : 'text-text'}`}>{label}</span>
       <button type="button" aria-label={`${label} down`} disabled={lessDisabled} onClick={onLess} className={btn}>
         <Minus className="h-3.5 w-3.5" aria-hidden />
@@ -172,7 +172,7 @@ export function Slider({
       onChange={(e) => onChange(Number(e.target.value))}
       onPointerUp={(e) => onCommit?.(Number(e.currentTarget.value))}
       onKeyUp={(e) => onCommit?.(Number(e.currentTarget.value))}
-      className={`m-0 h-7 ${inline ? 'w-[110px]' : 'w-full'} ${color}`}
+      className={`m-0 h-7 ${inline ? 'w-27.5' : 'w-full'} ${color}`}
     />
   )
   if (stacked) {
@@ -237,11 +237,11 @@ export function MenuRow({
   const panelId = useId()
   return (
     <div className="[&:not(:first-child)]:border-t [&:not(:first-child)]:border-border">
-      <button type="button" aria-expanded={open} aria-controls={panelId} onClick={onToggle} className="flex h-[52px] w-full items-center gap-3 pl-4 pr-3.5 text-left">
+      <button type="button" aria-expanded={open} aria-controls={panelId} onClick={onToggle} className="flex h-13 w-full items-center gap-3 pl-4 pr-3.5 text-left">
         <span className="shrink-0 text-muted" aria-hidden>{icon}</span>
         <span className="shrink-0 text-body-sm font-semibold text-text">{name}</span>
         <span className="min-w-0 flex-1 truncate text-right text-body-sm text-muted">{summary}</span>
-        <ChevronDown className={`h-[15px] w-[15px] shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
+        <ChevronDown className={`h-3.75 w-3.75 shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
       </button>
       {open && (
         <div id={panelId} className="flex flex-col gap-2.5 px-4 pb-3.5">

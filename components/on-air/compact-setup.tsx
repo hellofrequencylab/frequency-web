@@ -122,7 +122,7 @@ const MOVE_PRESETS: Record<MovementMode, readonly number[]> = {
   play: [],
 }
 
-const ICON = 'h-[18px] w-[18px]'
+const ICON = 'h-4.5 w-4.5'
 const STILL_ICON: Record<SessionMode, ReactNode> = {
   timer: <LotusIcon className={ICON} />,
   breath: <BreatheIcon className={ICON} />,
@@ -341,7 +341,7 @@ export function CompactSetup({
     onStart(choice())
   }
   const goLabel = logOnly ? 'Log it' : continuing ? `Continue, ${remainingMin} min left` : 'Start timer'
-  const goIcon = logOnly ? <BoltIcon className="h-[18px] w-[18px]" /> : <DialIcon className="h-[18px] w-[18px]" />
+  const goIcon = logOnly ? <BoltIcon className="h-4.5 w-4.5" /> : <DialIcon className="h-4.5 w-4.5" />
   const startFresh = () => patch({ freshFor: practice?.id ?? null, custom: null, typed: null })
 
   // Keyboard: Esc closes; on the web Enter starts (unless a field or button has focus) and the arrows
@@ -415,7 +415,7 @@ export function CompactSetup({
   const orbSize = openCount || logOnly ? 'text-display-h3' : plan ? 'text-display-h2' : 'text-display-h1'
   const readout = !editable && (continuing || authored || openCount)
   const readoutText = continuing ? `${remainingMin} min left of ${targetMin}. ${bankedMin} min banked today.` : authored ? `${minutes} min, set by ${practice?.title}` : 'Open. It counts up until you stop.'
-  const readoutIcon = continuing ? <DialIcon className="h-[17px] w-[17px]" /> : openCount ? <Volleyball className="h-[17px] w-[17px]" aria-hidden /> : <Lock className="h-[17px] w-[17px]" aria-hidden />
+  const readoutIcon = continuing ? <DialIcon className="h-4.25 w-4.25" /> : openCount ? <Volleyball className="h-4.25 w-4.25" aria-hidden /> : <Lock className="h-4.25 w-4.25" aria-hidden />
 
   const practiceRows = available.map((p) => {
     const on = p.id === practice?.id
@@ -427,7 +427,7 @@ export function CompactSetup({
     const meta = p.logsAs ? 'Any style, any length' : [styleName, length, p.durationLocked ? 'fixed' : null].filter(Boolean).join(', ')
     const tag = left ? { text: `${left} min left`, look: 'bg-primary-bg text-text' } : p.loggedToday ? { text: 'Done', look: 'bg-presence-bg text-presence', done: true } : on && journeyLabel ? { text: journeyLabel, look: 'bg-primary-bg text-primary-strong' } : p.durationLocked && !p.logsAs ? { text: 'Fixed', look: 'bg-surface-elevated text-text' } : null
     const sheetMeta = left ? `${left} min left` : p.loggedToday ? `Done today · ${meta}` : meta
-    return { p, on, meta, sheetMeta, tag, icon: p.logsAs ? <Sparkles className="h-[17px] w-[17px]" aria-hidden /> : mode === 'move' ? MOVE_ICON[style!.mode] : STILL_ICON[stillModeFor(p, p.id === explicitPracticeId)] }
+    return { p, on, meta, sheetMeta, tag, icon: p.logsAs ? <Sparkles className="h-4.25 w-4.25" aria-hidden /> : mode === 'move' ? MOVE_ICON[style!.mode] : STILL_ICON[stillModeFor(p, p.id === explicitPracticeId)] }
   })
 
   const stillTiles = SESSION_MODE_ORDER.map((m) => ({ value: m, label: SESSION_MODE_META[m].label, icon: STILL_ICON[m], disabled: (practice?.timerKind === 'none' && m !== 'log') || (styleLocked && m !== stillMode) }))
@@ -441,7 +441,7 @@ export function CompactSetup({
       type="button"
       onClick={go}
       disabled={goDisabled}
-      className={`flex items-center justify-center gap-2.5 rounded-pill font-semibold lift-2 transition-opacity disabled:opacity-40 ${accentBtn} ${size === 'sheet' ? 'h-14 w-full text-body' : 'h-12 min-w-[220px] px-[22px] text-body-sm'}`}
+      className={`flex items-center justify-center gap-2.5 rounded-pill font-semibold lift-2 transition-opacity disabled:opacity-40 ${accentBtn} ${size === 'sheet' ? 'h-14 w-full text-body' : 'h-12 min-w-55 px-5.5 text-body-sm'}`}
     >
       {goIcon}
       {goLabel}
@@ -480,10 +480,10 @@ export function CompactSetup({
     return (
       <div className="fixed inset-0 z-50 overflow-y-auto bg-canvas">
         <div className="flex min-h-dvh items-center justify-center bg-surface-elevated/55 p-8">
-          <div ref={panel} role="dialog" aria-modal="true" aria-label="Mindless timer setup" tabIndex={-1} className="flex h-[min(780px,calc(100dvh-64px))] w-full max-w-[1060px] flex-col overflow-hidden rounded-[28px] bg-surface ring-1 ring-inset ring-border lift-3 outline-none">
-            <header className="flex h-[68px] shrink-0 items-center gap-9 border-b border-border pl-7 pr-5">
-              <span className="flex items-center gap-2.5 text-meta font-bold uppercase tracking-[0.32em] text-text">
-                <LotusIcon className="h-[22px] w-[22px]" /> Mindless
+          <div ref={panel} role="dialog" aria-modal="true" aria-label="Mindless timer setup" tabIndex={-1} className="flex h-[min(780px,calc(100dvh-64px))] w-full max-w-265 flex-col overflow-hidden rounded-[28px] bg-surface ring-1 ring-inset ring-border lift-3 outline-none">
+            <header className="flex h-17 shrink-0 items-center gap-9 border-b border-border pl-7 pr-5">
+              <span className="eyebrow flex items-center gap-2.5 text-text">
+                <LotusIcon className="h-5.5 w-5.5" /> Mindless
               </span>
               <div role="tablist" aria-label="Timer mode" className="flex gap-7 self-stretch">
                 {(['still', 'move'] as const).map((m) => (
@@ -495,7 +495,7 @@ export function CompactSetup({
                     onClick={() => switchMode(m)}
                     className={`flex items-center gap-2 px-0.5 text-body-sm font-semibold ${mode === m ? `text-text ${m === 'move' ? 'shadow-[inset_0_-2px_0_var(--color-move)]' : 'shadow-[inset_0_-2px_0_var(--color-text)]'}` : 'text-muted hover:text-text'}`}
                   >
-                    {m === 'still' ? <LotusIcon className="h-[17px] w-[17px]" /> : <Footprints className="h-[17px] w-[17px]" aria-hidden />}
+                    {m === 'still' ? <LotusIcon className="h-4.25 w-4.25" /> : <Footprints className="h-4.25 w-4.25" aria-hidden />}
                     {m === 'still' ? 'Be Still' : 'Get Moving'}
                   </button>
                 ))}
@@ -504,23 +504,23 @@ export function CompactSetup({
               <span className="text-body-sm text-subtle">{MINDLESS_TAGLINE}</span>
               <button type="button" aria-label="Close" onClick={onClose} className="flex h-10 items-center gap-2 rounded-pill pl-3 pr-2.5 text-meta font-medium text-muted hover:text-text">
                 <Keycap className="ring-border-strong">Esc</Keycap>
-                <X className="h-[18px] w-[18px]" aria-hidden />
+                <X className="h-4.5 w-4.5" aria-hidden />
               </button>
             </header>
             <div className="grid min-h-0 flex-1 grid-cols-[264px_minmax(0,1fr)] min-[1200px]:grid-cols-[300px_minmax(0,1fr)]">
-              <aside aria-label="Your practices" className="flex min-h-0 flex-col gap-3 overflow-y-auto border-r border-border bg-surface-elevated px-3.5 pb-[18px] pt-[22px]">
-                <span className="px-2.5 font-display text-2xs font-medium uppercase tracking-[0.14em] text-muted">Today</span>
+              <aside aria-label="Your practices" className="flex min-h-0 flex-col gap-3 overflow-y-auto border-r border-border bg-surface-elevated px-3.5 pb-4.5 pt-5.5">
+                <span className="eyebrow px-2.5 text-muted">Today</span>
                 <div className="flex flex-col gap-1">
                   {practiceRows.map(({ p, on, meta, tag, icon }) => (
-                    <button key={p.id} type="button" aria-pressed={on} aria-label={`${p.title}`} onClick={() => pickPractice(p)} className={`flex min-h-[60px] items-center gap-3 rounded-[16px] px-3 py-2.5 text-left transition-colors ${on ? 'bg-surface ring-[1.5px] ring-inset ring-text lift-1' : 'hover:bg-surface/60'}`}>
-                      <span className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[11px] text-text ${on ? 'bg-surface-elevated' : 'bg-surface'}`}>{icon}</span>
-                      <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                    <button key={p.id} type="button" aria-pressed={on} aria-label={`${p.title}`} onClick={() => pickPractice(p)} className={`flex min-h-15 items-center gap-3 rounded-[16px] px-3 py-2.5 text-left transition-colors ${on ? 'bg-surface ring-[1.5px] ring-inset ring-text lift-1' : 'hover:bg-surface/60'}`}>
+                      <span className={`flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-[11px] text-text ${on ? 'bg-surface-elevated' : 'bg-surface'}`}>{icon}</span>
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.75">
                         <span className="truncate text-body-sm font-semibold text-text">{p.title}</span>
                         <span className="truncate text-meta text-muted">{meta}</span>
                       </span>
                       {tag && (
-                        <span className={`flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-pill px-[9px] text-2xs font-semibold ${tag.look}`}>
-                          {tag.done && <Check className="h-[11px] w-[11px]" strokeWidth={2.6} aria-hidden />}
+                        <span className={`flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-pill px-2.25 text-2xs font-semibold ${tag.look}`}>
+                          {tag.done && <Check className="h-2.75 w-2.75" strokeWidth={2.6} aria-hidden />}
                           {tag.text}
                         </span>
                       )}
@@ -530,15 +530,15 @@ export function CompactSetup({
                 <span className="flex-1" />
                 {practicedToday >= 3 && (
                   <span className="flex items-center gap-2 px-2.5 text-meta text-muted">
-                    <span className="h-[7px] w-[7px] rounded-pill bg-primary" aria-hidden />
+                    <span className="h-1.75 w-1.75 rounded-pill bg-primary" aria-hidden />
                     {practicedToday} members practiced today
                   </span>
                 )}
               </aside>
-              <main className="flex min-h-0 flex-col gap-[26px] overflow-y-auto px-9 pb-7 pt-[26px]">
+              <main className="flex min-h-0 flex-col gap-6.5 overflow-y-auto px-9 pb-7 pt-6.5">
                 <div className="flex items-center gap-4">
                   <span className="fq-breathe h-12 w-12 shrink-0 rounded-pill ring-1 ring-inset ring-surface/70 lift-2 motion-reduce:animate-none" aria-hidden style={{ background: orbFill }} />
-                  <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.25">
                     <h2 id={titleId} className="m-0 font-display text-display-card font-medium leading-tight tracking-[-0.04em] text-text">{practice?.title}</h2>
                     <span className="text-body-sm text-muted">{headline}</span>
                   </div>
@@ -562,12 +562,12 @@ export function CompactSetup({
                       <Segmented label="Length presets" className="flex-[1_1_320px]" value={minutes} options={presets.map((m) => ({ value: m, label: `${m} min` }))} onChange={pickLength} />
                       <div className={`flex h-12 shrink-0 items-center rounded-control bg-surface ring-inset ${invalid ? 'ring-[1.5px] ring-danger' : 'ring-1 ring-border-strong'}`}>
                         <button type="button" aria-label="One minute less" onClick={() => stepLength(-1)} className="flex h-12 w-10 items-center justify-center text-text">
-                          <Minus className="h-[15px] w-[15px]" aria-hidden />
+                          <Minus className="h-3.75 w-3.75" aria-hidden />
                         </button>
                         {minutesInput('h-10 w-11 border-0 text-center text-card-title font-semibold tabular-nums text-text')}
                         <span className="text-body-sm font-medium text-muted">min</span>
                         <button type="button" aria-label="One minute more" onClick={() => stepLength(1)} className="flex h-12 w-10 items-center justify-center text-text">
-                          <Plus className="h-[15px] w-[15px]" aria-hidden />
+                          <Plus className="h-3.75 w-3.75" aria-hidden />
                         </button>
                       </div>
                     </div>
@@ -577,7 +577,7 @@ export function CompactSetup({
                 {readout && (
                   <section className="flex flex-col gap-2.5">
                     <span className="text-body-sm font-semibold text-text">Length</span>
-                    <div role="group" aria-label={continuing ? 'Continue or start fresh' : 'Length'} className="flex min-h-[52px] items-center gap-3 rounded-control bg-surface-elevated px-4">
+                    <div role="group" aria-label={continuing ? 'Continue or start fresh' : 'Length'} className="flex min-h-13 items-center gap-3 rounded-control bg-surface-elevated px-4">
                       <span className="text-muted">{readoutIcon}</span>
                       <span className="flex-1 text-body font-semibold text-text">{readoutText}</span>
                       {continuing && (
@@ -607,16 +607,17 @@ export function CompactSetup({
   const pickerField = (open: boolean) => `flex h-14 min-w-0 items-center gap-2 rounded-[16px] bg-surface pl-3.5 pr-3 text-left ${open ? 'ring-[1.5px] ring-inset ring-text' : 'ring-1 ring-inset ring-border lift-1'}`
   return (
     <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="fixed inset-0 z-50 overflow-y-auto bg-canvas outline-none">
-      <div className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col px-5">
+      <div className="mx-auto flex min-h-dvh w-full max-w-120 flex-col px-5">
         <div className="flex items-center justify-between pt-[max(14px,env(safe-area-inset-top))]">
-          <span id={titleId} className="flex items-center gap-2.5 text-meta font-bold uppercase tracking-[0.32em] text-text">
-            <LotusIcon className="h-[22px] w-[22px]" /> Mindless
+          <span id={titleId} className="eyebrow flex items-center gap-2.5 text-text">
+            <LotusIcon className="h-5.5 w-5.5" /> Mindless
           </span>
-          <button type="button" aria-label="Close" onClick={onClose} className="-mr-2.5 flex h-11 w-11 items-center justify-center rounded-pill text-muted hover:text-text">
-            <X className="h-[18px] w-[18px]" aria-hidden />
+          <button type="button" onClick={onClose} className="-mr-2.5 flex h-11 w-11 items-center justify-center rounded-pill text-muted hover:text-text">
+            <X className="h-4.5 w-4.5" aria-hidden />
+            <span className="sr-only">Close</span>
           </button>
         </div>
-        <div role="tablist" aria-label="Timer mode" className="mb-[22px] mt-2 grid grid-cols-2 gap-1 rounded-pill bg-surface-elevated p-1">
+        <div role="tablist" aria-label="Timer mode" className="mb-5.5 mt-2 grid grid-cols-2 gap-1 rounded-pill bg-surface-elevated p-1">
           {(['still', 'move'] as const).map((m) => (
             <button
               key={m}
@@ -624,7 +625,7 @@ export function CompactSetup({
               role="tab"
               aria-selected={mode === m}
               onClick={() => switchMode(m)}
-              className={`flex h-11 items-center justify-center gap-[7px] rounded-pill text-body-sm font-semibold transition-colors ${mode === m ? tabOn[m] : 'text-muted'}`}
+              className={`flex h-11 items-center justify-center gap-1.75 rounded-pill text-body-sm font-semibold transition-colors ${mode === m ? tabOn[m] : 'text-muted'}`}
             >
               {m === 'still' ? <LotusIcon className="h-4 w-4" /> : <Footprints className="h-4 w-4" aria-hidden />}
               {m === 'still' ? 'Be Still' : 'Get Moving'}
@@ -634,30 +635,32 @@ export function CompactSetup({
 
         <div className="flex flex-col items-center gap-4">
           <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center">
-            <button type="button" aria-label="One minute less" disabled={!editable} onClick={() => stepLength(-1)} className="flex h-12 w-12 items-center justify-center justify-self-center rounded-pill bg-surface text-text ring-1 ring-inset ring-border lift-1 disabled:opacity-30">
-              <Minus className="h-[18px] w-[18px]" aria-hidden />
+            <button type="button" disabled={!editable} onClick={() => stepLength(-1)} className="flex h-12 w-12 items-center justify-center justify-self-center rounded-pill bg-surface text-text ring-1 ring-inset ring-border lift-1 disabled:opacity-30">
+              <Minus className="h-4.5 w-4.5" aria-hidden />
+              <span className="sr-only">One minute less</span>
             </button>
-            <div className="relative flex h-[164px] w-[164px] items-center justify-center">
+            <div className="relative flex h-41 w-41 items-center justify-center">
               <span className="fq-breathe absolute -inset-[8%] rounded-pill opacity-50 blur-[22px] motion-reduce:animate-none" aria-hidden style={{ background: orbFill }} />
               <span className="fq-breathe absolute inset-0 rounded-pill ring-1 ring-inset ring-surface/70 motion-reduce:animate-none" aria-hidden style={{ background: orbFill }} />
               {/* The number sits on the pale orb in both day and night, so it reads in the fixed ink. */}
               <div className="relative flex flex-col items-center gap-1.5 text-ink">
                 {editable ? (
-                  minutesInput(`w-[110px] border-0 p-0 text-center font-display font-medium leading-none tracking-[-0.05em] ${orbSize} ${invalid ? 'text-danger' : 'text-ink'}`)
+                  minutesInput(`w-27.5 border-0 p-0 text-center font-display font-medium leading-none tracking-[-0.05em] ${orbSize} ${invalid ? 'text-danger' : 'text-ink'}`)
                 ) : (
                   <span className={`font-display font-medium leading-none tracking-[-0.05em] tabular-nums ${orbSize}`}>{orbValue}</span>
                 )}
-                <span className="font-display text-2xs font-medium uppercase tracking-[0.14em] opacity-70">{orbUnit}</span>
+                <span className="eyebrow opacity-70">{orbUnit}</span>
               </div>
             </div>
-            <button type="button" aria-label="One minute more" disabled={!editable} onClick={() => stepLength(1)} className="flex h-12 w-12 items-center justify-center justify-self-center rounded-pill bg-surface text-text ring-1 ring-inset ring-border lift-1 disabled:opacity-30">
-              <Plus className="h-[18px] w-[18px]" aria-hidden />
+            <button type="button" disabled={!editable} onClick={() => stepLength(1)} className="flex h-12 w-12 items-center justify-center justify-self-center rounded-pill bg-surface text-text ring-1 ring-inset ring-border lift-1 disabled:opacity-30">
+              <Plus className="h-4.5 w-4.5" aria-hidden />
+              <span className="sr-only">One minute more</span>
             </button>
           </div>
           {editable && <Segmented label="Length presets in minutes" size="lg" className="w-full" value={minutes} options={presets.map((m) => ({ value: m, label: String(m), aria: `${m} minutes` }))} onChange={pickLength} />}
           {orbLine && (
             <p role={orbLine.role} className={`m-0 flex items-center gap-1.5 text-center text-body-sm font-medium ${orbLine.live ? 'text-danger' : 'text-muted'}`}>
-              {orbLine.lock && <Lock className="h-[13px] w-[13px]" aria-hidden />}
+              {orbLine.lock && <Lock className="h-3.25 w-3.25" aria-hidden />}
               {orbLine.text}
             </p>
           )}
@@ -670,30 +673,30 @@ export function CompactSetup({
               <span className="text-2xs font-medium text-muted">Practice</span>
               <span className="truncate text-body font-semibold text-text">{practice?.title}</span>
             </span>
-            <ChevronDown className={`h-[15px] w-[15px] shrink-0 text-muted transition-transform ${picker === 'practice' ? 'rotate-180' : ''}`} aria-hidden />
+            <ChevronDown className={`h-3.75 w-3.75 shrink-0 text-muted transition-transform ${picker === 'practice' ? 'rotate-180' : ''}`} aria-hidden />
           </button>
           <button type="button" aria-expanded={picker === 'how'} onClick={() => togglePicker('how')} className={pickerField(picker === 'how')}>
             <span className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="flex items-center gap-1 text-2xs font-medium text-muted">
-                How {styleLocked && <Lock className="h-[11px] w-[11px]" aria-hidden />}
+                How {styleLocked && <Lock className="h-2.75 w-2.75" aria-hidden />}
               </span>
               <span className="flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-body font-semibold text-text">
-                <span className="[&>svg]:h-[15px] [&>svg]:w-[15px]">{styleIcon}</span>
+                <span className="[&>svg]:h-3.75 [&>svg]:w-3.75">{styleIcon}</span>
                 {styleLabel}
               </span>
             </span>
-            <ChevronDown className={`h-[15px] w-[15px] shrink-0 text-muted transition-transform ${picker === 'how' ? 'rotate-180' : ''}`} aria-hidden />
+            <ChevronDown className={`h-3.75 w-3.75 shrink-0 text-muted transition-transform ${picker === 'how' ? 'rotate-180' : ''}`} aria-hidden />
           </button>
         </div>
         {picker === 'practice' && (
           <div role="group" aria-label="Your practices" className="mt-2 flex flex-col gap-0.5 rounded-[20px] bg-surface p-1.5 ring-1 ring-inset ring-border lift-2">
             {practiceRows.map(({ p, on, sheetMeta }) => (
-              <button key={p.id} type="button" aria-pressed={on} onClick={() => pickPractice(p)} className={`flex min-h-[52px] items-center gap-3 rounded-control px-3 py-2 text-left ${on ? 'bg-surface-elevated' : ''}`}>
-                <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+              <button key={p.id} type="button" aria-pressed={on} onClick={() => pickPractice(p)} className={`flex min-h-13 items-center gap-3 rounded-control px-3 py-2 text-left ${on ? 'bg-surface-elevated' : ''}`}>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.75">
                   <span className="text-body font-semibold text-text">{p.title}</span>
                   <span className="text-meta text-muted">{sheetMeta}</span>
                 </span>
-                {on && <Check className="h-[18px] w-[18px] text-text" aria-hidden />}
+                {on && <Check className="h-4.5 w-4.5 text-text" aria-hidden />}
               </button>
             ))}
           </div>
@@ -716,7 +719,7 @@ export function CompactSetup({
         <div className="min-h-4 flex-1" />
         <div className="sticky bottom-0 z-[2] flex flex-col gap-1.5 bg-gradient-to-t from-canvas from-72% to-transparent pb-[max(12px,env(safe-area-inset-bottom))] pt-2.5">
           {goButton('sheet')}
-          <div role={continuing ? 'group' : undefined} aria-label={continuing ? 'Continue or start fresh' : undefined} className="flex min-h-[22px] items-center justify-center gap-2.5 text-center text-body-sm text-muted">
+          <div role={continuing ? 'group' : undefined} aria-label={continuing ? 'Continue or start fresh' : undefined} className="flex min-h-5.5 items-center justify-center gap-2.5 text-center text-body-sm text-muted">
             <span>{sessionLine}</span>
             {continuing && (
               <button type="button" onClick={startFresh} className="h-8 px-1 text-body-sm font-semibold text-text underline underline-offset-[3px]">

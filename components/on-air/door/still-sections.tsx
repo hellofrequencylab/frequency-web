@@ -60,7 +60,7 @@ function CustomSliders({ still, set, accent, columns }: { still: TimerSettings['
 function HowItWorks({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
     <button type="button" aria-expanded={open} onClick={onToggle} className="flex h-8 items-center gap-1.5 px-1 text-body-sm font-medium text-muted hover:text-text">
-      <Info className="h-[15px] w-[15px]" aria-hidden /> How it works
+      <Info className="h-3.75 w-3.75" aria-hidden /> How it works
     </button>
   )
 }
@@ -79,7 +79,7 @@ export function BreathWebSection({ settings, set, accent }: { settings: TimerSet
   const pattern = currentPattern(settings.still)
   return (
     <WebSection label="Breath pattern" aside={<HowItWorks open={how} onToggle={() => setHow((v) => !v)} />}>
-      <Tiles label="Breath pattern" columns={6} height="h-[52px]" value={settings.still.patternSlug} options={tileOptions()} onChange={(slug) => set({ still: { patternSlug: slug } })} />
+      <Tiles label="Breath pattern" columns={6} height="h-13" value={settings.still.patternSlug} options={tileOptions()} onChange={(slug) => set({ still: { patternSlug: slug } })} />
       {how && <Instructions pattern={pattern} />}
       {settings.still.patternSlug === 'custom' && <CustomSliders still={settings.still} set={set} accent={accent} columns />}
     </WebSection>
@@ -92,7 +92,7 @@ function BreathSection({ settings, set, accent, open, onToggle}: { settings: Tim
   const pattern = currentPattern(settings.still)
   const options = tileOptions().map((o) => ({ value: o.value, label: o.label }))
   return (
-    <MenuRow icon={<BreatheIcon className="h-[18px] w-[18px]" />} name="Breath" summary={describeBreath(settings.still)} open={open} onToggle={onToggle}>
+    <MenuRow icon={<BreatheIcon className="h-4.5 w-4.5" />} name="Breath" summary={describeBreath(settings.still)} open={open} onToggle={onToggle}>
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
           <RowLabel>Pattern</RowLabel>
@@ -114,7 +114,7 @@ function BreathSection({ settings, set, accent, open, onToggle}: { settings: Tim
 export function NoteField({ value, onChange, variant }: { value: string; onChange: (v: string) => void; variant: 'web' | 'sheet' | 'row' }) {
   const look =
     variant === 'web'
-      ? 'min-h-[88px] rounded-control bg-surface px-3.5 py-3 ring-1 ring-inset ring-border-strong'
+      ? 'min-h-22 rounded-control bg-surface px-3.5 py-3 ring-1 ring-inset ring-border-strong'
       : variant === 'sheet'
         ? 'min-h-20 rounded-[16px] bg-surface px-4 py-3 ring-1 ring-inset ring-border'
         : 'min-h-20 rounded-control bg-surface-elevated px-3.5 py-3'
@@ -159,7 +159,7 @@ export function StillSections({
     <div className="overflow-hidden rounded-[20px] bg-surface ring-1 ring-inset ring-border lift-1" aria-label="Settings">
       {breathMode && <BreathSection settings={settings} set={set} accent={scope.accent} open={openRow === 'breath'} onToggle={() => onToggleRow('breath')} />}
       {journal && (
-        <MenuRow icon={<BookOpen className="h-[18px] w-[18px]" />} name="Note" summary={note || 'Optional'} open={openRow === 'note'} onToggle={() => onToggleRow('note')}>
+        <MenuRow icon={<BookOpen className="h-4.5 w-4.5" />} name="Note" summary={note || 'Optional'} open={openRow === 'note'} onToggle={() => onToggleRow('note')}>
           <NoteField value={note} onChange={onNote} variant="row" />
         </MenuRow>
       )}

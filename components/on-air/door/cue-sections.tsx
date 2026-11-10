@@ -124,7 +124,7 @@ function pickBell(value: string, cues: CueSettings, scope: CueScope, set: (patch
 export function SoundSection({ cues, set, audio, scope, open, onToggle}: { cues: CueSettings; set: (patch: TimerSettingsPatch) => void; audio: DoorAudio; scope: CueScope; open: boolean; onToggle: () => void }) {
   const on = cues[scope.flag]
   return (
-    <MenuRow icon={<BellCueIcon className="h-[18px] w-[18px]" />} name="Sound" summary={describeSound(cues, scope)} open={open} onToggle={onToggle}>
+    <MenuRow icon={<BellCueIcon className="h-4.5 w-4.5" />} name="Sound" summary={describeSound(cues, scope)} open={open} onToggle={onToggle}>
       <div className="flex flex-col gap-1.5">
         <RowLabel>Bell, tap to hear it</RowLabel>
         <Segmented label="Bell" size="sm" value={on ? cues.bellTone : 'off'} options={bellOptions()} onChange={(v) => pickBell(v, cues, scope, set, audio)} />
@@ -143,7 +143,7 @@ export function SoundSection({ cues, set, audio, scope, open, onToggle}: { cues:
 
 export function AmbientSection({ cues, set, audio, accent, open, onToggle }: { cues: CueSettings; set: (patch: TimerSettingsPatch) => void; audio: DoorAudio; accent: 'still' | 'move'; open: boolean; onToggle: () => void }) {
   return (
-    <MenuRow icon={<Waves className="h-[18px] w-[18px]" />} name="Ambient" summary={describeAmbient(cues)} open={open} onToggle={onToggle}>
+    <MenuRow icon={<Waves className="h-4.5 w-4.5" />} name="Ambient" summary={describeAmbient(cues)} open={open} onToggle={onToggle}>
       <div className="flex flex-col gap-1.5">
         <RowLabel>Track, tap to hear it</RowLabel>
         <Segmented
@@ -177,7 +177,7 @@ export function AmbientSection({ cues, set, audio, accent, open, onToggle }: { c
 
 export function FeelSection({ cues, set, open, onToggle }: { cues: CueSettings; set: (patch: TimerSettingsPatch) => void; open: boolean; onToggle: () => void }) {
   return (
-    <MenuRow icon={<VibrationIcon className="h-[18px] w-[18px]" />} name="Feel" summary={describeFeel(cues)} open={open} onToggle={onToggle}>
+    <MenuRow icon={<VibrationIcon className="h-4.5 w-4.5" />} name="Feel" summary={describeFeel(cues)} open={open} onToggle={onToggle}>
       <div className="flex flex-col gap-1.5">
         <RowLabel>Countdown</RowLabel>
         <Segmented label="Countdown" size="sm" value={cues.warmupSec} options={WARMUP_PRESETS.map((w) => ({ value: w as number, label: `${w} s` }))} onChange={(v) => set({ cues: { warmupSec: v } })} />
@@ -201,7 +201,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function SoundAndFeel({ cues, set, audio, scope }: { cues: CueSettings; set: (patch: TimerSettingsPatch) => void; audio: DoorAudio; scope: CueScope }) {
   const on = cues[scope.flag]
   return (
-    <WebSection label="Sound and feel" className="border-t border-border pt-[22px]">
+    <WebSection label="Sound and feel" className="border-t border-border pt-5.5">
       <div className="grid grid-cols-3 gap-3">
         <Field label="Bell">
           <Select aria-label="Bell" value={on ? cues.bellTone : 'off'} options={bellOptions()} onChange={(e) => pickBell(e.target.value, cues, scope, set, audio)} />
