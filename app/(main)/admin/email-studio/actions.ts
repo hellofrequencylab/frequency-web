@@ -42,7 +42,6 @@ import { sanitizeFromName, loadCampaignFromName, loadCampaignReplyMode, resolveC
 import { buildUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
-import { sendRawEmail } from '@/lib/email'
 import { BUILTIN_SEGMENTS, TRAIT_SEGMENT_PREFIX } from '@/lib/studio/campaigns'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { log } from '@/lib/log'
@@ -507,7 +506,7 @@ export async function saveEmailCampaign(
 
 /**
  * TEST send: deliver ONE copy of the campaign to the signed-in operator's own address. Writer-gated. Compiles
- * via compileEmailDoc, applies merge tags with EXAMPLE values, and sends a single email through sendRawEmail.
+ * via compileEmailDoc, applies merge tags with EXAMPLE values, and queues a single email through the durable outbox.
  * Never sends to a list, never clears the approval gate; records test_sent_at so the lifecycle UI can show
  * "tested".
  */
@@ -557,7 +556,12 @@ export async function sendTestEmail(id: string, toRaw?: string): Promise<ActionR
   // unhandled server-action error and trip the admin error boundary ("this view didn't load"). Catch it and
   // return a friendly, actionable failure so the composer shows an inline message and the page stays alive.
   try {
-    await sendRawEmail({ to, from, subject: `[Test] ${subject}`, html, text })
+    // Queue it, do not call the provider inline: with durable acceptance on, only a queue job carries the trusted
+    // context the provider boundary requires, so an inline send is refused. process-queue delivers it within minutes.
+    // Loaded on demand like data-blocks above: the draft-preservation probe (LIVE-877) stubs '@/lib/email' with a
+    // single export, and nothing there sends a test.
+    const { enqueueEmail } = await import('@/lib/email')
+    await enqueueEmail({ to, from, subject: `[Test] ${subject}`, html, text })
   } catch (e) {
     // Surface the provider's ACTUAL reason to the operator (this is a staff-gated action, so the raw
     // Resend error is safe + useful here) instead of throwing, which would trip the admin error boundary
