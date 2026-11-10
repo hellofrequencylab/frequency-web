@@ -304,7 +304,7 @@ export function Reveal({
           <StreakPanel payload={payload} />
         </Panel>
         <Panel>
-          <StatsPanel payload={payload} />
+          <StatsPanel payload={payload} onAction={onAction} />
         </Panel>
         <Panel>
           <DispatchPanel payload={payload} onClose={onClose} onAction={onAction} />
@@ -477,7 +477,7 @@ function StreakPanel({ payload }: { payload: RevealPayload }) {
 }
 
 // ③ Stats — airtime + depth + Amplitude.
-function StatsPanel({ payload }: { payload: RevealPayload }) {
+function StatsPanel({ payload, onAction }: { payload: RevealPayload; onAction?: () => void }) {
   const { stats } = payload
   // Only nudge a real, full timed sit: an "already counted" repeat or a partial
   // sit gets its own message on the Rewards card, never a depth ladder here.
@@ -530,7 +530,8 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
           <Flame className="h-3.5 w-3.5" aria-hidden /> {depthFlavor}
         </p>
       )}
-      <Link href="/crew/leaderboard" className="mt-3 inline-block text-meta font-semibold text-primary-strong hover:underline">
+      {/* Through onAction so the overlay drops after the link navigates (LIVE-2244), never a page under a takeover. */}
+      <Link href="/crew/leaderboard" onClick={() => onAction?.()} className="mt-3 inline-block text-meta font-semibold text-primary-strong hover:underline">
         Full stats →
       </Link>
     </div>
@@ -600,7 +601,7 @@ function DispatchPanel({
           in through (LIVE-801). Clicking it drops the overlay like the CTA above. */}
       <FunnelNextStep moment="mindless" onNavigate={onAction} className="mt-4 rounded-card border border-border bg-surface px-4 py-3 text-left" />
       <div className="mt-5 flex items-center justify-center gap-4">
-        <Link href="/on-air/dispatches" className="text-meta font-semibold text-subtle hover:text-text">
+        <Link href="/on-air/dispatches" onClick={() => onAction?.()} className="text-meta font-semibold text-subtle hover:text-text">
           Past Dispatches
         </Link>
         {/* A feed exit alongside the contextual CTA. Skipped when the CTA itself

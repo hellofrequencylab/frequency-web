@@ -83,6 +83,7 @@ import {
 import type { OnAirPrefs, RevealPayload } from '@/lib/on-air'
 import { MINUTE_MAX, clampMemberMinutes } from '@/lib/on-air/timer-settings'
 import { useSaveOnChange, useTimerSettings } from './use-timer-settings'
+import { takeUnlockedAudio } from '@/lib/on-air/timer-audio-unlock'
 import {
   loadLiveSession,
   saveLiveSession,
@@ -141,14 +142,14 @@ function buzz(pulse: number | number[] = 15) {
 
 /** The phase color: work banks success, rest warns, the lead-in is neutral. The
  *  final-3s danger ring is layered on top in the live screen, not here. */
-function phaseTone(kind: PhaseKind): { text: string; ring: string; bg: string; label: string } {
+function phaseTone(kind: PhaseKind): { text: string; ring: string; bg: string } {
   switch (kind) {
     case 'work':
-      return { text: 'text-success', ring: 'ring-success/40', bg: 'bg-success-bg/40', label: 'Work' }
+      return { text: 'text-success', ring: 'ring-success/40', bg: 'bg-success-bg/40' }
     case 'rest':
-      return { text: 'text-warning', ring: 'ring-warning/40', bg: 'bg-warning-bg/40', label: 'Rest' }
+      return { text: 'text-warning', ring: 'ring-warning/40', bg: 'bg-warning-bg/40' }
     default:
-      return { text: 'text-muted', ring: 'ring-border', bg: 'bg-surface-elevated', label: 'Ready' }
+      return { text: 'text-muted', ring: 'ring-border', bg: 'bg-surface-elevated' }
   }
 }
 
@@ -775,7 +776,7 @@ export function MovementSession({
     }
     if (viaGesture) {
       try {
-        audio.current = audio.current ?? new AudioContext()
+        audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
         void audio.current.resume()
       } catch {
         // cues are a nicety
@@ -818,7 +819,7 @@ export function MovementSession({
   // Restore audio + screen on the next tap after an automatic resume. Best-effort; clears the chip.
   function restoreCues() {
     try {
-      audio.current = audio.current ?? new AudioContext()
+      audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
       void audio.current.resume()
     } catch {
       // cues are a nicety
@@ -834,7 +835,7 @@ export function MovementSession({
     if (!practiceId) return
     // Unlock audio on the tap (autoplay policy only opens the context in a gesture).
     try {
-      audio.current = audio.current ?? new AudioContext()
+      audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
       void audio.current.resume()
     } catch {
       // the cues are a nicety, never a blocker

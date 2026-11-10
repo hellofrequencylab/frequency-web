@@ -11,6 +11,7 @@ import { chime } from '@/lib/timer-audio'
 import { createAmbient, type AmbientHandle } from '@/lib/on-air-ambient'
 import type { CueSettings, TimerSettingsPatch } from '@/lib/on-air/timer-settings'
 import { DoorSection, OptionRow, ToggleRow, VolumeRange } from './door-section'
+import { takeUnlockedAudio } from '@/lib/on-air/timer-audio-unlock'
 
 /** One audio context for previews, created on the first tap and closed with the door. */
 export function useDoorAudio() {
@@ -25,7 +26,7 @@ export function useDoorAudio() {
   )
   const ensure = () => {
     try {
-      ctx.current = ctx.current ?? new AudioContext()
+      ctx.current = ctx.current ?? takeUnlockedAudio() ?? new AudioContext()
       void ctx.current.resume()
       return ctx.current
     } catch {

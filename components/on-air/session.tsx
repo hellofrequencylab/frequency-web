@@ -66,6 +66,7 @@ import {
 } from '@/lib/on-air'
 import { findFreeSit, shouldRunFreeSit } from '@/lib/on-air/free-sit'
 import { useSaveOnChange, useTimerSettings } from './use-timer-settings'
+import { takeUnlockedAudio } from '@/lib/on-air/timer-audio-unlock'
 import { createAmbient, type AmbientHandle } from '@/lib/on-air-ambient'
 import { liveDepthCue } from '@/lib/practices/tiers'
 import { BreathVisualizer } from './visualizer'
@@ -679,7 +680,7 @@ export function OnAirSession({
   /** The shared bell/ambient context, created + unlocked lazily inside a gesture. */
   function ensureCtx(): AudioContext | null {
     try {
-      audio.current = audio.current ?? new AudioContext()
+      audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
       void audio.current.resume()
       return audio.current
     } catch {
@@ -903,7 +904,7 @@ export function OnAirSession({
     }
     if (viaGesture && s.bell) {
       try {
-        audio.current = audio.current ?? new AudioContext()
+        audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
         void audio.current.resume()
       } catch {
         // cues are a nicety
@@ -1000,7 +1001,7 @@ export function OnAirSession({
     if (bell) {
       // Lazily, on the tap: autoplay policy only unlocks audio in a gesture.
       try {
-        audio.current = audio.current ?? new AudioContext()
+        audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
         void audio.current.resume()
       } catch {
         // the bell is a nicety, never a blocker
@@ -1056,8 +1057,7 @@ export function OnAirSession({
   // 'move' (the data is already loaded, so the swap is instant and no second overlay opens). The
   // standalone /on-air route has no door (onModeChange absent); there it is a no-op. In practice the
   // door routes a movement default to Get Moving before this engine mounts, so this rarely fires.
-  function handOffToMovement(id: string) {
-    void id
+  function handOffToMovement() {
     if (onModeChange) {
       onModeChange('move')
       return
@@ -1197,18 +1197,6 @@ export function OnAirSession({
       seconds,
       resumeFromSec: resumeBanked.current,
       startedAt: startedIso,
-      customIn,
-      customHold,
-      customOut,
-      bell,
-      bellTone: bellToneSlug,
-      bellVolume,
-      endBell,
-      bellEveryMin,
-      haptics,
-      ambientTrack: ambientSlug,
-      ambientVolume,
-      warmupSec,
       // The Journal / Just Log reflection (server trims + caps it, and only stores it for a
       // note-bearing mode). Empty stays empty; the server maps it to null.
       note: modeHasNote(sentMode) ? note : null,
@@ -1311,7 +1299,7 @@ export function OnAirSession({
     // A movement default (rare — the door routes it to Get Moving first) hands off; everything else
     // runs the sit on the resolved mode. A log-only resolved practice on a timed mode runs Free Practice.
     if (practiceKind === 'movement' && !runningFree) {
-      handOffToMovement(practiceId)
+      handOffToMovement()
       return
     }
     let runMinutes = minutes
@@ -1920,7 +1908,7 @@ export function OnAirSession({
                           setBellToneSlug(t.slug)
                           // A one-strike preview on the tap (the gesture unlocks audio).
                           try {
-                            audio.current = audio.current ?? new AudioContext()
+                            audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
                             void audio.current.resume()
                             chime(audio.current, t, bellVolumeScale(bellVolume))
                           } catch {
@@ -1956,7 +1944,7 @@ export function OnAirSession({
                     onPointerUp={(e) => {
                       const v = Number((e.currentTarget as HTMLInputElement).value) / 100
                       try {
-                        audio.current = audio.current ?? new AudioContext()
+                        audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
                         void audio.current.resume()
                         chime(audio.current, bellToneBySlug(bellToneSlug), bellVolumeScale(v))
                       } catch {
