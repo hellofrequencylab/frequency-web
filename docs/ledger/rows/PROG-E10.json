@@ -1,0 +1,13 @@
+{
+  "id": "PROG-E10",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/editor-e10-sites.mjs",
+      "note": "Re-pointed 2026-11-10 on Daniel's decision card (Yes, re-point the probe). The old probe read a custom_domain column that never shipped; the real field is spaces.domain routed by proxy.ts. Those two seams hold today; the token-request path (D-1) does not, so this fails until it lands."
+    }
+  },
+  "append": {
+    "detail": "PROBE RE-POINTED 2026-11-10 (Daniel, decision card, \"Yes, re-point the probe\"): scripts/probes/editor-e10-sites.mjs checks spaces.domain, the proxy.ts host routing and the D-1 token-request path. The first two already hold; the token-request path is the open build work, with the owner and provider evidence."
+  }
+}
