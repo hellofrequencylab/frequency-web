@@ -353,5 +353,50 @@
       "locations": [],
       "forms": []
     }
+  },
+  "wildheart": {
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "motion": "fixed",
+      "accent": "fixed",
+      "register": "fixed"
+    },
+    "looks": [],
+    "functions": {
+      "booking": [
+        "SpaceBooking"
+      ],
+      "circles": [
+        "SpaceCommunity"
+      ],
+      "events": [
+        "SpaceEvents",
+        "WildheartRetreatBand"
+      ],
+      "firstnight": [
+        "WildheartFirstNight"
+      ],
+      "forms": [
+        "SpaceContact"
+      ],
+      "gallery": [
+        "WildheartPhoto"
+      ],
+      "letter": [],
+      "locations": [],
+      "plans": [],
+      "posts": [],
+      "reviews": [
+        "SpaceReviews"
+      ],
+      "services": [
+        "SpaceOfferings"
+      ],
+      "shop": [],
+      "team": []
+    }
   }
 }
