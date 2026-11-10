@@ -1,0 +1,6 @@
+{
+  "id": "SCAN-1133",
+  "append": {
+    "detail": "2026-11-10 slice: nine on-air setup tiles (pattern, minutes, warm-up, ambient, bell tone, interval, end bell) moved to choiceTileClasses and seven Journey v2 controls (drip, target and settings tiles, difficulty and format pills, pillar pill, official flag) to chipClasses or choiceTileClasses; raw-button-bg 162 to 146. Idle tiles gain the kit's bg-surface and selected pills the kit's solid-ink chip, by design. About 146 sites remain, mostly admin (28) and bespoke controls whose bg-primary-bg tint matches the lexical counter; the row stays open."
+  }
+}
