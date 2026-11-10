@@ -1,0 +1,6 @@
+{
+  "id": "PROG-E0",
+  "append": {
+    "detail": " UPDATE (shell wiring, dark): components/entity-blocks/editor-collab.tsx joins editor:space:<id> from NodePageBuilder past the owner guard, only when the rail data carries collabEntityId (EDITOR_COLLAB on, with render_path_space_profile); Yjs is a dynamic import (own chunk) and the file is the first allowlist entry. lib/editor-crdt/session.ts waits a jittered 0.8-1.5s for a peer before seeding from its own tree so two tabs do not double the page. Gate and known edges in docs/RUNBOOKS.md (Live co-editing). NOT proved: two real browsers live, and bytes in the built bundle (instrument still owed)."
+  }
+}

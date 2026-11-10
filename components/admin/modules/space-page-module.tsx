@@ -62,6 +62,7 @@ export function SpacePageModule() {
             lockedIds: layout.lockedIds,
             pickerData: layout.pickerData,
             nodeLayout: layout.nodeLayout,
+            collabEntityId: layout.collabEntityId,
             // NOTE: the publish bar (Draft / Publish / Undo / Visible) is no longer part of this in-rail
             // builder — it renders on the live page body (LiveProfileGrid), which reads profilePublished from
             // the owner preview and the shared store directly, so nothing about publish state is threaded here.
