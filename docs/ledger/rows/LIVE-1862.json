@@ -1,0 +1,6 @@
+{
+  "id": "LIVE-1862",
+  "append": {
+    "detail": "Packet E adds scripts/site-theme-css-measurement.mjs for paired built previews. It compares median first-contentful paint, HTML bytes and theme CSS transfer on cold and repeat navigation and fails if a member route requests a theme asset. Hosted comparison remains open while draft builds are skipped. Keep the inline default and both existing budgets."
+  }
+}
