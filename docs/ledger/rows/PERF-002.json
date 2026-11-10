@@ -1,0 +1,9 @@
+{
+  "id": "PERF-002",
+  "append": {
+    "detail": "2026-11-10 owner delegation: stays on the 2026-10-26 ruling, not applied. The live EXPLAIN uses the existing domain-prefix and Space indexes, the reply-alias unique bounds its FK lookup, and no application latency benefit is established, so a production migration (index and policy rewrite) buys nothing measurable and carries registration and apply cost under HYG-217. Future trigger unchanged: a representative authenticated workload or an FK-maintenance plan showing material avoidable cost. Open as parked work, not a defect."
+  },
+  "patch": {
+    "status": "parked"
+  }
+}
