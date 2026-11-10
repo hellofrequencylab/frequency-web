@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { ShoppingCart } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { addToCartAction } from './cart-actions'
@@ -34,6 +35,11 @@ export function AddToCartButton({ productId, variantId = null }: { productId: st
         <ShoppingCart className="h-4 w-4" aria-hidden />
         {added ? 'In your cart' : 'Add to cart'}
       </button>
+      {added ? (
+        <p className="text-body-sm">
+          <Link href="/cart" className="text-primary underline-offset-2 hover:underline">View your cart</Link>
+        </p>
+      ) : null}
       {note ? <p role="status" className="text-body-sm text-subtle">{note}</p> : null}
     </div>
   )
