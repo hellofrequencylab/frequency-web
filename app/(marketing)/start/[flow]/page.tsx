@@ -1,9 +1,10 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { LEAD_FLOWS, getLeadFlow } from '@/lib/onboarding/lead-flows'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 import { FnPhotoHero } from '@/components/frequency/site/pages/funnel/parts'
-import { FrequencyPersonaChooser } from '@/components/frequency/site/pages/funnel/persona-chooser'
+import { FrequencyPersonaChooser, SmartPersonaChooser } from '@/components/frequency/site/pages/funnel/persona-chooser'
 
 // An assignable lead flow (ADR-125, docs/LEAD-FLOWS.md): /start/<flow>. Drop the URL
 // behind any entry point (QR, IG bio, partner button). The splash sets the frame;
@@ -40,18 +41,22 @@ export default async function LeadFlowPage({ params }: { params: Promise<{ flow:
   const { flow } = await params
   if (!LEAD_FLOWS[flow]) notFound()
   const lf = getLeadFlow(flow)
+  const chooser = {
+    flow: lf.slug,
+    source: lf.source,
+    prompt: lf.splash.prompt,
+    personas: lf.personas,
+    captureEmail: lf.captureEmail,
+    defaultPersona: lf.defaultPersona,
+  }
 
   return (
     <>
       <FnPhotoHero image={lf.splash.image} kicker={lf.splash.eyebrow} title={lf.splash.headline} lede={lf.splash.body} />
-      <FrequencyPersonaChooser
-        flow={lf.slug}
-        source={lf.source}
-        prompt={lf.splash.prompt}
-        personas={lf.personas}
-        captureEmail={lf.captureEmail}
-        defaultPersona={lf.defaultPersona}
-      />
+      {/* An invite link's params (LIVE-2234) are read in the client island, so the page stays static. */}
+      <Suspense fallback={<FrequencyPersonaChooser {...chooser} />}>
+        <SmartPersonaChooser {...chooser} />
+      </Suspense>
     </>
   )
 }

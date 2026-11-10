@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2234",
+  "title": "Smart venue, builder and resident funnels: /start/partner, /start/welcome and /start/event read FlowWeb's invite link, and the link's attribution reaches the member",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/site/pages/funnel/persona-chooser.tsx",
+    "ref": "FlowWeb host funnel contract (flowweb funnelOf(): venue /start/partner, builder /start/welcome, resident /start/event). Daniel, 2026-11-10: 'looks good, let's implement it'."
+  },
+  "detail": "The /start/<flow> pages stay static; the persona picker now has a link-reading twin (SmartPersonaChooser, useSearchParams inside Suspense with the plain picker as fallback). On an invite link it pre-picks the persona the link names (when the flow lists it), shows a local note above the picker (the area or region, 'so you are early' in North County, Daniel's line on founder_email invites), always offers the email field so the attribution can land on a lead (still required only on capture flows), sends the raw params to captureLead (which re-reads them, LIVE-2233), and carries region, area, channel and src on to /join. Finishing the induction now copies the lead's contacts.meta.funnel, lead_source and host onto profiles.meta (lib/onboarding/funnel-stamp.ts, first stamp wins, best-effort). Probe: scripts/probes/start-funnels-smart.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/start-funnels-smart.mjs"
+  },
+  "closed": "2026-11-10",
+  "wave": "W7"
+}

@@ -13,6 +13,7 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { mergeProfileMeta } from '@/lib/profiles/meta'
+import { stampFunnelFromLead } from '@/lib/onboarding/funnel-stamp'
 import { uploadProfileImage } from '@/lib/storage/profile-images'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
@@ -451,6 +452,8 @@ async function writeInduction(data: InductionData): Promise<void> {
     // stamping it converted is what keeps the recovery job from mailing a member who is already
     // in. No-op when they never gave an email early. Best-effort — never blocks onboarding.
     await markLeadConverted(prof.id as string).catch(() => {})
+    // The invite link's region, area, Channel and source, from the lead row onto the member (LIVE-2234).
+    await stampFunnelFromLead(createAdminClient(), supabase, prof.id as string, user.email, meta)
     await stampAcquisitionTag(prof.id, acquisition)
     // Referral attribution (ADR-095) — apply the `fq_ref` cookie the /q resolver
     // drops when someone scans a member's personal code: set referred_by_profile_id,
