@@ -53719,3 +53719,64 @@ AccentScope still carries its optional surface and faces props. Nothing passes t
 **Decision.** Take stripe 23.1.0 and move the pin to 2026-10-28.endive. Stripe's Endive changelog states that versions after the first Endive release (2026-09-30) contain additive changes only, and this repo already uses the Endive checkout shapes. The billing, Stripe route and webhook test sets pass (888 tests). No real-card payment run; the owner declined manual payment tests.
 
 **Consequences.** Webhook endpoints keep the API version they were created with in the Stripe dashboard; only calls made through our client use the new pin. A future bump that moves the baked-in version fails the pin test again and needs its own ADR.
+
+## ADR-1933: Create a Space saves a private draft to the visitor's email at step 3, before there is an account
+
+**Status:** Accepted 2026-11-02 (owner asked for the signed-out wizard with lead capture and abandon recovery, and took every recommendation). Amends the v1 rule written in `lib/create-space/handoff.ts` that the draft leaves the browser once, at the last move. Builds on [ADR-125](DECISIONS.md) (lead flows) and the come-back rule of VLS-26 and VLS-27.
+
+**Context.** The v3 handoff asks for an email at step 3 ("How do clients find you?"), before photos and before the account, because photos is where people stop and an address is the only way to bring them back. Under v1 nothing left the browser until the visitor saved, so an abandoned draft left no trace and no way back.
+
+**Decision.** At step 3 the draft is sent once to `saveDraftLead` and kept server-side in `create_space_drafts` (token, contact, draft JSON capped at 8KB, time zone, step reached; row-level security on with no policies, admin client only). The contact goes through `captureLead` (root-scoped, suppression-checked). The draft is private: nothing is public until the Space is launched on /launch. Recovery is a dedicated cron that mirrors the come-back emails (1 hour, 1 day, 3 days after the last save, 8am to 8pm in the browser's zone, at most three, ended by saving, launching or unsubscribing), not a persona nurture sequence, because nurture has no local-hours window and no per-email log. The emails are transactional messages about the visitor's own draft, carry an unsubscribe link and pass the lifecycle send gate; contacts stay `consent_state: unknown` and newsletters stay opt-in. No SMS without explicit opt-in. Drafts and unconverted leads are purged after 90 days. Photo files never leave the browser. Funnel counts are first-party only, with no typed text and nothing sent to a pixel.
+
+**Consequences.** A visitor who gives an address can be reminded three times at most. The privacy page and the step-3 fine print must say the draft saves to their email; legal review of phone and location capture and of the recovery emails stays open. Signed-out operator doors now open this wizard instead of /sign-in.
+
+## ADR-1937: The next editor is generated from the role and block contracts
+
+**Date:** 2026-11-02 · **Status:** accepted (owner approval, 2026-11-02) · **Rows:** BLD-000 to BLD-902 · **Spec:** [`EDITOR-NEXT.md`](EDITOR-NEXT.md)
+
+**Context.** The editor UI groups blocks with type-name regexes (`lib/sites/editor/block-meta.ts`) and hand-writes inspector fields per block, while the data layer has moved to role blocks (ADR-1923), `defineBlock` (E1) and theme manifests. Each surface (site, Space profile, Spotlight, email) has its own editor shell.
+
+**Decision.**
+1. One builder shell for every surface. Every panel, chip, label and icon is read from `lib/blocks/roles/*.role.json` and `defineBlock` (`fields`, `surfaces`, `kinds`). No component names a block type.
+2. Role files gain four fields: `intent`, `icon`, `variants[x].thumb`, `slots[x].label` and `hint`, validated by a new `check:roles`.
+3. Two disclosure layers on screen (slots, then More), plus the command bar. Nothing deeper.
+4. Rails: hidden, strip, overlay or pinned, one rule set at 600, 840, 1200 and 1600.
+5. Every pass ships dark behind `render_path`, runs the build, validate, repair, record loop in the spec, and closes its own row as a fragment.
+
+**Consequences.** Adding a role adds it to the builder with no UI work. B4 (presence, Vera as a client, history) waits on E0. Theme personality still depends on LIVE-1861 presentation layers.
+
+**Open rulings,** carried by BLD-000: Vera's authority (drafts as diffs, or coaching only), the calendar name, the banned-word scope for owner and theme names, the first surface, and whether the member shell adopts the shared breakpoints.
+
+## ADR-1938: A Space has a Community wall, not a built-in Circle (2026-11-03)
+
+**Date:** 2026-11-03 · **Status:** accepted (owner rulings, 2026-11-03) · **Rows:** LIVE-2075 to LIVE-2081 · **Plan:** `/mnt/project-files/community-wall/PLAN.md`
+
+**Supersedes** the Space Circle ([ADR-1391](DECISIONS.md), [ADR-1393](DECISIONS.md), [ADR-1395](DECISIONS.md)), the Space Discussion door ([ADR-1469](DECISIONS.md), [ADR-1534](DECISIONS.md)) and the naming rule that kept "Community" off Space-level surfaces ([ADR-1091](DECISIONS.md)).
+
+**Context.** Every Space was given one always-on Circle (`circles.is_space_primary`, 300 seats, auto-enrolled members) as its communications hub, and its conversation was named Discussion. A Circle is a small group with a seat cap; a Space's public voice is not. Owner, 2026-11-03: a Space no longer has a built-in circle; it has a Community page like a Facebook wall, the public communications hub for that Space, and it can start any number of topic Circles which are listed on it.
+
+**Decision.**
+1. **Wall posts are scoped to the Space** (typed column `posts.scope_space_id`, derived from `scope_id` = the Space id, like the circle, event and profile scopes). No hidden circle, no seat cap. Reverses the Space post scope ADR-1469 rejected.
+2. **Who reads it is the owner's choice** (anyone, or members only). A private wall shows signed-out visitors a join prompt.
+3. **Who posts:** the Space team and members. The owner chooses whether followers may reply and react.
+4. **"Community" is the name of the Space wall tab,** and Circles is a second tab beside it. NAMING.md is amended in the same wave. The stored block key `SpaceCommunity` stays and keeps rendering the topic Circles list; the wall gets a new block key.
+5. **Existing Space Circle members** become Space members or followers; people who left stay unsubscribed. Existing posts, replies and reactions are re-keyed to the Space, never deleted. Old circle rows are archived and their URLs redirect to the Community page.
+6. **Topic-circle limits keep today's numbers** (free 1, Business 5, Collective 10), now counting topic Circles only.
+7. **The Space calendar shows on the Community page.**
+8. **Order of work:** additive migration, then the wall, then reader rewires, then public surface and redirects, then cutover, then retirement. The column and the Space Circle code go last.
+
+**Consequences.** Pinning tests and probes for the Space Circle are rewritten in the retire wave with the owner's phrases. Redirects for `/spaces/:slug/community`, `/spaces/:slug/discussion` and every archived Space Circle URL must exist before anything is archived. The design source is the Circles handoff (`docs/design-systems/circles/`).
+
+## ADR-1939: The builder's copy canon: primary action, the calendar's name, banned-word scope, Vera's authority (2026-11-04)
+
+**Date:** 2026-11-04 · **Status:** accepted (owner rulings BLD-000, 2026-11-02) · **Rows:** BLD-004 · **Spec:** [`EDITOR-NEXT.md`](EDITOR-NEXT.md#bld-004)
+
+**Context.** [ADR-1937](DECISIONS.md) started the role-driven builder and left five rulings open (BLD-000). The owner gave them on 2026-11-02 (`docs/design/builder-navigation-research/README.md`). BLD-004 settles the four copy conflicts that follow from them, so every later builder pass reads one vocabulary. The design handoff (`design_handoff/frequency/`) is read-only, so where it disagrees, this record is the canon and the handoff line stands as history.
+
+**Decision.**
+1. **Primary action on Commons.** The one primary action wears `--pa` (the pastel iridescent gradient) with ink text; every secondary action is ink. No violet: `#5B3FD0` stays banned, and "deep violet, white text" in the primary-action row of `design_handoff/frequency/guidelines/site-themes.md` is superseded. Deep violet survives only where that guide already gives it (links, focus, text accents).
+2. **The calendar is called "What's Happening" everywhere a person reads its name** (ruling 2): the Space tab, the Space function, the page title, the Circle tab and the builder. One constant, `CALENDAR_NAME` in `lib/calendar/name.ts`, carries it. Routes, the `.ics` feed and code keys keep `calendar`, because they are addresses, not names. A view switch that draws the month grid ("List | Calendar") names a view and keeps its word.
+3. **Banned words are Frequency's rule for Frequency's own copy** (ruling 3). Owner-chosen names and theme names are exempt. What an individual owner writes gets the same findings as suggestions, never as bans. `lintVoice` takes `exempt` names and `author: 'owner'` for that; its default stays Frequency's own copy, held to the list.
+4. **Vera coaches with questions only** (ruling 1). She never rewrites owner copy and never offers drafts as diffs. The builder's "Suggest changes" mode ships off. BLD-402 builds Vera to this rule.
+
+**Consequences.** Two Space profile-nav tests that pinned the tab label "Calendar" now pin "What's Happening"; what they guard (one merged row, its address) is unchanged. A later surface that names the calendar imports `CALENDAR_NAME`, never a literal. A caller that lints an owner's words passes `author: 'owner'` and the Space's name in `exempt`.
