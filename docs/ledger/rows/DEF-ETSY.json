@@ -1,0 +1,6 @@
+{
+  "id": "DEF-ETSY",
+  "append": {
+    "detail": "UPDATE 2026-11-10 (P7 slice 1, pure): lib/commerce/discounts.ts evaluates a discount code against a seller's cart lines (percent rounds down, fixed is single-currency, capped at the subtotal, minimum spend, window, redemption and per-buyer limits, exact largest-remainder split per line, scoped to one seller). Nothing calls it yet: no table for codes, no redemption count, no checkout wiring, and no tax or 1099 posture. Those need a migration (Daniel applies SQL after merge) and a fee-funding decision, so they are separate slices. Row stays open."
+  }
+}
