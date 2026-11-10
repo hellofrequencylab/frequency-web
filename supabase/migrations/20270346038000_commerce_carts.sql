@@ -28,22 +28,22 @@ alter table public.commerce_carts enable row level security;
 drop policy if exists commerce_carts_owner_read on public.commerce_carts;
 create policy commerce_carts_owner_read on public.commerce_carts
   for select to authenticated
-  using (profile_id = get_my_profile_id());
+  using (profile_id = (select private.get_my_profile_id()));
 
 drop policy if exists commerce_carts_owner_insert on public.commerce_carts;
 create policy commerce_carts_owner_insert on public.commerce_carts
   for insert to authenticated
-  with check (profile_id = get_my_profile_id());
+  with check (profile_id = (select private.get_my_profile_id()));
 
 drop policy if exists commerce_carts_owner_update on public.commerce_carts;
 create policy commerce_carts_owner_update on public.commerce_carts
   for update to authenticated
-  using (profile_id = get_my_profile_id())
-  with check (profile_id = get_my_profile_id());
+  using (profile_id = (select private.get_my_profile_id()))
+  with check (profile_id = (select private.get_my_profile_id()));
 
 drop policy if exists commerce_carts_owner_delete on public.commerce_carts;
 create policy commerce_carts_owner_delete on public.commerce_carts
   for delete to authenticated
-  using (profile_id = get_my_profile_id());
+  using (profile_id = (select private.get_my_profile_id()));
 
 commit;
