@@ -531,7 +531,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     commit({ ...draft, look: lookWith(patch, drop) }, { label })
   }
   function setBrandAccent(accent: string | null, burst?: string) {
-    const look = draft.theme === 'NetworkKit' && draft.look?.accent ? lookWith({}, ['accent']) : draft.look
+    const look = accentInLooks && draft.look?.accent ? lookWith({}, ['accent']) : draft.look
     commit({ ...draft, look, brand: { ...draft.brand, accent } }, { label: 'Accent', burst })
   }
   // THEME DRAFTS: several themes over the same pages. A switch is one undo step; when the theme differs the element
