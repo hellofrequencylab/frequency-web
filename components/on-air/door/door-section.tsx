@@ -177,30 +177,30 @@ export function Slider({
   )
   if (stacked) {
     return (
-      <label className="flex flex-col gap-1.5 text-body-sm font-medium text-text">
+      <div className="flex flex-col gap-1.5 text-body-sm font-medium text-text">
         <span className="flex justify-between">
           {label}
           <span className="tabular-nums text-muted">{text}</span>
         </span>
         {input}
-      </label>
+      </div>
     )
   }
   if (inline) {
     return (
-      <label className="flex items-center gap-2.5 text-body-sm font-medium text-muted">
+      <div className="flex items-center gap-2.5 text-body-sm font-medium text-muted">
         {label}
         {input}
         <span className="w-9 text-right tabular-nums text-text">{text}</span>
-      </label>
+      </div>
     )
   }
   return (
-    <label className="grid h-10 grid-cols-[64px_1fr_44px] items-center gap-2.5 text-body-sm font-medium text-text">
+    <div className="grid h-10 grid-cols-[64px_1fr_44px] items-center gap-2.5 text-body-sm font-medium text-text">
       {label}
       {input}
       <span className="text-right tabular-nums text-muted">{text}</span>
-    </label>
+    </div>
   )
 }
 
