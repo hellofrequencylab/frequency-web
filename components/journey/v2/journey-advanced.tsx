@@ -16,6 +16,7 @@ import { editorPageConfig, WIDGET_META, REQUIRED_WIDGETS } from '@/lib/journey-p
 import type { PageWidgetConfig } from '@/lib/journey-plans'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
+import { chipClasses } from '@/components/ui/chip'
 
 interface Props {
   planId: string
@@ -174,9 +175,7 @@ export function JourneyAdvanced({
               <button
                 type="button"
                 onClick={() => saveOfficial({ official: !official })}
-                className={`inline-flex items-center gap-1.5 rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors ${
-                  official ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:bg-surface-elevated'
-                }`}
+                className={chipClasses(official, 'inline-flex items-center gap-1.5 px-3 py-1.5 text-body-sm')}
                 aria-pressed={official}
               >
                 <Sparkles className="h-4 w-4" /> {official ? 'Official' : 'Make official'}
