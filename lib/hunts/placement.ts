@@ -56,7 +56,6 @@ export function resolvePlacement(input: {
 export function safeContinuation(next: string | null | undefined): string | null {
   if (!next || next[0] !== '/') return null
   if (next[1] === '/' || next[1] === '\\' || next.includes('\\')) return null
-  // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u001f\u007f]/.test(next)) return null
   return next
 }
