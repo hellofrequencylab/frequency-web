@@ -1,1 +1,10 @@
-{"id":"FH-003","append":{"detail":"\n\n2026-11-10 owner delegation (Daniel, project thread): D1 is Claude's call under best practice. Hunts thread drafts docs/hunts/DECISIONS-D1.md with a recommended choice for the owner to skim, then closes the row."}}
+{
+  "id": "FH-003",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  },
+  "append": {
+    "detail": "\n\n2026-11-10 owner delegation (Daniel, project thread): D1 is Claude's call under best practice. Hunts thread drafts docs/hunts/DECISIONS-D1.md with a recommended choice for the owner to skim, then closes the row.\n\nClosed 2026-11-10: docs/hunts/DECISIONS-D1.md records the choice (transactional claim RPC, legacy paths untouched, /play namespace, assurance A0-A3) and the same-day-visit walk-through that FH-010 proves with a test. Overruling it before FH-010 ships is cheap."
+  }
+}

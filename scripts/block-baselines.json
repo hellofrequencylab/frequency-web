@@ -1,0 +1,26 @@
+{
+  "_readme": "scripts/check-block-baselines.mjs (EDITOR-ARCHITECTURE section 7.3). A rise is refused; a fall is written down with --update --reason. Provenance rules are check-adoption's. `patterns` is the manifest and is part of the basis.",
+  "entries": [
+    {
+      "key": "block-systems",
+      "description": "Independent block systems still in the tree (target 1). Counted as how many of the five system entry points exist.",
+      "mode": "manifest",
+      "patterns": [
+        "lib/entity-blocks/registry.ts",
+        "lib/page-editor/config.tsx",
+        "lib/email-studio/product-block.ts",
+        "lib/library/element-catalog.ts",
+        "components/spotlight"
+      ],
+      "baseline": 5,
+      "frozen": {
+        "at": "2026-11-10",
+        "value": 5,
+        "direction": "seed",
+        "basis": "12bb4fc3a4bd",
+        "reason": "Seeded from the E2 census: five block systems measured on 2026-10-20 (EDITOR-ARCHITECTURE section 7.3, corrected from the first draft of 3)."
+      },
+      "history": []
+    }
+  ]
+}

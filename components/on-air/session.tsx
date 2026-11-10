@@ -1701,11 +1701,7 @@ export function OnAirSession({
                   type="button"
                   onClick={() => setPatternSlug(p.slug)}
                   title={p.blurb}
-                  className={`min-h-11 rounded-control border px-2 py-1.5 text-body-sm transition-colors ${
-                    p.slug === patternSlug
-                      ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                      : 'border-border text-muted hover:bg-surface-elevated'
-                  }`}
+                  className={choiceTileClasses(p.slug === patternSlug, `min-h-11 rounded-control px-2 py-1.5 text-body-sm ${p.slug === patternSlug ? 'font-semibold text-text' : 'text-muted'}`)}
                 >
                   {p.name}
                 </button>
@@ -1714,11 +1710,7 @@ export function OnAirSession({
                 type="button"
                 onClick={() => setPatternSlug('custom')}
                 title="Your counts. Set each phase to what fits."
-                className={`min-h-11 rounded-control border px-2 py-1.5 text-body-sm transition-colors ${
-                  patternSlug === 'custom'
-                    ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                    : 'border-border text-muted hover:bg-surface-elevated'
-                }`}
+                className={choiceTileClasses(patternSlug === 'custom', `min-h-11 rounded-control px-2 py-1.5 text-body-sm ${patternSlug === 'custom' ? 'font-semibold text-text' : 'text-muted'}`)}
               >
                 Custom
               </button>
@@ -1767,11 +1759,7 @@ export function OnAirSession({
                   key={m}
                   type="button"
                   onClick={() => setMinutes(m)}
-                  className={`min-h-11 rounded-control border px-2 py-1.5 text-body-sm tabular-nums transition-colors ${
-                    m === minutes
-                      ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                      : 'border-border text-muted hover:bg-surface-elevated'
-                  }`}
+                  className={choiceTileClasses(m === minutes, `min-h-11 rounded-control px-2 py-1.5 text-body-sm tabular-nums ${m === minutes ? 'font-semibold text-text' : 'text-muted'}`)}
                 >
                   {m}
                 </button>
@@ -1837,11 +1825,7 @@ export function OnAirSession({
                     type="button"
                     aria-pressed={w === warmupSec}
                     onClick={() => setWarmupSec(w)}
-                    className={`min-h-11 rounded-control border px-2 py-1.5 text-meta tabular-nums transition-colors ${
-                      w === warmupSec
-                        ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                        : 'border-border text-muted hover:bg-surface-elevated'
-                    }`}
+                    className={choiceTileClasses(w === warmupSec, `min-h-11 rounded-control px-2 py-1.5 text-meta tabular-nums ${w === warmupSec ? 'font-semibold text-text' : 'text-muted'}`)}
                   >
                     {w}s
                   </button>
@@ -1858,11 +1842,7 @@ export function OnAirSession({
                     <button
                       type="button"
                       onClick={() => selectAmbient(null)}
-                      className={`min-h-11 rounded-control border px-2 py-1.5 text-meta transition-colors ${
-                        ambientSlug === null
-                          ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                          : 'border-border text-muted hover:bg-surface-elevated'
-                      }`}
+                      className={choiceTileClasses(ambientSlug === null, `min-h-11 rounded-control px-2 py-1.5 text-meta ${ambientSlug === null ? 'font-semibold text-text' : 'text-muted'}`)}
                     >
                       Off
                     </button>
@@ -1871,11 +1851,7 @@ export function OnAirSession({
                         key={t.slug}
                         type="button"
                         onClick={() => selectAmbient(t.slug)}
-                        className={`min-h-11 rounded-control border px-2 py-1.5 text-meta transition-colors ${
-                          ambientSlug === t.slug
-                            ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                            : 'border-border text-muted hover:bg-surface-elevated'
-                        }`}
+                        className={choiceTileClasses(ambientSlug === t.slug, `min-h-11 rounded-control px-2 py-1.5 text-meta ${ambientSlug === t.slug ? 'font-semibold text-text' : 'text-muted'}`)}
                       >
                         {t.name}
                       </button>
@@ -1923,11 +1899,7 @@ export function OnAirSession({
                             // preview is a nicety
                           }
                         }}
-                        className={`min-h-11 rounded-control border px-2 py-1.5 text-meta transition-colors ${
-                          t.slug === bellToneSlug
-                            ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                            : 'border-border text-muted hover:bg-surface-elevated'
-                        }`}
+                        className={choiceTileClasses(t.slug === bellToneSlug, `min-h-11 rounded-control px-2 py-1.5 text-meta ${t.slug === bellToneSlug ? 'font-semibold text-text' : 'text-muted'}`)}
                       >
                         {t.name}
                       </button>
@@ -1975,11 +1947,7 @@ export function OnAirSession({
                           key={iv.value}
                           type="button"
                           onClick={() => setBellEveryMin(iv.value)}
-                          className={`min-h-11 rounded-control border px-2 py-1.5 text-meta tabular-nums transition-colors ${
-                            iv.value === bellEveryMin
-                              ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                              : 'border-border text-muted hover:bg-surface-elevated'
-                          }`}
+                          className={choiceTileClasses(iv.value === bellEveryMin, `min-h-11 rounded-control px-2 py-1.5 text-meta tabular-nums ${iv.value === bellEveryMin ? 'font-semibold text-text' : 'text-muted'}`)}
                         >
                           {iv.label}
                         </button>
@@ -1994,11 +1962,7 @@ export function OnAirSession({
                   aria-pressed={endBell}
                   onClick={() => setEndBell(!endBell)}
                   title="A double strike when the sit ends."
-                  className={`flex w-full items-center justify-between rounded-control border px-3 py-2 text-meta transition-colors ${
-                    endBell
-                      ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                      : 'border-border text-muted hover:bg-surface-elevated'
-                  }`}
+                  className={choiceTileClasses(endBell, `flex w-full items-center justify-between rounded-control px-3 py-2 text-meta ${endBell ? 'font-semibold text-text' : 'text-muted'}`)}
                 >
                   <span>End bell</span>
                   <span className={endBell ? 'text-primary-strong' : 'text-subtle'}>

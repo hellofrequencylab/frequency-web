@@ -1,6 +1,9 @@
 {
   "id": "SCAN-1205",
+  "patch": {
+    "title": "Find the React hydration mismatch (#418) on / at 1280, then /pricing at 390 and /the-community at 1280"
+  },
   "append": {
-    "detail": "\n\n2026-11-10 production audit (read-only, headless Chromium, signed out): / , /pricing and /the-community at 390 and 1280 showed no page errors and no React #418. Daniel's own incognito browser did show #418 on / at ~05:05Z, so it is intermittent or browser-specific (a browser extension or an injected ad/analytics script is the likely cause, since the page is static). Stays open at P3. Next step if it recurs: reproduce in the owner's browser with extensions off to rule that out."
+    "detail": "2026-11-10 production audit (route-family-audit against frequencylocal.com): /pricing and /the-community clean at 390 and 1280. The same React #418 fired on / at both viewports. Loops with a fresh context: 0/40, 2/40, then 40/40 at 1280 minutes apart, then 0/26 twenty minutes later, so it tracks the moment (fresh deploy or ISR regeneration of the prerendered / against client JS from a newer build), not the viewport. Dev server: 0/40 and no unminified message. Next step: loop a local pnpm build && pnpm start, or save the HTML from a failing prod load and diff it. Suspects with no evidence yet: GoogleAnalytics in head (renders from consent cookies), the pre-hydration scripts in app/layout.tsx and site-root.tsx, the live-circles figure in frequency-home.tsx."
   }
 }

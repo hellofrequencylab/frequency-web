@@ -1,1 +1,10 @@
-{"id":"FH-004","append":{"detail":"\n\n2026-11-10 owner delegation (Daniel, project thread): the role matrix is Claude's call under best practice. Hunts thread drafts docs/hunts/ROLE-MATRIX.md (deny examples included), then closes the row."}}
+{
+  "id": "FH-004",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  },
+  "append": {
+    "detail": "\n\n2026-11-10 owner delegation (Daniel, project thread): the role matrix is Claude's call under best practice. Hunts thread drafts docs/hunts/ROLE-MATRIX.md (deny examples included), then closes the row.\n\nClosed 2026-11-10: docs/hunts/ROLE-MATRIX.md has the grant matrix, the participant data wall and twelve deny examples that become FH-008 tests. Retention periods and the age policy are proposals; the privacy sign-off stays on FH-023."
+  }
+}

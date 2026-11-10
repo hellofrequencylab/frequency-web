@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2255",
+  "title": "FlowWeb learns which message worked: each signup traces back to the draft that brought it",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/flowweb/outcomes.ts",
+    "ref": "Daniel (2026-11-10): FlowWeb flows should have all tracking hooked up and keep analyzing the data and shifting the campaigns."
+  },
+  "detail": "FlowWeb links carried region and hunt (utm_campaign) but no draft id, and Frequency kept no utm_content, so no signup could be tied to the message, hunt or wording that brought it; region numbers reached FlowWeb only as a staff CSV download. Fix: /start pages store utm_content (the FlowWeb draft id) with the lead and member funnel record; POST /api/webhooks/flowweb-outcomes, signed with FLOWWEB_OUTCOMES_SECRET (same HMAC scheme as flowweb-claim), answers counts per utm_campaign + utm_content (leads, members, hosts, paid) plus the region numbers. Counts only, no name or email leaves; a failed read answers 500, never zeros. The region read moved to lib/onboarding/region-metrics-load.ts, shared with /admin/growth/flowweb-metrics. Owner step: set FLOWWEB_OUTCOMES_SECRET in Production and the same value on the Mac (docs/RUNBOOKS.md \"FlowWeb outcomes pull\").",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/flowweb-outcomes.mjs"
+  },
+  "closed": "2026-11-10",
+  "wave": "W7"
+}

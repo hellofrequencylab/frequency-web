@@ -3,7 +3,7 @@ import { funnelLocalNote, funnelQuery, funnelRecord, hostFunnelCopy, parseFunnel
 
 // The exact link FlowWeb's funnelOf() builds for a host lead (hellofrequencylab/flowweb).
 const FLOWWEB_LINK =
-  'persona=practitioner&region=north-county-sd&area=oceanside&channel=movement&src=event_listings&utm_source=flowweb&utm_medium=founder_email&utm_campaign=north-county-sd'
+  'persona=practitioner&region=north-county-sd&area=oceanside&channel=movement&src=event_listings&utm_source=flowweb&utm_medium=founder_email&utm_campaign=north-county-sd&utm_content=d-7f3a9c'
 
 describe('parseFunnelContext', () => {
   it('reads every param of a FlowWeb host link', () => {
@@ -17,6 +17,7 @@ describe('parseFunnelContext', () => {
       utm_source: 'flowweb',
       utm_medium: 'founder_email',
       utm_campaign: 'north-county-sd',
+      utm_content: 'd-7f3a9c',
     })
     expect(ctx.channelSubject).toBe('movement')
     expect(ctx.founderInvite).toBe(true)

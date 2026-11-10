@@ -1,0 +1,10 @@
+{
+  "id": "FH-009",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  },
+  "append": {
+    "detail": "\n\nBuilt 2026-11-10: migration 20270346036000_hunt_outbox.sql adds hunt_outbox and hunt_deliveries (service role only) and five functions: hunt_outbox_lease (SKIP LOCKED, expired leases come back, attempt cap dead-letters), hunt_outbox_complete and hunt_outbox_fail (fenced on a lease token, so a dead worker cannot touch a row it lost), hunt_outbox_backoff (5s doubling to 1h) and hunt_outbox_replay (bounded to 100, needs actor and reason, audited, never requeues a row that already has a receipt). A receipt is unique per (consumer, event) and per (consumer, semantic_key), so a retry after 'send succeeded, completion lost' records one effect. supabase/tests/hunt_outbox.test.sql walks the kill-after-lease, kill-after-send, backoff, dead-letter and replay cases. The migration is NOT applied in production until the owner runs it (see the PR); the worker and the claim path that writes outbox rows are FH-010. pgTAP is single-session, so two live workers sharing a row is carried by SKIP LOCKED, not proved here."
+  }
+}

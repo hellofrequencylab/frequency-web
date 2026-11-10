@@ -1,0 +1,6 @@
+{
+  "id": "SEC-POSTGIS-PUBLIC",
+  "append": {
+    "detail": "\n\n2026-11-10: the Supabase support request (text in docs/RUNBOOKS.md, PostGIS reference table) was sent. Waiting on Supabase; nothing is owed by Daniel. Row closes when the check query returns false, false, true."
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "FH-008",
+  "append": {
+    "detail": "\n\n2026-11-10: the decision function (lib/hunts/authz.ts, matrix from docs/hunts/ROLE-MATRIX.md) and its two-Space test matrix are in, plus supabase/tests/hunt_tenant_wall.test.sql proving the tables are service-role only. The route loader that fetches the facts fresh each request lands with the first route (FH-012); the decision never caches, so revocation is immediate once the loader reads live rows."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  }
+}

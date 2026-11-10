@@ -48,6 +48,8 @@ import {
 import type { PlanVisibility } from '@/lib/journey-plans'
 import type { JourneyTemplateMeta } from './journey-spark'
 import { Input } from '@/components/ui/field'
+import { chipClasses } from '@/components/ui/chip'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 /** One phase of the block tree, flattened for display (module children fold into steps). */
 export interface GuidePhaseNode {
@@ -392,11 +394,7 @@ export function JourneyGuide({
                         type="button"
                         onClick={() => setDrip(days)}
                         aria-pressed={drip === days}
-                        className={`rounded-pill border px-3 py-1.5 text-meta font-medium transition-colors ${
-                          drip === days
-                            ? 'border-primary/50 bg-primary-bg text-primary-strong'
-                            : 'border-border bg-surface text-muted hover:text-text'
-                        }`}
+                        className={chipClasses(drip === days, 'px-3 py-1.5 text-meta')}
                       >
                         {label}
                       </button>
@@ -483,9 +481,7 @@ export function JourneyGuide({
                         type="button"
                         onClick={() => setTarget(value)}
                         aria-pressed={target === value}
-                        className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-                          target === value ? 'border-primary/50 bg-primary-bg/30' : 'border-border bg-surface hover:bg-surface-elevated'
-                        }`}
+                        className={choiceTileClasses(target === value, 'flex w-full items-start gap-3 rounded-xl px-4 py-3 text-left')}
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block text-body-sm font-semibold text-text">{label}</span>

@@ -34,6 +34,7 @@ import type { CheckConfig } from '@/lib/journeys/store'
 import { PillarChip } from './pillar-chip'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button, buttonClasses } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 
 export interface EditorBlock {
   id: string
@@ -448,11 +449,7 @@ export function JourneyEditor({
                 type="button"
                 onClick={() => togglePillar(pl.id)}
                 aria-pressed={on}
-                className={`rounded-pill border px-2.5 py-1 text-meta font-medium transition-colors ${
-                  on
-                    ? 'border-primary/40 bg-primary-bg text-primary-strong'
-                    : 'border-border bg-surface text-subtle opacity-60 hover:opacity-100 hover:text-text'
-                }`}
+                className={chipClasses(on, `px-2.5 py-1 text-meta ${on ? '' : 'opacity-60 hover:opacity-100'}`)}
               >
                 {pl.name}
               </button>

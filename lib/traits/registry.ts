@@ -329,6 +329,14 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: true,
   },
   {
+    key: 'source_paid_search',
+    label: 'Source · Paid search',
+    description: 'First arrived by clicking a search ad (a Google Ads click id, or cpc/ppc from a search engine).',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
     key: 'source_search',
     label: 'Source · Search',
     description: 'First arrived from a search engine (organic search).',

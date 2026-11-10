@@ -330,3 +330,11 @@ room_create_atomic internal
 room_remove_member_atomic internal
 room_set_member_admin_atomic internal
 open_share_link internal
+# Hunt outbox lease functions (FH-009): service role only.
+hunt_outbox_backoff internal
+hunt_outbox_lease internal
+hunt_outbox_complete internal
+hunt_outbox_fail internal
+hunt_outbox_replay internal
+# Hunt claim command (FH-010): service role only.
+hunt_claim_apply internal
