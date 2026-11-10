@@ -1,9 +1,1 @@
-{
-  "id": "SCAN-1205",
-  "patch": {
-    "title": "Find the React hydration mismatch (#418) on / at 1280, then /pricing at 390 and /the-community at 1280"
-  },
-  "append": {
-    "detail": "2026-11-10 production audit (route-family-audit against frequencylocal.com): /pricing and /the-community clean at 390 and 1280. The same React #418 fired on / at both viewports. Loops with a fresh context: 0/40, 2/40, then 40/40 at 1280 minutes apart, then 0/26 twenty minutes later, so it tracks the moment (fresh deploy or ISR regeneration of the prerendered / against client JS from a newer build), not the viewport. Dev server: 0/40 and no unminified message. Next step: loop a local pnpm build && pnpm start, or save the HTML from a failing prod load and diff it. Suspects with no evidence yet: GoogleAnalytics in head (renders from consent cookies), the pre-hydration scripts in app/layout.tsx and site-root.tsx, the live-circles figure in frequency-home.tsx."
-  }
-}
+{"id":"SCAN-1205","append":{"detail":"2026-11-10: cause narrowed. SiteRoot rendered the SCAN-895 pre-paint script only when the resolved page was unlocked, so an ISR page regenerated under a pathname that resolved to the locked fallback differed structurally from the client's Home render (#418). The script is now always rendered (it skips a locked root itself) and an effect writes the client's page attributes after mount. The trigger that made a regeneration see a non-'/' pathname is still unknown; reopen if #418 recurs on /."}}

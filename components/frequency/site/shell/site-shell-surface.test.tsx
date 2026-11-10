@@ -70,6 +70,20 @@ describe('the kit root carries the surface', () => {
   })
 })
 
+describe('SCAN-1205: the root has one shape whatever pathname resolved', () => {
+  const html = (path: string) => {
+    pathname = path
+    return renderToStaticMarkup(<SiteRoot>x</SiteRoot>)
+  }
+  it('renders the pre-paint script for Home and for a locked page alike', () => {
+    expect(html('/')).toContain('fq-home-side')
+    expect(html('/pricing')).toContain('fq-home-side')
+  })
+  it('lets the script skip a locked root itself', () => {
+    expect(html('/pricing')).toContain("hasAttribute('data-lock')")
+  })
+})
+
 describe('every public layout wears the site shell under Frequency', () => {
   const SHELLED = [
     'app/(marketing)/layout.tsx',

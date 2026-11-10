@@ -1,0 +1,10 @@
+{
+  "id": "FH-014",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  },
+  "append": {
+    "detail": "\n\nBuilt 2026-11-10: lib/hunts/placement.ts is the resolution core. resolvePlacement turns a scan request into a landing, a public-only landing for crawlers and link previews (no claim path), a redirect to the canonical host, or a refusal (revoked, not found); it never returns a claim, so a GET cannot credit. safeContinuation keeps only same-site relative paths for the post-sign-in return. issueClaimToken and verifyClaimToken bind a short-lived HMAC proof to one run and one placement, so a token from another run or placement cannot claim. lib/hunts/placement.test.ts pins each. The route, the landing screen and the wiring to hunt_claim_apply moved to FH-014S (they ride the creator and player screens)."
+  }
+}

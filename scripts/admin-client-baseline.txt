@@ -435,6 +435,7 @@
 # LIVE-2080 (ADR-1938): lib/circles/retired-space-circle.ts reads one ARCHIVED Space Circle's Space slug and type so its old /circles and /discover URLs 308 to the Space Community page; it must find the archived row for a signed-out visitor whatever the circle's access setting, and the read returns only a path to a public page. Writes nothing.
 # LIVE-2255: app/api/webhooks/flowweb-outcomes/route.ts is an HMAC-signed (FLOWWEB_OUTCOMES_SECRET, 5 minute window, 401 without the secret) read-only pull of counts per utm_campaign and utm_content; no name, email or profile id leaves.
 # LIVE-2255: lib/onboarding/region-metrics-load.ts reads published events and last-seen profiles across every region (profiles RLS is in-region only) for the staff CSV and the signed outcomes pull, and returns totals only.
+# LIVE-2256: lib/flowweb/crm-io.ts writes FlowWeb's leads into the root Space CRM (one contact, one conversation, one message per draft step) only after /api/webhooks/flowweb-crm has verified FlowWeb's HMAC signature (FLOWWEB_OUTCOMES_SECRET) and the FLOWWEB_CRM_ENABLED switch; no member session exists on that path.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -1041,6 +1042,7 @@ lib/feed/viewer-resonance.ts
 lib/finance/dashboard.ts
 lib/finance/record.ts
 lib/flowweb/claim-io.ts
+lib/flowweb/crm-io.ts
 lib/founding/status.ts
 lib/frequency-signature-data.ts
 lib/funnels/overrides.ts
@@ -1050,6 +1052,7 @@ lib/growth/host-prompts.ts
 lib/growth/nearby-practice.ts
 lib/hierarchy/hub-admin.ts
 lib/hierarchy/nexus-admin.ts
+lib/hunts/store.ts
 lib/importer/harvest/media.ts
 lib/importer/harvest/staging-lifecycle.ts
 lib/importer/materialize.ts

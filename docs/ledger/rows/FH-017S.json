@@ -1,0 +1,18 @@
+{
+  "id": "FH-017S",
+  "title": "Hunts FH-017S: Run the accessibility and low-signal script on real devices and record the results",
+  "lane": "program",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/ACCESSIBILITY-REPORT.md",
+    "ref": "Split from FH-017 (2026-11-10): the script and pass rules shipped; the runs need the player (FH-016) and real devices."
+  },
+  "detail": "Run the twelve checks in docs/hunts/ACCESSIBILITY-REPORT.md on one iPhone and one Android phone against a published Trail with printed signs and tags, and write the dated results to docs/hunts/ACCESSIBILITY-RESULTS.md. Done when: every check is marked pass, fail with the rule it broke, or not run, and offline claims show pending with no silent awards. Requires: FH-015, FH-016. Owner role: Accessibility QA.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"docs/hunts/ACCESSIBILITY-RESULTS.md\")?0:1)'"
+  },
+  "wave": "W7"
+}

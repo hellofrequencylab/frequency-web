@@ -1,0 +1,6 @@
+{
+  "id": "FH-040",
+  "append": {
+    "detail": "\n\nPacket F UI slice: components/hunts/reconciliation-page.tsx accepts an injected redacted reader and session-authorized scope through lib/hunts/reconciliation-reader.ts. Claude owns the route integration, actual reader and kill switch."
+  }
+}

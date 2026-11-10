@@ -1,0 +1,6 @@
+{
+  "id": "FH-024",
+  "append": {
+    "detail": "\n\nPacket F UI slice: components/hunts/hunt-consent-panel.tsx displays the named Space, disclosure version and email opt-in and withdrawal states. The panel has no active submission and defaults off behind the Hunts master switch and a separate mount decision."
+  }
+}
