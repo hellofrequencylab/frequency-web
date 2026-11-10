@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { listTicketedEventProjections } from '@/lib/commerce/ticket-projection'
 import { recordLoyaltyVisit } from '@/lib/loyalty/visit'
 import { grantConnectorOutcome } from '@/lib/rewards/connector'
-import { HUNT_SWITCH_KEYS, huntSwitchOn, type HuntSwitch } from './flags'
+import { HUNT_SWITCH_KEYS, huntSwitchOn, type HuntSwitch } from '../flags'
 
 const fake = vi.hoisted(() => ({
   rpc: vi.fn(),
