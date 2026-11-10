@@ -1,6 +1,6 @@
 {
   "id": "SCAN-1205",
   "append": {
-    "detail": "\n\n2026-11-10 ~05:05Z seen again: Daniel's signed-out incognito console on production frequencylocal.com showed React error #418 on the homepage (reported by the Google Ads thread from his screenshot). Three routes now (/pricing, /the-community, /), so suspect something shared by marketing routes (header, footer, a consent or analytics banner, or a time/viewport read), not a per-page bug. Stays open; do not close as not reproduced. Next: reproduce with a cold context signed out on / (20+ loops) and read the unminified diff from pnpm dev."
+    "detail": "\n\n2026-11-10 production audit (read-only, headless Chromium, signed out): / , /pricing and /the-community at 390 and 1280 showed no page errors and no React #418. Daniel's own incognito browser did show #418 on / at ~05:05Z, so it is intermittent or browser-specific (a browser extension or an injected ad/analytics script is the likely cause, since the page is static). Stays open at P3. Next step if it recurs: reproduce in the owner's browser with extensions off to rule that out."
   }
 }
