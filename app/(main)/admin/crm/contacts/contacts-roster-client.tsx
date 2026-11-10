@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState, useTransition } from 'react'
+import { useCallback, useId, useMemo, useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Ban, Building2, Loader2, Mail, MailCheck, Search, Sparkles, UserRound, X } from 'lucide-react'
@@ -31,6 +31,7 @@ import { bulkSetContactConsent, setContactConsent } from './actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 
@@ -478,6 +479,10 @@ function ContactRow({
           {/* Where they came in from. Shown because the Source facet filters on it, and a filter whose
               value is invisible on the row is a filter the operator cannot trust. */}
           {row.source && <span>From {sourceLabel(row.source)}</span>}
+          {row.funnelOrigin?.source && row.funnelOrigin.source !== row.source && (
+            <span>Invite source {sourceLabel(row.funnelOrigin.source)}</span>
+          )}
+          {row.funnelOrigin && <FunnelOriginDetails name={row.displayName} origin={row.funnelOrigin} />}
         </div>
 
         {/* The upgrade "why", when this member is a candidate (transparent + tunable heuristic). */}
@@ -499,6 +504,58 @@ function ContactRow({
         </Link>
       )}
     </li>
+  )
+}
+
+function FunnelOriginDetails({
+  name,
+  origin,
+}: {
+  name: string
+  origin: NonNullable<ContactRosterRow['funnelOrigin']>
+}) {
+  const [open, setOpen] = useState(false)
+  const headingId = useId()
+  const fields = [
+    ['Region', origin.region],
+    ['Area', origin.area],
+    ['Channel', origin.channel ? sourceLabel(origin.channel) : null],
+    ['Source', origin.source ? sourceLabel(origin.source) : null],
+    ['UTM source', origin.utmSource],
+    ['UTM medium', origin.utmMedium],
+    ['UTM campaign', origin.utmCampaign],
+    ['UTM content', origin.utmContent],
+  ] as const
+
+  return (
+    <>
+      <Button type="button" variant="ghost" size="sm" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        Funnel origin<span className="sr-only"> for {name}</span>
+      </Button>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        align="drawer"
+        ariaLabelledBy={headingId}
+        className="flex max-w-md flex-col overflow-y-auto bg-surface shadow-pop"
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+          <div className="min-w-0">
+            <h2 id={headingId} className="text-lead font-bold text-text">Funnel origin</h2>
+            <p className="break-words text-body-sm text-subtle">{name}</p>
+          </div>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Close</Button>
+        </div>
+        <dl className="divide-y divide-border px-5 text-body-sm">
+          {fields.map(([label, value]) => value && (
+            <div key={label} className="flex justify-between gap-4 py-3">
+              <dt className="shrink-0 text-subtle">{label}</dt>
+              <dd className="min-w-0 break-words text-right text-text">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </Dialog>
+    </>
   )
 }
 

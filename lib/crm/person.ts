@@ -14,6 +14,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cityFromMeta } from '@/lib/crm/contact-fields'
+import type { ContactFunnelOrigin } from '@/lib/crm/contacts-roster-core'
+import { parseFunnelContext } from '@/lib/onboarding/funnel-context'
 import { escapeLike } from '@/lib/search-sanitize'
 
 function db() {
@@ -33,6 +35,7 @@ export type ContactCore = {
   /** Stored at `meta.city` (the contacts row has no `city` column); staff-editable (ADR-379). */
   city: string | null
   acquisition: Acquisition
+  funnelOrigin?: ContactFunnelOrigin | null
   firstSeenAt: string | null
   lastSeenAt: string | null
   createdAt: string | null
@@ -96,6 +99,35 @@ function asAcquisition(meta: unknown): Acquisition {
   }
 }
 
+/** Use the same validation as invite capture. Private persona answers and raw metadata stay here. */
+function readFunnelOrigin(meta: unknown): ContactFunnelOrigin | null {
+  if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return null
+  const record = meta as Record<string, unknown>
+  const raw = record.funnel
+  const funnel = raw && typeof raw === 'object' && !Array.isArray(raw)
+    ? raw as Record<string, unknown>
+    : {}
+  const parsed = parseFunnelContext({
+    get(key) {
+      if (key === 'persona') return undefined
+      const value = funnel[key]
+      return typeof value === 'string' ? value : undefined
+    },
+  })
+  const storedSource = record.lead_source
+  const origin: ContactFunnelOrigin = {
+    region: parsed.region?.name ?? null,
+    area: parsed.area?.name ?? null,
+    channel: parsed.channel,
+    source: parsed.src ?? (typeof storedSource === 'string' ? parseFunnelContext({ src: storedSource }).src : null),
+    utmSource: parsed.utm.source,
+    utmMedium: parsed.utm.medium,
+    utmCampaign: parsed.utm.campaign,
+    utmContent: parsed.utm.content,
+  }
+  return Object.values(origin).some(Boolean) ? origin : null
+}
+
 function mapContactCore(c: Record<string, unknown>): ContactCore {
   return {
     id: String(c.id),
@@ -122,12 +154,23 @@ async function getContactCore(id: string): Promise<ContactCore | null> {
 }
 
 /** Search the CRM by email or name. Powers the contacts list search box. */
-export async function searchContacts(q: string, limit = 100): Promise<ContactCore[]> {
+export async function searchContacts(
+  q: string,
+  limit = 100,
+  rootFunnelSpaceId: string | null = null,
+): Promise<ContactCore[]> {
   const needle = q.replace(/[(),%]/g, ' ').trim()
-  let query = db().from('contacts').select(CONTACT_COLS).order('created_at', { ascending: false }).limit(limit)
+  let query = db().from('contacts').select(`${CONTACT_COLS}, space_id`).order('created_at', { ascending: false }).limit(limit)
   if (needle) query = query.or(`email.ilike.%${needle}%,display_name.ilike.%${needle}%`)
   const { data } = await query
-  return ((data ?? []) as Record<string, unknown>[]).map(mapContactCore)
+  return ((data ?? []) as Record<string, unknown>[]).map((row) => {
+    const contact = mapContactCore(row)
+    // The platform roster supplies the root id. Never inherit attribution by email across Spaces.
+    if (rootFunnelSpaceId && row.space_id === rootFunnelSpaceId) {
+      contact.funnelOrigin = readFunnelOrigin(row.meta)
+    }
+    return contact
+  })
 }
 
 /** Gather everything that describes the person behind a CRM contact. */
