@@ -410,7 +410,7 @@ jobs:
           guards=(
             authz canon menu gate-parity workflows labels a11y-names help tokens phantom bridge contrast
             node-document-safety email-blocks headers security-headers seo rls grants admin-client client-boundary migrations adr docs-links templates marketing-kit
-            backlog one-list schema-contract rls-recursion id-collisions rls-deny fk-indexes shipped-ids roles
+            backlog one-list schema-contract rls-recursion id-collisions rls-deny fk-indexes shipped-ids roles editor-crdt-importers
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall

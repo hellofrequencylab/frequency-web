@@ -1,0 +1,3 @@
+# Editor-only modules allowed to import yjs / y-* / lib/editor-crdt outside lib/editor-crdt/.
+# One repo-relative path per line, with a comment saying why no visitor bundle reaches it.
+# Empty on purpose: the provider and writer are not wired into the editor shell yet.
