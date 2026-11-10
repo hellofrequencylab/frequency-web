@@ -1,11 +1,11 @@
 'use client'
 
-// THE MINDLESS DOOR (LIVE-2233): one screen, two levels. The primary stack is Mode, What (a
+// THE MINDLESS DOOR (LIVE-2241): one screen, two levels. The primary stack is Mode, What (a
 // practice), How (a sub-mode), How long, Go. Under it, the sub-menus expand in place (Breath,
 // Sound, Ambient, Feel) and a read-only Session footer. Nothing the sit engine can do sits
 // behind a second screen any more; every setting is written to the one timer settings model
 // (lib/on-air/timer-settings.ts) so the engine mounts with it. Get Moving keeps "More settings"
-// until LIVE-2234 brings its Plan and Cues rows here. The look is the compact door the owner kept
+// until LIVE-2242 brings its Plan and Cues rows here. The look is the compact door the owner kept
 // (2026-11-09); the new design drops onto the same props.
 
 import { useId, useRef, useState } from 'react'
@@ -35,7 +35,7 @@ export type SetupChoice = {
   practiceId: string
   mode: TimerMode
   minutesOverride?: number
-  /** The Be Still sub-mode and breath pattern the member set on the door (LIVE-2233). */
+  /** The Be Still sub-mode and breath pattern the member set on the door (LIVE-2241). */
   stillMode?: SessionMode
   patternSlug?: string
 }

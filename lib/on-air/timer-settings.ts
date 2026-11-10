@@ -278,7 +278,7 @@ export function diffSettings(prev: TimerSettingsPatch, next: TimerSettingsPatch)
   return Object.keys(out).length ? out : null
 }
 
-/** The one-line value summaries the door's collapsed sub-menu rows show (LIVE-2233), so a member
+/** The one-line value summaries the door's collapsed sub-menu rows show (LIVE-2241), so a member
  *  never has to open a row to know its state. Pure; the names come from the pattern and voice lists. */
 export function describeSections(
   s: TimerSettings,

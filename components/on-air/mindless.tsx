@@ -143,7 +143,7 @@ type OverlayState =
       phase: 'ready'
       setup?: boolean
       minutesOverride?: number
-      /** The Be Still sub-mode and breath pattern the door chose (LIVE-2233); the engine seeds from them. */
+      /** The Be Still sub-mode and breath pattern the door chose (LIVE-2241); the engine seeds from them. */
       stillMode?: SessionMode
       patternSlug?: string
       data: OnAirSessionData
@@ -516,7 +516,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             // practice opens the Just Log note screen; a generic open still lands on Meditate.
             explicitPracticeId={state.practiceId}
             prefs={state.data.prefs}
-            // The door's Be Still choices (LIVE-2233): the sub-mode and breath pattern it was set to.
+            // The door's Be Still choices (LIVE-2241): the sub-mode and breath pattern it was set to.
             initialMode={state.stillMode}
             initialPattern={state.patternSlug}
             practicedToday={state.data.practicedToday}

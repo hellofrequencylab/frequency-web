@@ -257,7 +257,7 @@ export function OnAirSession({
 }: {
   practices: OnAirPractice[]
   defaultPracticeId: string | null
-  /** The Be Still sub-mode the door chose (LIVE-2233). Wins over the practice's flavour for a fresh
+  /** The Be Still sub-mode the door chose (LIVE-2241). Wins over the practice's flavour for a fresh
    *  sit; a resume still runs the silent timer. Absent everywhere else, so the routing is unchanged. */
   initialMode?: SessionMode
   /** The breath pattern the door chose. Wins over the practice's authored pattern and the saved one. */

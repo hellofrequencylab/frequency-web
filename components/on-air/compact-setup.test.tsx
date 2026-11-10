@@ -52,7 +52,7 @@ describe('one shared compact setup', () => {
     expect(start).toHaveBeenCalledWith({ practiceId: 'sit', mode: 'still', stillMode: 'timer', patternSlug: 'box' })
     practices[0].durationLocked = false
   })
-  it('offers every Be Still sub-mode on the door and forwards the pick with its settings (LIVE-2233)', () => {
+  it('offers every Be Still sub-mode on the door and forwards the pick with its settings (LIVE-2241)', () => {
     render('still', 'free')
     const chips = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Sub-mode"] button')].map((b) => b.textContent)
     expect(chips).toEqual(['Meditate', 'Breathe', 'Journal', 'Stillness', 'Ritual', 'Just Log'])
