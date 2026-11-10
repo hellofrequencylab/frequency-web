@@ -353,3 +353,9 @@ hunt_claim_review internal
 hunt_claim_appeal internal
 # Hunt reward grant (FH-021): service role only.
 hunt_reward_grant internal
+# Hunt consent ledger (FH-024): service role only.
+hunt_consent_events_guard internal
+hunt_consent_record internal
+hunt_consent_can_send internal
+hunt_consent_roster internal
+hunt_privacy_request internal
