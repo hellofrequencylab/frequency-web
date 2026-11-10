@@ -906,6 +906,18 @@ Five switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on)
 
 Gate to turn one on: every Hunt migration up to the rung is applied in Frequency Community (hunt_outbox for the worker, hunt_claim_apply for claims), the legacy check-in, reward and commerce paths show no change with all switches off, and the rung below has run clean. Order: enabled, claims, authoring, worker, rewards. Rollback is unsetting the switch: no data moves, claims already credited stay credited, and outbox rows wait for the worker to return.
 
+### Stripe and progressive-dinner pilot gate
+
+Use the [D7 dinner draft](hunts/PRODUCT-DRAFTS-D4-D7-D8.md), the [Experience Pass binding](hunts/EXPERIENCE-PASS-BINDING.md), [paid ticket authority](hunts/PAID-TICKET-AUTHORITY.md) and [refund and dispute policy](hunts/REFUNDS-AND-DISPUTES.md) to agree the pilot scope before enabling sales.
+
+- [ ] Record the pilot Hunt, Space, dates, price and currency, capacity for each seating or route wave, and the named operator for each venue. Confirm arrival windows, dietary and accessibility arrangements, participant terms, cancellation deadlines and what happens if a venue drops out.
+- [ ] In the approved Stripe test environment, record evidence for immediate payment success, delayed success and failure, invalid webhook signatures, duplicate and out-of-order events, and mismatched buyer identity. Include a race for the final seat and a successful payment with the browser closed before the redirect. Verify only a valid payment can grant the matching ticket and that replays leave the ticket and capacity consistent.
+- [ ] Exercise cancellation, refund and dispute cases. Record the expected ticket, claim and capacity outcome for each alongside the resulting provider state. Reconcile the Stripe payment and refund, the canonical ticket and seat, and any transfer or payout as separate records. A successful payment does not establish a settled payout.
+- [ ] Have the pilot operator walk the dinner route and confirm handoffs, guest recovery and the venue fallback. Record the operator, date and evidence. Daniel and the commerce owner sign off on the pilot before sales open. Any real charge, refund, transfer or payout verification stays with the authorized owner and follows the approved payment runbook.
+- [ ] If any gate fails, hold new sales through the agreed pilot control. Keep incoming payment and refund reconciliation active and route unresolved obligations to the commerce owner. Record the hold and the evidence required to resume.
+
+Keep FH-041 open until the pilot gate has named sign-offs and the parent probe passes.
+
 ## Live co-editing
 
 `EDITOR_COLLAB` (blank by default) makes the Space page builder join a private Realtime channel (`editor:space:<id>`) so two people editing the same Space see each other's changes. Needs `render_path_space_profile` on (the node builder) and migration 20270346033000 applied (it is). Off, each owner edits alone as before.
