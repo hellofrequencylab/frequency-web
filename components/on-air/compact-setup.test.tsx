@@ -20,119 +20,139 @@ function render(initialMode: 'still' | 'move' = 'still', initialPracticeId = 'si
   host = document.createElement('div'); document.body.append(host); root = createRoot(host)
   act(() => root!.render(<CompactSetup practices={practices} initialMode={initialMode} initialPracticeId={initialPracticeId} onStart={start} onClose={vi.fn()} />))
 }
-afterEach(() => { act(() => root?.unmount()); host?.remove(); start.mockClear(); saveOnAirPrefs.mockClear(); window.localStorage.clear() })
-describe('one shared compact setup', () => {
+const buttons = () => [...host.querySelectorAll<HTMLButtonElement>('button')]
+const go = () => buttons().find((b) => b.textContent?.startsWith('Start timer') || b.textContent?.startsWith('Continue,') || b.textContent?.startsWith('Log it'))!
+const minutesField = () => host.querySelector<HTMLInputElement>('[aria-label^="Minutes"]')
+const type = (el: HTMLInputElement | HTMLTextAreaElement, value: string) => act(() => {
+  Object.getOwnPropertyDescriptor(el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value')!.set!.call(el, value)
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+})
+const openHow = () => act(() => buttons().find((b) => b.getAttribute('aria-expanded') !== null && b.textContent?.startsWith('How'))!.click())
+const styles = () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Style"] button')]
+const row = (name: string) => buttons().find((b) => b.getAttribute('aria-expanded') !== null && b.textContent?.startsWith(name))!
+afterEach(() => { act(() => root?.unmount()); host?.remove(); start.mockClear(); saveOnAirPrefs.mockClear(); window.localStorage.clear(); vi.unstubAllGlobals() })
+describe('the Mindless door (LIVE-2245)', () => {
   it('offers one free practice for the current mode, retaining the real adopted entry', () => {
     expect(setupPractices([...practices, { ...practices[1], id: 'duplicate' }], 'still').map((p) => p.id)).toEqual(['sit', 'free'])
   })
-  it('quick-starts a completed adopted practice without changing its authored duration', () => {
+  it('opens on the adopted practice with its authored length in the orb and starts it from Go', () => {
     render()
-    const button = host.querySelector<HTMLButtonElement>('[aria-label="Start Reflect"]')!
-    expect(button.textContent).toContain('17 min')
-    expect(button.textContent).toContain('Start again')
-    act(() => button.click())
-    expect(start).toHaveBeenCalledWith({ practiceId: 'sit', mode: 'still', stillMode: 'timer', patternSlug: 'box' })
+    expect(minutesField()!.value).toBe('17')
+    expect(host.textContent).toContain('Logs as Reflect · already counted today, this one is extra')
+    act(() => go().click())
+    expect(start).toHaveBeenCalledWith({ practiceId: 'sit', mode: 'still', minutesOverride: 17, stillMode: 'timer', patternSlug: 'box' })
   })
   it('custom still duration is validated and forwarded without resuming/logging', () => {
     render('still', 'free')
-    const input = host.querySelector('input')!
-    const update = (value: string) => act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true })) })
-    const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
-    update('0'); expect(begin.disabled).toBe(true)
-    update('13'); expect(begin.disabled).toBe(false)
-    act(() => begin.click())
+    type(minutesField()!, '0'); expect(go().disabled).toBe(true); expect(host.textContent).toContain('Choose 1 to 120 minutes.')
+    type(minutesField()!, '13'); expect(go().disabled).toBe(false)
+    act(() => go().click())
     expect(start).toHaveBeenCalledWith({ practiceId: 'free', mode: 'still', minutesOverride: 13, stillMode: 'timer', patternSlug: 'box' })
+  })
+  it('the minus and plus beside the orb step the length by one, and a preset sets it', () => {
+    render('still', 'free')
+    act(() => buttons().find((b) => b.textContent === 'One minute more')!.click())
+    expect(minutesField()!.value).toBe('11')
+    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Length presets in minutes"] [aria-label="20 minutes"]')!.click())
+    expect(minutesField()!.value).toBe('20')
+    expect(JSON.parse(window.localStorage.getItem('fq_timer_settings')!)).toMatchObject({ minutes: 20 })
   })
   it('custom Get Moving length lands in the composed plan and is remembered for the Free Practice (LIVE-2242)', () => {
     render('move', 'free-move')
-    const input = host.querySelector('input')!
-    const update = (value: string) => act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true })) })
-    const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
-    update('0'); expect(begin.disabled).toBe(true)
-    update('13'); expect(begin.disabled).toBe(false)
-    act(() => begin.click())
+    type(minutesField()!, '0'); expect(go().disabled).toBe(true)
+    type(minutesField()!, '13'); expect(go().disabled).toBe(false)
+    act(() => go().click())
     expect(start).toHaveBeenCalledWith({ practiceId: 'free-move', mode: 'move', moveConfig: expect.objectContaining({ mode: 'walk', walkMinutes: 13 }) })
     expect(JSON.parse(window.localStorage.getItem('fq_timer_settings')!)).toMatchObject({ move: { mode: 'walk', walkMinutes: 13 } })
   })
-  it('offers every Get Moving mode on the door with its Plan and Cues sub-menus, no second screen (LIVE-2242)', () => {
+  it('offers every Get Moving style in the How picker with its Plan and Cues rows, no second screen (LIVE-2242)', () => {
     render('move', 'free-move')
-    const chips = () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Sub-mode"] button')]
-    expect(chips().map((b) => b.textContent)).toEqual(['Walk', 'Run', 'Yoga', 'Strength', 'Stretch', 'Play'])
-    act(() => chips().find((b) => b.textContent === 'Strength')!.click())
-    expect(host.textContent).toContain('Authored sequence')
-    const planRow = [...host.querySelectorAll<HTMLButtonElement>('button[aria-expanded]')].find((b) => b.textContent?.includes('Plan'))!
-    act(() => planRow.click())
-    expect(planRow.getAttribute('aria-expanded')).toBe('true')
-    act(() => chips().find((b) => b.textContent === 'Walk')!.click())
-    const cuesRow = [...host.querySelectorAll<HTMLButtonElement>('button[aria-expanded]')].find((b) => b.textContent?.includes('Cues'))!
-    act(() => cuesRow.click())
-    const every5 = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Every 5 min')
-    if (every5) act(() => every5.click())
-    const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
-    act(() => begin.click())
-    expect(start).toHaveBeenCalledWith(expect.objectContaining({ mode: 'move', moveConfig: expect.objectContaining({ mode: 'walk', ...(every5 ? { walkIntervalMin: 5 } : {}) }) }))
+    openHow()
+    expect(styles().map((b) => b.textContent)).toEqual(['Walk', 'Run', 'Yoga', 'Strength', 'Stretch', 'Play'])
+    act(() => styles().find((b) => b.textContent === 'Strength')!.click())
+    expect(host.textContent).toContain('Tabata, 8 rounds, 4:00')
+    expect(minutesField()).toBeNull()
+    act(() => row('Plan').click())
+    expect(row('Plan').getAttribute('aria-expanded')).toBe('true')
+    act(() => buttons().find((b) => b.getAttribute('aria-label') === 'Rounds up')!.click())
+    expect(host.textContent).toContain('Tabata, 9 rounds')
+    openHow()
+    act(() => styles().find((b) => b.textContent === 'Walk')!.click())
+    act(() => row('Cues').click())
+    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Reminder"] button:nth-child(2)')!.click())
+    expect(row('Cues').textContent).toContain('Reminder every 5 min')
+    act(() => go().click())
+    expect(start).toHaveBeenCalledWith(expect.objectContaining({ mode: 'move', moveConfig: expect.objectContaining({ mode: 'walk', walkIntervalMin: 5 }) }))
     expect(host.textContent).not.toContain('More settings')
   })
   it('keeps locked authored lengths and log-only semantics out of custom overrides', () => {
     practices[0].durationLocked = true
     render()
-    expect(host.querySelector('input')!.disabled).toBe(true)
-    const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
-    act(() => begin.click())
+    expect(minutesField()).toBeNull()
+    expect(host.textContent).toContain('Fixed length, set by Reflect')
+    act(() => go().click())
     expect(start).toHaveBeenCalledWith({ practiceId: 'sit', mode: 'still', stillMode: 'timer', patternSlug: 'box' })
     practices[0].durationLocked = false
   })
-  it('offers every Be Still sub-mode on the door and forwards the pick with its settings (LIVE-2241)', () => {
+  it('offers every Be Still style and the Breath row, and forwards the pick with its settings (LIVE-2241)', () => {
     render('still', 'free')
-    const chips = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Sub-mode"] button')].map((b) => b.textContent)
-    expect(chips).toEqual(['Meditate', 'Breathe', 'Journal', 'Stillness', 'Ritual', 'Just Log'])
-    const breathe = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Sub-mode"] button')].find((b) => b.textContent === 'Breathe')!
-    act(() => breathe.click())
-    expect(breathe.getAttribute('aria-pressed')).toBe('true')
-    // The Breath sub-menu is a row on this screen, not a second screen.
-    const breathRow = [...host.querySelectorAll<HTMLButtonElement>('button[aria-expanded]')].find((b) => b.textContent?.includes('Breath'))!
-    act(() => breathRow.click())
-    const coherence = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Coherence')!
-    act(() => coherence.click())
-    const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
-    act(() => begin.click())
+    openHow()
+    expect(styles().map((b) => b.textContent)).toEqual(['Meditate', 'Breathe', 'Journal', 'Stillness', 'Ritual', 'Just Log'])
+    act(() => styles().find((b) => b.textContent === 'Breathe')!.click())
+    expect(minutesField()!.value).toBe('5')
+    act(() => row('Breath').click())
+    act(() => buttons().find((b) => b.textContent === 'Coherence')!.click())
+    expect(row('Breath').textContent).toContain('Coherence 5-5')
+    act(() => go().click())
     expect(start).toHaveBeenCalledWith(expect.objectContaining({ practiceId: 'free', mode: 'still', stillMode: 'breath', patternSlug: 'cohere' }))
     expect(JSON.parse(window.localStorage.getItem('fq_timer_settings')!)).toMatchObject({ pattern: 'cohere' })
     expect(host.textContent).not.toContain('More settings')
   })
-  it('Just Log opens the practice note instead of a timer', () => {
+  it('Just Log takes the note on the door and logs it from the one button', () => {
     render('still', 'free')
-    const log = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Sub-mode"] button')].find((b) => b.textContent === 'Just Log')!
-    act(() => log.click())
-    expect(host.querySelector('input')).toBeNull()
-    const go = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Open practice')!
-    act(() => go.click())
-    expect(start).toHaveBeenCalledWith({ practiceId: 'free', mode: 'still', stillMode: 'log', patternSlug: 'box' })
+    openHow()
+    act(() => styles().find((b) => b.textContent === 'Just Log')!.click())
+    expect(minutesField()).toBeNull()
+    type(host.querySelector<HTMLTextAreaElement>('[aria-label="Session note"]')!, 'Felt good')
+    expect(go().textContent).toBe('Log it')
+    act(() => go().click())
+    expect(start).toHaveBeenCalledWith({ practiceId: 'free', mode: 'still', stillMode: 'log', patternSlug: 'box', note: 'Felt good' })
   })
   it('offers Continue or Start fresh when the practice has a partial today, continuing by default (LIVE-2243)', () => {
     practices[0].partialToday = { bankedSec: 300, targetSec: 1020 }
     render()
-    const chips = () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Continue or start fresh"] button')]
-    expect(chips().map((b) => b.textContent)).toEqual(['Continue, 12 min left', 'Start fresh'])
-    expect(host.querySelector('input')).toBeNull()
-    let go = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Continue practice')!
-    act(() => go.click())
+    expect(go().textContent).toBe('Continue, 12 min left')
+    expect(minutesField()).toBeNull()
+    expect(host.textContent).toContain('5 of 17 min banked today')
+    act(() => go().click())
     expect(start).toHaveBeenLastCalledWith({ practiceId: 'sit', mode: 'still', stillMode: 'timer', patternSlug: 'box' })
-    act(() => chips()[1].click())
-    expect(chips()[1].getAttribute('aria-pressed')).toBe('true')
-    const input = host.querySelector('input')!
-    act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '9'); input.dispatchEvent(new Event('input', { bubbles: true })) })
-    go = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
-    act(() => go.click())
+    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Continue or start fresh"] button')!.click())
+    type(minutesField()!, '9')
+    expect(go().textContent).toBe('Start timer')
+    act(() => go().click())
     expect(start).toHaveBeenLastCalledWith({ practiceId: 'sit', mode: 'still', minutesOverride: 9, stillMode: 'timer', patternSlug: 'box', fresh: true })
     practices[0].partialToday = null
   })
   it('switches modes with one free entry and the correct selected authored movement length', () => {
     render()
-    const moving = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((b) => b.textContent?.includes('Get Moving'))!
+    const moving = buttons().find((b) => b.getAttribute('role') === 'tab' && b.textContent?.includes('Get Moving'))!
     act(() => moving.click())
     expect(moving.getAttribute('aria-selected')).toBe('true')
-    expect(host.querySelectorAll('[aria-label="Start Free Practice"]')).toHaveLength(1)
-    expect(host.querySelector('[aria-label="Start Walk"]')?.textContent).toContain('22 min')
+    act(() => buttons().find((b) => b.getAttribute('aria-expanded') !== null && b.textContent?.startsWith('Practice'))!.click())
+    const rows = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Your practices"] button')]
+    expect(rows.map((b) => b.textContent)).toEqual(['WalkWalk, 22 min', 'Free PracticeAny style, any length'])
+    act(() => rows[0].click())
+    expect(minutesField()!.value).toBe('22')
+  })
+  it('from 840px the door is a dialog with the Today rail, Sound and feel selects and Enter to start', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    render()
+    const dialog = host.querySelector('[role="dialog"]')!
+    expect(dialog.getAttribute('aria-label')).toBe('Mindless timer setup')
+    expect([...host.querySelectorAll('[aria-label="Your practices"] button')].map((b) => b.getAttribute('aria-label'))).toEqual(['Reflect', 'Free Practice'])
+    expect(host.querySelector<HTMLSelectElement>('select[aria-label="Bell"]')!.value).toBe('off')
+    expect(host.textContent).toContain('5 s countdown, then 17 min of Meditate. Logs as Reflect.')
+    act(() => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })) })
+    expect(start).toHaveBeenCalledWith(expect.objectContaining({ practiceId: 'sit', minutesOverride: 17 }))
   })
 })

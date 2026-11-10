@@ -19,7 +19,7 @@ import {
   coerceBellVolume,
   type OnAirPrefs,
 } from '@/lib/on-air'
-import { buildPlan, sanitizeMovementConfig, strengthPresetByKind, totalSeconds, type MovementConfig, type MovementMode } from '@/lib/movement'
+import { sanitizeMovementConfig, strengthPresetByKind, type MovementConfig, type MovementMode } from '@/lib/movement'
 
 /** The one minute band for a member-chosen length, on the door and in both engines. Authored
  *  (creator) configs clamp separately in lib/movement.ts. */
@@ -282,29 +282,6 @@ export function diffSettings(prev: TimerSettingsPatch, next: TimerSettingsPatch)
   return Object.keys(out).length ? out : null
 }
 
-/** The one-line value summaries the door's collapsed sub-menu rows show (LIVE-2241), so a member
- *  never has to open a row to know its state. Pure; the names come from the pattern and voice lists. */
-export function describeSections(
-  s: TimerSettings,
-  names: { pattern: string; voice: string; ambient: string | null },
-  opts: { breathMode: boolean },
-): { breath: string; sound: string; ambient: string; feel: string } {
-  const custom = `${s.still.customIn}-${s.still.customHold}-${s.still.customOut}`
-  const breath = s.still.patternSlug === 'custom' ? `Custom ${custom}` : names.pattern
-  const sound = !s.cues.bell
-    ? 'Off'
-    : [
-        names.voice,
-        !opts.breathMode && s.cues.bellEveryMin > 0 ? `every ${s.cues.bellEveryMin} min` : null,
-        s.cues.endBell ? 'end bell' : 'no end bell',
-      ]
-        .filter(Boolean)
-        .join(', ')
-  const ambient = s.cues.ambientTrack && names.ambient ? `${names.ambient}, ${Math.round(s.cues.ambientVolume * 100)}%` : 'Off'
-  const feel = `${s.cues.warmupSec} s countdown, vibration ${s.cues.haptics ? 'on' : 'off'}`
-  return { breath, sound, ambient, feel }
-}
-
 // --- Get Moving on the door (LIVE-2242) ------------------------------------------------------
 
 /** A fresh config for a sub-mode: the remembered one when it is the same mode, else the engine's
@@ -383,25 +360,4 @@ export function withMoveIntervalMin(c: MovementConfig, minutes: number): Movemen
     default:
       return c
   }
-}
-
-function fmtSeconds(total: number): string {
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
-/** The plan in one line for the door's read-out and the Plan row summary ("Tabata, 8 rounds · 4:00"). */
-export function describeMovePlan(c: MovementConfig): string {
-  const plan = buildPlan(c)
-  const total = totalSeconds(plan)
-  return total === null ? plan.label : `${plan.label} · ${fmtSeconds(total)}`
-}
-
-/** The Cues row summary for Walk, Run and Stretch. */
-export function describeMoveCues(c: MovementConfig): string {
-  const iv = moveIntervalMin(c)
-  if (iv === null || iv === 0) return 'None'
-  const what = c.mode === 'walk' ? 'Reminder' : c.mode === 'run' ? 'Split' : 'Switch sides'
-  return `${what} every ${iv} min`
 }

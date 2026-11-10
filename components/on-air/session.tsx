@@ -237,6 +237,8 @@ export function OnAirSession({
   practices,
   defaultPracticeId,
   explicitPracticeId,
+  initialNote,
+  logNow = false,
   prefs,
   practicedToday = 0,
   journeyLegs = [],
@@ -270,6 +272,11 @@ export function OnAirSession({
    *  log-only ('none') practice opens the Just Log note screen; a generic/daily open still lands
    *  on Meditate (owner directive) even when a log-only practice is due. */
   explicitPracticeId?: string
+  /** The note typed on the door (LIVE-2245): Journal keeps it on the live screen, Just Log sends it. */
+  initialNote?: string
+  /** The door's Log it (LIVE-2245): the member already wrote the note and tapped the one button, so
+   *  a Just Log launch logs at once instead of opening the engine's own note screen again. */
+  logNow?: boolean
   prefs: OnAirPrefs
   /** Distinct members with a practice log today (presence line, shown at ≥3). */
   practicedToday?: number
@@ -410,7 +417,7 @@ export function OnAirSession({
   // Log on the setup screen (capture the interaction before logging). Captured client-side and
   // kept across the session; persistence rides a later completeSession field (the action is owned
   // elsewhere). Never required.
-  const [note, setNote] = useState('')
+  const [note, setNote] = useState(initialNote ?? '')
   // The breath pattern: the launched practice's CREATOR-authored pattern wins (a Box-breathing
   // practice ships Box, P4), then the member's last-saved choice, then their pref. The member can
   // still switch patterns in setup.
@@ -804,7 +811,9 @@ export function OnAirSession({
     // A recovered / server-active sit owns the screen (it auto-resumes running above).
     if (loadLiveSession<MindlessSetup>('mindless') || resumeRecord) return
     if (!initialId) return
-    if (mode === 'log') return // a Just Log practice has no countdown to auto-run
+    // A Just Log practice has no countdown to auto-run; it logs at once only when the door's Log it
+    // asked for that (the note was written there), never from a practice chip.
+    if (mode === 'log' && !logNow) return
     // Mirror the footer button's Free Practice remap: when the resolved practice is log-only and the
     // routed mode is timed, run + log the Free Practice fallback (not the log-only id). Without this,
     // an auto-started 'none' practice logged the timed sit against the wrong practice.

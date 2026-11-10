@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2245",
+  "title": "Mindless door redesign: the Claude Design sheet and dialog on the restored door's props",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "closed": "2026-11-10",
+  "source": {
+    "file": "components/on-air/compact-setup.tsx",
+    "ref": "Claude Design handoff 'Mindless Timer UI Redesign' (owner, 2026-11-10 01:26Z), built from /mnt/project-files/mindless-timer/03-CLAUDE-DESIGN-HANDOFF.md"
+  },
+  "detail": "The door the restore stack rebuilt (LIVE-2241 to LIVE-2244) kept the compact look while the functions came back; the owner's redesign replaces that look on the same props and the same SetupChoice. Under 840px a full-screen sheet: the Be Still | Get Moving pill, the breathing orb that is the length field with minus and plus beside it and the presets under it, the Practice and How pickers, the settings rows (Breath, Plan, Cues, Note, Sound, Ambient, Feel; one open at a time) and a docked Go over the Logs as line. From 840px a dialog: a Today rail of practices, the main column (Style tiles, Length, Breath pattern or Plan, Note, Sound and feel) and a footer with the summary, Cancel and Go; Esc closes, Enter starts, the arrows change the minutes. The note for Journal and Just Log is typed on the door and carried into the sit; Just Log's Go is Log it and logs at once (Open practice retired, handoff decision 1). A practice whose movement config names no length runs its authored minutes. Tokens only; the kit Switch and Select; the segmented track and tiles are the door's own because the kit has no lifted-card segment. Prefs defaults stay the repo's (sit bell off, interval off, ambient 70%) rather than the handoff's demo values.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/timer-door-redesign.mjs"
+  },
+  "wave": "W7"
+}
