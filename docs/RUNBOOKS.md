@@ -922,6 +922,14 @@ Use the [D7 dinner draft](hunts/PRODUCT-DRAFTS-D4-D7-D8.md), the [Experience Pas
 
 Keep FH-041 open until the pilot gate has named sign-offs and the parent probe passes.
 
+## Site token requests
+
+`SITE_TOKEN_REQUESTS_ENABLED` (`1` / `true` / `on`) opens the token-request path (PROG-E10, ADR-976 D-1: nobody writes raw CSS). A Space asks for a theme token in words; the request files a support ticket of type `idea` (`lib/sites/token-request.ts`). Activation gate: the owner and the answer time for these tickets (EDITOR-ARCHITECTURE O-4) are named, and the builder form that calls `requestWebsiteThemeTokens` has shipped. Off, the call refuses and files nothing.
+
+## Member Connect tax reporting
+
+`CONNECT_TAX_REPORTING_ENABLED` (`1` / `true` / `on`) lets payout settings show a plain notice when Stripe still needs a member's tax details or their calendar-year earnings near the 1099-K threshold (`lib/billing/connect-tax.ts`, PROG-E7). Stripe files the forms; Frequency only reads and words. Activation gate, owner steps in this order: (1) in the Stripe Dashboard, turn on tax form reporting for Connect (Settings, Connect, tax reporting) and confirm the platform's own tax details; (2) confirm the thresholds in `FORM_1099_THRESHOLDS` against Stripe's current guidance; (3) a settings card calls `taxNotice`. Money still moves only behind `host_payouts_enabled`; this flag moves none.
+
 ## Live co-editing
 
 `EDITOR_COLLAB` (blank by default) makes the Space page builder join a private Realtime channel (`editor:space:<id>`) so two people editing the same Space see each other's changes. Needs `render_path_space_profile` on (the node builder) and migration 20270346033000 applied (it is). Off, each owner edits alone as before.
