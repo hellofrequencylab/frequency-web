@@ -212,6 +212,7 @@ export function MovementSession({
   warmupSec: warmupSecProp,
   prefs,
   initialConfig,
+  fresh = false,
   warmupMessageOverride,
   queuePosition,
   onCompleted,
@@ -228,6 +229,8 @@ export function MovementSession({
    *  what its sub-menus showed. A resume still overrides the length; a crash recovery still applies
    *  the saved record's config. */
   initialConfig?: MovementConfig | null
+  /** The door's Start fresh (LIVE-2243): today's partial on the launched practice is ignored. */
+  fresh?: boolean
   practices: OnAirPractice[]
   defaultPracticeId: string | null
   /** The Movement mode this session opens on (from a practice's movement_config, or Walk). */
@@ -302,6 +305,7 @@ export function MovementSession({
   // open-args remain a fallback for the initial practice (the "Finish Practice" button). Returns
   // null unless there's real remaining time, so anything malformed is a fresh sit.
   function resolveResume(id: string): { bankedSec: number; targetSec: number } | null {
+    if (fresh && id === initialId) return null
     const partial = practices.find((p) => p.id === id)?.partialToday
     if (partial && partial.targetSec > 0 && partial.targetSec - partial.bankedSec > 0) {
       return { bankedSec: Math.round(partial.bankedSec), targetSec: Math.round(partial.targetSec) }

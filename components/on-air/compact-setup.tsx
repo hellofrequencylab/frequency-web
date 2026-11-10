@@ -60,6 +60,8 @@ export type SetupChoice = {
   patternSlug?: string
   /** The Get Moving configuration the member composed on the door (LIVE-2242). */
   moveConfig?: MovementConfig
+  /** Start fresh (LIVE-2243): ignore today's partial on the practice and run the chosen length from zero. */
+  fresh?: boolean
 }
 
 export function setupPractices(practices: OnAirPractice[], mode: TimerMode) {
@@ -156,24 +158,34 @@ export function CompactSetup({
     if (isFree) set({ move: next })
   }
 
+  // Continue or Start fresh (LIVE-2243): a practice with a partial today continues by default, as the
+  // engines always did silently; the door now says so and offers the fresh start beside it.
+  const [freshFor, setFreshFor] = useState<string | null>(null)
+  const partial = practice?.partialToday ?? null
+  const remainingSec = partial && partial.targetSec > 0 ? Math.max(0, partial.targetSec - partial.bankedSec) : 0
+  const hasPartial = remainingSec > 0 && practice?.timerKind !== 'none'
+  const fresh = hasPartial && freshFor === practice?.id
+  const continuing = hasPartial && !fresh
+  const remainingMin = Math.max(1, Math.ceil(remainingSec / 60))
   const lockedByAuthor = !!practice?.durationLocked && !isFree
   const structured = mode === 'move' && (moveConfig.mode === 'yoga' || moveConfig.mode === 'strength')
   const openCount = mode === 'move' && moveConfig.mode === 'play'
   const logOnly = mode === 'still' ? stillMode === 'log' : practice?.timerKind === 'none'
-  const locked = (lockedByAuthor && ((practice?.durationMin ?? 0) > 0 || mode === 'move')) || structured || logOnly || openCount
+  const locked = (lockedByAuthor && ((practice?.durationMin ?? 0) > 0 || mode === 'move')) || structured || logOnly || openCount || continuing
   const configuredStill = practice?.durationMin ?? null
-  const minutes = mode === 'move' ? (moveMinutes(moveConfig) ?? 0) : (custom ?? configuredStill ?? settings.still.minutes)
+  const minutes = continuing ? remainingMin : mode === 'move' ? (moveMinutes(moveConfig) ?? 0) : (custom ?? configuredStill ?? settings.still.minutes)
   // Get Moving keeps an unfinished typed length (say "0" on the way to "10") out of the plan, so the
   // field alone decides whether Go is live until the number is a real one.
   const valid = isValidMemberMinutes(minutes) && (mode !== 'move' || custom === null || isValidMemberMinutes(custom))
   const presets: readonly number[] = mode === 'move' ? MOVE_PRESETS[moveConfig.mode] : stillMode === 'breath' ? BREATH_DURATION_PRESETS : DURATION_PRESETS
   const choice = (p = practice): SetupChoice =>
     mode === 'move'
-      ? { practiceId: p!.id, mode, moveConfig: p === practice ? moveConfig : moveConfigFor(p, settings.move) }
+      ? { practiceId: p!.id, mode, moveConfig: p === practice ? moveConfig : moveConfigFor(p, settings.move), ...(fresh && p === practice ? { fresh: true } : {}) }
       : {
           practiceId: p!.id,
           mode,
           ...(!locked && p === practice && valid ? { minutesOverride: minutes } : {}),
+          ...(fresh && p === practice ? { fresh: true } : {}),
           stillMode: p === practice ? stillMode : stillModeFor(p, p?.id === explicitPracticeId),
           patternSlug: settings.still.patternSlug,
         }
@@ -191,9 +203,9 @@ export function CompactSetup({
     if (!locked && configuredStill == null && isValidMemberMinutes(m)) set({ still: { minutes: m } })
   }
   const shownMinutes = mode === 'move' && custom !== null && !isValidMemberMinutes(custom) ? custom : minutes
-  const goLabel = logOnly ? 'Open practice' : 'Start timer'
+  const goLabel = logOnly ? 'Open practice' : continuing ? 'Continue practice' : 'Start timer'
   const runPractice = practice && !practice.logsAs ? practice : null
-  const lengthNote = logOnly ? 'Just Log' : structured ? 'Authored sequence' : openCount ? 'Open count-up' : locked ? 'Fixed duration' : 'Timer length'
+  const lengthNote = logOnly ? 'Just Log' : continuing ? `${remainingMin} min left` : structured ? 'Authored sequence' : openCount ? 'Open count-up' : locked ? 'Fixed duration' : 'Timer length'
   return (
     <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={headingId} tabIndex={-1} className="fixed inset-0 z-50 overflow-y-auto bg-canvas">
       <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -284,7 +296,18 @@ export function CompactSetup({
             <h2 className="text-body-sm font-semibold text-text">{practice?.title ?? 'Custom timer'}</h2>
             <span className="text-meta text-muted">{lengthNote}</span>
           </div>
-          {!logOnly && !structured && !openCount && (
+          {hasPartial && !logOnly && (
+            <div className="flex gap-2" role="group" aria-label="Continue or start fresh">
+              <button type="button" aria-pressed={continuing} onClick={() => setFreshFor(null)} className={chipClasses(continuing, 'min-h-11 flex-1')}>
+                Continue, {remainingMin} min left
+              </button>
+              <button type="button" aria-pressed={fresh} onClick={() => { setCustom(null); setFreshFor(practice?.id ?? null) }} className={chipClasses(fresh, 'min-h-11 flex-1')}>
+                Start fresh
+              </button>
+            </div>
+          )}
+          {continuing && <p className="text-meta text-muted">Picks up where the practice stopped today. Start fresh runs the length you choose from zero.</p>}
+          {!logOnly && !structured && !openCount && !continuing && (
             <>
               <div className={`grid gap-2 ${presets.length === 3 ? 'grid-cols-3' : presets.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}>
                 {presets.map((m) => (

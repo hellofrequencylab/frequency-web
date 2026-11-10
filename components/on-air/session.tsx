@@ -254,6 +254,7 @@ export function OnAirSession({
   minutesOverride,
   initialMode,
   initialPattern,
+  fresh = false,
 }: {
   practices: OnAirPractice[]
   defaultPracticeId: string | null
@@ -262,6 +263,9 @@ export function OnAirSession({
   initialMode?: SessionMode
   /** The breath pattern the door chose. Wins over the practice's authored pattern and the saved one. */
   initialPattern?: string
+  /** The door's Start fresh (LIVE-2243): today's partial on the launched practice is ignored and
+   *  the chosen length runs from zero. The partial stays banked; the finish logs this run whole. */
+  fresh?: boolean
   /** The practice this open EXPLICITLY requested (a practice-button launch), if any. An explicit
    *  log-only ('none') practice opens the Just Log note screen; a generic/daily open still lands
    *  on Meditate (owner directive) even when a log-only practice is due. */
@@ -327,6 +331,8 @@ export function OnAirSession({
   function resolveResume(
     id: string,
   ): { bankedSec: number; targetSec: number } | null {
+    // The door's Start fresh applies to the practice it opened on (LIVE-2243).
+    if (fresh && id === initialId) return null
     const partial = practices.find((p) => p.id === id)?.partialToday
     if (partial && partial.targetSec > 0 && partial.targetSec - partial.bankedSec > 0) {
       return { bankedSec: Math.round(partial.bankedSec), targetSec: Math.round(partial.targetSec) }
@@ -1653,7 +1659,8 @@ export function OnAirSession({
                     // so it always seeds the mode's default.
                     const runPractice = m !== 'log' && !practiceCanTime && freeSit ? freeSit : practice
                     const runLocked = !!runPractice?.durationLocked && (runPractice?.durationMin ?? 0) > 0
-                    if (m !== 'log' && !runLocked && (runPractice?.durationMin ?? 0) <= 0) {
+                    // A length the member chose on the door stays put across sub-modes (LIVE-2243).
+                    if (m !== 'log' && !runLocked && (runPractice?.durationMin ?? 0) <= 0 && !(minutesOverride && minutesOverride > 0)) {
                       setMinutes(meta.defaultMin)
                     }
                   }}
