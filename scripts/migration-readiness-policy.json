@@ -820,6 +820,13 @@
           "sha256": "7ca189cfaec6f652dcbaf415a53c393ef045125ce040e51dfaf11d277f0bde12",
           "baseMode": "000000",
           "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/member_reward_broadcast.test.sql",
+          "status": "modified",
+          "sha256": "2e97ff9d228ad0c2fa121c8e8c4d618dc1677101864629ac114335495dcf792c",
+          "baseMode": "100644",
+          "headMode": "100644"
         }
       ],
       "workflowPath": ".github/workflows/db-tests.yml",
