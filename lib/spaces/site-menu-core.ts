@@ -74,7 +74,7 @@ async function websiteCatalog(space: Space): Promise<MenuCatalogEntry[]> {
   const prefs = space.preferences
   const pages = publishedWebsiteSnapshot(prefs)?.pages ?? readProfilePages(prefs)
   const node = prefs && typeof prefs === 'object' ? (prefs as Record<string, unknown>).profileLayout : null
-  const rows = resolveRows(readTypeKeyedGrid(node) ?? {}, 'space')
+  const rows = resolveRows(readTypeKeyedGrid(node) ?? {}, 'site')
   const anchors = new Map<string, string>()
   for (const s of planHouseSections(rows)) {
     const nav = HOUSE_NAV[s.kind]
