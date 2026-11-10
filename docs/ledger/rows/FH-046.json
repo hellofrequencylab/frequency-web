@@ -1,0 +1,6 @@
+{
+  "id": "FH-046",
+  "append": {
+    "detail": "\n\nPacket F UI slice: components/hunts/hunt-donation-ask.tsx displays a separate optional beneficiary ask, defaults off and contains no checkout wiring. D8 approval gates activation."
+  }
+}
