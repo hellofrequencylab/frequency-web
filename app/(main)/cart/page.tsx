@@ -6,16 +6,14 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { CartLineControls } from '@/components/marketplace/cart-line-controls'
 import { getMyProfileId } from '@/lib/auth'
+import { CartCheckout } from '@/components/marketplace/cart-checkout'
+import { cartCheckoutEnabled } from '@/lib/commerce/cart-checkout-flag'
 import { cartEnabled } from '@/lib/commerce/cart-flag'
-import { loadCart } from '@/lib/commerce/cart-store'
-import { buildCartView } from '@/lib/commerce/cart-view'
-import { getProduct } from '@/lib/commerce/products'
-import { getVariantsByIds } from '@/lib/commerce/variants'
-import type { CommerceProduct } from '@/lib/commerce/types'
+import { loadCartView } from '@/lib/commerce/cart-load'
 
 // Your cart (DEF-ETSY P5). Dark until COMMERCE_CART_ENABLED is set: the page answers 404, like any route that
 // does not exist yet. It lists the saved lines with today's price read fresh from the product rows, says plainly
-// what is no longer for sale, and changes only the saved lines. Paying for a saved cart is its own step.
+// what is no longer for sale, and changes only the saved lines. Paying for it sits behind its own switch, COMMERCE_CART_CHECKOUT_ENABLED.
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Your cart' }
@@ -28,15 +26,7 @@ export default async function CartPage() {
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in?next=/cart')
 
-  const cart = await loadCart(profileId)
-  const ids = [...new Set(cart.map((l) => l.productId))]
-  const [found, variants] = await Promise.all([
-    Promise.all(ids.map((id) => getProduct(id))),
-    getVariantsByIds(cart.flatMap((l) => (l.variantId ? [l.variantId] : []))),
-  ])
-  const products = new Map<string, CommerceProduct>()
-  for (const p of found) if (p) products.set(p.id, p)
-  const view = buildCartView(cart, products, variants)
+  const view = await loadCartView(profileId)
   const dropped = view.removed.length
   const reduced = view.reduced.length
 
@@ -95,6 +85,11 @@ export default async function CartPage() {
               </div>
             ))}
             <p className="mt-2 text-body-sm text-subtle">Shipping and fees are added when you pay.</p>
+            {cartCheckoutEnabled() ? (
+              <div className="mt-4">
+                <CartCheckout priceLabel={view.totals.length === 1 ? money(view.totals[0].cents, view.totals[0].currency) : undefined} />
+              </div>
+            ) : null}
           </div>
         </div>
       )}
