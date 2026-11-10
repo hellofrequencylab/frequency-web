@@ -110,7 +110,9 @@ interface SiteSkin {
   dials?: { type: string; motion: string; image: string }
 }
 
-function skinCss(skin: SiteSkin | null, look = ''): string {
+/** The inline sheet. components/sites/site-skin-css.ts composes the same bytes for the preview-only static file
+ *  (site-theme-stylesheet.test.ts pins the two together), so a new skin lands in both. */
+export function skinCss(skin: SiteSkin | null, look = ''): string {
   if (!skin) return HOUSE_CSS
   if (skin.theme === 'wildheart') return HOUSE_CSS + FREQUENCY_PAGE_CSS + WILDHEART_CSS
   if (skin.theme === 'network') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NETWORK_CSS
@@ -134,6 +136,7 @@ export function SiteChrome({
   cta,
   themeFonts,
   skin = null,
+  themeStylesheet,
   logoUrl = null,
   logoMode,
   fadeOnPause = true,
@@ -161,6 +164,8 @@ export function SiteChrome({
   themeFonts: boolean
   /** A full website skin from the Space's page theme (only Menswork has one), with its season. */
   skin?: SiteSkin | null
+  /** Preview-only hashed stylesheet (LIVE-1862). Absent in production, which keeps the inline sheet. */
+  themeStylesheet?: string
   /** The Space's logo. The house look sets it as a round photo beside the name (or alone, logoMode
    *  'logo'); a skinned site draws it as a one-colour mark beside the name. */
   logoUrl?: string | null
@@ -296,7 +301,7 @@ export function SiteChrome({
       data-site-header={look.header}
       className="hs-root"
     >
-      <style>{nk ? skinCss(skin, look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '') : skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
+      {themeStylesheet ? <link rel="stylesheet" href={themeStylesheet} /> : <style>{nk ? skinCss(skin, look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '') : skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>}
       {designer && <DesignerHeaderState />}
       {nk && <NetworkKitHeaderState />}
       {tk && <TempleKitHeaderState />}
