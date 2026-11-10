@@ -16,6 +16,8 @@ import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
 import { resolveArchetype } from '@/lib/audience/archetypes'
 import { enrollInNurture } from '@/lib/nurture/enroll'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { findSubject } from '@/lib/taxonomy/subjects'
+import { funnelRecord, hasFunnelSignal, parseFunnelContext } from '@/lib/onboarding/funnel-context'
 
 export type LeadResult = { ok: true } | { ok: false; error: string }
 
@@ -32,13 +34,19 @@ export async function captureLead(input: {
   /** Optional — only present for capture-style flows. */
   email?: string
   name?: string
+  /** The invite link's raw params (LIVE-2233). Re-read here: the client's copy is never trusted. */
+  funnel?: Record<string, string>
+  /** The host form's answers (/start/host): what they host, where, and a link to their page. */
+  host?: { subject?: string; area?: string; link?: string }
 }): Promise<LeadResult> {
   const persona = isPersonaId(input.persona) ? input.persona : 'visitor'
   const archetype = resolveArchetype(persona, input.archetype)
   const flow = (input.flow || '').trim().slice(0, 60)
   const source = (input.source || '').trim().slice(0, 60) || 'lead_flow'
   const email = (input.email || '').trim().toLowerCase()
-  const name = (input.name || '').trim() || null
+  const name = (input.name || '').trim().slice(0, 120) || null
+  const funnel = input.funnel ? funnelRecord(parseFunnelContext(input.funnel)) : null
+  const host = input.host ? cleanHost(input.host) : null
 
   // No email → nothing to persist as a contact; the persona rides into the
   // induction on the URL and is stamped on the member at signup. Not an error.
@@ -74,6 +82,9 @@ export async function captureLead(input: {
     lead_flow: flow,
     persona_captured_at: nowIso,
     acquisition,
+    // The invite link's attribution, latest link wins (first-touch stays in `acquisition`).
+    ...(funnel && hasFunnelSignal(funnel) ? { funnel, lead_source: funnel.src ?? existingMeta.lead_source ?? null } : {}),
+    ...(host ? { host } : {}),
   } as unknown as Json
 
   let contactId: string | null = existing?.id ?? null
@@ -114,4 +125,17 @@ export async function captureLead(input: {
   if (contactId) await enrollInNurture({ contactId, email, persona })
 
   return { ok: true }
+}
+
+const LINK_RE = /^https?:\/\/[^\s]{3,300}$/i
+
+/** Keep only what the host form may store: a known subject, a known area (which names its region), and
+ *  an http(s) link. The area is editable on the form, so it may differ from the link's region. */
+function cleanHost(raw: { subject?: string; area?: string; link?: string }) {
+  const subject = findSubject((raw.subject || '').trim())?.key ?? null
+  const picked = parseFunnelContext({ area: (raw.area || '').trim() })
+  let link: string | null = (raw.link || '').trim().slice(0, 300) || null
+  if (link && !/^https?:\/\//i.test(link)) link = `https://${link}`
+  if (link && !LINK_RE.test(link)) link = null
+  return { subject, area: picked.area?.id ?? null, region: picked.region?.id ?? null, link }
 }

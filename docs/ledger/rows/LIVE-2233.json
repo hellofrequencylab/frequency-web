@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2233",
+  "title": "Smart host funnel at /start/host: FlowWeb invites land on a page that speaks to the host's town and stores where the lead came from",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/(marketing)/start/host/page.tsx",
+    "ref": "FlowWeb neighborhood-activation flow (hellofrequencylab/flowweb, flows/neighborhood-activation/config.json, funnelOf()): host invites link to /start/host with persona, region, area, channel, src and utm tags. Daniel, 2026-11-10: 'Make sure all our host funnels are smart.'"
+  },
+  "detail": "FlowWeb's host invites pointed at /start/host, which did not exist (it fell through to the /start/[flow] 404). The page now reads the invite link through lib/onboarding/funnel-context.ts: the four FlowWeb regions and their sub-areas, the six lead sources and the two send routes are closed lists, and anything off-list is dropped, never echoed. The hero says 'Start a Circle in <area, else region>'; North County (the seed) asks for first hosts, later regions borrow North County's proof; a founder_email invite adds Daniel's line. The form asks name, email, what they host (pre-picked from the Channel when it names a known subject), where (pre-picked from the area, editable) and an optional link. captureLead re-reads the raw params on the server and stores contacts.meta.funnel (persona, region, area, channel, src, utm_source, utm_medium, utm_campaign), meta.lead_source and meta.host, then the visitor continues to /join as a practitioner with the ids on the URL. First-touch utm capture in proxy.ts is unchanged. Follow-ups: the same reading on /start/partner, /start/welcome and /start/event, stamping meta.funnel on the profile at signup, and an admin CSV export per region in FlowWeb's metrics header. Probe: scripts/probes/host-funnel.mjs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/host-funnel.mjs"
+  },
+  "closed": "2026-11-10",
+  "wave": "W7"
+}
