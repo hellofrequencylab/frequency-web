@@ -1,6 +1,6 @@
 {
   "id": "DEF-ETSY",
   "append": {
-    "detail": "UPDATE 2026-11-10 (P7 slice 1, pure): lib/commerce/discounts.ts evaluates a discount code against a seller's cart lines (percent rounds down, fixed is single-currency, capped at the subtotal, minimum spend, window, redemption and per-buyer limits, exact largest-remainder split per line, scoped to one seller). Nothing calls it yet: no table for codes, no redemption count, no checkout wiring, and no tax or 1099 posture. Those need a migration (Daniel applies SQL after merge) and a fee-funding decision, so they are separate slices. Row stays open."
+    "detail": "UPDATE 2026-11-10 (P5 slice 1, pure, best-practice call under the owner's standing authorization): lib/commerce/cart.ts is the cart MODEL: lines of (product, variant, qty), add/set/remove, guest-into-member merge, prune against live stock with a report, and a tolerant parser for stored carts. It holds no price and no seller on purpose: a saved price goes stale, so both are read fresh from the product rows at checkout, where funds-flow.ts already splits one or many sellers. Nothing calls it yet. Decision recorded: the persistent store is a per-buyer row holding the parsed lines (a migration plus a policy PR, Daniel applies SQL after merge), written in its own slice."
   }
 }
