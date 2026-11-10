@@ -8,6 +8,7 @@ import { CartLineControls } from '@/components/marketplace/cart-line-controls'
 import { getMyProfileId } from '@/lib/auth'
 import { CartCheckout } from '@/components/marketplace/cart-checkout'
 import { cartCheckoutEnabled } from '@/lib/commerce/cart-checkout-flag'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { cartEnabled } from '@/lib/commerce/cart-flag'
 import { loadCartView } from '@/lib/commerce/cart-load'
 
@@ -26,12 +27,13 @@ export default async function CartPage() {
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in?next=/cart')
 
+  const hero = await resolveIndexHero('/cart')
   const view = await loadCartView(profileId)
   const dropped = view.removed.length
   const reduced = view.reduced.length
 
   return (
-    <IndexTemplate title="Your cart" description="Saved from the Market. Prices are checked again when you pay.">
+    <IndexTemplate {...hero} title="Your cart" description="Saved from the Market. Prices are checked again when you pay.">
       {dropped > 0 || reduced > 0 ? (
         <div role="status" className="mb-4 rounded-card border border-border bg-surface-elevated px-4 py-3 text-body-sm text-muted">
           {dropped > 0 ? `${dropped === 1 ? 'One item is' : `${dropped} items are`} no longer for sale and left out. ` : ''}
