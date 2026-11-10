@@ -1,0 +1,6 @@
+{
+  "id": "FH-037",
+  "append": {
+    "detail": "\n\nPacket F design slice: docs/hunts/PAID-TICKET-AUTHORITY.md records the canonical authority, integration boundaries and acceptance cases. Runtime implementation, prerequisites and the existing verify probe remain the full row gate."
+  }
+}
