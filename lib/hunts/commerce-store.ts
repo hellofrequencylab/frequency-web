@@ -94,7 +94,9 @@ export async function loadTicketSource(ticketId: string): Promise<TicketSource |
   if (!t) return null
   const ticket = t as TicketRow
   const { data: ev } = await db().from('events').select('space_id, host_space_id').eq('id', ticket.event_id).maybeSingle()
-  const sellerSpaceId = ((ev as { host_space_id: string | null; space_id: string | null } | null)?.host_space_id ?? (ev as { space_id: string | null } | null)?.space_id) ?? ''
+  const evRow = ev as { host_space_id: string | null; space_id: string | null } | null
+  const hostSpace = evRow?.host_space_id
+  const sellerSpaceId = hostSpace || evRow?.space_id || ''
   const { data: rsvp } = await db().from('event_rsvps').select('profile_id').eq('from_ticket_id', ticket.id).limit(1).maybeSingle()
   const attendee = ((rsvp as { profile_id: string | null } | null)?.profile_id ?? ticket.buyer_profile_id) || null
   const seats = Array.from({ length: Math.max(ticket.qty, 0) }, (_, i) => ({ unit: seatUnit(i + 1), profileId: i === 0 ? attendee : null }))
