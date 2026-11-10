@@ -44,6 +44,8 @@ export interface StillSetup {
 /** Cues shared by both engines: sound, feel and the warm-up. */
 export interface CueSettings {
   bell: boolean
+  /** Get Moving's own on/off for its cue sound; it shares the voice and volume with the sit. */
+  moveBell: boolean
   bellTone: string
   bellVolume: number
   endBell: boolean
@@ -113,6 +115,7 @@ export function settingsFromPrefs(prefs: Partial<OnAirPrefs> | null | undefined)
       // voice, no vibration (DEFAULT_PREFS documents the product intent; the engine behaviour wins
       // until the owner rules otherwise, so nothing changes under anyone on this PR).
       bell: typeof p.bell === 'boolean' ? p.bell : false,
+      moveBell: typeof p.moveBell === 'boolean' ? p.moveBell : true,
       bellTone: typeof p.bellTone === 'string' && p.bellTone ? p.bellTone : 'soft',
       bellVolume: coerceBellVolume(p.bellVolume),
       endBell: typeof p.endBell === 'boolean' ? p.endBell : (DEFAULT_PREFS.endBell ?? true),
@@ -156,6 +159,7 @@ export function sanitizePrefsPatch(input: unknown): Partial<OnAirPrefs> | null {
   if (input.customHold !== undefined) out.customHold = phaseSec(input.customHold, 0, 4)
   if (input.customOut !== undefined) out.customOut = phaseSec(input.customOut, 3, 6)
   if (typeof input.bell === 'boolean') out.bell = input.bell
+  if (typeof input.moveBell === 'boolean') out.moveBell = input.moveBell
   if (typeof input.bellTone === 'string' && input.bellTone.length > 0 && input.bellTone.length <= 20) out.bellTone = input.bellTone
   if (typeof input.bellVolume === 'number' && Number.isFinite(input.bellVolume)) out.bellVolume = Math.min(1, Math.max(0, input.bellVolume))
   if (typeof input.endBell === 'boolean') out.endBell = input.endBell
@@ -301,7 +305,7 @@ export function describeSections(
   return { breath, sound, ambient, feel }
 }
 
-// --- Get Moving on the door (LIVE-2234) ------------------------------------------------------
+// --- Get Moving on the door (LIVE-2242) ------------------------------------------------------
 
 /** A fresh config for a sub-mode: the remembered one when it is the same mode, else the engine's
  *  own defaults (a 20 min walk or run, a 10 min stretch, a gentle flow, Tabata). */

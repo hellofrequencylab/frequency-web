@@ -146,7 +146,7 @@ type OverlayState =
       /** The Be Still sub-mode and breath pattern the door chose (LIVE-2241); the engine seeds from them. */
       stillMode?: SessionMode
       patternSlug?: string
-      /** The Get Moving plan the door composed (LIVE-2234); the engine seeds from it. */
+      /** The Get Moving plan the door composed (LIVE-2242); the engine seeds from it. */
       moveConfig?: MovementConfig
       data: OnAirSessionData
       /** The mode the door is showing (auto-routed from the practice / entry; member-togglable). */
@@ -416,7 +416,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   const api = useMemo<MindlessApi>(() => ({ open, close }), [open, close])
 
   // The door's single Go: every setting is already in the settings model or on the choice, so the
-  // engine always auto-starts; the old "More settings" second screen is gone (LIVE-2234).
+  // engine always auto-starts; the old "More settings" second screen is gone (LIVE-2242).
   function configured(choice: SetupChoice) {
     setState((s) => s.phase !== 'ready' ? s : ({ ...s, setup: false, mode: choice.mode,
       practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, autoStart: true,
@@ -496,7 +496,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             warmupSec={state.data.prefs.warmupSec}
             // The member's prefs: the settings model lays the local copy over them (LIVE-2240).
             prefs={state.data.prefs}
-            // The plan the door composed (LIVE-2234): Start runs exactly what the sub-menus showed.
+            // The plan the door composed (LIVE-2242): Start runs exactly what the sub-menus showed.
             initialConfig={state.moveConfig}
             // A per-step warm-up message override (P5), shown in the pre-roll over the practice's own.
             warmupMessageOverride={state.warmupMessage}

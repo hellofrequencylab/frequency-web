@@ -22,6 +22,7 @@ describe('timer settings model (LIVE-2240)', () => {
     expect(s.still).toEqual({ patternSlug: 'box', minutes: 10, customIn: 4, customHold: 4, customOut: 6 })
     expect(s.move).toBeNull()
     expect(s.cues.bell).toBe(false)
+    expect(s.cues.moveBell).toBe(true)
     expect(s.cues.warmupSec).toBe(5)
   })
 

@@ -43,7 +43,7 @@ describe('one shared compact setup', () => {
     act(() => begin.click())
     expect(start).toHaveBeenCalledWith({ practiceId: 'free', mode: 'still', minutesOverride: 13, stillMode: 'timer', patternSlug: 'box' })
   })
-  it('custom Get Moving length lands in the composed plan and is remembered for the Free Practice (LIVE-2234)', () => {
+  it('custom Get Moving length lands in the composed plan and is remembered for the Free Practice (LIVE-2242)', () => {
     render('move', 'free-move')
     const input = host.querySelector('input')!
     const update = (value: string) => act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true })) })
@@ -54,7 +54,7 @@ describe('one shared compact setup', () => {
     expect(start).toHaveBeenCalledWith({ practiceId: 'free-move', mode: 'move', moveConfig: expect.objectContaining({ mode: 'walk', walkMinutes: 13 }) })
     expect(JSON.parse(window.localStorage.getItem('fq_timer_settings')!)).toMatchObject({ move: { mode: 'walk', walkMinutes: 13 } })
   })
-  it('offers every Get Moving mode on the door with its Plan and Cues sub-menus, no second screen (LIVE-2234)', () => {
+  it('offers every Get Moving mode on the door with its Plan and Cues sub-menus, no second screen (LIVE-2242)', () => {
     render('move', 'free-move')
     const chips = () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Sub-mode"] button')]
     expect(chips().map((b) => b.textContent)).toEqual(['Walk', 'Run', 'Yoga', 'Strength', 'Stretch', 'Play'])

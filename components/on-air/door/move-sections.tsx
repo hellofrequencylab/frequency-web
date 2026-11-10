@@ -1,6 +1,6 @@
 'use client'
 
-// The Get Moving sub-menus of the Mindless door (LIVE-2234): Plan (Yoga flow, Strength shape with
+// The Get Moving sub-menus of the Mindless door (LIVE-2242): Plan (Yoga flow, Strength shape with
 // work, rest and rounds), Cues (the Walk reminder, Run split or Stretch switch-sides chime), and the
 // shared Sound and Feel rows. Every control exists in the movement engine; this is the same setting
 // reached from the door, written to the one settings model and carried into the engine as its
@@ -44,7 +44,7 @@ export function MoveSections({
   const structured = config.mode === 'yoga' || config.mode === 'strength'
   const cued = config.mode === 'walk' || config.mode === 'run' || config.mode === 'stretch'
   const voice = bellToneBySlug(cues.bellTone).name
-  const sound = cues.bell ? voice : 'Off'
+  const sound = cues.moveBell ? voice : 'Off'
   const feel = `${cues.warmupSec} s countdown, vibration ${cues.haptics ? 'on' : 'off'}`
   const intervals = config.mode === 'walk' ? WALK_INTERVAL_PRESETS : config.mode === 'run' ? RUN_INTERVAL_PRESETS : STRETCH_INTERVAL_PRESETS
   const cueLabel = config.mode === 'walk' ? 'Reminder' : config.mode === 'run' ? 'Split' : 'Switch sides'
@@ -90,7 +90,7 @@ export function MoveSections({
           </fieldset>
         </DoorSection>
       )}
-      <SoundSection cues={cues} set={set} audio={audio} summary={sound} open={isOpen('sound')} onToggle={() => toggle('sound')} intervalBell={false} endBell={false} hint="Bells on phase changes, the 3-2-1 count and the end." />
+      <SoundSection cues={cues} set={set} audio={audio} summary={sound} open={isOpen('sound')} onToggle={() => toggle('sound')} intervalBell={false} endBell={false} flag="moveBell" hint="Bells on phase changes, the 3-2-1 count and the end." />
       <FeelSection cues={cues} set={set} summary={feel} open={isOpen('feel')} onToggle={() => toggle('feel')} vibrationHint="A small tap on each phase change and the end, where the device supports it." />
     </div>
   )

@@ -1,7 +1,7 @@
 'use client'
 
 // The Sound and Feel sub-menus of the Mindless door, shared by Be Still and Get Moving
-// (LIVE-2233, LIVE-2234). Previews (a bell strike, a short ambient audition) run on a tap, which
+// (LIVE-2241, LIVE-2242). Previews (a bell strike, a short ambient audition) run on a tap, which
 // is the gesture that unlocks audio. Every change writes the one settings model.
 
 import { useEffect, useRef } from 'react'
@@ -69,6 +69,7 @@ export function SoundSection({
   intervalBell,
   endBell,
   hint,
+  flag = 'bell',
 }: {
   cues: CueSettings
   set: (patch: TimerSettingsPatch) => void
@@ -81,11 +82,14 @@ export function SoundSection({
   /** The closing double strike is the sit's; Get Moving rings its own end. */
   endBell: boolean
   hint: string
+  /** Which on/off this section flips: the sit's `bell` (default off) or Get Moving's `moveBell` (default on). */
+  flag?: 'bell' | 'moveBell'
 }) {
+  const on = cues[flag]
   return (
     <DoorSection icon={<Volume2 className="h-4 w-4" />} name="Sound" summary={summary} open={open} onToggle={onToggle}>
-      <ToggleRow label="Sound" hint={hint} checked={cues.bell} onChange={(v) => set({ cues: { bell: v } })} />
-      {cues.bell && (
+      <ToggleRow label="Sound" hint={hint} checked={on} onChange={(v) => set({ cues: { [flag]: v } })} />
+      {on && (
         <>
           <OptionRow
             label="Bell voice"

@@ -408,6 +408,8 @@ export interface OnAirPrefs {
   customOut?: number
   /** Soft bell on phase changes (breath) / minute marks (timer). Default off. */
   bell?: boolean
+  /** Get Moving cue sound (phase bells, the 3-2-1 count, the end). Default on (owner 2026-11-10). */
+  moveBell?: boolean
   /** Which bell voice (P5): soft | low | amber | bowl. */
   bellTone?: string
   /** Bell loudness — scales the synth peak. Default medium. */

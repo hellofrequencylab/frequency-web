@@ -1,4 +1,4 @@
-// LIVE-2234: every Get Moving setting the movement engine owns is reachable from the Mindless door
+// LIVE-2242: every Get Moving setting the movement engine owns is reachable from the Mindless door
 // itself, as sub-menus that expand in place, and the door's single Go is the only way in: the
 // "More settings" second screen is gone for both modes. Source contract; the render test is
 // components/on-air/compact-setup.test.tsx in the test job.
@@ -21,8 +21,9 @@ const engine = read('components/on-air/movement-session.tsx')
 assert.ok(/initialConfig\?: MovementConfig \| null/.test(engine), 'the movement engine must accept the door plan')
 assert.ok(!engine.includes("bellToneBySlug('soft')"), 'the movement engine must not hardcode the bell voice')
 assert.ok(engine.includes('settings.cues.haptics'), 'vibration must follow the Feel setting')
-assert.ok(engine.includes('settings.cues.bell'), 'cue sound must follow the Sound setting')
+assert.ok(engine.includes('settings.cues.moveBell'), 'cue sound must follow the Get Moving Sound setting')
+assert.ok(read('lib/on-air/timer-settings.ts').includes("typeof p.moveBell === 'boolean' ? p.moveBell : true"), 'Get Moving cues default on (owner 2026-11-10)')
 const provider = read('components/on-air/mindless.tsx')
 assert.ok(provider.includes('initialConfig={state.moveConfig}'), 'the provider must hand the door plan to the engine')
 assert.ok(!provider.includes('onAdvanced'), 'the provider must not keep an advanced path')
-console.log('The Get Moving door contract holds (LIVE-2234).')
+console.log('The Get Moving door contract holds (LIVE-2242).')

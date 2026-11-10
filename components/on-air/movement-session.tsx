@@ -116,7 +116,7 @@ type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 // still opens on its creator's preset. The engine owns no storage key of its own any more.
 
 // The cue voice, loudness, on/off and vibration all come from the ONE cue model the door's Sound
-// and Feel sub-menus edit (LIVE-2234); the engine no longer hardcodes a voice or always buzzes.
+// and Feel sub-menus edit (LIVE-2242); the engine no longer hardcodes a voice or always buzzes.
 
 // The six mode icons (C.1): the movement modes show the SAME way the Mindless
 // modes do, so each gets a small glyph above its label in the 3-up grid.
@@ -224,7 +224,7 @@ export function MovementSession({
   minutesOverride?: number
   /** The member's server prefs; the settings model lays the local copy over them (LIVE-2240). */
   prefs?: Partial<OnAirPrefs> | null
-  /** The plan the door composed (LIVE-2234): wins for a fresh run so Start on the door runs exactly
+  /** The plan the door composed (LIVE-2242): wins for a fresh run so Start on the door runs exactly
    *  what its sub-menus showed. A resume still overrides the length; a crash recovery still applies
    *  the saved record's config. */
   initialConfig?: MovementConfig | null
@@ -335,7 +335,7 @@ export function MovementSession({
 
   const tone = useMemo(() => bellToneBySlug(settings.cues.bellTone), [settings.cues.bellTone])
   const cueVol = settings.cues.bellVolume
-  const soundOn = settings.cues.bell
+  const soundOn = settings.cues.moveBell
   const vibe = (pulse: number | number[] = 15) => { if (settings.cues.haptics) buzz(pulse) }
 
   const [practiceId, setPracticeId] = useState(initialId)
@@ -1313,7 +1313,7 @@ export function MovementSession({
         {/* The setup body centers vertically in the viewport and scrolls when it
             overflows; the Start bar below stays docked and visible (LAYOUT directive). */}
         <div className="flex flex-1 flex-col justify-center gap-5 py-2">
-        {/* An authored practice that locks its length also locks its shape (LIVE-2234): the mode
+        {/* An authored practice that locks its length also locks its shape (LIVE-2242): the mode
             grid and tuning stay visible but inert, with one line saying why. */}
         <fieldset disabled={!!practice?.durationLocked} className="contents" aria-describedby={practice?.durationLocked ? 'move-locked-hint' : undefined}>
         {practice?.durationLocked && (
