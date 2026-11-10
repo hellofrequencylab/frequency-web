@@ -908,6 +908,8 @@ The cutover runs in three steps (BLD-108, shadow render and cutover):
 
 Five switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on): `HUNTS_ENABLED` (browse, entry, the player's own run), `HUNTS_CLAIMS_ENABLED` (a scan may credit a mission), `HUNTS_REWARDS_ENABLED` (a credit may grant a reward), `HUNTS_AUTHORING_ENABLED` (creators draft and publish), `HUNTS_WORKER_ENABLED` (the outbox worker delivers). Each is on only when its parent is: claims and authoring and the worker need `HUNTS_ENABLED`; rewards need claims. Setting a lower rung alone never opens a higher one.
 
+`HUNTS_CLAIMS_ENABLED` also opens the staff door (`POST /api/hunts/staff/verify`, FH-020S), which signs and checks one-time player codes with `HUNTS_PROOF_SECRET`. Set that secret in Production before turning claims on: production refuses to fall back to the service-role key and the door answers 500 until it is set. A held claim is decided through `hunt_claim_review` (approve, reject or an audited override); an approval resumes it exactly once.
+
 Gate to turn one on: every Hunt migration up to the rung is applied in Frequency Community (hunt_outbox for the worker, hunt_claim_apply for claims), the legacy check-in, reward and commerce paths show no change with all switches off, and the rung below has run clean. Order: enabled, claims, authoring, worker, rewards. Rollback is unsetting the switch: no data moves, claims already credited stay credited, and outbox rows wait for the worker to return.
 
 ### Stripe and progressive-dinner pilot gate
