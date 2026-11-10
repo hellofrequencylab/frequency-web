@@ -1,6 +1,10 @@
 {
   "id": "FH-011",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
+  },
   "append": {
-    "detail": "\n\nBuilt 2026-11-10: lib/hunts/flags.ts holds five dark switches (HUNTS_ENABLED, HUNTS_CLAIMS_ENABLED, HUNTS_REWARDS_ENABLED, HUNTS_AUTHORING_ENABLED, HUNTS_WORKER_ENABLED) on envFlag, each on only when its parent is, so a lower rung alone never opens a higher one. Listed blank in .env.example with a one-line gate; activation gate and rollback in docs/RUNBOOKS.md (Frequency Hunts switches). Not done here: synthetic legacy rows and exact-SHA staging checks are a separate step that needs the switches wired into routes (FH-014 onward); the row stays open for that."
+    "detail": "\n\nBuilt 2026-11-10: lib/hunts/flags.ts holds five dark switches (HUNTS_ENABLED, HUNTS_CLAIMS_ENABLED, HUNTS_REWARDS_ENABLED, HUNTS_AUTHORING_ENABLED, HUNTS_WORKER_ENABLED) on envFlag, each on only when its parent is, so a lower rung alone never opens a higher one. Listed blank in .env.example with a one-line gate; activation gate and rollback in docs/RUNBOOKS.md (Frequency Hunts switches). The remaining half of the original ask (synthetic legacy rows, exact-SHA staging checks with all switches off, observability) moved to FH-011S because it needs the switches wired into routes first."
   }
 }
