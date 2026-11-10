@@ -4,7 +4,7 @@
 // kit's own surfaces, stored under public/themes/temple-kit (shots and layouts): the thirteen profile websites
 // through the real chrome and blocks, and the Spotlight layouts through the real Spotlight shell. The id of each
 // profile equals the Wizard niche (lib/theme/mega-theme.ts).
-import data from './temple-feature-data.json'
+import data from './temple-feature-data.json' with { type: 'json' }
 
 interface TempleKit {
   id: string
