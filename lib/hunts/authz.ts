@@ -11,7 +11,7 @@
  * this module is the part that can be tested without one.
  */
 
-export type HuntRole = 'owner' | 'admin' | 'editor' | 'operator'
+type HuntRole = 'owner' | 'admin' | 'editor' | 'operator'
 
 export type HuntAction =
   | 'read_public'
@@ -34,7 +34,7 @@ export type HuntAction =
   | 'export_hunt'
   | 'read_roster'
 
-export type DenyReason =
+type DenyReason =
   | 'signed_out'
   | 'not_visible'
   | 'no_role'
@@ -48,7 +48,7 @@ export type DenyReason =
   | 'owner_only'
   | 'forbidden_for_everyone'
 
-export type Decision = { allow: true; via: string; audit: boolean } | { allow: false; reason: DenyReason }
+type Decision = { allow: true; via: string; audit: boolean } | { allow: false; reason: DenyReason }
 
 export interface HuntFacts {
   id: string
