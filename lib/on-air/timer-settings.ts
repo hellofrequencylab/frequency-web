@@ -1,4 +1,4 @@
-// The Mindless timer's ONE settings model (LIVE-2232). Every member-chosen setting of both
+// The Mindless timer's ONE settings model (LIVE-2240). Every member-chosen setting of both
 // engines (the Be Still sit and the Get Moving run) lives here, in one shape, saved the moment
 // it changes: to localStorage at once, and to profiles.meta.onAir through saveOnAirPrefs
 // (app/(main)/on-air/actions.ts) so another device opens the same way.

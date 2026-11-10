@@ -490,7 +490,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             autoStart={state.autoStart}
             // The member's warm-up length pref, shared with the sit (item #10).
             warmupSec={state.data.prefs.warmupSec}
-            // The member's prefs: the settings model lays the local copy over them (LIVE-2232).
+            // The member's prefs: the settings model lays the local copy over them (LIVE-2240).
             prefs={state.data.prefs}
             // A per-step warm-up message override (P5), shown in the pre-roll over the practice's own.
             warmupMessageOverride={state.warmupMessage}

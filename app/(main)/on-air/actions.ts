@@ -215,7 +215,7 @@ export async function completeSession(
   // incremental airtime (sessionSeconds), never the cumulative a resume reports, so a resumed sit
   // doesn't inflate the running total either.
   //
-  // The member's setup is NOT written here any more (LIVE-2232). It used to be derived from the
+  // The member's setup is NOT written here any more (LIVE-2240). It used to be derived from the
   // sit that just ended, which stored a Just Log as a 1-minute remembered length and let a Get
   // Moving finish reset the saved breath pattern. Every setting now saves the moment it changes
   // through saveOnAirPrefs, below, from the one settings model (lib/on-air/timer-settings.ts).
@@ -405,7 +405,7 @@ export async function completeSession(
   })
 }
 
-/** Save a change to the member's Mindless settings the moment it is made (LIVE-2232). The one
+/** Save a change to the member's Mindless settings the moment it is made (LIVE-2240). The one
  *  settings model (lib/on-air/timer-settings.ts) sends only prefs keys; this clamps every value
  *  and merges ONLY the onAir key so no other writer of profiles.meta is clobbered (ADR-1212).
  *  Nothing here touches the economy: a setting is remembered, never paid for. */

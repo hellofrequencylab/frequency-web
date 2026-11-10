@@ -429,7 +429,7 @@ export interface OnAirPrefs {
   /** Show the per-phase breath count on the Breathe visualizer. Default on (LIVE-2233). */
   showBreathCount?: boolean
   /** The last Get Moving configuration the member ran unattached (Free Practice memory), kept
-   *  beside the sit's choices so another device opens the same way (LIVE-2232). */
+   *  beside the sit's choices so another device opens the same way (LIVE-2240). */
   move?: MovementConfig | null
 }
 

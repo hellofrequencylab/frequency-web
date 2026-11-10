@@ -16,7 +16,7 @@ function store(init: Record<string, string> = {}) {
   return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), map: m }
 }
 
-describe('timer settings model (LIVE-2232)', () => {
+describe('timer settings model (LIVE-2240)', () => {
   it('reads the server copy with product defaults for anything missing', () => {
     const s = settingsFromPrefs({})
     expect(s.still).toEqual({ patternSlug: 'box', minutes: 10, customIn: 4, customHold: 4, customOut: 6 })

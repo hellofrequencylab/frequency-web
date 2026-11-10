@@ -155,7 +155,7 @@ type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 
 // --- saved setup --------------------------------------------------------------
 // The member's choices (pattern, open length, custom phases, every cue) live in the ONE timer
-// settings model (lib/on-air/timer-settings.ts, LIVE-2232): local copy over server copy on
+// settings model (lib/on-air/timer-settings.ts, LIVE-2240): local copy over server copy on
 // mount, and every change saved the moment it is made (useSaveOnChange below). The engine owns
 // no storage key of its own any more.
 
@@ -564,7 +564,7 @@ export function OnAirSession({
   // could never enter it reliably; the dvh takeover above covers any device that
   // denies (iOS Safari). On leave, exitAppFullscreen drops it.
 
-  // Remember every choice the moment it changes (LIVE-2232): the pattern, the custom phases and
+  // Remember every choice the moment it changes (LIVE-2240): the pattern, the custom phases and
   // every cue always; the OPEN length only when the member chose it for a practice with no length
   // of its own, never a resume's remaining minutes or an authored length, so the remembered
   // default is always the member's own number.
