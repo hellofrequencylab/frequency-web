@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { CartLineControls } from '@/components/marketplace/cart-line-controls'
 import { getMyProfileId } from '@/lib/auth'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { cartEnabled } from '@/lib/commerce/cart-flag'
 import { loadCart } from '@/lib/commerce/cart-store'
 import { buildCartView } from '@/lib/commerce/cart-view'
@@ -28,6 +29,7 @@ export default async function CartPage() {
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in?next=/cart')
 
+  const hero = await resolveIndexHero('/cart')
   const cart = await loadCart(profileId)
   const ids = [...new Set(cart.map((l) => l.productId))]
   const [found, variants] = await Promise.all([
@@ -41,7 +43,7 @@ export default async function CartPage() {
   const reduced = view.reduced.length
 
   return (
-    <IndexTemplate title="Your cart" description="Saved from the Market. Prices are checked again when you pay.">
+    <IndexTemplate {...hero} title="Your cart" description="Saved from the Market. Prices are checked again when you pay.">
       {dropped > 0 || reduced > 0 ? (
         <div role="status" className="mb-4 rounded-card border border-border bg-surface-elevated px-4 py-3 text-body-sm text-muted">
           {dropped > 0 ? `${dropped === 1 ? 'One item is' : `${dropped} items are`} no longer for sale and left out. ` : ''}
