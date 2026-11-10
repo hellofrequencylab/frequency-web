@@ -18,7 +18,7 @@
 import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
 
 /** Where a published trail can be found. `private` is the draft state, never chosen. */
-export const HUNT_PUBLISH_VISIBILITY: readonly FieldOption[] = [
+const HUNT_PUBLISH_VISIBILITY: readonly FieldOption[] = [
   { value: 'unlisted', label: 'Unlisted (anyone with the link)' },
   { value: 'public', label: 'Public (on the list, after a person looks at it)' },
 ]

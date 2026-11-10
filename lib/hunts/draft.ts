@@ -32,14 +32,10 @@ export type TrailDraft = {
 export const MIN_STOPS = 3
 export const MAX_STOPS = 10
 /** Field caps, the same numbers the hunt_missions columns hold (title 120) plus plain room for a clue. */
-export const TRAIL_LIMITS = { title: 120, line: 200, clue: 1000 } as const
+const TRAIL_LIMITS = { title: 120, line: 200, clue: 1000 } as const
 
 /** `stop-1`, `stop-2`, ... Keys follow position, so reordering a stop reorders the Trail. */
 export const stopKey = (index: number): string => `stop-${index + 1}`
-
-export function emptyTrailDraft(): TrailDraft {
-  return { title: '', hook: '', area: '', audience: '', stops: [], routeTestedAtRevision: null, permissionConfirmed: false }
-}
 
 export function emptyStop(): Stop {
   return { place: '', clue: '', hint: '', placementReady: false }
@@ -148,7 +144,7 @@ export async function saveDraft(store: DraftStore, input: { huntId: string; base
 // ── Publishing ───────────────────────────────────────────────────────────────────────────────
 
 /** The rows an immutable published version holds (FH-005 tables), derived from the draft. Pure. */
-export type PublishRows = {
+type PublishRows = {
   missions: { mission_key: string; title: string; visible_body: string; locked_teaser: string | null; kind: 'visit'; required_assurance: 'signed_node' }[]
   /** One prerequisite group per stop after the first, plus the finish group. */
   groups: { key: string; target_mission_key: string | null; target_finish: boolean; logic: 'all'; members: string[] }[]

@@ -197,7 +197,7 @@ export async function loadTrail(huntId: string, actor: Actor): Promise<TrailEdit
   }
 }
 
-export type TrailSummary = { huntId: string; title: string; status: string; visibility: HuntRow['visibility']; stops: number; updatedAt: string | null }
+type TrailSummary = { huntId: string; title: string; status: string; visibility: HuntRow['visibility']; stops: number; updatedAt: string | null }
 
 /** The Hunts this profile owns, newest first. Only the owner's own rows; grants come later. */
 export async function listMyTrails(profileId: string): Promise<TrailSummary[]> {
@@ -307,7 +307,7 @@ export async function markRouteTested(huntId: string, actor: Actor, revision: nu
 
 // ── Publish ──────────────────────────────────────────────────────────────────────────────────
 
-export const contentHash = (draft: TrailDraft): string => createHash('sha256').update(canonicalContent(draft)).digest('hex')
+const contentHash = (draft: TrailDraft): string => createHash('sha256').update(canonicalContent(draft)).digest('hex')
 
 export type PublishResult =
   | { ok: true; versionNo: number; contentHash: string; visibility: PublishVisibility }

@@ -6,6 +6,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { listMyTrails } from '@/lib/hunts/store'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 
@@ -20,10 +21,11 @@ export default async function MyTrailsPage() {
   if (!huntSwitchOn('authoring')) notFound()
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in?next=/hunts/edit')
-  const trails = await listMyTrails(profileId)
+  const [trails, hero] = await Promise.all([listMyTrails(profileId), resolveIndexHero('/hunts/edit')])
 
   return (
     <IndexTemplate
+      {...hero}
       title="Your trails"
       description="Clue trails you have started. Open one to keep going, or start a new one with three stops."
       action={
