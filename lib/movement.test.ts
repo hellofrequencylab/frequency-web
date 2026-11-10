@@ -168,6 +168,14 @@ describe('phaseAt', () => {
     expect(pos.nextLabel).toBe('Work') // next round's work
   })
 
+  it('keeps the final phase elapsed growing past the end, so minute cues carry on (LIVE-2244)', () => {
+    const walk = buildWalk({ minutes: 10 })
+    const pos = phaseAt(walk, 600 + 125)
+    expect(pos.done).toBe(true)
+    expect(pos.remaining).toBe(0)
+    expect(pos.phaseElapsed).toBe(725)
+  })
+
   it('advances the round counter across blocks', () => {
     // Round 1 = 30s. Round 2 work starts at 30s.
     const pos = phaseAt(tabata, 31)
