@@ -3,3 +3,4 @@
 # editor-collab.tsx: imported only by NodePageBuilder (the owner's page builder), which mounts it past the owner guard and only while EDITOR_COLLAB is on; the editor-crdt import is dynamic, so it is its own chunk.
 components/entity-blocks/editor-collab.tsx
 components/builder/canvas/collab-text-editor.tsx
+components/builder/canvas/collab-canvas.tsx
