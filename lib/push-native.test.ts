@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 vi.mock('@/lib/comms/send-gate', () => ({ resolveSendGate: async () => ({ allowed: gateAllowed }) }))
-vi.mock('web-push', () => ({ default: { setVapidDetails: () => {}, sendNotification: async () => {} } }))
+vi.mock('web-push', () => ({ setVapidDetails: () => {}, sendNotification: async () => {} }))
 
 const payload = { title: 'Hi', body: 'A new post', url: '/feed' }
 
