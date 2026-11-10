@@ -7,7 +7,7 @@
 // Yjs state. Editor only: no visitor bundle may import this.
 
 import type * as Y from 'yjs'
-import type { EntityKind } from '../entity-blocks/layout'
+import type { EntityKind } from '../entity-blocks/registry'
 import type { NodeLayout } from '../entity-blocks/node-tree'
 import { sanitizeNodeLayout } from '../entity-blocks/node-ops'
 import { serializeLayout } from './node-ydoc'
