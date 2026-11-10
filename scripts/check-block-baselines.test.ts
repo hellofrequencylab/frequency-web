@@ -15,7 +15,7 @@ describe('check:block-baselines', () => {
   it('counts only manifest paths that exist', () => {
     const e = live.entries[0]
     expect(measure(e, () => true)).toBe(e.patterns.length)
-    expect(measure(e, (p: string) => p === e.patterns[0])).toBe(1)
+    expect(measure(e, (p) => String(p) === e.patterns[0])).toBe(1)
   })
   it('fails when a block system is added (a rise)', () => {
     const c = clone()
