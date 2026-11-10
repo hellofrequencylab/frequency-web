@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-1204",
+  "title": "Stop /create-a-space and /themes asking the browser to fetch Google Fonts CSS that connect-src blocks",
+  "lane": "hygiene",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "scripts/audit/route-family-audit.mjs",
+    "ref": "SCAN-1032 audit run 2026-11-09 against a production build of main 247fa6a2c; /themes"
+  },
+  "detail": "One CSP violation per page: Connecting to https://fonts.googleapis.com/css2?family=Barlow... is refused by connect-src (next.config.ts). Find the client fetch of the font stylesheet (a <link> would be style-src, so this is a fetch), then load it through the allowed route or self-host the face, rather than widening connect-src. Done when: node scripts/audit/route-family-audit.mjs --routes /themes reports no finding of this kind. 2026-11-10: NOT AN APP BUG. The blocked request is axe-core fetching the cross-origin stylesheet to read its rules; the page's own <link> loads and is allowed by style-src. Checked on a production build: 0 CSP violations without axe, 1 with, on both pages, and nothing in the app calls fetch or XHR to fonts.googleapis.com (initiator is the parser). The audit script now ignores that one console message. connect-src is unchanged. Side finding, not chased: /create-a-space logs one script-src violation for eval at /_next/static/chunks/*.js.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"scripts/audit/route-family-audit.mjs\",\"utf8\");process.exit(/fonts\\\\\\.googleapis\\\\\\.com/.test(s)&&!/connect-src \\\\\\.\\\\\\*(fonts|google)/.test(s)?0:1)'"
+  },
+  "wave": "W7"
+}
