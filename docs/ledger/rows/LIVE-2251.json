@@ -1,18 +1,18 @@
 {
   "id": "LIVE-2251",
-  "title": "Send FlowWeb's lead-hunt messages from Frequency: signed, off by default, suppression and a daily cap, with unsubscribe, postal address and, when asked, a posted event with its claim link",
+  "title": "Build claim links for FlowWeb's lead hunts: signed, off by default, suppression-checked, a posted event per organizer, and Frequency never sends the message",
   "lane": "live",
   "priority": "P1",
   "size": "M",
   "status": "done",
   "source": {
-    "file": "app/api/webhooks/flowweb-outreach/route.ts",
-    "ref": "FlowWeb row FW-C-041 (saved event lead hunts). Daniel, 2026-11-10: 'set up auto hunts for events, find their creators email or contact info ... send them a customized lead message with a claim link. The building stuff / claim link can be a second selectible layer.'"
+    "file": "app/api/webhooks/flowweb-claim/route.ts",
+    "ref": "FlowWeb row FW-C-041 (saved event lead hunts). Daniel, 2026-11-10: 'set up auto hunts for events, find their creators email or contact info ... send them a customized lead message with a claim link. The building stuff / claim link can be a second selectible layer.' Then, 2026-11-10: Resend's rules ban cold outreach, so hunt messages go from Daniel's own Workspace mailbox ('follow the rules'), and 'Build the thing' (the claim-link builder)."
   },
-  "detail": "POST /api/webhooks/flowweb-outreach takes one FlowWeb outbox item, signed as hex HMAC-SHA256 of `${x-flowweb-timestamp}.${body}` under FLOWWEB_OUTREACH_SECRET (5 minute window; no secret = 401). The item must name a deliverable address, the public page it came from (which the body must quote) and carry FlowWeb's 'reply no' opt-out. Gates in order: FLOWWEB_OUTREACH_ENABLED (envFlag, off by default, answers off), FLOWWEB_OUTREACH_REPLY_TO set, suppression (global or the root Space's own opt-outs, fail-closed), daily cap (FLOWWEB_OUTREACH_DAILY_CAP, default 50, counted on outreach_sends), unsubscribe link. With build, the event is posted for its organizer through the existing poster-events claim spine (seed owner as poster, published 'posted', organizer contact stamped after publish so the stock claim email is not sent twice) and {{claim_url}} is filled with /events/claim/<token>; a retried item reuses its event (events.details.flowweb.item_id). The send is the queue's email job, deduped on flowweb:<id>, with the root-Space unsubscribe link, List-Unsubscribe headers and the postal line. Pure rules in lib/flowweb/outreach.ts, IO in lib/flowweb/outreach-io.ts, runbook gate in docs/RUNBOOKS.md. Probe: scripts/probes/flowweb-outreach.mjs.\n\nEndpoint, gates and claim build shipped; switch stays off until the RUNBOOKS gate passes.",
+  "detail": "POST /api/webhooks/flowweb-claim takes one FlowWeb hunt item with build on, signed as hex HMAC-SHA256 of `${x-flowweb-timestamp}.${body}` under FLOWWEB_CLAIM_SECRET (5 minute window; no secret = 401). The item must name a deliverable address, the public page it came from (which the body must quote), FlowWeb's 'reply no' opt-out and the {{claim_url}} slot. Gates in order: FLOWWEB_CLAIM_ENABLED (envFlag, off by default, answers off), suppression (global or the root Space's own opt-outs, fail-closed, answers suppressed). Then the event is posted for its organizer through the existing poster-events claim spine (seed owner as poster, published 'posted', organizer contact stamped after publish so the stock claim email is not sent) and the answer is { status: 'built', claimUrl: /events/claim/<token>, eventUrl }; a retried item reuses its event (events.details.flowweb.item_id). Frequency sends no email here: FlowWeb's sender mails the organizer from the founder's own mailbox. Pure rules in lib/flowweb/claim.ts, IO in lib/flowweb/claim-io.ts, runbook gate in docs/RUNBOOKS.md. Probe: scripts/probes/flowweb-claim.mjs.\n\nEndpoint and claim build shipped; switch stays off until the RUNBOOKS gate passes.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/flowweb-outreach.mjs"
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/flowweb-claim.mjs"
   },
   "closed": "2026-11-10",
   "wave": "W7"
