@@ -8,6 +8,7 @@
 
 import { useCallback, useId, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { Input } from '@/components/ui/field'
 
 const OPEN_KEY = 'fq_timer_door_sections'
 
@@ -127,14 +128,15 @@ export function VolumeRange({ label, value, onChange, onCommit }: { label: strin
         <span className="text-meta font-medium text-muted">{label}</span>
         <span className="text-meta font-medium tabular-nums text-muted">{Math.round(value * 100)}%</span>
       </div>
-      <input
+      <Input
+        variant="seamless"
         type="range"
         min={0}
         max={100}
         step={5}
         value={Math.round(value * 100)}
         onChange={(e) => onChange(Number(e.target.value) / 100)}
-        onPointerUp={(e) => onCommit?.(Number((e.currentTarget as HTMLInputElement).value) / 100)}
+        onPointerUp={(e) => onCommit?.(Number(e.currentTarget.value) / 100)}
         aria-label={label}
         className="mt-1.5 w-full accent-primary"
       />
