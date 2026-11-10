@@ -177,3 +177,21 @@ platform_flags
 
 # ADR-1938 (LIVE-2081): retired Space Circle slugs for the old-link redirect; read by the service role only.
 retired_space_circles
+# FH-005 Frequency Hunts authoring tables: RLS on, no policy, browser grants revoked; lib/hunts writes through the service role after its own gate.
+hunts
+hunt_versions
+hunt_roles
+hunt_partners
+hunt_missions
+hunt_rule_groups
+hunt_rule_group_members
+hunt_nodes
+hunt_placements
+hunt_mission_placements
+# FH-006 Frequency Hunts transactional records: service role only, written by lib/hunts after its own gate; no browser role.
+hunt_runs
+hunt_claims
+hunt_progress
+hunt_command_keys
+hunt_audit
+hunt_compensations

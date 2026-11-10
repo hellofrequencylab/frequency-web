@@ -19,10 +19,12 @@ export function ComposeToolbar({
   preheader,
   fromName,
   replyMode,
+  purpose,
   onSubject,
   onPreheader,
   onFromName,
   onReplyMode,
+  onPurpose,
   previewOpen,
   onTogglePreview,
   showPreviewToggle = true,
@@ -41,6 +43,10 @@ export function ComposeToolbar({
   onFromName: (value: string) => void
   /** Provide to show the reply-mode toggle (the campaign composer). Omit on surfaces with a fixed mode. */
   onReplyMode?: (value: 'broadcast' | 'conversation') => void
+  /** What this email is. Paired with onPurpose, a Newsletter/Promotion toggle shows. A promotion always needs
+   *  marketing permission, whoever it is addressed to. */
+  purpose?: 'marketing' | 'lifecycle'
+  onPurpose?: (value: 'marketing' | 'lifecycle') => void
   previewOpen: boolean
   onTogglePreview: () => void
   /** The trio layout shows the preview permanently on the right, so it hides this toggle. */
@@ -138,6 +144,38 @@ export function ComposeToolbar({
                 Try again
               </button>
             </p>
+          </div>
+        )}
+        {onPurpose && (
+          <div className="block sm:col-span-2">
+            <span className="mb-1 block eyebrow text-muted">Email type</span>
+            <div className="inline-flex items-center gap-1 rounded-control bg-surface-elevated p-0.5 text-meta">
+              <button
+                type="button"
+                onClick={() => onPurpose('lifecycle')}
+                aria-pressed={purpose !== 'marketing'}
+                className={`rounded-control px-2.5 py-1 font-semibold transition-colors ${
+                  purpose !== 'marketing' ? 'bg-surface text-primary-strong lift-1' : 'text-muted'
+                }`}
+              >
+                Newsletter
+              </button>
+              <button
+                type="button"
+                onClick={() => onPurpose('marketing')}
+                aria-pressed={purpose === 'marketing'}
+                className={`rounded-control px-2.5 py-1 font-semibold transition-colors ${
+                  purpose === 'marketing' ? 'bg-surface text-primary-strong lift-1' : 'text-muted'
+                }`}
+              >
+                Promotion
+              </button>
+            </div>
+            <span className="mt-1 block text-2xs text-muted">
+              {purpose === 'marketing'
+                ? 'An invitation or an offer. Only goes to people who have said yes to promotions.'
+                : 'News and updates for your members. They can still unsubscribe.'}
+            </span>
           </div>
         )}
         {onReplyMode && (

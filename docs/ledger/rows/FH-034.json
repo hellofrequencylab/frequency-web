@@ -1,0 +1,18 @@
+{
+  "id": "FH-034",
+  "title": "Hunts FH-034: Qualify regional skate pilot",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-LIST.md",
+    "ref": "Frequency Hunts Build Plan (9 Nov 2026), Tier 3, Pilot. Owner asked 2026-11-09 to build the program into the site."
+  },
+  "detail": "Confirm shop clusters, Poods option, accessibility, no-stunt policy, staffing, permits and bad-weather plan. Done when: Owner signs venue and city prerequisites before announcement. Player can complete through one accessible cluster. Requires: FH-033. Owner role: Local operations.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"docs/hunts/PILOT-REGIONAL.md\")?0:1)'"
+  },
+  "wave": "W7"
+}
