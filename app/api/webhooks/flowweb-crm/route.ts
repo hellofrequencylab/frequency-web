@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server'
 import { envFlag, envStringOrNull } from '@/lib/env/string'
 import { verifySignature } from '@/lib/flowweb/claim'
 import { parseCrmItem } from '@/lib/flowweb/crm'
-import { syncFlowwebLead } from '@/lib/flowweb/crm-io'
+import { ownerIsProfile, syncFlowwebLead } from '@/lib/flowweb/crm-io'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { log } from '@/lib/log'
 
@@ -37,6 +37,12 @@ export async function POST(req: Request) {
   const rootId = await loadRootSpaceId()
   if (!rootId) return NextResponse.json({ status: 'error', reason: 'the root Space is not set' }, { status: 500 })
   try {
+    // Checked before any write, so a wrong owner id leaves no half-made lead behind.
+    if (!(await ownerIsProfile(ownerId)))
+      return NextResponse.json(
+        { status: 'no_owner', reason: 'FLOWWEB_CRM_OWNER_PROFILE_ID is not a profile id in this database' },
+        { status: 409 },
+      )
     const out = await syncFlowwebLead(item, { rootId, ownerId })
     log.info('flowweb.crm', { tag: item.tag, lead_status: out.leadStatus, added: out.added })
     const site = new URL(req.url).origin
