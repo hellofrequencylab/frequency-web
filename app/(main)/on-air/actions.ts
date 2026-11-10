@@ -77,23 +77,6 @@ export interface CompleteSessionInput {
    *  in history; the economy + timer-proof path is unchanged (Movement still claims a timed sit
    *  via mode 'timer'). Omitted for a plain Mindless sit. */
   movementMode?: string | null
-  /** Custom-pattern seconds + cue toggles, remembered with the rest of the setup (P3). */
-  customIn?: number
-  customHold?: number
-  customOut?: number
-  bell?: boolean
-  bellTone?: string
-  /** Bell loudness as a 0..1 slider fraction (was the quiet/medium/loud presets). */
-  bellVolume?: number
-  endBell?: boolean
-  bellEveryMin?: number
-  haptics?: boolean
-  /** Ambient loop slug, null = none. */
-  ambientTrack?: string | null
-  /** Ambient loop loudness as a 0..1 slider fraction. */
-  ambientVolume?: number
-  /** The warm-up countdown length (3 | 5 | 10s), remembered with the rest of the setup. */
-  warmupSec?: number
   /** The optional free-text reflection from a Journal / Just Log session. Trimmed + capped
    *  server-side; empty becomes null. Stored on the session history row, never the economy. */
   note?: string | null
