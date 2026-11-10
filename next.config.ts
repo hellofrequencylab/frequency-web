@@ -55,10 +55,10 @@ const csp = [
   // LIVE-ADS-CSP-CONNECT-SRC (2026-11-10): once GA4 is linked to Google Ads the tag also calls
   // analytics.google.com, stats.g.doubleclick.net and www.google.com/g/collect (the production
   // audit logged 5 connect-src violations a page). Exactly those, no wildcard; the Ads import of the
-  // GA4 sign_up key event needs no Ads pixel host. test/contract/csp-google-hosts.test.ts holds them.
+  // GA4 sign_up key event needs no Ads pixel host. www.googletagmanager.com is added for the tag's own /td diagnostics call, which prod blocked in about 2 of 20 loads (2026-11-10). test/contract/csp-google-hosts.test.ts holds them.
   // Browser error envelopes use this exact configured organization ingest origin.
   // No Sentry wildcard: keep unrelated organizations outside the connection policy.
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com/g/collect https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co https://api.stripe.com https://merchant-ui-api.stripe.com https://o4512171150934016.ingest.us.sentry.io",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.google.com/g/collect https://www.googletagmanager.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co https://api.stripe.com https://merchant-ui-api.stripe.com https://o4512171150934016.ingest.us.sentry.io",
   // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
   // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
   // Bandcamp, Apple Music and Twitch (two player hosts: clips have their own) joined on
