@@ -35,7 +35,14 @@ for (const route of ROUTES.length ? ROUTES : DEFAULT_ROUTES) {
     const page = await ctx.newPage()
     const consoleErrors = []
     const pageErrors = []
-    page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 300)) })
+    // axe-core fetches cross-origin stylesheets to read their rules, and the CSP's connect-src blocks that
+    // fetch. The page's own <link> loads fine (SCAN-1204: 0 violations without axe, 1 with), so it is noise.
+    page.on('console', (m) => {
+      if (m.type() !== 'error') return
+      const t = m.text()
+      if (/Connecting to 'https:\/\/fonts\.googleapis\.com\//.test(t)) return
+      consoleErrors.push(t.slice(0, 300))
+    })
     page.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 300)))
     const row = { route, viewport: vp.name, status: null, overflowPx: 0, consoleErrors, pageErrors, axe: [], shot: null, error: null }
     try {
