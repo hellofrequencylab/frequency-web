@@ -9,6 +9,7 @@
 
 import { useId, type ReactNode } from 'react'
 import { ChevronDown, Minus, Plus } from 'lucide-react'
+import { Input } from '@/components/ui/field'
 import { Switch } from '@/components/ui/switch'
 
 export type SegmentOption<V extends string | number | null> = { value: V; label: ReactNode; aria?: string; disabled?: boolean }
@@ -160,7 +161,8 @@ export function Slider({
 }) {
   const color = accent === 'move' ? 'accent-move' : 'accent-text'
   const input = (
-    <input
+    <Input
+      variant="seamless"
       type="range"
       min={min}
       max={max}
@@ -168,8 +170,8 @@ export function Slider({
       value={value}
       aria-label={label}
       onChange={(e) => onChange(Number(e.target.value))}
-      onPointerUp={(e) => onCommit?.(Number((e.currentTarget as HTMLInputElement).value))}
-      onKeyUp={(e) => onCommit?.(Number((e.currentTarget as HTMLInputElement).value))}
+      onPointerUp={(e) => onCommit?.(Number(e.currentTarget.value))}
+      onKeyUp={(e) => onCommit?.(Number(e.currentTarget.value))}
       className={`m-0 h-7 ${inline ? 'w-[110px]' : 'w-full'} ${color}`}
     />
   )

@@ -10,6 +10,7 @@
 import { useState } from 'react'
 import { BookOpen, Info } from 'lucide-react'
 import { BreatheIcon } from '@/components/on-air/icons'
+import { Textarea } from '@/components/ui/field'
 import { BREATH_PATTERNS, CUSTOM_PHASE_MAX, CUSTOM_PHASE_MIN, buildCustomPattern, type BreathPattern } from '@/lib/on-air'
 import type { TimerSettings, TimerSettingsPatch } from '@/lib/on-air/timer-settings'
 import { MenuRow, RowLabel, Segmented, Slider, SwitchRow, Tiles, WebSection } from './door-section'
@@ -118,13 +119,14 @@ export function NoteField({ value, onChange, variant }: { value: string; onChang
         ? 'min-h-20 rounded-[16px] bg-surface px-4 py-3 ring-1 ring-inset ring-border'
         : 'min-h-20 rounded-control bg-surface-elevated px-3.5 py-3'
   return (
-    <textarea
+    <Textarea
+      variant="seamless"
       aria-label="Session note"
       placeholder={NOTE_PLACEHOLDER}
       maxLength={NOTE_MAX}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`w-full resize-y border-0 text-body leading-normal text-text outline-none placeholder:text-subtle ${look}`}
+      className={`w-full border-0 text-body leading-normal text-text ${look}`}
     />
   )
 }

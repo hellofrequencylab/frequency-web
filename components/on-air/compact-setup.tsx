@@ -18,6 +18,7 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { BookOpen, Check, ChevronDown, Dumbbell, Flower2, Footprints, Lock, Minus, Moon, Plus, Rabbit, Sparkles, StretchHorizontal, Volleyball, X } from 'lucide-react'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
+import { Input } from '@/components/ui/field'
 import { BoltIcon, BreatheIcon, DialIcon, LotusIcon } from '@/components/on-air/icons'
 import { unlockTimerAudio } from '@/lib/on-air/timer-audio-unlock'
 import {
@@ -432,6 +433,7 @@ export function CompactSetup({
   const stillTiles = SESSION_MODE_ORDER.map((m) => ({ value: m, label: SESSION_MODE_META[m].label, icon: STILL_ICON[m], disabled: (practice?.timerKind === 'none' && m !== 'log') || (styleLocked && m !== stillMode) }))
   const moveTiles = MOVEMENT_MODES.map((m) => ({ value: m.mode, label: m.label, icon: MOVE_ICON[m.mode], disabled: styleLocked && m.mode !== moveConfig.mode }))
   const accentBtn = mode === 'move' ? 'bg-move text-on-move' : 'bg-primary text-on-primary'
+  const tabOn: Record<TimerMode, string> = { still: 'bg-primary text-on-primary lift-2', move: 'bg-move text-on-move lift-2' }
   const orbFill = mode === 'move' ? 'radial-gradient(circle at 35% 30%, var(--color-surface) 0, var(--color-presence-bg) 34%, color-mix(in oklab, var(--color-move) 45%, var(--color-surface)) 100%)' : 'var(--design-practice-orb)'
 
   const goButton = (size: 'sheet' | 'web') => (
@@ -448,7 +450,8 @@ export function CompactSetup({
   )
   const styleTiles = mode === 'move' ? <Tiles label="Style" columns={web ? 6 : 3} value={moveConfig.mode} options={moveTiles} onChange={pickMove} /> : <Tiles label="Style" columns={web ? 6 : 3} value={stillMode} options={stillTiles} onChange={pickStill} />
   const minutesInput = (className: string) => (
-    <input
+    <Input
+      variant="seamless"
       type="text"
       inputMode="numeric"
       aria-label={MINUTES_LABEL}
@@ -561,7 +564,7 @@ export function CompactSetup({
                         <button type="button" aria-label="One minute less" onClick={() => stepLength(-1)} className="flex h-12 w-10 items-center justify-center text-text">
                           <Minus className="h-[15px] w-[15px]" aria-hidden />
                         </button>
-                        {minutesInput('h-10 w-11 border-0 bg-transparent text-center text-card-title font-semibold tabular-nums text-text outline-none')}
+                        {minutesInput('h-10 w-11 border-0 text-center text-card-title font-semibold tabular-nums text-text')}
                         <span className="text-body-sm font-medium text-muted">min</span>
                         <button type="button" aria-label="One minute more" onClick={() => stepLength(1)} className="flex h-12 w-10 items-center justify-center text-text">
                           <Plus className="h-[15px] w-[15px]" aria-hidden />
@@ -621,7 +624,7 @@ export function CompactSetup({
               role="tab"
               aria-selected={mode === m}
               onClick={() => switchMode(m)}
-              className={`flex h-11 items-center justify-center gap-[7px] rounded-pill text-body-sm font-semibold transition-colors ${mode === m ? `${m === 'move' ? 'bg-move text-on-move' : 'bg-primary text-on-primary'} lift-2` : 'text-muted'}`}
+              className={`flex h-11 items-center justify-center gap-[7px] rounded-pill text-body-sm font-semibold transition-colors ${mode === m ? tabOn[m] : 'text-muted'}`}
             >
               {m === 'still' ? <LotusIcon className="h-4 w-4" /> : <Footprints className="h-4 w-4" aria-hidden />}
               {m === 'still' ? 'Be Still' : 'Get Moving'}
@@ -640,7 +643,7 @@ export function CompactSetup({
               {/* The number sits on the pale orb in both day and night, so it reads in the fixed ink. */}
               <div className="relative flex flex-col items-center gap-1.5 text-ink">
                 {editable ? (
-                  minutesInput(`w-[110px] border-0 bg-transparent p-0 text-center font-display font-medium leading-none tracking-[-0.05em] outline-none ${orbSize} ${invalid ? 'text-danger' : 'text-ink'}`)
+                  minutesInput(`w-[110px] border-0 p-0 text-center font-display font-medium leading-none tracking-[-0.05em] ${orbSize} ${invalid ? 'text-danger' : 'text-ink'}`)
                 ) : (
                   <span className={`font-display font-medium leading-none tracking-[-0.05em] tabular-nums ${orbSize}`}>{orbValue}</span>
                 )}
