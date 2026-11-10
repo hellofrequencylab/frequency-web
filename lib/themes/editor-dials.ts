@@ -1,5 +1,6 @@
 import SCHEMA2 from './editor-schema2.json' with { type: 'json' }
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
+import { stylePickerAccents } from './style-picker-accents'
 import { dialsFor, declaredDefault, looksFor, type Dial, type LookPreset, type ThemeEditorDecl } from '@/lib/theme/dials'
 import { SITE_DIAL_KEYS, type SiteDialKey } from '@/lib/theme/dials'
 import type { SiteThemeId } from '@/lib/theme/site-style'
@@ -23,9 +24,11 @@ export interface ThemeEditor {
 
 /** What the editor shows for a site theme id (`midnight`, `network-kit`, ...). */
 export function themeEditor(site: SiteThemeId, themeName = ''): ThemeEditor {
-  const manifestId = MEGA_THEMES.find((m) => m.site === site)?.id ?? site
-  const decl = DECLS[manifestId] ?? null
-  const dials = dialsFor(decl, themeName)
+  const theme = MEGA_THEMES.find((m) => m.site === site)
+  const decl = DECLS[theme?.id ?? site] ?? null
+  const dials = dialsFor(decl, themeName).map((dial) =>
+    dial.id === 'accent' && theme ? { ...dial, options: themeAccents(theme.editor) } : dial,
+  )
   const own: Partial<Record<SiteDialKey, string>> = {}
   for (const k of SITE_DIAL_KEYS) {
     const d = declaredDefault(decl, k)
@@ -34,8 +37,10 @@ export function themeEditor(site: SiteThemeId, themeName = ''): ThemeEditor {
   return { dials, looks: looksFor(decl, dials), own }
 }
 
-/** The named accents a theme's contract declares (`accents{}`), as swatches. Empty for a theme that has none. */
+/** Named swatches from a theme's palette or editor contract. */
 export function themeAccents(editorTheme: WebsiteTheme): AccentChoice[] {
+  const pickerAccents = stylePickerAccents(editorTheme)
+  if (pickerAccents) return pickerAccents
   const themes = (CONTRACT as unknown as { themes: Record<string, { accents?: Record<string, { label?: string; accent?: string }> }> }).themes
   return Object.entries(themes[editorTheme]?.accents ?? {}).flatMap(([id, a]) => (typeof a?.accent === 'string' ? [{ id, label: a.label ?? id, swatch: a.accent }] : []))
 }

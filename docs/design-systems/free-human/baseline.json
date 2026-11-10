@@ -34,6 +34,7 @@
   "copy:templates/website/Website.dc.html#e7d501ef",
   "copy:templates/website/Website.dc.html#f4a14704",
   "copy:templates/website/Website.dc.html#f9e6c188",
-  "missing:templates/website/YearWheel.dc.html"
+  "missing:templates/website/YearWheel.dc.html",
+  "token:--text-muted"
  ]
 }

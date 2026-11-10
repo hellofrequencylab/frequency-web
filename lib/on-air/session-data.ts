@@ -69,6 +69,32 @@ type PracticeRow = {
 // freshly-added columns (ADR-246) until lib/database.types.ts regenerates.
 const PRACTICE_TIMER_COLS = 'id, title, duration_min, timer_kind, mindless_mode, movement_config, duration_locked, warmup_message, warmup_sec, breath_pattern'
 
+// The "N members practiced today" line is decorative and the same for every member that day, but the read
+// pages through every member's log for the day (PostgREST aggregates are disabled in hosted projects and
+// max_rows is 1,000, see lib/on-air/practice-presence.ts), and it used to run on EVERY timer open. It is
+// kept in this server instance for a few minutes, one in-flight read shared by concurrent opens. In
+// memory and not the cross-request cache on purpose: that seam's census admits only viewer-independent
+// chrome rows, and a stale count here costs nothing. A failed read is never kept.
+const PRACTICED_TODAY_TTL_MS = 5 * 60_000
+const practicedTodayMemo = new Map<string, { at: number; value: Promise<number> }>()
+
+function practicedTodayCached(day: string): Promise<number> {
+  const now = Date.now()
+  const hit = practicedTodayMemo.get(day)
+  if (hit && now - hit.at < PRACTICED_TODAY_TTL_MS) return hit.value
+  // Member-local days: a handful of keys at any moment. Drop the rest rather than grow.
+  for (const [key, entry] of practicedTodayMemo) if (now - entry.at >= PRACTICED_TODAY_TTL_MS) practicedTodayMemo.delete(key)
+  const admin = createAdminClient()
+  const value = countPracticedToday(admin as unknown as Parameters<typeof countPracticedToday>[0], day, {
+    throwOnError: true,
+  })
+  practicedTodayMemo.set(day, { at: now, value })
+  value.catch(() => {
+    if (practicedTodayMemo.get(day)?.value === value) practicedTodayMemo.delete(day)
+  })
+  return value
+}
+
 /** Load a member's On Air setup state. `requestedPracticeId` pins + pre-selects a practice (the
  *  Journey "Practice" button, or a /on-air?practice link). The list is never empty — Free sit is
  *  always offered — so the timer is reachable for everyone. */
@@ -81,7 +107,7 @@ export async function loadOnAirSessionData(
   // logPractice writes logged_for under — NOT UTC. With UTC, the practice day rolled at UTC
   // midnight (~5pm Pacific), so an evening partial logged earlier the same local day stopped
   // matching and the timer opened fresh instead of resuming. resolveMemberDay fixes the boundary.
-  const today = await resolveMemberDay(profileId)
+  const todayP = resolveMemberDay(profileId)
   const [
     leg,
     mine,
@@ -97,15 +123,18 @@ export async function loadOnAirSessionData(
       // Today's logs carry the completion columns (seconds_done/target, completed) so a
       // banked-but-unfinished sit surfaces as a `partialToday` the timer can auto-resume from,
       // not just a `loggedToday` flag. Read through the untyped admin handle (ADR-246) since the
-      // completion columns are newer than the generated types.
-      admin
-        .from('practice_logs')
-        .select('practice_id, seconds_done, seconds_target, completed')
-        .eq('profile_id', profileId)
-        .eq('logged_for', today),
-      // PostgREST aggregates are disabled in hosted projects and max_rows is 1,000.
-      // Read stable, complete pages before counting distinct members.
-      countPracticedToday(admin as unknown as Parameters<typeof countPracticedToday>[0], today),
+      // completion columns are newer than the generated types. Only this read and the count need
+      // the day, so the day lookup runs beside the other reads instead of in front of them.
+      todayP.then((today) =>
+        admin
+          .from('practice_logs')
+          .select('practice_id, seconds_done, seconds_target, completed')
+          .eq('profile_id', profileId)
+          .eq('logged_for', today),
+      ),
+      // Decorative "N members practiced today", the same for every member that day: kept for a few
+      // minutes (practicedTodayCached) because the read pages through every member's log for the day.
+      todayP.then((today) => practicedTodayCached(today).catch(() => 0)),
       // The Free sit's target practice (the canonical short sit).
       admin.from('practices').select('id, title').eq('slug', DEFAULT_SIT_SLUG).maybeSingle(),
       // The Get Moving Free Practice's target practice (the canonical daily walk).

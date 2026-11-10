@@ -193,7 +193,7 @@ export function themeAssetPath(id: string, slot: ThemeAssetSlot): string {
 interface ThemeManifestFacts {
   offered: boolean
   library: { surfaces: { id: string; status: string }[] } | null
-  editor: { dials?: { register?: { supported: boolean; default: string } | string }; [k: string]: unknown }
+  editor: { dials?: { register?: { supported: boolean; default: string } | string; [k: string]: unknown }; [k: string]: unknown }
 }
 
 const THEME_MANIFESTS: Readonly<Record<string, ThemeManifestFacts>> = {
