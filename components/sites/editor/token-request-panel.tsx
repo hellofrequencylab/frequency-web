@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Input, Textarea } from '@/components/ui/field'
 import { k } from './skin'
 
 // ASK FOR A TOKEN (PROG-E10, ADR-976 D-1). Sites take no CSS, so a look the theme lacks is requested here in
@@ -30,9 +31,9 @@ export function TokenRequestPanel({ onSend }: { onSend: TokenRequestSend }) {
     <>
       <div className={k('we-caption')}>Need a look the theme does not have?</div>
       <div className={k('we-note')}>Describe it in words. The team adds a token for it; sites do not take CSS.</div>
-      <label className={k('we-field')}>What to call it<input type="text" value={token} maxLength={80} onChange={(e) => setToken(e.target.value)} placeholder="A softer accent for badges" /></label>
-      <label className={k('we-field')}>What it should do<textarea value={want} maxLength={600} rows={3} onChange={(e) => setWant(e.target.value)} /></label>
-      <label className={k('we-field')}>Why the theme does not cover it (optional)<textarea value={why} maxLength={600} rows={2} onChange={(e) => setWhy(e.target.value)} /></label>
+      <label className={k('we-field')}>What to call it<Input variant="seamless" type="text" value={token} maxLength={80} onChange={(e) => setToken(e.target.value)} placeholder="A softer accent for badges" /></label>
+      <label className={k('we-field')}>What it should do<Textarea variant="seamless" value={want} maxLength={600} rows={3} onChange={(e) => setWant(e.target.value)} /></label>
+      <label className={k('we-field')}>Why the theme does not cover it (optional)<Textarea variant="seamless" value={why} maxLength={600} rows={2} onChange={(e) => setWhy(e.target.value)} /></label>
       <div className={k('we-actions')}>
         <button type="button" className={k('we-action secondary')} disabled={state.kind === 'busy' || !token.trim() || !want.trim()} onClick={send}>{state.kind === 'busy' ? 'Sending…' : 'Send request'}</button>
       </div>
