@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2234",
+  "title": "Mindless door: every Get Moving setting on the one screen as sub-menus (mode, plan, cues, sound, feel); More settings retired",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-11-10",
+  "source": {
+    "file": "components/on-air/compact-setup.tsx",
+    "ref": "Daniel 2026-11-09: boil the functions down into the smartest interface possible with primary and sub-menu (dropdown expand) functions; keep the current door look. Plan in /mnt/project-files/mindless-timer/02-INTERFACE-PLAN.md."
+  },
+  "detail": "Since #3434 and #3483 Get Moving on the door was four walk lengths and Start; the six modes, the yoga and strength presets, work/rest/rounds, the interval cues, and every sound and vibration choice sat behind the ghost More settings link that mounted the engine's setup screen. The door's How row now offers Walk, Run, Yoga, Strength, Stretch and Play (pre-set by the practice, locked when the author locked it), the length presets follow the mode, Yoga and Strength show their sequence read-out, and the rows that expand in place are Plan (flow or shape, work/rest/rounds), Cues (interval chime), Sound and Feel (shared with Be Still, one cue model). The composed plan travels to the engine as initialConfig so Start runs exactly what the door showed; the Free Practice remembers it through the settings model, authored practices keep their preset. The movement engine reads voice, volume, on/off and vibration from the cue settings instead of a hardcoded soft bell and an unconditional buzz; its yoga default is Gentle to match lib/movement. The More settings path (onAdvanced, configured(choice, true)) is gone from the door, the provider and the route.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/timer-door-get-moving.mjs"
+  },
+  "wave": "W7"
+}

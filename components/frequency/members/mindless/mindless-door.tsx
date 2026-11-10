@@ -17,6 +17,5 @@ export function MindlessDoor({ session, initialPracticeId }: {
   const initial = session.practices.find((p) => p.id === initialPracticeId)
   return <CompactSetup practices={session.practices} initialPracticeId={initialPracticeId} initialMode={initial?.timerKind === 'movement' ? 'move' : 'still'} prefs={session.prefs} journeyLegs={session.journeyLegs ?? []} practicedToday={session.practicedToday}
     onStart={(choice) => timer.open({ practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, autoStart: true })}
-    onAdvanced={(choice) => timer.open({ practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, advanced: true })}
     onClose={() => router.push('/feed')} />
 }

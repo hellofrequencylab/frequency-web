@@ -7,71 +7,14 @@
 // tap, which is the gesture that unlocks audio.
 
 import { useEffect, useRef, useState } from 'react'
-import { Info, Music, Sparkles, Volume2, Wind } from 'lucide-react'
-import {
-  AMBIENT_TRACKS,
-  BELL_INTERVALS,
-  BELL_TONES,
-  BREATH_PATTERNS,
-  CUSTOM_PHASE_MIN,
-  WARMUP_PRESETS,
-  bellToneBySlug,
-  bellVolumeScale,
-  buildCustomPattern,
-  type BreathPattern,
-} from '@/lib/on-air'
-import { chime } from '@/lib/timer-audio'
-import { createAmbient, type AmbientHandle } from '@/lib/on-air-ambient'
+import { Info, Music, Wind } from 'lucide-react'
+import { AMBIENT_TRACKS, BREATH_PATTERNS, CUSTOM_PHASE_MIN, bellToneBySlug, buildCustomPattern, type BreathPattern } from '@/lib/on-air'
 import { describeSections, type TimerSettings, type TimerSettingsPatch } from '@/lib/on-air/timer-settings'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { DoorSection, OptionRow, ToggleRow, VolumeRange, useDoorSections } from './door-section'
+import { FeelSection, SoundSection, useDoorAudio } from './cue-sections'
 
 const CUSTOM_PHASE_MAX = 8
-
-/** One audio context for previews, created on the first tap and closed with the door. */
-function useDoorAudio() {
-  const ctx = useRef<AudioContext | null>(null)
-  const ambient = useRef<AmbientHandle | null>(null)
-  useEffect(
-    () => () => {
-      ambient.current?.stop()
-      void ctx.current?.close().catch(() => undefined)
-    },
-    [],
-  )
-  const ensure = () => {
-    try {
-      ctx.current = ctx.current ?? new AudioContext()
-      void ctx.current.resume()
-      return ctx.current
-    } catch {
-      return null
-    }
-  }
-  return {
-    strike(toneSlug: string, volume: number) {
-      const c = ensure()
-      if (!c) return
-      try {
-        chime(c, bellToneBySlug(toneSlug), bellVolumeScale(volume))
-      } catch {
-        // a preview is a nicety
-      }
-    },
-    audition(slug: string | null, volume: number) {
-      ambient.current?.stop()
-      ambient.current = null
-      if (!slug) return
-      const track = AMBIENT_TRACKS.find((t) => t.slug === slug)
-      const c = ensure()
-      if (!track || !c) return
-      ambient.current = createAmbient(c, track.src, { fadeInSec: 1, autoStopAfterSec: 4.5, volume })
-    },
-    level(volume: number) {
-      ambient.current?.setVolume(volume)
-    },
-  }
-}
 
 export function StillSections({
   settings,
@@ -130,27 +73,7 @@ export function StillSections({
           <ToggleRow label="Show breath count" hint="The seconds of each phase on the rings." checked={cues.showBreathCount} onChange={(v) => set({ cues: { showBreathCount: v } })} />
         </DoorSection>
       )}
-      <DoorSection icon={<Volume2 className="h-4 w-4" />} name="Sound" summary={summary.sound} open={isOpen('sound')} onToggle={() => toggle('sound')}>
-        <ToggleRow label="Sound" hint="Bells on phase changes and at the end." checked={cues.bell} onChange={(v) => set({ cues: { bell: v } })} />
-        {cues.bell && (
-          <>
-            <OptionRow
-              label="Bell voice"
-              value={cues.bellTone}
-              options={BELL_TONES.map((t) => ({ value: t.slug, label: t.name }))}
-              onChange={(slug) => {
-                set({ cues: { bellTone: slug } })
-                audio.strike(slug, cues.bellVolume)
-              }}
-            />
-            <VolumeRange label="Bell volume" value={cues.bellVolume} onChange={(v) => set({ cues: { bellVolume: v } })} onCommit={(v) => audio.strike(cues.bellTone, v)} />
-            {timerMode && (
-              <OptionRow label="Interval bell" value={cues.bellEveryMin} options={BELL_INTERVALS.map((iv) => ({ value: iv.value as number, label: iv.label }))} onChange={(v) => set({ cues: { bellEveryMin: v } })} />
-            )}
-            <ToggleRow label="End bell" hint="A double strike when the sit ends." checked={cues.endBell} onChange={(v) => set({ cues: { endBell: v } })} />
-          </>
-        )}
-      </DoorSection>
+      <SoundSection cues={cues} set={set} audio={audio} summary={summary.sound} open={isOpen('sound')} onToggle={() => toggle('sound')} intervalBell={timerMode} endBell hint="Bells on phase changes and at the end." />
       <DoorSection icon={<Music className="h-4 w-4" />} name="Ambient" summary={summary.ambient} open={isOpen('ambient')} onToggle={() => toggle('ambient')}>
         <OptionRow
           label="Background loop"
@@ -172,10 +95,7 @@ export function StillSections({
           />
         )}
       </DoorSection>
-      <DoorSection icon={<Sparkles className="h-4 w-4" />} name="Feel" summary={summary.feel} open={isOpen('feel')} onToggle={() => toggle('feel')}>
-        <OptionRow label="Countdown" columns={3} value={cues.warmupSec} options={WARMUP_PRESETS.map((w) => ({ value: w as number, label: `${w} s` }))} onChange={(v) => set({ cues: { warmupSec: v } })} />
-        <ToggleRow label="Vibration" hint="A small tap on the warm-up, the end and an early close, where the device supports it." checked={cues.haptics} onChange={(v) => set({ cues: { haptics: v } })} />
-      </DoorSection>
+      <FeelSection cues={cues} set={set} summary={summary.feel} open={isOpen('feel')} onToggle={() => toggle('feel')} vibrationHint="A small tap on the warm-up, the end and an early close, where the device supports it." />
       {howTo && <HowItWorks pattern={howTo} onClose={() => setHowTo(null)} />}
     </div>
   )

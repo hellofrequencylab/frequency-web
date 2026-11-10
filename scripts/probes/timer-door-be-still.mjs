@@ -9,7 +9,9 @@ assert.ok(existsSync('components/on-air/door/still-sections.tsx'), 'the Be Still
 assert.ok(door.includes("from './door/still-sections'"), 'the door must render the Be Still sub-menus')
 assert.ok(door.includes('SESSION_MODE_ORDER'), 'the door must offer every Be Still sub-mode')
 assert.ok(door.includes('stillMode'), 'the door must forward the chosen sub-mode')
-const sections = read('components/on-air/door/still-sections.tsx')
+// Sound and Feel are shared with Get Moving (LIVE-2234): they live in cue-sections.tsx, rendered by the Be Still rows.
+const sections = read('components/on-air/door/still-sections.tsx') + read('components/on-air/door/cue-sections.tsx')
+assert.ok(read('components/on-air/door/still-sections.tsx').includes('SoundSection'), 'the Be Still rows must render the shared Sound sub-menu')
 for (const name of ['"Breath"', '"Sound"', '"Ambient"', '"Feel"']) assert.ok(sections.includes(`name=${name}`), `sub-menu ${name} must exist`)
 for (const control of ['BREATH_PATTERNS', 'BELL_TONES', 'BELL_INTERVALS', 'AMBIENT_TRACKS', 'WARMUP_PRESETS', 'showBreathCount', 'haptics', 'endBell']) {
   assert.ok(sections.includes(control), `the door must carry ${control}`)

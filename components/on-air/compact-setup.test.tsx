@@ -18,7 +18,7 @@ let host: HTMLDivElement
 const start = vi.fn()
 function render(initialMode: 'still' | 'move' = 'still', initialPracticeId = 'sit') {
   host = document.createElement('div'); document.body.append(host); root = createRoot(host)
-  act(() => root!.render(<CompactSetup practices={practices} initialMode={initialMode} initialPracticeId={initialPracticeId} onStart={start} onAdvanced={vi.fn()} onClose={vi.fn()} />))
+  act(() => root!.render(<CompactSetup practices={practices} initialMode={initialMode} initialPracticeId={initialPracticeId} onStart={start} onClose={vi.fn()} />))
 }
 afterEach(() => { act(() => root?.unmount()); host?.remove(); start.mockClear(); saveOnAirPrefs.mockClear(); window.localStorage.clear() })
 describe('one shared compact setup', () => {
@@ -33,15 +33,45 @@ describe('one shared compact setup', () => {
     act(() => button.click())
     expect(start).toHaveBeenCalledWith({ practiceId: 'sit', mode: 'still', stillMode: 'timer', patternSlug: 'box' })
   })
-  it.each(['still', 'move'] as const)('custom %s duration is validated and forwarded without resuming/logging', (mode) => {
-    render(mode, mode === 'move' ? 'free-move' : 'free')
+  it('custom still duration is validated and forwarded without resuming/logging', () => {
+    render('still', 'free')
     const input = host.querySelector('input')!
     const update = (value: string) => act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true })) })
     const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
     update('0'); expect(begin.disabled).toBe(true)
     update('13'); expect(begin.disabled).toBe(false)
     act(() => begin.click())
-    expect(start).toHaveBeenCalledWith(mode === 'move' ? { practiceId: 'free-move', mode, minutesOverride: 13 } : { practiceId: 'free', mode, minutesOverride: 13, stillMode: 'timer', patternSlug: 'box' })
+    expect(start).toHaveBeenCalledWith({ practiceId: 'free', mode: 'still', minutesOverride: 13, stillMode: 'timer', patternSlug: 'box' })
+  })
+  it('custom Get Moving length lands in the composed plan and is remembered for the Free Practice (LIVE-2234)', () => {
+    render('move', 'free-move')
+    const input = host.querySelector('input')!
+    const update = (value: string) => act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true })) })
+    const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
+    update('0'); expect(begin.disabled).toBe(true)
+    update('13'); expect(begin.disabled).toBe(false)
+    act(() => begin.click())
+    expect(start).toHaveBeenCalledWith({ practiceId: 'free-move', mode: 'move', moveConfig: expect.objectContaining({ mode: 'walk', walkMinutes: 13 }) })
+    expect(JSON.parse(window.localStorage.getItem('fq_timer_settings')!)).toMatchObject({ move: { mode: 'walk', walkMinutes: 13 } })
+  })
+  it('offers every Get Moving mode on the door with its Plan and Cues sub-menus, no second screen (LIVE-2234)', () => {
+    render('move', 'free-move')
+    const chips = () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Sub-mode"] button')]
+    expect(chips().map((b) => b.textContent)).toEqual(['Walk', 'Run', 'Yoga', 'Strength', 'Stretch', 'Play'])
+    act(() => chips().find((b) => b.textContent === 'Strength')!.click())
+    expect(host.textContent).toContain('Authored sequence')
+    const planRow = [...host.querySelectorAll<HTMLButtonElement>('button[aria-expanded]')].find((b) => b.textContent?.includes('Plan'))!
+    act(() => planRow.click())
+    expect(planRow.getAttribute('aria-expanded')).toBe('true')
+    act(() => chips().find((b) => b.textContent === 'Walk')!.click())
+    const cuesRow = [...host.querySelectorAll<HTMLButtonElement>('button[aria-expanded]')].find((b) => b.textContent?.includes('Cues'))!
+    act(() => cuesRow.click())
+    const every5 = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Every 5 min')
+    if (every5) act(() => every5.click())
+    const begin = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
+    act(() => begin.click())
+    expect(start).toHaveBeenCalledWith(expect.objectContaining({ mode: 'move', moveConfig: expect.objectContaining({ mode: 'walk', ...(every5 ? { walkIntervalMin: 5 } : {}) }) }))
+    expect(host.textContent).not.toContain('More settings')
   })
   it('keeps locked authored lengths and log-only semantics out of custom overrides', () => {
     practices[0].durationLocked = true
