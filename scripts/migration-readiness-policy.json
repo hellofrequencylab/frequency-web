@@ -981,6 +981,140 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4847,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346039000_commerce_carts.sql",
+          "sha256": "23ab55a6a82aee751babddbc134ba1ac8d9fc4a6d56d08c7c7be076eb8a749e0"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": ".env.example",
+          "status": "modified",
+          "sha256": "f44318702b6dbe74ed18806b3781a60278b9b228886fc2a9469cf2f0b20fe833",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/marketplace/add-to-cart-button.tsx",
+          "status": "added",
+          "sha256": "1f53181ad61bb4a1254917465d47f69b96a9b0ee62ceb8524ce129f15f0994c5",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/marketplace/cart-actions.test.ts",
+          "status": "added",
+          "sha256": "f04ce88f8877a7d70d25872a1092c49c8ab68e2a9e734e003147052bc8b62a36",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/marketplace/cart-actions.ts",
+          "status": "added",
+          "sha256": "3e03118b24f900415e73c7b3808ddc320a9b38551ae801ee25bf0c382095217e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(public)/market/[id]/page.tsx",
+          "status": "modified",
+          "sha256": "dc2ed9d42b64cf4a3f51557de8c0c780ff9d984883d3bfc4dfe439e93c868cd0",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "fad2139a56957cfa11d8189e656f4967bb6ff5a9922975130d2997abc78de4ce",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/DEF-ETSY.json",
+          "status": "modified",
+          "sha256": "bdec445367808d24a2ad1e11b04e1a018c2d6e5a0ddb582d2d80ce16b23f03f7",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/cart-flag.ts",
+          "status": "added",
+          "sha256": "25459f64751da8ffe8252016196b58639720391a1b256c372177b5ad8553d1b2",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/cart-store.test.ts",
+          "status": "added",
+          "sha256": "d51142f49eae331dfecc38fb410a0b2fa2db383230c321551a160c68a66369de",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/cart-store.ts",
+          "status": "added",
+          "sha256": "f9398c0c8998dc50eadb76a6c926c2c9fd82b1b4da25ca2dc060aae34dd07260",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "8d277a1a7c5848e8a5860879e6b6d62c5716b36e9790cbcf2245e75514313594",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "f9bd66388264958147d52ac864bce34f9b9c732a1777fc14e4cb87e667956d56",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "e14e9ee55a221f13cd6947971e8e94948d3aeed9f39c789b654d8da638590659",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "497bd0f0d5b6bcdee447f6d605fec5525f541628724856d3428d56856c2710c1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346039000_commerce_carts.sql",
+          "status": "added",
+          "sha256": "23ab55a6a82aee751babddbc134ba1ac8d9fc4a6d56d08c7c7be076eb8a749e0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/commerce_carts.test.sql",
+          "status": "added",
+          "sha256": "0e898e3811107081daaadcc86144f357d0ec4d9f983f970a0dab3594b4d1e180",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
