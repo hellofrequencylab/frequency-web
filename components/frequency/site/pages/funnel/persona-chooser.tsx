@@ -11,13 +11,60 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import {
+  FUNNEL_PARAM_KEYS,
+  funnelLocalNote,
+  funnelQuery,
+  funnelRecord,
+  hasFunnelSignal,
+  parseFunnelContext,
+} from '@/lib/onboarding/funnel-context'
 import { getPersona, type PersonaId } from '@/lib/onboarding/personas'
 import { captureLead } from '@/app/(marketing)/start/actions'
 import { useArrivalFollowUp } from '@/components/onboarding/arrival-follow-up'
 import type { ArchetypeId } from '@/lib/audience/archetypes'
 import { Input } from '@/components/ui/field'
 import { FnHead } from './parts'
+
+type ChooserProps = {
+  flow: string
+  source: string
+  prompt: string
+  personas: PersonaId[]
+  captureEmail: boolean
+  defaultPersona?: PersonaId
+}
+
+/** What an invite link told the page (LIVE-2234): its raw params, the local note, the persona it named
+ *  and the ids-only query carried on to /join. Absent on a plain visit. */
+type FunnelProps = {
+  params: Record<string, string>
+  note: string | null
+  persona: PersonaId | null
+  query: string
+}
+
+/** The chooser with the invite link read (FlowWeb's persona, region, area, channel, src and utm tags).
+ *  It reads useSearchParams, so the page wraps it in Suspense with the plain chooser as the fallback. */
+export function SmartPersonaChooser(props: ChooserProps) {
+  const search = useSearchParams()
+  const ctx = parseFunnelContext(search)
+  const rec = funnelRecord(ctx)
+  if (!hasFunnelSignal(rec)) return <FrequencyPersonaChooser {...props} />
+  const params: Record<string, string> = {}
+  for (const k of FUNNEL_PARAM_KEYS) {
+    const v = search.get(k)
+    if (v) params[k] = v.slice(0, 64)
+  }
+  const persona = ctx.persona && props.personas.includes(ctx.persona) ? ctx.persona : null
+  return (
+    <FrequencyPersonaChooser
+      {...props}
+      funnel={{ params, note: funnelLocalNote(ctx), persona, query: funnelQuery(rec) }}
+    />
+  )
+}
 
 export function FrequencyPersonaChooser({
   flow,
@@ -26,16 +73,13 @@ export function FrequencyPersonaChooser({
   personas,
   captureEmail,
   defaultPersona,
-}: {
-  flow: string
-  source: string
-  prompt: string
-  personas: PersonaId[]
-  captureEmail: boolean
-  defaultPersona?: PersonaId
-}) {
+  funnel,
+}: ChooserProps & { funnel?: FunnelProps }) {
   const router = useRouter()
-  const [selected, setSelected] = useState<PersonaId | null>(defaultPersona ?? null)
+  const [selected, setSelected] = useState<PersonaId | null>(funnel?.persona ?? defaultPersona ?? null)
+  // An invite link always offers the email field, so its attribution can land on a lead even on a
+  // route-only flow; it stays required only where the flow itself captures.
+  const askEmail = captureEmail || !!funnel
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -43,14 +87,15 @@ export function FrequencyPersonaChooser({
   const followUps = useArrivalFollowUp(selected, archetype, setArchetype)
 
   const chosen = selected ? getPersona(selected) : null
-  const inductionHref = (id: PersonaId) => `/join?persona=${encodeURIComponent(id)}&flow=${encodeURIComponent(flow)}`
+  const inductionHref = (id: PersonaId) =>
+    `/join?persona=${encodeURIComponent(id)}&flow=${encodeURIComponent(flow)}${funnel?.query ? `&${funnel.query}` : ''}`
 
   async function go() {
     if (!selected || busy) return
     setBusy(true)
     setError('')
-    if (captureEmail) {
-      const res = await captureLead({ persona: selected, archetype, flow, source, email })
+    if (captureEmail || (funnel && email.trim())) {
+      const res = await captureLead({ persona: selected, archetype, flow, source, email, funnel: funnel?.params })
       if (!res.ok) {
         setError(res.error)
         setBusy(false)
@@ -63,7 +108,7 @@ export function FrequencyPersonaChooser({
   return (
     <section className="sec" data-screen-label="02 Choose">
       <div className="wrap">
-      <FnHead label="Who are you?" title={prompt} />
+      <FnHead label="Who are you?" title={prompt} note={funnel?.note ?? undefined} />
       <div className="g3 fn-doors" role="group" aria-label={prompt}>
         {personas.map((id) => {
           const p = getPersona(id)
@@ -127,9 +172,9 @@ export function FrequencyPersonaChooser({
               </div>
             )}
 
-            {captureEmail && (
+            {askEmail && (
               <label>
-                Email
+                {captureEmail ? 'Email' : 'Email, if you would like us to stay in touch'}
                 <Input
                   type="email"
                   value={email}

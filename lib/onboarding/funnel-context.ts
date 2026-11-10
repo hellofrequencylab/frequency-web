@@ -275,3 +275,19 @@ export function hostFunnelCopy(ctx: FunnelContext): HostFunnelCopy {
       : null,
   }
 }
+
+/** The local line the other /start pages show above the persona picker (LIVE-2234): the place the
+ *  invite named, early-mover tone in the seed region, and Daniel's line on his personal invites. */
+export function funnelLocalNote(ctx: FunnelContext): string | null {
+  const place = funnelPlace(ctx)
+  const parts: string[] = []
+  if (place) {
+    parts.push(
+      ctx.region?.seed
+        ? `Frequency is just opening in ${place}, so you are early.`
+        : `Frequency is opening in ${place}.`,
+    )
+  }
+  if (ctx.founderInvite) parts.push('Daniel, who started Frequency, invited you personally.')
+  return parts.length ? parts.join(' ') : null
+}
