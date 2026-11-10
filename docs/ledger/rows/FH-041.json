@@ -1,0 +1,6 @@
+{
+  "id": "FH-041",
+  "append": {
+    "detail": "Packet E adds the Stripe and progressive-dinner pilot gate to docs/RUNBOOKS.md. Test evidence and named pilot sign-offs remain open."
+  }
+}
