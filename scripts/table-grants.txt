@@ -392,3 +392,10 @@ hunt_rule_group_members              internal
 hunt_nodes                           internal
 hunt_placements                      internal
 hunt_mission_placements              internal
+# FH-006 Frequency Hunts transactional records: service role only, written by lib/hunts after its own gate
+hunt_runs                             internal
+hunt_claims                           internal
+hunt_progress                         internal
+hunt_command_keys                     internal
+hunt_audit                            internal
+hunt_compensations                    internal
