@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2251",
+  "title": "Send FlowWeb's lead-hunt messages from Frequency: signed, off by default, suppression and a daily cap, with unsubscribe, postal address and, when asked, a posted event with its claim link",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/api/webhooks/flowweb-outreach/route.ts",
+    "ref": "FlowWeb row FW-C-041 (saved event lead hunts). Daniel, 2026-11-10: 'set up auto hunts for events, find their creators email or contact info ... send them a customized lead message with a claim link. The building stuff / claim link can be a second selectible layer.'"
+  },
+  "detail": "POST /api/webhooks/flowweb-outreach takes one FlowWeb outbox item, signed as hex HMAC-SHA256 of `${x-flowweb-timestamp}.${body}` under FLOWWEB_OUTREACH_SECRET (5 minute window; no secret = 401). The item must name a deliverable address, the public page it came from (which the body must quote) and carry FlowWeb's 'reply no' opt-out. Gates in order: FLOWWEB_OUTREACH_ENABLED (envFlag, off by default, answers off), FLOWWEB_OUTREACH_REPLY_TO set, suppression (global or the root Space's own opt-outs, fail-closed), daily cap (FLOWWEB_OUTREACH_DAILY_CAP, default 50, counted on outreach_sends), unsubscribe link. With build, the event is posted for its organizer through the existing poster-events claim spine (seed owner as poster, published 'posted', organizer contact stamped after publish so the stock claim email is not sent twice) and {{claim_url}} is filled with /events/claim/<token>; a retried item reuses its event (events.details.flowweb.item_id). The send is the queue's email job, deduped on flowweb:<id>, with the root-Space unsubscribe link, List-Unsubscribe headers and the postal line. Pure rules in lib/flowweb/outreach.ts, IO in lib/flowweb/outreach-io.ts, runbook gate in docs/RUNBOOKS.md. Probe: scripts/probes/flowweb-outreach.mjs.\n\nEndpoint, gates and claim build shipped; switch stays off until the RUNBOOKS gate passes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/flowweb-outreach.mjs"
+  },
+  "closed": "2026-11-10",
+  "wave": "W7"
+}

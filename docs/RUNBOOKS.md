@@ -731,6 +731,20 @@ Then set `CONVERSATION_EMAIL_BRIDGE` to `1`, `true` or `on` in Vercel Production
 
 **Turn it off.** Unset. New member replies stop being forwarded. Issued house addresses still route.
 
+### FlowWeb lead-hunt outreach (LIVE-2251)
+
+`FLOWWEB_OUTREACH_ENABLED` defaults off. It is an on/off env switch (`envFlag`: `1` / `true` / `on`). FlowWeb's hunts (FlowWeb row FW-C-041) find event organizers' public addresses and draft one message each; at Autopilot FlowWeb's relay posts each message to `/api/webhooks/flowweb-outreach`. Frequency is the sender: it checks suppression (global and the root Space's own opt-outs), a daily cap, adds the one-click unsubscribe and the postal address, and with `build` posts the event for its organizer and fills in the claim link. Logic: `lib/flowweb/outreach.ts`.
+
+**Gate before turning it on**, in order. All **owner** unless tagged.
+
+1. `FLOWWEB_OUTREACH_SECRET` is set in Production (32+ random bytes) and the same value is on the Mac running FlowWeb. **agent** can confirm the route answers 401 without a signature.
+2. `FLOWWEB_OUTREACH_REPLY_TO` is an inbox someone reads: every message says "reply no and I won't write again".
+3. One controlled proof: a hunt at Autopilot sends one message to an address you own; it arrives with the unsubscribe link and the postal address, the unsubscribe link suppresses the address, and a second send to it answers `suppressed`.
+
+Then set `FLOWWEB_OUTREACH_ENABLED` to `1`, `true` or `on` in Vercel Production and redeploy. **owner**
+
+**Turn it off.** Unset the switch. Verified posts answer `off` and nothing is sent; FlowWeb keeps the items in its outbox.
+
 ### Regulars (LIVE-940, ADR-1780)
 
 `LOYALTY_ENABLED` defaults off (`envFlag`: `1` / `true` / `on`). Off, a Space check-in records as it always has but writes no stamp and pays no `space_checkin` Zaps, and the owner's Check-in panel says Regulars is not open. The program and its tables ship dark so owners can be set up before launch.
