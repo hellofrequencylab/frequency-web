@@ -1,6 +1,6 @@
 import SCHEMA2 from './editor-schema2.json' with { type: 'json' }
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
-import { NETWORK_KIT_SCHEME_ORDER, NETWORK_KIT_SCHEMES } from '@/lib/theme/network-kit'
+import { stylePickerAccents } from './style-picker-accents'
 import { dialsFor, declaredDefault, looksFor, type Dial, type LookPreset, type ThemeEditorDecl } from '@/lib/theme/dials'
 import { SITE_DIAL_KEYS, type SiteDialKey } from '@/lib/theme/dials'
 import type { SiteThemeId } from '@/lib/theme/site-style'
@@ -39,12 +39,8 @@ export function themeEditor(site: SiteThemeId, themeName = ''): ThemeEditor {
 
 /** Named swatches from a theme's palette or editor contract. */
 export function themeAccents(editorTheme: WebsiteTheme): AccentChoice[] {
-  if (editorTheme === 'NetworkKit') {
-    return NETWORK_KIT_SCHEME_ORDER.map((id) => {
-      const { label, accent } = NETWORK_KIT_SCHEMES[id]
-      return { id, label, swatch: accent }
-    })
-  }
+  const pickerAccents = stylePickerAccents(editorTheme)
+  if (pickerAccents) return pickerAccents
   const themes = (CONTRACT as unknown as { themes: Record<string, { accents?: Record<string, { label?: string; accent?: string }> }> }).themes
   return Object.entries(themes[editorTheme]?.accents ?? {}).flatMap(([id, a]) => (typeof a?.accent === 'string' ? [{ id, label: a.label ?? id, swatch: a.accent }] : []))
 }
