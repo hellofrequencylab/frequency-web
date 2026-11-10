@@ -39,7 +39,7 @@ import { gaServerEnabled, sendGa4Event } from './ga-server'
 import { hasConsent } from '@/lib/consent/consent'
 
 /** The browser's GA identity, read from the `_ga` cookies (lib/analytics/ga-client-id.ts). */
-export interface GaIdentity {
+interface GaIdentity {
   clientId: string
   sessionId: string | null
 }
