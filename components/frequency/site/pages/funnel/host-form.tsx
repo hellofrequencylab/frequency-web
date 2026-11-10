@@ -12,6 +12,7 @@ import { captureLead } from '@/app/(marketing)/start/actions'
 import { SUBJECTS } from '@/lib/taxonomy/subjects'
 import { FUNNEL_REGIONS } from '@/lib/onboarding/funnel-context'
 import { Input } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { FnHead } from './parts'
 
 export function HostFunnelForm({
@@ -96,19 +97,16 @@ export function HostFunnelForm({
             </label>
             <label>
               What you host
-              <select className="input" value={subject} onChange={(e) => setSubject(e.target.value)}>
-                <option value="">Choose one</option>
-                {SUBJECTS.map((s) => (
-                  <option key={s.key} value={s.key}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+              <Select
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                emptyLabel="Choose one"
+                options={SUBJECTS.map((x) => ({ value: x.key, label: x.label }))}
+              />
             </label>
             <label>
               Where
-              <select className="input" value={area} onChange={(e) => setArea(e.target.value)}>
-                <option value="">Somewhere else</option>
+              <Select value={area} onChange={(e) => setArea(e.target.value)} emptyLabel="Somewhere else">
                 {regions.map((r) => (
                   <optgroup key={r.id} label={r.name}>
                     {r.areas.map((a) => (
@@ -118,7 +116,7 @@ export function HostFunnelForm({
                     ))}
                   </optgroup>
                 ))}
-              </select>
+              </Select>
             </label>
             <label>
               Your page, if you have one
