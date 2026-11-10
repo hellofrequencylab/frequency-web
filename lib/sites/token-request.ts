@@ -5,13 +5,13 @@
 // before the first paid Site). Dark: off until SITE_TOKEN_REQUESTS_ENABLED is on (docs/RUNBOOKS.md).
 import { envFlag } from '@/lib/env/string'
 
-export const TOKEN_REQUESTS_FLAG = 'SITE_TOKEN_REQUESTS_ENABLED'
+const TOKEN_REQUESTS_FLAG = 'SITE_TOKEN_REQUESTS_ENABLED'
 
 export function tokenRequestsEnabled(): boolean {
   return envFlag(TOKEN_REQUESTS_FLAG)
 }
 
-export interface ThemeTokenRequestInput {
+interface ThemeTokenRequestInput {
   /** The token the Space wants, as a name: `--th-accent-soft`, or plain words ("a softer accent"). */
   token: string
   /** What it should do, in words. */
@@ -20,7 +20,7 @@ export interface ThemeTokenRequestInput {
   why?: string
 }
 
-export type TokenRequestCheck = { ok: true; request: Required<ThemeTokenRequestInput> } | { ok: false; error: string }
+type TokenRequestCheck = { ok: true; request: Required<ThemeTokenRequestInput> } | { ok: false; error: string }
 
 const MAX_TOKEN = 80
 const MAX_WANT = 600
@@ -49,7 +49,7 @@ export function checkTokenRequest(input: Partial<Record<keyof ThemeTokenRequestI
   return { ok: true, request: { token, want, why } }
 }
 
-export interface TokenRequestDeps {
+interface TokenRequestDeps {
   /** Files the ticket. The default is lib/support/store createTicket, loaded lazily so tests need no database. */
   createTicket: (input: {
     profileId: string

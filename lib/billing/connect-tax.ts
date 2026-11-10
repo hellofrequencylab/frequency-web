@@ -10,7 +10,7 @@
 import type Stripe from 'stripe'
 import { envFlag } from '@/lib/env/string'
 
-export const CONNECT_TAX_FLAG = 'CONNECT_TAX_REPORTING_ENABLED'
+const CONNECT_TAX_FLAG = 'CONNECT_TAX_REPORTING_ENABLED'
 
 /** Opt-in. Off, every surface that would show a 1099 notice shows nothing. */
 export function connectTaxReportingEnabled(): boolean {
@@ -20,13 +20,13 @@ export function connectTaxReportingEnabled(): boolean {
 /** The US 1099-K threshold (advisory): payment-processor gross above $20,000 AND more than 200 transactions
  *  in a calendar year. Member earnings settle through Stripe, so 1099-K is the form in play; NEC/MISC
  *  forms are for a payer that pays directly, which Frequency does not. */
-export const FORM_1099_THRESHOLDS = {
+const FORM_1099_THRESHOLDS = {
   kGrossCents: 20_000_00,
   kTransactions: 200,
 } as const
 
 /** How close a member's calendar-year earnings are to a 1099. `approaching` starts at 80% of a threshold. */
-export type Form1099Status = 'below' | 'approaching' | 'likely'
+type Form1099Status = 'below' | 'approaching' | 'likely'
 
 export function form1099Status(grossCents: number, transactions: number): Form1099Status {
   const g = Number.isFinite(grossCents) && grossCents > 0 ? grossCents : 0
@@ -40,7 +40,7 @@ export function form1099Status(grossCents: number, transactions: number): Form10
 // Stripe requirement keys that mean "the tax identity is missing" (SSN last 4, full ID number, EIN).
 const TAX_IDENTITY_KEY = /(^|\.)(ssn_last_4|id_number|tax_id|ssn)(\.|$)/
 
-export interface TaxInfoState {
+interface TaxInfoState {
   /** Stripe still needs the member's tax identity before it can report their earnings. */
   needsTaxInfo: boolean
   /** The Stripe requirement keys behind that, for support. */
