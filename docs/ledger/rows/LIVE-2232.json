@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2232",
+  "title": "Editor E3 remainder: Site-only surface filter and the zero-visual-diff Site picture",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E3 (split from LIVE-1172)"
+  },
+  "detail": "Split from LIVE-1172, which closed when library website code began resolving rows as kind site. Still to do: (1) a Site-only surface filter, so the registry can say which surfaces a block renders on for kind site (the filter lives only in git history today); (2) the zero-visual-diff proof: a Site picture taken on the site host (see LIVE-1170, which took the Spotlight pictures) committed under test/e2e/__screenshots__ so a later change to the site renderer is diffed against it. Start from lib/spaces/website.ts and test/e2e/surfaces.ts (editorTargetSurfaces).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const d='test/e2e/__screenshots__/visual.spec.ts';const hit=fs.existsSync(d)&&fs.readdirSync(d).some(f=>/^editor-site/.test(f));if(!hit){console.error('LIVE-2232: no editor-site picture under '+d+' to diff the Site renderer against');process.exit(1)}\"",
+    "note": "Passes once a Site picture is committed. Measures the zero-visual-diff baseline, the consequence the row exists for.",
+    "checked": "2026-11-09"
+  },
+  "wave": "W7"
+}
