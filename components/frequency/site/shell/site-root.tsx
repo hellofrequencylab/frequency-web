@@ -19,7 +19,7 @@
 // client code for the toggle: the buttons carry `data-set`, and the CSS does the rest
 // (`.p-only` / `.e-only`, `.sw .thumb`, `--fq-side`).
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { usePathname } from 'next/navigation'
 import { NavProgress } from '@/components/frequency/shared/nav-progress'
 import type { Side } from '@/lib/frequency/site-nav'
@@ -137,12 +137,29 @@ export function SiteRoot({ children, surface: fallback = 'stage' }: { children: 
     })
   }, [side, pathname])
 
+  // SCAN-1205. A page the server rendered under another pathname (a regenerated ISR page resolved to the
+  // locked fallback) hydrates with attributes React will not patch: the root is exempt from the diff. Writing
+  // the client's page state after mount makes the DOM right whatever the server saw.
+  const rootRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el) return
+    const set = (k: string, v: string | undefined) => (v === undefined ? el.removeAttribute(k) : el.setAttribute(k, v))
+    set('data-lock', page.locked ? side : undefined)
+    set('data-mood', page.mood)
+    set('data-energy-page', page.energy)
+    set('data-fx-quiet', quiet === undefined ? undefined : String(quiet))
+    const vars = moodStyle(page) as Record<string, string | number | undefined>
+    for (const [k, v] of Object.entries(vars ?? {})) if (k.startsWith('--') && v !== undefined) el.style.setProperty(k, String(v))
+  }, [page, side, quiet])
+
   // Overrides belong to the page that set them: SitePage clears its own on unmount.
   const value = useMemo<SiteState>(() => ({ page, surface, side, setSide, setOverride }), [page, surface, side, setSide])
 
   return (
     <SiteContext.Provider value={value}>
       <div
+        ref={rootRef}
         data-surface={surface}
         data-kit="site"
         data-side={side}
@@ -157,17 +174,19 @@ export function SiteRoot({ children, surface: fallback = 'stage' }: { children: 
         className="fq-site"
         style={moodStyle(page) as React.CSSProperties}
       >
-        {!page.locked && (
+        {/* Always rendered, so the server and client trees have the same shape whatever pathname each resolved
+            (SCAN-1205: a conditional child here made hydration throw the React hydration error). The script skips a locked root itself. */}
+        {
           // THE SIDE BEFORE THE FIRST PAINT (SCAN-895). The server renders the page's default side, and the stored
           // choice (URL hash, else localStorage) used to arrive only after hydration, so a returning Host visitor
           // watched the People headline vanish and the Host one fade in last. This sets the stored side on the
           // kit root while the page is still parsing, so the right copy is the first thing painted.
           <script
             dangerouslySetInnerHTML={{
-              __html: `(function(){try{var h=location.hash,s=h==='#people'?'p':(h==='#spaces'||h==='#experiences')?'e':localStorage.getItem(${JSON.stringify(SIDE_STORAGE_KEY)});if(s==='p'||s==='e'){var r=document.currentScript.parentElement;r.setAttribute('data-side',s);}}catch(e){}})()`,
+              __html: "(function(){try{var r=document.currentScript.parentElement;if(r.hasAttribute('data-lock'))return;var h=location.hash,s=h==='#people'?'p':(h==='#spaces'||h==='#experiences')?'e':localStorage.getItem('fq-home-side');if(s==='p'||s==='e'){r.setAttribute('data-side',s);}}catch(e){}})()",
             }}
           />
-        )}
+        }
         <NavProgress />
         {children}
       </div>
