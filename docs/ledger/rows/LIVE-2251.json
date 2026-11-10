@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2251",
+  "title": "A Google Ads click is counted as organic search, so ad signups have no channel of their own",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/attribution/channels.ts",
+    "ref": "deriveChannel"
+  },
+  "detail": "FOUND 2026-11-10 while wiring the Owner's first Google Ads campaign (Find your people locally, goal: subscriptions). first-touch already captures the gclid, but deriveChannel never read it. Google Ads auto-tagging sends a gclid, a google.com referrer and no utm, so every ad click was stamped source_search, the same as organic search. A hand-tagged utm_medium=cpc&utm_source=google was worse: the cpc rule sent it to social. CLOSED 2026-11-10: new acquisition channel paid_search (label Paid search, registry tag source_paid_search). A gclid wins after the entry routes; cpc/ppc/paid/sem from a search-engine source is paid search; cpc from a social source stays social. The channel rollup reads ACQUISITION_CHANNELS, so the new row shows with no further wiring. Conversions themselves need no code: GA4 is live in production and the Stripe webhook already sends a server-side purchase joined to the browser session (LIVE-348); the Owner links Ads to GA4 and imports the purchase key event.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\" \").replace(/^\\s*\\/\\/.*$/gm,\" \");const c=strip(fs.readFileSync(\"lib/attribution/channels.ts\",\"utf8\"));const r=strip(fs.readFileSync(\"lib/traits/registry.ts\",\"utf8\"));if(!/paid_search/.test(c))fail(\"no paid_search channel: a Google Ads click lands in organic search\");if(!/touch\\.gclid/.test(c))fail(\"deriveChannel ignores the gclid, so an auto-tagged ad click reads as organic search\");if(!/source_paid_search/.test(r))fail(\"no source_paid_search registry tag, so the cohort cannot be segmented\");process.exit(0)'",
+    "note": "Passes when a paid_search channel exists, deriveChannel reads the gclid, and the registry carries source_paid_search. Comments stripped first."
+  },
+  "closed": "2026-11-10"
+}
