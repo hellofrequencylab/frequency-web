@@ -128,6 +128,7 @@ const ENTITY_TABLES = new Map([
   ['market_listings', 'listing (Classifieds)'],
   ['listings', 'listing (Housing + General)'],
   ['commerce_products', 'product / service'],
+  ['hunts', 'hunt'],
 ])
 
 /**
@@ -165,6 +166,7 @@ export const ENTITY_WRITES = new Map([
   ['lib/marketplace.ts::createListing', { role: 'create', entity: 'listing', why: 'THE Classifieds listing road (market_listings, ADR-148).' }],
   ['lib/listings/index.ts::createListing', { role: 'create', entity: 'listing', why: 'The connect-only listings base (Housing + General).' }],
   ['lib/commerce/products.ts::createProduct', { role: 'create', entity: 'product / service', why: 'THE Market road for both a product and a service; product_kind discriminates.' }],
+  ['lib/hunts/store.ts::createTrailDraft', { role: 'create', entity: 'hunt', why: 'THE resident Trail road (FH-013): a private draft Hunt the caller owns, with its first draft version.' }],
 
   // ── Operator creates. Behind the admin console, with their own gate and their own audit. ────
   ['app/(main)/admin/actions.ts::createCircle', { role: 'operator', entity: 'circle', why: 'The operator console Circle create, behind the admin gate.' }],
@@ -227,6 +229,8 @@ export const CREATE_ENTRIES = new Map([
   // Product + service
   ['app/(main)/marketplace/commerce-actions.ts::createMakerProductAction', { entity: 'product', writer: 'lib/commerce/products.ts::createProduct' }],
   ['app/(main)/spaces/[slug]/settings/shop/shop-actions.ts::createSpaceProductAction', { entity: 'product / service', writer: 'lib/commerce/products.ts::createProduct' }],
+  // Hunt (FH-013)
+  ['app/(main)/hunts/actions.ts::createTrailAction', { entity: 'hunt', writer: 'lib/hunts/store.ts::createTrailDraft' }],
 ])
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────

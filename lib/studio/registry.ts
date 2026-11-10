@@ -32,6 +32,7 @@ import { SERVICE_MANIFEST } from './entities/service'
 import { SPACE_MANIFEST } from './entities/space'
 import { EMAIL_DOMAIN_MANIFEST } from './entities/email-domain'
 import { SPACE_PLAN_MANIFEST } from './entities/space-plan'
+import { HUNT_MANIFEST } from './entities/hunt'
 import {
   BROADCAST_MANIFEST,
   CHANNEL_MANIFEST,
@@ -62,6 +63,9 @@ export const STUDIO_ENTITIES: readonly EntityManifest[] = [
   HOUSING_MANIFEST,
   PRODUCT_MANIFEST,
   SERVICE_MANIFEST,
+  // A clue trail a resident writes and publishes (FH-013, docs/hunts/CREATOR-FLOW.md). Its editor
+  // is the only road; the drafts surface cannot finish one (create-commits NO_COMMIT_REASON).
+  HUNT_MANIFEST,
   // Catalog-only (owner decision, 2026-08-11): declared so the catalog is COMPLETE and the universal
   // Create affordance can list them, but deliberately given no wizard. They declare no `accepts` and
   // no `steer`, so nothing can render a drop zone or a mood dial for them. See entities/catalog-only.ts.

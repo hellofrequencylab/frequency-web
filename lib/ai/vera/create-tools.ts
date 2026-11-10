@@ -172,6 +172,13 @@ export const CREATE_GATES: Readonly<Record<string, CreateGate>> = {
     kind: 'scoped',
     why: 'The owning Space role ladder decides who may add a service (lib/spaces/entitlements.ts).',
   },
+  hunt: {
+    kind: 'scoped',
+    why:
+      'The HUNTS_AUTHORING_ENABLED switch (lib/hunts/flags.ts) plus a signed-in profile is the whole gate: ' +
+      'a resident owns the trail they start (docs/hunts/CREATOR-FLOW.md), no Space and no plan rung is ' +
+      'consulted, and createTrailAction (app/(main)/hunts/actions.ts) checks both before the layer runs.',
+  },
 }
 
 /** The declared gate for an entity, or null when it is unknown or catalog-only. Total. */
