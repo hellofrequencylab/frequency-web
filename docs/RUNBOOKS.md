@@ -918,3 +918,11 @@ select has_table_privilege('anon','public.spatial_ref_sys','INSERT,UPDATE,DELETE
        has_table_privilege('authenticated','public.spatial_ref_sys','INSERT,UPDATE,DELETE,TRUNCATE') as auth_can_write,
        has_table_privilege('anon','public.spatial_ref_sys','SELECT') as anon_can_read;
 ```
+
+## Google Ads conversion (sign_up)
+
+Signups reach Google Ads through GA4, not through a second tag. `app/auth/callback/route.ts` passes the browser's `_ga` identity to `track('account.created')`, which sends the GA4 key event `sign_up` once per real signup (Measurement Protocol, needs `GA_API_SECRET`, production only). No `_ga` cookie, no event: a visitor who declined analytics is never counted.
+
+Owner steps (Daniel), all in the Google UIs: link the GA4 property to the Google Ads account; mark `sign_up` as a key event in GA4; import it into Ads as the conversion and set the campaign goal to it. Do not count visits to `/onboarding`: returning members land there too.
+
+Check: GA4 Admin, DebugView or Realtime shows `sign_up` after a fresh signup in the same browser that clicked an ad (`?gclid=` on the landing URL). Known gap: a magic link opened in a different browser than the one that clicked the ad has no `_ga` cookie and is not counted.

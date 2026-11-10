@@ -30,6 +30,15 @@ export function gaEventName(event: string): string {
   return event.replace(/\./g, '_')
 }
 
+/** Join the browser session when known: session_id + a nominal engagement time so the event reports. */
+function withSession(
+  params: Record<string, string | number | boolean>,
+  sessionId?: string | null,
+): Record<string, string | number | boolean> {
+  if (!sessionId) return params
+  return { ...params, session_id: sessionId, engagement_time_msec: 1 }
+}
+
 /**
  * Fire one event to GA4 over the Measurement Protocol.
  *
@@ -43,14 +52,14 @@ export async function sendGa4Event(
   name: string,
   params: Record<string, string | number | boolean> = {},
   actorProfileId?: string | null,
-  opts?: { clientId?: string | null },
+  opts?: { clientId?: string | null; sessionId?: string | null },
 ): Promise<void> {
   if (!gaServerEnabled()) return
   const clientId = opts?.clientId || actorProfileId || globalThis.crypto.randomUUID()
   const body: Record<string, unknown> = {
     client_id: clientId,
     non_personalized_ads: true,
-    events: [{ name: gaEventName(name), params }],
+    events: [{ name: gaEventName(name), params: withSession(params, opts?.sessionId) }],
   }
   if (actorProfileId) body.user_id = actorProfileId
 
