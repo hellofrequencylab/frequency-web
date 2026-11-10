@@ -69,11 +69,13 @@ select ok(
       and policyname = 'realtime: a member receives their own member channel')
     ~ 'member:'
   -- The only publish policies are the LIVE-1155 device relay pair, keyed on device:<id> topics through
-  -- relay_*_may_join; nothing lets anyone publish on a member topic.
+  -- relay_*_may_join, plus the E0 editor send policy keyed on editor:<kind>:<id> through editor_may_join;
+  -- nothing lets anyone publish on a member topic.
   and not exists (
     select 1 from pg_policies where schemaname = 'realtime' and tablename = 'messages' and cmd in ('INSERT', 'ALL')
-      and not (policyname in ('realtime: a device sends on its own relay channel', 'realtime: a manager sends on a device relay channel')
-               and with_check ~ 'relay_(device|member)_may_join')
+      and not ((policyname in ('realtime: a device sends on its own relay channel', 'realtime: a manager sends on a device relay channel')
+                and with_check ~ 'relay_(device|member)_may_join')
+               or (policyname = 'realtime: an editor sends on an entity editing channel' and with_check ~ 'editor_may_join'))
   ),
   'it is keyed on the member topic, and members cannot publish'
 );
