@@ -39,7 +39,7 @@ export function seedWebsiteHome(space: Space, fallback: Data): Data {
   // type placed twice (legal since E0 task 10) still has exactly one bag to import; emitting it twice
   // would duplicate the copy and the `website-<id>` id.
   const seeded = new Set<string>()
-  for (const row of resolveRows(grid, 'space')) for (const id of row.cells.flat()) {
+  for (const row of resolveRows(grid, 'site')) for (const id of row.cells.flat()) {
     const type = TYPES[id]
     if (!type || seeded.has(id)) continue
     seeded.add(id)
