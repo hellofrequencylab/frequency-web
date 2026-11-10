@@ -1,0 +1,6 @@
+{
+  "id": "FH-013",
+  "append": {
+    "detail": "\n\nSlice 1, 2026-11-10: lib/hunts/draft.ts is the pure core the screens call. draftToGraph derives the Trail graph from a flat stop list; previewTrail evaluates it in memory with the real evaluator and can write nothing; publishChecklist is the six-item checklist from docs/hunts/CREATOR-FLOW.md (stop count, graph, stop text, placement, title, route test on this revision, permission); saveDraft takes an injected store whose update applies only when the stored revision equals the tab's base revision, so a stale tab gets a conflict and writes nothing, and any saved edit clears the route test. lib/hunts/draft.test.ts covers each. Still open: the screens and routes (app/(main)/hunts/new, the editor, the preview route), the store over public.hunts (a conditional update on revision, service role), immutable publish into hunt_versions, and the HUNTS_AUTHORING_ENABLED gate on the routes. Screens need a design look before they ship."
+  }
+}
