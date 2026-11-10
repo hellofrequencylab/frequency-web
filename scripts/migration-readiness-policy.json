@@ -983,30 +983,50 @@
       ]
     },
     {
+<<<<<<< HEAD
       "pullRequest": 4847,
       "expiresAt": "2026-11-16T23:59:59Z",
       "migrations": [
         {
           "file": "supabase/migrations/20270346039000_commerce_carts.sql",
           "sha256": "23ab55a6a82aee751babddbc134ba1ac8d9fc4a6d56d08c7c7be076eb8a749e0"
+=======
+      "pullRequest": 4849,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346038000_hunt_staff_review.sql",
+          "sha256": "b3bdc09766e31b6b2af99893196b289eb65a52b3584f69ee1cf64a79e5039aa0"
+>>>>>>> origin/main
         }
       ],
       "reviewedChanges": [
         {
           "file": ".env.example",
           "status": "modified",
+<<<<<<< HEAD
           "sha256": "f44318702b6dbe74ed18806b3781a60278b9b228886fc2a9469cf2f0b20fe833",
+=======
+          "sha256": "0b1bc09af55e71dfd1475dc7e7740c2002f6eaf69ee443ac7547d39a27260ddf",
+>>>>>>> origin/main
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
+<<<<<<< HEAD
           "file": "app/(main)/marketplace/add-to-cart-button.tsx",
           "status": "added",
           "sha256": "1f53181ad61bb4a1254917465d47f69b96a9b0ee62ceb8524ce129f15f0994c5",
+=======
+          "file": "app/api/hunts/staff/verify/route.ts",
+          "status": "added",
+          "sha256": "2a3fe27563a834a41c0dd541a761516bd2e4f1fb6131456d57d0138c1c96e0d6",
+>>>>>>> origin/main
           "baseMode": "000000",
           "headMode": "100644"
         },
         {
+<<<<<<< HEAD
           "file": "app/(main)/marketplace/cart-actions.test.ts",
           "status": "added",
           "sha256": "f04ce88f8877a7d70d25872a1092c49c8ab68e2a9e734e003147052bc8b62a36",
@@ -1031,76 +1051,161 @@
           "file": "docs/RUNBOOKS.md",
           "status": "modified",
           "sha256": "fad2139a56957cfa11d8189e656f4967bb6ff5a9922975130d2997abc78de4ce",
+=======
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "8430f53d69f342f3a1386af29cec47bb6d0c613d6072d14fddc048f33c8647cf",
+>>>>>>> origin/main
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
+<<<<<<< HEAD
           "file": "docs/ledger/rows/DEF-ETSY.json",
           "status": "modified",
           "sha256": "bdec445367808d24a2ad1e11b04e1a018c2d6e5a0ddb582d2d80ce16b23f03f7",
+=======
+          "file": "docs/ledger/rows/FH-020S.json",
+          "status": "modified",
+          "sha256": "f1e47a48c15800c80d350b4779ec2cacb0862056477a87801dfe9df69e07ad70",
+>>>>>>> origin/main
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
+<<<<<<< HEAD
           "file": "lib/commerce/cart-flag.ts",
           "status": "added",
           "sha256": "25459f64751da8ffe8252016196b58639720391a1b256c372177b5ad8553d1b2",
+=======
+          "file": "docs/ledger/rows/FH-020T.json",
+          "status": "added",
+          "sha256": "790828e2db7da1520364c32edbee6662f108b54a99d06f9bfd079783c9ad6835",
+>>>>>>> origin/main
           "baseMode": "000000",
           "headMode": "100644"
         },
         {
+<<<<<<< HEAD
           "file": "lib/commerce/cart-store.test.ts",
           "status": "added",
           "sha256": "d51142f49eae331dfecc38fb410a0b2fa2db383230c321551a160c68a66369de",
+=======
+          "file": "lib/hunts/staff-proof.test.ts",
+          "status": "modified",
+          "sha256": "2c0dfc885b083c49730303fb1a341870067800251073cccd9e57d2c3bb7ba8a6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/staff-proof.ts",
+          "status": "modified",
+          "sha256": "007ba216be8c42670787e142e64cbe0aad18b973cbcd17e6a7a8720bb0cc606f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/staff-review.test.ts",
+          "status": "added",
+          "sha256": "853ee99635ae016e4412824dbbffd700fc458c71acc2035f20943bc019b0f765",
+>>>>>>> origin/main
           "baseMode": "000000",
           "headMode": "100644"
         },
         {
+<<<<<<< HEAD
           "file": "lib/commerce/cart-store.ts",
           "status": "added",
           "sha256": "f9398c0c8998dc50eadb76a6c926c2c9fd82b1b4da25ca2dc060aae34dd07260",
+=======
+          "file": "lib/hunts/staff-review.ts",
+          "status": "added",
+          "sha256": "a88f02ce797d212048610f73084e61c88a04a576addf01c69d93703c030b566b",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/staff-store.ts",
+          "status": "added",
+          "sha256": "6ef71e3e307d3a1d6686afd3decb8c42ef30c8c5d6c841943d368d69eae7aaf9",
+>>>>>>> origin/main
           "baseMode": "000000",
           "headMode": "100644"
         },
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
+<<<<<<< HEAD
           "sha256": "8d277a1a7c5848e8a5860879e6b6d62c5716b36e9790cbcf2245e75514313594",
+=======
+          "sha256": "5e26591c50f9e634237bd1827d6748c7fa02ffda33083bf0ff0b72873f1270be",
+>>>>>>> origin/main
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
+<<<<<<< HEAD
           "sha256": "f9bd66388264958147d52ac864bce34f9b9c732a1777fc14e4cb87e667956d56",
+=======
+          "sha256": "b73823f5a59ca6ff40e9268457003579fd72f73d2a5109135e3180d3ca30603b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "b64a6d9cb295c2479b12bc194f4c09bb8133a02d46fb8e03b38fd323d57a2c59",
+>>>>>>> origin/main
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/rls-deny-all.txt",
           "status": "modified",
+<<<<<<< HEAD
           "sha256": "e14e9ee55a221f13cd6947971e8e94948d3aeed9f39c789b654d8da638590659",
+=======
+          "sha256": "db9d468aa5996b3be1c4cfc93f1991bb0b2312c6460988e2a00a4d93ac7d5739",
+>>>>>>> origin/main
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/table-grants.txt",
           "status": "modified",
+<<<<<<< HEAD
           "sha256": "497bd0f0d5b6bcdee447f6d605fec5525f541628724856d3428d56856c2710c1",
+=======
+          "sha256": "96bef670e398eba16e4e8741a98e31df58513e186b469336205276caac14b510",
+>>>>>>> origin/main
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
+<<<<<<< HEAD
           "file": "supabase/migrations/20270346039000_commerce_carts.sql",
           "status": "added",
           "sha256": "23ab55a6a82aee751babddbc134ba1ac8d9fc4a6d56d08c7c7be076eb8a749e0",
+=======
+          "file": "supabase/migrations/20270346038000_hunt_staff_review.sql",
+          "status": "added",
+          "sha256": "b3bdc09766e31b6b2af99893196b289eb65a52b3584f69ee1cf64a79e5039aa0",
+>>>>>>> origin/main
           "baseMode": "000000",
           "headMode": "100644"
         },
         {
+<<<<<<< HEAD
           "file": "supabase/tests/commerce_carts.test.sql",
           "status": "added",
           "sha256": "0e898e3811107081daaadcc86144f357d0ec4d9f983f970a0dab3594b4d1e180",
+=======
+          "file": "supabase/tests/hunt_staff_review.test.sql",
+          "status": "added",
+          "sha256": "0545f94d1fd1b6d7ea2718a316b83236abc1e4d08ed68eb49949649ff7820a9f",
+>>>>>>> origin/main
           "baseMode": "000000",
           "headMode": "100644"
         }
