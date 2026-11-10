@@ -37,6 +37,7 @@ export default async function OnAirPage({
   if (practices.length === 0) {
   return (
       <>
+        {/* header-ok: Focus takeover with no app chrome; the sr-only h1 only names the page */}
         <h1 className="sr-only">Mindless</h1>
         <MindlessEmpty />
       </>
@@ -46,7 +47,7 @@ export default async function OnAirPage({
     defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
   return (
     <>
-      {/* SCAN-1032: the takeover has only an h2 for its practice, so the page names itself for screen readers. */}
+      {/* header-ok: Focus takeover with no app chrome; the sr-only h1 only names the page (SCAN-1032) */}
       <h1 className="sr-only">Mindless</h1>
       <MindlessDoor
         session={{ practices, defaultPracticeId, prefs, practicedToday, journeyLegs }}
