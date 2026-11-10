@@ -872,6 +872,13 @@
           "headMode": "100644"
         },
         {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "369b990c5be6177154f1a78d8c48cdb7b0181c2983fee81b0cea61bee21441a8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
           "file": "scripts/rls-deny-all.txt",
           "status": "modified",
           "sha256": "8216270378debe6977d03450ffe2efee7eda4bb9cd981d38a2b6755305177030",
