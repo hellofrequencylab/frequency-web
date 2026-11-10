@@ -123,6 +123,7 @@ export const NO_COMMIT_REASON: Readonly<Record<string, string>> = {
   housing: 'A place to live carries a privacy choice about how much of the address to show, and that is yours to make. Finish it in the housing form.',
   product: 'Whether you can sell in a Space is decided by that Space. Finish it in the shop.',
   service: 'Whether you can sell in a Space is decided by that Space. Finish it in the shop.',
+  hunt: 'A trail is built stop by stop and walked once in preview before it goes live. Finish it in the trail editor.',
 }
 
 /** Whether this surface can finish an entity itself. Total: an unknown id is false. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { draftToGraph, previewTrail, publishChecklist, saveDraft, stopKey } from './draft'
+import { canonicalContent, draftToGraph, parseTrailDraft, previewTrail, publishChecklist, publishRows, saveDraft, stopKey } from './draft'
 import { validateGraph } from './graph'
 
 type Draft = Parameters<typeof publishChecklist>[0]
@@ -9,6 +9,7 @@ const draft = (over: Partial<Draft> = {}): Draft => ({
   title: 'Harbor walk',
   hook: 'Three stops, one story',
   area: 'Carlsbad',
+  audience: 'Anyone with an afternoon',
   stops: [stop(1), stop(2), stop(3)],
   routeTestedAtRevision: 4,
   permissionConfirmed: true,
@@ -86,5 +87,38 @@ describe('saveDraft', () => {
     expect(first.ok).toBe(true)
     expect(stale).toEqual({ ok: false, conflict: true, currentRevision: 5 })
     expect(store.writes).toBe(1)
+  })
+})
+
+describe('parseTrailDraft', () => {
+  it('reads an untrusted object into a capped draft and never trusts a forged route test', () => {
+    const d = parseTrailDraft({
+      title: 'x'.repeat(500),
+      stops: Array.from({ length: 14 }, (_, i) => ({ place: `P${i}`, clue: 'c', placementReady: 'yes' })),
+      routeTestedAtRevision: '7',
+      permissionConfirmed: 'true',
+    })
+    expect(d.title).toHaveLength(120)
+    expect(d.stops).toHaveLength(10)
+    expect(d.stops[0].placementReady).toBe(false)
+    expect(d.routeTestedAtRevision).toBeNull()
+    expect(d.permissionConfirmed).toBe(false)
+    expect(parseTrailDraft(null).stops).toEqual([])
+  })
+})
+
+describe('publishRows and canonicalContent', () => {
+  it('derives one mission per stop and the prerequisite groups from the Trail shape', () => {
+    const rows = publishRows(draft())
+    expect(rows.missions.map((m) => m.mission_key)).toEqual(['stop-1', 'stop-2', 'stop-3'])
+    expect(rows.missions[0].title).toBe('Place 1')
+    expect(rows.groups.map((g) => g.key)).toEqual(['stop-2:needs', 'stop-3:needs', 'finish'])
+    expect(rows.groups[2].members).toEqual(['stop-3'])
+  })
+
+  it('is stable for the same content and changes with any material edit', () => {
+    const a = canonicalContent(draft())
+    expect(canonicalContent(draft({ routeTestedAtRevision: 9 }))).toBe(a)
+    expect(canonicalContent(draft({ stops: [stop(1), stop(2), { ...stop(3), clue: 'Other' }] }))).not.toBe(a)
   })
 })
