@@ -1,0 +1,1 @@
+{"id":"OWN-109","append":{"detail":"\n\n2026-11-10 owner answer (Daniel, project thread decision card): parked until after the Jan 1 2027 launch. The database side is already locked down (anon and authenticated roles cannot read the private column), so nothing is exposed meanwhile. The hands-on check lives at /spaces/<slug>/settings/coach and needs two Spaces. Row stays open."}}
