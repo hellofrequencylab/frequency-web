@@ -44,7 +44,6 @@ import {
   WARMUP_PRESETS,
   ambientTrackBySlug,
   bellToneBySlug,
-  bellVolumeScale,
   breathPositionAt,
   buildCustomPattern,
   clampMinutes,
@@ -620,7 +619,7 @@ export function OnAirSession({
       // Cues: a phase-change ding/tap in breath mode, an interval ding on the
       // timer (Meditate). At zero the end bell rings ONCE and the screen waits —
       // the member collects with Finish in their own time (P10), no auto-advance.
-      const vol = bellVolumeScale(bellVolume)
+      const vol = bellVolume
       if (left > 0) {
         if (mode === 'breath') {
           const { phase } = breathPositionAt(pattern, elapsed)
@@ -741,7 +740,7 @@ export function OnAirSession({
     // This warm-up second's cue: a stronger pulse + flash on the final "one", a tick otherwise.
     const isOne = preroll === 1
     if (haptics) buzz(isOne ? [30, 80, 30] : 15)
-    if (bell) countBeep(audio.current, 1, isOne)
+    if (bell) countBeep(audio.current, bellVolume, isOne)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isOne) setFlash(true)
     const id = setTimeout(() => setPreroll((n) => (n === null ? null : n - 1)), 1000)
@@ -1919,7 +1918,7 @@ export function OnAirSession({
                           try {
                             audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
                             void audio.current.resume()
-                            chime(audio.current, t, bellVolumeScale(bellVolume))
+                            chime(audio.current, t, bellVolume)
                           } catch {
                             // preview is a nicety
                           }
@@ -1955,7 +1954,7 @@ export function OnAirSession({
                       try {
                         audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
                         void audio.current.resume()
-                        chime(audio.current, bellToneBySlug(bellToneSlug), bellVolumeScale(v))
+                        chime(audio.current, bellToneBySlug(bellToneSlug), v)
                       } catch {
                         // preview is a nicety
                       }

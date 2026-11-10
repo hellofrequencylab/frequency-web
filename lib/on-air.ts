@@ -351,15 +351,11 @@ export function ambientTrackBySlug(slug: string | null | undefined): AmbientTrac
  *  member's stored pref keeps the exact loudness it always had.) */
 export type BellVolume = number
 
-/** The bell synth-peak multiplier at 100% volume. A touch above the old "loud" preset (1.5)
- *  so the top of the slider is clearly loud, while the soft-attack synth stays clip-free. */
-const BELL_MAX_GAIN = 1.6
-
 /** Default bell volume for a fresh member (0..1). Lands just above the old "medium". */
 const DEFAULT_BELL_VOLUME = 0.7
 
-// Old string presets → the 0..1 scale, chosen so quiet/medium/loud migrate to the SAME gain
-// they always had (0.6 / 1.0 / 1.5 once multiplied by BELL_MAX_GAIN = 1.6).
+// Old string presets → the 0..1 slider, chosen so quiet/medium/loud keep their relative order
+// through the perceptual curve below (a stored pref never comes back louder than it was).
 const LEGACY_BELL_VOLUME: Record<string, number> = { quiet: 0.375, medium: 0.625, loud: 0.9375 }
 
 /** Clamp any bell-volume input (a 0..1 number, or a legacy quiet/medium/loud string) to 0..1. */
@@ -369,10 +365,14 @@ export function coerceBellVolume(v: number | string | null | undefined): number 
   return DEFAULT_BELL_VOLUME
 }
 
-/** The synth-peak multiplier for a bell volume: 0..1 → 0..BELL_MAX_GAIN. Accepts the legacy
- *  string presets too, so an un-migrated stored pref still rings at its old loudness. */
-export function bellVolumeScale(v: number | string | null | undefined): number {
-  return coerceBellVolume(v) * BELL_MAX_GAIN
+/** The perceptual volume curve shared by the bell and the ambient loop (LIVE-2246): a 0..1 slider
+ *  mapped over a 40 dB range, so the middle of the slider sounds like the middle instead of
+ *  almost-full. 0 is silence; 1 is unity; 0.5 is -20 dB (a tenth of the amplitude). Legacy
+ *  quiet/medium/loud strings coerce first. */
+export function volumeCurve(v: number | string | null | undefined): number {
+  const x = coerceBellVolume(v)
+  if (x <= 0) return 0
+  return Math.min(1, Math.pow(10, (x * 40 - 40) / 20))
 }
 
 /** Default ambient background volume for a fresh member (0..1). Above the old fixed level so a

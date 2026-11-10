@@ -10,7 +10,7 @@ import { useEffect, useRef } from 'react'
 import { Waves } from 'lucide-react'
 import { Select } from '@/components/ui/select'
 import { BellCueIcon, VibrationIcon } from '@/components/on-air/icons'
-import { AMBIENT_TRACKS, BELL_INTERVALS, BELL_TONES, WARMUP_PRESETS, bellToneBySlug, bellVolumeScale } from '@/lib/on-air'
+import { AMBIENT_TRACKS, BELL_INTERVALS, BELL_TONES, WARMUP_PRESETS, bellToneBySlug } from '@/lib/on-air'
 import { chime } from '@/lib/timer-audio'
 import { createAmbient, type AmbientHandle } from '@/lib/on-air-ambient'
 import type { CueSettings, TimerSettingsPatch } from '@/lib/on-air/timer-settings'
@@ -42,7 +42,7 @@ export function useDoorAudio() {
       const c = ensure()
       if (!c) return
       try {
-        chime(c, bellToneBySlug(toneSlug), bellVolumeScale(volume))
+        chime(c, bellToneBySlug(toneSlug), volume)
       } catch {
         // a preview is a nicety
       }
