@@ -1,0 +1,6 @@
+{
+  "id": "FH-047",
+  "append": {
+    "detail": "\n\nPacket F pure slice: lib/hunts/graph/sponsor-milestone-math.ts prices only confirmed distinct qualifications in a frozen threshold snapshot before Hunt end. The exact pledge rounds down to whole cents and is limited by one Hunt cap, with no rollover. Storage, once-only settlement and payout stay in the parent implementation. FH-045 approval gates real money."
+  }
+}
