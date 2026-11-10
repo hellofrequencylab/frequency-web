@@ -16,6 +16,7 @@ describe('Google measurement hosts in connect-src', () => {
       'https://analytics.google.com',
       'https://stats.g.doubleclick.net',
       'https://www.google.com/g/collect',
+      'https://www.googletagmanager.com',
     ]) expect(connect).toContain(host)
   })
   it('stays exact: no Google wildcard and no bare google.com', () => {
