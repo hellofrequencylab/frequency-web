@@ -96,6 +96,141 @@ function writeLayout(doc: Y.Doc, layout: NodeLayout): void {
   }, LOCAL_ORIGIN)
 }
 
+// ── RECONCILE: bring an existing doc to a target tree with the SMALLEST change ─────────────────────
+// The page builder's store works on plain trees (node-ops). To share edits, the store's next tree is
+// written onto the doc here: rows and bench nodes are matched by id, a field that did not change is
+// not touched (so a peer's concurrent edit to it survives), and only a moved or re-shaped part is
+// rebuilt. Rebuilding drops a concurrent edit INSIDE that part: the accepted cost of a move.
+
+const sameJson = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
+
+function patchBag(owner: Y.Map<unknown>, key: string, bag: Record<string, unknown> | undefined) {
+  const cur = owner.get(key)
+  if (!bag) {
+    if (cur !== undefined) owner.delete(key)
+    return
+  }
+  if (!(cur instanceof Y.Map)) {
+    owner.set(key, bagToMap(bag))
+    return
+  }
+  for (const k of [...cur.keys()]) if (!(k in bag) || bag[k] === undefined) cur.delete(k)
+  for (const [k, v] of Object.entries(bag)) if (v !== undefined && !sameJson(cur.get(k), v)) cur.set(k, v)
+}
+
+function patchNode(m: Y.Map<unknown>, n: BlockNode) {
+  if (m.get('type') !== n.type) m.set('type', n.type)
+  if (n.hidden === undefined) {
+    if (m.get('hidden') !== undefined) m.delete('hidden')
+  } else if (m.get('hidden') !== n.hidden) m.set('hidden', n.hidden)
+  patchBag(m, 'content', n.content)
+  patchBag(m, 'style', n.style as Record<string, unknown> | undefined)
+}
+
+function cellShape(cells: BlockNode[][]): string {
+  return JSON.stringify(cells.map((c) => c.map((n) => n.nid)))
+}
+
+function yCellShape(colsY: unknown): string | null {
+  if (!(colsY instanceof Y.Array)) return null
+  return JSON.stringify(
+    (colsY.toArray() as unknown[]).map((c) =>
+      c instanceof Y.Array ? (c.toArray() as Y.Map<unknown>[]).map((n) => (n instanceof Y.Map ? n.get('nid') : null)) : null,
+    ),
+  )
+}
+
+function buildCells(cells: BlockNode[][]): Y.Array<Y.Array<Y.Map<unknown>>> {
+  const cols = new Y.Array<Y.Array<Y.Map<unknown>>>()
+  for (const col of cells) {
+    const ca = new Y.Array<Y.Map<unknown>>()
+    ca.push(col.map(nodeToMap))
+    cols.push([ca])
+  }
+  return cols
+}
+
+function buildRow(r: NodeLayout['rows'][number]): Y.Map<unknown> {
+  const rm = new Y.Map<unknown>()
+  setScalars(rm, r as unknown as Record<string, unknown>, new Set(['cells']))
+  rm.set('cells', buildCells(r.cells))
+  return rm
+}
+
+function patchRow(rm: Y.Map<unknown>, r: NodeLayout['rows'][number]) {
+  const src = r as unknown as Record<string, unknown>
+  for (const k of [...rm.keys()]) if (k !== 'cells' && (!(k in src) || src[k] === undefined)) rm.delete(k)
+  for (const [k, v] of Object.entries(src)) if (k !== 'cells' && v !== undefined && !sameJson(rm.get(k), v)) rm.set(k, v)
+  const colsY = rm.get('cells')
+  if (yCellShape(colsY) === cellShape(r.cells)) {
+    ;(colsY as Y.Array<Y.Array<Y.Map<unknown>>>).forEach((ca, ci) => {
+      ca.forEach((nm, ni) => patchNode(nm, r.cells[ci][ni]))
+    })
+  } else {
+    rm.set('cells', buildCells(r.cells))
+  }
+}
+
+/** Match `arr` to `targets` by key: drop what is gone or duplicated, patch what stayed, rebuild what
+ *  moved. Order afterwards is exactly the target order. */
+function reconcileKeyed<T>(
+  arr: Y.Array<Y.Map<unknown>>,
+  targets: T[],
+  keyOf: (t: T) => string,
+  yKeyOf: (m: Y.Map<unknown>) => unknown,
+  build: (t: T) => Y.Map<unknown>,
+  patch: (m: Y.Map<unknown>, t: T) => void,
+) {
+  const want = new Set(targets.map(keyOf))
+  const seen = new Set<unknown>()
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const m = arr.get(i)
+    const k = m instanceof Y.Map ? yKeyOf(m) : undefined
+    if (!(m instanceof Y.Map) || typeof k !== 'string' || !want.has(k)) arr.delete(i, 1)
+  }
+  for (let i = 0; i < arr.length; i++) {
+    const k = yKeyOf(arr.get(i))
+    if (seen.has(k)) {
+      arr.delete(i, 1)
+      i--
+    } else seen.add(k)
+  }
+  targets.forEach((t, i) => {
+    const key = keyOf(t)
+    const here = i < arr.length ? arr.get(i) : undefined
+    if (here && yKeyOf(here) === key) {
+      patch(here, t)
+      return
+    }
+    for (let j = i + 1; j < arr.length; j++) {
+      if (yKeyOf(arr.get(j)) === key) {
+        arr.delete(j, 1)
+        break
+      }
+    }
+    arr.insert(i, [build(t)])
+  })
+}
+
+/** Write `layout` onto `doc` as the smallest change. A doc with no usable structure is written whole. */
+export function reconcileDoc(doc: Y.Doc, layout: NodeLayout): void {
+  const root = doc.getMap(ROOT)
+  const rowsY = root.get('rows')
+  const benchY = root.get('bench')
+  const metaY = root.get('meta')
+  if (!(rowsY instanceof Y.Array) || !(benchY instanceof Y.Array) || !(metaY instanceof Y.Map)) {
+    writeLayout(doc, layout)
+    return
+  }
+  doc.transact(() => {
+    reconcileKeyed(rowsY as Y.Array<Y.Map<unknown>>, layout.rows, (r) => (r as { id: string }).id, (m) => m.get('id'), buildRow, patchRow)
+    reconcileKeyed(benchY as Y.Array<Y.Map<unknown>>, layout.bench, (n) => n.nid, (m) => m.get('nid'), nodeToMap, patchNode)
+    if (layout.template === undefined) {
+      if (metaY.get('template') !== undefined) metaY.delete('template')
+    } else if (metaY.get('template') !== layout.template) metaY.set('template', layout.template)
+  }, LOCAL_ORIGIN)
+}
+
 /** A fresh Y.Doc holding `layout`. */
 export function toYDoc(layout: NodeLayout): Y.Doc {
   const doc = new Y.Doc()
