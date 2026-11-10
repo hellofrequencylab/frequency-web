@@ -345,6 +345,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
           <StudioField label="Or paste a list, one stop per line (place, then the clue after a colon)">
             <Textarea
               rows={3}
+              aria-label="Paste a list of stops"
               value={pasted}
               onChange={(e) => setPasted(e.target.value)}
               placeholder={'The old pier: Count the lamps and stand under the third.\nThe bakery: Ask what sold out first today.'}
