@@ -14,6 +14,7 @@ import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { chipClasses } from '@/components/ui/chip'
+import { unlockTimerAudio } from '@/lib/on-air/timer-audio-unlock'
 import {
   BREATH_DURATION_PRESETS,
   DURATION_PRESETS,
@@ -363,7 +364,7 @@ export function CompactSetup({
           </section>
         )}
         <div className="mt-auto space-y-2 pt-2">
-          <Button type="button" disabled={!practice || (!locked && !valid)} className="min-h-11 w-full rounded-control px-4 py-3 text-body-sm font-semibold disabled:opacity-50" onClick={() => onStart(choice())}>
+          <Button type="button" disabled={!practice || (!locked && !valid)} className="min-h-11 w-full rounded-control px-4 py-3 text-body-sm font-semibold disabled:opacity-50" onClick={() => { unlockTimerAudio(); onStart(choice()) }}>
             {goLabel}
           </Button>
         </div>
