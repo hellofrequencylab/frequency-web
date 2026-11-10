@@ -1,0 +1,18 @@
+{
+  "id": "FH-020T",
+  "title": "Hunts FH-020T: Wire the staff scan screen and held-claim review screen to the door route and review actions",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-020S (2026-11-10): the nonce table, door route, review, override and appeal shipped dark; the screens that call them are separate."
+  },
+  "detail": "Mount components/hunts/staff-proof-screens.tsx at app/(main)/hunts/staff, post a scanned or typed code to /api/hunts/staff/verify, list held claims (hunt_claims.state = needs_review) for the reviewer's venue, and call lib/hunts/staff-review.ts reviewClaim through a server action behind decide('review_claim'). Show the player's appeal button on a rejected claim. Done when: the staff page renders signed in as venue staff with HUNTS_CLAIMS_ENABLED on and 404s otherwise. Requires: FH-020S. Owner role: Game systems.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"app/(main)/hunts/staff/page.tsx\")?0:1)'"
+  },
+  "wave": "W7"
+}
