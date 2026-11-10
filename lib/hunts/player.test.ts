@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { draftToGraph, publishRows, stopKey } from './draft'
 import { projectForPlayer } from './player'
 
-const stops = [1, 2, 3].map((n) => ({ place: `Place ${n}`, clue: `Clue ${n}`, hint: n === 2 ? 'Near the water' : undefined, placementReady: true }))
-const draft = { title: 'T', hook: 'H', area: 'A', stops, routeTestedAtRevision: 1, permissionConfirmed: true }
+const stops = [1, 2, 3].map((n) => ({ place: `Place ${n}`, clue: `Clue ${n}`, placementReady: true, ...(n === 2 ? { hint: 'Near the water' } : {}) }))
+const draft = { title: 'T', hook: 'H', area: 'A', audience: 'Everyone', stops, routeTestedAtRevision: 1, permissionConfirmed: true }
 const graph = draftToGraph(draft)
 const content = publishRows(draft).missions
 const base = { graph, content, now: '2026-11-10T00:00:00Z', huntState: 'published' as const, revision: 7 }
