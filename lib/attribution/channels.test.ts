@@ -46,6 +46,22 @@ describe('acquisition channels', () => {
     })
   })
 
+  describe('deriveChannel — paid search', () => {
+    it('a Google Ads click id is paid search, even with a plain google.com referrer and no utm', () => {
+      expect(deriveChannel({ landing: '/start', gclid: 'Cj0KCQ', ref: 'https://www.google.com/' })).toBe('paid_search')
+    })
+
+    it('cpc/ppc from a search engine is paid search; cpc from a social network stays social', () => {
+      expect(deriveChannel({ landing: '/', utm: { source: 'google', medium: 'cpc' } })).toBe('paid_search')
+      expect(deriveChannel({ landing: '/', utm: { source: 'bing', medium: 'ppc' } })).toBe('paid_search')
+      expect(deriveChannel({ landing: '/', utm: { source: 'facebook', medium: 'cpc' } })).toBe('social')
+    })
+
+    it('an entry route still wins over a click id', () => {
+      expect(deriveChannel({ landing: '/q/abc', gclid: 'Cj0KCQ' })).toBe('qr_scan')
+    })
+  })
+
   describe('deriveChannel — referrer host', () => {
     it('classifies an AI answer engine as ai_answer, ahead of search and organic (SCAN-671)', () => {
       expect(deriveChannel({ landing: '/', ref: 'https://chatgpt.com/' })).toBe('ai_answer')
