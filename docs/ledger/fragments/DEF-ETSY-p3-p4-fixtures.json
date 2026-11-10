@@ -1,0 +1,9 @@
+{
+  "id": "DEF-ETSY",
+  "slice": "Packet G P3/P4 fixture UI",
+  "evidence": [
+    "components/marketplace/etsy-preview.tsx",
+    "components/marketplace/etsy-preview.test.tsx"
+  ],
+  "note": "Standalone fixture evidence. The canonical DEF-ETSY row stays with the Etsy cart thread. Shipping quotes, listing queries, checkout and the live product page are outside this slice."
+}
