@@ -14,5 +14,6 @@
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const walk=(d,o=[])=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=d+\"/\"+e.name;if(e.isDirectory())walk(f,o);else if(/\\.tsx$/.test(e.name)&&!/\\.test\\./.test(e.name))o.push(f)}return o};const all=[...walk(\"components\"),...walk(\"app\")];const src=(f)=>fs.readFileSync(f,\"utf8\");const mounted=all.some(f=>!/collab-text-editor\\.tsx$/.test(f)&&/CollabTextEditor/.test(src(f))&&/CanvasViewportShell/.test(src(f)));const peers=all.some(f=>/components\\/builder\\/presence\\//.test(f));const miss=[];if(!mounted)miss.push(\"no file mounts CollabTextEditor inside CanvasViewportShell\");if(!peers)miss.push(\"no collaborator presence component under components/builder/presence\");if(miss.length){console.error(\"PROG-E4B: \"+miss.join(\"; \"));process.exit(1)}'",
     "note": "Measures two consequences E4 still owes: a file that composes the canvas shell with the collaborative text editor (the editor route), and the collaborator presence UI. Fails on main today."
-  }
+  },
+  "wave": "W4"
 }
