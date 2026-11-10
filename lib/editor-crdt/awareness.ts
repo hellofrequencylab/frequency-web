@@ -6,7 +6,7 @@
 const MAX_NAME = 40
 const COLOR_RE = /^#[0-9a-f]{6}$/i
 
-interface PresenceState {
+export interface PresenceState {
   userId: string
   name: string
   color: string
@@ -23,4 +23,40 @@ export function readPresence(raw: unknown): PresenceState | null {
   const color = typeof r.color === 'string' && COLOR_RE.test(r.color) ? r.color : 'currentColor'
   const selectedNid = typeof r.selectedNid === 'string' && /^n[0-9a-z]{6,12}$/i.test(r.selectedNid) ? r.selectedNid : null
   return { userId: r.userId, name, color, selectedNid }
+}
+
+/** A peer not heard from for this long is gone (a closed tab sends no goodbye). Heartbeats are well inside it. */
+export const PRESENCE_TTL_MS = 20_000
+export const PRESENCE_BEAT_MS = 6_000
+const MAX_PEERS = 50
+
+/** Who is in the room right now. Pure: the clock is passed in, nothing here touches the document. */
+export function createPeerBook() {
+  const seen = new Map<string, { state: PresenceState; at: number }>()
+  const list = () => [...seen.values()].map((v) => v.state).sort((a, b) => a.userId.localeCompare(b.userId))
+  return {
+    /** Take a peer's state. Returns true when the visible list changed. */
+    hear(raw: unknown, now: number, selfId: string): boolean {
+      const st = readPresence(raw)
+      if (!st || st.userId === selfId) return false
+      const before = seen.get(st.userId)
+      if (!before && seen.size >= MAX_PEERS) return false
+      seen.set(st.userId, { state: st, at: now })
+      return !before || JSON.stringify(before.state) !== JSON.stringify(st)
+    },
+    leave(userId: string): boolean {
+      return seen.delete(userId)
+    },
+    /** Drop peers past the TTL. Returns true when anyone was dropped. */
+    prune(now: number): boolean {
+      let dropped = false
+      for (const [id, v] of seen) {
+        if (now - v.at < PRESENCE_TTL_MS) continue
+        seen.delete(id)
+        dropped = true
+      }
+      return dropped
+    },
+    list,
+  }
 }

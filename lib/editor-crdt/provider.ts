@@ -16,6 +16,7 @@ import type * as Y from 'yjs'
 import type { EntityKind } from '../entity-blocks/registry'
 import { editorTopic, encodeUpdate, decodeUpdate } from './channel'
 import { applyRemote, encodeState, REMOTE_ORIGIN } from './node-ydoc'
+import { createPeerBook, PRESENCE_BEAT_MS, type PresenceState } from './awareness'
 
 /** The subset of a Supabase RealtimeChannel this provider touches (a test passes a fake). */
 export interface EditorChannelLike {
@@ -38,14 +39,19 @@ interface ConnectOptions {
   entityId: string
   client: EditorClientLike
   onStatus?: (status: EditorLinkStatus) => void
+  /** Optional faces and selections. Rides the same channel as its own `presence` event and is never
+   *  written to the document (awareness.ts). `self` is who this tab is; `onPeers` hears the others. */
+  presence?: { self: PresenceState; onPeers: (peers: PresenceState[]) => void; now?: () => number }
 }
 
 interface EditorLink {
   disconnect(): void
+  /** Tell the room which node this tab has selected (null to clear). No-op without `presence`. */
+  select(nid: string | null): void
 }
 
 /** Join the entity's editing channel. Returns null when kind or id cannot form a topic. */
-export function connectEditor({ doc, kind, entityId, client, onStatus }: ConnectOptions): EditorLink | null {
+export function connectEditor({ doc, kind, entityId, client, onStatus, presence }: ConnectOptions): EditorLink | null {
   const topic = editorTopic(kind, entityId)
   if (!topic) return null
   const channel = client.channel(topic, { config: { private: true, broadcast: { self: false } } })
@@ -65,6 +71,15 @@ export function connectEditor({ doc, kind, entityId, client, onStatus }: Connect
   }
   doc.on('update', onDocUpdate)
 
+  const clock = presence?.now ?? Date.now
+  const book = createPeerBook()
+  let me = presence?.self
+  const sendPresence = () => {
+    if (me && live && !closed) void channel.send({ type: 'broadcast', event: 'presence', payload: me }).catch(() => {})
+  }
+  const tell = () => presence?.onPeers(book.list())
+  let timer: ReturnType<typeof setInterval> | null = null
+
   channel
     .on('broadcast', { event: 'update' }, ({ payload }) => {
       const bytes = decodeUpdate(payload)
@@ -77,6 +92,14 @@ export function connectEditor({ doc, kind, entityId, client, onStatus }: Connect
     })
     .on('broadcast', { event: 'sync' }, () => {
       if (live) sendState()
+      sendPresence()
+    })
+    .on('broadcast', { event: 'presence' }, ({ payload }) => {
+      if (presence && me && book.hear(payload, clock(), me.userId)) tell()
+    })
+    .on('broadcast', { event: 'leave' }, ({ payload }) => {
+      const id = (payload as { userId?: unknown } | undefined)?.userId
+      if (presence && typeof id === 'string' && book.leave(id)) tell()
     })
     .subscribe(status => {
       if (closed) return
@@ -85,6 +108,13 @@ export function connectEditor({ doc, kind, entityId, client, onStatus }: Connect
         setStatus('live')
         sendState()
         void channel.send({ type: 'broadcast', event: 'sync', payload: { v: 1 } }).catch(() => {})
+        sendPresence()
+        if (presence && !timer) {
+          timer = setInterval(() => {
+            if (book.prune(clock())) tell()
+            sendPresence()
+          }, PRESENCE_BEAT_MS)
+        }
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         live = false
         setStatus('offline')
@@ -94,7 +124,14 @@ export function connectEditor({ doc, kind, entityId, client, onStatus }: Connect
     })
 
   return {
+    select(nid) {
+      if (!me) return
+      me = { ...me, selectedNid: nid }
+      sendPresence()
+    },
     disconnect() {
+      if (me && live && !closed) void channel.send({ type: 'broadcast', event: 'leave', payload: { userId: me.userId } }).catch(() => {})
+      if (timer) clearInterval(timer)
       closed = true
       live = false
       doc.off('update', onDocUpdate)
