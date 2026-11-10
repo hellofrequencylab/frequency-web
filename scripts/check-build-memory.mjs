@@ -35,6 +35,7 @@ export const BUDGET_MB = 7168
 // which `next build` empties after prebuild has started the sampler. start() removes any stale copy.
 export const STATE_FILE = path.join(process.cwd(), 'node_modules', '.cache', 'check-build-memory.json')
 const TICK_MS = 250
+const REPORT_INTERVAL_MS = 30_000
 const MAX_SAMPLE_MS = 60 * 60 * 1000
 
 /** True for a process that belongs to the Next build. A shell whose command text merely mentions
@@ -60,6 +61,16 @@ export function judge(reading, { onVercel }) {
   return { ok: true, message: line }
 }
 
+/** Publish the first observed peak, then one running reading per interval. */
+export function runningPeakReporter(write = console.log) {
+  let nextReportAt = 0
+  return (reading, elapsedMs) => {
+    if (reading.processes === 0 || elapsedMs < nextReportAt) return
+    nextReportAt = elapsedMs + REPORT_INTERVAL_MS
+    write(`check-build-memory: running peak after ${Math.floor(elapsedMs / 1000)}s: ${reading.peakMb} MB summed high-water across ${reading.processes} next process(es), ${reading.concurrentMb} MB at once.`)
+  }
+}
+
 function kb(status, key) {
   const m = status.match(new RegExp(`^${key}:\\s+(\\d+) kB`, 'm'))
   return m ? Number(m[1]) : 0
@@ -68,6 +79,7 @@ function kb(status, key) {
 function sample() {
   const hwm = new Map()
   const started = Date.now()
+  const reportPeak = runningPeakReporter()
   let concurrentKb = 0
   const tick = () => {
     let nowKb = 0
@@ -86,11 +98,16 @@ function sample() {
     concurrentKb = Math.max(concurrentKb, nowKb)
     let sum = 0
     for (const v of hwm.values()) sum += v
-    writeFileSync(
-      STATE_FILE,
-      JSON.stringify({ pid: process.pid, peakMb: Math.round(sum / 1024), concurrentMb: Math.round(concurrentKb / 1024), processes: hwm.size }),
-    )
-    if (Date.now() - started < MAX_SAMPLE_MS) setTimeout(tick, TICK_MS)
+    const reading = {
+      pid: process.pid,
+      peakMb: Math.round(sum / 1024),
+      concurrentMb: Math.round(concurrentKb / 1024),
+      processes: hwm.size,
+    }
+    writeFileSync(STATE_FILE, JSON.stringify(reading))
+    const elapsedMs = Date.now() - started
+    reportPeak(reading, elapsedMs)
+    if (elapsedMs < MAX_SAMPLE_MS) setTimeout(tick, TICK_MS)
   }
   tick()
 }
@@ -102,7 +119,11 @@ function start() {
   }
   mkdirSync(path.dirname(STATE_FILE), { recursive: true })
   rmSync(STATE_FILE, { force: true })
-  const child = spawn(process.execPath, [fileURLToPath(import.meta.url), '--sample'], { detached: true, stdio: 'ignore' })
+  // The detached sampler outlives prebuild, but shares the build log so an OOM leaves a reading.
+  const child = spawn(process.execPath, [fileURLToPath(import.meta.url), '--sample'], {
+    detached: true,
+    stdio: ['ignore', 'inherit', 'ignore'],
+  })
   child.unref()
   console.log(`check-build-memory: sampling the next build's memory (budget ${BUDGET_MB} MB).`)
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BUDGET_MB, isNextProcess, judge } from './check-build-memory.mjs'
+import { BUDGET_MB, isNextProcess, judge, runningPeakReporter } from './check-build-memory.mjs'
 
 describe('check-build-memory (HYG-171)', () => {
   it('keeps a reserve under the 8 GB Standard build machine', () => {
@@ -22,5 +22,21 @@ describe('check-build-memory (HYG-171)', () => {
   it('fails on Vercel when the sampler never reported, and only skips locally', () => {
     expect(judge(null, { onVercel: true }).ok).toBe(false)
     expect(judge(null, { onVercel: false }).ok).toBe(true)
+  })
+})
+
+describe('running build memory log (HYG-221)', () => {
+  it('logs the first measured reading and then every 30 seconds while sampling', () => {
+    const lines: string[] = []
+    const report = runningPeakReporter((line: string) => lines.push(line))
+    const reading = { peakMb: 2770, concurrentMb: 2320, processes: 4 }
+    report({ ...reading, processes: 0 }, 0)
+    report(reading, 250)
+    report({ ...reading, peakMb: 3200 }, 30_249)
+    report({ ...reading, peakMb: 3200 }, 30_250)
+    expect(lines).toEqual([
+      'check-build-memory: running peak after 0s: 2770 MB summed high-water across 4 next process(es), 2320 MB at once.',
+      'check-build-memory: running peak after 30s: 3200 MB summed high-water across 4 next process(es), 2320 MB at once.',
+    ])
   })
 })
