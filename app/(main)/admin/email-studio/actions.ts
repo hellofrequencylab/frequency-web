@@ -42,7 +42,6 @@ import { sanitizeFromName, loadCampaignFromName, loadCampaignReplyMode, resolveC
 import { buildUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
-import { enqueueEmail } from '@/lib/email'
 import { BUILTIN_SEGMENTS, TRAIT_SEGMENT_PREFIX } from '@/lib/studio/campaigns'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { log } from '@/lib/log'
@@ -559,6 +558,9 @@ export async function sendTestEmail(id: string, toRaw?: string): Promise<ActionR
   try {
     // Queue it, do not call the provider inline: with durable acceptance on, only a queue job carries the trusted
     // context the provider boundary requires, so an inline send is refused. process-queue delivers it within minutes.
+    // Loaded on demand like data-blocks above: the draft-preservation probe (LIVE-877) stubs '@/lib/email' with a
+    // single export, and nothing there sends a test.
+    const { enqueueEmail } = await import('@/lib/email')
     await enqueueEmail({ to, from, subject: `[Test] ${subject}`, html, text })
   } catch (e) {
     // Surface the provider's ACTUAL reason to the operator (this is a staff-gated action, so the raw
