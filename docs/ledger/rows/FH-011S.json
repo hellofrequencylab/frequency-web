@@ -13,5 +13,6 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/legacy-regression.test.ts\")?0:1)'"
-  }
+  },
+  "wave": "W7"
 }
