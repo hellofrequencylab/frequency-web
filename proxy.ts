@@ -549,7 +549,7 @@ export const config = {
     // `/.well-known/*` (LIVE-714) are the app association files (app/.well-known/). Apple and Google
     // fetch them with no cookies and need a plain 200 with no hop, so a session refresh and a
     // first-touch cookie on them were pure noise.
-    '/((?!_next/static|_next/image|favicon.ico|api/v1(?:/|$)|api/status(?:/|$)|\\.well-known/|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|sw\\.js$|offline\\.html$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|_site-theme-assets(?:/|$)|favicon.ico|api/v1(?:/|$)|api/status(?:/|$)|\\.well-known/|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|sw\\.js$|offline\\.html$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     // A SPACE WEBSITE'S OWN CRAWLER FILES (PROG-E10 phase 4, LIVE-783). The entry above skips
     // robots.txt, sitemap.xml and llms.txt on every host, so a Space's domain would serve Frequency's. This arm
     // runs the proxy for exactly those two files on any host that is NOT one of Frequency's own, and

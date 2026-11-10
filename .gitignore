@@ -86,3 +86,6 @@ test/e2e/.degraded-capture.jsonl
 # never as a committed file.
 load-soak-*.json
 .builder-matrix/
+
+# Built static website theme CSS pilot
+/public/_site-theme-assets/

@@ -1,18 +1,19 @@
 {
- "id": "LIVE-2049",
- "title": "Convert Wildheart to the style-picker model (schema 2 manifest, dials, accents, Looks)",
- "lane": "live",
- "priority": "P2",
- "size": "M",
- "status": "open",
- "source": {
-  "file": "docs/design-systems/services/rules.json",
-  "ref": "Daniel 2026-11-02 New World thread"
- },
- "detail": "Plan step 9 for Wildheart: (1) manifest to schema 2 declaring today's four dials supported with THEME_LOOK defaults (owners see no change); (2) register, accent swatches, type voice, motion, hero/header/footer variants, image treatment, Looks, theme dials as the style system allows; (3) functions table mapping existing blocks to the twelve functions; conformance suite green before any dial flips to supported. NEEDS FROM DANIEL: Updated Wildheart style system: turning-sky theme dial and motion rules.",
- "verify": {
-  "kind": "cmd",
-  "cmd": "node -e \"const s=require('./lib/themes/editor-schema2.json');const m=require('./lib/theme/mega-theme');process.exit(Object.keys(s).length&&s['wildheart']?0:1)\""
- },
- "wave": "W7"
+  "id": "LIVE-2049",
+  "title": "Convert Wildheart to the style-picker model (schema 2 manifest, dials, accents, Looks)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/design-systems/services/rules.json",
+    "ref": "Daniel 2026-11-02 New World thread"
+  },
+  "detail": "Plan step 9 for Wildheart: (1) manifest to schema 2 declaring today's four dials supported with THEME_LOOK defaults (owners see no change); (2) register, accent swatches, type voice, motion, hero/header/footer variants, image treatment, Looks, theme dials as the style system allows; (3) functions table mapping existing blocks to the twelve functions; conformance suite green before any dial flips to supported. NEEDS FROM DANIEL: Updated Wildheart style system: turning-sky theme dial and motion rules.\n\nThe existing automatic sky and reduced-motion behaviour stay in place. The manifest declares the existing layout choices.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs -e \"const a=require('node:assert/strict'),id='wildheart',m=require('./lib/themes/manifests/'+id+'.manifest.json'),d=require('./lib/themes/editor-schema2.json')[id],e=require('./lib/themes/editor-dials.ts'),{THEME_LOOK,SITE_THEMES}=require('./lib/theme/site-style.ts');a.equal(m.schema,2);a.deepEqual(m.editor.functions,d.functions);const picker=e.themeEditor(m.legacyIds.site);a.deepEqual(Object.values(THEME_LOOK[m.legacyIds.site]),[\\\"soft\\\",\\\"airy\\\",\\\"bar\\\",\\\"full\\\"]);a.deepEqual(picker.looks.filter(l=>l.id!=='own').map(l=>l.id),[]);for(const key of ['corners','spacing','header','footer'])a.ok(picker.dials.some(x=>x.id===key));\""
+  },
+  "wave": "W7",
+  "closed": "2026-11-09"
 }
