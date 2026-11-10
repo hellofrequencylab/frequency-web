@@ -22,18 +22,23 @@ async function guarded(run: (profileId: string) => Promise<CartResult>): Promise
   }
 }
 
+// authz-ok: signed-in own-cart only. guarded() reads the profile from the session (never an argument), refuses signed-out callers and the dark switch, and every read and write is scoped to that profile id.
 export const getCartAction = () => guarded(async (p) => ({ ok: true, cart: await loadCart(p) }))
 
+// authz-ok: signed-in own-cart only. guarded() reads the profile from the session (never an argument), refuses signed-out callers and the dark switch, and every read and write is scoped to that profile id.
 export const addToCartAction = (productId: string, variantId: string | null, qty = 1) =>
   guarded(async (p) => {
     const r = await addToStoredCart(p, { productId: String(productId), variantId: variantId ? String(variantId) : null, qty: Number(qty) })
     return r.refused ? { ok: false, error: r.refused } : { ok: true, cart: r.cart }
   })
 
+// authz-ok: signed-in own-cart only. guarded() reads the profile from the session (never an argument), refuses signed-out callers and the dark switch, and every read and write is scoped to that profile id.
 export const setCartQtyAction = (lineKey: string, qty: number) =>
   guarded(async (p) => ({ ok: true, cart: await setStoredQty(p, String(lineKey), Number(qty)) }))
 
+// authz-ok: signed-in own-cart only. guarded() reads the profile from the session (never an argument), refuses signed-out callers and the dark switch, and every read and write is scoped to that profile id.
 export const removeFromCartAction = (lineKey: string) =>
   guarded(async (p) => ({ ok: true, cart: await removeFromStoredCart(p, String(lineKey)) }))
 
+// authz-ok: signed-in own-cart only. guarded() reads the profile from the session (never an argument), refuses signed-out callers and the dark switch, and every read and write is scoped to that profile id.
 export const mergeGuestCartAction = (guestLines: unknown) => guarded(async (p) => ({ ok: true, cart: await mergeGuestIntoStored(p, guestLines) }))

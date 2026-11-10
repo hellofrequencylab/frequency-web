@@ -8,8 +8,8 @@
 --
 --   * one cart per member: profile_id is the primary key
 --   * lines must be a jsonb array of at most 50 entries (the MAX_LINES cap in the model)
---   * RLS: a member reads and writes only their own row. The application writes with the service role
---     after it has established the profile; the policies are the floor if a client ever reaches the table.
+--   * service role only: RLS on with no policy, and no grant to anon or authenticated. The application
+--     reads and writes with the service role after it has established the profile from the session.
 --
 -- Guest carts stay in the browser and are merged in at sign-in (mergeCarts), so no anonymous row exists.
 -- Additive and idempotent.
@@ -25,25 +25,8 @@ create table if not exists public.commerce_carts (
 
 alter table public.commerce_carts enable row level security;
 
-drop policy if exists commerce_carts_owner_read on public.commerce_carts;
-create policy commerce_carts_owner_read on public.commerce_carts
-  for select to authenticated
-  using (profile_id = (select private.get_my_profile_id()));
-
-drop policy if exists commerce_carts_owner_insert on public.commerce_carts;
-create policy commerce_carts_owner_insert on public.commerce_carts
-  for insert to authenticated
-  with check (profile_id = (select private.get_my_profile_id()));
-
-drop policy if exists commerce_carts_owner_update on public.commerce_carts;
-create policy commerce_carts_owner_update on public.commerce_carts
-  for update to authenticated
-  using (profile_id = (select private.get_my_profile_id()))
-  with check (profile_id = (select private.get_my_profile_id()));
-
-drop policy if exists commerce_carts_owner_delete on public.commerce_carts;
-create policy commerce_carts_owner_delete on public.commerce_carts
-  for delete to authenticated
-  using (profile_id = (select private.get_my_profile_id()));
+-- Service role only, like the other commerce ledgers: no client policy, and the default grants are
+-- revoked so a signed-in caller cannot reach the table with the anon key either.
+revoke all on table public.commerce_carts from anon, authenticated;
 
 commit;

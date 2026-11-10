@@ -1,5 +1,5 @@
--- pgTAP guard for the persistent cart (DEF-ETSY P5, migration 20270346038000): RLS is on, the four
--- own-row policies exist and key on get_my_profile_id(), and the lines column is capped to an array.
+-- pgTAP guard for the persistent cart (DEF-ETSY P5, migration 20270346038000): service role only.
+-- RLS is on with no policy, anon and authenticated hold no privilege, and lines is checked to be an array.
 
 begin;
 select plan(5);
@@ -11,23 +11,22 @@ select ok(
 
 select is(
   (select count(*)::int from pg_policies where schemaname = 'public' and tablename = 'commerce_carts'),
-  4,
-  'commerce_carts has exactly the four own-row policies'
-);
-
-select is(
-  (select count(*)::int from pg_policies
-    where schemaname = 'public' and tablename = 'commerce_carts'
-      and coalesce(qual, '') || coalesce(with_check, '') like '%get_my_profile_id%'),
-  4,
-  'every policy keys on get_my_profile_id()'
-);
-
-select is(
-  (select count(*)::int from pg_policies
-    where schemaname = 'public' and tablename = 'commerce_carts' and 'anon' = any(roles)),
   0,
-  'no policy opens the cart to anon'
+  'commerce_carts has no client policy'
+);
+
+select ok(
+  not has_table_privilege('anon', 'public.commerce_carts', 'select')
+  and not has_table_privilege('anon', 'public.commerce_carts', 'insert'),
+  'anon holds no privilege on commerce_carts'
+);
+
+select ok(
+  not has_table_privilege('authenticated', 'public.commerce_carts', 'select')
+  and not has_table_privilege('authenticated', 'public.commerce_carts', 'insert')
+  and not has_table_privilege('authenticated', 'public.commerce_carts', 'update')
+  and not has_table_privilege('authenticated', 'public.commerce_carts', 'delete'),
+  'authenticated holds no privilege on commerce_carts'
 );
 
 select matches(
