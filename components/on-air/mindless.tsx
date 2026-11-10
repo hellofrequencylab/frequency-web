@@ -1,6 +1,6 @@
 'use client'
 
-import { CompactSetup, type SetupChoice } from './compact-setup'
+import type { SetupChoice } from './compact-setup'
 
 // Mindless — the ONE practice-timer door (ADR-229, docs/ON-AIR.md). The same On
 // Air session, launchable from anywhere via the header / Zap menu / practice
@@ -29,13 +29,14 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import type { SessionMode } from '@/lib/on-air'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { loadOnAirSession } from '@/app/(main)/on-air/actions'
 import { getActiveTimerSession } from '@/app/(main)/on-air/timer-session-actions'
 import type { OnAirSessionData } from '@/lib/on-air/session-data'
 import { LotusIcon } from '@/components/on-air/icons'
 import { loadLiveSession, type LiveSessionRecord } from '@/lib/on-air/live-session'
-import type { MovementMode } from '@/lib/movement'
+import type { MovementConfig, MovementMode } from '@/lib/movement'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { showLaneNotice } from '@/components/zap-toast'
 
@@ -44,6 +45,10 @@ import { showLaneNotice } from '@/components/zap-toast'
 // engine code on every page for a door most visits never open.
 const OnAirSession = dynamic(() => import('@/components/on-air/session').then((m) => m.OnAirSession), { ssr: false })
 const MovementSession = dynamic(() => import('@/components/on-air/movement-session').then((m) => m.MovementSession), { ssr: false })
+// LIVE-2241/2242 put every timer setting on the door as sub-menus, which pushed the shell's eager
+// first-load JS past check:shell-weight (1110 KB against 1100). The door renders only after a tap,
+// so it loads on demand like the engines; check-shell-weight.mjs carries its fingerprint.
+const CompactSetup = dynamic(() => import('./compact-setup').then((m) => m.CompactSetup), { ssr: false })
 
 /** The two member-facing modes of the one timer: the sit ('still', "Be Still") and
  *  the movement timer ('move', "Get Moving"). */
@@ -71,6 +76,8 @@ export interface MindlessOpenOpts {
   minutesOverride?: number
   /** Opens existing detailed controls rather than the compact door. */
   advanced?: boolean
+  /** Start fresh (LIVE-2243): ignore today's partial on the practice and run the chosen length from zero. */
+  fresh?: boolean
   practiceId?: string
   /** Force Get Moving on this movement sub-mode (a movement practice / the Movement entry). */
   mode?: MovementMode
@@ -124,6 +131,7 @@ type LoadingState = {
   practiceId?: string
   movementMode?: MovementMode
   resume?: ResumeInfo
+  fresh?: boolean
   /** A crash-recovery open forces the mode so the engine that owns the saved record mounts. */
   forceMode?: TimerMode
   /** A practice-select launch auto-starts the countdown (skips setup). */
@@ -142,6 +150,13 @@ type OverlayState =
       phase: 'ready'
       setup?: boolean
       minutesOverride?: number
+      /** The Be Still sub-mode and breath pattern the door chose (LIVE-2241); the engine seeds from them. */
+      stillMode?: SessionMode
+      patternSlug?: string
+      /** The Get Moving plan the door composed (LIVE-2242); the engine seeds from it. */
+      moveConfig?: MovementConfig
+      /** The door's Start fresh (LIVE-2243): the engine ignores today's partial on the practice. */
+      fresh?: boolean
       data: OnAirSessionData
       /** The mode the door is showing (auto-routed from the practice / entry; member-togglable). */
       mode: TimerMode
@@ -272,6 +287,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
       practiceId: hasQueue ? queueIds[0] : opts?.practiceId,
       movementMode: opts?.mode,
       resume,
+      fresh: forceMode ? undefined : opts?.fresh,
       forceMode,
       // A queued run auto-starts each leg (it's a select launch by definition).
       autoStart: forceMode ? false : (hasQueue ? true : opts?.autoStart),
@@ -300,6 +316,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     const requestedPracticeId = state.practiceId
     const forcedMovementMode = state.movementMode
     const requestedResume = state.resume
+    const requestedFresh = state.fresh
     const forceMode = state.forceMode
     const requestedAutoStart = state.autoStart
     const requestedWarmup = state.warmupMessage
@@ -334,6 +351,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         practiceId: requestedPracticeId,
         movementMode: forcedMovementMode,
         resume: requestedResume,
+        fresh: requestedFresh,
         autoStart: requestedAutoStart,
         warmupMessage: requestedWarmup,
         queue: requestedQueue,
@@ -409,10 +427,13 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
 
   const api = useMemo<MindlessApi>(() => ({ open, close }), [open, close])
 
-  function configured(choice: SetupChoice, advanced = false) {
+  // The door's single Go: every setting is already in the settings model or on the choice, so the
+  // engine always auto-starts; the old "More settings" second screen is gone (LIVE-2242).
+  function configured(choice: SetupChoice) {
     setState((s) => s.phase !== 'ready' ? s : ({ ...s, setup: false, mode: choice.mode,
-      practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, autoStart: !advanced,
-      movementMode: choice.mode === 'move' ? s.data.practices.find((p) => p.id === choice.practiceId)?.movementConfig?.mode : undefined,
+      practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, autoStart: true,
+      stillMode: choice.stillMode, patternSlug: choice.patternSlug, moveConfig: choice.moveConfig, fresh: choice.fresh,
+      movementMode: choice.mode === 'move' ? (choice.moveConfig?.mode ?? s.data.practices.find((p) => p.id === choice.practiceId)?.movementConfig?.mode) : undefined,
       data: { ...s.data, defaultPracticeId: choice.practiceId } }))
   }
 
@@ -447,7 +468,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
           </div>
         </MindlessShell>
       )}
-      {state.phase === 'ready' && state.setup && <CompactSetup practices={state.data.practices} initialMode={state.mode} initialPracticeId={state.practiceId ?? state.data.defaultPracticeId ?? undefined} rememberedMinutes={state.data.prefs.minutes} onStart={configured} onAdvanced={(choice) => configured(choice, true)} onClose={close} />}
+      {state.phase === 'ready' && state.setup && <CompactSetup practices={state.data.practices} initialMode={state.mode} initialPracticeId={state.practiceId ?? state.data.defaultPracticeId ?? undefined} prefs={state.data.prefs} explicitPracticeId={state.practiceId} journeyLegs={state.data.journeyLegs ?? []} practicedToday={state.data.practicedToday} onStart={configured} onClose={close} />}
       {state.phase === 'ready' && !state.setup &&
         (state.data.practices.length === 0 ? (
           <MindlessShell onClose={close}>
@@ -481,10 +502,16 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             journeyLegs={state.data.journeyLegs ?? []}
             resumeFromSec={state.resume?.resumeFromSec}
             secondsTarget={state.resume?.secondsTarget}
+            // The door's Start fresh (LIVE-2243): today's partial is left alone and the run starts from zero.
+            fresh={state.fresh}
             // A practice-select launch skips setup and begins the countdown immediately.
             autoStart={state.autoStart}
             // The member's warm-up length pref, shared with the sit (item #10).
             warmupSec={state.data.prefs.warmupSec}
+            // The member's prefs: the settings model lays the local copy over them (LIVE-2240).
+            prefs={state.data.prefs}
+            // The plan the door composed (LIVE-2242): Start runs exactly what the sub-menus showed.
+            initialConfig={state.moveConfig}
             // A per-step warm-up message override (P5), shown in the pre-roll over the practice's own.
             warmupMessageOverride={state.warmupMessage}
             // A sequenced run (P6): this leg's position, and the completion signal that drives advance.
@@ -509,6 +536,10 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             // practice opens the Just Log note screen; a generic open still lands on Meditate.
             explicitPracticeId={state.practiceId}
             prefs={state.data.prefs}
+            // The door's Be Still choices (LIVE-2241): the sub-mode and breath pattern it was set to.
+            initialMode={state.stillMode}
+            initialPattern={state.patternSlug}
+            fresh={state.fresh}
             practicedToday={state.data.practicedToday}
             journeyLegs={state.data.journeyLegs ?? []}
             resumeFromSec={state.resume?.resumeFromSec}
