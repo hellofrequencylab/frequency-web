@@ -109,6 +109,24 @@ describe('one shared compact setup', () => {
     act(() => go.click())
     expect(start).toHaveBeenCalledWith({ practiceId: 'free', mode: 'still', stillMode: 'log', patternSlug: 'box' })
   })
+  it('offers Continue or Start fresh when the practice has a partial today, continuing by default (LIVE-2243)', () => {
+    practices[0].partialToday = { bankedSec: 300, targetSec: 1020 }
+    render()
+    const chips = () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Continue or start fresh"] button')]
+    expect(chips().map((b) => b.textContent)).toEqual(['Continue, 12 min left', 'Start fresh'])
+    expect(host.querySelector('input')).toBeNull()
+    let go = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Continue practice')!
+    act(() => go.click())
+    expect(start).toHaveBeenLastCalledWith({ practiceId: 'sit', mode: 'still', stillMode: 'timer', patternSlug: 'box' })
+    act(() => chips()[1].click())
+    expect(chips()[1].getAttribute('aria-pressed')).toBe('true')
+    const input = host.querySelector('input')!
+    act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '9'); input.dispatchEvent(new Event('input', { bubbles: true })) })
+    go = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Start timer')!
+    act(() => go.click())
+    expect(start).toHaveBeenLastCalledWith({ practiceId: 'sit', mode: 'still', minutesOverride: 9, stillMode: 'timer', patternSlug: 'box', fresh: true })
+    practices[0].partialToday = null
+  })
   it('switches modes with one free entry and the correct selected authored movement length', () => {
     render()
     const moving = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((b) => b.textContent?.includes('Get Moving'))!
