@@ -72,6 +72,8 @@ export interface MindlessOpenOpts {
   minutesOverride?: number
   /** Opens existing detailed controls rather than the compact door. */
   advanced?: boolean
+  /** Start fresh (LIVE-2243): ignore today's partial on the practice and run the chosen length from zero. */
+  fresh?: boolean
   practiceId?: string
   /** Force Get Moving on this movement sub-mode (a movement practice / the Movement entry). */
   mode?: MovementMode
@@ -125,6 +127,7 @@ type LoadingState = {
   practiceId?: string
   movementMode?: MovementMode
   resume?: ResumeInfo
+  fresh?: boolean
   /** A crash-recovery open forces the mode so the engine that owns the saved record mounts. */
   forceMode?: TimerMode
   /** A practice-select launch auto-starts the countdown (skips setup). */
@@ -148,6 +151,8 @@ type OverlayState =
       patternSlug?: string
       /** The Get Moving plan the door composed (LIVE-2242); the engine seeds from it. */
       moveConfig?: MovementConfig
+      /** The door's Start fresh (LIVE-2243): the engine ignores today's partial on the practice. */
+      fresh?: boolean
       data: OnAirSessionData
       /** The mode the door is showing (auto-routed from the practice / entry; member-togglable). */
       mode: TimerMode
@@ -278,6 +283,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
       practiceId: hasQueue ? queueIds[0] : opts?.practiceId,
       movementMode: opts?.mode,
       resume,
+      fresh: forceMode ? undefined : opts?.fresh,
       forceMode,
       // A queued run auto-starts each leg (it's a select launch by definition).
       autoStart: forceMode ? false : (hasQueue ? true : opts?.autoStart),
@@ -306,6 +312,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     const requestedPracticeId = state.practiceId
     const forcedMovementMode = state.movementMode
     const requestedResume = state.resume
+    const requestedFresh = state.fresh
     const forceMode = state.forceMode
     const requestedAutoStart = state.autoStart
     const requestedWarmup = state.warmupMessage
@@ -340,6 +347,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         practiceId: requestedPracticeId,
         movementMode: forcedMovementMode,
         resume: requestedResume,
+        fresh: requestedFresh,
         autoStart: requestedAutoStart,
         warmupMessage: requestedWarmup,
         queue: requestedQueue,
@@ -420,7 +428,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   function configured(choice: SetupChoice) {
     setState((s) => s.phase !== 'ready' ? s : ({ ...s, setup: false, mode: choice.mode,
       practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, autoStart: true,
-      stillMode: choice.stillMode, patternSlug: choice.patternSlug, moveConfig: choice.moveConfig,
+      stillMode: choice.stillMode, patternSlug: choice.patternSlug, moveConfig: choice.moveConfig, fresh: choice.fresh,
       movementMode: choice.mode === 'move' ? (choice.moveConfig?.mode ?? s.data.practices.find((p) => p.id === choice.practiceId)?.movementConfig?.mode) : undefined,
       data: { ...s.data, defaultPracticeId: choice.practiceId } }))
   }
@@ -490,6 +498,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             journeyLegs={state.data.journeyLegs ?? []}
             resumeFromSec={state.resume?.resumeFromSec}
             secondsTarget={state.resume?.secondsTarget}
+            // The door's Start fresh (LIVE-2243): today's partial is left alone and the run starts from zero.
+            fresh={state.fresh}
             // A practice-select launch skips setup and begins the countdown immediately.
             autoStart={state.autoStart}
             // The member's warm-up length pref, shared with the sit (item #10).
@@ -525,6 +535,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             // The door's Be Still choices (LIVE-2241): the sub-mode and breath pattern it was set to.
             initialMode={state.stillMode}
             initialPattern={state.patternSlug}
+            fresh={state.fresh}
             practicedToday={state.data.practicedToday}
             journeyLegs={state.data.journeyLegs ?? []}
             resumeFromSec={state.resume?.resumeFromSec}
