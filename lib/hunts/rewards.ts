@@ -1,6 +1,6 @@
 /**
  * Hunt reward specs and the grant call (FH-021). The database does the scarce part in one transaction
- * (supabase/migrations/20270346039000_hunt_rewards.sql, `hunt_reward_grant`): it serialises on the
+ * (supabase/migrations/20270346042000_hunt_rewards.sql, `hunt_reward_grant`): it serialises on the
  * reward row, so two qualifying players racing the last unit allocate exactly one, and the loser reads
  * `sold_out` with the stock terms the reward published. This file holds what the caller computes around
  * that: the validated spec (deterministic, no clock and no randomness), the pure eligibility rule the

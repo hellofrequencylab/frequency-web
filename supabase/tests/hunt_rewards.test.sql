@@ -1,4 +1,4 @@
--- pgTAP guard for migration 20270346039000_hunt_rewards.sql (FH-021).
+-- pgTAP guard for migration 20270346042000_hunt_rewards.sql (FH-021).
 -- One session, one transaction: it proves each answer the grant gives on the sequential path, that the
 -- last unit goes to one claimant and the loser is told the published terms, and that the stock count can
 -- never pass the stock even for a direct write. It cannot prove two live sessions race safely in one

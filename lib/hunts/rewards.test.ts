@@ -71,7 +71,7 @@ describe('grantReward', () => {
 })
 
 describe('the migration', () => {
-  const code = readFileSync(join('supabase', 'migrations', '20270346039000_hunt_rewards.sql'), 'utf8')
+  const code = readFileSync(join('supabase', 'migrations', '20270346042000_hunt_rewards.sql'), 'utf8')
     .split('\n')
     .filter((l) => !l.trim().startsWith('--'))
     .join('\n')
