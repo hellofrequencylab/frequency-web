@@ -1,6 +1,6 @@
 {
   "id": "PROG-E2",
   "append": {
-    "detail": "UPDATE 2026-11-10 (ratchet seeded): scripts/block-baselines.json and check:block-baselines (in the checks guards array) hold block-systems at 5 with check:adoption's provenance rules: a rise is refused, a fall is written down with --update --reason, and the basis fingerprints the manifest of the five system entry points. The other five section-7.3 keys (block-types-total, unbound-app-surfaces, blocks-without-totext, raw-css-paths, editor-bytes-on-public-render) are NOT seeded: each needs a counter nobody has run, and an unmeasured baseline is the failure the section exists to prevent. The row stays open: the probe needs block-systems at 1, and the eleven core Space blocks still wait on the owner. Raise the ratchet only with --update --reason; the guard itself runs in the checks job beside check:editor-crdt-importers."
+    "detail": "OWNER RULING 2026-11-10 (best-practice decisions authorized by Daniel, relayed by the project thread): all eleven core Space blocks stay. None is retired, folded or aliased until the usage index (block_type_usage) shows zero tenants for it AND its renderer is an exact match for the block that would replace it. Until both hold, the row's consolidation half is not started on purpose. The usage-index slice itself moved to ChatGPT (Packet E); the block-systems ratchet already merged holds the count at 5."
   }
 }

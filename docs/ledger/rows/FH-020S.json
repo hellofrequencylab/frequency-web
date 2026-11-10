@@ -1,0 +1,18 @@
+{
+  "id": "FH-020S",
+  "title": "Hunts FH-020S: Staff scan route, nonce table, audited override and held-claim review",
+  "lane": "program",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-020 (2026-11-10): the proof core shipped in lib/hunts/staff-proof.ts; the stateful and screen halves need a migration and screens."
+  },
+  "detail": "Add the single-use nonce table (service role, unique insert backing consumeNonce), the staff scan route and screen, the audited override, the support appeal, and the held-claim review that resumes once after authorized review. Done when: cross-Space staff, replay, expired proof and a paused placement reject through the route, and an authorized review resumes a held claim exactly once. Requires: FH-020, FH-010, FH-019. Owner role: Game systems.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/staff-review.ts\")?0:1)'"
+  }
+}
