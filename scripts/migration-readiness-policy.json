@@ -789,6 +789,49 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4768,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346033000_editor_realtime_authz.sql",
+          "sha256": "2749b0261dc44de715b8e95a6a5fd1fb615fdf1df4959846e04f49e801b38814"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/PROG-E0.json",
+          "status": "modified",
+          "sha256": "908c0c03cfd5f6bcb1b1c873a35fb24d4480ea48d86f67666bc461e0bf96f612",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346033000_editor_realtime_authz.sql",
+          "status": "added",
+          "sha256": "2749b0261dc44de715b8e95a6a5fd1fb615fdf1df4959846e04f49e801b38814",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/editor_realtime_authz.test.sql",
+          "status": "added",
+          "sha256": "7ca189cfaec6f652dcbaf415a53c393ef045125ce040e51dfaf11d277f0bde12",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
