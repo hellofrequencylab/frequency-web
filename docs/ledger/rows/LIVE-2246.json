@@ -1,0 +1,21 @@
+{
+  "id": "LIVE-2246",
+  "title": "Mindless timer audio normalization: bell bus, limiter, per-track ambient trim, one volume curve",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/timer-audio.ts",
+    "ref": "Mindless Timer UI Redesign handoff (mindless-audio.js), Daniel 2026-11-10 01:26Z: do multiple passes to get every element."
+  },
+  "detail": "Before this the four-partial Bowl rang louder than the two-partial Soft, a low voice read quieter to the ear than its meter said, the three ambient tracks sat at three loudnesses for one slider position, and the bell slider was a linear multiplier so the middle sounded almost full. Now every bell voice is scaled to one summed peak, weighted up to 1.5x for a low fundamental, runs through a bell bus, a compressor and a -1 dBFS master limiter; the ambient loop is measured once per track (gated RMS over 50 ms blocks plus peak), trimmed toward -20 dBFS within -12..+18 dB, and reaches the speaker through the same limiter; the bell and the ambient loop share one perceptual 40 dB volume curve, and the sit's count tick follows the bell volume instead of a fixed full level. No asset files, pure browser audio.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/timer-audio-normalization.mjs",
+    "checked": "2026-11-10",
+    "evidence": "node scripts/probes/timer-audio-normalization.mjs passes; lib/timer-audio.test.ts pins the strike normalization, the volume curve and the gated trim on arrays."
+  },
+  "wave": "W7",
+  "closed": "2026-11-10"
+}
