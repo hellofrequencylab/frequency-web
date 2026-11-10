@@ -69,5 +69,73 @@
       "locations": ["NetworkKitVenue"],
       "forms": ["NetworkKitContact"]
     }
+  },
+  "designer": {
+    "dials": {
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "accent": "supported",
+      "register": "fixed"
+    },
+    "looks": [
+      {
+        "id": "coaches",
+        "label": "Interior designers",
+        "dials": {
+          "accent": "coaches"
+        }
+      },
+      {
+        "id": "studios",
+        "label": "Architects",
+        "dials": {
+          "accent": "studios"
+        }
+      },
+      {
+        "id": "hosts",
+        "label": "Design + build",
+        "dials": {
+          "accent": "hosts"
+        }
+      },
+      {
+        "id": "creators",
+        "label": "Web and digital design",
+        "dials": {
+          "accent": "creators"
+        }
+      }
+    ],
+    "functions": {
+      "booking": [],
+      "circles": [],
+      "events": [],
+      "firstnight": [],
+      "forms": [
+        "DesignerInquiry"
+      ],
+      "gallery": [
+        "DesignerPortfolio",
+        "DesignerGallery"
+      ],
+      "letter": [],
+      "locations": [],
+      "plans": [],
+      "posts": [],
+      "reviews": [
+        "DesignerTestimonials",
+        "DesignerQuote"
+      ],
+      "services": [
+        "DesignerServices"
+      ],
+      "shop": [],
+      "team": [
+        "DesignerFounder"
+      ]
+    }
   }
 }
