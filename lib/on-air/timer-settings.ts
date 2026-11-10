@@ -23,7 +23,7 @@ import { buildPlan, sanitizeMovementConfig, strengthPresetByKind, totalSeconds, 
 
 /** The one minute band for a member-chosen length, on the door and in both engines. Authored
  *  (creator) configs clamp separately in lib/movement.ts. */
-export const MINUTE_MIN = 1
+const MINUTE_MIN = 1
 export const MINUTE_MAX = 120
 
 /** localStorage key for the merged model. The two legacy keys are read once and folded in. */
@@ -32,7 +32,7 @@ const LEGACY_STILL_KEY = 'fq_mindless_setup'
 const LEGACY_MOVE_KEY = 'fq_movement_setup'
 
 /** The Be Still choices that make up a setup: what to breathe and for how long. */
-export interface StillSetup {
+interface StillSetup {
   patternSlug: string
   /** The remembered OPEN length (a practice with its own length ignores it). */
   minutes: number
@@ -42,7 +42,7 @@ export interface StillSetup {
 }
 
 /** Cues shared by both engines: sound, feel and the warm-up. */
-export interface CueSettings {
+interface CueSettings {
   bell: boolean
   /** Get Moving's own on/off for its cue sound; it shares the voice and volume with the sit. */
   moveBell: boolean
@@ -71,7 +71,7 @@ export type TimerSettingsPatch = {
 }
 
 /** A storage shaped like window.localStorage; tests pass a Map-backed one. */
-export interface SettingsStorage {
+interface SettingsStorage {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
 }
