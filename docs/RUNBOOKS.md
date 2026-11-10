@@ -922,7 +922,7 @@ Keep FH-041 open until the pilot gate has named sign-offs and the parent probe p
 
 `COMMERCE_CART_ENABLED` (blank by default, `lib/commerce/cart-flag.ts`) turns on the saved cart: an Add to cart control beside Buy now on `/market/<id>` and the cart server actions in `app/(main)/marketplace/cart-actions.ts`. Off, every action answers `off`, nothing renders and no row is written. The cart stores lines only (product, variant, quantity); price and seller are read fresh at checkout.
 
-Gate to turn it on: migration 20270346038000 (`commerce_carts`) is applied in Frequency Community, a signed-in member can add a product, reload and see it saved, and a signed-out visitor is told to sign in rather than shown an error. Checkout from a saved cart is a later slice, so turning this on only saves lines. Turn it off by unsetting it: no data moves.
+Gate to turn it on: migration 20270346039000 (`commerce_carts`) is applied in Frequency Community, a signed-in member can add a product, reload and see it saved, and a signed-out visitor is told to sign in rather than shown an error. Checkout from a saved cart is a later slice, so turning this on only saves lines. Turn it off by unsetting it: no data moves.
 
 ## Live co-editing
 

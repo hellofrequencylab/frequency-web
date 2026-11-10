@@ -1,4 +1,4 @@
--- pgTAP guard for the persistent cart (DEF-ETSY P5, migration 20270346038000): service role only.
+-- pgTAP guard for the persistent cart (DEF-ETSY P5, migration 20270346039000): service role only.
 -- RLS is on with no policy, anon and authenticated hold no privilege, and lines is checked to be an array.
 
 begin;
