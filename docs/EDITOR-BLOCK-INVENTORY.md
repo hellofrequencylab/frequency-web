@@ -281,3 +281,45 @@ changes a live page.
 
 The six queries behind §D **are** the `block_usage` index's first implementation. Build it from them,
 and treat this section as its expected output.
+
+
+## Packet E tenant usage and variant design
+
+The [November 10 snapshot](../scripts/block-tenant-usage.snapshot.json) counts distinct Spaces per
+registered type in the five current systems (Entity, Puck, Email Studio, Loom and Spotlight).
+Run `pnpm block-usage --tenant-snapshot` for the full report or
+`pnpm block-usage --tenant-snapshot puck SpaceAbout` for one type. The existing per-store
+`pnpm block-usage` command remains available. A Space can appear in more than one store, so adding
+its per-store totals would overcount usage.
+
+For a fresh capture, an authorized operator can run the [aggregate SELECT](../scripts/block-tenant-usage.sql)
+against Frequency Community using a read-only connection. For example, with connection settings
+already configured, run
+`PGOPTIONS='-c default_transaction_read_only=on -c statement_timeout=15000' psql -XAt -v ON_ERROR_STOP=1 -f scripts/block-tenant-usage.sql`.
+The query returns observed types. When updating the checked-in snapshot, compare them to the current
+registries and include zero counts for registered types without stored placements. Review unknown
+stored identifiers separately before publishing any aggregate. Record the capture date.
+
+- **Entity and Email Studio** include stored row placements, including the old slot and order shapes.
+  Campaigns count against their Space. Platform nurture steps have no Space attribution.
+- **Puck** includes marketing page drafts and published documents, Space page documents and the
+  legacy Home fallback, plus current draft, published and scheduled website documents. Archived
+  versions and runtime-generated default content are outside this saved-placement census.
+- **Spotlight** includes saved Space layouts. Personal Spotlight documents can place blocks but
+  have no Space attribution. **Loom** counts explicit saved asset references to element catalog
+  entries across the scanned stores. A catalog row or legacy URL alone supplies no placement.
+
+All eleven core Space blocks stay until a fresh census shows zero Spaces for the candidate and a
+render comparison proves its proposed replacement draws the same output. The following are design
+directions for reviewing variants.
+
+| Family | Shared contract to test | Differences a variant must retain |
+|---|---|---|
+| Space layout bands | An ordered group of slots, mobile stacking, section landmarks and owned content. | Preserve arrangements with different slot counts, stacking order, alignment or data bindings. Keep saved slot names readable. |
+| Wildheart | Share only sections with the same content model and interaction. Use theme tokens for visual differences. | Retain its typography, image crop, spacing, CTA placement and narrow-screen order. |
+| Network | Share the authored section shell and keep live collections behind explicit data bindings. | Preserve card counts, empty states, section links and collection scope. A hand-authored group and a live collection need distinct bindings. |
+| Marketing MediaText, Hero, Statement and CallToAction | Test a common section shell for width, theme and spacing. | MediaText keeps media placement and alternative text, Hero keeps its page heading and actions, Statement keeps its emphasis without inventing an action, and CallToAction keeps its link hierarchy and focus order. |
+
+Review a rendered pair with real content at desktop and narrow widths before approving any shared
+variant. Compare responsive reading order, heading levels, CTA destinations, keyboard behavior and
+empty-state output. The existing renderer remains the reference for each saved block.
