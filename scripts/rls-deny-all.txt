@@ -195,3 +195,6 @@ hunt_progress
 hunt_command_keys
 hunt_audit
 hunt_compensations
+# FH-009 Frequency Hunts durable outbox and receipts: service role only; drained by the worker through the hunt_outbox_* functions.
+hunt_outbox
+hunt_deliveries
