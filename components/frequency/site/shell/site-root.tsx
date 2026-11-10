@@ -183,7 +183,7 @@ export function SiteRoot({ children, surface: fallback = 'stage' }: { children: 
           // kit root while the page is still parsing, so the right copy is the first thing painted.
           <script
             dangerouslySetInnerHTML={{
-              __html: `(function(){try{var r=document.currentScript.parentElement;if(r.hasAttribute('data-lock'))return;var h=location.hash,s=h==='#people'?'p':(h==='#spaces'||h==='#experiences')?'e':localStorage.getItem(${JSON.stringify(SIDE_STORAGE_KEY)});if(s==='p'||s==='e'){r.setAttribute('data-side',s);}}catch(e){}})()`,
+              __html: "(function(){try{var r=document.currentScript.parentElement;if(r.hasAttribute('data-lock'))return;var h=location.hash,s=h==='#people'?'p':(h==='#spaces'||h==='#experiences')?'e':localStorage.getItem('fq-home-side');if(s==='p'||s==='e'){r.setAttribute('data-side',s);}}catch(e){}})()",
             }}
           />
         }
