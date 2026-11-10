@@ -1,5 +1,5 @@
-import { pathToFileURL } from 'node:url'
 import { chromium } from '@playwright/test'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const themeAsset = /\/_site-theme-assets\/[a-f0-9]{24}\.css$/
 const themeAssetDirectory = '/_site-theme-assets/'
@@ -82,7 +82,7 @@ export async function measureThemeCss(browser, { inline, linked, member, samples
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (invokedDirectly(import.meta.url)) {
   const [inline, linked, member, count = '7'] = process.argv.slice(2)
   const samples = Number(count)
   if (!inline || !linked || !member || !Number.isInteger(samples) || samples < 1 || samples > 25) {
