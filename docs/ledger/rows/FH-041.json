@@ -2,7 +2,7 @@
   "id": "FH-041",
   "title": "Hunts FH-041: Run Stripe and progressive dinner gates",
   "lane": "program",
-  "priority": "P0",
+  "priority": "P2",
   "size": "S",
   "status": "open",
   "source": {

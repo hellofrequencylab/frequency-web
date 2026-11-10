@@ -2,7 +2,7 @@
   "id": "FH-017",
   "title": "Hunts FH-017: Validate accessibility and low signal",
   "lane": "program",
-  "priority": "P0",
+  "priority": "P1",
   "size": "S",
   "status": "open",
   "source": {

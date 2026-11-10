@@ -2,7 +2,7 @@
   "id": "FH-030",
   "title": "Hunts FH-030: Implement ANY and N-of-M plus clusters",
   "lane": "program",
-  "priority": "P1",
+  "priority": "P2",
   "size": "M",
   "status": "open",
   "source": {

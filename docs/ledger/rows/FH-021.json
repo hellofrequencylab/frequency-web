@@ -2,7 +2,7 @@
   "id": "FH-021",
   "title": "Hunts FH-021: Build inventory and award transaction",
   "lane": "program",
-  "priority": "P0",
+  "priority": "P1",
   "size": "M",
   "status": "open",
   "source": {
