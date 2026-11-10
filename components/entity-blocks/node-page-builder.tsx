@@ -1,5 +1,6 @@
 'use client'
 
+import { EditorCollab } from './editor-collab'
 import { useCallback, useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -100,6 +101,7 @@ export function NodePageBuilder({
 
   const [loading, setLoading] = useState(true)
   const [matchId, setMatchId] = useState<string | null>(null)
+  const [collabId, setCollabId] = useState<string | null>(null)
   const [lockedIds, setLockedIds] = useState<string[]>([])
   const [pickerData, setPickerData] = useState<NonNullable<BuilderRailData['pickerData']>>({})
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
@@ -138,6 +140,7 @@ export function NodePageBuilder({
     const apply = (d: BuilderRailData | null) => {
       if (!active) return
       setMatchId(d?.matchId ?? null)
+      setCollabId(d?.collabEntityId ?? null)
       setLockedIds(d?.lockedIds ?? [])
       setPickerData(d?.pickerData ?? {})
       if (d && store) store.seed(seedLayout(d))
@@ -443,6 +446,7 @@ export function NodePageBuilder({
 
   return (
     <section className="min-w-0 space-y-3" aria-label="Space page builder">
+      {builderActive && collabId && kind === 'space' ? <EditorCollab kind="space" entityId={collabId} /> : null}
       <p className="sr-only" role="status" aria-live="polite">
         {announce}
       </p>

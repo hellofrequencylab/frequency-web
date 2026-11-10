@@ -1,3 +1,4 @@
 # Editor-only modules allowed to import yjs / y-* / lib/editor-crdt outside lib/editor-crdt/.
 # One repo-relative path per line, with a comment saying why no visitor bundle reaches it.
-# Empty on purpose: the provider and writer are not wired into the editor shell yet.
+# editor-collab.tsx: imported only by NodePageBuilder (the owner's page builder), which mounts it past the owner guard and only while EDITOR_COLLAB is on; the editor-crdt import is dynamic, so it is its own chunk.
+components/entity-blocks/editor-collab.tsx

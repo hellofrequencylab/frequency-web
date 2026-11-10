@@ -14,6 +14,7 @@
 //
 // Co-located under the Space manage tree beside the layout + mode actions these mirror.
 
+import { envFlag } from '@/lib/env/string'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { readSiteStyle, type SiteStyle } from '@/lib/theme/site-style'
 import { getCallerProfile } from '@/lib/auth'
@@ -435,6 +436,8 @@ interface SpaceLayoutRailData {
   /** The stored document read as NODES, present ONLY while render_path_space_profile is on (E0 task 12b): the
    *  rail then mounts the node page builder instead of the type-keyed one. Absent (undefined) otherwise. */
   nodeLayout?: NodeLayout
+  /** The Space id the live-collaboration channel is named for. Present only while EDITOR_COLLAB is on. */
+  collabEntityId?: string
   /** The pinned Top Hero's current values (operator overrides, else the Space's brand name / tagline), so the
    *  fixed hero editor opens showing what is on the page. Serializable (plain strings). */
   hero: HeroEditorValues
@@ -505,6 +508,7 @@ async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Pro
     pickerData,
     // The pinned Top Hero seed: operator overrides atop the Space's brand name / tagline (pure; buildHero).
     ...(nodePath ? { nodeLayout: ownerNodeLayout(saved) } : {}),
+    ...(nodePath && envFlag('EDITOR_COLLAB') ? { collabEntityId: space.id } : {}),
     hero: buildHero(space),
   }
 }

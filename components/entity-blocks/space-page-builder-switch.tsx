@@ -28,6 +28,7 @@ export function SpacePageBuilderSwitch({ slug, seed }: { slug: string; seed?: Bu
           lockedIds: d.lockedIds,
           pickerData: d.pickerData,
           nodeLayout: d.nodeLayout,
+          collabEntityId: d.collabEntityId,
         }
       : null
   }, [slug])

@@ -105,6 +105,8 @@ export interface BuilderRailData {
   /** The stored document as nodes, present only while render_path_space_profile is on; the Space rail then
    *  mounts the node page builder (SpacePageBuilderSwitch) instead of this one. */
   nodeLayout?: NodeLayout
+  /** The id the live-collaboration channel is named for; present only while EDITOR_COLLAB is on. */
+  collabEntityId?: string
   lockedIds?: string[]
   /** The edit-panel PICKER payload per function-backed block (ADR-573 item 5): the Space's live items + the
    *  create link. Absent on the member builder (no function-backed blocks). */

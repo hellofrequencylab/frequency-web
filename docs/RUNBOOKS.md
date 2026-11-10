@@ -871,6 +871,14 @@ The cutover runs in three steps (BLD-108, shadow render and cutover):
 2. **Cohort.** `BUILDER_V3_SPACES` (blank by default) lists Space slugs, comma separated, that get the new builder as their website editor; start with `danieltyack` and the Frequency-owned demo Spaces, then the owner's cohort. `?builder=classic` still opens the current editor for them. Gate for step 3: the owner has used it on danieltyack.com and said it is ready, and the log stayed clean for the cohort.
 3. **Everyone.** Set `BUILDER_V3`; then clear `BUILDER_V3_SPACES`. Rolling back is unsetting the switch: no data moves, both editors write the same draft.
 
+## Live co-editing
+
+`EDITOR_COLLAB` (blank by default) makes the Space page builder join a private Realtime channel (`editor:space:<id>`) so two people editing the same Space see each other's changes. Needs `render_path_space_profile` on (the node builder) and migration 20270346033000 applied (it is). Off, each owner edits alone as before.
+
+Gate to turn it on: two browsers signed in as owners of one Space both open the page builder; an edit in one appears in the other within a couple of seconds and neither page doubles its rows. A signed-out or non-owner session must be refused the channel (it fails closed). Turn it off by unsetting it: no data moves, the draft is still saved by the normal autosave.
+
+Known edges: a remote edit enters the editing tab's undo history; every open tab saves the same draft (idempotent); two tabs opening in the same instant may briefly seed twice and repair on the next edit.
+
 ## PostGIS reference table (`public.spatial_ref_sys`)
 
 Frequency Community (`azsqfeonabsbmemvddqd`), PostGIS 3.3.7 in `public`, not relocatable. Read-only catalog check, 2026-11-09:
