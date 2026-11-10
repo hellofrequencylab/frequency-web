@@ -1,17 +1,22 @@
 import { contrastRatio, HEX_ACCENT } from '@/lib/spaces/accent'
-
-import type { WebsiteTheme } from '@/lib/sites/editor/state'
 import { NETWORK_KIT_SCHEME_ORDER, NETWORK_KIT_SCHEMES, networkKitPickedAccent } from '@/lib/theme/network-kit'
 import { midnightAccentVars } from '@/lib/theme/midnight'
+import { templeKitAccentVars } from '@/lib/theme/temple-kit'
+import type { WebsiteTheme } from '@/lib/sites/editor/state'
 import { DESIGNER_KITS } from './designer-feature-data'
 import { NOCTURNE_KITS } from './nocturne-feature-data'
+import { TEMPLE_KITS } from './temple-feature-data'
 
 // These existing profile colours meet the filled-label contrast floor on the Designer site.
-const PICKER_IDS = new Set(['coaches', 'studios', 'hosts', 'creators', 'faith', 'markets'])
-const SWATCHES = DESIGNER_KITS.filter(({ id }) => PICKER_IDS.has(id))
+const DESIGNER_PICKER_IDS = new Set(['coaches', 'studios', 'hosts', 'creators', 'faith', 'markets'])
+const DESIGNER_SWATCHES = DESIGNER_KITS.filter(({ id }) => DESIGNER_PICKER_IDS.has(id))
   .map(({ id, name, hex }) => ({ id, label: name, swatch: hex }))
 
 const NETWORK_SWATCHES = NETWORK_KIT_SCHEME_ORDER.map((id) => ({ id, label: NETWORK_KIT_SCHEMES[id].label, swatch: NETWORK_KIT_SCHEMES[id].accent }))
+
+// Only the Temple profiles whose filled label clears the contrast floor are offered.
+const TEMPLE_SWATCHES = TEMPLE_KITS.filter(({ hex }) => contrastRatio(hex, templeKitAccentVars(hex)['--color-text-on-primary']) >= 4.5)
+  .map(({ id, name, hex }) => ({ id, label: name, swatch: hex }))
 
 // Only the Nocturne profiles whose filled label clears the contrast floor are offered.
 const NOCTURNE_SWATCHES = NOCTURNE_KITS.filter(({ hex }) => contrastRatio(hex, midnightAccentVars(hex)['--color-text-on-primary']) >= 4.5)
@@ -19,8 +24,9 @@ const NOCTURNE_SWATCHES = NOCTURNE_KITS.filter(({ hex }) => contrastRatio(hex, m
 
 export function stylePickerAccents(theme: WebsiteTheme) {
   if (theme === 'NetworkKit') return NETWORK_SWATCHES
+  if (theme === 'Designer') return DESIGNER_SWATCHES
   if (theme === 'Midnight') return NOCTURNE_SWATCHES
-  return theme === 'Designer' ? SWATCHES : undefined
+  return theme === 'TempleKit' ? TEMPLE_SWATCHES : undefined
 }
 
 export function stylePickerAccent(theme: WebsiteTheme, value: string | undefined): string | null {
