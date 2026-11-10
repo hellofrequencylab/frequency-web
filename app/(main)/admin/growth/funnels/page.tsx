@@ -9,7 +9,8 @@
 
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
-import { Activity, Rocket, FileEdit } from 'lucide-react'
+import { Activity, Rocket, FileEdit, Download } from 'lucide-react'
+import { buttonClasses } from '@/components/ui/button'
 import { requireAdmin } from '@/lib/admin/guard'
 import { listFunnels, funnelCounts } from '@/lib/funnels/store'
 import { FUNNEL_TEMPLATES } from '@/lib/funnels/templates'
@@ -59,6 +60,17 @@ export default async function FunnelsPage() {
             goalEvent: t.goalEvent,
           }))}
         />
+      </AdminSection>
+
+      <AdminSection
+        title="FlowWeb region numbers"
+        description="This week's hosts, events, covered sub-areas and weekly active members for each FlowWeb region, as the CSV FlowWeb's metrics upload takes. Download it, then upload it on FlowWeb's Flows page."
+      >
+        {/* A plain download link to the staff-gated CSV route (LIVE-2235), not a client fetch. */}
+        <a href="/admin/growth/flowweb-metrics" download className={buttonClasses('secondary', 'md')}>
+          <Download className="size-4" aria-hidden />
+          Download region numbers (CSV)
+        </a>
       </AdminSection>
     </AdminTemplate>
   )
