@@ -272,6 +272,7 @@
   "token:--color-primary-hover",
   "token:--color-primary-strong",
   "token:--color-text-on-primary",
+  "token:--color-text-subtle",
   "token:--motif-agave",
   "token:--motif-fig",
   "token:--motif-laurel",
@@ -293,6 +294,7 @@
   "token:--tex-roots",
   "token:--tex-smoke",
   "token:--tex-stardust",
+  "token:--text-muted",
   "token:--texture-contour",
   "token:--texture-grit",
   "token:--texture-linen",
@@ -302,6 +304,7 @@
   "token:--texture-terrazzo",
   "token:--th-body",
   "token:--th-display",
-  "token:--th-mono"
+  "token:--th-mono",
+  "token:--th-muted"
  ]
 }

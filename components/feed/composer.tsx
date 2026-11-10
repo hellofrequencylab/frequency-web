@@ -93,6 +93,8 @@ export function Composer({
   postKind = 'feed',
   dispatchScopes = [],
   initialBody = '',
+  submitKinds = false,
+  announce,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -116,7 +118,21 @@ export function Composer({
   /** Override the write path (the Space Community feed reuses THIS box but posts through its own gated
    *  space actions instead of createPost). Given the composed `body` + any uploaded `imageUrl`; return
    *  `{ error }` to surface a failure and keep the draft. When omitted, the default createPost path runs. */
-  onSubmit?: (data: { body: string; imageUrl: string | null }) => Promise<{ error?: string } | void>
+  onSubmit?: (data: {
+    body: string
+    imageUrl: string | null
+    /** The kind the person picked: a plain post unless `submitKinds` lets them pick a Poll or an
+     *  Ask, or `canAnnounce` lets them announce (LIVE-2095). */
+    kind: PostKind | 'note' | 'announcement'
+    /** The poll's options when `kind` is 'poll' (raw, trimmed by the writer); empty otherwise. */
+    pollOptions: string[]
+  }) => Promise<{ error?: string } | void>
+  /** LIVE-2095: with a custom onSubmit, keep the Poll and Ask chips and hand the picked kind to
+   *  onSubmit (the Community wall). Off, a custom onSubmit always sends a plain post. */
+  submitKinds?: boolean
+  /** LIVE-2095: rename the Dispatch chip for a surface where the team "announces" rather than
+   *  dispatches (the Community wall). The chip still sets post_type 'announcement'. */
+  announce?: { label: string; hint: string }
   /** Override image upload (e.g. the Space's follower-gated community-image action). Returns the public
    *  URL, or null on failure. When omitted, the default upload to the `posts` bucket runs. */
   onUploadImage?: (file: File) => Promise<string | null>
@@ -134,7 +150,7 @@ export function Composer({
   const [dispatchScope, setDispatchScope] = useState<DispatchScope | null>(dispatchScopes.includes('hub') ? 'hub' : (dispatchScopes[0] ?? null))
   // The kind picked on the default bottom row; a mount that passes its own row (Capture) sets it.
   const [pickedKind, setPickedKind] = useState<PostKind>(postKind)
-  const sendKind: PostKind = onSubmit ? 'feed' : pickedKind
+  const sendKind: PostKind = onSubmit && !submitKinds ? 'feed' : pickedKind
   const isPoll = sendKind === 'poll' && kind !== 'note'
   // Capture remounts the composer per feature (key=mode), so the Dispatch feature's
   // `forceAnnouncement` seeds the initial state — no effect needed.
@@ -289,7 +305,12 @@ export function Composer({
       // The Space Community feed reuses this box but posts through its own gated actions (onSubmit); the
       // default feed path builds the createPost FormData. Both keep the draft intact on failure.
       if (onSubmit) {
-        const res = await onSubmit({ body: trimmed, imageUrl })
+        const res = await onSubmit({
+          body: trimmed,
+          imageUrl,
+          kind: isAnnouncement ? 'announcement' : kind === 'note' ? 'note' : sendKind,
+          pollOptions: !isAnnouncement && isPoll ? pollOptions : [],
+        })
         if (res && 'error' in res && res.error) {
           setPostError(res.error)
           return
@@ -490,7 +511,11 @@ export function Composer({
 
   // The default bottom row's modes: Poll and Ask ride the createPost path, Dispatch needs the right.
   const rowModes =
-    kind === 'note' ? [] : MODES.filter((m) => (m.key === 'dispatch' ? canAnnounce : m.key === 'feed' || !onSubmit))
+    kind === 'note'
+      ? []
+      : MODES.filter((m) => (m.key === 'dispatch' ? canAnnounce : m.key === 'feed' || !onSubmit || submitKinds)).map((m) =>
+          m.key === 'dispatch' && announce ? { ...m, label: announce.label, hint: announce.hint } : m,
+        )
 
   const canPost =
     (!!body.trim() || !!imageFile) &&

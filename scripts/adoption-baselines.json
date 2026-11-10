@@ -758,14 +758,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 166,
+      "baseline": 162,
       "frozen": {
-        "at": "2026-10-28",
-        "value": 166,
+        "at": "2026-11-09",
+        "value": 162,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Sweep landed on main: 262 to 166 raw button backgrounds retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
-        "from": 262
+        "reason": "SCAN-1133 slice: event dispatch toggles and RSVP multi-select pills moved to the kit chip; 166 to 162",
+        "from": 166
       },
       "history": [
         {
@@ -1005,6 +1005,13 @@
           "to": 166,
           "direction": "lowered",
           "reason": "Sweep landed on main: 262 to 166 raw button backgrounds retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
+        },
+        {
+          "at": "2026-11-09",
+          "from": 166,
+          "to": 162,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice: event dispatch toggles and RSVP multi-select pills moved to the kit chip; 166 to 162"
         }
       ]
     },

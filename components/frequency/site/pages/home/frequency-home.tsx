@@ -6,11 +6,11 @@
 //   03 Story      four chapters per side (Find, Show up, Come back, Pass it on), with "Live this week"
 //   04 Features   six ways to be in the room / six things you can make
 //   05 Weave      how both sides' steps thread together (client island, ./weave.tsx)
-//   03y Beta      the beta announcement band: free until December 1, founding members, one Join the beta button
+//   03y Beta      the beta announcement band: free through December 31, founding members, one Join the beta button
 //   06 Manifesto  "Sacred, not serious."
 //   Dock          the Browse / Host switch and Join the beta, pinned once the hero has gone
 //
-// THE BETA (owner, 2026-10-14, since moved to December 1 by the 2026-10-19 ruling; OPENING_DATE_LABEL in lib/site.ts is the one date, year included): "We're in beta until January 1, let's announce that and do clear calls to
+// THE BETA (owner, 2026-10-14, moved to launch on January 1 by the 2026-11-09 ruling; OPENING_DATE_LABEL in lib/site.ts is the one date, year included): "We're in beta until January 1, let's announce that and do clear calls to
 // action into our beta sign up. Each feature CTA leads to the same beta intake flow." So the hero carries
 // the beta pill and ONE primary (Join the beta), a band after the story says it again, and every feature
 // CTA on this page (the chapter Acts, the path doors, the "Live this week" host button, the closer, the
