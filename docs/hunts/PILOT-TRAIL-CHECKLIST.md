@@ -1,14 +1,14 @@
 # Free Trail pilot field kit (FH-019)
 
-Acceptance pending: two named field runs. Status lives in the [build backlog](../../BUILD-BACKLOG.json). Use this blank kit to plan and record a pilot. The pilot lead owns the go or stop call and records the results after each run.
+Acceptance pending: two named field runs. Status lives in the [build backlog](../BUILD-BACKLOG.json). Use this blank kit to plan and record a pilot. The pilot lead owns the go or stop call and records the results after each run.
 
 ## Opening checklist
 
 - Name the pilot lead, creator, player, local placement operator and support lead for each run. Agree on the walk window, meeting point, support contact and a way to stop the test.
-- Record the approved environment, serving commit, Trail revision and current switch states. Use the [Hunts switch runbook](../../RUNBOOKS.md#frequency-hunts-switches) and record who can pause the Trail and restore the approved switch state. Keep rewards and other capabilities off unless the pilot lead has a separate approval.
-- Choose a free Trail with three or more stops and a free finish. Walk it before inviting anyone. Get permission for each stop, check opening hours and access, and agree on an accessible fallback. Use the [creator checklist](../CREATOR-FLOW.md#publish-checklist).
-- Confirm the approved player and placement URLs on the intended host. Keep the Trail unlisted for the closed pilot unless the owner approves public listing. Check QR print, NFC readback and the printed short code at every stop using the [placement kit](../PLACEMENT-KIT.md).
-- Capture the legacy control results with Hunts off. Assign iPhone and Android coverage, a weak-signal stop, and a second device for resume. Use the [accessibility script](../ACCESSIBILITY-REPORT.md).
+- Record the approved environment, serving commit, Trail revision and current switch states. Use the [Hunts switch runbook](../RUNBOOKS.md#frequency-hunts-switches) and record who can pause the Trail and restore the approved switch state. Keep rewards and other capabilities off unless the pilot lead has a separate approval.
+- Choose a free Trail with three or more stops and a free finish. Walk it before inviting anyone. Get permission for each stop, check opening hours and access, and agree on an accessible fallback. Use the [creator checklist](CREATOR-FLOW.md#publish-checklist).
+- Confirm the approved player and placement URLs on the intended host. Keep the Trail unlisted for the closed pilot unless the owner approves public listing. Check QR print, NFC readback and the printed short code at every stop using the [placement kit](PLACEMENT-KIT.md).
+- Capture the legacy control results with Hunts off. Assign iPhone and Android coverage, a weak-signal stop, and a second device for resume. Use the [accessibility script](ACCESSIBILITY-REPORT.md).
 
 ## Onsite tests
 
