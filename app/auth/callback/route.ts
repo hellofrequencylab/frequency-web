@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server'
 import { safeNextPath } from '@/lib/auth/safe-next'
 import { callbackErrorCode } from '@/app/sign-in/errors'
 import { track } from '@/lib/analytics/track'
+import { readGaIdentity } from '@/lib/analytics/ga-client-id'
 import { runGuestClaims } from '@/lib/auth/post-sign-in'
 import {
   claimGuestOrdersOnSignIn,
@@ -106,6 +107,8 @@ export async function GET(request: Request) {
             const source = (user.app_metadata?.provider as string | undefined) ?? 'unknown'
             await track('account.created', { source }, profile.id, {
               idempotencyKey: `account.created:${profile.id}`,
+              // Once per real signup, mirrored to GA4 as `sign_up` (the key event Google Ads imports).
+              gaIdentity: await readGaIdentity(),
             }).catch(() => {})
 
             // CLAIM-ON-SIGN-IN, the four legs (seats, leads, tickets, orders) a native sign-in also

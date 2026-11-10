@@ -38,6 +38,12 @@ import { isTrackedEvent } from './events'
 import { gaServerEnabled, sendGa4Event } from './ga-server'
 import { hasConsent } from '@/lib/consent/consent'
 
+/** The browser's GA identity, read from the `_ga` cookies (lib/analytics/ga-client-id.ts). */
+export interface GaIdentity {
+  clientId: string
+  sessionId: string | null
+}
+
 /** Record a product event into engagement_events. Unknown events are dropped (not an
  *  error). Each call is a distinct ledger row (analytics events aren't deduped). */
 export async function track(
@@ -58,11 +64,13 @@ export async function track(
      * the ledger drops it. Self-healing: no window to miss, nothing to reconcile.
      */
     idempotencyKey?: string
+    /** Browser GA identity. `account.created` only mirrors to GA4 (as `sign_up`) when this is present. */
+    gaIdentity?: GaIdentity | null
   } = {},
-): Promise<void> {
-  if (!isTrackedEvent(event)) return
+): Promise<boolean> {
+  if (!isTrackedEvent(event)) return false
   const clean = sanitizeProps(props)
-  await recordEngagementEvent({
+  const result = await recordEngagementEvent({
     idempotencyKey:
       opts.idempotencyKey ??
       `track:${event}:${actorProfileId ?? 'anon'}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
@@ -70,7 +78,8 @@ export async function track(
     eventType: event,
     actorProfileId,
     context: clean,
-  }).catch(() => {})
+  }).catch(() => null)
+  const recorded = result?.recorded ?? false
   // Mirror to GA4 server-side (parity with the client gtag mirror). Fire-and-forget,
   // and gated on the actor's analytics consent (ADR-069): a member who opted out of
   // analytics doesn't have their account-tied usage sent to Google. Anonymous events
@@ -80,12 +89,26 @@ export async function track(
   // parameter. Lift it off the prop bag before the mirror so a purchase joins the
   // browser session that started checkout.
   const { ga_client_id, ...gaParams } = clean
+  // A STABLE-key event is a lifecycle fact that happens once (account.created). The ledger already
+  // drops the repeat; the GA4 mirror must too, or every later sign-in re-sends it and a conversion
+  // counts once per login instead of once per person.
+  if (opts.idempotencyKey && !recorded) return false
+  if (event === 'account.created') {
+    // Google Ads imports the GA4 key event `sign_up`. It is sent only with the visitor's own `_ga`
+    // identity (so it joins the session that carried the ad click, and a visitor who never loaded
+    // the tag is never counted).
+    if (opts.gaIdentity) {
+      void mirrorToGa('sign_up', { method: String(gaParams.source ?? 'unknown') }, actorProfileId, opts.gaIdentity.clientId, opts.gaIdentity.sessionId)
+    }
+    return recorded
+  }
   void mirrorToGa(
     event,
     gaParams,
     actorProfileId,
     typeof ga_client_id === 'string' ? ga_client_id : null,
   )
+  return recorded
 }
 
 async function mirrorToGa(
@@ -93,11 +116,12 @@ async function mirrorToGa(
   props: Record<string, string | number | boolean>,
   actorProfileId: string | null,
   clientId: string | null,
+  sessionId: string | null = null,
 ): Promise<void> {
   if (!gaServerEnabled()) return
   if (actorProfileId && !(await hasConsent(actorProfileId, 'analytics'))) return
   // LIVE-810: the ledger keeps the full bag; Google gets the pixel-safe one (no persona,
   // archetype, topic or Journey/Circle slug). Anonymous events skip the consent read above,
   // which is exactly why the strip happens here for every caller rather than per call site.
-  await sendGa4Event(event, pixelSafeProps(props), actorProfileId, { clientId })
+  await sendGa4Event(event, pixelSafeProps(props), actorProfileId, { clientId, sessionId })
 }

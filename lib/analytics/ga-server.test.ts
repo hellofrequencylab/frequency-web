@@ -102,3 +102,22 @@ describe('sendGa4Event uses the browser client id for a purchase', () => {
     expect(body.events[0].params).toEqual({ value: 8, currency: 'usd', transaction_id: 'cs_1' })
   })
 })
+
+describe('sendGa4Event session join', () => {
+  it('adds session_id to the event params when a session is known', async () => {
+    vi.resetModules()
+    vi.stubEnv('NEXT_PUBLIC_GA_MEASUREMENT_ID', 'G-TEST')
+    vi.stubEnv('GA_API_SECRET', 'secret')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    const fetchMock = vi.fn().mockResolvedValue({})
+    vi.stubGlobal('fetch', fetchMock)
+    const { sendGa4Event: send } = await import('./ga-server')
+    await send('sign_up', { method: 'google' }, 'p1', { clientId: '1.2', sessionId: '999999999' })
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body.client_id).toBe('1.2')
+    expect(body.events[0].name).toBe('sign_up')
+    expect(body.events[0].params.session_id).toBe('999999999')
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+})

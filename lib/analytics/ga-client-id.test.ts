@@ -5,7 +5,7 @@ vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => undefined }),
 }))
 
-import { parseGaClientId, GA_CLIENT_ID_META } from './ga-client-id'
+import { parseGaClientId, parseGaSessionId, GA_CLIENT_ID_META } from './ga-client-id'
 
 const CREATORS = [
   'lib/commerce/checkout.ts',
@@ -43,5 +43,16 @@ describe('checkout creators stamp ga_client_id from the shared helper', () => {
       return !src.includes("from '@/lib/analytics/ga-client-id'") || !src.includes('checkoutGaMetadata')
     })
     expect(missing, `creators not stamping ${GA_CLIENT_ID_META}: ${missing.join(', ')}`).toEqual([])
+  })
+})
+
+describe('parseGaSessionId', () => {
+  it('reads GS1 and GS2 session cookies', () => {
+    expect(parseGaSessionId('GS1.1.1695123456.1.1.1695123500.0.0.0')).toBe('1695123456')
+    expect(parseGaSessionId('GS2.1.s1695123456$o1$g1$t1695123500')).toBe('1695123456')
+  })
+  it('refuses junk', () => {
+    expect(parseGaSessionId(undefined)).toBeNull()
+    expect(parseGaSessionId('nope')).toBeNull()
   })
 })
