@@ -1,18 +1,18 @@
 {
   "id": "LIVE-2251",
-  "title": "A real signup reaches Google Ads as one GA4 sign_up key event, joined to the ad-click session",
+  "title": "Build claim links for FlowWeb's lead hunts: signed, off by default, suppression-checked, a posted event per organizer, and Frequency never sends the message",
   "lane": "live",
   "priority": "P1",
-  "size": "S",
+  "size": "M",
   "status": "done",
   "source": {
-    "file": "app/auth/callback/route.ts",
-    "ref": "Daniel launched the Google Ads campaign 'Find your people locally' (2026-11-09) optimized for subscriptions."
+    "file": "app/api/webhooks/flowweb-claim/route.ts",
+    "ref": "FlowWeb row FW-C-041 (saved event lead hunts). Daniel, 2026-11-10: 'set up auto hunts for events, find their creators email or contact info ... send them a customized lead message with a claim link. The building stuff / claim link can be a second selectible layer.' Then, 2026-11-10: Resend's rules ban cold outreach, so hunt messages go from Daniel's own Workspace mailbox ('follow the rules'), and 'Build the thing' (the claim-link builder)."
   },
-  "detail": "account.created was mirrored to GA4 as account_created on EVERY sign-in (the ledger deduped, the mirror did not) and with the profile id as client_id, so no event joined an ad-click session. Fix: the auth callback hands track() the browser's _ga client_id and session_id; track() sends GA4 sign_up (method) once, only when the ledger row is new and only when the visitor carries a _ga cookie. Owner steps: link GA4 to Google Ads, mark sign_up a key event, import it into Ads as the conversion. Gate in docs/RUNBOOKS.md (Google Ads conversion).\n\nsign_up sent once per signup via track(); owner steps in RUNBOOKS",
+  "detail": "POST /api/webhooks/flowweb-claim takes one FlowWeb hunt item with build on, signed as hex HMAC-SHA256 of `${x-flowweb-timestamp}.${body}` under FLOWWEB_CLAIM_SECRET (5 minute window; no secret = 401). The item must name a deliverable address, the public page it came from (which the body must quote), FlowWeb's 'reply no' opt-out and the {{claim_url}} slot. Gates in order: FLOWWEB_CLAIM_ENABLED (envFlag, off by default, answers off), suppression (global or the root Space's own opt-outs, fail-closed, answers suppressed). Then the event is posted for its organizer through the existing poster-events claim spine (seed owner as poster, published 'posted', organizer contact stamped after publish so the stock claim email is not sent) and the answer is { status: 'built', claimUrl: /events/claim/<token>, eventUrl }; a retried item reuses its event (events.details.flowweb.item_id). Frequency sends no email here: FlowWeb's sender mails the organizer from the founder's own mailbox. Pure rules in lib/flowweb/claim.ts, IO in lib/flowweb/claim-io.ts, runbook gate in docs/RUNBOOKS.md. Probe: scripts/probes/flowweb-claim.mjs.\n\nEndpoint and claim build shipped; switch stays off until the RUNBOOKS gate passes.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/ads-signup-conversion.mjs"
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/flowweb-claim.mjs"
   },
   "closed": "2026-11-10",
   "wave": "W7"

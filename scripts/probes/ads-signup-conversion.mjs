@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2251: a real signup reaches GA4 (and so Google Ads) as one `sign_up` key event.
+// LIVE-2252: a real signup reaches GA4 (and so Google Ads) as one `sign_up` key event.
 // Fails when the auth callback stops handing track() the browser's GA identity, or track() stops
 // sending sign_up / stops deduping the mirror on the ledger's first-insert result.
 import { readFileSync } from 'node:fs'

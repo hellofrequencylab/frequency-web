@@ -731,6 +731,19 @@ Then set `CONVERSATION_EMAIL_BRIDGE` to `1`, `true` or `on` in Vercel Production
 
 **Turn it off.** Unset. New member replies stop being forwarded. Issued house addresses still route.
 
+### FlowWeb lead-hunt claim links (LIVE-2251)
+
+`FLOWWEB_CLAIM_ENABLED` defaults off. It is an on/off env switch (`envFlag`: `1` / `true` / `on`). FlowWeb's hunts find event organizers' public addresses and the founder's own mailbox sends each one a personal message (FlowWeb `senders/email.mjs`, through Gmail, a few a day). Frequency never sends these: Resend's rules ban cold outreach. For a hunt with build on, the sender first posts the item to `/api/webhooks/flowweb-claim`; Frequency checks suppression (global and the root Space's own opt-outs), posts the event for its organizer through the poster-events claim spine and answers the claim link the message carries. Logic: `lib/flowweb/claim.ts`.
+
+**Gate before turning it on**, in order. All **owner** unless tagged.
+
+1. `FLOWWEB_CLAIM_SECRET` is set in Production (32+ random bytes) and the same value is in the Mac's Keychain (service `flowweb-claim`). **agent** can confirm the route answers 401 without a signature.
+2. One controlled proof: a build hunt item for an address you own answers `built`; the claim link opens the event's claim page and claiming it hands the event to that account.
+
+Then set `FLOWWEB_CLAIM_ENABLED` to `1`, `true` or `on` in Vercel Production and redeploy. **owner**
+
+**Turn it off.** Unset the switch. Verified posts answer `off`, nothing is built, and FlowWeb's sender keeps build items waiting.
+
 ### Regulars (LIVE-940, ADR-1780)
 
 `LOYALTY_ENABLED` defaults off (`envFlag`: `1` / `true` / `on`). Off, a Space check-in records as it always has but writes no stamp and pays no `space_checkin` Zaps, and the owner's Check-in panel says Regulars is not open. The program and its tables ship dark so owners can be set up before launch.
