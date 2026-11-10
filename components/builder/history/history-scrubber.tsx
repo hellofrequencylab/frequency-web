@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Input } from '@/components/ui/field'
 import { selectedVersionIndex, versionTimeline, type EditorVersionSummary } from '@/lib/builder/version-history'
 
 const FORMAT_DATE = new Intl.DateTimeFormat('en-US', {
@@ -29,7 +30,7 @@ export function HistoryScrubber({ versions, selectedId, onPreview }: {
 
   return (
     <section aria-label="Version history" className="min-w-0 space-y-3">
-      <h2 className="text-title font-semibold">Version history</h2>
+      <h2 className="text-lead font-semibold">Version history</h2>
       <div className="rounded-card border border-border bg-surface p-4">
         <p className="text-body font-semibold">Version {index + 1} of {timeline.length}</p>
         <p className="text-body-sm text-muted">
@@ -39,7 +40,8 @@ export function HistoryScrubber({ versions, selectedId, onPreview }: {
       </div>
       <label className="block text-body-sm text-muted">
         Preview a version
-        <input
+        <Input
+          variant="seamless"
           className="mt-2 block w-full accent-current"
           type="range"
           min={0}
