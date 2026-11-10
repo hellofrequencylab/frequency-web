@@ -436,6 +436,7 @@
 # LIVE-2255: app/api/webhooks/flowweb-outcomes/route.ts is an HMAC-signed (FLOWWEB_OUTCOMES_SECRET, 5 minute window, 401 without the secret) read-only pull of counts per utm_campaign and utm_content; no name, email or profile id leaves.
 # LIVE-2255: lib/onboarding/region-metrics-load.ts reads published events and last-seen profiles across every region (profiles RLS is in-region only) for the staff CSV and the signed outcomes pull, and returns totals only.
 # LIVE-2256: lib/flowweb/crm-io.ts writes FlowWeb's leads into the root Space CRM (one contact, one conversation, one message per draft step) only after /api/webhooks/flowweb-crm has verified FlowWeb's HMAC signature (FLOWWEB_OUTCOMES_SECRET) and the FLOWWEB_CRM_ENABLED switch; no member session exists on that path.
+# LIVE-2257: app/api/webhooks/flowweb-link/route.ts inserts one managed url code in qr_codes (RLS denies clients, as the /q resolver and the Link Generator) only after FlowWeb's HMAC signature (FLOWWEB_OUTCOMES_SECRET) verifies, and only for an https page on this site carrying utm_source=flowweb; no member session exists on that path.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -671,6 +672,7 @@ app/api/search-handles/route.ts
 app/api/search-scopes/route.ts
 app/api/vitals/route.ts
 app/api/wallet/google/route.ts
+app/api/webhooks/flowweb-link/route.ts
 app/api/webhooks/flowweb-outcomes/route.ts
 app/api/webhooks/resend/route.ts
 app/api/webhooks/stripe/route.ts
