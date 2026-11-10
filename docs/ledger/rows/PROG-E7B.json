@@ -1,0 +1,19 @@
+{
+  "id": "PROG-E7B",
+  "title": "Editor E7: placeable tickets, membership and enroll blocks, checkout gated on a connected account",
+  "status": "open",
+  "priority": "P2",
+  "lane": "program",
+  "size": "L",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E7"
+  },
+  "detail": "Split from PROG-E7 on 2026-11-10 when its probe (the 1099 gap) closed with lib/billing/connect-tax.ts. What stays open from E7: the transactional widgets are not placeable blocks. lib/entity-blocks/registry.ts carries booking, contact and donate; tickets, membership and enroll have no block id. Per EDITOR-ARCHITECTURE D-3, ship the capability gate first: a block places freely, and its checkout is refused until the Space owner's Stripe account is ready (lib/billing/connect.ts ConnectStatus.ready, payoutsLive()). Dark behind the existing host_payouts_enabled flag. No live charge in the build or its tests.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=fs.readFileSync(\"lib/entity-blocks/registry.ts\",\"utf8\");const miss=[\"tickets\",\"membership\",\"enroll\"].filter(id=>!new RegExp(\"[\\\"\\x27]\"+id+\"[\\\"\\x27]\").test(r));if(miss.length){console.error(\"PROG-E7B: no placeable block for: \"+miss.join(\", \"));process.exit(1)}'",
+    "note": "Fails today: the entity-block registry has no tickets, membership or enroll ids. Passes once each is registered."
+  },
+  "wave": "W7"
+}
