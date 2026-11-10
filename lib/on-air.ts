@@ -408,6 +408,8 @@ export interface OnAirPrefs {
   customOut?: number
   /** Soft bell on phase changes (breath) / minute marks (timer). Default off. */
   bell?: boolean
+  /** Get Moving cue sound (phase bells, the 3-2-1 count, the end). Default on (owner 2026-11-10). */
+  moveBell?: boolean
   /** Which bell voice (P5): soft | low | amber | bowl. */
   bellTone?: string
   /** Bell loudness — scales the synth peak. Default medium. */
@@ -426,6 +428,8 @@ export interface OnAirPrefs {
   /** The warm-up countdown before a sit begins, in seconds: 3 | 5 | 10. Default 5
    *  (the original pre-roll). Drives the armed pre-roll on the live screen. */
   warmupSec?: number
+  /** Show the per-phase breath count on the Breathe visualizer. Default on (LIVE-2241). */
+  showBreathCount?: boolean
   /** The last Get Moving configuration the member ran unattached (Free Practice memory), kept
    *  beside the sit's choices so another device opens the same way (LIVE-2240). */
   move?: MovementConfig | null

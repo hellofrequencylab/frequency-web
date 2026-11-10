@@ -43,7 +43,6 @@ export default async function OnAirPage({
     <MindlessDoor
       session={{ practices, defaultPracticeId, prefs, practicedToday, journeyLegs }}
       initialPracticeId={initialId}
-      rememberedMinutes={prefs.minutes}
     />
   )
 }

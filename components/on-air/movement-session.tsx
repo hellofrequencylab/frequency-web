@@ -115,9 +115,8 @@ type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 // a bare Get Moving open pops back up in the last known configuration while an authored practice
 // still opens on its creator's preset. The engine owns no storage key of its own any more.
 
-// The bell voice is fixed to the tuned default for Movement (the sit's voice
-// picker is the place to choose one; here the cues are functional beats).
-const TONE = bellToneBySlug('soft')
+// The cue voice, loudness, on/off and vibration all come from the ONE cue model the door's Sound
+// and Feel sub-menus edit (LIVE-2242); the engine no longer hardcodes a voice or always buzzes.
 
 // The six mode icons (C.1): the movement modes show the SAME way the Mindless
 // modes do, so each gets a small glyph above its label in the 3-up grid.
@@ -212,6 +211,7 @@ export function MovementSession({
   autoStart = false,
   warmupSec: warmupSecProp,
   prefs,
+  initialConfig,
   warmupMessageOverride,
   queuePosition,
   onCompleted,
@@ -224,6 +224,10 @@ export function MovementSession({
   minutesOverride?: number
   /** The member's server prefs; the settings model lays the local copy over them (LIVE-2240). */
   prefs?: Partial<OnAirPrefs> | null
+  /** The plan the door composed (LIVE-2242): wins for a fresh run so Start on the door runs exactly
+   *  what its sub-menus showed. A resume still overrides the length; a crash recovery still applies
+   *  the saved record's config. */
+  initialConfig?: MovementConfig | null
   practices: OnAirPractice[]
   defaultPracticeId: string | null
   /** The Movement mode this session opens on (from a practice's movement_config, or Walk). */
@@ -327,7 +331,12 @@ export function MovementSession({
   const launched = practices.find((p) => p.id === initialId)
   const isFreeLaunch = launched != null && launched.id === findFreeMove(practices)?.id
   const { initial: settings, save: saveSettings } = useTimerSettings(prefs)
-  const initialCfg = (isFreeLaunch ? (settings.move ?? launched?.movementConfig) : launched?.movementConfig) ?? null
+  const initialCfg = initialConfig ?? (isFreeLaunch ? (settings.move ?? launched?.movementConfig) : launched?.movementConfig) ?? null
+
+  const tone = useMemo(() => bellToneBySlug(settings.cues.bellTone), [settings.cues.bellTone])
+  const cueVol = settings.cues.bellVolume
+  const soundOn = settings.cues.moveBell
+  const vibe = (pulse: number | number[] = 15) => { if (settings.cues.haptics) buzz(pulse) }
 
   const [practiceId, setPracticeId] = useState(initialId)
   const [mode, setMode] = useState<MovementMode>(defaultMode ?? initialCfg?.mode ?? 'walk')
@@ -346,7 +355,7 @@ export function MovementSession({
   const [runMinutes, setRunMinutes] = useState(defaultMode === 'run' && resumeMin ? resumeMin : (customMin ?? initialCfg?.runMinutes ?? 20))
   const [runIntervalMin, setRunIntervalMin] = useState(initialCfg?.runIntervalMin ?? 0)
   // Yoga
-  const [yogaKind, setYogaKind] = useState<YogaPresetKind>(initialCfg?.yogaKind ?? 'vinyasa')
+  const [yogaKind, setYogaKind] = useState<YogaPresetKind>(initialCfg?.yogaKind ?? 'gentle')
   // Stretch
   const [stretchMinutes, setStretchMinutes] = useState(
     defaultMode === 'stretch' && resumeMin ? resumeMin : (customMin ?? initialCfg?.stretchMinutes ?? 10),
@@ -573,8 +582,8 @@ export function MovementSession({
       // round to round all read here off the label changing.
       if (pos.phase.label !== lastPhaseLabel.current) {
         if (lastPhaseLabel.current !== null && !pos.done) {
-          chime(audio.current, TONE)
-          buzz(15)
+          if (soundOn) chime(audio.current, tone, cueVol)
+          vibe(15)
         }
         lastPhaseLabel.current = pos.phase.label
       }
@@ -585,7 +594,7 @@ export function MovementSession({
         const tick = Math.ceil(pos.remaining) // 3,2,1
         if (tick >= 1 && tick <= 3 && tick !== lastBeep.current) {
           lastBeep.current = tick
-          countBeep(audio.current, 1, tick === 1)
+          if (soundOn) countBeep(audio.current, cueVol, tick === 1)
         }
       } else {
         lastBeep.current = -1
@@ -606,7 +615,7 @@ export function MovementSession({
         const minute = Math.floor(pos.phaseElapsed / 60)
         if (minute > lastWalkMinute.current) {
           lastWalkMinute.current = minute
-          if (minute > 0 && minute % intervalMin === 0) chime(audio.current, TONE)
+          if (minute > 0 && minute % intervalMin === 0 && soundOn) chime(audio.current, tone, cueVol)
         }
       }
 
@@ -614,8 +623,8 @@ export function MovementSession({
       // the member to Finish (no auto-advance), mirroring the sit.
       if (pos.done && !endCued.current) {
         endCued.current = true
-        endChime(audio.current, TONE)
-        buzz([30, 80, 30])
+        if (soundOn) endChime(audio.current, tone, cueVol)
+        vibe([30, 80, 30])
       }
     }, 250)
     return () => clearInterval(id)
@@ -633,8 +642,8 @@ export function MovementSession({
       return
     }
     const isOne = preroll === 1
-    buzz(isOne ? [30, 80, 30] : 15)
-    countBeep(audio.current, 1, isOne)
+    vibe(isOne ? [30, 80, 30] : 15)
+    if (soundOn) countBeep(audio.current, cueVol, isOne)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isOne) setFlash(true)
     const id = setTimeout(() => setPreroll((n) => (n === null ? null : n - 1)), 1000)
@@ -710,7 +719,7 @@ export function MovementSession({
       setRunMinutes(c.runMinutes ?? 20)
       setRunIntervalMin(c.runIntervalMin ?? 0)
     } else if (c.mode === 'yoga') {
-      setYogaKind(c.yogaKind ?? 'vinyasa')
+      setYogaKind(c.yogaKind ?? 'gentle')
     } else if (c.mode === 'stretch') {
       setStretchMinutes(c.stretchMinutes ?? 10)
       setStretchIntervalMin(c.stretchIntervalMin ?? 0)
@@ -900,7 +909,7 @@ export function MovementSession({
   function confirmRunOver() {
     confirmationsRef.current = [...confirmationsRef.current, currentElapsedSec()]
     setRunOverPrompt(false)
-    buzz(10)
+    vibe(10)
   }
 
   // A checkpoint went a whole interval unanswered (walked away / tab left open / background return
@@ -936,7 +945,7 @@ export function MovementSession({
     const el = Math.round(e)
     const bankedThis = clampLoggedSeconds(gateTargetRef.current, el, [...confirmationsRef.current, el])
     const seconds = movementFinishSeconds(plan, { resumeOffset, bankedThis, finishCap })
-    buzz(10)
+    vibe(10)
     await finishWith(Math.max(0, seconds))
   }
 
@@ -1304,6 +1313,12 @@ export function MovementSession({
         {/* The setup body centers vertically in the viewport and scrolls when it
             overflows; the Start bar below stays docked and visible (LAYOUT directive). */}
         <div className="flex flex-1 flex-col justify-center gap-5 py-2">
+        {/* An authored practice that locks its length also locks its shape (LIVE-2242): the mode
+            grid and tuning stay visible but inert, with one line saying why. */}
+        <fieldset disabled={!!practice?.durationLocked} className="contents" aria-describedby={practice?.durationLocked ? 'move-locked-hint' : undefined}>
+        {practice?.durationLocked && (
+          <p id="move-locked-hint" className="text-center text-meta text-subtle">Set by the practice.</p>
+        )}
         {/* Mode — the SAME display as the six Mindless modes (C.1): a 3-up grid of
             icon-over-label tiles. The chosen mode's blurb sits as a one-line subline
             below the grid (no narrated feelings, no em or en dashes). */}
@@ -1461,6 +1476,8 @@ export function MovementSession({
             </div>
           </div>
         )}
+
+        </fieldset>
 
         {/* The plan read-out + total. */}
         <p className="text-center text-meta text-subtle">

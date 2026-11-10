@@ -19,7 +19,7 @@ import {
   coerceBellVolume,
   type OnAirPrefs,
 } from '@/lib/on-air'
-import { sanitizeMovementConfig, type MovementConfig } from '@/lib/movement'
+import { buildPlan, sanitizeMovementConfig, strengthPresetByKind, totalSeconds, type MovementConfig, type MovementMode } from '@/lib/movement'
 
 /** The one minute band for a member-chosen length, on the door and in both engines. Authored
  *  (creator) configs clamp separately in lib/movement.ts. */
@@ -42,8 +42,10 @@ interface StillSetup {
 }
 
 /** Cues shared by both engines: sound, feel and the warm-up. */
-interface CueSettings {
+export interface CueSettings {
   bell: boolean
+  /** Get Moving's own on/off for its cue sound; it shares the voice and volume with the sit. */
+  moveBell: boolean
   bellTone: string
   bellVolume: number
   endBell: boolean
@@ -52,6 +54,7 @@ interface CueSettings {
   ambientTrack: string | null
   ambientVolume: number
   warmupSec: number
+  showBreathCount: boolean
 }
 
 export interface TimerSettings {
@@ -112,6 +115,7 @@ export function settingsFromPrefs(prefs: Partial<OnAirPrefs> | null | undefined)
       // voice, no vibration (DEFAULT_PREFS documents the product intent; the engine behaviour wins
       // until the owner rules otherwise, so nothing changes under anyone on this PR).
       bell: typeof p.bell === 'boolean' ? p.bell : false,
+      moveBell: typeof p.moveBell === 'boolean' ? p.moveBell : true,
       bellTone: typeof p.bellTone === 'string' && p.bellTone ? p.bellTone : 'soft',
       bellVolume: coerceBellVolume(p.bellVolume),
       endBell: typeof p.endBell === 'boolean' ? p.endBell : (DEFAULT_PREFS.endBell ?? true),
@@ -123,6 +127,7 @@ export function settingsFromPrefs(prefs: Partial<OnAirPrefs> | null | undefined)
       ambientTrack: p.ambientTrack === undefined ? (DEFAULT_PREFS.ambientTrack ?? null) : p.ambientTrack,
       ambientVolume: coerceAmbientVolume(p.ambientVolume),
       warmupSec: clampWarmupSec(p.warmupSec),
+      showBreathCount: typeof p.showBreathCount === 'boolean' ? p.showBreathCount : true,
     },
   }
 }
@@ -154,6 +159,7 @@ export function sanitizePrefsPatch(input: unknown): Partial<OnAirPrefs> | null {
   if (input.customHold !== undefined) out.customHold = phaseSec(input.customHold, 0, 4)
   if (input.customOut !== undefined) out.customOut = phaseSec(input.customOut, 3, 6)
   if (typeof input.bell === 'boolean') out.bell = input.bell
+  if (typeof input.moveBell === 'boolean') out.moveBell = input.moveBell
   if (typeof input.bellTone === 'string' && input.bellTone.length > 0 && input.bellTone.length <= 20) out.bellTone = input.bellTone
   if (typeof input.bellVolume === 'number' && Number.isFinite(input.bellVolume)) out.bellVolume = Math.min(1, Math.max(0, input.bellVolume))
   if (typeof input.endBell === 'boolean') out.endBell = input.endBell
@@ -164,6 +170,7 @@ export function sanitizePrefsPatch(input: unknown): Partial<OnAirPrefs> | null {
   else if (typeof input.ambientTrack === 'string' && input.ambientTrack.length > 0 && input.ambientTrack.length <= 20) out.ambientTrack = input.ambientTrack
   if (typeof input.ambientVolume === 'number' && Number.isFinite(input.ambientVolume)) out.ambientVolume = Math.min(1, Math.max(0, input.ambientVolume))
   if (input.warmupSec === 3 || input.warmupSec === 5 || input.warmupSec === 10) out.warmupSec = input.warmupSec
+  if (typeof input.showBreathCount === 'boolean') out.showBreathCount = input.showBreathCount
   if (input.move === null) out.move = null
   else if (isRecord(input.move)) out.move = sanitizeMovementConfig(input.move)
   return Object.keys(out).length > 0 ? out : null
@@ -190,7 +197,7 @@ function parse(raw: string | null): Record<string, unknown> | null {
 }
 
 /** Merge a local patch over a base. `move` replaces whole (a config is one shape per mode). */
-function mergeTimerSettings(base: TimerSettings, patch: TimerSettingsPatch): TimerSettings {
+export function mergeTimerSettings(base: TimerSettings, patch: TimerSettingsPatch): TimerSettings {
   return {
     still: { ...base.still, ...(patch.still ?? {}) },
     move: patch.move === undefined ? base.move : patch.move,
@@ -273,4 +280,128 @@ export function diffSettings(prev: TimerSettingsPatch, next: TimerSettingsPatch)
   }
   if (next.move !== undefined && JSON.stringify(next.move) !== JSON.stringify(prev.move)) out.move = next.move
   return Object.keys(out).length ? out : null
+}
+
+/** The one-line value summaries the door's collapsed sub-menu rows show (LIVE-2241), so a member
+ *  never has to open a row to know its state. Pure; the names come from the pattern and voice lists. */
+export function describeSections(
+  s: TimerSettings,
+  names: { pattern: string; voice: string; ambient: string | null },
+  opts: { breathMode: boolean },
+): { breath: string; sound: string; ambient: string; feel: string } {
+  const custom = `${s.still.customIn}-${s.still.customHold}-${s.still.customOut}`
+  const breath = s.still.patternSlug === 'custom' ? `Custom ${custom}` : names.pattern
+  const sound = !s.cues.bell
+    ? 'Off'
+    : [
+        names.voice,
+        !opts.breathMode && s.cues.bellEveryMin > 0 ? `every ${s.cues.bellEveryMin} min` : null,
+        s.cues.endBell ? 'end bell' : 'no end bell',
+      ]
+        .filter(Boolean)
+        .join(', ')
+  const ambient = s.cues.ambientTrack && names.ambient ? `${names.ambient}, ${Math.round(s.cues.ambientVolume * 100)}%` : 'Off'
+  const feel = `${s.cues.warmupSec} s countdown, vibration ${s.cues.haptics ? 'on' : 'off'}`
+  return { breath, sound, ambient, feel }
+}
+
+// --- Get Moving on the door (LIVE-2242) ------------------------------------------------------
+
+/** A fresh config for a sub-mode: the remembered one when it is the same mode, else the engine's
+ *  own defaults (a 20 min walk or run, a 10 min stretch, a gentle flow, Tabata). */
+export function defaultMoveConfig(mode: MovementMode, remembered: MovementConfig | null): MovementConfig {
+  if (remembered && remembered.mode === mode) return sanitizeMovementConfig(remembered)
+  switch (mode) {
+    case 'walk':
+      return { mode, walkMinutes: 20, walkIntervalMin: 0 }
+    case 'run':
+      return { mode, runMinutes: 20, runIntervalMin: 0 }
+    case 'stretch':
+      return { mode, stretchMinutes: 10, stretchIntervalMin: 0 }
+    case 'yoga':
+      return { mode, yogaKind: 'gentle' }
+    case 'strength': {
+      const p = strengthPresetByKind('tabata')
+      return { mode, strengthKind: p.kind, workSec: p.workSec, restSec: p.restSec, rounds: p.rounds }
+    }
+    default:
+      return { mode: 'play' }
+  }
+}
+
+/** The one timed block's minutes for Walk, Run and Stretch; null for the structured modes. */
+export function moveMinutes(c: MovementConfig): number | null {
+  switch (c.mode) {
+    case 'walk':
+      return c.walkMinutes ?? 20
+    case 'run':
+      return c.runMinutes ?? 20
+    case 'stretch':
+      return c.stretchMinutes ?? 10
+    default:
+      return null
+  }
+}
+
+export function withMoveMinutes(c: MovementConfig, minutes: number): MovementConfig {
+  const m = clampMemberMinutes(minutes)
+  if (!Number.isFinite(m)) return c
+  switch (c.mode) {
+    case 'walk':
+      return { ...c, walkMinutes: m }
+    case 'run':
+      return { ...c, runMinutes: m }
+    case 'stretch':
+      return { ...c, stretchMinutes: m }
+    default:
+      return c
+  }
+}
+
+/** The cue interval (minutes between chimes) for Walk, Run and Stretch; null when the mode has none. */
+export function moveIntervalMin(c: MovementConfig): number | null {
+  switch (c.mode) {
+    case 'walk':
+      return c.walkIntervalMin ?? 0
+    case 'run':
+      return c.runIntervalMin ?? 0
+    case 'stretch':
+      return c.stretchIntervalMin ?? 0
+    default:
+      return null
+  }
+}
+
+export function withMoveIntervalMin(c: MovementConfig, minutes: number): MovementConfig {
+  switch (c.mode) {
+    case 'walk':
+      return { ...c, walkIntervalMin: minutes }
+    case 'run':
+      return { ...c, runIntervalMin: minutes }
+    case 'stretch':
+      return { ...c, stretchIntervalMin: minutes }
+    default:
+      return c
+  }
+}
+
+function fmtSeconds(total: number): string {
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+/** The plan in one line for the door's read-out and the Plan row summary ("Tabata, 8 rounds · 4:00"). */
+export function describeMovePlan(c: MovementConfig): string {
+  const plan = buildPlan(c)
+  const total = totalSeconds(plan)
+  return total === null ? plan.label : `${plan.label} · ${fmtSeconds(total)}`
+}
+
+/** The Cues row summary for Walk, Run and Stretch. */
+export function describeMoveCues(c: MovementConfig): string {
+  const iv = moveIntervalMin(c)
+  if (iv === null || iv === 0) return 'None'
+  const what = c.mode === 'walk' ? 'Reminder' : c.mode === 'run' ? 'Split' : 'Switch sides'
+  return `${what} every ${iv} min`
 }

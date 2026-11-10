@@ -29,13 +29,14 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import type { SessionMode } from '@/lib/on-air'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { loadOnAirSession } from '@/app/(main)/on-air/actions'
 import { getActiveTimerSession } from '@/app/(main)/on-air/timer-session-actions'
 import type { OnAirSessionData } from '@/lib/on-air/session-data'
 import { LotusIcon } from '@/components/on-air/icons'
 import { loadLiveSession, type LiveSessionRecord } from '@/lib/on-air/live-session'
-import type { MovementMode } from '@/lib/movement'
+import type { MovementConfig, MovementMode } from '@/lib/movement'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { showLaneNotice } from '@/components/zap-toast'
 
@@ -142,6 +143,11 @@ type OverlayState =
       phase: 'ready'
       setup?: boolean
       minutesOverride?: number
+      /** The Be Still sub-mode and breath pattern the door chose (LIVE-2241); the engine seeds from them. */
+      stillMode?: SessionMode
+      patternSlug?: string
+      /** The Get Moving plan the door composed (LIVE-2242); the engine seeds from it. */
+      moveConfig?: MovementConfig
       data: OnAirSessionData
       /** The mode the door is showing (auto-routed from the practice / entry; member-togglable). */
       mode: TimerMode
@@ -409,10 +415,13 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
 
   const api = useMemo<MindlessApi>(() => ({ open, close }), [open, close])
 
-  function configured(choice: SetupChoice, advanced = false) {
+  // The door's single Go: every setting is already in the settings model or on the choice, so the
+  // engine always auto-starts; the old "More settings" second screen is gone (LIVE-2242).
+  function configured(choice: SetupChoice) {
     setState((s) => s.phase !== 'ready' ? s : ({ ...s, setup: false, mode: choice.mode,
-      practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, autoStart: !advanced,
-      movementMode: choice.mode === 'move' ? s.data.practices.find((p) => p.id === choice.practiceId)?.movementConfig?.mode : undefined,
+      practiceId: choice.practiceId, minutesOverride: choice.minutesOverride, autoStart: true,
+      stillMode: choice.stillMode, patternSlug: choice.patternSlug, moveConfig: choice.moveConfig,
+      movementMode: choice.mode === 'move' ? (choice.moveConfig?.mode ?? s.data.practices.find((p) => p.id === choice.practiceId)?.movementConfig?.mode) : undefined,
       data: { ...s.data, defaultPracticeId: choice.practiceId } }))
   }
 
@@ -447,7 +456,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
           </div>
         </MindlessShell>
       )}
-      {state.phase === 'ready' && state.setup && <CompactSetup practices={state.data.practices} initialMode={state.mode} initialPracticeId={state.practiceId ?? state.data.defaultPracticeId ?? undefined} rememberedMinutes={state.data.prefs.minutes} onStart={configured} onAdvanced={(choice) => configured(choice, true)} onClose={close} />}
+      {state.phase === 'ready' && state.setup && <CompactSetup practices={state.data.practices} initialMode={state.mode} initialPracticeId={state.practiceId ?? state.data.defaultPracticeId ?? undefined} prefs={state.data.prefs} explicitPracticeId={state.practiceId} journeyLegs={state.data.journeyLegs ?? []} practicedToday={state.data.practicedToday} onStart={configured} onClose={close} />}
       {state.phase === 'ready' && !state.setup &&
         (state.data.practices.length === 0 ? (
           <MindlessShell onClose={close}>
@@ -487,6 +496,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             warmupSec={state.data.prefs.warmupSec}
             // The member's prefs: the settings model lays the local copy over them (LIVE-2240).
             prefs={state.data.prefs}
+            // The plan the door composed (LIVE-2242): Start runs exactly what the sub-menus showed.
+            initialConfig={state.moveConfig}
             // A per-step warm-up message override (P5), shown in the pre-roll over the practice's own.
             warmupMessageOverride={state.warmupMessage}
             // A sequenced run (P6): this leg's position, and the completion signal that drives advance.
@@ -511,6 +522,9 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             // practice opens the Just Log note screen; a generic open still lands on Meditate.
             explicitPracticeId={state.practiceId}
             prefs={state.data.prefs}
+            // The door's Be Still choices (LIVE-2241): the sub-mode and breath pattern it was set to.
+            initialMode={state.stillMode}
+            initialPattern={state.patternSlug}
             practicedToday={state.data.practicedToday}
             journeyLegs={state.data.journeyLegs ?? []}
             resumeFromSec={state.resume?.resumeFromSec}
