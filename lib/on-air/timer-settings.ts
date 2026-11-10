@@ -193,7 +193,7 @@ function parse(raw: string | null): Record<string, unknown> | null {
 }
 
 /** Merge a local patch over a base. `move` replaces whole (a config is one shape per mode). */
-function mergeTimerSettings(base: TimerSettings, patch: TimerSettingsPatch): TimerSettings {
+export function mergeTimerSettings(base: TimerSettings, patch: TimerSettingsPatch): TimerSettings {
   return {
     still: { ...base.still, ...(patch.still ?? {}) },
     move: patch.move === undefined ? base.move : patch.move,
