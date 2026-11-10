@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1204",
+  "title": "Stop /create-a-space and /themes asking the browser to fetch Google Fonts CSS that connect-src blocks",
+  "lane": "hygiene",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "scripts/audit/route-family-audit.mjs",
+    "ref": "SCAN-1032 audit run 2026-11-09 against a production build of main 247fa6a2c; /themes"
+  },
+  "detail": "One CSP violation per page: Connecting to https://fonts.googleapis.com/css2?family=Barlow... is refused by connect-src (next.config.ts). Find the client fetch of the font stylesheet (a <link> would be style-src, so this is a fetch), then load it through the allowed route or self-host the face, rather than widening connect-src. Done when: node scripts/audit/route-family-audit.mjs --routes /themes reports no finding of this kind.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-10",
+    "evidence": "OPEN. Re-run the audit on a production build and read report.md."
+  },
+  "wave": "W7"
+}

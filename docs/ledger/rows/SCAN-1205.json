@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1205",
+  "title": "Find the React hydration mismatch (#418) on /pricing at 390 and /the-community at 1280",
+  "lane": "hygiene",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "scripts/audit/route-family-audit.mjs",
+    "ref": "SCAN-1032 audit run 2026-11-09 against a production build of main 247fa6a2c; /pricing"
+  },
+  "detail": "Minified React error 418 in one viewport per page, seen once each, so it may be viewport-conditional. Reproduce with a dev build to get the unminified diff, then fix the server/client divergence (typically a viewport or Date/Math.random read during render). Done when: node scripts/audit/route-family-audit.mjs --routes /pricing reports no finding of this kind.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-10",
+    "evidence": "OPEN. Re-run the audit on a production build and read report.md."
+  },
+  "wave": "W7"
+}

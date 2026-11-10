@@ -20,8 +20,8 @@ const ROUTES = (arg('--routes', '') || '').split(',').filter(Boolean)
 export const DEFAULT_ROUTES = [
   '/', '/pricing', '/features', '/about', '/what-is-frequency', '/create-a-space', '/themes', '/start',
   '/stories', '/the-community', '/loneliness', '/friendship-as-an-adult', '/how-to-start-a-circle',
-  '/how-to-build-community', '/how-to-be-more-social', '/tools-for-community-builders', '/free-spotlight',
-  '/discover', '/events', '/calendar', '/podcasts', '/guidelines', '/privacy', '/accessibility', '/auth/login',
+  '/how-to-build-community', '/how-to-be-more-social', '/tools-for-community-builders',
+  '/discover', '/events', '/guidelines', '/privacy', '/accessibility', '/sign-in',
 ]
 const VIEWPORTS = [{ name: '390', width: 390, height: 844 }, { name: '1280', width: 1280, height: 900 }]
 const slug = (r) => (r === '/' ? 'home' : r.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '-'))

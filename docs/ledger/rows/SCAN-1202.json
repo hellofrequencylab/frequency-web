@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1202",
+  "title": "Fix the /themes colour-contrast failures axe reports at 390 and 1280 (9 nodes each)",
+  "lane": "hygiene",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "scripts/audit/route-family-audit.mjs",
+    "ref": "SCAN-1032 audit run 2026-11-09 against a production build of main 247fa6a2c; /themes"
+  },
+  "detail": "Serious axe color-contrast on 9 nodes at both viewports (production build of main 247fa6a2c, 2026-11-09). Read audit-out/report.json for the node selectors, fix the token pairs in the Nocturne-structured theme page, no hardcoded hex. Done when: node scripts/audit/route-family-audit.mjs --routes /themes reports no finding of this kind.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-10",
+    "evidence": "OPEN. Re-run the audit on a production build and read report.md."
+  },
+  "wave": "W7"
+}
