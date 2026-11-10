@@ -1,0 +1,18 @@
+{
+  "id": "FH-046S",
+  "title": "Hunts FH-046S: Mount the donation ask on the Space donation checkout and sync gifts",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-036..040 (2026-11-10): the pure core, storage and tests shipped dark behind HUNTS_COMMERCE_ENABLED; the live call sites move here."
+  },
+  "detail": "Behind D8 approval (FH-045), mount HuntDonationAsk through decideDonationAsk, reuse the Space donation checkout and receipt, mirror each donation into hunt_donation_gifts with giftStatusFromDonation on success, abandonment and refund, and show settledDonationTotals. Done when: success, abandonment and full and partial refunds show the right settled totals and no player's progress changes. Requires: FH-046, FH-045. Owner role: Billing and CRM.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/donation-sync.ts\")?0:1)'"
+  }
+}

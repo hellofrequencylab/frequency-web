@@ -1,0 +1,18 @@
+{
+  "id": "FH-038S",
+  "title": "Hunts FH-038S: Offer admin screen and order settlement call for store items",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-036..040 (2026-11-10): the pure core, storage and tests shipped dark behind HUNTS_COMMERCE_ENABLED; the live call sites move here."
+  },
+  "detail": "Add the screen where a Space owner approves a store item for a Hunt (writes hunt_store_offers), render the deep link through resolveStoreLink, and call planOrderProjection and projectUnit from the commerce order settlement and refund paths. Done when: a quantity-two bound line replayed gives two benefits and a refunded unit revokes only its own. Requires: FH-038, FH-037S. Owner role: Commerce.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/merch-hooks.ts\")?0:1)'"
+  }
+}

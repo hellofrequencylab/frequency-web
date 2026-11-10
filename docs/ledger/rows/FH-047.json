@@ -1,6 +1,10 @@
 {
   "id": "FH-047",
   "append": {
-    "detail": "\n\nPacket F pure slice: lib/hunts/graph/sponsor-milestone-math.ts prices only confirmed distinct qualifications in a frozen threshold snapshot before Hunt end. The exact pledge rounds down to whole cents and is limited by one Hunt cap, with no rollover. Storage, once-only settlement and payout stay in the parent implementation. FH-045 approval gates real money."
+    "detail": "\n\nPacket F pure slice: lib/hunts/graph/sponsor-milestone-math.ts prices only confirmed distinct qualifications in a frozen threshold snapshot before Hunt end. The exact pledge rounds down to whole cents and is limited by one Hunt cap, with no rollover. Storage, once-only settlement and payout stay in the parent implementation. FH-045 approval gates real money.\n\nBuilt 2026-11-10: hunt_sponsor_agreements, hunt_sponsor_snapshots and hunt_sponsor_settlements (migration 20270346041000: one cap per Hunt, snapshot frozen once per agreement, settlement once per snapshot, paid needs a provider reference) and lib/hunts/sponsor-milestone.ts: decideFreeze counts distinct confirmed keys, refuses before approval and after Hunt end, prices through sponsorMilestoneOwedCents; hunt_sponsor_freeze returns the first snapshot on replay; publicMoneyLines keeps an unpaid pledge out of donations raised. The confirmed-qualification reader and the invoice and payment sync moved to FH-047S."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
   }
 }

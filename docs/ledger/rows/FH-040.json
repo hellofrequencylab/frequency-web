@@ -1,6 +1,10 @@
 {
   "id": "FH-040",
   "append": {
-    "detail": "\n\nPacket F UI slice: components/hunts/reconciliation-page.tsx accepts an injected redacted reader and session-authorized scope through lib/hunts/reconciliation-reader.ts. Claude owns the route integration, actual reader and kill switch."
+    "detail": "\n\nPacket F UI slice: components/hunts/reconciliation-page.tsx accepts an injected redacted reader and session-authorized scope through lib/hunts/reconciliation-reader.ts. Claude owns the route integration, actual reader and kill switch.\n\nBuilt 2026-11-10: lib/hunts/finance-view.ts matches expected against provider amount, currency, fees, refunds, transfer and live benefits with an aging rule, and provides the redacted reader for components/hunts/reconciliation-page.tsx; app/(main)/hunts/finance/page.tsx mounts it behind HUNTS_COMMERCE_ENABLED and platform staff. hunt_commerce_state is the kill switch (closes new sales only, fails closed on a read error, audited both ways); settlement, refund handling and reconciliation never read it. Calling the kill switch from checkout creation and its admin toggle moved to FH-036S."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
   }
 }

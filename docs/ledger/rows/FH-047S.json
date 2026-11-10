@@ -1,0 +1,18 @@
+{
+  "id": "FH-047S",
+  "title": "Hunts FH-047S: Confirmed-qualification reader, sponsor invoice and payment sync",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-036..040 (2026-11-10): the pure core, storage and tests shipped dark behind HUNTS_COMMERCE_ENABLED; the live call sites move here."
+  },
+  "detail": "Read confirmed distinct qualification keys for a Hunt, call decideFreeze and freezeSnapshot once the threshold is met before Hunt end, invoice the frozen amount once (hunt_sponsor_settlements) and mark it paid only from the provider's own reference through nextSettlement, and show publicMoneyLines. Done when: event replay and a fraud correction cannot double invoice, and an unpaid pledge never appears as donations raised. Requires: FH-047, FH-045. Owner role: Finance and game systems.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/sponsor-settlement.ts\")?0:1)'"
+  }
+}
