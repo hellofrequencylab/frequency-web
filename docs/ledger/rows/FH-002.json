@@ -1,0 +1,6 @@
+{
+  "id": "FH-002",
+  "append": {
+    "detail": "\n\nIsolated application evidence in scripts/probes/hunts/legacy-seam-evidence.mjs. Duplicate campaign membership and scan replay preserve one progression credit. A post-capture interruption leaves the engagement and capture rows without replaying the downstream award. Competing requests at exhausted capacity preserve the existing capture and issue zero credits. An existing reward grant prevents a second Zap entry. Fresh Hunt evidence replays independently of an existing same-day Regulars stamp. The fixture runs the shipped orchestrators against in-memory database and side-effect boundaries. D1's adapter remains the transactional Hunt claim RPC with independent placement evidence and a durable outbox. The original scarcity-race acceptance remains open. Evidence is isolated from live scans, provider activity, and production database behavior."
+  }
+}

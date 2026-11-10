@@ -72,7 +72,7 @@ import { NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 import { prepareEmailLayoutWrite } from '@/lib/email-studio/layout-write'
 import type { EmailRenderLayout } from '@/lib/email-studio/render-layout'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
-import { sendRawEmail } from '@/lib/email'
+import { enqueueEmail } from '@/lib/email'
 import { spaceEmailBrand } from '@/lib/spaces/email-colors'
 import type { Space } from '@/lib/spaces/types'
 import { campaignCarriesFrequencyFooter } from '@/lib/spaces/campaign-footer'
@@ -357,7 +357,7 @@ export async function saveSpaceEmailDraft(
 /**
  * TEST send: deliver ONE copy of a Space draft to the signed-in operator's own address. Gated on canEditProfile
  * + the row belonging to the Space. Compiles with the Space's OWN brand palette (spaceEmailColors) and example
- * merge values, then sends a single email through sendRawEmail. Never sends to a list, never touches the Space's
+ * merge values, then queues a single email through the durable outbox. Never sends to a list, never touches the Space's
  * contacts or suppression ledger.
  */
 export async function sendSpaceTestEmail(
@@ -396,7 +396,8 @@ export async function sendSpaceTestEmail(
   const text = applyMergeTags(compiled.text, vars, { fallbacks, escape: false })
 
   try {
-    await sendRawEmail({ to, subject: `[Test] ${subject}`, html, text })
+    // Queue it: an inline provider call is refused once durable acceptance is on (needs a trusted queue job).
+    await enqueueEmail({ to, subject: `[Test] ${subject}`, html, text })
   } catch {
     return fail('Could not send the test email. Try again.')
   }
