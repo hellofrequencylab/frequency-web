@@ -10,6 +10,7 @@ export async function requestWebsiteThemeTokens(
 ): Promise<TokenRequestResult> {
   const auth = await authorizeWebsiteEditor(host)
   if (!auth) return { ok: false, error: 'Your editing session ended. Reopen the builder to send a request.' }
-  const theme = typeof auth.preferences?.websiteTheme === 'string' ? auth.preferences.websiteTheme : 'unknown'
+  const saved = (auth.preferences as { websiteTheme?: unknown } | null)?.websiteTheme
+  const theme = typeof saved === 'string' ? saved : 'unknown'
   return requestThemeTokens({ profileId: auth.profileId, spaceId: auth.space.id, spaceName: auth.space.name, theme, requests: Array.isArray(requests) ? requests : [] })
 }
