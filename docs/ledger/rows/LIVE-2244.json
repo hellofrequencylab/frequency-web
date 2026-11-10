@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2244",
+  "title": "Mindless timer seams: audio unlocked on the door's Go, reveal links drop the overlay, run-over minute cues, dead cue inputs removed",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-10",
+  "source": {
+    "file": "components/on-air/compact-setup.tsx",
+    "ref": "Mindless timer dig 2026-11-09, seams 7 to 15 in /mnt/project-files/mindless-timer/01-INVENTORY-AND-RESTORE-PLAN.md"
+  },
+  "detail": "Since the door auto-starts both engines from an effect, no tap of theirs ever created the AudioContext, so bells and cues were silent until the member tapped something mid-run. The door now unlocks one shared context on Go (lib/on-air/timer-audio-unlock.ts) and both engines seed from it before creating their own. On the reveal, Full stats and Past Dispatches navigated under the takeover; they now go through onAction like the Dispatch link. phaseAt froze phaseElapsed at the plan's end, which stopped the Walk / Run / Stretch minute cues the moment a run auto-continued past its target; it keeps counting now. Dead code gone: the unused intervalMin option on the walk, run and stretch builders, phaseTone's unused label, handOffToMovement's unused id, and the cue pref fields on CompleteSessionInput that completeSession stopped storing in LIVE-2240.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/timer-seams.mjs"
+  },
+  "wave": "W7"
+}

@@ -80,7 +80,10 @@ import {
   type StrengthPresetKind,
   type YogaPresetKind,
 } from '@/lib/movement'
-import type { RevealPayload } from '@/lib/on-air'
+import type { OnAirPrefs, RevealPayload } from '@/lib/on-air'
+import { MINUTE_MAX, clampMemberMinutes } from '@/lib/on-air/timer-settings'
+import { useSaveOnChange, useTimerSettings } from './use-timer-settings'
+import { takeUnlockedAudio } from '@/lib/on-air/timer-audio-unlock'
 import {
   loadLiveSession,
   saveLiveSession,
@@ -107,39 +110,14 @@ interface MovementSetup {
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
 
-// FREE PRACTICE MEMORY (PRACTICE-TIMER-CONTINUITY P3, mirrors the sit's fq_mindless_setup): the
-// member's last-run movement configuration. Written on every start; read only when the launch is
-// the UNATTACHED Free Practice, so a bare Get Moving open pops back up in the last known
-// configuration while an authored practice still opens on its creator's preset.
-const SAVED_MOVEMENT_SETUP_KEY = 'fq_movement_setup'
+// FREE PRACTICE MEMORY (PRACTICE-TIMER-CONTINUITY P3): the member's last-run movement configuration
+// lives in the ONE timer settings model (lib/on-air/timer-settings.ts `move`, LIVE-2240), saved
+// the moment the setup changes and read only when the launch is the UNATTACHED Free Practice, so
+// a bare Get Moving open pops back up in the last known configuration while an authored practice
+// still opens on its creator's preset. The engine owns no storage key of its own any more.
 
-/** Read the last-saved movement config once. Null when absent, on the server, or unparsable. */
-function readSavedMovementSetup(): MovementConfig | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(SAVED_MOVEMENT_SETUP_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<MovementConfig> | null
-    if (!parsed || typeof parsed !== 'object') return null
-    if (!MOVEMENT_MODES.some((m) => m.mode === parsed.mode)) return null
-    return parsed as MovementConfig
-  } catch {
-    return null
-  }
-}
-
-/** Persist the movement config a run just started with. Best-effort; never throws. */
-function writeSavedMovementSetup(config: MovementConfig): void {
-  try {
-    window.localStorage.setItem(SAVED_MOVEMENT_SETUP_KEY, JSON.stringify(config))
-  } catch {
-    // storage full / privacy mode: memory is a nicety, never a blocker
-  }
-}
-
-// The bell voice is fixed to the tuned default for Movement (the sit's voice
-// picker is the place to choose one; here the cues are functional beats).
-const TONE = bellToneBySlug('soft')
+// The cue voice, loudness, on/off and vibration all come from the ONE cue model the door's Sound
+// and Feel sub-menus edit (LIVE-2242); the engine no longer hardcodes a voice or always buzzes.
 
 // The six mode icons (C.1): the movement modes show the SAME way the Mindless
 // modes do, so each gets a small glyph above its label in the 3-up grid.
@@ -164,14 +142,14 @@ function buzz(pulse: number | number[] = 15) {
 
 /** The phase color: work banks success, rest warns, the lead-in is neutral. The
  *  final-3s danger ring is layered on top in the live screen, not here. */
-function phaseTone(kind: PhaseKind): { text: string; ring: string; bg: string; label: string } {
+function phaseTone(kind: PhaseKind): { text: string; ring: string; bg: string } {
   switch (kind) {
     case 'work':
-      return { text: 'text-success', ring: 'ring-success/40', bg: 'bg-success-bg/40', label: 'Work' }
+      return { text: 'text-success', ring: 'ring-success/40', bg: 'bg-success-bg/40' }
     case 'rest':
-      return { text: 'text-warning', ring: 'ring-warning/40', bg: 'bg-warning-bg/40', label: 'Rest' }
+      return { text: 'text-warning', ring: 'ring-warning/40', bg: 'bg-warning-bg/40' }
     default:
-      return { text: 'text-muted', ring: 'ring-border', bg: 'bg-surface-elevated', label: 'Ready' }
+      return { text: 'text-muted', ring: 'ring-border', bg: 'bg-surface-elevated' }
   }
 }
 
@@ -233,6 +211,9 @@ export function MovementSession({
   journeyLegs = [],
   autoStart = false,
   warmupSec: warmupSecProp,
+  prefs,
+  initialConfig,
+  fresh = false,
   warmupMessageOverride,
   queuePosition,
   onCompleted,
@@ -243,6 +224,14 @@ export function MovementSession({
   onModeChange,
 }: {
   minutesOverride?: number
+  /** The member's server prefs; the settings model lays the local copy over them (LIVE-2240). */
+  prefs?: Partial<OnAirPrefs> | null
+  /** The plan the door composed (LIVE-2242): wins for a fresh run so Start on the door runs exactly
+   *  what its sub-menus showed. A resume still overrides the length; a crash recovery still applies
+   *  the saved record's config. */
+  initialConfig?: MovementConfig | null
+  /** The door's Start fresh (LIVE-2243): today's partial on the launched practice is ignored. */
+  fresh?: boolean
   practices: OnAirPractice[]
   defaultPracticeId: string | null
   /** The Movement mode this session opens on (from a practice's movement_config, or Walk). */
@@ -317,6 +306,7 @@ export function MovementSession({
   // open-args remain a fallback for the initial practice (the "Finish Practice" button). Returns
   // null unless there's real remaining time, so anything malformed is a fresh sit.
   function resolveResume(id: string): { bankedSec: number; targetSec: number } | null {
+    if (fresh && id === initialId) return null
     const partial = practices.find((p) => p.id === id)?.partialToday
     if (partial && partial.targetSec > 0 && partial.targetSec - partial.bankedSec > 0) {
       return { bankedSec: Math.round(partial.bankedSec), targetSec: Math.round(partial.targetSec) }
@@ -345,8 +335,13 @@ export function MovementSession({
   // back up in the last known configuration. Authored practices keep the creator's preset.
   const launched = practices.find((p) => p.id === initialId)
   const isFreeLaunch = launched != null && launched.id === findFreeMove(practices)?.id
-  const savedSetup = useState(() => (isFreeLaunch ? readSavedMovementSetup() : null))[0]
-  const initialCfg = (isFreeLaunch ? (savedSetup ?? launched?.movementConfig) : launched?.movementConfig) ?? null
+  const { initial: settings, save: saveSettings } = useTimerSettings(prefs)
+  const initialCfg = initialConfig ?? (isFreeLaunch ? (settings.move ?? launched?.movementConfig) : launched?.movementConfig) ?? null
+
+  const tone = useMemo(() => bellToneBySlug(settings.cues.bellTone), [settings.cues.bellTone])
+  const cueVol = settings.cues.bellVolume
+  const soundOn = settings.cues.moveBell
+  const vibe = (pulse: number | number[] = 15) => { if (settings.cues.haptics) buzz(pulse) }
 
   const [practiceId, setPracticeId] = useState(initialId)
   const [mode, setMode] = useState<MovementMode>(defaultMode ?? initialCfg?.mode ?? 'walk')
@@ -356,7 +351,7 @@ export function MovementSession({
   // to pick here — the primary button always STARTS the resolved practice.
   // The per-mode duration default, overridden to the resumed practice's TARGET length so the plan
   // total matches and the live screen runs exactly the remaining time. A fresh sit uses the preset.
-  const customMin = !launched?.durationLocked && typeof minutesOverride === 'number' && Number.isFinite(minutesOverride) ? Math.max(1, Math.min(120, Math.round(minutesOverride))) : null
+  const customMin = !launched?.durationLocked && typeof minutesOverride === 'number' && Number.isFinite(minutesOverride) ? clampMemberMinutes(minutesOverride) : null
   const resumeMin = initialResume ? Math.max(1, Math.round(initialResume.targetSec / 60)) : 0
   // Walk
   const [walkMinutes, setWalkMinutes] = useState(defaultMode === 'walk' && resumeMin ? resumeMin : (customMin ?? initialCfg?.walkMinutes ?? 20))
@@ -365,7 +360,7 @@ export function MovementSession({
   const [runMinutes, setRunMinutes] = useState(defaultMode === 'run' && resumeMin ? resumeMin : (customMin ?? initialCfg?.runMinutes ?? 20))
   const [runIntervalMin, setRunIntervalMin] = useState(initialCfg?.runIntervalMin ?? 0)
   // Yoga
-  const [yogaKind, setYogaKind] = useState<YogaPresetKind>(initialCfg?.yogaKind ?? 'vinyasa')
+  const [yogaKind, setYogaKind] = useState<YogaPresetKind>(initialCfg?.yogaKind ?? 'gentle')
   // Stretch
   const [stretchMinutes, setStretchMinutes] = useState(
     defaultMode === 'stretch' && resumeMin ? resumeMin : (customMin ?? initialCfg?.stretchMinutes ?? 10),
@@ -411,6 +406,9 @@ export function MovementSession({
     restSec,
     rounds,
   ])
+  // Remember the composed setup the moment it changes (LIVE-2240), never on mount and never while
+  // a resume is dictating the length, so a cancelled setup still carries its choices to the next open.
+  useSaveOnChange({ move: config }, saveSettings, stage === 'setup' && !initialResume)
 
   const plan = useMemo<MovementPlan>(() => buildPlan(config), [config])
 
@@ -589,8 +587,8 @@ export function MovementSession({
       // round to round all read here off the label changing.
       if (pos.phase.label !== lastPhaseLabel.current) {
         if (lastPhaseLabel.current !== null && !pos.done) {
-          chime(audio.current, TONE)
-          buzz(15)
+          if (soundOn) chime(audio.current, tone, cueVol)
+          vibe(15)
         }
         lastPhaseLabel.current = pos.phase.label
       }
@@ -601,7 +599,7 @@ export function MovementSession({
         const tick = Math.ceil(pos.remaining) // 3,2,1
         if (tick >= 1 && tick <= 3 && tick !== lastBeep.current) {
           lastBeep.current = tick
-          countBeep(audio.current, 1, tick === 1)
+          if (soundOn) countBeep(audio.current, cueVol, tick === 1)
         }
       } else {
         lastBeep.current = -1
@@ -622,7 +620,7 @@ export function MovementSession({
         const minute = Math.floor(pos.phaseElapsed / 60)
         if (minute > lastWalkMinute.current) {
           lastWalkMinute.current = minute
-          if (minute > 0 && minute % intervalMin === 0) chime(audio.current, TONE)
+          if (minute > 0 && minute % intervalMin === 0 && soundOn) chime(audio.current, tone, cueVol)
         }
       }
 
@@ -630,8 +628,8 @@ export function MovementSession({
       // the member to Finish (no auto-advance), mirroring the sit.
       if (pos.done && !endCued.current) {
         endCued.current = true
-        endChime(audio.current, TONE)
-        buzz([30, 80, 30])
+        if (soundOn) endChime(audio.current, tone, cueVol)
+        vibe([30, 80, 30])
       }
     }, 250)
     return () => clearInterval(id)
@@ -649,8 +647,8 @@ export function MovementSession({
       return
     }
     const isOne = preroll === 1
-    buzz(isOne ? [30, 80, 30] : 15)
-    countBeep(audio.current, 1, isOne)
+    vibe(isOne ? [30, 80, 30] : 15)
+    if (soundOn) countBeep(audio.current, cueVol, isOne)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isOne) setFlash(true)
     const id = setTimeout(() => setPreroll((n) => (n === null ? null : n - 1)), 1000)
@@ -726,7 +724,7 @@ export function MovementSession({
       setRunMinutes(c.runMinutes ?? 20)
       setRunIntervalMin(c.runIntervalMin ?? 0)
     } else if (c.mode === 'yoga') {
-      setYogaKind(c.yogaKind ?? 'vinyasa')
+      setYogaKind(c.yogaKind ?? 'gentle')
     } else if (c.mode === 'stretch') {
       setStretchMinutes(c.stretchMinutes ?? 10)
       setStretchIntervalMin(c.stretchIntervalMin ?? 0)
@@ -778,7 +776,7 @@ export function MovementSession({
     }
     if (viaGesture) {
       try {
-        audio.current = audio.current ?? new AudioContext()
+        audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
         void audio.current.resume()
       } catch {
         // cues are a nicety
@@ -821,7 +819,7 @@ export function MovementSession({
   // Restore audio + screen on the next tap after an automatic resume. Best-effort; clears the chip.
   function restoreCues() {
     try {
-      audio.current = audio.current ?? new AudioContext()
+      audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
       void audio.current.resume()
     } catch {
       // cues are a nicety
@@ -837,7 +835,7 @@ export function MovementSession({
     if (!practiceId) return
     // Unlock audio on the tap (autoplay policy only opens the context in a gesture).
     try {
-      audio.current = audio.current ?? new AudioContext()
+      audio.current = audio.current ?? takeUnlockedAudio() ?? new AudioContext()
       void audio.current.resume()
     } catch {
       // the cues are a nicety, never a blocker
@@ -856,7 +854,7 @@ export function MovementSession({
     setStartedAt(now)
     setElapsed(0)
     // Remember this run's configuration (P3): the next UNATTACHED Free Practice open seeds from it.
-    writeSavedMovementSetup(config)
+    saveSettings({ move: config })
     // Open ARMED with the warm-up pre-roll (item #10): paused from the first millisecond, the
     // countdown ticks, then begin() unpauses. Same shape as the sit.
     setPausedAt(now)
@@ -916,7 +914,7 @@ export function MovementSession({
   function confirmRunOver() {
     confirmationsRef.current = [...confirmationsRef.current, currentElapsedSec()]
     setRunOverPrompt(false)
-    buzz(10)
+    vibe(10)
   }
 
   // A checkpoint went a whole interval unanswered (walked away / tab left open / background return
@@ -952,7 +950,7 @@ export function MovementSession({
     const el = Math.round(e)
     const bankedThis = clampLoggedSeconds(gateTargetRef.current, el, [...confirmationsRef.current, el])
     const seconds = movementFinishSeconds(plan, { resumeOffset, bankedThis, finishCap })
-    buzz(10)
+    vibe(10)
     await finishWith(Math.max(0, seconds))
   }
 
@@ -1320,6 +1318,12 @@ export function MovementSession({
         {/* The setup body centers vertically in the viewport and scrolls when it
             overflows; the Start bar below stays docked and visible (LAYOUT directive). */}
         <div className="flex flex-1 flex-col justify-center gap-5 py-2">
+        {/* An authored practice that locks its length also locks its shape (LIVE-2242): the mode
+            grid and tuning stay visible but inert, with one line saying why. */}
+        <fieldset disabled={!!practice?.durationLocked} className="contents" aria-describedby={practice?.durationLocked ? 'move-locked-hint' : undefined}>
+        {practice?.durationLocked && (
+          <p id="move-locked-hint" className="text-center text-meta text-subtle">Set by the practice.</p>
+        )}
         {/* Mode — the SAME display as the six Mindless modes (C.1): a 3-up grid of
             icon-over-label tiles. The chosen mode's blurb sits as a one-line subline
             below the grid (no narrated feelings, no em or en dashes). */}
@@ -1355,7 +1359,7 @@ export function MovementSession({
                 className="mt-2"
                 label={`${walkMinutes}m`}
                 onLess={() => setWalkMinutes((m) => Math.max(1, m - 1))}
-                onMore={() => setWalkMinutes((m) => Math.min(240, m + 1))}
+                onMore={() => setWalkMinutes((m) => Math.min(MINUTE_MAX, m + 1))}
               />
             </Group>
             <Group label="Reminders">
@@ -1385,7 +1389,7 @@ export function MovementSession({
                 className="mt-2"
                 label={`${runMinutes}m`}
                 onLess={() => setRunMinutes((m) => Math.max(1, m - 1))}
-                onMore={() => setRunMinutes((m) => Math.min(240, m + 1))}
+                onMore={() => setRunMinutes((m) => Math.min(MINUTE_MAX, m + 1))}
               />
             </Group>
             <Group label="Split cues">
@@ -1430,7 +1434,7 @@ export function MovementSession({
                 className="mt-2"
                 label={`${stretchMinutes}m`}
                 onLess={() => setStretchMinutes((m) => Math.max(1, m - 1))}
-                onMore={() => setStretchMinutes((m) => Math.min(240, m + 1))}
+                onMore={() => setStretchMinutes((m) => Math.min(MINUTE_MAX, m + 1))}
               />
             </Group>
             <Group label="Switch sides">
@@ -1477,6 +1481,8 @@ export function MovementSession({
             </div>
           </div>
         )}
+
+        </fieldset>
 
         {/* The plan read-out + total. */}
         <p className="text-center text-meta text-subtle">
