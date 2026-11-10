@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2256",
+  "title": "Every FlowWeb lead shows up in the CRM as a contact with one thread: drafted, sent, replied, signed up or said no",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/flowweb/crm.ts",
+    "ref": "Daniel (2026-11-10): I would LOVE to find a way to fully track any leads from FlowWeb over to the Frequency CRM."
+  },
+  "detail": "FlowWeb's hunts draft notes to event organizers and the founder sends them by hand, but Frequency only learns counts per draft (LIVE-2255), so nobody can open a lead in the CRM and see what was said, whether they answered, or whether they joined. Fix: POST /api/webhooks/flowweb-crm, signed with FLOWWEB_OUTCOMES_SECRET (same scheme), behind the FLOWWEB_CRM_ENABLED switch. Each draft becomes: a root-Space contact (source flowweb, consent unknown, contacts.meta.flowweb), one kind 'crm' conversation per lead owned by FLOWWEB_CRM_OWNER_PROFILE_ID, an internal note for the draft, an outbound message for the send (mirrored to the contact timeline), an inbound message or note for a reply, and a status that only moves forward: open, waiting, in_progress, resolved (signed up by email match or a member whose funnel carries the draft tag), closed (said no; suppressed for the root Space, consent unsubscribed). Messages are keyed on external_message_id per draft and step, so repeat posts add nothing. No schema change. Frequency sends nothing. FlowWeb side: the daemon posts after each mark and daily.\n\nPOST /api/webhooks/flowweb-crm keeps each FlowWeb lead as one contact and one CRM thread; probe passes",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/flowweb-crm.mjs"
+  },
+  "closed": "2026-11-10",
+  "wave": "W7"
+}

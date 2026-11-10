@@ -752,6 +752,14 @@ FlowWeb's weekly review learns which hunts, messages and regions bring members. 
 
 **Turn it off.** Unset the secret. Every request answers 401 and FlowWeb's review keeps its last numbers.
 
+### FlowWeb leads in the CRM (LIVE-2256)
+
+Every person FlowWeb drafts a note to can be followed in Frequency's CRM. FlowWeb's daemon posts each draft's state to `/api/webhooks/flowweb-crm` after the founder marks it (I sent it, They replied, They said no) and once a day, signed with `FLOWWEB_OUTCOMES_SECRET` (the outcomes pull's secret, same scheme). Frequency keeps one root-Space contact per address (`source = 'flowweb'`, consent `unknown`, where FlowWeb found them in `contacts.meta.flowweb`) and one CRM conversation per lead in /admin/crm/conversations. A draft is an internal note, a send is an outbound message on the contact's timeline, a reply is an inbound message (or a note when only marked), and the thread status is where the lead is: Open (drafted), Waiting (sent), In progress (replied), Resolved (signed up, by email or by the draft's link), Closed (said no; the address joins the root Space's opt-outs). FlowWeb only moves a thread forward, so a status set by hand is kept. Every message is keyed on the draft, so a repeat post adds nothing. Frequency never sends any of it. Logic: `lib/flowweb/crm.ts`, `lib/flowweb/crm-io.ts`.
+
+**Turn it on.** Needs the outcomes pull secret above. Set `FLOWWEB_CRM_OWNER_PROFILE_ID` to the founder's profile id (the threads' owner; without it the route falls back to `CRM_INBOX_OWNER_PROFILE_ID` and answers 409 when neither is set), then `FLOWWEB_CRM_ENABLED` to `1`, `true` or `on` in Vercel Production and redeploy. **owner** Then **agent** confirms an unsigned post answers 401 and a signed post of a test draft answers `synced` and appears in Conversations.
+
+**Turn it off.** Unset the switch. Verified posts answer `off` and nothing is written; FlowWeb keeps retrying daily.
+
 ### Regulars (LIVE-940, ADR-1780)
 
 `LOYALTY_ENABLED` defaults off (`envFlag`: `1` / `true` / `on`). Off, a Space check-in records as it always has but writes no stamp and pays no `space_checkin` Zaps, and the owner's Check-in panel says Regulars is not open. The program and its tables ship dark so owners can be set up before launch.

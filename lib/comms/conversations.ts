@@ -303,6 +303,9 @@ export interface AppendMessageInput {
   deliveryStatus?: string
   /** Per-message detail (e.g. `{ sender_mismatch: true }` from the inbound anti-spoof check). */
   metadata?: Record<string, unknown> | null
+  /** When the message really happened, for a message recorded after the fact (a FlowWeb note the
+   *  founder sent from his own mailbox). Defaults to now. */
+  occurredAt?: string | null
   /** When set, the non-internal message is mirrored onto the CRM person-timeline (best-effort). */
   mirror?: {
     ownerProfileId: string
@@ -382,6 +385,7 @@ export async function appendConversationMessage(input: AppendMessageInput): Prom
         ...(input.deliveryStatus ? { delivery_status: input.deliveryStatus } : {}),
         // The jsonb metadata bag stays a narrow Json cast (the one caller-defined loose shape).
         ...(input.metadata ? { metadata: input.metadata as Json } : {}),
+        ...(input.occurredAt ? { created_at: input.occurredAt, occurred_at: input.occurredAt } : {}),
       })
       .select('id')
       .single()
