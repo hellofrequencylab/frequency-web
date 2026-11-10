@@ -1,0 +1,5 @@
+{
+  "id": "FH-018",
+  "patch": { "status": "done", "closed": "2026-11-10" },
+  "append": { "detail": "\n\nCore shipped (lib/hunts/moderation.ts): report intake rules, triage that recommends a pause, pause/resume/close state moves with closed final, player view that keeps progress, and the publish gate. The report button, operator queue and closure banner ride the screens, so they split to FH-018S." }
+}
