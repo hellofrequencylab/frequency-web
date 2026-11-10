@@ -1,19 +1,19 @@
 {
   "id": "LIVE-2251",
-  "title": "A Google Ads click is counted as organic search, so ad signups have no channel of their own",
-  "status": "done",
-  "priority": "P1",
+  "title": "Build claim links for FlowWeb's lead hunts: signed, off by default, suppression-checked, a posted event per organizer, and Frequency never sends the message",
   "lane": "live",
-  "size": "S",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
   "source": {
-    "file": "lib/attribution/channels.ts",
-    "ref": "deriveChannel"
+    "file": "app/api/webhooks/flowweb-claim/route.ts",
+    "ref": "FlowWeb row FW-C-041 (saved event lead hunts). Daniel, 2026-11-10: 'set up auto hunts for events, find their creators email or contact info ... send them a customized lead message with a claim link. The building stuff / claim link can be a second selectible layer.' Then, 2026-11-10: Resend's rules ban cold outreach, so hunt messages go from Daniel's own Workspace mailbox ('follow the rules'), and 'Build the thing' (the claim-link builder)."
   },
-  "detail": "FOUND 2026-11-10 while wiring the Owner's first Google Ads campaign (Find your people locally, goal: subscriptions). first-touch already captures the gclid, but deriveChannel never read it. Google Ads auto-tagging sends a gclid, a google.com referrer and no utm, so every ad click was stamped source_search, the same as organic search. A hand-tagged utm_medium=cpc&utm_source=google was worse: the cpc rule sent it to social. CLOSED 2026-11-10: new acquisition channel paid_search (label Paid search, registry tag source_paid_search). A gclid wins after the entry routes; cpc/ppc/paid/sem from a search-engine source is paid search; cpc from a social source stays social. The channel rollup reads ACQUISITION_CHANNELS, so the new row shows with no further wiring. Conversions themselves need no code: GA4 is live in production and the Stripe webhook already sends a server-side purchase joined to the browser session (LIVE-348); the Owner links Ads to GA4 and imports the purchase key event.",
+  "detail": "POST /api/webhooks/flowweb-claim takes one FlowWeb hunt item with build on, signed as hex HMAC-SHA256 of `${x-flowweb-timestamp}.${body}` under FLOWWEB_CLAIM_SECRET (5 minute window; no secret = 401). The item must name a deliverable address, the public page it came from (which the body must quote), FlowWeb's 'reply no' opt-out and the {{claim_url}} slot. Gates in order: FLOWWEB_CLAIM_ENABLED (envFlag, off by default, answers off), suppression (global or the root Space's own opt-outs, fail-closed, answers suppressed). Then the event is posted for its organizer through the existing poster-events claim spine (seed owner as poster, published 'posted', organizer contact stamped after publish so the stock claim email is not sent) and the answer is { status: 'built', claimUrl: /events/claim/<token>, eventUrl }; a retried item reuses its event (events.details.flowweb.item_id). Frequency sends no email here: FlowWeb's sender mails the organizer from the founder's own mailbox. Pure rules in lib/flowweb/claim.ts, IO in lib/flowweb/claim-io.ts, runbook gate in docs/RUNBOOKS.md. Probe: scripts/probes/flowweb-claim.mjs.\n\nEndpoint and claim build shipped; switch stays off until the RUNBOOKS gate passes.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const strip=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\" \").replace(/^\\s*\\/\\/.*$/gm,\" \");const c=strip(fs.readFileSync(\"lib/attribution/channels.ts\",\"utf8\"));const r=strip(fs.readFileSync(\"lib/traits/registry.ts\",\"utf8\"));if(!/paid_search/.test(c))fail(\"no paid_search channel: a Google Ads click lands in organic search\");if(!/touch\\.gclid/.test(c))fail(\"deriveChannel ignores the gclid, so an auto-tagged ad click reads as organic search\");if(!/source_paid_search/.test(r))fail(\"no source_paid_search registry tag, so the cohort cannot be segmented\");process.exit(0)'",
-    "note": "Passes when a paid_search channel exists, deriveChannel reads the gclid, and the registry carries source_paid_search. Comments stripped first."
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/flowweb-claim.mjs"
   },
-  "closed": "2026-11-10"
+  "closed": "2026-11-10",
+  "wave": "W7"
 }

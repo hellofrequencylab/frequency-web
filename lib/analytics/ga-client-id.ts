@@ -29,6 +29,37 @@ export function parseGaClientId(raw: string | undefined | null): string | null {
   return id
 }
 
+/**
+ * Parse the GA4 session id out of the `_ga_<container>` cookie. Shape (GS1): `GS1.1.<session_id>.<n>...`,
+ * and (GS2): `GS2.1.s<session_id>$o1$g1...`. Anything else is refused. A server-side event that
+ * carries this session_id joins the browser session that carried the ad click.
+ */
+export function parseGaSessionId(raw: string | undefined | null): string | null {
+  if (!raw) return null
+  const gs1 = /^GS1\.\d+\.(\d{8,})\./.exec(raw.trim())
+  if (gs1) return gs1[1]
+  const gs2 = /^GS2\.\d+\.s(\d{8,})(?:\$|$)/.exec(raw.trim())
+  return gs2 ? gs2[1] : null
+}
+
+/**
+ * The browser's GA identity (client_id + session_id) from the current request's cookies, or null
+ * when there is no readable `_ga` cookie. No cookie means the visitor never loaded the tag
+ * (declined or never asked), and then there is nothing to attribute.
+ */
+export async function readGaIdentity(): Promise<{ clientId: string; sessionId: string | null } | null> {
+  try {
+    const jar = await cookies()
+    const clientId = parseGaClientId(jar.get('_ga')?.value)
+    if (!clientId) return null
+    const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
+    const sessionCookie = gaId ? jar.get(`_ga_${gaId.replace(/^G-/, '')}`)?.value : undefined
+    return { clientId, sessionId: parseGaSessionId(sessionCookie) }
+  } catch {
+    return null
+  }
+}
+
 /** Session metadata fragment. Empty when there is no readable `_ga` cookie. */
 export async function checkoutGaMetadata(): Promise<Record<string, string>> {
   try {

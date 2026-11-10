@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2252",
+  "title": "A real signup reaches Google Ads as one GA4 sign_up key event, joined to the ad-click session",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/auth/callback/route.ts",
+    "ref": "Daniel launched the Google Ads campaign 'Find your people locally' (2026-11-09) optimized for subscriptions."
+  },
+  "detail": "account.created was mirrored to GA4 as account_created on EVERY sign-in (the ledger deduped, the mirror did not) and with the profile id as client_id, so no event joined an ad-click session. Fix: the auth callback hands track() the browser's _ga client_id and session_id; track() sends GA4 sign_up (method) once, only when the ledger row is new and only when the visitor carries a _ga cookie. Owner steps: link GA4 to Google Ads, mark sign_up a key event, import it into Ads as the conversion. Gate in docs/RUNBOOKS.md (Google Ads conversion).\n\nsign_up sent once per signup via track(); owner steps in RUNBOOKS",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/ads-signup-conversion.mjs"
+  },
+  "closed": "2026-11-10",
+  "wave": "W7"
+}
