@@ -94,6 +94,13 @@ async function threadFor(item: CrmItem, contactId: string, ownerId: string, root
   return { id: opened.id, status: 'open' }
 }
 
+/** True when the configured owner is a real profile; a thread cannot be opened for anyone else. */
+export async function ownerIsProfile(ownerId: string): Promise<boolean> {
+  const res = await db().from('profiles').select('id').eq('id', ownerId).maybeSingle()
+  if (res.error) throw new Error(`owner read failed: ${res.error.message}`)
+  return !!res.data
+}
+
 export async function syncFlowwebLead(item: CrmItem, o: { rootId: string; ownerId: string }): Promise<CrmSyncResult> {
   const contact = await upsertContact(item, o.rootId)
   const signedUp = await hasSignedUp(contact.profileId, item.tag)
