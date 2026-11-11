@@ -4,15 +4,16 @@
   "lane": "program",
   "priority": "P1",
   "size": "M",
-  "status": "open",
-  "wave": "W7",
+  "status": "done",
   "source": {
     "file": "docs/hunts/README.md",
     "ref": "Split from FH-014 (2026-11-10): the resolution core shipped in lib/hunts/placement.ts; the route and landing need screens."
   },
-  "detail": "Add the scan route and landing that load the placement row, call resolvePlacement, hand a signed-in player a claim token and post to hunt_claim_apply through applyClaim, behind HUNTS_ENABLED and HUNTS_CLAIMS_ENABLED. Done when: a crawler, a wrong-origin URL, a revoked placement and a cross-run token all fail to claim through the real route. Requires: FH-014, FH-010, FH-013. Owner role: Web and QR.\n\nPacket 1 groundwork: the existing claim store resolves a printed QR or NFC short code by placement slug behind both Hunt switches. The read is scoped to live public or unlisted Hunts and keeps revocation visible to the resolver. It issues no token and writes no credit. The public landing, signed placement issuance and verification, the run-version mission binding and real-route acceptance remain open. A bare short code only identifies the placement.",
+  "detail": "Add the scan route and landing that load the placement row, call resolvePlacement, hand a signed-in player a claim token and post to hunt_claim_apply through applyClaim, behind HUNTS_ENABLED and HUNTS_CLAIMS_ENABLED. Done when: a crawler, a wrong-origin URL, a revoked placement and a cross-run token all fail to claim through the real route. Requires: FH-014, FH-010, FH-013. Owner role: Web and QR.\n\nPacket 1 groundwork: the existing claim store resolves a printed QR or NFC short code by placement slug behind both Hunt switches. The read is scoped to live public or unlisted Hunts and keeps revocation visible to the resolver. That groundwork stopped at lookup and wrote no credit. A bare short code only identifies the placement.\n\nThe scan GET opens the public Trail without credit. The same-origin confirmation POST verifies a signed-in player, run-bound token, live placement and canonical prerequisite eligibility before the signed_node claim command. Route tests cover crawler, origin, revocation, cross-run token and no-credit GET. Claims stay dark pending the FH-049T transaction gate and design review.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"app/(main)/hunts/p/[code]/route.ts\")?0:1)'"
-  }
+  },
+  "closed": "2026-11-11",
+  "wave": "W7"
 }
