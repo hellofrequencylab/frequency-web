@@ -1,0 +1,6 @@
+{
+  "id": "PROG-E5",
+  "append": {
+    "detail": "\n\nThe responsive inspector model reads the existing block contract's fields and surface field list. Tablet and phone overrides inherit desktop per field and report the source of each value. Reset clears one device field and preserves the other device and remaining overrides. Focused tests cover surface limits, false and zero values, provenance, and reset. Live inspector integration, container queries, and touch verification on real viewports remain open."
+  }
+}
