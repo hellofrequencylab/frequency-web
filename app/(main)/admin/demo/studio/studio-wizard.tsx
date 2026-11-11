@@ -6,6 +6,7 @@ import { Loader2, Eye, Sparkles, MapPin } from 'lucide-react'
 import { previewArea, seedArea } from './actions'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { Button } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 import { Banner } from '@/components/admin/status'
 import { RangeField } from '@/components/admin/range-field'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -104,7 +105,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
         <div className="mb-4 flex flex-wrap gap-2">
           {PRESETS.map((p) => (
             <button key={p.label} type="button" onClick={() => applyPreset(p)}
-              className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors ${activePreset === p ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-primary-bg'}`}>
+              className={chipClasses(activePreset === p)}>
               {p.label}
             </button>
           ))}
@@ -122,7 +123,7 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
         <div className="mb-3 flex flex-wrap gap-1.5">
           {channels.map((c) => (
             <button key={c.slug} type="button" onClick={() => toggleCh(c.slug)}
-              className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors ${sel.has(c.slug) ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-primary-bg'}`}>
+              className={chipClasses(sel.has(c.slug))}>
               {c.name}
             </button>
           ))}

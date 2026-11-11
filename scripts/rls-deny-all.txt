@@ -58,6 +58,7 @@ notification_queue
 nurture_enrollments
 nurture_sequences
 nurture_steps
+page_versions
 pages
 platform_flag_events
 platform_settings

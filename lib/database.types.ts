@@ -11400,6 +11400,64 @@ export type Database = {
           },
         ]
       }
+      page_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json
+          id: string
+          note: string | null
+          page_id: string
+          revision: number
+          space_id: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data: Json
+          id?: string
+          note?: string | null
+          page_id: string
+          revision: number
+          space_id: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          note?: string | null
+          page_id?: string
+          revision?: number
+          space_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_versions_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_versions_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pages: {
         Row: {
           data: Json
@@ -11407,6 +11465,7 @@ export type Database = {
           og_image_url: string | null
           published_at: string | null
           published_data: Json | null
+          published_version_id: string | null
           seo_description: string | null
           seo_title: string | null
           slug: string
@@ -11422,6 +11481,7 @@ export type Database = {
           og_image_url?: string | null
           published_at?: string | null
           published_data?: Json | null
+          published_version_id?: string | null
           seo_description?: string | null
           seo_title?: string | null
           slug: string
@@ -11437,6 +11497,7 @@ export type Database = {
           og_image_url?: string | null
           published_at?: string | null
           published_data?: Json | null
+          published_version_id?: string | null
           seo_description?: string | null
           seo_title?: string | null
           slug?: string
@@ -11447,6 +11508,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pages_published_version_id_fkey"
+            columns: ["published_version_id"]
+            isOneToOne: false
+            referencedRelation: "page_versions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pages_space_id_fkey"
             columns: ["space_id"]
@@ -19408,6 +19476,17 @@ export type Database = {
           sharer_profile_id: string
         }[]
       }
+      publish_page_version: {
+        Args: {
+          p_by?: string
+          p_data: Json
+          p_note?: string
+          p_slug: string
+          p_space_id: string
+          p_title: string
+        }
+        Returns: { revision: number; version_id: string }[]
+      }
       read_accepted_email_provider_attempt: {
         Args: {
           p_queue_job_id: string
@@ -19415,6 +19494,10 @@ export type Database = {
         Returns: Json
       }
       set_space_preferences: { Args: { p_space_id: string; p_patch: Json }; Returns: boolean }
+      revert_page_to_version: {
+        Args: { p_by?: string; p_slug: string; p_space_id: string; p_version_id: string }
+        Returns: number
+      }
       settle_email_provider_attempt: {
         Args: {
           p_queue_job_id: string

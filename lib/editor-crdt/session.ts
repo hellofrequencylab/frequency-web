@@ -17,6 +17,7 @@ import type { NodeLayout } from '../entity-blocks/node-tree'
 import { reconcileDoc, REMOTE_ORIGIN } from './node-ydoc'
 import { snapshotForStorage } from './snapshot'
 import { connectEditor, type EditorClientLike } from './provider'
+import type { PresenceState } from './awareness'
 
 type SessionStatus = 'connecting' | 'live' | 'offline'
 
@@ -30,23 +31,27 @@ interface SessionOptions {
   onStatus?: (status: SessionStatus) => void
   /** Wait for a peer before seeding. Tests pass 0. */
   seedWaitMs?: number
+  /** Faces and selections (BLD-401), handed straight to the provider. Never written to the doc. */
+  presence?: { self: PresenceState; onPeers: (peers: PresenceState[]) => void }
 }
 
 interface EditorSession {
   push(layout: NodeLayout): void
+  /** Tell the room which node this tab has selected (null clears). No-op without `presence`. */
+  select(nid: string | null): void
   close(): void
 }
 
 const hasStructure = (doc: Y.Doc) => doc.getMap('layout').get('rows') instanceof Y.Array
 
 /** Open a session, or null when the entity has no channel topic. */
-export function openEditorSession({ kind, entityId, client, initial, onRemote, onStatus, seedWaitMs }: SessionOptions): EditorSession | null {
+export function openEditorSession({ kind, entityId, client, initial, onRemote, onStatus, seedWaitMs, presence }: SessionOptions): EditorSession | null {
   const doc = new Y.Doc()
   let closed = false
   let seeded = false
   let latest = initial
 
-  const link = connectEditor({ doc, kind, entityId, client, onStatus })
+  const link = connectEditor({ doc, kind, entityId, client, onStatus, presence })
   if (!link) return null
 
   const seed = () => {
@@ -70,6 +75,9 @@ export function openEditorSession({ kind, entityId, client, initial, onRemote, o
       // Before the room has answered there is nothing to write onto: the seed will carry `latest`.
       if (!hasStructure(doc)) return
       reconcileDoc(doc, layout)
+    },
+    select(nid) {
+      if (!closed) link.select(nid)
     },
     close() {
       closed = true

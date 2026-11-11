@@ -190,6 +190,7 @@ outreach_sends                       authenticated
 page_chrome_overrides                public
 page_content                         public
 page_settings                        authenticated
+page_versions                        internal
 pages                                internal
 partner_offers                       public
 partner_redemptions                  authenticated

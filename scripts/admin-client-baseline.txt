@@ -1157,6 +1157,7 @@ lib/page-editor/data.ts
 lib/page-editor/guard.ts
 lib/page-editor/loom-field-actions.ts
 lib/page-editor/member-search-action.ts
+lib/page-editor/versions.ts
 lib/page-settings/actions.ts
 lib/page-settings/store.test.ts
 lib/page-settings/store.ts

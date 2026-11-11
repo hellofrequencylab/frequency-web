@@ -1531,6 +1531,175 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4886,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346043000_page_versions.sql",
+          "sha256": "da1c99cb1906116bf8cc8f9e4ce951bb6db7e6b3ba13ac28ea806f10beb6fc2c"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/edit/actions.ts",
+          "status": "modified",
+          "sha256": "9bb4b39546e6f9bf87d7a3e3e8c0f406bdaf3cd91e0e4051da9c0b1fc4686b64",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/pages/canvas/page.tsx",
+          "status": "modified",
+          "sha256": "ebf6764029365cf137f5bf68fe3f993159ed59caf939aafe209eeacc20fdac61",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/builder/history/history-panel.test.tsx",
+          "status": "added",
+          "sha256": "74238e782860519cb64922b9e80b4f2f4e6b19cd91c088ccf562fe69fd7b8365",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/builder/history/history-panel.tsx",
+          "status": "added",
+          "sha256": "71c0102c57c43c984c6b16400ef48d971b8179dc408c63b04558981a3aa4c4f6",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/builder/history/history-scrubber.test.tsx",
+          "status": "modified",
+          "sha256": "6e797d682674c2cd76ebfa4a62cd89be6fa14ed2a0230beccae0e416256817a8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/builder/history/history-scrubber.tsx",
+          "status": "modified",
+          "sha256": "ead86c9c0f664c0b158a7d65190826f1b366891add87b341bf8252177275903b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "3d7e40f7d36d27ef41d542a8dbf01f88023129c6b53f517485d0709ca67e5c64",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/BLD-403.json",
+          "status": "modified",
+          "sha256": "4dcde8608f9886db523306e7a5e025df39d7bfa9c0417bf1722abaf9daf5be05",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/PROG-E0.json",
+          "status": "modified",
+          "sha256": "60c7b8b558ff2b44c6a0b8697204eb9c2237c4f0f1dbc78ac8f1adaa93b46d6a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/builder/history-restore.test.ts",
+          "status": "added",
+          "sha256": "afce167d7906d75c94af29eb0d93695b05f71b14bd44ff6b6426027564236980",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/builder/history-restore.ts",
+          "status": "added",
+          "sha256": "2c081b5b03a248361ed9a7c10d2dca2da605b4f12517a4731ff28563e606ca6a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "49605c9df5cf5b60b7522b0ded98190f13877c7d391bb42bdb4231976983c9b1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/moderation/suspension-coverage.ts",
+          "status": "modified",
+          "sha256": "fbcabfe5b664bb251d04119cac6ccc159a55303a015abac8e436785d105787a4",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/page-editor/versions.test.ts",
+          "status": "added",
+          "sha256": "8698e44b02a693a6e54cdb970bbf54a80961970f4d5ef624556a7fc8ab173521",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/page-editor/versions.ts",
+          "status": "added",
+          "sha256": "40f277205d95e75fcefe1054715477c2ad621080a88df6e8bb2bcf9023fff485",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "fce05ad89182561e3b5c2848856f0abfa099d8fc1605f3b8f46fe45636853ff8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "901f07adf4a31ca1aa2f4a326f5933f9ec285f4ffba8eec421fe8e350b47cb69",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/builder/BLD-403.mjs",
+          "status": "added",
+          "sha256": "c0ae5e4c9e974cfe6073cbccc76ff48d49c1157a16e2ab2d001e2d416ec813f7",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "3c6e1fa89efb592726d6c33e23c1aa0dc0da9b6751c6fb36bbf693d392c2fbfd",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "b66120bf16e89489f627357c0028de1539b3b15d0cb26c764debf9be3d333a0e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346043000_page_versions.sql",
+          "status": "added",
+          "sha256": "da1c99cb1906116bf8cc8f9e4ce951bb6db7e6b3ba13ac28ea806f10beb6fc2c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
