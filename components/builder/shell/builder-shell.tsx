@@ -57,6 +57,8 @@ import { sitePageStyle, siteLook, siteLookOverrides, type SiteStyle } from '@/li
 import { EDITOR_THEME_OF } from '@/lib/sites/site-render-style'
 import { Select } from '@/components/ui/select'
 import { VeraRail } from '@/components/builder/vera/vera-rail'
+// Faces of the other people in this editor (BLD-401): read from a live session's EditorPeersProvider; none, nothing.
+import { LivePresenceFaces } from '@/components/builder/presence/presence-live'
 import { acceptGroup, readPage, validateProposal, veraGhost, veraGroups, veraMaySpeak, veraMenu, veraOpening, type VeraProposal } from '@/lib/builder/vera'
 import styles from './builder-shell.module.css'
 // The editor sheet declares the builder's shape and editor tokens (BLD-002) on [data-builder].
@@ -469,6 +471,7 @@ export function BuilderShell({ host, brandName, logo, brandAccent, initial, conf
         </nav>
         <span className={styles.save} data-state={state.save} role="status"><i className={styles.dot} aria-hidden />{builderSaveLabel(state.save)}</span>
         <span className={styles.spacer} />
+        <LivePresenceFaces />
         <div className={styles.devices} role="group" aria-label="Device">
           {DEVICES.map(({ id, label, Icon }) => <button key={id} type="button" data-action={`device-${id}`} className={`${styles.btn} ${styles.icon}`} aria-label={label} title={label} aria-pressed={state.device === id} onClick={() => dispatch({ type: 'device', device: id })}><Icon size={16} aria-hidden /></button>)}
         </div>

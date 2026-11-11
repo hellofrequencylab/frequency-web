@@ -25,6 +25,30 @@ export function readPresence(raw: unknown): PresenceState | null {
   return { userId: r.userId, name, color, selectedNid }
 }
 
+const toHex = (n: number) => Math.round(n * 255).toString(16).padStart(2, '0')
+
+/** A stable marker colour for a person: a hue hashed from their id, as the #rrggbb the payload carries. */
+export function presenceColor(userId: string): string {
+  let h = 0
+  for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) >>> 0
+  const hue = (h % 360) / 60
+  const s = 0.65, l = 0.45
+  const c = (1 - Math.abs(2 * l - 1)) * s
+  const x = c * (1 - Math.abs((hue % 2) - 1))
+  const m = l - c / 2
+  const [r, g, b] = hue < 1 ? [c, x, 0] : hue < 2 ? [x, c, 0] : hue < 3 ? [0, c, x] : hue < 4 ? [0, x, c] : hue < 5 ? [x, 0, c] : [c, 0, x]
+  return `#${toHex(r + m)}${toHex(g + m)}${toHex(b + m)}`
+}
+
+/** This tab's own presence from the signed-in user: the id, a display name (never the email) and a colour. */
+export function presenceSelf(user: { id?: unknown; user_metadata?: unknown } | null | undefined): PresenceState | null {
+  const id = typeof user?.id === 'string' ? user.id : ''
+  if (!id) return null
+  const meta = (user?.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {}) as Record<string, unknown>
+  const raw = [meta.display_name, meta.full_name, meta.name].find((v) => typeof v === 'string' && v.trim())
+  return readPresence({ userId: id, name: typeof raw === 'string' ? raw.trim() : '', color: presenceColor(id), selectedNid: null })
+}
+
 /** A peer not heard from for this long is gone (a closed tab sends no goodbye). Heartbeats are well inside it. */
 export const PRESENCE_TTL_MS = 20_000
 export const PRESENCE_BEAT_MS = 6_000
