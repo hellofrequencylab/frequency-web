@@ -1,5 +1,6 @@
-// THE LAUNCH CAMPAIGN DATES. One contract (LIVE-BETA-LAUNCH-CAMPAIGN, owner 2026-11-04): the official
-// launch is January 1, 2027 and beta participation runs through December 31, 2026. Every beta label,
+// THE LAUNCH CAMPAIGN DATES. One contract (LIVE-BETA-LAUNCH-CAMPAIGN, owner 2026-11-04; beta end moved by the
+// owner 2026-11-11): the official launch is January 1, 2027, inside the beta, and the beta runs through
+// January 31, 2027. Every beta label,
 // the public opening date and the founder-badge window read these constants; nothing types the date.
 //
 // PURE (constants and string helpers) so it is safe in a server page, an email builder and a test.
@@ -7,13 +8,13 @@
 // member's personal paid offer clock (the 72-hour offer) is its own timer. Neither reads this file.
 
 /** The last day of the beta, as a calendar date. */
-const BETA_ENDS_ON = '2026-12-31'
+const BETA_ENDS_ON = '2027-01-31'
 
 /** The official launch day, as a calendar date. */
 export const LAUNCH_ON = '2027-01-01'
 
 /** The last day of the beta as members read it, no year (surrounding copy gives the year). */
-export const BETA_ENDS_DAY_LABEL = 'December 31'
+export const BETA_ENDS_DAY_LABEL = 'January 31'
 
 /** The launch day as members read it, no year. */
 const LAUNCH_DAY_LABEL = 'January 1'

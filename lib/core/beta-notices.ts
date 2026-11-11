@@ -3,7 +3,7 @@
 // While the Beta is open (BETA_OPEN_ACCESS, lib/core/beta.ts) everyone is granted the paid Crew tier, so
 // every "here is the permission / here is the price" notice on the site should lead with "the Beta is
 // open, this is free right now" and frame the paid rule as what changes AT LAUNCH. When BETA_OPEN_ACCESS
-// flips to false (launch day, January 1, 2027, after the beta runs through December 31: owner ruling 2026-11-04, lib/core/launch-dates.ts) this module returns the LIVE (paid) copy instead, so a
+// flips to false (the beta runs through January 31, 2027, and launch day, January 1, falls inside it: lib/core/launch-dates.ts) this module returns the LIVE (paid) copy instead, so a
 // single switch swaps every notice that reads from here. No per-surface edit needed for the ones wired in.
 //
 // The FULL registry of beta announcements site-wide (including older hardcoded strings not yet routed

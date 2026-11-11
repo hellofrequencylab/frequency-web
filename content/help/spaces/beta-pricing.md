@@ -16,7 +16,7 @@ Frequency is in open beta, and a Collective that starts now gets a lower price t
 
 A Collective that starts during the beta pays Beta pricing, which sits under the list price. The current figures are on the [pricing page](/pricing). The offer ends **January 1**. A Collective that starts on it keeps that price, grandfathered, for as long as it keeps the plan.
 
-A Collective that starts before **December 31** also gets the founder badge.
+A Collective that starts before **January 31** also gets the founder badge.
 
 Paying yearly gives you two months free on any plan, so a yearly plan is ten months of the monthly price.
 
