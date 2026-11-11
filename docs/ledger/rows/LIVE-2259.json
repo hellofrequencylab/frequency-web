@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2259",
+  "title": "Serve FlowWeb a facts sheet (beta end, launch day, plan prices, launcher minutes) so its drafts quote only what the site shows",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/api/webhooks/flowweb-facts/route.ts",
+    "ref": "Owner 2026-11-11 \"Build this all out\" (FlowWeb re-engagement email batch): FlowWeb's fwd already GETs /api/webhooks/flowweb-facts daily (FW-C-102) and got 404, so its facts check fell back to dates typed in its config."
+  },
+  "detail": "GET /api/webhooks/flowweb-facts, signed with FLOWWEB_OUTCOMES_SECRET over an empty body (flowweb-claim scheme), answers {as_of, beta_ends, launch_on, prices, launcher_minutes}. beta_ends and launch_on read lib/core/launch-dates.ts; prices read getPricingValues() (catalog plus /admin/pricing rows) as <plan>_monthly/_annual/_list dollars; launcher_minutes reads CLOCK_BUDGET_MS. No take-rates or other settings. Unsigned answers 401 before any read; a failed pricing read answers 500 so FlowWeb keeps its last good sheet. Runbook: docs/RUNBOOKS.md \"FlowWeb facts sheet\".",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/flowweb-facts.mjs"
+  },
+  "closed": "2026-11-11",
+  "wave": "W7"
+}
