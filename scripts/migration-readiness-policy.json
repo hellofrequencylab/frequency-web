@@ -1545,7 +1545,7 @@
         {
           "file": "app/(main)/edit/actions.ts",
           "status": "modified",
-          "sha256": "12dc98f077a912ea09f83e6521ae2566092fa83a5ae647683f81c3dc79a2e1f9",
+          "sha256": "9bb4b39546e6f9bf87d7a3e3e8c0f406bdaf3cd91e0e4051da9c0b1fc4686b64",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -1623,6 +1623,13 @@
           "file": "lib/database.types.ts",
           "status": "modified",
           "sha256": "49605c9df5cf5b60b7522b0ded98190f13877c7d391bb42bdb4231976983c9b1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/moderation/suspension-coverage.ts",
+          "status": "modified",
+          "sha256": "fbcabfe5b664bb251d04119cac6ccc159a55303a015abac8e436785d105787a4",
           "baseMode": "100644",
           "headMode": "100644"
         },
