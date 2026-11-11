@@ -422,3 +422,6 @@ hunt_sponsor_settlements              internal
 commerce_carts                        internal
 # FH-020S Hunt staff-proof nonces: service role only; spent by hunt_staff_nonce_consume
 hunt_staff_nonces                     internal
+# FH-021 Frequency Hunts reward specs and grants: service role only; written by hunt_reward_grant
+hunt_rewards                          internal
+hunt_reward_grants                    internal

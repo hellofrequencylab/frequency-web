@@ -353,3 +353,5 @@ hunt_claim_review internal
 hunt_claim_appeal internal
 publish_page_version                 internal
 revert_page_to_version               internal
+# Hunt reward grant (FH-021): service role only.
+hunt_reward_grant internal

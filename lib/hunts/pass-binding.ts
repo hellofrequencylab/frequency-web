@@ -96,7 +96,7 @@ type PurchaseRequest = Readonly<{
   clientPriceCents?: number
 }>
 
-type PurchaseRefusal =
+export type PurchaseRefusal =
   | 'binding_retired'
   | 'tier_mismatch'
   | 'event_mismatch'
