@@ -27,15 +27,22 @@ export function huntRpc() {
 
 type Scope = { huntId: string; placementId: string; venueSpaceId: string; runId: string }
 
-export async function loadStaffFacts(staffId: string, scope: Scope): Promise<StaffFacts | null> {
+export async function loadStaffFacts(staffId: string, scope: Scope): Promise<(StaffFacts & { missionKey: string }) | null> {
   const client = db()
-  const { data: hunt } = await client
+  const { data: hunt, error } = await client
     .from('hunts')
-    .select('id, visibility, owner_profile_id, owner_space_id')
+    .select('id, visibility, owner_profile_id, owner_space_id, current_version_id')
     .eq('id', scope.huntId)
+    .eq('status', 'live')
     .maybeSingle()
-  if (!hunt) return null
-  const h = hunt as { id: string; visibility: 'private' | 'unlisted' | 'public'; owner_profile_id: string | null; owner_space_id: string | null }
+  const h = hunt as {
+    id: string
+    visibility: 'private' | 'unlisted' | 'public'
+    owner_profile_id: string | null
+    owner_space_id: string | null
+    current_version_id: string | null
+  } | null
+  if (error || !h?.current_version_id) return null
 
   const [roles, partners, placement, bound, run, space] = await Promise.all([
     client.from('hunt_roles').select('hunt_id, profile_id, role, expires_at, revoked_at').eq('hunt_id', scope.huntId),
@@ -43,14 +50,27 @@ export async function loadStaffFacts(staffId: string, scope: Scope): Promise<Sta
     client.from('hunt_placements').select('id, revoked_at').eq('id', scope.placementId).eq('hunt_id', scope.huntId).maybeSingle(),
     client
       .from('hunt_mission_placements')
-      .select('placement_id')
+      .select('mission_key')
       .eq('hunt_id', scope.huntId)
+      .eq('version_id', h.current_version_id)
       .eq('placement_id', scope.placementId)
       .eq('venue_space_id', scope.venueSpaceId)
-      .limit(1),
-    client.from('hunt_runs').select('id, subject_profile_id').eq('id', scope.runId).eq('hunt_id', scope.huntId).maybeSingle(),
+      .limit(2),
+    client.from('hunt_runs')
+      .select('subject_profile_id')
+      .eq('id', scope.runId)
+      .eq('hunt_id', scope.huntId)
+      .eq('version_id', h.current_version_id)
+      .eq('state', 'active')
+      .maybeSingle(),
     getSpaceById(scope.venueSpaceId),
   ])
+  if (roles.error || partners.error || placement.error || bound.error || run.error || !space) return null
+
+  // A v1 code signs a placement, venue and run. Only a single binding can identify its mission.
+  const bindings = bound.data as { mission_key: string }[] | null
+  const runSubjectId = (run.data as { subject_profile_id: string } | null)?.subject_profile_id
+  if (!runSubjectId || bindings?.length !== 1) return null
 
   const grants: RoleGrant[] = ((roles.data ?? []) as { hunt_id: string; profile_id: string; role: RoleGrant['role']; expires_at: string | null; revoked_at: string | null }[]).map((r) => ({
     huntId: r.hunt_id,
@@ -70,7 +90,7 @@ export async function loadStaffFacts(staffId: string, scope: Scope): Promise<Sta
 
   const caps = await getSpaceCapabilities(space, staffId)
   const placementRow = placement.data as { id: string; revoked_at: string | null } | null
-  const placementActive = !!placementRow && placementRow.revoked_at === null && ((bound.data ?? []) as unknown[]).length > 0
+  const placementActive = !!placementRow && placementRow.revoked_at === null
 
   return {
     hunt: { id: h.id, visibility: h.visibility, ownerProfileId: h.owner_profile_id, ownerSpaceId: h.owner_space_id },
@@ -79,6 +99,7 @@ export async function loadStaffFacts(staffId: string, scope: Scope): Promise<Sta
     actor: { profileId: staffId },
     staffVenueSpaceIds: caps.canEditProfile ? [scope.venueSpaceId] : [],
     placementActive,
-    runSubjectId: (run.data as { subject_profile_id: string } | null)?.subject_profile_id ?? null,
+    runSubjectId,
+    missionKey: bindings[0].mission_key,
   }
 }
