@@ -19,7 +19,7 @@ export interface PageVersionMeta {
   createdBy: string | null
 }
 
-export interface PublishArgs {
+interface PublishArgs {
   spaceId: string
   slug: string
   title: string

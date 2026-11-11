@@ -17,12 +17,12 @@ import { findNode, getNode } from '@/lib/entity-blocks/node-ops'
 
 export type HistoryDoc = Data | NodeLayout
 
-export function isNodeLayout(doc: unknown): doc is NodeLayout {
+function isNodeLayout(doc: unknown): doc is NodeLayout {
   const d = doc as NodeLayout | null
   return !!d && typeof d === 'object' && Array.isArray(d.rows) && Array.isArray(d.bench)
 }
 
-export function isPageData(doc: unknown): doc is Data {
+function isPageData(doc: unknown): doc is Data {
   const d = doc as Data | null
   return !!d && typeof d === 'object' && Array.isArray(d.content) && !isNodeLayout(doc)
 }
@@ -35,7 +35,7 @@ export function restoreWhole(version: unknown): HistoryDoc | null {
   return copy(version)
 }
 
-export type SectionRestore =
+type SectionRestore =
   | { ok: true; doc: HistoryDoc; inserted: boolean }
   | { ok: false; reason: 'shape' | 'missing' }
 
@@ -131,7 +131,7 @@ function placeAt(layout: NodeLayout, node: BlockNode, rowId: string, col: number
 
 // ── the outline the preview shows ────────────────────────────────────────────────────────────────
 
-export type SectionState = 'same' | 'changed' | 'missing'
+type SectionState = 'same' | 'changed' | 'missing'
 
 export interface SectionEntry {
   id: string
