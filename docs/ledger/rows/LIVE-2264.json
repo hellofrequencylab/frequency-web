@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2264",
+  "title": "Represent the early, hosts, and public beta intake phases on the shared launch date contract",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/core/launch-dates.ts",
+    "ref": "Beta launch handoff, Packet 0.1(e): three intake phases share the one public beta end date of January 31, 2027."
+  },
+  "detail": "The app needs one date contract for the Early Beta, Hosts Beta and Public Beta intake periods. Each phase closes intake on its stated date, while the free beta for everyone ends January 31, 2027. The phase helper lets launch copy and tests derive which phase is open without inventing a second beta end date.\n\nClosed after the phase boundary tests pass, including one shared January 31 beta end.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'require(\"node:child_process\").execFileSync(\"pnpm\", [\"exec\", \"vitest\", \"run\", \"lib/core/launch-dates.test.ts\"], { stdio: \"inherit\" })'"
+  },
+  "closed": "2026-11-11",
+  "wave": "W7"
+}
