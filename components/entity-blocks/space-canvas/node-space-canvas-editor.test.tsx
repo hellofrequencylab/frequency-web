@@ -22,7 +22,7 @@ function Probe() { const s = useNodeLayout()!; useEffect(() => { store = s }, [s
 
 beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn()
-  globalThis.ResizeObserver = class { observe() {} disconnect() {} unobserve() {} } as never
+  globalThis.ResizeObserver = class { constructor(_callback?: unknown) {} observe() {} disconnect() {} unobserve() {} } as never
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container)
 })
 afterEach(async () => { await act(async () => root.unmount()); container.remove() })
