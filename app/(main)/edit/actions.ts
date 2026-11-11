@@ -13,6 +13,13 @@ import { EDITABLE_PAGES, pathForSlug, isEditableSlug, resolveSpaceId } from '@/l
 // allowlist still gates every write below; full un-gating to per-Space authoring is Phase 5.
 // `space_id` isn't in the generated types yet, so the upsert/update payloads are cast (ADR-246).
 
+// The versioned publish, kept out of publishPage so that function stays one write, one error check, then revalidate.
+async function publishVersionedPage(slug: string, spaceId: string, title: string, data: Data, profileId: string): Promise<void> {
+  await publishVersioned({ spaceId, slug, title, data, profileId })
+  revalidatePath(pathForSlug(slug))
+  revalidatePath('/pages')
+}
+
 // Save + publish a page (MVP: publishing writes both the working draft and the
 // live version, then revalidates the public route).
 //
@@ -28,12 +35,7 @@ export async function publishPage(slug: string, data: Data, spaceId?: string | n
 
   // PROG-E0, dark: with EDITOR_CANVAS on, publish takes the versioned path (an immutable page_versions row and a
   // pointer swap, one transaction, published_data still dual-written). Off, the upsert below is unchanged.
-  if (envFlag('EDITOR_CANVAS')) {
-    await publishVersioned({ spaceId: sid, slug, title: meta.title, data, profileId: janitor.profileId })
-    revalidatePath(pathForSlug(slug))
-    revalidatePath('/pages')
-    return
-  }
+  if (envFlag('EDITOR_CANVAS')) return publishVersionedPage(slug, sid, meta.title, data, janitor.profileId)
 
   const db = createAdminClient()
   const now = new Date().toISOString()
