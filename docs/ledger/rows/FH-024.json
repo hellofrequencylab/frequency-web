@@ -1,6 +1,10 @@
 {
   "id": "FH-024",
   "append": {
-    "detail": "\n\nPacket F UI slice: components/hunts/hunt-consent-panel.tsx displays the named Space, disclosure version and email opt-in and withdrawal states. The panel has no active submission and defaults off behind the Hunts master switch and a separate mount decision."
+    "detail": "\n\nBuilt 2026-11-10 (storage and the call; the player-area wiring and the sender are later): migration 20270346044000_hunt_consent.sql adds hunt_consent_events (append-only ledger: a trigger refuses UPDATE and any direct DELETE; one row names one Space, channel, purpose, consent version, source and a unique event key), hunt_contact_suppressions (Space-scoped withdrawals that a newer grant lifts; global privacy suppressions and erasure tombstones that never lift and carry a contact hash so they outlive the account), hunt_leads (the tenant-scoped projection) and hunt_privacy_requests, all service role only, plus hunt_consent_record, hunt_consent_can_send, hunt_consent_roster and hunt_privacy_request. A withdrawal writes its suppression first. A repeated event key is a replay and an event older than the latest for that Space is stale, so replay after opt-out cannot re-subscribe; only a newer deliberate grant does, and never past a global suppression. hunt_consent_roster returns one Space's opted-in leads with no email and no other Space's rows. Essential messages are checked apart from marketing consent and blocked only by a global suppression. lib/hunts/consent.ts is the caller side; canSend fails closed. Proof: supabase/tests/hunt_consent.test.sql (33 assertions, run against Postgres 16). FH-023 (legal and privacy sign-off) stays open; the policy is drafted in PRODUCT-DRAFTS-D4-D7-D8.md. The migration is NOT applied in production until the owner runs it."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
   }
 }

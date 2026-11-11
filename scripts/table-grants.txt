@@ -425,3 +425,8 @@ hunt_staff_nonces                     internal
 # FH-021 Frequency Hunts reward specs and grants: service role only; written by hunt_reward_grant
 hunt_rewards                          internal
 hunt_reward_grants                    internal
+# FH-024 Frequency Hunts consent ledger, suppressions, leads and privacy requests: service role only; written by the hunt_consent_* functions
+hunt_consent_events                   internal
+hunt_contact_suppressions             internal
+hunt_leads                            internal
+hunt_privacy_requests                 internal
