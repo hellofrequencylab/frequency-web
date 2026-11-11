@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 import TrailLanding, { dynamic, generateMetadata } from './page'
 
 const mocks = vi.hoisted(() => ({
@@ -14,6 +15,13 @@ vi.mock('next/headers', () => ({ headers: mocks.headers }))
 vi.mock('next/navigation', () => ({
   notFound: () => { throw new Error('NOT_FOUND') },
   usePathname: () => '/play/coast-trail',
+}))
+vi.mock('@/lib/page-settings/store', () => ({
+  getPageHeaderImage: vi.fn(),
+  getPageHeaderFocus: vi.fn(),
+}))
+vi.mock('@/lib/elements/header', () => ({
+  resolveHeaderElement: vi.fn(async () => ({ height: 'standard', overlayStyle: 'shadow' })),
 }))
 vi.mock('@/lib/auth', () => ({ getMyProfileId: mocks.getMyProfileId }))
 vi.mock('@/lib/hunts/run-store', () => ({ loadPublicTrailSummary: mocks.loadPublicTrailSummary }))
@@ -146,7 +154,7 @@ describe('Public Trail landing', () => {
     expect(await generateMetadata({ params })).toEqual({
       title: trail.title,
       description: trail.description,
-      openGraph: { title: trail.title, description: trail.description },
+      openGraph: { ...OG_SITE, title: trail.title, description: trail.description, images: ROOT_OG_IMAGES },
       robots: { index: false, follow: false },
       referrer: 'strict-origin',
     })

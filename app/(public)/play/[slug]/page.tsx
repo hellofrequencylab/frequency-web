@@ -10,6 +10,8 @@ import { loadScanPlacement, openClaim } from '@/lib/hunts/claim-store'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { isCrawler } from '@/lib/hunts/placement'
 import { loadPublicTrailSummary } from '@/lib/hunts/run-store'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 // This route can render a run-bound claim token. Next must render it per request.
 export const dynamic = 'force-dynamic'
@@ -32,7 +34,7 @@ export async function generateMetadata({ params }: Pick<TrailLandingProps, 'para
   return {
     title,
     description,
-    openGraph: { title, description },
+    openGraph: { ...OG_SITE, title, description, images: ROOT_OG_IMAGES },
     robots: { index: false, follow: false },
     referrer: 'strict-origin',
   }
@@ -66,11 +68,12 @@ export default async function TrailLanding({ params, searchParams }: TrailLandin
   const confirmation = profileId ? await loadConfirmation(profileId, trail.slug, code) : null
 
   const feedback = profileId && !confirmation ? claimFeedback(claim) : undefined
+  const hero = await resolveDetailHero(`/play/${encodeURIComponent(trail.slug)}`)
   const playPath = `/hunts/${encodeURIComponent(trail.slug)}/play`
   return (
     <div className="wrap">
       <div className="py-8 sm:py-12">
-        <DetailTemplate title={trail.title} subtitle={trail.description}>
+        <DetailTemplate {...hero} title={trail.title} subtitle={trail.description}>
           <div className="space-y-4">
             <p className="text-body text-muted">{trail.stopCount} {trail.stopCount === 1 ? 'stop' : 'stops'}</p>
             {feedback && <p className="text-body" role="status">{feedback}</p>}
