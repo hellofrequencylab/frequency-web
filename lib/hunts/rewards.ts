@@ -14,9 +14,9 @@ import { createHash } from 'node:crypto'
 export type RewardKind = 'perk' | 'badge' | 'discount' | 'item'
 const KINDS: readonly RewardKind[] = ['perk', 'badge', 'discount', 'item']
 
-export type RewardEligibility = { runState: 'completed' } | { missions: readonly string[] }
+type RewardEligibility = { runState: 'completed' } | { missions: readonly string[] }
 
-export type RewardSpec = {
+type RewardSpec = {
   key: string
   title: string
   kind: RewardKind
