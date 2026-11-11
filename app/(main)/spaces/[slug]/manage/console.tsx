@@ -551,7 +551,7 @@ export function SpaceSettingsSurface({
           <SlidersHorizontal className="h-4 w-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-body-sm font-semibold text-text">Menu and features</span>
+          <span className="block text-body-sm font-semibold text-text">Page Tools</span>
           <span className="mt-0.5 block text-meta text-muted">Turn on more tools or tidy which ones show in your menu.</span>
         </span>
         <ArrowRight

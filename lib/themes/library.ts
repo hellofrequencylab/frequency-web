@@ -144,7 +144,7 @@ export function themeLibraryEntry(id: string): ThemeLibraryEntry | null {
 }
 
 /** Tools a Space can switch on, in plain words. Tools belong to your Space, not your theme, so switching themes never turns one off; a kit starts with two or
- *  three and the owner turns on the rest. Mirrors the Menu and features switches (lib/spaces/functions.ts). */
+ *  three and the owner turns on the rest. Mirrors the Page Tools switches (lib/spaces/functions.ts). */
 export const THEME_TOOLS: readonly { name: string; body: string }[] = [
   { name: 'Booking', body: 'Availability, deposits and reminders from one button.' },
   { name: 'Calendar and gatherings', body: 'What is on, how to join, and who is coming.' },

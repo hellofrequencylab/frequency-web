@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2263",
+  "title": "Rename the Space tools destination to Page Tools across the console and supporting copy",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/manage/modules/page.tsx",
+    "ref": "Owner-approved Gate A, Packet 0.1(d), 2026-11-11: replace the Space-facing Menu and features label with Page Tools while preserving its existing route and behavior."
+  },
+  "detail": "The Space module manager was labeled Menu and features even though it manages tools, roles, and menu visibility. Renames the visible destination and its supporting references to Page Tools across the Space console, theme kit copy, feature notices, billing help, and catalogs. The existing /manage/modules route, module IDs, access rules, and entitlement behavior stay unchanged. No new product claims, prices, or beta dates are introduced.\n\nLabel contract, 39 focused tests, menu contract, and changed-file lint passed locally; branch remains unpushed pending its authorized slot.\n\nCorrected node -e shell quoting without changing the 15-file label contract.\n\nTheme-kit FAQ copy removes the unsupported tool count and Business-selling implication, states Space hosting is free, and points to /pricing for current selling fees.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const paths=[\"app/(main)/spaces/[slug]/manage/console.tsx\",\"app/(main)/spaces/[slug]/manage/mode/mode-settings.tsx\",\"app/(main)/spaces/[slug]/manage/modules/page.tsx\",\"app/(main)/spaces/[slug]/manage/modules/starting-setup.tsx\",\"components/frequency/site/pages/themes/frequency-designer.tsx\",\"components/frequency/site/pages/themes/frequency-theme-kit.tsx\",\"components/pricing/tier-chip.tsx\",\"components/spaces/feature-locked-notice.tsx\",\"components/spaces/manage-quick-links.tsx\",\"content/help/spaces/billing.md\",\"lib/admin/modules/space-modules.test.ts\",\"lib/admin/modules/space-modules.ts\",\"lib/pricing/tier-marks.ts\",\"lib/spaces/niche-defaults.ts\",\"lib/themes/library.ts\"];const stale=paths.filter(p=>fs.readFileSync(p,\"utf8\").includes(\"Menu and features\"));if(stale.length)throw new Error(\"stale label: \"+stale.join(\", \"));if(!fs.readFileSync(\"app/(main)/spaces/[slug]/manage/modules/page.tsx\",\"utf8\").includes(\"Page Tools\"))throw new Error(\"new label missing\");console.log(\"LIVE-2263 label contract passes\")'"
+  },
+  "closed": "2026-11-11",
+  "wave": "W7"
+}

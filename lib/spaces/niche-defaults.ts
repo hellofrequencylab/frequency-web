@@ -9,7 +9,7 @@
 // A niche with no honest preset is `null` and changes nothing. `networks` is null: chapters, directory
 // and dues are not Space tools with a switch, so there is nothing true for a preset to say.
 //
-// PURE data and three small readers. Imported by the Space creation action and the Menu and features
+// PURE data and three small readers. Imported by the Space creation action and the Page Tools
 // page only, never by a shared layout.
 
 import { SPACE_FUNCTIONS, spaceFunctionDef } from '@/lib/spaces/functions'
