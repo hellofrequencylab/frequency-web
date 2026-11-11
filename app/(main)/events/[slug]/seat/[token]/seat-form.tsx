@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 import { Select } from '@/components/ui/select'
 import { Input, Textarea } from '@/components/ui/field'
 import { MAX_GUEST_PLUS_ONES, type GuestSeatQuestion, type GuestSeatState } from '@/lib/events/guest-seat'
@@ -279,9 +280,7 @@ function MultiSelect({
             onClick={() => toggle(opt)}
             aria-pressed={on}
             disabled={disabled}
-            className={`rounded-pill px-3 py-1 text-body-sm font-medium transition-colors ${
-              on ? 'bg-primary-bg text-primary-strong' : 'border border-border text-muted hover:text-text'
-            }`}
+            className={chipClasses(on)}
           >
             {opt}
           </button>

@@ -11,6 +11,7 @@ import { describeGeneratedAssets } from '@/lib/library/describe-generated'
 import type { BrandStyle } from '@/lib/library/styles'
 import { Input, Textarea } from '@/components/ui/field'
 import { buttonClasses } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 
 // One smart "Create" surface for the whole Loom. You pick WHAT you're making; the studio picks the
 // engine: Vera draws quick house-style line marks (icons / spot art) as inline SVG, and the Image
@@ -246,11 +247,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
                 onClick={() => pickType(t)}
                 aria-pressed={active}
                 title={disabled ? 'Needs the Image Studio (set RECRAFT_API_KEY)' : TYPES[t].hint}
-                className={`rounded-pill border px-3 py-1.5 text-body-sm font-semibold transition-colors disabled:opacity-40 ${
-                  active
-                    ? 'border-primary bg-primary text-on-primary'
-                    : 'border-border text-muted hover:bg-surface-elevated'
-                }`}
+                className={chipClasses(active, 'disabled:opacity-40')}
               >
                 {TYPES[t].label}
               </button>
