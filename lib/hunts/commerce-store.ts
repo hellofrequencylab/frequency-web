@@ -22,7 +22,7 @@ import {
 import type { PassBinding } from './pass-binding'
 
 // eslint-disable-next-line no-restricted-syntax -- the FH-036..047 hunt tables are not in the generated types yet (ADR-246 exception)
-const db = () => createAdminClient() as unknown as SupabaseClient
+export const db = () => createAdminClient() as unknown as SupabaseClient
 
 /** The RPC caller the pure modules take, bound to the service-role client. */
 export const huntRpc: Rpc = (fn, args) => db().rpc(fn, args)

@@ -1,6 +1,10 @@
 {
   "id": "FH-046",
   "append": {
-    "detail": "\n\nPacket F UI slice: components/hunts/hunt-donation-ask.tsx displays a separate optional beneficiary ask, defaults off and contains no checkout wiring. D8 approval gates activation."
+    "detail": "\n\nPacket F UI slice: components/hunts/hunt-donation-ask.tsx displays a separate optional beneficiary ask, defaults off and contains no checkout wiring. D8 approval gates activation.\n\nBuilt 2026-11-10: hunt_donation_asks and hunt_donation_gifts (migration 20270346041000, no ask is live without an approver) and lib/hunts/donation-ask.ts: the gate decision, the mapping of a Space donation to a Hunt gift (success, abandonment, full and partial refund), settled totals net of refunds with started gifts kept apart, and a donor named only with their own consent. A test pins that the progression graph never reads donations. Wiring the existing Space donation checkout and the gift sync moved to FH-046S."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
   }
 }

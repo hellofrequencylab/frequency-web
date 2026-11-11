@@ -31,7 +31,7 @@ export type TicketSource = Readonly<{
   seats: readonly Readonly<{ unit: string; profileId: string | null }>[]
 }>
 
-type ProjectionUnit = Readonly<{
+export type ProjectionUnit = Readonly<{
   huntId: string
   /** Exactly one of bindingId (a ticket pass) and offerId (a store item) is set. */
   bindingId: string | null

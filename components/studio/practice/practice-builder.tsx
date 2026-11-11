@@ -39,6 +39,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
 import { chipClasses } from '@/components/ui/chip'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
 // fields, footer) against the existing practice actions; mirrors the old
@@ -421,11 +422,10 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleFocus(p.id)}
-                className={`min-h-11 rounded-control border px-3 py-2 text-body-sm font-medium transition-colors ${
-                  active
-                    ? 'border-primary/50 bg-primary-bg text-primary-strong'
-                    : 'border-border bg-surface text-muted hover:bg-surface-elevated'
-                }`}
+                className={choiceTileClasses(
+                  active,
+                  `min-h-11 rounded-control px-3 py-2 text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-muted'}`,
+                )}
               >
                 {p.name}
               </button>
@@ -553,13 +553,12 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 disabled={!allowed}
                 title={allowed ? undefined : `Needs a ${floor}+ min practice`}
                 onClick={() => { if (!allowed) return; setWeightClass(w.value); queueSave({ weight_class: w.value }) }}
-                className={`flex min-h-11 flex-col items-center justify-center rounded-control border px-3 py-2 text-body-sm font-medium transition-colors ${
-                  active
-                    ? 'border-primary/50 bg-primary-bg text-primary-strong'
-                    : !allowed
-                    ? 'cursor-not-allowed border-border bg-surface text-subtle opacity-50'
-                    : 'border-border bg-surface text-muted hover:bg-surface-elevated'
-                }`}
+                className={choiceTileClasses(
+                  active,
+                  `flex min-h-11 flex-col items-center justify-center rounded-control px-3 py-2 text-body-sm font-medium ${
+                    active ? 'text-primary-strong' : !allowed ? 'cursor-not-allowed text-subtle opacity-50' : 'text-muted'
+                  }`,
+                )}
               >
                 <span>{w.label}</span>
                 <span className={`text-2xs font-semibold ${active ? 'text-primary-strong' : 'text-muted'}`}>
@@ -612,9 +611,10 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                     queueSave({ timer_kind: 'none', movement_config: null })
                   }
                 }}
-                className={`flex min-h-11 flex-col items-start justify-center rounded-control border px-3 py-2 text-body-sm font-medium transition-colors ${
-                  active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
-                }`}
+                className={choiceTileClasses(
+                  active,
+                  `flex min-h-11 flex-col items-start justify-center rounded-control px-3 py-2 text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-muted'}`,
+                )}
               >
                 <span>{k.label}</span>
                 <span className={`text-2xs font-normal ${active ? 'text-primary-strong' : 'text-muted'}`}>{k.hint}</span>
