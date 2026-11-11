@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { getMyProfileId } from '@/lib/auth'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { createTicketCheckout, refundTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
+import { huntsAfterTicketSession } from '@/lib/hunts/commerce-webhook'
 import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
@@ -132,6 +133,8 @@ export async function settleTicketAction(sessionId: string): Promise<ActionResul
   }
   try {
     const cents = await recordTicketFromSessionId(sessionId)
+    // FH-037S: the checkout return projects the same benefits the webhook does (idempotent, best effort, dark).
+    if (cents != null) await huntsAfterTicketSession(sessionId)
     return ok({ settled: cents != null })
   } catch (e) {
     // NEVER fatal to the buyer. They paid; the webhook still owes them the ticket, and a thrown

@@ -26,7 +26,7 @@ type ReversalEvent =
 type ReversalAction = Readonly<{ mode: 'refund' | 'dispute_open' | 'dispute_lost' | 'dispute_won'; unitKey: string | null; ref: string }>
 type ReviewCase = Readonly<{ kind: 'partial_unmapped'; ref: string; amountMinor: number; currency: string }>
 
-type ReversalDecision = Readonly<{
+export type ReversalDecision = Readonly<{
   actions: readonly ReversalAction[]
   cases: readonly ReviewCase[]
   /** Set when a won dispute is not restored because canonical state says the money is gone. */
