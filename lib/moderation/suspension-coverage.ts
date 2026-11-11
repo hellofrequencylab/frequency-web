@@ -96,6 +96,8 @@ export const SUSPENSION_EXEMPT: Record<string, string> = {
   // Money ledgers are written by webhooks and system paths; a raise here desyncs Stripe.
   financial_transactions: 'ledger row written by webhooks and system paths',
   commerce_orders: 'ledger row written by checkout and webhooks',
+  // Page documents are written by the janitor-gated editor actions with the service role; there is no member write path.
+  page_versions: 'immutable publish history written by staff-only editor actions (service role only)',
   commerce_order_transfers: 'transfer ledger written by settle, the Stripe webhook and the reconciler (service role only)',
   // RETIRED (LIVE-361): the contribution charge and its recorder are gone, so nothing writes this
   // any more. The table stays because it is schema, and it is still listed here on purpose --

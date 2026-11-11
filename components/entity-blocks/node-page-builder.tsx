@@ -1,6 +1,8 @@
 'use client'
 
 import { EditorCollab } from './editor-collab'
+import loadable from 'next/dynamic'
+import type { PresenceState } from '@/lib/editor-crdt/awareness'
 import { useCallback, useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -50,6 +52,11 @@ import { BlockPill, BlocksTray, Menu, MenuItem, RowLayoutPicker, label, type Bui
 import { Input } from '@/components/ui/field'
 import { capsLabel } from '@/components/ui/caps-label'
 import { SaveErrorOrCapPanel } from './spotlight-cap-panel'
+
+// Presence (BLD-401) is its own chunk: it loads only once a live EditorCollab session has heard a peer, so a
+// visitor (and an owner with EDITOR_COLLAB off) never pays for it, and this file keeps the builder ratchet (BLD-101).
+const PresenceFaces = loadable(() => import('@/components/builder/presence/presence-ui').then((m) => m.EditorPresenceFaces), { ssr: false })
+const PresenceOutlines = loadable(() => import('@/components/builder/presence/presence-live').then((m) => m.LiveSelectionOverlay), { ssr: false })
 
 // THE NODE PAGE BUILDER (E0 task 12b, ADR-1850). The in-rail outline editor for a Space page, on the node
 // store (ADR-1835): the Space half of `EntityPageBuilder`, where every block is a NODE. Selection, move,
@@ -102,6 +109,9 @@ export function NodePageBuilder({
   const [loading, setLoading] = useState(true)
   const [matchId, setMatchId] = useState<string | null>(null)
   const [collabId, setCollabId] = useState<string | null>(null)
+  // Who else is editing (BLD-401): filled only by a live EditorCollab session, so empty with EDITOR_COLLAB off.
+  const [peers, setPeers] = useState<PresenceState[]>([])
+  const canvasRef = useRef<HTMLDivElement | null>(null)
   const [lockedIds, setLockedIds] = useState<string[]>([])
   const [pickerData, setPickerData] = useState<NonNullable<BuilderRailData['pickerData']>>({})
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
@@ -446,7 +456,7 @@ export function NodePageBuilder({
 
   return (
     <section className="min-w-0 space-y-3" aria-label="Space page builder">
-      {builderActive && collabId && kind === 'space' ? <EditorCollab kind="space" entityId={collabId} /> : null}
+      {builderActive && collabId && kind === 'space' ? <EditorCollab kind="space" entityId={collabId} onPeers={setPeers} /> : null}
       <p className="sr-only" role="status" aria-live="polite">
         {announce}
       </p>
@@ -456,6 +466,7 @@ export function NodePageBuilder({
           <h3 className="text-body-sm font-bold text-text">Your page</h3>
           <p className="text-meta text-muted">Arrange the blocks on your page into rows and columns. Changes save on their own.</p>
         </div>
+        {peers.length > 0 ? <PresenceFaces peers={peers} /> : null}
         {store.saving || reconciling ? (
           <span className="flex items-center gap-1 text-2xs text-muted" role="status" aria-live="polite">
             <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving
@@ -477,6 +488,7 @@ export function NodePageBuilder({
         <Plus className="h-4 w-4" aria-hidden /> Add row
       </button>
 
+      <div ref={canvasRef} className="relative">
       <ol className="space-y-2">
         {layout.rows.map((row, index) => {
           const isCollapsed = collapsed.has(row.id)
@@ -614,7 +626,7 @@ export function NodePageBuilder({
                       {stack.map((node) => {
                         const nid = node.nid
                         return (
-                          <div key={nid} ref={selectedNid === nid ? activePanelRef : undefined}>
+                          <div key={nid} ref={selectedNid === nid ? activePanelRef : undefined} data-presence-nid={peers.length > 0 ? nid : undefined}>
                             <BlockPill
                               id={nid}
                               type={node.type}
@@ -673,6 +685,8 @@ export function NodePageBuilder({
           )
         })}
       </ol>
+      {peers.length > 0 ? <PresenceOutlines root={canvasRef} peers={peers} /> : null}
+      </div>
 
       <BlocksTray
         bench={bench}

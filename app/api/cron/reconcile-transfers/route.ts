@@ -19,6 +19,7 @@ import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
 import { reconcileTransfers } from '@/lib/commerce/transfers'
 import { reconcileSplitReversals } from '@/lib/commerce/split-refund'
+import { huntsRepairPass } from '@/lib/hunts/commerce-webhook'
 import { log, briefError } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -31,9 +32,15 @@ async function handler(req: NextRequest) {
     const budget = cronBudget(100)
     const result = await reconcileTransfers({ limit: budget.items, exhausted: budget.exhausted })
     const reversals = await reconcileSplitReversals({ limit: budget.items, exhausted: budget.exhausted })
+    // FH-037S: the Hunt benefit repair scan rides this pass. Dark until HUNTS_COMMERCE_ENABLED, and a failure
+    // is logged, never allowed to fail the transfer reconcile.
+    const hunts = await huntsRepairPass(budget.items).catch((err) => {
+      log.error('cron.reconcile_transfers.hunt_repair_failed', { error: briefError(err) })
+      return null
+    })
     const summary = budget.summary(result.orders + reversals.orders, result.remainingOrders + reversals.remainingOrders)
     log.info('cron.reconcile_transfers', { ...result, reversals, ...summary })
-    return NextResponse.json({ ok: true, ...result, reversals, budget: summary })
+    return NextResponse.json({ ok: true, ...result, reversals, hunts, budget: summary })
   } catch (err) {
     log.error('cron.reconcile_transfers.failed', { error: briefError(err) })
     return NextResponse.json({ error: 'transfer reconcile failed' }, { status: 500 })

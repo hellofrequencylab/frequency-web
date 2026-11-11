@@ -4,12 +4,21 @@ import type { Data } from '@/lib/page-editor/types'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireJanitor } from '@/lib/page-editor/guard'
+import { envFlag } from '@/lib/env/string'
+import { listPageVersions, publishVersioned, readPageVersion, revertToVersion, type PageVersionMeta } from '@/lib/page-editor/versions'
 import { EDITABLE_PAGES, pathForSlug, isEditableSlug, resolveSpaceId } from '@/lib/page-editor/data'
 
 // Space-scoped (Phase 0.5e, ENTITY-SPACES-BUILD §0.5.13): writes carry a spaceId, defaulting to
 // the root space, so per-Space micro-site pages are possible later. The 4-slug isEditableSlug
 // allowlist still gates every write below; full un-gating to per-Space authoring is Phase 5.
 // `space_id` isn't in the generated types yet, so the upsert/update payloads are cast (ADR-246).
+
+// The versioned publish, kept out of publishPage so that function stays one write, one error check, then revalidate.
+async function publishVersionedPage(slug: string, spaceId: string, title: string, data: Data, profileId: string): Promise<void> {
+  await publishVersioned({ spaceId, slug, title, data, profileId })
+  revalidatePath(pathForSlug(slug))
+  revalidatePath('/pages')
+}
 
 // Save + publish a page (MVP: publishing writes both the working draft and the
 // live version, then revalidates the public route).
@@ -23,6 +32,10 @@ export async function publishPage(slug: string, data: Data, spaceId?: string | n
   const meta = EDITABLE_PAGES.find((p) => p.slug === slug)!
   const sid = await resolveSpaceId(spaceId)
   if (!sid) throw new Error('No space to publish into.')
+
+  // PROG-E0, dark: with EDITOR_CANVAS on, publish takes the versioned path (an immutable page_versions row and a
+  // pointer swap, one transaction, published_data still dual-written). Off, the upsert below is unchanged.
+  if (envFlag('EDITOR_CANVAS')) return publishVersionedPage(slug, sid, meta.title, data, janitor.profileId)
 
   const db = createAdminClient()
   const now = new Date().toISOString()
@@ -79,4 +92,36 @@ export async function unpublishPage(slug: string, spaceId?: string | null): Prom
 
   revalidatePath(pathForSlug(slug))
   revalidatePath('/pages')
+}
+
+// Put the live page back on an older version: a pointer swap, nothing copied (PROG-E0). Dark behind EDITOR_CANVAS.
+export async function revertPageToVersion(slug: string, versionId: string, spaceId?: string | null): Promise<void> {
+  const janitor = await requireJanitor()
+  if (!envFlag('EDITOR_CANVAS')) throw new Error('Page history is not switched on.')
+  if (!isEditableSlug(slug)) throw new Error('That page cannot be edited here.')
+  const sid = await resolveSpaceId(spaceId)
+  if (!sid) throw new Error('No space to revert in.')
+  await revertToVersion({ spaceId: sid, slug, versionId, profileId: janitor.profileId })
+  revalidatePath(pathForSlug(slug))
+  revalidatePath('/pages')
+}
+
+// The history scrubber's reads (BLD-403). Staff only, dark behind EDITOR_CANVAS. A list leaves bodies out; a
+// preview returns one version's document and writes nothing, so previewing never touches the draft.
+export async function listPageHistory(slug: string, spaceId?: string | null): Promise<PageVersionMeta[]> {
+  await requireJanitor()
+  if (!envFlag('EDITOR_CANVAS')) throw new Error('Page history is not switched on.')
+  if (!isEditableSlug(slug)) throw new Error('That page cannot be edited here.')
+  const sid = await resolveSpaceId(spaceId)
+  if (!sid) return []
+  return listPageVersions(sid, slug)
+}
+
+export async function previewPageVersion(slug: string, versionId: string, spaceId?: string | null): Promise<Data | null> {
+  await requireJanitor()
+  if (!envFlag('EDITOR_CANVAS')) throw new Error('Page history is not switched on.')
+  if (!isEditableSlug(slug)) throw new Error('That page cannot be edited here.')
+  const sid = await resolveSpaceId(spaceId)
+  if (!sid) return null
+  return ((await readPageVersion(sid, slug, versionId)) as Data | null) ?? null
 }

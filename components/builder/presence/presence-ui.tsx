@@ -31,7 +31,7 @@ export function EditorPresenceFaces({ peers }: { peers: readonly PresenceState[]
   )
 }
 
-type NodeBounds = Readonly<{ left: number; top: number; width: number; height: number }>
+export type NodeBounds = Readonly<{ left: number; top: number; width: number; height: number }>
 
 export function EditorSelectionOverlay({ peers, bounds }: {
   peers: readonly PresenceState[]

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { upgradeLayout } from '../entity-blocks/node-tree'
 import type { EditorChannelLike, EditorClientLike } from './provider'
 import { openEditorSession } from './session'
+import { presenceColor, presenceSelf, type PresenceState } from './awareness'
 
 const ID = '0b6a3c1e-6b7e-4c1e-9a53-1d2f3a4b5c6d'
 type Handler = (m: { payload?: unknown }) => void
@@ -54,5 +55,35 @@ describe('editor session', () => {
     await tick()
     expect(got).toEqual([])
     s.close()
+  })
+  it('session presence: two tabs see each other and a selection follows, without touching the page', async () => {
+    const client = world()
+    const seenByB: PresenceState[][] = []
+    const gotB: unknown[] = []
+    const self = (id: string) => ({ userId: id, name: id, color: '#112233', selectedNid: null })
+    const a = openEditorSession({ kind: 'space', entityId: ID, client, initial: lay('one'), onRemote: () => {}, seedWaitMs: 0, presence: { self: self('ua'), onPeers: () => {} } })!
+    await tick()
+    const b = openEditorSession({ kind: 'space', entityId: ID, client, initial: lay('one'), onRemote: (t) => gotB.push(t), seedWaitMs: 200, presence: { self: self('ub'), onPeers: (p) => seenByB.push(p) } })!
+    await tick()
+    const remoteBefore = gotB.length
+    a.select('nabc1234')
+    await tick()
+    const last = seenByB[seenByB.length - 1]
+    expect(last.map((p) => p.userId)).toEqual(['ua'])
+    expect(last[0].selectedNid).toBe('nabc1234')
+    // A selection is presence, not an edit: the peer's tree did not change.
+    expect(gotB.length).toBe(remoteBefore)
+    a.close(); b.close()
+  })
+})
+
+describe('presence self', () => {
+  it('names the person without their email and gives a stable hex colour', () => {
+    const me = presenceSelf({ id: 'u1', user_metadata: { full_name: ' Ana ', email: 'ana@example.com' } })
+    expect(me).toEqual({ userId: 'u1', name: 'Ana', color: presenceColor('u1'), selectedNid: null })
+    expect(presenceColor('u1')).toMatch(/^#[0-9a-f]{6}$/)
+    expect(presenceColor('u1')).toBe(presenceColor('u1'))
+    expect(presenceSelf({ user_metadata: {} })).toBeNull()
+    expect(presenceSelf({ id: 'u2' })?.name).toBe('')
   })
 })
