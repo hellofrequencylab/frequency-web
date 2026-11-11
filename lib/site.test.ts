@@ -162,7 +162,7 @@ describe('FOUNDING_PLACE', () => {
 
 describe('socialLabel (LIVE-1135)', () => {
   it('names every brand profile in SOCIAL_PROFILES for the footer', () => {
-    expect(SOCIAL_PROFILES.map(socialLabel)).toEqual(['Instagram', 'TikTok'])
+    expect(SOCIAL_PROFILES.map(socialLabel)).toEqual(['Instagram', 'TikTok', 'YouTube'])
   })
 
   it('falls back to the bare hostname for a host it does not know', () => {

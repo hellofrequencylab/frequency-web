@@ -1,0 +1,6 @@
+{
+  "id": "BLD-403",
+  "append": {
+    "detail": "\n\nPacket G read-only slice: HistoryScrubber uses an injected list of version metadata and native pointer and keyboard controls to select a preview. The pure timeline discards duplicates and invalid dates without retaining snapshot bodies. The parent remains blocked on the stored reader, real version preview, and restore integration. Existing acceptance is unchanged."
+  }
+}

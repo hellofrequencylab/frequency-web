@@ -906,7 +906,7 @@ The cutover runs in three steps (BLD-108, shadow render and cutover):
 
 ## Frequency Hunts switches
 
-Five switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on): `HUNTS_ENABLED` (browse, entry, the player's own run), `HUNTS_CLAIMS_ENABLED` (a scan may credit a mission), `HUNTS_REWARDS_ENABLED` (a credit may grant a reward), `HUNTS_AUTHORING_ENABLED` (creators draft and publish), `HUNTS_WORKER_ENABLED` (the outbox worker delivers). Each is on only when its parent is: claims and authoring and the worker need `HUNTS_ENABLED`; rewards need claims. Setting a lower rung alone never opens a higher one.
+Six switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on): `HUNTS_ENABLED` (browse, entry, the player's own run), `HUNTS_CLAIMS_ENABLED` (a scan may credit a mission), `HUNTS_REWARDS_ENABLED` (a credit may grant a reward), `HUNTS_AUTHORING_ENABLED` (creators draft and publish), `HUNTS_WORKER_ENABLED` (the outbox worker delivers), `HUNTS_COMMERCE_ENABLED` (paid Experience Passes, store-item benefits, the finance view; activation gate: the D7 funds-flow sign-off on FH-035 and a green `hunt_commerce_state` kill switch drill). Each is on only when its parent is: claims, authoring, the worker and commerce need `HUNTS_ENABLED`; rewards need claims. Setting a lower rung alone never opens a higher one.
 
 `HUNTS_CLAIMS_ENABLED` also opens the staff door (`POST /api/hunts/staff/verify`, FH-020S), which signs and checks one-time player codes with `HUNTS_PROOF_SECRET`. Set that secret in Production before turning claims on: production refuses to fall back to the service-role key and the door answers 500 until it is set. A held claim is decided through `hunt_claim_review` (approve, reject or an audited override); an approval resumes it exactly once.
 
@@ -924,6 +924,14 @@ Use the [D7 dinner draft](hunts/PRODUCT-DRAFTS-D4-D7-D8.md), the [Experience Pas
 
 Keep FH-041 open until the pilot gate has named sign-offs and the parent probe passes.
 
+## Persistent cart
+
+`COMMERCE_CART_ENABLED` (blank by default, `lib/commerce/cart-flag.ts`) turns on the saved cart: an Add to cart control beside Buy now on `/market/<id>` and the cart server actions in `app/(main)/marketplace/cart-actions.ts`. Off, every action answers `off`, nothing renders and no row is written. The cart stores lines only (product, variant, quantity); price and seller are read fresh at checkout.
+
+Gate to turn it on: migration 20270346039000 (`commerce_carts`) is applied in Frequency Community, a signed-in member can add a product, reload and see it saved, and a signed-out visitor is told to sign in rather than shown an error, and `/cart` lists the saved lines with today's price, lets the buyer change a quantity or remove a line, and says what is no longer for sale. Off, `/cart` answers 404. Turning this on only saves and shows lines.
+
+`COMMERCE_CART_CHECKOUT_ENABLED` (blank by default, `lib/commerce/cart-checkout-flag.ts`) adds the Check out control to `/cart` and opens `startCartCheckoutAction`. It needs `COMMERCE_CART_ENABLED` too. The lines are priced and pruned from the live rows and paid through `createCommerceCheckout` unchanged, so single and multi-seller carts take the funds flow they already have; the cart is emptied after the on-page payment settles, and a buyer who is sent to hosted checkout keeps it until they clear it. Gate to turn it on: the cart switch has run for a day with no errors, a Stripe test-mode cart of two products from two sellers pays and appears in Orders as one split order, and a one-seller cart pays as a normal order. Off, no control renders and the action refuses without reading the cart. Turn it off by unsetting it: no data moves. Turn it off by unsetting it: no data moves.
+
 ## Site token requests
 
 `SITE_TOKEN_REQUESTS_ENABLED` (`1` / `true` / `on`) opens the token-request path (PROG-E10, ADR-976 D-1: nobody writes raw CSS). A Space asks for a theme token in words; the request files a support ticket of type `idea` (`lib/sites/token-request.ts`). Activation gate: the owner and the answer time for these tickets (EDITOR-ARCHITECTURE O-4) are named, and the "Need a look the theme does not have?" form in the site builder's Theme tab (`components/sites/editor/token-request-panel.tsx`, drawn only while the flag is on) is the only door. Off, the form is not drawn and the action refuses and files nothing.
@@ -935,6 +943,8 @@ Keep FH-041 open until the pilot gate has named sign-offs and the parent probe p
 ## Live co-editing
 
 `EDITOR_COLLAB` (blank by default) makes the Space page builder join a private Realtime channel (`editor:space:<id>`) so two people editing the same Space see each other's changes. Needs `render_path_space_profile` on (the node builder) and migration 20270346033000 applied (it is). Off, each owner edits alone as before.
+
+`EDITOR_CANVAS` (blank by default) turns on the staff-only canvas preview at `/pages/canvas`: the viewport shell holding a shared-document text editor. Off, the route is a 404. With `?space=<space id>` the canvas joins that Space's live editing room (same as `EDITOR_COLLAB`, which it does not need); without it the document is local. Text is not saved.
 
 Gate to turn it on: two browsers signed in as owners of one Space both open the page builder; an edit in one appears in the other within a couple of seconds and neither page doubles its rows. A signed-out or non-owner session must be refused the channel (it fails closed). Turn it off by unsetting it: no data moves, the draft is still saved by the normal autosave.
 

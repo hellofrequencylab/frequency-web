@@ -1157,7 +1157,7 @@
         {
           "file": "app/(main)/marketplace/cart-actions.ts",
           "status": "added",
-          "sha256": "3e03118b24f900415e73c7b3808ddc320a9b38551ae801ee25bf0c382095217e",
+          "sha256": "2f54ff3dbea53e0eebe30efd6eb907d290b700a21700db0ca88bc7e134a6c389",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -1242,6 +1242,203 @@
           "file": "supabase/tests/commerce_carts.test.sql",
           "status": "added",
           "sha256": "0e898e3811107081daaadcc86144f357d0ec4d9f983f970a0dab3594b4d1e180",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
+    },
+    {
+      "pullRequest": 4855,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346041000_hunt_commerce.sql",
+          "sha256": "c9401c09d39af8b42d7a0c3e3596116bfd811e3009a98b7e7036bf09fa8b0e8f"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": ".env.example",
+          "status": "modified",
+          "sha256": "26c1cb51797280acaf076c2a74530ccf828350a9e4fe98867df1d56150322516",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "a3f57f288899efecf4b2b3ddd373b99ee28368bf652f91c64d8c37c2d577282c",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/adr/ADR-1950.md",
+          "status": "added",
+          "sha256": "f1ad81b0c22f822ab8db0929957ea75b676c8ec5851c637e1c7da7aee45e148f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/FH-036.json",
+          "status": "modified",
+          "sha256": "3234396ef215b48d2af97039cde6fd8ef6bb08b15b03463cce2abe96820d74bf",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/FH-036S.json",
+          "status": "added",
+          "sha256": "56bfc016213875f9f085d631201e6e2ce585a9ff3737c3df1829a675e9b6606c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/FH-037.json",
+          "status": "modified",
+          "sha256": "3b2fb325dbb71d83a69bf93f65a33916ec2e0c3c1d472a8b639be0927cf5c5d6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/FH-037S.json",
+          "status": "added",
+          "sha256": "6f5e9460e0397606860e1f3745ee2206792837e84ef9f94c4756151eb1ff685e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/FH-039.json",
+          "status": "modified",
+          "sha256": "02eae989f6ae5ae51897af8a512d38ae932f35578f289fd25edc17541d6389af",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/commerce-schema.test.ts",
+          "status": "added",
+          "sha256": "88f9f6b4942d5eda74212f17ceee01e8319f125e838ff879cbc6394750964945",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/commerce-store.test.ts",
+          "status": "added",
+          "sha256": "2689445efa4e8fa1e6f13232ef01aab7bfbbd6e7ac1126f3b6b70467754b00af",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/commerce-store.ts",
+          "status": "added",
+          "sha256": "0ae9892ea34841e009611f9a5ed3f00cd5874d6eee2272b6ac120a1dec628d87",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/entitlements.test.ts",
+          "status": "added",
+          "sha256": "839daaf06d3438e345799729b9065d52a1ccf9907502ade28bbe3a6db7b90616",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/entitlements.ts",
+          "status": "added",
+          "sha256": "ec9a7e540aa2f334dd25d3e1bb13b77e1bbbaafdc6cb960b35b4e3cfa39251a8",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/flags.test.ts",
+          "status": "modified",
+          "sha256": "4289509af7ece2498ab1bcc477f4a1691ba27aafdef13f8db05f6f3818f00d71",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/flags.ts",
+          "status": "modified",
+          "sha256": "91d7d7005fe0fb2049b5d0f0fbe19bb447e302d55e933666059809a6114359a3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/pass-binding.test.ts",
+          "status": "added",
+          "sha256": "88f9f2b6ef79134148d518a960a72261bff8e9c6510087ed67efb39a81c7b857",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/pass-binding.ts",
+          "status": "added",
+          "sha256": "bf20511d8762df25ed349f9c3b1948df78ef099456647624855051765e36ef01",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/refunds.test.ts",
+          "status": "added",
+          "sha256": "43cd06bb397a63f9081da1217898a4fb28077762f781fefd6ef853a43b574905",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/refunds.ts",
+          "status": "added",
+          "sha256": "d634cbaef92d96d2c0f5fefc38b34c10861fa50a1f49ac1321b12727c935cd80",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "21c3d2129ec1356c38c237148f134d59ed2eea9af1e55f2a0ee96764fa32f87a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "77f8fd0fcf9ba0650d3cacd153127778626aacdd11822351861b64894bec92a3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "1a3af625b1428a166204a4e0aeb5868f478fc71f9d92943b8386b63c11004e63",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "97df4c856fa23370d75bbb4826e2d212844384ac1392d28de205d91c5fb331ba",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "f22e8b60c8a07c82de07cc92b13daa450ab5d92eb8200a9accbdc48accf64933",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346041000_hunt_commerce.sql",
+          "status": "added",
+          "sha256": "c9401c09d39af8b42d7a0c3e3596116bfd811e3009a98b7e7036bf09fa8b0e8f",
           "baseMode": "000000",
           "headMode": "100644"
         }

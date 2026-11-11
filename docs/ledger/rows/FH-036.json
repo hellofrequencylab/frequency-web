@@ -1,6 +1,10 @@
 {
   "id": "FH-036",
   "append": {
-    "detail": "\n\nPacket F design slice: docs/hunts/EXPERIENCE-PASS-BINDING.md records the canonical authority, integration boundaries and acceptance cases. Runtime implementation, prerequisites and the existing verify probe remain the full row gate."
+    "detail": "\n\nPacket F design slice: docs/hunts/EXPERIENCE-PASS-BINDING.md records the canonical authority, integration boundaries and acceptance cases. Runtime implementation, prerequisites and the existing verify probe remain the full row gate.\n\nBuilt 2026-11-10: lib/hunts/pass-binding.ts validates a binding (the tier belongs to the Event and the seller, is fixed-price paid, codes are valid, unique and published in the Hunt version, one live pass per tier) and resolves a purchase from the canonical tier only: the browser's price, tier, Event and seller are ignored or refused, a free, closed, sold-out or retired tier sells nothing, the kill switch stops new sales, the purchase snapshot freezes the binding revision and codes, and the only return path is an Event slug. hunt_pass_bindings (migration 20270346041000) is frozen by trigger. A paid guest seat projects as pending_claim until the verified-email claim. The checkout and organizer wiring moved to FH-036S."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
   }
 }

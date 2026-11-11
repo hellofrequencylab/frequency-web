@@ -758,14 +758,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 146,
+      "baseline": 139,
       "frozen": {
         "at": "2026-11-10",
-        "value": 146,
+        "value": 139,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice: on-air setup tiles and Journey editor pills and tiles moved to the kit chip and choice tile; 162 to 146",
-        "from": 162
+        "reason": "SCAN-1133 slice: the Space branding form's seven selectable tiles (logo backdrop, hero height, button orientation, scrim, look, theme) moved to the kit choice tile; 146 to 139",
+        "from": 146
       },
       "history": [
         {
@@ -1019,6 +1019,13 @@
           "to": 146,
           "direction": "lowered",
           "reason": "SCAN-1133 slice: on-air setup tiles and Journey editor pills and tiles moved to the kit chip and choice tile; 162 to 146"
+        },
+        {
+          "at": "2026-11-10",
+          "from": 146,
+          "to": 139,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice: the Space branding form's seven selectable tiles (logo backdrop, hero height, button orientation, scrim, look, theme) moved to the kit choice tile; 146 to 139"
         }
       ]
     },

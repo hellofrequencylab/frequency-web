@@ -10,12 +10,13 @@
  *   HUNTS_REWARDS_ENABLED  a credit may grant a reward through the outbox
  *   HUNTS_AUTHORING_ENABLED  creators may draft and publish Hunts
  *   HUNTS_WORKER_ENABLED   the outbox worker may lease and deliver rows
+ *   HUNTS_COMMERCE_ENABLED paid Experience Passes, store-item benefits and the finance view (FH-036..040)
  *
  * Authoring and the worker are independent of the player rungs, but each still needs HUNTS_ENABLED.
  */
 import { envFlag } from '@/lib/env/string'
 
-export type HuntSwitch = 'enabled' | 'claims' | 'rewards' | 'authoring' | 'worker'
+export type HuntSwitch = 'enabled' | 'claims' | 'rewards' | 'authoring' | 'worker' | 'commerce'
 
 export const HUNT_SWITCH_KEYS: Record<HuntSwitch, string> = {
   enabled: 'HUNTS_ENABLED',
@@ -23,6 +24,7 @@ export const HUNT_SWITCH_KEYS: Record<HuntSwitch, string> = {
   rewards: 'HUNTS_REWARDS_ENABLED',
   authoring: 'HUNTS_AUTHORING_ENABLED',
   worker: 'HUNTS_WORKER_ENABLED',
+  commerce: 'HUNTS_COMMERCE_ENABLED',
 }
 
 /** What each switch needs on first. A switch is on only when its own variable and every parent are on. */
@@ -32,6 +34,7 @@ const PARENT: Record<HuntSwitch, HuntSwitch | null> = {
   rewards: 'claims',
   authoring: 'enabled',
   worker: 'enabled',
+  commerce: 'enabled',
 }
 
 export function huntSwitchOn(name: HuntSwitch): boolean {
