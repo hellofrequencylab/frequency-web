@@ -1481,7 +1481,7 @@
         {
           "file": "lib/hunts/rewards.ts",
           "status": "added",
-          "sha256": "395c06fb734ad0d436b3923916dadefbbfc5938959091c0a7bbca5e237f2d9fc",
+          "sha256": "b9fa19b9d74373c88435a4dd98e96702b37605e09249bd1cbb8f8a85a67ce54f",
           "baseMode": "000000",
           "headMode": "100644"
         },
