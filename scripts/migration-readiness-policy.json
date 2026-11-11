@@ -1615,7 +1615,7 @@
         {
           "file": "lib/builder/history-restore.ts",
           "status": "added",
-          "sha256": "cfcee06580c8ddb6e09740fc9f527587ead8477c9ecce4198a5602618acdfd16",
+          "sha256": "2c081b5b03a248361ed9a7c10d2dca2da605b4f12517a4731ff28563e606ca6a",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -1643,7 +1643,7 @@
         {
           "file": "lib/page-editor/versions.ts",
           "status": "added",
-          "sha256": "9d07bcdc2fa4e4f38c9adbd0cdbb98411856cda69eb56362dbdd79877e82cf0e",
+          "sha256": "40f277205d95e75fcefe1054715477c2ad621080a88df6e8bb2bcf9023fff485",
           "baseMode": "000000",
           "headMode": "100644"
         },
