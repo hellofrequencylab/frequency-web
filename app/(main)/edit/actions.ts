@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireJanitor } from '@/lib/page-editor/guard'
 import { envFlag } from '@/lib/env/string'
-import { publishVersioned, revertToVersion } from '@/lib/page-editor/versions'
+import { listPageVersions, publishVersioned, readPageVersion, revertToVersion, type PageVersionMeta } from '@/lib/page-editor/versions'
 import { EDITABLE_PAGES, pathForSlug, isEditableSlug, resolveSpaceId } from '@/lib/page-editor/data'
 
 // Space-scoped (Phase 0.5e, ENTITY-SPACES-BUILD §0.5.13): writes carry a spaceId, defaulting to
@@ -102,4 +102,24 @@ export async function revertPageToVersion(slug: string, versionId: string, space
   await revertToVersion({ spaceId: sid, slug, versionId, profileId: janitor.profileId })
   revalidatePath(pathForSlug(slug))
   revalidatePath('/pages')
+}
+
+// The history scrubber's reads (BLD-403). Staff only, dark behind EDITOR_CANVAS. A list leaves bodies out; a
+// preview returns one version's document and writes nothing, so previewing never touches the draft.
+export async function listPageHistory(slug: string, spaceId?: string | null): Promise<PageVersionMeta[]> {
+  await requireJanitor()
+  if (!envFlag('EDITOR_CANVAS')) throw new Error('Page history is not switched on.')
+  if (!isEditableSlug(slug)) throw new Error('That page cannot be edited here.')
+  const sid = await resolveSpaceId(spaceId)
+  if (!sid) return []
+  return listPageVersions(sid, slug)
+}
+
+export async function previewPageVersion(slug: string, versionId: string, spaceId?: string | null): Promise<Data | null> {
+  await requireJanitor()
+  if (!envFlag('EDITOR_CANVAS')) throw new Error('Page history is not switched on.')
+  if (!isEditableSlug(slug)) throw new Error('That page cannot be edited here.')
+  const sid = await resolveSpaceId(spaceId)
+  if (!sid) return null
+  return ((await readPageVersion(sid, slug, versionId)) as Data | null) ?? null
 }

@@ -9,10 +9,12 @@ const FORMAT_DATE = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC',
 })
 
-export function HistoryScrubber({ versions, selectedId, onPreview }: {
+export function HistoryScrubber({ versions, selectedId, onPreview, onRestore }: {
   versions: readonly EditorVersionSummary[]
   selectedId: string | null
   onPreview: (versionId: string) => void
+  /** Copies the selected version into the draft (BLD-403). Left out, the button stays off. */
+  onRestore?: (versionId: string) => void
 }) {
   const timeline = versionTimeline(versions)
   const index = selectedVersionIndex(timeline, selectedId)
@@ -56,9 +58,12 @@ export function HistoryScrubber({ versions, selectedId, onPreview }: {
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="secondary" disabled={index === 0} onClick={() => choose(index - 1)}>Earlier</Button>
         <Button type="button" variant="secondary" disabled={index === timeline.length - 1} onClick={() => choose(index + 1)}>Later</Button>
-        <Button type="button" variant="secondary" disabled>Restore to draft</Button>
+        <Button type="button" variant="secondary" disabled={!onRestore} onClick={() => onRestore?.(selected.id)}>Restore to draft</Button>
       </div>
-      <p className="text-body-sm text-muted">Previewing a version leaves your draft unchanged. Restore is currently unavailable.</p>
+      <p className="text-body-sm text-muted">
+        Previewing a version leaves your draft unchanged.{' '}
+        {onRestore ? 'Restore copies it into your draft. Publish when it looks right.' : 'Restore is currently unavailable.'}
+      </p>
     </section>
   )
 }

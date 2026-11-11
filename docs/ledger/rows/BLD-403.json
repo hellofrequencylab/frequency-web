@@ -1,6 +1,14 @@
 {
   "id": "BLD-403",
   "append": {
-    "detail": "\n\nPacket G read-only slice: HistoryScrubber uses an injected list of version metadata and native pointer and keyboard controls to select a preview. The pure timeline discards duplicates and invalid dates without retaining snapshot bodies. The parent remains blocked on the stored reader, real version preview, and restore integration. Existing acceptance is unchanged."
+    "detail": "\n\nPacket G read-only slice: HistoryScrubber uses an injected list of version metadata and native pointer and keyboard controls to select a preview. The pure timeline discards duplicates and invalid dates without retaining snapshot bodies. The parent remains blocked on the stored reader, real version preview, and restore integration. Existing acceptance is unchanged.\n\nUPDATE 2026-11-11 (live, dark behind EDITOR_CANVAS, stacked on the PROG-E0 page_versions PR): /pages/canvas?page=<slug> (staff only, a 404 when the switch is off) mounts components/builder/history/history-panel.tsx, fed by listPageVersions on the server and by two new staff-only, switch-gated actions (listPageHistory, previewPageVersion). Moving the scrubber previews a version's sections against the draft and writes nothing. Restore to draft copies the whole version; Restore this section copies one section by id (page documents by props.id, node trees by nid through node-ops), in place or back where the version had it. Publish draft is the normal versioned publish; Make this the live page is the revertPageToVersion pointer swap and leaves the draft alone. lib/builder/history-restore.ts is pure and never consults the registry, so unknown blocks survive byte for byte; its table test 'Restore produces a document equal to the chosen version' covers the whole page and every section in turn, for both document shapes, in both directions. Probe scripts/probes/builder/BLD-403.mjs failed before and passes after. Not yet: the same panel inside the website builder shell (that draft is a Space site snapshot, not a page_versions document), and a full visual render of the preview (it shows the section outline)."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-11",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/builder/BLD-403.mjs"
+    }
   }
 }
