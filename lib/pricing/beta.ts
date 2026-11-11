@@ -83,7 +83,7 @@ export function effectiveCatalogAmounts(amounts: CatalogAmounts, betaActive: boo
 
 /** The instant the Collective Founding intro closes: midnight Pacific at the start of January 1, 2027
  *  (owner ruling 2026-10-20: "make sure people realize the beta pricing offer on Collective ends Jan 1").
- *  This is NOT the site-wide beta end (BETA_ENDS_LABEL, December 31): the intro is
+ *  This is NOT the site-wide beta end (BETA_ENDS_LABEL, January 31): the intro is
  *  its own offer and does not read `beta_grace`. Moving this one constant moves the checkout, every price
  *  surface and every end-date caption, because all of them read it. */
 export const COLLECTIVE_FOUNDING_ENDS_AT = '2027-01-01T08:00:00.000Z'

@@ -6,7 +6,7 @@
 //   03 Story      four chapters per side (Find, Show up, Come back, Pass it on), with "Live this week"
 //   04 Features   six ways to be in the room / six things you can make
 //   05 Weave      how both sides' steps thread together (client island, ./weave.tsx)
-//   03y Beta      the beta announcement band: free through December 31, founding members, one Join the beta button
+//   03y Beta      the beta announcement band: free through January 31, founding members, one Join the beta button
 //   06 Manifesto  "Sacred, not serious."
 //   Dock          the Browse / Host switch and Join the beta, pinned once the hero has gone
 //

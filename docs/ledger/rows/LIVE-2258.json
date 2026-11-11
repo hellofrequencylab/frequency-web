@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2258",
+  "title": "Move the free beta's end from December 31 to January 31, 2027, so the site matches the re-engagement emails",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/core/launch-dates.ts",
+    "ref": "Owner decision 2026-11-11: \"Move Frequency's beta end from December 31 to January 31 before today's email?\" -> \"Yes, I'll build that PR too\" (FlowWeb email queue thread)."
+  },
+  "detail": "The founding and re-engagement emails say Frequency is free through January 31, 2027, while BETA_ENDS_ON said 2026-12-31. Moved BETA_ENDS_ON to 2027-01-31 and its label to 'January 31'; launch day (January 1, 2027) now falls inside the beta. Help pages for beta pricing, Collective and plans say 'before January 31'. The Collective Founding intro (COLLECTIVE_FOUNDING_ENDS_AT, January 1) is unchanged. Owner follow-up outside code: the beta grace window in /admin/pricing (pricing_settings.beta_grace) may still end December 31.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/beta-ends-jan31.mjs"
+  },
+  "closed": "2026-11-11",
+  "wave": "W7"
+}
