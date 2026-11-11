@@ -1545,7 +1545,42 @@
         {
           "file": "app/(main)/edit/actions.ts",
           "status": "modified",
-          "sha256": "35552f274ec3525574b895ecf245c9363dfccb1f6a6e2955b871cc85b0ab0953",
+          "sha256": "12dc98f077a912ea09f83e6521ae2566092fa83a5ae647683f81c3dc79a2e1f9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/pages/canvas/page.tsx",
+          "status": "modified",
+          "sha256": "ebf6764029365cf137f5bf68fe3f993159ed59caf939aafe209eeacc20fdac61",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/builder/history/history-panel.test.tsx",
+          "status": "added",
+          "sha256": "74238e782860519cb64922b9e80b4f2f4e6b19cd91c088ccf562fe69fd7b8365",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/builder/history/history-panel.tsx",
+          "status": "added",
+          "sha256": "71c0102c57c43c984c6b16400ef48d971b8179dc408c63b04558981a3aa4c4f6",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/builder/history/history-scrubber.test.tsx",
+          "status": "modified",
+          "sha256": "6e797d682674c2cd76ebfa4a62cd89be6fa14ed2a0230beccae0e416256817a8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/builder/history/history-scrubber.tsx",
+          "status": "modified",
+          "sha256": "ead86c9c0f664c0b158a7d65190826f1b366891add87b341bf8252177275903b",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -1557,10 +1592,31 @@
           "headMode": "100644"
         },
         {
+          "file": "docs/ledger/rows/BLD-403.json",
+          "status": "modified",
+          "sha256": "4dcde8608f9886db523306e7a5e025df39d7bfa9c0417bf1722abaf9daf5be05",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
           "file": "docs/ledger/rows/PROG-E0.json",
           "status": "modified",
           "sha256": "60c7b8b558ff2b44c6a0b8697204eb9c2237c4f0f1dbc78ac8f1adaa93b46d6a",
           "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/builder/history-restore.test.ts",
+          "status": "added",
+          "sha256": "afce167d7906d75c94af29eb0d93695b05f71b14bd44ff6b6426027564236980",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/builder/history-restore.ts",
+          "status": "added",
+          "sha256": "cfcee06580c8ddb6e09740fc9f527587ead8477c9ecce4198a5602618acdfd16",
+          "baseMode": "000000",
           "headMode": "100644"
         },
         {
@@ -1596,6 +1652,13 @@
           "status": "modified",
           "sha256": "d521f530c0196a2f7c840da599f3d2a58a17c47031b72146e4003d545c22bb5b",
           "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/builder/BLD-403.mjs",
+          "status": "added",
+          "sha256": "c0ae5e4c9e974cfe6073cbccc76ff48d49c1157a16e2ab2d001e2d416ec813f7",
+          "baseMode": "000000",
           "headMode": "100644"
         },
         {
