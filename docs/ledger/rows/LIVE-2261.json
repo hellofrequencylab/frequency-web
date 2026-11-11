@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2261",
+  "title": "Offer Gathering, Maker, and Music setup presets with beta Email and CRM available on new Spaces",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/pricing/bundles.ts",
+    "ref": "Owner-approved Gate A, Packet 0.1(b), 2026-11-11: add Gathering, Maker, and Music setup packages and make Email and CRM available during beta without widening preset grants."
+  },
+  "detail": "The three launch packages were missing from setup, and setup could leave Email and CRM switched off even though they are open during the beta. Adds the three focused presets and applies the beta-open Email and CRM step only after a preset succeeds, gated by BETA_OPEN_ACCESS. Presets remain narrow and never grant tier-marked tools; the beta step only removes the Email and CRM off switches and leaves other entitlements and billing untouched. No pricing, Stripe, or schema change.\n\nPreset contract and 56 focused tests passed locally; branch remains unpushed pending its authorized slot.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs = require('node:fs'); const bundles = fs.readFileSync('lib/pricing/bundles.ts', 'utf8'); const setup = fs.readFileSync('lib/pricing/space-bundle.ts', 'utf8'); const provision = fs.readFileSync('lib/spaces/provision-core.ts', 'utf8'); const tests = fs.readFileSync('lib/pricing/bundles.test.ts', 'utf8'); for (const [name, ok] of [['three launch presets', ['GATHERING_BUNDLE', 'MAKER_BUNDLE', 'MUSIC_BUNDLE'].every((x) => bundles.includes(x))], ['beta tools gated', setup.includes('BETA_OPEN_ACCESS') && setup.includes('setSpaceBetaTools')], ['provision after preset', provision.includes('if (applied.ok) await setSpaceBetaTools(spaceId)')], ['preset coverage', ['gathering', 'maker', 'music'].every((x) => tests.includes(x))]]) { if (!ok) throw new Error('missing ' + name); } console.log('LIVE-2261 preset contract passes')\""
+  },
+  "closed": "2026-11-11",
+  "wave": "W7"
+}

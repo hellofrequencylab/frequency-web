@@ -25,7 +25,8 @@
 // exactly when billing may be off.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { capabilityBundle, nextBlobsForBundle, type CapabilityBundle } from './bundles'
+import { BETA_OPEN_ACCESS } from '@/lib/core/beta'
+import { capabilityBundle, nextBlobsForBundle, withBetaToolsOn, type CapabilityBundle } from './bundles'
 
 interface SetSpaceBundleResult {
   ok: boolean
@@ -79,4 +80,29 @@ export async function setSpaceBundle(spaceId: string, bundleId: string): Promise
   if (error) return { ok: false, reason: 'error' }
 
   return { ok: true, bundle, entitlements, featureRoles }
+}
+
+/**
+ * While the beta is open, leave Email and CRM on for a Space a preset just narrowed (owner 2026-11-11). A no-op
+ * once BETA_OPEN_ACCESS is off, and a no-op on a Space that never had them switched off. Writes entitlements
+ * only, so like setSpaceBundle it can never touch `spaces.plan` or the `billing` namespace. Returns true when
+ * it wrote.
+ */
+export async function setSpaceBetaTools(spaceId: string): Promise<boolean> {
+  if (!BETA_OPEN_ACCESS || !spaceId) return false
+  const db = createAdminClient()
+  const { data } = (await db.from('spaces').select('id, entitlements').eq('id', spaceId).maybeSingle()) as {
+    data: { id?: string; entitlements?: unknown } | null
+  }
+  if (!data?.id) return false
+  const current = asRecord(data.entitlements)
+  const next = withBetaToolsOn(current)
+  if (Object.keys(next).length === Object.keys(current).length) return false
+  const write = db as unknown as {
+    from: (t: string) => {
+      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
+    }
+  }
+  const { error } = await write.from('spaces').update({ entitlements: next }).eq('id', spaceId)
+  return !error
 }

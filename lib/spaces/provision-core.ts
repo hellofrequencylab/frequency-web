@@ -18,7 +18,7 @@ import { listTypeDefaultsForType } from '@/lib/spaces/type-defaults'
 import { resolveMode, isModeVariant, kindForMode } from '@/lib/spaces/modes'
 import { withProfileData } from '@/lib/spaces/profile-data'
 import { resolveSetupPreset, setupPresetForMode } from '@/lib/pricing/bundles'
-import { setSpaceBundle } from '@/lib/pricing/space-bundle'
+import { setSpaceBetaTools, setSpaceBundle } from '@/lib/pricing/space-bundle'
 import { ensureSpaceStages } from '@/lib/crm/pipeline'
 
 interface SpaceBirthConfig {
@@ -68,6 +68,8 @@ export async function finishSpaceBirth(
   if (config.presetId) {
     try {
       const applied = await setSpaceBundle(spaceId, config.presetId)
+      // The beta perk: Email and CRM stay on for a new Space while the beta is open (setSpaceBetaTools).
+      if (applied.ok) await setSpaceBetaTools(spaceId)
       if (!applied.ok) {
         console.error(`[spaces/provision] setup preset "${config.presetId}" not applied to ${spaceId}: ${applied.reason}`)
       }
