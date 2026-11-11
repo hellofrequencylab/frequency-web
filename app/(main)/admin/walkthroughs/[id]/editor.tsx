@@ -454,7 +454,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                     type="button"
                     aria-pressed={!step.icon}
                     onClick={() => setStep(selected, { icon: undefined })}
-                    className={choiceTileClasses(!step.icon, `rounded-control px-2 py-1.5 text-2xs font-medium ${!step.icon ? 'text-primary-strong' : 'text-subtle'}`)}
+                    className={choiceTileClasses(!step.icon, `rounded-control px-2 py-1.5 text-2xs font-medium ${!step.icon ? 'text-primary-strong' : 'text-muted'}`)}
                   >
                     None
                   </button>
