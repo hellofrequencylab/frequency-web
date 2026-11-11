@@ -60,6 +60,24 @@ function parse(token: string): { body: string; sig: string; payload: Payload } |
   }
 }
 
+function authenticateChallenge(secret: string, token: string) {
+  const parsed = parse(token)
+  if (!parsed) return { ok: false, reason: 'malformed' } as const
+
+  const want = Buffer.from(sign(secret, parsed.body))
+  const got = Buffer.from(parsed.sig)
+  if (want.length !== got.length || !timingSafeEqual(want, got)) return { ok: false, reason: 'bad_signature' } as const
+  return { ok: true, payload: parsed.payload } as const
+}
+
+/** Read only the signed scope for the door lookup. The verifier still checks expiry and staff access. */
+export function readSignedStaffScope(secret: string, token: string): Scope | null {
+  const challenge = authenticateChallenge(secret, token)
+  if (!challenge.ok) return null
+  const { h, p, v, r } = challenge.payload
+  return { huntId: h, placementId: p, venueSpaceId: v, runId: r }
+}
+
 /**
  * Check a token a staff member scanned. `staffVenueSpaceIds` are the venue Spaces this staff member holds
  * right now (loaded fresh by the caller). `consumeNonce` must resolve true exactly once per nonce.
@@ -73,14 +91,10 @@ export async function verifyStaffProof(input: {
   placementActive: boolean
   consumeNonce: (nonce: string) => Promise<boolean>
 }): Promise<Verdict> {
-  const parsed = parse(input.token)
-  if (!parsed) return { ok: false, reason: 'malformed' }
+  const challenge = authenticateChallenge(input.secret, input.token)
+  if (!challenge.ok) return challenge
 
-  const want = Buffer.from(sign(input.secret, parsed.body))
-  const got = Buffer.from(parsed.sig)
-  if (want.length !== got.length || !timingSafeEqual(want, got)) return { ok: false, reason: 'bad_signature' }
-
-  const p = parsed.payload
+  const p = challenge.payload
   if (input.now >= p.exp || input.now < p.iat) return { ok: false, reason: 'expired' }
 
   const e = input.expected
