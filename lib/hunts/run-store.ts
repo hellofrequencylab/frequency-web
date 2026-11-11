@@ -77,6 +77,21 @@ function completeRows(result: { data: unknown; count: number | null; error: unkn
     && result.data.every((row: unknown) => row !== null && typeof row === 'object')
 }
 
+async function readPublishedTrailVersion(client: SupabaseClient, huntId: string, versionId: string) {
+  const { data, error } = await client
+    .from('hunt_versions')
+    .select('id, trail_title:policy->trail->>title, trail_hook:policy->trail->>hook')
+    .eq('id', versionId)
+    .eq('hunt_id', huntId)
+    .eq('status', 'published')
+    .maybeSingle()
+  return error ? null : data as { id: string; trail_title: string | null; trail_hook: string | null } | null
+}
+
+export async function isPublishedTrailVersion(huntId: string, versionId: string): Promise<boolean> {
+  return (await readPublishedTrailVersion(db(), huntId, versionId)) !== null
+}
+
 async function readPublishedVersion(client: SupabaseClient, slug: string, liveOnly: boolean) {
   const hunts = client
     .from('hunts')
@@ -88,15 +103,8 @@ async function readPublishedVersion(client: SupabaseClient, slug: string, liveOn
   const state = h ? playerHuntState(h.status) : null
   if (huntError || !h || !state || !h.current_version_id || (liveOnly && state !== 'published')) return null
 
-  const { data: version, error: versionError } = await client
-    .from('hunt_versions')
-    .select('id, trail_title:policy->trail->>title, trail_hook:policy->trail->>hook')
-    .eq('id', h.current_version_id)
-    .eq('hunt_id', h.id)
-    .eq('status', 'published')
-    .maybeSingle()
-  const v = version as { id: string; trail_title: string | null; trail_hook: string | null } | null
-  if (versionError || !v) return null
+  const v = await readPublishedTrailVersion(client, h.id, h.current_version_id)
+  if (!v) return null
   return {
     huntId: h.id,
     slug: h.slug,

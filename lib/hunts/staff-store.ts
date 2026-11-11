@@ -25,6 +25,20 @@ export function huntRpc() {
   return (fn: string, args: Record<string, unknown>) => client.rpc(fn, args)
 }
 
+/** A scanned placement identifies a mission only when its version binds it exactly once. */
+export async function loadUniquePlacementMission(huntId: string, versionId: string, placementId: string): Promise<string | null> {
+  const binding = await db()
+    .from('hunt_mission_placements')
+    .select('mission_key', { count: 'exact' })
+    .eq('hunt_id', huntId)
+    .eq('version_id', versionId)
+    .eq('placement_id', placementId)
+    .limit(2)
+  if (binding.error || binding.count !== 1 || binding.data?.length !== 1) return null
+  const missionKey: unknown = binding.data[0]?.mission_key
+  return typeof missionKey === 'string' && missionKey ? missionKey : null
+}
+
 type Scope = { huntId: string; placementId: string; venueSpaceId: string; runId: string }
 
 export async function loadStaffFacts(staffId: string, scope: Scope): Promise<(StaffFacts & { missionKey: string }) | null> {

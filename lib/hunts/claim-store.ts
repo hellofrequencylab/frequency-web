@@ -20,8 +20,8 @@ import { authorizeClaim, checkScope, type ClaimRefusal, type ScopeFacts } from '
 import { huntSwitchOn } from './flags'
 import { evaluate, validateGraph } from './graph'
 import { issueClaimToken } from './placement'
-import { loadPublishedTrail, loadRunCreditsForClaim } from './run-store'
-import { huntRpc } from './staff-store'
+import { isPublishedTrailVersion, loadPublishedTrail, loadRunCreditsForClaim } from './run-store'
+import { huntRpc, loadUniquePlacementMission } from './staff-store'
 
 // eslint-disable-next-line no-restricted-syntax -- the FH-005 hunt tables are not in the generated types yet (ADR-246 exception)
 const db = () => createAdminClient() as unknown as SupabaseClient
@@ -87,14 +87,12 @@ async function loadScope(actorId: string, placementId: string): Promise<ScanScop
   if (huntError || !h?.current_version_id) return { ok: false, reason: 'placement_not_found' }
   const versionId = h.current_version_id
 
-  const [run, bound, version] = await Promise.all([
+  const [run, missionKey, published] = await Promise.all([
     client.from('hunt_runs').select('id, hunt_id, subject_profile_id, state')
       .eq('hunt_id', p.hunt_id).eq('version_id', versionId).eq('subject_profile_id', actorId)
       .order('attempt_no', { ascending: false }).limit(1).maybeSingle(),
-    client.from('hunt_mission_placements').select('mission_key', { count: 'exact' })
-      .eq('hunt_id', p.hunt_id).eq('version_id', versionId).eq('placement_id', p.id).limit(2),
-    client.from('hunt_versions').select('id')
-      .eq('hunt_id', p.hunt_id).eq('id', versionId).eq('status', 'published').maybeSingle(),
+    loadUniquePlacementMission(p.hunt_id, versionId, p.id),
+    isPublishedTrailVersion(p.hunt_id, versionId),
   ])
   const r = run.error ? null : run.data as { id: string; hunt_id: string; subject_profile_id: string; state: string } | null
   const facts: ScopeFacts = {
@@ -103,10 +101,8 @@ async function loadScope(actorId: string, placementId: string): Promise<ScanScop
   }
   const scope = checkScope(actorId, facts)
   if (!scope.ok) return scope
-  if (version.error || !version.data) return { ok: false, reason: 'placement_not_found' }
-  const bindings = bound.data as { mission_key: string }[] | null
-  const missionKey = bindings?.length === 1 ? bindings[0]?.mission_key : undefined
-  if (bound.error || bound.count !== 1 || typeof missionKey !== 'string' || !missionKey) return { ok: false, reason: 'mission_binding_unavailable' }
+  if (!published) return { ok: false, reason: 'placement_not_found' }
+  if (!missionKey) return { ok: false, reason: 'mission_binding_unavailable' }
 
   return { ...scope, facts, huntId: p.hunt_id, huntSlug: h.slug, versionId, missionKey }
 }

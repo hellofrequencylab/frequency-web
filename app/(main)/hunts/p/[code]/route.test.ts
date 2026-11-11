@@ -12,8 +12,7 @@ const { getCallerProfile, loadScanPlacement, claimAsPlayer, from, rpc } = vi.hoi
 
 vi.mock('@/lib/auth', () => ({ getCallerProfile }))
 vi.mock('@/lib/hunts/claim-store', () => ({ loadScanPlacement, claimAsPlayer }))
-vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from }) }))
-vi.mock('@/lib/hunts/staff-store', () => ({ huntRpc: () => rpc }))
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from, rpc }) }))
 
 const origin = 'https://frequencylocal.com'
 const scanPath = '/hunts/p/trail-stop'
