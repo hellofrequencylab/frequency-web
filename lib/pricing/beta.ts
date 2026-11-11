@@ -81,22 +81,16 @@ export function effectiveCatalogAmounts(amounts: CatalogAmounts, betaActive: boo
 // share the function. Closing the intro is removing the item from the set, which is a code change with
 // an ADR, exactly like a changed amount in the catalog (ADR-916).
 
-/** The instant the Collective Founding intro closes: midnight Pacific at the start of January 1, 2027
- *  (owner ruling 2026-10-20: "make sure people realize the beta pricing offer on Collective ends Jan 1").
- *  This is NOT the site-wide beta end (BETA_ENDS_LABEL, January 31): the intro is
- *  its own offer and does not read `beta_grace`. Moving this one constant moves the checkout, every price
- *  surface and every end-date caption, because all of them read it. */
-export const COLLECTIVE_FOUNDING_ENDS_AT = '2027-01-01T08:00:00.000Z'
+/** The Founding Year offer closes at midnight Pacific after January 31, 2027.
+ *  This is the approved beta and Founding Year cutoff. It does not change the live Stripe catalog or
+ *  `beta_grace`. Moving this instant changes the offer window used by checkout and pricing surfaces. */
+export const COLLECTIVE_FOUNDING_ENDS_AT = '2027-02-01T08:00:00.000Z'
 
-/** The end date as members read it. Derived from nothing else; keep it in step with
- *  COLLECTIVE_FOUNDING_ENDS_AT (pinned by beta.test.ts). */
-export const COLLECTIVE_FOUNDING_ENDS_LABEL = 'January 1'
+/** The offer close date as members read it. Keep it in step with the cutoff above. */
+export const COLLECTIVE_FOUNDING_ENDS_LABEL = 'January 31'
 
-/** The day the founder BADGE stops being granted: the `beta_grace` window end, which the badge grant reads
- *  (lib/billing/beta-founding.ts). The Founding PRICE runs past it to COLLECTIVE_FOUNDING_ENDS_AT, but the
- *  badge does not (owner 2026-10-20: "Badge till the beta ends for founders"). Kept equal to BETA_ENDS_LABEL
- *  (lib/core/beta-notices.ts, which imports this module, so it cannot be imported here); beta.test.ts pins
- *  the two together. */
+/** The Founding Member recognition window follows the beta end. It is distinct from the paid Founding
+ *  Year offer; beta.test.ts pins the two dates together. */
 export const FOUNDER_BADGE_ENDS_LABEL = BETA_ENDS_DAY_LABEL
 
 /** Is the standing Founding intro still open at `now`? False on/after the end instant, and false when the
@@ -106,8 +100,7 @@ export function collectiveFoundingOpen(now: Date = new Date()): boolean {
   return Number.isFinite(ends) && now.getTime() < ends
 }
 
-/** Is the Network Founding offer (a year for nine months, first year) open at `now`? It closes with the
- *  Collective intro on January 1 (owner 2026-10-20), so it shares the one end instant. PURE. */
+/** Is the Network Founding offer open at `now`? It closes with the beta on January 31, 2027, so it shares the one end instant. PURE. */
 export function networkFoundingOpen(now: Date = new Date()): boolean {
   return collectiveFoundingOpen(now)
 }
@@ -148,7 +141,7 @@ export function foundingOpenForPlan(plan: SpacePlan, betaActive: boolean, now: D
 /** The one plain sentence beside a Founding price: the offer ends on COLLECTIVE_FOUNDING_ENDS_LABEL, and
  *  the rate is locked for as long as the subscription is kept (readLockedPriceId re-bills it). Shared by
  *  /pricing, the in-app ladder (where Collective checkout starts) and the FAQ so it is worded once. */
-export const FOUNDING_RATE_NOTE = `Beta pricing, offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}. Grandfathered for as long as you keep the plan. Collectives that start before ${FOUNDER_BADGE_ENDS_LABEL} also get the founder badge.`
+export const FOUNDING_RATE_NOTE = `The paid Founding Year offer closes ${COLLECTIVE_FOUNDING_ENDS_LABEL}, 2027. Check /pricing for current availability, eligibility and terms.`
 
 // ── THE PRIVATE BETA PRICE GRANT (ADR-1061) — a per-Space grant, never a public offer ────────────
 // The owner, 2026-08-17, the same day they closed the window above: *"I still have a couple people

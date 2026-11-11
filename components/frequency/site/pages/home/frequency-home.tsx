@@ -6,15 +6,13 @@
 //   03 Story      four chapters per side (Find, Show up, Come back, Pass it on), with "Live this week"
 //   04 Features   six ways to be in the room / six things you can make
 //   05 Weave      how both sides' steps thread together (client island, ./weave.tsx)
-//   03y Beta      the beta announcement band: free through January 31, founding members, one Join the beta button
+//   03y Beta      the beta announcement band: free through January 31, Founding Member recognition, one Join the beta button
 //   06 Manifesto  "Sacred, not serious."
 //   Dock          the Browse / Host switch and Join the beta, pinned once the hero has gone
 //
-// THE BETA (owner, 2026-10-14, moved to launch on January 1 by the 2026-11-09 ruling; OPENING_DATE_LABEL in lib/site.ts is the one date, year included): "We're in beta until January 1, let's announce that and do clear calls to
-// action into our beta sign up. Each feature CTA leads to the same beta intake flow." So the hero carries
-// the beta pill and ONE primary (Join the beta), a band after the story says it again, and every feature
-// CTA on this page (the chapter Acts, the path doors, the "Live this week" host button, the closer, the
-// dock) goes to SITE.join, the three-step beta entry at /join. Anchors that only move down this page
+// THE BETA (owner, 2026-11-11): the beta runs through January 31, 2027; the official opening is January 1, 2027.
+// The hero and beta band share the end date and the primary action goes to the beta entry. Feature links
+// that only move down this page
 // ("See how it works") and "Browse this week" (it opens the real list) stay navigation.
 //
 // The owner's call (2026-10-13): under Frequency, `/` renders the design's content, not the published
@@ -33,7 +31,7 @@ import { FreeSpotlightButton } from '@/components/marketing/free-spotlight-butto
 import '@/app/themes/active/site-pages-a'
 import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
-import { OPENING_DATE_LABEL } from '@/lib/site'
+import { BETA_ENDS_DAY_LABEL } from '@/lib/core/launch-dates'
 import { homeFaq } from '@/lib/marketing/quick-answers'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { getActiveCircleCount, getRankedSpaces, getWhatsOn, type SiteEvent } from '../shared/data'
@@ -49,7 +47,7 @@ const HERO_BROLL = '/brand/frequency/broll/yoga-rave-uv-swirl-web.jpg'
 const SIG = 'Gather like it matters.'
 
 /** The shared beta label keeps the pill, band and closer on the same date. */
-const BETA_UNTIL = OPENING_DATE_LABEL
+const BETA_UNTIL = `${BETA_ENDS_DAY_LABEL}, 2027`
 const BETA_CTA = 'Join the beta'
 
 /** The fold's floating photos: [file, data-d depth, position + size]. Verbatim from the design. */
@@ -64,7 +62,7 @@ const FOLD_PHOTOS: [string, number, CSSProperties][] = [
 
 const FEATS: { icon: FqIconName; name: string; vp: string; ve: string; pp: string; pe: string }[] = [
   { icon: 'circle', name: 'Circle', vp: 'You join', ve: 'You run', pp: 'A small group around one activity, with its own meeting times.', pe: 'Choose a time and invite people to meet regularly.' },
-  { icon: 'event', name: 'Event', vp: 'You go', ve: 'You throw', pp: 'Find a one-off gathering you’d like to try.', pe: 'Greet guests and manage tickets. Paid tickets start at Business.' },
+  { icon: 'event', name: 'Event', vp: 'You go', ve: 'You throw', pp: 'Find a one-off gathering you’d like to try.', pe: 'Greet guests and manage tickets. See /pricing for current ticket options and fees.' },
   { icon: 'program', name: 'Program', vp: 'You move through', ve: 'You design', pp: 'Follow the program’s sessions and meeting dates.', pe: 'A path your Circle walks together, step by step.' },
   { icon: 'host', name: 'Experience', vp: 'You host', ve: 'You hand off', pp: 'Open your living room, garden or local park.', pe: 'Regulars running gatherings under your Space.' },
   { icon: 'checkin', name: 'Check-in', vp: 'You arrive', ve: 'You remember', pp: 'Follow the check-in instructions at the door.', pe: 'See who checked in and welcome them by name.' },
@@ -354,7 +352,7 @@ export async function FrequencyHome() {
               className="e-only"
               items={[
                 { href: SITE.join, icon: 'qr', title: 'Join to print your door QR', sub: 'One code for every experience' },
-                { href: SITE.join, icon: 'ticket', title: 'Join to run your guest list', sub: 'Paid tickets start at Business' },
+                { href: SITE.join, icon: 'ticket', title: 'Join to run your guest list', sub: 'See /pricing for current ticket options and fees' },
                 { href: SITE.join, icon: 'nudge', title: 'Join to greet first-timers', sub: 'Read their check-in history' },
               ]}
             />
@@ -487,8 +485,8 @@ export async function FrequencyHome() {
               a walk, a shared meal or a Circle of your own.
             </p>
             <p className="body-l e-only">
-              Share the hosting with a regular, or invite another local group to gather with you. Paid Space plans
-              and introduction fees are separate. Your own bookings carry no network fee, plus card processing.
+              Share the hosting with a regular, or invite another local group to gather with you. Selling fees depend
+              on your plan and who introduced the buyer. See /pricing for current rates; card processing also applies.
             </p>
             <Acts
               className="p-only"
@@ -503,7 +501,7 @@ export async function FrequencyHome() {
               items={[
                 { href: SITE.join, icon: 'standing', title: 'Join to watch your standing', sub: 'Earned, never bought' },
                 { href: SITE.join, icon: 'host', title: 'Join to hand a Circle to a regular', sub: 'Share the next gathering' },
-                { href: SITE.join, icon: 'gem', title: 'Join to see how it pays', sub: '0% on your regulars, plus card processing' },
+                { href: SITE.join, icon: 'gem', title: 'Join to see how it pays', sub: 'See /pricing for current fees and plan details' },
               ]}
             />
           </div>
@@ -524,18 +522,18 @@ export async function FrequencyHome() {
                 Frequency is in beta. <em className="fq-iri-text">Help us build it.</em>
               </h2>
               <p className="body-l">
-                Free until {BETA_UNTIL}. Founding members set the rhythm here, and you can tell us what you notice as you try the Circles and tools.
+                Free during the beta through {BETA_UNTIL}. Join or start a Space and help shape what comes next.
               </p>
             </div>
             <div className="bb-side">
               <ul className="bb-facts">
                 <li>
-                  <b>$0</b>
-                  <span>until {BETA_UNTIL}</span>
+                  <b>Free</b>
+                  <span>through {BETA_UNTIL}</span>
                 </li>
                 <li>
-                  <b>3</b>
-                  <span>sign-up steps</span>
+                  <b>Host</b>
+                  <span>at no cost</span>
                 </li>
               </ul>
               <Link className="btn fq-iri-btn" href={SITE.join}>

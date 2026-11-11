@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2260",
+  "title": "Align beta, Founding Year and selling copy with current launch terms",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/(marketing)/pricing/pricing-faq.ts",
+    "ref": "Daniel's 2026-11-11 launch rulings: one Jan 31 beta end; Founding Member is free recognition and Founding Year is a paid first-year offer; current copy must not imply Free selling is live before its separate gate ships."
+  },
+  "detail": "Aligned the host form entry to the Create a Space wizard, updated beta and Founding Year wording across the public offer, pricing FAQ, home, help pages and quick answers, and reframed the old beta notice inventory. Selling copy stays neutral until the separate Free selling row ships. The Founding Year close uses the approved local code cutoff of 2027-02-01T08:00:00Z (midnight Pacific after January 31); no beta_grace, Stripe catalog, entitlement or probe was changed. Public copy was checked against the current plan model and launch terms for free Founding Member recognition, paid Founding Year, current beta date, fee claims, unsupported counts and promises, typed prices, em dashes and retired theme names.\n\nLocal proof on 2026-11-11: copy watchdog passed; launch-0-4-fees and beta-ends-jan31 probes passed; focused Vitest passed 25/25; changed TS/TSX ESLint passed. Local-only branch, not pushed; no deploy or PR readiness claimed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const files=[\"app/(main)/offer/page.tsx\",\"app/(marketing)/pricing/pricing-faq.ts\",\"components/frequency/site/pages/funnel/host-form.tsx\",\"components/frequency/site/pages/home/frequency-home.tsx\",\"lib/marketing/quick-answers.ts\",\"lib/pricing/plan-story.ts\",\"content/help/spaces/beta-pricing.md\",\"content/help/spaces/collective.md\",\"content/help/spaces/plans-and-pricing.md\"];const s=files.map(f=>fs.readFileSync(f,\"utf8\").replace(/\\/\\*[\\s\\S]*?\\*\\/|^\\s*\\/\\/.*$/gm,\"\")).join(\"\\n\");const bad=[[/Midnight/i,\"retired theme name\"],[/\\u2014/,\"em dash\"],[/\\$[0-9]/,\"typed price\"],[/\\bFounder(?!ing)\\b|Founder\\s+badge|Founder\\s+price/i,\"incorrect Founder naming\"],[/Free Spaces use the fee-only selling rate/i,\"unbuilt Free selling claim\"],[/selling starts at Business|paid tickets start at Business/i,\"stale Business-only claim\"],[/grandfather(?:ed|ing)|rate for life|price lock for life/i,\"unsupported lifetime price claim\"],[/December\\s+(?:1|31)|Dec\\s+(?:1|31)\\b/i,\"stale beta date\"]];for(const [re,label] of bad){if(re.test(s)){console.error(\"copy watchdog: \"+label);process.exit(1)}}for(const phrase of [\"Founding Member\",\"Founding Year\",\"January 31, 2027\"]){if(!s.includes(phrase)){console.error(\"copy watchdog: missing \"+phrase);process.exit(1)}}'",
+    "note": "Node-based copy watchdog scans the changed public copy for retired names, old beta dates, typed prices, lifetime price guarantees, stale Business-only and unbuilt Free-selling claims."
+  },
+  "closed": "2026-11-11",
+  "wave": "W7"
+}

@@ -4,7 +4,8 @@
 // already read on the server (lib/onboarding/funnel-context.ts): what they host is pre-picked from the
 // link's Channel and where is pre-picked from its area, and both stay editable. Continue records the
 // lead through the shared lead action (captureLead), which re-reads the link's params itself, then
-// carries them into the induction as a practitioner.
+// opens the Create a Space wizard (owner 2026-11-11: a DM link goes straight to building, never to the member
+// sign-up), carrying the ids-only context along.
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -28,7 +29,7 @@ export function HostFunnelForm({
   area: string | null
   /** The link's region, listed first in the area picker. */
   region: string | null
-  /** Ids-only query carried on to /join. */
+  /** Ids-only query carried on to /create-a-space. */
   continueQuery: string
 }) {
   const router = useRouter()
@@ -62,16 +63,13 @@ export function HostFunnelForm({
       setBusy(false)
       return
     }
-    const q = new URLSearchParams(continueQuery)
-    q.set('persona', 'practitioner')
-    q.set('flow', 'host')
-    router.push(`/join?${q.toString()}`)
+    router.push(continueQuery ? `/create-a-space?${continueQuery}` : '/create-a-space')
   }
 
   return (
     <section className="sec" data-screen-label="02 Host">
       <div className="wrap">
-        <FnHead label="Your Circle" title="Tell us a little, and we will set you up." />
+        <FnHead label="Your Space" title="Tell us a little, and we will set up your Space." />
         <div className="fn-col">
           <form
             className="fn-box jx-f"
@@ -135,7 +133,7 @@ export function HostFunnelForm({
             )}
 
             <button className="btn fq-iri-btn" type="submit" disabled={busy || !email.trim()}>
-              {busy ? 'One sec…' : 'Start my Circle →'}
+              {busy ? 'One sec…' : 'Start my Space →'}
             </button>
             <p className="jx-fine">Free to host. We only use your email to help you get set up.</p>
           </form>

@@ -4,7 +4,7 @@ description: What the Collective plan is for, what it includes beyond Business, 
 category: spaces
 order: 5
 published: 2026-10-06
-updated: 2026-10-19
+updated: 2026-11-11
 audience: member
 featureKeys: [billing, collective]
 status: published
@@ -15,7 +15,7 @@ that run their own, Collective links you up while each group keeps its own Space
 
 If one organization runs many chapters, that is [Network](/help/spaces/network) instead.
 
-It sits above Business on the Space ladder: members join, Crew hosts, a Space runs, Business sells,
+It sits above Business on the Space ladder: members join, Crew hosts, a Space runs, Business adds tools,
 Collective connects, and Network unites.
 
 ## What Collective includes
@@ -25,8 +25,9 @@ Everything Business does, plus:
 - **A partner hub.** Invite up to ten Spaces you do not own to partner with yours. Each keeps its
   own members, payouts and settings.
 - **Vera AI included**, with no separate add-on.
-- **A lower network fee** on customers the network introduces. Your own people and your tips stay at
-  **0%**, as they are on every plan.
+- **A lower network fee** on customers the network introduces. Collective has no network fee on sales
+  to your own audience, and tips have no platform fee. Card processing still applies. See the
+  [pricing page](/pricing) for current rates.
 - **Higher allowances** across the board, and five editable QR codes.
 - **A network page** with your member Spaces and one shared calendar of their events.
 - **A private Collective report** that adds up members, Events and revenue across the network.
@@ -35,9 +36,7 @@ Everything Business does, plus:
 
 Each of these is explained below.
 
-The price and the yearly price are on the [pricing page](/pricing). While the Founding intro is open,
-a new Collective starts on the Founding price under the list price and keeps it for as long as it
-keeps the plan. The Founding offer ends January 1; a Collective that takes it has grandfathered pricing, and one that starts before January 31 also gets the founder badge. Paying yearly gives you two months free, the same as every plan.
+The current monthly and yearly prices are on the [pricing page](/pricing). Founding Year is a paid first-year offer with separate eligibility and terms; it closes January 31, 2027. Founding Member recognition is free and separate from a Founding Year purchase. Check /pricing for current availability, prices, annual billing and terms.
 
 ## Manage your member Spaces
 
@@ -122,8 +121,8 @@ A few rules keep the money honest:
 - Only the owner of the Space hosting the event can set shares.
 - A Space has to have payouts set up before it can take a share. A share for a Space that is still
   setting up is refused until it is ready.
-- The network fee comes out of every share in proportion, including yours. Your own people and your
-  tips stay at 0% plus card processing, as always.
+- The network fee comes out of every share in proportion, including yours. On Collective, sales to
+  your own audience and tips have no network fee. Card processing still applies.
 - Shares apply to tickets sold after you save them. A refund takes each share back in the same
   proportion.
 
@@ -137,7 +136,7 @@ the way:
 
 - Revenue splits on co-hosted Journeys.
 
-The price you start at holds while it lands. We will tell you when it goes live.
+Check the [pricing page](/pricing) for current prices and terms as this work continues.
 
 ## Is Collective right for me?
 
@@ -145,7 +144,6 @@ The price you start at holds while it lands. We will tell you when it goes live.
   It does everything you need to sell.
 - If you and other owners run **separate** groups and want to partner, take Collective.
 - If **one** organization runs several chapters, take [Network](/help/spaces/network).
-- If you are a verified nonprofit partnering with others, ask about **Non Profit Collective**, which
-  carries no network fee.
+- If you are a verified nonprofit, see /pricing for current eligibility and the Non Profit fee treatment.
 
 You can move between Business and Collective whenever you like. See [Billing](/help/spaces/billing).

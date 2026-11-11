@@ -1,36 +1,34 @@
 ---
 title: The Beta offer
-description: What Beta pricing is, who keeps it, and what changes on 1 January.
+description: The beta end date, Founding Year offer, and where to check current plan prices and fees.
 category: spaces
 order: 9
 published: 2026-10-26
-updated: 2026-10-26
+updated: 2026-11-11
 audience: host
 featureKeys: [billing]
 status: published
 ---
 
-Frequency is in open beta, and a Collective that starts now gets a lower price than the list price.
+Frequency's open beta runs through January 31, 2027. That is the one beta end date for everyone.
 
-## Beta pricing
+## Founding Year
 
-A Collective that starts during the beta pays Beta pricing, which sits under the list price. The current figures are on the [pricing page](/pricing). The offer ends **January 1**. A Collective that starts on it keeps that price, grandfathered, for as long as it keeps the plan.
+Founding Year is a paid first-year offer for eligible purchases during the beta. It closes January 31, 2027. Check the [pricing page](/pricing) for current availability, price and terms.
 
-A Collective that starts before **January 31** also gets the founder badge.
+Founding Member recognition is free and separate from a Founding Year purchase. Joining before launch does not by itself purchase a Founding Year.
 
-Paying yearly gives you two months free on any plan, so a yearly plan is ten months of the monthly price.
+Annual billing and the Founding Year offer have separate terms. Check the [pricing page](/pricing) for current prices and eligibility.
 
-## Open access until 31 December
+## Beta access
 
-Until 31 December 2026 the free allowances are switched off. Any Space can use every hosting tool with no limits, whatever plan it's on. Selling still opens at Business, and QR codes keep their published limit.
-
-From 1 January the allowances apply as written, and we'll tell you what changes before it changes.
+Beta access continues through January 31, 2027. The current tools, limits and selling fees for each Space plan are listed on the [pricing page](/pricing).
 
 ## Questions
 
 ### What happens if I'm already on a plan?
 
-The price you start on is yours for as long as you keep the plan.
+Review your plan, current price and renewal terms in **Settings**, then **Billing**. Any price lock and its terms appear in your billing details.
 
 ### Where do I start?
 

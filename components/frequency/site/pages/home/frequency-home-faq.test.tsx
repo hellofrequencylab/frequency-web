@@ -8,6 +8,10 @@ import { homeFaq } from '@/lib/marketing/quick-answers'
 import { faqSchema } from '@/lib/jsonld'
 it('renders every shared answer visibly with native keyboard disclosure matching FAQPage', async () => {
  const html = renderToStaticMarkup(await FrequencyHome())
+ expect(html).toContain('Free during the beta through January 31, 2027')
+ expect(html).toContain('See /pricing for current fees and plan details')
+ expect(html).not.toContain('0% on your regulars')
+ expect(html).not.toContain('sign-up steps')
  const section = html.slice(html.indexOf('id="questions"'),html.indexOf('</section>',html.indexOf('id="questions"')))
  expect(section).toContain('<details>')
  const schema = faqSchema(homeFaq()) as {mainEntity:{name:string;acceptedAnswer:{text:string}}[]}

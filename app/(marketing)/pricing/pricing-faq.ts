@@ -10,7 +10,8 @@ import {
   type PricingGridInput,
 } from '@/lib/pricing/pricing-grid'
 import { MISSION_FRAMING, PLAN_STORY, paidWalls } from '@/lib/pricing/pricing-page'
-import { COLLECTIVE_FOUNDING_ENDS_LABEL, FOUNDER_BADGE_ENDS_LABEL } from '@/lib/pricing/beta'
+import { COLLECTIVE_FOUNDING_ENDS_LABEL } from '@/lib/pricing/beta'
+import { BETA_ENDS_DAY_LABEL } from '@/lib/core/launch-dates'
 import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/meter-limits'
 
 /** The seats every plan includes, read off the ONE meter map so the answer can never quote a number the
@@ -36,7 +37,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
   const extras = planExtras(input)
   const ai = extras.find((e) => e.key === 'ai')!
   const ladder = spaces
-    .map((s) => `${s.label} is ${s.monthly}${s.listAnchor ? ` at the beta rate, under ${s.listAnchor}` : ''}: ${s.tagline.toLowerCase()} ${s.forWho}`)
+    .map((s) => `${s.label} is ${s.monthly}: ${s.tagline.toLowerCase()} ${s.forWho}`)
     .join(' ')
   const trial = trialNote(input.values)
   const sellers = spaces.filter((s) => s.sells)
@@ -56,10 +57,8 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     betaPlans.length > 0
       ? [
           {
-            q: 'What is the beta rate, and do I keep it?',
-            a: `Some plans are sold at a beta rate below their list price: ${betaPlans
-              .map((s) => `${s.label} at ${s.monthly} under ${s.listAnchor}`)
-              .join(' and ')}. If you subscribe on that rate you keep it for as long as you keep the plan. The other plans have one price, and we do not cross out a number we never charged.`,
+            q: 'What is the Founding Year offer?',
+            a: `Founding Year is a paid first-year offer. It closes ${COLLECTIVE_FOUNDING_ENDS_LABEL}, 2027. Check /pricing for current availability, eligibility and catalog pricing.`,
           },
         ]
       : []
@@ -68,11 +67,8 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     ? [
         {
           q: 'What is Collective?',
-          // The price reads the offering: the Founding intro under its struck list anchor while the intro
-          // is open (lib/pricing/beta.ts FOUNDING_OPEN_ITEMS), one price otherwise. The extra member Space
-          // belongs to Collectives that already hold member Spaces (the 2026-10-16 split moved chapters to
-          // Network), so it reads as the grandfathering fact it is.
-          a: `${PLAN_STORY.collective} It is ${collective.monthly}${collective.listAnchor ? ` as a Founding price under the ${collective.listAnchor} list. The Founding offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}, and the Founding price is grandfathered for as long as you keep the plan, and a Collective that starts before ${FOUNDER_BADGE_ENDS_LABEL} also gets the founder badge` : ''}. Its network fee is ${feeFigure(collective)}, charged the same way as Business: once, on a customer the network introduced. Collectives that already run member Spaces keep them${extraSpace ? `, and a member Space past the ones included stays ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}; one organization with chapters takes Network instead.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no network fee.` : ''}`,
+          // Price and availability read the catalog. Founding Year eligibility and the close date are separate from free Founding Member recognition.
+          a: `${PLAN_STORY.collective} It is ${collective.monthly}. A Founding Year is a paid first-year offer that closes ${COLLECTIVE_FOUNDING_ENDS_LABEL}, 2027; check /pricing for current availability, eligibility and terms. Its network fee is ${feeFigure(collective)} on customers the network introduces. On Business and higher, your own audience has no network fee; card processing still applies. Collectives that already run member Spaces keep them${extraSpace ? `, and a member Space past the ones included stays ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}; one organization with chapters takes Network instead.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no network fee.` : ''}`,
         },
       ]
     : []
@@ -92,15 +88,15 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
   return [
     {
       q: 'How does Frequency pricing work?',
-      a: `${PLAN_STORY.lines} ${PLAN_STORY.ladder} ${PLAN_STORY.paid} There are two lines. For you: ${member!.label} is free forever, and ${crew!.label} is ${crew!.monthly}, contribute what you want. For your Space: ${ladder} ${annualDiscountNote(input.values)}`,
+      a: `${PLAN_STORY.lines} ${PLAN_STORY.ladder} ${PLAN_STORY.paid} For you: ${member!.label} is free to join, and ${crew!.label} is ${crew!.monthly}, contribute what you want. For your Space: ${ladder} ${annualDiscountNote(input.values)}`,
     },
     {
       q: 'Do I need Crew to open a Space?',
-      a: `A Space comes with Crew, which you fund at whatever amount you choose. Until the beta ends, anyone can open one free. After that, hosting stays free: a free Space is a real Space, not a trial: your page, Circles, Events, posts, members, contacts, email, bookings and Journeys, with limits sized for a launch. People can tip you, and we take nothing from tips. When you want to charge for something, that is Business. Crew is what opens it, and a plan is only for when you charge.`,
+      a: `No. Crew is a personal membership, and a Space is separate. Hosting a Space is free. The beta runs through ${BETA_ENDS_DAY_LABEL}, 2027. Check /pricing for current tools, limits and selling fees. Founding Member recognition is free; Founding Year is a separate paid first-year offer.`,
     },
     {
-      q: 'Why does selling start at Business?',
-      a: `Because free hosting is the point. Opening a Space, gathering your people and running your Circles and Events should never cost anything. ${PLAN_STORY.selling} When you set a price on a free Space, you see what Business adds and can start its trial right there, or keep the thing free. Nothing you built is lost either way.`,
+      q: 'How do selling fees work?',
+      a: `Selling options and fees depend on your Space plan and the transaction. Business and higher plans have no network fee on sales to their own audience; card processing still applies. The pricing page shows current details and available features.`,
     },
     {
       q: 'What actually needs a paid plan?',
@@ -111,19 +107,19 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
         : `${PLAN_STORY.selling} ${PLAN_STORY.meters}`,
     },
     {
-      q: 'What stays free forever?',
-      a: 'The people part, hosting, and tips. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. Opening a Space and running it is free. Tips carry no platform fee on any tier, only card processing. A business never pays for access to people.',
+      q: 'What is free?',
+      a: 'Joining Frequency and hosting a Space are free. Tips have no platform fee on any plan, though card processing still applies. Selling fees, tools and limits depend on plan; check /pricing for current details.',
     },
     ...betaFaq,
     {
       q: 'Do you take a cut of my sales?',
-      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, ${PLAN_STORY.afterProcessing}, and we never take a share of a tip. ${PLAN_STORY.rate}${fees ? ` Where each selling plan lands: ${fees}.` : ''} Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again. We charge once for the introduction.`,
+      a: `Fees depend on your Space plan and the transaction. Business and higher plans have no network fee on sales to their own audience; card processing still applies. See /pricing for current rates.${fees ? ` Current selling-plan rates: ${fees}.` : ''}`,
     },
     ...collectiveFaq,
     ...networkFaq,
     {
       q: 'What does Crew get me?',
-      a: `${PLAN_STORY.crew} ${crew!.label} is ${crew!.monthly}, and it lives on your personal upgrade page. Crew does not take payments: selling runs through a Space on Business, which any member can open.`,
+      a: `${PLAN_STORY.crew} ${crew!.label} is ${crew!.monthly}, and it lives on your personal upgrade page. Crew is separate from Space selling. Selling options and fees depend on the Space plan; see /pricing for current details.`,
     },
     {
       q: 'How do team seats work?',
@@ -141,11 +137,11 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'What does yearly billing save?',
-      a: `${annualDiscountNote(input.values)} You pay for ten months and get twelve. Monthly is the low-friction default; yearly is the way to save on any plan.`,
+      a: `${annualDiscountNote(input.values)} Check /pricing for current monthly and yearly prices and offer terms.`,
     },
     {
       q: 'What happens if I downgrade?',
-      a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours, and you go back to the free limits. What stops is selling: new paid tickets, memberships and orders need Business again, and tips keep working. You can export your contacts and your data before, during, or after, anytime.',
+      a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours, and you go back to the free limits. Your selling options change to those available on the free Space plan; see /pricing for current details. Tips keep working. You can export your contacts and your data before, during, or after, anytime.',
     },
     {
       q: 'Can I leave and take my people with me?',
