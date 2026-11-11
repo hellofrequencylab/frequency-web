@@ -5,7 +5,7 @@
  * stops the next scan), checks scope with lib/hunts/claim-guard.ts, and only then calls the database.
  * The caller passes the signed-in profile id from `getCallerProfile()`; it is never read from the request.
  *
- *   loadScanPlacement(placementId)            the row `resolvePlacement` needs, plus the Hunt slug
+ *   loadScanPlacement(placementId | { code }) the row `resolvePlacement` needs, plus the Hunt slug
  *   openClaim(actorId, placementId, nowEpoch)  the signed-in landing: the run and a claim token for it
  *   claimAsPlayer(actorId, input)              the POST: verifies the token, scope, switch, then credits
  *
@@ -26,14 +26,27 @@ const db = () => createAdminClient() as unknown as SupabaseClient
 
 const secret = () => signingSecret('hunt-claim-proof', ['HUNTS_PROOF_SECRET'])
 
-/** The placement for the scan landing, with the Hunt's slug to link to. Null when there is no such placement. */
-export async function loadScanPlacement(placementId: string): Promise<{ id: string; huntId: string; revokedAt: string | null; huntSlug: string | null } | null> {
+/** A printed code is a public lookup, limited to live, visible Hunts and QR/NFC placements.
+ * Internal callers still look up the placement by ID for run and token verification. */
+export async function loadScanPlacement(lookup: string | { code: string }): Promise<{ id: string; huntId: string; revokedAt: string | null; huntSlug: string | null } | null> {
+  const code = typeof lookup === 'string' ? null : lookup.code
+  if (code !== null && (!huntSwitchOn('claims') || !/^[a-z0-9-]{6,80}$/.test(code))) return null
+
   const client = db()
-  const { data } = await client.from('hunt_placements').select('id, hunt_id, revoked_at').eq('id', placementId).maybeSingle()
-  const p = data as { id: string; hunt_id: string; revoked_at: string | null } | null
+  const placements = client.from('hunt_placements').select('id, hunt_id, revoked_at')
+  const { data, error } = await (typeof lookup === 'string'
+    ? placements.eq('id', lookup)
+    : placements.eq('slug', lookup.code).in('medium', ['qr', 'nfc'])).maybeSingle()
+  const p = error ? null : data as { id: string; hunt_id: string; revoked_at: string | null } | null
   if (!p) return null
-  const { data: hunt } = await client.from('hunts').select('slug').eq('id', p.hunt_id).maybeSingle()
-  return { id: p.id, huntId: p.hunt_id, revokedAt: p.revoked_at, huntSlug: (hunt as { slug: string } | null)?.slug ?? null }
+
+  const hunts = client.from('hunts').select('slug').eq('id', p.hunt_id)
+  const { data: hunt, error: huntError } = await (code === null
+    ? hunts
+    : hunts.in('visibility', ['public', 'unlisted']).eq('status', 'live')).maybeSingle()
+  const huntSlug = huntError ? null : (hunt as { slug: string } | null)?.slug ?? null
+  if (code !== null && !huntSlug) return null
+  return { id: p.id, huntId: p.hunt_id, revokedAt: p.revoked_at, huntSlug }
 }
 
 /** The placement and the actor's own latest run on that placement's Hunt. */
