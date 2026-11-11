@@ -1,6 +1,10 @@
 {
   "id": "FH-038",
   "append": {
-    "detail": "\n\nPacket F design slice: docs/hunts/STORE-ITEMS.md records the canonical authority, integration boundaries and acceptance cases. Runtime implementation, prerequisites and the existing verify probe remain the full row gate."
+    "detail": "\n\nPacket F design slice: docs/hunts/STORE-ITEMS.md records the canonical authority, integration boundaries and acceptance cases. Runtime implementation, prerequisites and the existing verify probe remain the full row gate.\n\nBuilt 2026-11-10: lib/hunts/merch.ts resolves an approved store link on the exact seller, product and variant (unavailable removes the purchase action) and plans one benefit per unit of an order line bound to an approved offer, nothing for an ordinary line on a mixed order. hunt_store_offers holds the approval. Retries collapse on the same unit key. The offer admin screen and the order-settlement call moved to FH-038S."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
   }
 }

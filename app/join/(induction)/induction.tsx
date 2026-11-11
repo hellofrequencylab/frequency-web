@@ -44,6 +44,7 @@ import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
 import { Dialog } from '@/components/ui/dialog'
 import { Select } from '@/components/ui/select'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
@@ -889,7 +890,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                             type="button"
                             onClick={() => toggleInterest(key)}
                             aria-pressed={active}
-                            className={`relative flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
+                            className={choiceTileClasses(active, 'relative flex items-start gap-3 rounded-2xl px-4 py-4 text-left')}
                           >
                             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? 'bg-primary text-on-primary' : 'bg-primary-bg text-primary-strong'}`} aria-hidden>
                               <Icon className="h-5 w-5" />
@@ -939,7 +940,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                             type="button"
                             onClick={() => togglePersona(p.id)}
                             aria-pressed={active}
-                            className={`relative flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
+                            className={choiceTileClasses(active, 'relative flex items-start gap-3 rounded-2xl px-4 py-4 text-left')}
                           >
                             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? 'bg-primary text-on-primary' : 'bg-primary-bg text-primary-strong'}`} aria-hidden>
                               <p.Icon className="h-5 w-5" />
@@ -1046,7 +1047,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                               type="button"
                               onClick={() => setCoreIndex(i)}
                               aria-pressed={active}
-                              className={`rounded-2xl border px-4 py-3 text-left transition-colors ${active ? 'border-primary bg-primary/10' : 'border-border bg-surface hover:border-primary/40'}`}
+                              className={choiceTileClasses(active, 'rounded-2xl px-4 py-3 text-left')}
                             >
                               <span className="block text-body font-bold text-text">{c.title}</span>
                               <span className="mt-0.5 block text-body-sm text-muted">{c.blurb}</span>
