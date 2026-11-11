@@ -338,6 +338,15 @@ hunt_outbox_fail internal
 hunt_outbox_replay internal
 # Hunt claim command (FH-010): service role only.
 hunt_claim_apply internal
+# Hunt commerce (FH-036..047): service role only.
+hunt_pass_binding_freeze internal
+hunt_entitlement_project internal
+hunt_entitlement_attach internal
+hunt_entitlement_consume internal
+hunt_entitlement_reverse internal
+hunt_refund_case_open internal
+hunt_commerce_set_sales internal
+hunt_sponsor_freeze internal
 # Hunt staff review (FH-020S): service role only.
 hunt_staff_nonce_consume internal
 hunt_claim_review internal

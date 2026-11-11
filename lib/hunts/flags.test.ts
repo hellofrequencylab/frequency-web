@@ -42,4 +42,12 @@ describe('Hunt switches', () => {
     process.env.HUNTS_CLAIMS_ENABLED = '1'
     expect(huntSwitchOn('rewards')).toBe(true)
   })
+
+  it('opens commerce only through enabled, and independently of claims', () => {
+    process.env.HUNTS_COMMERCE_ENABLED = '1'
+    expect(huntSwitchOn('commerce')).toBe(false)
+    process.env.HUNTS_ENABLED = '1'
+    expect(huntSwitchOn('commerce')).toBe(true)
+    expect(huntSwitchOn('claims')).toBe(false)
+  })
 })

@@ -1,6 +1,10 @@
 {
   "id": "FH-037",
   "append": {
-    "detail": "\n\nPacket F design slice: docs/hunts/PAID-TICKET-AUTHORITY.md records the canonical authority, integration boundaries and acceptance cases. Runtime implementation, prerequisites and the existing verify probe remain the full row gate."
+    "detail": "\n\nPacket F design slice: docs/hunts/PAID-TICKET-AUTHORITY.md records the canonical authority, integration boundaries and acceptance cases. Runtime implementation, prerequisites and the existing verify probe remain the full row gate.\n\nBuilt 2026-11-10: lib/hunts/entitlements.ts plans a projection from the re-read canonical ticket (pending waits, failed and refunded refuse, a wrong Event, tier, seller, currency or seat count goes to review) and writes one benefit per seat and code through hunt_entitlement_project, unique on (source, unit, code) so a webhook and a return that race create one row. lib/hunts/commerce-store.ts loads the ticket, repairs a missed projection (repairMissingBenefits) and writes only hunt_* rows. An older paid delivery cannot reopen a revoked benefit. The webhook, return and repair-cron wiring moved to FH-037S."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-10"
   }
 }

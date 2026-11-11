@@ -198,6 +198,21 @@ hunt_compensations
 # FH-009 Frequency Hunts durable outbox and receipts: service role only; drained by the worker through the hunt_outbox_* functions.
 hunt_outbox
 hunt_deliveries
+# FH-036..047 Hunt commerce tables: RLS on, no policy, browser grants revoked; lib/hunts/commerce-store.ts writes through the service role after its own gate.
+hunt_commerce_state
+hunt_commerce_audit
+hunt_pass_bindings
+hunt_store_offers
+hunt_entitlements
+hunt_entitlement_events
+hunt_refund_cases
+hunt_commerce_intents
+hunt_reconciliation
+hunt_donation_asks
+hunt_donation_gifts
+hunt_sponsor_agreements
+hunt_sponsor_snapshots
+hunt_sponsor_settlements
 # DEF-ETSY P5 persistent cart: service role only; the cart server actions read the profile from the session.
 commerce_carts
 # FH-020S Hunt staff-proof nonces: service role only; spent by hunt_staff_nonce_consume.
