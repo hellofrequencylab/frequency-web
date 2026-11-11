@@ -1,6 +1,6 @@
 /**
  * Hunt consent (FH-024): the application side of the consent ledger. The database keeps the guarantees
- * (supabase/migrations/20270346040000_hunt_consent.sql): the ledger is append-only, a repeated event key
+ * (supabase/migrations/20270346044000_hunt_consent.sql): the ledger is append-only, a repeated event key
  * is a replay, an event older than the latest for that Space is stale, a withdrawal writes its
  * suppression first, a global suppression outranks every grant, and one Space's roster never holds
  * another's choice. This file holds what the caller computes around it: the event key, the contact hash,
@@ -15,7 +15,7 @@ import { createHash } from 'node:crypto'
 
 type Rpc = (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>
 
-export type ConsentSource = 'hunt_reward' | 'follow_link' | 'player_area' | 'privacy_request'
+type ConsentSource = 'hunt_reward' | 'follow_link' | 'player_area' | 'privacy_request'
 
 /** Hash of a contact (a lowercased, trimmed email) for the suppression that must outlive the account. Never log the address. */
 export function contactHash(contact: string): string {

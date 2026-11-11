@@ -1,4 +1,4 @@
--- pgTAP guard for migration 20270346040000_hunt_consent.sql (FH-024).
+-- pgTAP guard for migration 20270346044000_hunt_consent.sql (FH-024).
 -- One session, one transaction. It proves the ledger is append-only, that a withdrawal stops a send and a
 -- replay or stale event cannot re-subscribe, that one Space never sees another's consent, that a global
 -- suppression from a privacy request outranks any grant, that essential messages are checked apart from

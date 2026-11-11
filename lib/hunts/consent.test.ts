@@ -75,7 +75,7 @@ describe('latestConsent', () => {
 })
 
 describe('the migration', () => {
-  const code = readFileSync(join('supabase', 'migrations', '20270346040000_hunt_consent.sql'), 'utf8')
+  const code = readFileSync(join('supabase', 'migrations', '20270346044000_hunt_consent.sql'), 'utf8')
     .split('\n')
     .filter((l) => !l.trim().startsWith('--'))
     .join('\n')
