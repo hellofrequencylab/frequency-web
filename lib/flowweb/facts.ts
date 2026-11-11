@@ -8,7 +8,7 @@ import { FOUNDING_MEMBER_COPY, LAUNCH_ON } from '@/lib/core/launch-dates'
 import { CLOCK_BUDGET_MS } from '@/lib/launch/clock'
 import type { PricingDefaults, TierPrice } from '@/lib/pricing/defaults'
 
-export interface FlowwebFacts {
+interface FlowwebFacts {
   as_of: string
   beta_ends: string
   launch_on: string
