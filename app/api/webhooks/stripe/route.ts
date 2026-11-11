@@ -67,6 +67,8 @@ import {
   abandonTicketFromSession,
   recordTicketRefundFromCharge,
 } from '@/lib/billing/tickets'
+import { huntsAfterOrderDispute, huntsAfterOrderRefund, huntsAfterOrderSession } from '@/lib/hunts/order-hooks'
+import { huntsAfterChargeRefund, huntsAfterDisputeClosed, huntsAfterTicketSession } from '@/lib/hunts/commerce-webhook'
 import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
 import {
   recordSpaceDonationFromSession,
@@ -198,7 +200,10 @@ export async function POST(req: Request) {
   const recordPaidCheckout = async (s: Stripe.Checkout.Session) => {
     await recordTipFromSession(s)
     await recordTicketFromSession(s)
+    // FH-037S: best effort and dark until HUNTS_COMMERCE_ENABLED; it never throws into settlement.
+    await huntsAfterTicketSession(s.id)
     await recordCommerceOrderFromSession(s)
+    await huntsAfterOrderSession(s.id)
     // LIVE-235: a gift to a Space fund settles here like every other one-off channel. It no-ops on a
     // session that is not a donation, so adding it to THIS list (the one both `completed` and
     // `async_payment_succeeded` consume) is what stops a delayed-payment donation from being the
@@ -428,7 +433,9 @@ export async function POST(req: Request) {
         // and running them all for every refund is safe (the same principle as `completed`).
         const charge = event.data.object as Stripe.Charge
         await recordTicketRefundFromCharge(charge)
+        await huntsAfterChargeRefund(charge)
         await recordCommerceRefundFromCharge(charge)
+        await huntsAfterOrderRefund(charge)
         await recordTipRefundFromCharge(charge)
         await recordSpaceDonationRefundFromCharge(charge)
         break
@@ -439,6 +446,8 @@ export async function POST(req: Request) {
         // order is recorded refunded for the disputed amount, and a split order's transfers are
         // reversed pro rata, so the sellers carry their share of it and not the platform alone.
         await recordCommerceDisputeClosed(event.data.object as Stripe.Dispute)
+        await huntsAfterDisputeClosed(event.data.object as Stripe.Dispute)
+        await huntsAfterOrderDispute(event.data.object as Stripe.Dispute)
         break
 
       case 'transfer.created':

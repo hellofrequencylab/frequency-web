@@ -16,17 +16,17 @@
  */
 import type { Rpc } from './entitlements'
 
-type ReversalEvent =
+export type ReversalEvent =
   | { kind: 'refund_full'; ref: string }
   | { kind: 'refund_partial'; ref: string; amountMinor: number; currency: string; unitKeys: readonly string[] | null }
   | { kind: 'dispute_opened'; ref: string }
   | { kind: 'dispute_lost'; ref: string }
   | { kind: 'dispute_won'; ref: string; canonicalStillPaid: boolean }
 
-type ReversalAction = Readonly<{ mode: 'refund' | 'dispute_open' | 'dispute_lost' | 'dispute_won'; unitKey: string | null; ref: string }>
+export type ReversalAction = Readonly<{ mode: 'refund' | 'dispute_open' | 'dispute_lost' | 'dispute_won'; unitKey: string | null; ref: string }>
 type ReviewCase = Readonly<{ kind: 'partial_unmapped'; ref: string; amountMinor: number; currency: string }>
 
-type ReversalDecision = Readonly<{
+export type ReversalDecision = Readonly<{
   actions: readonly ReversalAction[]
   cases: readonly ReviewCase[]
   /** Set when a won dispute is not restored because canonical state says the money is gone. */
