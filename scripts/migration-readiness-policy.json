@@ -1657,7 +1657,7 @@
         {
           "file": "scripts/function-grants.txt",
           "status": "modified",
-          "sha256": "d521f530c0196a2f7c840da599f3d2a58a17c47031b72146e4003d545c22bb5b",
+          "sha256": "901f07adf4a31ca1aa2f4a326f5933f9ec285f4ffba8eec421fe8e350b47cb69",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -1671,14 +1671,14 @@
         {
           "file": "scripts/rls-deny-all.txt",
           "status": "modified",
-          "sha256": "a85c9b130a8b6e0901a60ed8ccb9182fc6d6bbe3a4717468a84f9ab133018a67",
+          "sha256": "3c6e1fa89efb592726d6c33e23c1aa0dc0da9b6751c6fb36bbf693d392c2fbfd",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/table-grants.txt",
           "status": "modified",
-          "sha256": "562dd69756ff7ca402ef68d142c723d2837361dedaf5a700260e43c61a65ae14",
+          "sha256": "b66120bf16e89489f627357c0028de1539b3b15d0cb26c764debf9be3d333a0e",
           "baseMode": "100644",
           "headMode": "100644"
         },
