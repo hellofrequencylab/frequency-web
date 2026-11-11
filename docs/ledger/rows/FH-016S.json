@@ -9,7 +9,7 @@
     "file": "docs/hunts/README.md",
     "ref": "Split from FH-016 (2026-11-10): the read-only player page shipped; claiming and the map need the claim action and a map view."
   },
-  "detail": "Add the claim action on the player page (server action through applyClaim and hunt_claim_apply, gated by the claims switch), the list/map view of visited stops and the hint reveal. Done when: a player completes a Trail end to end from the page, a second device shows the same revision, and a hidden clue never reaches the page source. Requires: FH-016, FH-020. Owner role: Web.",
+  "detail": "Add the claim action on the player page (server action through applyClaim and hunt_claim_apply, gated by the claims switch), the list/map view of visited stops and the hint reveal. Done when: a player completes a Trail end to end from the page, a second device shows the same revision, and a hidden clue never reaches the page source. Requires: FH-016, FH-020. Owner role: Web.\n\nThe live player can reveal the current stop's hint by explicit request when claims are enabled and the signed-in player has an active run. Hint requests read the existing run without starting one. Future clues, place names and hints are omitted from the rendered page. The claim action still needs the signed placement flow and run-version mission binding. The map needs an authorized source of locations for visited stops, and the end-to-end Trail and second-device checks remain open.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"app/(main)/hunts/[slug]/play/actions.ts\")?0:1)'"

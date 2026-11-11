@@ -1,23 +1,28 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Check, Lock, MapPin } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
 import { FocusTemplate } from '@/components/templates'
+import { buttonClasses } from '@/components/ui/button'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { projectForPlayer } from '@/lib/hunts/player'
-import { loadPublishedTrail, loadRunCredits, startOrResumeRun } from '@/lib/hunts/run-store'
+import { loadPlayerRun, loadPublishedTrail, loadRunCredits, startOrResumeRun } from '@/lib/hunts/run-store'
 
 export const dynamic = 'force-dynamic'
 
 // THE PLAYER PAGE (FH-016): one signed-in member's run on one published Trail. Reading never credits:
 // credit goes through the claim path only. The server decides which words leave it (projectForPlayer):
-// a locked stop shows its position and an optional teaser, an open stop shows its clue without the
-// place, a visited stop shows both. No em dashes.
+// a locked stop shows its position, an open stop shows its clue without the place, and a visited
+// stop shows both. The current stop's optional hint requires an explicit request.
 
 export const metadata: Metadata = { title: 'Play a Trail', robots: { index: false } }
 
-export default async function PlayPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PlayPage({ params, searchParams }: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ hint?: string | string[] }>
+}) {
   const { slug } = await params
   if (!huntSwitchOn('enabled')) notFound()
   const trail = await loadPublishedTrail(slug)
@@ -25,7 +30,8 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
   const profileId = await getMyProfileId()
   if (!profileId) redirect(`/sign-in?next=/hunts/${slug}/play`)
 
-  const run = await startOrResumeRun(trail, profileId)
+  const { hint } = await searchParams
+  const run = hint === undefined ? await startOrResumeRun(trail, profileId) : await loadPlayerRun(trail, profileId)
   const credits = run ? await loadRunCredits(run.runId, profileId) : []
   const view = projectForPlayer({
     graph: trail.graph,
@@ -34,6 +40,10 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
     now: new Date(),
     huntState: trail.huntState,
     revision: trail.revision,
+    hints: {
+      enabled: huntSwitchOn('claims') && run?.state === 'active',
+      requestedKey: typeof hint === 'string' ? hint : undefined,
+    },
   })
 
   return (
@@ -62,8 +72,17 @@ export default async function PlayPage({ params }: { params: Promise<{ slug: str
                   {s.place ? `: ${s.place}` : ''}
                 </p>
                 {s.clue ? <p className="text-body-sm text-muted">{s.clue}</p> : null}
-                {s.teaser ? <p className="text-body-sm text-muted">{s.teaser}</p> : null}
-                {!s.clue && !s.teaser ? <p className="text-body-sm text-subtle">Locked for now.</p> : null}
+                {!s.clue ? <p className="text-body-sm text-subtle">Locked for now.</p> : null}
+                {s.hint ? <p className="mt-2 break-words text-body-sm text-muted">Hint: {s.hint}</p> : null}
+                {s.canRevealHint && (
+                  <Link
+                    href={{ pathname: `/hunts/${encodeURIComponent(slug)}/play`, query: { hint: s.key } }}
+                    prefetch={false}
+                    className={buttonClasses('secondary', 'md', 'mt-2')}
+                  >
+                    Show hint
+                  </Link>
+                )}
               </div>
             </li>
           ))}
