@@ -4,6 +4,8 @@ import type { Data } from '@/lib/page-editor/types'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireJanitor } from '@/lib/page-editor/guard'
+import { envFlag } from '@/lib/env/string'
+import { publishVersioned, revertToVersion } from '@/lib/page-editor/versions'
 import { EDITABLE_PAGES, pathForSlug, isEditableSlug, resolveSpaceId } from '@/lib/page-editor/data'
 
 // Space-scoped (Phase 0.5e, ENTITY-SPACES-BUILD §0.5.13): writes carry a spaceId, defaulting to
@@ -23,6 +25,15 @@ export async function publishPage(slug: string, data: Data, spaceId?: string | n
   const meta = EDITABLE_PAGES.find((p) => p.slug === slug)!
   const sid = await resolveSpaceId(spaceId)
   if (!sid) throw new Error('No space to publish into.')
+
+  // PROG-E0, dark: with EDITOR_CANVAS on, publish takes the versioned path (an immutable page_versions row and a
+  // pointer swap, one transaction, published_data still dual-written). Off, the upsert below is unchanged.
+  if (envFlag('EDITOR_CANVAS')) {
+    await publishVersioned({ spaceId: sid, slug, title: meta.title, data, profileId: janitor.profileId })
+    revalidatePath(pathForSlug(slug))
+    revalidatePath('/pages')
+    return
+  }
 
   const db = createAdminClient()
   const now = new Date().toISOString()
@@ -77,6 +88,18 @@ export async function unpublishPage(slug: string, spaceId?: string | null): Prom
   const { error } = await q.eq('slug', slug).eq('space_id', sid)
   if (error) throw new Error(error.message)
 
+  revalidatePath(pathForSlug(slug))
+  revalidatePath('/pages')
+}
+
+// Put the live page back on an older version: a pointer swap, nothing copied (PROG-E0). Dark behind EDITOR_CANVAS.
+export async function revertPageToVersion(slug: string, versionId: string, spaceId?: string | null): Promise<void> {
+  const janitor = await requireJanitor()
+  if (!envFlag('EDITOR_CANVAS')) throw new Error('Page history is not switched on.')
+  if (!isEditableSlug(slug)) throw new Error('That page cannot be edited here.')
+  const sid = await resolveSpaceId(spaceId)
+  if (!sid) throw new Error('No space to revert in.')
+  await revertToVersion({ spaceId: sid, slug, versionId, profileId: janitor.profileId })
   revalidatePath(pathForSlug(slug))
   revalidatePath('/pages')
 }
