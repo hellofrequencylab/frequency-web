@@ -72,45 +72,98 @@ type PublishedTrail = {
   content: ReturnType<typeof assembleTrail>['content']
 }
 
+function completeRows(result: { data: unknown; count: number | null; error: unknown }): result is { data: object[]; count: number; error: null } {
+  return !result.error && Array.isArray(result.data) && result.count === result.data.length
+    && result.data.every((row: unknown) => row !== null && typeof row === 'object')
+}
+
+async function readPublishedTrailVersion(client: SupabaseClient, huntId: string, versionId: string) {
+  const { data, error } = await client
+    .from('hunt_versions')
+    .select('id, trail_title:policy->trail->>title, trail_hook:policy->trail->>hook')
+    .eq('id', versionId)
+    .eq('hunt_id', huntId)
+    .eq('status', 'published')
+    .maybeSingle()
+  return error ? null : data as { id: string; trail_title: string | null; trail_hook: string | null } | null
+}
+
+export async function isPublishedTrailVersion(huntId: string, versionId: string): Promise<boolean> {
+  return (await readPublishedTrailVersion(db(), huntId, versionId)) !== null
+}
+
+async function readPublishedVersion(client: SupabaseClient, slug: string, liveOnly: boolean) {
+  const hunts = client
+    .from('hunts')
+    .select('id, slug, status, current_version_id, revision')
+    .eq('slug', slug)
+    .in('visibility', ['public', 'unlisted'])
+  const { data: hunt, error: huntError } = await (liveOnly ? hunts.eq('status', 'live') : hunts).maybeSingle()
+  const h = hunt as { id: string; slug: string; status: string; current_version_id: string | null; revision: number } | null
+  const state = h ? playerHuntState(h.status) : null
+  if (huntError || !h || !state || !h.current_version_id || (liveOnly && state !== 'published')) return null
+
+  const v = await readPublishedTrailVersion(client, h.id, h.current_version_id)
+  if (!v) return null
+  return {
+    huntId: h.id,
+    slug: h.slug,
+    versionId: v.id,
+    revision: h.revision,
+    title: (typeof v.trail_title === 'string' && v.trail_title.trim()) || h.slug,
+    description: (typeof v.trail_hook === 'string' && v.trail_hook.trim()) || null,
+    huntState: state,
+  }
+}
+
+/** The live public landing reads the published title, hook and stop count only. */
+export async function loadPublicTrailSummary(slug: string): Promise<{ slug: string; title: string; description: string | null; stopCount: number } | null> {
+  const client = db()
+  const version = await readPublishedVersion(client, slug, true)
+  if (!version) return null
+  const { count, error } = await client
+    .from('hunt_missions')
+    .select('mission_key', { count: 'exact', head: true })
+    .eq('version_id', version.versionId)
+    .eq('hunt_id', version.huntId)
+  if (error || count === null) return null
+  return { slug: version.slug, title: version.title, description: version.description, stopCount: count }
+}
+
 /**
  * The published Trail a player may open, by slug. Never the open draft: it reads the version the Hunt
  * points at, and only when that version is published. Null for a draft, a private Hunt, or no such slug.
  */
 export async function loadPublishedTrail(slug: string): Promise<PublishedTrail | null> {
   const client = db()
-  const { data: hunt } = await client
-    .from('hunts')
-    .select('id, slug, visibility, status, current_version_id, revision')
-    .eq('slug', slug)
-    .in('visibility', ['public', 'unlisted'])
-    .maybeSingle()
-  const h = hunt as { id: string; slug: string; status: string; current_version_id: string | null; revision: number } | null
-  const state = h ? playerHuntState(h.status) : null
-  if (!h || !state || !h.current_version_id) return null
-
-  const { data: version } = await client
-    .from('hunt_versions')
-    .select('id, status, policy')
-    .eq('id', h.current_version_id)
-    .eq('hunt_id', h.id)
-    .maybeSingle()
-  const v = version as { id: string; status: string; policy: { trail?: { title?: unknown } } | null } | null
-  if (!v || v.status !== 'published') return null
+  const version = await readPublishedVersion(client, slug, false)
+  if (!version) return null
 
   const [m, g, mem] = await Promise.all([
-    client.from('hunt_missions').select('mission_key, title, visible_body, locked_teaser, opens_at, closes_at').eq('version_id', v.id),
-    client.from('hunt_rule_groups').select('id, target_mission_key, target_finish, logic, min_count, group_key').eq('version_id', v.id),
-    client.from('hunt_rule_group_members').select('group_id, member_mission_key').eq('version_id', v.id),
+    client.from('hunt_missions').select('mission_key, title, visible_body, locked_teaser, opens_at, closes_at', { count: 'exact' }).eq('version_id', version.versionId),
+    client.from('hunt_rule_groups').select('id, target_mission_key, target_finish, logic, min_count, group_key', { count: 'exact' }).eq('version_id', version.versionId),
+    client.from('hunt_rule_group_members').select('group_id, member_mission_key', { count: 'exact' }).eq('version_id', version.versionId),
   ])
-  const { graph, content } = assembleTrail((m.data ?? []) as MissionRow[], (g.data ?? []) as GroupRow[], (mem.data ?? []) as MemberRow[])
-  const rawTitle = v.policy?.trail?.title
+  // Neither a failed read nor a response truncated by the API row cap may drop prerequisites.
+  if (!completeRows(m) || !completeRows(g) || !completeRows(mem)) return null
+  const missions = m.data as MissionRow[]
+  const groups = g.data as GroupRow[]
+  const members = mem.data as MemberRow[]
+  const missionKeys = new Set(missions.map((mission) => mission.mission_key))
+  const groupIds = new Set(groups.map((group) => group.id))
+  if (missions.some((mission) => typeof mission.mission_key !== 'string')
+    || groups.some((group) => typeof group.id !== 'string' || typeof group.target_finish !== 'boolean'
+      || (group.target_finish ? group.target_mission_key !== null : !missionKeys.has(group.target_mission_key ?? '')))
+    || members.some((member) => !groupIds.has(member.group_id) || !missionKeys.has(member.member_mission_key))) return null
+
+  const { graph, content } = assembleTrail(missions, groups, members)
   return {
-    huntId: h.id,
-    slug: h.slug,
-    versionId: v.id,
-    revision: h.revision,
-    title: typeof rawTitle === 'string' && rawTitle.trim() ? rawTitle.trim() : h.slug,
-    huntState: state,
+    huntId: version.huntId,
+    slug: version.slug,
+    versionId: version.versionId,
+    revision: version.revision,
+    title: version.title,
+    huntState: version.huntState,
     graph,
     content,
   }
@@ -157,10 +210,18 @@ export async function startOrResumeRun(trail: Pick<PublishedTrail, 'huntId' | 'v
 
 /** The credits a run holds. Only `credited` rows count; reversed or void rows are history. */
 export async function loadRunCredits(runId: string, profileId: string): Promise<Credit[]> {
+  return (await loadRunCreditsForClaim(runId, profileId)) ?? []
+}
+
+/** The claim adapter distinguishes unavailable progress from an empty, authorized run. */
+export async function loadRunCreditsForClaim(runId: string, profileId: string): Promise<Credit[] | null> {
   const client = db()
   // Ownership first: a run id is not a secret, so the read is scoped to its subject.
-  const { data: run } = await client.from('hunt_runs').select('id').eq('id', runId).eq('subject_profile_id', profileId).maybeSingle()
-  if (!run) return []
-  const { data } = await client.from('hunt_progress').select('mission_key').eq('run_id', runId).eq('disposition', 'credited')
-  return ((data ?? []) as { mission_key: string }[]).map((r) => ({ mission_key: r.mission_key }))
+  const { data: run, error: runError } = await client.from('hunt_runs').select('id').eq('id', runId).eq('subject_profile_id', profileId).maybeSingle()
+  if (runError || !run) return null
+  const progress = await client.from('hunt_progress').select('mission_key', { count: 'exact' }).eq('run_id', runId).eq('disposition', 'credited')
+  if (!completeRows(progress)) return null
+  const rows = progress.data as Credit[]
+  if (rows.some((row) => typeof row.mission_key !== 'string')) return null
+  return rows.map((row) => ({ mission_key: row.mission_key }))
 }

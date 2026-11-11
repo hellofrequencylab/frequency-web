@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { draftToGraph, publishRows } from './draft'
 import { projectForPlayer } from './player'
-import { assembleTrail, playerHuntState } from './run-store'
+import { assembleTrail, loadPublicTrailSummary, playerHuntState } from './run-store'
+
+const from = vi.fn()
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from }) }))
+afterEach(() => from.mockReset())
 
 const stops = Array.from({ length: 10 }, (_, i) => ({ place: `P${i + 1}`, clue: `C${i + 1}`, placementReady: true }))
 const draft = { title: 'T', hook: 'H', area: 'A', audience: 'All', stops, routeTestedAtRevision: 1, permissionConfirmed: true }
@@ -43,5 +47,49 @@ describe('playerHuntState', () => {
     expect(playerHuntState('cancelled')).toBe('closed')
     expect(playerHuntState('draft')).toBeNull()
     expect(playerHuntState('scheduled')).toBeNull()
+  })
+})
+
+function mockSummaryQueries(visibility: string, status: string, versionStatus: string) {
+  const tables: Record<string, Record<string, unknown>[]> = {
+    hunts: [{ id: 'h1', slug: 'north-county', visibility, status, current_version_id: 'v1', revision: 1 }],
+    hunt_versions: [{ id: 'v1', hunt_id: 'h1', status: versionStatus, trail_title: ' North County Trail ', trail_hook: ' A day outdoors ' }],
+    hunt_missions: [{ hunt_id: 'h1', version_id: 'v1', mission_key: 'stop-1', visible_body: 'private clue' }],
+  }
+  const select = vi.fn()
+  from.mockImplementation((table: string) => {
+    let matches = tables[table] ?? []
+    const query = {
+      select: (...args: unknown[]) => { select(table, ...args); return query },
+      eq: (column: string, value: unknown) => { matches = matches.filter((row) => row[column] === value); return query },
+      in: (column: string, values: unknown[]) => { matches = matches.filter((row) => values.includes(row[column])); return query },
+      maybeSingle: async () => ({ data: matches[0] ?? null, error: null }),
+      then: (resolve: (response: { data: null; count: number; error: null }) => unknown) => resolve({ data: null, count: matches.length, error: null }),
+    }
+    return query
+  })
+  return select
+}
+
+describe('loadPublicTrailSummary', () => {
+  it.each(['public', 'unlisted'])('reads just the published %s Trail summary and a count', async (visibility) => {
+    const select = mockSummaryQueries(visibility, 'live', 'published')
+    const summary = await loadPublicTrailSummary('north-county')
+    expect(summary).toEqual({ slug: 'north-county', title: 'North County Trail', description: 'A day outdoors', stopCount: 1 })
+    expect(select.mock.calls).toEqual([
+      ['hunts', 'id, slug, status, current_version_id, revision'],
+      ['hunt_versions', 'id, trail_title:policy->trail->>title, trail_hook:policy->trail->>hook'],
+      ['hunt_missions', 'mission_key', { count: 'exact', head: true }],
+    ])
+  })
+
+  it.each([
+    ['private', 'live', 'published'],
+    ['public', 'paused', 'published'],
+    ['public', 'live', 'draft'],
+  ])('refuses a %s, %s Hunt with a %s version before reading missions', async (visibility, status, versionStatus) => {
+    mockSummaryQueries(visibility, status, versionStatus)
+    expect(await loadPublicTrailSummary('north-county')).toBeNull()
+    expect(from).not.toHaveBeenCalledWith('hunt_missions')
   })
 })
