@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2259",
+  "title": "Send the six short /for doors in FlowWeb reply drafts (/for/teacher and five more) to the live door that fits, instead of a 404",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "next.config.ts",
+    "ref": "Owner decision 2026-11-11 (FlowWeb launch thread): FlowWeb's reply helper links hosts to /for/teacher, /for/studio, /for/venue, /for/music, /for/gathering and /for/maker, which the funnel registry never served (dynamicParams false, so 404)."
+  },
+  "detail": "Six temporary redirects in next.config.ts: teacher to coaches-and-healers, studio to studios, venue to venues, music to event-hosts, gathering to clubs-and-groups, maker to local-businesses. None shadows a registry slug, and every destination is one, so lib/marketing/funnel-redirects.test.ts holds. Temporary so the short slugs stay free for real doors later.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/for-short-doors.mjs"
+  },
+  "closed": "2026-11-11",
+  "wave": "W7"
+}

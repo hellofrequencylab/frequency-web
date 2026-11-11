@@ -462,6 +462,14 @@ const nextConfig: NextConfig = {
       { source: '/for/wellness-and-retreats', destination: '/for/studios', permanent: true },
       { source: '/for/markets-and-festivals', destination: '/for/event-hosts', permanent: true },
       { source: '/for/schools-and-programs', destination: '/for/clubs-and-groups', permanent: true },
+      // LIVE-2259: FlowWeb's reply drafts link to short niche doors (/for/teacher and five more) that the
+      // registry never served. Each lands on the closest live door; temporary, so the short slugs stay free.
+      { source: '/for/teacher', destination: '/for/coaches-and-healers', permanent: false },
+      { source: '/for/studio', destination: '/for/studios', permanent: false },
+      { source: '/for/venue', destination: '/for/venues', permanent: false },
+      { source: '/for/music', destination: '/for/event-hosts', permanent: false },
+      { source: '/for/gathering', destination: '/for/clubs-and-groups', permanent: false },
+      { source: '/for/maker', destination: '/for/local-businesses', permanent: false },
       // /calm-down-fast MERGED into /mindless (LIVE-2093): the guide's promise was five quiet minutes, and the
       // timer is that promise kept. The member help twin is self-canonical now. The /go/calm-down-fast
       // campaign door (lib/marketing/launch-doors.ts) is a separate route and keeps working.
