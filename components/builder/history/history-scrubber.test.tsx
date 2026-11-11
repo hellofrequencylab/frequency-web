@@ -23,3 +23,10 @@ it('omits the scrubber when there are no versions', () => {
   expect(html).toContain('No versions yet')
   expect(html).not.toContain('type="range"')
 })
+
+it('turns Restore on when the draft can take a version (BLD-403)', () => {
+  const html = renderToStaticMarkup(<HistoryScrubber versions={versions} selectedId="1" onPreview={vi.fn()} onRestore={vi.fn()} />)
+  expect(html).not.toMatch(/<button[^>]*disabled[^>]*>Restore to draft/)
+  expect(html).toContain('Restore copies it into your draft.')
+  expect(html).toContain('Version 1 of 2')
+})
