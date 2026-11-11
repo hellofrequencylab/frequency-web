@@ -52,3 +52,8 @@ export async function mergeGuestIntoStored(profileId: string, guestRaw: unknown)
   await saveCart(profileId, merged)
   return merged
 }
+
+/** Empty the saved cart, after what was in it has been paid for. */
+export async function clearStoredCart(profileId: string): Promise<void> {
+  await saveCart(profileId, [])
+}
