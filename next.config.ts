@@ -463,9 +463,20 @@ const nextConfig: NextConfig = {
       { source: '/for/markets-and-festivals', destination: '/for/event-hosts', permanent: true },
       { source: '/for/schools-and-programs', destination: '/for/clubs-and-groups', permanent: true },
       // /calm-down-fast MERGED into /mindless (LIVE-2093): the guide's promise was five quiet minutes, and the
-      // timer is that promise kept. The member help twin is self-canonical now. The /go/calm-down-fast
-      // campaign door (lib/marketing/launch-doors.ts) is a separate route and keeps working.
+      // timer is that promise kept. The member help twin is self-canonical now.
       { source: '/calm-down-fast', destination: '/mindless', permanent: true },
+      // LAUNCH REWORK (Phase 3): the five /go campaign doors are retired. Live ads and printed links still point
+      // at them, so each one 308s to the closest survivor; query strings (utm_*) ride through untouched.
+      { source: '/go/calm-down-fast', destination: '/mindless', permanent: true },
+      { source: '/go/find-your-people', destination: '/events', permanent: true },
+      { source: '/go/host-one-circle', destination: '/create-a-space', permanent: true },
+      { source: '/go/bring-your-practice', destination: '/create-a-space', permanent: true },
+      { source: '/go/run-it-together', destination: '/create-a-space', permanent: true },
+      { source: '/go/:path*', destination: '/create-a-space', permanent: true },
+      // The Vera page drafter at /spaces/launch is retired: the wizard is the one builder.
+      { source: '/spaces/launch', destination: '/create-a-space', permanent: true },
+      // The /free-spotlight landing is retired (same job as the Create a Space wizard); its link still works.
+      { source: '/free-spotlight', destination: '/create-a-space?utm_campaign=free-spotlight', permanent: true },
       // Founder-pricing retirement: the founders marketing funnel is gone and the beta
       // price framing is "Opening Beta" on /pricing. Permanent — the routes are deleted
       // for good, so inbound links + old emails should transfer straight to /pricing.
@@ -710,9 +721,12 @@ const nextConfig: NextConfig = {
         ? { source: '/system', destination: '/features', permanent: true }
         : { source: '/system', destination: '/pricing', permanent: false },
       // /start (the Build / Practice / Spread picker) MERGED into /join, the one front door, whose own
-      // picker replaced it. EXACT source: /start/[flow] stays live, because printed QR codes and the
-      // lead flows (lib/entry-points/templates.ts) point at /start/welcome, /start/event, /start/partner.
+      // picker replaced it. LAUNCH REWORK (Phase 3): /start/[flow] is retired too. /start/host is the one
+      // DM door; the printed-QR flows land on the survivor that fits (member QR: /join, venue QR: /start/host).
       { source: '/start', destination: '/join', permanent: true },
+      { source: '/start/welcome', destination: '/join', permanent: true },
+      { source: '/start/event', destination: '/join', permanent: true },
+      { source: '/start/partner', destination: '/start/host', permanent: true },
       // /discover/places MERGED into /discover/cities: one town template, which now renders any town
       // with something public (noindex below the local index floor) as well as the density cities, and
       // one index carrying both lists. The slug is the same citySlug() form on both sides.

@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2262",
+  "title": "Retire the old launch doors while preserving their routes and attribution",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "next.config.ts",
+    "ref": "Daniel-approved Gate A retirement plan, 2026-11-11; coordination claim on #4306 reserves LIVE-2262 for codex/gate-a-retired-doors."
+  },
+  "detail": "The retired /go campaign doors, /free-spotlight landing, Vera /spaces/launch drafter, and /start/[flow] splash must stop rendering while their old links keep reaching the right survivor through permanent 308 redirects. Keep /start/host live for invite attribution. Next.js config redirects run before filesystem routes, use 308 when permanent:true, and carry incoming query parameters through, including UTM and gclid values (Next 16 redirecting and redirects config docs). Daniel explicitly approved re-aiming only LIVE-1969, LIVE-1629, and LIVE-2158 on 2026-11-11. Their probes now verify the permanent /go survivor map, the /free-spotlight to /create-a-space campaign redirect, and the /spaces/launch plus legacy /start redirects while retaining checks for surviving funnel layouts. No other probes were changed. The row probe and the three re-aimed probes pass locally. Keep this row open until the exact-head checks and preview behavior provide the remaining acceptance evidence. LIVE-962 is not a fourth probe blocker: the git ls-files check passes when staged deletions are represented in the branch index.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const c=fs.readFileSync(\"next.config.ts\",\"utf8\");const q=String.fromCharCode(39);const pairs=[[\"/go/calm-down-fast\",\"/mindless\"],[\"/go/find-your-people\",\"/events\"],[\"/go/host-one-circle\",\"/create-a-space\"],[\"/go/bring-your-practice\",\"/create-a-space\"],[\"/go/run-it-together\",\"/create-a-space\"],[\"/go/:path*\",\"/create-a-space\"],[\"/free-spotlight\",\"/create-a-space?utm_campaign=free-spotlight\"],[\"/spaces/launch\",\"/create-a-space\"],[\"/start/welcome\",\"/join\"],[\"/start/event\",\"/join\"],[\"/start/partner\",\"/start/host\"]];const bad=[];for(const [a,b] of pairs)if(!c.includes(\"{ source: \"+q+a+q+\", destination: \"+q+b+q+\", permanent: true }\"))bad.push(a+\" must permanently redirect to \"+b);for(const p of [\"app/(marketing)/go/[door]/page.tsx\",\"app/(marketing)/free-spotlight/page.tsx\",\"app/(main)/spaces/launch/page.tsx\",\"app/(marketing)/start/[flow]/page.tsx\"])if(fs.existsSync(p))bad.push(p+\" still exists\");if(!fs.existsSync(\"app/(marketing)/start/host/page.tsx\"))bad.push(\"/start/host is missing\");const protectedProbes=[[\"LIVE-1969\",\"scripts/probes/create-space-doors.mjs\",\"lib/marketing/launch-doors.ts\"],[\"LIVE-1629\",\"scripts/probes/free-spotlight-entry.mjs\",\"app/(marketing)/free-spotlight/page.tsx\"],[\"LIVE-2158\",\"scripts/probes/marketing-evolution-funnels.mjs\",\"launch/free-spotlight.tsx\"]];for(const [id,path,stale] of protectedProbes)if(fs.existsSync(path)&&fs.readFileSync(path,\"utf8\").includes(stale))bad.push(\"needs-Daniel: protected probe \"+id+\" still names retired path \"+stale);if(bad.length){console.error(\"LIVE-2262: \"+bad.join(String.fromCharCode(10)));process.exit(1)}console.log(\"LIVE-2262: retired launch routes stay gone and redirects are permanent; protected probes no longer contain stale paths\")'",
+    "note": "The row probe checks exact permanent redirect mappings, absence of retired route files, and preservation of /start/host. The three closed protected probes were re-aimed only with Daniel\u2019s explicit item-specific approval; each retains its surviving acceptance checks. Keep the row open until exact-head CI and preview behavior are confirmed."
+  },
+  "wave": "W7"
+}

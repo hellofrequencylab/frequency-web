@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { COLD_KIT, createSpaceDoorHref, doorArrival, goalsFromDoor } from './door'
-import { LAUNCH_DOORS } from '@/lib/marketing/launch-doors'
 import { NICHE_FUNNEL_DESTINATIONS } from '@/lib/funnels/definitions'
 import { OPERATOR_CTA_HREF, operatorStartHref } from '@/lib/site'
 
@@ -64,7 +63,6 @@ describe('createSpaceDoorHref', () => {
 
 describe('every signed-out door lands in the builder primed', () => {
   const doors = [
-    ...LAUNCH_DOORS.map((d) => d.buttonHref),
     ...Object.values(NICHE_FUNNEL_DESTINATIONS).map((d) => (d.mode === 'direct' ? d.url : '')),
     OPERATOR_CTA_HREF,
     operatorStartHref('business', { name: 'Hearth', intents: 'events' }),
