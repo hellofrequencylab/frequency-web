@@ -1453,6 +1453,84 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4883,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346042000_hunt_rewards.sql",
+          "sha256": "06a8be46ac734e0540090067ff89ff5db90f3bb7812bdf8c19784e50cba37d7c"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/FH-021.json",
+          "status": "added",
+          "sha256": "61062e0b7e2ee2ebb250995576b42df8c1757d0b2586628dc97d47d6638486b9",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/rewards.test.ts",
+          "status": "added",
+          "sha256": "adaa9507b345607edfc5582c8c968afb9262f40f9673810f7d0caa9f55bac10c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/rewards.ts",
+          "status": "added",
+          "sha256": "395c06fb734ad0d436b3923916dadefbbfc5938959091c0a7bbca5e237f2d9fc",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "f98fa6d97ee3161806048c2d562a71d3e8e6e151ebbb8dcb8b91a30fa174da50",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "a84060dd8f626f8e8e5a5e5bc95f7fb4b1d2254343452bca4227b793d358c584",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "4fc8675ffd0573a7d99ea7b83c93c26d16407971771103b2097bf87361b66de3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346042000_hunt_rewards.sql",
+          "status": "added",
+          "sha256": "06a8be46ac734e0540090067ff89ff5db90f3bb7812bdf8c19784e50cba37d7c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunt_rewards.test.sql",
+          "status": "added",
+          "sha256": "c1162b64adf8c674ce5291b52234a014bf41dba9d5b32ed9826ce6454017d91a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
