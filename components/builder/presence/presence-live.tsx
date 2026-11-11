@@ -56,8 +56,8 @@ export function usePeerSelectionBounds(root: RefObject<HTMLElement | null>, peer
       }
       setBounds(next)
     }
-    const frame = requestAnimationFrame(measure)
-    const observer = el && wanted.size > 0 && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
+    const frame = requestAnimationFrame(() => measure())
+    const observer = el && wanted.size > 0 && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => measure()) : null
     if (el) observer?.observe(el)
     return () => {
       cancelAnimationFrame(frame)
