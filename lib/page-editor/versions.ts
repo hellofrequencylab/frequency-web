@@ -1,6 +1,6 @@
 // PAGE VERSIONS, the server side of the E0 writer (PROG-E0, docs/EDITOR-E0.md section 3).
 //
-// publishVersioned and revertToVersion call the two SQL functions from migration 20270346042000, which do the
+// publishVersioned and revertToVersion call the two SQL functions from migration 20270346043000, which do the
 // whole job in one transaction: lock the page, take the next revision, insert the immutable version row, swap
 // the published_version_id pointer, and dual-write published_data. This file only shapes the call and the
 // failure. A page's versions are listed newest first, bodies left out, so a history list stays small.
