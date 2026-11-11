@@ -75,7 +75,7 @@ export async function huntsAfterDisputeClosed(dispute: Stripe.Dispute): Promise<
  * minted. The claim itself runs in SQL at sign-in, so this scan finds seats still waiting (`pending_claim`),
  * re-reads the canonical attendee, and attaches it. Attaching is idempotent and only ever activates.
  */
-export async function attachClaimedSeats(limit = 50): Promise<{ checked: number; attached: number }> {
+async function attachClaimedSeats(limit = 50): Promise<{ checked: number; attached: number }> {
   const { data } = await db()
     .from('hunt_entitlements')
     .select('source_id, unit_key')

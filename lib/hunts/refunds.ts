@@ -16,14 +16,14 @@
  */
 import type { Rpc } from './entitlements'
 
-export type ReversalEvent =
+type ReversalEvent =
   | { kind: 'refund_full'; ref: string }
   | { kind: 'refund_partial'; ref: string; amountMinor: number; currency: string; unitKeys: readonly string[] | null }
   | { kind: 'dispute_opened'; ref: string }
   | { kind: 'dispute_lost'; ref: string }
   | { kind: 'dispute_won'; ref: string; canonicalStillPaid: boolean }
 
-export type ReversalAction = Readonly<{ mode: 'refund' | 'dispute_open' | 'dispute_lost' | 'dispute_won'; unitKey: string | null; ref: string }>
+type ReversalAction = Readonly<{ mode: 'refund' | 'dispute_open' | 'dispute_lost' | 'dispute_won'; unitKey: string | null; ref: string }>
 type ReviewCase = Readonly<{ kind: 'partial_unmapped'; ref: string; amountMinor: number; currency: string }>
 
 export type ReversalDecision = Readonly<{

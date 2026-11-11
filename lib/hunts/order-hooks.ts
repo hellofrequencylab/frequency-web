@@ -29,7 +29,7 @@ type OfferRow = {
 }
 
 /** Map the canonical rows to the pure planner's input. Exported for the replay tests. */
-export function toOrderSource(order: OrderRow, items: readonly ItemRow[]): OrderSource {
+function toOrderSource(order: OrderRow, items: readonly ItemRow[]): OrderSource {
   return {
     kind: 'store-order',
     id: order.id,
@@ -40,7 +40,7 @@ export function toOrderSource(order: OrderRow, items: readonly ItemRow[]): Order
   }
 }
 
-export function toStoreOffer(r: OfferRow): StoreOffer {
+function toStoreOffer(r: OfferRow): StoreOffer {
   return {
     id: r.id,
     huntId: r.hunt_id,
@@ -59,7 +59,7 @@ async function orderBy(column: 'stripe_checkout_session_id' | 'stripe_payment_in
 }
 
 /** Project the benefits of one settled order. Safe to repeat from the webhook, the return and a repair. */
-export async function projectOrderBenefits(orderId: string): Promise<{ created: number; units: number } | null> {
+async function projectOrderBenefits(orderId: string): Promise<{ created: number; units: number } | null> {
   const { data: o } = await db().from('commerce_orders').select('id, status, owner_space_id, buyer_profile_id').eq('id', orderId).maybeSingle()
   const order = o as OrderRow | null
   if (!order) return null

@@ -25,7 +25,7 @@ const MESSAGE: Record<PurchaseRefusal, string> = {
 }
 
 /** The buyer-facing line for a refusal. Never names a binding, a Hunt or a price rule. */
-export function passRefusalMessage(reason: PurchaseRefusal): string {
+function passRefusalMessage(reason: PurchaseRefusal): string {
   return MESSAGE[reason] ?? 'That ticket type isn’t available.'
 }
 

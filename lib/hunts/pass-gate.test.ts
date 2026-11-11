@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decidePassCheckout, passRefusalMessage } from './pass-gate'
+import { decidePassCheckout } from './pass-gate'
 import type { CanonicalTier, PassBinding } from './pass-binding'
 
 const binding: PassBinding = { id: 'b1', huntId: 'h1', versionId: 'v1', eventId: 'e1', ticketTypeId: 't1', sellerSpaceId: 's1', benefitCodes: ['entry'], revision: 1, status: 'active' }
@@ -22,7 +22,7 @@ describe('decidePassCheckout', () => {
   })
   it('refuses when the kill switch is closed, with a line that names no rule', () => {
     const out = decidePassCheckout(binding, tier, req, false)
-    expect(out).toEqual({ ok: false, error: passRefusalMessage('commerce_paused') })
+    expect(out).toEqual({ ok: false, error: 'This pass is not on sale right now.' })
     expect(JSON.stringify(out)).not.toMatch(/hunt|binding|price/i)
   })
   it('a tier that is not fixed-price paid cannot carry a pass, whatever the browser says', () => {

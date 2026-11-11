@@ -15,7 +15,7 @@ import type Stripe from 'stripe'
 import { huntSwitchOn } from './flags'
 import { applyReversal, decideReversal, type ReversalDecision } from './refunds'
 import type { Rpc } from './entitlements'
-import { attachAttendee, intentRetryMinutes } from './entitlements'
+import { intentRetryMinutes } from './entitlements'
 
 /** The charge-level reversal a refund event means. Pure, so the whole event matrix is testable. */
 export function reversalForCharge(charge: Pick<Stripe.Charge, 'id' | 'amount' | 'amount_refunded' | 'currency'>): ReversalDecision | null {
@@ -76,9 +76,4 @@ export function nextIntentState(attempts: number, now: number): { status: 'pendi
 export async function applyChargeReversal(rpc: Rpc, ticketId: string, decision: ReversalDecision | null): Promise<void> {
   if (!decision) return
   await applyReversal(rpc, { type: 'event-ticket', id: ticketId }, decision)
-}
-
-/** A verified attendee claimed a paid guest seat: activate that seat's pending benefits once. */
-export async function activateClaimedSeat(rpc: Rpc, ticketId: string, unitKey: string, profileId: string): Promise<number> {
-  return attachAttendee(rpc, ticketId, unitKey, profileId)
 }

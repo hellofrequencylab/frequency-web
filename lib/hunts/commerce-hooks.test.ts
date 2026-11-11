@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { activateClaimedSeat, applyChargeReversal, guarded, nextIntentState, reversalForCharge, reversalForDispute } from './commerce-hooks'
+import { applyChargeReversal, guarded, nextIntentState, reversalForCharge, reversalForDispute } from './commerce-hooks'
 import type { Rpc } from './entitlements'
 
 const charge = (amount: number, refunded: number) => ({ id: 'ch_1', amount, amount_refunded: refunded, currency: 'usd' })
@@ -62,7 +62,7 @@ describe('nextIntentState', () => {
   })
 })
 
-describe('applyChargeReversal and activateClaimedSeat', () => {
+describe('applyChargeReversal', () => {
   it('replaying a reversal sends the same reference each time', async () => {
     const calls: Array<Record<string, unknown>> = []
     const rpc: Rpc = async (_fn, args) => { calls.push(args); return { data: { revoked: 1 }, error: null } }
@@ -75,9 +75,5 @@ describe('applyChargeReversal and activateClaimedSeat', () => {
     const rpc = vi.fn()
     await applyChargeReversal(rpc as unknown as Rpc, 't1', null)
     expect(rpc).not.toHaveBeenCalled()
-  })
-  it('attaches the verified attendee to their own seat', async () => {
-    const rpc: Rpc = async () => ({ data: 2, error: null })
-    expect(await activateClaimedSeat(rpc, 't1', 'seat-2', 'p1')).toBe(2)
   })
 })

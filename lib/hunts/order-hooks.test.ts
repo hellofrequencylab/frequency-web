@@ -1,23 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { planOrderProjection } from './merch'
-import { toOrderSource, toStoreOffer } from './order-hooks'
+import { planOrderProjection, type OrderSource, type StoreOffer } from './merch'
 
-const offer = toStoreOffer({ id: 'o1', hunt_id: 'h1', seller_space_id: 's1', product_id: 'p1', variant_id: 'v1', benefit_code: 'tee', requires_state: 'paid', status: 'approved' })
-const order = (status: 'pending' | 'paid' | 'refunded') =>
-  toOrderSource({ id: 'ord1', status, owner_space_id: 's1', buyer_profile_id: 'b1' }, [
-    { id: 'l1', product_id: 'p1', variant_id: 'v1', qty: 2 },
-    { id: 'l2', product_id: 'p9', variant_id: null, qty: 1 },
-  ])
+const offer: StoreOffer = { id: 'o1', huntId: 'h1', sellerSpaceId: 's1', productId: 'p1', variantId: 'v1', benefitCode: 'tee', requiresState: 'paid', status: 'approved' }
+const order = (status: OrderSource['status']): OrderSource => ({
+  kind: 'store-order',
+  id: 'ord1',
+  status,
+  ownerSpaceId: 's1',
+  buyerProfileId: 'b1',
+  lines: [
+    { id: 'l1', productId: 'p1', variantId: 'v1', qty: 2 },
+    { id: 'l2', productId: 'p9', variantId: null, qty: 1 },
+  ],
+})
 
-describe('order projection through the call-site mapping', () => {
+describe('order projection as the call site feeds it', () => {
   it('a quantity-two bound line gives two benefits and an ordinary line gives none', () => {
     const plan = planOrderProjection(order('paid'), [offer])
     expect(plan.ok && plan.units.map((u) => u.unitKey)).toEqual(['l1:1', 'l1:2'])
   })
   it('a replay plans the same unit keys and semantic keys', () => {
-    const a = planOrderProjection(order('paid'), [offer])
-    const b = planOrderProjection(order('paid'), [offer])
-    expect(a).toEqual(b)
+    expect(planOrderProjection(order('paid'), [offer])).toEqual(planOrderProjection(order('paid'), [offer]))
   })
   it('nothing projects before payment settles or after a refund', () => {
     expect(planOrderProjection(order('pending'), [offer]).ok).toBe(false)
