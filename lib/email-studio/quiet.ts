@@ -10,7 +10,7 @@ import { envFlag } from '../env/string.ts'
 
 /** Each quiet audience and the days without a visit it starts at. */
 export const QUIET_SEGMENT_DAYS = { quiet_14: 14, quiet_30: 30, quiet_60: 60 } as const
-export type QuietSegment = keyof typeof QUIET_SEGMENT_DAYS
+type QuietSegment = keyof typeof QUIET_SEGMENT_DAYS
 
 /** How far past the line a member still qualifies, so a run the cron missed is caught by the next. */
 export const QUIET_CATCH_UP_DAYS = 7

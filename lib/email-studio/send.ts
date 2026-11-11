@@ -971,7 +971,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
 
 // ── Quiet-member re-engagement (LIVE-2260) ─────────────────────────────────────────
 
-export interface QuietSendResult {
+interface QuietSendResult {
   queued: number
   /** Members still due after the batch cap; the next run takes them. */
   remaining: number
