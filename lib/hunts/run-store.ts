@@ -117,6 +117,22 @@ export async function loadPublishedTrail(slug: string): Promise<PublishedTrail |
 }
 
 type PlayerRun = { runId: string; state: string }
+type PlayerRunScope = Pick<PublishedTrail, 'huntId' | 'versionId'>
+
+/** A hint request can resume reading an existing run without creating one. */
+export async function loadPlayerRun(trail: PlayerRunScope, profileId: string): Promise<PlayerRun | null> {
+  const { data } = await db()
+    .from('hunt_runs')
+    .select('id, state')
+    .eq('version_id', trail.versionId)
+    .eq('hunt_id', trail.huntId)
+    .eq('subject_profile_id', profileId)
+    .order('attempt_no', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const row = data as { id: string; state: string } | null
+  return row ? { runId: row.id, state: row.state } : null
+}
 
 /**
  * Start or resume the signed-in player's run on this version. A second tab or device finds the same
@@ -125,33 +141,17 @@ type PlayerRun = { runId: string; state: string }
  * returned so the player keeps seeing their progress.
  */
 export async function startOrResumeRun(trail: Pick<PublishedTrail, 'huntId' | 'versionId' | 'huntState'>, profileId: string): Promise<PlayerRun | null> {
-  const client = db()
-  const find = async () => {
-    const { data } = await client
-      .from('hunt_runs')
-      .select('id, state')
-      .eq('version_id', trail.versionId)
-      .eq('hunt_id', trail.huntId)
-      .eq('subject_profile_id', profileId)
-      .order('attempt_no', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    return (data as { id: string; state: string } | null) ?? null
-  }
-  const existing = await find()
-  if (existing) return { runId: existing.id, state: existing.state }
+  const existing = await loadPlayerRun(trail, profileId)
+  if (existing) return existing
   if (trail.huntState !== 'published') return null
-  const { data, error } = await client
+  const { data, error } = await db()
     .from('hunt_runs')
     .insert({ hunt_id: trail.huntId, version_id: trail.versionId, subject_profile_id: profileId })
     .select('id, state')
     .maybeSingle()
   if (data) return { runId: (data as { id: string }).id, state: (data as { state: string }).state }
   // 23505: another tab created it first. Read theirs.
-  if (error && error.code === '23505') {
-    const again = await find()
-    if (again) return { runId: again.id, state: again.state }
-  }
+  if (error?.code === '23505') return loadPlayerRun(trail, profileId)
   return null
 }
 
