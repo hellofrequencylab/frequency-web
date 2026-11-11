@@ -26,6 +26,7 @@ import {
 } from '@/lib/onboarding/steps'
 import { updateWalkthrough, setWalkthroughActive } from '../actions'
 import { Switch } from '@/components/ui/switch'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // The clever editor (Phase A centerpiece). A SPLIT layout: LEFT = controls (sequence
 // meta + a reorderable slide list + the per-slide editor), RIGHT = a LIVE PREVIEW that
@@ -453,9 +454,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                     type="button"
                     aria-pressed={!step.icon}
                     onClick={() => setStep(selected, { icon: undefined })}
-                    className={`rounded-control border px-2 py-1.5 text-2xs font-medium transition-colors ${
-                      !step.icon ? 'border-primary bg-primary-bg/40 text-primary-strong' : 'border-border text-subtle hover:bg-surface-elevated'
-                    }`}
+                    className={choiceTileClasses(!step.icon, `rounded-control px-2 py-1.5 text-2xs font-medium ${!step.icon ? 'text-primary-strong' : 'text-subtle'}`)}
                   >
                     None
                   </button>
@@ -466,9 +465,7 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
                       aria-label={name}
                       aria-pressed={step.icon === name}
                       onClick={() => setStep(selected, { icon: name })}
-                      className={`rounded-control border p-2 transition-colors ${
-                        step.icon === name ? 'border-primary bg-primary-bg/40 text-primary-strong' : 'border-border text-muted hover:bg-surface-elevated'
-                      }`}
+                      className={choiceTileClasses(step.icon === name, `rounded-control p-2 ${step.icon === name ? 'text-primary-strong' : 'text-muted'}`)}
                     >
                       <Icon className="h-4 w-4" aria-hidden />
                     </button>

@@ -12,6 +12,7 @@ import {
   deleteDispatch,
 } from '../actions'
 import { Button } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 import { StatusChip, type StatusTone, Banner } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DangerModal } from '@/components/admin/danger-modal'
@@ -143,11 +144,7 @@ function DispatchForm({
               key={t}
               type="button"
               onClick={() => setDispatchType(t)}
-              className={`px-3 py-1.5 rounded-control text-meta font-semibold border transition-colors ${
-                dispatchType === t
-                  ? 'border-primary bg-primary text-on-primary'
-                  : 'border-border bg-surface text-text hover:border-primary'
-              }`}
+              className={chipClasses(dispatchType === t)}
             >
               {TYPE_LABELS[t]}
             </button>
