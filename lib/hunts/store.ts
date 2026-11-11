@@ -119,6 +119,19 @@ async function authorizeHunt(client: SupabaseClient, huntId: string, actor: Acto
   return verdict.allow ? hunt : null
 }
 
+/**
+ * The Hunt row for an actor who may take `action` on it, or null (missing and forbidden answer the same).
+ * The commerce screens (FH-036S, FH-038S) use this so they ask the same gate as the editor.
+ */
+export async function authorizeHuntAction(
+  huntId: string,
+  actor: Actor,
+  action: HuntAction,
+): Promise<{ id: string; ownerSpaceId: string | null; currentVersionId: string | null } | null> {
+  const hunt = await authorizeHunt(db(), huntId, actor, action)
+  return hunt ? { id: hunt.id, ownerSpaceId: hunt.owner_space_id, currentVersionId: hunt.current_version_id ?? null } : null
+}
+
 async function latestVersion(client: SupabaseClient, huntId: string): Promise<VersionRow | null> {
   const { data } = await client
     .from('hunt_versions')
