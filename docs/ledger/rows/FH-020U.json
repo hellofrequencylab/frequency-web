@@ -1,0 +1,18 @@
+{
+  "id": "FH-020U",
+  "title": "Hunts FH-020U: Produce held Hunt claims for opted-in staff review",
+  "lane": "program",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Claude’s 2026-11-11 FH-014S ruling on #4306, comment 6799952003."
+  },
+  "detail": "Requires FH-049T and FH-020S. In hunt_claim_apply, allow an opted-in mission policy to record one needs_review claim for a qualifying assurance failure. Use the current mission-to-placement binding as the authority for the venue. Keep the default assurance refusal side-effect-free. A held claim creates no progress, reward, or credit outbox event. Prove a repeated command does not create another held row and that authorized existing review can resume it exactly once. Register and release through the serial HYG-217 process. Review and appeal UI follow the separate staff authorization ruling. Before release, record pgTAP and exact-head workflow_dispatch db-tests, real API acceptance, the approved apply sequence, and Frequency Community ledger parity.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\"),dir=\"supabase/migrations\";\nconst declaration=/create\\s+(?:or\\s+replace\\s+)?function\\s+(?:public\\.)?hunt_claim_apply\\s*\\(/gi;\nlet body=\"\";\nfor(const file of fs.readdirSync(dir).filter(f=>/^\\d{14}_.*\\.sql$/.test(f)&&f.slice(0,14)>=\"20270346037000\").sort()){\n  const sql=fs.readFileSync(dir+\"/\"+file,\"utf8\");\n  const matches=[...sql.matchAll(declaration)];\n  if(matches.length)body=sql.slice(matches.at(-1).index);\n}\nconst claimInserts=[...body.matchAll(/\\binsert\\s+into\\s+(?:public\\.)?hunt_claims\\b[^;]+;/gi)];\nconst holds=claimInserts.some(match=>/\\b(?:state|status)\\b/i.test(match[0])&&/\\bneeds_review\\b/i.test(match[0]));\nconst sqlTests=\"supabase/tests\";\nconst covered=fs.readdirSync(sqlTests).filter(f=>f.includes(\"hunt\")&&f.endsWith(\".sql\")).some(f=>{\n  const test=fs.readFileSync(sqlTests+\"/\"+f,\"utf8\");\n  return /\\bhunt_claim_apply\\s*\\(/i.test(test)&&/\\bneeds_review\\b/i.test(test)&&/\\bhunt_progress\\b/i.test(test);\n});\nprocess.exit(holds&&covered&&/\\bassurance_too_low\\b/i.test(body)?0:1);'"
+  },
+  "wave": "W7"
+}
