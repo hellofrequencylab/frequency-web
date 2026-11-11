@@ -26,6 +26,7 @@ import { UpgradeMoment } from '@/components/pricing/upgrade-moment'
 import { isPaymentsRefusal } from '@/lib/pricing/payments-copy'
 import type { UpgradeOffer, UpgradeTarget } from '@/lib/pricing/business-offer'
 import { buttonClasses } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // The draggable-pin location picker runs MapLibre, which must never touch the server, so it
 // lazy-mounts client-only (ssr:false) — the same dynamic-import pattern as EventLocationMap.
@@ -648,11 +649,7 @@ export function EventForm({
                   key={value}
                   onClick={() => setAttendanceMode(value)}
                   disabled={isPending}
-                  className={`rounded-control border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
-                    active
-                      ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
-                      : 'border-border bg-surface text-text hover:border-border-strong'
-                  } disabled:opacity-60`}
+                  className={choiceTileClasses(active, `rounded-control px-3 py-2 text-center text-body-sm font-medium ${active ? 'text-primary-strong ring-2 ring-primary/30' : 'text-text'}`)}
                 >
                   {label}
                 </button>
@@ -938,11 +935,7 @@ export function EventForm({
                     key={value}
                     onClick={() => setPriceMode(value)}
                     disabled={isPending}
-                    className={`rounded-control border px-3 py-2 text-center text-body-sm font-medium transition-colors ${
-                      active
-                        ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
-                        : 'border-border bg-surface text-text hover:border-border-strong'
-                    } disabled:opacity-60`}
+                    className={choiceTileClasses(active, `rounded-control px-3 py-2 text-center text-body-sm font-medium ${active ? 'text-primary-strong ring-2 ring-primary/30' : 'text-text'}`)}
                   >
                     {label}
                   </button>

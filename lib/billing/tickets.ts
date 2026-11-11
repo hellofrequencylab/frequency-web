@@ -53,6 +53,7 @@
 // they sold something, with a bell and an email, beside the buyer's receipts. Until it landed there
 // was no ticket-sold notification of any kind anywhere in the product.
 
+import { passCheckoutGate } from '@/lib/hunts/pass-gate'
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
@@ -489,6 +490,10 @@ export async function createTicketCheckout(opts: {
   if (!(await payoutsLive())) return { error: 'Ticketing isn’t turned on yet.' }
   if (!stripe) return { error: 'Ticketing isn’t turned on yet.' }
   const qty = Math.min(Math.max(Math.floor(opts.qty ?? 1), 1), TICKET_MAX_QTY)
+  // FH-036S: a tier bound to a Hunt pass also obeys the pass rules and the sales kill switch. Dark until
+  // HUNTS_COMMERCE_ENABLED; an unbound or unreadable tier is untouched and sells exactly as before.
+  const passRefusal = await passCheckoutGate({ eventId: opts.eventId, ticketTypeId: opts.ticketTypeId ?? null, qty })
+  if (passRefusal) return { error: passRefusal }
 
   // ── TWO BUYER-ONLY READS, STARTED NOW INSTEAD OF LAST (LIVE-363) ─────────────────────────
   // Both depend on nothing but `buyerProfileId`, which is already known here, and both used to
