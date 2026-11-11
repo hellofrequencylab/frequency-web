@@ -44,6 +44,7 @@ import { resolveProductRefs, productVarsFromLayout } from './product-block'
 import { resolveDataBlockRefs } from './data-blocks'
 import { MERGE_TAG_DEFAULT_FALLBACKS } from './types'
 import { lintVoice } from './voice-lint'
+import { isQuietSegment, quietDedupeKey, QUIET_ONE_SHOT_REFUSAL } from './quiet'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 // ── Sender FROM name (per-campaign display name, envelope address unchanged) ─────
@@ -653,6 +654,9 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   const row = await loadCampaign(campaignId)
   if (!row) return fail('That campaign no longer exists.')
 
+  // A quiet-member audience is evergreen (LIVE-2260): the daily trigger sends it, never this one-shot button.
+  if (isQuietSegment(row.segment)) return fail(QUIET_ONE_SHOT_REFUSAL)
+
   // Idempotency: never double-send.
   if (row.status === 'sent' || row.sent_at) return fail('This campaign has already been sent.')
   if (row.status === 'sending' && !(await sendLeaseExpired(campaignId))) {
@@ -963,6 +967,94 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   }
 
   return ok({ recipientCount: count })
+}
+
+// ── Quiet-member re-engagement (LIVE-2260) ─────────────────────────────────────────
+
+export interface QuietSendResult {
+  queued: number
+  /** Members still due after the batch cap; the next run takes them. */
+  remaining: number
+}
+
+/**
+ * Send one EVERGREEN quiet-member campaign to the members who newly crossed its line (lib/email-studio/quiet.ts).
+ * Called only by /api/cron/quiet-reengage. Refuses unless the approval spine approved the row (assertApproved) and the
+ * row is not paused, cancelled or sent. Each person gets it once: the campaign's send ledger skips anyone it already
+ * reached, and the outbox dedupe key stops two overlapping runs. FAIL-CLOSED on an unreadable ledger, because a
+ * second copy is worse than a day's delay. Broadcast identity only (no conversation mode); the same send gate,
+ * footer, unsubscribe headers and bulk lane as sendCampaignNow.
+ */
+export async function sendQuietCampaign(campaignId: string, limit: number): Promise<ActionResult<QuietSendResult>> {
+  const row = await loadCampaign(campaignId)
+  if (!row) return fail('That campaign no longer exists.')
+  if (!isQuietSegment(row.segment)) return fail('This campaign is not aimed at a quiet-member audience.')
+  if (['paused', 'cancelled', 'sent'].includes(row.status)) return fail(`A ${row.status} campaign is not sent by the trigger.`)
+  try {
+    await assertApproved({ type: 'campaign', id: campaignId })
+  } catch (err) {
+    return fail(err instanceof Error ? err.message : 'Refused: this campaign is not approved.')
+  }
+  const rawDoc: EmailRenderDoc = { ...docFromRow(row), subject: row.subject }
+  const subjectTemplate = rawDoc.subject.trim()
+  if (!subjectTemplate) return fail('The campaign has no subject to send.')
+  if (lintVoice(campaignAuthoredCopy(rawDoc)).hasEmDash) return fail(VOICE_EM_DASH_ERROR)
+
+  const rootSpaceId = await loadRootSpaceId()
+  if (!rootSpaceId) return fail('No root Space: a quiet-member send cannot be ledgered, so it does not run.')
+  const already = await readLedgerRecipients(campaignId)
+  if (!already) return fail(LEDGER_UNREADABLE_ERROR)
+
+  const due = (await resolveSegment(row.segment)).filter(
+    (r) => r.profileId && !already.contactIds.has(r.contactId) && !already.emails.has(r.email.toLowerCase()),
+  )
+  const batch = due.slice(0, Math.max(0, limit))
+  if (!batch.length) return ok({ queued: 0, remaining: 0 })
+
+  const doc: EmailRenderDoc = { ...rawDoc, layout: await resolveDataBlockRefs(await resolveProductRefs(rawDoc.layout)) }
+  const productVars = productVarsFromLayout(doc.layout)
+  const fromHeader = await resolveCampaignFromHeader(campaignId)
+  const replyTo = await loadCampaignReplyTo(campaignId)
+  const names = await loadContactNames(batch.map((r) => r.contactId))
+  const startedAt = new Date()
+  let queued = 0
+  for (const r of batch) {
+    const profileId = r.profileId as string
+    const decision = await resolveSendGate(profileId, 'email', 'marketing', { email: r.email })
+    if (!decision.allowed) continue
+    const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId, category: 'lifecycle' })
+    const manageUrl = buildManageEmailsUrl({ baseUrl: SITE_URL, profileId, category: 'lifecycle' })
+    const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
+    const vars = mergeVars({ firstName, lastName, email: r.email })
+    const fallbacks = { ...MERGE_TAG_DEFAULT_FALLBACKS, ...productVars }
+    const compiled = compileEmailDoc(doc, { unsubscribeUrl, manageUrl })
+    const html = appendUtm(applyMergeTags(compiled.html, vars, { fallbacks }), { siteUrl: SITE_URL, campaign: `email-${campaignId.slice(0, 8)}` })
+    const text = applyMergeTags(compiled.text, vars, { fallbacks, escape: false })
+    const subject = applyMergeTags(subjectTemplate, vars, { fallbacks, escape: false })
+    await enqueueEmail(
+      {
+        to: r.email,
+        from: fromHeader,
+        ...(replyTo ? { replyTo } : {}),
+        subject,
+        html,
+        text,
+        headers: { ...listUnsubscribeHeaders(unsubscribeUrl), 'X-Campaign-Id': campaignId },
+        tags: [{ name: 'campaign_id', value: campaignId }],
+      },
+      { lane: 'bulk', runAfter: bulkRunAfter(queued, startedAt), dedupeKey: quietDedupeKey(campaignId, r.contactId) },
+    )
+    queued++
+    await recordLedgerSend({ spaceId: rootSpaceId, campaignId, contactId: r.contactId || null, email: r.email })
+  }
+  if (queued > 0) {
+    const db = createAdminClient()
+    await db
+      .from('campaigns')
+      .update({ recipient_count: row.recipient_count + queued })
+      .eq('id', campaignId)
+  }
+  return ok({ queued, remaining: due.length - batch.length })
 }
 
 // ── Lifecycle transitions: pause / cancel ────────────────────────────────────────

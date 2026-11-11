@@ -13,6 +13,7 @@ import {
 } from '@/lib/messaging/place-tree'
 import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
 import { plainTextEmail } from '@/lib/email-studio/shell'
+import { isQuietSegment, quietWindow } from '@/lib/email-studio/quiet'
 
 /** A built-in audience, a trait segment (`seg:<slug>`), a place-tree selector
  *  (`circle:<id>` / `hub:<id>` / `nexus:<id>`, CRM Phase 5), an event RSVP audience
@@ -63,6 +64,11 @@ export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
   // already hold a Frequency profile, so the profile-based unsubscribe still works.
   // Pre-account waitlist folks (no profile_id) are reached transactionally, not here.
   { key: 'beta_waitlist', label: 'Beta waitlist (confirmed, has account)' },
+  // Quiet-member re-engagement (LIVE-2260, lib/email-studio/quiet.ts): subscribed members whose last visit is 14,
+  // 30 or 60 days back. A campaign to one of these is evergreen: the daily trigger sends it, never the Send button.
+  { key: 'quiet_14', label: 'Quiet 14 days (subscribed members, sent daily by the trigger)' },
+  { key: 'quiet_30', label: 'Quiet 30 days (subscribed members, sent daily by the trigger)' },
+  { key: 'quiet_60', label: 'Quiet 60 days (subscribed members, sent daily by the trigger)' },
 ]
 
 /** A classified audience key. A place selector is one audience type that spans the place tree
@@ -106,7 +112,7 @@ export function parseSegmentKey(key: string): ParsedSegmentKey {
  *  event's guests / a hand-picked set), reached as an opt-OUT `lifecycle` send — a member/product newsletter
  *  a signed-in member can still unsubscribe from. Pure; unit-tested. */
 export function sendCategoryForSegment(segment: SegmentKey): 'marketing' | 'lifecycle' {
-  return parseSegmentKey(segment).kind === 'builtin' && segment === 'subscribed_members'
+  return parseSegmentKey(segment).kind === 'builtin' && (segment === 'subscribed_members' || isQuietSegment(segment))
     ? 'marketing'
     : 'lifecycle'
 }
@@ -195,6 +201,25 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
     const { data } = await platformContacts(db, rootId)
       .in('id', parsed.ids)
       .neq('consent_state', 'unsubscribed')
+    return (data ?? [])
+      .filter((c) => c.profile_id && c.email)
+      .map((c) => ({ contactId: c.id, email: c.email as string, profileId: c.profile_id as string }))
+  }
+
+  // Quiet members (LIVE-2260): opted-in members whose last visit falls in the audience's window. Opt-IN only
+  // (consent_state 'subscribed'), never a demo profile. A visit moves last_seen_at, so signing in leaves the window.
+  if (parsed.kind === 'builtin' && isQuietSegment(parsed.slug)) {
+    const w = quietWindow(parsed.slug, new Date())
+    const { data: quiet } = await db
+      .from('profiles')
+      .select('id')
+      .eq('is_demo', false)
+      .gte('last_seen_at', w.from)
+      .lt('last_seen_at', w.to)
+      .limit(MAX_ADHOC_IDS)
+    const ids = (quiet ?? []).map((p) => p.id as string)
+    if (!ids.length) return []
+    const { data } = await platformContacts(db, rootId).in('profile_id', ids).eq('consent_state', 'subscribed')
     return (data ?? [])
       .filter((c) => c.profile_id && c.email)
       .map((c) => ({ contactId: c.id, email: c.email as string, profileId: c.profile_id as string }))

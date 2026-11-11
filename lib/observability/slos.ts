@@ -204,6 +204,7 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
       'embed-library',
       'tag-library',
       'lifecycle-triggers',
+      'quiet-reengage',
       'event-occurrences',
       'refresh-traits',
       'enforce-retention',
@@ -432,6 +433,7 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'calendar-holds', reason: 'hourly release of lapsed Pencil holds and two push nudges (LIVE-1709), off until CALENDAR_HOLDS_ENABLED; every step is idempotent and retried next hour, so a miss delays a release or a nudge by an hour, never loses one' },
   { job: 'launch-reminders', reason: 'the come-back notes to a person who stopped mid-launch (VLS-26); dark until LAUNCH_SYSTEM_ENABLED, a missed run is caught by the next quarter hour from the launch_email_log claim, and no Healthchecks check is free on the 20-check plan' },
   { job: 'create-space-draft-reminders', reason: 'the three notes to a person who saved a Create a Space draft and stopped (LIVE-1968); dark until CREATE_SPACE_DRAFT_REMINDERS_ENABLED, a missed run is caught by the next quarter hour from the create_space_draft_email_log claim, and no Healthchecks check is free on the 20-check plan' },
+  { job: 'quiet-reengage', reason: 'the quiet-member re-engagement emails (LIVE-2260); dark until QUIET_REENGAGE_ENABLED and sends only owner-approved campaigns, a missed day is caught by the next from the seven-day catch-up window and the campaign send ledger, and no Healthchecks check is free on the 20-check plan' },
   { job: 'indexnow', reason: 'a daily search-engine ping (LIVE-1137), off until INDEXNOW_ENABLED; a miss delays Bing seeing new pages by a day and the next run covers a 26-hour window, so nothing is lost' },
   // HYG-144: unmonitored only because the Healthchecks free tier's 20 checks are all taken. It is
   // the one opt-out whose silence is costly (a dead copy means new files have no second home), so

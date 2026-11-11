@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2260",
+  "title": "Send the owner's approved re-engagement emails to opted-in members at 14, 30 and 60 quiet days, once each, stopped by a visit",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/api/cron/quiet-reengage/route.ts",
+    "ref": "Owner 2026-11-11 \"Build this all out\" (FlowWeb re-engagement email batch R1 to R3): a quiet 14/30/60-day trigger inside Frequency, opted-in members only, stopped by sign-in, sending only after the owner approves."
+  },
+  "detail": "Email Studio gains three audiences, Quiet 14 / 30 / 60 days: subscribed (opt-in) members, never demo, whose profiles.last_seen_at is that many days back with seven days of catch-up (lib/email-studio/quiet.ts). A campaign aimed at one is evergreen: sendCampaignNow refuses it, and /api/cron/quiet-reengage (daily 17:00 UTC, dark until QUIET_REENGAGE_ENABLED) sends it through sendQuietCampaign to members who newly crossed the line. It refuses unless the approval spine approved the row (assertApproved), skips anyone in the campaign send ledger (fail-closed on an unreadable ledger), enqueues with a per-campaign-and-contact dedupe key on the bulk lane, and asks the marketing send gate per person. A visit moves last_seen_at, which ends the series. No migration. Owner steps: build R1 to R3 as campaigns on quiet_14 / quiet_30 / quiet_60, test-send, approve in the queue, then set the switch (docs/RUNBOOKS.md \"Quiet-member re-engagement\").",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/quiet-reengage.mjs"
+  },
+  "closed": "2026-11-11",
+  "wave": "W7"
+}
