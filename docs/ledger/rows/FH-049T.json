@@ -1,0 +1,18 @@
+{
+  "id": "FH-049T",
+  "title": "Hunts FH-049T: Enforce Hunt claim prerequisites across concurrent progress writes",
+  "lane": "program",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Claude’s 2026-11-11 FH-014S ruling on #4306, comment 6799952003."
+  },
+  "detail": "Requires FH-010 and FH-014S. Add p_expected_progress_count integer default null to hunt_claim_apply. Under the existing run lock, compare it to the total number of hunt_progress rows for that run and return stale_progress before any credit or side effects on mismatch. Keep old callers compatible through the null default, replace the old signature, and grant execution to service_role only. Use one complete progress snapshot for the total count and graph evaluation of credited rows. The adapter sends that count and rereads and reevaluates once on stale_progress before retrying. Prove a concurrent progress change cannot credit against the stale snapshot, that the retry is bounded, and that null retains the prior behavior. Order: registration PR, migration PR, Daniel applies and records the SQL in Frequency Community, then the adapter PR. This gates HUNTS_CLAIMS_ENABLED in production, FH-042 exclusive branches, and any real-value Hunt reward. Before release, record pgTAP and exact-head workflow_dispatch db-tests, real API acceptance, the approved apply sequence, and Frequency Community ledger parity.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\"),dir=\"supabase/migrations\";\nconst declaration=/create\\s+(?:or\\s+replace\\s+)?function\\s+(?:public\\.)?hunt_claim_apply\\s*\\(/gi;\nlet body=\"\";\nfor(const file of fs.readdirSync(dir).filter(f=>/^\\d{14}_.*\\.sql$/.test(f)&&f.slice(0,14)>=\"20270346037000\").sort()){\n  const sql=fs.readFileSync(dir+\"/\"+file,\"utf8\");\n  const matches=[...sql.matchAll(declaration)];\n  if(matches.length)body=sql.slice(matches.at(-1).index);\n}\nconst lock=body.search(/\\bfor\\s+update\\b/i), stale=body.search(/\\bstale_progress\\b/i);\nconst read=fs.readFileSync(\"lib/hunts/claim-store.ts\",\"utf8\");\nconst rpc=fs.readFileSync(\"lib/hunts/apply-claim.ts\",\"utf8\");\nconst hasLockedCount=lock>=0&&stale>lock&&/\\bcount\\s*\\([^)]*\\)[\\s\\S]*?\\bhunt_progress\\b/i.test(body.slice(lock,stale));\nprocess.exit(/\\bp_expected_progress_count\\s+integer\\s+default\\s+null\\b/i.test(body)&&hasLockedCount&&/\\bp_expected_progress_count\\s*:/.test(rpc)&&/\\bstale_progress\\b/.test(read)?0:1);'"
+  },
+  "wave": "W7"
+}
