@@ -752,6 +752,14 @@ FlowWeb's weekly review learns which hunts, messages and regions bring members. 
 
 **Turn it off.** Unset the secret. Every request answers 401 and FlowWeb's review keeps its last numbers.
 
+### FlowWeb facts sheet (LIVE-2259)
+
+FlowWeb's draft gate lets an email or DM quote only the dates and prices on its facts sheet. Its daemon GETs `/api/webhooks/flowweb-facts` once a day, signed with `FLOWWEB_OUTCOMES_SECRET` over an empty body (the outcomes scheme). The answer is `beta_ends`, `launch_on`, plan prices in dollars (read through `getPricingValues()`, so an /admin/pricing change reaches FlowWeb the next day) and `launcher_minutes`. Logic: `lib/flowweb/facts.ts`.
+
+**Turn it on.** Nothing new: it shares the outcomes secret. **agent** confirms an unsigned GET answers 401.
+
+**Turn it off.** Unset the secret. FlowWeb keeps its last good sheet.
+
 ### FlowWeb short links (LIVE-2257)
 
 FlowWeb's daemon asks `/api/webhooks/flowweb-link` for a short link for each draft it writes, signed with `FLOWWEB_OUTCOMES_SECRET` (same scheme as the outcomes pull). Frequency stores it as a managed url code in `qr_codes` titled `FlowWeb draft: <organizer>` and answers `https://frequencylocal.com/q/<slug>`, which redirects to the full tracked link, so utm_campaign and utm_content still reach the outcomes pull. Only https pages on this site carrying `utm_source=flowweb` qualify. If drafts show long links again, check the daemon's log for `flowweb-link` and that the secret matches; the daemon falls back to the long link and never blocks a draft. To retire one link, set its code inactive in /admin/qr. Logic: `lib/flowweb/short-link.ts`.
