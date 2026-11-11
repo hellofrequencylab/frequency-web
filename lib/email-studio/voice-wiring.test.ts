@@ -53,7 +53,7 @@ describe('the send engine refuses the hard rule on BOTH arming paths', () => {
   const code = strip(send)
 
   it('lints the authored copy in scheduleCampaign, sendCampaignNow AND sendQuietCampaign', () => {
-    // Three enforcement gates (the quiet-member trigger, LIVE-2260, is the third) + the panel-preflight read
+    // Three enforcement gates (the quiet-member trigger, LIVE-2265, is the third) + the panel-preflight read
     // (lintCampaignVoice). Fewer = a path stopped linting; more = a new call this test should learn about.
     expect(occurrences(code, 'lintVoice(campaignAuthoredCopy(')).toBe(4)
     expect(occurrences(code, '.hasEmDash) return fail(VOICE_EM_DASH_ERROR)')).toBe(3)

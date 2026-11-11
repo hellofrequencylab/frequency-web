@@ -654,7 +654,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   const row = await loadCampaign(campaignId)
   if (!row) return fail('That campaign no longer exists.')
 
-  // A quiet-member audience is evergreen (LIVE-2260): the daily trigger sends it, never this one-shot button.
+  // A quiet-member audience is evergreen (LIVE-2265): the daily trigger sends it, never this one-shot button.
   if (isQuietSegment(row.segment)) return fail(QUIET_ONE_SHOT_REFUSAL)
 
   // Idempotency: never double-send.
@@ -969,7 +969,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   return ok({ recipientCount: count })
 }
 
-// ── Quiet-member re-engagement (LIVE-2260) ─────────────────────────────────────────
+// ── Quiet-member re-engagement (LIVE-2265) ─────────────────────────────────────────
 
 interface QuietSendResult {
   queued: number

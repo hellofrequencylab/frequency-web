@@ -1,9 +1,9 @@
-// LIVE-2260 budget (ADR-1252): 300 emails per invocation across every quiet campaign; each campaign's send ledger is the
+// LIVE-2265 budget (ADR-1252): 300 emails per invocation across every quiet campaign; each campaign's send ledger is the
 // claim, so a reached member leaves the next run's due list; the remainder is the next day's head.
 // The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
 // declaration is applied, not merely written down.
 /**
- * Quiet-member re-engagement (LIVE-2260). Runs daily via Vercel Cron.
+ * Quiet-member re-engagement (LIVE-2265). Runs daily via Vercel Cron.
  *
  * For each Email Studio campaign aimed at a quiet audience (quiet_14 / quiet_30 / quiet_60) that the owner approved in
  * the approval queue, sends it to the opted-in members who newly went that many days without a visit, once per person.

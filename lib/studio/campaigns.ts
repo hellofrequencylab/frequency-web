@@ -64,7 +64,7 @@ export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
   // already hold a Frequency profile, so the profile-based unsubscribe still works.
   // Pre-account waitlist folks (no profile_id) are reached transactionally, not here.
   { key: 'beta_waitlist', label: 'Beta waitlist (confirmed, has account)' },
-  // Quiet-member re-engagement (LIVE-2260, lib/email-studio/quiet.ts): subscribed members whose last visit is 14,
+  // Quiet-member re-engagement (LIVE-2265, lib/email-studio/quiet.ts): subscribed members whose last visit is 14,
   // 30 or 60 days back. A campaign to one of these is evergreen: the daily trigger sends it, never the Send button.
   { key: 'quiet_14', label: 'Quiet 14 days (subscribed members, sent daily by the trigger)' },
   { key: 'quiet_30', label: 'Quiet 30 days (subscribed members, sent daily by the trigger)' },
@@ -206,7 +206,7 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
       .map((c) => ({ contactId: c.id, email: c.email as string, profileId: c.profile_id as string }))
   }
 
-  // Quiet members (LIVE-2260): opted-in members whose last visit falls in the audience's window. Opt-IN only
+  // Quiet members (LIVE-2265): opted-in members whose last visit falls in the audience's window. Opt-IN only
   // (consent_state 'subscribed'), never a demo profile. A visit moves last_seen_at, so signing in leaves the window.
   if (parsed.kind === 'builtin' && isQuietSegment(parsed.slug)) {
     const w = quietWindow(parsed.slug, new Date())

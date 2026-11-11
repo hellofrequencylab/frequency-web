@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2260: members who go quiet get the owner's approved re-engagement emails at 14, 30 and 60 days, once each,
+// LIVE-2265: members who go quiet get the owner's approved re-engagement emails at 14, 30 and 60 days, once each,
 // opted-in members only, stopped by a visit, and nothing goes out without the owner's approval.
 //
 // Fails when the three quiet audiences or their windows change, when a quiet audience is not opt-in marketing,

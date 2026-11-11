@@ -11,7 +11,7 @@ import {
 const NOW = new Date('2026-11-11T17:00:00Z')
 const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString()
 
-describe('quiet-member audiences (LIVE-2260)', () => {
+describe('quiet-member audiences (LIVE-2265)', () => {
   it('names exactly the 14, 30 and 60 day audiences', () => {
     expect(QUIET_SEGMENT_DAYS).toEqual({ quiet_14: 14, quiet_30: 30, quiet_60: 60 })
     expect(isQuietSegment('quiet_30')).toBe(true)
