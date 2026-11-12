@@ -12,6 +12,8 @@ const need = [
   ['lib/verticals/housing.ts', "surface: 'housing'"],
   ['lib/verticals/shop.ts', "surface: 'shop'"],
   ['lib/nav-areas.ts', "surface: 'vault'"],
+  ['lib/nav-areas.ts', "surface: 'quest'"],
+  ['lib/nav-areas.ts', "surface: 'journeys'"],
 ]
 for (const [f, anchor] of need) {
   const s = readFileSync(f, 'utf8')
