@@ -121,7 +121,7 @@ for (const address of [undefined, '', 'Client postal fixture']) {
     const mail = compileEmailDoc({ layout, subject: 'Client subject', preheader: 'Client preheader' }, { brand: address !== undefined ? { wordmark: 'Client Space', address } : undefined, unsubscribeUrl: 'https://frequencylocal.com/unsubscribe/synthetic' })
     for (const part of [mail.html, mail.text]) { expect(part).toContain(address || PLATFORM_POSTAL_LINE); expect(part).toContain('Customer-authored body stays here.'); expect(part).toContain('https://frequencylocal.com/unsubscribe/synthetic') }
     // The default postal line already includes the legal sender name; custom addresses retain its separate prefix.
-    expect(mail.html.match(/Frequency Labs Holdings/g)).toHaveLength(1)
+    expect(mail.html.match(/Frequency Labs/g)).toHaveLength(1)
     expect(mail.subject).toBe('Client subject')
     expect(JSON.stringify(layout)).toBe(before)
   })
