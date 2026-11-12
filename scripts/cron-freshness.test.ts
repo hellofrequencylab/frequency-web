@@ -343,7 +343,8 @@ describe('the floor', () => {
     // 37 since 2026-10-22: indexnow (LIVE-1137).
     // 39 since 2026-10-29: launch-reminders (VLS-26).
     // 41 since 2026-11-02: create-space-draft-reminders (LIVE-1968).
-    expect(jobs.length).toBe(41)
+    // 42 since 2026-11-12: quiet-reengage (LIVE-2265).
+    expect(jobs.length).toBe(42)
     expect(jobs.length).toBeGreaterThan(MIN_JOBS)
   })
 })
