@@ -123,7 +123,7 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'my-spaces',     href: '/spaces/directory', label: 'Business Spaces', section: 'Community', defaultAccess: 'member', surface: 'people' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
-  { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest', railHidden: true },
+  { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
   { key: 'journeys',   href: '/journeys',        label: 'Journeys',   section: 'The Quest', defaultAccess: 'member', surface: 'journeys', railHidden: true },
   { key: 'practices',  href: '/practices',       label: 'Practices',  section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
   // The Library row is GONE (LIVE-681, ADR-1678). The owner ruled one front door: /practices holds
