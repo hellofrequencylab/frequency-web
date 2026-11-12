@@ -25,6 +25,8 @@ import {
   resolveSetupPreset,
   setupPresetForMode,
   setupPresetIds,
+  BETA_OPEN_TOOL_KEYS,
+  withBetaToolsOn,
   SETUP_PRESET_BY_MODE,
 } from './bundles'
 import {
@@ -217,15 +219,15 @@ describe('nextBlobsForBundle', () => {
 // never subtracts a tool the Space cannot work without. Consequences are read through the real
 // reader (`spaceFunctionEnabled`), never off the shape of the blob.
 
-/** The four presets the ruling names, by id. A fifth would be a product decision, not a refactor. */
-const RULED_PRESET_IDS = ['studio', 'practice', 'venue', 'nonprofit'] as const
+/** The presets the rulings name, by id: the four of ADR-1294, then the three launch packages (owner 2026-11-11, "preset list only"). An eighth would be a product decision, not a refactor. */
+const RULED_PRESET_IDS = ['studio', 'practice', 'venue', 'nonprofit', 'gathering', 'maker', 'music'] as const
 
 /** The tools a preset may not name as ON: naming one would read as granting it, and a bundle cannot
  *  grant. Derived from the registry, so a tool that becomes tier-marked joins this set by itself. */
 const TIER_MARKED_KEYS = SPACE_FUNCTIONS.filter((f) => f.entitlement !== null).map((f) => f.key)
 
-describe('the four setup presets', () => {
-  it('are exactly the four the owner ruled, in catalog order, beside the pass-through', () => {
+describe('the setup presets', () => {
+  it('are exactly the seven the owner ruled, in catalog order, beside the pass-through', () => {
     expect(setupPresetIds()).toEqual([...RULED_PRESET_IDS])
     expect(capabilityBundleIds()).toEqual([GENERAL_BUNDLE_ID, ...RULED_PRESET_IDS])
   })
@@ -446,5 +448,38 @@ describe('provisioning applies the preset through the one writer', () => {
     // money; this asserts the CALLER did not reach around it.
     expect(provision).not.toMatch(/setSpacePlan|setSpaceAddons/)
     expect(action).not.toMatch(/setSpacePlan|setSpaceAddons/)
+  })
+})
+
+describe('the beta-open tools (owner 2026-11-11: Email and CRM free to try through the beta)', () => {
+  it('lists only tier-marked tools, which no preset may name, so the step is separate from the presets', () => {
+    for (const key of BETA_OPEN_TOOL_KEYS) expect(TIER_MARKED_KEYS).toContain(key)
+    for (const preset of SETUP_PRESETS) {
+      for (const key of BETA_OPEN_TOOL_KEYS) expect(preset.functions).not.toContain(key)
+    }
+  })
+
+  it('removes only the Email and CRM off-switches, and touches nothing else', () => {
+    const narrowed = nextBlobsForBundle({}, {}, capabilityBundle('maker')!).entitlements
+    expect(narrowed.email).toBe(false)
+    expect(narrowed.crm).toBe(false)
+    const after = withBetaToolsOn(narrowed)
+    expect(after.email).toBeUndefined()
+    expect(after.crm).toBeUndefined()
+    for (const key of Object.keys(narrowed)) {
+      if (!(BETA_OPEN_TOOL_KEYS as readonly string[]).includes(key)) expect(after[key]).toEqual(narrowed[key])
+    }
+    expect(spaceFunctionEnabled({ entitlements: after }, spaceFunctionDef('email')!)).toBe(true)
+    expect(spaceFunctionEnabled({ entitlements: after }, spaceFunctionDef('crm')!)).toBe(true)
+  })
+
+  it('keeps the launch packages narrow: Shop, Memberships, Journeys and Program stay one switch away', () => {
+    for (const id of ['gathering', 'maker', 'music']) {
+      const { entitlements } = nextBlobsForBundle({}, {}, capabilityBundle(id)!)
+      const after = withBetaToolsOn(entitlements)
+      for (const key of ['shop', 'memberships', 'journeys', 'program']) {
+        expect({ id, key, off: after[key] === false }).toEqual({ id, key, off: true })
+      }
+    }
   })
 })

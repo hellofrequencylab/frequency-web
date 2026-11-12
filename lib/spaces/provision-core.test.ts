@@ -1,15 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const H = vi.hoisted(() => ({ bundle: vi.fn(), stages: vi.fn() }))
+const H = vi.hoisted(() => ({ bundle: vi.fn(), beta: vi.fn(), stages: vi.fn() }))
 
 vi.mock('@/lib/spaces/type-defaults', () => ({ listTypeDefaultsForType: async () => [] }))
-vi.mock('@/lib/pricing/space-bundle', () => ({ setSpaceBundle: H.bundle }))
+vi.mock('@/lib/pricing/space-bundle', () => ({ setSpaceBundle: H.bundle, setSpaceBetaTools: H.beta }))
 vi.mock('@/lib/crm/pipeline', () => ({ ensureSpaceStages: H.stages }))
 
 import { spaceBirthConfig, finishSpaceBirth } from './provision-core'
 
 beforeEach(() => {
   H.bundle.mockReset()
+  H.beta.mockReset()
   H.stages.mockReset()
 })
 
@@ -30,7 +31,14 @@ describe('finishSpaceBirth', () => {
     H.bundle.mockResolvedValue({ ok: true })
     await finishSpaceBirth('s1', 'business', { modeVariant: null, presetId: 'p1' })
     expect(H.bundle).toHaveBeenCalledWith('s1', 'p1')
+    expect(H.beta).toHaveBeenCalledWith('s1')
     expect(H.stages).toHaveBeenCalledWith('s1', 'business', null)
+  })
+  it('does not run the beta step when the preset was not applied', async () => {
+    H.bundle.mockResolvedValue({ ok: false, reason: 'error' })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await finishSpaceBirth('s1', 'business', { modeVariant: null, presetId: 'p1' })
+    expect(H.beta).not.toHaveBeenCalled()
   })
   it('survives a bundle that throws', async () => {
     H.bundle.mockRejectedValue(new Error('x'))
