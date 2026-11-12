@@ -9,10 +9,10 @@
     "file": "lib/core/launch-dates.ts",
     "ref": "Beta launch handoff, Packet 0.1(e): three intake phases share the one public beta end date of January 31, 2027."
   },
-  "detail": "The app needs one date contract for the Early Beta, Hosts Beta and Public Beta intake periods. Each phase closes intake on its stated date, while the free beta for everyone ends January 31, 2027. The phase helper lets launch copy and tests derive which phase is open without inventing a second beta end date.\n\nClosed after the phase boundary tests pass, including one shared January 31 beta end.",
+  "detail": "The app needs one date contract for the Early Beta, Hosts Beta and Public Beta intake periods. Each phase closes intake on its stated date, while the free beta for everyone ends January 31, 2027. The phase helper lets launch copy and tests derive which phase is open without inventing a second beta end date.\n\nClosed once the phase list and helper are on the contract (scripts/probes/beta-phases.mjs reads the source; the phase boundary tests in lib/core/launch-dates.test.ts run in CI).",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e 'require(\"node:child_process\").execFileSync(\"pnpm\", [\"exec\", \"vitest\", \"run\", \"lib/core/launch-dates.test.ts\"], { stdio: \"inherit\" })'"
+    "cmd": "node scripts/probes/beta-phases.mjs"
   },
   "closed": "2026-11-11",
   "wave": "W7"
