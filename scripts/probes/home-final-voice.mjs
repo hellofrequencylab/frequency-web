@@ -3,7 +3,6 @@ import assert from 'node:assert/strict'
 const read = path => readFileSync(path, 'utf8')
 const home = read('components/frequency/site/pages/home/frequency-home.tsx')
 const weave = read('components/frequency/site/pages/home/weave-data.ts')
-const join = read('components/frequency/site/pages/join/frequency-join.tsx')
 const copy = `${home}\n${weave}`
 for (const retired of ['Nudges while they’re still in the room', 'Members land in their Circle', 'Recurring support that drops people into their Circle', 'Six weeks, same group', '+25 Zaps for being there']) {
   assert(!copy.includes(retired), `Home still contains an unqualified claim: ${retired}`)
