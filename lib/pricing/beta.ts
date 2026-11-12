@@ -141,7 +141,7 @@ export function foundingOpenForPlan(plan: SpacePlan, betaActive: boolean, now: D
 /** The one plain sentence beside a Founding price: the offer ends on COLLECTIVE_FOUNDING_ENDS_LABEL, and
  *  the rate is locked for as long as the subscription is kept (readLockedPriceId re-bills it). Shared by
  *  /pricing, the in-app ladder (where Collective checkout starts) and the FAQ so it is worded once. */
-export const FOUNDING_RATE_NOTE = `The paid Founding Year offer closes ${COLLECTIVE_FOUNDING_ENDS_LABEL}, 2027. Check /pricing for current availability, eligibility and terms.`
+export const FOUNDING_RATE_NOTE = `The paid Founding Year offer closes ${COLLECTIVE_FOUNDING_ENDS_LABEL}, 2027. Your rate stays yours as long as you keep the plan. Check /pricing for current availability, eligibility and terms.`
 
 // ── THE PRIVATE BETA PRICE GRANT (ADR-1061) — a per-Space grant, never a public offer ────────────
 // The owner, 2026-08-17, the same day they closed the window above: *"I still have a couple people
