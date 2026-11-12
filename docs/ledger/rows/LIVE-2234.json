@@ -1,0 +1,1 @@
+{"id": "LIVE-2234", "patch": {"source": {"file": "scripts/probes/start-funnels-smart.mjs", "ref": "LAUNCH-P3 2026-11-11: the persona chooser was deleted with /start/[flow]"}}, "append": {"detail": "\n\n2026-11-11 LAUNCH-P3: /start/[flow] and persona-chooser.tsx were retired. /start/host is the one invite-reading door; the probe now checks the redirects and the host page."}}
