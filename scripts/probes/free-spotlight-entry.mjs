@@ -1,11 +1,7 @@
 #!/usr/bin/env node
-// VLS-05: every "Get a Free Spotlight" button says the same words, links to /launch/start with where it was
-// pressed, shows only while the doorway is on, and sits on the home page, each /for door and each Theme Kit page.
-//
-// Runs lib/launch/entry.ts and lib/launch/enabled.ts under node and reads the button, the landing route and the
-// pages that carry it. Fails when a page loses the button, the label drifts, the button shows with the switch
-// off, or the landing opens with it off.
-import { readFileSync } from 'node:fs'
+// LIVE-1629 (Daniel-approved Gate A re-aim, 2026-11-11): keep the former landing link working through its permanent redirect.
+// The button, attribution and switch checks remain; the retired landing itself now has a permanent survivor.
+import { existsSync, readFileSync } from 'node:fs'
 import { FREE_SPOTLIGHT_LABEL, freeSpotlightHref } from '../../lib/launch/entry.ts'
 import { launchEntryEnabled } from '../../lib/launch/enabled.ts'
 
@@ -25,7 +21,13 @@ for (const [file, tag] of [
   ['components/frequency/site/pages/themes/frequency-theme-kit.tsx', 'surface="theme"'],
 ]) if (!read(file).includes(`<FreeSpotlightButton ${tag}`)) bad.push(`${file} has no Get a Free Spotlight button`)
 if (!/spotlightHref/.test(read('components/frequency/site/pages/themes/frequency-midnight.tsx')) || !/freeSpotlightHref\('theme', 'nocturne'\)/.test(read('app/(marketing)/themes/nocturne/page.tsx'))) bad.push('the Nocturne page has no Get a Free Spotlight button')
-if (!/if \(!launchEntryEnabled\(\)\) notFound\(\)/.test(read('app/(marketing)/free-spotlight/page.tsx'))) bad.push('the landing opens while the doorway is off')
+
+const config = read('next.config.ts')
+const retiredLanding = ['app', '(marketing)', 'free-spotlight', 'page.tsx'].join('/')
+if (existsSync(retiredLanding)) bad.push('the retired landing page still exists')
+if (!config.includes("{ source: '/free-spotlight', destination: '/create-a-space?utm_campaign=free-spotlight', permanent: true }")) {
+  bad.push('/free-spotlight must permanently redirect to /create-a-space with its campaign tag')
+}
 
 delete process.env.LAUNCH_SYSTEM_ENABLED
 delete process.env.LAUNCH_ENTRY_ENABLED
@@ -34,4 +36,4 @@ process.env.LAUNCH_ENTRY_ENABLED = 'on'
 if (launchEntryEnabled()) bad.push('the doorway opens while the launch itself is off')
 
 if (bad.length) { console.error(bad.map((b) => `✗ ${b}`).join('\n')); process.exit(1) }
-console.log('✓ Get a Free Spotlight: one label, one address with its utm values, dark until the switch is on, on every door')
+console.log('LIVE-1629: the button and switch contract holds and the retired landing permanently redirects to the Create a Space wizard')

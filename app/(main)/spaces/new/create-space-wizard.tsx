@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { Select } from '@/components/ui/select'
 import { type FqIconName } from '@/components/frequency/icon'
@@ -299,16 +298,6 @@ export function CreateSpaceWizard({
             ))}
           </dl>
         </>
-      }
-      footerNote={
-        index === 0 ? (
-          <>
-            Rather not fill it in by hand?{' '}
-            <Link href="/spaces/launch" className="underline">
-              Let Vera draft your page
-            </Link>
-          </>
-        ) : null
       }
     />
   )
