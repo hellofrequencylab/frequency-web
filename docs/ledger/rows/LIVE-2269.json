@@ -7,7 +7,7 @@
   "status": "done",
   "source": {
     "file": "app/(main)/layout.tsx",
-    "ref": "Assigned beta follow-up: suppress the personal 72-hour offer strip during beta while preserving post-beta offer behavior and existing probes."
+    "ref": "Assigned beta follow-up: suppress the personal 72-hour offer strip during beta while preserving post-beta offer behavior and existing probes. Supplemental acceptance command is preserved unchanged at scripts/probes/LIVE-2269.verify."
   },
   "detail": "Hide only the personal 72-hour countdown strip through the final beta day, January 31, 2027, in America/Los_Angeles. Restore the existing countdown display from February 1, 2027 Pacific time. Preserve the pending one-time navigation to /offer, personal offer clock, /offer page, checkout behavior and pricing. Keep the OfferBar mount so LIVE-1281 remains untouched. No settings, migration, flag, price or consent changes.\n\nClosed after the row consequence check passed and focused policy tests passed 4/4. Shell-weight gate was invoked but skipped because no .next artifact existed in this checkout; CI preview remains the required build artifact proof.",
   "verify": {
