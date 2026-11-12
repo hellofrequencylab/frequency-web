@@ -20,9 +20,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
-import { QUIET_SEGMENT_DAYS, quietReengageEnabled } from '@/lib/email-studio/quiet'
-import { sendQuietCampaign } from '@/lib/email-studio/send'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { quietReengageEnabled } from '@/lib/email-studio/quiet'
+import { listApprovedQuietCampaigns, sendQuietCampaign } from '@/lib/email-studio/send'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -37,16 +36,9 @@ async function handler(req: NextRequest) {
   }
 
   const budget = cronBudget(300)
-  const db = createAdminClient()
-  const { data, error } = await db
-    .from('campaigns')
-    .select('id, segment')
-    .in('segment', Object.keys(QUIET_SEGMENT_DAYS))
-    .in('approval_status', ['approved', 'scheduled'])
-    .not('status', 'in', '(paused,cancelled,sent)')
-    .order('created_at', { ascending: true })
+  const { data, error } = await listApprovedQuietCampaigns()
   if (error) {
-    log.error('cron.quiet_reengage.read_failed', { error: error.message })
+    log.error('cron.quiet_reengage.read_failed', { error })
     return NextResponse.json({ error: 'quiet re-engagement read failed' }, { status: 500 })
   }
 

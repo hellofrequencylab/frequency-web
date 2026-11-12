@@ -44,7 +44,7 @@ import { resolveProductRefs, productVarsFromLayout } from './product-block'
 import { resolveDataBlockRefs } from './data-blocks'
 import { MERGE_TAG_DEFAULT_FALLBACKS } from './types'
 import { lintVoice } from './voice-lint'
-import { isQuietSegment, quietDedupeKey, QUIET_ONE_SHOT_REFUSAL } from './quiet'
+import { isQuietSegment, quietDedupeKey, QUIET_ONE_SHOT_REFUSAL, QUIET_SEGMENT_DAYS } from './quiet'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 // ── Sender FROM name (per-campaign display name, envelope address unchanged) ─────
@@ -1086,4 +1086,18 @@ export async function cancelCampaign(campaignId: string): Promise<ActionResult<{
   const { error } = await db.from('campaigns').update({ status: next, scheduled_for: null }).eq('id', campaignId)
   if (error) return fail('Could not cancel this campaign.')
   return ok({ status: next })
+}
+
+/** The approved, still-running campaigns aimed at a quiet audience, oldest first. Lives here, beside the other
+ *  admin-client reads in this module, so the cron route itself stays off the service-role ratchet. */
+export async function listApprovedQuietCampaigns(): Promise<{ data: { id: unknown }[]; error: string | null }> {
+  const db = createAdminClient()
+  const { data, error } = await db
+    .from('campaigns')
+    .select('id, segment')
+    .in('segment', Object.keys(QUIET_SEGMENT_DAYS))
+    .in('approval_status', ['approved', 'scheduled'])
+    .not('status', 'in', '(paused,cancelled,sent)')
+    .order('created_at', { ascending: true })
+  return { data: data ?? [], error: error ? error.message : null }
 }
