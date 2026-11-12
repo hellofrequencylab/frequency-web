@@ -9,7 +9,7 @@ import { emailSurface, pageSurface } from '@/lib/theme/surface'
 import { isMegaThemeId } from '@/lib/theme/mega-theme'
 import { readSiteStyle, sitePageStyle, SITE_THEMES, siteLook, spacePageDefaultAccent, spacePageSiteFaces, THEME_LOOK } from '@/lib/theme/site-style'
 import { THEME_LIBRARY, themeIdFromSlug, themePagePath, themeSlug } from '@/lib/themes/library'
-import { THEME_KIT_PAGE_IDS } from '@/components/frequency/site/pages/themes/frequency-theme-kit'
+import { THEME_KIT_FAQ, THEME_KIT_PAGE_IDS } from '@/components/frequency/site/pages/themes/frequency-theme-kit'
 import { WIZARD_THEMES } from '@/lib/spaces/create-wizard'
 import {
   NETWORK_KIT_ACCENT,
@@ -182,6 +182,14 @@ describe('the editor contract', () => {
     expect(contract.themes.Network['--th-season']).toBe('#22303A')
     expect(Object.keys(contract.themes.Network)).not.toContain('profiles')
     expect((websiteThemeVars('Network', '#1F6FA8') as Record<string, string>)['--th-accent']).toBe('#1F6FA8')
+  })
+})
+
+describe('theme kit FAQ copy', () => {
+  it('keeps the setup and selling-fee answers factual and free of typed rates', () => {
+    const answer = (question: string) => THEME_KIT_FAQ.find((item) => item.q === question)?.a('Designer')
+    expect(answer('Do I have to use every tool?')).toBe('No. Start with the tools you need. Turn on more in Page Tools when you are ready.')
+    expect(answer('What does it cost?')).toBe('Space hosting is free. Check /pricing for current selling fees.')
   })
 })
 

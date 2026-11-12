@@ -28,3 +28,17 @@ const FOUNDING_MEMBER_LINE = `Join before ${LAUNCH_DAY_LABEL} and you are a ${FO
 
 /** The one-line recognition copy, for the offer and welcome surfaces to read. */
 export const FOUNDING_MEMBER_COPY = { name: FOUNDING_MEMBER_NAME, line: FOUNDING_MEMBER_LINE, endsOn: BETA_ENDS_ON } as const
+
+/** THE THREE BETA PHASES (owner 2026-11-11). A phase only closes INTAKE for that group: sign-ups for the Early
+ *  Beta stop on its date, then the Hosts Beta, then the Public Beta. Everything stays free for everyone through
+ *  the last day (BETA_ENDS_ON). One list, so the clock, the tags, the emails and the copy read the same dates. */
+export const BETA_PHASES = [
+  { id: 'early', name: 'Early Beta', endsOn: '2026-11-30', endsLabel: 'November 30', focus: 'the first people in' },
+  { id: 'hosts', name: 'Hosts Beta', endsOn: '2026-12-31', endsLabel: 'December 31', focus: 'hosts' },
+  { id: 'public', name: 'Public Beta', endsOn: BETA_ENDS_ON, endsLabel: BETA_ENDS_DAY_LABEL, focus: 'everyone' },
+] as const
+
+/** The phase open for sign-ups on a calendar date (YYYY-MM-DD), or null once the beta is over. */
+export function betaPhaseOn(day: string) {
+  return BETA_PHASES.find((p) => day <= p.endsOn) ?? null
+}

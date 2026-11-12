@@ -175,6 +175,36 @@ const NONPROFIT_BUNDLE: CapabilityBundle = {
   functions: [...CORE_SPACE_FUNCTION_KEYS, 'donations', 'journeys', 'qr'],
 }
 
+// ── THE LAUNCH PACKAGES (owner 2026-11-11: Gathering, Maker, Music, added to the four ruled presets) ──────
+// Same two rules as the four above: CORE stays on and no tier-marked tool is named on. Email and CRM are
+// tier-marked, so they are NOT listed here; a new Space gets them on during the beta through
+// setSpaceBetaTools (lib/pricing/space-bundle.ts), which is a beta perk and not a grant by a preset.
+// Working names, pending the naming ruling (docs/NAMING.md).
+
+/** Dance, drum circles, meetups and clubs: one Circle that keeps meeting, with co-hosts. */
+const GATHERING_BUNDLE: CapabilityBundle = {
+  id: 'gathering',
+  label: 'Gatherings and meetups',
+  tagline: 'A Circle that keeps meeting, the nights you hold, and the co-hosts who share them.',
+  functions: [...CORE_SPACE_FUNCTION_KEYS, 'qr', 'collaborators'],
+}
+
+/** Arts, crafts and workshops: workshop dates people book, and a page to show the work. */
+const MAKER_BUNDLE: CapabilityBundle = {
+  id: 'maker',
+  label: 'Maker or workshop',
+  tagline: 'Workshops people book, a page for your work, and a code for the flyer.',
+  functions: [...CORE_SPACE_FUNCTION_KEYS, 'availability', 'qr'],
+}
+
+/** Open mics, small shows and jam nights: a lineup, a calendar, and people who can follow it. */
+const MUSIC_BUNDLE: CapabilityBundle = {
+  id: 'music',
+  label: 'Music and open mics',
+  tagline: 'A calendar people can follow, the lineup you book, and a code for the door.',
+  functions: [...CORE_SPACE_FUNCTION_KEYS, 'qr', 'collaborators'],
+}
+
 /** The registry, in catalog order. Add a row to add a bundle. */
 export const CAPABILITY_BUNDLES: readonly CapabilityBundle[] = [
   GENERAL_BUNDLE,
@@ -182,6 +212,9 @@ export const CAPABILITY_BUNDLES: readonly CapabilityBundle[] = [
   PRACTICE_BUNDLE,
   VENUE_BUNDLE,
   NONPROFIT_BUNDLE,
+  GATHERING_BUNDLE,
+  MAKER_BUNDLE,
+  MUSIC_BUNDLE,
 ]
 
 const BY_ID = new Map(CAPABILITY_BUNDLES.map((b) => [b.id, b]))
@@ -304,4 +337,17 @@ export function nextBlobsForBundle(
   }
 
   return { entitlements, featureRoles }
+}
+
+/** The tier-marked tools a new Space gets ON while the beta is open, even from a preset that omits them
+ *  (owner 2026-11-11: every launching feature is free to try through the beta). A preset still never names
+ *  them (rule 2); this is a separate, beta-only step. */
+export const BETA_OPEN_TOOL_KEYS: readonly SpaceFunctionKey[] = ['email', 'crm']
+
+/** The entitlements blob with the beta-open tools' off-switches removed. PURE + total. It only DELETES an
+ *  off-switch, so it can never turn a tool off, never touch `billing`, and never grant past a plan. */
+export function withBetaToolsOn(entitlements: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...entitlements }
+  for (const key of BETA_OPEN_TOOL_KEYS) if (next[key] === false) delete next[key]
+  return next
 }

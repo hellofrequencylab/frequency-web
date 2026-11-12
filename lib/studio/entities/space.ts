@@ -82,6 +82,9 @@ const SETUP_PRESET_OPTIONS: readonly FieldOption[] = [
   { value: 'practice', label: 'Solo practice' },
   { value: 'venue', label: 'Venue' },
   { value: 'nonprofit', label: 'Non Profit' },
+  { value: 'gathering', label: 'Gatherings and meetups' },
+  { value: 'maker', label: 'Maker or workshop' },
+  { value: 'music', label: 'Music and open mics' },
 ]
 
 export const SPACE_MANIFEST: EntityManifest = {

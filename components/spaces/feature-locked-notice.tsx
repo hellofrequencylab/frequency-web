@@ -8,7 +8,7 @@ import { spaceManageHref, type SpaceType } from '@/lib/spaces/types'
 // tasteful "here is why, and the next step" card, NOT a 404 (the surface still resolves a visible Space,
 // so dead-ending would be jarring). Three reasons, each with its own next step:
 //   • 'disabled' — a UNIVERSAL tool is turned OFF for this space. An admin can turn it on under
-//                  Menu and features (the Module Manager).
+//                  Page Tools (the Module Manager).
 //   • 'plan'     — a tool whose plan ALLOWANCE is used up (metered model, ADR-519). Nothing is locked;
 //                  an admin sees a "you're on the free allowance, upgrade for more" nudge to billing, a
 //                  non-admin is pointed at whoever runs the space. (During the beta, with billing off,
@@ -56,14 +56,14 @@ export function FeatureLockedNotice({
   const description =
     reason === 'disabled'
       ? canManageMembers
-        ? `${label} is off for this space. Turn it on under Menu and features, then it shows here.`
-        : `${label} is off for this space. Ask an admin to turn it on under Menu and features.`
+        ? `${label} is off for this space. Turn it on under Page Tools, then it shows here.`
+        : `${label} is off for this space. Ask an admin to turn it on under Page Tools.`
       : reason === 'plan'
         ? (planLine ??
           (canManageMembers
             ? `${label} is available on every plan. You are on the free allowance for this space. Move up a plan for a higher limit.`
             : `${label} is available on every plan. You are on the free allowance. Ask an admin to move up a plan for more.`))
-        : `${label} is set for a higher role on this space. Ask whoever runs ${brandName} to give you access, or set the role under Menu and features.`
+        : `${label} is set for a higher role on this space. Ask whoever runs ${brandName} to give you access, or set the role under Page Tools.`
 
   // The next step depends on the reason: a plan gap points at billing, a universal-off / role gap points
   // at Features and access. A non-manager always lands back on the hub (they cannot change either).
@@ -86,7 +86,7 @@ export function FeatureLockedNotice({
       href={`/spaces/${slug}/manage/modules`}
       className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
     >
-      <SlidersHorizontal className="h-4 w-4" aria-hidden /> Menu and features
+      <SlidersHorizontal className="h-4 w-4" aria-hidden /> Page Tools
     </Link>
   )
 

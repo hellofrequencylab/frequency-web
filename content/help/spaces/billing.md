@@ -50,7 +50,7 @@ Pick the plan you want on the billing page. The card fields open under the butto
   [Collective](/help/spaces/collective). One organization with chapters takes
   [Network](/help/spaces/network) instead.
 - Your plan is not the only switch. You can also turn a feature off for your own Space in **Manage,
-  then Menu and features**, and it stays off whether or not your plan pays for it. So if billing
+  then Page Tools**, and it stays off whether or not your plan pays for it. So if billing
   says a tool is included and you still cannot find it, look there before you look at your plan.
 
 See [Plans and pricing](/help/spaces/plans-and-pricing) for what each plan costs and includes.
