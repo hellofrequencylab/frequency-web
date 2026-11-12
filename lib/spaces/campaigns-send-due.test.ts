@@ -336,9 +336,23 @@ describe('sendDueCampaigns', () => {
     expect(row.status).toBe('sending')
   })
 
-  it('a stale GLOBAL sending row is not fed to the Email Studio sender (it owns its own claim)', async () => {
+  it('a stale GLOBAL sending row IS resumed through the Email Studio sender (it owns its own claim and ledger)', async () => {
     seed({ space_id: null, status: 'sending', sending_started_at: STALE })
     const res = await sendDueCampaigns()
+    expect(globalSendCalls).toEqual(['cmp-1'])
+    expect(res.claimed).toBe(1)
+  })
+
+  it('a fresh GLOBAL sending row (a live sender) is left alone', async () => {
+    seed({ space_id: null, status: 'sending', sending_started_at: FRESH })
+    const res = await sendDueCampaigns()
+    expect(globalSendCalls).toEqual([])
+    expect(res.claimed).toBe(0)
+  })
+
+  it('stops taking campaigns once its clock is spent', async () => {
+    seed({ space_id: null })
+    const res = await sendDueCampaigns(100, { exhausted: () => true })
     expect(globalSendCalls).toEqual([])
     expect(res.claimed).toBe(0)
   })
