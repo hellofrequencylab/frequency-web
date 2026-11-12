@@ -23,13 +23,14 @@ import { resolveSegment, type SegmentKey } from '@/lib/studio/campaigns'
 import { loadCampaignPurpose, sendCategoryForPurpose } from '@/lib/email-studio/campaign-purpose'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
-import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { enqueueEmail, enqueueEmailBatch, listUnsubscribeHeaders } from '@/lib/email'
 import { bulkRunAfter } from '@/lib/queue/outbox'
 import { buildConversationReplyAddress, conversationSigningAvailable } from '@/lib/comms/reply-address'
 import { openOrGetConversation, appendConversationMessage, newConversationMessageId } from '@/lib/comms/conversations'
 import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
 import { envString } from '@/lib/env/string'
-import { isSendingLeaseStale } from '@/lib/messaging/status'
+import { isSendingLeaseStale, SENDING_LEASE_MS } from '@/lib/messaging/status'
+import { FAN_OUT_CHUNK, FAN_OUT_CONCURRENCY, campaignDedupeKey, mapLimit, parseDailyLimit } from './fan-out'
 import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { assertApproved } from '@/lib/outbound/approvals'
@@ -483,8 +484,11 @@ async function loadContactNames(contactIds: string[]): Promise<Map<string, strin
   const map = new Map<string, string | null>()
   if (!contactIds.length) return map
   const db = createAdminClient()
-  const { data } = await db.from('contacts').select('id, display_name').in('id', contactIds)
-  for (const r of data ?? []) map.set(String(r.id), (r.display_name as string) ?? null)
+  // 100 ids per read: ids ride in the request URL, and one `.in()` of thousands overflows it.
+  for (let i = 0; i < contactIds.length; i += FAN_OUT_CHUNK) {
+    const { data } = await db.from('contacts').select('id, display_name').in('id', contactIds.slice(i, i + FAN_OUT_CHUNK))
+    for (const r of data ?? []) map.set(String(r.id), (r.display_name as string) ?? null)
+  }
   return map
 }
 
@@ -493,13 +497,15 @@ async function loadContactNames(contactIds: string[]): Promise<Map<string, strin
 export interface AudienceResult {
   segment: string
   count: number
+  /** The email account's daily sending cap (EMAIL_DAILY_SEND_LIMIT), or null when not set. */
+  dailyLimit: number | null
 }
 
 /** Resolve an explicit segment key to a count (used by the send-panel preview). */
 export async function countAudience(segment: SegmentKey): Promise<ActionResult<AudienceResult>> {
   try {
     const recipients = await resolveSegment(segment)
-    return ok({ segment, count: recipients.length })
+    return ok({ segment, count: recipients.length, dailyLimit: parseDailyLimit(process.env.EMAIL_DAILY_SEND_LIMIT) })
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not resolve that audience.')
   }
@@ -602,34 +608,70 @@ async function readLedgerRecipients(
   }
 }
 
-/** Commit one recipient to the ledger, at 'queued': the outbox has the job, the send happens in the
- *  drain. Best-effort and never throws, exactly like the Space seam's recordSend, because the email
- *  is already enqueued by this point and a ledger blip must not fail a send that is going out.
- *  Needs a space to hang the row on (outreach_sends.space_id is NOT NULL); with no root space
- *  resolved there is nothing to write, and the caller has already logged that. */
+/** Commit a chunk of recipients to the ledger, at 'queued', in ONE insert: the outbox has the jobs, the
+ *  sends happen in the drain. Best-effort and never throws, exactly like the Space seam's recordSend,
+ *  because the emails are already enqueued by this point and a ledger blip must not fail a send that is
+ *  going out (the outbox dedupe key, lib/email-studio/fan-out campaignDedupeKey, is what still stops a
+ *  second copy). Needs a space to hang the rows on (outreach_sends.space_id is NOT NULL); with no root
+ *  space resolved there is nothing to write, and the caller has already logged that. One retry, because
+ *  a lost chunk of ledger rows is a chunk the next run re-evaluates. */
+async function recordLedgerSends(
+  spaceId: string,
+  campaignId: string,
+  recipients: { contactId: string | null; email: string }[],
+): Promise<void> {
+  if (recipients.length === 0) return
+  const rows = recipients.map((r) => ({
+    space_id: spaceId,
+    campaign_id: campaignId,
+    contact_id: r.contactId,
+    email: r.email,
+    status: 'queued',
+  }))
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const db = createAdminClient()
+      const { error } = await db.from('outreach_sends').insert(rows)
+      if (!error) return
+      console.error('[email-studio] ledger write failed', { campaignId, attempt, rows: rows.length, error: error.message })
+    } catch (err) {
+      console.error('[email-studio] ledger write failed', {
+        campaignId,
+        attempt,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+}
+
+/** One recipient, for the quiet-member sender (a handful per run). */
 async function recordLedgerSend(input: {
   spaceId: string
   campaignId: string
   contactId: string | null
   email: string
 }): Promise<void> {
+  await recordLedgerSends(input.spaceId, input.campaignId, [{ contactId: input.contactId, email: input.email }])
+}
+
+/** Whether the campaign is still 'sending' (an operator may pause it while a long fan-out runs).
+ *  Unreadable counts as still sending: pausing is best-effort, and a blip must not strand a send. */
+async function stillSending(campaignId: string): Promise<boolean> {
   try {
     const db = createAdminClient()
-    await db.from('outreach_sends').insert([
-      {
-        space_id: input.spaceId,
-        campaign_id: input.campaignId,
-        contact_id: input.contactId,
-        email: input.email,
-        status: 'queued',
-      },
-    ])
-  } catch (err) {
-    console.error('[email-studio] ledger write failed', {
-      campaignId: input.campaignId,
-      error: err instanceof Error ? err.message : String(err),
-    })
+    const { data, error } = await db.from('campaigns').select('status').eq('id', campaignId).maybeSingle()
+    if (error || !data) return true
+    return String((data as { status?: unknown }).status) === 'sending'
+  } catch {
+    return true
   }
+}
+
+/** Options a caller with a clock passes to sendCampaignNow. */
+export interface SendCampaignOptions {
+  /** True once the caller's time budget is spent. The fan-out checks it between chunks and, when it
+   *  fires, hands the unsent rest to the next cron run instead of running into the platform limit. */
+  exhausted?: () => boolean
 }
 
 // ── sendCampaignNow: the real, gated, per-recipient send ─────────────────────────
@@ -650,7 +692,10 @@ async function recordLedgerSend(input: {
  * outreach_sends row for the campaign, and the loop skips anyone who already has one, so the
  * re-send an operator is invited to make picks up where the failed one stopped.
  */
-export async function sendCampaignNow(campaignId: string): Promise<ActionResult<{ recipientCount: number }>> {
+export async function sendCampaignNow(
+  campaignId: string,
+  options: SendCampaignOptions = {},
+): Promise<ActionResult<{ recipientCount: number; complete?: false }>> {
   const row = await loadCampaign(campaignId)
   if (!row) return fail('That campaign no longer exists.')
 
@@ -730,12 +775,13 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   // read-checks at the top, but only ONE wins this conditional update — the loser sees 0 rows and
   // bails, so the recipient loop runs exactly once. (A bare `.eq('id', …)` update, as before, let
   // both callers proceed and double-sent the whole campaign.) Mirrors the space-campaigns cron claim.
-  const { data: claimed } = await db
-    .from('campaigns')
-    .update({ status: 'sending' })
-    .eq('id', campaignId)
-    .eq('status', row.status)
-    .select('id')
+  // A re-claim of an abandoned 'sending' row also re-asserts that the lease is STILL expired, so of two
+  // runs that both saw it expire only the first wins (the winner's fresh stamp is no longer stale).
+  const claimQuery = db.from('campaigns').update({ status: 'sending' }).eq('id', campaignId).eq('status', row.status)
+  const { data: claimed } = await (row.status === 'sending'
+    ? claimQuery.lt('sending_started_at', new Date(Date.now() - SENDING_LEASE_MS).toISOString())
+    : claimQuery
+  ).select('id')
   if (!claimed || (claimed as unknown[]).length === 0) {
     return fail('This campaign is already sending.')
   }
@@ -752,7 +798,6 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   const fanOutStartedAt = new Date()
   try {
     const recipients = await resolveSegment(row.segment)
-    const names = await loadContactNames(recipients.map((r) => r.contactId))
     // The send-gate category depends on the campaign's PURPOSE first (a promotion is marketing whoever it is
     // addressed to, lib/email-studio/campaign-purpose), then on the AUDIENCE (sendCategoryForSegment):
     // `subscribed_members` is the opt-IN marketing audience → 'marketing' (email_marketing, opt-in);
@@ -785,13 +830,17 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
         campaignId,
       })
     }
+    const pending: typeof recipients = []
     for (const r of recipients) {
       // Already queued by an earlier attempt at this campaign: skip. Matched on the contact id AND
       // the address, because a segment can yield a recipient with no contact id.
-      if (already && (already.contactIds.has(r.contactId) || already.emails.has(r.email.toLowerCase()))) {
-        skippedTotal++
-        continue
-      }
+      if (already && (already.contactIds.has(r.contactId) || already.emails.has(r.email.toLowerCase()))) skippedTotal++
+      else pending.push(r)
+    }
+
+    // One recipient's email, or null when the gate refuses them. Pure per recipient, so a chunk builds
+    // its recipients concurrently.
+    const buildOne = async (r: (typeof recipients)[number], names: Map<string, string | null>) => {
       let unsubscribeUrl: string
       // "Manage emails" opens the preference page (adjust categories / resubscribe), kept DISTINCT from the
       // one-click unsubscribe so it never fires the opt-out on load.
@@ -801,7 +850,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
         // preference) — the same seam the marketing composer and the beta send ride, run under the
         // audience's consent category (see above).
         const decision = await resolveSendGate(r.profileId, 'email', sendCategory, { email: r.email })
-        if (!decision.allowed) continue
+        if (!decision.allowed) return null
         // The unsubscribe link toggles the lifecycle preference (the broad email opt-out); a global
         // broadcast unsubscribe is a hard opt-out regardless of the send's gate category.
         unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
@@ -812,8 +861,8 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
         // and rely on resolveSegment's not-unsubscribed filter — the opt-out subscriber model the owner
         // asked for. Unsubscribe rides the per-address root-space token (records a root-space suppression,
         // which isSuppressed then honors on the next send). A missing root space id → skip (fail-closed).
-        if (!rootSpaceId) continue
-        if (await isSuppressed(r.email, rootSpaceId)) continue
+        if (!rootSpaceId) return null
+        if (await isSuppressed(r.email, rootSpaceId)) return null
         unsubscribeUrl = buildSpaceUnsubscribeUrl({ baseUrl: SITE_URL, spaceId: rootSpaceId, email: r.email })
         // The per-Space /unsubscribe?s=&e= landing IS a preference center (opt down individual topics or
         // unsubscribe from everything), so "Manage emails" points a profile-less lead at that same token page.
@@ -886,14 +935,9 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
           })
         }
       }
-
-      // The BULK lane, dripped. A campaign is mail nobody is sitting and waiting for, so it must
-      // never be the reason a welcome email misses the daily sending quota (LIVE-091: on
-      // 2026-07-17 a 356-recipient campaign took the quota and two welcomes dead-lettered behind
-      // it). `bulkRunAfter` staggers when each job becomes DUE so the fan-out cannot fill the
-      // claim window either — the claim is ordered by run_after and knows nothing about lanes.
-      await enqueueEmail(
-        {
+      return {
+        r,
+        payload: {
           to: r.email,
           from: emailFrom,
           ...(emailReplyTo ? { replyTo: emailReplyTo } : {}),
@@ -903,21 +947,73 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
           headers: emailHeaders,
           tags: [{ name: 'campaign_id', value: campaignId }],
         },
-        { lane: 'bulk', runAfter: bulkRunAfter(count, fanOutStartedAt) },
-      )
-      count++
-      // COMMITTED: the outbox has the job, so this recipient must never be enqueued again for this
-      // campaign. Written after the enqueue and best-effort, the same order and posture as the
-      // Space seam (lib/spaces/email.ts): the email is already going out, and a ledger blip must
-      // not fail a send that succeeded.
-      if (rootSpaceId) {
-        await recordLedgerSend({
-          spaceId: rootSpaceId,
-          campaignId,
-          contactId: r.contactId || null,
-          email: r.email,
-        })
       }
+    }
+
+    // THE FAN-OUT, in chunks (lib/email-studio/fan-out.ts). Per chunk: build the emails with bounded
+    // concurrency, queue them in ONE insert, write their ledger rows in ONE insert, checkpoint the
+    // progress and the lease. Between chunks: stop if an operator paused the campaign, and hand the rest
+    // to the next cron run when this run's clock is spent. A serial per-recipient loop did ~1 a second and
+    // died at the 300 s limit 300 people into the 585 person launch send.
+    for (let i = 0; i < pending.length; i += FAN_OUT_CHUNK) {
+      if (i > 0) {
+        if (!(await stillSending(campaignId))) {
+          // Paused (or cancelled) while sending: leave the status the operator chose, report what went out.
+          return ok({ recipientCount: count })
+        }
+        if (options.exhausted?.()) {
+          // OUT OF TIME: hand the rest to the next run. Back to 'scheduled', due now, ONLY while the row is
+          // still 'sending' (a pause must win). Everyone queued so far has a ledger row and an outbox
+          // dedupe key, so the next run sends to the rest and to nobody twice. If this write fails the row
+          // stays 'sending' with a live lease and the cron resumes it when the lease runs out.
+          const progress = count + skippedTotal
+          const { error: handoffError } = await db
+            .from('campaigns')
+            .update({ status: 'scheduled', recipient_count: progress, scheduled_for: new Date().toISOString() })
+            .eq('id', campaignId)
+            .eq('status', 'sending')
+          if (handoffError) {
+            console.error('[email-studio] could not hand the send to the next run', { campaignId, error: handoffError.message })
+          }
+          console.info('[email-studio] send handed to the next run', { campaignId, queued: count, remaining: pending.length - i })
+          return ok({ recipientCount: count, complete: false as const })
+        }
+      }
+      const chunk = pending.slice(i, i + FAN_OUT_CHUNK)
+      const names = await loadContactNames(chunk.map((r) => r.contactId))
+      const built = (await mapLimit(chunk, FAN_OUT_CONCURRENCY, (r) => buildOne(r, names))).filter(
+        (b): b is NonNullable<typeof b> => b !== null,
+      )
+      if (built.length > 0) {
+        // The BULK lane, dripped. A campaign is mail nobody is sitting and waiting for, so it must
+        // never be the reason a welcome email misses the daily sending quota (LIVE-091: on
+        // 2026-07-17 a 356-recipient campaign took the quota and two welcomes dead-lettered behind
+        // it). `bulkRunAfter` staggers when each job becomes DUE so the fan-out cannot fill the
+        // claim window either — the claim is ordered by run_after and knows nothing about lanes.
+        await enqueueEmailBatch(
+          built.map((b, k) => ({
+            payload: b.payload,
+            runAfter: bulkRunAfter(count + k, fanOutStartedAt),
+            dedupeKey: campaignDedupeKey(campaignId, b.r),
+          })),
+          { lane: 'bulk' },
+        )
+        count += built.length
+        // COMMITTED: the outbox has the jobs, so these recipients must never be enqueued again for this
+        // campaign. Written after the enqueue and best-effort, the same order and posture as the Space
+        // seam (lib/spaces/email.ts): the emails are already going out, and a ledger blip must not fail
+        // a send that succeeded.
+        if (rootSpaceId) {
+          await recordLedgerSends(
+            rootSpaceId,
+            campaignId,
+            built.map((b) => ({ contactId: b.r.contactId || null, email: b.r.email })),
+          )
+        }
+      }
+      // Checkpoint: the console shows live progress, a crash keeps its count, and a long run keeps its lease.
+      await db.from('campaigns').update({ recipient_count: count + skippedTotal }).eq('id', campaignId)
+      await stampSendColumns(campaignId, { sending_started_at: new Date().toISOString() })
     }
     if (skippedTotal > 0) {
       console.info('[email-studio] re-send skipped recipients already queued', {

@@ -99,7 +99,10 @@ async function spaceSendBrand(spaceId: string | null): Promise<CampaignHtmlOptio
  * send. `limit` caps how many campaigns one pass claims (keeps a pass bounded). Fail-safe: a single
  * campaign's resolve/send error stamps THAT campaign 'failed' and moves on; the pass never throws.
  */
-export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
+export async function sendDueCampaigns(
+  limit = 100,
+  opts: { exhausted?: () => boolean } = {},
+): Promise<SendDueResult> {
   // The typed admin client (campaigns.space_id / scheduled_for / topic are in the generated types).
   const db = createAdminClient()
 
@@ -141,6 +144,9 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
   let failed = 0
 
   for (const row of due) {
+    // The cron's clock is spent: leave the rest for the next run (they stay due; a handed-off send is
+    // 'scheduled' again). A campaign mid-fan-out has already stopped itself at a chunk boundary.
+    if (opts.exhausted?.()) break
     const resumed = row.status === 'sending'
     // GLOBAL campaign → the Email Studio sender. sendCampaignNow does its OWN atomic claim
     // (scheduled → sending) + stamping, so we do NOT pre-claim here. Idempotent: it refuses an
@@ -148,19 +154,21 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
     // 2026-09-05 (scan2 L5-04, ADR-1212): a GLOBAL campaign that fails now records `failed` with the
     // count sent so far (lib/email-studio/send.ts) and is re-sent by the operator, not this pass.
     if (isGlobalCampaign(row.space_id)) {
-      if (resumed) {
-        // sendCampaignNow owns the global claim and refuses a 'sending' row, so a stale global lease
-        // cannot be resumed from here. Logged (not silent) so the row is visible; the console shows it
-        // as 'stalled' and the operator re-schedules it.
-        log.warn('cron.space_campaigns.global_sending_stale', { id: row.id })
-        continue
-      }
+      // A stale 'sending' global row is a dead sender (a function killed at its time limit). Resume it
+      // here: sendCampaignNow re-claims it only while its lease is STILL expired (so two passes cannot
+      // both take it) and sends to the recipients with no send-ledger row, nobody twice. Before this it
+      // was logged and skipped, which left a campaign that died part way stuck until a human re-pressed
+      // send (the 585 person launch send stopped at 300 and stayed 'sending').
+      if (resumed) log.warn('cron.space_campaigns.global_sending_resumed', { id: row.id })
       claimed++
       try {
-        const res = await sendCampaignNow(row.id)
+        const res = await sendCampaignNow(row.id, { exhausted: opts.exhausted })
         if (isError(res)) {
           failed++
           log.error('cron.space_campaigns.global_send_failed', { id: row.id, error: res.error })
+        } else if (res.data.complete === false) {
+          // Out of time part way: the send put itself back to 'scheduled' and the next run carries on.
+          log.info('cron.space_campaigns.global_send_continues', { id: row.id, queued: res.data.recipientCount })
         } else {
           sent++
         }

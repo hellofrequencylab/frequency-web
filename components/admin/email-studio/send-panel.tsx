@@ -27,6 +27,7 @@ import {
 } from '@/app/(main)/admin/email-studio/send-actions'
 
 import { Input } from '@/components/ui/field'
+import { dailyLimitNote } from '@/lib/email-studio/fan-out'
 export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled'
 
 export interface SegmentOption {
@@ -69,6 +70,7 @@ export interface SendPanelProps {
 export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGMENTS, layout = 'stack' }: SendPanelProps) {
   const row = layout === 'row'
   const [current, setCurrent] = useState<CampaignStatus>(status)
+  const [limitNote, setLimitNote] = useState<string | null>(null)
   const [selected, setSelected] = useState(segment ?? segments[0]?.key ?? 'members')
   const [scheduleAt, setScheduleAt] = useState('')
   const [count, setCount] = useState<number | null>(null)
@@ -102,7 +104,11 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
   function preview() {
     run(
       () => audiencePreviewAction(campaignId, selected),
-      (d) => setCount((d as { count: number }).count),
+      (d) => {
+        const a = d as { count: number; dailyLimit?: number | null }
+        setCount(a.count)
+        setLimitNote(dailyLimitNote(a.count, a.dailyLimit ?? null))
+      },
     )
   }
 
@@ -161,6 +167,8 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
       }
       const size = aud.data.count
       setCount(size)
+      const limitNote = dailyLimitNote(size, aud.data.dailyLimit ?? null)
+      setLimitNote(limitNote)
       if (size === 0) {
         setError('This audience is empty. Pick a segment with recipients before sending.')
         return
@@ -172,7 +180,7 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
         ? `\n\nVoice check:\n${voice.warnings.map((w) => `- ${w}`).join('\n')}\n\nYou can still send.`
         : ''
       const okToSend = window.confirm(
-        `Send this campaign now to ${size.toLocaleString()} recipients? This cannot be undone.${voiceNote}`,
+        `Send this campaign now to ${size.toLocaleString()} recipients? This cannot be undone.${limitNote ? `\n\n${limitNote}` : ''}${voiceNote}`,
       )
       if (!okToSend) return
       const reallySend = window.confirm(
@@ -182,6 +190,13 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
       const r = await sendNowAction(campaignId)
       if (isError(r)) {
         setError(r.error)
+        return
+      }
+      if (r.data.complete === false) {
+        // A big audience: this click queued the first part and the scheduled sender carries on with the
+        // rest within minutes. Nothing to press again, and nobody is sent twice.
+        setCurrent('scheduled')
+        setNote(`${r.data.recipientCount.toLocaleString()} queued so far. The rest goes out automatically over the next few minutes.`)
         return
       }
       setCurrent('sent')
@@ -230,6 +245,7 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
                 {count.toLocaleString()} in this audience before the consent and suppression gate.
               </span>
             )}
+            {limitNote && <p className="basis-full text-meta text-muted">{limitNote}</p>}
           </div>
 
           <div className={row ? 'space-y-1' : 'space-y-1 border-t border-border pt-3'}>

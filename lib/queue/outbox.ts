@@ -247,12 +247,15 @@ export function laneFor(payload: Record<string, unknown> | null | undefined): Jo
  *
  * The claim (claim_outbox_jobs) is `order by run_after asc` and lane-blind, so the only way to keep
  * a campaign from sitting in front of a welcome is to stop the campaign from being due all at once.
- * The drain runs every 2 minutes and claims 25, i.e. ~12.5 jobs/min of capacity; letting bulk become
- * due at 10/min keeps the bulk backlog draining, so a transactional job enqueued now is claimed on
- * the next drain (≤2 min) instead of queueing behind 356 older-due campaign rows. A 356-recipient
- * campaign now spreads over ~36 minutes rather than landing in a single second.
+ * The drain (/api/cron/process-queue) runs every 2 minutes and works for up to ~100 s of each run,
+ * claiming 25 at a time (processQueueFor below). One send to the provider takes ~0.3-0.5 s, so it
+ * clears roughly 150-200 jobs a minute against the provider's default 2 requests a second. Letting bulk
+ * become due at 90/min stays under that, so the bulk backlog always drains and a transactional job
+ * enqueued now is claimed on the next drain (≤2 min) instead of queueing behind older-due campaign
+ * rows. A 10,000 recipient campaign spreads over ~110 minutes; the 356 recipient one that started this
+ * (LIVE-091) over ~4. It used to be 10/min, which made 10,000 a 17 hour send.
  */
-export const BULK_DUE_RATE_PER_MIN = 10
+export const BULK_DUE_RATE_PER_MIN = 90
 
 /** run_after for the Nth job of a bulk fan-out, dripping BULK_DUE_RATE_PER_MIN per minute. Pure. */
 export function bulkRunAfter(index: number, startedAt: Date = new Date()): Date {
@@ -331,6 +334,77 @@ export async function enqueue(
     throw new Error(`enqueue(${kind}) failed: ${error.message}`)
   }
   return { enqueued: true }
+}
+
+/** One job in an `enqueueMany` batch. */
+export interface EnqueueManyItem {
+  payload: Record<string, unknown>
+  runAfter?: Date
+  dedupeKey?: string
+}
+
+/**
+ * Enqueue many jobs of one kind in ONE insert (a campaign fan-out of 10,000 is a hundred round trips,
+ * not ten thousand). Same row shape as `enqueue`. Returns how many rows are now in the queue for this
+ * call's keys: a repeated dedupe key means an earlier attempt already queued that recipient, which
+ * is the idempotency working, so it counts as queued and is never inserted twice.
+ *
+ * A batch that hits a unique violation (an earlier, interrupted run queued part of it) falls back to
+ * one insert per row, where `enqueue` already treats the violation as success. Any other error throws,
+ * like `enqueue`: the caller must not believe a job is durable when it is not.
+ */
+export async function enqueueMany(
+  kind: string,
+  items: EnqueueManyItem[],
+  opts?: { lane?: JobLane; maxAttempts?: number },
+): Promise<{ enqueued: number; duplicates: number }> {
+  if (items.length === 0) return { enqueued: 0, duplicates: 0 }
+  const now = new Date()
+  const rows = items.map((item) => ({
+    kind,
+    payload: (opts?.lane === 'bulk' ? { ...item.payload, [LANE_KEY]: 'bulk' } : item.payload) as Json,
+    run_after: (item.runAfter ?? now).toISOString(),
+    max_attempts: opts?.maxAttempts ?? 5,
+    ...(item.dedupeKey ? { dedupe_key: item.dedupeKey } : {}),
+  })) as unknown as Database['public']['Tables']['notification_queue']['Insert'][]
+  const { error } = await db().from('notification_queue').insert(rows)
+  if (!error) return { enqueued: items.length, duplicates: 0 }
+  if (error.code !== UNIQUE_VIOLATION) throw new Error(`enqueueMany(${kind}) failed: ${error.message}`)
+  let enqueued = 0
+  let duplicates = 0
+  for (const item of items) {
+    const r = await enqueue(kind, item.payload, { runAfter: item.runAfter, lane: opts?.lane, maxAttempts: opts?.maxAttempts, dedupeKey: item.dedupeKey })
+    if (r.enqueued) enqueued++
+    else duplicates++
+  }
+  return { enqueued, duplicates }
+}
+
+/**
+ * Drain for a time budget instead of one batch: claim and run `batch` jobs at a time until the queue
+ * is empty or `exhausted()` says the cron's clock is spent. One batch of 25 per 2-minute run capped
+ * the whole platform at ~12 emails a minute (a 10,000 recipient campaign would have taken 13 hours);
+ * a ~100 s budget clears a few hundred a run. Every batch is the same atomic claim as before, so
+ * overlapping drains still never take the same job. Sequential on purpose: the provider's default
+ * rate limit is 2 requests a second and a 429 is parked without spending an attempt.
+ */
+export async function processQueueFor(
+  handlers: Record<string, JobHandler>,
+  opts: { batch: number; exhausted: () => boolean },
+): Promise<ProcessResult> {
+  const total: ProcessResult = { processed: 0, done: 0, failed: 0, retried: 0, deferred: 0 }
+  do {
+    const r = await processQueue(handlers, opts.batch)
+    total.processed += r.processed
+    total.done += r.done
+    total.failed += r.failed
+    total.retried += r.retried
+    total.deferred += r.deferred
+    // A short batch means nothing else is due right now; a deferred-only batch means the provider
+    // is closed to us (quota / rate limit), and asking again this run only burns requests.
+    if (r.processed < opts.batch || (r.deferred > 0 && r.done === 0)) break
+  } while (!opts.exhausted())
+  return total
 }
 
 /**

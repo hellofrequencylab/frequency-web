@@ -45,6 +45,13 @@ function contactsBuilder() {
       predicates.push((c) => c.space_id === null || c.space_id === scope[1])
       return api
     },
+    // The audience read is paged and ordered by id (readAllPages); the fixture is small, so one page holds it all.
+    order() {
+      return api
+    },
+    range() {
+      return api
+    },
     then(resolve: (r: { data: typeof contacts; error: null }) => void) {
       resolve({ data: contacts.filter((c) => predicates.every((p) => p(c))), error: null })
     },
