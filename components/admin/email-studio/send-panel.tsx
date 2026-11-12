@@ -193,10 +193,10 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
         return
       }
       if (r.data.complete === false) {
-        // A big audience: this click queued the first part and the scheduled sender carries on with the
-        // rest within minutes. Nothing to press again, and nobody is sent twice.
+        // A big audience: this click queued the first part and the scheduled sender queues the rest in the
+        // following runs. How long delivery then takes depends on the provider's sending limit.
         setCurrent('scheduled')
-        setNote(`${r.data.recipientCount.toLocaleString()} queued so far. The rest goes out automatically over the next few minutes.`)
+        setNote(`${r.data.recipientCount.toLocaleString()} queued so far. The rest is queued automatically, and delivery follows your daily sending limit.`)
         return
       }
       setCurrent('sent')

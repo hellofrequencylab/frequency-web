@@ -50,12 +50,12 @@ export function parseDailyLimit(raw: string | undefined): number | null {
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
-/** Operator copy shown beside an audience size when the account has a daily cap lower than the audience:
- *  the send still completes, over several days, because a refused-by-quota email waits for the window
- *  to reopen without spending an attempt (lib/queue/outbox). Null when the cap is unknown or not a
- *  constraint. Plain voice, no em dashes. */
+/** Operator copy shown beside an audience size when the configured daily cap is lower than the audience.
+ *  It states only the configured limit and the estimated duration (audience / limit, rounded up), nothing
+ *  about plans or upgrades. A quota-refused email waits for the window to reopen without spending an
+ *  attempt (lib/queue/outbox). Null when the cap is unknown or not a constraint. Plain voice, no em dashes. */
 export function dailyLimitNote(count: number, dailyLimit: number | null): string | null {
   if (!dailyLimit || count <= dailyLimit) return null
   const days = Math.ceil(count / dailyLimit)
-  return `Your email account sends up to ${dailyLimit.toLocaleString()} a day, so this will take about ${days} days to reach everyone. Upgrading the plan sends it all at once.`
+  return `The daily sending limit is set to ${dailyLimit.toLocaleString()}, so this send is expected to take about ${days} days to reach everyone.`
 }

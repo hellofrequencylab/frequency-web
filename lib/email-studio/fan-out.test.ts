@@ -50,5 +50,6 @@ describe('daily limit note', () => {
     expect(dailyLimitNote(100, 100)).toBeNull()
     expect(dailyLimitNote(585, 100)).toContain('about 6 days')
     expect(dailyLimitNote(585, 100)).not.toMatch(/[\u2013\u2014]/)
+    expect(dailyLimitNote(585, 100)).not.toMatch(/upgrad|plan/i)
   })
 })
