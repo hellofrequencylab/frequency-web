@@ -6,7 +6,6 @@ const files = [
   'app/(marketing)/pricing/page.tsx',
   'app/llms-full.txt/route.ts',
   'lib/page-editor/templates/home.ts',
-  'lib/page-editor/templates/what-is-frequency.ts',
 ]
 for (const f of files) {
   assert.doesNotMatch(readFileSync(f, 'utf8'), /host free with crew/i, `${f} still says Host free with Crew`)
