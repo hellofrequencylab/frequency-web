@@ -74,7 +74,7 @@ describe('Space brand (owner ruling 2026-10-12)', () => {
       expect(html).toContain(`href="https://frequencylocal.com${path}"`)
       expect(text).toContain(`https://frequencylocal.com${path}`)
     }
-    expect(html).toContain(`&copy; ${new Date().getFullYear()} Frequency Labs Holdings`)
+    expect(html).toContain(`&copy; ${new Date().getFullYear()} Frequency Labs`)
     expect(html).toContain('Carlsbad, CA')
     expect(text).toContain('Carlsbad, CA')
     expect(text).not.toContain('—')

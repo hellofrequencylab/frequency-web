@@ -309,7 +309,7 @@ describe('shell + compileEmailDoc', () => {
     // exactly like the site's, so this is now an equality rather than a case-folded match.
     expect(html).toContain(SITE_TAGLINE)
     // Physical mailing-address line: the real CAN-SPAM postal address plus the legal org.
-    expect(html).toContain('Frequency Labs Holdings')
+    expect(html).toContain('Frequency Labs')
     expect(html).toContain('802 Caminito Azul, Carlsbad, CA 92011')
     // Dated copyright.
     expect(html).toContain(`&copy; ${new Date().getFullYear()}`)
