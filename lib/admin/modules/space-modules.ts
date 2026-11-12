@@ -336,7 +336,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   { id: 'space.chapters', label: 'Chapters', desc: 'Your chapters and their leaders, the central admins who help run them, and chapter events waiting for a yes.', Icon: Network, family: 'growth', hub: 'settings', slot: 'billing', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/chapters`, order: 91, tier: 'extra', priority: 31, access: 'premium', freeNote: `Comes with ${SPACE_PLAN_LABEL.network}, ${NETWORK_PLAN.includedChapters} chapters to start`, parent: 'space.basics' },
 
   // ── System ───────────────────────────────────────────────────────────────────────────────────────────
-  // The "Menu and features" (Module Manager) rail entry was REMOVED (item 7): the bottom More menu no longer
+  // The "Page Tools" (Module Manager) rail entry was REMOVED (item 7): the bottom More menu no longer
   // lists it. The /manage/modules page still exists for direct access; it is just no longer a menu item.
   // Danger renders as a rail LINK-row (its inline delete lives in the /manage console + Module Manager, which
   // special-case `space.danger` by id — the `render` value drives only the rail, ADR-546b). It has no

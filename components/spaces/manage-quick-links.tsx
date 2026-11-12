@@ -44,7 +44,7 @@ export function manageQuickLinks({
   // Check in (LIVE-949): the door code, the NFC link, the roster and Regulars. The catalog row for it was retired
   // (LIVE-226) while its panel stayed, so this door is the way in.
   links.push({ key: 'checkin', label: 'Check in', href: `/spaces/${slug}?panel=checkin` })
-  links.push({ key: 'menu', label: 'Menu and features', href: `/spaces/${slug}/manage/modules` })
+  links.push({ key: 'menu', label: 'Page Tools', href: `/spaces/${slug}/manage/modules` })
   return links
 }
 

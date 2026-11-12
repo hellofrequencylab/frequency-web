@@ -28,7 +28,7 @@ import { consoleBack } from '@/lib/spaces/console-back'
 // the default 'global' rail like the mode + features pages (no page-chrome entry needed). No em dashes.
 
 export const metadata: Metadata = {
-  title: 'Menu and features',
+  title: 'Page Tools',
   description: 'Turn features on or off, set who can use each one, reorder your menu, and hide what you do not use.',
   robots: { index: false, follow: false },
 }
@@ -98,7 +98,7 @@ export default async function SpaceModulesPage({
     <ConsoleFocusTemplate
       back={consoleBack(space.slug, 'settings')}
       eyebrow={brandName}
-      title="Menu and features"
+      title="Page Tools"
       description="Turn the tools this space uses on or off, set who on your team can use each one, reorder your menu, and hide what you do not need."
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

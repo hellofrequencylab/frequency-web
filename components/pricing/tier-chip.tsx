@@ -6,7 +6,7 @@ import { TIER_MARKS, type TierMarkKey } from '@/lib/pricing/tier-marks'
 // the Space plans (Free, Business, Non Profit, Independent, Collective, Network), Founder, Founding Business
 // and Boosted. It composes RankBadge (the rank spectrum primitive both designs already style), and the
 // registry in lib/pricing/tier-marks.ts decides name, colour and glyph, so a mark reads the same on a member
-// card, a profile header, a Space card and the Menu and features index. A ladder rung wears the rank dot, a
+// card, a profile header, a Space card and the Page Tools index. A ladder rung wears the rank dot, a
 // status mark wears a glyph, and nothing here draws a second look. Server-friendly, no hooks.
 //
 //   <TierChip tier="crew" />

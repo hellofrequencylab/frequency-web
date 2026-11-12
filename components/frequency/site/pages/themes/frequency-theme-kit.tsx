@@ -25,10 +25,10 @@ function vars(v: Record<string, string | number>): React.CSSProperties {
 // The theme pages keep the library's definition order; only the pickers lead with New World and Designer.
 export const THEME_KIT_PAGE_IDS = SITE_THEME_DEFS.filter((d) => SITE_THEMES.some((t) => t.id === d.id)).map((t) => t.id).filter((id) => id !== 'midnight' && id !== 'new-world' && id !== 'services' && id !== 'cyberwitch')
 
-const THEME_KIT_FAQ: { q: string; a: (name: string) => string }[] = [
+export const THEME_KIT_FAQ: { q: string; a: (name: string) => string }[] = [
   {
     q: 'Do I have to use every tool?',
-    a: () => 'No. A kit starts with two or three. Switch on the rest from Menu and features when you are ready, and nothing is lost when you do.',
+    a: () => 'No. Start with the tools you need. Turn on more in Page Tools when you are ready.',
   },
   {
     q: 'What happens if I change my mind about the look?',
@@ -40,7 +40,7 @@ const THEME_KIT_FAQ: { q: string; a: (name: string) => string }[] = [
   },
   {
     q: 'What does it cost?',
-    a: () => 'Free to start. Business when you charge.',
+    a: () => 'Space hosting is free. Check /pricing for current selling fees.',
   },
 ]
 

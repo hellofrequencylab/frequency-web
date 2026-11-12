@@ -1,6 +1,6 @@
 // THE TIER MARK REGISTRY. One table that says, for every tier, rank or status mark a person or a Space can
 // wear, what it is called, which spectrum colour it takes and whether it carries a glyph. Every surface that
-// draws one of these (member cards, the profile header, Space cards and headers, the Menu and features index,
+// draws one of these (member cards, the profile header, Space cards and headers, the Page Tools index,
 // the plan ladder) reads it through components/pricing/tier-chip.tsx, so a mark cannot read differently on two
 // pages. Colour VALUES live in app/globals.css (the rank spectrum); this file only picks the key.
 //
@@ -52,7 +52,7 @@ export const TIER_MARKS: Record<TierMarkKey, TierMark> = {
   },
 }
 
-/** What a Menu and features row says about the plan it needs. `access` is the catalog's own marking
+/** What a Page Tools row says about the plan it needs. `access` is the catalog's own marking
  *  (lib/admin/modules/space-modules.ts): `included` is free for every Space, `freemium` is free with a cap a
  *  paid plan lifts, `premium` needs a paid plan. A premium row names its plan through `PREMIUM_MODULE_PLAN`. */
 const PREMIUM_MODULE_PLAN: Record<string, SpacePlan> = {

@@ -15,7 +15,7 @@ import { switchSpaceFocus, resetModeOverrides } from './actions'
 // role; this layer is fast inline feedback only. The page (an RSC) resolves + gates and hands this a plain
 // view model.
 //
-// MENU VISIBILITY lives ONLY in the Module Manager (Menu and features, ADR-552 Phase 4). This surface no
+// MENU VISIBILITY lives ONLY in the Module Manager (Page Tools, ADR-552 Phase 4). This surface no
 // longer carries an in-nav / hidden toggle: it is preset-only (focus, lexicon, pipeline), so there is one
 // place to show or hide a module.
 //
@@ -110,7 +110,7 @@ export function ModeSettings({
           A preset never locks anything. Every tool stays available; this is the order your console leads
           with and the words it uses. To show or hide a module in your menu, open{' '}
           <Link href={`/spaces/${slug}/manage/modules`} className="font-medium text-primary hover:underline">
-            Menu and features
+            Page Tools
           </Link>
           .
         </p>

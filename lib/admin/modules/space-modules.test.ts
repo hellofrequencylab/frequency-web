@@ -163,7 +163,7 @@ describe('advanced modules (progressive disclosure)', () => {
   })
 })
 
-// ADR-546 (docs/MODULAR-MENU.md P3): the hide/family metadata. (The "Menu and features" / space.modules rail
+// ADR-546 (docs/MODULAR-MENU.md P3): the hide/family metadata. (The "Page Tools" / space.modules rail
 // entry was removed — item 7 — so it is no longer part of the catalog.)
 describe('hide/family metadata', () => {
   it('has no space.modules rail entry (removed, item 7)', () => {

@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/select'
 import { SectionHeader } from '@/components/ui/section-header'
 import { chooseSpaceNiche } from './actions'
 
-// The starting setup card on Menu and features (ADR-1882). Says what this Space is building and which tools
+// The starting setup card on Page Tools (ADR-1882). Says what this Space is building and which tools
 // that starts on. The switches themselves stay in the grid below: this card only names the niche and, for a
 // Space that never tuned its tools, starts it from that niche's preset. Plain owner copy, no em dashes.
 
