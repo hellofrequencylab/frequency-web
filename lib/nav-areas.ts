@@ -139,7 +139,7 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // dock's first group, design_handoff/dawn/guidelines/chrome-docks.card.html), not under the
   // game. It renders in My Frequency now. The Quest keeps the five rows that ARE the game.
   { key: 'journal',    href: '/journal',         label: 'Journal',    section: 'The Quest', defaultAccess: 'member', surface: 'people', railHidden: true },
-  { key: 'vault',      href: '/crew/store',      label: 'The Vault',  section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
+  { key: 'vault',      href: '/crew/store',      label: 'The Vault',  section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault', railHidden: true },
 
   // ── Admin → the operator world. Telescopes: only the items a role/staff axis can
   // reach are shown; the rest are hidden, not ghosted. Most areas are STAFF-ADMIN gated

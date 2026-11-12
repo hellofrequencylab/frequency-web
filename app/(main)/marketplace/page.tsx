@@ -18,5 +18,8 @@ export const dynamic = 'force-dynamic'
 export default async function MarketplaceHubRedirect() {
   const jar = await cookies()
   const surface = parseCommerceSurface(jar.get(COMMERCE_LAST_COOKIE)?.value)
-  redirect(commerceSurfaceHref(surface))
+  // LIVE-2266: Classifieds and Housing are held until after launch, so the door lands on the Spaces'
+  // products (Market) for a first visit and for a remembered held surface.
+  const held = surface === 'classifieds' || surface === 'housing'
+  redirect(commerceSurfaceHref(held ? 'market' : surface))
 }

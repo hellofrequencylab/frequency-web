@@ -29,6 +29,7 @@ export const shop: Vertical = {
         section: 'Market',
         defaultAccess: 'visitor',
         surface: 'shop',
+        railHidden: true, // LIVE-2266: Frequency Store held until after launch
       },
     },
   ],
