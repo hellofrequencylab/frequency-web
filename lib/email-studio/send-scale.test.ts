@@ -13,8 +13,6 @@ type CampaignRow = Record<string, unknown>
 let row: CampaignRow
 /** Every update patch applied to the campaigns row, in order. */
 let updates: CampaignRow[]
-/** Inject a failure for an update whose patch satisfies the predicate. */
-let failUpdateWhen: ((patch: CampaignRow) => boolean) | null
 /** The outreach_sends ledger: one row per recipient this campaign has been queued to (LIVE-172). */
 let ledger: { campaign_id: string; contact_id: string | null; email: string; status: string }[]
 /** Make the ledger READ fail, so the fail-closed re-send path can be driven. */
@@ -210,7 +208,6 @@ beforeEach(() => {
   vi.clearAllMocks()
   row = freshRow()
   updates = []
-  failUpdateWhen = null
   ledger = []
   failLedgerRead = false
   queued = []
