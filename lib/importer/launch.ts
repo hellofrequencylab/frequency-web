@@ -12,12 +12,12 @@
 // because a half-answered launch still produces a page the owner can finish in setup.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { SEED_MOODS, type SeedMood, isSeedMood } from '@/lib/studio/kernel/moods'
+import { isSeedMood } from '@/lib/studio/kernel/moods'
 import type { IntakeInputs } from '@/lib/importer/intake'
 
 type LaunchQuestionId = 'name' | 'what' | 'who' | 'different' | 'offer' | 'where' | 'links' | 'mood'
 
-export interface LaunchQuestion {
+interface LaunchQuestion {
   id: LaunchQuestionId
   /** The screen heading: one question, in the member's own terms. */
   title: string
@@ -94,7 +94,7 @@ export const LAUNCH_QUESTIONS: readonly LaunchQuestion[] = [
 ] as const
 
 /** Answers by question id. Blank and missing are the same thing: skipped. */
-export type LaunchAnswers = Partial<Record<LaunchQuestionId, string>>
+type LaunchAnswers = Partial<Record<LaunchQuestionId, string>>
 
 const CLIP = 1500
 
@@ -164,14 +164,3 @@ export function launchAnswersToInputs(a: LaunchAnswers): IntakeInputs {
   if (isSeedMood(mood)) inputs.mood = mood
   return inputs
 }
-
-/** The moods a member can pick, plain labels only. */
-export const LAUNCH_MOODS: readonly { key: SeedMood; label: string; description: string }[] = SEED_MOODS.map((m) => ({
-  key: m.key,
-  label: m.label,
-  description: m.description,
-}))
-
-/** A rolling-window cap on how many launches one member can start, because each one runs a paid research
- *  and drafting pass. Per day, not lifetime: a second try after an edit is normal. */
-export const LAUNCH_DAILY_LIMIT = 3
