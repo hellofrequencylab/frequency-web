@@ -124,7 +124,7 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
-  { key: 'journeys',   href: '/journeys',        label: 'Journeys',   section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },
+  { key: 'journeys',   href: '/journeys',        label: 'Journeys',   section: 'The Quest', defaultAccess: 'member', surface: 'journeys', railHidden: true },
   { key: 'practices',  href: '/practices',       label: 'Practices',  section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
   // The Library row is GONE (LIVE-681, ADR-1678). The owner ruled one front door: /practices holds
   // the Library's ranked catalog of practices and journeys (the practices-best-of block) and
@@ -139,7 +139,7 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // dock's first group, design_handoff/dawn/guidelines/chrome-docks.card.html), not under the
   // game. It renders in My Frequency now. The Quest keeps the five rows that ARE the game.
   { key: 'journal',    href: '/journal',         label: 'Journal',    section: 'The Quest', defaultAccess: 'member', surface: 'people', railHidden: true },
-  { key: 'vault',      href: '/crew/store',      label: 'The Vault',  section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault' },
+  { key: 'vault',      href: '/crew/store',      label: 'The Vault',  section: 'The Quest', defaultAccess: 'member', previewBelowAccess: true, surface: 'vault', railHidden: true },
 
   // ── Admin → the operator world. Telescopes: only the items a role/staff axis can
   // reach are shown; the rest are hidden, not ghosted. Most areas are STAFF-ADMIN gated

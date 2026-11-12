@@ -21,6 +21,7 @@ export const housing: Vertical = {
         section: 'Market',
         defaultAccess: 'member',
         surface: 'housing',
+        railHidden: true, // LIVE-2266: held until after launch (the find, show up, come back loop)
       },
     },
   ],

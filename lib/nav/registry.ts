@@ -329,8 +329,6 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
       { id: 'events', label: 'Events', href: '/events', navKey: 'events' },
       { id: 'around-you', label: 'Around You', href: '/nearby', minAccess: 'visitor' },
       { id: 'spaces-directory', label: 'Business Spaces', href: '/spaces/directory', minAccess: 'visitor' },
-      { id: 'market', label: 'Classifieds', href: '/classifieds', navKey: 'market' },
-      { id: 'housing', label: 'Housing', href: '/housing', navKey: 'housing' },
       // 🔴 NO navKey, ON PURPOSE (LIVE-250). This row carried `navKey: 'maker'` and there is
       // no NAV_AREA with that key: ADR-868 retired the Maker rail row, so `lib/verticals/maker.ts`
       // declares `nav: []` and the key has pointed at nothing since. A dead key is not an error
@@ -342,7 +340,6 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
       // member-facing **Market** at `/market` (internal id `maker`), and **Classifieds** at
       // `/classifieds` (internal id `market`) — the row above.
       { id: 'maker', label: 'Market', href: '/market', minAccess: 'visitor' },
-      { id: 'shop', label: 'Frequency Store', href: '/store', navKey: 'shop' },
       { id: 'network', label: 'Members', href: '/network', navKey: 'people' },
     ],
   },
@@ -353,7 +350,6 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
       { id: 'journeys', label: 'Journeys', href: '/journeys', navKey: 'journeys' },
       { id: 'practices', label: 'Practices', href: '/practices', navKey: 'practices' },
       { id: 'leaderboard', label: 'Leaderboard', href: '/crew/leaderboard', minAccess: 'member' },
-      { id: 'vault', label: 'The Vault', href: '/crew/store', navKey: 'vault' },
     ],
   },
   {
