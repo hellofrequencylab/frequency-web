@@ -1,0 +1,1 @@
+{"id": "LIVE-1304", "patch": {}, "append": {"detail": "\n\n2026-11-12 LAUNCH-P3 (Daniel: re-aim approved): home-voice.mjs now checks Home reads BETA_ENDS_DAY_LABEL (the one beta end date) instead of OPENING_DATE_LABEL."}}

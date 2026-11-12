@@ -1,0 +1,1 @@
+{"id": "LIVE-1312", "patch": {}, "append": {"detail": "\n\n2026-11-12 LAUNCH-P3 (Daniel: re-aim approved): home-final-voice.mjs now checks the /pricing fee and ticket pointers and that Home no longer states a sign-up step count, instead of the retired Business-tier and step-count copy."}}
