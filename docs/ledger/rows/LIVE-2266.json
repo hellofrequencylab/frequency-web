@@ -4,7 +4,7 @@
   "lane": "live",
   "priority": "P1",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/nav/registry.ts",
     "ref": "Launch feature cull (Daniel, 2026-11-11): hide the Store, keep the marketplace so Spaces show their products; the game layer is streak and zaps only at launch."
@@ -14,5 +14,6 @@
     "kind": "cmd",
     "cmd": "node scripts/probes/launch-core-nav.mjs"
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-11"
 }
