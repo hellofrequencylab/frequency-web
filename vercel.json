@@ -139,6 +139,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/quiet-reengage",
+      "schedule": "0 17 * * *"
+    },
+    {
       "path": "/api/cron/signup-lead-recovery",
       "schedule": "0 15 * * *"
     },
