@@ -34,7 +34,7 @@ import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags } from '@/lib/email-studio/render'
 import { prepareEmailLayoutWrite } from '@/lib/email-studio/layout-write'
-import type { EmailRenderLayout } from '@/lib/email-studio/render-layout'
+import { parseEmailRenderLayout, type EmailRenderLayout } from '@/lib/email-studio/render-layout'
 import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { renderPathEnabled } from '@/lib/platform-flags'
 import type { CampaignPurpose } from '@/lib/email-studio/campaign-purpose'
@@ -530,7 +530,9 @@ export async function sendTestEmail(id: string, toRaw?: string): Promise<ActionR
   // Loaded on demand: data-blocks is server-only and reads the database, and the draft-preservation probe (LIVE-877)
   // imports this module with only the draft transports stubbed.
   const { resolveDataBlockRefs } = await import('@/lib/email-studio/data-blocks')
-  const layout = await resolveDataBlockRefs(layoutFromBlockJson(data.block_json))
+  // Same parse the real send uses (docFromRow): a native node document keeps its placements. The legacy
+  // parse drops object cells, which sent a blank body in a test while the real send was fine.
+  const layout = await resolveDataBlockRefs(parseEmailRenderLayout(data.block_json) ?? starterEmailLayout())
   const doc = { layout, subject: data.subject ?? '', preheader: data.preheader ?? '' }
   // A TEST is delivered to the operator's OWN address, so build REAL footer links for them (their own
   // (profileId, lifecycle) token). This makes the footer's "Unsubscribe" + "Manage emails" links live in the

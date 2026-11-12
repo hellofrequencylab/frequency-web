@@ -10,7 +10,7 @@ import { emailFooterHtml, plainTextEmail } from './shell'
 
 describe('PLATFORM_POSTAL_LINE', () => {
   it('names the legal sender and a street address with a state and ZIP', () => {
-    expect(PLATFORM_POSTAL_LINE.startsWith('Frequency Labs Holdings, ')).toBe(true)
+    expect(PLATFORM_POSTAL_LINE.startsWith('Frequency Labs, ')).toBe(true)
     expect(PLATFORM_POSTAL_LINE).toMatch(/\d+ [^,]+, [^,]+, [A-Z]{2} \d{5}$/)
   })
 

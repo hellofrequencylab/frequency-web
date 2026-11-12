@@ -9,12 +9,12 @@
 // have no brand input and always print this one.
 
 /** The legal sender name the footer prints. Mirrors lib/site.ts ORG_LEGAL_NAME. */
-const ORG_LEGAL_NAME = 'Frequency Labs Holdings'
+const ORG_LEGAL_NAME = 'Frequency Labs'
 
-/** The physical postal address for Frequency Labs Holdings. */
+/** The physical postal address for Frequency Labs. */
 const POSTAL_ADDRESS = '802 Caminito Azul, Carlsbad, CA 92011'
 
-/** "Frequency Labs Holdings, 802 Caminito Azul, Carlsbad, CA 92011": the line a footer prints verbatim. */
+/** "Frequency Labs, 802 Caminito Azul, Carlsbad, CA 92011": the line a footer prints verbatim. */
 export const PLATFORM_POSTAL_LINE = `${ORG_LEGAL_NAME}, ${POSTAL_ADDRESS}`
 
 /** The tagline under the wordmark in every Frequency email shell. Mirrors lib/site.ts SITE_TAGLINE

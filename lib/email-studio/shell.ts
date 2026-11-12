@@ -41,7 +41,7 @@ const DEFAULT_BASE_URL = 'https://frequencylocal.com'
 
 /** The org's legal identity for the CAN-SPAM footer. Mirrors lib/site.ts ORG_LEGAL_NAME; kept LOCAL so the
  *  email shell stays framework-free (importing lib/site pulls the whole nav registry). */
-const ORG_LEGAL_NAME = 'Frequency Labs Holdings'
+const ORG_LEGAL_NAME = 'Frequency Labs'
 
 /** The default brand tagline: the one every Frequency shell prints (lib/email-studio/postal.ts). A Space
  *  send can override it. */
@@ -123,6 +123,9 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
   const manageFallback = `${base}/manage-emails`
   const mutedLink = (href: string, label: string): string =>
     `<a href="${escapeHtml(href)}" style="color:${colors.muted};text-decoration:underline;">${label}</a>`
+  // The one-click opt-out stays a real, visible, underlined link, set a step smaller and quieter on its own line.
+  const fineLink = (href: string, label: string): string =>
+    `<a href="${escapeHtml(href)}" style="color:${colors.subtle};text-decoration:underline;">${label}</a>`
   const unsubscribeHref = input.unsubscribeUrl ?? manageFallback
   const manageHref = input.manageUrl ?? manageFallback
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
@@ -130,7 +133,8 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
       <p style="margin:0 0 2px;font-family:${brand.serif ? SERIF_DISPLAY : DISPLAY_STACK};font-size:${brand.serif ? 17 : 14}px;font-weight:${brand.serif ? 400 : emailType.displayWeight};letter-spacing:${brand.serif ? '0' : '-0.02em'};color:${colors.heading ?? colors.text};" data-fq="fq-strong">${name}</p>
       ${desc ? `<p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:${colors.muted};">${escapeHtml(desc)}</p>` : `<div style="height:14px;line-height:14px;font-size:0;">&nbsp;</div>`}
       <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${links}</p>
-      <p style="margin:0 0 10px;font-size:13px;line-height:1.6;">${mutedLink(unsubscribeHref, 'Unsubscribe')}${sep}${mutedLink(manageHref, 'Manage emails')}</p>
+      <p style="margin:0 0 6px;font-size:13px;line-height:1.6;">${mutedLink(manageHref, 'Manage emails')}</p>
+      <p style="margin:0 0 12px;font-size:11px;line-height:1.5;">${fineLink(unsubscribeHref, 'Unsubscribe')}</p>
       <p style="margin:0;font-size:12px;color:${colors.subtle};line-height:1.6;">&copy; ${year} ${brand.address ? `${escapeHtml(ORG_LEGAL_NAME)}${sep}` : ''}${addr}</p>
       ${input.sentWithFrequency ? `<p style="margin:10px 0 0;font-size:12px;color:${colors.subtle};line-height:1.6;">Sent with <a href="${escapeHtml(base)}" style="color:${colors.subtle};text-decoration:underline;">Frequency</a>.</p>` : ''}
     </td></tr>
