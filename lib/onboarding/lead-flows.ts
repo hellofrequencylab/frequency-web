@@ -95,7 +95,7 @@ const PARTNER: LeadFlow = {
   source: 'lead_partner',
 }
 
-export const LEAD_FLOWS: Record<string, LeadFlow> = {
+const LEAD_FLOWS: Record<string, LeadFlow> = {
   welcome: WELCOME,
   event: EVENT,
   partner: PARTNER,
