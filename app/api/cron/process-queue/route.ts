@@ -1,4 +1,4 @@
-// LIVE-190 budget (ADR-1252): 25 outbox jobs per invocation; claim_outbox_jobs flips them to processing under SKIP LOCKED; the queue itself is the cursor.
+// LIVE-190 budget (ADR-1252): 25 outbox jobs per claim, claimed again until a ~100 s clock is spent (so a run clears a few hundred emails, not 25); claim_outbox_jobs flips them to processing under SKIP LOCKED; the queue itself is the cursor.
 // The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
 // declaration is applied, not merely written down.
 // Drains the durable job queue (lib/queue/outbox) with retries + backoff.
@@ -18,20 +18,22 @@ import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { CRON_SLO_BREACH_HEADER, withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
 import { log } from '@/lib/log'
-import { processQueue, queueHealth, queueHealthBreaches, QUEUE_LAG_SLO_ID } from '@/lib/queue/outbox'
+import { processQueueFor, queueHealth, queueHealthBreaches, QUEUE_LAG_SLO_ID } from '@/lib/queue/outbox'
 import { queueHandlers } from '@/lib/queue/handlers'
 
 export const dynamic = 'force-dynamic'
 
 const JOB = 'process-queue'
+const DRAIN_TIME_BUDGET_MS = 100_000
 
 async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
   try {
-    const budget = cronBudget(25)
-    const result = await processQueue(queueHandlers, budget.items)
+    // 100 s of a 120 s cadence: runs never overlap, and a slow tail still leaves room to report.
+    const budget = cronBudget(25, { timeMs: DRAIN_TIME_BUDGET_MS })
+    const result = await processQueueFor(queueHandlers, { batch: budget.items, exhausted: budget.exhausted })
     const summary = budget.summary(result.processed)
     // Surface dead-letters in the cron's own logs so a backlog of dropped
     // side-effects is visible without inspecting the table by hand (ADR-043).

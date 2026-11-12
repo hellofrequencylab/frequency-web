@@ -30,7 +30,10 @@ function from(table: string) {
   let wantRows = false
   let single = false
 
-  const matches = () => filters.every((f) => (f.col === 'id' ? row.id === f.value : row[f.col] === f.value))
+  const ltFilters: Filter[] = []
+  const matches = () =>
+    filters.every((f) => (f.col === 'id' ? row.id === f.value : row[f.col] === f.value)) &&
+    ltFilters.every((f) => typeof row[f.col] === 'string' && (row[f.col] as string) < (f.value as string))
 
   const api = {
     select: (cols?: string) => {
@@ -56,6 +59,10 @@ function from(table: string) {
     },
     eq: (col: string, value: unknown) => {
       filters.push({ col, value })
+      return api
+    },
+    lt: (col: string, value: unknown) => {
+      ltFilters.push({ col, value })
       return api
     },
     in: () => api,
@@ -114,11 +121,21 @@ function from(table: string) {
   return api
 }
 
+vi.mock('@/lib/email-studio/fan-out', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/email-studio/fan-out')>()),
+  FAN_OUT_CHUNK: 1,
+}))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from }) }))
 
 const enqueueEmail = vi.fn()
 vi.mock('@/lib/email', () => ({
   enqueueEmail: (...a: unknown[]) => enqueueEmail(...a),
+  // The batch seam, adapted to the per-recipient spy these lifecycle tests were written against (chunks of
+  // ONE below keep that meaning exactly). The real chunked path has its own tests: send-scale.test.ts.
+  enqueueEmailBatch: async (items: { payload: unknown; runAfter?: Date; dedupeKey?: string }[], opts?: unknown) => {
+    for (const it of items) await enqueueEmail(it.payload, { ...(opts as object), runAfter: it.runAfter, dedupeKey: it.dedupeKey })
+    return { enqueued: items.length, duplicates: 0 }
+  },
   listUnsubscribeHeaders: () => ({}),
 }))
 vi.mock('@/lib/studio/campaigns', () => ({
