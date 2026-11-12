@@ -7,7 +7,7 @@
 // stops carrying the ids on to /join, or when finishing the induction stops copying the lead's funnel
 // record onto the member.
 // Run: node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/start-funnels-smart.mjs
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 const { parseFunnelContext, funnelLocalNote } = await import('../../lib/onboarding/funnel-context.ts')
 
@@ -17,12 +17,14 @@ if (!note || !note.includes('Irvine')) bad.push(`the local note does not name th
 if (!note || !note.includes('Daniel')) bad.push('a founder_email invite lost its founder line')
 if (funnelLocalNote(parseFunnelContext({})) !== null) bad.push('a plain visit grew a local note')
 
-const page = readFileSync('app/(marketing)/start/[flow]/page.tsx', 'utf8')
-if (!/<SmartPersonaChooser\b/.test(page)) bad.push('/start/<flow> no longer mounts the link-reading chooser')
-
-const chooser = readFileSync('components/frequency/site/pages/funnel/persona-chooser.tsx', 'utf8')
-if (!/captureLead\(\{[^}]*funnel: funnel\?\.params/.test(chooser)) bad.push('the chooser no longer sends the link params to captureLead')
-if (!/funnel\?\.query/.test(chooser)) bad.push('the chooser no longer carries the ids on to /join')
+// LAUNCH REWORK (Phase 3): /start/[flow] is retired. The three old addresses redirect, so printed QR codes work,
+// and /start/host is the one door that reads an invite link.
+const config = readFileSync('next.config.ts', 'utf8')
+for (const [from, to] of [['/start/welcome', '/join'], ['/start/event', '/join'], ['/start/partner', '/start/host']])
+  if (!new RegExp(`source: '${from}', destination: '${to}', permanent: true`).test(config)) bad.push(`${from} no longer redirects to ${to}`)
+if (existsSync('app/(marketing)/start/[flow]')) bad.push('the retired /start/[flow] route is back')
+const host = readFileSync('app/(marketing)/start/host/page.tsx', 'utf8')
+if (!/parseFunnelContext|funnel-context/.test(host)) bad.push('/start/host no longer reads the invite link')
 
 const induction = readFileSync('app/join/(induction)/actions.ts', 'utf8')
 if (!/await stampFunnelFromLead\(/.test(induction)) bad.push('finishing the induction no longer stamps the funnel record on the member')
@@ -31,4 +33,4 @@ if (bad.length) {
   console.error(bad.join('\n'))
   process.exit(1)
 }
-console.log('start-funnels-smart: every /start funnel reads the invite, and its attribution reaches the member')
+console.log('start-funnels-smart: /start/host reads the invite, the old /start flows redirect, and attribution reaches the member')
