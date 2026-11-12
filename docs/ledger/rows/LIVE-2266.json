@@ -1,6 +1,6 @@
 {
   "id": "LIVE-2266",
-  "title": "Hold the Store, Housing, Classifieds, Leaderboard and Vault out of the launch nav and open the Marketplace on Spaces' products",
+  "title": "Hold the Store, Housing, Classifieds and Vault out of the launch nav and open the Marketplace on Spaces' products",
   "lane": "live",
   "priority": "P1",
   "size": "S",
@@ -9,7 +9,7 @@
     "file": "lib/nav/registry.ts",
     "ref": "Launch feature cull (Daniel, 2026-11-11): hide the Store, keep the marketplace so Spaces show their products; the game layer is streak and zaps only at launch."
   },
-  "detail": "The member footer linked Classifieds, Housing, the Frequency Store, the Leaderboard and the Vault, and the rail showed Housing, the Store and the Vault, all empty or off the find, show up, come back loop at launch. They leave the footer and the rail; the routes stay built. /marketplace now opens on Market (Spaces' products) instead of Classifieds. Closes once scripts/probes/launch-core-nav.mjs passes on main.",
+  "detail": "The member footer linked Classifieds, Housing, the Frequency Store and the Vault, and the rail showed Housing, the Store and the Vault, all empty or off the find, show up, come back loop at launch. They leave the footer and the rail; the routes stay built. /marketplace now opens on Market (Spaces' products) instead of Classifieds. Closes once scripts/probes/launch-core-nav.mjs passes on main.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/launch-core-nav.mjs"

@@ -349,6 +349,7 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
       { id: 'quest', label: 'Dashboard', href: '/crew', navKey: 'quest' },
       { id: 'journeys', label: 'Journeys', href: '/journeys', navKey: 'journeys' },
       { id: 'practices', label: 'Practices', href: '/practices', navKey: 'practices' },
+      { id: 'leaderboard', label: 'Leaderboard', href: '/crew/leaderboard', minAccess: 'member' },
     ],
   },
   {
