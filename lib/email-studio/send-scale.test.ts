@@ -99,9 +99,6 @@ function from(table: string) {
         }
         if (table !== 'campaigns') throw new Error(`unexpected table ${table}`)
         if (op === 'update') {
-          if (failUpdateWhen && failUpdateWhen(patch!)) {
-            return Promise.resolve({ data: null, error: { message: 'simulated write failure' } }).then(resolve)
-          }
           const hit = matches()
           if (hit) {
             Object.assign(row, patch)

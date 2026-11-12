@@ -668,7 +668,7 @@ async function stillSending(campaignId: string): Promise<boolean> {
 }
 
 /** Options a caller with a clock passes to sendCampaignNow. */
-export interface SendCampaignOptions {
+interface SendCampaignOptions {
   /** True once the caller's time budget is spent. The fan-out checks it between chunks and, when it
    *  fires, hands the unsent rest to the next cron run instead of running into the platform limit. */
   exhausted?: () => boolean

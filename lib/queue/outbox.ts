@@ -337,7 +337,7 @@ export async function enqueue(
 }
 
 /** One job in an `enqueueMany` batch. */
-export interface EnqueueManyItem {
+interface EnqueueManyItem {
   payload: Record<string, unknown>
   runAfter?: Date
   dedupeKey?: string
