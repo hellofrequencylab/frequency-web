@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2267",
+  "title": "Remove the retired \"Host free with Crew\" claim from /pricing, llms-full and the home template",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/pricing/plan-story.ts",
+    "ref": "Launch feature-availability audit item 26 (2026-11-12): Crew is a separate personal membership; hosting a Space is free."
+  },
+  "detail": "PLAN_STORY already says hosting a Space is free and Crew is separate. Three surfaces still said Host free with Crew: the /pricing meta description, llms-full.txt, the home template hero. They now read Hosting a Space is free. The published home page is a database row set by migration 20270346023000, so the live hero changes only when Daniel runs the SQL given in the PR. The home-copy-canon test fixture still holds the old phrase and needs Daniel's own phrase to edit. The /what-is-frequency template still carries the phrase: changing its words moves a visual-baseline fingerprint (test/e2e/template-fingerprints.test.ts), which needs the e2e-manual update_baselines recapture in the same commit.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/launch-no-host-free-with-crew.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-12"
+}
