@@ -42,7 +42,7 @@ export default async function OfferPage({ searchParams }: { searchParams: Promis
     <FocusTemplate
       eyebrow="Beta offer"
       title={`${space.name} is ready. Keep it going.`}
-      description={`Your Space is free and stays free. Pay before ${endsLabel} Pacific and you lock in Beta pricing for as long as you keep your plan, plus the Founder badge while the Beta runs through ${BETA_ENDS_LABEL}. After that this offer is gone and plans start at the regular price. The countdown stays at the top of every page.`}
+      description={`This offer window closes ${endsLabel} Pacific. The beta runs through ${BETA_ENDS_LABEL}, 2027. Review the current plan options, prices and fees below. Founding Member recognition is free; Founding Year is a separate paid first-year offer. Check /pricing for current Founding Year availability, eligibility and terms.`}
       back={{ href: `/spaces/${space.slug}`, label: 'Back to your Space' }}
       width="wide"
     >

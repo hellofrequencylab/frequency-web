@@ -87,16 +87,17 @@ describe('the Collective Founding intro end date (LIVE-995)', () => {
     expect(foundingOpenForPlan('collective', false, AT_INTRO_END)).toBe(false)
   })
 
-  it('does not close while the global beta window is open, and is not the site-wide beta end', () => {
+  it('shares the approved January 31 close with the beta', () => {
     expect(foundingOpenFor('collective_base', true, AT_INTRO_END)).toBe(true)
-    expect(COLLECTIVE_FOUNDING_ENDS_LABEL).toBe('January 1')
-    expect(new Date(COLLECTIVE_FOUNDING_ENDS_AT).getUTCMonth()).toBe(0)
+    expect(COLLECTIVE_FOUNDING_ENDS_LABEL).toBe('January 31')
+    expect(COLLECTIVE_FOUNDING_ENDS_AT).toBe('2027-02-01T08:00:00.000Z')
   })
 
-  it('the shared note names both dates: price to January 1, founder badge to January 31', () => {
-    expect(FOUNDING_RATE_NOTE).toContain(COLLECTIVE_FOUNDING_ENDS_LABEL)
-    expect(FOUNDING_RATE_NOTE).toContain(FOUNDER_BADGE_ENDS_LABEL)
-    expect(FOUNDING_RATE_NOTE).toMatch(/Grandfathered/)
+  it('the shared note names the paid Founding Year and its close without legacy promises', () => {
+    expect(FOUNDING_RATE_NOTE).toContain('paid Founding Year offer')
+    expect(FOUNDING_RATE_NOTE).toContain(`${COLLECTIVE_FOUNDING_ENDS_LABEL}, 2027`)
+    expect(FOUNDING_RATE_NOTE).not.toMatch(/grandfathered|founder badge|start before/i)
+    expect(FOUNDER_BADGE_ENDS_LABEL).toBe(COLLECTIVE_FOUNDING_ENDS_LABEL)
   })
 
   it('the founder badge date is the site-wide beta end', async () => {
@@ -108,8 +109,9 @@ describe('the Collective Founding intro end date (LIVE-995)', () => {
     const { readFileSync } = await import('node:fs')
     for (const f of ['content/help/spaces/collective.md', 'content/help/spaces/plans-and-pricing.md']) {
       const text = readFileSync(f, 'utf8')
-      expect(text).toContain(COLLECTIVE_FOUNDING_ENDS_LABEL)
-      expect(text).toContain(FOUNDER_BADGE_ENDS_LABEL)
+      expect(text).toContain(`${COLLECTIVE_FOUNDING_ENDS_LABEL}, 2027`)
+      expect(text).toContain('Founding Year')
+      expect(text).not.toMatch(/grandfathered|founder badge|January 1|December 31/i)
     }
   })
 })

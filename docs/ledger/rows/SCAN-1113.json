@@ -1,0 +1,1 @@
+{"id": "SCAN-1113", "patch": {"verify": {"kind": "cmd", "cmd": "node scripts/probes/meta-scan-2026-10-26.mjs opening-date"}}, "append": {"detail": "\n\n2026-11-12 LAUNCH-P3 (Daniel: re-aim approved): opening-date case now checks Home reads BETA_ENDS_DAY_LABEL."}}

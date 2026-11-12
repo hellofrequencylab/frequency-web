@@ -28,49 +28,45 @@
 /** The one narrative spine every pricing/marketing surface can reuse verbatim: what is free, WHY a
  *  plan, and how the network fee works, stated so a skeptic believes it. No em dashes.
  *
- *  🔴 THE FIVE-TIER LADDER (ADR-1709, LIVE-759). Members join, Crew hosts, a Space runs, Business
- *  sells, Collective connects. Selling is what Business is for: a free Space keeps every business tool
- *  with limits sized for launch, and it takes tips, but paid tickets, paid memberships, donations, shop
- *  checkout and booking deposits open at Business. That reverses ADR-914's "never gate the
- *  transaction" and ADR-1415's free-Space memberships, which is why `paid` below no longer says a free
- *  Space sells. The reason to take a plan still lives here, in one place (LIVE-253, ADR-1350), and it
- *  is still never "a lower rate": the fee is a fact about introductions, stated in `rate`.
+ *  THE PLAN LADDER (ADR-1709, LIVE-759). Members join, Crew hosts, a Space runs, Business adds tools,
+ *  Collective connects, Network unites. Current selling options and fees depend on the plan and
+ *  transaction. Card processing applies to paid transactions. The current details belong on /pricing.
  *
  *  Plan NAMES may appear here (they are the canon in docs/NAMING.md); prices and percentages never do.
  *  A surface that needs a figure reads it from the catalog or the rate vector beside this sentence. */
 export const PLAN_STORY = {
   /** The whole spine in one breath. */
   spine:
-    'Frequency is where your local community happens. People join free. Host free with Crew. You pay when you start charging, and never for access to people.',
+    'Frequency is where your local community happens. People join free. Hosting a Space is free. Crew is a separate personal membership. Selling fees depend on your plan and buyer source; see /pricing for current details.',
   /** The three lines on their own (CORE-MODEL §1), for a surface that already has its own first
    *  sentence: the site description, the llms.txt header. PROG-R8 (ADR-1499) added this so the
    *  <meta> description and the crawler corpus READ the lines rather than retype them; the spine
    *  above keeps them too, because the home document's hero is the spine verbatim. */
-  lines: 'People join free. Host free with Crew. You pay when you start charging.',
+  lines: 'People join free. Hosting a Space is free. Crew is a separate personal membership.',
   /** The ladder in one line: six tiers, one verb each (ADR-1709; Network added by the 2026-10-16 split). */
   ladder:
-    'Six tiers, one verb each. Members join. Crew hosts. A Space runs. Business sells. Collective connects. Network unites.',
-  /** WHY a plan, in the model's own terms: free hosting is the point, and a plan is what you take when
-   *  you start charging. Every surface interpolates this instead of arguing it again. */
+    'Six tiers, one verb each. Members join. Crew hosts. A Space runs. Business adds tools. Collective connects. Network unites.',
+  /** WHY a plan, in the model's own terms: hosting is free, and paid plans add tools and selling
+   *  options. Every surface interpolates this instead of arguing it again. */
   paid:
-    'Hosting is free, and that is the point, not a teaser. A Space comes with Crew, which you fund at whatever amount you choose, and after that a free Space runs the whole thing: your page, Circles, Events, contacts, email, bookings and Journeys, with limits sized for a launch. Business is what you take when you start charging. Collective is for separate groups that partner, and Network is for one organization with chapters.',
-  /** The selling line: where taking money starts, and the one kind of money every tier receives. */
+    'Hosting a Space is free. Crew is a separate personal membership for members who want to contribute and host more. The pricing page shows which tools, limits, selling options and fees apply to each Space plan.',
+  /** The selling line: plan and transaction details determine the current options and fees. */
   selling:
-    'Selling starts at Business. Paid tickets, paid memberships, donations, shop checkout and booking deposits open there. Tips stay open on every tier, with no platform fee, only card processing.',
-  /** The network fee, stated as the consequence it is: an introduction fee, never the reason to take
-   *  a plan, and never a buy-down. */
+    'Selling options and fees depend on your Space plan and the transaction. See /pricing for current details.',
+  /** The fee line, kept generic until the live catalog and plan gates expose current options. */
   rate:
-    'The network fee applies only to a customer the network introduced, once, at their first purchase. After that they are your people. Your own audience and your tips are free of it on every plan (card processing still applies), and Non Profit pays none at all.',
-  /** The meter framing: a full meter stops new writes and takes nothing away. */
+    'Selling options and fees depend on your Space plan and the transaction. Tips have no platform fee on any plan, though card processing still applies. See /pricing for current details.',
+  /** The meter framing: plan tools and limits vary, and a full meter stops new writes without taking
+   *  anything away. */
   meters:
-    'Every business tool is on every Space plan. The free limits are sized for a launch, and a full meter only stops new writes. It never hides, deletes, or locks what is already there.',
+    'Space tools and limits depend on the plan. A full meter only stops new writes. It never hides, deletes, or locks what is already there.',
   /** The Space and Crew upsell in one line, for any surface that opens a Space: the page, the doors, the
    *  emails. The requirement is ADR-810's creation gate, which bites when the beta ends. */
   crewSpace:
-    'A Space comes with Crew, which you fund at whatever amount you choose. Until the beta ends, anyone can open one free.',
+    'A Space is separate from Crew. Hosting a Space is free. Crew is a personal membership, with its own member host benefits. See /pricing for current plan details and fees.',
   /** Crew in one breath: support plus a host kit, in the canon's words (ADR-1084). */
   crew:
-    'Crew is how a member backs the community and hosts more, and a Space comes with it. You contribute what you want, and every amount buys the same Crew: more Circles, Events and Journeys, and a monthly Boost for a Circle or Space you love.',
+    'Crew is how a member backs the community and hosts more. It is separate from a Space plan. Members contribute what they want for Crew and receive the same personal membership benefits.',
   /** Collective in one breath: separate groups that partner (the 2026-10-16 split; Network is the
    *  one-owner-with-chapters plan). */
   collective:
@@ -78,18 +74,14 @@ export const PLAN_STORY = {
   /** Network in one breath: one organization, many chapters. */
   network:
     'Network is for one organization with chapters: one membership that works in every chapter, central admins who see the whole network, chapter leaders who run their own, one network calendar and home, and a roll-up report.',
-  /** The honest price framing. It used to carry the Opening Beta line ("beta rates hold through the
-   *  Summer of Frequency"), which stopped being true when the owner closed the window on 2026-08-17
-   *  (ADR-1060), and then said "every plan is one price", which stopped being true when Collective got a
-   *  standing Founding intro (ADR-1709 §7, owner 2026-10-19). What is true: a price you take is yours for
-   *  as long as you keep the plan, and the year is two months free. */
+  /** Keep the free Founding Member recognition distinct from the paid Founding Year offer. Current
+   *  availability and terms belong on /pricing so this shared copy does not promise either. */
   founding:
-    'The price you start on is yours for as long as you keep the plan, and paying for the year is two months free.',
+    'Founding Member is free early-member recognition. Founding Year is a separate paid first-year offer with its own eligibility and terms. Check /pricing for current availability and terms. The beta runs through January 31, 2027.',
   /** CARD PROCESSING (LIVE-913, docs/VALUE-LADDER.md §2). Stripe's processing fee is always passed
-   *  through, so no surface says "0%" or "no fee" without these words beside it, and none says "you keep
-   *  100%" without saying of what. Two fragments, not sentences, because the caveat belongs INSIDE the
-   *  claim it qualifies: `plusProcessing` follows a rate ("0% on your own people, plus card
-   *  processing"), `afterProcessing` follows a kept share ("you keep 100% of it, after card processing").
+   *  through. No percentage or "no fee" claim belongs in shared prose without the card-processing
+   *  qualification. Two fragments, not sentences, because the caveat belongs inside the claim it
+   *  qualifies: `plusProcessing` follows a rate and `afterProcessing` follows a kept share.
    *  `node scripts/probes/launch-0-4-fees.mjs` fails any claim in scope that drops them. */
   plusProcessing: 'plus card processing',
   afterProcessing: 'after card processing',

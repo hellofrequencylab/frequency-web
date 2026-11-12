@@ -4,26 +4,24 @@ description: What each Space plan is for, what it turns on, and how to pick the 
 category: spaces
 order: 2
 published: 2026-07-27
-updated: 2026-10-19
+updated: 2026-11-11
 audience: member
 featureKeys: [billing]
 status: published
 ---
 
-People join free. Host free with Crew. You pay when you start charging.
+People join free. Hosting a Space is free. Crew is a separate personal membership for members who want to contribute and host more.
 
-A Space comes with Crew, which you fund at whatever amount you choose. Until the beta ends, anyone can open one free. After that, every Space stays a real Space: your page, your events, your posts, your members.
-Hosting is free, and that is the point, not a teaser. A plan is what you take when you start charging. This page covers what each plan is for
-and what it turns on.
+The beta runs through January 31, 2027. Selling fees and available tools depend on your Space plan and the customer source. This page explains the plan ladder; the [pricing page](/pricing) reads prices and rates from the live catalog and shows current terms.
 
 The figures live in one place. The [pricing page](/pricing) reads every price, every yearly figure,
 and every rate straight from the plan catalog, so it is always the number you will be charged. This
 article deliberately does not repeat them: a number copied here would go stale the day the catalog
 moved, and the pricing page cannot.
 
-## Six tiers, one verb each
+## The tier ladder
 
-Members join. Crew hosts. A Space runs. Business sells. Collective connects. Network unites.
+Members join. Crew hosts. A Space runs. Business adds tools. Collective connects. Network unites.
 
 Two of those are personal and four are for Spaces.
 
@@ -31,28 +29,21 @@ Two of those are personal and four are for Spaces.
 | --- | --- |
 | **Member** | Everyone. Free, for joining Circles, going to Events, and finding your people |
 | **Crew** | Members who want to back the community and host more. Contribute what you want |
-| **Space** (the free plan) | Running a community, a studio, or a business page, with every hosting tool |
-| **Business** | The day you start charging. Selling opens here |
+| **Space** (the free plan) | Running a community, studio or business page |
+| **Business** | A paid plan for Spaces that need its added tools and selling options |
 | **Collective** | Separate groups that partner: a hub linking partner Spaces, a shared calendar, cross-listing, Vera AI, and a lower network fee. Each partner keeps its own Space |
 | **Network** | One organization with chapters: one membership in every chapter, central admins, chapter leaders, a network calendar and a roll-up report |
 
 Two more plans sit beside the ladder:
 
 - **Non Profit** is for verified nonprofits. It does everything Business does, with no network fee.
-  There is a Non Profit Collective too.
-- **Independent** is white label, run on your own terms, off the shared network. It is arranged
-  directly rather than bought from this page, so if that is what you need, [ask us](/help).
+- White-label and client-site arrangements are handled directly. If you need one, [ask us](/help).
 
-The price you start on is yours for as long as you keep the plan. Collective has a Founding price
-under its list price while the intro is open (the offer ends January 1), and a Collective that starts on it keeps it, grandfathered, and with the
-founder badge if it starts before January 31. Paying yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
+A Founding Year is a paid first-year offer for eligible purchases during the beta, and closes January 31, 2027. Its current availability, price and terms are shown on the [pricing page](/pricing). Founding Member recognition is free and separate from a Founding Year purchase. Annual billing has separate terms; check the [pricing page](/pricing) for current details.
 
 ## What a free Space gives you
 
-A free Space is a real plan, not a countdown, and it does not expire. It has every hosting tool:
-your page, Circles, Events, Practices, Journeys, Space Contacts, email campaigns, a funnel, one
-automation, and a stock QR code you can download. Each one comes with room to start, and the pricing
-page shows exactly how much.
+A free Space is a real plan, not a countdown. The pricing page shows its current tools, limits and selling fees. Open a Space's page to share its events and invite people to gather.
 
 Open your Space's QR codes settings to download its stock code as PNG or SVG. It opens your public
 Space page and stays fixed. It does not use your editable QR code allowance.
@@ -64,19 +55,19 @@ moved, locked, or deleted, and you can always read and export it.
 
 ## What Business turns on
 
-**Selling starts at Business.** Paid tickets, paid memberships, donations, shop checkout, booking
-deposits, and priced Journeys all open there. Business also raises every allowance, includes two
-operator seats, and gives you three editable QR codes.
+Selling options depend on your Space plan and the transaction. Business and higher plans have no
+network fee on sales to their own audience; card processing still applies. Check the [pricing page](/pricing)
+for current availability, tools and fees. Business also raises allowances and includes more operator
+seats and editable QR codes.
 
-If you try to charge for something on a free Space, Frequency shows you what Business adds and lets
-you start its trial right there. Keeping it free is an equal choice, and nothing you built is lost
-either way.
+If an item requires a paid plan, Frequency shows the available plans and trial. You can keep using
+the free plan, and nothing you built is lost either way.
 
 ## What Collective turns on
 
-**Collective is Business for separate groups that partner.** It includes everything Business does,
+**Collective is for separate groups that partner.** It includes the Business tools,
 plus shared listings and a shared calendar with your partners, Vera AI included, five editable QR codes,
-higher allowances, and a lower network fee. See [Collective](/help/spaces/collective).
+  higher allowances, and a lower network fee. See [Collective](/help/spaces/collective).
 
 ## What Network turns on
 
@@ -89,40 +80,30 @@ start it yourself with the 14 day trial. See [Network](/help/spaces/network).
 
 **Tips are free.** Frequency takes nothing out of a tip, on any tier.
 
-**A sale to your own people is free.** If the buyer already follows your Space, is an active member of
-it, sits in your Space Contacts or your own contact list, or has bought from you before, Frequency's
-share is **0%**. We charge once for the introduction. After that they are your people, free.
+Selling fees and options depend on your plan and the transaction. Business and higher plans have no network fee on sales to their own audience. Card processing still applies.
 
-That leaves customers the network introduced: someone who found you through discovery, a referral,
-or the Market. Frequency takes a network fee once, at that customer's first purchase. Business pays
-the standard fee, Collective pays a lower one, and Non Profit pays none. A Space that is off the
-network has no introduced customers, so it pays nothing. The exact fees are on the
-[pricing page](/pricing).
+For customers Frequency introduces, the network fee depends on the Space plan and applies once at that customer's first purchase. See the [pricing page](/pricing) for current rates.
 
 Your own Space shows the fee it is on, in **Manage, then Get paid**, beside the account your money
 lands in. See [Get paid](/help/spaces/get-paid).
 
 ## Your personal account
 
-Personal accounts host. They do not sell. A Member hosts a Circle and a couple of free Events.
-**Crew** carries a host kit with room for more Circles, Events, guests, and Journeys, and it is
-contribute what you want. See [Crew](/help/membership/crew). To charge for something, open a Space
-and take Business.
+Personal accounts host. They do not sell. A Member hosts a Circle and free Events. **Crew** carries
+a host kit with room for more Circles, Events, guests, and Journeys, and it is contribute what you want.
+See [Crew](/help/membership/crew). Selling runs through a Space, and options and fees depend on its
+plan. See the [pricing page](/pricing) for current details.
 
 ## Picking a plan
 
-- Stay on the free Space until you start charging for something. There is no rush, and no clock.
-- Take **Business** when you want to sell, when other people work in your Space, or when you run a
-  Program others can join.
+- Stay on the free Space while its tools and limits fit your needs.
+- Take **Business** when its added tools and selling options fit your Space, when other people work
+  with you, or when you run a Program others can join.
 - Take **Collective** when you run several groups that belong together.
 - If you are a verified nonprofit, take **Non Profit** and pay no network fee.
 
 You can change plans whenever you like. See [Billing](/help/spaces/billing) for how that works.
 
-## Open access until 31 December
+## Open beta
 
-Frequency is in open beta, so the free allowances are switched **off until 31 December 2026**. Until
-then a Space can use every hosting tool with no limits, whatever plan it is on. Selling still opens at
-Business during the beta, and QR codes keep their published limit throughout.
-
-From 1 January the allowances apply as written, and we will tell you what changes before it changes.
+The beta runs through January 31, 2027. That date applies to everyone. The pricing page lists current tools, limits and selling fees.

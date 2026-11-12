@@ -17,7 +17,7 @@ interface QuickAnswer {
   a: string
 }
 
-/** The member themes a picker offers on this deploy, e.g. ["Default", "Midnight"]. Passed in, so this
+/** The member themes a picker offers on this deploy, e.g. ["Default", "Bold"]. Passed in, so this
  *  module stays free of the theme registry and the caller decides what the build offers. */
 export function quickAnswers(opts: {
   /** The whole priced ladder in one phrase, e.g. "Member free, Crew from $5, ...". Left out, the cost
@@ -30,7 +30,7 @@ export function quickAnswers(opts: {
 }): QuickAnswer[] {
   const { ladder, abs, memberThemes = [] } = opts
   const themes = memberThemes.length > 1
-    ? ` The app's look is the ${memberThemes[0]} theme; members can switch to ${memberThemes.slice(1).join(' or ')} in Settings, Appearance.`
+    ? ' Members can change themes in Settings, Appearance.'
     : ''
   return [
     {
@@ -47,15 +47,15 @@ export function quickAnswers(opts: {
     },
     {
       q: `Does ${SITE_NAME} take a cut of tips or my own bookings?`,
-      a: `No. Tips carry no platform fee on any plan, plus card processing, and you keep 100% of the bookings you bring in yourself, ${PLAN_STORY.afterProcessing}. ${PLAN_STORY.rate}`,
+      a: `Tips have no platform fee on any plan, though card processing still applies. Selling options and fees depend on your Space plan and the transaction. See ${abs('/pricing')} for current details.`,
     },
     {
       q: `How does ${SITE_NAME} work?`,
-      a: `Open What's happening (${abs('/discover/events')}), the calendar of public Events near you, or browse Circles (${abs('/discover/circles')}). Save your spot, show up, and check in at the door. Hosts start a Circle or open a Space for free, post Events, and take RSVPs and tips; paid tickets and memberships open at Business.${themes}`,
+      a: `Open What's happening (${abs('/discover/events')}), the calendar of public Events near you, or browse Circles (${abs('/discover/circles')}). Save your spot, show up, and check in at the door. Hosts start a Circle or open a Space for free, post Events, and take RSVPs and tips. Space plans show current selling options, tools and fees.${themes}`,
     },
     {
       q: `Where is ${SITE_NAME} available?`,
-      a: `${SITE_NAME} opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. Open your Space free before then. It is local-first, and anyone can join from anywhere: Circles and Events appear wherever hosts start them, and a city gets its own page (${abs('/discover/cities')}) once enough is happening there. Each Event is shown in its own local time; the community's home time zone is Pacific time (${HOME_TZ}).`,
+      a: `${SITE_NAME} opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. You can join and host during the beta, which runs through January 31, 2027. It is local-first, and anyone can join from anywhere: Circles and Events appear wherever hosts start them, and a city gets its own page (${abs('/discover/cities')}) once enough is happening there. Each Event is shown in its own local time; the community's home time zone is Pacific time (${HOME_TZ}).`,
     },
   ]
 }

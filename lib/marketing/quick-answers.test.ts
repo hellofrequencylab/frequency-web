@@ -5,7 +5,7 @@ import { FOUNDING_PLACE } from '@/lib/site'
 const abs = (p: string) => `https://example.test${p}`
 
 describe('quickAnswers', () => {
-  const answers = quickAnswers({ ladder: 'Member free, Business $49/mo', abs, memberThemes: ['Default', 'Midnight'] })
+  const answers = quickAnswers({ ladder: 'Member free, see /pricing for current rates', abs, memberThemes: ['Default', 'Bold'] })
   const text = quickAnswerLines(answers).join('\n')
 
   it('answers what, who, cost, tips, how and where', () => {
@@ -20,16 +20,17 @@ describe('quickAnswers', () => {
   })
 
   it('uses the owner rulings word for word', () => {
-    expect(text).toContain('no platform fee on any plan, plus card processing')
+    expect(text).toContain('Tips have no platform fee on any plan, though card processing still applies.')
     expect(text).toContain("What's happening (https://example.test/discover/events)")
-    expect(text).toContain('Default theme; members can switch to Midnight')
+    expect(text).toContain('Members can change themes in Settings, Appearance.')
+    expect(text).not.toMatch(/Midnight|100% of the bookings|paid tickets and memberships open at Business|Free Spaces use the fee-only selling rate|—/i)
     expect(text).not.toMatch(/What's on\b/)
   })
 
   it('states place and zone from the canon, and the ladder it was handed', () => {
     expect(text).toContain(FOUNDING_PLACE)
     expect(text).toContain('America/Los_Angeles')
-    expect(text).toContain('Member free, Business $49/mo')
+    expect(text).toContain('Member free, see /pricing for current rates')
   })
 
   it('carries no em dash and no weekly promise', () => {
