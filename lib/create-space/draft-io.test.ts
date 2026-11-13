@@ -34,8 +34,10 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: () =>
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ rpc: async () => ({ data: state.rpc, error: null }) }) }))
 vi.mock('@/lib/attribution/server', () => ({ resolveAcquisition: async () => ({}) }))
 vi.mock('@/lib/spaces/store', () => ({ isSpaceSlugTaken: async (slug: string) => slug === 'taken' }))
+vi.mock('@/lib/analytics/leads', () => ({ recordVerifiedLeadCapture: vi.fn() }))
 vi.mock('@/lib/signing-secret', () => ({ signingSecret: () => 'test-secret' }))
 
+import { recordVerifiedLeadCapture } from '@/lib/analytics/leads'
 import { emptyDraft } from '@/lib/create-space/builder'
 import type { BuilderDraft } from '@/lib/create-space/builder'
 import { draftLinkToken, markDraftConverted, readDraftByToken, saveDraft, unsubscribeDrafts } from '@/lib/create-space/draft-io'
@@ -50,7 +52,7 @@ const draft = (over: Partial<BuilderDraft> = {}): BuilderDraft => ({
   ...over,
 })
 
-beforeEach(() => { state.rows.clear(); state.updates = []; state.rpc = { id: 'lead-1', claim_token: 't' } })
+beforeEach(() => { vi.mocked(recordVerifiedLeadCapture).mockClear(); state.rows.clear(); state.updates = []; state.rpc = { id: 'lead-1', claim_token: 't' } })
 
 describe('saveDraft (ADR-1933)', () => {
   it('needs an address, and otherwise keeps nothing', async () => {
@@ -70,6 +72,7 @@ describe('saveDraft (ADR-1933)', () => {
     expect(row.tz).toBe('Europe/Lisbon')
     expect(row.step_reached).toBe(3)
     expect(row.signup_lead_id).toBe('lead-1')
+    expect(recordVerifiedLeadCapture).toHaveBeenCalledWith('lead-1', 'create_space')
     expect((row.draft as { leadToken: unknown }).leadToken).toBeNull()
   })
 
@@ -101,6 +104,7 @@ describe('saveDraft (ADR-1933)', () => {
     const r = await saveDraft({ draft: draft(), token: null, tz: null, ownPhoto: false })
     expect(r).not.toBeNull()
     expect([...state.rows.values()][0].signup_lead_id).toBeUndefined()
+    expect(recordVerifiedLeadCapture).not.toHaveBeenCalled()
   })
 })
 
