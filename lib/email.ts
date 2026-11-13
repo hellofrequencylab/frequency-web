@@ -19,7 +19,7 @@ import { readEmailDeliveryContext, type EmailDeliveryContextV1 } from '@/lib/com
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { envString } from '@/lib/env/string'
 import { EMAIL_TAGLINE, PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
-import { enqueue, type JobLane } from '@/lib/queue/outbox'
+import { enqueue, enqueueMany, type JobLane } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 import type { ThisWeekEvent } from '@/lib/this-week'
 import { palette } from '@/lib/theme/palette'
@@ -207,6 +207,26 @@ export async function enqueueEmail(
     runAfter: opts?.runAfter,
     dedupeKey: opts?.dedupeKey,
   })
+}
+
+/**
+ * Enqueue many emails in one insert (lib/queue/outbox enqueueMany). Same payload handling as
+ * `enqueueEmail`; each item carries its own `runAfter` (the bulk drip) and `dedupeKey` (so a resumed
+ * fan-out cannot queue the same recipient twice).
+ */
+export async function enqueueEmailBatch(
+  items: { payload: EmailPayload; runAfter?: Date; dedupeKey?: string }[],
+  opts?: { lane?: JobLane },
+): Promise<{ enqueued: number; duplicates: number }> {
+  return enqueueMany(
+    'email',
+    items.map(({ payload, runAfter, dedupeKey }) => {
+      const deliveryContext = readEmailDeliveryContext(payload.deliveryContext)
+      const queuedPayload = { ...payload, ...(deliveryContext ? { deliveryContext } : {}) }
+      return { payload: queuedPayload as unknown as Record<string, unknown>, runAfter, dedupeKey }
+    }),
+    { lane: opts?.lane },
+  )
 }
 
 // ── Welcome email ─────────────────────────────────────────────────────────────

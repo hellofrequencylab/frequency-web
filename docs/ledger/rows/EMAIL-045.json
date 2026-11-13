@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-045",
+  "title": "Make campaign sends scale to 10,000+ without anyone pressing anything",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "lib/email-studio/send.ts",
+    "ref": "2026-11-12 launch send"
+  },
+  "detail": "2026-11-12: the 585 person launch send (VIP Beta launch preview) stopped at 300 and stayed 'sending'. Four causes, all fixed here. (1) sendCampaignNow queued one recipient at a time (several round trips each, ~1 a second) inside one function run, so anything past ~300 people hit the 300 s limit: it now works in chunks of 100 (build with 8 in flight, ONE outbox insert via enqueueMany, ONE ledger insert), with a clock between chunks; out of time it puts the row back to 'scheduled', due now, and the scheduled-send cron finishes it (lib/email-studio/fan-out.ts). (2) The cron skipped a stale global 'sending' row (global_sending_stale); it now resumes it, and the re-claim re-asserts the lease is still expired so two passes cannot both take it. (3) resolveSegment read the built-in audiences unranged, and PostgREST caps a response at 1,000 rows, so a 10,000 person audience silently resolved to 1,000: readAllPages pages them, ordered by id; .in() filters are chunked to 100 ids. (4) Delivery was capped at 25 emails per 2 minute drain and bulk jobs became due at 10 a minute (a 10,000 send would take ~17 hours): the drain now claims batches until a ~100 s clock is spent (processQueueFor) and BULK_DUE_RATE_PER_MIN is 90 (10,000 over ~110 minutes, inside the provider's default 2 requests a second). No double sends: the per-recipient send ledger is kept, and every queued email now also carries an outbox dedupe key (campaign:<id>:<contact>), so a chunk queued by an interrupted run is refused by the database on the next run. A pause between chunks wins over the handoff. Probe: scripts/probes/email-send-scales.mjs. Tests: lib/email-studio/send-scale.test.ts (450 person audience: chunking, handoff and resume exactly once, killed-run resume, live lease untouched, dedupe backstop), fan-out.test.ts, lib/queue/outbox-batch.test.ts, lib/studio/campaigns-paging.test.ts. Three existing tests pinned the slow behavior and were changed with it: outbox.test.ts (bulk drip rate), campaigns-send-due.test.ts (stale global row was 'not fed to the sender', now resumed), and send-lifecycle.test.ts (adapter for the batch seam, chunk size 1 so its per-recipient assertions keep their meaning). Not changed: trait segments (loadMemberSnapshots) were not audited for the 1,000 row cap; sendQuietCampaign keeps its per-run limit. The sending account's Resend plan and rate limit still bound real delivery speed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-send-scales.mjs",
+    "note": "Fails on main: the send queues one recipient at a time, the cron skips a stale global sending row, audiences are read unpaged and the drain claims 25 per run. Passes once the fan-out is chunked, time-budgeted, resumable, paged and drained for 10,000+."
+  },
+  "closed": "2026-11-12",
+  "wave": "W7"
+}

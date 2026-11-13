@@ -58,6 +58,13 @@ function contactsBuilder() {
       }
       return api
     },
+    // The audience read is paged and ordered by id (readAllPages); the fixture is small, so one page holds it all.
+    order() {
+      return api
+    },
+    range() {
+      return api
+    },
     then(resolve: (r: { data: typeof contacts; error: null }) => void) {
       const rows = contacts.filter((c) => preds.every((p) => p(c)))
       resolve({ data: rows, error: null })

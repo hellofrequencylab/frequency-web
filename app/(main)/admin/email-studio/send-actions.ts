@@ -26,7 +26,11 @@ import {
   type AudienceResult,
 } from '@/lib/email-studio/send'
 
+import { deadlineAfter } from '@/lib/email-studio/fan-out'
+
 const STUDIO_PATH = '/admin/email-studio'
+/** How long the Send button waits on the fan-out before handing the rest to the cron. */
+const SEND_NOW_BUDGET_MS = 90_000
 
 /** Preview an audience size for a segment (read-only). Writer-gated: a marketer may preview. */
 export async function audiencePreviewAction(
@@ -62,10 +66,12 @@ export async function scheduleCampaignAction(
 }
 
 /** Send a campaign now. Approver-gated here; the spine re-checks approval inside the send. */
-export async function sendNowAction(campaignId: string): Promise<ActionResult<{ recipientCount: number }>> {
+export async function sendNowAction(campaignId: string): Promise<ActionResult<{ recipientCount: number; complete?: false }>> {
   const gate = await approverGate()
   if (!gate.ok) return fail(gate.error)
-  const result = await sendCampaignNow(campaignId)
+  // A page-sized wait, not the whole audience: past ~90 s the send stops at a chunk boundary and the
+  // scheduled-send cron carries on with the rest (nobody twice), so a 10,000 person send needs no second click.
+  const result = await sendCampaignNow(campaignId, { exhausted: deadlineAfter(SEND_NOW_BUDGET_MS) })
   // Audit trail: a Studio campaign carries no phase, so the approver role gate here is its sole
   // authorization. Record every real send (who sent which campaign, and to how many) so a standalone
   // Studio send is as traceable as a spine-armed one. Best-effort, on success only, never blocks the send.

@@ -18,6 +18,7 @@ import { FqIcon } from '@/components/frequency/icon'
 import { restoreDraft, saveDraftLead } from '@/app/(marketing)/create-a-space/actions'
 import { SaveCard, SavedCard } from '@/components/frequency/site/pages/create-space/create-space-claim'
 import type { Saved } from '@/components/frequency/site/pages/create-space/create-space-claim'
+import { LookRows } from '@/components/frequency/site/pages/create-space/create-space-look'
 import { PhotosCard } from '@/components/frequency/site/pages/create-space/create-space-photos'
 import type { UploadUrls } from '@/components/frequency/site/pages/create-space/create-space-photos'
 import { ContactCard, MOCKUP_LINES, NameCard, OFFER_EXAMPLES, OfferCard } from '@/components/frequency/site/pages/create-space/create-space-steps'
@@ -30,7 +31,7 @@ import {
 } from '@/lib/create-space/builder'
 import type { BuilderDraft, BuilderMove } from '@/lib/create-space/builder'
 import { doorArrival } from '@/lib/create-space/door'
-import { lastKitFrom } from '@/lib/create-space/last-kit'
+import { lastAccentAt, lastKitFrom, rememberAccent, rememberKit } from '@/lib/create-space/last-kit'
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import type { DoorArrival } from '@/lib/create-space/door'
 import { isHandleShape } from '@/lib/create-space/handle'
@@ -376,7 +377,6 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
     if (step === 0) {
       if (!hasName) { setErr('name'); return }
       if (!isHandleShape(handle) || status === 'taken') { setErr('slug'); return }
-      if (!draft.accentPicked) { setErr('accent'); return }
       flash(`Name and ${accent.name} accent saved`)
       markDone('name')
       advance({ ...draft.done, name: true }, 0)
@@ -410,6 +410,20 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
     markDone('photos')
     flash(`Using ${kitLabel} photos for now. Swap them any time.`)
     advance({ ...draft.done, photos: true }, 3)
+  }
+  // The look rows: a pick is remembered in the browser, so the next visit starts on it (lib/create-space/last-kit.ts).
+  const onKit = (id: MegaThemeId) => {
+    if (id === draft.kit) return
+    rememberKit(id)
+    const at = lastAccentAt(id, document.cookie) ?? 0
+    patch({ kit: id, kitChosen: true, accentAt: at })
+    signal('createspace.view', { kit: id, chosen: true })
+  }
+  const onAccent = (at: number) => {
+    const a = accents[at]
+    if (!a) return
+    rememberAccent(a.name)
+    patch({ accentAt: at, accentPicked: true })
   }
   const onResume = () => {
     const d = resume
@@ -448,8 +462,7 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
         <div className="cs-grid" data-mode={mode}>
           <div className="cs-top">
             <div className="cs-top-row">
-              <span className="cs-eyebrow"><span className="cs-dot" />{kitLabel} theme</span>
-              <Link className="cs-change" href="/themes">Change theme</Link>
+              <LookRows kits={PREVIEW_KITS} kit={draft.kit} accents={accents} accentAt={draft.accentAt} onKit={onKit} onAccent={onAccent} />
               <div className="cs-badge">
                 <span className="cs-dot" />
                 <b>Draft</b>
@@ -481,7 +494,7 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
             ) : null}
 
             {building && step === 0 ? (
-              <NameCard draft={draft} patch={patch} intro={intro} status={status} accents={accents} err={err} onNext={next} resumeName={resume?.name.trim() ?? ''} onResume={onResume} inputRef={nameRef} />
+              <NameCard draft={draft} patch={patch} intro={intro} status={status} err={err} onNext={next} resumeName={resume?.name.trim() ?? ''} onResume={onResume} inputRef={nameRef} />
             ) : null}
             {building && step === 1 ? (
               <OfferCard draft={draft} patch={patch} busyLine={busyLine} err={err} onNext={next} onExample={(t) => { patch({ offer: t }); mockUp(t) }} inputRef={offerRef} />
@@ -564,13 +577,21 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
 
 const noopSubscribe = () => () => {}
 
+/** The cookie string as it was when the page first read it. Read once so a pick made in the builder (which writes the
+ *  same cookies) never changes the arrival and remounts the island under the visitor's hands. */
+let bootCookie: string | undefined
+const firstCookie = () => (bootCookie ??= document.cookie)
+
 function FromUrl() {
   const params = useSearchParams()
   const asked = doorArrival((k) => params.get(k))
-  // No kit in the address: start on the one they last looked at (lib/create-space/last-kit.ts). Read after mount,
-  // because this page is static. An explicit ?kit= wins.
-  const last = useSyncExternalStore(noopSubscribe, () => lastKitFrom(document.cookie), () => null as MegaThemeId | null)
-  const arrival = asked.chosen || !last ? asked : { ...asked, kit: last, chosen: true }
+  // No kit in the address: start on the one they last looked at or last picked here (lib/create-space/last-kit.ts), with
+  // the accent they last picked. Read after mount, because this page is static. An explicit ?kit= wins, and so does ?accent=.
+  const cookie = useSyncExternalStore(noopSubscribe, firstCookie, () => null as string | null)
+  const last = lastKitFrom(cookie)
+  const kit = asked.chosen ? asked.kit : last ?? asked.kit
+  const accentAt = asked.accentAt ?? (cookie ? lastAccentAt(kit, cookie) ?? undefined : undefined)
+  const arrival = { ...asked, kit, chosen: asked.chosen || !!last, ...(accentAt !== undefined ? { accentAt } : {}) }
   return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.accentAt ?? ''}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} draftToken={params.get('draft')} />
 }
 

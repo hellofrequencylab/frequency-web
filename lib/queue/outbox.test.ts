@@ -103,10 +103,12 @@ describe('lanes (bulk must never starve transactional)', () => {
     expect(bulkRunAfter(0, t0).getTime()).toBe(t0.getTime())
     expect(bulkRunAfter(BULK_DUE_RATE_PER_MIN - 1, t0).getTime()).toBe(t0.getTime())
     expect(bulkRunAfter(BULK_DUE_RATE_PER_MIN, t0).getTime()).toBe(t0.getTime() + 60_000)
-    // The incident's 356-recipient campaign now spreads over ~36 minutes instead of one second,
-    // and stays under the drain's ~12.5 jobs/min capacity (25 jobs every 2 minutes).
-    expect(bulkRunAfter(355, t0).getTime() - t0.getTime()).toBe(35 * 60_000)
-    expect(BULK_DUE_RATE_PER_MIN).toBeLessThan(12.5)
+    // The incident's 356-recipient campaign spreads over ~4 minutes instead of one second ...
+    expect(bulkRunAfter(355, t0).getTime() - t0.getTime()).toBe(3 * 60_000)
+    // ... and a 10,000 recipient one over under two hours (it was a 17 hour send at 10 a minute), at a
+    // rate inside the provider's default 2 requests a second so the drain's ~100 s budget clears it.
+    expect(bulkRunAfter(9_999, t0).getTime() - t0.getTime()).toBeLessThan(2 * 60 * 60_000)
+    expect(BULK_DUE_RATE_PER_MIN).toBeLessThanOrEqual(120)
   })
 })
 

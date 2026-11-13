@@ -26,7 +26,7 @@ async function handler(req: NextRequest) {
     // log.time wraps the send pass and emits one structured line (duration_ms + ok), queryable by
     // `cron.space_campaigns`. On failure it emits the error line and re-throws (the catch returns 500).
     const budget = cronBudget(100)
-    const result = await log.time('cron.space_campaigns', () => sendDueCampaigns(budget.items))
+    const result = await log.time('cron.space_campaigns', () => sendDueCampaigns(budget.items, { exhausted: budget.exhausted }))
     const summary = budget.summary(result.due)
     log.info('cron.space_campaigns.counts', { ...result, ...summary })
     return NextResponse.json({ ok: true, ...result, budget: summary })

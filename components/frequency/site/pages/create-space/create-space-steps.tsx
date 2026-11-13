@@ -17,12 +17,11 @@ import { OFFER_MAX } from '@/lib/create-space/intents-from-offer'
 const NAME_QUESTION = "What's your business called?"
 
 /** Which field the last Next tripped over; the card shows the matching line. */
-export type StepError = 'name' | 'slug' | 'accent' | 'offer' | 'fullName' | 'email' | null
+export type StepError = 'name' | 'slug' | 'offer' | 'fullName' | 'email' | null
 
 export const ERROR_TEXT: Record<Exclude<StepError, null>, string> = {
   name: 'Give it a name. You can change it any time.',
   slug: 'Pick a handle that is free to use.',
-  accent: 'Pick an accent above to keep going.',
   offer: 'A few words is enough. What do people come to you for?',
   fullName: 'Add the name clients know you by.',
   email: 'Add an email so your draft is safe.',
@@ -46,7 +45,6 @@ interface NameCardProps {
   /** The intro state: the card is bare, inside the hero copy, and its button says Start building. */
   intro: boolean
   status: HandleStatus
-  accents: readonly { name: string; fill: string }[]
   err: StepError
   onNext: () => void
   resumeName: string
@@ -54,14 +52,12 @@ interface NameCardProps {
   inputRef: RefObject<HTMLInputElement | null>
 }
 
-export function NameCard({ draft, patch, intro, status, accents, err, onNext, resumeName, onResume, inputRef }: NameCardProps) {
+export function NameCard({ draft, patch, intro, status, err, onNext, resumeName, onResume, inputRef }: NameCardProps) {
   const [editing, setEditing] = useState(false)
   const handle = claimedHandle(draft)
   const hasName = draft.name.trim().length > 0
-  const locked = hasName && !draft.accentPicked
-  const accent = accents[draft.accentAt] ?? accents[0]
   const onEnter = (e: KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); onNext() } }
-  const showErr = err === 'name' || err === 'slug' || err === 'accent'
+  const showErr = err === 'name' || err === 'slug'
   return (
     <div data-morph="name" className={intro ? 'cs-card-name' : 'cs-card-name fq-iri-rim'}>
       <label htmlFor="cs-name" className="cs-label">{NAME_QUESTION}</label>
@@ -81,8 +77,6 @@ export function NameCard({ draft, patch, intro, status, accents, err, onNext, re
           type="button"
           className="fq-iri-btn cs-name-go"
           onClick={onNext}
-          aria-disabled={locked}
-          title={locked ? 'Pick an accent first' : undefined}
         >
           {intro ? 'Start building' : 'Next'}<Arrow />
         </button>
@@ -102,14 +96,6 @@ export function NameCard({ draft, patch, intro, status, accents, err, onNext, re
               <input value={draft.slug || handle} onChange={(e) => patch({ slug: cleanHandleInput(e.target.value) })} onKeyDown={onEnter} aria-label="Handle" placeholder="yourhandle" maxLength={40} />
             </span>
           ) : null}
-          <div className="cs-accent">
-            {draft.accentPicked ? <span className="cs-accent-k">Accent · <span>{accent?.name}</span></span> : <span className="cs-accent-need"><i className="fq-breathe" />Pick an accent to continue</span>}
-            <div role="radiogroup" aria-label="Accent" className="cs-swatches">
-              {accents.map((a, i) => (
-                <button key={a.name} type="button" role="radio" aria-checked={draft.accentPicked && i === draft.accentAt} aria-label={a.name} className="cs-swatch" style={{ background: a.fill }} onClick={() => patch({ accentAt: i, accentPicked: true })} />
-              ))}
-            </div>
-          </div>
         </div>
       ) : null}
       {showErr && err ? <p role="alert" className="cs-err">{ERROR_TEXT[err]}</p> : null}
