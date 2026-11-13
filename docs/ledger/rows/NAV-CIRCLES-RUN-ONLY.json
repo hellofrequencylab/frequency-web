@@ -1,0 +1,15 @@
+{
+  "id": "NAV-CIRCLES-RUN-ONLY",
+  "title": "Left rail 'Your Circles' lists only Circles the member runs",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-13",
+  "detail": "Owner ruling 2026-11-13: the rail shows the Circles a member hosts (host seat or circles.host_id), not ones they merely joined. Fixed in lib/nav/my-frequency.ts; lib/nav/my-frequency.seeded.test.ts proves a joined-only Circle is dropped.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "lib/nav/my-frequency.seeded.test.ts: a joined-only Circle (volunteer_role null, not host_id) is absent from the rail menu; run in CI as part of the test job.",
+    "checked": "2026-11-13"
+  }
+}

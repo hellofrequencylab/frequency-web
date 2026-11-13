@@ -86,7 +86,7 @@ function emptyFor(profileHref: string): MyFrequency {
 }
 
 type NoticeRow = { reference_type: string | null; reference_id: string | null }
-type CircleRow = { circle_id: string }
+type CircleRow = { circle_id: string; volunteer_role?: string | null }
 type CircleNameRow = { id: string; name: string | null; slug: string | null; space_id?: string | null; image_url?: string | null }
 
 /**
@@ -117,18 +117,20 @@ async function noticeCounts(profileId: string): Promise<Map<string, number>> {
   return out
 }
 
-/** The Circles this member is an ACTIVE member of, newest membership first, capped. */
+/** The Circles this member RUNS (host seat or circles.host_id), not ones they merely joined. Owner ruling 2026-11-13. */
 async function myCircles(profileId: string): Promise<CircleNameRow[]> {
   const db = await createClient()
   const { data: memberships, error } = await db
     .from('memberships')
-    .select('circle_id')
+    .select('circle_id, volunteer_role')
     .eq('profile_id', profileId)
     .eq('status', 'active')
     // Read past the cap: seeded Circles are filtered out after this, so they must not eat the 8 slots.
     .limit(CIRCLE_READ_LIMIT)
   if (error || !memberships?.length) return []
-  const ids = (memberships as CircleRow[]).map((m) => m.circle_id).filter(Boolean)
+  const hostIds = (memberships as CircleRow[]).filter((m) => m.volunteer_role === 'host').map((m) => m.circle_id).filter(Boolean)
+  const { data: owned } = await db.from('circles').select('id').eq('host_id', profileId).limit(CIRCLE_READ_LIMIT)
+  const ids = [...new Set([...hostIds, ...((owned ?? []) as { id: string }[]).map((c) => c.id)])]
   if (ids.length === 0) return []
   const { data: circles } = await db.from('circles').select('id, name, slug, space_id, image_url').in('id', ids)
   return (circles ?? []) as CircleNameRow[]

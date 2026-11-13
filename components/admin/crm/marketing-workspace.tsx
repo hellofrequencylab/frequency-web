@@ -15,7 +15,9 @@ import { MessagingConsole } from '@/components/admin/messaging/messaging-console
 import { Button, buttonClasses } from '@/components/ui/button'
 import { MarketingComposePopup } from '@/components/admin/crm/marketing-compose-popup'
 import { CampaignAnalyticsExpansion } from '@/components/admin/crm/campaign-analytics-expansion'
-import { deleteEmailDraft } from '@/app/(main)/admin/email-studio/actions'
+import { deleteEmailDraft, analyzeCampaignLearningAction, applyCampaignLearningRevisionAction } from '@/app/(main)/admin/email-studio/actions'
+import { CampaignLearningPanel } from '@/modules/email-design/client'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import type { MessagingCampaignItem, MessagingFunnelItem } from '@/lib/messaging/console'
 import type { SegmentOption } from '@/modules/email-design/client'
@@ -42,6 +44,7 @@ export function MarketingWorkspace({
   const [campaigns, setCampaigns] = useState(initialCampaigns)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [learningTarget, setLearningTarget] = useState('')
   const [, startTransition] = useTransition()
 
   // Adopt fresh server data whenever a refresh lands new props (the compose popup autosaves without
@@ -64,6 +67,7 @@ export function MarketingWorkspace({
     () => (q ? funnels.filter((f) => f.name.toLowerCase().includes(q)) : funnels),
     [funnels, q],
   )
+  const selectedLearningTarget = campaigns.find((campaign) => campaign.id === learningTarget && ['draft', 'paused', 'scheduled'].includes(campaign.status))
 
   function openNew() {
     setComposeCampaignId(undefined)
@@ -158,6 +162,28 @@ export function MarketingWorkspace({
         deletingId={deletingId}
         renderExpansion={(id) => <CampaignAnalyticsExpansion campaignId={id} />}
       />
+
+      {!composeOpen && campaigns.some((campaign) => campaign.status === 'sent') && (
+        <section className="space-y-3 rounded-card border border-border bg-surface p-4" aria-label="Learn from a past email">
+          <h2 className="text-body font-semibold text-text">Learn from a past email</h2>
+          <p className="text-body-sm text-muted">Choose an upcoming email to review against a past send. Applying a revision returns it to draft for fresh approval and scheduling.</p>
+          <label className="block space-y-1 text-body-sm text-text">
+            <span>Upcoming email</span>
+            <Select value={learningTarget} onChange={(event) => setLearningTarget(event.target.value)}>
+              <option value="">Choose an email</option>
+              {campaigns.filter((campaign) => ['draft', 'paused', 'scheduled'].includes(campaign.status)).map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name || 'Untitled email'}</option>)}
+            </Select>
+          </label>
+          {selectedLearningTarget && <CampaignLearningPanel
+            key={learningTarget}
+            targetCampaignId={learningTarget}
+            sourceCampaigns={campaigns.filter((campaign) => campaign.status === 'sent').map((campaign) => ({ id: campaign.id, subject: campaign.name }))}
+            analyzeAction={analyzeCampaignLearningAction}
+            applyRevisionAction={applyCampaignLearningRevisionAction}
+            onApplied={() => { setLearningTarget(''); router.refresh() }}
+          />}
+        </section>
+      )}
 
       <MarketingComposePopup
         open={composeOpen}

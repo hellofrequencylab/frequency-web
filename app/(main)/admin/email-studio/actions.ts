@@ -45,6 +45,43 @@ import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-st
 import { BUILTIN_SEGMENTS, TRAIT_SEGMENT_PREFIX } from '@/lib/studio/campaigns'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { log } from '@/lib/log'
+import type { CampaignLearningReviewResult, CampaignLearningApplyInput } from '@/lib/email-studio/campaign-learning'
+
+const LEARNING_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const learningStrategy = (value: unknown): value is 'personal_preview' | 'host_followup' => value === 'personal_preview' || value === 'host_followup'
+
+/** Existing Studio writer gate; evidence and proposals never authorize a send. */
+export async function analyzeCampaignLearningAction(sourceId: string, targetId: string, strategy: 'personal_preview' | 'host_followup'): Promise<CampaignLearningReviewResult> {
+  const gate = await writerGate()
+  if (!gate.ok) return { ok: false, error: gate.error }
+  if (!LEARNING_ID.test(sourceId) || !LEARNING_ID.test(targetId) || sourceId === targetId || !learningStrategy(strategy)) return { ok: false, error: 'Choose a past send, an upcoming email, and a supported approach.' }
+  try {
+    const { analyzeCampaignLearning } = await import('@/lib/email-studio/campaign-learning')
+    return await analyzeCampaignLearning(createAdminClient(), sourceId, targetId, strategy, { callerProfileId: gate.profileId, siteUrl: SITE_URL })
+  } catch {
+    return { ok: false, error: 'Could not review these emails. Nothing was changed.' }
+  }
+}
+
+/** Disarming an approved schedule is an approver act, even though the result is a draft. */
+export async function applyCampaignLearningRevisionAction(input: CampaignLearningApplyInput): Promise<{ ok: boolean; error?: string; campaignId?: string }> {
+  const { approverGate } = await import('@/lib/outbound/guard')
+  const gate = await approverGate()
+  if (!gate.ok) return { ok: false, error: gate.error }
+  if (!input || input.reviewed !== true || !LEARNING_ID.test(input.sourceCampaignId) || !LEARNING_ID.test(input.targetCampaignId) || !learningStrategy(input.strategy) || !/^[a-f0-9]{64}$/.test(input.expectedFingerprint) || !/^[a-f0-9]{64}$/.test(input.expectedProposalFingerprint)) return { ok: false, error: 'Review the current proposal before applying it.' }
+  try {
+    const { applyCampaignLearningRevision } = await import('@/lib/email-studio/campaign-learning')
+    const result = await applyCampaignLearningRevision(createAdminClient(), input, { callerProfileId: gate.profileId, siteUrl: SITE_URL })
+    if (result.ok) {
+      const { logAdminAction } = await import('@/lib/admin/audit')
+      await logAdminAction({ actorId: gate.profileId, action: 'email.campaign.learning_revision', targetType: 'campaign', targetId: input.targetCampaignId, detail: { sourceCampaignId: input.sourceCampaignId, strategy: input.strategy, previousRevision: input.expectedFingerprint } })
+      revalidatePath('/admin/crm/marketing')
+    }
+    return result
+  } catch {
+    return { ok: false, error: 'The revision could not be confirmed. Refresh the email before trying again.' }
+  }
+}
 
 /** The console that LISTS campaigns, revalidated after every act that changes the list (create /
  *  delete / test / discard). Was /admin/beta, the Beta Command Center's Campaign tab, which is gone. */
