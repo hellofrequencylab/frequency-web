@@ -9,7 +9,7 @@
     "file": "docs/ANALYTICS.md",
     "ref": "Owner analytics dashboard and user-flow request, 2026-11-13."
   },
-  "detail": "Consenting browser activity is collected only after trusted audience resolution; client-supplied GA identity and authority flags cannot bypass the public collector. Identity comes from browser cookies, and private URL/title content is removed. New focused regressions failed before implementation; existing probes were preserved. Implementation proof does not assert production activation.",
+  "detail": "Consenting browser activity is collected only after trusted audience resolution; client-supplied GA identity and authority flags cannot bypass the public collector. Identity comes from browser cookies, and private URL/title content is removed. New focused regressions failed before implementation; existing probes were preserved. Implementation proof does not assert production activation. CI trace 43522750456 identified excessive generic instantiation in the existing gems RPC bind, blocking this release under the unchanged 6144 MB heap. Moving its existing exact RPC signature before bind preserves the call and reduces targeted compiler instantiations from 3536235 to 7924 (heap 540 MB to 146 MB); no probe, test or memory budget changed.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/analytics-tracking.mjs"
