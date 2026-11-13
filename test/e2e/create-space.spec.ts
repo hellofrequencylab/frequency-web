@@ -26,9 +26,9 @@ test.describe('create a space, signed out', { tag: '@smoke' }, () => {
     await expect(page.locator('#cs-name')).toHaveValue('Limewell Studio')
   })
 
-  // Owner 2026-11-02: every logged-out launch, build, Spotlight or website click opens the wizard. A cold /launch
-  // and the Free Spotlight buttons' /launch/start make the same hop as /spaces/new, query intact.
-  for (const door of ['/launch', '/launch/start?utm_source=site&utm_medium=landing']) {
+  // Owner 2026-11-02: every logged-out launch or build click opens the wizard. A cold /launch makes the same hop as
+  // /spaces/new, query intact. (The Free Spotlight buttons' /launch/start opens the Spotlight step instead, owner 2026-11-13.)
+  for (const door of ['/launch']) {
     test(`${door} opens the wizard for a visitor with no account`, async ({ page }) => {
       const response = await page.goto(door)
       expect(response!.ok(), `expected the ${door} hop to end in a 2xx, got ${response!.status()} at ${page.url()}`).toBe(true)
