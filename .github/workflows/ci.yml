@@ -91,7 +91,13 @@ on:
   push:
     branches: [main]
   merge_group: {}
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      typecheck_trace:
+        description: Capture a bounded compiler trace when diagnosing a typecheck failure
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -229,9 +235,42 @@ jobs:
       # reading a PR is merged on. Raise it here rather than in package.json so local runs, which
       # set it per box, are not pinned to a CI number.
       - name: Typecheck
+        id: typecheck
         env:
           NODE_OPTIONS: --max-old-space-size=6144
-        run: pnpm exec tsc --noEmit
+          TYPECHECK_TRACE: ${{ github.event_name == 'workflow_dispatch' && inputs.typecheck_trace == true }}
+        run: |
+          if [ "$TYPECHECK_TRACE" = 'true' ]; then
+            pnpm exec tsc --noEmit --generateTrace "$RUNNER_TEMP/typecheck-trace"
+          else
+            pnpm exec tsc --noEmit
+          fi
+      # Dispatch-only diagnostics: compiler timings/paths, never a heap or environment dump.
+      # Keep a bounded prefix when an OOM leaves a large or unfinished trace; exclude types.json.
+      - name: Bound failed typecheck trace
+        if: ${{ failure() && steps.typecheck.outcome == 'failure' && github.event_name == 'workflow_dispatch' && inputs.typecheck_trace == true }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const source = path.join(process.env.RUNNER_TEMP, 'typecheck-trace', 'trace.json')
+          if (!fs.existsSync(source)) process.exit(0)
+          const destination = path.join(process.env.RUNNER_TEMP, 'typecheck-trace-bounded')
+          fs.mkdirSync(destination, { recursive: true })
+          const size = Math.min(fs.statSync(source).size, 25 * 1024 * 1024)
+          const buffer = Buffer.alloc(size)
+          const file = fs.openSync(source, 'r')
+          try { fs.readSync(file, buffer, 0, size, 0) } finally { fs.closeSync(file) }
+          fs.writeFileSync(path.join(destination, 'trace.json'), buffer)
+          NODE
+      - name: Upload failed typecheck trace
+        if: ${{ failure() && steps.typecheck.outcome == 'failure' && github.event_name == 'workflow_dispatch' && inputs.typecheck_trace == true }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: typecheck-trace-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/typecheck-trace-bounded/trace.json
+          if-no-files-found: warn
+          retention-days: 1
 
       # One step, every guard, all failures reported. Each is grouped in the log so a red run
       # reads as a list of what to fix rather than a single stop-the-world exit.
