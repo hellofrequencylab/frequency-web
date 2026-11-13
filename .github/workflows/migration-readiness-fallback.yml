@@ -1,0 +1,134 @@
+# Posts the `migration-readiness` context for pull requests that add no SQL, the moment they open.
+#
+# WHY IT EXISTS (OPS-MIGRATION-FALLBACK). The real gate (migration-readiness.yml) is a privileged
+# `pull_request_target` job that holds a Supabase token, so it deliberately SKIPS drafts. This
+# repo opens every pull request as a draft, so every PR sat on "migration-readiness: Expected,
+# waiting for status to be reported" until it was marked ready, then waited again for that job
+# (checkout, setup-node, three API reads) after every "Update branch". A PR with no SQL has
+# nothing for that gate to judge: it reads no ledger and compares nothing.
+#
+# WHAT THIS CLAIMS, AND ONLY THIS. No file under supabase/migrations/ changed, so the PR cannot
+# change the migration ledger. The status description says exactly that. It is not a pass of the
+# readiness evaluation.
+#
+# WHY A COMMIT STATUS, AND WHY IT CANNOT OVERWRITE A RED GATE. Same shape as db-tests-fallback.yml:
+# this job runs on every PR, decides for itself from the PR's own changed files whether the real
+# gate owns it, and posts ONLY when no migration file changed. A PR that adds, edits or deletes
+# SQL gets nothing from this file, so the trusted gate stays the only voice for it. This job is
+# unprivileged (`pull_request`, statuses: write, no secrets), so it adds no new trust surface.
+# For a no-SQL PR the real gate reports `not_applicable` success anyway, so the two never disagree.
+name: migration-readiness-fallback
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Pull request number to post migration-readiness for (recomputed from the API, never assumed)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: migration-readiness-fallback-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+jobs:
+  # Deliberately NOT named `migration-readiness` (the real check run owns that name).
+  fallback:
+    name: migration-readiness fallback (no-SQL PRs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Resolve the pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          case "$PR_NUMBER" in ''|*[!0-9]*) echo "::error::pr must be a number, got '${PR_NUMBER}'."; exit 1 ;; esac
+          # Always ask the API: the dispatch path has no event head, and a moved head must win.
+          curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/pr.json \
+            -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}"
+          state=$(python3 -c 'import json; print(json.load(open("/tmp/pr.json"))["state"])')
+          base=$(python3 -c 'import json; print(json.load(open("/tmp/pr.json"))["base"]["ref"])')
+          head=$(python3 -c 'import json; print(json.load(open("/tmp/pr.json"))["head"]["sha"])')
+          same=$(python3 -c 'import json,os; p=json.load(open("/tmp/pr.json")); print("true" if p["head"]["repo"]["full_name"]==os.environ["GITHUB_REPOSITORY"] else "false")')
+          [ "$state" = "open" ] || { echo "::error::PR #${PR_NUMBER} is ${state}, not open."; exit 1; }
+          [ "$base" = "main" ] || { echo "::error::PR #${PR_NUMBER} targets ${base}, not main."; exit 1; }
+          # A fork PR is not trusted to be judged here; the real gate refuses forks too.
+          [ "$same" = "true" ] || { echo "::notice::Fork PR. Posting nothing."; echo "post=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          if [ -n "${EVENT_HEAD}" ] && [ "${EVENT_HEAD}" != "$head" ]; then
+            echo "::notice::Head moved since this event (${EVENT_HEAD} -> ${head}); a newer run owns it."
+            echo "post=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "head=${head}" >> "$GITHUB_OUTPUT"
+          echo "post=true" >> "$GITHUB_OUTPUT"
+
+      # Paginated, because a truncated list would look SQL-free and post a green over a schema change.
+      # If the list cannot be read, this job FAILS and posts nothing: the real gate still owns the PR.
+      - name: Decide whether the real gate owns this PR
+        id: decide
+        if: steps.pr.outputs.post == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          : > /tmp/changed.txt
+          page=1
+          while : ; do
+            curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/page.json \
+              -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}"
+            count=$(python3 -c 'import json; d=json.load(open("/tmp/page.json")); print(len(d))')
+            python3 -c 'import json; d=json.load(open("/tmp/page.json")); [print(f["filename"]) for f in d]; [print(f["previous_filename"]) for f in d if f.get("previous_filename")]' >> /tmp/changed.txt
+            [ "$count" -lt 100 ] && break
+            page=$((page + 1))
+            [ "$page" -le 30 ] || { echo "::error::More than 3000 files. Refusing to decide on a guess."; exit 1; }
+          done
+          echo "Changed files: $(wc -l < /tmp/changed.txt)"
+          if grep -q '^supabase/migrations/' /tmp/changed.txt; then
+            echo "sql=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::This PR touches supabase/migrations. The trusted gate owns it; posting nothing."
+          else
+            echo "sql=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No migration file changed. Posting migration-readiness on the gate's behalf."
+          fi
+
+      - name: Post migration-readiness
+        if: steps.pr.outputs.post == 'true' && steps.decide.outputs.sql == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ steps.pr.outputs.head }}
+        run: |
+          set -uo pipefail
+          api="${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}"
+          attempt=1; delay=2
+          while : ; do
+            code=$(curl -sS -o /tmp/post.out -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+              "${api}/statuses/${HEAD_SHA}" \
+              -d '{"state":"success","context":"migration-readiness","description":"No migration file changed, so there is no ledger to judge. Not a readiness evaluation.","target_url":"'"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"'"}') || code=000
+            [ "$code" = "201" ] && break
+            case "$code" in 000|429|500|502|503|504) ;; *) echo "::error::statuses API returned ${code}, not transient."; cat /tmp/post.out || true; exit 1 ;; esac
+            [ "$attempt" -lt 8 ] || { echo "::error::statuses API still ${code} after 8 attempts; migration-readiness NOT posted."; exit 1; }
+            sleep "$delay"; delay=$((delay * 2)); attempt=$((attempt + 1))
+          done
+          # Read it back: the merge depends on the context existing on this SHA, not on a 201.
+          curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/status.json \
+            -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "${api}/commits/${HEAD_SHA}/status"
+          python3 -c 'import json,sys; sys.exit(0 if any(s["context"]=="migration-readiness" and s["state"]=="success" for s in json.load(open("/tmp/status.json"))["statuses"]) else 1)' \
+            || { echo "::error::Posted but the context is absent on ${HEAD_SHA}."; exit 1; }
+          echo "::notice::Posted migration-readiness=success on ${HEAD_SHA}. This asserts only that no migration file changed."
