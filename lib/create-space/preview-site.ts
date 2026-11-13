@@ -88,9 +88,9 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
   },
   // Services has no library of its own yet; it wears the New World pictures of people at work together.
   services: {
-    hero: '/sites/services/hero-squeegee.webp', heroPos: '62% center', portrait: NEW_WORLD_PHOTO('workshop-table'), portraitPos: 'center 30%',
+    hero: NEW_WORLD_PHOTO('backyard-class'), heroPos: 'center 45%', portrait: NEW_WORLD_PHOTO('workshop-table'), portraitPos: 'center 30%',
     strip: [NEW_WORLD_PHOTO('cafe-table'), NEW_WORLD_PHOTO('backyard-class'), NEW_WORLD_PHOTO('beach-gong')], nav1: 'Services', cta2: 'See prices',
-    covers: ['/sites/services/hero-squeegee.webp', NEW_WORLD_PHOTO('backyard-class'), NEW_WORLD_PHOTO('beach-gong'), NEW_WORLD_PHOTO('cafe-table'), NEW_WORLD_PHOTO('workshop-table')],
+    covers: [NEW_WORLD_PHOTO('backyard-class'), NEW_WORLD_PHOTO('beach-gong'), NEW_WORLD_PHOTO('cafe-table'), NEW_WORLD_PHOTO('workshop-table')],
     portraits: [NEW_WORLD_PHOTO('workshop-table'), NEW_WORLD_PHOTO('cafe-table')],
   },
   // Free Human's own library (lib/sites/free-human-home.ts wears the same files): the walking virgin is its hero, the

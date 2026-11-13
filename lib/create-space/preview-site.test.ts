@@ -49,7 +49,7 @@ describe('preview site', () => {
     expect(fh.portrait).toMatch(/^\/sites\/free-human\/photos\//)
     for (const src of [...fh.strip, ...fh.covers, ...fh.portraits]) expect(src).toMatch(/^\/sites\/free-human\/photos\//)
     expect(fh).not.toEqual(kitImagery('frequency'))
-    expect(kitImagery('services').hero).toBe('/sites/services/hero-squeegee.webp')
+    expect(kitImagery('services').hero).toMatch(/^\/sites\/new-world\/photos\//)
   })
 
   it('reads as a sample Space when nothing is filled in', () => {
