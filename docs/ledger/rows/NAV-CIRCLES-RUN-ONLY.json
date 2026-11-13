@@ -1,0 +1,9 @@
+{
+  "id": "NAV-CIRCLES-RUN-ONLY",
+  "title": "Left rail 'Your Circles' lists only Circles the member runs",
+  "priority": "P2",
+  "lane": "live-product",
+  "size": "S",
+  "status": "done",
+  "detail": "Owner ruling 2026-11-13: the rail shows the business Circles a member hosts (host seat or circles.host_id), not ones they merely joined. Fixed in lib/nav/my-frequency.ts; covered by my-frequency.seeded.test.ts."
+}

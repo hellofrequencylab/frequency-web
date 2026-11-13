@@ -20,19 +20,36 @@ vi.mock('@/lib/spaces/claim', () => ({
 
 const tables: Record<string, unknown[]> = {
   notifications: [],
-  memberships: [{ circle_id: 'c-own' }, { circle_id: 'c-seed' }, { circle_id: 'c-free' }],
+  // c-joined is a Circle the member only joined; it must not reach the rail (owner ruling 2026-11-13).
+  memberships: [
+    { circle_id: 'c-own', volunteer_role: 'host' },
+    { circle_id: 'c-seed', volunteer_role: 'host' },
+    { circle_id: 'c-free', volunteer_role: 'host' },
+    { circle_id: 'c-joined', volunteer_role: null },
+  ],
   circles: [
     { id: 'c-own', name: 'My Circle', slug: 'my-circle', space_id: 'sp-own', image_url: '/img/my-circle.jpg' },
     { id: 'c-seed', name: 'Seeded Circle', slug: 'seeded-circle', space_id: 'sp-seed' },
     { id: 'c-free', name: 'Free Circle', slug: 'free-circle', space_id: null },
+    { id: 'c-joined', name: 'Joined Circle', slug: 'joined-circle', space_id: null },
   ],
 }
 
 function query(rows: unknown[]) {
-  const result = Promise.resolve({ data: rows, error: null })
+  let out = rows
+  const result = { then: (f: (v: unknown) => unknown) => Promise.resolve({ data: out, error: null }).then(f) }
   const chain: Record<string, unknown> = {}
-  for (const k of ['select', 'eq', 'is', 'in', 'gte', 'order', 'limit']) chain[k] = () => chain
-  chain.then = result.then.bind(result)
+  for (const k of ['select', 'is', 'gte', 'order', 'limit']) chain[k] = () => chain
+  // Honour `.in('id', ids)` and `.eq('host_id', …)` so the rail's two host reads behave like the real tables.
+  chain.in = (col: string, vals: string[]) => {
+    out = out.filter((r) => vals.includes((r as Record<string, string>)[col]))
+    return chain
+  }
+  chain.eq = (col: string) => {
+    if (col === 'host_id') out = []
+    return chain
+  }
+  chain.then = result.then
   return chain
 }
 
