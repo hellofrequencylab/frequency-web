@@ -15,7 +15,7 @@ export async function ExperimentPanel() {
     <TileGrid>
       <Tile label={spec.title} span={3}>
         <p className="text-body-sm text-text">{spec.hypothesis}</p>
-        <p className="mt-2 text-meta text-muted">Control: {spec.control}. Treatment: {spec.treatment}. Audience: signed-in, analytics-consenting Members, excluding staff. Only headings visible in a foreground tab create exposures.</p>
+        <p className="mt-2 text-meta text-muted">Control: {spec.control}. Treatment: {spec.treatment}. Audience: signed-in Members allowed by browser and account analytics settings, excluding staff. Only headings visible in a foreground tab create exposures.</p>
         <p className="mt-2 text-meta text-muted">Target: {spec.targetPerArm} mature exposures per arm, a fixed {spec.minimumDays}-day enrollment horizon, then {spec.conversionDays} days of follow-up. This is a pilot target, not a statistical power guarantee. Primary outcome: a server-confirmed RSVP within seven days of exposure.</p>
         <p className="mt-2 text-meta text-muted">Guardrails: {spec.guardrails}</p>
         <p className="mt-2 text-body-sm text-text">State: {result?.status ?? 'not drafted'}. {evaluation?.explanation ?? 'No experiment is running. A draft does not change the member experience.'}</p>

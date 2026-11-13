@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => undefined }) }))
 const mock = vi.hoisted(() => ({ caller: vi.fn(), profileId: vi.fn(), realRole: vi.fn(), consent: vi.fn(), rpc: vi.fn(), team: vi.fn() }))
 vi.mock('@/lib/auth', () => ({ getCallerProfile: mock.caller, getMyProfileId: mock.profileId, getRealCallerWebRole: mock.realRole }))
 vi.mock('@/lib/consent/consent', () => ({ hasConsent: mock.consent }))

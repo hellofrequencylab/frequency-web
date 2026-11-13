@@ -1,4 +1,6 @@
 import 'server-only'
+import { cookies } from 'next/headers'
+import { analyticsAllowed, parseConsentChoice, CONSENT_COOKIE, CONSENT_REGION_COOKIE } from '@/lib/consent/cookie-consent'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile, getMyProfileId, getRealCallerWebRole } from '@/lib/auth'
 import { hasConsent } from '@/lib/consent/consent'
@@ -15,6 +17,10 @@ async function rpc(name: string, args: Record<string, unknown>) {
 
 /** Staff membership is checked without view-as, which deliberately strips staff UI capabilities. */
 async function eligibleMember(profileId: string): Promise<boolean> {
+  try {
+    const jar = await cookies()
+    if (!analyticsAllowed({ choice: parseConsentChoice(jar.get(CONSENT_COOKIE)?.value), priorConsentRegion: jar.get(CONSENT_REGION_COOKIE)?.value === '1' })) return false
+  } catch { return false }
   if (isStaff(await getRealCallerWebRole())) return false
   const db = createAdminClient()
   const { data, error } = await db.from('team_members').select('profile_id').eq('profile_id', profileId).maybeSingle()
@@ -22,7 +28,7 @@ async function eligibleMember(profileId: string): Promise<boolean> {
   return hasConsent(profileId, 'analytics')
 }
 
-/** Signed-in analytics-consenting non-staff audience only. No assignment is an exposure. */
+/** Signed-in non-staff audience allowed by browser policy AND account settings. No assignment is an exposure. */
 export async function memberExperiment(key: ExperimentKey): Promise<{ id: string; variant: ExperimentVariant } | null> {
   try {
     if (!isExperimentKey(key)) return null
