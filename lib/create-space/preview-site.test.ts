@@ -49,16 +49,20 @@ describe('preview site', () => {
     expect(fh.portrait).toMatch(/^\/sites\/free-human\/photos\//)
     for (const src of [...fh.strip, ...fh.covers, ...fh.portraits]) expect(src).toMatch(/^\/sites\/free-human\/photos\//)
     expect(fh).not.toEqual(kitImagery('frequency'))
-    expect(kitImagery('services').hero).toMatch(/^\/sites\/new-world\/photos\//)
+    expect(kitImagery('services').hero).toBe('/sites/services/hero-squeegee.webp')
   })
 
   it('reads as a sample Space when nothing is filled in', () => {
     const s = deriveSite(base)
     expect(s.name).toBe('Business Name')
     expect(s.em).toBe('start to finish.')
-    expect(s.domain).toBe('frequency.community/yourspace')
+    expect(s.domain).toBe('businessname.frequencylocal.com')
     expect(s.offers).toHaveLength(3)
     expect(s.host).toBe('you')
+  })
+
+  it('the address bar reads the name as a subdomain of frequencylocal.com', () => {
+    expect(deriveSite({ ...base, name: 'Salt & Sage', handle: 'saltsage' }).domain).toBe('saltsage.frequencylocal.com')
   })
 
   it('takes the second line, verb and tagline from the picks', () => {

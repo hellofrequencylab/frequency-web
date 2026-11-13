@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-2283",
+  "title": "Make each Create a Space theme preview look like its real theme",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "components/frequency/site/pages/create-space/create-space-themes.css",
+    "ref": "Owner request 2026-11-13: CyberWitch is the complete preview, the others read as recolors; the address bar should read businessname.frequencylocal.com."
+  },
+  "detail": "Eight themes get their own preview blocks (fonts, photo hero or split hero, button shapes, offer cards, and a Spotlight phone in the theme's own layout), read from the shipped theme CSS and rendered theme pages. Services wears its own squeegee hero. Wildheart wears its own portrait. The address bar slugifies the Business Name live. Spotlight phones for Bold and Wildheart are a best guess: their design systems carry no Spotlight layout.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/create-space-theme-previews.mjs" },
+  "wave": "W7"
+}
