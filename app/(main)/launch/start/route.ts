@@ -3,7 +3,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
 import { recordLaunchEvent } from '@/lib/launch/events'
 import { readPendingLaunch, writePendingLaunch } from '@/lib/launch/pending-io'
-import { launchHomeHref } from '@/lib/launch/destination'
+import { inFlowHref, launchHomeHref } from '@/lib/launch/destination'
 import { getActiveLaunch, startLaunch } from '@/lib/launch/store'
 import { cookies } from 'next/headers'
 import { isPreviewKit, kitAccentIndex } from '@/lib/create-space/preview-site'
@@ -33,7 +33,8 @@ export async function GET(request: Request) {
   const answers = kitId ? { ...held?.answers, spotlight: { ...held?.answers?.spotlight, theme: kitId, ...accent } } : (held?.answers ?? {})
   if (!profileId) {
     await writePendingLaunch({ niche: niche ?? held?.niche ?? null, intents: held?.intents ?? [], answers })
-    redirect(launchHomeHref({ signedIn: false }))
+    // Owner 2026-11-13: a Free Spotlight click opens the Spotlight builder, signed out too; the account is asked for at Publish.
+    redirect(inFlowHref('/launch/step/spotlight'))
   }
   if (kitId) await writePendingLaunch({ niche: niche ?? held?.niche ?? null, intents: held?.intents ?? [], answers })
 

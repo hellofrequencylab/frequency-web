@@ -12,3 +12,15 @@ describe('lastKitFrom', () => {
     expect(lastKitFrom(null)).toBeNull()
   })
 })
+
+describe('last accent', () => {
+  it('reads the accent name and finds its place in a kit\'s list', async () => {
+    const { lastAccentFrom, lastAccentAt } = await import('./last-kit')
+    const { kitAccents } = await import('./preview-site')
+    const name = kitAccents('new-world')[1].name
+    expect(lastAccentFrom(`a=1; fq_last_accent=${encodeURIComponent(name)}`)).toBe(name)
+    expect(lastAccentAt('new-world', `fq_last_accent=${encodeURIComponent(name)}`)).toBe(1)
+    expect(lastAccentAt('new-world', 'fq_last_accent=Nope')).toBeNull()
+    expect(lastAccentAt('new-world', '')).toBeNull()
+  })
+})

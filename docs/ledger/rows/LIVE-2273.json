@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-2273",
+  "title": "Put the Hunts organizer screen's four selects and checkbox on the field primitives, so the adoption ratchet is green on main",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-13",
+  "source": {
+    "file": "components/hunts/commerce-admin.tsx",
+    "ref": "FH-036S (#4895) added four raw <select> and one raw checkbox <input>; node scripts/check-adoption.mjs failed on main (raw-select 4 to 8, raw-input 75 to 76) and turned `checks` red on every open PR."
+  },
+  "detail": "commerce-admin.tsx now renders Select and Checkbox from components/ui. Baselines untouched. Done when node scripts/check-adoption.mjs passes.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/check-adoption.mjs" },
+  "wave": "W7"
+}
