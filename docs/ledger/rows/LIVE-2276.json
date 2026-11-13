@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2276",
+  "title": "Record leads and purchases only after durable saves with browser attribution",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/ANALYTICS.md",
+    "ref": "Owner analytics dashboard and user-flow request, 2026-11-13."
+  },
+  "detail": "Verified lead capture follows durable IDs across signup capture doors; shared idempotency avoids duplicate counts. Checkout carries consenting browser client/session identity into confirmed purchase facts. No migration or mail send. New focused regressions failed before implementation; existing probes were preserved. Implementation proof does not assert production activation.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/analytics-verified-leads.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-13"
+}
