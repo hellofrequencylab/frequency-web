@@ -20,7 +20,7 @@ export async function reserveLifecycleSend(
   admin: SupabaseClient,
   input: { recipient: string; profileId?: string | null; kind: string; dedupeKey: string; now?: Date },
 ): Promise<Reservation> {
-  if (!envFlag(process.env.LIFECYCLE_CAP_ENABLED)) return 'reserved'
+  if (!envFlag('LIFECYCLE_CAP_ENABLED')) return 'reserved'
   const now = input.now ?? new Date()
   const recipient = input.recipient.trim().toLowerCase()
   try {
