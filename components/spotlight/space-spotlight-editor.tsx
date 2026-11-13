@@ -191,7 +191,7 @@ export function SpaceSpotlightEditor({
                     onClick={() => onTheme(o.id)}
                     disabled={readOnly || pending}
                     aria-pressed={theme === o.id}
-                    className={choiceTileClasses(theme === o.id, 'rounded-full px-3 py-1.5 text-body-sm font-semibold text-text')}
+                    className={choiceTileClasses(theme === o.id, 'rounded-pill px-3 py-1.5 text-body-sm font-semibold text-text')}
                   >
                     {o.label}
                   </button>
