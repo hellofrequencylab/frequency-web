@@ -4,7 +4,8 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
+  "closed": "2026-11-13",
   "source": {
     "file": "components/frequency/site/pages/create-space/create-space-studio.tsx",
     "ref": "Daniel 2026-11-13: the theme step of /create-a-space is confusing; one row of theme buttons, one of accents, same hero; New World unless they came from another theme; remember the last pick; preview says Business Name."
