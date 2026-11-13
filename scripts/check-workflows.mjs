@@ -58,8 +58,9 @@ const DIR = '.github/workflows'
  *  no proof outside its own header that it could fire.
  *
  *  Raised 9 -> 10 on 2026-10-28: the live count reached 18, so a floor of 9 stopped being above half
- *  of it, which scripts/check-workflows.test.ts requires of every floor. */
-const MIN_WORKFLOWS = 10
+ *  of it, which scripts/check-workflows.test.ts requires of every floor.
+ *  Raised 10 -> 11 on 2026-11-13: the live count reached 20 (migration-readiness-fallback.yml). */
+const MIN_WORKFLOWS = 11
 
 /**
  * Blank out the BODY of every block scalar (`key: |`, `key: >`, with any chomp/indent
