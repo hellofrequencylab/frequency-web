@@ -1,0 +1,16 @@
+{
+  "id": "HYG-222",
+  "title": "Give no-SQL pull requests the migration-readiness context at once, draft or ready",
+  "lane": "hygiene",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-13",
+  "source": {
+    "file": ".github/workflows/migration-readiness-fallback.yml",
+    "ref": "Daniel 2026-11-13: migration-readiness stalls PRs on Expected and takes too long."
+  },
+  "detail": "The trusted gate (migration-readiness.yml) is a pull_request_target job with a Supabase token and refuses drafts on purpose, so every draft PR sat on Expected, and every Update branch waited on that job again. migration-readiness-fallback.yml is an unprivileged pull_request job, modelled on db-tests-fallback: it lists the PR's own files and posts a success commit status named migration-readiness only when none is under supabase/migrations/. A PR that adds SQL gets nothing from it, so the trusted gate keeps its full protection and no probe, test or gate script was edited.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/migration-readiness-fallback.mjs" },
+  "wave": "W7"
+}

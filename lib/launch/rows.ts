@@ -1,13 +1,15 @@
 // The rows behind the launch done-checks (VLS-02). One small read per noun, by the Space, under the member's own session (RLS), so a schema change
 // to any of them degrades to "not yet" instead of throwing (the lib/onboarding/status.ts rule). Server-only.
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { getConnectStatus } from '@/lib/billing/connect'
 import type { LaunchRows, SetupExtras } from './done-checks'
 import { offerPageCount } from './offer-page'
 
-export async function loadLaunchRows(spaceId: string, ownerProfileId: string, withExtras = false): Promise<LaunchRows | null> {
-  const db = await createClient()
+/** `client` lets a cron with no member session (the lifecycle emails) read the same rows with its own service-role client. */
+export async function loadLaunchRows(spaceId: string, ownerProfileId: string, withExtras = false, client?: SupabaseClient): Promise<LaunchRows | null> {
+  const db = client ?? (await createClient())
   const count = async (q: PromiseLike<{ count: number | null; error: unknown }>): Promise<number> => {
     const res = await q
     return res.error ? 0 : (res.count ?? 0)

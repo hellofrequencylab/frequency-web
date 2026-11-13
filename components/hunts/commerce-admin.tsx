@@ -1,7 +1,9 @@
 import { FocusTemplate } from '@/components/templates/focus-template'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
+import { labelClasses } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import type { CommerceAdminView } from '@/lib/hunts/commerce-admin'
 import { approveOfferAction, bindPassAction, withdrawOfferAction } from '@/app/(main)/hunts/edit/[id]/commerce/actions'
 
@@ -30,19 +32,17 @@ export function HuntCommerceAdmin({ view }: { view: CommerceAdminView }) {
                 <input type="hidden" name="huntId" value={view.huntId} />
                 <div>
                   <label htmlFor="pass-tier" className={labelClasses}>Ticket</label>
-                  <select id="pass-tier" name="ticketTypeId" required className={fieldClasses}>
+                  <Select id="pass-tier" name="ticketTypeId" required>
                     {open.map((t) => (
                       <option key={t.id} value={t.id}>{t.eventTitle}: {t.name} ({dollars(t.priceCents)})</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <fieldset>
                   <legend className={labelClasses}>Benefits</legend>
                   <div className="mt-2 space-y-2">
                     {view.benefits.map((b) => (
-                      <label key={b.code} className="flex items-center gap-2 text-body-sm">
-                        <input type="checkbox" name="benefit" value={b.code} /> {b.label}
-                      </label>
+                      <Checkbox key={b.code} name="benefit" value={b.code} label={b.label} />
                     ))}
                   </div>
                 </fieldset>
@@ -71,23 +71,23 @@ export function HuntCommerceAdmin({ view }: { view: CommerceAdminView }) {
                 <input type="hidden" name="huntId" value={view.huntId} />
                 <div>
                   <label htmlFor="offer-product" className={labelClasses}>Item</label>
-                  <select id="offer-product" name="productId" required className={fieldClasses}>
+                  <Select id="offer-product" name="productId" required>
                     {view.products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label htmlFor="offer-benefit" className={labelClasses}>Benefit</label>
-                  <select id="offer-benefit" name="benefitCode" className={fieldClasses}>
+                  <Select id="offer-benefit" name="benefitCode">
                     <option value="">Link only</option>
                     {view.benefits.map((b) => <option key={b.code} value={b.code}>{b.label}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label htmlFor="offer-state" className={labelClasses}>Opens when the order is</label>
-                  <select id="offer-state" name="requiresState" className={fieldClasses}>
+                  <Select id="offer-state" name="requiresState">
                     <option value="paid">Paid</option>
                     <option value="fulfilled">Fulfilled</option>
-                  </select>
+                  </Select>
                 </div>
                 <Button type="submit">Approve item</Button>
               </form>

@@ -994,3 +994,13 @@ Signups reach Google Ads through GA4, not through a second tag. `app/auth/callba
 Owner steps (Daniel), all in the Google UIs: link the GA4 property to the Google Ads account; mark `sign_up` as a key event in GA4; import it into Ads as the conversion and set the campaign goal to it. Do not count visits to `/onboarding`: returning members land there too.
 
 Check: GA4 Admin, DebugView or Realtime shows `sign_up` after a fresh signup in the same browser that clicked an ad (`?gclid=` on the landing URL). Known gap: a magic link opened in a different browser than the one that clicked the ad has no `_ga` cookie and is not counted.
+
+## Lifecycle cap
+
+`LIFECYCLE_CAP_ENABLED` (EMAIL-047). Off by default: every lifecycle sender behaves as before and nothing is read or written. On: `reserveLifecycleSend` (`lib/lifecycle/cap-io.ts`) holds a lifecycle email when the address already got one in the last day (rank 1 emails are exempt from the daily cap) or three in the last week, and claims a row in `lifecycle_send_log` unique by dedupe key. Today the nurture runner calls it; other senders join as their PRs land.
+
+**Gate before turning it on:** migration `20270346045000_lifecycle_send_log.sql` is applied in Frequency Community and its ledger row recorded. A read or write error answers `error`, the sender skips and retries next run, so flipping it on without the table pauses nurture rather than sending unmetered.
+
+**Watch:** `lifecycle.cap.held` (info) counts held sends with the reason and when they retry; `lifecycle.cap.read_failed` and `lifecycle.cap.claim_failed` (error) mean the table or the grant is wrong.
+
+**Off:** blank the variable; held sends go out on their next run.

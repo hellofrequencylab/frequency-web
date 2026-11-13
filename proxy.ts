@@ -80,14 +80,14 @@ const SESSION_ROUTES = new Set(['/offer'])
 
 // CREATE A SPACE, SIGNED OUT (LIVE-1969, ADR-1933; owner 2026-11-02: every logged-out click on launch, build a
 // Space, Spotlight or website opens the wizard). /spaces/new used to be the funnel's second session page and a cold
-// /launch or /launch/start (the Free Spotlight buttons) went to the Spotlight sign-in form. For a visitor with no
+// /launch went to the Spotlight sign-in form. /launch/start (the Free Spotlight buttons) is NOT a door any more (owner 2026-11-13): signed out it opens the Spotlight step, which needs no account (app/(main)/launch/start/route.ts). For a visitor with no
 // account they all open the wizard that needs no account, /create-a-space, and the door's query (kit or theme,
 // mode, intents, niche, name) rides along untouched: lib/create-space/door.ts reads it back on the wizard. The hop
 // happens here, before the (main) layout, for the same reason /offer is gated here; the pages keep the same
 // redirect as their own fallback (lib/launch/destination.ts). Exact matches: `/spaces/new` as a prefix would also
 // catch a Space whose slug starts with "new", and /launch/claim, /launch/resume and the step pages stay the
 // account's own (the wizard's hand-over and the come-back links sign in first).
-const CREATE_SPACE_DOORS = new Set(['/spaces/new', '/launch', '/launch/start'])
+const CREATE_SPACE_DOORS = new Set(['/spaces/new', '/launch'])
 const CREATE_SPACE_WIZARD = '/create-a-space'
 
 export async function proxy(request: NextRequest) {

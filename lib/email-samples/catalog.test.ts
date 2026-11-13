@@ -87,7 +87,7 @@ describe('the stock email catalog', () => {
     // Conversation replies are one-to-one mail, not commercial; the receipts are transactional with
     // their own footer; the owner notices (a lead, a sale, a tip, a renewal, a trial ending) are account mail about the
     // owner's own Space; everything else is lifecycle or marketing and must carry the CAN-SPAM footer.
-    const exempt = new Set(['conversation-reply-space', 'conversation-reply-frequency', 'conversation-coalesced', 'receipt-order', 'receipt-donation', 'guest-booking-confirm', 'booking-reminder', 'booking-confirmation-member', 'booking-confirmation-owner', 'booking-cancelled', 'member-ticket', 'guest-ticket', 'guest-rsvp-confirmation', 'guest-event-reminder', 'guest-event-update', 'guest-event-cancelled', 'event-claim-invite', 'optin-confirm', 'signup-recovery', 'welcome', 'invite', 'order-shipped', 'contact-lead', 'ticket-sale-host', 'tip-received', 'renewal-reminder', 'renewal-overdue', 'trial-ending'])
+    const exempt = new Set(['conversation-reply-space', 'conversation-reply-frequency', 'conversation-coalesced', 'receipt-order', 'receipt-donation', 'guest-booking-confirm', 'booking-reminder', 'booking-confirmation-member', 'booking-confirmation-owner', 'booking-cancelled', 'member-ticket', 'guest-ticket', 'guest-rsvp-confirmation', 'guest-event-reminder', 'guest-event-update', 'guest-event-cancelled', 'event-claim-invite', 'optin-confirm', 'signup-recovery', 'welcome', 'invite', 'order-shipped', 'contact-lead', 'contact-ack', 'ticket-sale-host', 'tip-received', 'renewal-reminder', 'renewal-overdue', 'trial-ending'])
     for (const r of all) {
       if (exempt.has(r.id)) continue
       expect(r.html, r.id).toMatch(/unsubscribe/i)
