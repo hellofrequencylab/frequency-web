@@ -357,7 +357,7 @@ export function deriveSite(input: SiteInput): PreviewSite {
     if (!offerIds.includes(id) && isIntent(id)) offerIds.push(id)
   }
   const offers = offerIds.map((id, i) => ({ ...INTENT_LOOK[id].offer, img: imagery.strip[i], n: ['I', 'II', 'III'][i] }))
-  const name = input.name.trim() || 'Your Space'
+  const name = input.name.trim() || 'Business Name'
   const handle = input.handle || 'yourspace'
   const host = input.hostName.trim()
   const nouns = picks.map((p) => INTENT_LOOK[p.id].noun)

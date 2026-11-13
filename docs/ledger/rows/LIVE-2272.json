@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-2272",
+  "title": "Pick the theme and accent in two hero rows on the 12-minute builder, remember the last pick, and mirror the typed name in the preview",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-13",
+  "source": {
+    "file": "components/frequency/site/pages/create-space/create-space-studio.tsx",
+    "ref": "Daniel 2026-11-13: the theme step of /create-a-space is confusing; one row of theme buttons, one of accents, same hero; New World unless they came from another theme; remember the last pick; preview says Business Name."
+  },
+  "detail": "Theme and accent are two radiogroups in the hero (create-space-look.tsx) instead of a Change theme link plus swatches inside the name card. Nothing blocks Next on an accent now. A pick writes the fq_last_kit cookie and a new fq_last_accent cookie; the next visit starts on them unless the address names a kit. The preview name reads Business Name until a name is typed. Done when scripts/probes/create-space-look-row.mjs passes.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/create-space-look-row.mjs" },
+  "wave": "W7"
+}

@@ -143,6 +143,31 @@ function platformContacts(db: ReturnType<typeof createAdminClient>, rootId: stri
   return rootId ? q.or(`space_id.is.null,space_id.eq.${rootId}`) : q.is('space_id', null)
 }
 
+/** Rows PostgREST returns per request: it caps every response at 1,000 whatever the query asks for, so
+ *  an unranged `select` over a larger audience silently stops at 1,000 people. */
+const PAGE_SIZE = 1000
+
+/** How many ids one `.in()` filter carries. Ids ride in the request URL, and a few thousand of them
+ *  overflows it; 100 uuids is ~3.8 KB. */
+const IN_CHUNK = 100
+
+/** Read EVERY row a contacts query matches, a page at a time, ordered by id so a page boundary can
+ *  neither skip nor repeat a row. This is what lets an audience be larger than 1,000 (a 10,000 person
+ *  send used to resolve to its first 1,000 and report success). A read error THROWS: a partial
+ *  audience must stop the send, not shrink it. Exported for the test. */
+export async function readAllPages<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<T[]> {
+  const out: T[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await page(from, from + PAGE_SIZE - 1)
+    if (error) throw new Error(`Could not read the audience: ${error.message}`)
+    const rows = data ?? []
+    out.push(...rows)
+    if (rows.length < PAGE_SIZE) return out
+  }
+}
+
 /** Map a set of profile ids onto their member contacts (the send-seam shape), excluding
  *  unsubscribed contacts. The SAME query the trait / place / event / ad-hoc-profile paths all
  *  share: a contact must carry both a profile id and an email to be reachable. Fail-safe to []. */
@@ -152,12 +177,20 @@ async function recipientsForProfileIds(
   rootId: string | null,
 ): Promise<Recipient[]> {
   if (!profileIds.length) return []
-  const { data } = await platformContacts(db, rootId)
-    .in('profile_id', profileIds)
-    .neq('consent_state', 'unsubscribed')
-  return (data ?? [])
+  const rows: Awaited<ReturnType<typeof readContactRows>> = []
+  for (let i = 0; i < profileIds.length; i += IN_CHUNK) {
+    const chunk = profileIds.slice(i, i + IN_CHUNK)
+    rows.push(...(await readContactRows(platformContacts(db, rootId).in('profile_id', chunk).neq('consent_state', 'unsubscribed'))))
+  }
+  return rows
     .filter((c) => c.profile_id && c.email)
     .map((c) => ({ contactId: c.id, email: c.email as string, profileId: c.profile_id as string }))
+}
+
+/** Every row of a contacts query, paged (see readAllPages). */
+function readContactRows(q: ReturnType<typeof platformContacts>) {
+  const ordered = q.order('id')
+  return readAllPages((from, to) => ordered.range(from, to))
 }
 
 /** Member contacts in a segment, excluding unsubscribed (suppression is enforced at
@@ -243,8 +276,8 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
       .neq('consent_state', 'unsubscribed')
       // (has an account) OR (is the owned imported list) — NEVER a profile-less capture lead.
       .or('profile_id.not.is.null,source.eq.import')
-    const { data } = await allq
-    return (data ?? [])
+    const data = await readContactRows(allq)
+    return data
       .filter((c) => c.email)
       .map((c) => ({ contactId: c.id, email: c.email as string, profileId: (c.profile_id as string) ?? null }))
   }
@@ -256,8 +289,8 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
     const impq = platformContacts(db, rootId)
       .eq('source', 'import')
       .neq('consent_state', 'unsubscribed')
-    const { data } = await impq
-    return (data ?? [])
+    const data = await readContactRows(impq)
+    return data
       .filter((c) => c.email)
       .map((c) => ({ contactId: c.id, email: c.email as string, profileId: (c.profile_id as string) ?? null }))
   }
@@ -284,8 +317,8 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
   // contacts that came in through the Beta waitlist capture (source = 'beta_waitlist').
   if (parsed.slug === 'beta_waitlist') q = q.eq('source', 'beta_waitlist')
 
-  const { data } = await q
-  return (data ?? [])
+  const data = await readContactRows(q)
+  return data
     .filter((c) => c.profile_id && c.email)
     .map((c) => ({ contactId: c.id, email: c.email as string, profileId: c.profile_id as string }))
 }
