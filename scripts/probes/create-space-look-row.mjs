@@ -1,4 +1,4 @@
-// LIVE-2269: the 12-minute builder picks its look in two hero rows (theme, accent), starts on New World, remembers the
+// LIVE-2272: the 12-minute builder picks its look in two hero rows (theme, accent), starts on New World, remembers the
 // last pick, and the preview name mirrors the name input ("Business Name" until one is typed). Exits 1 when any fails.
 import { readFileSync } from 'node:fs'
 const read = (p) => readFileSync(p, 'utf8')
