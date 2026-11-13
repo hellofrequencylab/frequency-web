@@ -5,7 +5,7 @@
 import { boxView, type LaunchBoxView } from './box-state.ts'
 import { getStartedView } from './get-started.ts'
 import type { InventorySection } from './overview.ts'
-import type { LaunchSnapshot } from './state.ts'
+import { toSnapshot, type LaunchSnapshot } from './state.ts'
 
 const TODO_SHOWN = 6
 
@@ -25,4 +25,15 @@ export function setupBoxView(launch: LaunchSnapshot, sections: readonly Inventor
       todo: v.todo.slice(0, TODO_SHOWN).map((i) => ({ id: i.id, label: i.label, href: i.href, photo: i.photo, skipped: i.skipped })),
     },
   }
+}
+
+/** The Finish setup box for a member who OWNS a Space but has no launch row (they made it through /spaces/new or the
+ *  wizard hand-over, then closed the page), while the Space's Spotlight is not published. The same pill and the same
+ *  list, so closing the wizard never drops the thread: it points at the Spotlight, then the website. The launch the
+ *  view is built over is a stand-in that is never stored (the setup sheet only reads the list; hiding it is the
+ *  person's own setting, lib/launch/setup-hidden.ts). Null when the list is complete or the Spotlight is already live. */
+export function spaceOnlySetupBoxView(ownerId: string, spaceId: string, sections: readonly InventorySection[], now: Date): LaunchBoxView | null {
+  if (sections.some((s) => s.id === 'spotlight' && s.items.some((i) => i.id === 'sp-live' && i.state === 'done'))) return null
+  const standIn = toSnapshot({ id: `space-only:${spaceId}`, owner_id: ownerId, space_id: spaceId, started_at: now.toISOString(), updated_at: now.toISOString(), niche: null, intents: [], steps: {} })
+  return standIn ? setupBoxView(standIn, sections, now) : null
 }
