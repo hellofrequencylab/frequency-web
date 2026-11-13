@@ -6,7 +6,7 @@ import { isStaff } from '@/lib/core/roles'
 import { hasConsent } from '@/lib/consent/consent'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export interface RequestAnalyticsAudience { allowed: boolean; staff: boolean }
+interface RequestAnalyticsAudience { allowed: boolean; staff: boolean }
 
 /** Current verified request only. View-as must never make real staff into analytics traffic. */
 export const currentAnalyticsAudience = cache(async (): Promise<RequestAnalyticsAudience> => {

@@ -34,7 +34,7 @@ it('the serialized parser gate and React navigation gate apply the same state', 
   vi.resetModules()
   const { GaConsentGate } = await import('./ga-consent-gate')
   const html = renderToStaticMarkup(<GaConsentGate disabled />)
-  const script = html.match(/<script>([\s\S]*)<\/script>/)?.[1]
+  const script = new DOMParser().parseFromString(html, 'text/html').querySelector('script')?.textContent
   expect(script).toBeTruthy()
   new Function(script!)()
   expect(state().__fqGaAccountDisabled).toBe(true)
