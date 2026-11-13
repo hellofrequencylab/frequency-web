@@ -56,9 +56,13 @@ describe('preview site', () => {
     const s = deriveSite(base)
     expect(s.name).toBe('Business Name')
     expect(s.em).toBe('start to finish.')
-    expect(s.domain).toBe('frequency.community/yourspace')
+    expect(s.domain).toBe('businessname.frequencylocal.com')
     expect(s.offers).toHaveLength(3)
     expect(s.host).toBe('you')
+  })
+
+  it('the address bar reads the name as a subdomain of frequencylocal.com', () => {
+    expect(deriveSite({ ...base, name: 'Salt & Sage', handle: 'saltsage' }).domain).toBe('saltsage.frequencylocal.com')
   })
 
   it('takes the second line, verb and tagline from the picks', () => {

@@ -139,6 +139,7 @@ export function SpacePreview(props: SpacePreviewProps) {
                 )}
               </div>
             </div>
+            <span className="cs-pv-avatar">{hostInitial}</span>
             <span className="cs-pv-host">Hosted by {site.host}</span>
             <span className="cs-pv-pname">{site.name}<br /><em>{site.em}</em></span>
             <div className="cs-pv-links">
