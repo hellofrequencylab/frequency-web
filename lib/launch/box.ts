@@ -6,7 +6,9 @@ import { getMyProfileId } from '@/lib/auth'
 import { launchSystemEnabled } from './enabled'
 import { boxView, type LaunchBoxView } from './box-state'
 import { loadPostPublishList } from './get-started-io'
-import { setupBoxView } from './setup-box'
+import { setupBoxView, spaceOnlySetupBoxView } from './setup-box'
+import { loadInventory } from './inventory-io'
+import { listOwnedSpaces } from './spaces-io'
 import { loadSetupHidden } from './setup-hidden-io'
 import { getActiveLaunch, getLaunchForOwner } from './store'
 
@@ -25,11 +27,21 @@ export async function loadLaunchBox(): Promise<LaunchBoxView | null> {
       const launch = active ?? (await getLaunchForOwner(profileId))
       return launch ? setupBoxView(launch, list, new Date()) : null
     }
-    if (!active) return null
+    if (!active) return await loadSpaceOnlyBox(profileId)
     return boxView(active, new Date())
   } catch {
     return null
   }
+}
+
+// A member with a Space and no launch row (made through /spaces/new or the wizard hand-over, wizard closed) still gets
+// the Finish setup pill while a Space's Spotlight is unpublished: the first such Space, never a second list.
+async function loadSpaceOnlyBox(profileId: string): Promise<LaunchBoxView | null> {
+  const space = (await listOwnedSpaces(profileId)).find((s) => !s.spotlightLive)
+  if (!space) return null
+  if (await loadSetupHidden(profileId)) return null
+  const inv = await loadInventory(space.id, profileId, [], true)
+  return inv ? spaceOnlySetupBoxView(profileId, space.id, inv.sections, new Date()) : null
 }
 
 // A running launch owns the member's "what next" list (VLS-11): the Get Started checklist stands down while the box is
@@ -39,5 +51,9 @@ export async function loadLaunchBox(): Promise<LaunchBoxView | null> {
 export async function launchOwnsNextSteps(): Promise<boolean> {
   if ((await loadLaunchBox()) === null) return false
   const profileId = await getMyProfileId()
-  return !(profileId && (await loadPostPublishList(profileId)))
+  if (!profileId) return false
+  const hasList = (await loadPostPublishList(profileId)) !== null
+  // The space-only pill (no launch row) leaves the plain checklist where it is.
+  if (!hasList && !(await getActiveLaunch(profileId))) return false
+  return !hasList
 }
