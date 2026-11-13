@@ -6,5 +6,5 @@ const bad = []
 for (const t of ['new-world', 'services', 'designer', 'midnight', 'network-kit', 'temple-kit', 'bold', 'wildheart']) {
   if (!css.includes(`[data-preview-theme="${t}"]`)) bad.push(`no preview block for ${t}`)
 }
-if (!site.includes('.frequencylocal.com')) bad.push('the address bar does not read <name>.frequencylocal.com')
+if (!/domain: `\$\{[^`]*\}\.frequencylocal\.com`/.test(site)) bad.push('the address bar does not read <name>.frequencylocal.com')
 if (bad.length) { console.error(bad.join('\n')); process.exit(1) }
