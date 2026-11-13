@@ -229,3 +229,5 @@ hunt_privacy_requests
 
 # EMAIL-047 cross-email lifecycle send ledger: service role only; written by reserveLifecycleSend (lib/lifecycle/cap-io.ts).
 lifecycle_send_log
+analytics_experiments
+analytics_experiment_assignments

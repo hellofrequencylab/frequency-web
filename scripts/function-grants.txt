@@ -361,3 +361,11 @@ hunt_consent_record internal
 hunt_consent_can_send internal
 hunt_consent_roster internal
 hunt_privacy_request internal
+analytics_experiment_manage internal
+analytics_experiment_assign internal
+analytics_experiment_expose internal
+analytics_experiment_outcome internal
+analytics_experiment_results internal
+analytics_experiment_withdraw_consent internal
+analytics_experiment_count_exclusion internal
+analytics_experiment_purge internal

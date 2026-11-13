@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2278",
+  "title": "Run only closed consented experiments with mature follow-up and guarded evaluation",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/ANALYTICS.md",
+    "ref": "Owner analytics dashboard and user-flow request, 2026-11-13."
+  },
+  "detail": "Closed heading pilot uses stable assignment, visible exposure, authoritative RSVP outcomes, fixed enrollment/follow-up, actual staff exclusion, consent withdrawal and anonymous attrition. Null/future starts fail closed. Evaluation never publishes a variant. Isolated SQL verified role and lifecycle behavior; production activation remains LIVE-2281. New focused regressions failed before implementation; existing probes were preserved. Implementation proof does not assert production activation. Exact unchanged policy consequence probe fails on current main d012ac9d2 because the closed evaluator is absent. Assignment retention is enforced through a service-only bounded 180-day purge with exact counts and visible failure logging; existing cron tests remain byte-identical. pgTAP lifecycle coverage is included for trusted replay; UI mounting and production application remain separate release steps.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/analytics-experiment-policy.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-13"
+}
