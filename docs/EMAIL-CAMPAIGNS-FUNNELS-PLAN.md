@@ -48,6 +48,27 @@ meaning of Funnel (the triggered email journey) and rename the others (Entry cam
 
 ## What best practice says (and how we honor it)
 
+### Learn from a past email before revising the next one
+
+The CRM Marketing workspace offers a review outside the open composer. Select an
+upcoming campaign and a past send, inspect recipient-deduplicated evidence, then
+review a participant-preview or explicitly host-targeted proposal. Existing Vera
+coaching remains read-only; a deterministic revision is a separate, explicit act.
+
+Experience, builder, utility and unsubscribe-link clicks are separate, potentially
+overlapping recipient groups. Privacy-affected opens do not establish interest.
+Incomplete provider reads, unjoined Google traffic, missing replies and completed
+campaign-attributed opt-outs remain unknown. Audience recommendations do not widen
+a campaign automatically; eligibility and suppression are previewed through the
+existing send controls.
+
+Applying a reviewed revision guards the current content and lifecycle against
+concurrent edits or dispatch, records provenance, and returns the campaign to draft.
+Approval, schedule, test-send proof and compiled HTML must be renewed. Emails with
+send history and evergreen quiet-member campaigns require a separate one-time draft.
+The review itself never sends, resumes, schedules or enrolls anyone in a sequence.
+See [ADR-1952](ledger/adr/ADR-1952.md) for the write and evidence boundaries.
+
 | Finding | Source | How we apply it |
 |---|---|---|
 | A welcome/nurture series is **4–6 emails**, behavioral-triggered, personalized by how they joined. | [InboxArmy](https://www.inboxarmy.com/blog/welcome-email-series/), [Omnisend](https://www.omnisend.com/blog/email-marketing-funnel/) | Funnel templates ship as best-practice 4–6 step journeys, segmented by entry. |
