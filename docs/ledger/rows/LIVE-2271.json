@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-2271",
+  "title": "Prompt a member who made a Space and closed the wizard to launch their Spotlight and website",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-13",
+  "source": {
+    "file": "lib/launch/box.ts",
+    "ref": "Daniel 2026-11-13: one flexible wizard that remembers where they left off; after creating a Space and closing the wizard they are prompted to launch the Spotlight and website."
+  },
+  "detail": "The Finish setup pill only showed for a member with a launch row. A member with an active Space and no launch row (made through /spaces/new or the wizard hand-over) saw nothing. loadLaunchBox now falls back to the first owned Space whose Spotlight is unpublished and draws the same pill over that Space's Get Started list (spaceOnlySetupBoxView), Spotlight first. Hiding setup still hides it. Not checked signed in from the build box; see the PR.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/launch-space-only-box.mjs" },
+  "wave": "W7"
+}

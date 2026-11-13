@@ -11,7 +11,9 @@ import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { log } from '@/lib/log'
 import { readOwner } from './comeback-io'
+import { loadInventory } from './inventory-io'
 import { buildLaunchedEmail, LAUNCHED_KIND } from './launched-email'
+import { nextBestStep } from './next-best-step'
 import type { LaunchSnapshot } from './state'
 
 /** Postgres unique_violation: the claim row already exists. */
@@ -36,7 +38,10 @@ export async function sendLaunchedWelcome(launch: LaunchSnapshot, space: { slug:
     if (skipReason || !owner.email) return 'skipped'
 
     const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl, profileId: launch.ownerId, category: 'lifecycle' })
-    const payload = buildLaunchedEmail({ to: owner.email, firstName: owner.firstName, spaceName: space.name, slug: space.slug, baseUrl, unsubscribeUrl })
+    // "Next up" is a bonus: a failed read sends the welcome without it (loadInventory never throws).
+    const inventory = await loadInventory(launch.spaceId, launch.ownerId, launch.skippedPhotos, true, { client: admin, personal: false })
+    const next = inventory ? nextBestStep(inventory.sections, { niche: launch.niche, intents: launch.intents }) : null
+    const payload = buildLaunchedEmail({ to: owner.email, firstName: owner.firstName, spaceName: space.name, slug: space.slug, baseUrl, unsubscribeUrl, next })
     await enqueueEmail({ ...payload, headers: listUnsubscribeHeaders(unsubscribeUrl) }, { dedupeKey: `launch_welcome:${launch.id}` })
     return 'sent'
   } catch (e) {

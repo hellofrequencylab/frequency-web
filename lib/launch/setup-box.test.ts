@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { setupBoxView } from './setup-box'
+import { setupBoxView, spaceOnlySetupBoxView } from './setup-box'
 import { toSnapshot } from './state'
 import type { InventorySection } from './overview'
 
@@ -28,5 +28,17 @@ describe('the Finish setup box (LIVE-1914)', () => {
   it('shows at most six still-to-do items so the sheet stays a glance', () => {
     const many: InventorySection[] = [{ id: 'space', title: 'Space', items: Array.from({ length: 9 }, (_, i) => item(`i${i}`, 'todo')) }] as InventorySection[]
     expect(setupBoxView(launch, many, t0)!.setup!.todo).toHaveLength(6)
+  })
+})
+
+describe('the Finish setup box for a Space with no launch', () => {
+  it('shows over the Space\'s list while the Spotlight is not live, Spotlight first', () => {
+    const v = spaceOnlySetupBoxView('p1', 's1', sections(['todo', 'done', 'todo']), t0)!
+    expect(v.setup!.todo[0]).toMatchObject({ id: 'sp-live', href: '/launch/step/spotlight' })
+    expect(v.setup).toMatchObject({ done: 1, total: 3 })
+  })
+  it('stands down once the Spotlight is live or the list is complete', () => {
+    expect(spaceOnlySetupBoxView('p1', 's1', sections(['done', 'done', 'todo']), t0)).toBeNull()
+    expect(spaceOnlySetupBoxView('p1', 's1', sections(['done', 'done', 'done']), t0)).toBeNull()
   })
 })

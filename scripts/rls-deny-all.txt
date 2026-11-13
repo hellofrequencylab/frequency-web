@@ -226,3 +226,6 @@ hunt_consent_events
 hunt_contact_suppressions
 hunt_leads
 hunt_privacy_requests
+
+# EMAIL-047 cross-email lifecycle send ledger: service role only; written by reserveLifecycleSend (lib/lifecycle/cap-io.ts).
+lifecycle_send_log

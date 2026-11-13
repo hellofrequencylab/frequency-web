@@ -22,7 +22,9 @@ if (!/launchHomeHref\(\{ signedIn: true \}\)/.test(page) || !/\/launch\/start/.t
 const proxy = read('proxy.ts')
 if (/SESSION_ROUTES = new Set\(\[[^\]]*'\/spaces\/new'/.test(proxy)) bad.push('proxy.ts still walls /spaces/new behind sign-in')
 const doorSet = proxy.match(/CREATE_SPACE_DOORS = new Set\(\[([^\]]*)\]\)/)?.[1] ?? ''
-for (const route of ['/spaces/new', '/launch', '/launch/start']) if (!doorSet.includes(`'${route}'`)) bad.push(`proxy.ts does not send a signed-out ${route} to the wizard`)
+for (const route of ['/spaces/new', '/launch']) if (!doorSet.includes(`'${route}'`)) bad.push(`proxy.ts does not send a signed-out ${route} to the wizard`)
+if (doorSet.includes("'/launch/start'")) bad.push('proxy.ts still hops the Free Spotlight buttons to the wizard (owner 2026-11-13: they open the Spotlight builder)')
+if (!/inFlowHref\('\/launch\/step\/spotlight'\)/.test(read('app/(main)/launch/start/route.ts'))) bad.push('a signed-out /launch/start does not open the Spotlight step')
 if (!/CREATE_SPACE_WIZARD = '\/create-a-space'/.test(proxy) || !/!user && CREATE_SPACE_DOORS\.has\(pathname\.replace\(/.test(proxy)) bad.push('proxy.ts does not make the signed-out hop to /create-a-space')
 
 // Other operator doors still open the wizard, never the member sign-up.

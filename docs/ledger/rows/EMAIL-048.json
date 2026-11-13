@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-048",
+  "title": "Contact form submitters get an acknowledgement email, not only the Space owner",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/crm/lead-notify.ts",
+    "ref": "Funnel follow-up email survey 2026-11-13, plan item 4: the owner is emailed on a contact form, the submitter is not"
+  },
+  "detail": "submitContactForm (every Space site contact, quote, inquiry, letter and follow form) emailed only the owner. The submitter now gets one receipt: lib/crm/contact-ack-email.ts (pure builder), lib/crm/contact-ack-io.ts (best-effort sender called beside notifyOwnerOfContactLead; suppression list honored, one per address per Space per hour via a once-claim plus an hour-bucketed outbox dedupe key). Sent from Frequency's default From; Space-name masking stays off until Daniel approves it. Done when the probe passes (door calls the sender; sender keeps suppression, limit and dedupe) and the sample is in the catalog. Not covered, deliberately: event check-in, share-back exchange and warm-intro accept send the person nothing, and the lead-magnet unlock page says it is on its way to the inbox but no email is sent. Those are separate rows.\n\nContact form submitters get the acknowledgement; draft PR claude/email-submitter-ack.\n\nProbe wired as a node command.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/contact-submitter-ack.mjs"
+  },
+  "closed": "2026-11-13",
+  "wave": "W7"
+}

@@ -27,6 +27,7 @@ vi.mock('@/lib/queue/outbox', async (importOriginal) => {
   return {
     ...real,
     processQueue: () => state.drainError ? Promise.reject(state.drainError) : Promise.resolve(state.drain),
+    processQueueFor: () => state.drainError ? Promise.reject(state.drainError) : Promise.resolve(state.drain),
     queueHealth: () => Promise.resolve(state.health),
   }
 })

@@ -5,6 +5,8 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { captureLead } from '@/lib/crm/lead-capture'
 import { createDealForCapturedLead } from '@/lib/crm/lead-deal'
 import { notifyOwnerOfContactLead } from '@/lib/crm/lead-notify'
+import { sendContactAck } from '@/lib/crm/contact-ack-io'
+import { getCachedUser } from '@/lib/auth'
 import { rateLimitOk } from '@/lib/rate-limit'
 
 // THE PUBLIC CONTACT-FORM DOOR (lead capture, door 6).
@@ -137,6 +139,20 @@ export async function submitContactForm(input: ContactFormInput): Promise<Contac
     fromEmail: email,
     message: message || null,
     optedIn: optIn,
+  })
+
+  // The submitter's own receipt, right beside the owner's notice. Best-effort and never awaited for its
+  // result: sendContactAck swallows every failure (the lead is sealed and the owner told), is limited to one
+  // per address per Space per hour, and skips a suppressed address. `signedOut` only decides whether the note
+  // adds a quiet "Join free" link; a failed session read counts as signed out.
+  const viewer = await getCachedUser().catch(() => null)
+  await sendContactAck({
+    spaceId: space.id,
+    spaceSlug: space.slug,
+    spaceName: space.brandName?.trim() || space.name,
+    email,
+    visitorName: name || null,
+    signedOut: !viewer,
   })
 
   // NO revalidatePath. Every public capture door omits it on purpose: the visitor's page swaps to a
