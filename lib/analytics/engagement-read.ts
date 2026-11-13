@@ -9,6 +9,7 @@
 
 import { getEngagementDashboard } from './dashboard'
 import { getOutcomeReport } from './outcomes'
+import { getShowingUpReading } from './showing-up'
 
 export type Severity = 'good' | 'watch' | 'risk'
 
@@ -23,11 +24,11 @@ export interface Insight {
 }
 
 export interface ReadInput {
-  wam: number
+  showingUpMembers: number | null
   newMembers: number
   /** 0..1 */
   activationRate: number
-  funnel: Array<{ step: string; actors: number; dropPct: number | null }>
+  funnel: Array<{ step: string; actors: number; dropPct: number | null; orderedCohort?: boolean }>
   challenges: Array<{ name: string; started: number; completed: number; rate: number | null }>
   quests: Array<{ name: string; started: number; rate: number | null; avgStallStep: number | null }>
 }
@@ -40,7 +41,7 @@ interface EngagementRead {
 
 const SEVERITY_RANK: Record<Severity, number> = { risk: 0, watch: 1, good: 2 }
 const LOW_COMPLETION = 25
-const MIN_STARTS = 3
+const MIN_STARTS = 30
 
 /** Pure: turn the engagement signal into ranked insights. Unit-tested. */
 export function synthesizeInsights(input: ReadInput): Insight[] {
@@ -66,20 +67,20 @@ export function synthesizeInsights(input: ReadInput): Insight[] {
     })
   }
 
-  // WAM — the North Star.
-  if (input.wam === 0) {
+  // Host-confirmed attendance is the north star. Missing is distinct from zero.
+  if (input.showingUpMembers === 0) {
     out.push({
-      id: 'wam_zero',
+      id: 'attendance_zero',
       severity: 'risk',
-      title: 'No weekly-active members',
-      finding: 'Zero members logged a verified practice in the last 7 days.',
-      recommendation: 'Prioritize getting a handful of members to one real practice this week — depth over reach.',
+      title: 'No host-confirmed attendance this week',
+      finding: 'No Members were marked present by a host in the last 7 days.',
+      recommendation: 'Check host marking coverage, then help members reach a gathering.',
     })
   }
 
   // Funnel — where navigation jams (biggest step-over-step drop).
   const worstDrop = input.funnel
-    .filter((s) => s.dropPct !== null && s.dropPct > 0 && s.actors >= 0)
+    .filter((s) => s.orderedCohort && s.dropPct !== null && s.dropPct > 0 && s.actors >= 0)
     .sort((a, b) => (b.dropPct ?? 0) - (a.dropPct ?? 0))[0]
   if (worstDrop && (worstDrop.dropPct ?? 0) >= 40) {
     out.push({
@@ -113,7 +114,7 @@ export function synthesizeInsights(input: ReadInput): Insight[] {
 export function summarize(insights: Insight[]): string {
   const risks = insights.filter((i) => i.severity === 'risk').length
   const watches = insights.filter((i) => i.severity === 'watch').length
-  if (risks === 0 && watches === 0) return 'Engagement looks healthy — nothing flagged this week.'
+  if (risks === 0 && watches === 0) return 'No rule-based concerns met the evidence threshold. This does not establish that every flow is healthy.'
   const parts: string[] = []
   if (risks) parts.push(`${risks} thing${risks > 1 ? 's' : ''} need${risks > 1 ? '' : 's'} attention`)
   if (watches) parts.push(`${watches} to watch`)
@@ -121,9 +122,12 @@ export function summarize(insights: Insight[]): string {
 }
 
 export async function getEngagementRead(): Promise<EngagementRead> {
-  const [dash, outcomes] = await Promise.all([getEngagementDashboard(30), getOutcomeReport()])
+  const [dash, outcomes, attendance] = await Promise.all([
+    getEngagementDashboard(30).catch(() => null), getOutcomeReport().catch(() => null), getShowingUpReading(),
+  ])
+  if (!dash || !outcomes) return { summary: 'A required reading is unavailable. No reliable engagement recommendation can be made.', insights: [], generatedAt: new Date().toISOString() }
   const input: ReadInput = {
-    wam: dash.practice.wam,
+    showingUpMembers: attendance?.members ?? null,
     newMembers: dash.practice.newMembers,
     activationRate: dash.practice.activationRate,
     funnel: dash.funnel.map((f) => ({ step: f.step, actors: f.actors, dropPct: f.dropPct })),

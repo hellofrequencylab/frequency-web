@@ -5,7 +5,7 @@ import { CREATE_SPACE_SIGNALS } from './signal'
 // LIVE-1970: the funnel the admin page shows, and the median the "12 minutes" claim rests on.
 
 describe('createSpaceFunnel', () => {
-  it('counts visits for the builder steps and members for the launch steps, with the drop between', () => {
+  it('counts visits for the builder steps and members for the launch steps, without claiming conversion between populations', () => {
     const f = createSpaceFunnel([
       { eventType: 'createspace.view', events: 100, actors: 0 },
       { eventType: 'createspace.name_started', events: 60, actors: 0 },
@@ -18,13 +18,13 @@ describe('createSpaceFunnel', () => {
     ])
     expect(f.map((s) => [s.eventType, s.actors, s.dropPct])).toEqual([
       ['createspace.view', 100, null],
-      ['createspace.name_started', 60, 40],
-      ['createspace.accent_picked', 45, 25],
-      ['createspace.offer', 30, 33],
-      ['createspace.lead', 20, 33],
-      ['createspace.photos', 18, 10],
-      ['launch_started', 12, 33],
-      ['launch_completed', 9, 25],
+      ['createspace.name_started', 60, null],
+      ['createspace.accent_picked', 45, null],
+      ['createspace.offer', 30, null],
+      ['createspace.lead', 20, null],
+      ['createspace.photos', 18, null],
+      ['launch_started', 12, null],
+      ['launch_completed', 9, null],
     ])
   })
   it('is all zeros with no drop when the ledger is empty', () => {
