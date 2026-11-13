@@ -430,3 +430,4 @@ hunt_consent_events                   internal
 hunt_contact_suppressions             internal
 hunt_leads                            internal
 hunt_privacy_requests                 internal
+lifecycle_send_log                    internal
