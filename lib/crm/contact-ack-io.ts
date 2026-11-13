@@ -19,7 +19,7 @@ import { buildContactAckEmail, CONTACT_ACK_KIND } from './contact-ack-email'
 const HOUR_SECONDS = 3600
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
-export type ContactAckResult = 'sent' | 'skipped' | 'limited' | 'failed'
+type ContactAckResult = 'sent' | 'skipped' | 'limited' | 'failed'
 
 export async function sendContactAck(input: {
   spaceId: string
