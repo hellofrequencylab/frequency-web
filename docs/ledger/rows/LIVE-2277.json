@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2277",
+  "title": "Keep independent analytics totals separate from ordered cohort conversion",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/ANALYTICS.md",
+    "ref": "Owner analytics dashboard and user-flow request, 2026-11-13."
+  },
+  "detail": "Independent event totals no longer imply ordered drop-off; anonymous visits and signed-in launches remain distinct populations. Unavailable attendance and page speed remain unknown instead of zero. New focused regressions failed before implementation; existing probes were preserved. Implementation proof does not assert production activation.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/analytics-metrics.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-13"
+}

@@ -44,7 +44,7 @@ interface RawFunnelRow {
 
 export const JOURNEY_WINDOW_DAYS = 30
 
-type UntypedRpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }>
+type UntypedRpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error?: unknown }>
 
 /** The admin client stays typed; only its `rpc` method is widened. */
 function rpc(): UntypedRpc {
@@ -53,12 +53,13 @@ function rpc(): UntypedRpc {
 }
 
 async function readOne(journey: Journey, windowDays: number): Promise<JourneyFunnel> {
-  const { data } = await rpc()('journey_funnel', {
+  const { data, error } = await rpc()('journey_funnel', {
     _journey_key: journey.key,
     _steps: toFunnelSpec(journey),
     _days: windowDays,
   })
-  const rows = ((data ?? []) as RawFunnelRow[]).map((r) => ({
+  if (error || !Array.isArray(data) || data.length !== journey.steps.length) throw new Error('Funnel reading unavailable')
+  const rows = (data as RawFunnelRow[]).map((r) => ({
     stepKey: r.step_key,
     subjects: Number(r.subjects),
   }))
@@ -172,10 +173,11 @@ export async function getVitalsReadout(
   windowDays = VITALS_WINDOW_DAYS,
   viewport: string | null = null,
 ): Promise<VitalsReadout> {
-  const { data } = await rpc()('vitals_p75', {
+  const { data, error } = await rpc()('vitals_p75', {
     _days: windowDays,
     _path_template: null,
     _viewport: viewport,
   })
-  return buildVitalsReadout((data ?? []) as RawVitalRow[], windowDays)
+  if (error || !Array.isArray(data)) throw new Error('Page speed reading unavailable')
+  return buildVitalsReadout(data as RawVitalRow[], windowDays)
 }
