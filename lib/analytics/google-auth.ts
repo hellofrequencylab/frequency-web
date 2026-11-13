@@ -1,7 +1,7 @@
 // Server/CLI credential adapter. Only imported by guarded server code and local readiness tooling.
 // This uses Google's readonly OAuth scope and fixed token endpoint, never a credential-file URL.
 import { createHash, sign } from 'node:crypto'
-import { readFile, stat } from 'node:fs/promises'
+import { open } from 'node:fs/promises'
 
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token'
 export const GOOGLE_ANALYTICS_READ_SCOPE = 'https://www.googleapis.com/auth/analytics.readonly'
@@ -9,7 +9,7 @@ type Env = Record<string, string | undefined>
 interface ServiceAccount { client_email: string; private_key: string; private_key_id?: string }
 interface TokenCache { key: string; token: string; until: number }
 let cached: TokenCache | null = null
-let inflight: { key: string; promise: Promise<string | null> } | null = null
+let inflight: { key: string; id: symbol; promise: Promise<string | null> } | null = null
 
 export function googleCredentialConfigured(env: Env = process.env): boolean {
   return !!(env.GA4_REPORTING_ACCESS_TOKEN?.trim() || env.GA4_REPORTING_CREDENTIALS_JSON?.trim() || env.GOOGLE_APPLICATION_CREDENTIALS?.trim())
@@ -41,9 +41,20 @@ export async function getGoogleReportingAccessToken(options: {
   if (token) return token.length <= 8192 && !/[\r\n]/.test(token) ? token : null
   const readCredentialFile = options.readCredentialFile ?? (async (path: string) => {
     try {
-      const metadata = await stat(path)
-      if (!metadata.isFile() || metadata.size > 65536) return null
-      return await readFile(path, 'utf8')
+      const handle = await open(path, 'r')
+      try {
+        const metadata = await handle.stat()
+        if (!metadata.isFile() || metadata.size > 65536) return null
+        // Read through the same opened descriptor and cap bytes even if the file grows.
+        const bytes = Buffer.alloc(65537)
+        let total = 0
+        while (total < bytes.length) {
+          const { bytesRead } = await handle.read(bytes, total, bytes.length - total, total)
+          if (bytesRead === 0) break
+          total += bytesRead
+        }
+        return total <= 65536 ? bytes.subarray(0, total).toString('utf8') : null
+      } finally { await handle.close() }
     } catch { return null }
   })
   const raw = env.GA4_REPORTING_CREDENTIALS_JSON?.trim() || (env.GOOGLE_APPLICATION_CREDENTIALS ? await readCredentialFile(env.GOOGLE_APPLICATION_CREDENTIALS) : null)
@@ -90,6 +101,7 @@ export async function getGoogleReportingAccessToken(options: {
     } catch { return null }
   }
   const promise = exchange()
-  inflight = { key, promise }
-  try { return await promise } finally { if (inflight?.promise === promise) inflight = null }
+  const id = Symbol('google-token-request')
+  inflight = { key, id, promise }
+  try { return await promise } finally { if (inflight?.id === id) inflight = null }
 }

@@ -4,7 +4,7 @@ import { getGoogleReportingAccessToken, googleReportingCredentialKey } from './g
 import { googleReportingConfig, readGoogleReports, type GoogleAnalyticsReading } from './google-data'
 
 let cached: { key: string; until: number; reading: GoogleAnalyticsReading } | null = null
-let pending: { key: string; promise: Promise<GoogleAnalyticsReading> } | null = null
+let pending: { key: string; id: symbol; promise: Promise<GoogleAnalyticsReading> } | null = null
 
 /** Fixed reporting access behind the Insights gate. Cache is private, bounded to five minutes and configuration-specific. */
 export async function getGoogleAnalyticsReading(): Promise<GoogleAnalyticsReading> {
@@ -22,6 +22,7 @@ export async function getGoogleAnalyticsReading(): Promise<GoogleAnalyticsReadin
     return reading
   }
   const promise = read()
-  pending = { key, promise }
-  try { return await promise } finally { if (pending?.promise === promise) pending = null }
+  const id = Symbol('google-report-request')
+  pending = { key, id, promise }
+  try { return await promise } finally { if (pending?.id === id) pending = null }
 }
