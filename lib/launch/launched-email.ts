@@ -8,6 +8,7 @@
 import { emailButton, emailShell, escapeHtml, EMAIL_H1, EMAIL_MUTED, EMAIL_P, type EmailPayload } from '@/lib/email'
 import { palette } from '@/lib/theme/palette'
 import { emailType } from '@/lib/theme/email-type'
+import type { NextBestStep } from './next-best-step'
 
 export const LAUNCHED_KIND = 'launched_welcome'
 
@@ -21,6 +22,8 @@ interface LaunchedEmailParts {
   baseUrl: string
   /** Signed unsubscribe link (lifecycle category) for the plain-text footer. */
   unsubscribeUrl: string
+  /** The Space's next undone step (lib/launch/next-best-step.ts), or null/absent when nothing is left. Adds a "next up" line and makes its button the one button. */
+  next?: NextBestStep | null
 }
 
 const SUBJECT = "You're live. Here's where people find you."
@@ -31,6 +34,7 @@ const LEAD = [
   'Here is where people find you:',
 ]
 const NUDGE = 'One small thing that makes a difference: send your Spotlight link to three people today. A text is enough.'
+const NEXT_UP = 'Next up:'
 const CTA = 'Open your Space'
 const CLOSE = 'Change anything any time from your Space console. Nothing is locked in.'
 const WHY = "You're getting this because you launched a Space on Frequency."
@@ -55,6 +59,8 @@ export function buildLaunchedEmail(parts: LaunchedEmailParts): EmailPayload {
     .join('')
   const linkBlock = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" data-fq="fq-panel" style="width:100%;border-collapse:separate;background:${palette.emailAccentSoft};border-radius:20px;margin:4px 0 24px;"><tr><td style="padding:16px 20px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${linkRows}</table></td></tr></table>`
 
+  const next = parts.next && parts.next.href.startsWith('/') ? { ...parts.next, href: `${parts.baseUrl.replace(/\/+$/, '')}${parts.next.href}` } : null
+  const nextLine = next ? `${NEXT_UP} ${next.label}. ${next.why}` : null
   const html = emailShell(
     [
       `<h1 data-fq="fq-h1" style="${EMAIL_H1}">${escapeHtml(HEADING)}</h1>`,
@@ -62,7 +68,7 @@ export function buildLaunchedEmail(parts: LaunchedEmailParts): EmailPayload {
       ...LEAD.map(p),
       linkBlock,
       p(NUDGE),
-      emailButton(escapeHtml(CTA), links[1].href),
+      ...(next && nextLine ? [p(nextLine), emailButton(escapeHtml(next.label), next.href)] : [emailButton(escapeHtml(CTA), links[1].href)]),
       `<p data-fq="fq-muted" style="${EMAIL_P}font-size:14px;color:${EMAIL_MUTED};">${escapeHtml(CLOSE)}</p>`,
     ].join('\n'),
     { text: escapeHtml(WHY), unsubscribe: true },
@@ -79,7 +85,7 @@ export function buildLaunchedEmail(parts: LaunchedEmailParts): EmailPayload {
     '',
     NUDGE,
     '',
-    `${CTA}: ${links[1].href}`,
+    ...(next && nextLine ? [nextLine, '', `${next.label}: ${next.href}`] : [`${CTA}: ${links[1].href}`]),
     '',
     CLOSE,
     '',
