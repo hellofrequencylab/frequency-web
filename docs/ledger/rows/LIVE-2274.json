@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-2274",
+  "title": "Let a Spotlight-only Space pick any theme that has Spotlight looks, no website needed",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-13",
+  "source": {
+    "file": "components/spotlight/space-spotlight-editor.tsx",
+    "ref": "Daniel 2026-11-13: keep the themes through the whole system; Spotlight users get the Spotlight version of any theme, even without a site."
+  },
+  "detail": "The Spotlight console only showed a Look row, and only when the Space's website theme already had looks, so a Spotlight-only Space on the default theme had no way to pick a theme there. The console now has a Theme row (the builder's kits that have Spotlight looks). It calls setSpaceSpotlightTheme, which goes through applyMegaTheme, the one theme apply, so the Spotlight, Space page, email and website follow one choice and no website is needed. Nocturne, Bold and Wildheart join the row when their Spotlight layouts ship. Not checked signed in from the build box.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/spotlight-theme-row.mjs" },
+  "wave": "W7"
+}

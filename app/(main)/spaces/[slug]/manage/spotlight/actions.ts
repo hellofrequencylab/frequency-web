@@ -140,3 +140,20 @@ export async function setSpaceSpotlightLook(slug: string, look: string | null): 
   if (!wanted || !offered.some((l) => l.look === wanted)) return { error: 'That look is not part of this theme.' }
   return writeSpotlight(slug, { look: wanted })
 }
+
+/** The theme picker on the Spotlight console: a Space with no website can still dress its Spotlight in any theme that has
+ *  whole-page looks. It goes through the one theme apply (lib/theme/apply-mega-theme.ts), so the website, email and the
+ *  Space page follow the same choice and the theme stays one thing through the whole system. A theme with no Spotlight
+ *  looks is refused here, so the picker never leaves a Spotlight on the plain block page by accident. */
+export async function setSpaceSpotlightTheme(slug: string, theme: string): Promise<{ error?: string }> {
+  const managed = await managedSpace(slug)
+  if ('error' in managed) return managed
+  if (typeof theme !== 'string' || spaceLooksFor(theme).length === 0) return { error: 'That theme has no Spotlight look yet.' }
+  const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
+  const res = await applyMegaTheme(managed.space.id, theme)
+  if (!res.ok) return { error: res.error }
+  revalidatePath(`/spaces/${slug}/spotlight`)
+  revalidatePath(`/spaces/${slug}/manage/spotlight`)
+  revalidatePath(`/spaces/${slug}`)
+  return {}
+}
