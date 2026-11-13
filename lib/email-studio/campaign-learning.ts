@@ -141,7 +141,7 @@ async function prepare(client: object, sourceId: string, targetId: string, strat
       { label: 'Unsubscribe-link click recipients', value: metric(p.unsubscribeClicked) },
       { label: 'Utility-link click recipients', value: metric(p.utilityClicked) },
       { label: 'Campaign-attributed completed opt-outs', value: metric(evidence.suppressions.campaignUnsubscribed) },
-      { label: 'Currently suppressed cohort recipients', value: metric(evidence.suppressions.currentRecipients) },
+      { label: 'Currently suppressed recipients', value: metric(evidence.suppressions.currentRecipients) },
     ], limitations, findings, proposal,
     target: { subject: target.subject, status: target.status, scheduledFor: target.scheduled_for, segment: target.segment },
     audienceNote: target.segment === 'members'

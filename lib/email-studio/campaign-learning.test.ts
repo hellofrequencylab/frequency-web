@@ -8,7 +8,7 @@ import { analyzeCampaignLearning, applyCampaignLearningRevision } from './campai
 const sourceId = '10047b53-0000-4000-8000-000000000001'
 const targetId = '85ca4b8c-0000-4000-8000-000000000002'
 const layout = { rows: [{ id: 'r0', columns: 1, cells: [['prose']] }], content: { prose: { text: 'Reviewed invitation' } } }
-const base = () => ({ id: targetId, subject: 'Come preview it', preheader: 'Preview', body: 'Old body', from_name: 'Daniel', from_address: null, reply_mode: 'broadcast', status: 'scheduled', approval_status: 'approved', scheduled_for: '2026-11-17T18:00:00Z', sent_at: null, recipient_count: 0, block_json: layout, audience_filter: { purpose: 'marketing', existing: true }, approved_by: 'approver', approved_at: '2026-11-11T00:00:00Z', test_sent_at: '2026-11-11T00:00:00Z', compiled_html: '<p>Old</p>', created_by: 'owner', space_id: 'root-space', segment: 'members' })
+const base = () => ({ id: targetId, subject: 'Come preview it', preheader: 'Preview', body: 'Old body', from_name: 'Daniel', from_address: null, reply_mode: 'broadcast', status: 'scheduled', approval_status: 'approved', scheduled_for: '2026-11-17T18:00:00Z', sent_at: null as string | null, recipient_count: 0, block_json: layout, audience_filter: { purpose: 'marketing', existing: true }, approved_by: 'approver', approved_at: '2026-11-11T00:00:00Z', test_sent_at: '2026-11-11T00:00:00Z', compiled_html: '<p>Old</p>', created_by: 'owner', space_id: 'root-space', segment: 'members' })
 let rows: Record<string, ReturnType<typeof base>>
 let writes: Array<Record<string, unknown>>
 let race: (() => void) | null
