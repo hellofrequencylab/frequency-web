@@ -43,6 +43,7 @@ import {
 import { receiptHtml, receiptText, type ReceiptContent } from '@/lib/billing/receipt-email'
 // EMAIL-027: the stock emails built outside lib/email.ts, each through its exported builder.
 import { buildContactLeadEmail } from '@/lib/crm/lead-notify'
+import { buildContactAckEmail } from '@/lib/crm/contact-ack-email'
 import { promotedSeatHtml, promotedSeatText, PROMOTED_SEAT_LINE } from '@/lib/events/waitlist-notify'
 import { briefHtml, briefText, ownerBriefEmailHtml } from '@/lib/ai/vera/owner-brief'
 import type { TodayCard } from '@/lib/ai/vera/today'
@@ -354,6 +355,7 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'plan-share-requested', group: 'Community', run: () => buildPlanShareEmail({ to: TO, recipientName: 'Jordan', recipientProfileId: PROFILE, moment: 'requested', otherSpaceName: 'Tidepool Trust', planTitle: 'Winter beach cleanups', calendarPath: '/spaces/north-light/settings/calendar' }) },
   // ── Owner notices (EMAIL-027: the stock emails built outside lib/email.ts) ──────────────────────────
   { id: 'contact-lead', group: 'Owner notices', run: () => buildContactLeadEmail({ to: TO, ownerName: 'Jordan', who: 'Maya Chen', spaceName: SAMPLE_SPACE_NAME, preview: 'Hi, is the Tuesday sunrise session OK for a beginner? I can swim but I have never done open water.', optedIn: true, keptOutOfCrm: false, crmUrl: `${SITE}/spaces/north-light/crm`, replyTo: 'maya@example.com' }) },
+  { id: 'contact-ack', group: 'Tickets and bookings', run: () => buildContactAckEmail({ to: TO, visitorName: 'Maya Chen', spaceName: SAMPLE_SPACE_NAME, slug: 'north-light', baseUrl: SITE, signedOut: true }) },
   { id: 'ticket-sale-host', group: 'Owner notices', run: () => { const c = { hostName: 'Jordan', buyerName: 'Maya', countLabel: '2 tickets', eventTitle: 'Sunrise sound bath', tierName: 'General', grossLabel: '$40', feeLabel: '$2.40', feeIsZero: false, overage: null, eventUrl: EVENT_URL }; return { to: TO, subject: 'You sold 2 tickets to Sunrise sound bath', html: saleEmailHtml(c), text: saleEmailText(c) } } },
   { id: 'tip-received', group: 'Owner notices', run: () => { const p = { recipientName: 'Jordan', tipperName: 'Maya', amount: '$10', note: 'Thank you for the extra time after class.' }; return { to: TO, subject: 'Maya sent you a $10 tip', html: tipEmailHtml(p), text: tipEmailText(p) } } },
   { id: 'renewal-reminder', group: 'Owner notices', run: () => buildRenewalNoticeEmail({ to: TO, touch: 'reminder_30', planLabel: 'Collective', spaceName: SAMPLE_SPACE_NAME, dateLabel: 'November 19, 2026', rateLabel: '$99 a month', greetingName: 'Jordan', billingUrl: `${SITE}/spaces/north-light/settings/billing` }) },
