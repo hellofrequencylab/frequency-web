@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// EMAIL-045: a person who submits a Space's contact form gets an acknowledgement, not only the owner.
+// EMAIL-048: a person who submits a Space's contact form gets an acknowledgement, not only the owner.
 // Fails when the contact-form door stops calling the sender, or the sender stops honoring the suppression list,
 // the one-per-address-per-Space-per-hour limit, or the outbox dedupe key.
 import { readFileSync } from 'node:fs'
