@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// EMAIL-045: the follow-up emails name the one next step a Space has not done, and say nothing when none is left.
+// EMAIL-046: the follow-up emails name the one next step a Space has not done, and say nothing when none is left.
 //
 // Runs lib/launch/next-best-step.ts under node (wizard order, null when done, skipped items never nag) and reads the
 // three senders for the wiring: the operator day 1/3/7 run asks the helper and skips when nothing is left, falling back
@@ -32,7 +32,7 @@ if (!/next\?: NextBestStep/.test(emails)) bad.push('the operator builder does no
 if (!/nextBestStep\(/.test(launchedIo) || !/next/.test(launchedEmail)) bad.push('the launched welcome is not wired to the helper')
 
 if (bad.length) {
-  console.error(`EMAIL-045 probe FAILED:\n - ${bad.join('\n - ')}`)
+  console.error(`EMAIL-046 probe FAILED:\n - ${bad.join('\n - ')}`)
   process.exit(1)
 }
-console.log('EMAIL-045 probe ok')
+console.log('EMAIL-046 probe ok')
