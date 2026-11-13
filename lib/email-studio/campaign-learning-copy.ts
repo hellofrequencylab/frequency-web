@@ -1,8 +1,8 @@
 // Reviewed, deterministic human-written templates. No model call, send, approval or database access.
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
-export type CampaignLearningStrategy = 'personal_preview' | 'host_followup'
-export interface CampaignLearningCopyInput {
+type CampaignLearningStrategy = 'personal_preview' | 'host_followup'
+interface CampaignLearningCopyInput {
   strategy: CampaignLearningStrategy
   targetCampaignId: string
   fromName: string
@@ -12,7 +12,7 @@ export interface CampaignLearningCopyInput {
   /** Set only when source analysis verified the invitation-to-builder mismatch. */
   acknowledgeMismatch?: boolean
 }
-export interface CampaignLearningCopy {
+interface CampaignLearningCopy {
   subject: string
   preheader: string
   /** Plain authored prose. The separate primary CTA is represented by destination and layout. */

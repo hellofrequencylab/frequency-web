@@ -2,7 +2,7 @@ import 'server-only'
 
 // A read-only evidence boundary. The caller supplies its already-authorized service-role client;
 // this module never creates an admin client, sends mail, changes campaigns, or returns recipient rows.
-export type EvidenceReadState = 'complete' | 'partial' | 'unavailable'
+type EvidenceReadState = 'complete' | 'partial' | 'unavailable'
 export interface EvidenceRows<T> { state: EvidenceReadState; rows: T[]; reason?: string }
 interface CampaignRow { id: string; status: string; sent_at: string | null; recipient_count: number | null; space_id: string | null; created_by?: string | null }
 interface QueueRow { id?: string; campaign_id?: string; email: string | null; contact_id?: string | null; status: string; created_at?: string; updated_at?: string }
@@ -16,7 +16,7 @@ export interface CampaignLearningRawInput {
 }
 interface SourceCoverage { state: EvidenceReadState; rowsRead: number; reason?: string }
 type NullableCounts<K extends string> = Record<K, number | null>
-export interface CampaignLearningEvidence {
+interface CampaignLearningEvidence {
   campaignId: string; observedAt: string;
   campaign: { status: string; sentAt: string | null; recordedRecipientCount: number | null };
   coverage: Record<'queue' | 'provider' | 'contacts' | 'suppressions', SourceCoverage>;
@@ -31,7 +31,7 @@ export interface CampaignLearningEvidence {
   ga: { state: 'unavailable'; reason: string };
   replies: { state: 'unavailable'; reason: string };
 }
-export interface CampaignLearningReadResult { state: 'available' | 'partial' | 'unavailable' | 'not_found'; evidence: CampaignLearningEvidence | null; reason?: string }
+interface CampaignLearningReadResult { state: 'available' | 'partial' | 'unavailable' | 'not_found'; evidence: CampaignLearningEvidence | null; reason?: string }
 
 const QUEUE_STATES = ['queued', 'sent', 'delivered', 'bounced', 'complained', 'failed', 'suppressed'] as const
 const PROVIDER_STATES = ['sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained'] as const

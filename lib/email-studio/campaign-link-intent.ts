@@ -1,10 +1,10 @@
 // Pure, local campaign review. Copy promises are evidence about the message, never proof
 // of reader intent or conversions. No destinations are fetched and no document is changed.
 
-export type CampaignPromisedIntent = 'preview' | 'explore' | 'attend' | 'host' | 'unknown'
-export type CampaignDestinationIntent = 'hosting' | 'attendance' | 'preview' | 'external' | 'unsupported' | 'unknown'
+type CampaignPromisedIntent = 'preview' | 'explore' | 'attend' | 'host' | 'unknown'
+type CampaignDestinationIntent = 'hosting' | 'attendance' | 'preview' | 'external' | 'unsupported' | 'unknown'
 
-export interface CampaignLinkIntentInput {
+interface CampaignLinkIntentInput {
   subject?: string
   preheader?: string
   body?: string
@@ -15,7 +15,7 @@ export interface CampaignLinkIntentInput {
   siteUrl?: string
 }
 
-export interface CampaignIntentLink {
+interface CampaignIntentLink {
   label: string
   location: string
   destinationPath: string
@@ -23,7 +23,7 @@ export interface CampaignIntentLink {
   destinationIntent: CampaignDestinationIntent
 }
 
-export interface CampaignIntentFinding extends CampaignIntentLink {
+interface CampaignIntentFinding extends CampaignIntentLink {
   id: string
   code: 'promise_destination_mismatch'
   severity: 'warning'
@@ -32,7 +32,7 @@ export interface CampaignIntentFinding extends CampaignIntentLink {
   question: string
 }
 
-export interface CampaignLinkIntentAudit {
+interface CampaignLinkIntentAudit {
   links: CampaignIntentLink[]
   findings: CampaignIntentFinding[]
   utmSuggestion: {
