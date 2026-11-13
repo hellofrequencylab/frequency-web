@@ -758,14 +758,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 129,
+      "baseline": 124,
       "frozen": {
-        "at": "2026-11-11",
-        "value": 129,
+        "at": "2026-11-13",
+        "value": 124,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice 5: event-form attendance and price tiles moved to the kit choice tile; create-studio type pill and seat-form option pill moved to the kit chip; 133 to 129",
-        "from": 133
+        "reason": "Sweep retired 5 raw button backgrounds (Hunts commerce admin, #4916); floor re-frozen to the measured 124",
+        "from": 129
       },
       "history": [
         {
@@ -1040,6 +1040,13 @@
           "to": 129,
           "direction": "lowered",
           "reason": "SCAN-1133 slice 5: event-form attendance and price tiles moved to the kit choice tile; create-studio type pill and seat-form option pill moved to the kit chip; 133 to 129"
+        },
+        {
+          "at": "2026-11-13",
+          "from": 129,
+          "to": 124,
+          "direction": "lowered",
+          "reason": "Sweep retired 5 raw button backgrounds (Hunts commerce admin, #4916); floor re-frozen to the measured 124"
         }
       ]
     },

@@ -7,6 +7,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { enqueueEmail } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildOperatorEmail, operatorFocus, OPERATOR_DAYS, type OperatorDay } from '@/lib/marketing/operator-emails'
+import { loadInventory } from '@/lib/launch/inventory-io'
+import { nextBestStep, type NextBestStep } from '@/lib/launch/next-best-step'
 import { log } from '@/lib/log'
 
 const DAY_MS = 86_400_000
@@ -55,6 +57,17 @@ export async function sendOperatorEmailForSpace(
   const email = userData?.user?.email
   if (!email) return 'skipped'
   if (!(await resolveSendGate(space.owner_profile_id, 'email', 'lifecycle', { email })).allowed) return 'skipped'
+  // Days 1, 3 and 7 name the one next step the owner has not done (lib/launch/next-best-step.ts). Nothing left means there
+  // is nothing honest to say, so the day is skipped. The one-day window (GRACE_DAYS) is the only mark a day has, so a
+  // skipped day is not retried on the next run. A failed read is not "nothing left": it falls back to the fixed copy for the focus.
+  let next: NextBestStep | null = null
+  if (day !== 0) {
+    const inventory = await loadInventory(space.id, space.owner_profile_id, [], true, { client: admin, personal: false })
+    if (inventory) {
+      next = nextBestStep(inventory.sections)
+      if (!next) return 'skipped'
+    }
+  }
   const pd = space.preferences?.profileData
   const kind = pd?.kind ?? pd?.category
   // A Network is a Space with member Spaces; only the later emails care, so the count is read just for them.
@@ -67,6 +80,7 @@ export async function sendOperatorEmailForSpace(
       greetingName: profile.display_name,
       spaceName: space.name ?? 'your Space',
       spaceSlug: space.slug,
+      next,
       baseUrl: process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com',
     }),
     { dedupeKey: `operator_lifecycle:${space.id}:${day}` },

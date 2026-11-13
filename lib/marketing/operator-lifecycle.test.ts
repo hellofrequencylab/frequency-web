@@ -4,6 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 const state = vi.hoisted(() => ({
   enqueued: [] as { to: string; subject: string; key: string | undefined }[],
   allowed: true,
+  // undefined = the inventory read failed (loadInventory returns null); otherwise the sections it hands back.
+  inventory: undefined as unknown,
 }))
 
 vi.mock('@/lib/email', async (orig) => ({
@@ -13,6 +15,7 @@ vi.mock('@/lib/email', async (orig) => ({
   },
 }))
 vi.mock('@/lib/comms/send-gate', () => ({ resolveSendGate: async () => ({ allowed: state.allowed }) }))
+vi.mock('@/lib/launch/inventory-io', () => ({ loadInventory: async () => (state.inventory ? { sections: state.inventory, space: { id: 'x', slug: 'x', name: 'x' } } : null) }))
 vi.mock('@/lib/log', () => ({ log: { info: () => {}, warn: () => {}, error: () => {} } }))
 
 import { operatorDayDue, sendOperatorLifecycle } from './operator-lifecycle'
@@ -42,6 +45,7 @@ const space = (id: string, age: number) => ({
 beforeEach(() => {
   state.enqueued = []
   state.allowed = true
+  state.inventory = undefined
 })
 
 describe('operatorDayDue', () => {
@@ -69,5 +73,30 @@ describe('sendOperatorLifecycle', () => {
     const r = await sendOperatorLifecycle(admin([space('a', 1.1)]), { limit: 50, now: NOW })
     expect(r).toEqual({ sent: 0, skipped: 1, failed: 0 })
     expect(state.enqueued).toEqual([])
+  })
+})
+
+describe('smart days (next best step)', () => {
+  const todo = (id: string, label: string) => [{ id: 'space', title: 'Space', items: [{ id, label, state: 'todo' }] }]
+
+  it('names the next step on day 1, still keyed on the Space and the day', async () => {
+    state.inventory = todo('sc-tag', 'Tagline')
+    const r = await sendOperatorLifecycle(admin([space('a', 1.1)]), { limit: 50, now: NOW })
+    expect(r.sent).toBe(1)
+    expect(state.enqueued[0].key).toBe('operator_lifecycle:a:1')
+    expect(state.enqueued[0].subject).toBe('One small thing left on your page.')
+  })
+
+  it('skips the email when nothing is left to do', async () => {
+    state.inventory = [{ id: 'space', title: 'Space', items: [{ id: 'sc-tag', label: 'Tagline', state: 'done' }] }]
+    const r = await sendOperatorLifecycle(admin([space('a', 3.2)]), { limit: 50, now: NOW })
+    expect(r).toEqual({ sent: 0, skipped: 1, failed: 0 })
+    expect(state.enqueued).toEqual([])
+  })
+
+  it('falls back to the fixed copy when the inventory read fails', async () => {
+    state.inventory = undefined
+    await sendOperatorLifecycle(admin([space('a', 3.2)]), { limit: 50, now: NOW })
+    expect(state.enqueued[0].subject).toBe('Three days in. Invite your regulars.')
   })
 })
