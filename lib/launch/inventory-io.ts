@@ -2,6 +2,7 @@
 // inventory its facts. One Space read, then lib/launch/rows.ts for the counts, all under the member's own session.
 // Server-only. Never throws: a failed read is "no inventory", and the page falls back to the plain resume card.
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { getSpaceById } from '@/lib/spaces/store'
 import { inventorySections } from './inventory'
 import type { InventorySection } from './overview'
@@ -16,17 +17,24 @@ export interface Inventory {
   space: { id: string; slug: string; name: string }
 }
 
-export async function loadInventory(spaceId: string | null, ownerProfileId: string, skippedPhotos: readonly string[] = [], extended = false): Promise<Inventory | null> {
+interface LoadInventoryOptions {
+  /** A service-role client for a caller with no member session (the lifecycle emails). Absent: the member's own session. */
+  client?: SupabaseClient
+  /** Add the owner's Personal section on the extended list. Default true; an email about the Space leaves it off. */
+  personal?: boolean
+}
+
+export async function loadInventory(spaceId: string | null, ownerProfileId: string, skippedPhotos: readonly string[] = [], extended = false, opts: LoadInventoryOptions = {}): Promise<Inventory | null> {
   if (!spaceId) return null
   try {
     const space = await getSpaceById(spaceId)
     if (!space) return null
-    const rows = await loadLaunchRows(spaceId, ownerProfileId, extended)
+    const rows = await loadLaunchRows(spaceId, ownerProfileId, extended, opts.client)
     if (!rows) return null
     const hrefs: Record<string, string> = Object.fromEntries(SPACE_MODULES.filter((m) => m.deepLink).map((m) => [m.id, m.deepLink!(space.slug)]))
     hrefs[OFFER_PAGE_HREF_KEY] = `/spaces/${space.slug}/manage/offer`
     const sections = inventorySections({ rows, spaceName: space.name, coverImageUrl: space.coverImageUrl ?? null, logoUrl: space.brandLogoUrl ?? null, skippedPhotos, extended, hrefs })
-    if (extended) {
+    if (extended && opts.personal !== false) {
       const founder = await getFounderTasks(ownerProfileId).catch(() => null)
       if (founder) sections.push(personalSection(founder.tasks))
     }
