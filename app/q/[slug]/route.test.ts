@@ -20,6 +20,8 @@ const fx = vi.hoisted(() => ({
   checkInEvent: vi.fn(async (): Promise<Row> => ({ ok: true })),
   warn: vi.fn(),
   profileId: 'member-1' as string | null,
+  track: vi.fn(async (..._args: unknown[]) => false),
+  gaIdentity: vi.fn(async (): Promise<{ clientId: string; sessionId: string | null } | null> => null),
 }))
 
 const CODE: Row = {
@@ -57,7 +59,8 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 vi.mock('@/lib/auth', () => ({ getMyProfileId: async () => fx.profileId }))
-vi.mock('@/lib/analytics/track', () => ({ track: async () => undefined }))
+vi.mock('@/lib/analytics/track', () => ({ track: fx.track }))
+vi.mock('@/lib/analytics/ga-client-id', () => ({ readGaIdentity: fx.gaIdentity }))
 vi.mock('@/lib/engagement/events', () => ({ recordEngagementEvent: async () => ({ recorded: false }) }))
 vi.mock('@/app/(main)/circles/actions', () => ({ joinCircle: async () => undefined }))
 vi.mock('@/app/(main)/events/actions', () => ({
@@ -95,6 +98,9 @@ beforeEach(() => {
   fx.checkInEvent.mockResolvedValue({ ok: true })
   fx.warn.mockClear()
   fx.profileId = 'member-1'
+  fx.track.mockClear()
+  fx.gaIdentity.mockReset()
+  fx.gaIdentity.mockResolvedValue(null)
 })
 
 describe('the QR door carries its outcome to the event page', () => {
@@ -160,6 +166,9 @@ describe('the QR door carries its outcome to the event page', () => {
 
   it('a signed-in scan is unchanged by the guest door: both actions run and no guest flag rides', async () => {
     fx.profileId = 'member-1'
+  fx.track.mockClear()
+  fx.gaIdentity.mockReset()
+  fx.gaIdentity.mockResolvedValue(null)
     const url = await scan()
     expect(url.pathname).toBe('/events/moon-circle')
     expect(url.searchParams.get('door')).not.toBe('guest')
@@ -211,5 +220,31 @@ describe('a splash scan shows what the owner authored (SCAN-780)', () => {
     expect(res.status).toBeGreaterThanOrEqual(300)
     expect(res.status).toBeLessThan(400)
     expect(res.headers.get('location')).toBe('https://a.test/book')
+  })
+})
+
+
+describe('QR browser attribution', () => {
+  it('carries the same consented browser session into the authoritative scan event', async () => {
+    fx.gaIdentity.mockResolvedValue({ clientId: '123.456', sessionId: '1695123456' })
+    await scan()
+    expect(fx.track).toHaveBeenCalledWith('qr.scanned', expect.objectContaining({ medium: 'qr' }), 'member-1', { gaIdentity: { clientId: '123.456', sessionId: '1695123456' } })
+  })
+  it('keeps a no-cookie scan first-party without fabricating a client identity', async () => {
+    fx.profileId = null
+    await scan()
+    expect(fx.track).toHaveBeenCalledWith('qr.scanned', expect.any(Object), null, { gaIdentity: null })
+  })
+  it('does not write analytics-attribution cookies before required consent', async () => {
+    fx.profileId = null
+    const res = await GET(new Request('https://frequency.test/q/moon', { headers: { cookie: 'fq_ask=1' } }), { params: Promise.resolve({ slug: 'moon' }) })
+    expect(res.cookies.get('fq_attr')).toBeUndefined()
+    expect(res.cookies.get('fq_src')).toBeUndefined()
+  })
+  it('does not write analytics-attribution cookies after a decline', async () => {
+    fx.profileId = null
+    const res = await GET(new Request('https://frequency.test/q/moon', { headers: { cookie: 'fq_consent=denied' } }), { params: Promise.resolve({ slug: 'moon' }) })
+    expect(res.cookies.get('fq_attr')).toBeUndefined()
+    expect(res.cookies.get('fq_src')).toBeUndefined()
   })
 })

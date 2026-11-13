@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2275",
+  "title": "Respect browser, account and staff consent in analytics collection",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/ANALYTICS.md",
+    "ref": "Owner analytics dashboard and user-flow request, 2026-11-13."
+  },
+  "detail": "Consenting browser activity is collected only after trusted audience resolution; client-supplied GA identity and authority flags cannot bypass the public collector. Identity comes from browser cookies, and private URL/title content is removed. New focused regressions failed before implementation; existing probes were preserved. Implementation proof does not assert production activation.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/analytics-tracking.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-13"
+}
