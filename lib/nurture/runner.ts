@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
+import { reserveLifecycleSend } from '@/lib/lifecycle/cap-io'
 import { buildLeadUnsubUrl } from '@/lib/connections/lead-unsub'
 import { nextStepAfter, runAtFrom, type NurtureStep } from '@/lib/nurture/schedule'
 import { parseEmailRenderLayout, type EmailRenderLayout } from '@/lib/email-studio/render-layout'
@@ -196,6 +197,13 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
     const message = block
       ? renderBlockStep(await resolveDataBlockRefs(block), step.subject, mergeVarsFor(contact.display_name, e.email), unsubscribeUrl)
       : { subject: step.subject, ...renderPlainStep(step.body, unsubscribeUrl) }
+    // The cross-email cap (EMAIL-047): at most one lifecycle email a day and three a week per address. A capped or
+    // errored reservation pushes this step back a quarter hour, like any other transient skip. Dark until
+    // LIFECYCLE_CAP_ENABLED is set, when this always answers 'reserved'.
+    const reservation = await reserveLifecycleSend(db, { recipient: e.email, profileId: contact.profile_id, kind: 'nurture_step', dedupeKey: `nurture_step:${e.id}:${step.order}` })
+    if (reservation === 'capped' || reservation === 'error') { await deferTransient({ ...e, next_run_at: lockUntil }); continue }
+    if (reservation === 'duplicate') continue
+
     // A drip step is BULK mail: scheduled marketing to a list, not a message someone is waiting
     // on. The lane keeps it behind transactional sends when the daily quota is tight (LIVE-091).
     await enqueueEmail(

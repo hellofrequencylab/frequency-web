@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-047",
+  "title": "One registry and one cross-email cap for every lifecycle email",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/lifecycle/cap.ts",
+    "ref": "email/COACH-EMAIL-SYSTEM-BUILD-PLAN-2026-11-13.md, Phase 0"
+  },
+  "detail": "2026-11-13: lifecycle emails were scattered across about 30 senders with no shared rule, so one person could get a nurture step, an operator note and a come-back on the same day. lib/lifecycle/registry.ts declares every automatic follow-up (kind, trigger, audience, rank, builder file; registry.test.ts fails when a builder file is missing). lib/lifecycle/cap.ts is the pure rule Daniel set (one a day, three a week; rank 1 emails are exempt from the daily cap and still count for the week). lib/lifecycle/cap-io.ts reserves a send: reads the address's last seven days from lifecycle_send_log, decides, claims a row unique by dedupe key, fails closed on any error. Migration 20270346045000_lifecycle_send_log.sql (service role only, additive, idempotent). Dark behind LIFECYCLE_CAP_ENABLED (docs/RUNBOOKS.md, Lifecycle cap): with it off every sender behaves as before. The nurture runner is the first caller; operator, launched and draft-reminder senders join in later PRs. Not built here: the journey-state reader, which composes with the next-best-step helper (EMAIL-046) after it merges.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/lifecycle-cap.mjs",
+    "note": "Fails on main: no cap module, registry or lifecycle_send_log migration, and the nurture runner enqueues without reserving. Passes once all four exist."
+  },
+  "closed": "2026-11-13",
+  "wave": "W7"
+}
