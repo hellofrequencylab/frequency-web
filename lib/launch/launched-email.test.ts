@@ -32,4 +32,21 @@ describe('the launched welcome', () => {
     expect(e.html).toContain('a%26b')
     expect(e.html).not.toContain('a&b/')
   })
+
+  it('with no next step, is the same email as before: one Open your Space button, no next up line', () => {
+    for (const e of [buildLaunchedEmail(base), buildLaunchedEmail({ ...base, next: null })]) {
+      expect(e.text).not.toContain('Next up')
+      expect(e.text).toContain('Open your Space: https://frequencylocal.com/spaces/harbor-meetups')
+    }
+  })
+
+  it('with a next step, adds the line and makes its button the one button', () => {
+    const next = { id: 'w-site', label: 'Publish your website', href: '/launch/step/website', why: 'Without one, every link you share points somewhere half-built.' }
+    const e = buildLaunchedEmail({ ...base, next })
+    for (const out of [e.html, e.text]) expect(out).toContain('Next up: Publish your website. Without one')
+    expect(e.text).toContain('Publish your website: https://frequencylocal.com/launch/step/website')
+    expect(e.html).toContain('href="https://frequencylocal.com/launch/step/website"')
+    expect(e.text).not.toContain('Open your Space:')
+    expect(e.text).not.toMatch(/—/)
+  })
 })

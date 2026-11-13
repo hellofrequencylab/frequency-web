@@ -6,6 +6,7 @@
 import { emailButton, emailShell, EMAIL_P, escapeHtml, type EmailPayload } from '@/lib/email'
 import { palette } from '@/lib/theme/palette'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
+import type { NextBestStep } from '@/lib/launch/next-best-step'
 
 export type OperatorDay = 0 | 1 | 3 | 7
 /** Day 0 goes out the moment the Space is created; the daily cron sends the rest. */
@@ -195,6 +196,14 @@ const DAY_7: Record<OperatorFocus, Step> = {
 
 const STEPS: Record<OperatorDay, Record<OperatorFocus, Step>> = { 0: DAY_0, 1: DAY_1, 3: DAY_3, 7: DAY_7 }
 
+/** The smart days: the subject and the pain-first opener for each. The rest of the email is the one next step from
+ *  lib/launch/next-best-step.ts, so it names a thing the owner has not done yet. Day 0 stays fixed copy. */
+const SMART: Partial<Record<OperatorDay, { subject: string; lead: string }>> = {
+  1: { subject: 'One small thing left on your page.', lead: 'A page with a gap in it is easy to scroll past, and nobody tells you they did.' },
+  3: { subject: 'Three days in. One thing is still open.', lead: 'Sharing your link is hard to do when you know the page is not quite ready for whoever clicks it.' },
+  7: { subject: 'A week in. Here is your next thing.', lead: 'The first week is where plenty of people stall, and it is rarely the big stuff. It is the next small thing.' },
+}
+
 export function buildOperatorEmail(parts: {
   day: OperatorDay
   focus: OperatorFocus
@@ -203,12 +212,19 @@ export function buildOperatorEmail(parts: {
   spaceName: string
   spaceSlug: string
   baseUrl: string
+  /** The Space's next undone step (lib/launch/next-best-step.ts). When given on day 1, 3 or 7 the email names it. Absent: the fixed copy for the focus. */
+  next?: NextBestStep | null
 }): EmailPayload {
-  const step = STEPS[parts.day][parts.focus]
+  const smart = SMART[parts.day]
+  const next = smart && parts.next && parts.next.href.startsWith('/') ? parts.next : null
+  const step: Step =
+    smart && next
+      ? { subject: smart.subject, lines: [smart.lead, `Next up: ${next.label}.`, next.why], cta: next.label, path: 'manage' }
+      : STEPS[parts.day][parts.focus]
   const greeting = parts.greetingName ? `Hi ${parts.greetingName},` : 'Hi,'
   // The Crew requirement is stated once, on the first email, from the one pricing line.
   const lines = parts.day === 0 ? [...step.lines, PLAN_STORY.crewSpace] : step.lines
-  const href = step.path === 'manage' ? `${parts.baseUrl}/spaces/${parts.spaceSlug}/manage` : `${parts.baseUrl}/spaces/${parts.spaceSlug}`
+  const href = smart && next ? `${parts.baseUrl.replace(/\/+$/, '')}${next.href}` : step.path === 'manage' ? `${parts.baseUrl}/spaces/${parts.spaceSlug}/manage` : `${parts.baseUrl}/spaces/${parts.spaceSlug}`
   const why = `You are receiving this because you run ${parts.spaceName} on Frequency.`
   const html = emailShell(
     [

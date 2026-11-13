@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-045",
+  "title": "Follow-up emails name the one next step a Space has not done (operator days 1, 3, 7 and the launched welcome)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "email/FUNNEL-FOLLOWUP-EMAIL-SURVEY-2026-11-13.md",
+    "ref": "Funnel follow-up email survey 2026-11-13, plan items 1 to 3: the next-best-step helper, smart operator emails, smart launched welcome."
+  },
+  "detail": "lib/launch/next-best-step.ts is a pure helper over the inventory sections (lib/launch/inventory.ts, setup-items.ts) and getStartedView: it returns the one next undone item {id, label, href, why} in the launch wizard's own order (orderedLaunchSteps, so niche and intents reorder it and a hidden Journey is never offered), or null when all is done. Skipped items and the owner's Personal section never come back. It only reads the wizard's exports (steps.ts, get-started.ts); the wizard, steps.ts and done-checks.ts are untouched. lib/launch/inventory-io.ts loadInventory gains an options argument (a service-role client for the cron, and a personal switch) and lib/launch/rows.ts loadLaunchRows an optional client, so the same read runs without a member session. lib/marketing/operator-lifecycle.ts reads it on days 1, 3 and 7: the email names the step with a button to its address (lib/marketing/operator-emails.ts), a day with nothing left is skipped (the one-day window is its only mark), and a failed read falls back to the fixed per-focus copy. Day 0 is unchanged. lib/launch/launched-email.ts takes an optional next step and, when present, adds a 'Next up' line and makes its button the one button; lib/launch/launched-io.ts passes it from the launch's own inventory, and a failed read sends the welcome as before. Sends still go through resolveSendGate and enqueueEmail with the existing dedupe keys; no persona or wellness data is in any link. No migration.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-next-best-step.mjs",
+    "note": "Runs the helper under node (wizard order, null when done, skipped never offered) and reads the senders for the inventory read, the skip when nothing is left, the send gate and the dedupe key."
+  },
+  "closed": "2026-11-13",
+  "wave": "W7"
+}
