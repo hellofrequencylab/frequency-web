@@ -11,6 +11,7 @@ import { announcementBannerState, countdownLabel } from '@/components/layout/ann
 import { AnnouncementBar } from '@/components/layout/announcement-bar'
 import { OfferBar } from '@/components/offers/offer-bar'
 import { offerBarState } from '@/lib/offers/operator-offer-server'
+import { offerBarDisplayState } from '@/lib/offers/offer-bar-policy'
 import { matchPublicTwin } from '@/lib/nav/public-twin'
 import { getPublicCircles, getTopicalChannels } from '@/lib/discover'
 import { isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
@@ -403,7 +404,10 @@ export default async function MainLayout({
   // The timed Beta offer (try-first funnel): a live countdown strip, or a one-time nudge to the offer
   // page once a new Space owner has something built. Null for everyone else, at no query.
   const offerState = previewingDown ? null : await offerBarState(profile.id, profile.meta, operatesSpaces)
-  const offerBanner = offerState ? <OfferBar href="/offer" endsAtMs={offerState.endsAtMs} pending={offerState.pending} /> : null
+  const offerDisplayState = offerBarDisplayState(offerState)
+  const offerBanner = offerDisplayState ? (
+    <OfferBar href="/offer" endsAtMs={offerDisplayState.endsAtMs} pending={offerDisplayState.pending} />
+  ) : null
 
   // MY FREQUENCY — the rail's disclosure (you, and what you run). One React-cached read, itself
   // fail-safe (any error resolves to a profile-only menu), so the rail can never block or throw on

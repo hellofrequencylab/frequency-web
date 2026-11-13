@@ -7,6 +7,8 @@ vi.mock('@/app/(main)/spaces/[slug]/manage/spotlight/actions', () => ({
   connectSpotlightDomain: vi.fn(),
   saveSpaceSpotlightLayout: vi.fn(async () => ({})),
   setSpaceSpotlightPublished: vi.fn(),
+  setSpaceSpotlightLook: vi.fn(async () => ({})),
+  setSpaceSpotlightTheme: vi.fn(async () => ({})),
 }))
 vi.mock('@/app/(main)/spaces/[slug]/settings/profile/actions', () => ({ saveSpaceGridLayout: vi.fn() }))
 vi.mock('@/app/(main)/settings/rail-getters', () => ({ getMemberLayoutRailData: vi.fn() }))
@@ -33,9 +35,9 @@ beforeEach(() => {
 })
 afterEach(async () => { await act(async () => root.unmount()); container.remove() })
 
-async function mount(seed: BuilderRailData) {
+async function mount(seed: BuilderRailData, themes?: { options: { id: string; label: string }[]; current: string }) {
   await act(async () => {
-    root.render(<SpaceSpotlightEditor slug="acme" seed={seed} preview={<div />} initialPublished={false} readOnly={false} />)
+    root.render(<SpaceSpotlightEditor slug="acme" seed={seed} preview={<div />} initialPublished={false} readOnly={false} themes={themes} />)
   })
 }
 
@@ -50,5 +52,20 @@ describe('SpaceSpotlightEditor', () => {
     await mount(legacySeed)
     expect(container.querySelector('section[aria-label="Spotlight builder"]')).toBeNull()
     expect(container.querySelector('button[aria-label="Edit Links"]')).not.toBeNull()
+  })
+
+  // LIVE-2274: a Spotlight-only Space (no website, on the default theme, so no looks) still gets the theme row.
+  it('offers a theme row without a website, and presses the current theme', async () => {
+    await mount(legacySeed, { options: [{ id: 'new-world', label: 'New World' }, { id: 'designer', label: 'Designer' }], current: 'new-world' })
+    const row = container.querySelector('section[aria-label="Theme"]')
+    expect(row).not.toBeNull()
+    const pressed = [...row!.querySelectorAll('button')].filter((b) => b.getAttribute('aria-pressed') === 'true')
+    expect(pressed.map((b) => b.textContent)).toEqual(['New World'])
+    expect(container.querySelector('section[aria-label="Look"]')).toBeNull()
+  })
+
+  it('shows no theme row when none are offered', async () => {
+    await mount(legacySeed)
+    expect(container.querySelector('section[aria-label="Theme"]')).toBeNull()
   })
 })
