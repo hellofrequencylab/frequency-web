@@ -23,7 +23,6 @@ import { cookies, headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { resolveAcquisition } from '@/lib/attribution/server'
-import { recordVerifiedLeadCapture } from '@/lib/analytics/leads'
 import type { Json } from '@/lib/database.types'
 
 /** The id of the lead row this browser is building, so later beats update it instead of
@@ -172,7 +171,6 @@ export async function captureLead(
       path: '/',
       maxAge: LEAD_COOKIE_MAX_AGE,
     })
-    await recordVerifiedLeadCapture(claim.id, input.source ?? 'beta_induction').catch(() => {})
     return { ok: true }
   } catch {
     // A capture failure must never surface as a different outcome than a duplicate would.

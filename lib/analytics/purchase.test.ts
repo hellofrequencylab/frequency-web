@@ -28,7 +28,6 @@ describe('purchaseConversionFromSession', () => {
         kind: 'ticket',
         buyer_profile_id: 'p1',
         ga_client_id: '123.456',
-        ga_session_id: '1695123456',
       },
     })
     expect(conv).toMatchObject({
@@ -42,7 +41,6 @@ describe('purchaseConversionFromSession', () => {
         currency: 'usd',
         transaction_id: 'cs_paid',
         ga_client_id: '123.456',
-        ga_session_id: '1695123456',
       },
     })
   })

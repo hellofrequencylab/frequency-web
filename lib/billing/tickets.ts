@@ -53,7 +53,6 @@
 // they sold something, with a bell and an email, beside the buyer's receipts. Until it landed there
 // was no ticket-sold notification of any kind anywhere in the product.
 
-import { recordVerifiedLeadCapture } from '@/lib/analytics/leads'
 import { passCheckoutGate } from '@/lib/hunts/pass-gate'
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -1846,7 +1845,7 @@ async function recordGuestBuyerAsLead(guestEmail: string, eventId: string): Prom
     // The name is a LITERAL at the call site so check:schema-contract can resolve it against the
     // generated types (ADR-1207). The name/handle arguments are omitted rather than passed as null:
     // the SQL defaults them, and a guest checkout collected none of them.
-    const { data, error } = await db().rpc('capture_signup_lead', {
+    const { error } = await db().rpc('capture_signup_lead', {
       p_email: guestEmail,
       p_source: 'event_rsvp',
       p_step: GUEST_TICKET_LEAD_STEP,
@@ -1861,10 +1860,6 @@ async function recordGuestBuyerAsLead(guestEmail: string, eventId: string): Prom
         eventId,
         error: error.message,
       })
-    } else if (data && typeof data === 'object' && !Array.isArray(data) && typeof data.id === 'string') {
-      // No request cookies exist in a Stripe webhook. Keep the authoritative first-party
-      // lead fact; never invent browser attribution or reuse another request's identity.
-      await recordVerifiedLeadCapture(data.id, 'event_ticket', { gaIdentity: null }).catch(() => {})
     }
   } catch (e) {
     console.error('[tickets] capture_signup_lead threw for a guest ticket buyer', {

@@ -1,7 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-vi.mock('@/lib/analytics/leads', () => ({ recordVerifiedLeadCapture: vi.fn(async () => {}) }))
-import { recordVerifiedLeadCapture } from '@/lib/analytics/leads'
-
 import type Stripe from 'stripe'
 
 // GUEST TICKET SETTLE (lib/billing/tickets.ts). MONEY CODE, and the one place in this build where a
@@ -46,20 +43,17 @@ const state = vi.hoisted(() => {
   let settleQueue: unknown[][] = []
   /** What a read-back of event_tickets by session id finds. */
   let ticketLookup: unknown = null
-  let capturedLead: unknown = null
   return {
     calls,
     setSettleQueue(q: unknown[][]) {
       settleQueue = q
     },
-    setCapturedLead(data: unknown) { capturedLead = data },
     setTicketLookup(row: unknown) {
       ticketLookup = row
     },
     run(call: Call) {
       calls.push(call)
       if (call.op === 'rpc') {
-        if (call.table === 'rpc:capture_signup_lead') return { data: capturedLead, error: null }
         if (call.table === 'rpc:settle_ticket_atomic') {
           return { data: settleQueue.length ? settleQueue.shift() : [], error: null }
         }
@@ -78,7 +72,6 @@ const state = vi.hoisted(() => {
       calls.length = 0
       settleQueue = []
       ticketLookup = null
-      capturedLead = null
     },
   }
 })
@@ -395,12 +388,4 @@ describe('a MEMBER settle takes the member leg (regression + LIVE-316)', () => {
     expect(memberMail.sendMemberTicketReceipt).toHaveBeenCalledTimes(1)
     expect(memberMail.sendMemberTicketReceipt.mock.calls[0][0]).toMatchObject({ profileId: 'p-1' })
   })
-})
-
-
-it('records a confirmed guest-ticket lead without borrowing request-browser identity', async () => {
-  state.setCapturedLead({ id: 'stored-guest-lead', get claim_token() { throw new Error('claim token must not be inspected') } })
-  state.setSettleQueue([[GUEST_ROW]])
-  await recordTicketFromSession(guestSession())
-  expect(recordVerifiedLeadCapture).toHaveBeenCalledWith('stored-guest-lead', 'event_ticket', { gaIdentity: null })
 })

@@ -1,7 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-vi.mock('@/lib/analytics/leads', () => ({ recordVerifiedLeadCapture: vi.fn(async () => {}) }))
-import { recordVerifiedLeadCapture } from '@/lib/analytics/leads'
-
 
 // ADR-959 — the lead-capture actions in front of the signup_leads RPCs.
 //
@@ -81,7 +78,6 @@ describe('captureLead', () => {
       expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 }),
     )
     expect(jar.get('fq_lead')).toBe('lead-1.tok-1')
-    expect(recordVerifiedLeadCapture).toHaveBeenCalledWith('lead-1', 'beta_induction')
   })
 
   it('🔴 sets no cookie when the RPC returns the pre-token shape (a bare id) or half a claim', async () => {
@@ -192,22 +188,5 @@ describe('markLeadConverted', () => {
   it('no-ops with no cookie', async () => {
     expect(await markLeadConverted('profile-1')).toEqual({ ok: false })
     expect(rpc).not.toHaveBeenCalled()
-  })
-})
-
-
-describe('verified lead conversion tracking', () => {
-  it('uses the feature-funnel source after a confirmed stored lead', async () => {
-    await captureLead({ email: 'jo@example.com', source: 'feature_funnel' })
-    expect(recordVerifiedLeadCapture).toHaveBeenCalledWith('lead-1', 'feature_funnel')
-  })
-  it('does not turn analytics failure into a failed capture', async () => {
-    vi.mocked(recordVerifiedLeadCapture).mockRejectedValueOnce(new Error('analytics down'))
-    await expect(captureLead({ email: 'jo@example.com' })).resolves.toEqual({ ok: true })
-  })
-  it('does not record conversion when capture was rejected', async () => {
-    rpc.mockResolvedValue({ data: null, error: { message: 'rejected' } })
-    await captureLead({ email: 'jo@example.com' })
-    expect(recordVerifiedLeadCapture).not.toHaveBeenCalled()
   })
 })

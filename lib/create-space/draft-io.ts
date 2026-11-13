@@ -32,7 +32,6 @@ import { signingSecret } from '@/lib/signing-secret'
 import { isSpaceSlugTaken } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { recordVerifiedLeadCapture } from '@/lib/analytics/leads'
 
 const TABLE = 'create_space_drafts'
 
@@ -110,9 +109,7 @@ async function captureDraftLead(email: string, draft: BuilderDraft, facts: { own
     })
     if (error || !data || typeof data !== 'object') return null
     const id = (data as { id?: unknown }).id
-    if (typeof id !== 'string' || !id) return null
-    await recordVerifiedLeadCapture(id, 'create_space')
-    return id
+    return typeof id === 'string' && id ? id : null
   } catch {
     return null
   }
