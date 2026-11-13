@@ -18,6 +18,7 @@ import {
   connectSpotlightDomain,
   saveSpaceSpotlightLayout,
   setSpaceSpotlightLook,
+  setSpaceSpotlightTheme,
   setSpaceSpotlightPublished,
 } from '@/app/(main)/spaces/[slug]/manage/spotlight/actions'
 
@@ -41,6 +42,7 @@ export function SpaceSpotlightEditor({
   ownLinks,
   clicks,
   looks,
+  themes,
 }: {
   slug: string
   /** The builder seed: the Spotlight layout plus the Space's locked blocks and picker data. Null when the
@@ -61,9 +63,12 @@ export function SpaceSpotlightEditor({
   clicks?: { label: string; count: number }[]
   /** The whole-page looks the Space's theme offers, and the one it wears. Absent for a theme with none. */
   looks?: { options: readonly { look: string; label: string; blurb: string }[]; current: string }
+  /** The themes whose Spotlight looks exist, and the one the Space wears. The Space needs no website to pick one. */
+  themes?: { options: readonly { id: string; label: string }[]; current: string }
 }) {
   const router = useRouter()
   const [look, setLook] = useState(looks?.current ?? 'stack')
+  const [theme, setTheme] = useState(themes?.current ?? '')
   const save = useCallback<SaveLayout>((payload) => saveSpaceSpotlightLayout(slug, payload), [slug])
   const saveNodes = useCallback<SaveNodeLayout>(
     (layout) => saveSpaceSpotlightLayout(slug, layout as unknown as BuilderLayout),
@@ -84,6 +89,21 @@ export function SpaceSpotlightEditor({
     startConnect(async () => {
       const res = await connectSpotlightDomain(slug)
       setDomainState(res.error ?? 'connected')
+    })
+  }
+
+  const onTheme = (next: string) => {
+    const prev = theme
+    setTheme(next)
+    setError(null)
+    startTransition(async () => {
+      const res = await setSpaceSpotlightTheme(slug, next)
+      if (res.error) {
+        setTheme(prev)
+        setError(res.error)
+        return
+      }
+      router.refresh()
     })
   }
 
@@ -158,6 +178,27 @@ export function SpaceSpotlightEditor({
               </p>
             )}
           </section>
+
+          {themes && themes.options.length > 0 && (
+            <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Theme">
+              <p className="text-body-sm font-bold text-text">Theme</p>
+              <p className="text-meta text-muted">One theme for your Spotlight, Space and website. You do not need a website to pick one.</p>
+              <div className="flex flex-wrap gap-2">
+                {themes.options.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => onTheme(o.id)}
+                    disabled={readOnly || pending}
+                    aria-pressed={theme === o.id}
+                    className={choiceTileClasses(theme === o.id, 'rounded-full px-3 py-1.5 text-body-sm font-semibold text-text')}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           {looks && looks.options.length > 0 && (
             <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Look">
