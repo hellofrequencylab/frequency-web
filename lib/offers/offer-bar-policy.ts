@@ -1,7 +1,7 @@
 import { FOUNDING_MEMBER_COPY } from '@/lib/core/launch-dates'
 import { HOME_TZ } from '@/lib/time/home-zone'
 
-export type OfferBarDisplayState = { endsAtMs: number | null; pending: boolean }
+type OfferBarDisplayState = { endsAtMs: number | null; pending: boolean }
 
 function pacificCalendarDay(now: Date): string {
   const parts = new Intl.DateTimeFormat('en-US', {
