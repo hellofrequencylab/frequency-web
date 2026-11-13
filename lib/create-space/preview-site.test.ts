@@ -54,7 +54,7 @@ describe('preview site', () => {
 
   it('reads as a sample Space when nothing is filled in', () => {
     const s = deriveSite(base)
-    expect(s.name).toBe('Your Space')
+    expect(s.name).toBe('Business Name')
     expect(s.em).toBe('start to finish.')
     expect(s.domain).toBe('frequency.community/yourspace')
     expect(s.offers).toHaveLength(3)
