@@ -7,20 +7,25 @@ import { isJanitor } from '@/lib/core/roles'
 import { staffCan } from '@/lib/core/staff-roles'
 import { getCapabilityOverrides } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isExperimentKey, type ExperimentCommand } from '@/lib/analytics/experiments'
+import type { ExperimentCommand } from '@/lib/analytics/experiments'
+import { parseInput } from '@/lib/validation'
 
 /** Only a reviewed catalog entry can be created or run; no code or copy enters from the form. */
 export async function manageGrowthExperiment(key: string, command: ExperimentCommand): Promise<{ error?: string }> {
   const caller = await requireAdmin('janitor', { staff: 'insights', staffLevel: 'write' })
-  if (!isExperimentKey(key) || !['draft', 'start', 'pause', 'finish'].includes(command)) return { error: 'Unknown experiment or command.' }
+  let input: { key: 'upcoming-next-step'; command: ExperimentCommand }
+  try {
+    input = parseInput(z.object({ key: z.literal('upcoming-next-step'), command: z.enum(['draft', 'start', 'pause', 'finish']) }), { key, command })
+  } catch { return { error: 'Unknown experiment or command.' } }
   const db = createAdminClient()
   const invoke = (db.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ error: unknown }>).bind(db)
-  const { error } = await invoke('analytics_experiment_manage', { _key: key, _command: command, _actor: caller.profileId })
+  const { error } = await invoke('analytics_experiment_manage', { _key: input.key, _command: input.command, _actor: caller.profileId })
   if (error) return { error: 'The transition could not be completed. Check migration access, current state and the minimum enrollment period.' }
   revalidatePath('/admin/insights')
   return {}
 }
 
+// parse-ok: No client arguments; this authenticated read parses only the database response below.
 export async function readGrowthExperiments() {
   const caller = await requireAdmin('janitor', { staff: 'insights', staffLevel: 'read' })
   const canWrite = isJanitor(caller.webRole) || staffCan(caller.staffRole, 'insights', 'write', await getCapabilityOverrides())
