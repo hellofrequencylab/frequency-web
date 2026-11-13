@@ -40,6 +40,8 @@ export const INTENT_LOOK: Record<IntentId, IntentLook> = {
 }
 
 const FALLBACK_OFFERS: readonly IntentId[] = ['events', 'bookings', 'community']
+/** The handle the builder shows before there is a name (lib/create-space/builder.ts handleOf). The address bar reads it as "businessname". */
+const SAMPLE_HANDLE = 'yourspace'
 const FALLBACK_EM = 'start to finish.'
 const FALLBACK_EYEBROW = 'A Space on Frequency'
 const FALLBACK_TAGLINE = 'Gatherings, sessions and your people, all in one place.'
@@ -144,10 +146,10 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
   // Wildheart's own five pictures from the revised design system (the theme's blocks wear the same files). It has no
   // portrait photography, so the host portrait stays the gathering photo, as Nocturne's does.
   wildheart: {
-    hero: WILDHEART_PHOTO('sisters-shore'), heroPos: 'center 30%', portrait: FREQUENCY_PHOTO(1), portraitPos: 'center',
+    hero: WILDHEART_PHOTO('sisters-shore'), heroPos: 'center 30%', portrait: WILDHEART_PHOTO('huddle'), portraitPos: 'center 30%',
     strip: [WILDHEART_PHOTO('cacao-circle'), WILDHEART_PHOTO('hands-together'), WILDHEART_PHOTO('huddle')], nav1: 'Gatherings', cta2: 'Come along',
     covers: [WILDHEART_PHOTO('sisters-shore'), WILDHEART_PHOTO('huddle'), WILDHEART_PHOTO('cacao-circle'), WILDHEART_PHOTO('hands-together'), WILDHEART_PHOTO('forest-witch')],
-    portraits: [FREQUENCY_PHOTO(1)],
+    portraits: [WILDHEART_PHOTO('huddle'), WILDHEART_PHOTO('forest-witch')],
   },
   frequency: FREQUENCY_IMAGERY,
 }
@@ -373,7 +375,7 @@ export function deriveSite(input: SiteInput): PreviewSite {
     eyebrow: ghost ? GHOST.eyebrow : clipPreview(picks.length ? picks.slice(0, 2).map((p) => cap(p.label.split(' ').slice(-1)[0])).join(' · ') : FALLBACK_EYEBROW, PREVIEW_CLIP.eyebrow),
     tagline: ghost ? GHOST.tagline : sentence || (nouns.length ? `${cap(joinList(nouns))}, all in one place.` : FALLBACK_TAGLINE),
     handle,
-    domain: `frequency.community/${handle}`,
+    domain: `${handle === SAMPLE_HANDLE ? 'businessname' : handle}.frequencylocal.com`,
     host: host || 'you',
     offers: offers.map((o, i) => ({ ...o, ...(ghost ? GHOST.offers[i] : { t: clipPreview(o.t, PREVIEW_CLIP.offerTitle), s: clipPreview(o.s, PREVIEW_CLIP.offerDetail) }) })),
     links: [offers[1].t, 'Join the list', `About ${host ? host.split(' ')[0] : 'the host'}`],

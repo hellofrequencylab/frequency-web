@@ -19,7 +19,7 @@ export const PREVIEW_TOKEN_KEYS = [
   '--pv-font-display', '--pv-font-body', '--pv-display-weight', '--pv-display-case', '--pv-display-track', '--pv-label-track',
   '--pv-radius-btn', '--pv-radius-card', '--pv-radius-inner', '--pv-radius-photo',
   '--pv-mat', '--pv-shadow', '--pv-rule-w', '--pv-ring-opacity', '--pv-btn-bg', '--pv-btn-ink', '--pv-em-ink',
-  '--pv-font-em', '--pv-art', '--pv-badge',
+  '--pv-font-em', '--pv-art', '--pv-badge', '--pv-photo-ink', '--pv-photo-shade', '--pv-font-mono',
 ] as const
 type PreviewTokenKey = (typeof PREVIEW_TOKEN_KEYS)[number]
 type PreviewTokens = Record<PreviewTokenKey, string>
@@ -196,6 +196,10 @@ export function previewTokens(id: MegaThemeId): PreviewTokens {
     '--pv-font-em': p.emFont ?? p.display,
     '--pv-art': p.art ? p.art(s.border) : 'none',
     '--pv-badge': p.badge ? 'inline-flex' : 'none',
+    // Over a picture the words are light and the scrim is dark, whatever the theme's ground is (the photo-hero themes).
+    '--pv-photo-ink': '#FFFFFF', // token-ok: text over a photograph
+    '--pv-photo-shade': '#000000', // token-ok: the scrim under that text
+    '--pv-font-mono': "ui-monospace, 'SFMono-Regular', Menlo, monospace", // Services and Bold's mono voice
   }
 }
 

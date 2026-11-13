@@ -45,6 +45,7 @@ import type { UploadKind } from '@/lib/create-space/uploads'
 import { CLOCK_BUDGET_MS, formatClock } from '@/lib/launch/clock'
 import { PREVIEW_FONT_SHEET, previewAccentVars, previewTokens } from '@/lib/theme/preview-tokens'
 import './create-space.css'
+import './create-space-themes.css'
 
 /** The hero wears its mode as a class too, so a probe and a test can read it off the markup. */
 const HERO_CLASS = { intro: 'cs-hero cs-hero-intro', building: 'cs-hero cs-hero-building' } as const
