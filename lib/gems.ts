@@ -77,10 +77,10 @@ export async function awardGems(
   // count-then-insert here was a race: N concurrent awards at cap-1 all read the same count
   // and all inserted, over-paying past daily_cap. The RPC is not in the generated types yet,
   // so the call is cast (repo convention for not-yet-typed DB objects).
-  const rpc = admin.rpc.bind(admin) as unknown as (
+  const rpc = (admin.rpc as unknown as (
     name: 'award_gems_atomic',
     args: { _profile: string; _action: string; _amount: number; _daily_cap: number | null; _metadata: Record<string, unknown>; _day_key?: string | null; _timezone?: string | null },
-  ) => Promise<{ data: { awarded?: boolean; capped?: boolean } | null; error: { message: string } | null }>
+  ) => Promise<{ data: { awarded?: boolean; capped?: boolean } | null; error: { message: string } | null }>).bind(admin)
 
   const { data, error } = await rpc('award_gems_atomic', {
     _profile: profileId,

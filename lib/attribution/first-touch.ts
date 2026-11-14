@@ -72,9 +72,33 @@ export function encodeFirstTouch(touch: FirstTouch): string {
 
 /** Parse a first-touch cookie value back to a record (best-effort). */
 export function decodeFirstTouch(value: string | undefined | null): FirstTouch | null {
-  if (!value) return null
+  if (!value || value.length > 8192) return null
   try {
-    return JSON.parse(decodeURIComponent(value)) as FirstTouch
+    const raw: unknown = JSON.parse(decodeURIComponent(value))
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+    const record = raw as Record<string, unknown>
+    if (typeof record.ts !== 'string' || record.ts.length > 40 || !Number.isFinite(Date.parse(record.ts))) return null
+    if (typeof record.landing !== 'string' || !record.landing.startsWith('/') || record.landing.startsWith('//') || record.landing.length > 200) return null
+    const touch: FirstTouch = { ts: record.ts, landing: record.landing.split(/[?#]/, 1)[0] }
+    for (const key of ['ref', 'gclid', 'fbclid', 'code'] as const) {
+      const v = record[key]
+      if (v === undefined || v === null) continue
+      if (typeof v !== 'string' || v.length > (key === 'ref' ? 300 : 200)) return null
+      if (v.trim()) touch[key] = v.trim()
+    }
+    if (record.utm !== undefined && record.utm !== null) {
+      if (typeof record.utm !== 'object' || Array.isArray(record.utm)) return null
+      const rawUtm = record.utm as Record<string, unknown>
+      const utm: NonNullable<FirstTouch['utm']> = {}
+      for (const key of UTM_KEYS) {
+        const v = rawUtm[key]
+        if (v === undefined || v === null) continue
+        if (typeof v !== 'string' || v.length > 200) return null
+        if (v.trim()) utm[key] = v.trim()
+      }
+      if (Object.keys(utm).length) touch.utm = utm
+    }
+    return touch
   } catch {
     return null
   }

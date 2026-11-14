@@ -91,7 +91,13 @@ on:
   push:
     branches: [main]
   merge_group: {}
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      typecheck_trace:
+        description: Capture a bounded compiler trace when diagnosing a typecheck failure
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -222,16 +228,68 @@ jobs:
           # cannot be read the gate falls back to this total and prints a warning saying so.
           CHANGED: ${{ github.event.pull_request.changed_files }}
         run: node scripts/pr-size-gate.mjs
-      # ADR-1327. tsc on this tree peaks above node's default ~4 GB heap: on 2026-09-14 the step died
-      # on #2571 with "Ineffective mark-compacts near heap limit" at 4026 of 4128 MB after 112 s, on a
-      # PR that changed no TypeScript. The lanes had already measured 3.7 GB RSS locally that day.
-      # ubuntu-latest carries 16 GB, so the step gets 6 GB and the whole-tree check keeps being the
-      # reading a PR is merged on. Raise it here rather than in package.json so local runs, which
-      # set it per box, are not pinned to a CI number.
+      # ADR-1327. Provision the full compiler here rather than changing local Node settings.
+      # Verify effective runner capacity before assigning its heap, and record peak RSS.
+      # The same complete typecheck and every contract guard remain required.
       - name: Typecheck
+        id: typecheck
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
-        run: pnpm exec tsc --noEmit
+          NODE_OPTIONS: --max-old-space-size=8192
+          TYPECHECK_TRACE: ${{ github.event_name == 'workflow_dispatch' && inputs.typecheck_trace == true }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const os = require('node:os')
+          const physical = os.totalmem()
+          const cgroups = []
+          for (const path of ['/sys/fs/cgroup/memory.max', '/sys/fs/cgroup/memory/memory.limit_in_bytes']) {
+            try {
+              const raw = fs.readFileSync(path, 'utf8').trim()
+              if (raw !== 'max' && !/^\d+$/.test(raw)) throw new Error(`Invalid memory limit at ${path}`)
+              cgroups.push({ path, limitBytes: raw === 'max' ? null : raw })
+            } catch (error) {
+              if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error
+            }
+          }
+          const numericLimits = cgroups.filter(({ limitBytes }) => limitBytes !== null).map(({ limitBytes }) => Number(limitBytes))
+          const effective = Math.min(physical, ...numericLimits)
+          console.log(JSON.stringify({ physicalBytes: physical, cgroups, effectiveBytes: effective, requestedHeapMiB: 8192 }))
+          if (effective < 12 * 1024 ** 3) {
+            console.error('Typecheck requires at least 12 GiB of effective runner memory before assigning an 8 GiB heap.')
+            process.exit(1)
+          }
+          NODE
+          if [ "$TYPECHECK_TRACE" = 'true' ]; then
+            /usr/bin/time -v pnpm exec tsc --noEmit --generateTrace "$RUNNER_TEMP/typecheck-trace"
+          else
+            /usr/bin/time -v pnpm exec tsc --noEmit
+          fi
+      # Dispatch-only diagnostics: compiler timings/paths, never a heap or environment dump.
+      # Keep a bounded prefix when an OOM leaves a large or unfinished trace; exclude types.json.
+      - name: Bound failed typecheck trace
+        if: ${{ failure() && steps.typecheck.outcome == 'failure' && github.event_name == 'workflow_dispatch' && inputs.typecheck_trace == true }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const source = path.join(process.env.RUNNER_TEMP, 'typecheck-trace', 'trace.json')
+          if (!fs.existsSync(source)) process.exit(0)
+          const destination = path.join(process.env.RUNNER_TEMP, 'typecheck-trace-bounded')
+          fs.mkdirSync(destination, { recursive: true })
+          const size = Math.min(fs.statSync(source).size, 25 * 1024 * 1024)
+          const buffer = Buffer.alloc(size)
+          const file = fs.openSync(source, 'r')
+          try { fs.readSync(file, buffer, 0, size, 0) } finally { fs.closeSync(file) }
+          fs.writeFileSync(path.join(destination, 'trace.json'), buffer)
+          NODE
+      - name: Upload failed typecheck trace
+        if: ${{ failure() && steps.typecheck.outcome == 'failure' && github.event_name == 'workflow_dispatch' && inputs.typecheck_trace == true }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: typecheck-trace-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/typecheck-trace-bounded/trace.json
+          if-no-files-found: warn
+          retention-days: 1
 
       # One step, every guard, all failures reported. Each is grouped in the log so a red run
       # reads as a list of what to fix rather than a single stop-the-world exit.
