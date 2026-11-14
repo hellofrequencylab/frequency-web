@@ -19,12 +19,14 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { signInWithGoogle, sendSignupLink } from '@/app/sign-in/actions'
 import { getMyProfileId } from '@/lib/auth'
-import { claimedHandle } from '@/lib/create-space/builder'
+import { claimedHandle, serializeDraft } from '@/lib/create-space/builder'
 import { readDraftByToken, saveDraft } from '@/lib/create-space/draft-io'
 import { destinationFor, holdFor, parseHandoff } from '@/lib/create-space/handoff'
-import { isLeadToken, isZone } from '@/lib/create-space/lead'
+import { isLeadToken, isZone, leadEmailOf } from '@/lib/create-space/lead'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
-import { writePendingLaunch } from '@/lib/launch/pending-io'
+import { readPendingLaunch, writePendingLaunch } from '@/lib/launch/pending-io'
+import { getActiveLaunch, saveWizardResume, startLaunch } from '@/lib/launch/store'
+import { parseWizardResume } from '@/lib/launch/wizard-resume'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { isSpaceSlugTaken } from '@/lib/spaces/store'
 
@@ -36,8 +38,8 @@ const HANDLE_TAKEN = 'That handle was just taken. Pick another and try again.'
 type Handed = { next: string; keepBuildingHref: string | null } | { error: string }
 
 /** The draft cut to its closed shape, its handle checked once more, and (when the launch is open) the hold written. */
-async function handOver(raw: FormDataEntryValue | null): Promise<Handed> {
-  const draft = parseHandoff(raw)
+async function handOver(raw: FormDataEntryValue | null, rawZone: FormDataEntryValue | null): Promise<Handed> {
+  let draft = parseHandoff(raw)
   if (!draft) return { error: DRAFT_LOST }
   // Only a read that SAYS the handle is taken stops the hand-over: a failed read (null) is not a reason to lose the visitor.
   if ((await isSpaceSlugTaken(claimedHandle(draft)).catch(() => null)) === true) return { error: HANDLE_TAKEN }
@@ -45,7 +47,31 @@ async function handOver(raw: FormDataEntryValue | null): Promise<Handed> {
   // The server copy is NOT stamped converted here: a tap on Claim is not an arrival. The hold carries the draft's token,
   // and /launch/claim stamps it the moment the person has signed in (the owner's rule, 2026-11-03: an abandoned claim,
   // a magic link never opened or a Google sign-in never finished, still gets the come-back emails, ADR-1933).
-  await writePendingLaunch(holdFor(draft))
+  const profileId = await getMyProfileId()
+  const active = profileId && launchSystemEnabled() ? await getActiveLaunch(profileId) : null
+  // One active launch stays intact. A stale builder cannot replace the setup of an attached Space.
+  if (active?.spaceId) return { error: DRAFT_LOST }
+  if (!profileId && leadEmailOf(draft)) {
+    // The hold intentionally omits the full draft. Finish this latest snapshot before auth can claim its token.
+    const save = new FormData()
+    save.set('draft', serializeDraft(draft))
+    if (draft.leadToken) save.set('token', draft.leadToken)
+    if (isZone(rawZone)) save.set('tz', rawZone)
+    if ([draft.cover, draft.logo, draft.profile].includes('up')) save.set('own', '1')
+    const stored = await saveDraftLead(save).catch(() => ({ ok: false as const }))
+    if (!stored.ok) return { error: DRAFT_LOST }
+    if (stored.handleTaken) return { error: HANDLE_TAKEN }
+    draft = { ...draft, leadToken: stored.token }
+  }
+  const previous = await readPendingLaunch()
+  const resume = parseWizardResume({ version: 1, phase: 'launch', cursor: 4, theme: draft.kit,
+    accentAt: draft.accentAt, niche: draft.niche, goals: draft.goals,
+    timedEntry: active?.resume?.timedEntry === true || previous?.resume?.timedEntry === true, draft, leadToken: draft.leadToken })
+  await writePendingLaunch({ ...holdFor(draft), ...(resume ? { resume } : {}) })
+  if (profileId && resume && launchSystemEnabled()) {
+    const launch = active ?? await startLaunch(profileId, { niche: draft.niche, intents: draft.goals })
+    if (!launch || !(await saveWizardResume(launch, resume, new Date(), { requireUnattached: true }))) return { error: DRAFT_LOST }
+  }
   return { next: where.next, keepBuildingHref: where.keepBuildingHref }
 }
 
@@ -97,7 +123,7 @@ export async function restoreDraft(token: string): Promise<{ draft: string | nul
 export async function claimWithEmail(formData: FormData): Promise<ClaimResult> {
   const email = String(formData.get('email') ?? '').trim()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return { ok: false, error: 'Enter a full email address.' }
-  const handed = await handOver(formData.get('draft'))
+  const handed = await handOver(formData.get('draft'), formData.get('tz'))
   if ('error' in handed) return { ok: false, error: handed.error }
   const send = new FormData()
   send.set('email', email)
@@ -109,7 +135,7 @@ export async function claimWithEmail(formData: FormData): Promise<ClaimResult> {
 /** "Continue with Google". Ends in a redirect to Google, so it is a plain form action. A bad draft goes back to the page. */
 // authz-ok: public by design, it is a sign-in door. The redirect is signInWithGoogle (per-IP throttle); the only write is the caller's own httpOnly hold cookie.
 export async function claimWithGoogle(formData: FormData): Promise<void> {
-  const handed = await handOver(formData.get('draft'))
+  const handed = await handOver(formData.get('draft'), formData.get('tz'))
   if ('error' in handed) redirect('/create-a-space#get-started')
   const send = new FormData()
   send.set('next', handed.next)
@@ -120,6 +146,22 @@ export async function claimWithGoogle(formData: FormData): Promise<void> {
  *  via /launch/claim. Returns the address so the page can clear the local draft first. */
 export async function continueSignedIn(formData: FormData): Promise<{ ok: true; href: string } | { ok: false; error: string }> {
   if (!(await getMyProfileId())) return { ok: false, error: 'Your session ended. Sign in and try again.' }
-  const handed = await handOver(formData.get('draft'))
+  const handed = await handOver(formData.get('draft'), formData.get('tz'))
   return 'error' in handed ? { ok: false, error: handed.error } : { ok: true, href: handed.next }
+}
+
+/** Persist the caller's cursor and look. Identity always comes from the session, never the browser. */
+export async function saveBuilderProgress(input: unknown): Promise<{ ok: boolean }> {
+  if (!launchSystemEnabled()) return { ok: false }
+  const resume = parseWizardResume(input)
+  if (!resume || resume.phase !== 'builder') return { ok: false }
+  const profileId = await getMyProfileId()
+  if (profileId) {
+    const launch = await getActiveLaunch(profileId) ?? await startLaunch(profileId, { niche: resume.niche, intents: resume.goals })
+    if (!launch || launch.spaceId || launch.resume?.phase === 'launch') return { ok: false }
+    return { ok: !!(await saveWizardResume(launch, resume)) }
+  }
+  const previous = await readPendingLaunch()
+  await writePendingLaunch({ niche: resume.niche, intents: resume.goals, answers: previous?.answers ?? {}, resume })
+  return { ok: true }
 }

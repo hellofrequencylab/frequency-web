@@ -26,7 +26,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypt
 import { resolveAcquisition } from '@/lib/attribution/server'
 import { claimedHandle, parseDraft, serializeDraft } from '@/lib/create-space/builder'
 import type { BuilderDraft } from '@/lib/create-space/builder'
-import { isLeadToken, leadEmailOf, leadPayloadFor, stepReached } from '@/lib/create-space/lead'
+import { isLeadToken, isZone, leadEmailOf, leadPayloadFor, stepReached } from '@/lib/create-space/lead'
 import type { Json } from '@/lib/database.types'
 import { signingSecret } from '@/lib/signing-secret'
 import { isSpaceSlugTaken } from '@/lib/spaces/store'
@@ -129,20 +129,27 @@ interface SaveDraftResult {
   handleTaken: boolean
 }
 
+/** Unknown browser zones must not replace a previously known zone on an existing draft. */
+function acceptedZone(value: string | null): string | null {
+  if (!isZone(value)) return null
+  try { new Intl.DateTimeFormat('en', { timeZone: value }); return value } catch { return null }
+}
+
 /** Keep the draft. Null only when it has no address to keep it under, or the write failed. */
 export async function saveDraft(input: SaveDraftInput): Promise<SaveDraftResult | null> {
   const email = leadEmailOf(input.draft)
   if (!email) return null
   const handle = claimedHandle(input.draft)
+  const timezone = acceptedZone(input.tz)
   // A read that SAYS taken is the only taken; a failed read (null) is not a reason to alarm the visitor.
   const handleTaken = (await isSpaceSlugTaken(handle).catch(() => null)) === true
-  const leadId = await captureDraftLead(email, input.draft, { ownPhoto: input.ownPhoto, tz: input.tz })
+  const leadId = await captureDraftLead(email, input.draft, { ownPhoto: input.ownPhoto, tz: timezone })
   const now = new Date().toISOString()
   const common = {
     email,
     handle: handle || null,
     draft: storedDraft(input.draft),
-    tz: input.tz,
+    tz: timezone,
     saved_at: now,
     started_at: input.draft.startedAt,
     ...(leadId ? { signup_lead_id: leadId } : {}),
@@ -157,7 +164,8 @@ export async function saveDraft(input: SaveDraftInput): Promise<SaveDraftResult 
       if (row) {
         // A link token re-keys the row to this browser: the browser gets a token of its own from here on.
         const token = 'id' in key ? mintToken() : input.token!
-        const patch = { ...common, step_reached: Math.max(step, row.step_reached), ...('id' in key ? { token_hash: hashToken(token) } : {}) }
+        const { tz, ...snapshot } = common
+        const patch = { ...snapshot, ...(tz ? { tz } : {}), step_reached: Math.max(step, row.step_reached), ...('id' in key ? { token_hash: hashToken(token) } : {}) }
         const { error } = await db.from(TABLE).update(patch).eq('id', row.id)
         return error ? null : { token, handleTaken }
       }

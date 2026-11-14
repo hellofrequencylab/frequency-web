@@ -12,6 +12,9 @@
 
 import { isLaunchStepId, isSkippable, orderedLaunchSteps, type LaunchStepId } from './steps.ts'
 
+import { readWizardResumeMetadata } from './wizard-resume-metadata.ts'
+import type { WizardResume } from './wizard-resume.ts'
+
 type LaunchStepStatus = 'started' | 'published' | 'skipped'
 
 interface LaunchStepEntry {
@@ -35,6 +38,8 @@ export interface LaunchSnapshot {
   stage: 'found' | 'gather' | 'keep'
   currentStep: LaunchStepId
   steps: LaunchSteps
+  resume?: WizardResume
+  stepsRevision?: string
   minimized: boolean
   /** Photo to-do items the person chose to skip for now (PHOTO_ITEM_IDS). They stay on the list, quietly. */
   skippedPhotos: string[]
@@ -101,8 +106,8 @@ export function skipPhoto(skipped: readonly string[], id: unknown): string[] | n
 }
 
 /** The steps record plus the skipped photos, as written to the steps column. */
-export function stepsWithSkips(steps: LaunchSteps, skipped: readonly string[]): Record<string, unknown> {
-  return skipped.length ? { ...steps, [PHOTO_SKIPS_KEY]: [...skipped] } : { ...steps }
+export function stepsWithSkips(steps: LaunchSteps, skipped: readonly string[], resume?: WizardResume, revision?: string): Record<string, unknown> {
+  return { ...steps, ...(skipped.length ? { [PHOTO_SKIPS_KEY]: [...skipped] } : {}), ...(resume ? { wizardResume: resume } : {}), ...(revision ? { stepsRevision: revision } : {}) }
 }
 
 /** A step is settled once it is published or skipped. */
@@ -188,7 +193,11 @@ export function toSnapshot(row: Record<string, unknown> | null | undefined): Lau
   const stored = str('current_step')
   const currentStep = stored && isLaunchStepId(stored) ? stored : (resumeStep(niche, intents, steps) ?? 'spotlight')
   const stage = row.stage === 'gather' || row.stage === 'keep' ? row.stage : 'found'
+  const metadata = row.steps && typeof row.steps === 'object' ? row.steps as Record<string, unknown> : {}
+  const resume = readWizardResumeMetadata(metadata.wizardResume)
+  const revision = typeof metadata.stepsRevision === 'string' && /^[a-z0-9-]{1,64}$/i.test(metadata.stepsRevision) ? metadata.stepsRevision : undefined
   return {
+    ...(resume ? { resume } : {}), ...(revision ? { stepsRevision: revision } : {}),
     id, ownerId, spaceId: str('space_id'), niche, intents, stage, currentStep, steps,
     minimized: row.minimized === true, skippedPhotos: readSkippedPhotos(row.steps), startedAt, updatedAt,
     cancelRequestedAt: str('cancel_requested_at'), cancelledAt: str('cancelled_at'), completedAt: str('completed_at'),

@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import { holdFor } from '@/lib/create-space/handoff'
 import { LaunchClockSlot } from '@/components/launch/launch-clock-slot'
 import { LaunchFlow } from '@/components/launch/launch-flow'
 import { DashboardTemplate } from '@/components/templates'
@@ -27,7 +28,7 @@ export default async function SpotlightStepPage({ searchParams }: { searchParams
   if (spotlightArrivalGoesHome({ hasLaunch: !!launch, go, e, new: startNew })) redirect(launchHomeHref({ signedIn: true }))
   const view = flowView(launch)
   const saved = view.slug ? await loadSpotlightAnswers(launch) : null
-  const typed = (await readPendingLaunch())?.answers.spotlight
+  const typed = launch?.resume?.draft ? holdFor(launch.resume.draft).answers.spotlight : (await readPendingLaunch())?.answers.spotlight
   // With nothing saved or typed yet, the person's own profile (name, bio, website) fills the form.
   const known = !saved && !typed && profileId ? await loadKnownProfile(profileId) : null
   const held = saved ?? (typed ? { name: typed.name ?? '', line: typed.line ?? '', link: typed.link ?? '' } : known ? prefillAnswers(null, null, known) : null)

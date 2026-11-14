@@ -51,9 +51,13 @@ export default async function NewSpacePage({
   // goes home to it, and everyone else starts one, so a first-timer never lands on this form inside the rail.
   // /launch opens as the full-screen lightbox (lib/launch/destination.ts). With the launch off, the form below stays.
   if (launchSystemEnabled()) {
-    if (await getActiveLaunch(profileId)) redirect(launchHomeHref({ signedIn: true }))
+    const launch = await getActiveLaunch(profileId)
+    if (launch?.resume?.phase === 'builder') redirect('/create-a-space?new=1')
+    if (launch) redirect(launchHomeHref({ signedIn: true }))
     const niche = nicheFromHint(params.niche) ?? nicheFromHint((await cookies()).get('fq_beta_seq')?.value)
-    redirect(niche ? `/launch/start?niche=${encodeURIComponent(niche)}` : '/launch/start')
+    const launchStart = '/launch/start'
+    const query = new URLSearchParams({ new: '1', ...(niche ? { niche } : {}) })
+    redirect(`${launchStart}?${query.toString()}`)
   }
 
   const choices = listModeChoices()
