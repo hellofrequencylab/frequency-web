@@ -44,6 +44,8 @@ interface GaIdentity {
   sessionId: string | null
 }
 
+const LEAD_SOURCES = new Set(['create_space', 'beta_induction', 'feature_funnel', 'event_rsvp', 'event_ticket'])
+
 /** Record a product event into engagement_events. Unknown events are dropped (not an
  *  error). Each call is a distinct ledger row (analytics events aren't deduped). */
 export async function track(
@@ -64,11 +66,12 @@ export async function track(
      * the ledger drops it. Self-healing: no window to miss, nothing to reconcile.
      */
     idempotencyKey?: string
-    /** Browser GA identity. `account.created` only mirrors to GA4 (as `sign_up`) when this is present. */
+    /** Browser GA identity. Signup and durable-lead mirrors require this instead of a synthetic ID. */
     gaIdentity?: GaIdentity | null
   } = {},
 ): Promise<boolean> {
   if (!isTrackedEvent(event)) return false
+  if (event === 'lead.captured' && (!opts.idempotencyKey?.startsWith('lead.captured:') || opts.idempotencyKey.length <= 'lead.captured:'.length)) return false
   const clean = sanitizeProps(props)
   const result = await recordEngagementEvent({
     idempotencyKey:
@@ -93,6 +96,23 @@ export async function track(
   // drops the repeat; the GA4 mirror must too, or every later sign-in re-sends it and a conversion
   // counts once per login instead of once per person.
   if (opts.idempotencyKey && !recorded) return false
+  if (event === 'lead.captured') {
+    const identity = opts.gaIdentity
+    const source = gaParams.source
+    if (gaServerEnabled() && identity && /^\d+\.\d+$/.test(identity.clientId) &&
+      (identity.sessionId === null || /^\d{8,}$/.test(identity.sessionId)) &&
+      typeof source === 'string' && LEAD_SOURCES.has(source)) {
+      // Load request/account policy only for this server-authoritative conversion. The
+      // first-party fact survives a declined browser, staff exclusion or unavailable evidence.
+      try {
+        const { requestGoogleAllowed } = await import('./server-google-policy')
+        if (await requestGoogleAllowed()) {
+          void mirrorToGa('generate_lead', { lead_source: source }, null, identity.clientId, identity.sessionId)
+        }
+      } catch { /* Analytics must not fail an accepted lead capture. */ }
+    }
+    return recorded
+  }
   if (event === 'account.created') {
     // Google Ads imports the GA4 key event `sign_up`. It is sent only with the visitor's own `_ga`
     // identity (so it joins the session that carried the ad click, and a visitor who never loaded
