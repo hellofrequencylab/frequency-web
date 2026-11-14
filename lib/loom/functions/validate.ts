@@ -66,7 +66,7 @@ export interface LoomContext {
   schemas: ReadonlyMap<string, z.ZodType>
 }
 
-export type LoomValidation = { ok: true; fn: LoomFunction } | { ok: false; problems: string[] }
+type LoomValidation = { ok: true; fn: LoomFunction } | { ok: false; problems: string[] }
 
 /** Unwrap optional / nullable / default to the value's own schema. */
 function inner(schema: z.ZodType): z.ZodType {

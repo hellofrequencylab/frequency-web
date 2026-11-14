@@ -9,7 +9,7 @@ import type { LoomContext } from './validate'
 // manifest (./primitives.ts).
 
 /** `block:<type>` → that adopted block's content schema. */
-export function loomSchemas(): ReadonlyMap<string, z.ZodType> {
+function loomSchemas(): ReadonlyMap<string, z.ZodType> {
   return new Map(ADOPTED_BLOCKS.map((b) => [`block:${b.type}`, b.content as z.ZodType]))
 }
 
