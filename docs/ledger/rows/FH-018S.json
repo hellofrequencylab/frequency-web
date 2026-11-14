@@ -4,15 +4,16 @@
   "lane": "program",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/hunts/README.md",
     "ref": "Split from FH-018 (2026-11-10): the moderation rules shipped in lib/hunts/moderation.ts; the screens and the stored reports need routes and a table."
   },
-  "detail": "Add the report button on the player, the operator queue (reads triage), pause and close actions gated by decide(), and the banner active players see. Needs a hunt_reports table (migration, HYG-217 cycle). Done when: an operator can pause an unsafe Hunt from the queue and an active player sees the banner with their progress intact. Requires: FH-018, FH-016. Owner role: Operations.\n\nPacket G read-only UI slice: the player uses the existing projected pause/closure state and shows a disabled report control while reporting is unavailable. The operator queue shell uses a scoped injected reader and renders only aggregate triage, with fixture tests for switch, authorization and privacy boundaries. The stored reader, live queue route, report writes and pause/close actions remain with Claude.",
+  "detail": "Add the report button on the player, the operator queue (reads triage), pause and close actions gated by decide(), and the banner active players see. Needs a hunt_reports table (migration, HYG-217 cycle). Done when: an operator can pause an unsafe Hunt from the queue and an active player sees the banner with their progress intact. Requires: FH-018, FH-016. Owner role: Operations.\n\nPacket G read-only UI slice: the player uses the existing projected pause/closure state and shows a disabled report control while reporting is unavailable. The operator queue shell uses a scoped injected reader and renders only aggregate triage, with fixture tests for switch, authorization and privacy boundaries. The stored reader, live queue route, report writes and pause/close actions remain with Claude.\n\nBuilt 2026-11-14 (live half): migration 20270346051000_hunt_moderation.sql adds hunt_reports (one open report per person per Hunt) and two service-role-only functions. hunt_report_file takes one report on a visible Hunt (replays on the same key, refuses a reused key for another request, one open report per person). hunt_moderate is the only writer of a Hunt's running state after publish: pause (live to paused), resume (paused to live), close (live or paused to ended, final); close and resume resolve open reports, a pause leaves the queue open; each writes audit, one outbox row (consumer moderation) and the idempotency record together. lib/hunts/moderation-actions.ts holds the decide() gate (pause_resume, end), request hashes and the words per answer; lib/hunts/moderation-store.ts loads facts fresh per request, resolves the caller's scope from open reports they may moderate, and reads the queue (reasons and counts, never reporters). POST /api/hunts/report (HUNTS_ENABLED) and POST /api/hunts/moderation (HUNTS_AUTHORING_ENABLED); app/(main)/hunts/moderation/page.tsx is the queue; the player page shows the live report form. Dark behind the Hunt switches. Proof: supabase/tests/hunt_moderation.test.sql and lib/hunts/moderation-actions.test.ts. The migration is NOT applied in production until the owner runs it.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"app/(main)/hunts/moderation/page.tsx\")?0:1)'"
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-14"
 }

@@ -63,6 +63,7 @@ app/(main)/events/new/page.tsx
 app/(main)/hunts/edit/[id]/commerce/page.tsx
 app/(main)/hunts/edit/[id]/page.tsx
 app/(main)/hunts/finance/page.tsx
+app/(main)/hunts/moderation/page.tsx
 app/(main)/hunts/new/page.tsx
 app/(main)/hunts/staff/page.tsx
 app/(main)/hunts/staff/review/page.tsx

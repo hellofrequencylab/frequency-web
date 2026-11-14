@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { triage, type playerView } from '@/lib/hunts/moderation'
+import { ModerationActions } from './moderation-actions'
+import { ReportTrailForm } from './report-trail-form'
 import type { HuntModerationReader, HuntModerationScope } from '@/lib/hunts/moderation-reader'
 
-export function HuntPlayerSafety({ banner }: { banner: ReturnType<typeof playerView>['banner'] }) {
+/** `reportSlug` turns the report control on; without it the control stays disabled (reporting unavailable). */
+export function HuntPlayerSafety({ banner, reportSlug }: { banner: ReturnType<typeof playerView>['banner']; reportSlug?: string }) {
   if (!huntSwitchOn('enabled')) return null
 
   return (
@@ -18,17 +21,23 @@ export function HuntPlayerSafety({ banner }: { banner: ReturnType<typeof playerV
             : 'This Trail has closed. Your progress stays here.'}
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="secondary" disabled>Report this Trail</Button>
-        <p className="text-body-sm text-muted">Reporting is currently unavailable.</p>
-      </div>
+      {reportSlug ? (
+        <ReportTrailForm slug={reportSlug} />
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="secondary" disabled>Report this Trail</Button>
+          <p className="text-body-sm text-muted">Reporting is currently unavailable.</p>
+        </div>
+      )}
     </section>
   )
 }
 
-export async function HuntModerationScreen({ scope, reader }: {
+/** `canAct` shows the pause, resume and close controls; the route sets it only when the caller was authorized. */
+export async function HuntModerationScreen({ scope, reader, canAct = false }: {
   scope: HuntModerationScope | null
   reader: HuntModerationReader
+  canAct?: boolean
 }) {
   if (!huntSwitchOn('authoring')) return null
 
@@ -37,7 +46,7 @@ export async function HuntModerationScreen({ scope, reader }: {
   const cases = authorized ? await reader(authorized).catch(() => null) : null
   const queue = cases
     ?.filter((item) => allowed.has(item.huntId))
-    .map((item) => ({ huntId: item.huntId, title: item.title, ...triage(item.reports) }))
+    .map((item) => ({ huntId: item.huntId, title: item.title, state: item.state, ...triage(item.reports) }))
     .filter((item) => item.level !== 'none')
     .sort((a, b) => Number(b.recommendPause) - Number(a.recommendPause))
 
@@ -68,6 +77,7 @@ export async function HuntModerationScreen({ scope, reader }: {
               <p className="mt-1 text-body-sm text-muted">
                 {item.reporters} {item.reporters === 1 ? 'person reported' : 'people reported'}
               </p>
+              {canAct && item.state && item.state !== 'closed' ? <ModerationActions huntId={item.huntId} state={item.state} /> : null}
             </li>
           ))}
         </ul>
