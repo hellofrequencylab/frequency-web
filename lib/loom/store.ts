@@ -14,7 +14,7 @@ import { validateLoomFunction } from './functions/validate'
 // A stored row is NOT trusted on the way out: the read side (./functions/run.ts) re-validates it against
 // today's manifest and schemas before it runs, so a later primitive retirement strands it safely.
 
-export interface StoredLoomFunction {
+interface StoredLoomFunction {
   id: string
   surface: string
   slug: string
@@ -23,7 +23,7 @@ export interface StoredLoomFunction {
   updatedAt: string
 }
 
-export type LoomSaveResult = { ok: true; id: string; version: number } | { ok: false; problems: string[] }
+type LoomSaveResult = { ok: true; id: string; version: number } | { ok: false; problems: string[] }
 
 const SURFACE = /^[a-z][a-z0-9-]{1,39}$/
 const OFF = 'Loom functions are switched off.'
