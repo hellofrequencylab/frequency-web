@@ -9,6 +9,7 @@ import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
 import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { FqFindField } from '@/components/frequency/members/shared/kit-tools'
+import { PracticeInvitation } from '@/components/practice/practice-invitation'
 
 // Practices (ADR-270/294). The whole interior is module-driven: the personal blocks (stats ·
 // activity · Pillar balance · your practices), the ranked best-of catalog of practices AND journeys
@@ -21,15 +22,15 @@ import { FqFindField } from '@/components/frequency/members/shared/kit-tools'
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
   title: 'Practices',
-  description: 'This is where the Zaps come from: a growing community library. Adopt or claim a practice, then log it every day to earn Zaps and keep your streak alive.',
+  description: 'Find a practice that supports what matters to you. Explore Mind, Body, Spirit, and Expression, then choose a rhythm that fits your life.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2);
-// the fallback strings are the page's previous static metadata, unchanged.
+// the fallback keeps the community library and a member-chosen practice rhythm legible.
 export function generateMetadata() {
   return pageContentMetadata('/practices', {
     title: 'Practices',
-    description: 'Browse the community practice library, adopt one, and log it to build your streak.',
+    description: 'Browse the community practice library. Choose a practice, explore what it supports, and build a rhythm that fits your life.',
   })
 }
 
@@ -122,6 +123,7 @@ export default async function PracticesPage({
         }
       />
       {body && <div className="body mc-bottom-24">{body}</div>}
+      <PracticeInvitation />
       <div className="fqm-tools">
         <FqFindField
           action="/practices"

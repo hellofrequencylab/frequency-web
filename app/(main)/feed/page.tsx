@@ -13,6 +13,7 @@ import { getLocalActivity } from '@/lib/feed/density'
 import { StreamTemplate } from '@/components/templates/stream-template'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
+import { PracticeInvitation } from '@/components/practice/practice-invitation'
 import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
 import { AvatarNudge } from '@/components/feed/avatar-nudge'
 import { FeedWalkthrough } from '@/components/walkthroughs/feed-walkthrough'
@@ -392,6 +393,8 @@ export default async function FeedPage({
             atRisk={practiceStreak?.atRisk ?? false}
             loggedToday={practiceStreak?.loggedToday ?? false}
           />}
+
+      <PracticeInvitation />
 
       {/* "Add a photo" nudge (ADR-421): a safety net for anyone who landed without an
           avatar (the localStorage-quota loss, a cross-browser magic-link, or any upload
