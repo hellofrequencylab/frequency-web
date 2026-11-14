@@ -1,11 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMemberPractices } from '@/lib/practices'
+import { practiceSupportIds } from '@/lib/practices/support-filter'
 import type { PillarSlug } from '@/lib/pillars/slugs'
 
 // The 4 Pillars are the `pillars` table (Mind · Body · Spirit · Expression) — the
-// organizing axis for practices (practices.domain_id) and, next, the open Journeys
-// library (backlog §Q1). Surfaced product-wide as "Channels"; here we read them as
-// the typed pillar set so callers don't re-query the taxonomy ad hoc.
+// support areas for practices and Journeys. A practice can support several Pillars.
+// Channels are a separate topic vocabulary; callers share this typed Pillar catalog.
 //
 // This module is SERVER-ONLY by construction — `getMemberPractices` above makes it so, and
 // `lib/practices.ts` now says so with a directive rather than a comment. The closed slug set moved
@@ -62,14 +62,21 @@ export interface PillarCount {
   count: number
 }
 
-/** A member's adopted practices counted per Pillar, in pillar order — the
- *  "balance" read for the feed Journey board. Always returns all four pillars
- *  (zero-filled) so the balance reads as coverage, not just what they have. */
+/** Current adopted practices counted once per authored support area, in catalog order.
+ *  Areas overlap: these counts are not a unique practice total, performed days or wellbeing.
+ *  The legacy array API remains zero-filled for the feed and practice widgets. */
 export async function getMemberPillarBalance(profileId: string): Promise<PillarCount[]> {
   const [practices, pillars] = await Promise.all([getMemberPractices(profileId), getPillars()])
+  const known = new Set(pillars.map((p) => p.id))
+  const supportsByPractice = new Map<string, Set<string>>()
+  for (const practice of practices) {
+    const supports = supportsByPractice.get(practice.id) ?? new Set<string>()
+    for (const id of practiceSupportIds(practice)) if (known.has(id)) supports.add(id)
+    supportsByPractice.set(practice.id, supports)
+  }
   const counts = new Map<string, number>()
-  for (const p of practices) {
-    if (p.domain_id) counts.set(p.domain_id, (counts.get(p.domain_id) ?? 0) + 1)
+  for (const supports of supportsByPractice.values()) {
+    for (const id of supports) counts.set(id, (counts.get(id) ?? 0) + 1)
   }
   return pillars.map((pl) => ({ slug: pl.slug, name: pl.name, count: counts.get(pl.id) ?? 0 }))
 }

@@ -209,7 +209,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                   />
               </Labeled>
             </div>
-            <Labeled label="Primary Pillar (the lean)">
+            <Labeled label="Main focus (optional)">
               <div className="flex flex-wrap gap-2">
                 {PILLAR_SLUGS.map((p) => (
                   <button
@@ -235,7 +235,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
           </Section>
 
           {/* ── Pillars inside ───────────────────────────────────── */}
-          <Section title="The four Pillars inside" anchor="pillars" editorNotes={draft.editorNotes}>
+          <Section title="What this Circle can support" anchor="pillars" editorNotes={draft.editorNotes}>
             <div className="space-y-3">
               {PILLAR_SLUGS.map((p) => (
                 <Labeled key={p} label={PILLAR_LABELS[p]}>
@@ -250,7 +250,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                       setPillarsInside(next)
                       saveIfChanged('pillarsInside', next, draft.pillarsInside)
                     }}
-                    placeholder={`One honest line for ${PILLAR_LABELS[p]}.`}
+                    placeholder={`Optional: how this Circle can support ${PILLAR_LABELS[p]}.`}
                       />
                 </Labeled>
               ))}
