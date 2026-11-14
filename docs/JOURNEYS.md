@@ -95,17 +95,17 @@ record + the authoring rubric: [ADR-307](DECISIONS.md) and
 **The container.** A one-month **Run**: a small group (~8 to 12) with a **Host**, a fixed start,
 moving on the weekly drip. **Four week-Phases** (one Phase ≈ one week) on the arc *arrive →
 deepen → apply → integrate*, wrapped by an **Onboarding** phase before week 1 and a **Close**
-phase at the end. All four **Pillars** (Mind/Body/Spirit/Expression) carry every week.
+phase at the end. Mind, Body and Spirit are overlapping support areas. Expression is an optional invitation throughout, including private making, speaking, helping or connecting. A Journey does not need equal coverage to be useful.
 
 **The week shape (per Phase).** Same parts every week, fresh content:
 
 | Part | What it is |
 |---|---|
 | **Lesson** | A hook, **one open/essential question** for discussion, a short teaching, and a **reach-back** to the prior week. Plain lesson content; there is **no "Mission" object** (NAMING). |
-| **Anchor practice** | One practice done **daily, all month, unchanged**: the keystone-habit through-line. **Strong-suggest, warn-on-save, departable** (below). |
-| **Three weekly practices** | One each for **Mind / Body / Spirit**. **Rotate each week by default**, or hold **fixed** for the whole Journey (a scaffold-time choice). |
-| **Weekly Expression Challenge** | The Expression Pillar as the active/social *doing*, **LIGHT** (small/no Zaps). The **Close** carries the **capstone Expression Challenge**, **HEAVY** (the Journey-completion reward). |
-| **Reflection** | A weekly checkpoint. |
+| **Anchor practice** | One neutral starting practice to return to on a personally useful rhythm. **Strong-suggest, warn-on-save, departable** (below). The author can replace or remove it. |
+| **Supporting practices** | Optional suggestions for **Mind / Body / Spirit**, which can overlap. Keep, replace or remove them to fit the intention; rotate or hold fixed deliberately. |
+| **Expression invitation** | Optional making, speaking, helping or connecting. It can stay private and does not require prior balance. New template exercises retain the existing weekly and Close extra-credit bonus amounts; official Quest requirements are separate. |
+| **Reflection** | An optional checkpoint: what supported you, and what would you keep or change? |
 
 **The two-touchpoint meeting model.** Two standing weekly touchpoints, the group's to purpose:
 a **Circle Meetup** (mid-week, in person or virtual: connect + process the week) and a
@@ -205,20 +205,28 @@ collapsed to a mini strip** (`railStartsCollapsed` in `lib/layout/page-chrome.ts
 returns `'global'`, the rail is never removed): an expand toggle at the rail's foot opens it to the
 full width, a collapse toggle returns it. Default on this route is collapsed, for the build width.
 
-**Vera composes the opening week.** A new Journey opens pre-propagated with a balanced shape: **one
-practice per Pillar**: **Mind**, **Body**, **Spirit**, and **Expression** (an Expression practice is
-about putting it out: make/share/connect). So a fresh Journey starts balanced across all four Pillars
-(each is a `practice` block tagged to its Pillar `domain_id`; logging it feeds the four-Pillar
-Signature like any practice). The Vera box sits at the top of the Curriculum tab: the author says
-what they're making and Vera fills the shape, either reusing a fitting library practice
-(`searchLibraryPractices({ pillarId })` candidates, picked by id) or writing a new inline one. Falls
-back to the empty shape ("Start with the shape") when AI is off. Code: `journey-composer.tsx`,
-`lib/ai/journey-composition.ts` (Opus, forced-tool, every library id re-validated against the
-candidates), `composeJourneyAction` / `scaffoldJourneyAction`.
+**A manual starting rhythm; Vera coaches.** The explicit scaffold action inserts one neutral
+Anchor practice plus optional Mind, Body and Spirit supports and an optional Expression invitation.
+The Master Framework uses the same pure row factories (`lib/journeys/support-template.ts`) for its
+Onboarding, week and Close phases. Existing authored rows are not rewritten. The author can remove
+or replace suggestions and decide which work is required for their own program. New optional support
+rows carry `settings.support_suggestion=true`: they stay available in the player without auto-adoption.
+Participants can self-adopt a practice; an author-selected Anchor or required practice remains automatic.
+Existing unmarked optional rows keep their prior adoption behavior. Expression may
+be private; these templates do not change an enrolled official Quest's qualification policy.
+Future official ranked fixed-window enrollments can carry an immutable prospective policy with optional
+Expression; existing NULL/active and unenrolled participation retain their original rules. See
+[the economy and Journey policy](ECONOMY-AND-JOURNEYS.md).
+Activation requires the reviewed migration.
+
+Vera returns separate planning questions. She does not populate participant-facing names, prose,
+practice picks or required flags. `composeJourneyAction` and `populateWeekAction` are read-only
+coaching paths; manual scaffold creation is a separate explicit action. Code:
+`journey-composer.tsx`, `lib/ai/journey-composition.ts`, and `lib/journeys/compose.ts`.
 
 **Extra-credit Challenges (ADR-300 Part 2, shipped).** Above-and-beyond bonus tasks on a Journey that
 pay **regular Zaps** on completion (not a Pillar practice). An `exercise` block with `required=false`
-+ `settings.extra_credit` + `settings.bonus_zaps`; Vera seeds one per composed Journey and the author
++ `settings.extra_credit` + `settings.bonus_zaps`; the manual scaffold supplies an optional invitation and the author
 can add more (`addExtraCreditAction`). The bonus Zaps are paid exactly once on check-off via the
 `reward_grants` lock (`lib/journeys/grants.ts` `grantExtraCreditIfAny`). The editor shows an Award chip
 + editable Zaps field; the player shows an "Extra credit · +N Zaps" badge.
@@ -230,9 +238,8 @@ that grant a badge and do not touch the Pillar Signature, built on the `achievem
 
 1. **Start from a template or blank-with-prompts.** Seeded templates ("4-Week Reset," "5-Phase
    Coaching Arc," "Onboarding Program") + a blank that walks the author with prompts ("Who is
-   this for? What will they be able to do by the end?"). An **AI "draft my outline"** turns a
-   description into a Phase→Module→Lesson skeleton to edit (AI outlines materially lift creator
-   completion, §10).
+   this for? What would be useful by the end?"). Vera offers separate coaching questions; the author
+   writes the outline and decides what belongs in it.
 2. **The outline tree.** Drag-drop **Program → Phase → Module → Lesson** with inline rename +
    reorder; add a phase/module/lesson with one click.
 3. **Block-based lessons.** Each lesson is typed (video/reading/exercise/reflection/check/

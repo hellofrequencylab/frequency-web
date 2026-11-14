@@ -266,7 +266,7 @@ export function JourneyGuide({
                       <span className="rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong">Best start</span>
                     </span>
                     <span className="block text-meta leading-snug text-muted">
-                      A welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone.
+                      A welcome, one anchor, optional supporting practices, expression and reflection.
                     </span>
                   </span>
                 </button>
