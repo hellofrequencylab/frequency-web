@@ -9,7 +9,8 @@
 //
 // Inspector (PROG-E5): given a block's fields, the canvas also mounts the responsive inspector beside the frame. It
 // shares the frame's device, so switching to Phone edits phone values, and the frame draws the values that device
-// resolves to. The values are local to this page; nothing is saved.
+// resolves to. The values are local to this page; nothing is saved. Under it, Vera's questions for the block
+// (PROG-E8): questions only, at creation or when asked, never a write to a field.
 //
 // Presence (BLD-401): on a shared Space the link also carries who is here (faces above the canvas) and which node
 // each person is in (an outline on that node inside the frame). It rides the channel, never the doc.
@@ -20,6 +21,7 @@ import type { BuilderDevice } from '@/lib/builder/state'
 import type { InspectorFieldView } from '@/lib/builder/inspector-fields'
 import { resolveInspectorValue, type InspectorDeviceValues } from '@/lib/builder/inspector-model'
 import { ResponsiveInspector } from '@/components/builder/inspector/responsive-inspector'
+import { VeraBlockCoach } from '@/components/builder/inspector/vera-block-coach'
 import { CanvasViewportShell } from './canvas-viewport-shell'
 import { CollabTextEditor } from './collab-text-editor'
 import { EditorPresenceFaces } from '@/components/builder/presence/presence-ui'
@@ -52,6 +54,8 @@ export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspect
   const [blockValues, setBlockValues] = useState<InspectorDeviceValues<Record<string, string | boolean>>>(
     () => ({ desktop: inspector?.initial ?? {} }),
   )
+  // Vera (PROG-E8): the block counts as just created when every word field starts empty. Read once, at mount.
+  const [fresh] = useState(() => !!inspector && inspector.fields.every((f) => (f.kind !== 'text' && f.kind !== 'textarea') || !inspector.initial[f.key]))
   const shown = (key: string) => {
     const { value } = resolveInspectorValue(blockValues, device, key)
     return typeof value === 'string' ? value : ''
@@ -128,6 +132,7 @@ export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspect
       </div>
     </CanvasViewportShell>
     {inspector && (
+      <div className="min-w-0">
       <ResponsiveInspector
         title={inspector.title}
         fields={inspector.fields}
@@ -136,6 +141,8 @@ export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspect
         values={blockValues}
         onChange={setBlockValues}
       />
+      <VeraBlockCoach title={inspector.title} values={blockValues.desktop ?? {}} fresh={fresh} spaceId={spaceId} />
+      </div>
     )}
     </div>
     </>
