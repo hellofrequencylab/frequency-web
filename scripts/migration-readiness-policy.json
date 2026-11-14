@@ -1785,7 +1785,7 @@
       "migrations": [
         {
           "file": "supabase/migrations/20270346046000_hunt_reward_redeem.sql",
-          "sha256": "97e50e1cbe091c0e949adf5bd63c29ccf27c85357e6ac7c0caaf78e77727f7c8"
+          "sha256": "bad61afabaec30eb0023abf80185fcf56d2ae0cdc2ade78ab497517b3d72bb3f"
         }
       ],
       "reviewedChanges": [
@@ -1869,7 +1869,7 @@
         {
           "file": "supabase/migrations/20270346046000_hunt_reward_redeem.sql",
           "status": "added",
-          "sha256": "97e50e1cbe091c0e949adf5bd63c29ccf27c85357e6ac7c0caaf78e77727f7c8",
+          "sha256": "bad61afabaec30eb0023abf80185fcf56d2ae0cdc2ade78ab497517b3d72bb3f",
           "baseMode": "000000",
           "headMode": "100644"
         },
