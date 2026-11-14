@@ -85,7 +85,7 @@ export const CIRCLE_MANIFEST: EntityManifest = {
 
   sections: [
     { key: 'identity', title: 'Identity', desc: 'The name, the hook, and the lean. What a stranger reads first.' },
-    { key: 'pillars', title: 'The four Pillars inside', desc: 'One honest line each for Mind, Body, Spirit, and Expression. Every Circle works the whole person.' },
+    { key: 'pillars', title: 'What this Circle can support', desc: 'Optional notes for the areas that fit. Mind, Body, Spirit and Expression can overlap; leave other areas blank.' },
     { key: 'rhythm', title: 'The standing rhythm', desc: 'The midweek Meetup, the Weekend Gathering, and the Thread that runs between them.' },
     { key: 'shape', title: 'How it runs', desc: 'In person or online, the headcount that works, and the cap.' },
     { key: 'agreements', title: 'Agreements', desc: 'The plain norms of the group, stated once.' },
@@ -100,8 +100,8 @@ export const CIRCLE_MANIFEST: EntityManifest = {
     { path: 'name', label: 'Name', kind: 'text', section: 'identity', placement: 'spark', required: true, editPlane: 'rail' },
     // The Card / one-liner lands in the Circle's About (createBlankCircleDraft: oneLiner ?? identity).
     { path: 'about', label: 'About', kind: 'longtext', section: 'identity', placement: 'spark', prose: true, veraDrafts: true },
-    // The lean. The other three Pillars live inside it; a Circle is never sorted by it.
-    { path: 'primaryPillar', label: 'Primary Pillar', kind: 'select', section: 'identity', placement: 'spark', options: PILLAR_OPTIONS },
+    // An optional main focus. Other support areas are independent; a Circle is never sorted by it.
+    { path: 'primaryPillar', label: 'Main focus (optional)', kind: 'select', section: 'identity', placement: 'spark', options: PILLAR_OPTIONS },
     // Derived from the name at create (uniqueCircleSlug), editable after.
     { path: 'slug', label: 'Handle', kind: 'slug', section: 'identity', omitWhenEmpty: true },
     // The cover, `circles.image_url`. Self-saves through the Loom (setCircleCoverUrl); the rail
@@ -109,7 +109,7 @@ export const CIRCLE_MANIFEST: EntityManifest = {
     // on the cover control (CircleHeaderControls) and are not fields, as the Journey's are not.
     { path: 'imageUrl', label: 'Cover image', kind: 'image', section: 'identity', omitWhenEmpty: true, veraDrafts: false },
 
-    // ── The four Pillars inside. Content, edited in place on the live Circle. ──
+    // ── What this Circle can support. Content, edited in place on the live Circle. ──
     { path: 'pillarsInside.mind', label: 'Mind', kind: 'text', section: 'pillars', placement: 'inline', veraDrafts: true },
     { path: 'pillarsInside.body', label: 'Body', kind: 'text', section: 'pillars', placement: 'inline', veraDrafts: true },
     { path: 'pillarsInside.spirit', label: 'Spirit', kind: 'text', section: 'pillars', placement: 'inline', veraDrafts: true },
