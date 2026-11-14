@@ -1,0 +1,19 @@
+{
+  "id": "HYG-224",
+  "title": "Fetch repository history for CI contract guards",
+  "lane": "hygiene",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": ".github/workflows/ci.yml",
+    "ref": "LIVE-2288 exact-head checks: check:shipped-ids failed because the checks runner had no origin/main ref."
+  },
+  "detail": "The checks job now requests complete Git history so repository guards that scan merged IDs and migration history have origin/main and its ancestry. The lint and test jobs retain their shallow checkouts. This changes CI checkout evidence only; no runtime code, migration, key-event setting, probe baseline, or product flag changes.\n\nCI contract guards now run with complete main history; the base-fetch consequence probe passes.\n\nCI contract guards now have complete main history; the checked-out-base consequence probe passes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/ci-history-base-fetch.mjs"
+  },
+  "closed": "2026-11-14",
+  "wave": "W7"
+}
