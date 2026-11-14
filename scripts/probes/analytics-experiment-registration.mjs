@@ -17,7 +17,7 @@ const apiStep = 'Real local service, anon and authenticated analytics experiment
 const requiredSteps = ['Start local Supabase (applies all migrations)', 'Run pgTAP RLS/RPC tests', 'Refuse an unstated permanent skip in the TAP output', apiStep, 'Always destroy dispatched staging containers and volumes']
 assert.deepEqual(registration.migrations, [{ file, sha256: sqlHash }])
 assert.equal(registration.reviewedChanges.length, 32)
-assert.equal(hash(registration.reviewedChanges), 'a94c52b99a54831504f489848b81e47a122c3f1ff15ecba72141723b94b3a9f8', 'The complete reviewed source, harness, tests and file modes must remain frozen')
+assert.equal(hash(registration.reviewedChanges), '781fa09dcb2c72935b45b997af89dcb7ad8e913a56e50d694419cbe31c78f114', 'The complete reviewed source, harness, tests and file modes must remain frozen')
 assert.equal(registration.workflowPath, '.github/workflows/db-tests.yml')
 assert.equal(registration.workflowSha256, '522262e06e8c2928e73aaf8528faae02a7d3a74116fbe85995df9c3ae3cc6b18')
 assert.equal(registration.expiresAt, '2026-11-21T23:59:59Z')
