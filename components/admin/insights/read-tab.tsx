@@ -22,7 +22,7 @@ export async function ReadTab() {
     <DashArea
       icon={Sparkles}
       label="The read"
-      blurb="Vera reads the live engagement signal and names the next move. Start with whatever she flags as needing attention."
+      blurb="Rule-based observations from measured engagement. These are investigation prompts, not causal findings."
       footnote={<FreshnessNote at={new Date()} label="Computed" />}
     >
       <TileGrid>

@@ -70,7 +70,8 @@ function PanelSkeleton({ label }: { label: string }) {
 // ── Panel 1: the five funnels ───────────────────────────────────────────────────
 
 async function FunnelsPanel() {
-  const funnels = await getJourneyFunnels(JOURNEY_WINDOW_DAYS)
+  const funnels = await getJourneyFunnels(JOURNEY_WINDOW_DAYS).catch(() => null)
+  if (!funnels) return <DashArea label="Funnels unavailable" blurb="The database could not provide a reliable funnel reading. Check database access and migrations. This is not a zero-traffic result." >{null}</DashArea>
   const gaps = journeyGaps()
 
   return (
@@ -183,7 +184,8 @@ const CHIP_TONE: Record<BudgetStatus, 'success' | 'warning' | 'danger' | 'neutra
 }
 
 async function VitalsPanel() {
-  const v = await getVitalsReadout(VITALS_WINDOW_DAYS)
+  const v = await getVitalsReadout(VITALS_WINDOW_DAYS).catch(() => null)
+  if (!v) return <DashArea label="Page speed unavailable" blurb="The database reading could not be loaded. No budget result is available." >{null}</DashArea>
 
   const columns: ColumnDef<RouteVitals>[] = [
     {
