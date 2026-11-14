@@ -59,7 +59,9 @@ export function SpacePreview(props: SpacePreviewProps) {
   const coverPos = props.cover && props.cover !== imagery.hero ? 'center' : imagery.heroPos
   const portrait = props.portrait ?? imagery.portrait
   const portraitPos = props.portrait && props.portrait !== imagery.portrait ? 'center' : imagery.portraitPos
-  const logo = props.logo ?? 'word'
+  const sm0 = site.sample
+  // Wildheart's design page wears the stag mark; it shows until they upload a logo of their own.
+  const logo = props.logo && props.logo !== 'word' ? props.logo : kit === 'wildheart' && sm0 ? { src: '/brand/wildheart/wildheart-logo.svg' } : (props.logo ?? 'word')
   const profile = props.profile ?? 'photo'
   const initial = props.initial ?? (site.name[0] ?? 'Y').toUpperCase()
   const hostInitial = props.hostInitial ?? initial
@@ -96,8 +98,7 @@ export function SpacePreview(props: SpacePreviewProps) {
               {typeof logo === 'object' ? <span className="cs-pv-logo-img"><Image src={logo.src} alt="" fill sizes="120px" unoptimized /></span> : null}
               {logo === 'word' ? <><span className="cs-pv-badge">{initial}</span><span className="cs-pv-brand">{site.name}</span></> : null}
             </span>
-            <span className="cs-pv-label">{site.nav1}</span>
-            <span className="cs-pv-label">About</span>
+            {(sm?.links ?? [site.nav1, 'About']).map((l) => <span className="cs-pv-label" key={l}>{l}</span>)}
             <span className="cs-pv-btn cs-pv-btn-s">{heroCta}</span>
           </div>
           <div className="cs-pv-hero">
@@ -113,6 +114,12 @@ export function SpacePreview(props: SpacePreviewProps) {
             <div className="cs-pv-pic">
               <span className="cs-pv-ring" />
               <div className="cs-pv-photo"><Photo src={cover} pos={coverPos} sizes={HERO_SIZES} priority={priority} /></div>
+              {sm?.next ? (
+                <div className="cs-pv-next">
+                  <span className="cs-pv-next-pic"><Photo src={sm.next.img} sizes="120px" /></span>
+                  <span className="cs-pv-next-text"><span className="cs-pv-next-k">{sm.next.kicker}</span><span className="cs-pv-next-t">{sm.next.title}</span><span className="cs-pv-next-d">{sm.next.date}</span></span>
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="cs-pv-offers">

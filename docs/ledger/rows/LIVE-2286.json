@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-2286",
+  "title": "Create a Space previews carry each theme's small design details",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-14",
+  "source": {
+    "file": "components/frequency/site/pages/create-space/space-preview.tsx",
+    "ref": "Owner 2026-11-14: finish the remaining preview details (Wildheart stag logo, per-theme nav links, Temple next-gathering card, Bold stand-in photos)."
+  },
+  "detail": "Follow-up to LIVE-2284. Wildheart's preview wears the stag mark until a logo is uploaded; each theme shows its design page's own nav links (Designer: Portfolio, Services, Book, Events; Network: Come to a meetup, Join, Shop; Temple: Programs, Gatherings, Membership, About; the rest: Offerings, Events, About, Contact); Temple shows its next-gathering card; Bold wears New World outdoor-group pictures as a stand-in until its own library is supplied. Nocturne's design page shows a ticker strip rather than links, so it keeps the default four.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/create-space-preview-details.mjs" },
+  "wave": "W7"
+}
