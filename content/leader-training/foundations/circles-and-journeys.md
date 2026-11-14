@@ -5,7 +5,7 @@ category: foundations
 order: 1
 audience: host
 status: published
-updated: 2026-06-16
+updated: 2026-11-14
 ---
 
 ## What this is
@@ -20,44 +20,34 @@ What makes it a Circle and not a club is that it is built to last. Groups come t
 
 ## The Journey
 
-A Journey is what a Circle does together. It is a shared arc with a beginning and an end, a month long, that the whole group moves through at the same time. The whole group going through one Journey together is a Run. Daily practice on your own, two gatherings a week, and a real-world challenge to finish.
+A Journey is an intentional path of practices, teaching and reflection that someone can follow alone or with a Circle. A Circle moving through a Journey together is a Run. A shared start and regular gatherings can help people connect, but the useful rhythm depends on the people and purpose. A month is one starting shape, not a required duration.
 
-A Circle does not run one Journey and stop. It runs Journeys one after another, and the community deepens with each one. The Journey is the thing you do. The Circle is the thing that lasts.
+A Circle can run Journeys one after another. The Journey is a path you choose to explore. The Circle is the group that can keep gathering as its needs change.
 
-Every Journey comes with a default shape, and you can change it to fit your group. The shape is a starting point, not a rulebook. The full shape and how to build one are in [How to Create a Journey](/lead/training-library/authoring/how-to-create-a-journey). This page is the why. That one is the how.
+The builder offers a starting shape you can adapt. [How to Create a Journey](/lead/training-library/authoring/how-to-create-a-journey) explains the anchor, optional supports, expression and reflection. Neither the template nor Vera's review expects four equal daily tasks.
 
-## The four Pillars
+## Ways to support yourself
 
-This is the part that makes a Frequency Journey different from any other group activity. Underneath every Journey, whatever the topic, are four Pillars.
+Mind, Body and Spirit are overlapping lenses. Expression is one way that support can show up in life, and it can support us in return.
 
-- **Mind.** Mental clarity and focus. Meditation, journaling, reading, time off the screen.
-- **Body.** Physical health. Movement, exercise, food, rest.
-- **Spirit.** Your emotions and your energy. Breathwork, naming what you feel, time in nature.
-- **Expression.** What comes out when the other three are in balance. Putting something true into the world, and the challenges that close each Journey.
+- **Mind.** Attention, learning and reflection. Read, write, notice or take a quiet moment.
+- **Body.** Movement, rest and physical care, adapted to the person.
+- **Spirit.** Presence, connection and meaning, in the person's own terms.
+- **Expression.** Make something, speak, share, help or connect. You can keep it private.
 
-A good Journey touches all four. That is what keeps a Circle from being one-dimensional. A running Circle is not just a running club, it is a group of whole people who happen to bond over running, because the Journey rounds the running out across all four Pillars. The topic is the door. The four Pillars are what is actually being built.
+A walk may offer movement, attention and connection at once. A running Circle may intentionally focus on Body; a creative Circle may focus on Expression. Invite other support when it serves the group, without filling categories for their own sake.
 
-There are two ways a Journey carries the Pillars.
+People do not have to achieve harmony before expressing themselves. Quiet expression, solo practice, rest and returning after a gap belong here too. Logged categories cannot tell us everything that supports a person's life.
 
-- **Lead with the Pillars.** The four Pillars are the content itself. This is the catch-all version, for a Circle with no single topic.
-- **Lead with the topic.** The topic sits on the surface and the four Pillars are woven underneath. A running Journey, where the Host builds a Mind practice, a Spirit practice, and an act of Expression in around the miles.
+## A shape you can change
 
-Both balance the four. They just lead with different things.
+Start with an intention and one attainable action. The template suggests one Anchor practice to return to, with optional Mind, Body and Spirit supports and optional invitations to express or reflect. Keep, replace or remove those suggestions. The author chooses what belongs in the published Journey.
 
-## What is fixed, and what is yours
+An anchor can follow a useful personal rhythm. It does not have to be daily or stay unchanged all month. A Circle Meetup and a Weekend Gathering can be useful touchpoints; choose a realistic cadence together, with accessible and solo alternatives.
 
-A modifiable shape only works if it is clear what holds and what is open.
+New optional support suggestions remain available in the player without being automatically added to a participant's active practices. People can adopt one they want to return to. An author-selected Anchor or required activity is different, so explain the commitment before people enroll.
 
-A few things make a Journey a Frequency Journey, and they do not change.
-
-1. It balances the four Pillars, every week.
-2. It has an Anchor practice. One practice you do daily, all month, unchanged. It is the through-line, the habit that stays after the month is done. It is strongly recommended, not forced. The builder will nudge you to set one and warn you if you skip it, but it lets you carry on.
-3. The group meets twice a week. A Circle Meetup mid-week, in person or online, where you connect and process the week. A Weekend Gathering, an in-person social event that fits your group. You set what each one is for.
-4. Expression shows up each week as a challenge, the doing, not a quiet practice. A small one each week, and one big one at the end that closes the Journey, something done out in life, not just in the room.
-
-Everything else is yours to set. The topic, the specific practices, whether the weekly practices rotate or hold, and the challenge itself.
-
-One rule of thumb. The default Journey already balances the four Pillars and carries the Anchor and the two gatherings, so if you start from it and adjust, you stay balanced without having to think about it. Balance is meant to be the easy path, not extra work.
+Official Quest participation is a separate published contract. Existing enrollments can retain an Expression requirement and a fixed practice-day window. Follow the requirement shown for that enrollment; a new template does not erase it or change earned recognition. Expression invitations in an ordinary personal Journey do not need a public performance.
 
 ## Seasons and the game
 
@@ -73,14 +63,14 @@ You do not need to be an expert or a teacher. You need to be willing to gather a
 
 1. **Gather a few people.** Start small, six to ten, people you would actually want in your life. Local first, so you can be in the same room.
 2. **Pick your topic, or go catch-all.** Anything that gives people a reason to come. Or no topic at all, and let the four Pillars be the point.
-3. **Set your Journey.** Take the default shape and fit it to your group. Keep the four Pillars, the Anchor practice, the two weekly gatherings, and the closing challenge. Change the rest.
-4. **Set your cadence.** Two gatherings a week is the heartbeat: a Circle Meetup mid-week and a Weekend Gathering. Meet in person whenever you can.
-5. **Run it, then run the next one.** Move through the Journey together, finish the challenge, and start the next Journey when the new season comes. The community grows each time.
+3. **Shape your Journey.** Choose an intention, a useful anchor if you want one, and the support that fits. Expression and reflection can be private and optional.
+4. **Set your cadence.** Agree on a rhythm people can realistically return to. Make room for rest, access needs and changes of plan.
+5. **Notice and adjust.** Move through the Journey together, reflect on what supported people, and decide what to keep or try next.
 
 For the craft of actually holding a group together, turning a first season into a community that lasts, see the [Circle Host Guide](/lead/training-library/host-training/circle-host-guide). This guide is the what. That one is the how.
 
 ## The first Circle
 
-Frequency is starting with one catch-all Circle, run by Daniel. It leads with the four Pillars rather than a single topic, and its first Journey is Stretch. The point of it is to get the ball rolling, build real community on the ground, and show other people what a Circle can be, so they go and start their own.
+A first Circle can start with one shared topic, one gathering and an invitation to return. It can explore several kinds of support or deepen one area. Let the people and the intention shape the next Journey rather than trying to complete a four-part formula.
 
-That is the whole model. One Circle becomes many. Each one runs Journeys. The four Pillars hold underneath. And the communities last.
+One Circle can become many. Each can find its own rhythm, with practices and Journeys that give people a reason to keep gathering.

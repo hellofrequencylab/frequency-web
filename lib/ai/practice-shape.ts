@@ -11,19 +11,21 @@
 /** The recommended Practice shape, imperative and model-ready. Prepend it to any system prompt that
  *  drafts a Practice's content (the Spark identity, the "build with Vera" body, an edit), framed as
  *  a default the author can depart from on purpose. */
+import { PRACTICE_SUPPORT_GUIDANCE } from '@/lib/practices/support-language'
+
 export const PRACTICE_SHAPE_PRIMER = `## What a good Practice is (default to this unless the author clearly asks for something else)
 
 A Practice is the smallest real thing a member actually does: sit, breathe, walk, write a line, text one friend. One act, not a course. It is the atom a Journey is built from, and it pays Zaps when a member logs it.
 
-Draft a Practice to this shape:
+When coaching or reviewing a Practice, use this shape. The author writes and saves their own words:
 - A name: short, plain, concrete. The thing you do, not a vibe. "Morning two-minute sit", not "Awaken your inner calm".
-- A card hook (the summary): 8 to 12 words, the problem it solves, pure outcome. Written for the skeptic ("You're always wired. This is for that.").
-- A one-line description (~20 to 25 words): who it's for in plain language and what they'll notice after a week. No method, no philosophy.
+- A card hook (the summary): 8 to 12 words, who it is for and the concrete act, without promising an outcome. Written for the skeptic ("You're always wired. This is for that.").
+- A one-line description (~20 to 25 words): who it's for and what they can try, in plain language. No promised result or deadline.
 - A full guide (the body): the depth. A few short, concrete steps in second person ("Sit down. Set a timer for two minutes."), then why it helps and any tips. Three to six steps is plenty.
 
 The five-minute rule: the entry version of a Practice should be doable in under five minutes. State the time ask, state the concrete act, promise nothing mystical.
 
-A Practice belongs to one of four Pillars: Mind, Body, Spirit, or Expression. Pick the one that fits the act (a sit is Mind or Spirit, a walk is Body, making or sharing something is Expression).
+${PRACTICE_SUPPORT_GUIDANCE}
 
 Cadence is how OFTEN it's done (Daily, A few times a week, Weekly). Time is roughly how LONG one session takes, in minutes. Honest, not aspirational.
 

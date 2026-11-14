@@ -239,9 +239,8 @@ export default async function ProfilePage({
     // band line is gone; narrowing the read is what stops the achievement republishing the same bit
     // three DOM nodes away.
     admin.from('memberships').select('circles!circle_id ( id, name, slug, unlisted, status, space_id, image_url )').eq('profile_id', profileId).eq('status', 'active'),
-    // The Frequency Signature — the member's practice spread across the four Pillars
-    // (docs/JOURNEYS.md §9.2), the identity centerpiece below.
-    getMemberSignature(profileId),
+    // Personal practice details are owner-only; visitors never trigger an admin log read.
+    isOwner ? getMemberSignature(profileId) : Promise.resolve(null),
     // Real earned awards + owned shop items for the public awards section.
     getProfileAwards(profileId),
     // Tips (ADR-176): payouts-live + the recipient's Connect status. Always fetched; the
@@ -535,7 +534,7 @@ export default async function ProfilePage({
           sessions: p.sessions,
         }))}
       >
-        <FrequencySignature signature={signature} variant="full" layout="stack" name={isOwner ? undefined : firstName} />
+        {isOwner && signature ? <FrequencySignature signature={signature} variant="full" layout="stack" /> : null}
       </ProfilePractice>
     ) : (
       <div className="stack mc-gap-24">

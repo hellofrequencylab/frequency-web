@@ -25,7 +25,7 @@ function toBlock(r: Record<string, unknown>): BlockRowWithSettings {
     required: (r.required as boolean) ?? true,
     est_minutes: (r.est_minutes as number) ?? null,
     practice_id: (r.practice_id as string) || null,
-    settings: (r.settings as { anchor?: boolean } | null) ?? null,
+    settings: (r.settings as BlockRowWithSettings['settings']) ?? null,
   }
 }
 

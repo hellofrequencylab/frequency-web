@@ -10,7 +10,7 @@
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Database } from '@/lib/database.types'
+import type { Database, Json } from '@/lib/database.types'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan } from '@/lib/journey-plans'
 import { createPractice } from '@/lib/practices'
@@ -24,10 +24,9 @@ import {
   pillarIdsBySlug,
   insertChildren,
   extraCreditRow,
-  PILLAR_SLOTS,
   EXTRA_CREDIT_PLACEHOLDER,
-  type ComposedRow,
 } from '@/lib/journeys/compose'
+import { personalJourneyRows } from '@/lib/journeys/support-template'
 import { canEditJourney } from '@/lib/journeys/authoring'
 import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import { toPortable, type PortableJourney } from '@/lib/journeys/portable'
@@ -78,19 +77,21 @@ function done(slug: string): void {
  *  she fills the existing arc instead of stacking a new phase beside it. Falls back to a new phase
  *  when every phase already has content (or there are none). */
 async function reuseOrCreatePhase(admin: ReturnType<typeof createAdminClient>, planId: string, title: string): Promise<string | null> {
-  const { data: phases } = await admin
+  const { data: phases, error: phasesError } = await admin
     .from('journey_plan_items')
     .select('id')
     .eq('plan_id', planId)
     .eq('block_type', 'phase')
     .is('parent_id', null)
     .order('sort_order', { ascending: true })
+  if (phasesError) return null
   for (const ph of (phases ?? []) as { id: string }[]) {
-    const { count } = await admin
+    const { count, error: countError } = await admin
       .from('journey_plan_items')
       .select('id', { count: 'exact', head: true })
       .eq('parent_id', ph.id)
-    if (!count) return ph.id
+    if (countError || count == null) return null
+    if (count === 0) return ph.id
   }
   const sort = await nextSortOrder(admin, planId, null)
   const { data } = await admin
@@ -343,17 +344,13 @@ export async function draftSlotCoachingAction(
 
 // ── Vera Journey composer (JOURNEYS.md §6) ──────────────────────────────────────────────
 //
-// Every new Journey opens pre-propagated with a balanced shape: one practice per Pillar — Mind,
-// Body, Spirit, and Expression. So a fresh Journey starts balanced across all four Pillars, and
-// doing the practices feeds the four-Pillar Signature. The author tells Vera what they're making
-// and she fills the shape (reusing fitting library practices or writing new ones), or starts from
-// the empty shape and fills it by hand. Extra-credit Challenges (above-and-beyond bonus tasks that
-// pay regular Zaps) and Side Quests (reward-only, badge-granting) are separate layers, not here.
+// Manual creation suggests one anchor plus optional supporting practices and expression.
+// These are new rows only. Existing authored requirements, completion policy and rewards remain intact.
 
 const SCAFFOLD_PHASE = 'Your first week'
 
-/** Build the empty shape (a phase with the four Pillar slots — Mind/Body/Spirit practices + an
- *  Expression challenge), prompts in the body. The no-AI path, and the fallback when Vera is off. */
+/** Suggest a starting rhythm in an empty or newly created phase. The author can remove or
+ *  replace any suggestion; choosing this action never rewrites an existing lesson. */
 export async function scaffoldJourneyAction(slug: string): Promise<ActionResult<{ phaseId: string }>> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
@@ -362,17 +359,7 @@ export async function scaffoldJourneyAction(slug: string): Promise<ActionResult<
   const phaseId = await reuseOrCreatePhase(admin, a.planId, SCAFFOLD_PHASE)
   if (!phaseId) return fail('Could not start the journey shape.')
 
-  const rows: ComposedRow[] = [
-    ...PILLAR_SLOTS.map((s) => ({
-      block_type: 'practice',
-      title: s.label,
-      body: s.prompt,
-      domain_id: pillarIds[s.slug] ?? null,
-      required: true,
-    })),
-    // One extra-credit slot (ADR-300 Part 2): seeded alongside the four Pillar practices.
-    extraCreditRow(EXTRA_CREDIT_PLACEHOLDER.title, EXTRA_CREDIT_PLACEHOLDER.body),
-  ]
+  const rows = personalJourneyRows(pillarIds)
   await insertChildren(admin, a.planId, phaseId, rows)
   done(slug)
   return ok({ phaseId })
@@ -424,11 +411,11 @@ export async function populateWeekAction(slug: string, phaseId: string): Promise
     .eq('block_type', 'practice')
   const priorTitles = ((priorRows ?? []) as { title: string | null }[]).map((r) => r.title).filter((t): t is string => !!t).slice(0, 24)
   const description = [
-    `Compose this week's four Pillar practices so they fit this week's focus and follow on from the earlier weeks.`,
+    `Offer planning questions about this week's intention and an attainable next action. Supporting areas may overlap; no four-Pillar quota or public expression is required. The author chooses and writes the content.`,
     `This week's focus: ${phase.title ?? ''}${phase.body ? `: ${phase.body}` : ''}.`,
     plan?.title ? `Journey: ${plan.title}.` : '',
     plan?.summary ? `Promise: ${plan.summary}.` : '',
-    priorTitles.length ? `Practices already used in earlier weeks (do not repeat; build on these): ${priorTitles.join('; ')}.` : '',
+    priorTitles.length ? `Practices already used in earlier weeks (keep or vary them deliberately): ${priorTitles.join('; ')}.` : '',
     source ? `The author's own course outline follows. Follow it closely and use the practices it names for THIS week where it gives them:\n"""\n${source.slice(0, 4000)}\n"""` : '',
   ]
     .filter(Boolean)
@@ -507,9 +494,19 @@ export async function updateBlockAction(
   if (patch.required !== undefined) update.required = patch.required
   if (patch.blockType !== undefined && (LEAF_TYPES as readonly string[]).includes(patch.blockType)) update.block_type = patch.blockType
   if (patch.coachingPrompt !== undefined) {
-    // A practice slot's `settings` carries only the coaching line, so a whole-object write
-    // is safe here (same rationale as the check block above).
-    update.settings = { coaching_prompt: patch.coachingPrompt.slice(0, 300) }
+    // The author sends only the coaching line. Read the target's own metadata so an edit
+    // cannot erase its Anchor, prospective optionality or other server-stored settings.
+    const { data: target, error: targetError } = await db()
+      .from('journey_plan_items')
+      .select('block_type, settings')
+      .eq('id', itemId)
+      .eq('plan_id', a.planId)
+      .maybeSingle()
+    const practice = target as { block_type: string | null; settings: Json } | null
+    if (targetError || !practice || (practice.block_type ?? 'practice') !== 'practice') return fail('Could not save.')
+    const previous = practice.settings && typeof practice.settings === 'object' && !Array.isArray(practice.settings)
+      ? practice.settings : {}
+    update.settings = { ...previous, coaching_prompt: patch.coachingPrompt.slice(0, 300) }
   }
   if (patch.bonusZaps !== undefined) {
     // An extra-credit block's `settings` carries only these two keys, so a whole-object write

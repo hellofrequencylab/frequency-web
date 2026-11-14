@@ -214,7 +214,7 @@ function LaunchStepsSheet({ view, onClose }: { view: LaunchBoxView; onClose: () 
         ))}
       </div>
       {view.current && (
-        <Link href={RESUME_HREF} className="btn pa ap-launch-go" onClick={onClose}>
+        <Link href={view.resumeHref ?? RESUME_HREF} className="btn pa ap-launch-go" onClick={onClose}>
           Keep going
         </Link>
       )}

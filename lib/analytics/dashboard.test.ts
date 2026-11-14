@@ -2,15 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { computeFunnel } from './dashboard'
 
 describe('computeFunnel', () => {
-  it('first step has no drop; later steps measure loss vs the previous', () => {
+  it('does not infer conversion from independent totals', () => {
     const out = computeFunnel([
       { step: 'a', eventType: 'a', actors: 100 },
       { step: 'b', eventType: 'b', actors: 40 },
       { step: 'c', eventType: 'c', actors: 10 },
     ])
     expect(out[0].dropPct).toBeNull()
-    expect(out[1].dropPct).toBe(60)
-    expect(out[2].dropPct).toBe(75)
+    expect(out[1].dropPct).toBeNull()
+    expect(out[2].dropPct).toBeNull()
   })
 
   it('null drop when the previous step is zero (avoids divide-by-zero)', () => {

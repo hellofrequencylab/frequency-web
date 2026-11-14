@@ -27,6 +27,7 @@ interface SetupBoxView {
 }
 
 export interface LaunchBoxView {
+  resumeHref?: string
   total: number
   /** Steps that exist (published). A skipped step is settled but not counted as made. */
   done: number
@@ -54,6 +55,7 @@ export function boxView(l: LaunchSnapshot, now: Date): LaunchBoxView {
   const settled = ordered.filter((s) => isSettled(l.steps[s.id])).length
   const current = nowId ? { id: nowId, label: ordered.find((s) => s.id === nowId)!.label } : null
   return {
+    ...(l.resume?.phase === 'builder' && !l.spaceId ? { resumeHref: '/create-a-space?new=1' } : {}),
     total: rows.length,
     done,
     pct: rows.length ? Math.round((settled / rows.length) * 100) : 0,

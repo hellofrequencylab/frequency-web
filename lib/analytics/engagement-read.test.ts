@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { synthesizeInsights, summarize, type ReadInput } from './engagement-read'
 
 const base: ReadInput = {
-  wam: 5,
+  showingUpMembers: 5,
   newMembers: 10,
   activationRate: 0.6,
   funnel: [],
@@ -22,8 +22,16 @@ describe('synthesizeInsights', () => {
     expect(synthesizeInsights(base).find((x) => x.id === 'activation_good')?.severity).toBe('good')
   })
 
-  it('flags zero WAM', () => {
-    expect(synthesizeInsights({ ...base, wam: 0 }).some((x) => x.id === 'wam_zero')).toBe(true)
+  it('flags measured zero attendance', () => {
+    expect(synthesizeInsights({ ...base, showingUpMembers: 0 }).some((x) => x.id === 'attendance_zero')).toBe(true)
+  })
+
+  it('does not infer abandonment from unrelated activity totals', () => {
+    const out = synthesizeInsights({ ...base, funnel: [{ step: 'Later', actors: 1, dropPct: 99 }] })
+    expect(out.some((i) => i.id === 'funnel_jam')).toBe(false)
+  })
+  it('does not equate missing attendance data to zero', () => {
+    expect(synthesizeInsights({ ...base, showingUpMembers: null }).some((i) => i.id === 'attendance_zero')).toBe(false)
   })
 
   it('flags the biggest funnel jam (>=40%)', () => {
@@ -31,7 +39,7 @@ describe('synthesizeInsights', () => {
       ...base,
       funnel: [
         { step: 'Viewed', actors: 100, dropPct: null },
-        { step: 'Used a feature', actors: 30, dropPct: 70 },
+        { step: 'Used a feature', actors: 30, dropPct: 70, orderedCohort: true },
       ],
     })
     const jam = out.find((x) => x.id === 'funnel_jam')

@@ -35,9 +35,15 @@ vi.mock('@/app/sign-in/actions', () => ({
 vi.mock('@/lib/launch/enabled', () => ({ launchSystemEnabled: () => launchOpen }))
 vi.mock('@/lib/auth', () => ({ getMyProfileId: async () => profileId }))
 vi.mock('@/lib/launch/pending-io', () => ({
+  readPendingLaunch: async () => null,
   writePendingLaunch: async (hold: unknown) => {
     held.push(hold)
   },
+}))
+vi.mock('@/lib/launch/store', () => ({
+  getActiveLaunch: async () => null,
+  startLaunch: async () => ({ id: 'launch', ownerId: profileId, spaceId: null }),
+  saveWizardResume: async (launch: unknown) => launch,
 }))
 vi.mock('@/lib/spaces/store', () => ({
   isSpaceSlugTaken: async () => {

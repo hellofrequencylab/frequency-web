@@ -177,6 +177,12 @@ from `check-elements.mjs`) · the store's write path actually calls the validato
 with extra steps. The exit is a PR adding a primitive — Layer 1, engineers, CI-gated — which is
 exactly [ADR-975](DECISIONS.md)'s split.
 
+✅ **Both arms landed 2026-11-14 with the manifest** (PROG-E9): `LOOM_PRIMITIVES` in
+`lib/loom/functions/primitives.ts`, arm A in `lib/loom/functions/validate.ts`, arm B in
+`scripts/check-loom-integrity.mjs` (vitest home `scripts/check-loom-integrity.test.ts`). Schemas are the
+adopted block contract's own content schemas, so the gate did not wait on E2. `lib/loom/store.ts` does not
+exist yet (it needs the `loom_functions` table), so M5 holds vacuously until it does.
+
 ⚠️ **Arm B should land with E2**, when `LOOM_PRIMITIVES` first exists. **A manifest with no gate is
 how `library_usages` got dropped five days after creation.**
 

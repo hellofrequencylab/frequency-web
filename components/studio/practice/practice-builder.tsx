@@ -40,6 +40,7 @@ import { Button } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
 import { chipClasses } from '@/components/ui/chip'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
+import { PRACTICE_SUPPORT_COPY } from '@/lib/practices/support-language'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
 // fields, footer) against the existing practice actions; mirrors the old
@@ -412,8 +413,8 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       {/* Focus — a practice can belong to MULTIPLE Focuses (Pillars). Toggle each on/off;
           the first selected is the primary (drives the card + Pillar filtering). */}
       <fieldset className="mt-6">
-        <legend className={capsLabel('text-2xs font-semibold text-muted')}>Focus</legend>
-        <div role="group" aria-label="Focus" className="mt-1 flex flex-wrap gap-2">
+        <legend className={capsLabel('text-2xs font-semibold text-muted')}>{PRACTICE_SUPPORT_COPY.heading}</legend>
+        <div role="group" aria-label={PRACTICE_SUPPORT_COPY.heading} className="mt-1 flex flex-wrap gap-2">
           {props.pillars.map((p) => {
             const active = !!focusDetails[p.id]
             return (
@@ -432,8 +433,10 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             )
           })}
         </div>
-        <p className="mt-1 text-meta text-subtle">Pick one or more. Each gets its own instructions and timing below.</p>
+        <p className="mt-1 text-meta text-subtle">{PRACTICE_SUPPORT_COPY.hint}</p>
       </fieldset>
+
+      <p className="mt-2 text-meta text-subtle">{PRACTICE_SUPPORT_COPY.detailHint}</p>
 
       {/* Per-Focus instructions + timing. Appears/disappears as Focuses are toggled. */}
       {focusIds.length > 0 && (
@@ -759,7 +762,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
               ))}
             </div>
             <p className="mt-1 text-2xs text-muted">
-              {mindlessMode ? BE_STILL_MODES.find((m) => m.value === mindlessMode)?.hint : 'Picks a fitting mode from the practice’s Pillar.'}
+              {mindlessMode ? BE_STILL_MODES.find((m) => m.value === mindlessMode)?.hint : 'Starts with a suggested mode. You can choose another.'}
             </p>
 
             {/* Breath pattern (P4): a Breathe practice can SHIP its pattern, so a Box-breathing

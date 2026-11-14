@@ -69,7 +69,7 @@ function buildJourneyContent(
   }
   lines.push(
     '',
-    'Note: member-built library Journeys carry no Expression Challenge of their own; judge the premise, the spread of practices, and whether it could carry someone for four weeks.',
+    'Note: judge how the work serves the stated intention and declared scope. A focused Journey can be useful without equal Pillar coverage. Expression is optional and can stay private. Do not assume a four-week duration or infer missing participant needs. Existing official enrollment requirements are separate.',
   )
   return lines.join('\n')
 }

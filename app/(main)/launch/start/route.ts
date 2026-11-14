@@ -4,10 +4,13 @@ import { launchSystemEnabled } from '@/lib/launch/enabled'
 import { recordLaunchEvent } from '@/lib/launch/events'
 import { readPendingLaunch, writePendingLaunch } from '@/lib/launch/pending-io'
 import { inFlowHref, launchHomeHref } from '@/lib/launch/destination'
-import { getActiveLaunch, startLaunch } from '@/lib/launch/store'
+import { getActiveLaunch, saveWizardResume, startLaunch } from '@/lib/launch/store'
 import { cookies } from 'next/headers'
 import { isPreviewKit, kitAccentIndex } from '@/lib/create-space/preview-site'
 import { lastKitFrom } from '@/lib/create-space/last-kit'
+import { COLD_KIT } from '@/lib/create-space/door'
+import { parseWizardResume } from '@/lib/launch/wizard-resume'
+import { ownedWizardEntry } from '@/lib/launch/entry-io'
 import { resolvePicker } from '@/lib/spaces/space-picker'
 
 // /launch/start (VLS-07): where every "Get a Free Spotlight" button lands. The niche comes from `niche`, or from the
@@ -26,21 +29,37 @@ export async function GET(request: Request) {
   const kitId = isPreviewKit(asked) ? asked : lastKitFrom((await cookies()).toString())
 
   const profileId = await getMyProfileId()
+  const entry = profileId ? await ownedWizardEntry(profileId, q.get('new') === '1') : null
+  if (entry) redirect(entry)
   const held = await readPendingLaunch()
   // The accent picked beside the button rides with it, as its place in the kit's list (lib/launch/carry.ts `accent`).
   const accentAt = kitId ? kitAccentIndex(kitId, q.get('accent')) : null
   const accent: Record<string, string> = accentAt !== null ? { accent: String(accentAt) } : {}
   const answers = kitId ? { ...held?.answers, spotlight: { ...held?.answers?.spotlight, theme: kitId, ...accent } } : (held?.answers ?? {})
+  const explicitlyTimed = q.get('timer') === '12' || q.get('entry') === '12-minutes'
+  const resume = held?.resume ? { ...held.resume, timedEntry: held.resume.timedEntry || explicitlyTimed } : (explicitlyTimed ? parseWizardResume({
+    version: 1, phase: 'launch', cursor: 0, theme: kitId ?? COLD_KIT, accentAt: accentAt ?? 0,
+    niche, goals: [], timedEntry: true, draft: null, leadToken: null,
+  }) : null)
   if (!profileId) {
-    await writePendingLaunch({ niche: niche ?? held?.niche ?? null, intents: held?.intents ?? [], answers })
+    await writePendingLaunch({ niche: niche ?? held?.niche ?? null, intents: held?.intents ?? [], answers, ...(resume ? { resume } : {}) })
     // Owner 2026-11-13: a Free Spotlight click opens the Spotlight builder, signed out too; the account is asked for at Publish.
     redirect(inFlowHref('/launch/step/spotlight'))
   }
-  if (kitId) await writePendingLaunch({ niche: niche ?? held?.niche ?? null, intents: held?.intents ?? [], answers })
+  if (kitId || resume) await writePendingLaunch({ niche: niche ?? held?.niche ?? null, intents: held?.intents ?? [], answers, ...(resume ? { resume } : {}) })
 
-  if (!(await getActiveLaunch(profileId))) {
+  const active = await getActiveLaunch(profileId)
+  if (active && !active.spaceId && resume) {
+    // Opting into the clock must not replace an existing builder cursor or its full draft.
+    const carried = active.resume ? { ...active.resume, timedEntry: active.resume.timedEntry || resume.timedEntry } : resume
+    await saveWizardResume(active, carried)
+  }
+  if (!active) {
     const launch = await startLaunch(profileId, { niche, intents: [] })
-    if (launch) await recordLaunchEvent(profileId, { type: 'launch_started', launchId: launch.id })
+    if (launch) {
+      if (resume) await saveWizardResume(launch, resume)
+      await recordLaunchEvent(profileId, { type: 'launch_started', launchId: launch.id })
+    }
   }
   redirect(launchHomeHref({ signedIn: true }))
 }

@@ -116,7 +116,7 @@ export async function publishSpotlightFormAction(formData: FormData): Promise<vo
   const held = await readPendingLaunch()
   const profileId = await getMyProfileId()
   if (!profileId) {
-    await writePendingLaunch({ niche: held?.niche ?? null, intents: held?.intents ?? [], answers: { ...held?.answers, spotlight: { ...held?.answers.spotlight, name: answers.name, line: answers.line, link: answers.link } } })
+    await writePendingLaunch({ ...(held?.resume ? { resume: held.resume } : {}), niche: held?.niche ?? null, intents: held?.intents ?? [], answers: { ...held?.answers, spotlight: { ...held?.answers.spotlight, name: answers.name, line: answers.line, link: answers.link } } })
     redirect('/sign-in?next=/launch/claim')
   }
 
@@ -127,7 +127,8 @@ export async function publishSpotlightFormAction(formData: FormData): Promise<vo
   }
   if (!launch) redirect(spotlightStepUrl('retry'))
 
-  const made = await publishSpotlightStep(profileId, launch, answers, readCarry(held?.answers.spotlight))
+  const carry = readCarry({ ...held?.answers.spotlight, ...(launch.resume ? { theme: launch.resume.theme, accent: String(launch.resume.accentAt) } : {}) })
+  const made = await publishSpotlightStep(profileId, launch, answers, carry)
   if ('error' in made) redirect(spotlightStepUrl('retry'))
   await clearPendingLaunch()
   redirect(launchStepPublishedHref('spotlight'))

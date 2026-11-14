@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2277",
+  "title": "Keep independent analytics totals separate from ordered cohort conversion",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/ANALYTICS.md",
+    "ref": "Owner analytics dashboard and user-flow request, 2026-11-13."
+  },
+  "detail": "Independent event totals no longer imply ordered drop-off; anonymous visits and signed-in launches remain distinct populations. Unavailable attendance and page speed remain unknown instead of zero. New focused regressions failed before implementation; existing probes were preserved. Implementation proof does not assert production activation. Daniel explicitly authorized the three legacy metric test corrections with the exact owner phrase 'Do it' on 2026-11-13: independent-population drop expectations become null, funnel warnings require ordered-cohort evidence, and unavailable attendance differs from zero. Only lib/analytics/dashboard.test.ts, lib/create-space/funnel.test.ts and lib/analytics/engagement-read.test.ts have those approved contract corrections. Existing probes are unchanged and MIN_STARTS remains 3; prior fixture sizes 10 new members and 4 program starts are retained. The unchanged consequence probe was rerun against main 4e1e6aa341f6cb9432c701d2adca0a9b1af41cd8 and failed with Independent totals cannot imply conversion loss; it passes on this branch. Four focused metric test files (22 tests) and changed-file ESLint passed. No SQL or production setting is required; rendered UI and production acceptance remain release evidence, not asserted by this row.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/analytics-metrics.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-13"
+}

@@ -7,8 +7,8 @@
 //
 // This file is a DECLARATION, the same law as SPACE_MODULES (ADR-553) and PLAYBOOK_REGISTRY
 // (ADR-382): it says WHAT a Practice draft contains and how it groups, and nothing about how
-// any of it renders. Unlike the Journey, the Spark drafts the WHOLE Practice in one pass
-// (there is no arc to fill in later), so almost everything here arrives from Vera at once.
+// any of it renders. Vera offers separate coaching questions; the author writes and saves
+// the Practice content. Structured hints never replace the author's words.
 //
 // STRICT BOUNDARY: entities import from the kernel; the kernel never imports from entities
 // (`pnpm check:studio`). Everything below is data plus a few PURE read functions.
@@ -32,6 +32,7 @@
 
 import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
 import { SUBJECTS } from '@/lib/taxonomy/subjects'
+import { PRACTICE_SUPPORT_COPY } from '@/lib/practices/support-language'
 
 /** Render a scalar as display text. Mirrors the kernel's own reader. PURE + total. */
 function str(v: unknown): string {
@@ -96,10 +97,10 @@ export const PRACTICE_MANIFEST: EntityManifest = {
   steer: { mood: true, directions: true, lock: ['content'] },
 
   sections: [
-    { key: 'brief', title: 'The brief', desc: 'What Vera asks before she drafts. Who it is for, the act, and how often it is done.' },
+    { key: 'brief', title: 'The brief', desc: 'Questions to shape your practice. You write who it is for, the act, and how often it is done.' },
     { key: 'identity', title: 'Identity', desc: 'The name and the face people see on the card.' },
     { key: 'content', title: 'The practice', desc: 'The hook, the description, and the guide people actually follow.' },
-    { key: 'pillars', title: 'Pillars and tags', desc: 'Where it sits across the four Pillars, and how people browse to it.' },
+    { key: 'pillars', title: 'Support and tags', desc: 'The areas this practice can support. A practice can support more than one.' },
     { key: 'shape', title: 'Cadence and length', desc: 'How often it is done, and how long one session takes.' },
     { key: 'timer', title: 'The Mindless timer', desc: 'Which mode it opens in, its tuning, and the warm-up before it starts.' },
     { key: 'rewards', title: 'Rewards', desc: 'What one log is worth. The override is for admins.' },
@@ -152,16 +153,16 @@ export const PRACTICE_MANIFEST: EntityManifest = {
     // the focus_details keys below (a Practice may develop more than one Pillar), never "the first"
     // of them: focus_details is jsonb, which keeps no key order (LIVE-650, ADR-1618).
     // A pointer to a `pillars` row, stored as its id and shown as its name, so it must be loaded.
-    { path: 'domain_id', label: 'Pillar', kind: 'reference', section: 'pillars', veraDrafts: true, optionsFrom: 'pillars' },
+    { path: 'domain_id', label: PRACTICE_SUPPORT_COPY.primaryLabel, kind: 'reference', section: 'pillars', veraDrafts: true, optionsFrom: 'pillars' },
     // THE SPLIT (ADR-438; LIVE-641, ADR-1604): a second Pillar this practice's Zaps also count
     // toward, and the primary's share of each log. Attribution only: the wallet total never moves.
     // The author's call, so Vera never drafts it. The store is `resolveSplitWrite`
     // (lib/practices/split.ts): never the primary, always one of the Focuses below (choosing a new
     // one adds it), and 75/25 when the share is left unset.
-    { path: 'secondary_domain_id', label: 'Second Pillar', kind: 'reference', section: 'pillars', veraDrafts: false, omitWhenEmpty: true, optionsFrom: 'pillars' },
+    { path: 'secondary_domain_id', label: PRACTICE_SUPPORT_COPY.secondaryRewardLabel, kind: 'reference', section: 'pillars', veraDrafts: false, omitWhenEmpty: true, optionsFrom: 'pillars' },
     // A plain `number`, not a new slider kind: a kind is a kernel change every wizard inherits, and
     // the bounds (50 to 100) and the 75 default are the write's rule, not the control's.
-    { path: 'primary_pct', label: 'Main Pillar share (%)', kind: 'number', section: 'pillars', veraDrafts: false, read: (d) => str(d.primary_pct) || '75' },
+    { path: 'primary_pct', label: PRACTICE_SUPPORT_COPY.primaryRewardLabel, kind: 'number', section: 'pillars', veraDrafts: false, read: (d) => str(d.primary_pct) || '75' },
     // `focus_details` is a MAP keyed by Pillar id, so it expands as a keyed-map repeat below
     // rather than sitting here as one collapsed line (ADR-992).
     // A pointer to a `practice_subcategories` row. The surface loads the ones under the Pillar.

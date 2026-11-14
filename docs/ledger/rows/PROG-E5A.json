@@ -1,0 +1,20 @@
+{
+  "id": "PROG-E5A",
+  "title": "Editor E5 slice: mount the responsive inspector on the canvas",
+  "status": "done",
+  "priority": "P2",
+  "lane": "program",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E5"
+  },
+  "detail": "Split from PROG-E5 on 2026-11-14. The responsive inspector model (lib/builder/inspector-model.ts) had no UI. This slice mounts it on the staff, EDITOR_CANVAS-gated /pages/canvas: fields derived on the server from the Banner block contract, the frame's device switcher, per-field provenance, a per-field reset to desktop, a bottom sheet below lg, a container-query form, and 44px targets with no hover dependency. Dark.\n\nClosed 2026-11-14: components/builder/inspector/responsive-inspector.tsx, lib/builder/inspector-fields.ts, mounted by components/builder/canvas/collab-canvas.tsx and fed by app/(main)/pages/canvas/page.tsx. Unit tests render the provenance and reset UI. Persistence, the builder shells and real-viewport touch verification stay on PROG-E5.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/PROG-E5A.mjs",
+    "note": "Fails on main: no inspector component and the canvas mounts none. Passes once the canvas mounts the contract-derived inspector with provenance, reset, a bottom sheet and a container query."
+  },
+  "closed": "2026-11-14"
+}

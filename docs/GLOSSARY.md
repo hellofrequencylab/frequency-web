@@ -185,16 +185,18 @@ pays gems. The single source of truth is `currencyForCriteria` /
   season rank. All free. *(The legacy action-chain engine is retired **and dropped**, ADR-152.)*
 - **Challenge / Expression Challenge**: the **Expression capstone** that completes each
   Journey (a `season_challenges` row typed `expression`, linked to its Journey via `journey_id`).
-  Required to finish the Journey. Pays **+50 Zaps in person at a Circle, or +30 Gems posted
-  solo online**. The season-wide 15-challenge outreach engine is **dormant** (kept, not seeded).
+  Required only when the participant's enrolled policy says so; existing contracts and earned
+  recognition are preserved. Pays **+50 Zaps in person at a Circle, or +30 Gems posted
+  solo online** through the existing official reward paths. The season-wide 15-challenge outreach engine is **dormant** (kept, not seeded).
 - **Trophy**: the award minted when a member **finishes a Journey**. Advances the season rank.
   Pays no Gems: the escalating ladder (Initiate 25 / Adept 50 / Master 100) is RETIRED by
   ADR-305 and LIVE-185 removed the code still paying it. Stamped with the rank reached and
   stored in `season_trophies`.
 - **Pillars**: Mind / Body / Spirit / Expression, the taxonomy Journeys are organised by
   (table `pillars`, migration `20260613000010`; renamed 2026, see docs/NAMING.md).
-  **Three Pillars carry Journeys (Mind / Body / Spirit); Expression is woven in as the
-  Challenge capstone on every Journey**, not a fourth Journey. Pillars are **never**
+  **The official Quest carries three Journeys (Mind / Body / Spirit). Expression can be woven
+  throughout as making, speaking, helping, sharing, or connecting**, not a fourth compulsory
+  daily quota. A published enrollment may still require its official Challenge. Pillars are **never**
   called Channels (Channels = the topical forum feature only).
 - **Per-practice intensity tiers: RETIRED (June 2026).** The Initiate / Adept / Master
   practice-content tier system is removed: `practice_tiers` table + `default_tier` /
@@ -207,7 +209,7 @@ pays gems. The single source of truth is `currencyForCriteria` /
   **quest clock** (a season = 91 days = 13×7 buckets). Both are **internal-only**: the UI says
   "streak" and "season," never "rhythm/quest clock." A Journey completes when the member has
   logged its Practices on 14-16 distinct days inside its ~4-week window **and** completed its
-  Expression Challenge. Derived from `practice_logs`, no progress table
+  Expression Challenge when the enrollment requires it. Derived from `practice_logs`, no progress table
   (`lib/journey-arc.ts`, ADR-197). Completion fires the Trophy + rank advance + Zap/Gem grants
   via `reward_grants` (ADR-200).
 - **Co-op**: circle co-op completion: ≥3 active circle members on the same Journey
@@ -216,7 +218,10 @@ pays gems. The single source of truth is `currencyForCriteria` /
 - **Circle Current**: a circle's collective, non-competitive seasonal standing (replaces
   the prior term, renamed 2026, see docs/NAMING.md; internal column `circles.season_current`, ledger `circle_current_transactions`,
   migration `20260613000040`). See [EVENTS-SYSTEM.md](EVENTS-SYSTEM.md).
-- **Frequency Signature**: a member's four-Pillar practice balance, a derived profile identity
+- **Frequency Signature**: a descriptive view of a member's recorded practice rhythm
+  across Mind, Body, Spirit, and Expression. It reflects logged activity, not a measure of wellbeing
+  or a target of equal daily activity. Support areas may overlap; expression can be private.
+  Historical activity, reward allocation, and enrollment qualification have distinct contracts.
   (`lib/frequency-signature.ts`).
 - **Achievements / streaks**: `achievements`, `user_achievements`, `streaks`,
   `challenge_progress`, `season_challenges`, `season_trophies`.
