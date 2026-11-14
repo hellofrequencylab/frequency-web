@@ -34,9 +34,9 @@
 // The `src` tag is gone. What ships instead is ONE inline script, built by
 // lib/consent/cookie-consent.ts, which decides from the consent cookies whether to append that
 // `src` tag at all. The pure root stays static. The head asks the private request-policy endpoint before configuration; nothing
-// on the wire for a visitor in the prior-consent region who has not answered. <GaConsentGate/> is
-// untouched and still runs in the (main) layout: the two gates are ANDed, browser layer and
-// account layer, and neither replaces the other.
+// on the wire for a visitor in the prior-consent region who has not answered. The request-policy
+// wrapper also resolves the real account before loading; <GaConsentGate/> synchronizes later
+// account/staff changes in the mounted app. Browser and account permission remain ANDed.
 
 import { gaBootstrapScript } from '@/lib/consent/cookie-consent'
 
