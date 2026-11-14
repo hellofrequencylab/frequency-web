@@ -1067,14 +1067,14 @@
         "components/ui/meter.tsx",
         "components/ui/streak-meter.tsx"
       ],
-      "baseline": 7,
+      "baseline": 6,
       "frozen": {
-        "at": "2026-10-28",
-        "value": 7,
+        "at": "2026-11-14",
+        "value": 6,
         "direction": "lowered",
         "basis": "d2ed9520aa4f",
-        "reason": "Sweep landed on main: 8 to 7 sites retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
-        "from": 8
+        "reason": "adhoc-progress 7 -> 6: a merged sweep retired one; re-frozen so the ratchet holds (HYG-224 unblock, no UI change in this PR)",
+        "from": 7
       },
       "history": [
         {
@@ -1125,6 +1125,13 @@
           "to": 7,
           "direction": "lowered",
           "reason": "Sweep landed on main: 8 to 7 sites retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
+        },
+        {
+          "at": "2026-11-14",
+          "from": 7,
+          "to": 6,
+          "direction": "lowered",
+          "reason": "adhoc-progress 7 -> 6: a merged sweep retired one; re-frozen so the ratchet holds (HYG-224 unblock, no UI change in this PR)"
         }
       ]
     },
