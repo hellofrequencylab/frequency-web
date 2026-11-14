@@ -1,5 +1,7 @@
 # Member economy + Journeys (premium): spec (draft for review)
 
+> Work and activation status live in [BUILD-BACKLOG.json](BUILD-BACKLOG.json) through ledger fragments. The prospective participation contract is specified at the end of this document.
+
 Status: ⏳ **draft, pre-build.** Extends ADR-084 (Beta = Crew) and the Quest economy
 (zaps/gems/seasons). Decisions in §6 are open.
 
@@ -269,3 +271,53 @@ Surfaces:
 
 This realizes **BACKLOG §Q** ("active Journey plan on the board"). Member-facing how-to
 lives in `content/help/the-game/your-journey.md`.
+
+
+## Prospective official enrollment policy
+
+Daniel's November 14, 2026 direction makes support flexible and Expression an invitation.
+The original requirements described above remain the contract for legacy participation;
+new behavior is scoped to an immutable recorded enrollment policy, not a global switch.
+Implementation: `lib/quest/support-policy.ts`, `support-policy-read.ts`, and `completion.ts`.
+Schema: `20270346050500_quest_support_policy.sql`. Release/activation status belongs to
+LIVE-2291 in the merged ledger, not this document.
+
+A future enrollment receives version 2 only when its Journey is official and ranked-eligible,
+has both fixed window bounds, and names valid canonical supports. The database snapshots the
+same 14 distinct practice-day threshold, window dates, and support IDs with optional Expression.
+Solo, cohort, and paid enrollment inserts use the same trigger. Existing enrollment policies
+are not backfilled. A NULL policy, including an active legacy enrollment or participation with
+no enrollment record, retains the existing rule. Library Journeys keep their separate contract.
+A later edit to a plan cannot move a recorded window or change that enrollment's Expression rule.
+Current ranked eligibility still governs recognition; policy snapshots do not bypass moderation.
+
+When several enrollments coexist, the oldest active contract wins, with the ID breaking ties.
+After all are complete, the newest completed contract supports an idempotent completion retry.
+The new UI describes optional Expression only when the actual selected policy is version 2.
+It offers Expression throughout and after the practice-day qualification, without asserting that
+an uncompleted Expression was done. Private expression is welcome; the separate existing Circle
+and online reward modes retain their actual conditions, values, and one-time grant identities.
+
+Future practice-log inserts freeze the full set of actual canonical support IDs, including
+valid object-valued focus entries. NULL historical evidence remains unknown; it is never filled
+from today's editable practice. Reward stamping and partial-to-full timer updates preserve the
+original snapshot. Full support associations are separate from the older Zap-allocation split,
+so additional supports neither multiply currency nor duplicate a practice date.
+
+For prospective qualification, full versioned snapshots win. Older frozen primary IDs remain
+known; a secondary contributes only when its recorded integer share is positive. A missing or
+invalid historical share is unknown, not permission to apply a reward-accounting default to
+participation credit. No current-category fallback invents third or fourth historical supports.
+The day unit remains recorded participation, including existing partial-log semantics, rather
+than a claim of 14 full-duration sessions. Rest does not manufacture logs or qualifying days.
+
+Readers use ordered ID keysets until an empty page proves completion. A short provider page is
+not the end; a failed, repeated, or exhausted read is unavailable. Day keys use the existing
+member-local day resolver, enrolled bounds, and an upper bound of today. Unknown historical
+support details produce a visible lower-bound explanation. Fourteen known qualifying days can
+still establish completion despite other unknown records; fewer known days do not prove that
+someone failed to participate.
+
+No existing completion, trophy, rank, wallet value, or reward key is rewritten. A policy version
+is not a new payout identity. Deployment requires the additive migration and normal reviewed
+readiness/application order; code without its required schema is not an activated release.
