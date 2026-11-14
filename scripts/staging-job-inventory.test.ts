@@ -43,3 +43,20 @@ for (const [name, mutate] of Object.entries({
   'foreign details': (f: ReturnType<typeof fixture>) => { f.checks[1].details_url = 'https://example.com/' },
   'missing execution steps': (f: ReturnType<typeof fixture>) => { f.jobs[0].steps = [] },
 })) it(`refuses ${name}`, async () => { const f = fixture(); mutate(f); await expect(stagingJobInventory(f.options)).rejects.toThrow() })
+it('accepts in-progress non-executing publisher metadata without using its result', async () => {
+  const f = fixture()
+  f.jobs[1].status = 'in_progress'; f.jobs[1].conclusion = ''
+  f.checks[1].status = 'in_progress'; f.checks[1].conclusion = ''
+  expect((await stagingJobInventory(f.options)).jobs).toHaveLength(1)
+})
+it('refuses a second successful real execution', async () => {
+  const f = fixture()
+  f.jobs[1] = { ...f.jobs[0], id: f.jobs[1].id, check_run_url: f.jobs[1].check_run_url }
+  f.checks[1] = { ...f.checks[0], id: f.jobs[1].id }
+  await expect(stagingJobInventory(f.options)).rejects.toThrow('exactly one real staging execution')
+})
+it('refuses a metadata-only suite', async () => {
+  const f = fixture()
+  f.jobs.shift(); f.checks.shift(); f.options.inventory.total_count = 2
+  await expect(stagingJobInventory(f.options)).rejects.toThrow('exactly one real staging execution')
+})
