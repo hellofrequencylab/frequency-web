@@ -6,7 +6,7 @@
       "expiresAt": "2026-11-16T23:59:59Z",
       "migrations": [
         {
-          "file": "supabase/migrations/20270346047000_hunt_moderation.sql",
+          "file": "supabase/migrations/20270346051000_hunt_moderation.sql",
           "sha256": "50791a564015acda9892dabfb65828cc3a7b49657258638fca19aec947217951"
         }
       ],
@@ -63,7 +63,7 @@
         {
           "file": "docs/ledger/rows/FH-018S.json",
           "status": "modified",
-          "sha256": "e96006b6c818ef82ba1094e30f7564b2ecf3ab8234e4adad6f03fb8e1ccc4742",
+          "sha256": "54926405564cd0122fd97a8fd5cb592e4b8817cf969d726213bc56460ca50b27",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -105,7 +105,7 @@
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "b94486fde2933ff74439ce98892d07eaef2c8d1f10ea50132ac9ecc3902a8702",
+          "sha256": "412d61b1419babf82697c4d06b87c0a96dc59aded0dba53c34081f1139d9fa1f",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -138,7 +138,7 @@
           "headMode": "100644"
         },
         {
-          "file": "supabase/migrations/20270346047000_hunt_moderation.sql",
+          "file": "supabase/migrations/20270346051000_hunt_moderation.sql",
           "status": "added",
           "sha256": "50791a564015acda9892dabfb65828cc3a7b49657258638fca19aec947217951",
           "baseMode": "000000",
@@ -147,7 +147,7 @@
         {
           "file": "supabase/tests/hunt_moderation.test.sql",
           "status": "added",
-          "sha256": "fd1929c62ac406766e5c6970fe1a348661396cd233874db97ff9c4661fcbbef3",
+          "sha256": "d3c74066981393c8822d7fd5e6a0f8ab4011313b850bebb71e9724d037e2e3e8",
           "baseMode": "000000",
           "headMode": "100644"
         }
