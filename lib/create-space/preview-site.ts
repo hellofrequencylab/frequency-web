@@ -142,7 +142,13 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
     portraits: [TEMPLE_KIT_PHOTO('11'), TEMPLE_KIT_PHOTO('13')],
   },
   // Bold has no library of its own yet (the Hearts on Fire photos belong to that program), so it wears the gathering photos.
-  bold: FREQUENCY_IMAGERY,
+  // Bold has no library of its own yet; it wears New World's outdoor groups until the owner supplies one (the design page's beach group).
+  bold: {
+    hero: NEW_WORLD_PHOTO('beach-joy'), heroPos: 'center 40%', portrait: NEW_WORLD_PHOTO('hands-up'), portraitPos: 'center 30%',
+    strip: [NEW_WORLD_PHOTO('circle-sunrise'), NEW_WORLD_PHOTO('hands-up'), NEW_WORLD_PHOTO('fire-circle')], nav1: 'Offerings', cta2: 'Learn more',
+    covers: [NEW_WORLD_PHOTO('beach-joy'), NEW_WORLD_PHOTO('circle-sunrise'), NEW_WORLD_PHOTO('hands-up'), NEW_WORLD_PHOTO('fire-circle')],
+    portraits: [NEW_WORLD_PHOTO('hands-up'), NEW_WORLD_PHOTO('group-hug')],
+  },
   // Wildheart's own five pictures from the revised design system (the theme's blocks wear the same files). It has no
   // portrait photography, so the host portrait stays the gathering photo, as Nocturne's does.
   wildheart: {
@@ -326,16 +332,16 @@ export function asSentence(v: string): string {
 /** The words each theme's own design page uses for its hero (docs/design-systems/<theme>, the Web Theme / Website pages), shown
  *  while the preview is a ghost so a visitor sees the theme as designed. Their own copy replaces it once step 2 is done.
  *  CyberWitch has none: its preview is the benchmark and keeps the business name as its headline. */
-interface KitSample { nav?: string; eyebrow: string; headline: string; em: string; lead: string; cta: string; cta2: string }
+interface KitSample { nav?: string; links?: readonly string[]; next?: { kicker: string; title: string; date: string; img: string }; eyebrow: string; headline: string; em: string; lead: string; cta: string; cta2: string }
 const KIT_SAMPLE: Partial<Record<MegaThemeId, KitSample>> = {
-  'new-world': { nav: 'Book', eyebrow: 'Your street · your city', headline: 'Say what happens here', em: 'and who it is for.', lead: 'Say what you do, who shows up and how someone new gets started. Keep it to two sentences.', cta: 'Book your first visit', cta2: 'See the calendar' },
-  services: { eyebrow: 'Booking now · your city', headline: 'Good work,', em: 'done right.', lead: 'Clear prices, on-time arrivals and work finished properly the first time. Book online in about a minute.', cta: 'Book a visit', cta2: 'See what we do' },
-  designer: { eyebrow: 'Design studio · your city', headline: 'We make spaces that balance beauty, structure,', em: 'and soul.', lead: 'One team from the first sketch to the final styling. Tell us what you are dreaming up and we will take it from there.', cta: 'Start a project', cta2: 'View portfolio' },
-  midnight: { nav: 'This week', eyebrow: 'Welcome', headline: 'Good things happen', em: 'when people show up.', lead: 'A local place with its own rhythm. Come by, see what is happening this week, and say hello.', cta: "See what's happening", cta2: 'Get in touch' },
-  'network-kit': { eyebrow: 'When and where you meet', headline: 'Your people', em: 'are already here.', lead: 'A morning meetup for business owners, professionals and creatives. Grab a coffee, meet a few people, leave with one useful introduction.', cta: 'Come to a meetup', cta2: 'How it works' },
-  'temple-kit': { eyebrow: 'Your town', headline: 'A house', em: 'for gathering.', lead: 'Small numbers, slow hours, nothing rushed. Rooms for ceremony, practice and long tables.', cta: "See what's open", cta2: 'Visit the space' },
-  bold: { eyebrow: 'Coaching and care', headline: 'Stuck on the same thing for', em: 'too long?', lead: 'Sessions and small groups for people who are ready for the next step. Say hello and we will find a time.', cta: 'Book a visit', cta2: 'Learn more' },
-  wildheart: { eyebrow: 'Coaching and healing', headline: 'You do not have to carry it', em: 'alone.', lead: 'Sessions and small groups for people who are ready for the next step. Say hello and we will find a time.', cta: 'Book a visit', cta2: 'Come along' },
+  'new-world': { links: ['Events','About','Contact'], nav: 'Book', eyebrow: 'Your street · your city', headline: 'Say what happens here', em: 'and who it is for.', lead: 'Say what you do, who shows up and how someone new gets started. Keep it to two sentences.', cta: 'Book your first visit', cta2: 'See the calendar' },
+  services: { links: ['Offerings','Events','About','Contact'], eyebrow: 'Booking now · your city', headline: 'Good work,', em: 'done right.', lead: 'Clear prices, on-time arrivals and work finished properly the first time. Book online in about a minute.', cta: 'Book a visit', cta2: 'See what we do' },
+  designer: { links: ['Portfolio','Services','Book','Events'], eyebrow: 'Design studio · your city', headline: 'We make spaces that balance beauty, structure,', em: 'and soul.', lead: 'One team from the first sketch to the final styling. Tell us what you are dreaming up and we will take it from there.', cta: 'Start a project', cta2: 'View portfolio' },
+  midnight: { links: ['Offerings','Events','About','Contact'], nav: 'This week', eyebrow: 'Welcome', headline: 'Good things happen', em: 'when people show up.', lead: 'A local place with its own rhythm. Come by, see what is happening this week, and say hello.', cta: "See what's happening", cta2: 'Get in touch' },
+  'network-kit': { links: ['Come to a meetup','Join','Shop'], eyebrow: 'When and where you meet', headline: 'Your people', em: 'are already here.', lead: 'A morning meetup for business owners, professionals and creatives. Grab a coffee, meet a few people, leave with one useful introduction.', cta: 'Come to a meetup', cta2: 'How it works' },
+  'temple-kit': { next: { kicker: 'Next gathering', title: 'New moon sound bath', date: 'Thu 20 Nov', img: TEMPLE_KIT_PHOTO('05') }, links: ['Programs','Gatherings','Membership','About'], eyebrow: 'Your town', headline: 'A house', em: 'for gathering.', lead: 'Small numbers, slow hours, nothing rushed. Rooms for ceremony, practice and long tables.', cta: "See what's open", cta2: 'Visit the space' },
+  bold: { links: ['Offerings','Events','About','Contact'], eyebrow: 'Coaching and care', headline: 'Stuck on the same thing for', em: 'too long?', lead: 'Sessions and small groups for people who are ready for the next step. Say hello and we will find a time.', cta: 'Book a visit', cta2: 'Learn more' },
+  wildheart: { links: ['Offerings','Events','About','Contact'], eyebrow: 'Coaching and healing', headline: 'You do not have to carry it', em: 'alone.', lead: 'Sessions and small groups for people who are ready for the next step. Say hello and we will find a time.', cta: 'Book a visit', cta2: 'Come along' },
 }
 
 export interface PreviewSite {

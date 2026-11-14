@@ -9,7 +9,7 @@
 //
 // Inspector (PROG-E5): given a block's fields, the canvas also mounts the responsive inspector beside the frame. It
 // shares the frame's device, so switching to Phone edits phone values, and the frame draws the values that device
-// resolves to. The values are local to this page; nothing is saved. Under it, Vera's questions for the block
+// resolves to. The block is a BlockNode whose tablet and phone edits are stored as sparse `responsive` overrides; the page holds it locally. Under it, Vera's questions for the block
 // (PROG-E8): questions only, at creation or when asked, never a write to a field.
 //
 // Presence (BLD-401): on a shared Space the link also carries who is here (faces above the canvas) and which node
@@ -19,11 +19,14 @@ import { useEffect, useRef, useState } from 'react'
 import * as Y from 'yjs'
 import type { BuilderDevice } from '@/lib/builder/state'
 import type { InspectorFieldView } from '@/lib/builder/inspector-fields'
-import { resolveInspectorValue, type InspectorDeviceValues } from '@/lib/builder/inspector-model'
+import type { InspectorDeviceValues } from '@/lib/builder/inspector-model'
+import { nodeDeviceValues, resolveNodeContent, withDeviceValues } from '@/lib/builder/node-responsive'
+import type { BlockNode } from '@/lib/entity-blocks/node-tree'
 import { ResponsiveInspector } from '@/components/builder/inspector/responsive-inspector'
 import { VeraBlockCoach } from '@/components/builder/inspector/vera-block-coach'
 import { CanvasViewportShell } from './canvas-viewport-shell'
 import { CollabTextEditor } from './collab-text-editor'
+import { LayerList, type Layer } from './layer-list'
 import { EditorPresenceFaces } from '@/components/builder/presence/presence-ui'
 import type { PresenceState } from '@/lib/editor-crdt/awareness'
 
@@ -39,6 +42,10 @@ type Link = 'local' | 'connecting' | 'live' | 'offline'
 
 /** The demo text node's id: a real node id shape, so a selection of it is a valid presence payload. */
 const CANVAS_NID = 'ncanvasdemo'
+const CANVAS_BLOCK_NID = 'ncanvasblock'
+
+/** The demo page's sections for the layer list (PROG-E6A). Local order only; nothing is saved. */
+const DEMO_LAYERS: Layer[] = [{ id: 'banner', label: 'Banner' }, { id: 'story', label: 'Story' }, { id: 'gatherings', label: 'Gatherings' }, { id: 'contact', label: 'Contact' }]
 
 /** The block the inspector edits: its name, the controls the server derived from its contract, and starting values. */
 type CanvasInspector = {
@@ -51,15 +58,18 @@ type CanvasInspector = {
 export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspector?: CanvasInspector }) {
   const [doc] = useState(() => new Y.Doc())
   const [device, setDevice] = useState<BuilderDevice>('desktop')
-  const [blockValues, setBlockValues] = useState<InspectorDeviceValues<Record<string, string | boolean>>>(
-    () => ({ desktop: inspector?.initial ?? {} }),
-  )
+  // The demo block is a real BlockNode: desktop is its `content`, tablet and phone its sparse `responsive` bags
+  // (the stored form), so what the inspector edits is what a document would hold.
+  const [node, setNode] = useState<BlockNode>(() => ({ nid: CANVAS_BLOCK_NID, type: 'photoHero', content: { ...(inspector?.initial ?? {}) } }))
+  // The inspector only draws string and toggle controls, so those are the values it reads and writes.
+  const blockValues = nodeDeviceValues(node) as InspectorDeviceValues<Record<string, string | boolean>>
   // Vera (PROG-E8): the block counts as just created when every word field starts empty. Read once, at mount.
   const [fresh] = useState(() => !!inspector && inspector.fields.every((f) => (f.kind !== 'text' && f.kind !== 'textarea') || !inspector.initial[f.key]))
   const shown = (key: string) => {
-    const { value } = resolveInspectorValue(blockValues, device, key)
+    const value = resolveNodeContent(node, device)[key]
     return typeof value === 'string' ? value : ''
   }
+  const [layers, setLayers] = useState<Layer[]>(DEMO_LAYERS)
   const [link, setLink] = useState<Link>(spaceId ? 'connecting' : 'local')
   const [peers, setPeers] = useState<PresenceState[]>([])
   const select = useRef<(nid: string | null) => void>(() => {})
@@ -139,12 +149,13 @@ export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspect
         elsewhere={inspector.elsewhere}
         device={device}
         values={blockValues}
-        onChange={setBlockValues}
+        onChange={(next) => setNode((cur) => withDeviceValues(cur, next as InspectorDeviceValues<Record<string, unknown>>))}
       />
       <VeraBlockCoach title={inspector.title} values={blockValues.desktop ?? {}} fresh={fresh} spaceId={spaceId} />
       </div>
     )}
     </div>
+    <div className="mt-4"><LayerList layers={layers} onChange={setLayers} /></div>
     </>
   )
 }
