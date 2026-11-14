@@ -16,7 +16,21 @@ describe('editorTargetSurfaces', () => {
   })
 
   it('joins the coverage union so the baseline-distinctness reader sees them', () => {
-    const slugs = coverageSurfaces({ spotlightHandle: 'ada' }).map((s) => s.slug)
+    const slugs = coverageSurfaces({ spotlightHandle: 'ada', siteUrl: 'https://house.example' }).map((s) => s.slug)
     expect(slugs).toContain('editor-spotlight')
+    expect(slugs).toContain('editor-site')
+  })
+
+  // LIVE-2232: a Site renders only on its own host, so its surface is an absolute url, the Home of that origin.
+  it('names the Site Home on its own host when the url is set', () => {
+    expect(editorTargetSurfaces({ siteUrl: 'https://house.example/about?x=1' })).toEqual([
+      { path: 'https://house.example/', slug: 'editor-site', audience: 'anon', viewportOnly: true },
+    ])
+  })
+
+  it('adds no Site for a url that is not an https origin', () => {
+    for (const siteUrl of ['', '  ', 'house.example', 'http://house.example', '/sites/house', 'https://u:p@house.example']) {
+      expect(editorTargetSurfaces({ siteUrl })).toEqual([])
+    }
   })
 })

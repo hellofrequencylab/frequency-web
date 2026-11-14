@@ -44,6 +44,7 @@ export function CanvasViewportShell({
             type="button"
             size="sm"
             variant={device === id ? 'primarySoft' : 'secondary'}
+            className="min-h-11"
             aria-pressed={device === id}
             onClick={() => onDeviceChange(id)}
           >
