@@ -3,6 +3,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getPlan, getVeraReview, normalizeJourneyMeeting } from '@/lib/journey-plans'
 import { canEditJourney } from '@/lib/journeys/authoring'
 import { listPublicPractices } from '@/lib/practices'
+import { practiceSupportIds } from '@/lib/practices/support-filter'
 import { getPillars } from '@/lib/pillars'
 import { JourneyEditor, type EditorBlock, type EditorPractice, type EditorPillar } from '@/components/journey/v2/journey-editor'
 import { parseCheck } from '@/lib/journeys/store'
@@ -75,6 +76,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
     title: p.title,
     description: p.description,
     pillarId: p.domain_id,
+    supportIds: practiceSupportIds(p),
   }))
   const pillars: EditorPillar[] = pillarsRaw.map((p) => ({ id: p.id, name: p.name, slug: p.slug }))
 
