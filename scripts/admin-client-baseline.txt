@@ -1111,6 +1111,7 @@ lib/listings/index.ts
 lib/loom/authorized-image-upload.ts
 lib/loom/cover-actions.ts
 lib/loom/picker-actions.ts
+lib/loom/store.ts
 lib/loyalty/discover.ts
 lib/loyalty/hunt-store.ts
 lib/loyalty/hunts-visit.ts
