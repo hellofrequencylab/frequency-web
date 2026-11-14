@@ -1989,7 +1989,7 @@
         {
           "file": "scripts/check-loom-integrity.mjs",
           "status": "modified",
-          "sha256": "d800ad9e6c8ce143f52f9cbd0947c164ca5f4c0954acb8cbd8123d668fb6d66d",
+          "sha256": "62d50c2ea591a6e032bb7cb1990bd7b099813210cd85724922a93f332ca9ffc3",
           "baseMode": "100644",
           "headMode": "100644"
         },
