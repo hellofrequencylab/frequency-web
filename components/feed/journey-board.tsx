@@ -77,7 +77,7 @@ export function JourneyBoard({
   freezeTokens?: number
   /** A freeze would automatically protect today if missed. */
   willFreezeProtect?: boolean
-  /** The member's adopted practices counted per Pillar (all four, zero-filled). */
+  /** Current adopted practice supports. Areas overlap; not a unique total or performed days. */
   pillarBalance?: PillarCount[]
   /** The member's top enrolled journey — a slim "current step" line that links to
    *  the My Quest hub. Undefined = no enrolled journey. `done`/`total` are
@@ -335,7 +335,7 @@ export function JourneyBoard({
           Pillars. Coverage, not a score. */}
       {stageUnlocked('feed.pillar-balance', stageIndex) && pillarBalance && pillarBalance.length > 0 && (
         <div className="mt-3 border-t border-border px-4 pt-3">
-          <p className="mb-1.5 text-2xs font-medium text-muted">Your pillars</p>
+          <p className="mb-1.5 text-2xs font-medium text-muted">Adopted practice supports</p>
           <div className="flex gap-1.5">
             {pillarBalance.map((p) => (
               <div
@@ -351,6 +351,7 @@ export function JourneyBoard({
               </div>
             ))}
           </div>
+          <p className="mt-1.5 text-3xs text-muted">Areas can overlap. These are adopted practices, not days practiced.</p>
         </div>
       )}
 

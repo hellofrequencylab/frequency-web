@@ -1,6 +1,1 @@
-{
-  "id": "PROG-E2",
-  "append": {
-    "detail": "OWNER RULING 2026-11-10 (best-practice decisions authorized by Daniel, relayed by the project thread): all eleven core Space blocks stay. None is retired, folded or aliased until the usage index (block_type_usage) shows zero tenants for it AND its renderer is an exact match for the block that would replace it. Until both hold, the row's consolidation half is not started on purpose. The usage-index slice itself moved to ChatGPT (Packet E); the block-systems ratchet already merged holds the count at 5. Packet E adds the five-system distinct-Space census, a checked-in aggregate snapshot and the variant design in docs/EDITOR-BLOCK-INVENTORY.md. Consolidation stays open."
-  }
-}
+{"id":"PROG-E2","append":{"detail":"\n\n2026-11-14 (Loom projection slice, no migration). lib/loom/functions/usage.ts projects stored Loom declarations into a usage index (primitive -> functions, block type -> functions, stranded rows) with retirementImpact(), derived from rows a caller already read, so no new table. Dark behind EDITOR_CANVAS; check:loom-integrity arm M7 proves it is not vacuous. This closes the 'functions ALREADY STORED when a primitive is retired' blind spot the gate named. The consolidation half is untouched and the row stays open: block-systems is still 5 (scripts/block-baselines.json), and the probe needs 1."}}

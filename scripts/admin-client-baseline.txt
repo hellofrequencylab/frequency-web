@@ -1057,6 +1057,7 @@ lib/hunts/claim-store.ts
 lib/hunts/redemption-store.ts
 lib/hunts/commerce-store.ts
 lib/hunts/run-store.ts
+lib/hunts/staff-queue-store.ts
 lib/hunts/staff-store.ts
 lib/hunts/store.ts
 lib/importer/harvest/media.ts
@@ -1109,6 +1110,7 @@ lib/listings/index.ts
 lib/loom/authorized-image-upload.ts
 lib/loom/cover-actions.ts
 lib/loom/picker-actions.ts
+lib/loom/store.ts
 lib/loyalty/discover.ts
 lib/loyalty/hunt-store.ts
 lib/loyalty/hunts-visit.ts

@@ -208,8 +208,8 @@ export function TemplateEditor({ template }: { template: CircleTemplate }) {
       </FormSection>
 
       <FormSection
-        title="The four Pillars inside"
-        description="One honest line each. Lean one Pillar, carry all four. Every Circle works the whole person."
+        title="What this Circle can support"
+        description="Optional notes for the areas that fit. Leave other areas blank; equal coverage is not required."
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {PILLAR_ORDER.map((p) => (

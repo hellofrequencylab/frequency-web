@@ -336,7 +336,7 @@ export function PathBlock({
   )
 }
 
-/** The Pillar-balance meter (full meter as context; the primary Pillar rides the header). */
+/** Descriptive assigned categories on this path, not personal participation or balance. */
 export function PillarBalanceBlock({
   items,
   pillars,
@@ -347,7 +347,8 @@ export function PillarBalanceBlock({
   const coverage = new Map(planPillarMap(items).map((s) => [s.domainId, s.count]))
   return (
     <section>
-      <SectionHeader title="Pillar balance" />
+      <SectionHeader title="Path categories" />
+      <p className="mb-2 text-meta text-muted">Counts show path items tagged with each primary category, not your practice activity or wellbeing.</p>
       <div className="flex flex-wrap gap-1.5">
         {pillars.map((pl) => {
           const n = coverage.get(pl.id) ?? 0
