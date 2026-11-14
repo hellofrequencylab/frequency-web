@@ -3,13 +3,8 @@ import { ExpressionIcon, expressionPillarStyle } from '@/lib/quest/expression-pi
 import { pillarZapBalance, type BalancePractice } from '@/lib/quest/pillar-balance'
 import type { PillarSlug } from '@/lib/pillars'
 
-// The per-Pillar Zap-balance indicator — the new owner-locked rule made visible while
-// authoring (docs/NAMING.md: Pillars are Mind / Body / Spirit / Expression). A Journey's
-// Practices must be balanced so each Pillar earns the same total daily Zaps; this shows
-// the four totals and warns the moment they diverge. Pure math lives in
-// lib/quest/pillar-balance.ts so the same read backs the Journey editor later. Expression
-// carries its plum / Sparkles identity (lib/quest/expression-pillar.ts) so it reads as a
-// peer of the other three. Presentational, server-safe (no hooks); semantic tokens only.
+// Descriptive author bookkeeping only. The existing pure reward sums stay unchanged;
+// equality is not a publication rule or an assessment of participants.
 
 const PILLAR_LABEL: Record<PillarSlug, string> = {
   mind: 'Mind',
@@ -19,12 +14,6 @@ const PILLAR_LABEL: Record<PillarSlug, string> = {
 }
 
 const ORDER: readonly PillarSlug[] = ['mind', 'body', 'spirit', 'expression']
-
-/** Name the Pillar(s) that fall short of the highest total, for the warning line. */
-function lightPillars(totals: Record<PillarSlug, number>): string[] {
-  const max = Math.max(...ORDER.map((s) => totals[s]))
-  return ORDER.filter((s) => totals[s] < max).map((s) => PILLAR_LABEL[s])
-}
 
 export function PillarBalance({
   practices,
@@ -42,14 +31,13 @@ export function PillarBalance({
     expression: balance.expression,
   }
   const empty = ORDER.every((s) => totals[s] === 0)
-  const light = balance.balanced ? [] : lightPillars(totals)
 
   return (
     <div className={`rounded-card border border-border bg-surface p-3 ${className ?? ''}`}>
       <div className="flex items-center gap-1.5">
         <Scale className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
         <span className="eyebrow text-subtle">
-          Pillar Zap balance
+          Practice reward values
         </span>
       </div>
 
@@ -75,21 +63,14 @@ export function PillarBalance({
         })}
       </dl>
 
-      {empty ? (
-        <p className="mt-2 text-2xs text-muted">
-          Add Practices across the four Pillars to see the balance.
-        </p>
-      ) : balance.balanced ? (
-        <p className="mt-2 text-2xs font-medium text-success">
-          Balanced. Every Pillar earns the same daily Zaps.
-        </p>
-      ) : (
-        <p className="mt-2 text-2xs font-medium text-warning" role="status">
-          {light.length === 1
-            ? `${light[0]} is light. Balance the Pillars so each earns the same daily Zaps.`
-            : `${light.join(', ')} are light. Balance the Pillars so each earns the same daily Zaps.`}
-        </p>
-      )}
+      <p className="mt-2 text-2xs text-muted">
+        {empty
+          ? 'No categorized reward values yet. Add a practice to see its value per log.'
+          : 'Zaps per log, summed across practices in each primary Pillar. Cadence and actual participation vary.'}
+      </p>
+      <p className="mt-1 text-meta text-muted">
+        These are reward values, not daily targets. Choose supporting practices that fit the intention; equal totals are not required.
+      </p>
     </div>
   )
 }
