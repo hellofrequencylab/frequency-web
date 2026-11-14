@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { envFlag } from '@/lib/env/string'
 import { createSpaceDoorHref } from '@/lib/create-space/door'
+import { resolveOnboardingNicheSeed } from '@/lib/create-space/niche-choices.server'
 import { launchHomeHref } from '@/lib/launch/destination'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
 import { getActiveLaunch } from '@/lib/launch/store'
@@ -44,7 +45,10 @@ export default async function NewSpacePage({
   // and its hand-over lands them on the launch like any member (LIVE-1969, ADR-1933). Until 2026-11-02 this bounced
   // them to /sign-in first, a form before the thing they asked for.
   const profileId = await getMyProfileId()
-  const params = await searchParams
+  const rawParams = await searchParams
+  const first = (v: string | string[] | undefined) => Array.isArray(v) ? v[0] : v
+  const seed = resolveOnboardingNicheSeed(first(rawParams.niche), first(rawParams.mode))
+  const params = { ...rawParams, ...(seed ? { niche: seed.niche, mode: seed.mode } : {}) }
   if (!profileId) redirect(createSpaceDoorHref(params))
 
   // One front door (LIVE-1913). With the launch on, this page is only ever the way in: someone with a launch under way
@@ -56,7 +60,7 @@ export default async function NewSpacePage({
     if (launch) redirect(launchHomeHref({ signedIn: true }))
     const niche = nicheFromHint(params.niche) ?? nicheFromHint((await cookies()).get('fq_beta_seq')?.value)
     const launchStart = '/launch/start'
-    const query = new URLSearchParams({ new: '1', ...(niche ? { niche } : {}) })
+    const query = new URLSearchParams({ new: '1', ...(niche ? { niche } : {}), ...(seed ? { mode: seed.mode } : {}) })
     redirect(`${launchStart}?${query.toString()}`)
   }
 

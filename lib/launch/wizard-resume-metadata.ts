@@ -14,6 +14,7 @@ export function readWizardResumeMetadata(raw: unknown): WizardResume | null {
   return {
     version: 1, phase: value.phase, cursor: Number(value.cursor), theme: value.theme,
     accentAt: Number(value.accentAt), niche: token(value.niche) ? value.niche : null,
+    ...(typeof value.modeHint === 'string' && value.modeHint.length <= 64 && /^[a-z]+:[a-z]+$/.test(value.modeHint) ? { modeHint: value.modeHint } : {}),
     goals: Array.isArray(value.goals) ? [...new Set(value.goals.filter(token))].slice(0, 8) : [],
     timedEntry: value.timedEntry === true, draft: null,
     leadToken: typeof value.leadToken === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(value.leadToken) ? value.leadToken : null,

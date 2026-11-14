@@ -8,6 +8,7 @@ import { slugify } from '@/lib/utils'
 import { OFFER_MAX } from '@/lib/create-space/intents-from-offer'
 import { isPreviewKit } from '@/lib/create-space/preview-site'
 import { isMegaNicheId, type MegaNicheId, type MegaThemeId } from '@/lib/theme/mega-theme'
+import { nicheModeChoice } from './niche-choices'
 
 /** The four moves answered in the builder; the fifth (save) is the account step. */
 export const BUILDER_MOVES = ['name', 'offer', 'contact', 'photos'] as const
@@ -32,8 +33,10 @@ export interface BuilderDraft {
   offer: string
   /** The goals the sentence named (intentsFromOffer), editable later on the launch. */
   goals: IntentId[]
-  /** The Mega niche the door named (lib/create-space/door.ts); rides to the launch hold, never asked here. */
+  /** The canonical Mega niche chosen in the hero or named by a door. */
   niche: MegaNicheId | null
+  /** An explicit registered Mode/Focus from the door or niche chip, retained independently of typed goals. */
+  modeHint?: string
   hostName: string
   email: string
   phone: string
@@ -134,6 +137,7 @@ interface StartingMode {
 
 const MODES: Record<string, StartingMode> = {
   'business:service': { label: 'General', tools: ['Calendar and gatherings', 'Email and contacts', 'QR codes'] },
+  'business:packages': { label: 'Packages', tools: ['Booking', 'Reviews', 'Email and contacts'] },
   'business:appointments': { label: 'Appointments', tools: ['Booking', 'Reviews', 'Email and contacts'] },
   'business:membership': { label: 'Memberships', tools: ['Memberships', 'Calendar and gatherings', 'Circles'] },
   'business:cohort': { label: 'Programs', tools: ['Journeys and practices', 'Circles', 'Email and contacts'] },
@@ -145,8 +149,9 @@ const MODES: Record<string, StartingMode> = {
 const GENERAL = 'business:service'
 
 /** The setup and the three tools the picks switch on. The same rule the signed-in wizard uses; no pick is General. */
-export function startingModeFor(goals: readonly string[]): StartingMode {
-  return MODES[suggestModeForIntents(goals, Object.keys(MODES)) ?? GENERAL]
+export function startingModeFor(goals: readonly string[], modeHint?: string): StartingMode {
+  const explicit = nicheModeChoice(modeHint)?.id
+  return MODES[(explicit && Object.hasOwn(MODES, explicit) ? explicit : suggestModeForIntents(goals, Object.keys(MODES))) ?? GENERAL]
 }
 
 // ── The draft in the visitor's own browser ──────────────────────────────────────────────────────────
@@ -181,6 +186,7 @@ export function parseDraft(raw: string | null, arrivedKit: MegaThemeId | null): 
     offer: text(o.offer, OFFER_MAX),
     goals,
     niche: isMegaNicheId(o.niche) ? o.niche : null,
+    ...(nicheModeChoice(o.modeHint) ? { modeHint: nicheModeChoice(o.modeHint)!.id } : {}),
     hostName: text(o.hostName, 80),
     email: text(o.email, 254),
     phone: text(o.phone, 30),
@@ -212,7 +218,7 @@ export function serializeDraft(draft: BuilderDraft): string {
 
 /** Whether a draft holds anything worth a "Welcome back". */
 export function hasProgress(draft: BuilderDraft): boolean {
-  return Boolean(draft.name.trim() || draft.offer || draft.hostName || draft.email || draft.accentPicked)
+  return Boolean(draft.name.trim() || draft.offer || draft.hostName || draft.email || draft.accentPicked || draft.niche || nicheModeChoice(draft.modeHint))
 }
 
 /** The host's initial for the monogram and the initials avatar: the host's, else the business's, else Y. */

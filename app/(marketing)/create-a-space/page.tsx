@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { ownedWizardEntry } from '@/lib/launch/entry-io'
 import { getActiveLaunch } from '@/lib/launch/store'
+import { getOnboardingNicheChoices } from '@/lib/create-space/niche-choices.server'
 import type { Metadata } from 'next'
 import { JsonLd } from '@/components/json-ld'
 import { CreateSpaceStudio } from '@/components/frequency/site/pages/create-space/create-space-studio'
@@ -25,7 +26,7 @@ export default async function CreateASpacePage({ searchParams }: { searchParams:
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.createSpace)} />
-      <CreateSpaceStudio initialResume={launch?.resume ?? null} />
+      <CreateSpaceStudio initialResume={launch?.resume ?? null} nicheChoices={getOnboardingNicheChoices()} />
       <SoundFamiliar />
       <DayOne />
       <FreeToOperate />
