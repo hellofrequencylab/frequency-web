@@ -2,8 +2,9 @@ import { JsonLd } from '@/components/json-ld'
 import type { ReactNode } from 'react'
 import { faqSchema } from '@/lib/jsonld'
 import { safeImageSrc } from '@/lib/safe-image-src'
+import { envFlag } from '@/lib/env/string'
 import { isFeatureDataSource, pickerSelection, resolvePickedIds, safeImageUrl } from '@/lib/entity-blocks/block-content'
-import { resolveRows, type EntityLayout, type RowColumns, type RowDef } from '@/lib/entity-blocks/layout'
+import { resolveRows, siteSurfaceRows, type EntityLayout, type RowColumns, type RowDef } from '@/lib/entity-blocks/layout'
 import { getSpaceFaqs } from '@/lib/spaces/content-data'
 import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { isServiceListed, readProfileData, SPACE_SOCIAL_PLATFORMS } from '@/lib/spaces/profile-data'
@@ -73,7 +74,10 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
   const prefs = space.preferences
   const content: Record<string, Bag> = (grid.content ?? {}) as Record<string, Bag>
   const bag = (id: string | null): Bag => (id ? (content[id] ?? {}) : {})
-  const rows = resolveRows(grid, 'site')
+  // The Site surface filter (LIVE-2232) is dark: with EDITOR_CANVAS off the rows are exactly resolveRows', so the
+  // published website is unchanged until the editor-site picture can diff the switch.
+  const resolved = resolveRows(grid, 'site')
+  const rows = envFlag('EDITOR_CANVAS') ? siteSurfaceRows(resolved) : resolved
   const plan = planHouseSections(rows, (id) => isFeatureDataSource(content[id]))
   // The Space on Frequency: only the clearly labelled On Frequency section links here.
   const spaceBase = `${origin}/spaces/${space.slug}`

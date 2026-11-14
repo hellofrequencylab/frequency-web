@@ -40,6 +40,9 @@ export interface EntityBlockDef {
   requiresFunction?: SpaceFunctionKey
   /** Default display order within a fresh profile (ascending). */
   order: number
+  /** The Site surface filter (E3, LIVE-2232): legal on a Space, and so on a Site (blockSupportsKind), but drawn only
+   *  on the Space's own surfaces, never on its published website. Read by siteSurfaceRows (layout.ts). */
+  notOnSite?: true
 }
 
 // ── DATA blocks bound to entity data ──────────────────────────────────────────────────────────────
@@ -60,10 +63,10 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'journeys', label: 'Journeys', description: 'The journeys you host here.', category: 'data', kinds: ['space'], order: 66 },
   // Link cards (the Space Spotlight, LIVE-852): link-in-bio buttons, each to ONE thing the Space offers.
   // Offered on the Spotlight's own palette only (lib/spaces/spotlight.ts), not the Space page's core set.
-  { id: 'linkCards', label: 'Link cards', description: 'Big buttons, each to one product, Journey, event, membership or booking.', category: 'data', kinds: ['space'], order: 67 },
+  { id: 'linkCards', label: 'Link cards', description: 'Big buttons, each to one product, Journey, event, membership or booking.', category: 'data', kinds: ['space'], order: 67, notOnSite: true },
   // The Space's own fund as a card (SPL-13): the Donate tab's fund and checkout, shown only when the Space can
   // take a gift (Business and up with payouts on). Space Spotlight only.
-  { id: 'donate', label: 'Donate', description: 'Your fund, with amounts people can give. 0% from Frequency.', category: 'data', kinds: ['space'], order: 68 },
+  { id: 'donate', label: 'Donate', description: 'Your fund, with amounts people can give. 0% from Frequency.', category: 'data', kinds: ['space'], order: 68, notOnSite: true },
   { id: 'circles', label: 'Circles', description: 'The community circles inside this space.', category: 'data', kinds: ['space'], order: 70 },
   { id: 'team', label: 'Team', description: 'The people who run this space.', category: 'data', kinds: ['space'], requiresFunction: 'members', order: 80 },
   { id: 'reviews', label: 'Reviews', description: 'What members say.', category: 'data', kinds: ['space'], order: 90 },
@@ -173,6 +176,12 @@ export function blockSupportsKind(block: EntityBlockDef, kind: EntityKind): bool
   // A Site is the Space's own website: every block a Space may hold is legal there, and no block is legal
   // there that a Space cannot hold. One source (`kinds` carries `space`), so the two cannot drift.
   return block.kinds.includes(kind === 'site' ? 'space' : kind)
+}
+
+/** Does a block draw on a Space's published website? Legality is blockSupportsKind's; this is the surface on top of
+ *  it: a Spotlight-only block (link cards, the Donate card) is legal on a Site's saved layout but has no Site render. */
+export function blockRendersOnSite(block: EntityBlockDef): boolean {
+  return blockSupportsKind(block, 'site') && block.notOnSite !== true
 }
 
 /** Block ids the MEMBER profile CHROME already renders canonically (ADR-522): the bio in the identity

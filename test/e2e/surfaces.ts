@@ -118,7 +118,8 @@ export async function applyRenderState(page: Page, state: RenderState): Promise<
 /* ── Surfaces ─────────────────────────────────────────────────────────────── */
 
 export interface Surface {
-  /** Route to visit, relative to PW_BASE_URL. */
+  /** Route to visit, relative to PW_BASE_URL. The one exception is `editor-site`, an absolute url on the
+   *  Site's own host (see editorTargetSurfaces). */
   path: string
   /** Snapshot + test-title slug. Stable across route renames only if you keep it stable. */
   slug: string
@@ -913,22 +914,45 @@ export function headerBandSurfaces(): readonly Surface[] {
  * surfaces no baseline covered, a member's standalone Spotlight and a Space's external Site. E3's
  * gate is "zero visual diff" across them, and a gate with no photograph behind it measures nothing.
  *
- * Both are env-gated like `appSurfaces()`' room and console: a handle and a slug are facts about
- * real data (a member with a Spotlight, a Space with a Site), so they are repo variables the owner
+ * Both are env-gated like `appSurfaces()`' room and console: a handle and a Site url are facts about
+ * real data (a member with a Spotlight, a Space with a published Site: PW_SPOTLIGHT_HANDLE and
+ * PW_SITE_URL, the Site's own https origin), so they are repo variables the owner
  * sets, not constants here. With neither set this returns nothing and the suite is unchanged.
  * Anonymous, because both are public pages; viewport only, because a Spotlight is a member's
  * live content and a fullPage baseline of it would record WHEN it was taken (see `viewportOnly`).
  */
 export function editorTargetSurfaces(
-  env: { spotlightHandle?: string } = {
+  env: { spotlightHandle?: string; siteUrl?: string } = {
     spotlightHandle: process.env.PW_SPOTLIGHT_HANDLE,
+    siteUrl: process.env.PW_SITE_URL,
   },
 ): readonly Surface[] {
   const surfaces: Surface[] = []
   if (env.spotlightHandle) {
     surfaces.push({ path: `/spotlight/${env.spotlightHandle}`, slug: 'editor-spotlight', audience: 'anon', viewportOnly: true })
   }
+  const site = siteHomeUrl(env.siteUrl)
+  if (site) surfaces.push({ path: site, slug: 'editor-site', audience: 'anon', viewportOnly: true })
   return surfaces
+}
+
+/**
+ * The Site's Home as an ABSOLUTE url, or null (LIVE-2232). A Site renders only on its own host (a slug
+ * subdomain or a custom domain, lib/sites/host.ts); `/sites/<slug>` on the app host only forwards to the
+ * Space page, so a path under PW_BASE_URL can never photograph one. `page.goto` takes an absolute url
+ * over the base, which is the whole mechanism. Only an https origin counts, and only its Home is
+ * photographed (the path and query are dropped), so a mistyped variable adds nothing rather than
+ * photographing the wrong page under the Site's name.
+ */
+function siteHomeUrl(raw: string | undefined): string | null {
+  const value = raw?.trim()
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && !url.username && !url.password ? `${url.origin}/` : null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -952,7 +976,7 @@ export function editorTargetSurfaces(
  * is how the argument gets made.
  */
 export function coverageSurfaces(
-  env?: { roomPath?: string; spaceSlug?: string; spotlightHandle?: string },
+  env?: { roomPath?: string; spaceSlug?: string; spotlightHandle?: string; siteUrl?: string },
 ): readonly Surface[] {
   return [
     ...publicSurfaces(),
