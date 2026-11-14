@@ -30,7 +30,7 @@
 // same law across the full matrix, so a copy that drifts fails the build (the method
 // lib/theme/mode.test.ts established for the pre-paint bootstrap).
 
-import { PIXEL_PATH_PREFIXES, REDACTED_PAGE_TITLE } from '@/lib/analytics/sanitize'
+import { PIXEL_PATH_PREFIXES, REDACTED_PAGE_TITLE, pixelSafeAttributionQuery } from '@/lib/analytics/sanitize'
 
 /* ── Storage ──────────────────────────────────────────────────────────────── */
 
@@ -44,6 +44,9 @@ export const CONSENT_COOKIE = 'fq_consent'
  * the one category ePrivacy exempts, so it is written before a choice exists.
  */
 export const CONSENT_REGION_COOKIE = 'fq_ask'
+
+/** Suppression only. It bridges the existing browser/staff opt-out to request-backed mirrors. */
+export const ANALYTICS_OPTOUT_COOKIE = 'fq_ga_optout'
 
 /**
  * How long a recorded choice stands. Six months is the re-ask cadence EU regulators consistently
@@ -146,32 +149,71 @@ export function shouldAskForConsent(state: ConsentState): boolean {
  * (next.config.ts) is `'unsafe-inline'` plus an allow-list that already names
  * `https://www.googletagmanager.com`, so nothing here needs it yet.
  */
-export function gaBootstrapScript(gaId: string): string {
+export function gaBootstrapScript(gaId: string, requireRequestPolicy = false, loadGoogle = true): string {
   const id = JSON.stringify(gaId)
-  // LIVE-810: the first page view carries a redacted path, same rule as pixelSafePath.
   const prefixes = JSON.stringify(PIXEL_PATH_PREFIXES)
-  // SCAN-838: on a redacted path the title goes generic too, for the config and (gtag set) every later hit.
   const generic = JSON.stringify(REDACTED_PAGE_TITLE)
-  return `(function(){try{
-var ID=${id},started=false,P=${prefixes},G=${generic};
-function title(p){return safe(p)===p?document.title:G;}
-function safe(p){for(var i=0;i<P.length;i++){var x=P[i]+'/';if(p.indexOf(x)===0){var r=p.slice(x.length),j=r.indexOf('/');if(!r||r.charAt(0)==='[')return p;return P[i]+'/[slug]'+(j<0?'':r.slice(j));}}return p;}
+  // This pure low-level loader remains independently exercised by the frozen browser-law matrix.
+  // The actual production component always enables the stricter request-policy wrapper below.
+  const runtimePolicy = requireRequestPolicy ? `
+var pending=false,generation=0;
+window.__fqAnalyticsAllowed=false;window.__fqGoogleEnabled=false;
+if(ID)window['ga-disable-'+ID]=true;
+function stop(){generation++;pending=false;window.__fqAnalyticsAllowed=false;window.__fqGoogleEnabled=false;if(ID)window['ga-disable-'+ID]=true;}
 window.__fqGa=function(){
+if(!browser()){stop();return;}
+if(pending)return;
+pending=true;var own=++generation;
+var controller=typeof AbortController==='function'?new AbortController():null;
+var timer=setTimeout(function(){if(own===generation)stop();if(controller)controller.abort();},4000);
+if(typeof fetch!=='function'){clearTimeout(timer);stop();return;}
+Promise.resolve().then(function(){return fetch('/api/analytics/policy',{credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller?controller.signal:undefined});})
+.then(function(response){if(!response.ok)throw new Error('policy unavailable');return response.json();})
+.then(function(value){if(own!==generation)return;if(!value||value.allowed!==true||!browser()){stop();return;}
+window.__fqAnalyticsAllowed=true;window.__fqGoogleEnabled=GOOGLE;if(ID)window['ga-disable-'+ID]=!GOOGLE;if(GOOGLE)start();window.dispatchEvent(new Event('fq-analytics-policy-ready'));})
+.catch(function(){if(own===generation)stop();})
+.finally(function(){clearTimeout(timer);if(own===generation)pending=false;});
+};
+function policyChanged(event){
+var refresh=false;
+if(event.type==='storage'){
+if(event.key!=='fq-analytics-policy-update')return;
+try{refresh=JSON.parse(event.newValue||'null').refresh===true;}catch(e){}
+}else refresh=!!(event.detail&&event.detail.refresh===true);
+stop();if(refresh)window.__fqGa();
+}
+if(window.__fqPolicyListener){window.removeEventListener('storage',window.__fqPolicyListener);window.removeEventListener('fq-analytics-policy-changed',window.__fqPolicyListener);}
+window.__fqPolicyListener=policyChanged;
+window.addEventListener('storage',policyChanged);window.addEventListener('fq-analytics-policy-changed',policyChanged);
+if(browser())window.__fqGa();
+` : `
+window.__fqGa=start;
+var choice=read(${JSON.stringify(CONSENT_COOKIE)});
+var ask=read(${JSON.stringify(CONSENT_REGION_COOKIE)})==='1';
+if(choice==='granted'||(choice!=='denied'&&!ask))window.__fqGa();
+`
+  return `(function(){try{
+var ID=${id},GOOGLE=${JSON.stringify(loadGoogle)},started=false,P=${prefixes},G=${generic};
+var law=(${analyticsAllowed.toString()}),parse=(${parseConsentChoice.toString()}),query=(${pixelSafeAttributionQuery.toString()});
+function read(name){var match=new RegExp('(?:^|;\\\\s*)'+name+'=([^;]*)').exec(document.cookie);return match?match[1]:'';}
+function browser(){try{return law({choice:parse(read(${JSON.stringify(CONSENT_COOKIE)})),priorConsentRegion:read(${JSON.stringify(CONSENT_REGION_COOKIE)})==='1'})&&read(${JSON.stringify(ANALYTICS_OPTOUT_COOKIE)})!=='1'&&localStorage.getItem('freq-ga-optout')!=='1';}catch(e){return false;}}
+function title(path){return safe(path)===path?document.title:G;}
+function safe(path){for(var i=0;i<P.length;i++){var prefix=P[i]+'/';if(path.indexOf(prefix)===0){var rest=path.slice(prefix.length),slash=rest.indexOf('/');if(!rest||rest.charAt(0)==='[')return path;return P[i]+'/[slug]'+(slash<0?'':rest.slice(slash));}}return path;}
+function referrer(){try{if(!document.referrer)return '';var url=new URL(document.referrer);if(url.protocol!=='https:'&&url.protocol!=='http:')return '';if(url.username||url.password)return '';return url.origin+(url.origin===location.origin?safe(url.pathname)+query(url.search):'/');}catch(e){return '';}}
+function start(){
 if(started)return;started=true;
 window.dataLayer=window.dataLayer||[];
 function gtag(){window.dataLayer.push(arguments);}
-try{if(localStorage.getItem('freq-ga-optout')==='1'){window['ga-disable-'+ID]=true;}}catch(e){}
+window.gtag=gtag;
+try{if(localStorage.getItem('freq-ga-optout')==='1')window['ga-disable-'+ID]=true;}catch(e){}
 gtag('js',new Date());
-var T=title(location.pathname);
-gtag('set',{page_title:T});
-gtag('config',ID,{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false,page_location:location.origin+safe(location.pathname),page_title:T});
-var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id='+ID;
-document.head.appendChild(s);
-};
-var m=/(?:^|;\\s*)${CONSENT_COOKIE}=([^;]*)/.exec(document.cookie);
-var choice=m?m[1]:'';
-var ask=/(?:^|;\\s*)${CONSENT_REGION_COOKIE}=1(?:\\s*;|\\s*$)/.test(document.cookie);
-if(choice==='granted'||(choice!=='denied'&&!ask)){window.__fqGa();}
+var pageTitle=title(location.pathname),pageReferrer=referrer();
+gtag('set',{page_title:pageTitle,page_referrer:pageReferrer});
+gtag('config',ID,{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false,page_location:location.origin+safe(location.pathname)+query(location.search),page_title:pageTitle,page_referrer:pageReferrer});
+var script=document.createElement('script');script.async=true;script.src='https://www.googletagmanager.com/gtag/js?id='+ID;
+document.head.appendChild(script);
+}
+${runtimePolicy}
 }catch(e){}})();`
 }
 

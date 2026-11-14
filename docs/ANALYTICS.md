@@ -247,6 +247,31 @@ build time.
 
 ## Privacy
 
+### Request-backed analytics eligibility
+
+The root layout stays static. Its pure inline bootstrap checks the current browser choice first,
+then requests `/api/analytics/policy` with same-origin credentials and no caching. That route
+returns only `{allowed: boolean}`, with private/no-store response headers. It checks the verified
+session, the real profile's web role, team membership and account consent. View-as identities do
+not supply permission; unavailable account evidence denies. A known anonymous visitor can still
+use the existing opt-out default outside the prior-consent region.
+
+Google configuration, the global tag function and its external loader appear only after that
+positive decision. Closed campaign identifiers are retained; human campaign labels, search terms,
+private page names and arbitrary query values are excluded. External referrers retain only their
+origin. When Google is disabled for a preview or lacks its measurement ID, the same policy resolver
+still supports first-party product events without loading Google.
+
+Client events recheck browser consent and the positive policy flag. Account/staff changes,
+withdrawal and cross-tab policy updates invalidate that flag synchronously. A stale in-flight
+response cannot restore a revoked decision. The member collector rechecks policy server-side;
+request identity, checkout attribution, sign-up and verified-lead mirrors share the same request
+policy. A browser/staff suppression cookie can deny permission, never grant it.
+
+Authoritative background business-ledger writes keep their existing semantics. This request policy
+does not reinterpret webhook execution as an anonymous browser request; background mirrors and
+their existing account-consent and captured-checkout-metadata rules remain separate.
+
 - First-party events are internal product telemetry tied to the member's own account — no
   *additional* cookies, no new consent surface.
 - GA4 stays per ADR-048 (anonymized, ad signals off).

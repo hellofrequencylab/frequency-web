@@ -7,6 +7,7 @@ import type { ConsentScope } from '@/lib/consent/scopes'
 import { saveConsentScope } from '@/app/(main)/settings/notifications/actions'
 import { isError } from '@/lib/action-result'
 import { Switch } from '@/components/ui/switch'
+import { updateBrowserAnalyticsPolicy } from '@/lib/analytics/browser-policy'
 
 // The member-controllable consent scopes surfaced as toggles (Phase 6). These were
 // ledger-only until now: recorded on grant/revoke elsewhere, with no member control.
@@ -45,12 +46,16 @@ export function ConsentScopesForm({ initial }: { initial: ConsentScopeState }) {
     const prev = state
     setState({ ...state, [scope]: next })
     setSaveError(null)
+    // A revoke takes effect before the network save; a grant waits for persistence and fresh policy.
+    if (scope === 'analytics' && !next) updateBrowserAnalyticsPolicy(false)
     startTransition(async () => {
       const res = await saveConsentScope(scope, next)
       if (isError(res)) {
         setState(prev)
         setSaveError(res.error || 'Could not save. Try again.')
+        // A failed revoke must not automatically revive this page's permission.
       } else {
+        if (scope === 'analytics') updateBrowserAnalyticsPolicy(next)
         setSavedAt(Date.now())
       }
     })
