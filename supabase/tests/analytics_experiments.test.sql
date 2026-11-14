@@ -1,0 +1,40 @@
+-- Closed pilot lifecycle, role denial, consent deletion and bounded retention. Transaction rolls back.
+begin;
+select plan(17);
+select is(has_table_privilege('anon','public.analytics_experiments','select'),false,'anon cannot read pilots');
+select is(has_table_privilege('authenticated','public.analytics_experiment_assignments','select'),false,'members cannot read assignment identities');
+select is(has_function_privilege('authenticated','public.analytics_experiment_purge(timestamptz)','execute'),false,'members cannot purge assignments');
+select is((select relrowsecurity from pg_class where oid='public.analytics_experiment_assignments'::regclass),true,'assignment RLS enabled');
+insert into auth.users(id,email,email_confirmed_at) values ('00000000-0000-4000-e278-000000000001','experiment278@test.local',now());
+select set_config('test.experiment.person',(select id::text from public.profiles where auth_user_id='00000000-0000-4000-e278-000000000001'),true);
+select set_config('request.jwt.claim.role','authenticated',true);
+select throws_ok($q$select public.analytics_experiment_results()$q$,'42501','not authorized','RPC independently rejects a non-service caller');
+select set_config('request.jwt.claim.role','service_role',true);
+select public.analytics_experiment_manage('upcoming-next-step','draft',current_setting('test.experiment.person')::uuid);
+select is(public.analytics_experiment_assign('upcoming-next-step',current_setting('test.experiment.person')::uuid),null::jsonb,'draft does not allocate traffic');
+update public.analytics_experiments set status='running',started_at=null where key='upcoming-next-step';
+select is(public.analytics_experiment_assign('upcoming-next-step',current_setting('test.experiment.person')::uuid),null::jsonb,'null start fails closed');
+update public.analytics_experiments set status='draft' where key='upcoming-next-step';
+select public.analytics_experiment_manage('upcoming-next-step','start',current_setting('test.experiment.person')::uuid);
+select set_config('test.experiment.assignment',public.analytics_experiment_assign('upcoming-next-step',current_setting('test.experiment.person')::uuid)::text,true);
+select is(public.analytics_experiment_assign('upcoming-next-step',current_setting('test.experiment.person')::uuid),current_setting('test.experiment.assignment')::jsonb,'assignment is stable');
+select public.analytics_experiment_outcome('event.rsvp',current_setting('test.experiment.person')::uuid);
+select is((select converted_at from public.analytics_experiment_assignments where profile_id=current_setting('test.experiment.person')::uuid),null::timestamptz,'assignment without exposure cannot convert');
+select public.analytics_experiment_expose((current_setting('test.experiment.assignment')::jsonb->>'id')::uuid,current_setting('test.experiment.person')::uuid);
+select public.analytics_experiment_outcome('event.rsvp',current_setting('test.experiment.person')::uuid);
+select ok((select converted_at is not null from public.analytics_experiment_assignments where profile_id=current_setting('test.experiment.person')::uuid),'exposed authoritative RSVP converts');
+select public.analytics_experiment_manage('upcoming-next-step','pause',current_setting('test.experiment.person')::uuid);
+select is(public.analytics_experiment_assign('upcoming-next-step',current_setting('test.experiment.person')::uuid),current_setting('test.experiment.assignment')::jsonb,'pause preserves exposed follow-up');
+select throws_ok($q$select public.analytics_experiment_purge(now())$q$,'P0001','invalid retention cutoff','purge cannot shorten retention');
+select is(public.analytics_experiment_purge(now()-interval '180 days'),0::bigint,'recent membership survives purge');
+update public.analytics_experiment_assignments set assigned_at=now()-interval '181 days' where profile_id=current_setting('test.experiment.person')::uuid;
+select is(public.analytics_experiment_purge(now()-interval '180 days'),1::bigint,'old membership purged with exact count');
+select is((select control_excluded+treatment_excluded from public.analytics_experiments where key='upcoming-next-step'),1::bigint,'retention preserves anonymous attrition');
+-- Consent trigger is exercised by a real consent row using the catalog defaults.
+insert into public.analytics_experiment_assignments(experiment_id,profile_id,variant,exposed_at)
+values ((current_setting('test.experiment.assignment')::jsonb->>'id')::uuid,current_setting('test.experiment.person')::uuid,'control',now());
+insert into public.consent_records(profile_id,scope,granted) values(current_setting('test.experiment.person')::uuid,'analytics',false);
+select is((select count(*) from public.analytics_experiment_assignments where profile_id=current_setting('test.experiment.person')::uuid),0::bigint,'consent withdrawal deletes membership');
+select is((select control_excluded+treatment_excluded from public.analytics_experiments where key='upcoming-next-step'),2::bigint,'consent withdrawal preserves anonymous attrition only');
+select * from finish();
+rollback;
