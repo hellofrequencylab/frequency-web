@@ -11,7 +11,7 @@ export const PRACTICE_SUPPORT_CHOICES: readonly { id: PillarSlug; label: string;
 type ExploreInvitation = { kind: 'explore'; message: string; href: string; action: string }
 type RestInvitation = { kind: 'rest'; message: string }
 export type PracticeInvitationChoice = PillarSlug | 'familiar' | 'rest'
-export type PracticeInvitationResult = ExploreInvitation | RestInvitation
+type PracticeInvitationResult = ExploreInvitation | RestInvitation
 
 const INVITATIONS: Readonly<Record<PracticeInvitationChoice, PracticeInvitationResult>> = {
   mind: {
