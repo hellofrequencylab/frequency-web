@@ -1,16 +1,19 @@
 {
   "id": "HYG-225",
-  "title": "Cap the page-data workers so the Vercel build stops being OOM-killed at the fork",
+  "title": "Apply reviewed migrations through existing Management API credentials in one atomic transaction",
   "lane": "hygiene",
   "priority": "P1",
-  "size": "S",
+  "size": "M",
   "status": "done",
-  "closed": "2026-11-14",
   "source": {
-    "file": "next.config.ts",
-    "ref": "HYG-221 / HYG-224. Preview dpl_HdkU1usy (PR #4978) read the real number: next-build 6757 MB, container 7889 MB at 70 s, 7936 MB at 80 s, then the OOM kill at 'Collecting page data using 3 workers'."
+    "file": ".github/workflows/apply-migration.yml",
+    "ref": "Owner explicitly authorized secure push/merge/migrate automation. Existing dry-run43637695440 fails solely because SUPABASE_DB_URL is absent while the trusted readiness Management API credential works."
   },
-  "detail": "MEASURED 2026-11-14 on Vercel with the HYG-224 sampler. The `next-build` process (the Turbopack compile, invisible to the old sampler) climbs 2.0 GB at 10 s, 4.2 GB at 30 s, 5.8 GB at 60 s, 6.8 GB at 70 s. The compile finishes at 73 s and the process still holds about 6 GB when page-data collection forks 3 workers (about 330 MB each), putting the container at 7.93 GB of the 8 GB Standard machine. Whether a build survives is a coin toss on how much the compile peak and the workers overshoot, which is why one build in nine passed. This slice sets experimental.cpus to 1: about 660 MB less at the fullest moment, at the price of slower static generation. No route, budget or fan-out changed. The row closes on the setting; whether it holds is read from this PR's preview and the next production deploys, and HYG-221 stays the umbrella and closes on the 20-deploy criterion. If the compile peak itself must come down (the process alone reaches 6.8 GB), the next step is the compile, not the workers.",
-  "verify": { "kind": "cmd", "cmd": "node scripts/probes/page-data-workers-capped.mjs" },
-  "wave": "W7"
+  "detail": "The sanctioned main-only protected-environment workflow retains its admin-or-independent-head-review and GitHub Actions source checks, then uses a main-owned helper for both direct DB and canonical Frequency Community Management API transports. It verifies exact current main/head, trusted current-main readiness receipt and real evaluator provenance (actual one-or-two-job API shapes), complete reviewed source hashes/modes, migration hashes, unexpired registration, latest exact-head staging source/run/required replay-TAP-API-cleanup steps and production ledger. Final prewrite checks repeat bindings and latest provider facts. Only Git SQL blobs are read; no candidate JavaScript is installed or executed. Dry-run is the helper default and submits no writes. The official Management API read_only contract preserves raw SELECT results; non-2xx/unknown response shapes fail closed without exposing credentials or provider bodies. SQL and ledger insert share one transaction with advisory and exclusive ledger-table locks, exact in-transaction ledger assertion, local timeouts and no write retry. Conservative lexical parsing preserves quoted function bodies and strips only proven outer transactions; ambiguous ASCII/Unicode dollar identifiers, psql escapes and top-level controls refuse. The new immutable consequence probe fails on current main because apply-migration does not wire the existing Management API credential, then passes with the fallback and zero-query default dry-run. Focused protocol/security tests, independent source/provenance review and actual isolated PostgreSQL atomic rollback proofs are recorded after completion. No production migration dispatch, SQL application, feature activation, collector/publisher/registration/db-tests workflow edit, experiment source change, or existing test/probe/pin modification is included. Final local focused verification passes227 tests across5 files (39 new protocol/security cases plus unchanged readiness/publisher/migration/invocation suites), changed-file ESLint passes, and workflow contract passes. Root and independent provenance/security reviewers pass. Independent actual isolated PostgreSQL executes the final parser hash cff4b06c1062f1baa88f161149fb5ab2251819adbd57d5b15b5b6296d0e8aa56: body failures roll back DDL and ledger, successful DDL/ledger commit together, ledger-insert failure rolls back DDL, and ASCII/Unicode dollar-alias transaction escapes refuse. The actual reviewed analytics50000 SQL also commits successfully inside the wrapper with its exact ledger row in the isolated fixture. These are disposable local proofs, not live provider application. The official Management API OpenAPI contract confirms read_only and documented201 success; a real main-owned dry-run and actual application remain separate root-operated acceptance after publication. Required local check:backlog passes on the reviewed implementation with2699 entries and1006 agreeing probes, including the unchanged existing workflow/head-approval contracts. The immutable probe remains SHA25698f589c24354cea0dbef568503556457bb44488b38b58f935daa176e512a1e09. All actual provider write acceptance remains reserved for the root-operated main workflow after exact-head CI and publication.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/management-migration-apply.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
 }

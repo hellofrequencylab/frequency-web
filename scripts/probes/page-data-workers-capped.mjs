@@ -1,4 +1,4 @@
-// HYG-225: the Vercel build was OOM-killed when 'Collecting page data' forked 3 workers on top of a compile process still
+// HYG-226: the Vercel build was OOM-killed when 'Collecting page data' forked 3 workers on top of a compile process still
 // holding about 6 GB (container 7.93 of 8 GB, measured with the HYG-224 sampler). next.config.ts must cap the workers.
 // Exits 1 when experimental.cpus is not set to 1 or 2.
 import { readFileSync } from 'node:fs'
