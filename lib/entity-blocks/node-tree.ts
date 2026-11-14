@@ -71,7 +71,7 @@ export interface BlockNode {
 }
 
 /** The breakpoints that can override desktop content, keyed by content field. */
-export type NodeResponsive = Partial<Record<'tablet' | 'phone', Record<string, unknown>>>
+type NodeResponsive = Partial<Record<'tablet' | 'phone', Record<string, unknown>>>
 
 /** Read a stored `responsive` value: only the tablet and phone bags that are non-empty plain objects. */
 export function readResponsive(raw: unknown): NodeResponsive | undefined {
