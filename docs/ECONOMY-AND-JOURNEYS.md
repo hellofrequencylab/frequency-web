@@ -279,7 +279,7 @@ Daniel's November 14, 2026 direction makes support flexible and Expression an in
 The original requirements described above remain the contract for legacy participation;
 new behavior is scoped to an immutable recorded enrollment policy, not a global switch.
 Implementation: `lib/quest/support-policy.ts`, `support-policy-read.ts`, and `completion.ts`.
-Schema: `20270346049000_quest_support_policy.sql`. Release/activation status belongs to
+Schema: `20270346051000_quest_support_policy.sql`. Release/activation status belongs to
 LIVE-2291 in the merged ledger, not this document.
 
 A future enrollment receives version 2 only when its Journey is official and ranked-eligible,
