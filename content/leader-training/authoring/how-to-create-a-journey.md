@@ -1,154 +1,112 @@
 ---
 title: How to Create a Journey
-description: The Master Journey Template. A best-practice framework for building a Journey people actually finish, grounded in completion research, behavior design, and self-determination theory.
+description: An adaptable Journey framework with one anchor, optional supporting practices, expression and reflection.
 category: authoring
 order: 1
 audience: leader
 status: published
-updated: 2026-06-18
+updated: 2026-11-14
 ---
 
 # The Master Journey Template
 
-This is the recommended shape of a Journey. It is the framework the builder and Vera scaffold toward, and the rubric the Vera review gate reads. Start from it. You can depart from any part of it on purpose, but start from it.
+This is a starting shape, not a checklist for a balanced person. The builder offers it as a manual template, and Vera reads this guidance when helping an author review their plan. Keep, replace or remove suggestions to serve the Journey's intention. Do not treat equal Pillar counts, minutes or Zaps as a quality requirement.
 
-A Journey is a one-month **Run**: a small group of about eight to twelve people, with a **Host**, a fixed start, moving through the month together on a weekly drip. The template tells you what goes in each week and why. The point is not to fill in boxes. The point is to give people a month that changes something, and to make it the kind of month they finish.
+A Journey can be a one-month **Run** with a **Host** and a small Circle moving through weekly phases together. That is a useful starting structure, not a universal duration or group size. Solo participation and other rhythms remain valid. The author chooses what fits the people and purpose.
 
 ## The one thing to remember
 
-The content is not what makes people finish. Delivery, the group, and the first week are. A Journey is a container that good practices sit inside. Build the container first.
+Start with what people want support with. Give them an attainable next action and room to notice whether it helps. The point is what they carry into life, not how many boxes they complete.
 
 ## Build backward
 
-Name the outcome first. One plain line: what is different at the end of the month. Then name the evidence: what a person could point to that proves it took. Only then choose the practices, the challenge, and the assets that get them there. If you pick the practices first, you end up with a pile of nice activities and no shape. The outcome and its evidence are the shape.
+Name the intention in a plain line. What would participants like to explore or make room for? Name something they could notice or do, without promising a feeling or an outcome. Then choose the practices, teaching and invitations that serve it.
 
-## The best-practice principles
+## Principles for a useful Journey
 
-1. **Push, do not make them pull.** One clear thing arrives each day. Never build a library people have to remember to open. Self-paced courses finish under 15 percent. Daily-drip challenges finish at 70 to 80 percent.
-2. **The group carries it.** People finish in a group and quit alone. Group programs finish above 85 percent. Every Journey is built to be run by a Circle as a Run. Solo is an on-ramp, nudged toward a Run fast.
-3. **Hit the three needs.** People keep going when a Journey gives them autonomy (real choice), competence (visible progress), and relatedness (being seen). The game can fake choice and belonging. It cannot fake competence, so the practices have to produce progress a person can feel.
-4. **Win the first week.** Most people who quit, quit early. A Journey has to pay out a real win in its first days, or the rest never happens. Make the first three days unmissable.
-5. **The game is scaffolding, not the point.** Use Zaps and streaks to carry people to the real outcome, then get out of the way. Over-gamifying a Journey hollows it out.
+1. **Offer a clear next step.** Keep the next action small and easy to find. Be honest about the time and accessible alternatives.
+2. **Make room for people.** A Circle can offer companionship and support. A solo participant should still have a useful path, with invitations to connect rather than pressure.
+3. **Support choice, capability and connection.** Let people understand why something is suggested, try an attainable action, and decide what comes next.
+4. **Make returning welcoming.** Rest, a missed week, a swap or a change of direction does not make someone a failure. Published participation requirements still need to be explained clearly.
+5. **Keep rewards in their place.** Zaps and streaks can recognize participation. They do not measure wellbeing or prove that a person is balanced.
 
-## The month container
+## Mind, Body, Spirit and Expression
 
-A Journey is a month. That month has a frame, four Pillars carried every week, a four-week arc, a Run group, a Host, and two bookend phases.
+These are overlapping lenses, not four daily quotas.
 
-### The frame
+- **Mind:** attention, learning and reflection.
+- **Body:** movement, rest and physical care.
+- **Spirit:** presence, connection and meaning, in the participant's own terms.
+- **Expression:** making, speaking, helping, sharing or connecting.
 
-The Run is a fixed start and a small group. Aim for eight to twelve people. Big enough that a missing person does not stall the room, small enough that everyone is seen. Everyone starts together so the weekly drip lands for the whole group at once.
+A single practice can support several areas. A walk might offer movement, attention and connection. Singing may be expression and support at the same time. Choose associations the practice's content actually supports, without promising what everyone will feel.
 
-### The four Pillars
+Mind, Body and Spirit can support expression. Expression can also support us in return. People do not have to achieve harmony before they express themselves. They can keep expression private.
 
-Every week carries all four Pillars evenly.
+An intentional running Journey may emphasize Body. A creative Journey may emphasize Expression. Invite other kinds of support where they serve the intention, not to equalize a graph.
 
-- **Mind is mental health.** A clear, settled head.
-- **Body is physical health.** Movement, energy, sleep, the basics.
-- **Spirit is emotions and personal energy.** How you feel and how charged you are.
-- **Expression is the output.** What you put into the world when the other three are in balance. Expression shows up each week as the doing, not a quiet practice (see the weekly Expression Challenge below).
+## A starting container
 
-A good month touches all four every week. That is what keeps a Journey from being one-dimensional. A running Journey is not a running club. It is whole people who happen to bond over running, because the month rounds the running out across all four Pillars.
+A welcome and an intention can lead into weekly **Phases**, followed by a Close. One possible arc is **arrive, deepen, apply, integrate**. Change the length or arc when the work calls for it.
 
-### The four-week arc
+A **Run** can have a shared start, a **Host**, a Circle Meetup and a Weekend Gathering. These are useful invitations to connect, not a requirement that everyone participate in public or attend two touchpoints every week.
 
-Four week-**Phases**. A Phase is the system word for a week (one Phase is about one week). The arc runs: **arrive, deepen, apply, integrate.** Week one gets people in the door and moving. Week two goes deeper into the work. Week three takes it out into life. Week four lands it so it sticks past the month.
+## The Anchor practice
 
-### Onboarding and Close
+An **Anchor practice** is one practice to return to on a rhythm that fits the participant's life. It can be daily when appropriate, but a daily schedule is not the definition of a useful anchor. Rest, access needs and real circumstances matter.
 
-The four weeks are wrapped by two short phases.
+The new template starts with one neutral Anchor practice; it is not assigned to Mind before the author makes a choice. The author can choose from the library, write their own, replace it or remove it. The builder's missing-anchor guidance remains advisory and does not block publication.
 
-- **Onboarding** runs before week one. It gets people set up, names the outcome, sets the Anchor practice, and makes the first three days easy to win.
-- **Close** runs at the end. It carries the **capstone Expression Challenge** (below) and the moment the group marks what changed.
+The template marks its starting anchor as required for the author to review. Authors decide which activities belong in their published program and can change that flag before participants enroll. Do not silently change requirements for an existing enrollment.
 
-### The Host
+## Optional supporting practices
 
-A Run has a Host, never a facilitator. The Host holds the month: starts the Run, sets the tone, runs the touchpoints, and keeps the group moving. The Host does not have to be an expert. The Host has to keep showing up.
+The new template offers Mind, Body and Spirit suggestions. All are optional. Keep a suggestion, replace it, combine its support with another practice, or remove it. New optional support suggestions stay in the player without being automatically added to a participant's active practices. Participants can choose one through the existing practice adoption control. If the author makes a suggestion required or chooses it as the Anchor before enrollment, it joins the Journey's automatic practice targets. Existing unmarked Journey practices keep their prior adoption behavior. No equal count, duration or reward total is expected.
 
-## The weekly module
+Suggestions may refresh each week or stay fixed when repetition serves the intention. Neither option guarantees habit formation. Give a useful cue, such as "after breakfast," when the participant wants one, and allow a smaller or different action when needed.
 
-Each week (each Phase) carries the same set of parts. Same shape every week, fresh content. This rhythm is what people learn to trust.
+## Expression invitations
 
-### The lesson
+Ask: **What might you carry into your day?** Make something, speak honestly, help someone or connect. A paragraph written privately, a song to yourself or a conversation can be expression. Public posting is not the default proof.
 
-The week's focus. It has three parts and one reach-back.
+The weekly and Close invitations in new manual templates are optional extra-credit exercises. Existing bonus amounts and payout rules stay unchanged. Expression does not have to wait until other areas are balanced, and declining an invitation does not make a participant deficient.
 
-- **A hook.** One line that opens the week. The reason this week matters.
-- **One open question.** A single essential question the group sits with and discusses. Open, not a quiz. The kind of question that earns a different answer from each person.
-- **A short teaching.** A small amount of plain content that frames the week. Short. The teaching serves the practice, not the other way around.
-- **A reach-back.** A line that ties this week to the one before it, so the month reads as one arc and not four separate weeks.
+Official Quest qualification is a separate published contract. This authoring framework does not change an active enrollment's requirements or rewrite earned recognition.
 
-This is plain lesson content. There is no object called a "Mission" anywhere in a Journey. Mission is the movement's word and stays the movement's word.
+## Lessons and reflection
 
-### The Anchor practice
+A week's focus can include a hook, one open question, a short teaching and a reach-back to the previous week. Use what the intention needs. There is no separate object called a "Mission" in the Journey.
 
-The **Anchor practice** is one practice done daily, all month, unchanged. It is the keystone-habit through-line: the single thing a person does every single day from week one to the Close, no matter what else is rotating around it. By the end of the month it is the habit that stays.
-
-The Anchor practice is **strongly recommended, not required.** The builder prompts you to set one and warns you on save if it is missing, but it lets you proceed. A month without an Anchor works. A month with one works better, because the daily through-line is what the streak hangs on and what people point to at the Close.
-
-Note the word. **Anchor practice** is the noun for this month-long keystone practice. It is distinct from the verb "anchor a practice to a daily routine," which means tying any practice to an existing moment in your day. The Anchor practice is the one you anchor every day.
-
-### The three weekly practices
-
-One practice each for **Mind, Body, and Spirit.** Three practices. Each has a five-minute floor so it can be done on a bad day.
-
-By default the three weekly practices **refresh each week** so the month keeps moving and stays fresh. You can instead **hold them fixed** for the whole Journey if the work is better served by repetition. Rotation is the default; fixed is a deliberate choice. Either is fine.
-
-### The weekly Expression Challenge
-
-The Expression Pillar shows up each week as an active, social **Expression Challenge**, the doing, never a fourth quiet practice. Weekly Expression Challenges are **light**: small or no Zaps. One small reach a week.
-
-The **Close carries the capstone Expression Challenge**, and that one is **heavy.** It is the proof of the month and the most human part of it. It is one fun act that pushes a person out of their comfort zone through expression, done with or in front of people, with a solo fallback. It carries the Journey-completion reward. Do not cut it.
-
-So: small expressive reaches every week, building to one real expressive act at the Close.
-
-### The two touchpoints
-
-Two standing weekly touchpoints. The group chooses what each is for.
-
-- **The Circle Meetup.** Mid-week, in person or virtual. The group connects and processes the week together.
-- **The Weekend Gathering.** A weekend in-person social event that fits the group's vibe. Less about the work, more about the bonds the work is building.
-
-Both are built in and encouraged. The Host can shape them to the group.
-
-### The Reflection
-
-A **Reflection** checkpoint each week. A moment to name what landed and what did not. Reflection is how the week gets remembered instead of just done.
-
-## The anchor-and-rotation practice model
-
-Put the weekly module together and the practice picture is:
-
-- **One Anchor practice**, daily, fixed all month. Strongly suggested, warned on save if missing, never blocked.
-- **Three weekly practices** (Mind, Body, Spirit), rotating each week by default or held fixed by choice.
-- **One weekly Expression Challenge**, light, plus the **heavy capstone Expression Challenge** at the Close.
-
-The Anchor is the through-line. The three rotate (or hold). Expression is always the doing. That is the practice spine of the month.
+An optional **Reflection** can ask: "What supported you? What would you keep or change?" Do not require a private disclosure or infer how a participant feels from their practice history.
 
 ## How to build one
 
-1. Name the outcome in one line. If it sounds like a promise of transformation, rewrite it as the plain shift it creates.
-2. Name the evidence. What proves the outcome took.
-3. Set the Anchor practice. One thing, every day, all month. The builder will prompt you and warn on save if it is empty.
-4. Lay the four weeks: arrive, deepen, apply, integrate. Wrap them with Onboarding and Close.
-5. For each week, write the lesson: a hook, one open question, a short teaching, and a reach-back to last week.
-6. Choose the three weekly practices (Mind, Body, Spirit) and decide rotate or fixed. Each gets a five-minute floor.
-7. Write the weekly Expression Challenge light, and the capstone Expression Challenge heavy at the Close.
-8. Set the two touchpoints: the Circle Meetup mid-week, the Weekend Gathering on a weekend.
-9. Make the first three days unmissable. The first win comes fast.
-10. Name it plainly. One accent word. No kitsch, no ancient-wisdom dressing.
-11. Check it against the principles before shipping.
+1. Name the intention without an outcome promise.
+2. Choose an attainable first action.
+3. Suggest one Anchor practice and a useful rhythm, or deliberately leave it out.
+4. Shape the phases and explain the pace.
+5. Add only the teaching and supporting practices that serve the intention.
+6. Invite expression and connection with private and solo forms available.
+7. Offer reflection and ways to adapt or return.
+8. Review which activities are required before publication and explain those requirements clearly.
+9. Name it plainly. The author writes the name, story, instructions and participant-facing prose.
+10. Ask Vera for coaching questions when useful. She does not fill a week or decide what the author must write.
 
 ## Practices are open
 
-The library is a seed, not a cage. People create their own practices and tag them by Pillar and however else they want. The point is a life of intentional, integrated practices that feel natural, not a fixed checklist someone hands you. The library is the starter pack, not the whole set. A practice carries an owner and a tag set, so anyone can add their own and file it where it belongs.
+The library is a seed, not a cage. People can create practices and describe the areas they may support. Preserve the author's intention and the participant's choice. A useful Journey is a rhythm that serves its people, not a perfect four-part graph.
 
-## Fixed mechanics (do not reinvent)
+## Existing official Quest mechanics
 
-- Log a practice: Daily 10, three-times-a-week 15, weekly 25 Zaps (cadence sets the value, not effort). Practices without an explicit value fall back to light 8, standard 12, heavy 15.
-- Finish a Journey: complete the month and the capstone. Pays **+75 Zaps and a Pillar Trophy** (Mind, Body, or Spirit).
-- The capstone Expression Challenge pays **+50 Zaps in person at a Circle, or +30 Gems posted solo online**, and is required to finish the Journey.
-- Finish all three Journeys in a season: **Master** rank and the **Certificate** (a unique cosmetic and 100 Gems).
+This framework changes new authoring suggestions, not reward amounts or existing completion contracts:
+
+- Log a practice: Daily 10, three-times-a-week 15, weekly 25 Zaps when the explicit cadence value is set. Practices without an explicit value retain light 8, standard 12, heavy 15 fallbacks.
+- Existing official Journey qualification retains its published month and Expression capstone requirements, with **+75 Zaps and a Pillar Trophy** for completion.
+- Its Expression Challenge retains **+50 Zaps in person at a Circle, or +30 Gems posted solo online**, under the existing qualification policy.
+- Finish all three official Journeys in a season: **Master** rank and the **Certificate** (a unique cosmetic and 100 Gems).
+
+Versioned changes to official participation requirements belong to their own policy release. Do not use a template suggestion or review recommendation to alter active enrollments or pay a reward twice.
 
 ## Voice
 
-Plain sentences. Proper nouns carry the weight, the rest stays ordinary. No em dashes. One accent word per name. Specific sensory outcomes and honest time asks. Never narrate the member's feelings for them.
+Plain sentences, no em dashes, no hard outcome claims. Never narrate the member's feelings for them. Judge a Journey by its intention, clarity, attainable actions, accessibility and room for choice, not equal Pillar coverage.

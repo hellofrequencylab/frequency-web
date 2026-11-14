@@ -9,8 +9,8 @@ import {
   masterWeekRows,
   masterOnboardingRows,
   masterCloseRows,
-  type ComposedRow,
-} from './compose'
+} from './support-template'
+import type { ComposedRow } from './compose'
 import type { ComposePillar } from '@/lib/ai/journey-composition'
 
 interface TemplateLesson {
@@ -118,18 +118,17 @@ interface TemplateBlockRow {
 //
 // The single "stamp it to the recommended shape" template. Unlike the simple skeleton templates
 // above (Phase → Module → Lesson with just a type + title), every block here carries its real
-// content: the anchor flag, a Pillar `domain_id`, and the Expression Challenge's extra-credit
+// content: the anchor flag, a support `domain_id`, and optional expression extra-credit
 // settings. So its rows are full ComposedRow blocks (the same shape compose.ts stamps), built once
-// in compose.ts and reused here — the one definition the template AND any future Vera fill share.
+// in support-template.ts and reused here. Vera offers questions rather than filling these rows.
 //
-// Shape: an Onboarding phase (welcome + the ANCHOR practice + an intro prompt) → N week-Phases (the
-// week's focus lesson + Mind/Body/Spirit practices + a LIGHT weekly Expression Challenge + a
-// reflection) → a Close phase (the HEAVY capstone Expression Challenge + a final reflection).
+// Shape: welcome + one neutral anchor → N weeks of a focus lesson and optional supports,
+// expression and reflection → an optional expression/reflection Close. Only new templates change.
 
 export const MASTER_FRAMEWORK_ID = 'master-framework'
 
 /** Options for stamping the Master Framework. `fixed` toggles the weekly-practice rotation:
- *  default (false) leaves DISTINCT placeholder slots per week for Vera/the author to fill with
+ *  default (false) leaves DISTINCT placeholder slots per week for the author to fill with
  *  different practices each week; `fixed: true` stamps the SAME Mind/Body/Spirit slots into every
  *  week (held fixed for the whole Journey). This is a scaffold-time choice, never persisted. */
 interface MasterFrameworkOptions {
@@ -141,7 +140,7 @@ interface MasterFrameworkOptions {
 export const MASTER_FRAMEWORK = {
   id: MASTER_FRAMEWORK_ID,
   name: 'Master Framework',
-  description: 'The recommended shape, ready to fill: a welcome, weekly practices across the Pillars, an Expression Challenge each week, and a capstone to finish.',
+  description: 'A starting rhythm you can adapt: one anchor, optional supporting practices, expression and reflection.',
   emoji: '🧭',
 } as const
 
@@ -165,7 +164,7 @@ interface MasterBlockRow {
 /** Build the Master Framework's phase list (Onboarding → N weeks → Close) for the given Pillar ids.
  *  When `fixed` is true the same weekly practice slots repeat each week; otherwise each week gets a
  *  distinct set of placeholder slots (identical shape, filled differently later). The shape is the
- *  same either way — "fixed" only changes how the author/Vera treats the slots downstream. */
+ *  same either way; "fixed" only changes how the author treats the slots downstream. */
 function masterFrameworkPhases(
   pillarIds: Partial<Record<ComposePillar, string>>,
   opts: MasterFrameworkOptions = {},
@@ -186,7 +185,7 @@ function masterFrameworkPhases(
       blocks: heldFixed ? heldFixed.map((r) => ({ ...r })) : masterWeekRows(pillarIds),
     })
   }
-  phases.push({ title: 'Close', body: 'The finish line. Ship the capstone and look back.', blocks: masterCloseRows(pillarIds) })
+  phases.push({ title: 'Close', body: 'Look back, choose what to keep, and make room for expression in your own way.', blocks: masterCloseRows(pillarIds) })
   return phases
 }
 

@@ -25,7 +25,7 @@ import { listReadFailClosed } from '@/lib/discover'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { adoptPracticesForJourney, retireJourneyPracticeRows } from '@/lib/practices'
-import { computeLegTargets } from '@/lib/journeys/leg-targets'
+import { automaticallyAdoptsPractice, computeLegTargets, type BlockRowWithSettings } from '@/lib/journeys/leg-targets'
 import type { JourneyMeeting } from '@/lib/journeys/meeting'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { log } from '@/lib/log'
@@ -983,10 +983,11 @@ export async function isPlanAdopted(profileId: string, planId: string): Promise<
 
 /** The distinct practice ids a plan's block tree carries (phase/module blocks are null). */
 async function listPlanPracticeIds(planId: string): Promise<string[]> {
-  const { data: itemRows } = await db().from('journey_plan_items').select('practice_id').eq('plan_id', planId)
+  const { data: itemRows } = await db().from('journey_plan_items').select('practice_id, required, settings').eq('plan_id', planId)
   return [
     ...new Set(
-      ((itemRows as { practice_id: string | null }[] | null) ?? [])
+      ((itemRows as Array<Pick<BlockRowWithSettings, 'practice_id' | 'required' | 'settings'>> | null) ?? [])
+        .filter(automaticallyAdoptsPractice)
         .map((r) => r.practice_id)
         .filter((id): id is string => !!id),
     ),
@@ -1029,7 +1030,7 @@ async function planEnrollTargetIds(planId: string, anchorStart: Date | null, str
       required: (r.required as boolean) ?? true,
       est_minutes: (r.est_minutes as number) ?? null,
       practice_id: (r.practice_id as string) || null,
-      settings: (r.settings as { anchor?: boolean } | null) ?? null,
+      settings: (r.settings as BlockRowWithSettings['settings']) ?? null,
     }))
     const { data: planRow, error: planError } = await db()
       .from('journey_plans')
@@ -1041,7 +1042,7 @@ async function planEnrollTargetIds(planId: string, anchorStart: Date | null, str
     const drip = Number((planRow as { drip_interval_days: number | null } | null)?.drip_interval_days ?? 7)
     const targets = computeLegTargets(blocks, anchorStart, drip)
     if (targets.weeks > 0) return targets.targetIds
-    if (strict) return [...new Set(blocks.map((block) => block.practice_id).filter((id): id is string => !!id))]
+    if (strict) return [...new Set(blocks.filter(automaticallyAdoptsPractice).map((block) => block.practice_id).filter((id): id is string => !!id))]
     return listPlanPracticeIds(planId)
   } catch (error) {
     if (strict) throw error

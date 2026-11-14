@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2290",
+  "title": "Offer adaptable Journey anchors, supports and private expression",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/JOURNEYS.md",
+    "ref": "Daniel's approved support/practice/expression strategy and request to implement every phase with three review passes, 2026-11-14."
+  },
+  "detail": "New manual scaffolds and Master Framework templates share deterministic pure row factories: one neutral anchor, optional Mind/Body/Spirit support suggestions, optional private-capable expression and optional reflection. Authors keep their existing edit/remove/required controls. The explicit scaffold only inserts into an empty or new phase and does not rewrite existing authored rows or enrolled official Quest requirements. Vera builder and template-picker copy now describe coaching and an adaptable starting rhythm; the fixed authoring rubric and Journey template spec match that model. Existing optional extra-credit amounts remain 10 weekly and 25 for manual/Close; grants only imports/re-exports the unchanged default from a neutral leaf, with reward writes/identities unchanged. The consequence probe failed on main 9fd87ee37 because the shared flexible row model did not exist and passes on this implementation. Focused tests cover the real scaffold authorization boundary, existing-row preservation, actual template flattening, optional private expression and real UI entry wording. No production SQL, sends, flags, price, reward amounts or historical recognition changed. Local implementation, independent review and final regression/render passes are separate from CI, preview and authenticated production acceptance. Independent review found and corrected a real optionality gap: new support_suggestion-marked, required:false practice rows remain playable but do not auto-adopt at enrollment or rollover; explicit Anchor/required choices and unmarked legacy optional rows retain prior behavior. Both enrollment fallback paths use the same eligibility predicate. Portable v1 export/import additively carries only an exact true supportSuggestion marker, omitting it for legacy rows and never passing practice IDs, private notes or arbitrary reward settings. Current final local verification: 113 focused tests across 20 files and warning-free ESLint across 22 changed TypeScript files passed. Three actual UI surfaces rendered with synthetic author data at all five required widths (15 images) with no horizontal overflow or unnamed buttons; these are not real authenticated acceptance. A second new immutable consequence probe reproduces the automatic-adoption regression against byte-identical main leg-target/tree/schedule/portable modules, failing semantically when a marked optional suggestion is included; both consequence probes pass after the fix. The independent final peer pass reproduced the promoted-Anchor portable conversion and guarded coaching-save cases; exact true markers are exported only for genuinely optional non-Anchor suggestions. Coaching saves read existing plan/id-scoped practice metadata and merge the bounded prompt, retaining support, Anchor and other existing flags; failed/missing/wrong-kind reads make no write.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/journey-support-template.mjs && node --experimental-strip-types --no-warnings scripts/probes/journey-support-adoption.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}

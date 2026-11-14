@@ -103,6 +103,8 @@ interface PortableLesson {
   est_minutes: number | null
   /** Does this leaf gate course completion (journey_plan_items.required). */
   required: boolean
+  /** Additive v1 metadata for new optional support suggestions. No IDs or arbitrary settings. */
+  supportSuggestion?: true
 }
 
 /** The versioned, portable JSON a Journey serializes to — the federated contract. */
@@ -188,6 +190,8 @@ export interface PortableSourceRow {
   note?: string | null
   required?: boolean | null
   est_minutes?: number | null
+  /** Read only the explicit support marker; no private or reward settings are exported. */
+  settings?: unknown
 }
 
 /** Serialize a journey_plan + its flat item rows into the versioned PortableJourney tree. Pure: no
@@ -219,6 +223,9 @@ export function toPortable(
     note: noteOf(row),
     est_minutes: row.est_minutes ?? null,
     required: row.required ?? true,
+    ...(row.block_type === 'practice' && row.required === false && row.settings && typeof row.settings === 'object' && !Array.isArray(row.settings)
+      && (row.settings as Record<string, unknown>).support_suggestion === true
+      && (row.settings as Record<string, unknown>).anchor !== true ? { supportSuggestion: true as const } : {}),
   })
 
   const buildChildren = (parentId: string | null): PortableItem[] =>
@@ -268,6 +275,8 @@ interface PortableBlockRow {
   required: boolean
   estMinutes: number | null
   sortOrder: number
+  /** Only the explicit prospective support marker is reconstructed, never arbitrary settings. */
+  settings?: { support_suggestion: true }
 }
 
 interface FromPortableResult {
@@ -301,6 +310,7 @@ export function fromPortable(portable: PortableJourney): FromPortableResult {
       required: lesson.required,
       estMinutes: lesson.est_minutes,
       sortOrder,
+      ...(lesson.block_type === 'practice' && lesson.supportSuggestion === true ? { settings: { support_suggestion: true as const } } : {}),
     })
   }
 
