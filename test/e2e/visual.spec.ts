@@ -464,6 +464,8 @@ test.describe('visual · header band', { tag: '@visual' }, () => {
 // The editor's Spotlight (PROG-E3, LIVE-1170): the picture a node-tree render has to match. Anonymous,
 // first screen only, desktop and mobile. Adds nothing until PW_SPOTLIGHT_HANDLE is set. The loop
 // existed in surfaces.ts but no describe walked it, so the capture run photographed nothing.
+// The Site (LIVE-2232) joins the same loop once PW_SITE_URL names a published Site's own https origin:
+// its surface path is absolute, so `page.goto` leaves PW_BASE_URL for the Site's host.
 test.describe('visual · editor', { tag: '@visual' }, () => {
   test.skip(
     !baseURL,

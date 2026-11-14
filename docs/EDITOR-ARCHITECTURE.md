@@ -50,7 +50,10 @@ Two facts settle it:
   happened to mount the component.
 - **Give Site the four things email got**: legality (`kinds`), a column ceiling, a palette allowlist,
   and a renderer. Site's renderer is the web one, so it is the cheapest of the four surfaces to add
-  — but it needs a surface filter, which currently lives only in git history. ✅ **The published flag
+  — but it needs a surface filter. ✅ **The Site surface filter is back, dark** (LIVE-2232): a registry
+  block marked `notOnSite` (`blockRendersOnSite`, `siteSurfaceRows` in `lib/entity-blocks/layout.ts`)
+  leaves the Site's rows only with `EDITOR_CANVAS` on, so the Site is unchanged until its `editor-site`
+  picture (`PW_SITE_URL`, `test/e2e/surfaces.ts`) can diff the switch. ✅ **The published flag
   is live**: `lib/spaces/website.ts` exports `readWebsitePublished`, the `setWebsitePublished` server
   action exists, and `space-page-panel.tsx` exposes the operator toggle.
 
