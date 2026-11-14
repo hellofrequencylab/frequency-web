@@ -54,7 +54,7 @@ function fixture(){
    const synthetic={name:'migration-readiness',run_id:700,run_attempt:1,head_sha:head,runner_id:null,...complete,check_run_url:`https://api.github.com/repos/${REPO}/check-runs/900`,steps:[]}
    return {total_count:data.jobCount,jobs:data.jobCount===1?[actual]:[actual,synthetic]}
   }
-  if(path.includes('/actions/runs/600/'))return {total_count:1,jobs:[{head_sha:head,...complete,check_run_url:`https://api.github.com/repos/${REPO}/check-runs/601`,steps:data.stageSteps}]}
+  if(path.includes('/actions/runs/600/'))return {total_count:1,jobs:[{id:601,name:'db-tests',run_id:600,run_attempt:1,runner_id:42,head_sha:head,...complete,check_run_url:`https://api.github.com/repos/${REPO}/check-runs/601`,steps:data.stageSteps}]}
   if(path.endsWith('/check-runs/800'))return check(800,'migration-readiness-runner')
   if(path.endsWith('/check-runs/601'))return check(601,'db-tests')
   throw Error('Unexpected API path')
@@ -136,4 +136,18 @@ describe('one atomic reviewed transaction',()=>{
  it('preserves statements after CR comments',()=>{expect(migrationBody('-- comment\rselect 1;')).toBe('select 1;')})
  for(const unsafe of ['select 1 as a$hidden$; commit; select 2 as b$hidden$;','select 1 as é$hidden$; commit; select 2 as b$hidden$;',String.raw`\i file.sql`,String.raw`select E'a\'b'; commit;`,'begin;select 1;rollback;','select 1;commit;','set statement_timeout=0;select 1;'])it('refuses ambiguous/control SQL before execution',()=>{expect(()=>migrationBody(unsafe)).toThrow()})
  it('binds source hash and contains lock, exact ledger check and insert in one transaction',()=>{const t=migrationTransaction({sql,version:'20270101000000',name:'fixture',sha256:migrationDigest(sql),ledger});expect(t).toContain('in exclusive mode');expect(t).toContain('pg_advisory_xact_lock');expect(t).toContain("lock_timeout = '10s'");expect(t.indexOf('create table fixture_atomic')).toBeLessThan(t.indexOf('insert into supabase_migrations'));expect(t.trim().endsWith('commit;')).toBe(true);expect(()=>migrationTransaction({sql,version:'20270101000000',name:'fixture',sha256:'0'.repeat(64),ledger})).toThrow()})
+})
+
+it('apply planner accepts authenticated failed publisher metadata in the successful staging suite',async()=>{
+ const f=fixture(),original=f.api
+ const metadata={id:602,name:'migration-readiness',run_id:600,run_attempt:1,runner_id:null,head_sha:head,status:'completed',conclusion:'failure',steps:[],check_run_url:`https://api.github.com/repos/${REPO}/check-runs/602`}
+ f.api=async path=>{
+  if(path.includes('/actions/runs/600/')){const inventory=await original(path);return {total_count:2,jobs:[...inventory.jobs,metadata]}}
+  if(path.endsWith('/check-runs/602'))return {...metadata,app,external_id:`migration-readiness:701:1:7:${base}:${head}`,details_url:`https://github.com/${REPO}/runs/602`}
+  if(path.endsWith('/actions/runs/701/attempts/1'))return {...f.data.trustedRun,id:701,path:'.github/workflows/migration-readiness.yml',head_repository:{full_name:REPO}}
+  return original(path)
+ }
+ const plan=await collectApplyPlan(f)
+ expect(plan).toBeTruthy()
+ expect(f.data.writeCalls).toBe(0)
 })
