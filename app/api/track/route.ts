@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
   // Consent gate (ADR-069): no analytics consent → silently drop (SCAN-765).
   if (!(await hasConsent(profile.id, 'analytics'))) return new NextResponse(null, { status: 204 })
 
-  await track(event, body.props ?? {}, profile.id)
+  // The browser owns its Google event. This authenticated sink records its first-party copy only.
+  await track(event, body.props ?? {}, profile.id, { mirrorGa: false })
   return new NextResponse(null, { status: 204 })
 }

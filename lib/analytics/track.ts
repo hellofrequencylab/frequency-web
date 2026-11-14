@@ -68,6 +68,8 @@ export async function track(
     idempotencyKey?: string
     /** Browser GA identity. Signup and durable-lead mirrors require this instead of a synthetic ID. */
     gaIdentity?: GaIdentity | null
+    /** The client collector records only first-party data; its browser already owns Google delivery. */
+    mirrorGa?: boolean
   } = {},
 ): Promise<boolean> {
   if (!isTrackedEvent(event)) return false
@@ -96,6 +98,7 @@ export async function track(
   // drops the repeat; the GA4 mirror must too, or every later sign-in re-sends it and a conversion
   // counts once per login instead of once per person.
   if (opts.idempotencyKey && !recorded) return false
+  if (opts.mirrorGa === false) return recorded
   if (event === 'lead.captured') {
     const identity = opts.gaIdentity
     const source = gaParams.source
