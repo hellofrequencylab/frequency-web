@@ -35,9 +35,6 @@ vi.mock('@/lib/analytics/track', () => ({
     return Promise.resolve()
   },
 }))
-// Staff/account audience behavior is exercised against trusted resolution in the
-// separate audience regression suite; these cases retain their original consent fixture.
-vi.mock('@/lib/analytics/audience', () => ({ currentAnalyticsAudience: async () => ({ allowed: true, staff: false }) }))
 
 import { POST } from './route'
 
