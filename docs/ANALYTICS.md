@@ -190,6 +190,7 @@ Every key action in the member journey emits a named event. Initial set:
 | Event | Emitted when | Key props |
 |---|---|---|
 | `account.created` | new auth user / profile row | source (oauth/email) |
+| `lead.captured` | server-confirmed durable lead saved; stable key deduplicates retries | closed source only |
 | `onboarding.induction_completed` ✅ | beta induction finished | hasAvatar, hasIntent |
 | `onboarding.vera_opened` ✅ | reached the Vera concierge | — |
 | `onboarding.step_viewed` | a tour coachmark shows | step id |
@@ -239,6 +240,10 @@ build time.
 - **Acquisition in the dashboard:** pull GA's headline metrics through the **GA Data API**
   (service account; this is what the Google Analytics MCP also uses) as a dashboard widget — or,
   simplest, link out to GA. Open decision.
+
+### Durable lead conversion mirror
+
+`recordVerifiedLeadCapture` is called only after the capture RPC returns a durable lead ID. Its server-only `lead.captured` event records the first-party fact and maps to GA4 `generate_lead` only on the first ledger insert. Browser identity is required; missing identity and explicit-null background captures never get a synthetic Google ID. The lead-only mirror rechecks canonical browser consent and the verified account’s analytics choice, excludes actual platform and team staff even during role previews, and withholds on unavailable identity or staff evidence. Google receives only `lead_source` from the closed source catalog, never contact details, the lead ID or private practice context. A declined or unavailable mirror does not remove the already accepted first-party fact. This conversion is prospective; it does not backfill historical Google events.
 
 ## Privacy
 
