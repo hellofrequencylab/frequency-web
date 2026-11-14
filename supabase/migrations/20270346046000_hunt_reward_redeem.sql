@@ -22,6 +22,8 @@ alter table public.hunt_reward_grants add column if not exists redeemed_venue_sp
 alter table public.hunt_reward_grants add column if not exists voided_at timestamptz;
 alter table public.hunt_reward_grants add column if not exists void_reason text;
 
+create index if not exists hunt_reward_grants_redeemed_by_idx on public.hunt_reward_grants(redeemed_by) where redeemed_by is not null;
+
 do $$
 begin
   if not exists (select 1 from pg_constraint where conname = 'hunt_reward_grants_void_reason_len') then
