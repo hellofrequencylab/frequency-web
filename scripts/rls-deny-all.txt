@@ -221,6 +221,8 @@ hunt_staff_nonces
 # FH-021 Frequency Hunts reward specs and grants: service role only; written by hunt_reward_grant.
 hunt_rewards
 hunt_reward_grants
+# FH-018S Frequency Hunts reports: service role only; written by hunt_report_file.
+hunt_reports
 # FH-024 Frequency Hunts consent ledger, suppressions, tenant-scoped leads and privacy requests: service role only; written by the hunt_consent_* and hunt_privacy_request functions.
 hunt_consent_events
 hunt_contact_suppressions

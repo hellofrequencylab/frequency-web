@@ -358,6 +358,9 @@ hunt_reward_grant internal
 # Hunt reward redemption (FH-022): service role only.
 hunt_reward_redeem internal
 hunt_reward_void internal
+# Hunt reports and the pause switch (FH-018S): service role only.
+hunt_report_file internal
+hunt_moderate internal
 # Hunt consent ledger (FH-024): service role only.
 hunt_consent_events_guard internal
 hunt_consent_record internal

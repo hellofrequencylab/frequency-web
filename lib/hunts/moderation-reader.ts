@@ -6,6 +6,8 @@ export type HuntModerationScope = Readonly<{ huntIds: readonly string[] }>
 type HuntModerationCase = Readonly<{
   huntId: string
   title: string
+  /** What the Trail is doing now, in the player's words: running, paused or closed. */
+  state?: 'published' | 'paused' | 'closed'
   reports: Parameters<typeof triage>[0]
 }>
 
