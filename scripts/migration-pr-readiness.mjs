@@ -1,3 +1,4 @@
+import { stagingJobInventory } from './lib/staging-job-inventory.mjs'
 // PR readiness only. The isolated PR-target workflow checks out the fresh main Git blob;
 // it executes no candidate code and accepts no caller-supplied ledger or approval JSON.
 // Main pushes continue through the unchanged strict check-migrations.mjs path.
@@ -184,14 +185,7 @@ export async function collectReadiness({ env, event, git, api, ledger, collector
   const run = candidates[0]
   requireFact(run?.status === 'completed' && run.conclusion === 'success' && Number.isSafeInteger(run.id) && Number.isSafeInteger(run.run_attempt), 'latest exact-head staging is not successful')
   const jobs = await api(`/repos/${REPOSITORY}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`)
-  requireFact(Array.isArray(jobs?.jobs) && jobs.jobs.length > 0 && Number.isSafeInteger(jobs.total_count) && jobs.total_count === jobs.jobs.length && jobs.total_count <= 100 && jobs.jobs.every(j => j.status === 'completed' && j.conclusion === 'success' && j.head_sha === headSha), 'incomplete staging job inventory')
-  for (const job of jobs.jobs) {
-    const checkId = /\/check-runs\/(\d+)$/.exec(job.check_run_url ?? '')?.[1]
-    requireFact(checkId, 'staging check identity missing')
-    const check = await api(`/repos/${REPOSITORY}/check-runs/${checkId}`)
-    requireFact(check?.app?.slug === 'github-actions' && check.app.id === 15368 && check.head_sha === headSha && check.status === 'completed' && check.conclusion === 'success', 'untrusted staging check publisher')
-  }
-  const steps = jobs.jobs.flatMap(j => j.steps ?? [])
+  const { steps } = await stagingJobInventory({ inventory: jobs, run, pr: number, base: baseSha, head: headSha, api })
   for (const name of registration.requiredSteps) requireFact(steps.filter(s => s.name === name && s.conclusion === 'success').length === 1, 'required reviewed staging step missing/duplicated')
   // The decision kernel retains the original independent full-replay/TAP/API/cleanup requirements.
   const staging = { id: run.id, repository: REPOSITORY, app: 'github-actions', event: run.event, headSha, workflowPath: workflow.path, status: run.status, conclusion: run.conclusion, steps }
