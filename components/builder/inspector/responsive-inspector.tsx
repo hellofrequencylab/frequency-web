@@ -107,7 +107,7 @@ function InspectorForm({
               )}
               <div className="flex min-h-11 flex-wrap items-center justify-between gap-2">
                 <span id={noteId} className="mu-hint">{provenance(device, source)}</span>
-                {overridden && device !== 'desktop' ? (
+                {overridden ? (
                   <Button
                     type="button"
                     variant="ghost"

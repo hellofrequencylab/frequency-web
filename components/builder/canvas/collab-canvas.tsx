@@ -119,6 +119,7 @@ export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspect
         </div>
         {inspector && (
           <div data-inspector-preview="" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid currentColor' }}>
+            {/* token-ok: preview mimics the page's own eyebrow size, not a UI chrome size */}
             {shown('eyebrow') && <p style={{ margin: 0, fontSize: 12, textTransform: 'uppercase' }}>{shown('eyebrow')}</p>}
             <p style={{ margin: '4px 0', fontSize: device === 'phone' ? 24 : 32, fontWeight: 700 }}>{shown('title') || inspector.title}</p>
             {shown('subtitle') && <p style={{ margin: 0 }}>{shown('subtitle')}</p>}
