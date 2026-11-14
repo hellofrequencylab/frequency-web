@@ -2022,6 +2022,13 @@
           "headMode": "100644"
         },
         {
+          "file": "scripts/templates-baseline.txt",
+          "status": "modified",
+          "sha256": "2a1b928b6ce1b66caff979a0b00edd5c42da44928b20a0d26a1040c439e115a9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
           "file": "supabase/migrations/20270346047000_hunt_moderation.sql",
           "status": "added",
           "sha256": "50791a564015acda9892dabfb65828cc3a7b49657258638fca19aec947217951",
