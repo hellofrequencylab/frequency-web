@@ -12,6 +12,7 @@ try {
 const base = status.API_URL
 const endpoint = new URL(base)
 assert.ok(['127.0.0.1', 'localhost'].includes(endpoint.hostname) && endpoint.protocol === 'http:', 'Only local Supabase API is permitted')
+assert.ok(!endpoint.username && !endpoint.password, 'Local API URL must not contain credentials')
 const anon = status.ANON_KEY, service = status.SERVICE_ROLE_KEY
 assert.ok(anon && service, 'Locally generated API keys required')
 const users = [], checks = []
@@ -23,6 +24,8 @@ let ownedPilot = null
 async function request(path, token, method = 'GET', body) {
   const response = await fetch(base + path, {
     method,
+    redirect: 'error',
+    signal: AbortSignal.timeout(10_000),
     headers: { apikey: token === service ? service : anon, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   })
