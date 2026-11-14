@@ -11,13 +11,13 @@ assert.equal(document.version, 1)
 const matches = document.registrations.filter(entry => entry.pullRequest === 4930)
 assert.equal(matches.length, 1, 'Exactly one main-side reviewed experiment registration is required')
 const registration = matches[0]
-const file = 'supabase/migrations/20270346046500_analytics_experiments.sql'
+const file = 'supabase/migrations/20270346050000_analytics_experiments.sql'
 const sqlHash = 'ebefee10a1e936f2e7516ecd6a70fb1242ce0638bedf517522ecbdfb6cb894bb'
 const apiStep = 'Real local service, anon and authenticated analytics experiment API acceptance'
 const requiredSteps = ['Start local Supabase (applies all migrations)', 'Run pgTAP RLS/RPC tests', 'Refuse an unstated permanent skip in the TAP output', apiStep, 'Always destroy dispatched staging containers and volumes']
 assert.deepEqual(registration.migrations, [{ file, sha256: sqlHash }])
 assert.equal(registration.reviewedChanges.length, 32)
-assert.equal(hash(registration.reviewedChanges), '537c22c3d9153e2c6ee93ae23e16c8f395f634cc8ef14ef9b3ad3e63e83bfba6', 'The complete reviewed source, harness, tests and file modes must remain frozen')
+assert.equal(hash(registration.reviewedChanges), 'a94c52b99a54831504f489848b81e47a122c3f1ff15ecba72141723b94b3a9f8', 'The complete reviewed source, harness, tests and file modes must remain frozen')
 assert.equal(registration.workflowPath, '.github/workflows/db-tests.yml')
 assert.equal(registration.workflowSha256, '522262e06e8c2928e73aaf8528faae02a7d3a74116fbe85995df9c3ae3cc6b18')
 assert.equal(registration.expiresAt, '2026-11-21T23:59:59Z')
@@ -27,7 +27,7 @@ assert.deepEqual(registration.requiredSteps, requiredSteps)
 // Exercise the real decision kernel using the actual registered source inventory and explicit
 // synthetic identities/staging success. The collector must independently obtain real facts.
 const baseRows = Array.from({ length: 400 }, (_, i) => ({ version: String(20240101000000 + i), name: `existing_${i}`, sha256: 'a'.repeat(64) }))
-const added = { version: '20270346046500', name: 'analytics_experiments', sha256: sqlHash }
+const added = { version: '20270346050000', name: 'analytics_experiments', sha256: sqlHash }
 const facts = {
   event: 'pull_request', repository: 'hellofrequencylab/frequency-web', sameRepository: true, baseBranch: 'main',
   baseSha: 'synthetic-base', currentBase: 'synthetic-base', headSha: 'synthetic-head', currentHead: 'synthetic-head',
