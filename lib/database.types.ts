@@ -9582,6 +9582,67 @@ export type Database = {
           },
         ]
       }
+      loom_functions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          declaration: Json
+          id: string
+          slug: string
+          space_id: string
+          surface: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          declaration: Json
+          id?: string
+          slug: string
+          space_id: string
+          surface: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          declaration?: Json
+          id?: string
+          slug?: string
+          space_id?: string
+          surface?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loom_functions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loom_functions_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loom_functions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_listings: {
         Row: {
           author_id: string | null

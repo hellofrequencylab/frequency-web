@@ -71,6 +71,44 @@ export function runningPeakReporter(write = console.log) {
   }
 }
 
+const CONTAINER_REPORT_MS = 10_000
+const CGROUP_FILES = [
+  ['/sys/fs/cgroup/memory.current', '/sys/fs/cgroup/memory.peak'],
+  ['/sys/fs/cgroup/memory/memory.usage_in_bytes', '/sys/fs/cgroup/memory/memory.max_usage_in_bytes'],
+]
+
+/** HYG-224: the whole container's memory, which is what the kernel kills on, not just the `next`
+ *  processes. On 2026-11-14 eight production builds in a row died ~80 s into the compile while this
+ *  sampler read 86 MB: the process doing the compile is not counted by `isNextProcess`. */
+export function readContainerMemory(read = (f) => readFileSync(f, 'utf8')) {
+  for (const [cur, peak] of CGROUP_FILES) {
+    try {
+      const currentMb = Math.round(Number(read(cur)) / 1048576)
+      let peakMb = currentMb
+      try { peakMb = Math.max(currentMb, Math.round(Number(read(peak)) / 1048576)) } catch { /* no peak file */ }
+      if (Number.isFinite(currentMb)) return { currentMb, peakMb }
+    } catch {
+      /* try the next cgroup layout */
+    }
+  }
+  return null
+}
+
+/** The largest processes by resident memory, any command, so a build killed with the sampler still
+ *  names who grew. `procs` is [{ name, rssKb }]. */
+export function topProcesses(procs, n = 3) {
+  return [...procs].sort((a, b) => b.rssKb - a.rssKb).slice(0, n)
+}
+
+/** One log line for the container reading plus the biggest processes. */
+export function containerLine(container, procs, elapsedMs) {
+  const head = container
+    ? `container ${container.currentMb} MB now, ${container.peakMb} MB peak`
+    : 'container memory unreadable (no cgroup files)'
+  const top = topProcesses(procs).map((p) => `${p.name} ${Math.round(p.rssKb / 1024)} MB`).join(', ') || 'none'
+  return `check-build-memory: ${Math.floor(elapsedMs / 1000)}s ${head}; biggest processes: ${top}.`
+}
+
 function kb(status, key) {
   const m = status.match(new RegExp(`^${key}:\\s+(\\d+) kB`, 'm'))
   return m ? Number(m[1]) : 0
@@ -80,11 +118,20 @@ function sample() {
   const hwm = new Map()
   const started = Date.now()
   const reportPeak = runningPeakReporter()
+  let nextContainerAt = 0
   let concurrentKb = 0
   const tick = () => {
     let nowKb = 0
+    const all = new Map()
     for (const pid of readdirSync('/proc')) {
       if (!/^\d+$/.test(pid) || Number(pid) === process.pid) continue
+      try {
+        const st = readFileSync(`/proc/${pid}/status`, 'utf8')
+        const name = (st.match(/^Name:\s+(\S+)/m) ?? [])[1] ?? pid
+        all.set(pid, { name, rssKb: kb(st, 'VmRSS') })
+      } catch {
+        /* gone */
+      }
       try {
         const cmd = readFileSync(`/proc/${pid}/cmdline`, 'utf8').replace(/\0/g, ' ')
         if (!isNextProcess(cmd)) continue
@@ -107,6 +154,10 @@ function sample() {
     writeFileSync(STATE_FILE, JSON.stringify(reading))
     const elapsedMs = Date.now() - started
     reportPeak(reading, elapsedMs)
+    if (elapsedMs >= nextContainerAt) {
+      nextContainerAt = elapsedMs + CONTAINER_REPORT_MS
+      console.log(containerLine(readContainerMemory(), [...all.values()], elapsedMs))
+    }
     if (elapsedMs < MAX_SAMPLE_MS) setTimeout(tick, TICK_MS)
   }
   tick()
