@@ -38,6 +38,7 @@ import {
   placedSeed,
   benchSeed,
   upgradeLayout,
+  readResponsive,
   type BlockNode,
   type NodeLayout,
 } from './node-tree'
@@ -105,6 +106,8 @@ function cleanNode(raw: unknown, nid: string): BlockNode | null {
   const style = plainObject(o.style)
   if (style && Object.keys(style).length) node.style = style as BlockStyle
   if (o.hidden === true) node.hidden = true
+  const responsive = readResponsive(o.responsive)
+  if (responsive) node.responsive = responsive
   return node
 }
 
@@ -345,6 +348,19 @@ export function setNodeContent(layout: NodeLayout, nid: string, props: Record<st
   })
 }
 
+/** Replace a node's per-breakpoint overrides (PROG-E5; empty or undefined clears them). Sanitized on write by
+ *  `sanitizeNodeLayout`, like content. No-op for an unknown node. */
+export function setNodeResponsive(layout: NodeLayout, nid: string, responsive: BlockNode['responsive']): NodeLayout {
+  if (!getNode(layout, nid)) return layout
+  const next = readResponsive(responsive)
+  return mapNode(layout, nid, (n) => {
+    const out: BlockNode = { ...n }
+    if (next) out.responsive = next
+    else delete out.responsive
+    return out
+  })
+}
+
 /** Replace a node's style bag (an empty / undefined style clears it). No-op for an unknown node. */
 export function setNodeStyle(layout: NodeLayout, nid: string, style: BlockStyle | undefined): NodeLayout {
   if (!getNode(layout, nid)) return layout
@@ -381,7 +397,22 @@ function sanitizeNode(node: BlockNode, kind: EntityKind): BlockNode | null {
   const style = sanitizeBlockStyle(node.style)
   if (style) out.style = style
   if (node.hidden === true) out.hidden = true
+  const responsive = sanitizeResponsive(node.type, node.responsive)
+  if (responsive) out.responsive = responsive
   return out
+}
+
+/** Each device bag goes through the block's own field sanitizer, so an override can never hold what the
+ *  desktop content could not. */
+function sanitizeResponsive(type: string, raw: BlockNode['responsive']): BlockNode['responsive'] {
+  const read = readResponsive(raw)
+  if (!read) return undefined
+  const out: NonNullable<BlockNode['responsive']> = {}
+  for (const device of ['tablet', 'phone'] as const) {
+    const bag = sanitizeBlockContent(type, read[device])
+    if (bag && Object.keys(bag).length) out[device] = bag
+  }
+  return Object.keys(out).length ? out : undefined
 }
 
 /** Clamp a row to the kind's max columns by FOLDING the overflow stacks onto the last kept column, so a

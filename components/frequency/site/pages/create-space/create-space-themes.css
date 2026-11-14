@@ -356,3 +356,16 @@
 .cs-pv:is([data-preview-theme="designer"],[data-preview-theme="midnight"],[data-preview-theme="network-kit"],[data-preview-theme="temple-kit"],[data-preview-theme="services"]) .cs-pv-screen{padding-top:14.6cqi}
 .cs-pv[data-preview-theme="designer"] .cs-pv-pname{font-size:1.65cqi}
 .cs-pv[data-preview-theme="midnight"] .cs-pv-pname,.cs-pv[data-preview-theme="services"] .cs-pv-pname{font-size:2cqi}
+
+/* v3 (owner, 2026-11-14): Temple's "next gathering" card, the design's own, over the house picture. */
+.cs-pv-next{display:none}
+.cs-pv[data-preview-theme="temple-kit"] .cs-pv-next{display:flex;position:absolute;z-index:2;right:2.4cqi;bottom:2.4cqi;gap:1.2cqi;align-items:center;padding:.9cqi 1.4cqi .9cqi .9cqi;border-radius:1.4cqi;background:color-mix(in oklab,var(--pv-bg) 82%,transparent);backdrop-filter:blur(1.4cqi);color:var(--pv-ink)}
+.cs-pv-next-pic{position:relative;display:block;width:4.6cqi;height:4.6cqi;border-radius:1cqi;overflow:hidden;flex:none}
+.cs-pv-next-text{display:flex;flex-direction:column;gap:.3cqi}
+.cs-pv-next-k{font-size:.8cqi;letter-spacing:.16em;text-transform:uppercase;color:var(--pv-accent)}
+.cs-pv-next-t{font-family:var(--pv-font-display);font-size:1.6cqi;line-height:1.1}
+.cs-pv-next-d{font-size:.95cqi;color:var(--pv-muted)}
+/* The design's own nav: more than two links, so the row may not wrap or crowd the button. */
+.cs-pv-nav{gap:2cqi}
+.cs-pv-nav .cs-pv-label{white-space:nowrap}
+.cs-pv[data-preview-theme="wildheart"] .cs-pv-logo-img{height:4.4cqi;width:7cqi}
