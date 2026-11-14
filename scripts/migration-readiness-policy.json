@@ -2193,7 +2193,7 @@
       "expiresAt": "2026-11-21T23:59:59Z",
       "migrations": [
         {
-          "file": "supabase/migrations/20270346046500_analytics_experiments.sql",
+          "file": "supabase/migrations/20270346050000_analytics_experiments.sql",
           "sha256": "ebefee10a1e936f2e7516ecd6a70fb1242ce0638bedf517522ecbdfb6cb894bb"
         }
       ],
@@ -2278,7 +2278,7 @@
         {
           "file": "docs/ledger/rows/LIVE-2278.json",
           "status": "added",
-          "sha256": "a6130d27f395a04e5b63a68e1bb3a159001c069d0579feb365cb81b56a11b396",
+          "sha256": "dfd37298aa4cd9054037cfae8c5cea27840bd2194881a1a9c9eaad828a36a03b",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -2355,14 +2355,14 @@
         {
           "file": "lib/database.types.ts",
           "status": "modified",
-          "sha256": "e9ea89738d9cde1162fc6661b9860d97ca95899d17d88a7592329a54c8399b56",
+          "sha256": "79129e326f4bc0eee0e4140cdd484640abae6834fa64590aafca2a54501ff8e0",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "459f3fddca1bb91c25092b89d9e5080d96b86c27253d67ea7c4350544af40845",
+          "sha256": "2517c63898fa0940ca3bd8bbb7ff037b6c3482cfe206f7a1d9d58955c31a8d27",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -2383,14 +2383,14 @@
         {
           "file": "scripts/probes/analytics-experiments-sql.mjs",
           "status": "added",
-          "sha256": "a1cb937f0be969fa02ed17ca7ea719ca991f63711742d9a2e9f4f9a9999a174c",
+          "sha256": "f9274a26846926c729bc1a8822e76ecaca2887d47416b8bfdcaeb5e5c5640100",
           "baseMode": "000000",
           "headMode": "100644"
         },
         {
           "file": "scripts/rls-deny-all.txt",
           "status": "modified",
-          "sha256": "580a8afa42654f34e64c9ba20be43dba10b38628166ad42d3dc1df5a55124906",
+          "sha256": "c6ff4baea2a368feae45f409f91242aa72d1a7c0b7ddfc9904256395d154f089",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -2404,12 +2404,12 @@
         {
           "file": "scripts/table-grants.txt",
           "status": "modified",
-          "sha256": "a6c327a081e8ae2cbaa049aff479eb72bc831485142d5e7e7dba2ae203b20b58",
+          "sha256": "d1245a78192c767f99fb7c58d2ce15524dd6e62aa9069d0f539896d5c8e15f5d",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
-          "file": "supabase/migrations/20270346046500_analytics_experiments.sql",
+          "file": "supabase/migrations/20270346050000_analytics_experiments.sql",
           "status": "added",
           "sha256": "ebefee10a1e936f2e7516ecd6a70fb1242ce0638bedf517522ecbdfb6cb894bb",
           "baseMode": "000000",
