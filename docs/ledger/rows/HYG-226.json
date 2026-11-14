@@ -1,0 +1,19 @@
+{
+  "id": "HYG-226",
+  "title": "Verify trusted readiness receipts when GitHub omits PR associations",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "scripts/verify-migration-readiness.mjs",
+    "ref": "Observed successful Actions run43638345158 exposes pull_requests:[] and only one real evaluator job; the separately published receipt is check132580134012. Owner directed the bounded, provenance-preserving receiver fix."
+  },
+  "detail": "The actual existing receiver rejected a successful trusted workflow before reading its authenticated receipt when GitHub returned an explicit empty PR association array. The new unchanged consequence tests fail against actual main source in four positive cases (30 negative cases already refuse), then pass34/34 after the fix. An empty association is accepted only when explicitly Array.isArray with length0, never missing/malformed or a wrong nonempty association. The one-job fallback requires the real evaluator name/run/attempt/head/runner and check identity, a complete bounded check inventory, and the newest exact external_id publisher receipt; pending or failed newest checks cannot fall through to older success. Receipt PR/base/head/run/attempt, main-owned source hashes, verdict and registered staging fields remain bound. Two-job synthetic identity rules and all existing tests/assertions remain unchanged. Legacy associated one-job fixtures retain their existing behavior. SQL receipts still require the exact current-main merge tree; only authenticated no-SQL receipts preserve the existing older-base exception. This receiver change neither creates readiness nor applies SQL, and does not edit the collector, publisher, policy or database workflow. Initial focused verification passes all34 new cases and all32 unchanged legacy receiver cases. User standing authorization directs automatic release completion without repeated handoff approvals.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/migration-readiness-empty-association.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}
