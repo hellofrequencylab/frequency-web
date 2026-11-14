@@ -1057,6 +1057,7 @@ lib/hunts/claim-store.ts
 lib/hunts/redemption-store.ts
 lib/hunts/commerce-store.ts
 lib/hunts/run-store.ts
+lib/hunts/staff-queue-store.ts
 lib/hunts/staff-store.ts
 lib/hunts/store.ts
 lib/importer/harvest/media.ts
