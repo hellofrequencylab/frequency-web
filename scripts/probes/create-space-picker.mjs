@@ -16,7 +16,7 @@ if (!/family=Lora:ital@1/.test(tokens)) bad.push('the preview font sheet does no
 
 const site = read('lib/create-space/preview-site.ts')
 if (!/'new-world': \{\s*hero: NEW_WORLD_PHOTO\('beach-joy'\)/.test(site)) bad.push('New World does not wear its own photo library in the preview')
-if (!/services: \{\s*hero: NEW_WORLD_PHOTO/.test(site)) bad.push('Services has no preview pictures')
+if (!/services: \{\s*hero: (NEW_WORLD_PHOTO|'\/sites\/services\/hero-squeegee\.webp')/.test(site)) bad.push('Services has no preview pictures')
 for (const name of ['beach-joy', 'group-hug', 'circle-sunrise', 'hands-up', 'fire-circle', 'garden-picnic', 'cafe-table', 'backyard-class', 'workshop-table', 'beach-gong']) {
   if (!existsSync(`public/sites/new-world/photos/${name}.webp`)) bad.push(`New World photo ${name} is missing`)
 }
