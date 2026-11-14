@@ -1,0 +1,15 @@
+{
+  "id": "HYG-224",
+  "title": "Make the build-memory sampler read the whole container so an OOM-killed Vercel build names the process that grew",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "scripts/check-build-memory.mjs",
+    "ref": "Eight production deploys of main in a row ended ERROR out_of_memory on 2026-11-14 (5ZrLfju8 through 4RJ9L4hn) after the last READY, 3a2f33d0."
+  },
+  "detail": "MEASURED 2026-11-14 from the Vercel build logs of 4RJ9L4hn (ERROR) and 2W5v8cLHx (READY), same machine (4 cores, 8 GB Standard), same cloned size, same restored cache. The failed build is killed about 80 s into 'Creating an optimized production build', where the passing one logs 'Compiled successfully in 72s'. Through that whole window the sampler reads 86-87 MB across 1 next process in BOTH builds, so it does not see the process doing the compile; the 2.9 GB peak it reports for the passing build is only the page-data workers. The gate has been judging the wrong number. Slice: the sampler also logs, every 10 s, the container's cgroup memory (now and peak) and the three biggest processes of any name, so the next killed build leaves the real reading in its log. No budget or route was changed. Next: read that line from the next failed build, then act on the process it names (HYG-221 step 3 is only for a real reading).",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/build-memory-container-reading.mjs" },
+  "wave": "W7"
+}
