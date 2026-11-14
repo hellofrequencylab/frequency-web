@@ -1,0 +1,6 @@
+{
+  "id": "PROG-E6",
+  "append": {
+    "detail": "\n\nUPDATE 2026-11-14 (first slice, dark behind EDITOR_CANVAS; split out and closed as PROG-E6A): pure gesture model in lib/builder/gesture.ts (long-press state machine, drop hit-test, reorder, Alt+Arrow keyboard twin) and a layer list on /pages/canvas with press-and-hold drag, keyboard and Up/Down button reorder. No real-device touch test has been run; the order is local, not saved. Still open: spacing handles, canvas drag, the nested layer tree, presets-first inserter on the canvas, wiring to a real document, and the phone gate."
+  }
+}
