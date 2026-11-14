@@ -27,6 +27,7 @@ export function gaEventName(event: string): string {
   // Recommended GA4 event: value + currency + transaction_id only join a purchase
   // report when the name is `purchase`, not `commerce_purchase`.
   if (event === 'commerce.purchase') return 'purchase'
+  if (event === 'lead.captured') return 'generate_lead'
   return event.replace(/\./g, '_')
 }
 
@@ -55,7 +56,11 @@ export async function sendGa4Event(
   opts?: { clientId?: string | null; sessionId?: string | null },
 ): Promise<void> {
   if (!gaServerEnabled()) return
-  const clientId = opts?.clientId || actorProfileId || globalThis.crypto.randomUUID()
+  // Never invent a browser identity: a profile UUID is not a GA client_id, and an
+  // arbitrary UUID creates a fictitious new visitor. Keep the first-party fact even
+  // when consented browser attribution is unavailable.
+  const clientId = opts?.clientId
+  if (!clientId) return
   const body: Record<string, unknown> = {
     client_id: clientId,
     non_personalized_ads: true,
