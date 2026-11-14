@@ -86,9 +86,9 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
     covers: [NEW_WORLD_PHOTO('beach-joy'), NEW_WORLD_PHOTO('circle-sunrise'), NEW_WORLD_PHOTO('hands-up'), NEW_WORLD_PHOTO('fire-circle'), NEW_WORLD_PHOTO('garden-picnic')],
     portraits: [NEW_WORLD_PHOTO('group-hug'), NEW_WORLD_PHOTO('cafe-table')],
   },
-  // Services has no library of its own yet; it wears the New World pictures of people at work together.
+  // Services wears its own hero (the window washer, the theme's hero everywhere), and New World people-at-work pictures for the rest.
   services: {
-    hero: NEW_WORLD_PHOTO('backyard-class'), heroPos: 'center 45%', portrait: NEW_WORLD_PHOTO('workshop-table'), portraitPos: 'center 30%',
+    hero: '/sites/services/hero-squeegee.webp', heroPos: 'center 45%', portrait: NEW_WORLD_PHOTO('workshop-table'), portraitPos: 'center 30%',
     strip: [NEW_WORLD_PHOTO('cafe-table'), NEW_WORLD_PHOTO('backyard-class'), NEW_WORLD_PHOTO('beach-gong')], nav1: 'Services', cta2: 'See prices',
     covers: [NEW_WORLD_PHOTO('backyard-class'), NEW_WORLD_PHOTO('beach-gong'), NEW_WORLD_PHOTO('cafe-table'), NEW_WORLD_PHOTO('workshop-table')],
     portraits: [NEW_WORLD_PHOTO('workshop-table'), NEW_WORLD_PHOTO('cafe-table')],

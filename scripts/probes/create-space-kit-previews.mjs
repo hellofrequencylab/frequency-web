@@ -18,7 +18,7 @@ const site = read('lib/create-space/preview-site.ts')
 if (!/const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = \{/.test(site)) bad.push('KIT_IMAGERY is not total over every kit id')
 if (/KIT_IMAGERY\[kit\] \?\? FREQUENCY_IMAGERY/.test(site)) bad.push('kitImagery still falls back to the gathering photos')
 if (!/'free-human': \{\s*hero: FREE_HUMAN_PHOTO\('heritage-a-virgin'\)/.test(site)) bad.push('the Free Human preview does not wear the kit\'s own photo library')
-if (!/services: \{\s*hero: NEW_WORLD_PHOTO/.test(site)) bad.push('the Services preview has no pictures of its own')
+if (!/services: \{\s*hero: (NEW_WORLD_PHOTO|'\/sites\/services\/hero-squeegee\.webp')/.test(site)) bad.push('the Services preview has no pictures of its own')
 
 for (const n of ['heritage-a-virgin', 'founder-audrey', 'place-daisies', 'light-sun', 'light-floating-candles', 'light-lanterns', 'light-honey-dipper']) {
   if (!existsSync(`public/sites/free-human/photos/${n}.webp`)) bad.push(`Free Human photo ${n} is missing`)
