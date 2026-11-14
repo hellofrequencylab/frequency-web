@@ -98,14 +98,14 @@
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "e6ed47605c9d3742e993ac828192d4f218bce016f4a5b7ff80e389e898202cdf",
+          "sha256": "f82d59c23d8394e4964bc320763deff2e151572a7496a5e40abfc25bca075638",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "b0cf22f0d20af57d9267051a1b8b2ec78115e7a52c05317cb6c87bb1abcef4ca",
+          "sha256": "b94486fde2933ff74439ce98892d07eaef2c8d1f10ea50132ac9ecc3902a8702",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -133,7 +133,7 @@
         {
           "file": "scripts/templates-baseline.txt",
           "status": "modified",
-          "sha256": "2a1b928b6ce1b66caff979a0b00edd5c42da44928b20a0d26a1040c439e115a9",
+          "sha256": "3159709df3fe99e95dde680db1bc11a250b2b317b184aaa44a6b5d56846fd31e",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -2144,7 +2144,7 @@
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "207058c8f9cf5c255087267c1d2e9fb92ce86fd09a7b826541af5e0557fae944",
+          "sha256": "d5c99943d91dcbcf686c3aec1a123e5bb9eda62f8b4567b3d6f53b520894863d",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -2362,7 +2362,7 @@
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "ccac5962c7511c5c1cae3497a204e1fd264513721e033a245fdf6e26b2cabba8",
+          "sha256": "459f3fddca1bb91c25092b89d9e5080d96b86c27253d67ea7c4350544af40845",
           "baseMode": "100644",
           "headMode": "100644"
         },
