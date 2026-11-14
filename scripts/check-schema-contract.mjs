@@ -201,6 +201,7 @@ export const ALLOWLIST = [
   { file: 'lib/hunts/redemption-store.ts', table: 'hunt_partners', added: '2026-11-14', owner: 'FH-022', reason: 'Migration 20270346031000_hunts_schema.sql (FH-005/FH-006) creates this service-role-only table (partner Space rows the authz decide() reads). Retire on public schema regeneration after the migration is applied.' },
   { file: 'lib/hunts/redemption-store.ts', table: 'hunt_rewards', added: '2026-11-14', owner: 'FH-022', reason: 'Migration 20270346042000_hunt_rewards.sql (FH-021) creates this service-role-only table (the reward title and kind the station shows). Retire on public schema regeneration after the migration is applied.' },
   { file: 'lib/hunts/redemption-store.ts', table: 'hunt_reward_grants', added: '2026-11-14', owner: 'FH-022', reason: 'Migration 20270346042000_hunt_rewards.sql (FH-021) creates this service-role-only table (the grant a station redeems). Retire on public schema regeneration after the migration is applied.' },
+  { file: 'lib/hunts/redemption-store.ts', table: 'hunt_versions', added: '2026-11-14', owner: 'FH-022', reason: 'Migration 20270346031000_hunts_schema.sql (FH-005/FH-006) creates this service-role-only table (the published version whose policy carries the Trail title the station shows). Retire on public schema regeneration after the migration is applied.' },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */
