@@ -12,9 +12,8 @@
 //   M3  the manifest is declared once: `export const LOOM_PRIMITIVES` appears in exactly one source file.
 //   M4  `.from('loom_functions')` appears only in lib/loom/store.ts (lifted from check-elements.mjs): nothing
 //       writes the table around the validator.
-//   M5  if lib/loom/store.ts exists, it calls validateLoomFunction (the write path is guarded). Today there is
-//       no store: the loom_functions table needs a migration that has not been written, so M5 reports that it
-//       is waiting and passes. It turns strict the moment the file exists.
+//   M5  if lib/loom/store.ts exists, it calls validateLoomFunction (the write path is guarded). The store exists
+//       since PROG-E9 part 2 (migration 20270346048000), so M5 is strict.
 //   M6  arm A is not vacuous: the validator accepts a known-good declaration against the real context and
 //       rejects a broken copy of it.
 //
