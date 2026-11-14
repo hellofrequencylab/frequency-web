@@ -3,13 +3,13 @@
 // A Starter Circle is a staff-authored blueprint (table `circle_templates`) a
 // would-be leader adopts ("Make it yours") into a private draft they own, then
 // publishes as a completely original live Circle. Pillars are NOT how Circles
-// are sorted: each leans ONE primary Pillar and carries the other three inside
-// it. This module is framework-free (types + constants only) so server actions,
+// are sorted. A primary Pillar can describe a focus; supporting areas are optional
+// and may overlap. This module is framework-free (types + constants only) so server actions,
 // the admin authoring surface, and the member builder all share one definition.
 
 import type { PillarSlug } from '@/lib/pillars'
 
-/** One concrete line per Pillar — what this Circle touches inside itself. The
+/** Optional concrete lines for the Pillars the Host chooses to describe. The
  *  primary Pillar (the lean) is the template's `primary_pillar`, not repeated here. */
 export type PillarsInside = Partial<Record<PillarSlug, string>>
 
@@ -92,8 +92,8 @@ const STANDARD_CALLOUTS: readonly CircleCallout[] = [
   },
   {
     anchor: 'pillars',
-    title: 'Lean one Pillar, carry all four',
-    body: 'Pick the Pillar this Circle is really about, then write one honest line each for Mind, Body, Spirit, and Expression. Every Circle works the whole person.',
+    title: 'Choose what this Circle can support',
+    body: 'Mind, Body and Spirit can overlap, and expression can take many forms. These notes are optional. Describe only what fits this Circle, and leave other areas blank. No Circle needs to cover everything.',
   },
   {
     anchor: 'rhythm',

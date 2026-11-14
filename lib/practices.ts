@@ -130,6 +130,8 @@ export interface Practice {
    *  read from: it is one of the `focus_details` keys, never "the first" of them (jsonb keeps no
    *  key order; LIVE-650, ADR-1618). Drives the primary badge and Zap split; discovery matches every support. */
   domain_id: string | null
+  /** An additional authored support, also used by the existing reward allocation. */
+  secondary_domain_id?: string | null
   /** Per-Focus instructions + timing, keyed by pillar id. The keys are the selected
    *  Focuses (a practice can belong to multiple). Defaults to {} on legacy rows. */
   focus_details: FocusDetails
@@ -169,7 +171,7 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, timer_kind, movement_config, mindless_mode, duration_locked, warmup_message, warmup_sec, breath_pattern, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
+  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, timer_kind, movement_config, mindless_mode, duration_locked, warmup_message, warmup_sec, breath_pattern, reward_zaps, reward_note, weight_class, domain_id, secondary_domain_id, focus_details, subcategory_id, status, slug'
 
 // The same columns MINUS the table-only ones, for reads against the `practices_ranked`
 // VIEW. The view predates `slug` and does not expose it (selecting it errors and returns
