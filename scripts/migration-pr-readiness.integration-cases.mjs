@@ -14,7 +14,7 @@ function fixture() {
   const registration = { pullRequest: 44, expiresAt: '2030-01-01T00:00:00Z', migrations: [{ file: added, sha256: hash(sql) }], reviewedChanges: [{ file: added, status: 'added', sha256: hash(sql), baseMode: '000000', headMode: '100644' }], workflowPath: '.github/workflows/db-tests.yml', workflowSha256: hash(workflow), requiredSteps: [...core, apiStep], apiAcceptanceStep: apiStep }
   const pr = { state: 'open', draft: false, base: { ref: 'main', sha: base, repo: { full_name: repository } }, head: { sha: head, repo: { full_name: repository } } }
   const run = { id: 100, run_attempt: 1, repository: { full_name: repository }, head_sha: head, event: 'workflow_dispatch', workflow_id: 22, status: 'completed', conclusion: 'success' }
-  const job = { head_sha: head, status: 'completed', conclusion: 'success', check_run_url: 'https://api.github.com/repos/test/check-runs/300', steps: [...core, apiStep].map(name => ({ name, conclusion: 'success' })) }
+  const job = { id: 300, name: 'db-tests', run_id: 100, run_attempt: 1, runner_id: 42, head_sha: head, status: 'completed', conclusion: 'success', check_run_url: `https://api.github.com/repos/${repository}/check-runs/300`, steps: [...core, apiStep].map(name => ({ name, conclusion: 'success' })) }
   const live = names.map(file => { const m = /\/(\d+)_(.*)\.sql$/.exec(file); return { version: m[1], name: m[2] } })
   const calls = [], blobs = new Map()
   for (const rev of [base, head]) for (const file of names) blobs.set(`${rev}:${file}`, 'unchanged SQL')
@@ -51,7 +51,7 @@ function fixture() {
       if (path.endsWith('/actions/workflows/db-tests.yml')) return { id: 22, path: '.github/workflows/db-tests.yml' }
       if (path.includes('/actions/workflows/22/runs?')) return { total_count: 1, workflow_runs: [run] }
       if (path.includes('/actions/runs/100/attempts/1/jobs?')) return { total_count: 1, jobs: [job] }
-      if (path.endsWith('/check-runs/300')) return { app: { slug: 'github-actions', id: 15368 }, head_sha: head, status: 'completed', conclusion: 'success' }
+      if (path.endsWith('/check-runs/300')) return { id: 300, name: 'db-tests', app: { slug: 'github-actions', id: 15368 }, head_sha: head, status: 'completed', conclusion: 'success' }
       throw Error('unexpected API operation')
     },
   }
@@ -244,4 +244,19 @@ test('no-SQL PR on an older base than current main still gets the trusted fallba
 test('SQL PR on an older base than current main is refused', async () => {
   const f = fixture(); mainAhead(f)
   await assert.rejects(() => collectReadiness(f.options), /stale or moving/)
+})
+
+test('actual three-job staging suite excludes only authenticated failed publisher metadata', async () => {
+  const f = fixture(), original = f.options.api
+  const metadata = [401, 402].map(id => ({ id, name: 'migration-readiness', run_id: 100, run_attempt: 1, runner_id: null, head_sha: head, status: 'completed', conclusion: 'failure', steps: [], check_run_url: `https://api.github.com/repos/${repository}/check-runs/${id}` }))
+  f.options.api = async path => {
+    if (path.includes('/actions/runs/100/attempts/1/jobs?')) return { total_count: 3, jobs: [f.job, ...metadata] }
+    if (path.endsWith('/actions/workflows/migration-readiness.yml')) return { id: 33, path: '.github/workflows/migration-readiness.yml' }
+    for (const job of metadata) {
+      if (path.endsWith(`/check-runs/${job.id}`)) return { id: job.id, name: job.name, app: { id: 15368, slug: 'github-actions' }, head_sha: head, status: 'completed', conclusion: 'failure', external_id: `migration-readiness:${job.id + 100}:1:44:${base}:${head}`, details_url: `https://github.com/${repository}/runs/${job.id}` }
+      if (path.endsWith(`/actions/runs/${job.id + 100}/attempts/1`)) return { id: job.id + 100, run_attempt: 1, workflow_id: 33, path: '.github/workflows/migration-readiness.yml', event: 'pull_request_target', head_sha: head, repository: { full_name: repository }, head_repository: { full_name: repository } }
+    }
+    return original(path)
+  }
+  assert.equal((await collectReadiness(f.options)).status, 'registered_pending_apply')
 })
