@@ -98,7 +98,7 @@
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "f82d59c23d8394e4964bc320763deff2e151572a7496a5e40abfc25bca075638",
+          "sha256": "06f17a79b52d1272a2adea098aa7c62359d425892514700afaff449c0fed0b6e",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -119,14 +119,14 @@
         {
           "file": "scripts/rls-deny-all.txt",
           "status": "modified",
-          "sha256": "7df2d64cbef78d9003b31f3a6598069d25ae562ead095baa3ceb2ad12aa5426a",
+          "sha256": "9b299e1bc6e4da0c22a0b50df4fd33c71c0bd183fec954037a7640125804e81b",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/table-grants.txt",
           "status": "modified",
-          "sha256": "b3c18a4ed9107b4618bbee508956ead82194b1cc011494143c430663b774bc90",
+          "sha256": "e89b8f4915f1331dc2f4b42a5edfe94195a39d6aa75e38420032ab8be326b833",
           "baseMode": "100644",
           "headMode": "100644"
         },
