@@ -1891,6 +1891,161 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4960,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346047000_hunt_moderation.sql",
+          "sha256": "50791a564015acda9892dabfb65828cc3a7b49657258638fca19aec947217951"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/hunts/[slug]/play/page.tsx",
+          "status": "modified",
+          "sha256": "aec91ee6c572292979ca8c14061b30ce826b22fd2fd16f476095b2c65dd36d60",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/hunts/moderation/page.tsx",
+          "status": "added",
+          "sha256": "9c7ed6fccacccce39dfd376decf88b1a31c9318c72fdfdcca863dc7cf22a238e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/api/hunts/moderation/route.ts",
+          "status": "added",
+          "sha256": "656096e2820283d57ab2299508553318418e5d809d3d8fcfdb8f070ec978e665",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/api/hunts/report/route.ts",
+          "status": "added",
+          "sha256": "548583189af904665e46a0ef9f0f734c736ae16b10f30b73dbe643708b9ced51",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/hunts/moderation-actions.tsx",
+          "status": "added",
+          "sha256": "a856f589fcaebcb68c2f00492f1b382c67ffafaf4989601be690d19d43c2d944",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/hunts/moderation-screens.tsx",
+          "status": "modified",
+          "sha256": "4a5d056cc7e2c1149a41def5ee698e8d413a3f5a4d644b853581f4d79e275326",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/hunts/report-trail-form.tsx",
+          "status": "added",
+          "sha256": "b04c3e69564ab33a5c9c2738349b49b8c5b50dd8e6812e1759c6fd7e01af30b5",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/FH-018S.json",
+          "status": "modified",
+          "sha256": "e96006b6c818ef82ba1094e30f7564b2ecf3ab8234e4adad6f03fb8e1ccc4742",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/moderation-actions.test.ts",
+          "status": "added",
+          "sha256": "2f1f4f02a414d31b4226a2d6d8107272058479f543040339b3509ecf50815411",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/moderation-actions.ts",
+          "status": "added",
+          "sha256": "36d0db35792255e643a7df62a34270c667b4866b031c161885dcda801f43a9bf",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/moderation-reader.ts",
+          "status": "modified",
+          "sha256": "9103ecd5071139a79d4abafec8f2c12093a945bd50e7b7105249fa876323519a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/moderation-store.ts",
+          "status": "added",
+          "sha256": "6fa7935af53e5dc493b3b266c78ef06d015e1b254109a403af797ff11ba6dfec",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "e6ed47605c9d3742e993ac828192d4f218bce016f4a5b7ff80e389e898202cdf",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "b0cf22f0d20af57d9267051a1b8b2ec78115e7a52c05317cb6c87bb1abcef4ca",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "8563d3513e85476e5e243774183f3e9e9ed394411baa85220ecc502b185df917",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "7df2d64cbef78d9003b31f3a6598069d25ae562ead095baa3ceb2ad12aa5426a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "b3c18a4ed9107b4618bbee508956ead82194b1cc011494143c430663b774bc90",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346047000_hunt_moderation.sql",
+          "status": "added",
+          "sha256": "50791a564015acda9892dabfb65828cc3a7b49657258638fca19aec947217951",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunt_moderation.test.sql",
+          "status": "added",
+          "sha256": "1bc378184e08e800cbb10022df1a16c6263b15fa8dfcf81f00243a67e9588d27",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
