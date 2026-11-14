@@ -1,14 +1,10 @@
-// The Frequency Signature — a member's evolving visual identity, derived purely
-// from how their practice spreads across the four Pillars (Mind / Body / Spirit /
-// Expression). See docs/JOURNEYS.md §9.2. This module is the PURE compute: it takes
-// a per-pillar tally and returns the shape data a visual renders from. No I/O, no
-// React, no Supabase — so it's trivially unit-testable and reusable client + server.
-//
-// The data fetch lives in lib/frequency-signature-data.ts (it tallies practice_logs
-// per pillar, then calls computeSignature here). The visual lives in
-// components/profile/frequency-signature.tsx.
+// Legacy Signature math remains compatible for existing consumers and frozen tests.
+// The live owner display uses PracticeRhythm: one recent window of nonexclusive
+// recorded support-days, never a wellness score. This module stays pure and IO-free.
 
-import { PILLAR_SLUGS, type PillarSlug } from '@/lib/pillars'
+import { PILLAR_SLUGS, type PillarSlug } from '@/lib/pillars/slugs'
+
+import { PRACTICE_WINDOW_DATES, type PracticeRhythm } from './frequency-rhythm.ts'
 
 /** The signature's axes are exactly the four Pillars. Re-exported as the canonical
  *  key so callers don't reach into lib/pillars for the slug union. */
@@ -28,7 +24,7 @@ export type PillarWindowDays = Record<PillarKey, number>
 
 /** The rolling window the bloom is measured over, in days. Wide enough that a steady
  *  member's shape is stable day to day, yet short enough that a lapse visibly fades it. */
-export const WINDOW_DAYS = 21
+export const WINDOW_DAYS = PRACTICE_WINDOW_DATES
 
 /** Distinct active days, per Pillar, that drive a single Pillar's point all the way to
  *  the rim. Bloom is paced so a FULL, round bloom needs ~this many distinct days across
@@ -38,6 +34,8 @@ export const WINDOW_DAYS = 21
 export const TARGET_DAYS_PER_PILLAR = 7
 
 export interface FrequencySignature {
+  /** Authoritative recent owner read. Legacy math fields remain compatible for existing callers. */
+  rhythm?: PracticeRhythm
   /** The raw per-pillar tally (echoed back for display / debugging). */
   counts: PillarCounts
   /** Total acts across all pillars. `0` ⇒ the empty signature (no shape yet). */
@@ -55,7 +53,7 @@ export interface FrequencySignature {
   /** Balance 0..1: how evenly practice is distributed across the four pillars.
    *  1 = perfectly even (all four equal); → 0 = concentrated in one pillar.
    *  Defined as normalised Shannon evenness over the touched distribution; `0` when
-   *  empty and `0` for a single touched pillar (a pure spike, no balance). */
+   *  empty and `0` for a single touched pillar. Never a wellbeing assessment. */
   balance: number
   /** Per-Pillar BLOOM 0..1: how far that Pillar's point reaches toward the rim, from
    *  its distinct practice-days in the recent window vs {@link TARGET_DAYS_PER_PILLAR}.
@@ -65,7 +63,7 @@ export interface FrequencySignature {
    *  share, so the shape still grows for callers that don't pass a window. */
   bloom: Record<PillarKey, number>
   /** Overall FILL 0..1: how full the whole bloom is — the mean of the four blooms.
-   *  This is ABSOLUTE progress, not balance: a brand-new member is ~0 (tiny, near the
+   *  Legacy geometry parameter only, not personal progress. A brand-new member is ~0 (near the
    *  centre); a member practicing all four Pillars steadily for a week-plus approaches 1
    *  (a full, round bloom). Drops back toward 0 as recent activity ages out of the
    *  window. Drives the shape's size AND the brightness of the glow behind it. */
@@ -195,4 +193,9 @@ export function computeSignature(
     bloom,
     fill,
   }
+}
+
+/** Adapt factual recent days without changing legacy computation contracts. */
+export function signatureForRhythm(rhythm: PracticeRhythm): FrequencySignature {
+  return { ...computeSignature(rhythm.days), rhythm }
 }
