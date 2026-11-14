@@ -29,3 +29,9 @@ export function appendUtm(html: string, opts: { siteUrl: string; campaign: strin
     return `${open}${buildTrackedUrl(raw, utm).replace(/&/g, '&amp;')}${close}`
   })
 }
+
+/** Delivery attribution uses the opaque database UUID, never a subject or audience label. */
+export function appendCampaignUtm(html: string, opts: { siteUrl: string; campaignId: string }): string {
+  const campaign = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(opts.campaignId) ? opts.campaignId : ''
+  return appendUtm(html, { siteUrl: opts.siteUrl, campaign })
+}
