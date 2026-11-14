@@ -38,13 +38,17 @@ export async function loadGrant(grantId: string): Promise<GrantRow | null> {
     .maybeSingle()
   const g = data as { id: string; hunt_id: string; profile_id: string; state: string; expires_at: string | null; reward_id: string } | null
   if (error || !g) return null
-  const [reward, hunt] = await Promise.all([
-    db().from('hunt_rewards').select('title, kind').eq('id', g.reward_id).maybeSingle(),
-    db().from('hunts').select('title').eq('id', g.hunt_id).maybeSingle(),
+  const reward = await db().from('hunt_rewards').select('title, kind, version_id').eq('id', g.reward_id).maybeSingle()
+  const r = reward.data as { title: string; kind: string; version_id: string } | null
+  if (reward.error || !r) return null
+  // A Hunt has no title column: the Trail's title is published with its version (policy.trail.title), the slug is the fallback.
+  const [version, hunt] = await Promise.all([
+    db().from('hunt_versions').select('trail_title:policy->trail->>title').eq('id', r.version_id).eq('hunt_id', g.hunt_id).maybeSingle(),
+    db().from('hunts').select('slug').eq('id', g.hunt_id).maybeSingle(),
   ])
-  const r = reward.data as { title: string; kind: string } | null
-  const h = hunt.data as { title: string | null } | null
-  if (reward.error || hunt.error || !r) return null
+  if (version.error || hunt.error) return null
+  const trailTitle = (version.data as { trail_title: string | null } | null)?.trail_title?.trim()
+  const slug = (hunt.data as { slug: string } | null)?.slug
   return {
     id: g.id,
     hunt_id: g.hunt_id,
@@ -53,7 +57,7 @@ export async function loadGrant(grantId: string): Promise<GrantRow | null> {
     expires_at: g.expires_at,
     reward_title: r.title,
     reward_kind: r.kind,
-    trail_title: h?.title ?? 'A Trail',
+    trail_title: trailTitle || slug || 'A Trail',
   }
 }
 

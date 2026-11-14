@@ -1891,6 +1891,386 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4957,
+      "expiresAt": "2026-11-17T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346048000_loom_functions.sql",
+          "sha256": "01cd40f90ee3a609741ffe5d17d9b43f55c85c27bffb2dd56e90ff48aec697e0"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/pages/loom/actions.ts",
+          "status": "added",
+          "sha256": "3d3690e71f55ea03c75f5b954616e9d0e2261b9ff66cf752eaef20a17c5e3d28",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/pages/loom/composer-form.tsx",
+          "status": "added",
+          "sha256": "ad775295ab24df8b7b5522d6ba265c9119ca78f7c1606bb5d92a801c1399440a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/pages/loom/page.tsx",
+          "status": "added",
+          "sha256": "cbde44f14d1962e9ed6cae0cd66b411a7c1d8b11c9d8306fad9a51388b7eb87d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/EDITOR-ARCHITECTURE.md",
+          "status": "modified",
+          "sha256": "87a67766f2c97468543f1db158479e039c90df5bcdeed7af6ecb422337c339a6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/EDITOR-GATES.md",
+          "status": "modified",
+          "sha256": "5ef5359155a28f481917a4e460a8b0ad4e05ca9f1872bedf5175e2d319daafc2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "5901da45248b977ec891a57b73f0f0ca7c38bbf1d47738d5ac331f5264247ff1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/PROG-E9.json",
+          "status": "modified",
+          "sha256": "8cee100256a81bc7b56e2d0de5845380e1033593cfb768c1010d8fea7dc3f4ab",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "e8ae2e3176f2dcd92d7230a4fd6064248c0930eefdc17a425516948769daee3b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/loom/store.test.ts",
+          "status": "added",
+          "sha256": "812e62da4e142bbf19ce35656a8e138ff8eca36cd00a7776c73a6f90b93994da",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/loom/store.ts",
+          "status": "added",
+          "sha256": "e0a91becad8f82fcea96511d430ec43ab55b103c27914b7fdc5e5306039db628",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/moderation/suspension-coverage.ts",
+          "status": "modified",
+          "sha256": "8978bd9a9dc01b0fe4e3e47e084e5239c21fb746464224accaf927cb87e64bd8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "207058c8f9cf5c255087267c1d2e9fb92ce86fd09a7b826541af5e0557fae944",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-loom-integrity.mjs",
+          "status": "modified",
+          "sha256": "d800ad9e6c8ce143f52f9cbd0947c164ca5f4c0954acb8cbd8123d668fb6d66d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "d5018bd0bdbe26a2dbf8f81b87012ab3b5b56d8e523d6eebc8c39fa03afe036d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "f482fb8ad6fa002a9b8bd1127d23787b1f00e4b71c83c96fee2182b05bbd6dac",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346048000_loom_functions.sql",
+          "status": "added",
+          "sha256": "01cd40f90ee3a609741ffe5d17d9b43f55c85c27bffb2dd56e90ff48aec697e0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
+    },
+    {
+      "pullRequest": 4930,
+      "expiresAt": "2026-11-21T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346046500_analytics_experiments.sql",
+          "sha256": "ebefee10a1e936f2e7516ecd6a70fb1242ce0638bedf517522ecbdfb6cb894bb"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": ".github/workflows/db-tests.yml",
+          "status": "modified",
+          "sha256": "522262e06e8c2928e73aaf8528faae02a7d3a74116fbe85995df9c3ae3cc6b18",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/admin/insights/experiment-actions.test.ts",
+          "status": "added",
+          "sha256": "1c8f43de885f910af08f38134871fd1f7999c19bd5e90213bce3e90beb8bbbd7",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/admin/insights/experiment-actions.ts",
+          "status": "added",
+          "sha256": "14c2152df654c1e3cf1bea32acd6e1479822f4c85de3ebf8c9367666a948b93c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/events/actions.ts",
+          "status": "modified",
+          "sha256": "dfddbd0cd293d3074f8e0d9c4780fb175a687a021405395a80df67cd5035ea21",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/events/experiment-actions.ts",
+          "status": "added",
+          "sha256": "73098fdc2b01ca831bfc4d3bfdeae7534b8cf99b0fd11f1ad25e0bef2c7c9d9f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/api/cron/enforce-retention/route.ts",
+          "status": "modified",
+          "sha256": "44cce348f24ccda87d5ac8e0387f5cc353758cacfef9aff7cecc2a9d97b7e4d4",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/experiment-controls.tsx",
+          "status": "added",
+          "sha256": "0eca8ff16f8526e64ed609ba225aa1455e41db5990c3c3ba18cae869b5a290f2",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/experiment-panel.tsx",
+          "status": "added",
+          "sha256": "2d7d52f305d608099fd3128945931dee4704f076d8dad66789ccd244a1288e0d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/events/experiment-exposure.test.tsx",
+          "status": "added",
+          "sha256": "d031b017c41cf40d9c8cc421e640c747635ed14e8781a2006e3305d3c5198387",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/events/experiment-exposure.tsx",
+          "status": "added",
+          "sha256": "56a0c56622f6e2b23a40e1688fb688e7e839067b5b3ff3943dfa4176a6a045be",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/events/upcoming-widget.tsx",
+          "status": "modified",
+          "sha256": "1d57e500edbf77334bf1f02d506f540f05b76cde72a8463880ee0eb7a1cd2447",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2278.json",
+          "status": "added",
+          "sha256": "a6130d27f395a04e5b63a68e1bb3a159001c069d0579feb365cb81b56a11b396",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/experiment-browser-consent.test.ts",
+          "status": "added",
+          "sha256": "9ad612c1fa6efecfbf21f0a619d075c18b0f6648318b1ac40d08e4b36717030b",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/experiment-retention.test.ts",
+          "status": "added",
+          "sha256": "c31a83768174b46c0891f019bc017d9fc3d9f9c11cbefcb4a4e9703736d2ea17",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/experiment-retention.ts",
+          "status": "added",
+          "sha256": "94aaa4c48cb901da928ad2a5afe1de9fda9b36395b1a4c29c3a2ccaf452de0cd",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/experiment-runtime.test.ts",
+          "status": "added",
+          "sha256": "bb6eac504ee04a3424ae339f7ebfc3e28dac2daddbee256cf702e21c31db32c4",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/experiment-runtime.ts",
+          "status": "added",
+          "sha256": "b95201dc40edc1bcb09ee262b491ecac52a147b5d80e0430861a60bb1620ed0b",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/experiments.test.ts",
+          "status": "added",
+          "sha256": "f622db5a29de1a02e5fdc697c3195250cf1afadec98a46985026c59d8c4bc372",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/experiments.ts",
+          "status": "added",
+          "sha256": "6ef117282222d1c413c5e90095af69fede1c8a2f560fc217e0319e7838be0958",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/rsvp-telemetry.test.ts",
+          "status": "added",
+          "sha256": "b10f69ba928363fd853622a5175973a8f40e66c52454529a96a79f7e54b93051",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/rsvp-telemetry.ts",
+          "status": "added",
+          "sha256": "6bd3bd7d314989f7d568ab1af88c24a1ca2e33466a73e07beb6cc5cf0bb8f21e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/consent/retention.ts",
+          "status": "modified",
+          "sha256": "cb954527caa62b15fb7c9368b1f6f538e1907bfea155ffca3f5d26ee76a22df0",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "e9ea89738d9cde1162fc6661b9860d97ca95899d17d88a7592329a54c8399b56",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "ccac5962c7511c5c1cae3497a204e1fd264513721e033a245fdf6e26b2cabba8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "c39f06c0818cbd59533179711995b44d7b5811675ffb6111578589d3aa3c0ffd",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/analytics-experiment-policy.mjs",
+          "status": "added",
+          "sha256": "c3bf54e8b558d8087347d0d131954b4dffbb883869b82e5e697c896d652bce25",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/analytics-experiments-sql.mjs",
+          "status": "added",
+          "sha256": "a1cb937f0be969fa02ed17ca7ea719ca991f63711742d9a2e9f4f9a9999a174c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "580a8afa42654f34e64c9ba20be43dba10b38628166ad42d3dc1df5a55124906",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/analytics-experiments-api.mjs",
+          "status": "added",
+          "sha256": "00d106e1b50863defd8d136d9c6fca5d5492a82ac5623370742a0141bd3c9d6d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "a6c327a081e8ae2cbaa049aff479eb72bc831485142d5e7e7dba2ae203b20b58",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346046500_analytics_experiments.sql",
+          "status": "added",
+          "sha256": "ebefee10a1e936f2e7516ecd6a70fb1242ce0638bedf517522ecbdfb6cb894bb",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/analytics_experiments.test.sql",
+          "status": "added",
+          "sha256": "cff66761ec649928e5c877a51cb83c1a8961cd0ed9c5508f4a7ab1e81f277d7d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "522262e06e8c2928e73aaf8528faae02a7d3a74116fbe85995df9c3ae3cc6b18",
+      "apiAcceptanceStep": "Real local service, anon and authenticated analytics experiment API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated analytics experiment API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }

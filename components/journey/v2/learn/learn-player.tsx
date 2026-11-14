@@ -591,7 +591,7 @@ export function LearnPlayer({
                   <div className="mt-5 flex max-w-prose items-start gap-2 rounded-xl border border-warning/30 bg-warning-bg/30 p-3">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
                     <p className="text-body-sm leading-relaxed text-text">
-                      You haven&rsquo;t logged this practice yet. {selectedUsesTimer ? 'Run the timer' : 'Tap Log it'} above so it counts toward your Pillar balance, or continue without logging.
+                      This practice has no log for today. You can {selectedUsesTimer ? 'run the timer' : 'tap Log it'} to record it, or continue without logging. Choose what fits today.
                     </p>
                   </div>
                 )}
