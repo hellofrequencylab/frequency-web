@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2297",
+  "title": "Traverse every public Pillar practice result with real paginated library reads",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/discover/practices/pillar/[slug]/page.tsx",
+    "ref": "Daniel authorized completion of the support and practice changeover; claim issue4306 comment6881050400."
+  },
+  "detail": "The public Pillar practice route now accepts a validated positive integer page and requests that exact 60-row library slice while preserving the existing public, non-demo, support-aware trending query. Unsafe, ambiguous or offset-overflow inputs resolve to page one. Actual result totals and page count reach the existing site-kit view; optional props preserve other callers. Previous and Next links use the established dd-pager/subnav design, with a clean first-page URL. Later pages have self-referencing canonical and Open Graph URLs; structured practice data contains only the actual rendered slice. Legitimate out-of-range pages return not found rather than claiming a Pillar is empty. Later-page read failures rethrow into the existing error boundary rather than inventing a false404; first-page legacy degradation is preserved. The unchanged new consequence probe failed actual main69a6c5af5 with11 failing and2 passing actual-route assertions, then passes on the implementation. Focused tests cover actual route options, metadata, unknown Pillars, empty first pages, out-of-range/error distinction, unsafe inputs, actual kit link markup and legacy view callers; unchanged support-aware discovery and static/auth guards remain green. Next searchParams is a request-time API; the route keeps the existing revalidate declaration and no viewer-auth reads, matching public Spaces query pagination without claiming query pages are statically generated. No SQL, schema, reward, onboarding or existing test/probe/budget change is included. Final source verification passes56 tests across4 files and five changed TypeScript/TSX files pass ESLint without warnings. Root and independent picker peer review pass. Final required check:backlog passed2690 entries with997 agreeing probes. Fifteen real-component synthetic first/middle/last page renders passed390,1280,1440,1920,2000 with no horizontal overflow or unnamed controls, using current compiled CSS and the actual SiteRoot selector contract; pager and full-page screenshots were reviewed. The fixture omits authenticated/site-chrome behavior, so this is not production or signed-in acceptance.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/practice-pillar-pagination.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}
