@@ -65,6 +65,8 @@ app/(main)/hunts/edit/[id]/page.tsx
 app/(main)/hunts/finance/page.tsx
 app/(main)/hunts/moderation/page.tsx
 app/(main)/hunts/new/page.tsx
+app/(main)/hunts/staff/page.tsx
+app/(main)/hunts/staff/review/page.tsx
 app/(main)/journeys/[slug]/edit/page.tsx
 app/(main)/journeys/[slug]/guide/page.tsx
 app/(main)/journeys/new/page.tsx
