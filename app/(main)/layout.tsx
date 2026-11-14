@@ -58,7 +58,6 @@ import { VeraLauncher } from '@/components/vera/vera-launcher'
 import { resolvePersonalTeaseGate } from '@/lib/pricing/tease-gate'
 import { PageViewTracker } from '@/components/analytics/track-provider'
 import { ObserveProvider } from '@/components/analytics/observe-provider'
-import { currentAnalyticsAudience } from '@/lib/analytics/audience'
 import { GaConsentGate } from '@/components/analytics/ga-consent-gate'
 import { GaStaffOptOut } from '@/components/analytics/ga-staff-optout'
 import { hasConsent } from '@/lib/consent/consent'
@@ -422,8 +421,7 @@ export default async function MainLayout({
   // Keep an operator's own browsing out of Google Analytics. Gated on the TRUE web role (not the
   // view-as-downgraded pageWebRole), so previewing as a member does not re-enable tracking. GaStaffOptOut
   // persists the opt-out in the browser so even future first-paints are excluded before the page_view.
-  const gaAudience = await currentAnalyticsAudience().catch(() => ({ allowed: false, staff: false }))
-  const gaStaffExcluded = isStaff(asWebRole(profile.web_role)) || gaAudience.staff
+  const gaStaffExcluded = isStaff(asWebRole(profile.web_role))
 
   // The operator-identity context (FRAMING ONLY — lib/context/operator-context.ts). Re-derived from
   // REAL authority (owned/admin Spaces + the staff axis) and re-validates the cookie, so the chip +
@@ -551,7 +549,7 @@ export default async function MainLayout({
   // The app-wide overlays and launchers every member page carries, under the member shell.
   const shellChildren = (
     <>
-      <GaConsentGate disabled={!analyticsConsent || !gaAudience.allowed || gaStaffExcluded} />
+      <GaConsentGate disabled={!analyticsConsent || gaStaffExcluded} />
       {gaStaffExcluded && <GaStaffOptOut />}
       <ImpersonationBanner />
       {children}

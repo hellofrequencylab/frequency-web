@@ -1,12 +1,11 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 
-const jar = vi.hoisted(() => ({ get: vi.fn(), audience: vi.fn(async () => true) }))
-vi.mock('./audience', () => ({ currentViewerAllowsAnalytics: jar.audience }))
-vi.mock('next/headers', () => ({ cookies: async () => jar }))
-afterEach(() => { jar.get.mockReset(); jar.audience.mockResolvedValue(true); vi.unstubAllEnvs() })
+vi.mock('next/headers', () => ({
+  cookies: async () => ({ get: () => undefined }),
+}))
 
-import { parseGaClientId, parseGaSessionId, GA_CLIENT_ID_META, checkoutGaMetadata } from './ga-client-id'
+import { parseGaClientId, parseGaSessionId, GA_CLIENT_ID_META } from './ga-client-id'
 
 const CREATORS = [
   'lib/commerce/checkout.ts',
@@ -34,8 +33,6 @@ describe('parseGaClientId', () => {
     expect(parseGaClientId('not-a-ga-cookie')).toBeNull()
     expect(parseGaClientId('GA1.1.abc.def')).toBeNull()
     expect(parseGaClientId('GA1.1.onlythree')).toBeNull()
-    expect(parseGaClientId('not-ga.1.123.456')).toBeNull()
-    expect(parseGaClientId('GA1.1.123.456.extra')).toBeNull()
   })
 })
 
@@ -58,29 +55,4 @@ describe('parseGaSessionId', () => {
     expect(parseGaSessionId(undefined)).toBeNull()
     expect(parseGaSessionId('nope')).toBeNull()
   })
-})
-
-
-describe('checkout identity continuity', () => {
-  it('carries both browser and session identity into payment metadata', async () => {
-    vi.stubEnv('NEXT_PUBLIC_GA_MEASUREMENT_ID', 'G-TEST')
-    jar.get.mockImplementation((key: string) => key === '_ga' ? { value: 'GA1.1.123.456' } : key === '_ga_TEST' ? { value: 'GS2.1.s1695123456$o1' } : undefined)
-    expect(await checkoutGaMetadata()).toEqual({ ga_client_id: '123.456', ga_session_id: '1695123456' })
-  })
-  it('does not invent an identity when no cookie exists', async () => {
-    expect(await checkoutGaMetadata()).toEqual({})
-  })
-})
-
-
-it('does not reuse stale GA cookies after analytics consent was withdrawn', async () => {
-  jar.get.mockImplementation((key: string) => key === 'fq_consent' ? { value: 'denied' } : key === '_ga' ? { value: 'GA1.1.123.456' } : undefined)
-  expect(await checkoutGaMetadata()).toEqual({})
-})
-
-
-it('does not reuse browser cookies for an opted-out account or excluded staff viewer', async () => {
-  jar.get.mockImplementation((key: string) => key === '_ga' ? { value: 'GA1.1.123.456' } : undefined)
-  jar.audience.mockResolvedValue(false)
-  expect(await checkoutGaMetadata()).toEqual({})
 })

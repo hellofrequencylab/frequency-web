@@ -4,15 +4,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isCodeLive } from '@/lib/qr/codes'
 import { track } from '@/lib/analytics/track'
-import { readGaIdentity } from '@/lib/analytics/ga-client-id'
-import { analyticsAllowed, parseConsentChoice, CONSENT_COOKIE, CONSENT_REGION_COOKIE } from '@/lib/consent/cookie-consent'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import {
   CHANNEL_COOKIE,
   FIRST_TOUCH_COOKIE,
   FIRST_TOUCH_MAX_AGE,
   encodeFirstTouch,
-  decodeFirstTouch,
   type FirstTouch,
 } from '@/lib/attribution/first-touch'
 import { joinCircleAsMember } from '@/lib/circles/join'
@@ -129,8 +126,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     })
     .then(() => {}, () => {})
   // First-party + GA4 funnel event (covers dynamic links, member + marketing codes).
-  const gaIdentity = await readGaIdentity().catch(() => null)
-  await track('qr.scanned', { purpose: code.purpose ?? 'none', destination: code.destination_type, medium }, profileId, { gaIdentity }).catch(() => {})
+  void track('qr.scanned', { purpose: code.purpose ?? 'none', destination: code.destination_type, medium }, profileId)
 
   // Drive QR campaign challenges (scavenger hunts). Idempotent per (code, member),
   // so progress counts distinct codes; the rules engine advances any challenge whose
@@ -154,24 +150,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   // /admin/onboarding-controls) gates ONLY the attribution cookie: with referrals off
   // we still log the scan and redirect, we just don't drop fq_ref, so no new referral
   // credit accrues (existing rewards untouched). Defaults on; off cleanly stops attribution.
-  const cookieHeader = request.headers.get('cookie') ?? ''
-  const cookieValue = (name: string) => {
-    const pair = cookieHeader.split(';').find((part) => part.trim().startsWith(`${name}=`))
-    return pair?.trim().slice(name.length + 1)
-  }
-  const mayAttribute = analyticsAllowed({
-    choice: parseConsentChoice(cookieValue(CONSENT_COOKIE)),
-    priorConsentRegion: cookieValue(CONSENT_REGION_COOKIE) === '1',
-  })
-  const creditOwner = mayAttribute && !profileId && !!code.owner_profile_id && (await referralsEnabled())
-  const hasFirstTouch = !!decodeFirstTouch(cookieValue(FIRST_TOUCH_COOKIE))
+  const creditOwner = !profileId && !!code.owner_profile_id && (await referralsEnabled())
+  const hasFirstTouch = (request.headers.get('cookie') ?? '').includes(`${FIRST_TOUCH_COOKIE}=`)
   // SPACE LEAD-GRAB (CRM Phase 3): an anonymous scan of a Space lead-grab code carries a pending grab
   // so the eventual signup redeems the sealed lead into the Space CRM (app/onboarding/actions.ts →
   // claimPendingLeadGrab). Computed in the space-lead branch below; withReferral drops the cookie.
   let pendingLeadGrab: string | null = null
   const withReferral = (res: NextResponse) => {
     // Mark the channel for any anonymous scan (ADR-095) — attribution at signup.
-    if (!profileId && mayAttribute) {
+    if (!profileId) {
       res.cookies.set(CHANNEL_COOKIE, 'qr_scan', { path: '/', maxAge: FIRST_TOUCH_MAX_AGE, sameSite: 'lax' })
       // First-touch wins: stamp the code/source only if no prior touch exists, so the
       // eventual signup traces to THIS poster (ADR-107). Persisted at onboarding.
@@ -199,7 +186,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     }
     // A/B: remember which variant this anonymous scanner saw, so their signup
     // attributes the conversion (app/onboarding/actions.ts → applyEntryPointConversion).
-    if (!profileId && mayAttribute && abVariantKey) {
+    if (!profileId && abVariantKey) {
       res.cookies.set('fq_var', `${code.id}:${abVariantKey}`, {
         httpOnly: true,
         sameSite: 'lax',

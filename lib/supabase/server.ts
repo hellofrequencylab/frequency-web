@@ -6,21 +6,15 @@ import { createBearerClient } from './bearer'
 import { bearerIdentity } from './request-identity'
 
 type ServerClient = ReturnType<typeof createServerClient<Database>>
-type ServerRpc = ServerClient['rpc']
-// Binding only the receiver keeps the full SDK RPC signature without expanding
-// every generated RPC argument through Function.bind's partial-argument overloads.
-type ReceiverBoundServerClient = ServerClient & {
-  rpc: ServerRpc & { bind(thisArg: unknown): ServerRpc }
-}
 
 // Must be called with `await` — cookies() is async in Next.js 16.
 //
 // Inside a verified /api/v1 bearer scope (lib/supabase/request-identity.ts, LIVE-717) this is the
 // bearer client instead: the same anon key, the caller's own token in place of the cookie, so the
 // read runs as the same person under the same RLS. The two clients expose the same query API.
-export async function createClient(): Promise<ReceiverBoundServerClient> {
+export async function createClient(): Promise<ServerClient> {
   const bearer = bearerIdentity()
-  if (bearer) return createBearerClient(bearer.token, bearer.user) as unknown as ReceiverBoundServerClient
+  if (bearer) return createBearerClient(bearer.token, bearer.user) as unknown as ServerClient
   const cookieStore = await cookies()
 
   return createServerClient<Database>(
@@ -44,5 +38,5 @@ export async function createClient(): Promise<ReceiverBoundServerClient> {
         },
       },
     }
-  ) as ReceiverBoundServerClient
+  )
 }
