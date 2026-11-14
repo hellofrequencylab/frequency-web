@@ -64,13 +64,21 @@ export function SpacePreview(props: SpacePreviewProps) {
   const initial = props.initial ?? (site.name[0] ?? 'Y').toUpperCase()
   const hostInitial = props.hostInitial ?? initial
   const reach = [['Visit', site.contact.visit], ['Write', site.contact.write], ['Call', site.contact.call]].filter(([, v]) => v)
+  const sm = site.sample
+  const profileKit = kit === 'bold' || kit === 'wildheart'
+  const headline = sm?.headline ?? ''
+  const emText = sm?.em ?? site.em
+  const heroCta = sm ? (sm.nav ?? sm.cta) : site.cta
+  const heroCtaLong = sm ? sm.cta : site.ctaLong
+  const heroCta2 = sm ? sm.cta2 : site.cta2
   const phoneFoot = reach.length ? reach.map(([, v]) => v).join(' · ') : site.domain
   return (
     <div
       className={`cs-pv${className ? ` ${className}` : ''}`}
       data-preview-theme={kit}
       data-ghost={ghost ? '1' : undefined}
-      data-long={site.name.length + site.em.length > 22 ? '1' : undefined}
+      data-long={!sm && site.name.length + site.em.length > 22 ? '1' : undefined}
+      data-sample={sm ? '1' : undefined}
       data-busy={busy ? '1' : undefined}
       style={asStyle(vars)}
       role="img"
@@ -90,16 +98,16 @@ export function SpacePreview(props: SpacePreviewProps) {
             </span>
             <span className="cs-pv-label">{site.nav1}</span>
             <span className="cs-pv-label">About</span>
-            <span className="cs-pv-btn cs-pv-btn-s">{site.cta}</span>
+            <span className="cs-pv-btn cs-pv-btn-s">{heroCta}</span>
           </div>
           <div className="cs-pv-hero">
             <div className="cs-pv-copy" key={contentKey} data-reveal={contentKey > 0 ? '1' : undefined}>
-              <span className="cs-pv-eyebrow"><span className="cs-pv-rule" />{site.eyebrow}</span>
-              <span className="cs-pv-h1">{site.name}<br /><em>{site.em}</em></span>
-              <span className="cs-pv-lead">{site.tagline}</span>
+              <span className="cs-pv-eyebrow"><span className="cs-pv-rule" />{sm?.eyebrow ?? site.eyebrow}</span>
+              <span className="cs-pv-h1">{headline || site.name}<br /><em>{emText}</em></span>
+              <span className="cs-pv-lead">{sm?.lead ?? site.tagline}</span>
               <div className="cs-pv-ctas">
-                <span className="cs-pv-btn">{site.ctaLong} →</span>
-                <span className="cs-pv-btn cs-pv-btn-o">{site.cta2}</span>
+                <span className="cs-pv-btn">{heroCtaLong} →</span>
+                <span className="cs-pv-btn cs-pv-btn-o">{heroCta2}</span>
               </div>
             </div>
             <div className="cs-pv-pic">
@@ -139,11 +147,20 @@ export function SpacePreview(props: SpacePreviewProps) {
                 )}
               </div>
             </div>
-            <span className="cs-pv-avatar">{hostInitial}</span>
+            <span className="cs-pv-avatar">{kit === 'wildheart' && imagery.portraits[1] ? <Photo src={imagery.portraits[1]} sizes="80px" /> : hostInitial}</span>
             <span className="cs-pv-host">Hosted by {site.host}</span>
-            <span className="cs-pv-pname">{site.name}<br /><em>{site.em}</em></span>
+            {profileKit ? (
+              <>
+                <span className="cs-pv-pname">{site.name}</span>
+                <span className="cs-pv-phandle">@{site.handle}</span>
+                <span className="cs-pv-ploc">{site.contact.visit || 'Your city'}</span>
+                <span className="cs-pv-pbio">{sm?.lead ?? site.tagline}</span>
+              </>
+            ) : (
+              <span className="cs-pv-pname">{headline || site.name}<br /><em>{emText}</em></span>
+            )}
             <div className="cs-pv-links">
-              <span className="cs-pv-link cs-pv-link-p">{site.ctaLong}</span>
+              <span className="cs-pv-link cs-pv-link-p">{heroCtaLong}</span>
               {site.links.map((l, i) => <span className="cs-pv-link" key={i}>{l}</span>)}
             </div>
             <span className="cs-pv-handle">{phoneFoot}</span>
