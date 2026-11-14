@@ -22,7 +22,9 @@ export async function verifyReadiness({ env, event, api, git }) {
   requireFact(Number.isSafeInteger(workflow?.id) && workflow.path === '.github/workflows/migration-readiness.yml', 'trusted workflow identity unavailable')
   const inventory = await api(`/repos/${repository}/actions/workflows/${workflow.id}/runs?event=pull_request_target&head_sha=${head}&per_page=100`)
   requireFact(Number.isSafeInteger(inventory?.total_count) && Array.isArray(inventory.workflow_runs) && inventory.total_count === inventory.workflow_runs.length && inventory.total_count <= 100, 'run inventory incomplete')
-  const run = inventory.workflow_runs.filter(r => r.event === 'pull_request_target' && r.workflow_id === workflow.id && r.head_sha === head && r.repository?.full_name === repository && r.pull_requests?.some(p => p.number === event.number && p.head?.sha === head && p.base?.sha === base)).sort((a, b) => b.id - a.id)[0]
+  const associated = run => Array.isArray(run.pull_requests) && run.pull_requests.some(p => p.number === event.number && p.head?.sha === head && p.base?.sha === base)
+  const unassociated = run => Array.isArray(run.pull_requests) && run.pull_requests.length === 0
+  const run = inventory.workflow_runs.filter(r => r.event === 'pull_request_target' && r.workflow_id === workflow.id && r.head_sha === head && r.repository?.full_name === repository && (associated(r) || unassociated(r))).sort((a, b) => b.id - a.id)[0]
   requireFact(run?.status === 'completed' && run.conclusion === 'success' && Number.isSafeInteger(run.id) && Number.isSafeInteger(run.run_attempt), 'exact-head trusted readiness is not complete')
   const jobs = await api(`/repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`)
   requireFact(Array.isArray(jobs?.jobs) && jobs.total_count === jobs.jobs.length && [1, 2].includes(jobs.total_count), 'trusted job inventory incomplete or unexpected')
@@ -36,14 +38,28 @@ export async function verifyReadiness({ env, event, api, git }) {
   requireFact(checkId, 'trusted job check identity missing')
   const check = await api(`/repos/${repository}/check-runs/${checkId}`)
   requireFact(check?.app?.id === 15368 && check.app.slug === 'github-actions' && check.head_sha === head && check.conclusion === 'success', 'untrusted check publisher')
+  let publishedId
   if (jobs.jobs.length === 2) {
     requireFact(evaluator.name === 'migration-readiness-runner' && evaluator.run_id === run.id && evaluator.run_attempt === run.run_attempt && Number.isSafeInteger(evaluator.runner_id) && evaluator.runner_id > 0, 'unrecognized real evaluator')
     const synthetic = jobs.jobs.find(job => job !== evaluator)
     requireFact(synthetic.name === 'migration-readiness' && synthetic.run_id === run.id && synthetic.run_attempt === run.run_attempt && synthetic.head_sha === head && synthetic.runner_id === null && Array.isArray(synthetic.steps) && synthetic.steps.length === 0 && synthetic.status === 'completed' && synthetic.conclusion === 'success', 'unrecognized additional job')
     const syntheticId = /\/check-runs\/(\d+)$/.exec(synthetic.check_run_url ?? '')?.[1]
     requireFact(syntheticId && syntheticId !== checkId, 'synthetic check identity missing')
-    const published = await api(`/repos/${repository}/check-runs/${syntheticId}`)
-    requireFact(published?.id === Number(syntheticId) && published.name === 'migration-readiness' && published.app?.id === 15368 && published.app.slug === 'github-actions' && published.head_sha === head && published.status === 'completed' && published.conclusion === 'success' && published.external_id === `migration-readiness:${run.id}:${run.run_attempt}:${event.number}:${base}:${head}`, 'untrusted synthetic publisher')
+    publishedId = syntheticId
+  } else if (unassociated(run)) {
+    // GitHub can omit both the PR association and the synthetic job from run metadata.
+    // Require the real runner identity and independently locate this exact run's receipt.
+    requireFact(evaluator.name === 'migration-readiness-runner' && evaluator.run_id === run.id && evaluator.run_attempt === run.run_attempt && Number.isSafeInteger(evaluator.runner_id) && evaluator.runner_id > 0 && check.id === Number(checkId) && check.status === 'completed', 'unrecognized unassociated evaluator')
+    const publishedInventory = await api(`/repos/${repository}/commits/${head}/check-runs?per_page=100`)
+    requireFact(Number.isSafeInteger(publishedInventory?.total_count) && Array.isArray(publishedInventory.check_runs) && publishedInventory.total_count === publishedInventory.check_runs.length && publishedInventory.total_count <= 100, 'publisher inventory incomplete')
+    const externalId = `migration-readiness:${run.id}:${run.run_attempt}:${event.number}:${base}:${head}`
+    const newest = publishedInventory.check_runs.filter(item => item.name === 'migration-readiness' && item.app?.id === 15368 && item.app.slug === 'github-actions' && item.head_sha === head && item.external_id === externalId).sort((a, b) => b.id - a.id)[0]
+    requireFact(Number.isSafeInteger(newest?.id) && newest.id > 0 && newest.status === 'completed' && newest.conclusion === 'success', 'exact unassociated publisher receipt unavailable')
+    publishedId = String(newest.id)
+  }
+  if (publishedId) {
+    const published = await api(`/repos/${repository}/check-runs/${publishedId}`)
+    requireFact(published?.id === Number(publishedId) && published.name === 'migration-readiness' && published.app?.id === 15368 && published.app.slug === 'github-actions' && published.head_sha === head && published.status === 'completed' && published.conclusion === 'success' && published.external_id === `migration-readiness:${run.id}:${run.run_attempt}:${event.number}:${base}:${head}`, 'untrusted synthetic publisher')
     const summary = published.output?.summary
     requireFact(typeof summary === 'string' && summary.length <= 8192 && summary.split('\n\n').length === 2, 'synthetic receipt missing')
     const receipt = JSON.parse(summary.split('\n\n')[1])
@@ -57,7 +73,7 @@ export async function verifyReadiness({ env, event, api, git }) {
       requireFact(/^[a-f0-9]{64}$/.test(receipt.registrationSha256 ?? '') && /^[a-f0-9]{64}$/.test(receipt.workflowSha256 ?? '') && Number.isSafeInteger(receipt.stagingRunId) && receipt.stagingRunId > 0 && Number.isSafeInteger(receipt.stagingAttempt) && receipt.stagingAttempt > 0, 'synthetic staging receipt incomplete')
     }
   }
-  if (jobs.jobs.length !== 2) requireCurrentBase()
+  if (!publishedId) requireCurrentBase()
   const [finalPr, finalMain] = await Promise.all([readPr(), readMain()])
   requireFact(finalPr.state === 'open' && !finalPr.draft && finalPr.head.sha === head && finalPr.base.sha === base && (noSql || finalMain.commit.sha === mainTip), 'branch moved during readiness read')
   return { ok: true, runId: run.id, head, base }

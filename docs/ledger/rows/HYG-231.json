@@ -1,0 +1,16 @@
+{
+  "id": "HYG-231",
+  "title": "Cap the page-data workers so the Vercel build stops being OOM-killed at the fork",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-14",
+  "source": {
+    "file": "next.config.ts",
+    "ref": "HYG-221 / HYG-224. Preview dpl_HdkU1usy (PR #4978) read the real number: next-build 6757 MB, container 7889 MB at 70 s, 7936 MB at 80 s, then the OOM kill at 'Collecting page data using 3 workers'."
+  },
+  "detail": "MEASURED 2026-11-14 on Vercel with the HYG-224 sampler. The `next-build` process (the Turbopack compile, invisible to the old sampler) climbs 2.0 GB at 10 s, 4.2 GB at 30 s, 5.8 GB at 60 s, 6.8 GB at 70 s. The compile finishes at 73 s and the process still holds about 6 GB when page-data collection forks 3 workers (about 330 MB each), putting the container at 7.93 GB of the 8 GB Standard machine. Whether a build survives is a coin toss on how much the compile peak and the workers overshoot, which is why one build in nine passed. This slice sets experimental.cpus to 1: about 660 MB less at the fullest moment, at the price of slower static generation. No route, budget or fan-out changed. The row closes on the setting; whether it holds is read from this PR's preview and the next production deploys, and HYG-221 stays the umbrella and closes on the 20-deploy criterion. If the compile peak itself must come down (the process alone reaches 6.8 GB), the next step is the compile, not the workers.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/page-data-workers-capped.mjs" },
+  "wave": "W7"
+}

@@ -248,7 +248,7 @@ const nextConfig: NextConfig = {
     // with no graph to keep. The cost is a cold compile on every build; ADR-1656 rejected this for
     // cache size, and memory now outranks it. scripts/check-build-memory.mjs gates the result.
     turbopackFileSystemCacheForBuild: false,
-    // ONE PAGE-DATA WORKER (HYG-226). Measured on Vercel 2026-11-14 with the HYG-224 sampler: the
+    // ONE PAGE-DATA WORKER (HYG-231). Measured on Vercel 2026-11-14 with the HYG-224 sampler: the
     // `next-build` compile process climbs to about 6.8 GB and is still holding about 6 GB when
     // 'Collecting page data using 3 workers' forks, each worker adding about 330 MB. The container
     // read 7.93 GB of 8 GB and the build was OOM-killed at that fork, on previews and production.
