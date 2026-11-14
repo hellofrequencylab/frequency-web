@@ -22,6 +22,7 @@ describe('ga-server', () => {
 
   it('maps commerce.purchase to the recommended GA4 purchase event', () => {
     expect(gaEventName('commerce.purchase')).toBe('purchase')
+    expect(gaEventName('lead.captured')).toBe('generate_lead')
   })
 
   it('is inert without configuration (no env in test)', () => {
@@ -119,5 +120,19 @@ describe('sendGa4Event session join', () => {
     expect(body.events[0].params.session_id).toBe('999999999')
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
+  })
+})
+
+
+describe('unattributed server facts', () => {
+  it('keeps facts out of GA rather than inventing a browser visitor', async () => {
+    vi.stubEnv('NEXT_PUBLIC_GA_MEASUREMENT_ID', 'G-TEST')
+    vi.stubEnv('GA_API_SECRET', 'secret')
+    vi.stubEnv('VERCEL_ENV', 'production')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const { sendGa4Event } = await loadGaServer()
+    await sendGa4Event('commerce.purchase', { value: 5 }, 'profile-1')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
