@@ -1004,3 +1004,19 @@ Check: GA4 Admin, DebugView or Realtime shows `sign_up` after a fresh signup in 
 **Watch:** `lifecycle.cap.held` (info) counts held sends with the reason and when they retry; `lifecycle.cap.read_failed` and `lifecycle.cap.claim_failed` (error) mean the table or the grant is wrong.
 
 **Off:** blank the variable; held sends go out on their next run.
+
+
+## Practice support evidence
+
+`PRACTICE_SUPPORT_EVIDENCE_ENABLED` is a server-only reader switch. Blank, unset, `0`, `false` and unrecognized values keep it off. Only `1`, `true` or `on` enable it through `envFlag`. Keep it off until the schema and acceptance below are verified. Implementation tracking belongs to LIVE-2294 in the merged backlog; this section is the activation procedure, not release status.
+
+The off path selects only the pre-snapshot log columns. The on path adds `support_pillar_ids` and `support_evidence_version` to the same owner-authorized, date-bounded, paginated read. It does not write logs, change rewards, send messages, or expand profile visibility. It reads version-1 associations actually frozen by the database at log time; it never fills missing historical third/fourth supports from current practice categories.
+
+Activation order:
+
+1. Complete the reviewed LIVE-2291 migration readiness process. Daniel applies `20270346048000_quest_support_policy.sql` to **Frequency Community** only after its own exact-head checks are green, and records that exact version in the ledger. Do not apply SQL from this runbook or reapply an earlier migration. LIVE-2289 must already be on main before the LIVE-2294 application slice is published.
+2. Verify the actual target schema exposes both snapshot columns and the reviewed version-1 insert trigger/immutability guards. In the disposable local Supabase instance, perform an authenticated practice log through the existing logging flow, then a local Auth/PostgREST owner-scoped read selecting `id,logged_for,support_pillar_ids,support_evidence_version`. Confirm a four-focus practice stores all four canonical support IDs with version 1, and editing/removing current practice categories does not rewrite that recorded array. A legacy log must retain its original evidence, not acquire invented supports. Attempt a user replacement and verify the persisted snapshot remains unchanged; totals and idempotent rewards must also remain unchanged. This local HTTP acceptance must run against the exact reviewed app/database heads, not only a mocked client or a pure parser test.
+3. In an isolated preview backed by the verified schema, set the flag on and use an authorized owner session. Check that the graph displays the four recorded supports in the same dated practice-day window. A visitor, signed-out session or another member must not trigger the personal log read or see the graph. Confirm a read failure shows unavailable/partial evidence rather than inactivity. Do not enable the flag on a preview or production database lacking the two columns.
+4. Confirm production migration/ledger parity and the serving application identity. Set the server flag only on that verified deployment, then perform the same owner and non-owner acceptance on the live host. Record release evidence without credentials, private reflections, raw member logs or support categories in advertising analytics.
+
+Rollback: clear the flag to restore the old-column read and verify the serving instance observes it (redeploy/restart if the provider requires it). The additive snapshot columns and recorded evidence can remain. Never delete or rewrite evidence or earned recognition to roll back this reader. An on-path schema/query failure must stay visibly unavailable; do not silently retry the old-column reader and present it as complete four-support history.
