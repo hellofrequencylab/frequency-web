@@ -1,4 +1,5 @@
 import type { AdminPracticeFacets, AdminPracticeSearchOpts } from '@/lib/practices'
+import { practiceSupportIds, practiceSupportsPillar } from './support-filter'
 
 // Residual ("minus-self") facet counts for the practices curation workspace (LIVE-646, ADR-1609).
 //
@@ -19,6 +20,8 @@ import type { AdminPracticeFacets, AdminPracticeSearchOpts } from '@/lib/practic
 export interface FacetBaseRow {
   id: string
   domain_id: string | null
+  secondary_domain_id?: string | null
+  focus_details?: unknown
   subcategory_id: string | null
   status: string | null
   weight_class: string | null
@@ -46,7 +49,7 @@ function activePredicates(
   tagsOf: (id: string) => readonly string[],
 ): { group: Group; pass: (r: FacetBaseRow) => boolean }[] {
   const out: { group: Group; pass: (r: FacetBaseRow) => boolean }[] = []
-  if (f.pillarId) out.push({ group: 'pillar', pass: (r) => r.domain_id === f.pillarId })
+  if (f.pillarId) out.push({ group: 'pillar', pass: (r) => practiceSupportsPillar(r, f.pillarId!) })
   if (f.subId) out.push({ group: 'subcategory', pass: (r) => r.subcategory_id === f.subId })
   if (f.status) out.push({ group: 'status', pass: (r) => r.status === f.status })
   if (f.weightClass) out.push({ group: 'weight', pass: (r) => r.weight_class === f.weightClass })
@@ -111,7 +114,11 @@ export function residualFacetCounts(
     if (failures > 1) continue
     const counts = (g: Group) => failures === 0 || failed === g
 
-    if (counts('pillar')) bump(pillar, r.domain_id, '__none__')
+    if (counts('pillar')) {
+      const supports = practiceSupportIds(r)
+      if (supports.length === 0) bump(pillar, null, '__none__')
+      for (const id of supports) bump(pillar, id)
+    }
     if (counts('subcategory')) bump(subcategory, r.subcategory_id, '__none__')
     if (counts('status')) bump(status, r.status)
     if (counts('weight')) bump(weight, r.weight_class)

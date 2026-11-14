@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2288",
+  "title": "Find practices through every current authored support",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/PRACTICE-LIBRARY.md",
+    "ref": "Daniel's November 14 support/practice/expression changeover: flexible overlapping supports, full survey and three verification passes."
+  },
+  "detail": "Current public and admin library filters match the primary, secondary, or any canonical UUID-keyed object in focus_details before database count, sorting and pagination. Admin result/count/bulk paths share that predicate; residual facet buckets count each applicable support once per practice and are explicitly nonexclusive. Global primary-category statistics and uncategorized-primary gap semantics remain distinct. Public and alternate admin sorts add the stable id tie-break; existing visibility, demo, template, text, tag and author predicates stay conjunctive. No practice logging, reward totals, historical attribution, production SQL, flags or sends changed. The unchanged new consequence probe fails on main 9fd87ee37 because the support-filter seam is absent, then passes with the implementation; a separate actual-main reader regression with only the new test/helper as adapters also demonstrates the missing mixed-focus rows. Final focused verification: 55 tests across six files, including the new current-reader tests and existing unchanged admin, primary, slug, Space and API tests, passed; changed-file lint passed. Root and independent peer correctness/privacy reviews found no material issues; the real SDK retains separate support and text OR predicates. A read-only actual Supabase practices_ranked request verified the JSON containment OR grammar with HTTP200 and limit0, without printing row contents. This row describes source implementation, not production deployment or authenticated visual acceptance.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/practice-support-discovery.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}
