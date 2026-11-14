@@ -19,7 +19,7 @@ export async function runQuestSupportAcceptance({ env = process.env, localStatus
   const anon = status.ANON_KEY; const service = status.SERVICE_ROLE_KEY
   assert.ok(typeof anon === 'string' && anon && typeof service === 'string' && service && anon !== service, 'Locally generated distinct API keys required')
   const base = endpoint.origin
-  const ids = { space: randomUUID(), practice: randomUUID(), plan: randomUUID(), legacy: randomUUID(), enrolled: randomUUID(), log: randomUUID() }
+  const ids = { space: randomUUID(), practice: randomUUID(), plan: randomUUID(), legacy: randomUUID(), enrolled: randomUUID(), log: randomUUID(), fourLog: randomUUID() }
   const users = []; const checks = []
   const suffix = randomUUID().replaceAll('-', '').slice(0, 12)
   const password = randomBytes(24).toString('base64url')
@@ -35,6 +35,7 @@ export async function runQuestSupportAcceptance({ env = process.env, localStatus
   async function check(name, action) { await action(); checks.push(name); console.log('PASS ' + name) }
   const getPolicy = async (id) => success(await request(`/rest/v1/journey_enrollments?id=eq.${id}&select=completion_policy`, service))[0]?.completion_policy
   const getLog = async () => success(await request(`/rest/v1/practice_logs?id=eq.${ids.log}&select=support_pillar_ids,support_evidence_version,completed,zaps_awarded`, service))[0]
+  const getFourLog = async () => success(await request(`/rest/v1/practice_logs?id=eq.${ids.fourLog}&select=support_pillar_ids,support_evidence_version,completed,zaps_awarded`, service))[0]
   try {
     const pillars = success(await request('/rest/v1/pillars?slug=in.(mind,body,spirit)&select=id,slug', service))
     const bySlug = new Map(pillars.map((row) => [row.slug, row.id]))
@@ -85,6 +86,7 @@ export async function runQuestSupportAcceptance({ env = process.env, localStatus
     const wallet = async () => success(await request(`/rest/v1/profiles?id=eq.${member.profile}&select=lifetime_zaps,current_season_zaps,amplitude`, service))[0]
     const beforeWallet = await wallet()
     const expectedSupports = [mind, body, spirit].sort()
+    let expectedFourSupports
     await check('First partial log records actual multi-support evidence instead of caller claims', async () => {
       success(await request('/rest/v1/practice_logs', service, 'POST', { id: ids.log, profile_id: member.profile, practice_id: ids.practice, logged_for: '2026-11-01', completed: false, zaps_awarded: 1, support_pillar_ids: [ids.plan], support_evidence_version: 99 }))
       assert.deepEqual((await getLog()).support_pillar_ids, expectedSupports)
@@ -108,15 +110,56 @@ export async function runQuestSupportAcceptance({ env = process.env, localStatus
       assert.deepEqual(log.support_pillar_ids, expectedSupports); assert.equal(log.completed, true); assert.equal(log.zaps_awarded, 12)
       assert.deepEqual(await wallet(), beforeWallet, 'Support bookkeeping must not award currency')
     })
+    await check('A new four-focus log freezes all four supports with owner-only access and unchanged rewards', async () => {
+      const expressions = success(await request('/rest/v1/pillars?slug=eq.expression&select=id,slug', service))
+      assert.equal(expressions.length, 1, 'Exactly one canonical Expression pillar required')
+      assert.equal(expressions[0].slug, 'expression')
+      const expression = expressions[0].id
+      expectedFourSupports = [mind, body, spirit, expression].sort()
+      assert.equal(new Set(expectedFourSupports).size, 4, 'Four distinct canonical supports required')
+      success(await request(`/rest/v1/practices?id=eq.${ids.practice}`, service, 'PATCH', {
+        domain_id: body, secondary_domain_id: mind,
+        focus_details: { [spirit]: { instructions: '', timing: '' }, [expression]: { instructions: '', timing: '' } },
+      }))
+      success(await request('/rest/v1/practice_logs', service, 'POST', {
+        id: ids.fourLog, profile_id: member.profile, practice_id: ids.practice, logged_for: '2026-11-02',
+        completed: false, zaps_awarded: 1, support_pillar_ids: [], support_evidence_version: 99,
+      }))
+      const partial = await getFourLog()
+      assert.deepEqual(partial.support_pillar_ids, expectedFourSupports)
+      assert.equal(partial.support_evidence_version, 1)
+      assert.equal(partial.completed, false)
+      success(await request(`/rest/v1/practice_logs?id=eq.${ids.fourLog}`, service, 'PATCH', {
+        completed: true, zaps_awarded: 12, support_pillar_ids: [], support_evidence_version: 1,
+      }))
+      const completed = await getFourLog()
+      assert.deepEqual(completed.support_pillar_ids, expectedFourSupports)
+      assert.equal(completed.support_evidence_version, 1)
+      assert.equal(completed.completed, true)
+      assert.equal(completed.zaps_awarded, 12)
+      const owned = success(await request(`/rest/v1/practice_logs?id=eq.${ids.fourLog}&select=support_pillar_ids,support_evidence_version`, member.token))
+      assert.equal(owned.length, 1, 'Actual owner must read the new four-focus log')
+      assert.deepEqual(owned[0].support_pillar_ids, expectedFourSupports)
+      assert.equal(owned[0].support_evidence_version, 1)
+      for (const token of [anon, legacy.token]) {
+        const response = await request(`/rest/v1/practice_logs?id=eq.${ids.fourLog}&select=support_pillar_ids,support_evidence_version`, token)
+        if (response.ok) assert.deepEqual(response.data, [], 'Four-focus evidence must stay within its owner scope')
+        else assert.ok([401, 403].includes(response.status), 'Four-focus read must be refused by the actual privilege boundary')
+      }
+      assert.deepEqual((await getLog()).support_pillar_ids, expectedSupports, 'The original three-support snapshot must not acquire the new fourth focus')
+      assert.deepEqual(await wallet(), beforeWallet, 'Four-focus bookkeeping must not award currency')
+    })
     await check('Deleting a practice does not erase its recorded support evidence', async () => {
       success(await request(`/rest/v1/practices?id=eq.${ids.practice}`, service, 'DELETE'))
       assert.deepEqual((await getLog()).support_pillar_ids, expectedSupports)
+      assert.deepEqual((await getFourLog()).support_pillar_ids, expectedFourSupports)
+      assert.equal((await getFourLog()).support_evidence_version, 1)
     })
     return { status: 'PASS', evidence: 'Disposable full-schema Supabase Auth/PostgREST HTTP only', checks }
   } finally {
     const failures = []
-    for (const [table, id] of [['practice_logs', ids.log], ['journey_plans', ids.plan], ['practices', ids.practice], ['spaces', ids.space]]) {
-      try { success(await request(`/rest/v1/${table}?id=eq.${id}`, service, 'DELETE')) } catch { failures.push(table) }
+    for (const [table, filter] of [['practice_logs', `id=in.(${ids.log},${ids.fourLog})`], ['journey_plans', `id=eq.${ids.plan}`], ['practices', `id=eq.${ids.practice}`], ['spaces', `id=eq.${ids.space}`]]) {
+      try { success(await request(`/rest/v1/${table}?${filter}`, service, 'DELETE')) } catch { failures.push(table) }
     }
     for (const user of users) {
       try { success(await request(`/auth/v1/admin/users/${user.auth}`, service, 'DELETE')) } catch { failures.push('auth-user') }
