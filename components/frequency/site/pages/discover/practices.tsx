@@ -4,6 +4,7 @@
 // The Pillar chips stay real links, so the per-Pillar pages stay crawlable landing pages.
 
 import Link from 'next/link'
+import { pillarPracticePageHref } from '@/lib/practices/library-pages'
 import { BETA_CTA_HREF, SITE_NAME } from '@/lib/site'
 import { ShareButton } from '@/components/discover/share-button'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
@@ -121,12 +122,18 @@ export function FrequencyPillarPractices({
   pillars,
   rows,
   image,
+  total = rows.length,
+  page = 1,
+  pageCount = 1,
 }: {
   pillar: PillarLink
   description: string
   pillars: PillarLink[]
   rows: PracticeCardData[]
   image: string | null
+  total?: number
+  page?: number
+  pageCount?: number
 }) {
   return (
     <DirPage side="p">
@@ -142,7 +149,7 @@ export function FrequencyPillarPractices({
       />
       <DirSection
         label={pillar.name}
-        meta={rows.length > 0 ? count(rows.length, 'Practice', 'Practices') : null}
+        meta={total > 0 ? count(total, 'Practice', 'Practices') : null}
         title={`Small ${pillar.name} acts, kept up.`}
       >
         <DirChips label="Browse practices by Pillar" chips={pillarChips(pillars, pillar.slug)} />
@@ -153,7 +160,18 @@ export function FrequencyPillarPractices({
             </Link>
           </DirEmpty>
         ) : (
-          <PracticeGrid rows={rows} />
+          <>
+            <PracticeGrid rows={rows} />
+            {pageCount > 1 && (
+              <nav className="dd-pager" aria-label="Practice pages">
+                <span>Page {page} of {pageCount}</span>
+                <span className="subnav">
+                  {page > 1 && <Link href={pillarPracticePageHref(pillar.slug, page - 1)}>← Previous</Link>}
+                  {page < pageCount && <Link href={pillarPracticePageHref(pillar.slug, page + 1)}>Next →</Link>}
+                </span>
+              </nav>
+            )}
+          </>
         )}
       </DirSection>
       <KeepGoing
