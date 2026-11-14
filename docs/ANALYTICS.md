@@ -36,6 +36,14 @@ The helper is the *only* sanctioned way to record an analytics event; ad-hoc `gt
 disallowed so coverage stays complete and consistent. Both mirrors are inert unless the GA env vars
 are set in production.
 
+Browser events send one Google event and one first-party request. The authenticated
+`/api/track` collector passes the internal `mirrorGa: false` option, so it records the
+first-party row without emitting the browser event to Google a second time. The option
+is never read from the request payload. When the browser tag is unavailable, the
+collector still records an eligible member event; it does not create a replacement
+Google identity. Direct server-authoritative signup, lead and purchase callers retain
+their existing mirror and durable-key behavior.
+
 ## Two streams: semantic events vs. the raw firehose (PI.1, [ADR-166](DECISIONS.md))
 
 `track()`/`engagement_events` is the **semantic** stream — named, reviewable, business-meaningful
