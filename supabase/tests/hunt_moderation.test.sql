@@ -4,7 +4,7 @@
 -- final), that close and resume resolve open reports while a pause leaves them open, and that no browser
 -- role can execute either function.
 begin;
-select plan(18);
+select plan(17);
 
 insert into public.profiles (id, display_name, handle) values
   ('00000000-0000-4000-a018-000000000001', 'FH018 Reporter A', 'fh018-a'),
