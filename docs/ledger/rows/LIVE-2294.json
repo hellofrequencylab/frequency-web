@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2294",
+  "title": "Gate private multi-focus practice snapshot reads behind verified schema readiness",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/practice-support-evidence-read.ts",
+    "ref": "Daniel approved every phase of the support/practice/expression changeover; this is the schema-gated read continuation after LIVE-2289 and LIVE-2291."
+  },
+  "detail": "PRACTICE_SUPPORT_EVIDENCE_ENABLED uses the existing envFlag primitive and defaults off. The off path preserves the exact old-column select and every unchanged legacy reader assertion. Only an explicit on value expands the same authorized, member-local-date-bounded paginated owner read with support_pillar_ids and support_evidence_version. The existing pure version-1 adapter can then display the immutable four-support associations written at log time, including after current category edits or practice deletion, while null legacy versions never invent missing focuses. The chosen select is captured once per authorized read so pages share one schema contract. Enabled-path query/schema errors stay visibly unavailable or partial; there is no silent old-column downgrade. A blank .env.example entry and RUNBOOKS procedure require LIVE-2289 on main, Daniel-applied migration20270346048000 after green and recorded ledger parity, exact-head disposable Auth/PostgREST snapshot/immutability acceptance, then owner/non-owner preview and production acceptance before activation. No migration, SQL application, production flag change, reward change, email or public-sharing expansion is included. The immutable consequence probe fails on parent55ee6c618 because the actual selector module is absent, then passes on this implementation. Initial focused verification:37 tests across three files and changed-file lint pass, including unchanged no-SQL reader pins and actual enabled-reader four-support/authorization/failure regressions. This implementation remains local until preceding application/schema releases are ready; code completion does not claim activation or production acceptance. Final three-pass verification: root and independent peer review pass; the runbook describes persisted snapshots staying unchanged after replacement attempts, without claiming that the trigger must return an HTTP error. Final combined regression run passes93 tests across8 files, including all unchanged parent Signature/reader/profile/sidebar tests, and3 changed TypeScript files pass ESLint. Exact SCAN-502 is150/150 and required backlog is2685 entries with992 agreeing probes. The stable parent orphan-export repair was fast-forwarded before these checks; no new API exports are orphaned. Production schema/HTTP/owner acceptance and activation remain explicitly held. Current-main refresh after LIVE-2289 merged: 49 focused tests across four files, three-file lint, frozen probe and required backlog2690/997 pass on main69a6. The default-off code is prepared for draft review; this does not authorize schema application, flag activation or production acceptance.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/practice-support-evidence-read.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}

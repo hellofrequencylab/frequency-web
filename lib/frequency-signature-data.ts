@@ -4,9 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { PILLAR_KEYS, signatureForRhythm, type FrequencySignature } from '@/lib/frequency-signature'
 import { computePracticeRhythm, missingPracticeRhythm, practiceWindow, type RhythmLog, type PracticeWindow } from '@/lib/frequency-rhythm'
 import type { PillarSlug } from '@/lib/pillars/slugs'
+import { practiceSupportLogColumns } from '@/lib/practice-support-evidence-read'
 
-// Existing columns only: future support snapshots are a separate schema-gated release.
-const LOG_COLUMNS = 'id, logged_for, pillar_id, secondary_pillar_id, primary_pct, practice:practices(domain_id, secondary_domain_id, primary_pct)'
 const PAGE_SIZE = 250
 const MAX_PAGES = 100
 
@@ -26,10 +25,12 @@ export async function getMemberSignature(profileId: string): Promise<FrequencySi
       if (PILLAR_KEYS.includes(item.slug as PillarSlug)) pillars.set(item.id, item.slug as PillarSlug)
     }
     if (new Set(pillars.values()).size !== PILLAR_KEYS.length) return signatureForRhythm(missingPracticeRhythm('unavailable', window))
+    // Resolve once per authorized read so every page uses one schema contract.
+    const logColumns = practiceSupportLogColumns()
     const rows: RhythmLog[] = []
     let after: string | null = null
     for (let page = 0; page < MAX_PAGES; page++) {
-      let query = client.from('practice_logs').select(LOG_COLUMNS).eq('profile_id', profileId)
+      let query = client.from('practice_logs').select(logColumns).eq('profile_id', profileId)
         .gte('logged_for', window.start).lte('logged_for', window.end).order('id', { ascending: true }).limit(PAGE_SIZE)
       if (after) query = query.gt('id', after)
       const { data, error } = await query
