@@ -137,6 +137,7 @@ export const PIXEL_PATH_PREFIXES: readonly string[] = [
   '/discover/topics',
   '/discover/journeys',
   '/discover/circles',
+  '/discover/practices/pillar',
   '/discover/practices',
   '/practices',
   '/channels',
