@@ -50,6 +50,8 @@ function nodeToMap(n: BlockNode): Y.Map<unknown> {
   if (content) m.set('content', content)
   const style = bagToMap(n.style as Record<string, unknown> | undefined)
   if (style) m.set('style', style)
+  // Overrides are JSON replaced whole (a sparse bag per device), like any other value under a key.
+  if (n.responsive) m.set('responsive', n.responsive)
   return m
 }
 
@@ -66,6 +68,8 @@ function mapToNode(m: Y.Map<unknown>): BlockNode {
   if (style) node.style = style as BlockNode['style']
   const hidden = m.get('hidden')
   if (hidden !== undefined) node.hidden = hidden as boolean
+  const responsive = m.get('responsive')
+  if (responsive !== undefined) node.responsive = responsive as BlockNode['responsive']
   return node
 }
 
@@ -125,6 +129,9 @@ function patchNode(m: Y.Map<unknown>, n: BlockNode) {
   } else if (m.get('hidden') !== n.hidden) m.set('hidden', n.hidden)
   patchBag(m, 'content', n.content)
   patchBag(m, 'style', n.style as Record<string, unknown> | undefined)
+  if (n.responsive === undefined) {
+    if (m.get('responsive') !== undefined) m.delete('responsive')
+  } else if (!sameJson(m.get('responsive'), n.responsive)) m.set('responsive', n.responsive)
 }
 
 function cellShape(cells: BlockNode[][]): string {

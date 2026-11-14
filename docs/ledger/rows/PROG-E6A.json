@@ -1,0 +1,20 @@
+{
+  "id": "PROG-E6A",
+  "title": "Editor E6 slice: the touch gesture model and a layer list on the canvas",
+  "status": "done",
+  "priority": "P2",
+  "lane": "program",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E6"
+  },
+  "detail": "Split from PROG-E6 on 2026-11-14. Adds the pure gesture model (lib/builder/gesture.ts: a long-press state machine with a hold delay and a drift slop, a row hit-test, reorder, and the Alt+Arrow keyboard twin) and a layer list (components/builder/canvas/layer-list.tsx) mounted on the staff, EDITOR_CANVAS-gated /pages/canvas over a local demo section order. Three paths reorder a section: press-and-hold then drag, Alt+Arrow/Home/End, and Up/Down buttons that need no gesture. 44px targets, no hover, a polite live region announces each move. Dark. Unit tests cover the model and the list markup.\n\nVERIFIED: pure model tests, SSR markup tests, lint, tokens. NOT VERIFIED: any real-device touch (pointer events are untested in jsdom, scroll-vs-drag arbitration, touch-action behaviour on iOS Safari). The order is local and not saved; it is not yet wired to a real document, the page editor, or the website editor.\n\nStill on PROG-E6: spacing handles, drag from the canvas itself, the nested layer tree, a presets-first inserter on the canvas, and the E6 gate (the full authoring path completes on a phone), a device test.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/PROG-E6A.mjs",
+    "note": "Fails on main: no gesture model and no layer list. Passes once the pure model, the layer list with its three reorder paths, and the dark canvas mount exist with tests."
+  },
+  "closed": "2026-11-14"
+}
