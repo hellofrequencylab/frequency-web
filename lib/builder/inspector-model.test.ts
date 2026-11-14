@@ -6,6 +6,7 @@ import {
   inspectorFields,
   resetInspectorOverride,
   resolveInspectorValue,
+  setInspectorValue,
   type InspectorDeviceValues,
 } from './inspector-model'
 
@@ -74,5 +75,15 @@ describe('inspector device values', () => {
     expect(resolveInspectorValue(next, 'phone', 'hidden')).toEqual({ value: true, source: 'desktop' })
     expect(next.tablet).toBe(values.tablet)
     expect(resetInspectorOverride(next, 'phone', 'padding')).toBe(next)
+  })
+})
+
+describe('inspector writes', () => {
+  it('writes one device field without touching desktop or the other device', () => {
+    const next = setInspectorValue(values, 'phone', 'padding', 8)
+    expect(resolveInspectorValue(next, 'phone', 'padding')).toEqual({ value: 8, source: 'phone' })
+    expect(next.desktop).toBe(values.desktop)
+    expect(next.tablet).toBe(values.tablet)
+    expect(values.phone).toEqual({ hidden: true })
   })
 })
