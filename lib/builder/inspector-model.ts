@@ -53,3 +53,13 @@ export function resetInspectorOverride<Values extends object, Key extends keyof 
   else delete next[device]
   return next
 }
+
+/** Write one field on one device. Desktop is the base every other device inherits from. */
+export function setInspectorValue<Values extends object, Key extends keyof Values>(
+  values: InspectorDeviceValues<Values>,
+  device: BuilderDevice,
+  key: Key,
+  value: Values[Key],
+): InspectorDeviceValues<Values> {
+  return { ...values, [device]: { ...values[device], [key]: value } }
+}

@@ -7,12 +7,19 @@
 // builder's layout is untouched, and nothing here is persisted. Editor only: allowlisted for check:editor-crdt-importers, mounted
 // only by the staff-gated, flag-gated /pages/canvas.
 //
+// Inspector (PROG-E5): given a block's fields, the canvas also mounts the responsive inspector beside the frame. It
+// shares the frame's device, so switching to Phone edits phone values, and the frame draws the values that device
+// resolves to. The values are local to this page; nothing is saved.
+//
 // Presence (BLD-401): on a shared Space the link also carries who is here (faces above the canvas) and which node
 // each person is in (an outline on that node inside the frame). It rides the channel, never the doc.
 
 import { useEffect, useRef, useState } from 'react'
 import * as Y from 'yjs'
 import type { BuilderDevice } from '@/lib/builder/state'
+import type { InspectorFieldView } from '@/lib/builder/inspector-fields'
+import { resolveInspectorValue, type InspectorDeviceValues } from '@/lib/builder/inspector-model'
+import { ResponsiveInspector } from '@/components/builder/inspector/responsive-inspector'
 import { CanvasViewportShell } from './canvas-viewport-shell'
 import { CollabTextEditor } from './collab-text-editor'
 import { EditorPresenceFaces } from '@/components/builder/presence/presence-ui'
@@ -31,9 +38,24 @@ type Link = 'local' | 'connecting' | 'live' | 'offline'
 /** The demo text node's id: a real node id shape, so a selection of it is a valid presence payload. */
 const CANVAS_NID = 'ncanvasdemo'
 
-export function CollabCanvas({ spaceId }: { spaceId?: string }) {
+/** The block the inspector edits: its name, the controls the server derived from its contract, and starting values. */
+type CanvasInspector = {
+  title: string
+  fields: readonly InspectorFieldView[]
+  elsewhere: number
+  initial: Readonly<Record<string, string | boolean>>
+}
+
+export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspector?: CanvasInspector }) {
   const [doc] = useState(() => new Y.Doc())
   const [device, setDevice] = useState<BuilderDevice>('desktop')
+  const [blockValues, setBlockValues] = useState<InspectorDeviceValues<Record<string, string | boolean>>>(
+    () => ({ desktop: inspector?.initial ?? {} }),
+  )
+  const shown = (key: string) => {
+    const { value } = resolveInspectorValue(blockValues, device, key)
+    return typeof value === 'string' ? value : ''
+  }
   const [link, setLink] = useState<Link>(spaceId ? 'connecting' : 'local')
   const [peers, setPeers] = useState<PresenceState[]>([])
   const select = useRef<(nid: string | null) => void>(() => {})
@@ -79,6 +101,7 @@ export function CollabCanvas({ spaceId }: { spaceId?: string }) {
       </p>
       <EditorPresenceFaces peers={peers} />
       </div>
+    <div className={inspector ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' : undefined}>
     <CanvasViewportShell surface="site" device={device} onDeviceChange={setDevice}>
       <div style={{ padding: 24, font: '16px/1.5 system-ui, sans-serif' }}>
         <div
@@ -94,8 +117,27 @@ export function CollabCanvas({ spaceId }: { spaceId?: string }) {
           )}
           <CollabTextEditor doc={doc} nid={CANVAS_NID} field="body" seed={SEED} label="Page text" />
         </div>
+        {inspector && (
+          <div data-inspector-preview="" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid currentColor' }}>
+            {/* token-ok: preview mimics the page's own eyebrow size, not a UI chrome size */}
+            {shown('eyebrow') && <p style={{ margin: 0, fontSize: 12, textTransform: 'uppercase' }}>{shown('eyebrow')}</p>}
+            <p style={{ margin: '4px 0', fontSize: device === 'phone' ? 24 : 32, fontWeight: 700 }}>{shown('title') || inspector.title}</p>
+            {shown('subtitle') && <p style={{ margin: 0 }}>{shown('subtitle')}</p>}
+          </div>
+        )}
       </div>
     </CanvasViewportShell>
+    {inspector && (
+      <ResponsiveInspector
+        title={inspector.title}
+        fields={inspector.fields}
+        elsewhere={inspector.elsewhere}
+        device={device}
+        values={blockValues}
+        onChange={setBlockValues}
+      />
+    )}
+    </div>
     </>
   )
 }
