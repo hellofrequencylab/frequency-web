@@ -32,5 +32,5 @@ export function resumeView(l: LaunchSnapshot, now: Date): ResumeView {
   const step = resumeStep(l.niche, l.intents, l.steps)
   if (!step) return { kind: 'complete' }
   const made = LAUNCH_STEP_IDS.filter((id) => l.steps[id]?.status === 'published').map((id) => launchStep(id).label)
-  return { kind: 'step', step, label: launchStep(step).label, href: launchStepHref(step), savedAgo: agoLabel(l.updatedAt, now), made }
+  return { kind: 'step', step, label: launchStep(step).label, href: l.resume?.phase === 'builder' && !l.spaceId ? '/create-a-space?new=1' : launchStepHref(step), savedAgo: agoLabel(l.updatedAt, now), made }
 }
