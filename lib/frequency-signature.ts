@@ -13,14 +13,14 @@ export type PillarKey = PillarSlug
 export const PILLAR_KEYS: readonly PillarKey[] = PILLAR_SLUGS
 
 /** Raw input: how many qualifying acts (practice logs) landed in each Pillar. */
-export type PillarCounts = Record<PillarKey, number>
+type PillarCounts = Record<PillarKey, number>
 
 /** Windowed engagement input: the number of DISTINCT practice-days each Pillar has
  *  inside the recent rolling window (see WINDOW_DAYS). This is the signal the shape
  *  GROWS from — and, because old days fall out of the window, the signal it COLLAPSES
  *  toward when a member stops practicing. Computed server-side (the clock read lives in
  *  lib/frequency-signature-data.ts, never in a React render). */
-export type PillarWindowDays = Record<PillarKey, number>
+type PillarWindowDays = Record<PillarKey, number>
 
 /** The rolling window the bloom is measured over, in days. Wide enough that a steady
  *  member's shape is stable day to day, yet short enough that a lapse visibly fades it. */
