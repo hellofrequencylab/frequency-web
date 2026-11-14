@@ -25,6 +25,7 @@ describe('analytics taxonomy', () => {
 
   it('isClientEvent blocks server-authoritative events from client emit', () => {
     expect(isClientEvent('nav.page_view')).toBe(true)
+    expect(isClientEvent('lead.captured')).toBe(false)
     expect(isClientEvent('feature.used')).toBe(true)
     expect(isClientEvent('practice.adopted')).toBe(false) // server-authoritative
     expect(isClientEvent('circle.joined')).toBe(false)

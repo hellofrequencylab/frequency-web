@@ -30,7 +30,7 @@
 // same law across the full matrix, so a copy that drifts fails the build (the method
 // lib/theme/mode.test.ts established for the pre-paint bootstrap).
 
-import { PIXEL_PATH_PREFIXES, REDACTED_PAGE_TITLE } from '@/lib/analytics/sanitize'
+import { PIXEL_PATH_PREFIXES, REDACTED_PAGE_TITLE, pixelSafeAttributionQuery } from '@/lib/analytics/sanitize'
 
 /* ── Storage ──────────────────────────────────────────────────────────────── */
 
@@ -153,25 +153,50 @@ export function gaBootstrapScript(gaId: string): string {
   // SCAN-838: on a redacted path the title goes generic too, for the config and (gtag set) every later hit.
   const generic = JSON.stringify(REDACTED_PAGE_TITLE)
   return `(function(){try{
-var ID=${id},started=false,P=${prefixes},G=${generic};
+var ID=${id},started=false,lastPath=null,P=${prefixes},G=${generic},query=(${pixelSafeAttributionQuery.toString()});
+function locationFor(p){return location.origin+safe(p)+query(location.search);}
 function title(p){return safe(p)===p?document.title:G;}
 function safe(p){for(var i=0;i<P.length;i++){var x=P[i]+'/';if(p.indexOf(x)===0){var r=p.slice(x.length),j=r.indexOf('/');if(!r||r.charAt(0)==='[')return p;return P[i]+'/[slug]'+(j<0?'':r.slice(j));}}return p;}
+function allowed(){var m=/(?:^|;\\s*)${CONSENT_COOKIE}=([^;]*)/.exec(document.cookie);var c=m?m[1]:'';return c==='granted'||(c!=='denied'&&!/(?:^|;\\s*)${CONSENT_REGION_COOKIE}=1(?:\\s*;|\\s*$)/.test(document.cookie));}
+function hasAuthCookie(){return /(?:^|;\\s*)sb-[^=;\\s]+-auth-token(?:\\.\\d+)?=/.test(document.cookie);}
+function view(){
+if(hasAuthCookie()&&window.__fqGaAccountResolved!==true)return;
+if(!started||!allowed()||window['ga-disable-'+ID])return;
+var p=location.pathname;if(lastPath===p)return;
+var T=lastPath===null?title(p):G;lastPath=p;
+window.gtag('set',{page_title:T,page_location:locationFor(p)});
+window.gtag('event','page_view',{send_to:ID,page_location:locationFor(p),page_title:T,page_view_source:'frequency_manual'});
+}
+window.__fqGaView=view;
+window.__fqGaRoute=function(){if(hasAuthCookie()&&location.pathname!==lastPath){window.__fqGaAccountResolved=false;window.__fqGaAccountPending=true;window['ga-disable-'+ID]=true;}var owner=view;queueMicrotask(function(){if(window.__fqGaView===owner)owner();});};
+if(!window.__fqGaHistory){
+window.__fqGaHistory=true;
+['pushState','replaceState'].forEach(function(k){var original=history[k];history[k]=function(){var result=original.apply(this,arguments);if(window.__fqGaRoute)window.__fqGaRoute();return result;};});
+window.addEventListener('popstate',function(){if(window.__fqGaRoute)window.__fqGaRoute();});
+}
 window.__fqGa=function(){
-if(started)return;started=true;
+if(!allowed()||(hasAuthCookie()&&window.__fqGaAccountResolved!==true))return;
+var blocked=window.__fqGaAccountDisabled===true;
+try{blocked=blocked||localStorage.getItem('freq-ga-optout')==='1';}catch(e){}
+if(window.__fqGaBrowserDisabled){window.__fqGaBrowserDisabled=false;window['ga-disable-'+ID]=blocked;lastPath=null;}
+if(blocked){window['ga-disable-'+ID]=true;return;}
+if(started){view();return;}started=true;
 window.dataLayer=window.dataLayer||[];
-function gtag(){window.dataLayer.push(arguments);}
+function gtag(){if(hasAuthCookie()&&window.__fqGaAccountResolved!==true){window.__fqGaAccountPending=true;window['ga-disable-'+ID]=true;return;}if(!allowed()||window['ga-disable-'+ID])return;window.dataLayer.push(arguments);}
+window.gtag=gtag;
 try{if(localStorage.getItem('freq-ga-optout')==='1'){window['ga-disable-'+ID]=true;}}catch(e){}
 gtag('js',new Date());
 var T=title(location.pathname);
-gtag('set',{page_title:T});
-gtag('config',ID,{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false,page_location:location.origin+safe(location.pathname),page_title:T});
+gtag('set',{page_title:T,page_location:locationFor(location.pathname)});
+gtag('config',ID,{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false,send_page_view:false,page_location:locationFor(location.pathname),page_title:T});
 var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id='+ID;
 document.head.appendChild(s);
+view();
 };
 var m=/(?:^|;\\s*)${CONSENT_COOKIE}=([^;]*)/.exec(document.cookie);
 var choice=m?m[1]:'';
 var ask=/(?:^|;\\s*)${CONSENT_REGION_COOKIE}=1(?:\\s*;|\\s*$)/.test(document.cookie);
-if(choice==='granted'||(choice!=='denied'&&!ask)){window.__fqGa();}
+if(choice==='granted'||(choice!=='denied'&&!ask)){if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){if(allowed())window.__fqGa();},{once:true});}else{window.__fqGa();}}
 }catch(e){}})();`
 }
 
