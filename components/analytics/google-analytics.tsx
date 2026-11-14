@@ -8,9 +8,8 @@
 //
 // Privacy: we pass `anonymize_ip` and disable Google's advertising signals
 // (`allow_google_signals`/`allow_ad_personalization_signals` off). GA4's
-// The consent bootstrap owns explicit sanitized page views for the whole app.
-// Disable Enhanced Measurement history page views in the web stream before live
-// validation; send_page_view:false disables config views but cannot override remote history settings.
+// "Enhanced measurement" auto-tracks client-side route changes, so this single
+// snippet covers SPA navigation across the whole app — no manual pageview wiring.
 // Disclosed in the privacy policy (see app/privacy/page.tsx) and ADR-048.
 //
 // STAFF OPT-OUT: an operator working IN the product should not pollute their own

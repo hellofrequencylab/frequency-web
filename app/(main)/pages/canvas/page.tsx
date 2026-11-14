@@ -7,6 +7,8 @@ import { getJanitor } from '@/lib/page-editor/guard'
 import { EDITABLE_PAGES, getPage, isEditableSlug, resolveSpaceId } from '@/lib/page-editor/data'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { listPageVersions } from '@/lib/page-editor/versions'
+import { inspectorFieldViews } from '@/lib/builder/inspector-fields'
+import { photoHeroBlock } from '@/lib/entity-blocks/contract/photoHero'
 import type { Data } from '@/lib/page-editor/types'
 import { AdminPage } from '@/components/admin/admin-page'
 
@@ -20,6 +22,14 @@ const HistoryPanel = loadable(() => import('@/components/builder/history/history
 export const metadata: Metadata = { title: 'Canvas', robots: { index: false } }
 
 const EMPTY: Data = { content: [], root: {} }
+
+// The inspector's demo block (PROG-E5): the Banner contract's fields for a Space site, derived here on the server so
+// the contract and its registry never ship to the client. Starting values are desktop only; tablet and phone inherit.
+const BANNER_INSPECTOR = {
+  title: 'Banner',
+  ...inspectorFieldViews(photoHeroBlock, 'space-site'),
+  initial: { title: 'Come as you are', subtitle: 'A line under the headline', height: 'medium', display: 'overlay', buttonOn: true },
+}
 
 // THE E4 CANVAS ROUTE (PROG-E4B), dark. Off (and a 404) unless EDITOR_CANVAS is on, and then staff only. It mounts
 // the viewport shell with a shared-doc text editor; the live channel for a real entity is a later slice. With
@@ -53,7 +63,7 @@ export default async function CanvasPage({ searchParams }: { searchParams: Promi
           <HistoryPanel key={history.slug} slug={history.slug} title={history.title} spaceId={spaceId} initialVersions={history.versions} initialDraft={history.draft} />
         ) : null}
       </section>
-      <CollabCanvas spaceId={spaceId} />
+      <CollabCanvas spaceId={spaceId} inspector={BANNER_INSPECTOR} />
     </AdminPage>
   )
 }

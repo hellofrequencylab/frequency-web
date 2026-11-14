@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2292",
+  "title": "Offer voluntary practice exploration without inferring wellbeing or leaking support choices",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/practice/practice-invitation.tsx",
+    "ref": "Daniel's support/practice/expression changeover authorization and triple-pass review request, 2026-11-14."
+  },
+  "detail": "Implementation offers the same small voluntary invitation on the feed after the existing board and on the practice entry page. Explicit Mind, Body, Spirit and Expression choices open existing category libraries with honest exploration labels; familiar practice, rest, another choice and dismissal remain available. Choice state is component-local only: no reflection storage, tracking events, fabricated practice logs, AI calls or rewards. Existing button/section primitives and semantic tokens are reused. Practice page fallback and metadata describe a chosen rhythm rather than daily streak pressure; operator content remains operator-controlled. The new immutable consequence probe fails on main9fd87ee37 because the invitation implementation is absent and passes on the branch; SHA25614dd75abbf7dade84db3b8f89e28cf3abf752462047e88b1508563396676f897. A separate new privacy regression demonstrated that existing nested pillar URLs retained the support in default pixel paths. The narrow redaction prefix now removes all four categories and their titles before existing pixel mirrors; no old assertion or probe changed. Focused implementation/interaction/privacy and existing sanitizer/board tests pass66 assertions across5 files, with changed-file lint. Real-component synthetic initial/expression/rest fixtures rendered at390,1280,1440,1920,2000 without horizontal overflow, unnamed buttons or JavaScript errors; these are not authenticated or production acceptance. Root and independent discovery-specialist source reviews passed. Final focused regression remains66 tests across5 files, changed-file ESLint passes, and check:backlog reports2684 entries/991 agreeing probes. Result links disable prefetch, so selecting an area does not preload a category before explicit navigation. No SQL, send, production flag, merge or deployment performed. Exact-head CI product tests passed2642 files/29107 assertions, but its full backlog guard found151 externally unused lib exports against the unchanged150 cap. The new result union was needed only inside its module; removing its export modifier reduced the measured inventory to150 without changing emitted behavior, callers, tests, probes, baselines or the cap.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/practice-invitations.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}

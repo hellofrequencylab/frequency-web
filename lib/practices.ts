@@ -35,6 +35,7 @@ import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/prac
 import { normalizePrimaryPct, type PillarSplit } from '@/lib/practices/attribution'
 import { keepPrimary, resolveSplitWrite } from '@/lib/practices/split'
 import { residualFacetCounts, type FacetBaseRow } from '@/lib/practices/residual-facets'
+import { applyPracticePillarFilter } from '@/lib/practices/support-filter'
 import { coerceTermWeeks, cleanCue, termWindow, withinActiveCap } from '@/lib/practices/adoption'
 import { BREATH_PATTERNS } from '@/lib/on-air'
 import {
@@ -127,7 +128,7 @@ export interface Practice {
   weight_class: string | null
   /** The PRIMARY Pillar (domains.id), or null if uncategorized. The one place the primary is
    *  read from: it is one of the `focus_details` keys, never "the first" of them (jsonb keeps no
-   *  key order; LIVE-650, ADR-1618). Drives Pillar filtering, cards and the Zap split. */
+   *  key order; LIVE-650, ADR-1618). Drives the primary badge and Zap split; discovery matches every support. */
   domain_id: string | null
   /** Per-Focus instructions + timing, keyed by pillar id. The keys are the selected
    *  Focuses (a practice can belong to multiple). Defaults to {} on legacy rows. */
@@ -363,7 +364,7 @@ export async function searchLibraryPractices(opts: LibrarySearchOpts = {}): Prom
   if (!opts.includeHidden) q = q.eq('is_public', true)
   if (opts.hideDemo) q = q.eq('is_demo', false)
   if (opts.templatesOnly) q = q.eq('is_template', true)
-  if (opts.pillarId) q = q.eq('domain_id', opts.pillarId)
+  if (opts.pillarId) q = applyPracticePillarFilter(q, opts.pillarId)
   if (opts.subId) q = q.eq('subcategory_id', opts.subId)
   if (tagIds) q = q.in('id', tagIds)
   if (opts.q && opts.q.trim()) {
@@ -379,6 +380,7 @@ export async function searchLibraryPractices(opts: LibrarySearchOpts = {}): Prom
   else if (sort === 'az') q = q.order('title', { ascending: true })
   else q = q.order('score', { ascending: false }).order('created_at', { ascending: false })
 
+  q = q.order('id', { ascending: true })
   const from = (page - 1) * pageSize
   const res = await q.range(from, from + pageSize - 1)
   const base =
@@ -432,7 +434,7 @@ export type AdminPracticeSort = 'score' | 'new' | 'old' | 'az' | 'za' | 'logs' |
 export interface AdminPracticeSearchOpts {
   /** Free-text needle (title / summary / description ilike). */
   q?: string | null
-  /** Primary Pillar (domains.id). */
+  /** Any current support: primary, secondary, or selected Focus (pillars.id). */
   pillarId?: string | null
   subId?: string | null
   /** Library review status filter — INCLUDING 'archived' (admin can surface archived). */
@@ -558,7 +560,7 @@ async function applyAdminFilters<Q extends {
   // NB: `featured` is NOT filtered here (it is a timestamp, not a bool). searchAdminPractices
   // applies it post-query against the enriched featured_at; countAdminPractices applies it as a
   // null check on the view's featured_at.
-  if (opts.pillarId) q = q.eq('domain_id', opts.pillarId)
+  if (opts.pillarId) q = applyPracticePillarFilter(q, opts.pillarId)
   if (opts.subId) q = q.eq('subcategory_id', opts.subId)
   if (opts.status) q = q.eq('status', opts.status)
   if (opts.weightClass) q = q.eq('weight_class', opts.weightClass)
@@ -655,6 +657,7 @@ export async function searchAdminPractices(
     else if (sort === 'za') q = q.order('title', { ascending: false })
     else if (sort === 'logs') q = q.order('logs_total', { ascending: false }).order('created_at', { ascending: false })
     else if (sort === 'adopters') q = q.order('adopters', { ascending: false }).order('created_at', { ascending: false })
+    q = q.order('id', { ascending: true })
     const from = (page - 1) * pageSize
     const res = await q.range(from, from + pageSize - 1)
     base = ((res.data as AdminRankedRow[] | null) ?? [])
@@ -750,7 +753,7 @@ const FACET_PAGE = 1000
  *  text is long, and the counter only needs to know it is missing, which a second, id-only read
  *  asks with the table's own `is('body', null)`. */
 const FACET_BASE_COLS =
-  'id, domain_id, subcategory_id, status, weight_class, created_by, is_public, is_template, ' +
+  'id, domain_id, secondary_domain_id, focus_details, subcategory_id, status, weight_class, created_by, is_public, is_template, ' +
   'featured_at, header_image, logs_total'
 
 /** Every practices_ranked row matching `opts`, through applyAdminFilters, a page at a time in id

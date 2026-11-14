@@ -27,15 +27,17 @@ const STEPS: ReadonlyArray<{ step: string; eventType: string; count: 'events' | 
   { step: 'Launched (every door)', eventType: 'launch_completed', count: 'actors' },
 ]
 
-/** The funnel with step-over-step drop, from the window's counts by event type. Total. */
+/** Independent builder-visit and signed-in launch activity for the window, without inferred conversion. */
 export function createSpaceFunnel(byType: readonly Count[]): FunnelStep[] {
   const of = (et: string, kind: 'events' | 'actors') => byType.find((c) => c.eventType === et)?.[kind] ?? 0
-  return STEPS.map((s, i) => {
-    const actors = of(s.eventType, s.count)
-    const prev = i === 0 ? null : of(STEPS[i - 1].eventType, STEPS[i - 1].count)
-    const dropPct = prev && prev > 0 ? Math.round((1 - actors / prev) * 100) : null
-    return { step: s.step, eventType: s.eventType, actors, dropPct }
-  })
+  // Anonymous visits and signed-in members are separate populations. Even within
+  // one population these window totals do not prove ordered cohort conversion.
+  return STEPS.map((s) => ({
+    step: s.step,
+    eventType: s.eventType,
+    actors: of(s.eventType, s.count),
+    dropPct: null,
+  }))
 }
 
 /** The median of a list, or null for an empty one. Total. */

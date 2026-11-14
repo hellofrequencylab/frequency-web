@@ -1,10 +1,10 @@
 ---
 title: Build and share a Journey
-description: Turn what you know into a guided program. Let Vera draft a balanced first week, build it phase by phase, share it with the community, and let Vera check it for rank.
+description: Shape a Journey around an intention, choose supporting practices, and use optional coaching questions while you write.
 category: sharing
 order: 3
 published: 2026-06-06
-updated: 2026-10-06
+updated: 2026-11-14
 audience: member
 featureKeys: [journeys]
 status: published
@@ -35,21 +35,24 @@ the curriculum in the middle, and the settings in a panel on the right.
 
 Leave partway through and you'll come back to the step you stopped on.
 
-## Let Vera build it
+## Shape a Journey that fits
 
-The fastest start is the **Build with Vera box** in the main column. Tell her what you're making (for
-example, "a 3-week reset for people who want to sleep better and scroll less") and hit **Build with
-Vera**. She lays down a **balanced first week with one practice for each Pillar**: **Mind**, **Body**,
-**Spirit**, and **Expression** (an Expression practice is about putting it out: making something,
-sharing something, or connecting with someone). For each, she either pulls a fitting one from the
-library or writes a new one. You can edit, reorder, or remove anything after.
+Begin with an intention and one anchor practice: something people can return to.
+Add supporting practices when they serve that intention. Mind, Body, and Spirit
+can overlap; they do not need equal time or equal Zaps. Expression can be woven
+through the Journey as making, speaking, helping, or connecting. It can stay private.
 
-Starting with all four Pillars means a Journey opens **balanced**, so taking it nudges every side of
-your Signature toward center. Vera also drops in one **extra-credit Challenge**: an optional,
-above-and-beyond task that pays bonus **Zaps** when someone finishes it. Edit it, remove it, or add
-more from **Add extra credit** in the Curriculum (you set the Zaps each one is worth).
+The template is a starting shape, not a daily quota. You can replace, remove, or
+reorder its suggested practices. Changing a template does not rewrite the steps
+or requirements of Journeys people are already taking.
 
-Prefer to start by hand? **Start with the shape** lays the same slots down empty for you to fill.
+**Vera offers coaching questions.** Tell her what you are making and use the
+questions to clarify it. You write the names, guidance, and steps and choose what
+to save. The manual shape is available when you prefer to work without AI.
+
+An **extra-credit Challenge** is an optional task with a separate bonus. Use
+**Add extra credit** in the Curriculum when you want one. Its reward is separate
+from a practice's support areas; choosing more areas does not multiply rewards.
 
 ## Build the structure
 

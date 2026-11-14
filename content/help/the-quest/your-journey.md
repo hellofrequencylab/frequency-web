@@ -4,14 +4,14 @@ description: Each season gives you three Journeys. Do the practices, share what 
 category: the-quest
 order: 4
 published: 2026-06-06
-updated: 2026-10-07
+updated: 2026-11-14
 audience: member
 featureKeys: [journeys, circles]
 status: published
 ---
 
-A **Journey** is a guided run of **Practices** that moves through all four **Pillars**:
-Mind, Body, Spirit, and Expression. Every season of **The Quest** gives you three
+A **Journey** is a guided set of **Practices** built around an intention. Mind, Body,
+Spirit, and Expression offer overlapping ways to explore what supports you. Every season of **The Quest** gives you three
 Journeys, and they run in sequence, about four weeks each.
 
 ## Start one
@@ -45,25 +45,31 @@ every lesson you finished stays finished.
 
 ## How you finish
 
-A Journey is finished when two things are true inside its four-week window:
+**The requirements shown for your Journey apply.** Official Quest participation
+has a recorded completion contract; personal practice is not a test of balance.
 
-1. You **logged one of its Practices on at least 14 different days**. Not 14 in a row, and
-   not all in one weekend. The point is the rhythm: showing up most days for a few weeks.
-2. You **completed its Expression Challenge** (below).
+Official Journeys generally ask for practice on at least **14 different days**
+inside the stated window. Those days do not need to be consecutive. An existing
+enrollment may also require its Expression Challenge. Follow the requirement
+shown on your progress card; a newer optional-expression policy does not
+silently change an enrollment you already started.
 
-That's it. No lessons to grind and no quiz at the end. The work is the practice, done
-often enough to stick.
+Other library Journeys have their own structure. You do not need equal activity
+across four Pillars to make a practice meaningful. Previously earned recognition
+and rewards remain yours when templates or completion policies change.
 
 ## The Expression Challenge
 
-Each Journey closes with an **Expression Challenge**: share what you practiced with your
-community. You can do it two ways, and you choose:
+An **Expression Challenge** can invite you to carry a practice into life: make
+something, speak, help, or connect. Personal expression can stay private. Official
+Challenge rewards still follow the recorded completion routes:
 
 - **In person at a Circle gathering** pays **+50 Zaps**.
 - **Posted solo online** pays **+30 Gems**.
 
-Completing the Expression Challenge is required to finish the Journey. It's the part where
-the practice turns into something other people can see.
+Your progress card says whether this Challenge is required for your enrollment.
+You do not need to feel balanced before expressing yourself. A private creative
+act is valid personal expression, even when it does not claim an official Challenge reward.
 
 ## What finishing earns
 

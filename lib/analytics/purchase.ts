@@ -58,6 +58,7 @@ export function purchaseConversionFromSession(s: SessionLike): PurchaseConversio
     transaction_id: s.id,
   }
   if (meta.ga_client_id) props.ga_client_id = meta.ga_client_id
+  if (meta.ga_session_id) props.ga_session_id = meta.ga_session_id
   return {
     event: 'commerce.purchase',
     shopEvent: kind === 'commerce_order' ? 'shop.order_completed' : null,

@@ -31,7 +31,7 @@ export interface JourneyDetailsData {
 
 // Journeys v2 — the SINGLE-PAGE editor shell (ADR-301). Laid out like the Journey it builds and
 // following course-builder best practice: a cover band up top, then the identity row (icon + accent
-// picker beside a click-to-edit Title + subtitle), then Vera's four-Pillar composer FULL WIDTH, then
+// picker beside a click-to-edit Title + subtitle), then Vera's writing coach FULL WIDTH, then
 // a two-column body — the curriculum in the main column and ALL settings in a collapsible right rail.
 // No tabs; every field autosaves on blur.
 //
@@ -142,7 +142,7 @@ function JourneyActions({
         // Non-blocking nudge: the Master Template recommends an Anchor but never requires one. After
         // this shows, the same button proceeds on the next click.
         <p className="max-w-md text-2xs text-warning">
-          No anchor practice set. Journeys build habits best with one daily through-line. You can add one, or continue.
+          No anchor practice set. You can choose one to return to, or continue without one.
         </p>
       )}
     </div>
@@ -235,7 +235,7 @@ export function JourneyBuilder({
   /** Whether an Anchor practice exists (Master Template). Computed by the page (which holds the
    *  blocks); `false` warns before save/publish, `null`/unset never warns. */
   hasAnchor?: boolean | null
-  /** Vera's four-Pillar composer — rendered full-width above the body (edit mode). */
+  /** Vera's writing coach — rendered full-width above the body (edit mode). */
   vera?: ReactNode
   /** The curriculum editor (phases) — main column, edit mode. */
   curriculum?: ReactNode
@@ -536,7 +536,7 @@ function DraftGhostVera() {
         <Sparkles className="h-5 w-5 text-primary-strong" /> Build your Journey with Vera
       </p>
       <p className="mt-1 text-body-sm text-muted">
-        Name your Journey, then describe it and Vera fills a balanced four-Pillar week (Mind, Body, Spirit, Expression).
+        Name your Journey, then ask Vera questions to clarify your intention and shape the next step.
       </p>
     </div>
   )

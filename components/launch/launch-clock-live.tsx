@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { LaunchClock } from '@/components/launch/launch-clock'
 import { clockBeatAction } from '@/lib/launch/actions'
-import { BEAT_EVERY_MS, IDLE_AFTER_MS, clockView, type BeatKind } from '@/lib/launch/clock'
+import { BEAT_EVERY_MS, CLOCK_BUDGET_MS, IDLE_AFTER_MS, clockView, type BeatKind } from '@/lib/launch/clock'
 
 // THE LAUNCH CLOCK (the live half). Wraps the face: ticks the clock while the person is working, pauses it when the tab
 // is hidden or nothing has been touched for a minute, and reports in to the server every 15 seconds (the server is the
@@ -97,6 +97,7 @@ export function LaunchClockLive({ initialActiveMs, done, total, stages, stagesDo
     return () => window.removeEventListener('resize', place)
   }, [pill])
 
+  if (active >= CLOCK_BUDGET_MS) return null
   const view = clockView({ activeMs: active, done, total, running })
   return (
     <>

@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+vi.mock('@/lib/analytics/leads', () => ({ recordVerifiedLeadCapture: vi.fn(async () => {}) }))
+import { recordVerifiedLeadCapture } from '@/lib/analytics/leads'
+
 
 // THE LEAD BESIDE THE SEAT (Phase 1). The signed-out RSVP form now captures a `signup_leads` row
 // next to the guest seat, so an address that arrived through an event door is a proto-profile the
@@ -81,6 +84,7 @@ describe('submitGuestRsvp captures a signup lead beside the seat', () => {
     const res = await submitGuestRsvp({ eventId: EVENT, email: ' Sam@Example.COM ', name: ' Sam ' })
 
     expect(res).toEqual({ ok: true })
+    expect(recordVerifiedLeadCapture).toHaveBeenCalledWith('lead-1', 'event_rsvp')
     expect(leadArgs()).toEqual({
       p_email: 'sam@example.com',
       p_source: 'event_rsvp',
@@ -199,5 +203,24 @@ describe('the paths that must capture NO lead', () => {
     const res = await submitGuestRsvp({ eventId: EVENT, email: 'not-an-email' })
     expect(res.ok).toBe(false)
     expect(rpc).not.toHaveBeenCalled()
+  })
+})
+
+
+describe('guest lead analytics boundary', () => {
+  it('does not inspect the claim token or expose the stored lead identifier', async () => {
+    const data = { id: 'lead-1', get claim_token() { throw new Error('claim token must not be inspected') } }
+    rpc.mockImplementation(async (fn: string) => fn === 'capture_signup_lead' ? { data, error: null } : { data: 'receipt-1', error: null })
+    await expect(submitGuestRsvp({ eventId: EVENT, email: 'sam@example.com' })).resolves.toEqual({ ok: true })
+    expect(recordVerifiedLeadCapture).toHaveBeenCalledWith('lead-1', 'event_rsvp')
+  })
+  it('preserves the generic success if analytics fails', async () => {
+    vi.mocked(recordVerifiedLeadCapture).mockRejectedValueOnce(new Error('analytics down'))
+    await expect(submitGuestRsvp({ eventId: EVENT, email: 'sam@example.com' })).resolves.toEqual({ ok: true })
+  })
+  it('records no conversion for a failed lead capture', async () => {
+    rpc.mockImplementation(async (fn: string) => fn === 'capture_signup_lead' ? { data: null, error: { message: 'failed' } } : { data: 'receipt-1', error: null })
+    await submitGuestRsvp({ eventId: EVENT, email: 'sam@example.com' })
+    expect(recordVerifiedLeadCapture).not.toHaveBeenCalled()
   })
 })

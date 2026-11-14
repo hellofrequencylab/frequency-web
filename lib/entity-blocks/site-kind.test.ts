@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { ENTITY_BLOCKS, blockSupportsKind, blocksForKind } from './registry'
-import { maxColumnsForKind, resolveRows, starterRows, type EntityLayout } from './layout'
+import { ENTITY_BLOCKS, blockRendersOnSite, blockSupportsKind, blocksForKind } from './registry'
+import { maxColumnsForKind, resolveRows, siteSurfaceRows, starterRows, type EntityLayout } from './layout'
 
 // E3 (LIVE-1171): Site is a fourth kind. It is the web renderer on a Space's public page, so its legality is the
 // Space's, its ceiling is stated on its own, and a fresh Site starts from the Space starters.
@@ -45,5 +45,32 @@ describe('a saved layout resolves the same rows for site as for space', () => {
   ]
   it.each(layouts.map((l, i) => [i, l] as const))('layout %i', (_i, layout) => {
     expect(resolveRows(layout, 'site')).toEqual(resolveRows(layout, 'space'))
+  })
+})
+
+// The Site surface filter (LIVE-2232): legality stays the Space's, and the registry says which of those blocks draw on
+// the published website. Only the Spotlight-only blocks stay off it; everything else passes untouched.
+describe('the site surface filter', () => {
+  it('keeps only the Spotlight-only blocks off the Site', () => {
+    const off = ENTITY_BLOCKS.filter((b) => blockSupportsKind(b, 'site') && !blockRendersOnSite(b)).map((b) => b.id)
+    expect(off.sort()).toEqual(['donate', 'linkCards'])
+  })
+
+  it('never draws a block the Site may not hold', () => {
+    for (const b of ENTITY_BLOCKS) if (!blockSupportsKind(b, 'site')) expect(blockRendersOnSite(b)).toBe(false)
+  })
+
+  it('drops a Spotlight-only id from its cell and keeps the row shape', () => {
+    const rows = resolveRows({ rows: [{ id: 'r0', columns: 2, cells: [['about', 'linkCards'], ['donate']] }] }, 'site')
+    expect(siteSurfaceRows(rows)).toEqual([{ id: 'r0', columns: 2, cells: [['about'], []] }])
+    expect(rows[0].cells).toEqual([['about', 'linkCards'], ['donate']])
+  })
+
+  it('changes nothing on the starters or a layout with no Spotlight-only block', () => {
+    const layouts: (EntityLayout | null)[] = [null, { rows: [{ id: 'r0', columns: 2, cells: [['about'], ['stats']] }] }, { order: ['events', 'about'] }]
+    for (const l of layouts) {
+      const rows = resolveRows(l, 'site')
+      expect(siteSurfaceRows(rows)).toEqual(rows)
+    }
   })
 })

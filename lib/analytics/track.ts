@@ -88,7 +88,7 @@ export async function track(
   // LIVE-348: `ga_client_id` is the Measurement Protocol client_id, not an event
   // parameter. Lift it off the prop bag before the mirror so a purchase joins the
   // browser session that started checkout.
-  const { ga_client_id, ga_session_id, ...gaParams } = clean
+  const { ga_client_id, ...gaParams } = clean
   // A STABLE-key event is a lifecycle fact that happens once (account.created). The ledger already
   // drops the repeat; the GA4 mirror must too, or every later sign-in re-sends it and a conversion
   // counts once per login instead of once per person.
@@ -106,8 +106,7 @@ export async function track(
     event,
     gaParams,
     actorProfileId,
-    opts.gaIdentity?.clientId ?? (typeof ga_client_id === 'string' ? ga_client_id : null),
-    opts.gaIdentity?.sessionId ?? (typeof ga_session_id === 'string' ? ga_session_id : null),
+    typeof ga_client_id === 'string' ? ga_client_id : null,
   )
   return recorded
 }

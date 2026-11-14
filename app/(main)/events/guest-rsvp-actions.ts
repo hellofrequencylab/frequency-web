@@ -5,6 +5,7 @@ import { rateLimitOk } from '@/lib/rate-limit'
 import { createClient } from '@/lib/supabase/server'
 import { sendGuestRsvpReceipt } from '@/lib/events/guest-rsvp-email'
 import { resolveAcquisition } from '@/lib/attribution/server'
+import { recordVerifiedLeadCapture } from '@/lib/analytics/leads'
 
 // SIGNED-OUT GUEST RSVP — one field, and a seat that obeys the member rules.
 //
@@ -181,7 +182,7 @@ export async function submitGuestRsvp(input: {
       attribution = {}
     }
 
-    // The RETURN VALUE IS DISCARDED ENTIRELY, including the `claim_token`. A guest's browser has no
+    // The claim token is DISCARDED. Only the opaque id is used for a deduplicated analytics fact. A guest's browser has no
     // continuity with the sign-in that happens days later, often on another device, so a token held
     // here could never be presented by the person it belongs to — and keeping it would only invite
     // a future reader to branch on it, which is how the identical reply above gets lost. The
@@ -191,7 +192,7 @@ export async function submitGuestRsvp(input: {
     //
     // `error` is read for one reason only: a swallowed failure with no trace is an invisible
     // regression. It is LOGGED and never branched on — the reply below is GENERIC_OK either way.
-    const { error } = await (supabase as unknown as UntypedRpc).rpc('capture_signup_lead', {
+    const { data, error } = await (supabase as unknown as UntypedRpc).rpc('capture_signup_lead', {
       p_email: email,
       p_source: 'event_rsvp',
       p_step: 0,
@@ -206,6 +207,8 @@ export async function submitGuestRsvp(input: {
     })
     if (error) {
       console.error('[guest-rsvp] capture_signup_lead failed', { eventId: input.eventId, error: error.message })
+    } else if (data && typeof data === 'object' && 'id' in data && typeof data.id === 'string') {
+      await recordVerifiedLeadCapture(data.id, 'event_rsvp').catch(() => {})
     }
   } catch (e) {
     console.error('[guest-rsvp] capture_signup_lead threw', { eventId: input.eventId, error: e instanceof Error ? e.message : String(e) })

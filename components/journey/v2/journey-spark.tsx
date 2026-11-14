@@ -512,8 +512,8 @@ export function JourneySpark({
               <span className="min-w-0 flex-1">
                 <span className="block text-body-sm font-semibold text-text">The recommended framework</span>
                 <span className="block text-meta leading-snug text-muted">
-                  The proven shape, with no AI: a welcome, weekly practices across the Pillars, an Expression
-                  Challenge each week, and a capstone.
+                  A starting rhythm, with no AI: a welcome, one anchor, optional supporting practices,
+                  expression and reflection.
                 </span>
                 <span className={capsLabel('mt-1 block text-2xs font-medium text-muted')}>
                   You choose the length

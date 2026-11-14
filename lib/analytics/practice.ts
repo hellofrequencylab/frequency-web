@@ -30,12 +30,13 @@ async function computePracticeMetrics(): Promise<PracticeMetrics> {
   const monthAgo = new Date(now - 30 * DAY).toISOString()
 
   // Verified practices in the last 7 days → WAM (distinct actors) + volume.
-  const { data: weekRows } = await admin
+  const { data: weekRows, error: weekError } = await admin
     .from('engagement_events')
     .select('actor_profile_id')
     .eq('event_type', PRACTICE_EVENT)
     .gte('created_at', weekAgo)
 
+  if (weekError) throw new Error('Practice reading unavailable')
   const verifiedThisWeek = weekRows?.length ?? 0
   const wam = new Set(
     (weekRows ?? []).map((r) => r.actor_profile_id).filter((id): id is string => !!id),
@@ -43,23 +44,25 @@ async function computePracticeMetrics(): Promise<PracticeMetrics> {
 
   // Activation: of members who joined in the last 30 days, how many logged a
   // verified practice within N days of joining.
-  const { data: newProfiles } = await admin
+  const { data: newProfiles, error: profileError } = await admin
     .from('profiles')
     .select('id, created_at')
     .eq('is_system', false)
     .gte('created_at', monthAgo)
 
+  if (profileError) throw new Error('Member cohort reading unavailable')
   const newMembers = newProfiles?.length ?? 0
   let activated = 0
 
   if (newProfiles && newProfiles.length > 0) {
     const ids = newProfiles.map((p) => p.id)
-    const { data: practices } = await admin
+    const { data: practices, error: practicesError } = await admin
       .from('engagement_events')
       .select('actor_profile_id, created_at')
       .eq('event_type', PRACTICE_EVENT)
       .in('actor_profile_id', ids)
 
+    if (practicesError) throw new Error('Practice activation reading unavailable')
     // Earliest verified practice per actor.
     const firstByActor = new Map<string, number>()
     for (const ev of practices ?? []) {
@@ -72,7 +75,7 @@ async function computePracticeMetrics(): Promise<PracticeMetrics> {
     for (const p of newProfiles) {
       if (!p.created_at) continue
       const first = firstByActor.get(p.id)
-      if (first !== undefined && first - new Date(p.created_at).getTime() <= ACTIVATION_WINDOW_DAYS * DAY) {
+      if (first !== undefined && first >= new Date(p.created_at).getTime() && first - new Date(p.created_at).getTime() <= ACTIVATION_WINDOW_DAYS * DAY) {
         activated++
       }
     }

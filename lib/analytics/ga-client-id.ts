@@ -9,9 +9,7 @@
 // Best-effort: a missing cookie, a request with no cookie jar (tests, cron), or a cookie
 // we cannot parse all return {}. Checkout still starts.
 
-import { currentViewerAllowsAnalytics } from './audience'
 import { cookies } from 'next/headers'
-import { analyticsAllowed, parseConsentChoice, CONSENT_COOKIE, CONSENT_REGION_COOKIE } from '@/lib/consent/cookie-consent'
 
 /** Stripe metadata key. Session-level; the webhook is what reads it. */
 export const GA_CLIENT_ID_META = 'ga_client_id'
@@ -24,9 +22,11 @@ export const GA_CLIENT_ID_META = 'ga_client_id'
  */
 export function parseGaClientId(raw: string | undefined | null): string | null {
   if (!raw) return null
-  if (raw.length > 128) return null
-  const parsed = /^GA\d+\.\d+\.(\d+\.\d+)$/.exec(raw.trim())
-  return parsed ? parsed[1] : null
+  const parts = raw.trim().split('.')
+  if (parts.length < 4) return null
+  const id = `${parts[parts.length - 2]}.${parts[parts.length - 1]}`
+  if (!/^\d+\.\d+$/.test(id)) return null
+  return id
 }
 
 /**
@@ -50,9 +50,8 @@ export function parseGaSessionId(raw: string | undefined | null): string | null 
 export async function readGaIdentity(): Promise<{ clientId: string; sessionId: string | null } | null> {
   try {
     const jar = await cookies()
-    if (!analyticsAllowed({ choice: parseConsentChoice(jar.get(CONSENT_COOKIE)?.value), priorConsentRegion: jar.get(CONSENT_REGION_COOKIE)?.value === '1' })) return null
     const clientId = parseGaClientId(jar.get('_ga')?.value)
-    if (!clientId || !(await currentViewerAllowsAnalytics())) return null
+    if (!clientId) return null
     const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
     const sessionCookie = gaId ? jar.get(`_ga_${gaId.replace(/^G-/, '')}`)?.value : undefined
     return { clientId, sessionId: parseGaSessionId(sessionCookie) }
@@ -63,10 +62,11 @@ export async function readGaIdentity(): Promise<{ clientId: string; sessionId: s
 
 /** Session metadata fragment. Empty when there is no readable `_ga` cookie. */
 export async function checkoutGaMetadata(): Promise<Record<string, string>> {
-  const identity = await readGaIdentity()
-  if (!identity) return {}
-  return {
-    [GA_CLIENT_ID_META]: identity.clientId,
-    ...(identity.sessionId ? { ga_session_id: identity.sessionId } : {}),
+  try {
+    const jar = await cookies()
+    const id = parseGaClientId(jar.get('_ga')?.value)
+    return id ? { [GA_CLIENT_ID_META]: id } : {}
+  } catch {
+    return {}
   }
 }

@@ -1054,6 +1054,7 @@ lib/growth/nearby-practice.ts
 lib/hierarchy/hub-admin.ts
 lib/hierarchy/nexus-admin.ts
 lib/hunts/claim-store.ts
+lib/hunts/redemption-store.ts
 lib/hunts/commerce-store.ts
 lib/hunts/run-store.ts
 lib/hunts/staff-store.ts
@@ -1331,4 +1332,3 @@ test/authz/check-authz-lib.test.ts
 app/(main)/admin/insights/experiment-actions.ts
 lib/analytics/experiment-runtime.ts
 lib/analytics/experiment-retention.ts
-lib/analytics/audience.ts

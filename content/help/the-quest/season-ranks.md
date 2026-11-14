@@ -4,7 +4,7 @@ description: How finishing Journeys moves you up the ranks each season.
 category: the-quest
 order: 2
 published: 2026-06-03
-updated: 2026-06-18
+updated: 2026-11-14
 audience: member
 featureKeys: [ranks]
 status: published
@@ -28,7 +28,7 @@ When you complete a Journey you earn:
 - **+75 Zaps**
 - **A Pillar Trophy** for that Journey (Mind, Body, or Spirit)
 
-Each Journey is capped by an **Expression Challenge**: sharing what you practiced with your community. Completing the Expression Challenge is required to finish the Journey. It pays an extra **+50 Zaps** if you do it in person at a Circle gathering, or **+30 Gems** if you post it solo online.
+An **Expression Challenge** can be part of a Journey. **The requirements shown for your Journey apply.** Existing enrollments retain their published contract; newer policies may make Expression optional. A policy change does not remove recognition you already earned. The Challenge keeps its separate reward: **+50 Zaps** in person at a Circle gathering, or **+30 Gems** posted solo online. Private expression is welcome too, without implying an official reward claim.
 
 ## Finish all three: the Certificate
 

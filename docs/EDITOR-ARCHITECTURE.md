@@ -50,7 +50,10 @@ Two facts settle it:
   happened to mount the component.
 - **Give Site the four things email got**: legality (`kinds`), a column ceiling, a palette allowlist,
   and a renderer. Site's renderer is the web one, so it is the cheapest of the four surfaces to add
-  — but it needs a surface filter, which currently lives only in git history. ✅ **The published flag
+  — but it needs a surface filter. ✅ **The Site surface filter is back, dark** (LIVE-2232): a registry
+  block marked `notOnSite` (`blockRendersOnSite`, `siteSurfaceRows` in `lib/entity-blocks/layout.ts`)
+  leaves the Site's rows only with `EDITOR_CANVAS` on, so the Site is unchanged until its `editor-site`
+  picture (`PW_SITE_URL`, `test/e2e/surfaces.ts`) can diff the switch. ✅ **The published flag
   is live**: `lib/spaces/website.ts` exports `readWebsitePublished`, the `setWebsitePublished` server
   action exists, and `space-page-panel.tsx` exposes the operator toggle.
 
@@ -568,7 +571,7 @@ repo that cannot merge.
 | `check:blocks` | AST manifest over the registry: every block resolves to a renderer for **each declared surface**; `toText` present; migration chain complete and contiguous; `content` is a Zod schema; `reads: 'live'` implies no email renderer **unless `resolveAt: 'send'` names a registered resolver**. ⚠️ Without that clause the gate fails on a clean tree, because `productCard` is live-reading *and* renders to email | Hard |
 | `check:doc-safety` | A frozen corpus of real stored documents round-trips through the registry with **zero loss** — unknown types preserved byte-for-byte | Hard |
 | `check:surface-binding` | **Adds a sixth rule to `check:menu`'s five** (`MENU-CONTRACT.md`), sharing its manifests: every App carrying a surface resolves to a component. The guard whose absence let `surfaces.page = {}` ship 157 times | Hard |
-| `check:loom-integrity` | Every Loom-declared function resolves to real primitives and real schemas | Write-time |
+| `check:loom-integrity` | Every Loom-declared function resolves to real primitives and real schemas. ✅ **Both arms live 2026-11-14** (PROG-E9): arm A `validateLoomFunction` (`lib/loom/functions/validate.ts`), arm B `scripts/check-loom-integrity.mjs`, enforced under vitest. The store it guards (`lib/loom/store.ts`, needs a `loom_functions` migration) is not written | Write-time |
 | `check:email-blocks` | ✅ **LIVE 2026-10-19** ([ADR-1759](DECISIONS.md), LIVE-933): `scripts/check-email-blocks.mjs`, in the `checks` guards array. `EMAIL_PALETTE_BLOCK_IDS` ⇄ renderer-switch **bijection** (14 ⇄ 14, exact today); no `reads: 'live'` block in the palette without a declared send-time resolver. ⚠️ **The first draft said `KNOWN_BLOCK_IDS` ⇄ switch. That gate fails on a clean tree** — `KNOWN_BLOCK_IDS` is all **36** entity ids (`block-content.ts:1286`, the prototype-pollution allowlist), the switch has **14**. Its real assertion is *superset, and derived rather than restated* | Hard |
 
 ### 7.3 Ratchets

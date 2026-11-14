@@ -16,7 +16,14 @@ import { unlockedPhaseCount } from './schedule'
 
 /** BlockRow plus the settings jsonb (the anchor flag lives there). */
 export interface BlockRowWithSettings extends BlockRow {
-  settings?: { anchor?: boolean } | null
+  settings?: { anchor?: boolean; support_suggestion?: boolean } | null
+}
+
+/** New template suggestions stay available in the player without becoming commitments.
+ *  Legacy optional rows keep their existing automatic adoption. Making a suggestion required
+ *  or explicitly choosing it as the Anchor promotes it into the Journey's automatic targets. */
+export function automaticallyAdoptsPractice(row: Pick<BlockRowWithSettings, 'required' | 'settings'>): boolean {
+  return row.required !== false || row.settings?.support_suggestion !== true || row.settings?.anchor === true
 }
 
 interface LegTargets {
@@ -44,8 +51,9 @@ export function computeLegTargets(
   // PLAYABLE tree (a phase's lessons). buildJourneyTree drops root-level module blocks
   // entirely, so an anchor authored there would ride the target set of a journey whose
   // player never shows it; scope to what the member can actually reach.
+  const optionalSuggestions = new Set(blocks.filter((row) => !automaticallyAdoptsPractice(row)).map((row) => row.id))
   const playable = new Set<string>()
-  for (const phase of phases) for (const m of phase.modules) for (const l of m.lessons) if (l.practiceId) playable.add(l.practiceId)
+  for (const phase of phases) for (const m of phase.modules) for (const l of m.lessons) if (l.practiceId && !optionalSuggestions.has(l.id)) playable.add(l.practiceId)
   const anchorIds = [
     ...new Set(
       blocks
@@ -60,7 +68,7 @@ export function computeLegTargets(
   const ids = new Set<string>(anchorIds)
   for (const phase of legPhases) {
     if (!phase) continue
-    for (const m of phase.modules) for (const l of m.lessons) if (l.practiceId) ids.add(l.practiceId)
+    for (const m of phase.modules) for (const l of m.lessons) if (l.practiceId && !optionalSuggestions.has(l.id)) ids.add(l.practiceId)
   }
   return { targetIds: [...ids], anchorIds, week, weeks: phases.length }
 }

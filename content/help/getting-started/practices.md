@@ -1,17 +1,26 @@
 ---
 title: Practices, choose, do, log
-description: Adopt a practice or follow your Circle's, then log it each day to earn Zaps and build your streak.
+description: Find a practice that supports you, choose a rhythm, and keep a record of what you do.
 category: getting-started
 order: 3
 published: 2026-05-31
-updated: 2026-10-06
+updated: 2026-11-14
 audience: member
 featureKeys: [practices, gamification]
 status: published
 ---
 
-A practice is the thing you actually do: meditate, move, breathe, journal. Logging
-your practice is the heart of Frequency, it is how showing up turns into progress.
+A practice is something you choose to do: walk, breathe, journal, make something, or
+spend a quiet moment with someone. Start with what would support you today.
+
+A practice can support more than one part of life. **Mind** can mean attention and
+reflection; **Body**, movement and rest; **Spirit**, connection and meaning in your
+own terms. **Expression** can be making, speaking, helping, or sharing. These overlap.
+You do not need to fill four boxes every day, and you do not need to feel balanced
+before you express yourself.
+
+Logging keeps a record of what you did. It cannot capture everything that supports
+you, and the shape of that record is not a verdict about how you are doing.
 
 ## Two ways to have a practice
 
@@ -41,24 +50,24 @@ Either way, marking **any** practice done, your own or your Circle's, earns **Za
 Once it's done, the row reads **Logged today**. Tapped it by mistake? Hit **Undo** to
 un-log it, same day only. After today the log is locked in.
 
-You can log a practice once per day. Do it for a few days in a row and the streak
-starts to pull you back, which is exactly the point.
+You can log a practice once per day. Choose a rhythm you can return to. You can rest,
+change your plan, or come back after a gap without starting your personal journey over.
 
 One timer, two modes. **[Mindless](/help/the-quest/on-air)** has **Be Still** for
 a sit and **Get Moving** for a walk, run, yoga, strength, stretch or play. A timed
 practice can come **preset by whoever built it**, its mode, its length, its warm-up,
 even a full workout like Tabata, so it opens ready to go and you just start.
 
-## Adopt for a stretch, or for good
+## Choose a rhythm
 
 When you adopt a practice, you pick how long you are taking it on: **2 weeks**, **4
-weeks** (what most people pick), **8 weeks** (long enough to make it stick), or
+weeks**, **8 weeks** (a longer stretch to explore), or
 **ongoing**. You can also note when you plan to do it ("After my morning coffee"),
-which makes it far more likely to happen. Your card shows where you stand, **Week 2
+which gives the practice a place in your day. Your card shows where you stand, **Week 2
 of 4 · Day 9 of 28**, from day one.
 
 When a commitment completes, you get the note and the choice: go again, keep it going
-for good, or let it rest. Your history stays yours either way.
+as an ongoing practice, or let it rest. Your history stays yours either way.
 
 Your list holds up to **five** practices you adopted yourself, on purpose: the ones
 you keep are the ones that happen. Taking on a sixth offers a **swap**, pick one to
@@ -70,20 +79,17 @@ can change the Circle's practice whenever the focus shifts.
 
 You can shape practices, not just pick them:
 
-- **Create one with Vera.** On **Practices**, hit **Create a practice** to open the
-  builder. Answer a few quick questions (who it is for, the act itself, what you want
-  out of it, how often, and how long) and Vera drafts the whole thing: a name, a hook,
-  the steps, a cadence, a Pillar, and **how it is done**, a stillness timer, a moving
-  timer, or a simple log, with a warm-up line, shown before you create it. Review it,
-  change anything, and create; every part of the timer still tunes in the editor. Already
-  wrote your practice somewhere else? Paste it and Vera shapes it into the same fields.
-  Want to start from scratch instead? Pick "Skip, I'll build it myself" to go straight to the editor.
-  Any signed-in member can create a practice. A free Member publishes a few, and **Crew**
-  publishes as many as they like. Any member can **adopt** a practice and log it.
-- **Edit yours.** Any practice you created shows an **Edit** button. Change its name,
-  summary, full "how to" guide, cadence, Pillar, category, and icon by hand, or use
-  **Edit with Vera** to make a change in plain language ("make it a morning sit," "cut it
-  to five minutes").
+- **Create your own.** On **Practices**, hit **Create a practice**. You write the
+  name, what someone does, and any guidance you want to share. Vera can offer
+  separate coaching questions to help you clarify it; you decide what to write
+  and save. Choose the areas it can support, a cadence, and how it is done.
+  You can also paste your own written practice or start from a template.
+  Any signed-in member can create a practice. A free Member publishes a few,
+  and **Crew** publishes as many as they like. Any member can adopt and log one.
+- **Edit yours.** Open a practice you created and choose **Edit**. Change the name,
+  guide, cadence, supporting Pillars, category, and timer. Coaching can help you
+  think it through; it does not replace your words.
+
 - **Set up how it runs.** In the editor, **How it's done** picks the timer: **Mindless**
   (a quiet Be Still sit, and you choose the flavour, Meditate, Breathe, Stillness, Ritual,
   Journal or Just Log), **Get Moving** (a walk, run, yoga, stretch, play, or a full strength
@@ -105,11 +111,11 @@ hard they are.)
 Many library practices are **templates**: a proven starting point you can claim and
 make your own. Open one and hit **Claim & make it yours**:
 
-1. Tell **Vera** what you want from it and when you can realistically do it.
-2. Vera shapes a personal version: a name, a cadence that fits your week, and concrete
-   steps for *you*. (No Vera handy? Skip and tweak it yourself.)
-3. Review, edit anything, and claim it. You get your own private copy, it is adopted
-   onto your list, and you earn Zaps for claiming your first one.
+1. Open the template and decide what you want to keep or adapt.
+2. You write the changes. Optional coaching questions can help you clarify the act
+   and choose a rhythm that fits your week.
+3. Review and claim it. You get your own private copy, adopted onto your list.
+   You can earn Zaps for your first claim.
 
 From there it is yours: edit it anytime, log it daily, and, if you want, share it back
 to the community library for others to find. A practice you build starts as a **private
@@ -139,9 +145,10 @@ The library is organized so you can find practices that fit you, even as it grow
 thousands:
 
 - **Search.** Use the search box to find a practice by name or description.
-- **Pillars and sub-categories.** Everything sits under one of the four Pillars
-  (**Mind, Body, Spirit, Expression**), and within a Pillar you can narrow to a
-  sub-category (for example Body → Cardio, Strength, Mobility).
+- **Pillars and sub-categories.** Browse **Mind, Body, Spirit, or Expression** as
+  ways to explore. A practice can support more than one Pillar. Its main category
+  helps organize the library; it does not limit what the practice can mean to you.
+  You can narrow to a sub-category, such as Body → Mobility.
 - **Tags.** Practices carry tags like `morning`, `quick`, `outdoor`, or `social` so
   you can spot what suits the moment. When you create or edit your own practice, add
   your own tags to help others find it.
