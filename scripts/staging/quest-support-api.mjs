@@ -5,6 +5,9 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
 import { invokedDirectly } from '../lib/invoked-directly.mjs'
 
+/**
+ * @param {{ env?: Record<string, string | undefined>, localStatus?: Record<string, unknown>, requestImpl?: (url: string, options: RequestInit) => Promise<Response> }} [options]
+ */
 export async function runQuestSupportAcceptance({ env = process.env, localStatus, requestImpl = globalThis.fetch } = {}) {
   if (env.FREQUENCY_EPHEMERAL_ROOM_STAGING !== '1') throw new Error('Explicit ephemeral staging opt-in required')
   let status = localStatus
