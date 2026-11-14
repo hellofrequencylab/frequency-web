@@ -1893,6 +1893,140 @@
       ]
     },
     {
+      "pullRequest": 4957,
+      "expiresAt": "2026-11-17T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346048000_loom_functions.sql",
+          "sha256": "01cd40f90ee3a609741ffe5d17d9b43f55c85c27bffb2dd56e90ff48aec697e0"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/pages/loom/actions.ts",
+          "status": "added",
+          "sha256": "3d3690e71f55ea03c75f5b954616e9d0e2261b9ff66cf752eaef20a17c5e3d28",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/pages/loom/composer-form.tsx",
+          "status": "added",
+          "sha256": "ad775295ab24df8b7b5522d6ba265c9119ca78f7c1606bb5d92a801c1399440a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/pages/loom/page.tsx",
+          "status": "added",
+          "sha256": "cbde44f14d1962e9ed6cae0cd66b411a7c1d8b11c9d8306fad9a51388b7eb87d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/EDITOR-ARCHITECTURE.md",
+          "status": "modified",
+          "sha256": "87a67766f2c97468543f1db158479e039c90df5bcdeed7af6ecb422337c339a6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/EDITOR-GATES.md",
+          "status": "modified",
+          "sha256": "5ef5359155a28f481917a4e460a8b0ad4e05ca9f1872bedf5175e2d319daafc2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "5901da45248b977ec891a57b73f0f0ca7c38bbf1d47738d5ac331f5264247ff1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/PROG-E9.json",
+          "status": "modified",
+          "sha256": "8cee100256a81bc7b56e2d0de5845380e1033593cfb768c1010d8fea7dc3f4ab",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "e8ae2e3176f2dcd92d7230a4fd6064248c0930eefdc17a425516948769daee3b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/loom/store.test.ts",
+          "status": "added",
+          "sha256": "812e62da4e142bbf19ce35656a8e138ff8eca36cd00a7776c73a6f90b93994da",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/loom/store.ts",
+          "status": "added",
+          "sha256": "e0a91becad8f82fcea96511d430ec43ab55b103c27914b7fdc5e5306039db628",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/moderation/suspension-coverage.ts",
+          "status": "modified",
+          "sha256": "8978bd9a9dc01b0fe4e3e47e084e5239c21fb746464224accaf927cb87e64bd8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "207058c8f9cf5c255087267c1d2e9fb92ce86fd09a7b826541af5e0557fae944",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-loom-integrity.mjs",
+          "status": "modified",
+          "sha256": "d800ad9e6c8ce143f52f9cbd0947c164ca5f4c0954acb8cbd8123d668fb6d66d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "d5018bd0bdbe26a2dbf8f81b87012ab3b5b56d8e523d6eebc8c39fa03afe036d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "f482fb8ad6fa002a9b8bd1127d23787b1f00e4b71c83c96fee2182b05bbd6dac",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346048000_loom_functions.sql",
+          "status": "added",
+          "sha256": "01cd40f90ee3a609741ffe5d17d9b43f55c85c27bffb2dd56e90ff48aec697e0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
+    },
+    {
       "pullRequest": 4960,
       "expiresAt": "2026-11-16T23:59:59Z",
       "migrations": [

@@ -154,7 +154,7 @@ export const WIDGET_META: Record<WidgetId, { label: string; hint: string; mode: 
   'season-context': { label: 'Season context', hint: 'The season, its theme, and the current Act.', mode: 'active' },
   'story': { label: 'The story', hint: 'The intro markdown: why this Journey exists.', mode: 'discovery' },
   'path': { label: 'The path', hint: 'The ordered steps with cadence, note, and tier. (Always on.)', mode: 'discovery' },
-  'pillar-balance': { label: 'Pillar balance', hint: 'How the path spreads across the four Pillars.', mode: 'discovery' },
+  'pillar-balance': { label: 'Path categories', hint: 'Primary category labels assigned to path items, not a personal balance score.', mode: 'discovery' },
 }
 
 /**
