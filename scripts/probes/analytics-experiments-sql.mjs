@@ -12,7 +12,7 @@ await db.exec(`
   create table consent_records(profile_id uuid, scope text, granted boolean);
   insert into profiles values ('00000000-0000-0000-0000-000000000001'),('00000000-0000-0000-0000-000000000002');
 `)
-await db.exec(readFileSync(new URL('../../supabase/migrations/20270346046500_analytics_experiments.sql', import.meta.url), 'utf8'))
+await db.exec(readFileSync(new URL('../../supabase/migrations/20270346050000_analytics_experiments.sql', import.meta.url), 'utf8'))
 await assert.rejects(db.query('select analytics_experiment_results()'), /not authorized/)
 await db.exec('set role anon')
 await assert.rejects(db.query('select * from analytics_experiment_assignments'), /permission denied/)

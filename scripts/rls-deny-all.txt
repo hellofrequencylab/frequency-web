@@ -229,5 +229,8 @@ hunt_privacy_requests
 
 # EMAIL-047 cross-email lifecycle send ledger: service role only; written by reserveLifecycleSend (lib/lifecycle/cap-io.ts).
 lifecycle_send_log
+
+# PROG-E9: Loom function declarations; read and written only by lib/loom/store.ts behind validateLoomFunction and the staff gate; service-only, no browser role.
+loom_functions
 analytics_experiments
 analytics_experiment_assignments

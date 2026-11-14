@@ -159,6 +159,7 @@ listing_intake                       internal
 listing_offers                       authenticated
 listing_saves                        authenticated
 listings                             authenticated
+loom_functions                       internal
 market_listings                      authenticated
 marketplace_reports                  authenticated
 member_match_prefs                   authenticated
