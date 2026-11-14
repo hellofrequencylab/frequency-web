@@ -2362,7 +2362,7 @@
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "2517c63898fa0940ca3bd8bbb7ff037b6c3482cfe206f7a1d9d58955c31a8d27",
+          "sha256": "35c03581b1320f76ab39e0cac48f6f00a3f8711590339da8e73f05f885138c7a",
           "baseMode": "100644",
           "headMode": "100644"
         },
