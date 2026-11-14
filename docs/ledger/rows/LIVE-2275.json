@@ -4,16 +4,15 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "done",
+  "status": "open",
   "source": {
     "file": "docs/ANALYTICS.md",
     "ref": "Owner analytics dashboard and user-flow request, 2026-11-13."
   },
-  "detail": "Consenting browser activity is collected only after trusted audience resolution; client-supplied GA identity and authority flags cannot bypass the public collector. Browser identity comes from consented cookies, and private URL/title content is removed. New focused regressions failed before implementation; existing probes remain unchanged. Implementation proof does not assert production activation. CI trace 43522750456 identified excessive generic RPC receiver-binding instantiation. The existing gems signature is applied before binding, and both admin and session client factories preserve the full SDK RPC signature through receiver-only binding. Emitted JavaScript is identical, and direct/bound RPC names and required arguments remain checked. The complete sixteen-site inventory contains twelve admin-client sites, two generated-schema session-client message readers, one type-erased ticket client and one already-narrow test client. Targeted admin-consumer instantiations drop from 3597768 to 69469; the first session reader drops from 3597626 to 69415. Post-fix trace 43528206975 confirms progress beyond the old hot paths while the whole program still exhausts the 6 GiB V8 allocation. CI provisions an 8 GiB Typecheck process heap only after measuring at least 12 GiB of effective physical/cgroup runner capacity, and records peak RSS with time -v. The complete tsc verification, all acceptance checks, local/lint allocation, tests, probes and production artifact budgets are unchanged.",
+  "detail": "Production deployment dpl_4tJA2zajUgC3xgoUc2iVjx5kZYr9 for merged #4924 (main 2f1209773f76706f113bb38317e8ae6fa8494c9d) failed on 2026-11-14 at 02:21:09 UTC. The production alias continues serving 4e1e6aa; the build-specific failure cause requires Vercel logs and is not inferred. This safety rollback restores every application/source/test blob introduced or changed by #4924 to its exact 4e1e6aa version. The complete implementation remains preserved on codex/analytics-tracking. The frozen scripts/probes/analytics-tracking.mjs remains unchanged and now fails against the restored application, so this capability is honestly reopened. CI-only compiler provisioning and optional diagnostics remain to avoid the measured process-capacity OOM; no production artifact criterion, SQL, probe or independent test assertion was modified.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/analytics-tracking.mjs"
   },
-  "wave": "W7",
-  "closed": "2026-11-13"
+  "wave": "W7"
 }
