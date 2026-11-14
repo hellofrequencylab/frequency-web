@@ -207,7 +207,7 @@ export const ALLOWLIST = [
   { file: 'lib/hunts/moderation-store.ts', table: 'hunts', added: '2026-11-14', owner: 'FH-018S', reason: 'Migration 20270346031000_hunts_schema.sql (FH-005/FH-006) creates this service-role-only table (the Hunt, its owner and its status the moderation queue reads). Retire on public schema regeneration after the migration is applied.' },
   { file: 'lib/hunts/moderation-store.ts', table: 'hunt_roles', added: '2026-11-14', owner: 'FH-018S', reason: 'Migration 20270346031000_hunts_schema.sql (FH-005/FH-006) creates this service-role-only table (per-Hunt role grants the authz decide() reads). Retire on public schema regeneration after the migration is applied.' },
   { file: 'lib/hunts/moderation-store.ts', table: 'hunt_versions', added: '2026-11-14', owner: 'FH-018S', reason: 'Migration 20270346031000_hunts_schema.sql (FH-005) creates this service-role-only table (the published Trail title the queue shows). Retire on public schema regeneration after the migration is applied.' },
-  { file: 'lib/hunts/moderation-store.ts', table: 'hunt_reports', added: '2026-11-14', owner: 'FH-018S', reason: 'Migration 20270346047000_hunt_moderation.sql (FH-018S) creates this service-role-only table (open reports the queue counts). Retire on public schema regeneration after the migration is applied.' },
+  { file: 'lib/hunts/moderation-store.ts', table: 'hunt_reports', added: '2026-11-14', owner: 'FH-018S', reason: 'Migration 20270346051000_hunt_moderation.sql (FH-018S) creates this service-role-only table (open reports the queue counts). Retire on public schema regeneration after the migration is applied.' },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */

@@ -1,4 +1,4 @@
--- pgTAP guard for migration 20270346047000_hunt_moderation.sql (FH-018S).
+-- pgTAP guard for migration 20270346051000_hunt_moderation.sql (FH-018S).
 -- One session, one transaction: it proves a report is taken once per person per Hunt, that a retry with
 -- the same key replays one answer, that pause, resume and close make only the allowed moves (closed is
 -- final), that close and resume resolve open reports while a pause leaves them open, and that no browser
