@@ -117,7 +117,7 @@ export async function track(
     // Google Ads imports the GA4 key event `sign_up`. It is sent only with the visitor's own `_ga`
     // identity (so it joins the session that carried the ad click, and a visitor who never loaded
     // the tag is never counted).
-    if (opts.gaIdentity) {
+    if (opts.gaIdentity && await (await import('./server-google-policy')).requestGoogleAllowed()) {
       void mirrorToGa('sign_up', { method: String(gaParams.source ?? 'unknown') }, actorProfileId, opts.gaIdentity.clientId, opts.gaIdentity.sessionId)
     }
     return recorded

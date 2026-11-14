@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server'
 import { track } from '@/lib/analytics/track'
 import { hasConsent } from '@/lib/consent/consent'
 import { isClientEvent } from '@/lib/analytics/events'
+import { currentViewerAllowsAnalytics } from '@/lib/analytics/audience'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +26,9 @@ export async function POST(req: NextRequest) {
 
   const event = body?.event
   if (!event || !isClientEvent(event)) return new NextResponse(null, { status: 400 })
+
+  // This is a request-backed client sink, not the authoritative background business ledger.
+  if (!(await currentViewerAllowsAnalytics())) return new NextResponse(null, { status: 204 })
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

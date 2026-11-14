@@ -36,6 +36,10 @@ vi.mock('@/lib/analytics/track', () => ({
   },
 }))
 
+// The existing account-scope unit matrix supplies an eligible request policy.
+// request-consent-runtime.test.ts exercises the real request policy, auth and staff boundaries.
+vi.mock('@/lib/analytics/audience', () => ({ currentViewerAllowsAnalytics: async () => true }))
+
 import { POST } from './route'
 
 const request = (body: unknown) =>

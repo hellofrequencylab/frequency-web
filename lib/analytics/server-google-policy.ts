@@ -2,7 +2,7 @@ import 'server-only'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { analyticsAllowed, parseConsentChoice, CONSENT_COOKIE, CONSENT_REGION_COOKIE } from '@/lib/consent/cookie-consent'
+import { analyticsAllowed, parseConsentChoice, CONSENT_COOKIE, CONSENT_REGION_COOKIE, ANALYTICS_OPTOUT_COOKIE } from '@/lib/consent/cookie-consent'
 import { hasConsent } from '@/lib/consent/consent'
 import { asWebRole, isStaff } from '@/lib/core/roles'
 
@@ -10,6 +10,8 @@ import { asWebRole, isStaff } from '@/lib/core/roles'
 export async function requestGoogleAllowed(): Promise<boolean> {
   try {
     const jar = await cookies()
+    // Suppression only: this browser flag can never grant account or geographic consent.
+    if (jar.get(ANALYTICS_OPTOUT_COOKIE)?.value === '1') return false
     if (!analyticsAllowed({
       choice: parseConsentChoice(jar.get(CONSENT_COOKIE)?.value),
       priorConsentRegion: jar.get(CONSENT_REGION_COOKIE)?.value === '1',

@@ -10,6 +10,8 @@
 // we cannot parse all return {}. Checkout still starts.
 
 import { cookies } from 'next/headers'
+import { currentViewerAllowsAnalytics } from './audience'
+import { analyticsAllowed, parseConsentChoice, CONSENT_COOKIE, CONSENT_REGION_COOKIE, ANALYTICS_OPTOUT_COOKIE } from '@/lib/consent/cookie-consent'
 
 /** Stripe metadata key. Session-level; the webhook is what reads it. */
 export const GA_CLIENT_ID_META = 'ga_client_id'
@@ -50,6 +52,8 @@ export function parseGaSessionId(raw: string | undefined | null): string | null 
 export async function readGaIdentity(): Promise<{ clientId: string; sessionId: string | null } | null> {
   try {
     const jar = await cookies()
+    if (!analyticsAllowed({ choice: parseConsentChoice(jar.get(CONSENT_COOKIE)?.value), priorConsentRegion: jar.get(CONSENT_REGION_COOKIE)?.value === '1' })) return null
+    if (jar.get(ANALYTICS_OPTOUT_COOKIE)?.value === '1' || !(await currentViewerAllowsAnalytics())) return null
     const clientId = parseGaClientId(jar.get('_ga')?.value)
     if (!clientId) return null
     const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
@@ -62,11 +66,6 @@ export async function readGaIdentity(): Promise<{ clientId: string; sessionId: s
 
 /** Session metadata fragment. Empty when there is no readable `_ga` cookie. */
 export async function checkoutGaMetadata(): Promise<Record<string, string>> {
-  try {
-    const jar = await cookies()
-    const id = parseGaClientId(jar.get('_ga')?.value)
-    return id ? { [GA_CLIENT_ID_META]: id } : {}
-  } catch {
-    return {}
-  }
+  const identity = await readGaIdentity()
+  return identity ? { [GA_CLIENT_ID_META]: identity.clientId } : {}
 }
