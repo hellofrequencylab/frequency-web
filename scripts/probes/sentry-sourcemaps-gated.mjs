@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 const code = readFileSync('next.config.ts', 'utf8').replace(/^\s*\/\/.*$/gm, '')
 const checks = [
   ['the switch reads envFlag, not a hand-rolled compare', /envFlag\('SENTRY_SOURCEMAPS'\)/.test(code) && !/SENTRY_SOURCEMAPS\s*===/.test(code)],
-  ['sourcemaps.disable follows the switch', /disable:\s*!uploadSourceMaps/.test(code)],
+  ['sourcemaps.disable follows the switch', /disable:\s*!isProductionBuild\s*\|\|\s*!uploadSourceMaps/.test(code)],
   ['.env.example lists it blank', /^SENTRY_SOURCEMAPS=$/m.test(readFileSync('.env.example', 'utf8'))],
   ['RUNBOOKS holds the activation gate', /SENTRY_SOURCEMAPS[\s\S]{0,900}Activation gate/.test(readFileSync('docs/RUNBOOKS.md', 'utf8'))],
 ]

@@ -802,7 +802,8 @@ const nextConfig: NextConfig = {
 // 2026-11-14: the `next-build` process peaked at 7.06 GB with them (production, container 8.05 GB of
 // 8 GB, OOM-killed) against 6.8 GB without (previews). SENTRY_SOURCEMAPS=1 turns them back on, in
 // production only, once the compile fits; until then client stack traces in Sentry are minified.
-const uploadSourceMaps = envFlag('SENTRY_SOURCEMAPS') && process.env.VERCEL_ENV === 'production'
+const isProductionBuild = process.env.VERCEL_ENV === 'production'
+const uploadSourceMaps = envFlag('SENTRY_SOURCEMAPS')
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
@@ -813,7 +814,7 @@ export default withSentryConfig(nextConfig, {
   sourcemaps: {
     // Readable production stacks only, and only while SENTRY_SOURCEMAPS is on (see above). A preview
     // is an e2e target, not a place anyone debugs.
-    disable: !uploadSourceMaps,
+    disable: !isProductionBuild || !uploadSourceMaps,
   },
   // Upload a wider set of source maps for readable client stack traces.
   widenClientFileUpload: true,
