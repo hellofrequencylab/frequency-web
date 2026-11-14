@@ -209,7 +209,9 @@ export function pixelSafeAttributionQuery(search: string): string {
   }
   for (const key of ['utm_campaign', 'utm_id']) {
     const value = input.get(key) ?? ''
-    if (/^(?:[0-9]{1,32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.test(value)) output.set(key, value)
+    // Compatibility for already-sent Email Studio links only. The old prefix is not a full UUID join.
+    const legacyEmail = key === 'utm_campaign' && source === 'frequency' && medium === 'email' && /^email-[0-9a-f]{8}$/i.test(value)
+    if (/^(?:[0-9]{1,32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.test(value) || legacyEmail) output.set(key, value)
   }
   for (const key of ['gclid', 'dclid', 'gbraid', 'wbraid']) {
     const value = input.get(key) ?? ''
