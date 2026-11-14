@@ -1,4 +1,4 @@
-import { entityBlockById, blockSupportsKind, blocksForKind, type EntityKind } from './registry'
+import { entityBlockById, blockRendersOnSite, blockSupportsKind, blocksForKind, type EntityKind } from './registry'
 import { typeLimiter } from './block-limits'
 import { applyBlockAliases } from './aliases'
 import { upgradeLayout, type NodeLayout } from './node-tree'
@@ -662,6 +662,23 @@ export const STARTER_LAYOUTS: Record<EntityKind, Record<StarterId, readonly RowD
 /** A fresh, deep-copied RowDef[] for a starter seed (safe to hand to a mutable editor / renderer). */
 export function starterRows(kind: EntityKind, id: StarterId): RowDef[] {
   return STARTER_LAYOUTS[kind][id].map((row) => ({ ...row, cells: row.cells.map((c) => [...c]) }))
+}
+
+/**
+ * THE SITE SURFACE FILTER (E3, LIVE-2232). The rows a Space's published website draws, from the rows resolveRows
+ * gave for kind `site`: every id the registry marks `notOnSite` (blockRendersOnSite) leaves its cell; the row, its
+ * column count and its other ids stay, so the page keeps its shape. Pure and total; never mutates its input.
+ * Dark: the Site renderer applies it only with EDITOR_CANVAS on (components/sites/house-home.tsx), so with the
+ * switch off the Site draws exactly what it drew before (the zero-visual-diff gate, test/e2e editor-site).
+ */
+export function siteSurfaceRows(rows: readonly RowDef[]): RowDef[] {
+  return rows.map((row) => ({
+    ...row,
+    cells: row.cells.map((stack) => stack.filter((id) => {
+      const block = entityBlockById(id)
+      return block === null || blockRendersOnSite(block)
+    })),
+  }))
 }
 
 /**
