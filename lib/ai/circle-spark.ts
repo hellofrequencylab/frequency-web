@@ -76,12 +76,12 @@ const TOOL: Anthropic.Tool = {
       audience: { type: 'string', description: 'The person who would join, in a phrase.' },
       pillars_inside: {
         type: 'object',
-        description: 'One concrete line each for how this Circle touches all four Pillars. Every Circle works the whole person; the primary Pillar is just the lean.',
+        description: 'Optional support notes only where the host supplied a concrete line. Areas may overlap. Leave unspecified areas empty; do not invent coverage.',
         properties: {
-          mind: { type: 'string', description: 'One concrete line for Mind.' },
-          body: { type: 'string', description: 'One concrete line for Body.' },
-          spirit: { type: 'string', description: 'One concrete line for Spirit.' },
-          expression: { type: 'string', description: 'One concrete line for Expression.' },
+          mind: { type: 'string', description: 'An optional host-supplied line for Mind; otherwise empty.' },
+          body: { type: 'string', description: 'An optional host-supplied line for Body; otherwise empty.' },
+          spirit: { type: 'string', description: 'An optional host-supplied line for Spirit; otherwise empty.' },
+          expression: { type: 'string', description: 'An optional host-supplied line for Expression; otherwise empty.' },
         },
       },
       meetup: { type: 'string', description: 'The standing midweek Circle Meetup: what happens, roughly how long, in person or virtual.' },

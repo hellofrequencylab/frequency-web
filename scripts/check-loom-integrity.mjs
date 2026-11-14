@@ -17,6 +17,8 @@
 //       is waiting and passes. It turns strict the moment the file exists.
 //   M6  arm A is not vacuous: the validator accepts a known-good declaration against the real context and
 //       rejects a broken copy of it.
+//   M7  the usage projection (lib/loom/functions/usage.ts, PROG-E2) is not vacuous: it indexes the self-test's
+//       primitives and block, and lists a row whose op was retired as stranded, so a retirement can be sized.
 //
 // No `// loom-ok:` bypass, on either arm. The exit is a PR adding a primitive (Layer 1, CI-gated).
 //
@@ -102,6 +104,23 @@ export function validatorProblems(validate, ctx) {
   return out
 }
 
+/** M7. `project` is projectLoomUsage, `impact` is retirementImpact; both run over the real context. */
+export function usageProblems(project, impact, ctx) {
+  const out = []
+  const prev = process.env.EDITOR_CANVAS
+  process.env.EDITOR_CANVAS = '1'
+  try {
+    const idx = project([{ spaceId: 'self-test', surface: 'self-test', declaration: SELF_TEST }, { spaceId: 'self-test', surface: 'stranded', declaration: { ...SELF_TEST, steps: [{ ...SELF_TEST.steps[0], op: 'js.eval' }] } }], ctx)
+    if (impact(idx, { primitive: 'text.trim' }).functions.length !== 1) out.push('M7 the usage projection does not index a primitive the self-test uses')
+    if (impact(idx, { block: SELF_TEST.input }).functions.length !== 1) out.push('M7 the usage projection does not index the self-test block')
+    if (idx.stranded.length !== 1) out.push('M7 the usage projection does not list a row with a retired primitive as stranded')
+  } finally {
+    if (prev === undefined) delete process.env.EDITOR_CANVAS
+    else process.env.EDITOR_CANVAS = prev
+  }
+  return out
+}
+
 /** Every .ts / .tsx source under lib, app and components, tests excluded. */
 export function readSources(root = '.') {
   const out = {}
@@ -124,12 +143,14 @@ async function main() {
   const { LOOM_PRIMITIVES, LOOM_KINDS, primitiveBody } = await import('../lib/loom/functions/primitives.ts')
   const { validateLoomFunction, shapeOf } = await import('../lib/loom/functions/validate.ts')
   const { loomContext } = await import('../lib/loom/functions/context.ts')
+  const { projectLoomUsage, retirementImpact } = await import('../lib/loom/functions/usage.ts')
   const ctx = loomContext()
   const problems = [
     ...manifestProblems(LOOM_PRIMITIVES, { kinds: [...LOOM_KINDS], bodyOf: primitiveBody }),
     ...schemaProblems(ctx.schemas, { isZod: (s) => s instanceof z.ZodType, shapeOf }),
     ...sourceProblems(readSources()),
     ...validatorProblems(validateLoomFunction, ctx),
+    ...usageProblems(projectLoomUsage, retirementImpact, ctx),
   ]
   if (problems.length) {
     console.error(`check:loom-integrity — ${problems.length} problem(s):\n` + problems.map((p) => `  ${p}`).join('\n'))

@@ -4,20 +4,10 @@ import { getMemberPillarBalance, getPillars, type PillarCount } from '@/lib/pill
 import { getMemberPillarZaps } from '@/lib/practices/attribution'
 import { ExpressionIcon, expressionPillarStyle } from '@/lib/quest/expression-pillar'
 import { SectionHeader } from '@/components/ui/section-header'
-import { ProgressTrack } from '@/components/ui/progress-track'
 
-// Practices layout module (ADR-270/294): "Pillar balance" — how the member's ADOPTED practices
-// spread across the four Pillars (Mind / Body / Spirit / Expression, docs/NAMING.md — never
-// "Channels"), and what their logged practices EARNED in each one. Self-fetching RSC, no client
-// JS; renders nothing for a logged-out viewer. With no adopted practices and no Zaps it shows a
-// gentle empty line rather than four bare zeros. Keeps the id="practices-balance" anchor. Reads
-// the canonical per-Pillar count (lib/pillars.getMemberPillarBalance) so the share always covers
-// all four Pillars.
-//
-// The Zap line reads the per-Pillar ledger (lib/practices/attribution.getMemberPillarZaps,
-// LIVE-642, ADR-1605): each paid log's Zaps split by the Pillar share frozen at log time. The
-// split ATTRIBUTES and never adds (one wallet, ADR-438), so the four Pillar lines plus the
-// "no Pillar" line always sum to the member's Zaps from practice logs.
+// Current adopted support counts and historical reward attribution are separate reads.
+// A practice can count in several support areas, so their sum is not a unique practice total.
+// No participation or wellbeing is inferred from adoption. Preserve the historical Zap ledger.
 
 const zapWord = (n: number) => (n === 1 ? 'Zap' : 'Zaps')
 
@@ -30,7 +20,7 @@ export async function PracticesBalance() {
     getPillars(),
     getMemberPillarZaps(profileId),
   ])
-  const total = balance.reduce((sum, p) => sum + p.count, 0)
+  const hasAdoptedSupports = balance.some((p) => p.count > 0)
   const isExpression = (p: PillarCount) => p.slug === 'expression'
 
   // Ledger totals are keyed by Pillar id; the balance rows by slug.
@@ -46,22 +36,24 @@ export async function PracticesBalance() {
 
   return (
     <section id="practices-balance" className="scroll-mt-20">
-      <SectionHeader title="Pillar balance" />
+      <SectionHeader title="Adopted practice supports" />
       <div className="rounded-card border border-border bg-surface p-4">
         <div className="flex items-center gap-1.5">
           <Scale className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-          <span className="text-meta font-medium text-muted">Across your adopted practices</span>
+          <span className="text-meta font-medium text-muted">Current areas of support</span>
         </div>
 
-        {total === 0 && !hasZaps ? (
+        {!hasAdoptedSupports && !hasZaps ? (
           <p className="mt-3 text-body-sm text-subtle">
-            Adopt a practice from the library to see how your Pillars balance out.
+            Adopt a practice from the library when you find something you want to return to.
           </p>
         ) : (
           <>
+            <p className="mt-2 text-meta text-muted">
+              A practice can support more than one area, so these counts overlap. They show what you have adopted, not days practiced or how you are doing.
+            </p>
             <ul className="mt-3 space-y-3">
               {balance.map((p) => {
-                const share = total > 0 ? Math.round((p.count / total) * 100) : 0
                 const earned = zapsFor(p)
                 return (
                   <li key={p.slug} data-pillar={p.slug}>
@@ -75,22 +67,12 @@ export async function PracticesBalance() {
                       </span>
                       <span className="tabular-nums text-muted">
                         <span className="font-semibold text-text">{p.count}</span>
-                        {p.count > 0 && <span className="ml-1.5 text-subtle">{share}%</span>}
+                        <span className="ml-1.5 text-subtle">adopted {p.count === 1 ? 'practice' : 'practices'}</span>
                       </span>
-                    </div>
-                    {/* data-driven: Expression's bar takes its rank accent (the same --rank-deep the
-                        label above uses); `tone="current"` inherits it from this wrapper. */}
-                    <div style={isExpression(p) ? { color: 'var(--rank-deep)' } : undefined}>
-                      <ProgressTrack
-                        value={share}
-                        label={`${p.name} share`}
-                        size="lg"
-                        tone={isExpression(p) ? 'current' : 'primary'}
-                      />
                     </div>
                     {hasZaps && (
                       <p className="mt-1 text-meta tabular-nums text-subtle" data-pillar-zaps={earned}>
-                        {earned} {zapWord(earned)} earned here
+                        {earned} {zapWord(earned)} credited from your logs
                       </p>
                     )}
                   </li>
@@ -100,8 +82,8 @@ export async function PracticesBalance() {
             {hasZaps && (
               <p className="mt-3 text-meta text-muted">
                 Your logs earned <span className="font-semibold tabular-nums text-text">{zaps.total}</span>{' '}
-                {zapWord(zaps.total)}, credited to the Pillar each practice belongs to. A practice that
-                spans two Pillars shares its Zaps between them, so the total never changes.
+                {zapWord(zaps.total)}, credited using the recorded reward split, with a current-practice fallback for older logs.
+                These rewards are separate from adopted support counts and recent practice days. A split never changes the total.
                 {noPillarZaps > 0 && (
                   <>
                     {' '}
@@ -112,10 +94,10 @@ export async function PracticesBalance() {
                 )}
               </p>
             )}
-            {hasZaps && !zaps.complete && (
-              <p className="mt-1 text-meta text-subtle">You have more logs than we can count in one go, so these figures leave some out.</p>
-            )}
           </>
+        )}
+        {!zaps.complete && (
+          <p className="mt-2 text-meta text-subtle">Some reward records could not be loaded. Displayed amounts may be incomplete.</p>
         )}
       </div>
     </section>
