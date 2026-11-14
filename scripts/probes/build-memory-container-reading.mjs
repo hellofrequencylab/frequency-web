@@ -3,9 +3,9 @@
 import { containerLine, readContainerMemory, topProcesses } from '../check-build-memory.mjs'
 const files = { '/sys/fs/cgroup/memory.current': '3145728000', '/sys/fs/cgroup/memory.peak': '6291456000' }
 const read = (f) => { if (f in files) return files[f]; throw new Error('missing') }
-const c = typeof readContainerMemory === 'function' ? readContainerMemory(read) : null
+const c = readContainerMemory(read)
 const procs = [{ name: 'a', rssKb: 10 }, { name: 'next-server', rssKb: 4194304 }, { name: 'node', rssKb: 2048 }]
-const line = typeof containerLine === 'function' ? containerLine(c, procs, 70_000) : ''
+const line = containerLine(c, procs, 70_000)
 const checks = [
   ['reads cgroup v2 current and peak in MB', c?.currentMb === 3000 && c?.peakMb === 6000],
   ['returns null when no cgroup file exists', readContainerMemory(() => { throw new Error('x') }) === null],
