@@ -64,6 +64,25 @@ export interface BlockNode {
   style?: BlockStyle
   /** Replaces the document-level `hidden: string[]`, which could only hide every node of a type. */
   hidden?: boolean
+  /** Sparse per-breakpoint content overrides (PROG-E5). Desktop is `content`; a tablet or phone entry holds only
+   *  the fields authored for that device, and every other field inherits. Optional and additive: a document
+   *  without it loads and renders exactly as before, and public renderers do not read it. */
+  responsive?: NodeResponsive
+}
+
+/** The breakpoints that can override desktop content, keyed by content field. */
+export type NodeResponsive = Partial<Record<'tablet' | 'phone', Record<string, unknown>>>
+
+/** Read a stored `responsive` value: only the tablet and phone bags that are non-empty plain objects. */
+export function readResponsive(raw: unknown): NodeResponsive | undefined {
+  const o = plainObject(raw)
+  if (!o) return undefined
+  const out: NodeResponsive = {}
+  for (const device of ['tablet', 'phone'] as const) {
+    const bag = plainObject(o[device])
+    if (bag && Object.keys(bag).length) out[device] = bag
+  }
+  return Object.keys(out).length ? out : undefined
 }
 
 /** `RowDef` with node cells. Every other field is `RowDef`'s, unchanged. */
@@ -164,6 +183,8 @@ function readCell(raw: unknown): { type: string; node: Partial<BlockNode> } | nu
   const style = plainObject(o.style)
   if (style) node.style = style as BlockStyle
   if (o.hidden === true) node.hidden = true
+  const responsive = readResponsive(o.responsive)
+  if (responsive) node.responsive = responsive
   return { type: o.type, node }
 }
 
@@ -225,6 +246,7 @@ export function upgradeLayout(raw: unknown): NodeLayout | null {
     const styleObj = plainObject(style)
     if (styleObj && Object.keys(styleObj).length) node.style = styleObj as BlockStyle
     if (partial.hidden === true || hidden.has(type)) node.hidden = true
+    if (partial.responsive) node.responsive = partial.responsive
     return node
   }
 
