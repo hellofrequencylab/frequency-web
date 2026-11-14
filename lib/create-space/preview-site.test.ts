@@ -89,6 +89,12 @@ describe('preview site', () => {
     expect(g.offers[0].img).toBeTruthy()
   })
 
+  it('shows the theme\'s own sample headline while a ghost, never once their words land', () => {
+    expect(deriveSite({ ...base, kit: 'bold', ghost: true }).sample?.headline).toBe('Stuck on the same thing for')
+    expect(deriveSite({ ...base, kit: 'bold' }).sample).toBeUndefined()
+    expect(deriveSite({ ...base, kit: 'cyberwitch', ghost: true }).sample).toBeUndefined()
+  })
+
   it('fills the contact strip from step 3 and leaves it empty before', () => {
     expect(deriveSite(base).contact).toEqual({ visit: '', write: '', call: '' })
     const s = deriveSite({ ...base, reach: { email: 'sam@example.com', phone: '555 0100', where: 'Carlsbad' } })
