@@ -30,7 +30,6 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   { name: 'onboarding.funnel_captured', category: 'lifecycle', description: 'A feature funnel captured a lead email mid-flow (props.seq, props.style).', clientEmittable: true },
 
   // ── Server-authoritative lifecycle + engagement (recorded server-side only) ──
-  { name: 'lead.captured', category: 'lifecycle', description: 'A lead capture RPC confirmed a stored lead (props.source).', clientEmittable: false },
   { name: 'account.created', category: 'lifecycle', description: 'New auth user / profile row (props.source).', clientEmittable: false },
   { name: 'onboarding.induction_completed', category: 'lifecycle', description: 'Finished the beta induction (props.hasAvatar, props.hasIntent).', clientEmittable: false },
   { name: 'onboarding.vera_opened', category: 'lifecycle', description: 'Reached the Vera onboarding concierge.', clientEmittable: false },

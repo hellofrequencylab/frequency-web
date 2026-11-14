@@ -49,8 +49,6 @@ declare global {
   interface Window {
     /** Defined by the GA head script (lib/consent/cookie-consent.ts). Idempotent. */
     __fqGa?: () => void
-    /** Distinguishes browser withdrawal from independent account/staff opt-outs. */
-    __fqGaBrowserDisabled?: boolean
   }
 }
 
@@ -107,7 +105,6 @@ export function CookieBanner() {
         router.refresh()
         return
       }
-      window.__fqGaBrowserDisabled = true
       if (GA_ID) {
         ;(window as unknown as Record<string, boolean>)[`ga-disable-${GA_ID}`] = true
       }
