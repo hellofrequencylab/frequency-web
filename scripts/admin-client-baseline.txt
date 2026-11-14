@@ -1331,3 +1331,6 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
+app/(main)/admin/insights/experiment-actions.ts
+lib/analytics/experiment-runtime.ts
+lib/analytics/experiment-retention.ts

@@ -103,6 +103,11 @@ jobs:
         env:
           FREQUENCY_EPHEMERAL_ROOM_STAGING: '1'
         run: node scripts/staging/calendar-suite-api.mjs
+      - name: Real local service, anon and authenticated analytics experiment API acceptance
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          FREQUENCY_EPHEMERAL_ROOM_STAGING: '1'
+        run: node scripts/staging/analytics-experiments-api.mjs
       - name: Always destroy dispatched staging containers and volumes
         if: always() && github.event_name == 'workflow_dispatch'
         run: pnpm exec supabase stop --no-backup

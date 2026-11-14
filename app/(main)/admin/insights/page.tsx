@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { LineChart } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { isJanitor } from '@/lib/core/roles'
@@ -9,6 +10,7 @@ import { OutcomesTab } from '@/components/admin/insights/outcomes-tab'
 import { IntelTab } from '@/components/admin/insights/intel-tab'
 import { ExpansionTab } from '@/components/admin/insights/expansion-tab'
 import { FinancialsTab } from '@/components/admin/insights/financials-tab'
+import { GoogleGrowthPanel } from '@/components/admin/insights/google-growth-panel'
 import { ExperienceTab } from './experience-tab'
 
 // The consolidated INSIGHTS suite (ADR-263): one tabbed surface that absorbed the six
@@ -24,7 +26,7 @@ import { ExperienceTab } from './experience-tab'
 // only consumer of the two RPCs behind it.
 export const dynamic = 'force-dynamic'
 
-const TAB_KEYS = ['read', 'engagement', 'experience', 'outcomes', 'intel', 'expansion', 'financials'] as const
+const TAB_KEYS = ['read', 'engagement', 'experience', 'outcomes', 'intel', 'expansion', 'google', 'financials'] as const
 type TabKey = (typeof TAB_KEYS)[number]
 
 const TAB_LABEL: Record<TabKey, string> = {
@@ -35,6 +37,7 @@ const TAB_LABEL: Record<TabKey, string> = {
   intel: 'Marketing intel',
   expansion: 'Expansion',
   financials: 'Finances',
+  google: 'Google Analytics',
 }
 
 export default async function InsightsPage({
@@ -78,6 +81,7 @@ export default async function InsightsPage({
         {tab === 'intel' && <IntelTab />}
         {tab === 'expansion' && <ExpansionTab />}
         {tab === 'financials' && <FinancialsTab />}
+        {tab === 'google' && <Suspense fallback={<p className="text-body-sm text-muted">Loading Google Analytics reports...</p>}><GoogleGrowthPanel /></Suspense>}
       </div>
     </AdminTemplate>
   )
