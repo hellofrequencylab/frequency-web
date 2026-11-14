@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2296",
+  "title": "Find Journey picker practices across their authored supports",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/journey/v2/journey-editor.tsx",
+    "ref": "Daniel approved completion of the support/practice/expression changeover with three passes, November 14, 2026. Claim issue4306comment6881070617."
+  },
+  "detail": "The existing author-gated editor page projects current support IDs through the shared authoritative practiceSupportIds helper. Add and Replace use the same client-safe membership predicate, so secondary and extra authored support matches appear once without inventing reward or historical associations. Existing primary-only callers remain compatible when supportIds is omitted; an explicit empty projection remains empty. Authorization/public-library load boundaries, text search, adopted-title exclusion, thirty-result cap, and save actions are unchanged. The immutable probe failed on actual main69a6 before the helper existed, SHA256 d4d4f242266ac0d963e9a6737c3825cdb36fa1e34e5401468d6a3db0f42f9c4d. Actual main editor/page executed against unchanged new consequence tests then failed seven of nine cases; the candidate passes all nine, including actual Add/Replace behavior, all four projected UUIDs, legacy fallback and unauthorized/signed-out omission. LIVE-2295 must land first because it adds the existing secondary_domain_id column to the public practice projection; no reader files are changed here. No migration, reward, enrollment contract, existing authored content, existing tests or probes are changed. Further release verification is recorded in the PR; this implementation is not production acceptance. Final focused regression passes37 tests across six files, including unchanged author/save gate, stored block order, slot coaching and discovery regressions; all five changed TypeScript files pass ESLint. Root and independent pagination peer source reviews pass. Actual Add/Replace components were rendered after synthetic interactions, then captured at390,1280,1440,1920,2000: ten captures have no horizontal overflow or unnamed buttons. These fixtures are explicitly synthetic and not authenticated acceptance. Final required check:backlog passes on the current-container candidate. Independent policy third-pass source review and the same nine actual boundary tests pass with the frozen probe unchanged. Publication may be a draft only; release stays held behind LIVE-2295 and real preview/production acceptance.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/journey-practice-support-picker.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}
