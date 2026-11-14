@@ -24,6 +24,7 @@ import { ResponsiveInspector } from '@/components/builder/inspector/responsive-i
 import { VeraBlockCoach } from '@/components/builder/inspector/vera-block-coach'
 import { CanvasViewportShell } from './canvas-viewport-shell'
 import { CollabTextEditor } from './collab-text-editor'
+import { LayerList, type Layer } from './layer-list'
 import { EditorPresenceFaces } from '@/components/builder/presence/presence-ui'
 import type { PresenceState } from '@/lib/editor-crdt/awareness'
 
@@ -39,6 +40,9 @@ type Link = 'local' | 'connecting' | 'live' | 'offline'
 
 /** The demo text node's id: a real node id shape, so a selection of it is a valid presence payload. */
 const CANVAS_NID = 'ncanvasdemo'
+
+/** The demo page's sections for the layer list (PROG-E6A). Local order only; nothing is saved. */
+const DEMO_LAYERS: Layer[] = [{ id: 'banner', label: 'Banner' }, { id: 'story', label: 'Story' }, { id: 'gatherings', label: 'Gatherings' }, { id: 'contact', label: 'Contact' }]
 
 /** The block the inspector edits: its name, the controls the server derived from its contract, and starting values. */
 type CanvasInspector = {
@@ -60,6 +64,7 @@ export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspect
     const { value } = resolveInspectorValue(blockValues, device, key)
     return typeof value === 'string' ? value : ''
   }
+  const [layers, setLayers] = useState<Layer[]>(DEMO_LAYERS)
   const [link, setLink] = useState<Link>(spaceId ? 'connecting' : 'local')
   const [peers, setPeers] = useState<PresenceState[]>([])
   const select = useRef<(nid: string | null) => void>(() => {})
@@ -145,6 +150,7 @@ export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspect
       </div>
     )}
     </div>
+    <div className="mt-4"><LayerList layers={layers} onChange={setLayers} /></div>
     </>
   )
 }
