@@ -2031,7 +2031,7 @@
         {
           "file": "supabase/tests/hunt_moderation.test.sql",
           "status": "added",
-          "sha256": "1bc378184e08e800cbb10022df1a16c6263b15fa8dfcf81f00243a67e9588d27",
+          "sha256": "fd1929c62ac406766e5c6970fe1a348661396cd233874db97ff9c4661fcbbef3",
           "baseMode": "000000",
           "headMode": "100644"
         }
