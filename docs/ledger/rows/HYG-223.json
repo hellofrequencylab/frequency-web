@@ -1,0 +1,19 @@
+{
+  "id": "HYG-223",
+  "title": "Register the reviewed experiment API staging contract before production application",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "scripts/migration-readiness-policy.json",
+    "ref": "Separate main-side review for LIVE-2278 PR #4930; candidate ecb6a880042005cf92d0a8ce02ab49a2b2ce9a55 based on main 2f1209773f76706f113bb38317e8ae6fa8494c9d."
+  },
+  "detail": "One finite PR registration pins the complete 32-file reviewed diff, whole-blob hashes and file modes, the additive experiment SQL, candidate database workflow bytes and the real local experiment API acceptance step beside full replay, pgTAP, skip enforcement and unconditional cleanup. The immutable consequence probe failed on current main because no #4930 registration existed, then exercises the real decision kernel with explicitly synthetic staging facts and rejects missing API proof, changed source, a moving head and live-ledger drift. This is policy capability verification, not actual exact-head staging evidence or production SQL authorization. Daniel still applies SQL only after real release gates pass; no pilot is started.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/analytics-experiment-registration.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}
