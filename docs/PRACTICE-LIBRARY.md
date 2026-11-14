@@ -125,6 +125,14 @@ The rules, each enforced in code and covered by tests (`lib/practices/adoption*.
 
 ## 5. Search + faceting contract (Phase 1)
 
+A Pillar filter matches any current authored support: the primary, the secondary, or a
+selected `focus_details` entry. The predicate runs in the database before counting,
+sorting and paging. Each practice appears once in the result even when it matches
+several branches. Residual Pillar buckets count each practice once per applicable
+support, so their sum is not a unique-practice total. The primary remains the editing
+and reward-allocation anchor; this discovery rule does not rewrite historical logs
+or change the total reward. Global primary-category statistics remain primary-based.
+
 - **Hybrid retrieval RPC**: full-text (`search_vector` / GIN) + vector (`embedding` / HNSW) fused
   with Reciprocal Rank Fusion. No external engine — Postgres-native, ACID, tunable weights.
 - **Keyset (cursor) pagination** replacing the `rankedPractices(limit = 200)` cap; server-side sort.
