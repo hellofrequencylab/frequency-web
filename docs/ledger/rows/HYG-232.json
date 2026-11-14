@@ -1,0 +1,16 @@
+{
+  "id": "HYG-232",
+  "title": "Gate Sentry source maps behind a switch, off, so the production compile fits the 8 GB build machine",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-14",
+  "source": {
+    "file": "next.config.ts",
+    "ref": "HYG-221 / HYG-231. Production deploy dpl_3oxPk5VW (b44310e, cpus: 1) OOM-killed with next-build at 7.06 GB and the container at 8.05 GB of 8 GB; previews, which build no source maps, peak near 6.8 GB and went READY twice with the same cpus: 1."
+  },
+  "detail": "MEASURED 2026-11-14 with the HYG-224 sampler. Under Turbopack the Sentry plugin sets productionBrowserSourceMaps = true unless sourcemaps.disable is set (@sentry/nextjs 11.10.0 getFinalConfigObjectBundlerUtils maybeEnableTurbopackSourcemaps), so production builds browser source maps inside the compile; previews had them disabled by HYG-162. The extra is about 0.3 GB at the compile peak, which is the margin between a build that fits and one that is killed. This slice gates them behind SENTRY_SOURCEMAPS (envFlag, blank in .env.example, activation gate in RUNBOOKS) and leaves it off, so production compiles like a preview. COST, flagged: client stack traces in Sentry are minified until the switch is turned back on. Restore path: a production build whose container line shows 1.5 GB of headroom, or producing the maps outside the compile. HYG-221 stays the umbrella and closes on 20 consecutive READY deploys.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/sentry-sourcemaps-gated.mjs" },
+  "wave": "W7"
+}

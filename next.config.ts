@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { resolveDesign } from "./lib/theme/design";
+import { envFlag } from "./lib/env/string";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 // An ENFORCED Content-Security-Policy (P8 hardening, ADR-170). Graduated from
@@ -794,7 +795,14 @@ const nextConfig: NextConfig = {
 // for PRODUCTION only: a preview's stack traces are read by nobody, and the upload was also the
 // slowest step of the build. Errors in the upload still surface: the plugin warns and continues
 // by default, which is the behaviour this config had before.
-const isProductionBuild = process.env.VERCEL_ENV === 'production'
+//
+// SOURCE MAPS ARE OFF UNTIL THE COMPILE HAS HEADROOM (HYG-232). With sourcemaps enabled, the Sentry
+// plugin forces `productionBrowserSourceMaps = true` under Turbopack (getFinalConfigObjectBundlerUtils
+// `maybeEnableTurbopackSourcemaps`), and the maps are built inside the compile. Measured on Vercel
+// 2026-11-14: the `next-build` process peaked at 7.06 GB with them (production, container 8.05 GB of
+// 8 GB, OOM-killed) against 6.8 GB without (previews). SENTRY_SOURCEMAPS=1 turns them back on, in
+// production only, once the compile fits; until then client stack traces in Sentry are minified.
+const uploadSourceMaps = envFlag('SENTRY_SOURCEMAPS') && process.env.VERCEL_ENV === 'production'
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
@@ -803,8 +811,9 @@ export default withSentryConfig(nextConfig, {
   silent: true,
   telemetry: false,
   sourcemaps: {
-    // Readable production stacks only. A preview is an e2e target, not a place anyone debugs.
-    disable: !isProductionBuild,
+    // Readable production stacks only, and only while SENTRY_SOURCEMAPS is on (see above). A preview
+    // is an e2e target, not a place anyone debugs.
+    disable: !uploadSourceMaps,
   },
   // Upload a wider set of source maps for readable client stack traces.
   widenClientFileUpload: true,
