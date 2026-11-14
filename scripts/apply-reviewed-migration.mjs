@@ -1,3 +1,4 @@
+import { stagingJobInventory } from './lib/staging-job-inventory.mjs'
 // Main-owned apply entry point. Candidate Git blobs are data, never executed JavaScript.
 import { execFileSync } from 'node:child_process'
 import { readFileSync, appendFileSync } from 'node:fs'
@@ -147,14 +148,7 @@ export async function collectApplyPlan({ env, git, api, query, now = Date.now })
   const stage = stagingRuns.workflow_runs.filter(run => run.head_sha === head && run.event === 'workflow_dispatch' && run.workflow_id === stagingWorkflow.id && run.repository?.full_name === REPO).sort((a, b) => b.id - a.id)[0]
   requireFact(complete(stage) && stage.id === receipt.stagingRunId && stage.run_attempt === receipt.stagingAttempt, 'Latest exact-head staging differs')
   const stageJobs = await api(`/repos/${REPO}/actions/runs/${stage.id}/attempts/${stage.run_attempt}/jobs?per_page=100`)
-  requireFact(stageJobs.total_count === stageJobs.jobs?.length && stageJobs.total_count > 0 && stageJobs.total_count <= 100 && stageJobs.jobs.every(job => complete(job) && job.head_sha === head), 'Staging job incomplete')
-  for (const job of stageJobs.jobs) {
-    const id = /\/check-runs\/(\d+)$/.exec(job.check_run_url ?? '')?.[1]
-    requireFact(id, 'Staging publisher identity absent')
-    const check = await api(`/repos/${REPO}/check-runs/${id}`)
-    requireFact(trusted(check) && complete(check) && check.head_sha === head, 'Untrusted staging publisher')
-  }
-  const steps = stageJobs.jobs.flatMap(job => job.steps ?? [])
+  const { steps } = await stagingJobInventory({ inventory: stageJobs, run: stage, pr: number, base, head, api })
   const core = ['Start local Supabase (applies all migrations)', 'Run pgTAP RLS/RPC tests', 'Refuse an unstated permanent skip in the TAP output', 'Always destroy dispatched staging containers and volumes']
   requireFact(Array.isArray(registration.requiredSteps) && registration.requiredSteps.length >= 5 && new Set(registration.requiredSteps).size === registration.requiredSteps.length && typeof registration.apiAcceptanceStep === 'string' && registration.apiAcceptanceStep.length > 0 && !core.includes(registration.apiAcceptanceStep) && [...core, registration.apiAcceptanceStep].every(name => typeof name === 'string' && registration.requiredSteps.includes(name)) && registration.requiredSteps.every(name => steps.filter(step => step.name === name && step.conclusion === 'success').length === 1), 'Reviewed replay/TAP/API/cleanup not complete')
   const ledger = await query(LEDGER, { readOnly: true }); normalizedLedger(ledger)
