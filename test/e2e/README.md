@@ -376,6 +376,8 @@ ceiling carrying that reason.
 | `PW_STORAGE_STATE` | for the member shell | Path to a saved storage-state JSON |
 | `PW_ROOM_PATH` | no (**no default** — unset means no room surface) | The room surface to capture |
 | `PW_SPACE_SLUG` | no | Adds `/spaces/<slug>/manage` to the matrix |
+| `PW_SPOTLIGHT_HANDLE` | no | Adds the editor's Spotlight (`editor-spotlight`, first screen) |
+| `PW_SITE_URL` | no | A published Site's own https origin; adds its Home (`editor-site`, first screen, LIVE-2232). A Site renders only on its own host, never under `PW_BASE_URL` |
 | `PW_VISUAL_EXTRA_MASK` | no | Extra mask selectors, comma-separated |
 | `PW_CAPTURE_ALLOW_5XX` | no | URL substrings whose 5xx does not refuse the capture, comma-separated (one-run reprieve) |
 | `PW_MEMBER_EMAIL` | to mint a session | The e2e member account (see below) |

@@ -7,10 +7,11 @@
 // Space is made on the launch page, when the Spotlight is published. Styles: create-space.css (cs-sum, cs-google...).
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState, useSyncExternalStore, useTransition } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { claimWithEmail, claimWithGoogle, continueSignedIn } from '@/app/(marketing)/create-a-space/actions'
 import { serializeDraft } from '@/lib/create-space/builder'
+import { browserZone } from '@/lib/create-space/lead'
 import type { BuilderDraft } from '@/lib/create-space/builder'
 import { joinList } from '@/lib/create-space/preview-site'
 
@@ -52,9 +53,12 @@ interface SaveCardProps {
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const subscribeZone = () => () => {}
+const serverZone = () => null
 
 export function SaveCard({ draft, handle, siteName, kitLabel, coverSrc, trapped, onHandOver, onSaved, onNeedEmail }: SaveCardProps) {
   const viewer = useViewer()
+  const zone = useSyncExternalStore(subscribeZone, browserZone, serverZone)
   const [err, setErr] = useState('')
   const [pending, start] = useTransition()
   const email = draft.email.trim()
@@ -68,6 +72,8 @@ export function SaveCard({ draft, handle, siteName, kitLabel, coverSrc, trapped,
       const data = new FormData()
       data.set('email', email)
       data.set('draft', serializeDraft(draft))
+      const tz = browserZone()
+      if (tz) data.set('tz', tz)
       const res = await claimWithEmail(data)
       if (!res.ok) { setErr(res.error); return }
       onHandOver()
@@ -80,6 +86,8 @@ export function SaveCard({ draft, handle, siteName, kitLabel, coverSrc, trapped,
     start(async () => {
       const data = new FormData()
       data.set('draft', serializeDraft(draft))
+      const tz = browserZone()
+      if (tz) data.set('tz', tz)
       const res = await continueSignedIn(data)
       if (!res.ok) { setErr(res.error); return }
       onHandOver()
@@ -106,8 +114,9 @@ export function SaveCard({ draft, handle, siteName, kitLabel, coverSrc, trapped,
         </>
       ) : (
         <>
-          <form action={claimWithGoogle} onSubmit={(e) => { if (trapped) { e.preventDefault(); onSaved({ email, keepBuildingHref: null }); return } onHandOver() }}>
+          <form action={claimWithGoogle} onSubmit={(e) => { if (trapped) { e.preventDefault(); onSaved({ email, keepBuildingHref: null }); return } }}>
             <input type="hidden" name="draft" value={serializeDraft(draft)} />
+            <input type="hidden" name="tz" value={zone ?? ''} />
             <button type="submit" className="cs-google" disabled={pending}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 {/* Google's own four-colour mark: brand colours, not theme colours. */}
@@ -147,6 +156,8 @@ export function SavedCard({ draft, firstOffer, tools, saved, trapped }: SavedCar
       const data = new FormData()
       data.set('email', saved.email)
       data.set('draft', serializeDraft(draft))
+      const tz = browserZone()
+      if (tz) data.set('tz', tz)
       setAgain((await claimWithEmail(data)).ok ? 'sent' : 'failed')
     })
   }

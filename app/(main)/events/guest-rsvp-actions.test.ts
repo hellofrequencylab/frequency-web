@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+vi.mock('@/lib/analytics/leads', () => ({ recordVerifiedLeadCapture: vi.fn(async () => {}) }))
+
 
 // Meta-scan L5-14 (2026-09-05): the signed-out guest RSVP always answered "ok" and always sent the
 // receipt email, even when the capture RPC failed. A guest read "Check your email" while no seat

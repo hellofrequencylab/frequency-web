@@ -15,7 +15,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
-import { restoreDraft, saveDraftLead } from '@/app/(marketing)/create-a-space/actions'
+import { restoreDraft, saveBuilderProgress, saveDraftLead } from '@/app/(marketing)/create-a-space/actions'
 import { SaveCard, SavedCard } from '@/components/frequency/site/pages/create-space/create-space-claim'
 import type { Saved } from '@/components/frequency/site/pages/create-space/create-space-claim'
 import { LookRows } from '@/components/frequency/site/pages/create-space/create-space-look'
@@ -42,6 +42,7 @@ import type { CreateSpaceSignal } from '@/lib/create-space/signal'
 import { PREVIEW_KITS, deriveSite, joinList, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
 import { acceptUpload, getUploads, putUpload } from '@/lib/create-space/uploads'
 import type { UploadKind } from '@/lib/create-space/uploads'
+import { parseWizardResume, type WizardResume } from '@/lib/launch/wizard-resume'
 import { CLOCK_BUDGET_MS, formatClock } from '@/lib/launch/clock'
 import { PREVIEW_FONT_SHEET, previewAccentVars, previewTokens } from '@/lib/theme/preview-tokens'
 import './create-space.css'
@@ -66,6 +67,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const SERVER_SAVE_MS = 1500
 /** Where the tab's last changes go on pagehide (app/api/create-space/draft/route.ts). */
 const BEACON_URL = '/api/create-space/draft'
+const RESUME_KEY = 'fq-wizard-resume-v1'
 
 const lightGround = (hex: string) => {
   const n = parseInt(hex.replace('#', ''), 16)
@@ -82,15 +84,15 @@ const slotSrc = (slot: string, list: readonly string[], fallback: string, own?: 
 
 type Phase = 'build' | 'saved'
 
-function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: string | null }) {
+function Island({ arrival, draftToken, initialResume = null, timedEntry = false }: { arrival: DoorArrival; draftToken: string | null; initialResume?: WizardResume | null; timedEntry?: boolean }) {
   // A door's hints (lib/create-space/door.ts) prime the start: the name is typed in, the goals light the preview's
   // offer cards before a sentence is written, and the niche rides to the launch. Nothing is marked done for them.
   // The accent picked beside the kit's Use button arrives picked: they chose it there, so it is not asked again.
-  const [draft, setDraft] = useState<BuilderDraft>(() => ({
+  const [draft, setDraft] = useState<BuilderDraft>(() => initialResume?.draft ?? ({
     ...emptyDraft(arrival.kit, arrival.chosen), name: arrival.name, goals: arrival.goals, niche: arrival.niche,
     ...(arrival.accentAt !== undefined ? { accentAt: arrival.accentAt, accentPicked: true } : {}),
   }))
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(initialResume?.draft ? initialResume.cursor : 0)
   const [phase, setPhase] = useState<Phase>('build')
   const [busyLine, setBusyLine] = useState<number | null>(null)
   const [err, setErr] = useState<StepError>(null)
@@ -113,6 +115,23 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
   const contactRef = useRef<HTMLInputElement>(null)
   const morphRects = useRef<Record<string, DOMRect> | null>(null)
   const restored = useRef(false)
+  const awaitingResume = useRef(false)
+  const resumeCursor = useRef<number | null>(initialResume?.cursor ?? null)
+  const [timed, setTimed] = useState(initialResume?.timedEntry ?? timedEntry)
+  const pendingProgress = useRef<WizardResume | null>(null)
+  const savingProgress = useRef(false)
+  const flushProgress = useCallback(async () => {
+    if (savingProgress.current) return
+    savingProgress.current = true
+    try {
+      while (pendingProgress.current) {
+        const value = pendingProgress.current
+        pendingProgress.current = null
+        await saveBuilderProgress(value)
+      }
+    } catch { /* local draft remains available for another save */ }
+    finally { savingProgress.current = false }
+  }, [])
   // Once the draft has been handed to the launch it is not kept here any more.
   const sealed = useRef(false)
   const timers = useRef<{ toast?: number; save?: number; mock?: number; line?: number; focus?: number; server?: number }>({})
@@ -136,13 +155,16 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
   // ── The browser's own draft: read back once after mount (server markup is the cold render), kept on every change.
   useEffect(() => {
     try {
-      const back = readStoredDraft((k) => window.localStorage.getItem(k), arrival.chosen ? arrival.kit : null)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the browser's own storage once, after hydration, is the only way to match the server markup
-      if (back && hasProgress(back)) setResume(back)
+      const shared = parseWizardResume(JSON.parse(window.localStorage.getItem(RESUME_KEY) ?? 'null'))
+      resumeCursor.current = initialResume?.cursor ?? shared?.cursor ?? null
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the browser clock opt-in after hydration alongside its draft
+      if (!initialResume && shared) setTimed(shared.timedEntry)
+      const back = initialResume?.draft ? null : readStoredDraft((k) => window.localStorage.getItem(k), arrival.chosen ? arrival.kit : null)
+      if (back && hasProgress(back)) { awaitingResume.current = true; setResume(back) }
     } catch { /* storage blocked: the page works without it */ }
     restored.current = true
     signal('createspace.view', { kit: arrival.kit, chosen: arrival.chosen })
-  }, [arrival, signal])
+  }, [arrival, signal, initialResume])
 
   // ── A ?draft= link: the server copy comes back as a "Welcome back", never restored by itself (ADR-1933).
   useEffect(() => {
@@ -151,18 +173,30 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
     restoreDraft(draftToken).then(({ draft: json }) => {
       if (!live || !json) return
       const back = parseDraft(json, null)
-      if (back && hasProgress(back)) setResume(back)
+      if (back && hasProgress(back)) { awaitingResume.current = true; setResume(back) }
     }).catch(() => { /* the link opened nothing: the page is still the page */ })
     return () => { live = false }
   }, [draftToken])
 
   useEffect(() => {
-    if (!restored.current || sealed.current) return
+    if (!restored.current || sealed.current || awaitingResume.current || resume) return
     try { window.localStorage.setItem(DRAFT_KEY, serializeDraft(draft)) } catch { /* private window */ }
     if (!draft.name.trim()) return
     window.clearTimeout(timers.current.save)
     timers.current.save = window.setTimeout(() => setSaveState('saved'), 700)
-  }, [draft])
+  }, [draft, resume])
+
+  useEffect(() => {
+    if (!restored.current || sealed.current || awaitingResume.current || resume || (!draft.name && step === 0 && !draft.kitChosen)) return
+    const value = parseWizardResume({ version: 1, phase: 'builder', cursor: step, theme: draft.kit,
+      accentAt: draft.accentAt, niche: draft.niche, goals: draft.goals, timedEntry: timed,
+      draft, leadToken: draft.leadToken })
+    if (!value) return
+    try { window.localStorage.setItem(RESUME_KEY, JSON.stringify(value)) } catch { /* private window */ }
+    pendingProgress.current = value
+    const timer = window.setTimeout(() => { void flushProgress() }, 350)
+    return () => window.clearTimeout(timer)
+  }, [draft, step, resume, flushProgress, timed])
 
   // ── The moment a name and a full address are typed, the draft also goes to the server (the owner's rule, 2026-11-03:
   // capture before Save, so an abandoned draft gets its come-back email): debounced after every change, and by beacon
@@ -304,8 +338,9 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
   const startedAt = draft.startedAt ? Date.parse(draft.startedAt) : NaN
   const endAt = building ? now : (draft.endedAt ? Date.parse(draft.endedAt) : now)
   const elapsedMs = Number.isFinite(startedAt) && now ? Math.max(0, endAt - startedAt) : 0
-  const h1Lead = intro ? INTRO_H1_LEAD : building ? 'Launch your business in ' : `${siteName}, saved in `
-  const h1Time = intro ? '' : building ? formatClock(Math.max(0, CLOCK_BUDGET_MS - elapsedMs)) : `${formatClock(elapsedMs)}.`
+  const showClock = timed && elapsedMs < CLOCK_BUDGET_MS
+  const h1Lead = intro ? INTRO_H1_LEAD : building && showClock ? 'Launch your business in ' : !building && timed ? `${siteName}, saved in ` : siteName
+  const h1Time = intro || !timed || (building && !showClock) ? '' : building ? formatClock(Math.max(0, CLOCK_BUDGET_MS - elapsedMs)) : `${formatClock(elapsedMs)}.`
   const sub = intro ? INTRO_SUB : building ? `Step ${step + 1} of 5 · ${stepPrompt(step, kitLabel)}` : `We sent your link to ${saved?.email ?? draft.email.trim()}. It stays a private draft until you open it.`
   const rowValue = [`${siteName} · /${handle || 'yourspace'}`, draft.offer.trim(), `${draft.hostName.trim()} · ${draft.email.trim()}`, ownCount ? `${ownCount} of yours, the rest from ${kitLabel}` : `${kitLabel} photos for now`]
   const doneRows = building ? BUILDER_MOVES.map((k, i) => ({ k, i })).filter(({ k, i }) => draft.done[k] && i !== step) : []
@@ -431,15 +466,16 @@ function Island({ arrival, draftToken }: { arrival: DoorArrival; draftToken: str
     if (!d) return
     capture()
     signal('createspace.resume', { source: draftToken ? 'email' : 'local' })
+    awaitingResume.current = false
     setResume(null)
-    edit(() => ({ ...d, startedAt: new Date().toISOString(), endedAt: null }))
-    const n = nextOpenMove(d.done, -1) ?? 4
+    edit(() => ({ ...d, endedAt: null }))
+    const n = resumeCursor.current ?? nextOpenMove(d.done, -1) ?? 4
     setStep(n)
     focusStep(n)
   }
   const handOver = () => {
     sealed.current = true
-    try { window.localStorage.removeItem(DRAFT_KEY) } catch { /* nothing to clear */ }
+    try { window.localStorage.removeItem(DRAFT_KEY); window.localStorage.removeItem(RESUME_KEY) } catch { /* nothing to clear */ }
   }
   const onSaved = (s: Saved) => {
     capture()
@@ -583,7 +619,7 @@ const noopSubscribe = () => () => {}
 let bootCookie: string | undefined
 const firstCookie = () => (bootCookie ??= document.cookie)
 
-function FromUrl() {
+function FromUrl({ initialResume }: { initialResume: WizardResume | null }) {
   const params = useSearchParams()
   const asked = doorArrival((k) => params.get(k))
   // No kit in the address: start on the one they last looked at or last picked here (lib/create-space/last-kit.ts), with
@@ -593,13 +629,13 @@ function FromUrl() {
   const kit = asked.chosen ? asked.kit : last ?? asked.kit
   const accentAt = asked.accentAt ?? (cookie ? lastAccentAt(kit, cookie) ?? undefined : undefined)
   const arrival = { ...asked, kit, chosen: asked.chosen || !!last, ...(accentAt !== undefined ? { accentAt } : {}) }
-  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.accentAt ?? ''}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} draftToken={params.get('draft')} />
+  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.accentAt ?? ''}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} draftToken={params.get('draft')} initialResume={initialResume} timedEntry={params.get('timer') === '12' || params.get('entry') === '12-minutes'} />
 }
 
-export function CreateSpaceStudio() {
+export function CreateSpaceStudio({ initialResume = null }: { initialResume?: WizardResume | null }) {
   return (
     <Suspense fallback={<Island arrival={doorArrival(() => null)} draftToken={null} />}>
-      <FromUrl />
+      <FromUrl initialResume={initialResume} />
     </Suspense>
   )
 }

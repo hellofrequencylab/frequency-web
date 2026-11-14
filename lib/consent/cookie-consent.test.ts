@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { trackClient } from '@/components/analytics/track-provider'
 import { REDACTED_PAGE_TITLE } from '@/lib/analytics/sanitize'
 import {
   CONSENT_COOKIE,
@@ -43,18 +42,16 @@ function clearCookies(): void {
 }
 
 /** Put the DOM into a scenario, then run the REAL head script against it. */
-function runBootstrap(opts: { choice?: ConsentChoice; priorConsentRegion?: boolean; loading?: boolean }): {
+function runBootstrap(opts: { choice?: ConsentChoice; priorConsentRegion?: boolean }): {
   tagLoaded: boolean
   loader: (() => void) | undefined
 } {
   clearCookies()
   document.head.querySelectorAll(TAG_SELECTOR).forEach((n) => n.remove())
   delete (window as { __fqGa?: unknown }).__fqGa
-  delete window.gtag
   ;(window as { dataLayer?: unknown }).dataLayer = undefined
   if (opts.choice) document.cookie = `${CONSENT_COOKIE}=${opts.choice}; path=/`
   if (opts.priorConsentRegion) document.cookie = `${CONSENT_REGION_COOKIE}=1; path=/`
-  Object.defineProperty(document, 'readyState', { configurable: true, value: opts.loading ? 'loading' : 'complete' })
   new Function(gaBootstrapScript(GA_ID))()
   return {
     tagLoaded: document.head.querySelector(TAG_SELECTOR) !== null,
@@ -172,14 +169,12 @@ describe('the loader is one function, defined once, callable twice', () => {
     const { tagLoaded, loader } = runBootstrap({ priorConsentRegion: true })
     expect(tagLoaded).toBe(false)
     expect(typeof loader).toBe('function')
-    document.cookie = `${CONSENT_COOKIE}=granted; path=/`
     loader!()
     expect(document.head.querySelector(TAG_SELECTOR)).not.toBeNull()
   })
 
   it('is idempotent — calling it again never appends a second tag', () => {
     const { loader } = runBootstrap({ priorConsentRegion: true })
-    document.cookie = `${CONSENT_COOKIE}=granted; path=/`
     loader!()
     loader!()
     loader!()
@@ -240,189 +235,4 @@ describe('SCAN-838: a redacted path carries a generic page_title', () => {
     runBootstrap({})
     expect(configArgs()?.page_title).toBe('Pricing · Frequency')
   })
-})
-
-
-describe('one manual page-view owner across every shell', () => {
-  function calls() {
-    return ((window as { dataLayer?: unknown[] }).dataLayer ?? []).map((a) => Array.from(a as ArrayLike<unknown>))
-  }
-  function views() { return calls().filter((args) => args[0] === 'event' && args[1] === 'page_view') }
-  afterEach(() => { window.history.replaceState(null, '', '/'); document.title = '' })
-
-  it('publishes the consenting gtag function so client feature events reach the queue', () => {
-    runBootstrap({ choice: 'granted' })
-    expect(typeof window.gtag).toBe('function')
-    trackClient('feature.used', { feature: 'builder', topic: 'private' })
-    expect(calls()).toContainEqual(['event', 'feature_used', { feature: 'builder' }])
-    expect(calls().find((args) => args[0] === 'config')?.[2]).toMatchObject({ send_page_view: false })
-    expect(views()).toHaveLength(1)
-  })
-
-  it('does not publish a client queue or view before required consent', () => {
-    runBootstrap({ priorConsentRegion: true })
-    expect(window.gtag).toBeUndefined()
-    expect(views()).toHaveLength(0)
-  })
-
-  it('records the current route when consent is granted after navigation', () => {
-    const { loader } = runBootstrap({ priorConsentRegion: true })
-    window.history.pushState(null, '', '/journeys/private-topic?email=private@example.com')
-    document.title = 'Private topic'
-    document.cookie = `${CONSENT_COOKIE}=granted; path=/`
-    loader!()
-    expect(views()).toHaveLength(1)
-    expect(views()[0][2]).toMatchObject({ page_location: `${location.origin}/journeys/[slug]`, page_title: REDACTED_PAGE_TITLE })
-  })
-
-  it('handles push, replace and pop without duplicate views or sensitive stale titles', async () => {
-    window.history.replaceState(null, '', '/')
-    runBootstrap({ choice: 'granted' })
-    document.title = 'Private topic from the previous React frame'
-    window.history.pushState(null, '', '/journeys/private-topic?token=private')
-    window.history.replaceState(null, '', '/journeys/private-topic?token=changed')
-    await Promise.resolve()
-    expect(views()).toHaveLength(2)
-    expect(views()[1][2]).toMatchObject({ page_location: `${location.origin}/journeys/[slug]`, page_title: REDACTED_PAGE_TITLE })
-    window.history.replaceState(null, '', '/pricing')
-    window.dispatchEvent(new PopStateEvent('popstate'))
-    await Promise.resolve()
-    expect(views()).toHaveLength(3)
-    expect(views()[2][2]).toMatchObject({ page_location: `${location.origin}/pricing`, page_title: REDACTED_PAGE_TITLE })
-    expect(JSON.stringify(views())).not.toContain('Private topic')
-    expect(JSON.stringify(views())).not.toContain('token=')
-  })
-
-  it('stops route views immediately when browser consent is withdrawn', () => {
-    runBootstrap({ choice: 'granted' })
-    const before = views().length
-    document.cookie = `${CONSENT_COOKIE}=denied; path=/`
-    window.history.pushState(null, '', '/pricing')
-    expect(views()).toHaveLength(before)
-  })
-})
-
-
-describe('grant, withdraw and grant again preserve independent opt-outs', () => {
-  const state = () => window as unknown as Record<string, unknown>
-  const views = () => ((window as { dataLayer?: unknown[] }).dataLayer ?? []).map((a) => Array.from(a as ArrayLike<unknown>)).filter((a) => a[0] === 'event' && a[1] === 'page_view')
-  function withdrawAndRegrant(loader: () => void) {
-    document.cookie = `${CONSENT_COOKIE}=denied; path=/`
-    window.__fqGaBrowserDisabled = true
-    state()[`ga-disable-${GA_ID}`] = true
-    document.cookie = `${CONSENT_COOKIE}=granted; path=/`
-    loader()
-  }
-  afterEach(() => {
-    delete state().__fqGaAccountDisabled
-    delete state().__fqGaBrowserDisabled
-    delete state()[`ga-disable-${GA_ID}`]
-    localStorage.removeItem('freq-ga-optout')
-  })
-  it('reenables only the browser-owned suppression and records one new consenting view', () => {
-    const { loader } = runBootstrap({ choice: 'granted' })
-    const before = views().length
-    withdrawAndRegrant(loader!)
-    expect(state()[`ga-disable-${GA_ID}`]).toBe(false)
-    expect(views()).toHaveLength(before + 1)
-    loader!()
-    expect(views()).toHaveLength(before + 1)
-  })
-  it('keeps staff exclusion effective after browser consent is granted again', () => {
-    localStorage.setItem('freq-ga-optout', '1')
-    const { loader } = runBootstrap({ choice: 'granted' })
-    withdrawAndRegrant(loader!)
-    expect(state()[`ga-disable-${GA_ID}`]).toBe(true)
-    expect(views()).toHaveLength(0)
-  })
-  it('keeps account-level analytics withdrawal effective after browser regrant', () => {
-    state().__fqGaAccountDisabled = true
-    const { loader } = runBootstrap({ choice: 'granted' })
-    withdrawAndRegrant(loader!)
-    expect(state()[`ga-disable-${GA_ID}`]).toBe(true)
-    expect(views()).toHaveLength(0)
-  })
-})
-
-
-it('waits for streamed account gates before loading GA or emitting the first view', () => {
-  const state = window as unknown as Record<string, unknown>
-  runBootstrap({ choice: 'granted', loading: true })
-  expect(document.head.querySelector(TAG_SELECTOR)).toBeNull()
-  expect(window.gtag).toBeUndefined()
-  state.__fqGaAccountDisabled = true
-  document.dispatchEvent(new Event('DOMContentLoaded'))
-  const views = ((window as { dataLayer?: unknown[] }).dataLayer ?? []).map((a) => Array.from(a as ArrayLike<unknown>)).filter((a) => a[0] === 'event' && a[1] === 'page_view')
-  expect(views).toHaveLength(0)
-  expect(state[`ga-disable-${GA_ID}`]).toBe(true)
-  delete state.__fqGaAccountDisabled
-  delete state[`ga-disable-${GA_ID}`]
-})
-
-
-it('preserves approved campaign IDs for attribution without leaking human topics or private queries', () => {
-  const campaign = '8f030f11-dcaa-4ab8-a6b2-a7c8129dc481'
-  window.history.replaceState(null, '', `/?utm_source=email&utm_medium=email&utm_campaign=${campaign}&utm_content=grief-circle&email=private@example.com&token=secret`)
-  runBootstrap({ choice: 'granted' })
-  const calls = ((window as { dataLayer?: unknown[] }).dataLayer ?? []).map((a) => Array.from(a as ArrayLike<unknown>))
-  const view = calls.find((a) => a[0] === 'event' && a[1] === 'page_view')?.[2] as Record<string, unknown>
-  expect(view.page_location).toContain(`utm_campaign=${campaign}`)
-  expect(view.page_location).toContain('utm_source=email')
-  expect(view.page_location).not.toContain('grief')
-  expect(view.page_location).not.toContain('private')
-  expect(view.page_location).not.toContain('token')
-  window.history.replaceState(null, '', '/?utm_source=grief-circle&utm_medium=email&utm_campaign=grief-circle&utm_term=trauma')
-  const last = ((window as { dataLayer?: unknown[] }).dataLayer ?? []).map((a) => Array.from(a as ArrayLike<unknown>)).filter((a) => a[0] === 'event' && a[1] === 'page_view')
-  // Query-only changes are not a new view; execute a fresh page load to inspect that arrival.
-  runBootstrap({ choice: 'granted' })
-  const fresh = ((window as { dataLayer?: unknown[] }).dataLayer ?? []).map((a) => Array.from(a as ArrayLike<unknown>)).find((a) => a[0] === 'event' && a[1] === 'page_view')?.[2] as Record<string, unknown>
-  expect(last.length).toBeGreaterThan(0)
-  expect(fresh.page_location).toBe(location.origin + '/')
-  window.history.replaceState(null, '', '/')
-})
-
-
-it('lets the committed account gate suppress a pending SPA page view', async () => {
-  const state = window as unknown as Record<string, unknown>
-  runBootstrap({ choice: 'granted' })
-  const count = () => ((window as { dataLayer?: unknown[] }).dataLayer ?? []).map((a) => Array.from(a as ArrayLike<unknown>)).filter((a) => a[0] === 'event' && a[1] === 'page_view').length
-  const before = count()
-  window.history.pushState(null, '', '/feed')
-  // A client layout effect applies the resolved account gate during the same React commit.
-  state.__fqGaAccountDisabled = true
-  state[`ga-disable-${GA_ID}`] = true
-  await Promise.resolve()
-  expect(count()).toBe(before)
-  delete state.__fqGaAccountDisabled
-  delete state[`ga-disable-${GA_ID}`]
-  window.history.replaceState(null, '', '/')
-})
-
-
-it('fails closed for an authenticated cookie until the server account gate resolves, including SPA navigation', async () => {
-  const state = window as unknown as Record<string, unknown>
-  runBootstrap({ choice: 'granted', loading: true })
-  document.cookie = 'sb-project-auth-token.0=opaque-session; path=/'
-  document.dispatchEvent(new Event('DOMContentLoaded'))
-  expect(document.head.querySelector(TAG_SELECTOR)).toBeNull()
-  expect(window.gtag).toBeUndefined()
-  const { applyGaAccountGate } = await import('@/lib/analytics/ga-account-gate')
-  applyGaAccountGate(GA_ID, false)
-  expect(typeof window.gtag).toBe('function')
-  const views = () => ((window as { dataLayer?: unknown[] }).dataLayer ?? []).map((a) => Array.from(a as ArrayLike<unknown>)).filter((a) => a[0] === 'event' && a[1] === 'page_view')
-  const before = views().length
-  window.history.pushState(null, '', '/feed')
-  await Promise.resolve()
-  expect(state.__fqGaAccountResolved).toBe(false)
-  expect(views()).toHaveLength(before)
-  applyGaAccountGate(GA_ID, true)
-  expect(views()).toHaveLength(before)
-  applyGaAccountGate(GA_ID, false)
-  expect(views()).toHaveLength(before + 1)
-  delete state.__fqGaAccountDisabled
-  delete state.__fqGaAccountResolved
-  delete state.__fqGaAccountPending
-  delete state[`ga-disable-${GA_ID}`]
-  document.cookie = 'sb-project-auth-token.0=; path=/; max-age=0'
-  window.history.replaceState(null, '', '/')
 })

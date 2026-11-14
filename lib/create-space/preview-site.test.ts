@@ -49,7 +49,7 @@ describe('preview site', () => {
     expect(fh.portrait).toMatch(/^\/sites\/free-human\/photos\//)
     for (const src of [...fh.strip, ...fh.covers, ...fh.portraits]) expect(src).toMatch(/^\/sites\/free-human\/photos\//)
     expect(fh).not.toEqual(kitImagery('frequency'))
-    expect(kitImagery('services').hero).toMatch(/^\/sites\/new-world\/photos\//)
+    expect(kitImagery('services').hero).toBe('/sites/services/hero-squeegee.webp')
   })
 
   it('reads as a sample Space when nothing is filled in', () => {
@@ -87,6 +87,12 @@ describe('preview site', () => {
     expect(g.tagline).toContain('mocked up from what you offer')
     expect(g.offers.map((o) => o.t)).toEqual(['Your first offering', 'What people book', 'A way to stay close'])
     expect(g.offers[0].img).toBeTruthy()
+  })
+
+  it('shows the theme\'s own sample headline while a ghost, never once their words land', () => {
+    expect(deriveSite({ ...base, kit: 'bold', ghost: true }).sample?.headline).toBe('Stuck on the same thing for')
+    expect(deriveSite({ ...base, kit: 'bold' }).sample).toBeUndefined()
+    expect(deriveSite({ ...base, kit: 'cyberwitch', ghost: true }).sample).toBeUndefined()
   })
 
   it('fills the contact strip from step 3 and leaves it empty before', () => {

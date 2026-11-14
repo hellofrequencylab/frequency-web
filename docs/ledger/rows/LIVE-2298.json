@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2298",
+  "title": "Align Journey review and host guidance with adaptable support",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/ai/quality-gate.ts",
+    "ref": "Daniel approved completing all phases of the support/practice/expression changeover; follow-up to merged LIVE-2290."
+  },
+  "detail": "The actual Journey rank-review gateway guidance and fallback now judge a clear intention, usable actions and honest pacing rather than a fixed four-week/four-area/public-capstone formula. Numeric score floor, tool schema, model tier, budget/rate-limit fail-closed gates, static rubric import paths and reward contracts stay unchanged. Actual weekly coaching context asks planning questions, lets authors keep a familiar anchor and preserves author-written content. The published foundations lesson distinguishes optional personal support and private Expression from an existing official enrollment's published requirements. No existing authored rows, verdicts, enrollment requirements, reward values or historical recognition are rewritten. The immutable consequence probe exercises the actual gateway request and weekly server-action boundaries: actual main69a6c5af5 fails five semantic assertions while five safety assertions pass; candidate passes all ten without editing tests or probe bytes. Current-runtime focused regression passes51 tests across six files and changed-file ESLint passes five TypeScript files. This records implementation, not authenticated preview or production acceptance. Independent root and current-container policy reviews pass. The real HelpMarkdown and DetailTemplate render the changed foundations lesson at390,1280,1440,1920 and2000 pixels with no horizontal overflow or unnamed controls; owner data is synthetic and page administration is stubbed, so these are not authenticated acceptance. The process-local rubric text cache and provider system-prefix cache do not require durable invalidation: a fresh deployment reads the revised rubric, changed prompt bytes change the cached prefix, and existing stored verdicts remain untouched. Final current-runtime required backlog contract passes with 2690 entries and 997 agreeing probes; existing probe bytes and old contracts are unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/journey-review-support.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}

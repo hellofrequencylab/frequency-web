@@ -130,6 +130,10 @@ const VITEST_ENFORCED: Record<string, string> = {
   // Added 2026-10-20 (PROG-E1). A page App's surface resolves to a component, and the count of empty surface
   // descriptors only falls. The catalog is TypeScript, so the enforcing arm runs under vitest where it is importable.
   'check:surface-binding': 'scripts/check-surface-binding.test.ts',
+  // Added 2026-11-14 (PROG-E9). Arm B of the Loom integrity gate: every primitive resolves to a real export, every
+  // composable schema is a Zod object, the manifest is declared once, and arm A (the write-time validator) is not
+  // vacuous. The manifest and schemas are TypeScript, so the enforcing arm runs under vitest where they import.
+  'check:loom-integrity': 'scripts/check-loom-integrity.test.ts',
   // Added 2026-10-28 (LIVE-1570). Every file of a theme's design system is checked against the code. The
   // enforcing arm needs the repo's token block (TypeScript behind a path alias), so it runs under vitest, where
   // its sibling test walks the real tree and fails on any gap the baseline does not name.

@@ -7,7 +7,6 @@ import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { TableSkeleton } from '@/components/admin/table-skeleton'
 import { FreshnessNote } from '@/components/admin/freshness-note'
 import { RankList } from '@/components/admin/rank-list'
-import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getEngagementDashboard, type FunnelStep, type EventTypeCount } from '@/lib/analytics/dashboard'
 import { formatMedian } from '@/lib/create-space/funnel'
@@ -30,7 +29,8 @@ export function EngagementTab() {
 }
 
 async function EngagementContent() {
-  const d = await getEngagementDashboard(WINDOW_DAYS)
+  const d = await getEngagementDashboard(WINDOW_DAYS).catch(() => null)
+  if (!d) return <AdminSection title="Activity unavailable"><p className="text-body-sm text-muted">The database reading could not be loaded. No activity counts are available.</p></AdminSection>
 
   const byTypeColumns: ColumnDef<EventTypeCount>[] = [
     { key: 'eventType', header: 'Event', render: (r) => <span className="font-mono text-meta text-text">{r.eventType}</span> },
@@ -51,15 +51,15 @@ async function EngagementContent() {
 
       <DashArea
         icon={Activity}
-        label="Where members drop off"
-        blurb="Distinct members reaching each step. The drop tells you where to focus: new-member activation runs induction to a first verified practice; the broader funnel fills in as page and feature events accrue."
+        label="Activity across steps"
+        blurb="Independent activity totals for the last 30 days. These groups may contain different people and are not an ordered conversion funnel. Use Experience for linked funnels."
         footnote={<FreshnessNote at={new Date()} label="Computed" />}
       >
         <TileGrid>
           <Tile label="New-member activation" span={3} caption="Induction → Vera → first circle → first practice.">
             <FunnelView steps={d.activationFunnel} />
           </Tile>
-          <Tile label="Engagement funnel" span={3} caption="Distinct members reaching each broad step across the app.">
+          <Tile label="Engagement activity" span={3} caption="Distinct members reaching each broad step across the app.">
             <FunnelView steps={d.funnel} />
           </Tile>
           <Tile label="Create a Space, signed out" span={3} caption={`Visits reaching each builder step (anonymous, one per tab), then members starting and finishing the launch from every door. Name to hand-over, median: ${formatMedian(d.createSpaceMedianMs)}.`}>
@@ -93,7 +93,7 @@ async function EngagementContent() {
 }
 
 function FunnelView({ steps }: { steps: FunnelStep[] }) {
-  const top = steps[0]?.actors ?? 0
+  const top = Math.max(0, ...steps.map((s) => s.actors))
   if (steps.length === 0) {
     return <p className="text-body-sm text-muted">No funnel signal yet in this window.</p>
   }
@@ -106,13 +106,10 @@ function FunnelView({ steps }: { steps: FunnelStep[] }) {
             <div className="flex items-baseline justify-between gap-2 text-body-sm">
               <span className="truncate text-text">{s.step}</span>
               <span className="flex shrink-0 items-center gap-2">
-                {s.dropPct !== null && s.dropPct > 0 && (
-                  <StatusChip tone="danger" size="sm">−{s.dropPct}%</StatusChip>
-                )}
-                <span className="font-semibold tabular-nums text-text">{s.actors.toLocaleString()}</span>
+                <span className="font-semibold tabular-nums text-text">{s.actors.toLocaleString()}{s.eventType.startsWith('createspace.') ? ' visits' : ' members'}</span>
               </span>
             </div>
-            <ProgressTrack value={width} label={`${s.step} share of actors`} className="mt-1" />
+            <ProgressTrack value={width} label={`${s.step}, relative activity volume`} className="mt-1" />
           </div>
         )
       })}

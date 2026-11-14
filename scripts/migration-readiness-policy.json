@@ -1780,11 +1780,124 @@
       ]
     },
     {
+      "pullRequest": 4946,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346046000_hunt_reward_redeem.sql",
+          "sha256": "bad61afabaec30eb0023abf80185fcf56d2ae0cdc2ade78ab497517b3d72bb3f"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/hunts/station/page.tsx",
+          "status": "added",
+          "sha256": "37b7325cc06b2af0d4f88e96a50e4f5faad4b55ff7ade0e2046d652ce77874fe",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/api/hunts/rewards/token/route.ts",
+          "status": "added",
+          "sha256": "92b86defa2468ea96cfe36c6eedb97406e4f06844bbe9cc39b90f44c9d23d8e4",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/api/hunts/station/route.ts",
+          "status": "added",
+          "sha256": "be421808da6faa1929d519c55634805e64e6dcab94584d84cc4b4296139494b9",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/hunts/station-terminal.tsx",
+          "status": "added",
+          "sha256": "2867d598816e8230b1017030a45955cd899ada97f2269c6cf71b118c8a82fe2a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/FH-022.json",
+          "status": "added",
+          "sha256": "3f685baffd18ecb607e5ad96a27224de98c2aa4ef3e1bde61abef4944a5a51d2",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/redemption-store.ts",
+          "status": "added",
+          "sha256": "ae61d24930dbb508232f1e8d3b332e22131eaed38fb037f17b708a698641acc0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/redemption.test.ts",
+          "status": "added",
+          "sha256": "badfd570fb776600bb3a54a19df279a54e9b72a4edb4be2b7ded236b93ff92bf",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/redemption.ts",
+          "status": "added",
+          "sha256": "43648727b98d33c3d9e38dcf3d935108fb0241c314c0110c66df357addef41ff",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "673e439c9a31e41870e645706c65aca08b9aab7e94b01596d000f5fcda336dcd",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "eac072fb26b37aeca0973c2e5071f084910593eb76563e5fea85aa1f913ac082",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "a3e84334e806a24e887651ec8563fa6b00a9b19989f646e95100b52c8ce4a4d1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346046000_hunt_reward_redeem.sql",
+          "status": "added",
+          "sha256": "bad61afabaec30eb0023abf80185fcf56d2ae0cdc2ade78ab497517b3d72bb3f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunt_reward_redeem.test.sql",
+          "status": "added",
+          "sha256": "9b4ebd12b54a93053aed94c261727c0762cf5b96f87f99649b456099fc3c310b",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
+    },
+    {
       "pullRequest": 4930,
       "expiresAt": "2026-11-21T23:59:59Z",
       "migrations": [
         {
-          "file": "supabase/migrations/20270346046000_analytics_experiments.sql",
+          "file": "supabase/migrations/20270346046500_analytics_experiments.sql",
           "sha256": "ebefee10a1e936f2e7516ecd6a70fb1242ce0638bedf517522ecbdfb6cb894bb"
         }
       ],
@@ -1869,7 +1982,7 @@
         {
           "file": "docs/ledger/rows/LIVE-2278.json",
           "status": "added",
-          "sha256": "fe462479b9d7b79d1d56a8400f4d9a20c6f113684ac99b931f7860f8d328fd54",
+          "sha256": "a6130d27f395a04e5b63a68e1bb3a159001c069d0579feb365cb81b56a11b396",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -1953,14 +2066,14 @@
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "76ab267a82da1ec990c34928d309fd61f52db4fa510624f8b3a106c640018694",
+          "sha256": "ccac5962c7511c5c1cae3497a204e1fd264513721e033a245fdf6e26b2cabba8",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/function-grants.txt",
           "status": "modified",
-          "sha256": "7b6528a63780c64c96dba5718499e3952ecb41e3b1b413c834487ae58eee934a",
+          "sha256": "c39f06c0818cbd59533179711995b44d7b5811675ffb6111578589d3aa3c0ffd",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -1974,7 +2087,7 @@
         {
           "file": "scripts/probes/analytics-experiments-sql.mjs",
           "status": "added",
-          "sha256": "58af130f42d0c91da796060cc11a196812777da8c108dda8fd6e62a8ba2257a5",
+          "sha256": "a1cb937f0be969fa02ed17ca7ea719ca991f63711742d9a2e9f4f9a9999a174c",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -2000,7 +2113,7 @@
           "headMode": "100644"
         },
         {
-          "file": "supabase/migrations/20270346046000_analytics_experiments.sql",
+          "file": "supabase/migrations/20270346046500_analytics_experiments.sql",
           "status": "added",
           "sha256": "ebefee10a1e936f2e7516ecd6a70fb1242ce0638bedf517522ecbdfb6cb894bb",
           "baseMode": "000000",

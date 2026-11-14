@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-2284",
+  "title": "Lay out each Create a Space theme preview like the theme's own page",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-11-14",
+  "source": {
+    "file": "components/frequency/site/pages/create-space/create-space-themes.css",
+    "ref": "Owner 2026-11-13/14: the previews are not laid out like the themes; show the design's sample headline until the business writes its own."
+  },
+  "detail": "Follow-up to LIVE-2283. Each theme's preview is recomposed from its design pages: New World (aurora, tall glass picture card with the week's list over it), Services (full-bleed job photo, book-online panel), Designer (utility strip, edge-to-edge hero, dark project strip), Nocturne (slim top rule, very large Bodoni headline), Network (arched picture beside the headline), Temple (edge-to-edge house picture), Bold (one column, season bar, wide notched picture) and Wildheart (large serif headline, arch rising from the bottom). Bold and Wildheart phones show handle, place and bio. The theme's own sample hero words show while the preview is a ghost. Services still wears New World stand-in pictures because probe create-space-kit-previews pins them; its own window-washer hero needs the owner's OK to edit that probe.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/create-space-theme-layouts.mjs" },
+  "wave": "W7"
+}

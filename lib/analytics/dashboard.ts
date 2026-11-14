@@ -55,13 +55,9 @@ const ACTIVATION_FUNNEL: ReadonlyArray<{ step: string; eventType: string }> = [
   { step: 'Verified a practice', eventType: 'practice.verified' },
 ]
 
-/** Pure: attach step-over-step drop-off to an ordered list of (step, actors). */
+/** Independent activity totals are not an ordered cohort. Never call their ratio drop-off. */
 export function computeFunnel(steps: ReadonlyArray<{ step: string; eventType: string; actors: number }>): FunnelStep[] {
-  return steps.map((s, i) => {
-    const prev = i === 0 ? null : steps[i - 1].actors
-    const dropPct = prev && prev > 0 ? Math.round((1 - s.actors / prev) * 100) : null
-    return { ...s, dropPct }
-  })
+  return steps.map((s) => ({ ...s, dropPct: null }))
 }
 
 function mapProps(data: unknown): PropCount[] {
@@ -81,6 +77,9 @@ export async function getEngagementDashboard(windowDays = 30): Promise<Engagemen
     db.from('create_space_drafts').select('started_at, converted_at').not('converted_at', 'is', null).gte('converted_at', new Date(Date.now() - windowDays * 86_400_000).toISOString()).limit(5000),
   ])
 
+  if (byTypeRes.error || pagesRes.error || featuresRes.error || draftsRes.error) {
+    throw new Error('Engagement reading unavailable')
+  }
   const byType = ((byTypeRes.data ?? []) as Array<{ event_type: string; events: number; actors: number }>).map((r) => ({
     eventType: r.event_type,
     events: Number(r.events),

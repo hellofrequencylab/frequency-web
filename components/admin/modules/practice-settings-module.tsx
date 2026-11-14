@@ -18,6 +18,7 @@ import {
 import { deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { PRACTICE_RAIL } from './practice-rail-plan'
+import { PRACTICE_SUPPORT_COPY } from '@/lib/practices/support-language'
 import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Practice settings" (EMBEDDED-ADMIN.md / ADR-133) on /practices/[id]. The rail section header
@@ -50,10 +51,10 @@ const PLACEHOLDERS: Record<string, string> = { duration_min: 'Optional' }
 
 /** The split's standing guidance (LIVE-641), which names the primary Pillar the row already holds. */
 function splitHints(mainPillar: string | null): Record<string, string> {
-  if (!mainPillar) return { secondary_domain_id: 'Pick a Pillar in the full editor first.' }
+  if (!mainPillar) return { secondary_domain_id: 'Choose a primary Pillar in the full editor before adjusting reward attribution.' }
   return {
-    secondary_domain_id: `Zaps count toward ${mainPillar}. Pick a second Pillar to share them.`,
-    primary_pct: `${mainPillar} keeps 50 to 100. The rest counts toward the second Pillar.`,
+    secondary_domain_id: `${mainPillar} is the primary reward Pillar. An additional Pillar can share the same Zaps.`,
+    primary_pct: `${mainPillar} receives 50 to 100 percent of the existing reward. Any remainder credits the additional reward Pillar.`,
   }
 }
 
@@ -126,7 +127,7 @@ export function PracticeSettingsModule() {
         <span className="min-w-0 flex-1">
           <span className="block text-body-sm font-semibold text-text">Open full editor</span>
           <span className="block text-meta text-muted">
-            The full guide, cadence, Pillar, and tags. Build or rework it with Vera.
+            The guide, rhythm, supports, and tags. Write your practice with coaching from Vera.
           </span>
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-subtle" />
@@ -147,6 +148,8 @@ export function PracticeSettingsModule() {
           />
         </div>
       )}
+
+      <p className="text-meta text-muted">{PRACTICE_SUPPORT_COPY.allocationHint}</p>
 
       <RailAutosaveForm action={updatePracticeSettings.bind(null, data.id, data.slug)}>
         <RailManifestFields

@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2287",
+  "title": "Explain overlapping practice supports and keep Vera guidance optional",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/practices/support-language.ts",
+    "ref": "Daniel's November 14 approval of the support/practice/expression strategy and three-pass implementation."
+  },
+  "detail": "Implementation invites creators to choose overlapping supports using the existing focus_details editor and keeps reward attribution separate in the unchanged manifest-derived rail controls. Shared guidance explains Mind, Body and Spirit as overlapping invitations with optional private Expression, retaining closed primary-only model output contracts and human-authored prose. Vera's actual stable system prompt permits rest, refusal and changing direction, forbids inferred wellbeing from missing logs and retains existing confirmation/tool rules. Adoption presets retain all weeks/defaults/caps while dropping the eight-week permanence promise. The immutable consequence probe failed on main9fd87ee37 because this shared support contract is absent and passes against the implementation, including actual withPracticeShape output and unchanged commitment limits. New interaction regressions preserve existing per-focus author instructions while adding/removing third/fourth supports without changing rewards. No SQL, sends, commitments, rewards, flags or historical qualification changed. Final local verification passes 61 focused tests across seven files, changed-file ESLint across ten TS/TSX files, and the existing frozen Practice coaching probe. Root independent source review found no blocker and its authorship-copy correction is included. Synthetic actual PracticeBuilder and StudioWindow fixtures with two/four supports rendered at 390,1280,1440,1920,2000 without horizontal overflow; mobile/desktop screenshots were visually inspected. Fixture data and disabled IO do not assert authenticated or production acceptance. Exact-head CI, preview and real acceptance remain release gates.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/practice-support-language.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}

@@ -3,7 +3,7 @@
 // A member adopts a practice FOR A TERM (2 / 4 / 8 weeks) or ONGOING. The evidence shape
 // (docs/PRACTICE-LIBRARY.md §Adoption + the ADR): time-boxed commitments lower the cost of
 // saying yes and outperform open-ended intentions for NEW habits; automaticity medians sit
-// near 66 days (Lally 2010), so 8 weeks is the "builds it for good" recommendation while 4
+// near 66 days (Lally 2010), with substantial variation, so 8 weeks offers a longer trial while 4
 // stays the default ask. A finished term is a completion moment, never a silent expiry —
 // the sweep (Phase 3) celebrates it and offers the next commitment.
 //
@@ -18,7 +18,7 @@ interface TermPreset {
   /** The one-line why, shown as the chip's tooltip/subtext. */
   hint: string
   default?: boolean
-  /** The evidence-backed "builds it for good" nudge (8 weeks ≈ the 66-day automaticity median). */
+  /** A longer optional trial, without promising a permanent habit. */
   recommended?: boolean
 }
 
@@ -26,8 +26,8 @@ interface TermPreset {
  *  exact moment we want a fast yes. */
 export const TERM_PRESETS: readonly TermPreset[] = [
   { weeks: 2, label: '2 weeks', hint: 'A short trial. See if it fits.' },
-  { weeks: 4, label: '4 weeks', hint: 'The standard commitment. One month, one habit.', default: true },
-  { weeks: 8, label: '8 weeks', hint: 'Long enough to make it stick for good.', recommended: true },
+  { weeks: 4, label: '4 weeks', hint: 'A month to try a rhythm and see what fits.', default: true },
+  { weeks: 8, label: '8 weeks', hint: 'Build a rhythm over eight weeks.', recommended: true },
   { weeks: null, label: 'Ongoing', hint: 'No end date. Yours until you retire it.' },
 ] as const
 

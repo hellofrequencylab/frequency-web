@@ -9,8 +9,11 @@
 
 Turn the practice library from a ~200-item, staff-curated set into an **endlessly growing,
 member-remixable library** across the four Pillars (Mind / Body / Spirit / Expression), where
-points are **auto-valued and farm-proof** and every practice carries **one primary Pillar plus an
-optional secondary** with an adjustable split. Sequence: **Scale → Clean → Grow → Autopilot.**
+rewards are **auto-valued and farm-proof**. A practice can support more than one Pillar through
+its existing focus map. One primary and an optional secondary remain the legacy reward-allocation
+model, not a rule about what the practice can mean. Mind, Body, and Spirit are overlapping lenses;
+Expression can be woven through them and can stay private. Equal activity is not a personal goal.
+Sequence: **Scale → Clean → Grow → Autopilot.**
 
 ## 2. Data model
 
@@ -81,8 +84,9 @@ end), validated-creation requiring a distinct established validator.
 ## 4. Primary + secondary Pillar split
 
 `domain_id` is the primary; `secondary_domain_id` + `primary_pct` (default 75, floor 50) give the
-split. One slider, snaps to 75/25; the floor keeps the primary dominant ("one primary Pillar"
-holds). **Function:** the split **attributes a log's earned Zaps across Pillars** for per-Pillar
+split. The allocation control defaults to 75/25; the floor preserves the existing primary-share
+contract. This is reward accounting, not a wellbeing percentage or a limit of two supporting areas.
+**Function:** the split **attributes a log's earned Zaps across Pillars** for per-Pillar
 progress (12 zaps at 75/25 → 9 primary, 3 secondary). It **never changes the wallet total** — so it
 is not an inflation or farming lever. The columns shipped Phase 1; the **attribution ledger's
 server half shipped in Phase 4** ([ADR-1131](DECISIONS.md)): `logPractice` freezes the split onto
@@ -124,6 +128,14 @@ The rules, each enforced in code and covered by tests (`lib/practices/adoption*.
   opt-in, email off by design).
 
 ## 5. Search + faceting contract (Phase 1)
+
+A Pillar filter matches any current authored support: the primary, the secondary, or a
+selected `focus_details` entry. The predicate runs in the database before counting,
+sorting and paging. Each practice appears once in the result even when it matches
+several branches. Residual Pillar buckets count each practice once per applicable
+support, so their sum is not a unique-practice total. The primary remains the editing
+and reward-allocation anchor; this discovery rule does not rewrite historical logs
+or change the total reward. Global primary-category statistics remain primary-based.
 
 - **Hybrid retrieval RPC**: full-text (`search_vector` / GIN) + vector (`embedding` / HNSW) fused
   with Reciprocal Rank Fusion. No external engine — Postgres-native, ACID, tunable weights.

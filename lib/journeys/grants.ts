@@ -8,13 +8,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { awardZaps } from '@/lib/zaps'
 import type { JourneyRewardEvent } from './rewards'
+import { DEFAULT_EXTRA_CREDIT_ZAPS } from './extra-credit'
 
 function db(): SupabaseClient {
   return createAdminClient()
 }
 
-/** Default bonus Zaps for an extra-credit Challenge, when the author hasn't set an amount. */
-export const DEFAULT_EXTRA_CREDIT_ZAPS = 25
+// A neutral leaf keeps template construction independent of the reward-writing graph.
+export { DEFAULT_EXTRA_CREDIT_ZAPS } from './extra-credit'
 
 /** Gems for finishing a phase (a slice of the journey). */
 const PHASE_COMPLETE_GEMS = 10

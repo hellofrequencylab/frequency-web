@@ -30,6 +30,7 @@ import {
 import { isError, type ActionResult } from '@/lib/action-result'
 import { builderSegments, childrenInOrder, laneOf, moveTo, planSiblingOrder, type Lane } from '@/lib/journeys/block-order'
 import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
+import { practiceMatchesSupports } from '@/lib/journeys/practice-support-picker'
 import type { CheckConfig } from '@/lib/journeys/store'
 import { PillarChip } from './pillar-chip'
 import { Input, Textarea } from '@/components/ui/field'
@@ -118,8 +119,10 @@ export interface EditorPractice {
   id: string
   title: string
   description: string | null
-  /** The practice's primary Pillar (practices.domain_id) — for the pillar-faceted picker. */
+  /** The practice's primary Pillar, retained for legacy callers and existing display. */
   pillarId: string | null
+  /** All current authored supports. Omitted preserves primary-only callers. */
+  supportIds?: string[]
 }
 
 /** The four Pillars (Mind/Body/Spirit/Expression), for the practice selector's facets. */
@@ -413,7 +416,7 @@ export function JourneyEditor({
     .filter((p) => !used.has(p.title))
     // Pillar facet: when any Pillar is toggled on, show only practices in those Pillars
     // (preloaded from the chosen Pillar/Focus). Empty filter = the whole library.
-    .filter((p) => pillarFilter.size === 0 || (p.pillarId !== null && pillarFilter.has(p.pillarId)))
+    .filter((p) => practiceMatchesSupports(p, pillarFilter))
     .filter((p) => !term || (p.title + ' ' + (p.description ?? '')).toLowerCase().includes(term))
     .slice(0, 30)
 

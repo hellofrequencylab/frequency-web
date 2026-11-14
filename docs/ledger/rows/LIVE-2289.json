@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2289",
+  "title": "Show private recorded practice rhythm with trustworthy historical days",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/frequency-rhythm.ts",
+    "ref": "Daniel approved the support/practice/expression changeover and three-pass review, 2026-11-14."
+  },
+  "detail": "Owner-only Signature reads authorize the current profile before creating an admin client. Profile visitors neither request nor render personal practice details. The reader pages by stable log id until an empty page, scopes every request to the owner and exact 21 member-local calendar dates, excludes future dates, and exposes complete, empty, partial, unavailable and restricted states. Distinct recorded days per support area and separate total active days use one window/unit; overlapping area counts are explicitly nonexclusive. Frozen primary/positive-secondary evidence survives current practice edits/deletion. Legacy current-category estimates and unmapped records are disclosed rather than invented as historical third/fourth focuses. No reward allocation, completion policy, reflection storage, public-sharing preference or SQL changes. The existing organic graph and semantic tokens remain without a Grounded label, wellbeing grade, success tint or perfect-bloom quota. Legacy computeSignature math remains compatible; the live owner renderer uses factual rhythm metadata. A future explicit support_evidence_version=1 pure adapter accepts immutable multi-focus snapshots, but no unapplied support columns are selected by the current database reader. The immutable consequence probe failed on baseline main9fd87ee37 because the real rhythm module was absent, then passes on this implementation; original Signature tests/assertions and all existing probes are unchanged. Synthetic real-component fixtures at 390,1280,1440,1920,2000 show accessible graph summaries, no horizontal overflow, no partial-data graph and no restricted-viewer chart; they do not claim authenticated or production acceptance. Final independent review, required backlog and release evidence are recorded in the PR before Ready. Three implementation/review/regression passes completed: root and independent peer source reviews found no blocker; 78 focused tests across seven files passed, including all unchanged legacy Signature tests and adjacent profile/sidebar contracts. Eight changed TypeScript files pass ESLint. Final backlog contract reports 2684 entries and 991 agreeing probes. Mobile and desktop screenshots were visually inspected; Pillar dots use the real semantic rank ramps with a local inline-alias fallback, without hardcoded colors or global token changes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/practice-rhythm.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}

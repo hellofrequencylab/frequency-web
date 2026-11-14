@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-2285",
+  "title": "Services Create a Space preview wears the Services theme's own hero",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-14",
+  "source": {
+    "file": "lib/create-space/preview-site.ts",
+    "ref": "Owner 2026-11-14 ('do it') on the open follow-up from LIVE-2284: swap the Services preview to its window-washer hero."
+  },
+  "detail": "The Services builder preview hero is /sites/services/hero-squeegee.webp. Probe create-space-kit-previews was edited with the owner's go-ahead to accept it; the remaining Services pictures stay New World stand-ins.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/create-space-services-hero.mjs" },
+  "wave": "W7"
+}

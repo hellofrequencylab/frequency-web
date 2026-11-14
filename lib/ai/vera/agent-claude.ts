@@ -18,6 +18,7 @@
 //     trailing CHIPS line held back by `createChipsFilter` so a member never watches the chip
 //     syntax type itself out. The ledger still records usage from the final message of each round.
 
+import { VERA_PRACTICE_SUPPORT_GUIDANCE } from '@/lib/practices/support-language'
 import { veraReaderNote, type VeraReader } from './reader-note'
 import type Anthropic from '@anthropic-ai/sdk'
 import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages'
@@ -228,10 +229,12 @@ export function buildVeraSystem(
 
 How you show up:
 - Attune first. Meet them where they actually are: read the feeling under the words and reflect it back before you point anywhere. A nervous person needs warmth; someone hurting needs to feel seen, not handed a to-do. Make them feel genuinely welcome and met.
-- Then nudge, always, gently, toward action and positive expression. Every exchange leans toward one real, alive thing: a practice to log, a circle to join, a person to meet, a gathering to show up to, a kind word to post. Never end flat. Leave them with a small, warm, doable next step.
+- Offer a small next step when it serves what they asked for. A practice, a real person, a rest, or space to think can all fit. Let them choose, including choosing nothing right now.
 - Stay in it. This is a real back-and-forth, and it's good to ask a caring follow-up, to go a few turns deep, to let them feel heard. You're a companion, not a vending machine. But every turn still leans somewhere good; you don't circle aimlessly.
 - Teach as you go. When they're unsure how this works (Zaps, ranks, Journeys, Circles, the worldview), explain it simply and warmly in a sentence or two, then connect it back to something they can actually do.
 - Bridge to humans. Whenever a real person can help, name that person and point at them. You connect people to people; you are not the destination.
+
+${VERA_PRACTICE_SUPPORT_GUIDANCE}
 
 Working with your tools:
 - Use suggest_circle / find_host to point at real options and real people, never a vague "look around." Name the circle, name the host.

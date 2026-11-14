@@ -100,16 +100,6 @@ export function sanitizeProps(
  * Circle label (what they came for). Ids stay: an opaque uuid says nothing about a person.
  */
 const PIXEL_SENSITIVE_KEYS: ReadonlySet<string> = new Set([
-  'email',
-  'email_address',
-  'phone',
-  'phone_number',
-  'display_name',
-  'full_name',
-  'token',
-  'access_token',
-  'ga_client_id',
-  'ga_session_id',
   'persona',
   'personas',
   'archetype',
@@ -147,6 +137,7 @@ export const PIXEL_PATH_PREFIXES: readonly string[] = [
   '/discover/topics',
   '/discover/journeys',
   '/discover/circles',
+  '/discover/practices/pillar',
   '/discover/practices',
   '/practices',
   '/channels',
@@ -203,31 +194,4 @@ export function pixelSafeProps(
     out[k] = v
   }
   return out
-}
-
-/**
- * A self-contained function because the consent bootstrap serializes these exact rules.
- * Human campaign/topic labels and search terms stay first-party. Pixels receive only
- * closed channel pairs, opaque campaign IDs, and bounded Google click identifiers.
- */
-export function pixelSafeAttributionQuery(search: string): string {
-  const input = new URLSearchParams(search)
-  const output = new URLSearchParams()
-  const pairs = ['email/email', 'qr_scan/qr', 'partner/referral', 'google/cpc', 'instagram/social', 'facebook/social', 'frequency/email']
-  const source = (input.get('utm_source') ?? '').toLowerCase()
-  const medium = (input.get('utm_medium') ?? '').toLowerCase()
-  if (pairs.includes(`${source}/${medium}`)) {
-    output.set('utm_source', source)
-    output.set('utm_medium', medium)
-  }
-  for (const key of ['utm_campaign', 'utm_id']) {
-    const value = input.get(key) ?? ''
-    if (/^(?:[0-9]{1,32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.test(value)) output.set(key, value)
-  }
-  for (const key of ['gclid', 'dclid', 'gbraid', 'wbraid']) {
-    const value = input.get(key) ?? ''
-    if (/^[A-Za-z0-9_-]{20,200}$/.test(value)) output.set(key, value)
-  }
-  const encoded = output.toString()
-  return encoded ? `?${encoded}` : ''
 }

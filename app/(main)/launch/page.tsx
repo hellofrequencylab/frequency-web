@@ -47,6 +47,7 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
     if (!launch) redirect(inFlowHref(launchStepHref('spotlight')))
   }
 
+  if (launch.resume?.phase === 'builder' && !launch.spaceId && !launch.cancelledAt && !launch.completedAt) redirect('/create-a-space?new=1')
   const view = resumeView(launch, new Date())
   const justPublished = published === '1'
   const spotlightRef = launch.steps.spotlight?.status === 'published' ? launch.steps.spotlight.ref : undefined

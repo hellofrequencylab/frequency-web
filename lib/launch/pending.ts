@@ -10,6 +10,8 @@
 // A PLAIN MODULE, NOT AN ACTION FILE, for the reason the induction's reader is one: the cookie is httpOnly, and a
 // reader in a 'use server' file would be a callable endpoint that hands the answers back to any script.
 
+import { readWizardResumeMetadata } from './wizard-resume-metadata.ts'
+import type { WizardResume } from './wizard-resume.ts'
 import { isLaunchStepId, type LaunchStepId } from './steps.ts'
 
 export const PENDING_LAUNCH_COOKIE = 'fq_pending_launch'
@@ -21,6 +23,7 @@ const MAX_TOKEN = 40
 const MAX_ANSWER = 500
 
 export interface PendingLaunch {
+  resume?: WizardResume
   niche: string | null
   intents: string[]
   /** Per step, field name to what the person typed. */
@@ -59,10 +62,12 @@ export function parsePendingLaunch(raw: string | undefined | null, now: Date): P
       if (Object.keys(clean).length > 0) answers[step] = clean
     }
   }
-  return { niche: token(d.niche), intents, answers, savedAt: new Date(savedMs).toISOString() }
+  // The full draft stays in the own-token store/browser; cookies carry a bounded pointer only.
+  const resume = readWizardResumeMetadata(d.resume ? { ...(d.resume as Record<string, unknown>), draft: null } : null)
+  return { ...(resume ? { resume } : {}), niche: token(d.niche), intents, answers, savedAt: new Date(savedMs).toISOString() }
 }
 
 /** A hold as the cookie text. Goes through the parser's rules, so what is written is what a read would keep. */
 export function serializePendingLaunch(input: Omit<PendingLaunch, 'savedAt'>, now: Date): string {
-  return JSON.stringify({ ...input, savedAt: now.toISOString() })
+  return JSON.stringify({ ...input, ...(input.resume ? { resume: { ...input.resume, draft: null } } : {}), savedAt: now.toISOString() })
 }

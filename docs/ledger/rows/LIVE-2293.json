@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2293",
+  "title": "Explain flexible support and enrollment-specific Journey requirements consistently",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "content/help/getting-started/practices.md",
+    "ref": "Daniel's approved support/practice/expression changeover and triple-pass instruction, 2026-11-14."
+  },
+  "detail": "Member help explains overlapping Mind/Body/Spirit supports and private expression, without equal daily quotas or a wellness score. Practice/Journey authoring help describes actual coaching and preserves human authorship rather than promising generated prose. Official Quest help preserves the participant's displayed requirements and existing reward amounts while distinguishing prospective optional-expression policies; these policy-dependent explanations are held behind LIVE-2291's reviewed release. The engineering glossary and Practice Library distinguish support meaning from legacy reward allocation and describe the graph as logged activity, not wellbeing. The immutable help consequence probe failed on untouched main9fd at overlapping support guidance and passes after conversion; SHA256 d46eaf6c264a6ea6c8f4101ed33b3a1dc2c1d0625c5e8f4c2dc130fb4a247a2b. Existing help coverage and rendering tests remain unchanged. No SQL, sends, rewards, completion thresholds or existing enrollment contracts changed. Implementation documentation is not production activation; source dependencies, preview and production acceptance remain release gates. Member-stage taglines invite a personal rhythm and exploration without changing stage gates. Final verification: unchanged help coverage/rendering/TOC/FAQ and member-progress suites pass 34 tests across five files; two-file lint, strict help coverage (37/37 core feature keys), frozen probe and backlog2684/991 pass. Synthetic actual HelpMarkdown bodies for five converted articles rendered at all five required widths (25 captures), plus actual StageCelebration source taglines at the same widths (five captures), without horizontal overflow or unnamed controls. Server acknowledgement is stubbed only in synthetic stage fixtures; no authenticated or production claim.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/support-guidance.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}

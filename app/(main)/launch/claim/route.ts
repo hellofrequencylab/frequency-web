@@ -3,9 +3,11 @@ import { getMyProfileId } from '@/lib/auth'
 import { launchSystemEnabled } from '@/lib/launch/enabled'
 import { clearPendingLaunch, readPendingLaunch } from '@/lib/launch/pending-io'
 import { launchHomeHref } from '@/lib/launch/destination'
-import { startLaunch } from '@/lib/launch/store'
+import { saveWizardResume, startLaunch } from '@/lib/launch/store'
 import { readCarry } from '@/lib/launch/carry'
-import { markDraftConverted } from '@/lib/create-space/draft-io'
+import { parseDraft } from '@/lib/create-space/builder'
+import { markDraftConverted, readDraftByToken } from '@/lib/create-space/draft-io'
+import { parseWizardResume } from '@/lib/launch/wizard-resume'
 
 // /launch/claim (VLS-06): where a visitor lands after signing in with a launch held in their cookie. It makes their
 // one space_launch row from the held niche and intents, clears the hold so it is claimed once, and sends them on
@@ -17,14 +19,38 @@ export async function GET() {
   if (!profileId) redirect('/sign-in?next=/launch/claim')
   const held = await readPendingLaunch()
   if (held) {
-    // The /create-a-space draft this hold came from is converted NOW, signed in, not when Claim was tapped: its
-    // reminders stop the moment the person really arrives (lib/create-space/draft-recovery.ts).
-    const lead = readCarry(held.answers.spotlight).lead
-    if (lead) await markDraftConverted(lead)
+    // The bounded resume pointer is authoritative when present; older holds used carry fields.
+    const lead = held.resume?.leadToken ?? readCarry(held.answers.spotlight).lead ?? null
+    const json = lead ? await readDraftByToken(lead) : null
+    const recovered = json ? parseDraft(json, null) : null
+    const draft = recovered && lead ? { ...recovered, leadToken: lead } : recovered
     const launch = await startLaunch(profileId, { niche: held.niche, intents: held.intents })
-    // Held answers (the Spotlight step's) stay until that step publishes, so signing in does not lose them. startLaunch
-    // returns the running launch, so keeping the cookie cannot make a second row.
-    if (launch && Object.keys(held.answers).length === 0) await clearPendingLaunch()
+    if (launch) {
+      const canonical = parseWizardResume(launch.resume)
+      const incoming = held.resume
+        ? parseWizardResume({ ...held.resume, leadToken: lead, draft })
+        : draft ? parseWizardResume({
+          version: 1, phase: 'launch', cursor: 4, theme: draft.kit, accentAt: draft.accentAt,
+          niche: draft.niche, goals: draft.goals, timedEntry: false, draft, leadToken: lead,
+        }) : null
+      // A converted token no longer reads its draft. A complete, matching canonical copy
+      // proves a previous claim succeeded without treating a token alone as durable content.
+      const matchingCanonical = canonical?.draft && canonical.leadToken === lead
+        ? parseWizardResume({ ...(held.resume ?? canonical), leadToken: lead, draft: draft ?? canonical.draft })
+        : null
+      let acknowledged = !!matchingCanonical && JSON.stringify(matchingCanonical) === JSON.stringify(canonical)
+      const heldAt = Date.parse(held.savedAt)
+      const savedAt = Date.parse(launch.updatedAt)
+      const incomingIsNewer = Number.isFinite(heldAt) && Number.isFinite(savedAt) && heldAt > savedAt
+      if (!acknowledged && !launch.spaceId && incoming && (!lead || draft) && (!canonical || incomingIsNewer)) {
+        acknowledged = !!(await saveWizardResume(launch, incoming, new Date(), { heldSavedAt: held.savedAt }))
+      }
+      // Legacy tokenless answers need no draft transfer. Every token-backed hold must be
+      // durably saved or an exact replay before reminders stop or its retry cookie clears.
+      if (!held.resume && !lead) acknowledged = true
+      if (acknowledged && lead) await markDraftConverted(lead)
+      if (acknowledged && Object.keys(held.answers).length === 0) await clearPendingLaunch()
+    }
   }
   redirect(launchHomeHref({ signedIn: true }))
 }
