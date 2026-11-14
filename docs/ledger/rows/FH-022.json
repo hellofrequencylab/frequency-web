@@ -1,0 +1,10 @@
+{
+  "id": "FH-022",
+  "append": {
+    "detail": "\n\nBuilt 2026-11-14: migration 20270346046000_hunt_reward_redeem.sql adds expiry, redeemed_by, venue and void columns to hunt_reward_grants and two service-role-only functions. hunt_reward_redeem locks the grant row so two staff terminals redeem once (the second reads already_redeemed); a revoked, expired or unknown grant is never redeemed; the same key replays and a reused key for another request is a conflict. hunt_reward_void cancels an unredeemed grant with a written reason (it does not return stock; that is the commerce rows). lib/hunts/redemption.ts holds the signed one-use grant token (g1, ten minutes, reissued by the player), the decide('redeem_reward') gate, the issuer-only station view (reward, Trail, state; never the player) and the words per answer. POST /api/hunts/rewards/token issues a player's own token; POST /api/hunts/station previews, redeems or voids for staff; app/(main)/hunts/station/page.tsx is the terminal. Dark behind HUNTS_REWARDS_ENABLED. Proof: supabase/tests/hunt_reward_redeem.test.sql and lib/hunts/redemption.test.ts. Typed-code entry only; camera scan is FH-020T. The migration is NOT applied in production until the owner runs it."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-14"
+  }
+}
