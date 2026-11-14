@@ -411,11 +411,11 @@ export async function populateWeekAction(slug: string, phaseId: string): Promise
     .eq('block_type', 'practice')
   const priorTitles = ((priorRows ?? []) as { title: string | null }[]).map((r) => r.title).filter((t): t is string => !!t).slice(0, 24)
   const description = [
-    `Compose this week's four Pillar practices so they fit this week's focus and follow on from the earlier weeks.`,
+    `Offer planning questions about this week's intention and an attainable next action. Supporting areas may overlap; no four-Pillar quota or public expression is required. The author chooses and writes the content.`,
     `This week's focus: ${phase.title ?? ''}${phase.body ? `: ${phase.body}` : ''}.`,
     plan?.title ? `Journey: ${plan.title}.` : '',
     plan?.summary ? `Promise: ${plan.summary}.` : '',
-    priorTitles.length ? `Practices already used in earlier weeks (do not repeat; build on these): ${priorTitles.join('; ')}.` : '',
+    priorTitles.length ? `Practices already used in earlier weeks (keep or vary them deliberately): ${priorTitles.join('; ')}.` : '',
     source ? `The author's own course outline follows. Follow it closely and use the practices it names for THIS week where it gives them:\n"""\n${source.slice(0, 4000)}\n"""` : '',
   ]
     .filter(Boolean)
