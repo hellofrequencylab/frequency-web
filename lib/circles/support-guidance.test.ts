@@ -28,7 +28,7 @@ describe('Circle support is optional authored context', () => {
   it('asks only for host-supplied support notes without changing the tool schema', () => {
     const schema = CIRCLE_SPARK.tool.input_schema
     expect(schema.required).toEqual(['name', 'card', 'one_liner', 'identity'])
-    const support = schema.properties!.pillars_inside as { description: string; properties: Record<string, { description: string }> }
+    const support = (schema.properties as { pillars_inside: { description: string; properties: Record<string, { description: string }> } }).pillars_inside
     expect(support.description).toMatch(/Leave unspecified areas empty; do not invent coverage/)
     expect(Object.keys(support.properties)).toEqual(['mind', 'body', 'spirit', 'expression'])
     for (const field of Object.values(support.properties)) expect(field.description).toMatch(/optional host-supplied.*otherwise empty/)
