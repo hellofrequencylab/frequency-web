@@ -2,7 +2,9 @@
 //
 // A Journey is FINISHED when, inside its ~4-week window (journey_plans.window_*),
 // the member logged one of that Journey's Practices on >= QUEST.DAYS_TO_FINISH_JOURNEY
-// DISTINCT days AND completed that Journey's Expression Challenge. This module reads
+// DISTINCT days AND completed its Expression Challenge under the original contract.
+// Future official enrollments can carry a versioned contract with optional Expression;
+// old/unenrolled participants retain the original qualification. This module reads
 // the eligibility signals; lib/quest/complete.ts owns the reward transaction.
 //
 // The pure threshold math (does a count of distinct days + an expression flag mean
@@ -11,6 +13,9 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { QUEST } from '@/lib/gamification'
+import { resolveMemberDay } from '@/lib/member-day'
+import { parseCompletionPolicy, type CompletionPolicy } from './support-policy'
+import { readEnrollmentPolicy, readRecordedSupportDays } from './support-policy-read'
 
 /** Distinct practice_ids that belong to a Journey (the plan's block tree). */
 export async function journeyPracticeIds(journeyId: string): Promise<string[]> {
@@ -137,13 +142,16 @@ export async function expressionRequirement(
   return { required: true, done: !!(progress as { completed_at: string | null } | null)?.completed_at }
 }
 
-/** Pure threshold rule: enough distinct days AND (no Expression required, or it's done). */
+/** Three-argument callers keep legacy qualification. Only a validated stored policy can opt out of Expression. */
 export function isJourneyFinished(
   distinctDays: number,
   expressionRequired: boolean,
   expressionDone: boolean,
+  policy?: CompletionPolicy,
 ): boolean {
-  return distinctDays >= QUEST.DAYS_TO_FINISH_JOURNEY && (!expressionRequired || expressionDone)
+  const recorded = policy === undefined ? null : parseCompletionPolicy(policy)
+  if (policy !== undefined && !recorded) return false
+  return distinctDays >= (recorded?.daysRequired ?? QUEST.DAYS_TO_FINISH_JOURNEY) && (!(recorded?.expressionRequired ?? expressionRequired) || expressionDone)
 }
 
 interface JourneyEligibility {
@@ -154,9 +162,19 @@ interface JourneyEligibility {
   /** Whether the Journey has an Expression Challenge that gates completion. */
   expressionRequired: boolean
   expressionDone: boolean
+  /** Actual linked challenge existence, separate from whether the enrollment requires it. */
+  hasExpression?: boolean
   /** Whether a completion window was resolved (a plan window, or a member enrollment anchor). */
   windowOk: boolean
   finished: boolean
+  /** Present only for an immutable prospective enrollment contract. */
+  policyVersion?: 2
+  /** Unavailable data is never a count of zero qualifying days. */
+  evidenceAvailable?: boolean
+  /** Some legacy records lack full support evidence; known days are a lower bound. */
+  unknownSupportLogs?: number
+  windowStartsAt?: string | null
+  windowEndsAt?: string | null
 }
 
 /** Add `days` calendar days to an ISO timestamp, returning an ISO string. */
@@ -185,16 +203,38 @@ export async function evaluateJourneyCompletion(
   const admin = createAdminClient()
   const { data: plan } = await admin
     .from('journey_plans')
-    .select('ranked_eligible, window_starts_at, window_ends_at')
+    .select('ranked_eligible, official, window_starts_at, window_ends_at')
     .eq('id', journeyId)
     .maybeSingle()
 
   const p = plan as {
     ranked_eligible: boolean | null
+    official?: boolean | null
     window_starts_at: string | null
     window_ends_at: string | null
   } | null
   const rankedEligible = !!p?.ranked_eligible
+
+  // The stored contract wins even if the plan's official flag or window later changes.
+  // Existing NULL enrollments, unenrolled participants and library contracts stay legacy.
+  // Current rank eligibility still controls whether any completion can award recognition.
+  if (p) {
+    const recorded = await readEnrollmentPolicy(admin, profileId, journeyId)
+    if (!recorded.available) return { distinctDays: 0, daysRequired: QUEST.DAYS_TO_FINISH_JOURNEY,
+      rankedEligible, expressionRequired: true, expressionDone: false, windowOk: false,
+      finished: false, evidenceAvailable: false }
+    if (recorded.policy) {
+      const policy = recorded.policy
+      const today = await resolveMemberDay(profileId)
+      const evidence = await readRecordedSupportDays(admin, profileId, policy, today)
+      const { required: hasExpression, done: expressionDone } = await expressionRequirement(profileId, journeyId, season)
+      return { distinctDays: evidence.distinctDays, daysRequired: policy.daysRequired,
+        rankedEligible, expressionRequired: false, expressionDone, hasExpression, windowOk: true,
+        finished: rankedEligible && evidence.available && isJourneyFinished(evidence.distinctDays, false, expressionDone, policy),
+        policyVersion: 2, evidenceAvailable: evidence.available, unknownSupportLogs: evidence.unknownLogs,
+        windowStartsAt: policy.windowStart, windowEndsAt: policy.windowEnd }
+    }
+  }
 
   // Window: a fixed plan window (official/seeded Journeys), else member-anchored from
   // the member's enrollment (member-built library Journeys).

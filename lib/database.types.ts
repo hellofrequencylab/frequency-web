@@ -8112,6 +8112,7 @@ export type Database = {
       journey_enrollments: {
         Row: {
           completed_at: string | null
+          completion_policy: Json | null
           created_at: string
           id: string
           order_id: string | null
@@ -8122,6 +8123,7 @@ export type Database = {
         }
         Insert: {
           completed_at?: string | null
+          completion_policy?: Json | null
           created_at?: string
           id?: string
           order_id?: string | null
@@ -8132,6 +8134,7 @@ export type Database = {
         }
         Update: {
           completed_at?: string | null
+          completion_policy?: Json | null
           created_at?: string
           id?: string
           order_id?: string | null
@@ -12481,6 +12484,8 @@ export type Database = {
           secondary_pillar_id: string | null
           seconds_done: number | null
           seconds_target: number | null
+          support_evidence_version: number | null
+          support_pillar_ids: string[] | null
           zaps_awarded: number | null
         }
         Insert: {
@@ -12496,6 +12501,8 @@ export type Database = {
           secondary_pillar_id?: string | null
           seconds_done?: number | null
           seconds_target?: number | null
+          support_evidence_version?: number | null
+          support_pillar_ids?: string[] | null
           zaps_awarded?: number | null
         }
         Update: {
@@ -12511,6 +12518,8 @@ export type Database = {
           secondary_pillar_id?: string | null
           seconds_done?: number | null
           seconds_target?: number | null
+          support_evidence_version?: number | null
+          support_pillar_ids?: string[] | null
           zaps_awarded?: number | null
         }
         Relationships: [

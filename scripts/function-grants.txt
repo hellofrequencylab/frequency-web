@@ -372,3 +372,6 @@ analytics_experiment_results internal
 analytics_experiment_withdraw_consent internal
 analytics_experiment_count_exclusion internal
 analytics_experiment_purge internal
+# LIVE-2291: immutable support snapshots and enrollment contracts are trigger-only.
+freeze_journey_completion_policy internal
+freeze_practice_support_evidence internal
