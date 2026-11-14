@@ -30,12 +30,17 @@ export function practiceSupportsPillar(row: PracticeSupports, pillarId: string):
 }
 
 /** Filters the database set before sort/count/pagination. A single row can match several branches once. */
-export function applyPracticePillarFilter<Q extends {
-  eq: (field: string, value: unknown) => Q
-  or: (filter: string) => Q
-}>(query: Q, pillarId: string): Q {
+export function applyPracticePillarFilter<Q>(query: Q, pillarId: string): Q {
+  // Keep the concrete Supabase builder type at the call site. A self-referential
+  // `eq(...): Q` constraint recursively expands PostgREST's generic builder and
+  // can exceed TypeScript's instantiation depth. The runtime methods return this
+  // same builder; this narrow adapter keeps the query grammar boundary explicit.
+  const builder = query as unknown as {
+    eq: (field: string, value: unknown) => unknown
+    or: (filter: string) => unknown
+  }
   const id = uuid(pillarId)
   // Keep legacy equality behavior, but never place an unchecked identifier in PostgREST grammar.
-  if (!id) return query.eq('domain_id', pillarId)
-  return query.or(`domain_id.eq.${id},secondary_domain_id.eq.${id},focus_details.cs.${JSON.stringify({ [id]: {} })}`)
+  if (!id) return builder.eq('domain_id', pillarId) as Q
+  return builder.or(`domain_id.eq.${id},secondary_domain_id.eq.${id},focus_details.cs.${JSON.stringify({ [id]: {} })}`) as Q
 }
