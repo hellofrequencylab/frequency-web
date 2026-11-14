@@ -1,19 +1,16 @@
 {
   "id": "LIVE-2285",
-  "title": "Keep one owner-scoped onboarding cursor and resume existing Spotlight editing",
+  "title": "Services Create a Space preview wears the Services theme's own hero",
   "lane": "live",
-  "priority": "P1",
-  "size": "L",
+  "priority": "P2",
+  "size": "S",
   "status": "done",
+  "closed": "2026-11-14",
   "source": {
-    "file": "lib/launch/state.ts",
-    "ref": "Daniel onboarding handoff P1-1, 2026-11-13: shared progress and theme, existing-owner Spotlight editing, and explicit-entry timer visibility."
+    "file": "lib/create-space/preview-site.ts",
+    "ref": "Owner 2026-11-14 ('do it') on the open follow-up from LIVE-2284: swap the Services preview to its window-washer hero."
   },
-  "detail": "Implementation shares a bounded wizardResume record in the existing owner-RLS launch steps JSON, preserving published work, skipped photos and the original builder start. Create a Space, launch entry and Finish setup resume the saved cursor and selected theme. Existing owners enter their Spotlight editor or the existing chooser; an explicit new request never cancels or replaces an attached active launch. Full signed-out handovers save the latest draft before auth, carry rotated tokens and preserve a known timezone; failed transfer retains the hold. Canonical writes use fresh-state and atomic attachment/revision guards, including the one-way builder-to-launch barrier. Only explicit URL timer requests opt in, and the live clock disappears at zero. Native Google submission retains local recovery until authentication; no lifecycle send, SQL application or rollout change is included. The unchanged consequence probe fails against main 00ebfde922c73dccf9d066183cea0cac80a463ce at snapshot.resume.cursor because main drops the resume metadata. That semantic baseline used the new pure parser solely as an input adapter beside the unchanged main state module; the probe was byte-identical. Focused regressions and five-width real-component fixtures verify implementation behavior; fixture permissions/data are synthetic and do not assert authenticated production acceptance. Production deployment and real owner acceptance remain release gates. Final local verification: 132 focused tests across 21 affected files and changed-file ESLint across 36 TS/TSX files passed. Additional handover race assertions confirm that a concurrent Space attachment retains the recoverable hold/token; the frozen probe and protected launch registries remain unchanged. The pure state/cookie boundary exposes bounded metadata with no private draft; all four owner-store return paths run the canonical preview/full-draft decoder, dropping an invalid resume entirely. Native Node imports and full draft/token preservation through publication and photo writes are covered without changing any existing probe.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node --experimental-strip-types --no-warnings scripts/probes/shared-onboarding-resume.mjs"
-  },
-  "wave": "W7",
-  "closed": "2026-11-13"
+  "detail": "The Services builder preview hero is /sites/services/hero-squeegee.webp. Probe create-space-kit-previews was edited with the owner's go-ahead to accept it; the remaining Services pictures stay New World stand-ins.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/create-space-services-hero.mjs" },
+  "wave": "W7"
 }
