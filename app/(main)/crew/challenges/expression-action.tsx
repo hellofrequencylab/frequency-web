@@ -8,7 +8,7 @@ import { completeExpression } from '../gamification-actions'
 // single deliberate act (share what you practiced), not a counter, so it gets a
 // "where did you do it" choice instead of a progress bar: in person at a Circle
 // (+50 Zaps) or solo online (+30 Gems). Completing it can finish the Journey.
-export function ExpressionAction({ journeyId }: { journeyId: string }) {
+export function ExpressionAction({ journeyId, optional = false }: { journeyId: string; optional?: boolean }) {
   const [pending, startTransition] = useTransition()
   const [mode, setMode] = useState<'circle' | 'online' | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -29,7 +29,9 @@ export function ExpressionAction({ journeyId }: { journeyId: string }) {
 
   return (
     <div className="mt-2.5">
-      <p className="mb-1.5 text-meta text-subtle">Share what you practiced to finish this Journey:</p>
+      <p className="mb-1.5 text-meta text-subtle">{optional
+        ? 'If you shared your practice, you can record it here. Keeping it private is welcome too.'
+        : 'Share what you practiced to finish this Journey:'}</p>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
