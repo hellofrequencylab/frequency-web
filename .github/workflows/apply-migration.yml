@@ -218,21 +218,21 @@ jobs:
       - name: Read current main candidate as data only
         uses: actions/checkout@v7
         with:
-          ref: 06c3188999e975995330fb61085111c4dc1fb656
+          ref: 085372d906f4e31a734e934cbbaf1ae647bb274d
           path: rollback-candidate
           persist-credentials: false
       - name: Read unchanged trusted main guard
         uses: actions/checkout@v7
         with:
-          ref: 06c3188999e975995330fb61085111c4dc1fb656
+          ref: 085372d906f4e31a734e934cbbaf1ae647bb274d
           path: trusted-guard
           persist-credentials: false
       - name: Verify trusted guard and helper source
         id: trusted_source_check
         run: |
           set -euo pipefail
-          test "$(git -C rollback-candidate rev-parse HEAD)" = 06c3188999e975995330fb61085111c4dc1fb656
-          test "$(git -C trusted-guard rev-parse HEAD)" = 06c3188999e975995330fb61085111c4dc1fb656
+          test "$(git -C rollback-candidate rev-parse HEAD)" = 085372d906f4e31a734e934cbbaf1ae647bb274d
+          test "$(git -C trusted-guard rev-parse HEAD)" = 085372d906f4e31a734e934cbbaf1ae647bb274d
           for source in scripts/check-migrations.mjs scripts/check-adr.mjs scripts/check-id-collisions.mjs scripts/lib/invoked-directly.mjs scripts/lib/ledger.mjs scripts/maintenance/ledger-parity.mjs scripts/pr-size-gate.mjs; do
             cmp "$source" "trusted-guard/$source"
           done

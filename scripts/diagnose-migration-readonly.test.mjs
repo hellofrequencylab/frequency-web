@@ -40,8 +40,8 @@ test('nested or message-only SQLSTATE becomes closed metadata without exposing t
 
 test('strict candidate parity executes trusted main code and candidate remains data',()=>{
  const w=readFileSync(new URL('../.github/workflows/apply-migration.yml',import.meta.url),'utf8')
- assert.ok(w.includes('ref: 06c3188999e975995330fb61085111c4dc1fb656'))
- assert.ok(w.includes('ref: 06c3188999e975995330fb61085111c4dc1fb656'))
+ assert.ok(w.includes('ref: 085372d906f4e31a734e934cbbaf1ae647bb274d'))
+ assert.ok(w.includes('ref: 085372d906f4e31a734e934cbbaf1ae647bb274d'))
  assert.ok(w.includes('for source in scripts/check-migrations.mjs scripts/check-adr.mjs scripts/check-id-collisions.mjs scripts/lib/invoked-directly.mjs scripts/lib/ledger.mjs scripts/maintenance/ledger-parity.mjs scripts/pr-size-gate.mjs; do'))
  assert.ok(w.includes('cmp "$source" "trusted-guard/$source"'))
  assert.ok(w.includes('run: node scripts/diagnose-strict-migration-parity.mjs'))
