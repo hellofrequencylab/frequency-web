@@ -6,6 +6,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { TerminalQueueError } from '@/lib/queue/terminal-error'
 import type { Database, Json } from '@/lib/database.types'
+import { shouldHoldResourceReceipt } from '@/lib/crm/lead-magnet-resource-policy'
 import { getSlo, meetsSlo } from '@/lib/observability/slos'
 
 interface QueueJob {
@@ -14,6 +15,8 @@ interface QueueJob {
   payload: Record<string, unknown>
   attempts: number
   max_attempts: number
+  /** Existing claim RPC returns the complete row, including legacy resource keys. */
+  dedupe_key?: string | null
   /** When the job was first enqueued. claim_outbox_jobs already returns it (`returning q.*`);
    *  the retry policy needs it as the wall clock that bounds a deferral (see retryDelayFor). */
   created_at?: string | null
@@ -477,6 +480,19 @@ export async function processQueue(
     const lane = laneFor(job.payload)
     const createdMs = job.created_at ? Date.parse(job.created_at) : NaN
     const ageMs = Number.isFinite(createdMs) ? Math.max(0, Date.now() - createdMs) : 0
+
+    // A dark resource rollout parks only its canonical email family. Use the existing pending
+    // deferral shape: release the claim, preserve attempts, and never acknowledge a held send.
+    if (shouldHoldResourceReceipt(job)) {
+      await persistStatus(job.id, {
+        status: 'pending',
+        run_after: new Date(Date.now() + 3_600_000).toISOString(),
+        last_error: '[outbox] deferred: requested-resource email rollout is off',
+        updated_at: new Date().toISOString(),
+      })
+      deferred++
+      continue
+    }
 
     // The lane trip: a bulk job behind a known-closed quota never touches the provider. It keeps
     // its attempts, keeps its place, and comes back when the window does.

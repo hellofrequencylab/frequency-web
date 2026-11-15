@@ -1038,3 +1038,14 @@ A write is never automatically retried. If its response is unavailable, the help
 `SENTRY_SOURCEMAPS` is off (blank). While it is off, no build generates or uploads source maps, so client stack traces in Sentry are minified. Reason: with maps on, the Sentry plugin makes Turbopack build browser source maps inside the compile, and the `next-build` process reached 7.06 GB (container 8.05 GB of 8 GB) and was OOM-killed on production; without them it peaks near 6.8 GB.
 
 **Activation gate.** Set it to `1` on Vercel production only after the `check-build-memory` container line of a production build shows the compile peak at least 1.5 GB under the machine (container peak below about 6.5 GB), or after the maps are produced outside the compile. Turn it back off if a production build is OOM-killed.
+
+
+## Requested resource email rollout
+
+`LEAD_MAGNET_RESOURCE_EMAIL_ENABLED` is off by default (blank/unset, `0`, `false` and unrecognized values). Only `1`, `true` or `on` enable it through `envFlag`. While off, signed resource forms still capture valid submissions and reveal the existing resource inline, but the requested-copy sender performs no delivery IO. This control does not enable nurture, campaigns or any other sender.
+
+The drain also recognizes already queued EMAIL-049 resource copies by their canonical database dedupe key (`lead_magnet_resource:<64 lowercase hex>:<hour>`). While off it releases those claimed rows back to `pending`, schedules them one hour later and preserves attempts. It does not invoke the handler, mark delivery, delete or cancel the job. Other emails and job kinds retain their existing behavior. A failed parking write surfaces as a storage error; existing stale-claim recovery applies.
+
+**Activation gate:** keep the variable blank until the owner approves requested-resource sending and exact-head checks/real preview verify default-off inline access, opted-in transactional enqueue, suppression/dedupe and off-to-enabled drain replay. Review the existing held resource backlog and link freshness before enabling; enabling allows due held copies to resume. Confirm deployed identity and configuration in both the public form runtime and queue worker before acceptance. Tests and fixture renders are not production sending approval.
+
+**Rollback:** blank the flag in both runtimes and redeploy/restart if required. New resource copies stop being queued; queued canonical resource copies defer without spending attempts. Keep the resource available inline. Do not cancel jobs or change unrelated email controls to perform this rollback. This cannot recall mail already accepted by the provider or stop an old worker before the new deployment takes over.
