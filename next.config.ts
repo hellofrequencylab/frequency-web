@@ -222,6 +222,7 @@ const ROOT_CARD_FONTS = [
 ]
 
 const nextConfig: NextConfig = {
+  productionBrowserSourceMaps: true,
   // TYPECHECKING IS CI'S JOB, NOT THE BUILD'S (2026-07-28). `next build` ran a FULL
   // TypeScript pass on top of the compile, and as the repo grew that second pass began
   // exhausting the Vercel build container: the worker took a SIGKILL with an OOM event
