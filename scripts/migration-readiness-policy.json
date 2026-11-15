@@ -98,7 +98,7 @@
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "06f17a79b52d1272a2adea098aa7c62359d425892514700afaff449c0fed0b6e",
+          "sha256": "58e5a4c3994bd89dfc68bdada6e4ff4c509a4246b4b611f89efb712386a84f7b",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -112,21 +112,21 @@
         {
           "file": "scripts/function-grants.txt",
           "status": "modified",
-          "sha256": "8563d3513e85476e5e243774183f3e9e9ed394411baa85220ecc502b185df917",
+          "sha256": "1923fa09a1c10707b9695d7c0a97ff6041b9527d7139518c076728849580ab1a",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/rls-deny-all.txt",
           "status": "modified",
-          "sha256": "9b299e1bc6e4da0c22a0b50df4fd33c71c0bd183fec954037a7640125804e81b",
+          "sha256": "5f43c5fe479ffa7f72898f3cdaab57c9b65e5cb2d9266f9a935182636e6536ab",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/table-grants.txt",
           "status": "modified",
-          "sha256": "e89b8f4915f1331dc2f4b42a5edfe94195a39d6aa75e38420032ab8be326b833",
+          "sha256": "82139c3ab0acd9d3d6f1225987e50a70e66cb998eca95646cb1a694cb5c13653",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -153,7 +153,7 @@
         }
       ],
       "workflowPath": ".github/workflows/db-tests.yml",
-      "workflowSha256": "635ee8dcd2cf870404a5dd384c485e475dfefbb2d4228328073107b41309b505",
+      "workflowSha256": "522262e06e8c2928e73aaf8528faae02a7d3a74116fbe85995df9c3ae3cc6b18",
       "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
       "requiredSteps": [
         "Start local Supabase (applies all migrations)",
