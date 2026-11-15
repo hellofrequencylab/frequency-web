@@ -1,0 +1,457 @@
+{
+  "tables": [
+    {
+      "rls": true,
+      "name": "analytics_experiment_assignments",
+      "columns": [
+        {
+          "name": "experiment_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "profile_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "variant",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "assigned_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "exposed_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "converted_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notNull": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX analytics_experiment_assignments_age_idx ON public.analytics_experiment_assignments USING btree (assigned_at)",
+        "CREATE UNIQUE INDEX analytics_experiment_assignments_pkey ON public.analytics_experiment_assignments USING btree (experiment_id, profile_id)",
+        "CREATE INDEX analytics_experiment_assignments_profile_idx ON public.analytics_experiment_assignments USING btree (profile_id)"
+      ],
+      "forceRls": false,
+      "policies": [],
+      "anonAnyData": false,
+      "constraints": [
+        {
+          "name": "analytics_experiment_assignments_assigned_at_not_null",
+          "definition": "NOT NULL assigned_at"
+        },
+        {
+          "name": "analytics_experiment_assignments_experiment_id_fkey",
+          "definition": "FOREIGN KEY (experiment_id) REFERENCES analytics_experiments(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "analytics_experiment_assignments_experiment_id_not_null",
+          "definition": "NOT NULL experiment_id"
+        },
+        {
+          "name": "analytics_experiment_assignments_pkey",
+          "definition": "PRIMARY KEY (experiment_id, profile_id)"
+        },
+        {
+          "name": "analytics_experiment_assignments_profile_id_fkey",
+          "definition": "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "analytics_experiment_assignments_profile_id_not_null",
+          "definition": "NOT NULL profile_id"
+        },
+        {
+          "name": "analytics_experiment_assignments_variant_check",
+          "definition": "CHECK (variant = ANY (ARRAY['control'::text, 'treatment'::text]))"
+        },
+        {
+          "name": "analytics_experiment_assignments_variant_not_null",
+          "definition": "NOT NULL variant"
+        }
+      ],
+      "serviceDelete": true,
+      "serviceInsert": true,
+      "serviceSelect": true,
+      "serviceUpdate": true,
+      "serviceTrigger": true,
+      "serviceTruncate": true,
+      "serviceReferences": true,
+      "authenticatedAnyData": false
+    },
+    {
+      "rls": true,
+      "name": "analytics_experiments",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true
+        },
+        {
+          "name": "key",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'draft'::text",
+          "notNull": true
+        },
+        {
+          "name": "primary_event",
+          "type": "text",
+          "default": null,
+          "notNull": true
+        },
+        {
+          "name": "treatment_percent",
+          "type": "integer",
+          "default": "50",
+          "notNull": true
+        },
+        {
+          "name": "target_per_arm",
+          "type": "integer",
+          "default": "100",
+          "notNull": true
+        },
+        {
+          "name": "minimum_days",
+          "type": "integer",
+          "default": "7",
+          "notNull": true
+        },
+        {
+          "name": "conversion_days",
+          "type": "integer",
+          "default": "7",
+          "notNull": true
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "guardrails_reviewed_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notNull": false
+        },
+        {
+          "name": "control_excluded",
+          "type": "bigint",
+          "default": "0",
+          "notNull": true
+        },
+        {
+          "name": "treatment_excluded",
+          "type": "bigint",
+          "default": "0",
+          "notNull": true
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX analytics_experiments_created_by_idx ON public.analytics_experiments USING btree (created_by)",
+        "CREATE UNIQUE INDEX analytics_experiments_key_key ON public.analytics_experiments USING btree (key)",
+        "CREATE UNIQUE INDEX analytics_experiments_pkey ON public.analytics_experiments USING btree (id)",
+        "CREATE INDEX analytics_experiments_updated_by_idx ON public.analytics_experiments USING btree (updated_by)"
+      ],
+      "forceRls": false,
+      "policies": [],
+      "anonAnyData": false,
+      "constraints": [
+        {
+          "name": "analytics_experiments_control_excluded_not_null",
+          "definition": "NOT NULL control_excluded"
+        },
+        {
+          "name": "analytics_experiments_conversion_days_check",
+          "definition": "CHECK (conversion_days >= 1 AND conversion_days <= 28)"
+        },
+        {
+          "name": "analytics_experiments_conversion_days_not_null",
+          "definition": "NOT NULL conversion_days"
+        },
+        {
+          "name": "analytics_experiments_created_at_not_null",
+          "definition": "NOT NULL created_at"
+        },
+        {
+          "name": "analytics_experiments_created_by_fkey",
+          "definition": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "analytics_experiments_id_not_null",
+          "definition": "NOT NULL id"
+        },
+        {
+          "name": "analytics_experiments_key_check",
+          "definition": "CHECK (key = 'upcoming-next-step'::text)"
+        },
+        {
+          "name": "analytics_experiments_key_key",
+          "definition": "UNIQUE (key)"
+        },
+        {
+          "name": "analytics_experiments_key_not_null",
+          "definition": "NOT NULL key"
+        },
+        {
+          "name": "analytics_experiments_minimum_days_check",
+          "definition": "CHECK (minimum_days >= 7 AND minimum_days <= 90)"
+        },
+        {
+          "name": "analytics_experiments_minimum_days_not_null",
+          "definition": "NOT NULL minimum_days"
+        },
+        {
+          "name": "analytics_experiments_pkey",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "analytics_experiments_primary_event_check",
+          "definition": "CHECK (primary_event = 'event.rsvp'::text)"
+        },
+        {
+          "name": "analytics_experiments_primary_event_not_null",
+          "definition": "NOT NULL primary_event"
+        },
+        {
+          "name": "analytics_experiments_status_check",
+          "definition": "CHECK (status = ANY (ARRAY['draft'::text, 'running'::text, 'paused'::text, 'completed'::text]))"
+        },
+        {
+          "name": "analytics_experiments_status_not_null",
+          "definition": "NOT NULL status"
+        },
+        {
+          "name": "analytics_experiments_target_per_arm_check",
+          "definition": "CHECK (target_per_arm >= 30)"
+        },
+        {
+          "name": "analytics_experiments_target_per_arm_not_null",
+          "definition": "NOT NULL target_per_arm"
+        },
+        {
+          "name": "analytics_experiments_treatment_excluded_not_null",
+          "definition": "NOT NULL treatment_excluded"
+        },
+        {
+          "name": "analytics_experiments_treatment_percent_check",
+          "definition": "CHECK (treatment_percent >= 1 AND treatment_percent <= 50)"
+        },
+        {
+          "name": "analytics_experiments_treatment_percent_not_null",
+          "definition": "NOT NULL treatment_percent"
+        },
+        {
+          "name": "analytics_experiments_updated_by_fkey",
+          "definition": "FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL"
+        }
+      ],
+      "serviceDelete": true,
+      "serviceInsert": true,
+      "serviceSelect": true,
+      "serviceUpdate": true,
+      "serviceTrigger": true,
+      "serviceTruncate": true,
+      "serviceReferences": true,
+      "authenticatedAnyData": false
+    }
+  ],
+  "triggers": [
+    {
+      "name": "analytics_experiment_count_exclusion",
+      "table": "analytics_experiment_assignments",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER analytics_experiment_count_exclusion BEFORE DELETE ON analytics_experiment_assignments FOR EACH ROW EXECUTE FUNCTION analytics_experiment_count_exclusion()"
+    },
+    {
+      "name": "analytics_experiment_withdraw_consent",
+      "table": "consent_records",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER analytics_experiment_withdraw_consent AFTER INSERT ON consent_records FOR EACH ROW EXECUTE FUNCTION analytics_experiment_withdraw_consent()"
+    }
+  ],
+  "functions": [
+    {
+      "name": "analytics_experiment_assign",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "signature": "analytics_experiment_assign(text,uuid)",
+      "anonExecute": false,
+      "sourceSha256": "b1d34d848bd49ab71b444579a5f6b472f5da2a5d7a572b3ca33a15cf85b9c935",
+      "ownerBypassRls": true,
+      "ownerSuperuser": true,
+      "serviceExecute": true,
+      "securityDefiner": true,
+      "definitionSha256": "f219b3bae41aba27a7d6219838f3fae75e37557ac721fe052f3aa1309ce83839",
+      "authenticatedExecute": false
+    },
+    {
+      "name": "analytics_experiment_count_exclusion",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "signature": "analytics_experiment_count_exclusion()",
+      "anonExecute": false,
+      "sourceSha256": "3ad9533403d15efd06e581d2ff1f34cd54bc798e974809657cff4dc77d773b2a",
+      "ownerBypassRls": true,
+      "ownerSuperuser": true,
+      "serviceExecute": true,
+      "securityDefiner": true,
+      "definitionSha256": "56b74ac9064dfd0c986ae370ca3327998e2e3d79addd2985f4374bbefe84a2e4",
+      "authenticatedExecute": false
+    },
+    {
+      "name": "analytics_experiment_expose",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "signature": "analytics_experiment_expose(uuid,uuid)",
+      "anonExecute": false,
+      "sourceSha256": "80d4ee9916eabb1e24a20a398ee6fa0141b3a03bc25357b0927d313595b4e77f",
+      "ownerBypassRls": true,
+      "ownerSuperuser": true,
+      "serviceExecute": true,
+      "securityDefiner": true,
+      "definitionSha256": "72f2bcf519a920450b9a9a2551f4b4d0a7d36e625941d95a943fe9dadc3f4005",
+      "authenticatedExecute": false
+    },
+    {
+      "name": "analytics_experiment_manage",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "signature": "analytics_experiment_manage(text,text,uuid)",
+      "anonExecute": false,
+      "sourceSha256": "10d41e7d0991e6c46832576e8071f074ff311a6afb0450d72bac56460a74dafd",
+      "ownerBypassRls": true,
+      "ownerSuperuser": true,
+      "serviceExecute": true,
+      "securityDefiner": true,
+      "definitionSha256": "482827304a3d5f6077f0de82acb1f77a8acc0bd13c2239c9e1f41eb8ad4e58fa",
+      "authenticatedExecute": false
+    },
+    {
+      "name": "analytics_experiment_outcome",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "signature": "analytics_experiment_outcome(text,uuid)",
+      "anonExecute": false,
+      "sourceSha256": "b536af9cb3cff379de7522192df0f107f18843d4af007f46a89a8686fdd8536d",
+      "ownerBypassRls": true,
+      "ownerSuperuser": true,
+      "serviceExecute": true,
+      "securityDefiner": true,
+      "definitionSha256": "ada3fccc4cace3b7047d9d48aac26f762ef904864cad5b384056c7ea2a4951f7",
+      "authenticatedExecute": false
+    },
+    {
+      "name": "analytics_experiment_purge",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "signature": "analytics_experiment_purge(timestamp with time zone)",
+      "anonExecute": false,
+      "sourceSha256": "b7553260b673e875a78d4bd20d35d16d7909d19d7ed3a6526f9bf7d09055b5e1",
+      "ownerBypassRls": true,
+      "ownerSuperuser": true,
+      "serviceExecute": true,
+      "securityDefiner": true,
+      "definitionSha256": "b965375c2048e6aabdd2daae6b6155d4493b70a9fe7fd9e90d1919c29c4a6386",
+      "authenticatedExecute": false
+    },
+    {
+      "name": "analytics_experiment_results",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "signature": "analytics_experiment_results()",
+      "anonExecute": false,
+      "sourceSha256": "4cc049103d4dd904dc491e34f2516162e6319a4d932ee6b4f2095444cd42eb3d",
+      "ownerBypassRls": true,
+      "ownerSuperuser": true,
+      "serviceExecute": true,
+      "securityDefiner": true,
+      "definitionSha256": "cfb0092790e69d402dcc7288caa3e0ece3656e573a11a2c471855bcfd6487011",
+      "authenticatedExecute": false
+    },
+    {
+      "name": "analytics_experiment_withdraw_consent",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "signature": "analytics_experiment_withdraw_consent()",
+      "anonExecute": false,
+      "sourceSha256": "77de440409e03a94a15ec8b2d583b465e11f74175dc9075c91d1b4492ee5d15c",
+      "ownerBypassRls": true,
+      "ownerSuperuser": true,
+      "serviceExecute": true,
+      "securityDefiner": true,
+      "definitionSha256": "23a735b5e45f15a4057d7844140fbcf123ebfcf7f9e6f63b94404792cc8593ea",
+      "authenticatedExecute": false
+    }
+  ]
+}
