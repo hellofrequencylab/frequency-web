@@ -256,6 +256,7 @@ const nextConfig: NextConfig = {
     // One worker is about 660 MB less at the exact moment the container is fullest; static
     // generation takes longer, which costs minutes, not money.
     cpus: 1,
+    turbopackScopeHoisting: false,
   },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
