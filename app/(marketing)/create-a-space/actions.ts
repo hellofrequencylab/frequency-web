@@ -65,7 +65,7 @@ async function handOver(raw: FormDataEntryValue | null, rawZone: FormDataEntryVa
   }
   const previous = await readPendingLaunch()
   const resume = parseWizardResume({ version: 1, phase: 'launch', cursor: 4, theme: draft.kit,
-    accentAt: draft.accentAt, niche: draft.niche, goals: draft.goals,
+    accentAt: draft.accentAt, niche: draft.niche, goals: draft.goals, modeHint: draft.modeHint,
     timedEntry: active?.resume?.timedEntry === true || previous?.resume?.timedEntry === true, draft, leadToken: draft.leadToken })
   await writePendingLaunch({ ...holdFor(draft), ...(resume ? { resume } : {}) })
   if (profileId && resume && launchSystemEnabled()) {

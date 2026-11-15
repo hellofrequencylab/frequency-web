@@ -2,6 +2,7 @@
 import { readWizardResumeMetadata } from './wizard-resume-metadata.ts'
 import { isPreviewKit } from '../create-space/preview-site'
 import { parseDraft, type BuilderDraft } from '../create-space/builder'
+import { nicheModeChoice } from '../create-space/niche-choices'
 
 export interface WizardResume {
   version: 1
@@ -10,6 +11,7 @@ export interface WizardResume {
   theme: string
   accentAt: number
   niche: string | null
+  modeHint?: string
   goals: string[]
   timedEntry: boolean
   draft: BuilderDraft | null
@@ -24,7 +26,17 @@ export function parseWizardResume(raw: unknown): WizardResume | null {
   const draft = value.draft == null ? null : parseDraft(JSON.stringify(value.draft), null)
   if (value.draft != null && !draft) return null
   if (draft && draft.kit !== metadata.theme) return null
-  return { ...metadata, draft }
+  const { modeHint: rawMode, ...wire } = metadata
+  const mode = nicheModeChoice(rawMode)?.id
+  const draftMode = nicheModeChoice(draft?.modeHint)?.id
+  if (mode && draftMode && mode !== draftMode) return null
+  const validatedMode = draftMode ?? mode
+  return {
+    ...wire,
+    ...(draftMode && draft ? { niche: draft.niche, goals: draft.goals } : {}),
+    ...(validatedMode ? { modeHint: validatedMode } : {}),
+    draft,
+  }
 }
 
 export function showWizardClock(resume: WizardResume | null | undefined, activeMs: number): boolean {
