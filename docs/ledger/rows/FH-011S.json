@@ -4,15 +4,16 @@
   "lane": "program",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/hunts/README.md",
     "ref": "Split from FH-011 (2026-11-10): the switches shipped; the legacy regression proof needs them wired into routes (FH-014 onward)."
   },
-  "detail": "Seed synthetic legacy rows, then show on an exact SHA that with every Hunt switch off the existing check-in, reward and commerce paths behave as before, plus observability and rollback proof. Done when: a test that exercises those three paths with all five switches off exists and passes, and the staging note records the SHA. Requires: FH-011, FH-014. Owner role: Release engineering.\n\nPacket G evidence: lib/hunts/legacy-paths.test.ts exercises the legacy Regulars stamp, Connector reward, and Market ticket projection with all five Hunt switches off and in-memory boundaries. Acceptance pending: staging SHA, observability, rollback. The protected closing path is reserved for acceptance.",
+  "detail": "Seed synthetic legacy rows, then show on an exact SHA that with every Hunt switch off the existing check-in, reward and commerce paths behave as before, plus observability and rollback proof. Done when: a test that exercises those three paths with all five switches off exists and passes, and the staging note records the SHA. Requires: FH-011, FH-014. Owner role: Release engineering.\n\nPacket G evidence: lib/hunts/legacy-paths.test.ts exercises the legacy Regulars stamp, Connector reward, and Market ticket projection with all five Hunt switches off and in-memory boundaries. Acceptance pending: staging SHA, observability, rollback. The protected closing path is reserved for acceptance.\n\nFH-011S regression evidence: lib/hunts/legacy-regression.test.ts seeds synthetic legacy rows and, with all six Hunt switches blank (HUNTS_ENABLED, CLAIMS, REWARDS, AUTHORING, WORKER, COMMERCE; read from HUNT_SWITCH_KEYS), runs the Regulars stamp, Connector grant, Market ticket projection and ticket checkout gate with one recording admin client: identical outputs and zero hunt_* table reads or rpc calls, and the Hunt claim and store-order/refund entry points return disabled or skip with zero boundary calls. Observability: the commerce guard reports 'skipped' (and 'ok' once on) and no [hunts-*] failure is logged while off. Rollback: commerce on reads hunt_pass_bindings, then switching everything off restores the identical legacy results with zero Hunt calls. Still open: the staging note recording the exact SHA is release engineering acceptance and cannot be produced from the test; status stays open. Closed 2026-11-15: the regression test exists and passes; the exact-SHA staging note is split to FH-011T.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/legacy-regression.test.ts\")?0:1)'"
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-15"
 }
