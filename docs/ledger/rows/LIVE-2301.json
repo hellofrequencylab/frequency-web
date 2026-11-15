@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2301",
+  "title": "Preserve opaque Email Studio campaign attribution through pixel privacy",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/email-studio/send.ts",
+    "ref": "Daniel authorized completing analytics; actual delivery-to-pixel audit found campaign UUID truncation."
+  },
+  "detail": "Both real Email Studio delivery paths now use the full opaque database campaign UUID through a shared pure wrapper. Invalid IDs suppress campaign attribution without interrupting delivery; generic appendUtm and its manual override contract are unchanged. The pixel sanitizer accepts already-sent email-8hex identifiers only for the actual frequency/email source and utm_campaign, never utm_id or arbitrary labels. Historical prefixes remain potentially ambiguous and cannot reconstruct full UUIDs. The sanitizer remains self-contained for root bootstrap serialization. New actual mail builder to sanitizer probe fails on baseline with email-ab12cd34 versus the full UUID and passes on the candidate, and checks both production delivery call sites and serialized sanitizer execution. Growth Link Composer arbitrary campaign labels still require a separate private opaque-ID mapping; this change intentionally does not expose human campaign labels to pixels. No emails sent or scheduled, provider settings changed, Google goal writes, SQL or migrations. Google key-event creation remains externally blocked by service-account Editor permission, and this row does not claim production deployment. Verification passes 100 focused tests across eight files, including existing delivery lifecycle, scale, learning-copy and link-compose regressions; all five changed JavaScript/TypeScript files pass ESLint and diff whitespace checks. The identical new probe was independently run against actual fetched main 5b4cea3b modules and failed at the full UUID consequence; the candidate passes, including serialized-bootstrap execution. Own probe SHA256 03c1b8aeb17be88505fdc03bc579328b7311921e787e48f10c6aac6b4fcbeb42; own test SHA256 b237de5401a78c9fb39e1a6248b334046c75f3e914c1e10fc7467ffd4611ab5e. Root reviewed the source and privacy peer independently passed 39 tests across three files including actual bootstrap serialization. The delivery module aliases the validated wrapper to its established local appendUtm name, preserving the unchanged EMAIL-036 structural probe as well as actual campaign behavior. The new own wiring assertion follows that real binding; baseline RED remains the actual truncated-ID consequence. Final focused rerun passes all 100 tests. Final required backlog passes 2697 entries with all 1004 run probes agreeing; no further broad backlog rerun is needed for this receipt-only row update.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-campaign-attribution.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}
