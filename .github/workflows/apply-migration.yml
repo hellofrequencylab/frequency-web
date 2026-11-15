@@ -42,6 +42,11 @@ on:
         description: 'Pull request number whose new migration files to apply'
         required: true
         type: number
+      readonly_diagnostic:
+        description: 'Fixed read-only metadata diagnostic on the reviewed diagnostic branch only'
+        required: false
+        type: boolean
+        default: false
       dry_run:
         description: 'Check everything and print the plan, but apply nothing'
         required: false
@@ -63,7 +68,7 @@ jobs:
     # SCAN-847: workflow_dispatch runs the workflow file from the ref the dispatcher picks. Only
     # main's copy of this file may reach the production-db environment; the environment's own
     # deployment-branch rule (SETUP) is the second lock on the same door.
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.readonly_diagnostic != true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production-db
@@ -184,3 +189,29 @@ jobs:
           else
             echo "::warning::No CI run found for $SHA. Push to the PR or re-run CI by hand."
           fi
+
+  readonly-diagnostic:
+    if: github.repository == 'hellofrequencylab/frequency-web' && github.ref == 'refs/heads/codex/diagnostic-migration-readonly' && inputs.readonly_diagnostic == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Require repository admin dispatcher
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/collaborators/${GITHUB_ACTOR}/permission" --jq .permission)" = admin
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Fixed read-only production metadata
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: node scripts/diagnose-migration-readonly.mjs
