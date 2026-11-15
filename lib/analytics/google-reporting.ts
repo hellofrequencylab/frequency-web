@@ -32,7 +32,7 @@ export const GOOGLE_REPORTING_SPEC = {
     { name: 'New and returning activity', dimensions: ['newVsReturning'], metrics: ['activeUsers', 'totalUsers', 'sessions', 'engagedSessions'], note: 'Users can appear in both populations during the same period.' },
     { name: 'Page activity', dimensions: ['pagePath', 'deviceCategory'], metrics: ['screenPageViews', 'activeUsers', 'userEngagementDuration', 'sessions'], note: 'Sanitized paths; engagement duration is seconds. Rows overlap and do not establish an ordered journey or abandonment.' },
     { name: 'Recorded actions', dimensions: ['eventName'], metrics: ['eventCount', 'totalUsers'], note: 'Repeated events and overlapping users are not conversions. Missing instrumentation cannot establish absence of an action.' },
-    { name: 'Daily acquisition and engagement', dimensions: ['date'], metrics: ['sessions', 'engagedSessions', 'keyEvents'], note: 'Chronological property-calendar dates. Missing dates are not filled with synthetic zeros; no person-level paths or cohort retention are inferred.' },
+    { name: 'Daily acquisition and engagement', dimensions: ['date'], metrics: ['sessions', 'engagedSessions', 'keyEvents'], note: 'Chronological property-calendar dates. Missing dates are not filled with synthetic zeros; no person-level paths or return-visit retention are inferred.' },
     { name: 'Outcome totals across campaigns', dimensions: ['eventName'], metrics: ['eventCount', 'keyEvents', 'purchaseRevenue'], note: 'Hostname-bound totals for sign_up, generate_lead and purchase only, without campaign truncation. Observed eventCount is separate from configured keyEvents; absent rows and limited reporting remain unknown.' },
   ],
   nativeGa4: {
