@@ -40,8 +40,8 @@ test('nested or message-only SQLSTATE becomes closed metadata without exposing t
 
 test('strict candidate parity executes trusted main code and candidate remains data',()=>{
  const w=readFileSync(new URL('../.github/workflows/apply-migration.yml',import.meta.url),'utf8')
- assert.ok(w.includes('ref: ab99b3bad10e33a2c8a560e8e00de1194d998d16'))
- assert.ok(w.includes('ref: 38b5b931f6be2eaf4cec42a239f2ffab773b35e9'))
+ assert.ok(w.includes('ref: 06c3188999e975995330fb61085111c4dc1fb656'))
+ assert.ok(w.includes('ref: 06c3188999e975995330fb61085111c4dc1fb656'))
  assert.ok(w.includes('for source in scripts/check-migrations.mjs scripts/check-adr.mjs scripts/check-id-collisions.mjs scripts/lib/invoked-directly.mjs scripts/lib/ledger.mjs scripts/maintenance/ledger-parity.mjs scripts/pr-size-gate.mjs; do'))
  assert.ok(w.includes('cmp "$source" "trusted-guard/$source"'))
  assert.ok(w.includes('run: node scripts/diagnose-strict-migration-parity.mjs'))
@@ -61,7 +61,7 @@ test('strict guard output filter never forwards provider bodies or accepts a ski
 })
 
 test('fresh untouched ledger JSON reaches only documented trusted guard data input then is removed',async()=>{
- const rows=Array.from({length:400},(_,i)=>({version:String(20240101000000+i),name:'test'}))
+ const rows=Array.from({length:400},(_,i)=>({version:String(20240101000000+i),name:'test'})); rows[0]={version:'20270346050000',name:'analytics_experiments'}
  const raw=JSON.stringify(rows,null,2);let file
  const runner=(node,args,opts)=>{
   file=args[3];assert.equal(args[1],'--require-ledger');assert.equal(args[2],'--ledger')
@@ -75,6 +75,7 @@ test('fresh untouched ledger JSON reaches only documented trusted guard data inp
   return {status:201,text:async()=>raw}
  },{SUPABASE_PROJECT_REF:PROJECT,SUPABASE_ACCESS_TOKEN:'secret'})
  assert.equal(result.category,'strict_version_name_parity');assert.equal(existsSync(file),false)
+ assert.equal(result.analytics50000Recorded,true);assert.equal(result.analytics50000NameMatches,true);assert.equal(result.hunts51000Recorded,false);assert.equal(result.hunts51000NameMatches,false);assert.equal(result.liveLedgerCount,400)
 })
 test('ledger fetch and shape failures remain closed and never execute a guard with invented data',async()=>{
  const env={SUPABASE_PROJECT_REF:PROJECT,SUPABASE_ACCESS_TOKEN:'secret'};let called=false

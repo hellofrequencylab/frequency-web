@@ -31,7 +31,7 @@ export async function strictParity(workspace, runner = spawnSync, fetcher = fetc
     const result = runner(process.execPath, [resolve(workspace,'trusted-guard/scripts/check-migrations.mjs'),'--require-ledger','--ledger',ledgerFile], {cwd:resolve(workspace,'rollback-candidate'),env:process.env,encoding:'utf8',timeout:120000,maxBuffer:8*1024*1024})
     // The unchanged guard may include a provider body on failure. Never forward it to Actions.
     writeFileSync(join(directory,'guard.log'),String(result.stdout ?? '')+String(result.stderr ?? ''),{mode:0o600})
-    return safeParityResult(result)
+    return { ...safeParityResult(result), liveLedgerCount:body.length, analytics50000Recorded:body.some(row=>row?.version==='20270346050000'), analytics50000NameMatches:body.some(row=>row?.version==='20270346050000' && row.name==='analytics_experiments'), hunts51000Recorded:body.some(row=>row?.version==='20270346051000'), hunts51000NameMatches:body.some(row=>row?.version==='20270346051000' && row.name==='hunt_moderation') }
   } finally { rmSync(directory,{recursive:true,force:true}) }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
