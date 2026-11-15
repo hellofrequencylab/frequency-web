@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-2303",
+  "title": "Show complete Google growth outcomes and daily engagement in Insights",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": { "file": "docs/ANALYTICS.md", "ref": "Owner classic growth dashboard request for Frequency and native GA4, 2026-11-15." },
+  "detail": "The private Google tab uses independent fixed event-grain outcome totals and chronological daily activity reports under the existing exact hostname filter and complete-day period. Design-system bars, engagement ring and outcome cards distinguish observed event counts from configured key events, missing outcomes from explicit zero, and Google engagement from verified member activation or attendance. Complete coverage is required for headline totals; thresholded, sampled or truncated reports remain unknown. Existing campaign-row detail is retained without presenting its subset sum as a headline total. The new consequence probe fails against main766068a39 because the event-grain totals report is absent, then passes after implementation. Actual readonly checks returned HTTP200 for both new report shapes; an empty outcome report is an observation, not proof of zero leads. No Google account settings, native saved reports or collection were changed. Native Reports Library authoring remains separately OPEN/manual under OWN-110; this source row does not claim it complete. No SQL, emitted events, real messages or configuration activation.",
+  "verify": { "kind": "cmd", "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/google-classic-growth.mjs" },
+  "wave": "W7",
+  "closed": "2026-11-15"
+}
