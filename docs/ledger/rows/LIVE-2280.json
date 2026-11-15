@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2280",
+  "title": "Show private growth, user activity and measured flow friction",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "source": {
+    "file": "docs/ANALYTICS.md",
+    "ref": "Owner request: complete analytics reporting, campaign and user-flow dashboards using the design system, 2026-11-13."
+  },
+  "detail": "The private Growth tab composes existing charts, infographics and tables for host-confirmed attendance, returning participation, signup and captured-lead campaign cohorts, ordered mature builder visits, user activity and measured friction. Unknown, pending and unavailable values remain distinct. Campaign links use opaque identifiers, exports neutralize spreadsheet formulas, visible-tab refresh does not call a model, and explicit AI requests use coarse allowlisted evidence through the existing accounting gateway. The separately reviewed experiment panel is mounted without starting a pilot. Current-main Google reporting and existing inventory entries are preserved. The pure consequence probe fails on main because growth modules are absent and passes on this implementation. Current-base verification passes 96 focused tests; the campaign-link cross-contract awaits the consent-runtime pixelSafeAttributionQuery export and the Growth tab awaits the preceding experiment panel. Changed-file lint, workflow guard and supplementary isolated PostgreSQL role/cohort integration pass. Actual full Supabase replay, pgTAP, Auth/PostgREST acceptance, authenticated render and production activation remain pending; the live aggregate RPC returns 404/PGRST202. The never-applied SQL is retimed from 47000 to 50200 after experiment 50000 and before Quest 50500, with byte-identical SQL SHA25650741416abd3550288f8699c68e81a303c21ee94efb5a80d88bf4ba202f54b0e. The owner explicitly authorized the sole SQL-probe filename literal update 47000 to 50200; every assertion and control remains unchanged. No production SQL, Google account setting, email, pilot or rollout flag is changed by this implementation.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/analytics-growth-contract.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}

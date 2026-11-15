@@ -65,6 +65,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'demo-palette': 1,
   'website-editor': 1, // Preserve the editor's former dailyCapFor fallback in mandatory admission.
   'campaign-coach': 1,
+  'growth-insights': 1,
   'circle-compose': 1,
   'circle-spark': 1,
   // Previously used the $1 fallback; explicit registration preserves those ceilings.

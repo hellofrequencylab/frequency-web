@@ -1332,3 +1332,4 @@ lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
 lib/analytics/server-google-policy.ts
+lib/analytics/growth-read.ts

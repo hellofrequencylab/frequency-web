@@ -1,9 +1,47 @@
 # Analytics — first-party tracking + admin dashboard (and GA4)
 
-Status: **design.** GA4 acquisition tag is **shipped** (ADR-048); the **dual-emit `track()` helper
-+ taxonomy + page-view capture are shipped** (ADR-070, [ENGAGEMENT-MARKETING-ENGINE.md](ENGAGEMENT-MARKETING-ENGINE.md)
-Phase A) — the admin dashboard (below) is the remaining build. This doc specs the **first-party
-event layer + admin dashboard** and how GA4 is "fully embedded." Decision: [DECISIONS.md ADR-050](DECISIONS.md).
+Delivery and activation evidence live in [BUILD-BACKLOG.json](BUILD-BACKLOG.json) through ledger fragments.
+
+## Private Growth reporting
+
+The Growth tab at `/admin/insights?tab=growth` combines the existing chart, infographic and table
+primitives with a service-role-only `analytics_growth_snapshot(30)` reader. Every server action
+checks the Insights permission. Application deployment does not apply its database migration;
+release follows the reviewed migration and production acceptance process.
+
+The first-party ledger and host-confirmed attendance are authoritative for operational outcomes.
+Campaign signup and captured-lead populations are separate. Recent cohorts remain pending until
+their observation window matures; no denominator is an unmeasured result. Re-marking attendance
+does not move an event into a new historical cohort. A missing host mark is not proof of absence.
+Anonymous builder signals are not joined to Member accounts or divided by account-based counts.
+Only ordered, mature visits support builder transition rates.
+
+The user-flow panel distinguishes measured friction from weak signals and missing coverage.
+Independent page totals cannot prove a path or abandonment. Read failures stay unavailable instead
+of appearing as zero activity. The visible tab can refresh once a minute; this does not change
+Google processing latency or prove that all emitters work.
+
+Google reporting uses fixed hostname-filtered, read-only queries, private credential-specific
+caching and server-only credentials. The reporting period ends yesterday in the property timezone.
+Rows can overlap, be truncated, sampled or privacy-thresholded. Reading Google reports and exporting
+a portable specification do not create a saved dashboard in Google Analytics.
+
+Campaign links use opaque campaign identifiers and a private downloaded mapping. The CSV export
+neutralizes spreadsheet formulas. Keep operational reporting private; do not publish member data
+through a public embed. Google labels and arbitrary campaign text do not enter the AI prompt.
+
+AI receives allowlisted aggregates through the existing accounting gateway with the
+`growth-insights` feature cap. It drafts an evidence brief and investigation proposals; polling
+does not call a model. It cannot publish changes, run arbitrary queries, start an experiment or
+send a campaign. The Growth tab also mounts the separately reviewed controlled-pilot panel behind
+its own Suspense boundary. Its storage and server controls come from the preceding experiment
+release. An authorized operator must explicitly draft and start the closed-catalog pilot; mounting
+the panel never starts it. Recommendation cards do not create or run experiments.
+
+Production acceptance must reconcile deployed reports and durable signup, lead, reservation,
+attendance and payment evidence; verify consent and staff exclusions, exactly one page view per
+navigation, and Google reporting latency. Focused tests and synthetic render fixtures are not
+production acceptance.
 
 ## Goal
 

@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { isJanitor } from '@/lib/core/roles'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
+import { GrowthTab } from '@/components/admin/insights/growth-tab'
 import { ReadTab } from '@/components/admin/insights/read-tab'
 import { EngagementTab } from '@/components/admin/insights/engagement-tab'
 import { OutcomesTab } from '@/components/admin/insights/outcomes-tab'
@@ -26,11 +27,12 @@ import { ExperienceTab } from './experience-tab'
 // only consumer of the two RPCs behind it.
 export const dynamic = 'force-dynamic'
 
-const TAB_KEYS = ['read', 'engagement', 'experience', 'outcomes', 'intel', 'expansion', 'google', 'financials'] as const
+const TAB_KEYS = ['read', 'growth', 'engagement', 'experience', 'outcomes', 'intel', 'expansion', 'google', 'financials'] as const
 type TabKey = (typeof TAB_KEYS)[number]
 
 const TAB_LABEL: Record<TabKey, string> = {
   read: 'Read',
+  growth: 'Growth',
   engagement: 'Engagement',
   experience: 'Experience',
   outcomes: 'Outcomes',
@@ -63,7 +65,7 @@ export default async function InsightsPage({
       title="Insights"
       eyebrow="Insights"
       icon={LineChart}
-      description="The platform's analytics in one place: the engagement read, the activation funnel, the five funnels and page speed, program outcomes, marketing intel, expansion signal, and finances."
+      description="Live growth, campaign outcomes, participation, measured funnels, page speed, marketing intel and finances in one place."
       width="wide"
     >
       <AdminSection>
@@ -75,6 +77,7 @@ export default async function InsightsPage({
 
       <div className="mt-2">
         {tab === 'read' && <ReadTab />}
+        {tab === 'growth' && <GrowthTab />}
         {tab === 'engagement' && <EngagementTab />}
         {tab === 'experience' && <ExperienceTab />}
         {tab === 'outcomes' && <OutcomesTab />}
