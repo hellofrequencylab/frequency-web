@@ -34,19 +34,19 @@ insert into public.hunt_runs (id, hunt_id, version_id, subject_profile_id) value
   ('00000000-0000-4000-a02f-0000000000d1', '00000000-0000-4000-a02f-0000000000a1', '00000000-0000-4000-a02f-0000000000b1', '00000000-0000-4000-a02f-000000000001');
 
 select is(
-  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm1', '00000000-0000-4000-a02f-0000000000c1', 'ev-1', 'signed_node', 'key-fh020u-01', 'hash-fh020u-01'))->>'result',
+  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm1', '00000000-0000-4000-a02f-0000000000c1', 'ev-1', 'signed_node', 'key-fh020u-01', 'hash-fh020u-request-01'))->>'result',
   'assurance_too_low', 'without the opt-in the shortfall is refused as before');
 select is(
   (select count(*)::int from public.hunt_claims where run_id = '00000000-0000-4000-a02f-0000000000d1'),
   0, 'the default refusal writes no claim');
 select is(
-  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-2', 'none', 'key-fh020u-02', 'hash-fh020u-02'))->>'result',
+  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-2', 'none', 'key-fh020u-02', 'hash-fh020u-request-02'))->>'result',
   'assurance_too_low', 'an opted-in placement does not hold a scan with no assurance at all');
 select is(
   (select count(*)::int from public.hunt_claims where run_id = '00000000-0000-4000-a02f-0000000000d1'),
   0, 'a non-qualifying shortfall writes no claim');
 select is(
-  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-3', 'signed_node', 'key-fh020u-03', 'hash-fh020u-03'))->>'result',
+  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-3', 'signed_node', 'key-fh020u-03', 'hash-fh020u-request-03'))->>'result',
   'held', 'an opted-in placement holds a signed scan against a staff mission');
 select is(
   (select count(*)::int from public.hunt_claims where run_id = '00000000-0000-4000-a02f-0000000000d1' and mission_key = 'm2' and state = 'needs_review'),
@@ -67,22 +67,22 @@ select is(
   (select count(*)::int from public.hunt_audit where run_id = '00000000-0000-4000-a02f-0000000000d1' and action = 'claim_held'),
   1, 'the hold is audited');
 select is(
-  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-3', 'signed_node', 'key-fh020u-03', 'hash-fh020u-03'))->>'result',
+  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-3', 'signed_node', 'key-fh020u-03', 'hash-fh020u-request-03'))->>'result',
   'held', 'the same command returns the held answer');
 select is(
-  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-3', 'signed_node', 'key-fh020u-03', 'hash-fh020u-03'))->>'replayed',
+  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-3', 'signed_node', 'key-fh020u-03', 'hash-fh020u-request-03'))->>'replayed',
   'true', 'the same key replays its stored answer');
 select is(
-  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-4', 'signed_node', 'key-fh020u-04', 'hash-fh020u-04'))->>'claim_id',
+  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-4', 'signed_node', 'key-fh020u-04', 'hash-fh020u-request-04'))->>'claim_id',
   (select id from public.hunt_claims where run_id = '00000000-0000-4000-a02f-0000000000d1' and mission_key = 'm2')::text, 'a new key for the same shortfall returns the same held claim');
 select is(
   (select count(*)::int from public.hunt_claims where run_id = '00000000-0000-4000-a02f-0000000000d1' and mission_key = 'm2'),
   1, 'repeated commands never create a second held row');
 select is(
-  (public.hunt_claim_review((select id from public.hunt_claims where run_id = '00000000-0000-4000-a02f-0000000000d1' and mission_key = 'm2'), '00000000-0000-4000-a02f-000000000002', 'approve', 'Staff saw the player', 'key-fh020u-05', 'hash-fh020u-05'))->>'result',
+  (public.hunt_claim_review((select id from public.hunt_claims where run_id = '00000000-0000-4000-a02f-0000000000d1' and mission_key = 'm2'), '00000000-0000-4000-a02f-000000000002', 'approve', 'Staff saw the player', 'key-fh020u-05', 'hash-fh020u-request-05'))->>'result',
   'credited', 'authorized review resumes the held claim');
 select is(
-  (public.hunt_claim_review((select id from public.hunt_claims where run_id = '00000000-0000-4000-a02f-0000000000d1' and mission_key = 'm2'), '00000000-0000-4000-a02f-000000000002', 'approve', 'Staff saw the player', 'key-fh020u-06', 'hash-fh020u-06'))->>'result',
+  (public.hunt_claim_review((select id from public.hunt_claims where run_id = '00000000-0000-4000-a02f-0000000000d1' and mission_key = 'm2'), '00000000-0000-4000-a02f-000000000002', 'approve', 'Staff saw the player', 'key-fh020u-06', 'hash-fh020u-request-06'))->>'result',
   'already_decided', 'a second review does not credit again');
 select is(
   (select count(*)::int from public.hunt_progress where run_id = '00000000-0000-4000-a02f-0000000000d1' and mission_key = 'm2'),
@@ -91,7 +91,7 @@ select is(
   (select count(*)::int from public.hunt_outbox where aggregate_id = '00000000-0000-4000-a02f-0000000000d1'),
   1, 'exactly one outbox event follows the review');
 select is(
-  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-5', 'signed_node', 'key-fh020u-07', 'hash-fh020u-07'))->>'result',
+  (public.hunt_claim_apply('00000000-0000-4000-a02f-000000000001', '00000000-0000-4000-a02f-0000000000d1', 'm2', '00000000-0000-4000-a02f-0000000000c1', 'ev-5', 'signed_node', 'key-fh020u-07', 'hash-fh020u-request-07'))->>'result',
   'already_credited', 'after credit a new claim finds it credited');
 select is(
   (select has_function_privilege('service_role', 'public.hunt_claim_apply(uuid, uuid, text, uuid, text, text, text, text, integer)', 'execute')),
