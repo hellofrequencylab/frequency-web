@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2300",
+  "title": "Record browser events once in Google while preserving the first-party ledger",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/api/track/route.ts",
+    "ref": "Owner-directed completion of accurate Frequency analytics; root-approved measurement audit followup after LIVE-2275 consent restoration."
+  },
+  "detail": "Actual eligible browser event delivery previously called Google once through gtag and again through the authenticated collector and server tracker, producing two same-name provider events and a second profile-based provider identity for one first-party row. The collector now supplies an internal mirrorGa:false option after its unchanged client-event, actual-account and consent gates. The server tracker still records the first-party row and honors durable-key deduplication, then returns before Google for that explicit option; direct authoritative signup, lead and purchase callers retain their existing defaults. The flag is never taken from the untrusted payload, and an unavailable or deployment-disabled browser tag does not trigger a replacement server identity. Actual-module tests execute the browser helper, real collector, taxonomy, request policy, ledger recorder and Google transport with only external auth/database/provider fixtures. On the unchanged LIVE-2275 privacy base93ec5c1 the frozen new consequence test has seven failures and ten passes; after the bounded implementation all17 pass. Exactly one existing collector expected-call tuple is strengthened with the fourth internal false option, as expressly approved by root under the owner instruction to bypass handoff approval checkpoints; every consent, denial and response assertion remains unchanged. The new test and probe bytes are identical before and after the fix. Initial standard pageviews and manual SPA behavior are untouched: the existing first-mount skip works, and read-only Admin evidence confirms the current property has enhanced page/history measurement disabled. No provider settings, live Google events, SQL, reward accounting or advertising-sensitive data are changed. This row proves source delivery consequences, not live Google configuration or deployment acceptance. Focused verification passes157 tests across12 files and lint on five changed code/probe files. Independent privacy peer re-ran48 tests acrossthree files and passed; root reviewed the actual production delta as the third pass. Required backlog passes2697 entries with1004 agreeing probes. Provider settings and live acceptance remain outside this source proof.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/client-event-single-google.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}
