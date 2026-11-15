@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { updateBrowserAnalyticsPolicy } from '@/lib/analytics/browser-policy'
 import {
   CONSENT_COOKIE,
   CONSENT_MAX_AGE,
@@ -95,13 +96,15 @@ export function CookieBanner() {
   const answer = useCallback(
     (choice: ConsentChoice) => {
       setAsking(false)
+      // Withdrawal must stop this page even if the browser refuses to persist its cookie.
+      if (choice === 'denied') updateBrowserAnalyticsPolicy(false)
       try {
         writeCookie(CONSENT_COOKIE, choice, CONSENT_MAX_AGE)
       } catch {
         return
       }
       if (choice === 'granted') {
-        window.__fqGa?.()
+        updateBrowserAnalyticsPolicy(true)
         router.refresh()
         return
       }
