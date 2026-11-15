@@ -222,6 +222,7 @@ const ROOT_CARD_FONTS = [
 ]
 
 const nextConfig: NextConfig = {
+  productionBrowserSourceMaps: true,
   // TYPECHECKING IS CI'S JOB, NOT THE BUILD'S (2026-07-28). `next build` ran a FULL
   // TypeScript pass on top of the compile, and as the repo grew that second pass began
   // exhausting the Vercel build container: the worker took a SIGKILL with an OOM event
@@ -256,6 +257,7 @@ const nextConfig: NextConfig = {
     // One worker is about 660 MB less at the exact moment the container is fullest; static
     // generation takes longer, which costs minutes, not money.
     cpus: 1,
+    turbopackPluginRuntimeStrategy: "workerThreads",
   },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
