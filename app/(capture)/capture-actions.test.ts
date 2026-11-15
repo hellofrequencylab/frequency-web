@@ -6,6 +6,7 @@ process.env.OPTIN_CONFIRM_SECRET = process.env.OPTIN_CONFIRM_SECRET || 'test-lea
 // Public capture endpoints are unauthenticated: stub the request headers + fail-open rate limiter, and
 // SPY the engine so we assert the action's WIRING (token -> right door + consent posture, honeypot,
 // validation, anti-forgery) without any DB.
+vi.mock('@/lib/crm/lead-magnet-resource-io', () => ({ sendLeadMagnetResource: vi.fn(async () => 'queued') }))
 vi.mock('next/headers', () => ({ headers: async () => new Map([['x-forwarded-for', '1.2.3.4']]) }))
 vi.mock('@/lib/rate-limit', () => ({ rateLimitOk: vi.fn(async () => true) }))
 vi.mock('@/lib/crm/lead-capture', async (importActual) => {

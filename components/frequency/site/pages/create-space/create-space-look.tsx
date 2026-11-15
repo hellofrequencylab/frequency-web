@@ -5,6 +5,7 @@
 // New World and its first accent are already picked, so the rows only ever change a choice. The remembering is
 // lib/create-space/last-kit.ts (a first-party cookie), written by the studio, not here.
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
+import type { NicheChoice } from '@/lib/create-space/niche-choices'
 
 interface LookRowsProps {
   kits: readonly { id: MegaThemeId; label: string }[]
@@ -13,9 +14,13 @@ interface LookRowsProps {
   accentAt: number
   onKit: (id: MegaThemeId) => void
   onAccent: (at: number) => void
+  niches?: readonly NicheChoice[]
+  niche?: string | null
+  onNiche?: (id: string) => void
+  nicheDisabled?: boolean
 }
 
-export function LookRows({ kits, kit, accents, accentAt, onKit, onAccent }: LookRowsProps) {
+export function LookRows({ kits, kit, accents, accentAt, onKit, onAccent, niches = [], niche, onNiche, nicheDisabled }: LookRowsProps) {
   return (
     <div className="cs-look">
       <div role="radiogroup" aria-label="Theme" className="cs-themes">
@@ -30,6 +35,12 @@ export function LookRows({ kits, kit, accents, accentAt, onKit, onAccent }: Look
           </button>
         ))}
       </div>
+      {niches.length > 0 && onNiche && <div className="cs-niches">
+        <span className="cs-label">What are you building?</span>
+        <div role="radiogroup" aria-label="What are you building?" className="cs-themes">
+          {niches.map((choice) => <button key={choice.slug} type="button" role="radio" aria-checked={choice.niche === niche} className="cs-theme" disabled={nicheDisabled} onClick={() => onNiche(choice.niche)}>{choice.label}</button>)}
+        </div>
+      </div>}
     </div>
   )
 }

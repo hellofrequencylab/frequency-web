@@ -1020,3 +1020,32 @@ Activation order:
 4. Confirm production migration/ledger parity and the serving application identity. Set the server flag only on that verified deployment, then perform the same owner and non-owner acceptance on the live host. Record release evidence without credentials, private reflections, raw member logs or support categories in advertising analytics.
 
 Rollback: clear the flag to restore the old-column read and verify the serving instance observes it (redeploy/restart if the provider requires it). The additive snapshot columns and recorded evidence can remain. Never delete or rewrite evidence or earned recognition to roll back this reader. An on-path schema/query failure must stay visibly unavailable; do not silently retry the old-column reader and present it as complete four-support history.
+
+## Reviewed production migration automation
+
+`apply-migration` runs only from main and the protected `production-db` environment. Its existing independent head-commit approval or repository-admin dispatcher rule remains in force. It accepts only a ready same-repository PR based on current main, whose trusted readiness receipt, main registration, complete reviewed source and exact-head full replay/TAP/API/cleanup staging agree. Status belongs to HYG-225 in the merged backlog.
+
+The workflow uses `SUPABASE_DB_URL` when configured, or the existing `SUPABASE_ACCESS_TOKEN` with repository variable `SUPABASE_PROJECT_REF`. Both routes require Frequency Community's canonical project binding. The Management API transport uses the official `read_only` option for ledger reads. Neither the token nor SQL/provider error bodies are printed. Candidate JavaScript is never installed or run with production credentials.
+
+First dispatch from main with the PR number and `dry_run: true`. This checks current source, staging, project, ordering and ledger, then prints only the bound head/base, filenames and SHA-256 plan. It performs no SQL mutation. When that exact plan is authorized, dispatch with `dry_run: false`; the apply step independently recollects all facts and refuses changed head/main, proof, latest staging, expiry or ledger.
+
+Each pending SQL file and its ledger insertion commit in one database transaction. The transaction takes an advisory lock and an exclusive migration-ledger table lock, verifies the entire expected ledger inside the lock, and uses bounded lock/statement timeouts. Only proven outer `BEGIN`/`COMMIT` wrappers are stripped; unsupported transaction/session controls or ambiguous SQL tokens refuse before application. Reviewed dollar-quoted function bodies remain data in the parser.
+
+A write is never automatically retried. If its response is unavailable, the helper makes only a read-only ledger diagnostic and stops. Check the actual ledger and workflow receipt before another dispatch; do not blindly reapply or rename a version. An already recorded matching version is skipped when all trusted bindings still hold. Application switches remain governed by their own runbooks. This workflow does not turn features on or claim post-deployment acceptance.
+
+### Sentry source maps (HYG-232)
+
+`SENTRY_SOURCEMAPS` is off (blank). While it is off, no build generates or uploads source maps, so client stack traces in Sentry are minified. Reason: with maps on, the Sentry plugin makes Turbopack build browser source maps inside the compile, and the `next-build` process reached 7.06 GB (container 8.05 GB of 8 GB) and was OOM-killed on production; without them it peaks near 6.8 GB.
+
+**Activation gate.** Set it to `1` on Vercel production only after the `check-build-memory` container line of a production build shows the compile peak at least 1.5 GB under the machine (container peak below about 6.5 GB), or after the maps are produced outside the compile. Turn it back off if a production build is OOM-killed.
+
+
+## Requested resource email rollout
+
+`LEAD_MAGNET_RESOURCE_EMAIL_ENABLED` is off by default (blank/unset, `0`, `false` and unrecognized values). Only `1`, `true` or `on` enable it through `envFlag`. While off, signed resource forms still capture valid submissions and reveal the existing resource inline, but the requested-copy sender performs no delivery IO. This control does not enable nurture, campaigns or any other sender.
+
+The drain also recognizes already queued EMAIL-049 resource copies by their canonical database dedupe key (`lead_magnet_resource:<64 lowercase hex>:<hour>`). While off it releases those claimed rows back to `pending`, schedules them one hour later and preserves attempts. It does not invoke the handler, mark delivery, delete or cancel the job. Other emails and job kinds retain their existing behavior. A failed parking write surfaces as a storage error; existing stale-claim recovery applies.
+
+**Activation gate:** keep the variable blank until the owner approves requested-resource sending and exact-head checks/real preview verify default-off inline access, opted-in transactional enqueue, suppression/dedupe and off-to-enabled drain replay. Review the existing held resource backlog and link freshness before enabling; enabling allows due held copies to resume. Confirm deployed identity and configuration in both the public form runtime and queue worker before acceptance. Tests and fixture renders are not production sending approval.
+
+**Rollback:** blank the flag in both runtimes and redeploy/restart if required. New resource copies stop being queued; queued canonical resource copies defer without spending attempts. Keep the resource available inline. Do not cancel jobs or change unrelated email controls to perform this rollback. This cannot recall mail already accepted by the provider or stop an old worker before the new deployment takes over.

@@ -9,6 +9,8 @@ import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
 import { nextSpotlightPreferences } from '@/lib/spaces/spotlight'
 import { kitAccentFill } from '@/lib/create-space/preview-site'
+import { nicheModeChoice } from '@/lib/create-space/niche-choices'
+import { resolveOnboardingNicheSeed } from '@/lib/create-space/niche-choices.server'
 import { createSpace, type CreateSpaceInput } from '@/lib/spaces/provision'
 import { getSpaceById, getSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
 import { recordLaunchEvent } from './events'
@@ -42,9 +44,11 @@ export async function publishSpotlightStep(profileId: string, launch: LaunchSnap
   let space = launch.spaceId ? await getSpaceById(launch.spaceId) : null
 
   if (!space) {
+    const seed = resolveOnboardingNicheSeed(launch.resume?.niche ?? launch.niche, launch.resume?.modeHint)
+    const mode = nicheModeChoice(seed?.mode ?? launch.resume?.modeHint)
     let last = 'We could not make your Space. Try again.'
     for (let attempt = 0; attempt < HANDLE_TRIES && !space; attempt++) {
-      const made = await makeSpace(profileId, { type: 'business', name: answers.name, slug: handleCandidate(answers.name, attempt, carry.handle), niche: launch.niche, intents: launch.intents, theme: carry.theme, accent: kitAccentFill(carry.theme, carry.accent) })
+      const made = await makeSpace(profileId, { type: mode?.type ?? 'business', ...(mode ? { modeVariant: mode.variant } : {}), name: answers.name, slug: handleCandidate(answers.name, attempt, carry.handle), niche: seed?.niche ?? launch.niche, intents: launch.resume?.goals ?? launch.intents, theme: carry.theme, accent: kitAccentFill(carry.theme, carry.accent) })
       if ('error' in made) {
         last = made.error
         if (!/already taken/i.test(made.error)) return { error: made.error }

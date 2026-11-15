@@ -91,7 +91,7 @@ function storedSteps(steps: LaunchSnapshot['steps'], l: LaunchSnapshot, resume: 
 
 /** Every steps writer reads fresh and compares an opaque revision. No private draft text enters a filter URL.
  * Legacy rows compare the absent revision; the first successful write installs one, even in the same millisecond. */
-async function mutateSteps(l: LaunchSnapshot, mutate: (fresh: LaunchSnapshot) => { steps?: LaunchSnapshot['steps']; skipped?: string[]; resume?: WizardResume; requireUnattached?: true } | null, now: Date, claim?: { heldSavedAt: string }): Promise<LaunchSnapshot | null> {
+async function mutateSteps(l: LaunchSnapshot, mutate: (fresh: LaunchSnapshot) => { steps?: LaunchSnapshot['steps']; skipped?: string[]; resume?: WizardResume; requireUnattached?: true; builderSeed?: { niche: string | null; intents: string[] } } | null, now: Date, claim?: { heldSavedAt: string }): Promise<LaunchSnapshot | null> {
   const heldAt = claim ? Date.parse(claim.heldSavedAt) : null
   if (claim && !Number.isFinite(heldAt)) return null
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -103,9 +103,12 @@ async function mutateSteps(l: LaunchSnapshot, mutate: (fresh: LaunchSnapshot) =>
     const change = mutate(fresh)
     if (!change) return null
     const steps = change.steps ?? fresh.steps
-    const next = resumeStep(fresh.niche, fresh.intents, steps) ?? fresh.currentStep
+    const niche = change.builderSeed ? change.builderSeed.niche : fresh.niche
+    const intents = change.builderSeed?.intents ?? fresh.intents
+    const next = resumeStep(niche, intents, steps) ?? fresh.currentStep
     const db = await createClient()
     let query = db.from('space_launch').update({
+      ...(change.builderSeed ? { niche, intents } : {}),
       steps: storedSteps(steps, { ...fresh, skippedPhotos: change.skipped ?? fresh.skippedPhotos }, change.resume ?? fresh.resume, randomUUID()) as unknown as Json,
       current_step: next, stage: stageOf(next), updated_at: now.toISOString(),
     }).eq('id', fresh.id).eq('owner_id', fresh.ownerId).is('cancelled_at', null).is('completed_at', null)
@@ -130,7 +133,11 @@ export async function saveWizardResume(l: LaunchSnapshot, input: unknown, now = 
     // attachment after the action's initial read. This runs again after every collision.
     if (resume.phase === 'builder' && (fresh.spaceId || fresh.resume?.phase === 'launch')) return null
     if (options?.requireUnattached && fresh.spaceId) return null
-    return { resume, ...(resume.phase === 'builder' || options?.requireUnattached ? { requireUnattached: true as const } : {}) }
+    // Only a validated full builder draft can change the launch's canonical niche/intents.
+    // Metadata-only cookies cannot choose these columns; attached Spaces and handovers retain their state.
+    const builderSeed = resume.phase === 'builder' && resume.draft?.modeHint
+      ? { niche: resume.draft.niche, intents: [...resume.draft.goals] } : undefined
+    return { resume, ...(builderSeed ? { builderSeed } : {}), ...(resume.phase === 'builder' || options?.requireUnattached ? { requireUnattached: true as const } : {}) }
   }, now, claim) : null
 }
 

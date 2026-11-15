@@ -190,6 +190,7 @@ Every key action in the member journey emits a named event. Initial set:
 | Event | Emitted when | Key props |
 |---|---|---|
 | `account.created` | new auth user / profile row | source (oauth/email) |
+| `lead.captured` | server-confirmed durable lead saved; stable key deduplicates retries | closed source only |
 | `onboarding.induction_completed` ✅ | beta induction finished | hasAvatar, hasIntent |
 | `onboarding.vera_opened` ✅ | reached the Vera concierge | — |
 | `onboarding.step_viewed` | a tour coachmark shows | step id |
@@ -240,7 +241,36 @@ build time.
   (service account; this is what the Google Analytics MCP also uses) as a dashboard widget — or,
   simplest, link out to GA. Open decision.
 
+### Durable lead conversion mirror
+
+`recordVerifiedLeadCapture` is called only after the capture RPC returns a durable lead ID. Its server-only `lead.captured` event records the first-party fact and maps to GA4 `generate_lead` only on the first ledger insert. Browser identity is required; missing identity and explicit-null background captures never get a synthetic Google ID. The lead-only mirror rechecks canonical browser consent and the verified account’s analytics choice, excludes actual platform and team staff even during role previews, and withholds on unavailable identity or staff evidence. Google receives only `lead_source` from the closed source catalog, never contact details, the lead ID or private practice context. A declined or unavailable mirror does not remove the already accepted first-party fact. This conversion is prospective; it does not backfill historical Google events.
+
 ## Privacy
+
+### Request-backed analytics eligibility
+
+The root layout stays static. Its pure inline bootstrap checks the current browser choice first,
+then requests `/api/analytics/policy` with same-origin credentials and no caching. That route
+returns only `{allowed: boolean}`, with private/no-store response headers. It checks the verified
+session, the real profile's web role, team membership and account consent. View-as identities do
+not supply permission; unavailable account evidence denies. A known anonymous visitor can still
+use the existing opt-out default outside the prior-consent region.
+
+Google configuration, the global tag function and its external loader appear only after that
+positive decision. Closed campaign identifiers are retained; human campaign labels, search terms,
+private page names and arbitrary query values are excluded. External referrers retain only their
+origin. When Google is disabled for a preview or lacks its measurement ID, the same policy resolver
+still supports first-party product events without loading Google.
+
+Client events recheck browser consent and the positive policy flag. Account/staff changes,
+withdrawal and cross-tab policy updates invalidate that flag synchronously. A stale in-flight
+response cannot restore a revoked decision. The member collector rechecks policy server-side;
+request identity, checkout attribution, sign-up and verified-lead mirrors share the same request
+policy. A browser/staff suppression cookie can deny permission, never grant it.
+
+Authoritative background business-ledger writes keep their existing semantics. This request policy
+does not reinterpret webhook execution as an anonymous browser request; background mirrors and
+their existing account-consent and captured-checkout-metadata rules remain separate.
 
 - First-party events are internal product telemetry tied to the member's own account — no
   *additional* cookies, no new consent surface.

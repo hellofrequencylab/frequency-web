@@ -57,7 +57,7 @@ async function outbox() {
       return { error }
     } }) } },
   }
-  const queue = load('lib/queue/outbox.ts', { '@/lib/supabase/admin': { createAdminClient: () => client }, '@/lib/queue/terminal-error': load('lib/queue/terminal-error.ts'), '@/lib/observability/slos': load('lib/observability/slos.ts') })
+  const queue = load('lib/queue/outbox.ts', { '@/lib/supabase/admin': { createAdminClient: () => client }, '@/lib/queue/terminal-error': load('lib/queue/terminal-error.ts'), '@/lib/observability/slos': load('lib/observability/slos.ts'), '@/lib/crm/lead-magnet-resource-policy': load('lib/crm/lead-magnet-resource-policy.ts', { '@/lib/env/string': load('lib/env/string.ts') }) })
   const job = extra => ({ id: 'job', kind: 'push', payload: {}, attempts: 0, max_attempts: 5, created_at: new Date().toISOString(), ...extra })
   for (const mode of ['returned-ack', 'thrown-ack', 'retry', 'dead-letter', 'deferral', 'parking']) {
     state.updates = []; let calls = 0

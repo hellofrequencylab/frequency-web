@@ -1,5 +1,6 @@
 'use server'
 
+import { recordConfirmedRsvp } from '@/lib/analytics/rsvp-telemetry'
 import { revalidatePath } from 'next/cache'
 import { approvalResetOnEdit } from '@/lib/collective/network-tools'
 import { clearEventDecisions } from '@/lib/collective/network-tools-store'
@@ -17,7 +18,6 @@ import { processGamificationEvent, recordStreakActivity } from '@/lib/achievemen
 import { awardGems } from '@/lib/gems'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
-import { track } from '@/lib/analytics/track'
 import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import {
   propagateAnchorEditsToOccurrences,
@@ -1167,9 +1167,7 @@ function rsvpWriteFailure(error: { message?: string } | null | undefined): Actio
 // FAIL-SAFE: `track()` already swallows its ledger write, and this is called un-awaited. An
 // analytics row never delays or breaks an RSVP.
 function recordRsvpConversion(eventId: string, profileId: string): void {
-  void track('event.rsvp', { eventId }, profileId, {
-    idempotencyKey: `event.rsvp:${eventId}:${profileId}`,
-  }).catch((e) => console.error('[events rsvp analytics]', e))
+  void recordConfirmedRsvp(eventId, profileId)
 }
 
 // Does this event make people wait for the host? Reads `events.rsvp_requires_approval`

@@ -24,7 +24,7 @@ import { POPOVER_DISMISS_SCRIPT } from '@/lib/ui/popover-dismiss'
 import { ThemeModeSync } from '@/components/layout/theme-mode-sync'
 import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
-import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { FirstPartyAnalyticsPolicy, GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { CookieBanner } from "@/components/consent/cookie-banner";
 import { WebVitals } from "@/components/analytics/web-vitals";
 import { Analytics } from "@/components/analytics/vercel-analytics";
@@ -229,9 +229,10 @@ export default function RootLayout({
         <JsonLd data={[organizationSchema({ foundingLocation: FOUNDING_PLACE, sameAs: SOCIAL_PROFILES }), websiteSchema()]} />
         {/* GA4 — inert unless NEXT_PUBLIC_GA_MEASUREMENT_ID is set in production, and, since
             OWN-061, inert for a visitor in the prior-consent region who has not said yes. The
-            decision is made here in the head, synchronously, from the consent cookies the edge and
-            the banner write; the layout stays static and the shell bundle gains nothing. */}
+            browser law is checked synchronously; the head then waits for the private request-policy
+            decision before loading GA. The layout stays static without server auth imports. */}
         <GoogleAnalytics />
+        <FirstPartyAnalyticsPolicy />
       </head>
       <body className="min-h-full flex flex-col">
         {/* Anonymous Core Web Vitals capture (no cookies, no profile link — keeps the

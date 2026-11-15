@@ -35,7 +35,8 @@ import { lastAccentAt, lastKitFrom, rememberAccent, rememberKit } from '@/lib/cr
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import type { DoorArrival } from '@/lib/create-space/door'
 import { isHandleShape } from '@/lib/create-space/handle'
-import { intentsFromOffer } from '@/lib/create-space/intents-from-offer'
+import { chooseDraftNiche, goalsFromNicheOffer, nicheArrival } from '@/lib/create-space/niche-draft'
+import type { NicheChoice } from '@/lib/create-space/niche-choices'
 import { browserZone, leadEmailOf } from '@/lib/create-space/lead'
 import { SIGNAL_URL, visitorKeyFrom } from '@/lib/create-space/signal'
 import type { CreateSpaceSignal } from '@/lib/create-space/signal'
@@ -84,12 +85,12 @@ const slotSrc = (slot: string, list: readonly string[], fallback: string, own?: 
 
 type Phase = 'build' | 'saved'
 
-function Island({ arrival, draftToken, initialResume = null, timedEntry = false }: { arrival: DoorArrival; draftToken: string | null; initialResume?: WizardResume | null; timedEntry?: boolean }) {
+function Island({ arrival, draftToken, initialResume = null, timedEntry = false, nicheChoices = [] }: { arrival: DoorArrival & { modeHint?: string }; draftToken: string | null; initialResume?: WizardResume | null; timedEntry?: boolean; nicheChoices?: readonly NicheChoice[] }) {
   // A door's hints (lib/create-space/door.ts) prime the start: the name is typed in, the goals light the preview's
   // offer cards before a sentence is written, and the niche rides to the launch. Nothing is marked done for them.
   // The accent picked beside the kit's Use button arrives picked: they chose it there, so it is not asked again.
   const [draft, setDraft] = useState<BuilderDraft>(() => initialResume?.draft ?? ({
-    ...emptyDraft(arrival.kit, arrival.chosen), name: arrival.name, goals: arrival.goals, niche: arrival.niche,
+    ...emptyDraft(arrival.kit, arrival.chosen), name: arrival.name, goals: arrival.goals, niche: arrival.niche, ...(arrival.modeHint ? { modeHint: arrival.modeHint } : {}),
     ...(arrival.accentAt !== undefined ? { accentAt: arrival.accentAt, accentPicked: true } : {}),
   }))
   const [step, setStep] = useState(initialResume?.draft ? initialResume.cursor : 0)
@@ -187,9 +188,9 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false 
   }, [draft, resume])
 
   useEffect(() => {
-    if (!restored.current || sealed.current || awaitingResume.current || resume || (!draft.name && step === 0 && !draft.kitChosen)) return
+    if (!restored.current || sealed.current || awaitingResume.current || resume || (!draft.name && step === 0 && !draft.kitChosen && !draft.niche && !draft.modeHint)) return
     const value = parseWizardResume({ version: 1, phase: 'builder', cursor: step, theme: draft.kit,
-      accentAt: draft.accentAt, niche: draft.niche, goals: draft.goals, timedEntry: timed,
+      accentAt: draft.accentAt, niche: draft.niche, goals: draft.goals, modeHint: draft.modeHint, timedEntry: timed,
       draft, leadToken: draft.leadToken })
     if (!value) return
     try { window.localStorage.setItem(RESUME_KEY, JSON.stringify(value)) } catch { /* private window */ }
@@ -334,7 +335,7 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false 
   const pct = progressOf(draft, !building)
   const started = hasName || step > 0 || !building
   const busy = busyLine !== null
-  const mode3 = startingModeFor(draft.goals)
+  const mode3 = startingModeFor(draft.goals, draft.modeHint)
   const startedAt = draft.startedAt ? Date.parse(draft.startedAt) : NaN
   const endAt = building ? now : (draft.endedAt ? Date.parse(draft.endedAt) : now)
   const elapsedMs = Number.isFinite(startedAt) && now ? Math.max(0, endAt - startedAt) : 0
@@ -397,7 +398,7 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false 
     setBusyLine(0)
     window.clearInterval(timers.current.line)
     timers.current.line = window.setInterval(() => setBusyLine((l) => Math.min((l ?? 0) + 1, MOCKUP_LINES.length - 1)), MOCKUP_LINE_MS)
-    const goals = intentsFromOffer(offer)
+    const goals = goalsFromNicheOffer(draft, offer)
     signal('createspace.offer', { example_used: (OFFER_EXAMPLES as readonly string[]).includes(offer.trim()), intents: goals.join(',') })
     timers.current.mock = window.setTimeout(() => {
       window.clearInterval(timers.current.line)
@@ -405,7 +406,7 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false 
       markDone('offer', { offer, goals })
       setContentKey((k) => k + 1)
       setBusyLine(null)
-      flash(`Mock-up ready. Switched on ${joinList(startingModeFor(goals).tools.map((t) => t.toLowerCase()))}`)
+      flash(`Mock-up ready. Switched on ${joinList(startingModeFor(goals, draft.modeHint).tools.map((t) => t.toLowerCase()))}`)
       advance(done, 1)
     }, MOCKUP_MIN_MS)
   }
@@ -499,7 +500,7 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false 
         <div className="cs-grid" data-mode={mode}>
           <div className="cs-top">
             <div className="cs-top-row">
-              <LookRows kits={PREVIEW_KITS} kit={draft.kit} accents={accents} accentAt={draft.accentAt} onKit={onKit} onAccent={onAccent} />
+              <LookRows kits={PREVIEW_KITS} kit={draft.kit} accents={accents} accentAt={draft.accentAt} onKit={onKit} onAccent={onAccent} niches={nicheChoices} niche={draft.niche} nicheDisabled={busy} onNiche={(id) => edit((d) => chooseDraftNiche(d, nicheChoices, id))} />
               <div className="cs-badge">
                 <span className="cs-dot" />
                 <b>Draft</b>
@@ -619,9 +620,9 @@ const noopSubscribe = () => () => {}
 let bootCookie: string | undefined
 const firstCookie = () => (bootCookie ??= document.cookie)
 
-function FromUrl({ initialResume }: { initialResume: WizardResume | null }) {
+function FromUrl({ initialResume, nicheChoices }: { initialResume: WizardResume | null; nicheChoices: readonly NicheChoice[] }) {
   const params = useSearchParams()
-  const asked = doorArrival((k) => params.get(k))
+  const asked = nicheArrival(doorArrival((k) => params.get(k)), nicheChoices, params.get('niche'), params.get('mode'))
   // No kit in the address: start on the one they last looked at or last picked here (lib/create-space/last-kit.ts), with
   // the accent they last picked. Read after mount, because this page is static. An explicit ?kit= wins, and so does ?accent=.
   const cookie = useSyncExternalStore(noopSubscribe, firstCookie, () => null as string | null)
@@ -629,13 +630,13 @@ function FromUrl({ initialResume }: { initialResume: WizardResume | null }) {
   const kit = asked.chosen ? asked.kit : last ?? asked.kit
   const accentAt = asked.accentAt ?? (cookie ? lastAccentAt(kit, cookie) ?? undefined : undefined)
   const arrival = { ...asked, kit, chosen: asked.chosen || !!last, ...(accentAt !== undefined ? { accentAt } : {}) }
-  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.accentAt ?? ''}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}`} arrival={arrival} draftToken={params.get('draft')} initialResume={initialResume} timedEntry={params.get('timer') === '12' || params.get('entry') === '12-minutes'} />
+  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.accentAt ?? ''}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}:${arrival.modeHint ?? ''}`} arrival={arrival} draftToken={params.get('draft')} initialResume={initialResume} nicheChoices={nicheChoices} timedEntry={params.get('timer') === '12' || params.get('entry') === '12-minutes'} />
 }
 
-export function CreateSpaceStudio({ initialResume = null }: { initialResume?: WizardResume | null }) {
+export function CreateSpaceStudio({ initialResume = null, nicheChoices = [] }: { initialResume?: WizardResume | null; nicheChoices?: readonly NicheChoice[] }) {
   return (
-    <Suspense fallback={<Island arrival={doorArrival(() => null)} draftToken={null} />}>
-      <FromUrl initialResume={initialResume} />
+    <Suspense fallback={<Island arrival={doorArrival(() => null)} draftToken={null} nicheChoices={nicheChoices} />}>
+      <FromUrl initialResume={initialResume} nicheChoices={nicheChoices} />
     </Suspense>
   )
 }

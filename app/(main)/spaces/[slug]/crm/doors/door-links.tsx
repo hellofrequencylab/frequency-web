@@ -248,6 +248,7 @@ function MagnetMaker({ slug }: { slug: string }) {
           onChange={setResource}
           placeholder="https://…"
         />
+        <p className="text-body-sm text-subtle">Add a resource link for an email copy. Leave it blank for a contact-only link.</p>
         <MakeButton status={status}>Make the unlock link</MakeButton>
       </form>
       <LinkResultRow url={url} error={error} />

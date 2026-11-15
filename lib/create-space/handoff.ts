@@ -25,7 +25,7 @@ export function parseHandoff(raw: unknown): BuilderDraft | null {
 /** The launch hold for a draft. */
 export function holdFor(draft: BuilderDraft): Omit<PendingLaunch, 'savedAt'> {
   return {
-    // The niche a /for or /go door named rides through (lib/create-space/door.ts); the builder never asks for one.
+    // The canonical niche named by a door or chosen in the hero rides through.
     niche: draft.niche,
     intents: [...draft.goals],
     answers: {

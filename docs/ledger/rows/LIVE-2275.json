@@ -4,15 +4,16 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/ANALYTICS.md",
     "ref": "Owner analytics dashboard and user-flow request, 2026-11-13."
   },
-  "detail": "Production deployment dpl_4tJA2zajUgC3xgoUc2iVjx5kZYr9 for merged #4924 (main 2f1209773f76706f113bb38317e8ae6fa8494c9d) failed on 2026-11-14 at 02:21:09 UTC. The production alias continues serving 4e1e6aa; the build-specific failure cause requires Vercel logs and is not inferred. This safety rollback restores every application/source/test blob introduced or changed by #4924 to its exact 4e1e6aa version. The complete implementation remains preserved on codex/analytics-tracking. The frozen scripts/probes/analytics-tracking.mjs remains unchanged and now fails against the restored application, so this capability is honestly reopened. CI-only compiler provisioning and optional diagnostics remain to avoid the measured process-capacity OOM; no production artifact criterion, SQL, probe or independent test assertion was modified.",
+  "detail": "Production deployment dpl_4tJA2zajUgC3xgoUc2iVjx5kZYr9 for merged #4924 (main 2f1209773f76706f113bb38317e8ae6fa8494c9d) failed on 2026-11-14 at 02:21:09 UTC. The production alias continues serving 4e1e6aa; the build-specific failure cause requires Vercel logs and is not inferred. This safety rollback restores every application/source/test blob introduced or changed by #4924 to its exact 4e1e6aa version. The complete implementation remains preserved on codex/analytics-tracking. The frozen scripts/probes/analytics-tracking.mjs remains unchanged and now fails against the restored application, so this capability is honestly reopened. CI-only compiler provisioning and optional diagnostics remain to avoid the measured process-capacity OOM; no production artifact criterion, SQL, probe or independent test assertion was modified. Owner-directed restoration resumes the honestly reopened row after reproducing the frozen probe failure and actual runtime boundaries. The root remains static with pure imports: the production inline bootstrap waits for one private/no-store same-origin request-policy response before Google configuration or loading. It resolves browser choice, verified real account, staff/team and account consent through the shared LIVE-2299 leaf. Unknown request evidence fails closed, outside-region known anonymous behavior remains compatible, and no view-as identity grants permission. Explicit withdrawal and account/staff changes synchronously invalidate browser flags; generation guards reject stale responses and cross-tab withdrawal suppresses already loaded tags. First-party eligibility remains available without a Google measurement ID or on preview, while Google stays disabled. Actual identity/checkout/signup/client collector boundaries share the policy, closed attribution and private names/referrers stay pixel-safe. Background authoritative business ledgers and webhook mirror behavior are not rewritten. The original analytics-tracking.mjs probe is byte-identical and now passes. New actual production-component and real request-chain tests reproduce baseline head14 failures/1 pass and client7 failures/1 pass, then pass on the candidate. The only preexisting test edit adds an eligible request-policy fixture to the old account-scope unit matrix; every original expectation is unchanged, with strict real policy denial cases added separately. Real artifact and deployment acceptance remain release requirements; synthetic tests are not live browser/account proof.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/analytics-tracking.mjs"
+    "cmd": "node scripts/probes/analytics-tracking.mjs && node scripts/probes/analytics-consent-runtime.mjs"
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-14"
 }

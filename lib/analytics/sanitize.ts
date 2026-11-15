@@ -195,3 +195,28 @@ export function pixelSafeProps(
   }
   return out
 }
+
+/** Closed attribution values only. Human labels, arbitrary search terms and private query values stay off pixels. */
+export function pixelSafeAttributionQuery(search: string): string {
+  const input = new URLSearchParams(search)
+  const output = new URLSearchParams()
+  const pairs = ['email/email', 'qr_scan/qr', 'partner/referral', 'google/cpc', 'instagram/social', 'facebook/social', 'frequency/email']
+  const source = (input.get('utm_source') ?? '').toLowerCase()
+  const medium = (input.get('utm_medium') ?? '').toLowerCase()
+  if (pairs.includes(`${source}/${medium}`)) {
+    output.set('utm_source', source)
+    output.set('utm_medium', medium)
+  }
+  for (const key of ['utm_campaign', 'utm_id']) {
+    const value = input.get(key) ?? ''
+    // Compatibility for already-sent Email Studio links only. The old prefix is not a full UUID join.
+    const legacyEmail = key === 'utm_campaign' && source === 'frequency' && medium === 'email' && /^email-[0-9a-f]{8}$/i.test(value)
+    if (/^(?:[0-9]{1,32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.test(value) || legacyEmail) output.set(key, value)
+  }
+  for (const key of ['gclid', 'dclid', 'gbraid', 'wbraid']) {
+    const value = input.get(key) ?? ''
+    if (/^[A-Za-z0-9_-]{20,200}$/.test(value)) output.set(key, value)
+  }
+  const encoded = output.toString()
+  return encoded ? `?${encoded}` : ''
+}

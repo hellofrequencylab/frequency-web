@@ -31,6 +31,7 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
 
   // ── Server-authoritative lifecycle + engagement (recorded server-side only) ──
   { name: 'account.created', category: 'lifecycle', description: 'New auth user / profile row (props.source).', clientEmittable: false },
+  { name: 'lead.captured', category: 'lifecycle', description: 'A server-confirmed durable lead was saved (props.source).', clientEmittable: false },
   { name: 'onboarding.induction_completed', category: 'lifecycle', description: 'Finished the beta induction (props.hasAvatar, props.hasIntent).', clientEmittable: false },
   { name: 'onboarding.vera_opened', category: 'lifecycle', description: 'Reached the Vera onboarding concierge.', clientEmittable: false },
   { name: 'profile.completed', category: 'lifecycle', description: 'Name / handle / avatar set.', clientEmittable: false },
