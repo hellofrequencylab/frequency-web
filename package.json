@@ -8,7 +8,7 @@
     "postbuild": "node scripts/check-build-memory.mjs && node scripts/check-build-budget.mjs && node scripts/check-og-trace.mjs && node scripts/check-cache-budget.mjs && node scripts/check-shell-weight.mjs && node scripts/check-build-fanout.mjs && node scripts/check-notfound-routes.mjs",
     "predev": "node --experimental-strip-types --no-warnings scripts/write-design-assets.mjs --dev && node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_OPTIONS=--max-old-space-size=2048 MIMALLOC_PURGE_DELAY=0 next build",
     "start": "next start",
     "prelint": "node scripts/preflight-lint.mjs",
     "lint": "eslint --max-warnings=0 --cache --cache-strategy content",
