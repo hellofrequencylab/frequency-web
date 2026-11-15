@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2280",
+  "title": "Show classic growth, participation and measured user-flow friction",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "source": {
+    "file": "docs/ANALYTICS.md",
+    "ref": "Owner request: complete analytics reporting, campaign and user-flow dashboards using the design system, 2026-11-13. Owner2026-11-15 additionally requests a classic growth area."
+  },
+  "detail": "The private Growth tab composes existing design-system charts, infographics and tables for first-party acquisition, mature seven-day signup activation, mature 28-day attendance retention, host-confirmed participation, campaign and captured-lead cohorts, ordered builder visits and measured flow friction. The requested classic AARRR area shows referral outcomes and cohort revenue as unavailable instead of invented zeroes. The Growth journey is an overview of independent visitor, signup, community and Space populations with explicit windows; unmeasured visitors and created Spaces never inherit unrelated counts or cross-population ratios. Campaign links use opaque identifiers; exports neutralize spreadsheet formulas; visible-tab refresh does not call a model; explicit AI requests use coarse allowlisted evidence through the existing accounting gateway. The experiment panel mounts without starting a pilot. Current main Google/privacy/campaign/deduplication/email-off/Hunts source and all historical SQL are preserved. The unchanged pure probe fails on main because Growth modules are absent; the new independent classic-area UI regression failed before those sections existed. Existing tests and assertions remain unchanged. Initial current-base validation passes47 focused tests,29-file changed lint, isolated PostgreSQL role/cohort integration and admin/function/schema guards. Full Supabase replay, pgTAP, Auth/PostgREST staging, production activation and native Google account edits remain pending. Captured main766068 contains Hunts51000. Root explicitly authorized never-applied Growth50200 to52000 (after an earlier owner-approved47000 to50200 retime); SQL SHA50741416abd3550288f8699c68e81a303c21ee94efb5a80d88bf4ba202f54b0e stays byte-identical, and the frozen SQL probe changes only its filename literal, never an assertion or fixture. Quest follows separately at52500. Actual Hunts production parity must be restored before Growth staging/application. No production SQL, email, pilot, rollout flag, money or provider setting is changed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/analytics-growth-contract.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-15"
+}
