@@ -4,10 +4,11 @@ import { createRequire } from 'node:module'
 import vm from 'node:vm'
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
+const env = { LEAD_MAGNET_RESOURCE_EMAIL_ENABLED: '1' }
 function sourceModule(path, stubs) {
   const code = ts.transpileModule(readFileSync(path, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText
   const loaded = { exports: {} }
-  new vm.Script('(function(require,module,exports){' + code + '\n})', { filename: path }).runInNewContext({ URL, Date, process: { env: {} }, console })(name => {
+  new vm.Script('(function(require,module,exports){' + code + '\n})', { filename: path }).runInNewContext({ URL, Date, process: { env }, console })(name => {
     assert.ok(Object.hasOwn(stubs, name), 'Unexpected dependency: ' + name)
     return stubs[name]
   }, loaded, loaded.exports)
@@ -32,7 +33,10 @@ await action.captureUnlock(input)
 assert.equal(deliveries.length, 1, 'A failed capture cannot become a mail relay')
 await action.captureUnlock({ ...input, company: 'bot' })
 assert.equal(deliveries.length, 1, 'Honeypots must never email')
+const environment = sourceModule('lib/env/string.ts', {})
+const policy = sourceModule('lib/crm/lead-magnet-resource-policy.ts', { '@/lib/env/string': environment })
 const io = sourceModule('lib/crm/lead-magnet-resource-io.ts', {
+  './lead-magnet-resource-policy': policy,
   'server-only': {}, 'node:crypto': require('node:crypto'),
   '@/lib/email': { enqueueEmail: async (email, options) => queued.push({ email, options }) },
   '@/lib/suppression': { isSuppressed: async () => suppressed },

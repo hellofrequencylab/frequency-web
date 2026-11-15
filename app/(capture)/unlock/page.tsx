@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { parseLeadLink, isSafeHttpUrl } from '@/lib/crm/lead-links'
+import { resourceReceiptEmailEnabled } from '@/lib/crm/lead-magnet-resource-policy'
 import { loadSpaceName } from '@/lib/crm/capture-context'
 import { CaptureShell } from '@/components/crm/leads/capture-shell'
 import { CaptureForm } from '@/components/crm/leads/capture-form'
@@ -33,17 +34,18 @@ export default async function UnlockPage({ searchParams }: { searchParams: Promi
   const spaceName = await loadSpaceName(payload.s)
   const magnet = payload.l?.trim() || 'this'
   const hasResource = isSafeHttpUrl(payload.r)
+  const offerEmailCopy = hasResource && resourceReceiptEmailEnabled()
 
   return (
     <CaptureShell
       eyebrow={spaceName}
       title={hasResource ? (payload.l?.trim() ? `Get ${magnet}.` : 'Get it.') : 'Stay in touch.'}
-      description={hasResource ? 'Leave your email to open it now and request an email copy.' : 'Share your details with the people who sent you this link.'}
+      description={hasResource ? (offerEmailCopy ? 'Leave your email to open it now and request an email copy.' : 'Leave your email to open it now.') : 'Share your details with the people who sent you this link.'}
     >
       <CaptureForm
         token={t as string}
         submit={captureUnlock}
-        submitLabel={hasResource ? 'Send it to me' : 'Share my details'}
+        submitLabel={hasResource ? (offerEmailCopy ? 'Send it to me' : 'Open the resource') : 'Share my details'}
         consentNote={
           <>
             By leaving your email you&apos;ll also get the occasional note from {spaceName}. It&apos;s a

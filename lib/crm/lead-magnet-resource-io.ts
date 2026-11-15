@@ -6,6 +6,7 @@ import { enqueueEmail } from '@/lib/email'
 import { isSuppressed } from '@/lib/suppression'
 import { claimOnce } from '@/lib/rate-limit'
 import { log } from '@/lib/log'
+import { resourceReceiptEmailEnabled } from './lead-magnet-resource-policy'
 import { buildLeadMagnetResourceEmail, resourceEmailUrl } from './lead-magnet-resource-email'
 
 /** One requested copy per address/Space/hour across ALL resources. The durable hourly key still
@@ -13,6 +14,7 @@ import { buildLeadMagnetResourceEmail, resourceEmailUrl } from './lead-magnet-re
 export async function sendLeadMagnetResource(input: {
   spaceId: string; email: string; resourceUrl: string; label?: string | null; now?: Date
 }): Promise<'queued' | 'skipped' | 'limited' | 'failed'> {
+  if (!resourceReceiptEmailEnabled()) return 'skipped'
   try {
     const email = input.email.trim().toLowerCase()
     const resourceUrl = resourceEmailUrl(input.resourceUrl)

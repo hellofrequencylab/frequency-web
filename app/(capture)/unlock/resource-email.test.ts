@@ -36,6 +36,7 @@ const blank = { name: 'Maya', email: ' MAYA@Example.com ', phone: '', company: '
 const token = (resource = 'https://example.com/guide.pdf') => signLeadLink(makeLeadLinkPayload({ s: 'space', d: 'lead_magnet', l: 'First gathering checklist', ...(resource ? { r: resource } : {}) }))
 const request = { spaceId: 'space', email: 'maya@example.com', resourceUrl: 'https://example.com/guide.pdf', label: 'Guide', now: new Date('2026-11-14T12:30:00Z') }
 beforeEach(() => {
+  vi.stubEnv('LEAD_MAGNET_RESOURCE_EMAIL_ENABLED', '1')
   vi.stubEnv('OPTIN_CONFIRM_SECRET', 'test-only-resource-signing-secret')
   state.capture = true; state.captureThrows = false; state.firstTouch = false; state.allowed = true
   state.claimed = true; state.suppressed = false; state.queueFailure = false
@@ -45,6 +46,15 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs())
 
 describe('requested resource delivery through the real outbox boundary', () => {
+  it.each(['', '0', 'false', 'off', 'unknown'])('off rollout %s preserves capture and inline access without queue IO', async value => {
+    vi.stubEnv('LEAD_MAGNET_RESOURCE_EMAIL_ENABLED', value)
+    const result = await captureUnlock({ ...blank, token: token() })
+    expect(result).toMatchObject({ ok: true, link: { href: request.resourceUrl } })
+    expect(state.captureCalls).toBe(1)
+    expect(state.rows.size).toBe(0)
+    expect(state.claims).toHaveLength(0)
+  })
+
   it('an existing contact gets the signed resource copy and immediate reveal', async () => {
     const result = await captureUnlock({ ...blank, token: token() })
     expect(result).toMatchObject({ ok: true, link: { href: request.resourceUrl } })
