@@ -63,7 +63,7 @@ describe('POST /api/track is consent-gated (SCAN-765)', () => {
     const res = await POST(request(pageView))
     expect(res.status).toBe(204)
     expect(state.consentCalls).toEqual([['profile-1', 'analytics']])
-    expect(state.tracked).toEqual([['nav.page_view', { path: '/feed' }, 'profile-1']])
+    expect(state.tracked).toEqual([['nav.page_view', { path: '/feed' }, 'profile-1', { mirrorGa: false }]])
   })
 
   it('answers 204 and never calls track() when analytics consent is off', async () => {
