@@ -42,6 +42,19 @@ describe('applyClaim', () => {
     expect(seen.p_idempotency_key).toBe('key-0000001')
   })
 
+  it('sends the expected progress count, or null when the caller has none, and keeps it out of the request hash', async () => {
+    const seen: Record<string, unknown>[] = []
+    const rpc = async (_fn: string, args: Record<string, unknown>) => {
+      seen.push(args)
+      return { data: { result: 'stale_progress' }, error: null }
+    }
+    expect(await applyClaim(rpc, { ...input, expectedProgressCount: 3 })).toEqual({ result: 'stale_progress', claimId: undefined, replayed: false })
+    await applyClaim(rpc, input)
+    expect(seen[0].p_expected_progress_count).toBe(3)
+    expect(seen[1].p_expected_progress_count).toBeNull()
+    expect(seen[0].p_request_hash).toBe(seen[1].p_request_hash)
+  })
+
   it('reports a replay', async () => {
     const out = await applyClaim(async () => ({ data: { result: 'credited', replayed: true }, error: null }), input)
     expect(out.replayed).toBe(true)
@@ -50,6 +63,23 @@ describe('applyClaim', () => {
   it('throws on a database error and on an answer it does not know', async () => {
     await expect(applyClaim(async () => ({ data: null, error: { message: 'boom' } }), input)).rejects.toThrow('boom')
     await expect(applyClaim(async () => ({ data: { result: 'maybe' }, error: null }), input)).rejects.toThrow('does not know')
+  })
+})
+
+describe('the progress guard migration', () => {
+  const code = readFileSync(join('supabase', 'migrations', '20270346052000_hunt_claim_progress_guard.sql'), 'utf8')
+    .split('\n')
+    .filter((l) => !l.trim().startsWith('--'))
+    .join('\n')
+    .toLowerCase()
+
+  it('replaces the old signature, counts under the run lock before any write, and stays service role only', () => {
+    expect(code).toContain('drop function if exists public.hunt_claim_apply(uuid, uuid, text, uuid, text, text, text, text)')
+    expect(code).toContain('p_expected_progress_count integer default null')
+    expect(code.indexOf('for update')).toBeLessThan(code.indexOf('stale_progress'))
+    expect(code.indexOf('stale_progress')).toBeLessThan(code.indexOf('insert into public.hunt_claims'))
+    expect(code).toContain('revoke all on function public.hunt_claim_apply(uuid, uuid, text, uuid, text, text, text, text, integer) from public, anon, authenticated')
+    expect(code).toContain('grant execute on function public.hunt_claim_apply(uuid, uuid, text, uuid, text, text, text, text, integer) to service_role')
   })
 })
 
