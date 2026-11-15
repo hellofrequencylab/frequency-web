@@ -2,6 +2,84 @@
   "version": 1,
   "registrations": [
     {
+      "pullRequest": 4994,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346052000_hunt_claim_progress_guard.sql",
+          "sha256": "eda5033171512b3daee86bfdbffeac8a31ae8442156435aedb4c698596e362ca"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/FH-049T.json",
+          "status": "modified",
+          "sha256": "b3facba7f36328d596cf512f0d8a35cd26a639be3dc64723781d1ab56d3715a2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/apply-claim.test.ts",
+          "status": "modified",
+          "sha256": "c4987493587b0b24f478a0d1ceb9b8499ede1b4eebc63fb07491b1bec1600a51",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/apply-claim.ts",
+          "status": "modified",
+          "sha256": "30e13864bcb46c1fa98d337aa03096d2e7370b75933f1e4cf767811f8a8bb8e0",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/claim-store.test.ts",
+          "status": "modified",
+          "sha256": "e969f7e25194af93d31f24083469d46e580c5f629495f47de965329299361317",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/claim-store.ts",
+          "status": "modified",
+          "sha256": "49f99501df58beff194ab84013af3da5122fc9e6aa2ee685e1c10624cf2dc9af",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/run-store.ts",
+          "status": "modified",
+          "sha256": "435c575f5e17323492100df26be6a5ea477bb4fd7f96d78d80abe804b112d45a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346052000_hunt_claim_progress_guard.sql",
+          "status": "added",
+          "sha256": "eda5033171512b3daee86bfdbffeac8a31ae8442156435aedb4c698596e362ca",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunt_claim_progress_guard.test.sql",
+          "status": "added",
+          "sha256": "192db3d83a517ba1052d8ce4deae6b5dd249c8e1df41e0cc445d4838a36427e8",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "522262e06e8c2928e73aaf8528faae02a7d3a74116fbe85995df9c3ae3cc6b18",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
+    },
+    {
       "pullRequest": 4960,
       "expiresAt": "2026-11-16T23:59:59Z",
       "migrations": [
