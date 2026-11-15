@@ -48,7 +48,8 @@ test('strict candidate parity executes trusted main code and candidate remains d
  assert.doesNotMatch(w,/run:.*(?:node|bash|sh) [^\n]*rollback-candidate/)
 })
 
-import { safeParityResult } from './diagnose-strict-migration-parity.mjs'
+import { safeParityResult, strictParity, LEDGER_QUERY } from './diagnose-strict-migration-parity.mjs'
+import { existsSync, statSync } from 'node:fs'
 test('strict guard output filter never forwards provider bodies or accepts a skipped comparison',()=>{
  const secret='private provider body token'
  assert.deepEqual(safeParityResult({status:1,stderr:secret,stdout:secret}),{category:'strict_guard_failed'})
@@ -57,4 +58,30 @@ test('strict guard output filter never forwards provider bodies or accepts a ski
  const result=safeParityResult({status:0,stdout:text})
  assert.deepEqual(result,{category:'strict_version_name_parity',guardExit:0,repoCount:897,ledgerCount:897,versionsSha256:'a'.repeat(64),versionNameSha256:'b'.repeat(64)})
  assert.doesNotMatch(JSON.stringify(result),/private|token/)
+})
+
+test('fresh untouched ledger JSON reaches only documented trusted guard data input then is removed',async()=>{
+ const rows=Array.from({length:400},(_,i)=>({version:String(20240101000000+i),name:'test'}))
+ const raw=JSON.stringify(rows,null,2);let file
+ const runner=(node,args,opts)=>{
+  file=args[3];assert.equal(args[1],'--require-ledger');assert.equal(args[2],'--ledger')
+  assert.equal(args[0],'/reviewed/trusted-guard/scripts/check-migrations.mjs');assert.equal(opts.cwd,'/reviewed/rollback-candidate')
+  assert.equal(readFileSync(file,'utf8'),raw);assert.equal(statSync(file).mode&0o777,0o600)
+  return {status:0,stdout:'✅ Migration ledger parity: 400 repo file(s) ⇄ 400 applied row(s), identical on version and name.\n   versions sha256 `'+ 'a'.repeat(64) +'` · version+name sha256 `'+ 'b'.repeat(64) +'`'}
+ }
+ const result=await strictParity('/reviewed',runner,async(url,opts)=>{
+  assert.equal(url,`https://api.supabase.com/v1/projects/${PROJECT}/database/query`)
+  assert.deepEqual(JSON.parse(opts.body),{query:LEDGER_QUERY,read_only:true})
+  return {status:201,text:async()=>raw}
+ },{SUPABASE_PROJECT_REF:PROJECT,SUPABASE_ACCESS_TOKEN:'secret'})
+ assert.equal(result.category,'strict_version_name_parity');assert.equal(existsSync(file),false)
+})
+test('ledger fetch and shape failures remain closed and never execute a guard with invented data',async()=>{
+ const env={SUPABASE_PROJECT_REF:PROJECT,SUPABASE_ACCESS_TOKEN:'secret'};let called=false
+ const runner=()=>{called=true}
+ const denied=await strictParity('/reviewed',runner,async()=>({status:403,text:async()=>'private provider body secret'}),env)
+ assert.deepEqual(denied,{category:'ledger_fetch_failed',httpStatus:403})
+ const invalid=await strictParity('/reviewed',runner,async()=>({status:201,text:async()=>'{}'}),env)
+ assert.deepEqual(invalid,{category:'ledger_payload_refused'});assert.equal(called,false)
+ assert.doesNotMatch(JSON.stringify([denied,invalid]),/secret|private/)
 })
