@@ -1,0 +1,17 @@
+{
+  "id": "FH-020V",
+  "title": "Hunts FH-020V: Release held Hunt claims and give the opt-in an authoring surface",
+  "lane": "program",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-020U (2026-11-15)."
+  },
+  "detail": "Requires FH-020U. Register migration 20270346053000 through the serial HYG-217 process (policy-only PR first), record pgTAP and exact-head workflow_dispatch db-tests, real API acceptance, the approved apply sequence and Frequency Community ledger parity. Add the authoring control for evidence_policy.hold_for_review on a mission placement (lib/studio entity, no raw JSON field). Word a held answer for the player (Trail) in the play and scan screens, and route the claim.held result. Review and appeal UI follow the separate staff authorization ruling. Hunts switches stay OFF until the gate passes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const s=fs.readFileSync(\"app/(main)/hunts/[slug]/play/actions.ts\",\"utf8\");process.exit(/\\bheld\\b/.test(s)&&fs.readdirSync(\"lib/studio/entities\").some(f=>fs.readFileSync(\"lib/studio/entities/\"+f,\"utf8\").includes(\"hold_for_review\"))?0:1)'"
+  }
+}
