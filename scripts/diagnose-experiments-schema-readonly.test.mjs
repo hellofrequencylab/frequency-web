@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { schemaResult, verifySchema, EXPECTED,CATALOG_QUERY,PROVENANCE_QUERY,EXPECTED_SQL_SHA256 } from './diagnose-experiments-schema-readonly.mjs'
+import { schemaResult, verifySchema, EXPECTED,CATALOG_QUERY,PROVENANCE_QUERY,EXPECTED_SQL_SHA256,tableDifferences } from './diagnose-experiments-schema-readonly.mjs'
 import { PROJECT } from './diagnose-migration-readonly.mjs'
 const provenance={nameMatches:true,statementType:'null',statementCount:null,singleStatementSha256:null}
 test('reviewed isolated catalog has exactly two tables eight protected functions and two triggers',()=>{
@@ -47,4 +47,13 @@ test('owner context is reported separately and full definition drift is detected
  const result=schemaResult(copy,provenance);assert.equal(result.schemaCatalogMatches,true);assert.equal(result.ownerContexts[0].superuser,false)
  copy.functions[0].definitionSha256='0'.repeat(64);assert.equal(schemaResult(copy,provenance).functionDefinitionMatches,false)
  assert.ok(CATALOG_QUERY.includes('TRUNCATE,REFERENCES,TRIGGER'));assert.ok(CATALOG_QUERY.includes('pg_get_functiondef'))
+})
+
+test('bounded table differences expose only known metadata names, booleans and digests',()=>{
+ const actual=structuredClone(EXPECTED.tables);actual[0].anonAnyData=true
+ actual[0].constraints=actual[0].constraints.filter(c=>!c.definition.startsWith('NOT NULL'))
+ actual[0].constraints.push({name:'private provider body email@example.test',definition:'private raw SQL source'})
+ const diff=tableDifferences(actual);assert.ok(diff.some(d=>d.field==='anonAnyData'&&d.expected===false&&d.actual===true))
+ assert.ok(diff.some(d=>d.field==='constraints'&&d.missing.every(m=>m.kind==='not_null')))
+ assert.doesNotMatch(JSON.stringify(diff),/private|provider|email@example|raw SQL source/)
 })
