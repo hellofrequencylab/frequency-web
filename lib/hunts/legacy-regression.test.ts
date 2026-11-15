@@ -121,7 +121,7 @@ describe('FH-011S legacy regression with every Hunt switch off', () => {
     expect(work).not.toHaveBeenCalled()
     expect(onFailure).not.toHaveBeenCalled()
     await runLegacyPaths()
-    expect(errors.mock.calls.filter((c) => String(c[0]).startsWith('[hunts-'))).toEqual([])
+    expect(errors.mock.calls.filter((c: unknown[]) => String(c[0]).startsWith('[hunts-'))).toEqual([])
     // The same wrapper reports 'ok' once the switch is on, so 'skipped' is a real, distinguishable signal.
     setAll('1')
     await expect(guarded('order-projection', work, onFailure)).resolves.toBe('ok')
