@@ -210,18 +210,23 @@ export async function startOrResumeRun(trail: Pick<PublishedTrail, 'huntId' | 'v
 
 /** The credits a run holds. Only `credited` rows count; reversed or void rows are history. */
 export async function loadRunCredits(runId: string, profileId: string): Promise<Credit[]> {
-  return (await loadRunCreditsForClaim(runId, profileId)) ?? []
+  return (await loadRunProgressSnapshot(runId, profileId))?.credits ?? []
 }
 
-/** The claim adapter distinguishes unavailable progress from an empty, authorized run. */
-export async function loadRunCreditsForClaim(runId: string, profileId: string): Promise<Credit[] | null> {
+/** One complete read of a run's progress: every row's total (any disposition) and the credited missions.
+ * The claim command compares the total under its run lock, so the credits and the count must come from
+ * the same read. Null when the run is not the subject's or the read is truncated or malformed. */
+export async function loadRunProgressSnapshot(runId: string, profileId: string): Promise<{ credits: Credit[]; total: number } | null> {
   const client = db()
   // Ownership first: a run id is not a secret, so the read is scoped to its subject.
   const { data: run, error: runError } = await client.from('hunt_runs').select('id').eq('id', runId).eq('subject_profile_id', profileId).maybeSingle()
   if (runError || !run) return null
-  const progress = await client.from('hunt_progress').select('mission_key', { count: 'exact' }).eq('run_id', runId).eq('disposition', 'credited')
+  const progress = await client.from('hunt_progress').select('mission_key, disposition', { count: 'exact' }).eq('run_id', runId)
   if (!completeRows(progress)) return null
-  const rows = progress.data as Credit[]
+  const rows = progress.data as { mission_key: unknown; disposition?: unknown }[]
   if (rows.some((row) => typeof row.mission_key !== 'string')) return null
-  return rows.map((row) => ({ mission_key: row.mission_key }))
+  return {
+    total: rows.length,
+    credits: rows.filter((row) => row.disposition === 'credited').map((row) => ({ mission_key: row.mission_key as string })),
+  }
 }

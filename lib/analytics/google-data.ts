@@ -2,13 +2,15 @@
 // No arbitrary endpoint, property or report query is accepted from a browser.
 import { pixelSafePath } from './sanitize.ts'
 export interface GoogleReport {
-  id: 'acquisition' | 'landing_pages' | 'conversions' | 'audience_summary' | 'user_populations' | 'page_activity' | 'actions'
+  id: 'acquisition' | 'landing_pages' | 'conversions' | 'audience_summary' | 'user_populations' | 'page_activity' | 'actions' | 'daily_activity' | 'outcome_totals'
   label: string
   dimensions: string[]
   metrics: string[]
   rows: Array<{ dimensions: Record<string, string>; metrics: Record<string, number> }>
   warnings: string[]
   rowCount: number
+  coverage?: { completeRows: boolean; thresholded: boolean; sampled: boolean; otherRowLoss: boolean }
+  currencyCode?: string
 }
 interface GoogleAnalyticsData {
   state: 'available'
@@ -33,6 +35,8 @@ export const GOOGLE_DATA_REPORTS = [
   { id: 'user_populations', label: 'New and returning users', dimensions: ['newVsReturning'], metrics: ['activeUsers', 'totalUsers', 'sessions', 'engagedSessions'] },
   { id: 'page_activity', label: 'Page activity', dimensions: ['pagePath', 'deviceCategory'], metrics: ['screenPageViews', 'activeUsers', 'userEngagementDuration', 'sessions'] },
   { id: 'actions', label: 'Recorded actions and events', dimensions: ['eventName'], metrics: ['eventCount', 'totalUsers'] },
+  { id: 'daily_activity', label: 'Daily acquisition and engagement', dimensions: ['date'], metrics: ['sessions', 'engagedSessions', 'keyEvents'] },
+  { id: 'outcome_totals', label: 'Outcome totals across campaigns', dimensions: ['eventName'], metrics: ['eventCount', 'keyEvents', 'purchaseRevenue'] },
 ] as const
 type ReportSpec = typeof GOOGLE_DATA_REPORTS[number]
 const object = (value: unknown): Record<string, unknown> | null => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
@@ -47,15 +51,27 @@ export function googleReportingConfig(env: Record<string, string | undefined> = 
 
 export function googleReportRequest(spec: ReportSpec, hostname: string) {
   const host = { filter: { fieldName: 'hostName', stringFilter: { matchType: 'EXACT', value: hostname, caseSensitive: false } } }
-  const dimensionFilter = spec.id === 'conversions'
+  const dimensionFilter = (spec.id === 'conversions' || spec.id === 'outcome_totals')
     ? { andGroup: { expressions: [host, { filter: { fieldName: 'eventName', inListFilter: { values: ['sign_up', 'generate_lead', 'purchase'] } } }] } }
     : host
   return {
     dateRanges: [PERIOD], dimensions: spec.dimensions.map((name) => ({ name })),
     metrics: spec.metrics.map((name) => ({ name })), dimensionFilter,
-    orderBys: [{ metric: { metricName: spec.metrics[0] }, desc: true }],
+    orderBys: spec.id === 'daily_activity'
+      ? [{ dimension: { dimensionName: 'date', orderType: 'ALPHANUMERIC' }, desc: false }]
+      : [{ metric: { metricName: spec.metrics[0] }, desc: true }],
     limit: '100', keepEmptyRows: false, returnPropertyQuota: true,
   }
+}
+
+/** GA's date dimension is a property-calendar date, never a browser/UTC timestamp conversion. */
+export function googleReportingDate(value: string): string | null {
+  if (!/^[0-9]{8}$/.test(value)) return null
+  const year = Number(value.slice(0, 4)), month = Number(value.slice(4, 6)), day = Number(value.slice(6, 8))
+  const date = new Date(0)
+  date.setUTCFullYear(year, month - 1, day)
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null
+  return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`
 }
 
 /** Schema mismatches, omitted values and nonfinite metrics are failures, never synthetic zeros. */
@@ -77,6 +93,8 @@ export function parseGoogleReport(spec: ReportSpec, raw: unknown): GoogleReport 
       dimensions: Object.fromEntries(spec.dimensions.map((key, i) => {
         const text = object(dimensions[i])?.value
         if (typeof text !== 'string') throw new Error('invalid_google_dimension')
+        if (key === 'date' && googleReportingDate(text) === null) throw new Error('invalid_google_date')
+        if (spec.id === 'outcome_totals' && !['sign_up', 'generate_lead', 'purchase'].includes(text)) throw new Error('invalid_google_outcome')
         // Private report labels are bounded, never HTML and never passed to the AI brief.
         return [key, (key === 'landingPage' || key === 'pagePath' ? pixelSafePath(text) : text).replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 256)]
       })),
@@ -89,6 +107,7 @@ export function parseGoogleReport(spec: ReportSpec, raw: unknown): GoogleReport 
       })),
     }
   })
+  if ((spec.id === 'daily_activity' || spec.id === 'outcome_totals') && new Set(rows.map(row => JSON.stringify(row.dimensions))).size !== rows.length) throw new Error('duplicate_google_grain')
   const metadata = object(body.metadata)
   const warnings = ['GA processing latency and consent exclusions apply. Staff/bot filtering depends on the property configuration.']
   warnings.push('Reporting dates follow the GA property time zone; they may differ from first-party UTC windows.')
@@ -104,7 +123,10 @@ export function parseGoogleReport(spec: ReportSpec, raw: unknown): GoogleReport 
   if (metadata?.subjectToThresholding === true) warnings.push('Google privacy thresholding can hide eligible rows.')
   if (metadata?.dataLossFromOtherRow === true) warnings.push('High-cardinality dimensions caused data loss into the other row.')
   if (Array.isArray(metadata?.samplingMetadatas) && metadata.samplingMetadatas.length) warnings.push('Google sampled this report; do not treat it as an exact operational count.')
-  return { id: spec.id, label: spec.label, dimensions: [...spec.dimensions], metrics: [...spec.metrics], rows, rowCount, warnings }
+  return { id: spec.id, label: spec.label, dimensions: [...spec.dimensions], metrics: [...spec.metrics], rows, rowCount, warnings,
+    coverage: { completeRows: rowCount === rows.length, thresholded: metadata?.subjectToThresholding === true, sampled: Array.isArray(metadata?.samplingMetadatas) && metadata.samplingMetadatas.length > 0, otherRowLoss: metadata?.dataLossFromOtherRow === true },
+    ...(typeof metadata?.currencyCode === 'string' && /^[A-Z]{3}$/.test(metadata.currencyCode) ? { currencyCode: metadata.currencyCode } : {}),
+  }
 }
 
 async function boundedJson(response: Response): Promise<unknown> {

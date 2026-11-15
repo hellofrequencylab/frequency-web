@@ -52,4 +52,20 @@ describe('Google growth reporting presentation', () => {
     expect(html).not.toContain('form_start')
   })
 
+  it('renders complete event-grain outcomes and observed daily bars without claiming absent outcomes are zero', async () => {
+    const coverage = { completeRows: true, thresholded: false, sampled: false, otherRowLoss: false }
+    mocks.read.mockResolvedValue({ state: 'available', propertyId: '539919559', hostname: 'frequencylocal.com', computedAt: '2026-11-15T00:00:00Z', period: { startDate: '30daysAgo', endDate: 'yesterday' }, reports: [
+      { id: 'outcome_totals', label: 'Outcome totals', dimensions: ['eventName'], metrics: ['eventCount'], rowCount: 1, warnings: [], coverage, rows: [{ dimensions: { eventName: 'generate_lead' }, metrics: { eventCount: 8, keyEvents: 0, purchaseRevenue: 0 } }] },
+      { id: 'daily_activity', label: 'Daily activity', dimensions: ['date'], metrics: ['sessions'], rowCount: 1, warnings: [], coverage, rows: [{ dimensions: { date: '20261114' }, metrics: { sessions: 12, engagedSessions: 4, keyEvents: 0 } }] },
+    ] } satisfies GoogleAnalyticsReading)
+    const html = renderToStaticMarkup(await GoogleGrowthPanel())
+    expect(html).toContain('Outcomes across campaigns')
+    expect(html).toContain('0 events counted as key events')
+    expect(html).toContain('Not reported')
+    expect(html).toContain('2026-11-14: 12 sessions')
+    expect(html).toContain('Missing dates are not zero-filled')
+    expect(html).toContain('https://analytics.google.com/analytics/web/#/p539919559')
+    expect(html).toContain('Zero key events does not mean zero recorded leads')
+  })
+
 })

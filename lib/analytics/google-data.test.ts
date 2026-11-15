@@ -6,7 +6,7 @@ const body = (i = 0) => {
   return {
     dimensionHeaders: spec.dimensions.map((name) => ({ name })), metricHeaders: spec.metrics.map((name) => ({ name })),
     rowCount: 1,
-    rows: [{ dimensionValues: spec.dimensions.map(() => ({ value: 'campaign' })), metricValues: spec.metrics.map((key) => ({ value: key.endsWith('Rate') ? '0.25' : '4' })) }],
+    rows: [{ dimensionValues: spec.dimensions.map(key => ({ value: key === 'date' ? '20261101' : spec.id === 'outcome_totals' ? 'purchase' : 'campaign' })), metricValues: spec.metrics.map((key) => ({ value: key.endsWith('Rate') ? '0.25' : '4' })) }],
   }
 }
 describe('Google report contracts', () => {
@@ -61,7 +61,7 @@ describe('Google report contracts', () => {
     const request = vi.fn(async () => new Response(JSON.stringify(body(i++))))
     const reading = await readGoogleReports({ propertyId: '123', hostname: 'frequencylocal.com' }, 'token', request)
     expect(reading.state).toBe('available')
-    if (reading.state === 'available') expect(reading.reports.map((r) => r.id)).toEqual(['acquisition', 'landing_pages', 'conversions', 'audience_summary', 'user_populations', 'page_activity', 'actions'])
+    if (reading.state === 'available') expect(reading.reports.map((r) => r.id)).toEqual(['acquisition', 'landing_pages', 'conversions', 'audience_summary', 'user_populations', 'page_activity', 'actions', 'daily_activity', 'outcome_totals'])
   })
   it('supports a no-dimension audience total without summing overlapping user populations', () => {
     const spec = GOOGLE_DATA_REPORTS.find((r) => String(r.id) === 'audience_summary')
@@ -81,4 +81,18 @@ describe('Google report contracts', () => {
       expect(spec.metrics.some((m) => m === 'activeUsers' || m === 'totalUsers')).toBe(true)
     }
   })
+  it('validates the calendar and independent outcome grains instead of accepting malformed provider totals', () => {
+    const daily = GOOGLE_DATA_REPORTS.findIndex(report => report.id === 'daily_activity')
+    const outcomes = GOOGLE_DATA_REPORTS.findIndex(report => report.id === 'outcome_totals')
+    const raw = body(daily)
+    raw.rows[0].dimensionValues[0].value = '20260230'
+    expect(() => parseGoogleReport(GOOGLE_DATA_REPORTS[daily], raw)).toThrow('invalid_google_date')
+    const duplicate = body(outcomes)
+    duplicate.rows.push(duplicate.rows[0]); duplicate.rowCount = 2
+    expect(() => parseGoogleReport(GOOGLE_DATA_REPORTS[outcomes], duplicate)).toThrow('duplicate_google_grain')
+    const unexpected = body(outcomes)
+    unexpected.rows[0].dimensionValues[0].value = 'page_view'
+    expect(() => parseGoogleReport(GOOGLE_DATA_REPORTS[outcomes], unexpected)).toThrow('invalid_google_outcome')
+  })
+
 })

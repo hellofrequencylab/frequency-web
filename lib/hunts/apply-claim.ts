@@ -1,6 +1,6 @@
 /**
  * The application side of the Hunt claim command (FH-010). The database does the work in one
- * transaction (supabase/migrations/20270346037000_hunt_claim_apply.sql, `hunt_claim_apply`); this file
+ * transaction (supabase/migrations/20270346037000_hunt_claim_apply.sql, then 20270346052000_hunt_claim_progress_guard.sql, `hunt_claim_apply`); this file
  * holds the two things the caller computes around it: the request hash that makes an idempotency key
  * mean one payload, and the call itself with the answer narrowed to a known set.
  *
@@ -20,6 +20,8 @@ export type ClaimInput = {
   evidenceId: string
   assurance: Assurance
   idempotencyKey: string
+  /** Total hunt_progress rows (any disposition) in the snapshot the caller evaluated; null/absent skips the check. */
+  expectedProgressCount?: number | null
 }
 
 /** Every answer the database gives. Anything else is a bug and throws rather than reading as success. */
@@ -37,12 +39,13 @@ const RESULTS = [
   'mission_closed',
   'placement_not_valid',
   'assurance_too_low',
+  'stale_progress',
 ] as const
 
 type ClaimResult = (typeof RESULTS)[number]
 
 /** Hash of everything that defines the request except the key itself, so reusing a key for a different proof is a conflict. */
-export function claimRequestHash(input: Omit<ClaimInput, 'idempotencyKey'>): string {
+export function claimRequestHash(input: Omit<ClaimInput, 'idempotencyKey' | 'expectedProgressCount'>): string {
   const canonical = JSON.stringify([
     input.actorId,
     input.runId,
@@ -67,6 +70,7 @@ export async function applyClaim(rpc: Rpc, input: ClaimInput): Promise<{ result:
     p_assurance: input.assurance,
     p_idempotency_key: input.idempotencyKey,
     p_request_hash: claimRequestHash(input),
+    p_expected_progress_count: input.expectedProgressCount ?? null,
   })
   if (error) throw new Error(`hunt_claim_apply failed: ${error.message}`)
   const answer = data as { result?: string; claim_id?: string; replayed?: boolean } | null

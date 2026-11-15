@@ -20,7 +20,7 @@ import { authorizeClaim, checkScope, type ClaimRefusal, type ScopeFacts } from '
 import { huntSwitchOn } from './flags'
 import { evaluate, validateGraph } from './graph'
 import { issueClaimToken } from './placement'
-import { isPublishedTrailVersion, loadPublishedTrail, loadRunCreditsForClaim } from './run-store'
+import { isPublishedTrailVersion, loadPublishedTrail, loadRunProgressSnapshot } from './run-store'
 import { huntRpc, loadUniquePlacementMission } from './staff-store'
 
 // eslint-disable-next-line no-restricted-syntax -- the FH-005 hunt tables are not in the generated types yet (ADR-246 exception)
@@ -127,17 +127,26 @@ export async function claimAsPlayer(
   const decision = authorizeClaim({ actorId, facts: scope.facts, token: input.token, secret: secret(), nowEpoch: input.nowEpoch, missionKey: scope.missionKey, idempotencyKey: input.idempotencyKey })
   if (!decision.ok) return decision
 
-  const [trail, credits] = await Promise.all([
+  const [trail, first] = await Promise.all([
     loadPublishedTrail(scope.huntSlug),
-    loadRunCreditsForClaim(scope.runId, actorId),
+    loadRunProgressSnapshot(scope.runId, actorId),
   ])
   if (!trail || trail.huntId !== scope.huntId || trail.versionId !== scope.versionId || trail.huntState !== 'published'
-    || !credits || !validateGraph(trail.graph).ok) return { ok: false, reason: 'eligibility_unavailable' }
+    || !first || !validateGraph(trail.graph).ok) return { ok: false, reason: 'eligibility_unavailable' }
 
-  // The run lock still protects the write. The dark rollout requires FH-049T before activation.
-  const evaluation = evaluate(trail.graph, credits, input.nowEpoch * 1000)
-  if (evaluation.credited.includes(scope.missionKey)) return { ok: true, result: 'already_credited', replayed: false }
-  if (!evaluation.eligible.includes(scope.missionKey)) return { ok: false, reason: 'mission_not_eligible' }
-  const out = await applyClaim(huntRpc() as never, decision.input)
-  return { ok: true, ...out }
+  // FH-049T: the credits and the progress count come from one snapshot. The database compares the count
+  // under the run lock and answers stale_progress when a progress row landed since. Then the snapshot is
+  // reread and the graph reevaluated, once, before one more call: two attempts at most, never a loop.
+  let snapshot = first
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const evaluation = evaluate(trail.graph, snapshot.credits, input.nowEpoch * 1000)
+    if (evaluation.credited.includes(scope.missionKey)) return { ok: true, result: 'already_credited', replayed: false }
+    if (!evaluation.eligible.includes(scope.missionKey)) return { ok: false, reason: 'mission_not_eligible' }
+    const out = await applyClaim(huntRpc() as never, { ...decision.input, expectedProgressCount: snapshot.total })
+    if (out.result !== 'stale_progress' || attempt === 1) return { ok: true, ...out }
+    const reread = await loadRunProgressSnapshot(scope.runId, actorId)
+    if (!reread) return { ok: false, reason: 'eligibility_unavailable' }
+    snapshot = reread
+  }
+  return { ok: false, reason: 'eligibility_unavailable' }
 }

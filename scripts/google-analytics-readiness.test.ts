@@ -16,7 +16,7 @@ it('returns safe verification metadata without tokens, campaign labels, metric v
     const spec = GOOGLE_DATA_REPORTS[i++]
     return new Response(JSON.stringify({
       dimensionHeaders: spec.dimensions.map((name) => ({ name })), metricHeaders: spec.metrics.map((name) => ({ name })),
-      rowCount: 1, rows: [{ dimensionValues: spec.dimensions.map(() => ({ value: 'private-campaign-label' })), metricValues: spec.metrics.map(() => ({ value: '0' })) }],
+      rowCount: 1, rows: [{ dimensionValues: spec.dimensions.map(key => ({ value: key === 'date' ? '20261101' : spec.id === 'outcome_totals' ? 'purchase' : 'private-campaign-label' })), metricValues: spec.metrics.map(() => ({ value: '0' })) }],
     }))
   })
   const result = await verifyGoogleReporting({ env: { GA4_REPORTING_PROPERTY_ID: '123456789', GA4_REPORTING_ACCESS_TOKEN: 'secret-access-token' }, request })

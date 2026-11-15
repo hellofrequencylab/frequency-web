@@ -2,6 +2,8 @@ import { RowCard } from '@/components/cards/row-card'
 import { DashArea, GraphTile, Tile, TileGrid } from '@/components/admin/dash'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { FreshnessNote } from '@/components/admin/freshness-note'
+import { WeekBars, RingGauge } from '@/components/admin/spark-charts'
+import { googleGrowthOverview, googlePropertyUrl, GOOGLE_OUTCOMES } from '@/lib/analytics/google-overview'
 import { RankList } from '@/components/admin/rank-list'
 import { StatusChip } from '@/components/admin/status'
 import { ProgressTrack } from '@/components/ui/progress-track'
@@ -17,7 +19,7 @@ const LABELS: Record<string, string> = {
   eventCount: 'Recorded actions', purchaseRevenue: 'Purchase revenue (property currency)',
   newVsReturning: 'New or returning', pagePath: 'Page', activeUsers: 'Active users',
   totalUsers: 'Reported users', newUsers: 'New users', screenPageViews: 'Page views',
-  userEngagementDuration: 'Engagement seconds',
+  userEngagementDuration: 'Engagement seconds', date: 'Reporting date',
 }
 const ACTION_LABELS: Record<string, string> = {
   page_view: 'Page viewed', nav_page_view: 'App route viewed', session_start: 'Session started',
@@ -47,6 +49,8 @@ export async function GoogleGrowthPanel() {
       </Tile></TileGrid>
     </DashArea>
   )
+  const overview = googleGrowthOverview(reading.reports)
+  const propertyUrl = googlePropertyUrl(reading.propertyId)
   const acquisition = reading.reports.find((r) => r.id === 'acquisition')
   const conversions = reading.reports.find((r) => r.id === 'conversions')
   const audience = reading.reports.find((r) => r.id === 'audience_summary')?.rows[0]?.metrics
@@ -74,6 +78,22 @@ export async function GoogleGrowthPanel() {
           </div>
           <p className="mt-3 text-meta text-muted">{audience.engagedSessions.toLocaleString()} engaged sessions · {audience.eventCount.toLocaleString()} recorded events. Google identities are not verified unique people; these totals are separate from overlapping page and event rows.</p>
         </Tile>}
+        <GraphTile label="Daily acquisition" span={2} caption="Sessions by returned property-calendar date. Missing dates are not zero-filled; see Report detail for exact dates.">
+          {overview.daily.points.length ? <div role="img" aria-label={overview.daily.points.map(point => `${point.date}: ${point.sessions} sessions`).join('; ')}>
+            <div className="h-24"><WeekBars values={overview.daily.points.map(point => point.sessions)} height={96} /></div>
+            <p className="mt-3 text-meta text-muted">{overview.daily.points[0].date} through {overview.daily.points.at(-1)?.date} · {overview.daily.points.length} returned dates</p>
+          </div> : <p className="text-body-sm text-muted">{overview.daily.state === 'empty' ? 'Google returned no daily rows for this period.' : 'Daily activity is not reported with complete coverage.'}</p>}
+        </GraphTile>
+        <GraphTile label="Session engagement" caption="Google engagement is not verified member activation, attendance or cohort retention.">
+          {overview.engagement.rate !== null ? <RingGauge pct={overview.engagement.rate} label="Sessions engaged" sub="of measured sessions" /> : <p className="text-body-sm text-muted">Engagement rate not reported with a valid complete denominator.</p>}
+        </GraphTile>
+        <Tile label="Outcomes across campaigns" span={3} caption="Independent event-grain totals, not sums of top campaign rows. Recorded events can repeat and are not unique people. Missing or limited readings stay unknown.">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {GOOGLE_OUTCOMES.map(event => <StatCard key={event} label={ACTION_LABELS[event]} value={overview.outcomes[event].events ?? 'Not reported'} detail={overview.outcomes[event].keyEvents === null ? 'Key-event count not reported' : `${overview.outcomes[event].keyEvents} events counted as key events`} />)}
+            <StatCard label="Purchase revenue" value={overview.revenue !== null && overview.currencyCode ? `${overview.revenue.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${overview.currencyCode}` : 'Not reported'} detail="Google property currency; not profit or Stripe reconciliation" />
+          </div>
+          <p className="mt-3 text-meta text-muted">A recorded signup or lead event is separate from its configured key-event count. Zero key events does not mean zero recorded leads. Retention, member referrals and Space creation require their own first-party readings.</p>
+        </Tile>
         <GraphTile label="New and returning activity" caption="Active users in each measured population. The same user can be new and returning within this period; do not add the rows as a unique-user total.">
           {populations.length ? <ol className="space-y-4">{populations.map((row) => <li key={row.dimensions.newVsReturning}>
             <div className="flex justify-between gap-2 text-body-sm"><span>{populationLabel(row.dimensions.newVsReturning)}</span><strong>{row.metrics.activeUsers.toLocaleString()} active users</strong></div>
@@ -104,9 +124,9 @@ export async function GoogleGrowthPanel() {
             </li>
           })}</ol> : <p className="text-body-sm text-muted">No acquisition rows were reported for this hostname and period.</p>}
         </GraphTile>
-        <Tile label="Reported conversion events" caption="Counts across returned campaign rows. These are events, not unique leads, customers or attendance.">
+        <Tile label="Conversion events in returned campaign rows" caption="Counts across returned campaign rows. These are events, not unique leads, customers or attendance.">
           <RankList items={[...conversionCounts].map(([value, n]) => ({ value, n })).sort((a, b) => b.n - a.n)} empty="No conversion-event rows reported in this period." />
-          <a className={buttonClasses('ghost', 'sm', 'mt-3')} href="https://analytics.google.com/" target="_blank" rel="noreferrer">Inspect the Google property</a>
+          <a className={buttonClasses('ghost', 'sm', 'mt-3')} href={propertyUrl ?? 'https://analytics.google.com/'} target="_blank" rel="noreferrer">Inspect the Google property</a>
         </Tile>
         {warnings.length > 0 && <Tile label="Reporting coverage" span={3}><ul className="space-y-2 text-meta text-muted">{warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></Tile>}
         <Tile label="Report detail" span={3}>
