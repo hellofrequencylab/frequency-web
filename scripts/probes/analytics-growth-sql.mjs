@@ -18,7 +18,7 @@ await db.exec(`
   create table create_space_drafts(created_at timestamptz);
   create table signup_leads(created_at timestamptz, attribution jsonb default '{}', converted_profile_id uuid, id uuid default gen_random_uuid());
 `)
-const migration = readFileSync(new URL('../../supabase/migrations/20270346052000_analytics_growth_snapshot.sql', import.meta.url), 'utf8')
+const migration = readFileSync(new URL('../../supabase/migrations/20270346060000_analytics_growth_snapshot.sql', import.meta.url), 'utf8')
 await db.exec(migration)
 await assert.rejects(db.query('select analytics_growth_snapshot()'), /not authorized/)
 await db.exec(`set role anon`)
