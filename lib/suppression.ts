@@ -36,10 +36,11 @@ const norm = (email: string) => email.trim().toLowerCase()
 export async function isSuppressed(email: string, spaceId?: string): Promise<boolean> {
   const addr = norm(email)
   try {
-    const { data } = await db()
+    const { data, error } = await db()
       .from('email_suppressions')
       .select('space_id')
       .eq('email', addr)
+    if (error) return true
     const rows = data ?? []
     if (!spaceId) {
       // Global-only: a row whose space_id is NULL.
