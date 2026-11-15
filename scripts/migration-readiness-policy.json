@@ -2652,6 +2652,284 @@
         "Real local service, anon and authenticated Quest support API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 4997,
+      "expiresAt": "2026-11-22T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346060000_analytics_growth_snapshot.sql",
+          "sha256": "50741416abd3550288f8699c68e81a303c21ee94efb5a80d88bf4ba202f54b0e"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": ".github/workflows/db-tests.yml",
+          "status": "modified",
+          "sha256": "506e7faa637aed0e801df7bb5d83c24a8dbb681156f7c01768431856d77bffc2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/admin/insights/growth-actions.ts",
+          "status": "added",
+          "sha256": "424243564739dd61d5481d7eb915abeae5077e109287d5d08d71b4a1af72ff26",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/admin/insights/page.tsx",
+          "status": "modified",
+          "sha256": "460729e8864b09b5db522dcc30fbe3c4da81c0bddf475b29b8999e63e4710a68",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/campaign-link-builder.test.tsx",
+          "status": "added",
+          "sha256": "8145610cb62b6f75aa44776e8981254443001716f728b03488965cf103cf3bcd",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/campaign-link-builder.tsx",
+          "status": "added",
+          "sha256": "1b3999fc9cdbf357bff1e032316f1bf374aeb520ba1568e0642bba1361617b06",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/classic-growth-area.test.tsx",
+          "status": "added",
+          "sha256": "d0921bff16c2672a43cf276c61be88e4e21fbddaf169dce3fd114402659132d7",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/growth-tab.test.tsx",
+          "status": "added",
+          "sha256": "d486131298a34cd80762e7d4f39fd044dddd09740f61a27848203fd1ba7023d3",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/growth-tab.tsx",
+          "status": "added",
+          "sha256": "fecb811df274cd87934feafc587bcad6ba6c84a9e1d26932886d68cc2f4672d6",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/growth-tools.test.tsx",
+          "status": "added",
+          "sha256": "de933f80acf2a565ad62bd05fa14fe6c4ac730f42ced154f54dec27ab8314283",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/growth-tools.tsx",
+          "status": "added",
+          "sha256": "971b6a67490c03b67fe198bc14bf6266c771b02ef827ef96ed31565b6b84ac39",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/growth-visuals.tsx",
+          "status": "added",
+          "sha256": "9c6cdd89cb73889da6ce3441136381dd92eabb7d3f1248fcee51e7496b1a67b8",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/live-refresh.test.tsx",
+          "status": "added",
+          "sha256": "f93afdcf6e3e74d95d0083f3778e32c94763d84091af7127ed84617d79da5099",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/live-refresh.tsx",
+          "status": "added",
+          "sha256": "9142564f4068002093507252687ee09050bb880a88c85ff5fe3eee80d1fd071f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/user-flow-panel.test.tsx",
+          "status": "added",
+          "sha256": "851bd67d1d2d588fab41a01de59e26bd0a80bf15eb4074b072f692283f58f89d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/user-flow-panel.tsx",
+          "status": "added",
+          "sha256": "56457168e7ee9eb175f22fc8e0a062b931dc2a1002045a977450b7b95d159e8a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ANALYTICS.md",
+          "status": "modified",
+          "sha256": "a9a77ebeb1ced470b152fb089cc6dd3868a32597665c8b6c8e1d77f0ab003126",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2280.json",
+          "status": "added",
+          "sha256": "b062fa345996f81a327549b791a728d6f22401555efaa171b71568bc3689a9cb",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/ai/budget.ts",
+          "status": "modified",
+          "sha256": "d4f961dcf283457b9a2c88c4d8704a775ef96e997a13a81b6d6ae925a46492f5",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/campaign-links.test.ts",
+          "status": "added",
+          "sha256": "5a42a1744e2ba9732348351a7de1de7b7e9fa5529af33ed39da5627d6782500a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/campaign-links.ts",
+          "status": "added",
+          "sha256": "cade9a11fd3595586c0fb463bb51394426e2d2a1d291572902693fb2a0315a53",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/growth-read.test.ts",
+          "status": "added",
+          "sha256": "c141e55f529deeef56923ff866bcab002f5668dce959520038f5726fbbe1d74b",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/growth-read.ts",
+          "status": "added",
+          "sha256": "af4f0436a2e08f1fc57de1103c9a28194154d82e1a32fbce484e6d563eb9a1d8",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/growth.test.ts",
+          "status": "added",
+          "sha256": "891a0d0ba445bfbe2029bf6148124d74f587afc6a4386d174ec049e60fd629d5",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/growth.ts",
+          "status": "added",
+          "sha256": "353f3ae9a8dfb17ca61e225141fea300e12dbb360cd405b64b2d41ba0e2a462c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/user-flow.test.ts",
+          "status": "added",
+          "sha256": "9df029705d103274fc62e1ca3c1da3efc37575cce465264799a4e45e0b7f67c5",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/user-flow.ts",
+          "status": "added",
+          "sha256": "37dccc48e4cac787a32fb8f508b70c9c63483e1ee516ce6d5f9ba9d52984da93",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "68c3db3630be074a835abf9bb989af3099889ebee6cf6eba7817f75f6a0ad1cd",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/analytics-readiness.mjs",
+          "status": "added",
+          "sha256": "f762f41d11ce949fbef001cbac4a2949d0c912df56c75132c474e1b136a43483",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/analytics-readiness.test.ts",
+          "status": "added",
+          "sha256": "d6cd247f9c3d6e74e488b686847ccebab6e6da8fc6c217533a405f8d436b1585",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "eb6c22d92dc8f4b4b58e369cd6871fd5a28d310ee762913904a704eeb5d76389",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/analytics-growth-contract.mjs",
+          "status": "added",
+          "sha256": "0e3cd5ce6d396369ce17e37071658f7ac914bb698d6a92a660afcc4208845b68",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/analytics-growth-sql.mjs",
+          "status": "added",
+          "sha256": "ed0a320288d8afb9945d4382e1bfb48ec6d475fd0afa1a6f53bdad76290bcb47",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/analytics-growth-api.mjs",
+          "status": "added",
+          "sha256": "89e74f7c96e4c4f80a15e4048f13d7b624d14370e0ae805420f57eda0cab24ff",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346060000_analytics_growth_snapshot.sql",
+          "status": "added",
+          "sha256": "50741416abd3550288f8699c68e81a303c21ee94efb5a80d88bf4ba202f54b0e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/analytics_growth_snapshot.test.sql",
+          "status": "added",
+          "sha256": "7baa35dc17f3c65522a57429ab64de8661ad362d9865ebdde61fd1babe230486",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "test/fixtures/growth-dashboard.ts",
+          "status": "added",
+          "sha256": "5923f7c9105d320be338216f862efa269897ac8a39a4f247218be0676971c1c1",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "506e7faa637aed0e801df7bb5d83c24a8dbb681156f7c01768431856d77bffc2",
+      "apiAcceptanceStep": "Real local service, anon and authenticated growth API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated room API acceptance",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Real local service, anon and authenticated calendar suite API acceptance",
+        "Real local service, anon and authenticated analytics experiment API acceptance",
+        "Real local service, anon and authenticated growth API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
