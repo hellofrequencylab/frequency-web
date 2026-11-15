@@ -32,7 +32,13 @@ export const GOOGLE_REPORTING_SPEC = {
     { name: 'New and returning activity', dimensions: ['newVsReturning'], metrics: ['activeUsers', 'totalUsers', 'sessions', 'engagedSessions'], note: 'Users can appear in both populations during the same period.' },
     { name: 'Page activity', dimensions: ['pagePath', 'deviceCategory'], metrics: ['screenPageViews', 'activeUsers', 'userEngagementDuration', 'sessions'], note: 'Sanitized paths; engagement duration is seconds. Rows overlap and do not establish an ordered journey or abandonment.' },
     { name: 'Recorded actions', dimensions: ['eventName'], metrics: ['eventCount', 'totalUsers'], note: 'Repeated events and overlapping users are not conversions. Missing instrumentation cannot establish absence of an action.' },
+    { name: 'Daily acquisition and engagement', dimensions: ['date'], metrics: ['sessions', 'engagedSessions', 'keyEvents'], note: 'Chronological property-calendar dates. Missing dates are not filled with synthetic zeros; no person-level paths or cohort retention are inferred.' },
+    { name: 'Outcome totals across campaigns', dimensions: ['eventName'], metrics: ['eventCount', 'keyEvents', 'purchaseRevenue'], note: 'Hostname-bound totals for sign_up, generate_lead and purchase only, without campaign truncation. Observed eventCount is separate from configured keyEvents; absent rows and limited reporting remain unknown.' },
   ],
+  nativeGa4: {
+    savedReports: 'Requires an authorized Editor/Administrator browser session in the selected property. The published Data/Admin API contracts do not author Reports Library layouts.',
+    runtime: 'This app requests analytics.readonly. A working data connection does not mean a native saved report was created.',
+  },
   lookerStudio: {
     pages: ['Acquisition and landing pages', 'Campaign leads and first attendance', 'Participation and return', 'Measurement quality'],
     sources: ['GA4 connector', 'Private campaign outcome CSV export, or an approved aggregate warehouse view'],
