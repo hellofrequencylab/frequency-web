@@ -97,6 +97,30 @@ describe('Trail player hint reveal', () => {
     expect(await render('stop-1')).not.toMatch(/Show hint|Private hint/)
   })
 
+  it('renders the claim form and visited list with no hidden clue, place or hint in the markup', async () => {
+    const html = await render()
+    expect(html).toContain('Confirm stop')
+    expect(html).not.toContain('Stops you visited')
+    expect(html).not.toMatch(/Private hint|Clue [23]|Place [123]/)
+    store.loadRunCredits.mockResolvedValue([{ mission_key: 'stop-1' }])
+    const after = await render()
+    expect(after).toContain('Stops you visited')
+    expect(after).toContain('Place 1')
+    expect(after).toContain('Clue 2')
+    expect(after).not.toMatch(/Private hint|Clue 3|Place [23]/)
+  })
+
+  it('shows no claim form when claims are off, the Hunt is paused, or the Trail is finished', async () => {
+    vi.stubEnv('HUNTS_CLAIMS_ENABLED', '')
+    expect(await render()).not.toContain('Confirm stop')
+    vi.stubEnv('HUNTS_CLAIMS_ENABLED', 'on')
+    store.loadPublishedTrail.mockResolvedValue({ ...trail, huntState: 'paused' })
+    expect(await render()).not.toContain('Confirm stop')
+    store.loadPublishedTrail.mockResolvedValue(trail)
+    store.loadRunCredits.mockResolvedValue([{ mission_key: 'stop-1' }, { mission_key: 'stop-2' }, { mission_key: 'stop-3' }])
+    expect(await render()).not.toContain('Confirm stop')
+  })
+
   it('redirects a signed-out request before looking up a run', async () => {
     store.getMyProfileId.mockResolvedValue(null)
     await expect(render('stop-1')).rejects.toThrow('/sign-in?next=/hunts/coast-trail/play')

@@ -1,0 +1,18 @@
+{
+  "id": "FH-016T",
+  "title": "Hunts FH-016T: Visited-stops map, on-page scan entry and end-to-end player acceptance",
+  "lane": "program",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-016S (2026-11-15): the claim action, visited list and hint safety shipped; the map, scan entry and live acceptance remain."
+  },
+  "detail": "Add the map of visited stops from an authorized source of locations (visited stops only), the camera or scan entry on the player page, and run-version mission binding hardening. Done when: a player completes a Trail end to end from the page against a real database, a second device shows the same revision, and a hidden clue never reaches the page source. Requires: FH-016S, FH-049T. Owner role: Web.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"components/hunts/visited-stops-map.tsx\")?0:1)'"
+  },
+  "wave": "W7"
+}
