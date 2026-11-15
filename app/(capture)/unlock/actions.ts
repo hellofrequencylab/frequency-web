@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { parseLeadLink, isSafeHttpUrl } from '@/lib/crm/lead-links'
 import { captureLeadMagnet } from '@/lib/crm/lead-capture'
+import { sendLeadMagnetResource } from '@/lib/crm/lead-magnet-resource-io'
 import type { CaptureSubmitResult } from '@/components/crm/leads/capture-form'
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
@@ -41,7 +42,7 @@ export async function captureUnlock(input: {
 
   // A filled honeypot is a bot: show the same success, write nothing.
   if ((input.company || '').trim()) {
-    return { ok: true, heading: "You're in.", ...(reveal ? { link: reveal } : { message: 'Check your email.' }) }
+    return { ok: true, heading: "You're in.", ...(reveal ? { link: reveal } : { message: 'Ask the person who shared this link for the resource.' }) }
   }
 
   const hdrs = await headers()
@@ -52,16 +53,22 @@ export async function captureUnlock(input: {
 
   // Consent-native capture: the engine seals this lead 'subscribed'. Best-effort — never surface a
   // DB error to a visitor, and never reveal whether they were already on the list.
-  await captureLeadMagnet({
+  const captured = await captureLeadMagnet({
     spaceId: payload.s,
     email,
     displayName: name,
     magnetLabel: payload.l ?? null,
   }).catch(() => null)
 
+  // The capture must succeed before a public request can enqueue mail. Existing contacts may
+  // request a copy too; firstTouch is not a delivery gate. Never promise delivery or hide inline access.
+  if (captured && reveal) {
+    await sendLeadMagnetResource({ spaceId: payload.s, email, resourceUrl: reveal.href, label: payload.l }).catch(() => null)
+  }
+
   return {
     ok: true,
     heading: "You're in.",
-    ...(reveal ? { link: reveal } : { message: "It's on its way to your inbox." }),
+    ...(reveal ? { link: reveal } : { message: 'Ask the person who shared this link for the resource.' }),
   }
 }

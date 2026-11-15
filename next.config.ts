@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { resolveDesign } from "./lib/theme/design";
+import { envFlag } from "./lib/env/string";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 // An ENFORCED Content-Security-Policy (P8 hardening, ADR-170). Graduated from
@@ -248,6 +249,13 @@ const nextConfig: NextConfig = {
     // with no graph to keep. The cost is a cold compile on every build; ADR-1656 rejected this for
     // cache size, and memory now outranks it. scripts/check-build-memory.mjs gates the result.
     turbopackFileSystemCacheForBuild: false,
+    // ONE PAGE-DATA WORKER (HYG-231). Measured on Vercel 2026-11-14 with the HYG-224 sampler: the
+    // `next-build` compile process climbs to about 6.8 GB and is still holding about 6 GB when
+    // 'Collecting page data using 3 workers' forks, each worker adding about 330 MB. The container
+    // read 7.93 GB of 8 GB and the build was OOM-killed at that fork, on previews and production.
+    // One worker is about 660 MB less at the exact moment the container is fullest; static
+    // generation takes longer, which costs minutes, not money.
+    cpus: 1,
   },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
@@ -787,7 +795,15 @@ const nextConfig: NextConfig = {
 // for PRODUCTION only: a preview's stack traces are read by nobody, and the upload was also the
 // slowest step of the build. Errors in the upload still surface: the plugin warns and continues
 // by default, which is the behaviour this config had before.
+//
+// SOURCE MAPS ARE OFF UNTIL THE COMPILE HAS HEADROOM (HYG-232). With sourcemaps enabled, the Sentry
+// plugin forces `productionBrowserSourceMaps = true` under Turbopack (getFinalConfigObjectBundlerUtils
+// `maybeEnableTurbopackSourcemaps`), and the maps are built inside the compile. Measured on Vercel
+// 2026-11-14: the `next-build` process peaked at 7.06 GB with them (production, container 8.05 GB of
+// 8 GB, OOM-killed) against 6.8 GB without (previews). SENTRY_SOURCEMAPS=1 turns them back on, in
+// production only, once the compile fits; until then client stack traces in Sentry are minified.
 const isProductionBuild = process.env.VERCEL_ENV === 'production'
+const uploadSourceMaps = envFlag('SENTRY_SOURCEMAPS')
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
@@ -796,8 +812,9 @@ export default withSentryConfig(nextConfig, {
   silent: true,
   telemetry: false,
   sourcemaps: {
-    // Readable production stacks only. A preview is an e2e target, not a place anyone debugs.
-    disable: !isProductionBuild,
+    // Readable production stacks only, and only while SENTRY_SOURCEMAPS is on (see above). A preview
+    // is an e2e target, not a place anyone debugs.
+    disable: !isProductionBuild || !uploadSourceMaps,
   },
   // Upload a wider set of source maps for readable client stack traces.
   widenClientFileUpload: true,

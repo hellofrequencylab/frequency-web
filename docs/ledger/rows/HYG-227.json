@@ -1,0 +1,19 @@
+{
+  "id": "HYG-227",
+  "title": "Register the reviewed Quest support policy against an applied analytics base",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "scripts/migration-readiness-policy.json",
+    "ref": "Owner-authorized append-only registration for Quest PR4982 candidate b00109d7f57ac54e91bd3efa5b0fc194446975e9 against future analytics base5db562158f2b05445652b6c493e450185af99b24."
+  },
+  "detail": "The dedicated unchanged consequence probe fails on current main because Quest PR4982 has no registration. One finite main-owned registration pins all28 reviewed Git blobs and file modes, byte-identical additive50500 Quest SQL, combined database workflow and six mandatory replay, pgTAP, skip enforcement, analytics API, Quest API and unconditional cleanup steps. Independent Git recomputation agrees with the source inventory and verifies898 historical SQL blobs/modes unchanged. The new probe exercises the actual decision kernel with explicitly synthetic future-base facts containing already-applied analytics50000 and only Quest50500 pending; missing any required step, altered source/mode, extra files, a moving head, missing analytics parity and live-ledger drift refuse. Synthetic capability verification is neither actual exact-head staging evidence nor production authorization. Every existing registration, the frozen analytics capability probe, collector and publisher remain unchanged. Root holds this policy merge until analytics50000 is actually applied and merged; final Quest50500 exact-head staging and all normal release gates remain mandatory. This registration performs no SQL and enables no feature. The final reviewed Quest harness adds an actual four-focus log with exact four-support evidence, owner-only visibility, preserved earlier three-support evidence, unchanged wallet rewards and cleanup; only its two reviewed script/test blob hashes change. SQL, workflow and existing probes remain byte-identical. Final exact-head eight-check Quest API staging is still required.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/quest-support-registration.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}
