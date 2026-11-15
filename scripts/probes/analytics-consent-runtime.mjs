@@ -11,7 +11,9 @@ const result = spawnSync(process.execPath, [
   'components/analytics/track-provider-consent.test.tsx',
   'components/analytics/consent-transitions.test.tsx',
   'lib/analytics/request-consent-runtime.test.ts',
-  '--maxWorkers=2',
+  // Keep every test file isolated in its own VM while reusing one worker's runtime.
+  // Fork-per-file JSDOM startup exceeded the unchanged full-backlog CPU ceiling.
+  '--maxWorkers=1', '--pool=vmThreads',
 ], { cwd: process.cwd(), stdio: 'inherit' })
 if (result.error) throw result.error
 process.exit(result.status ?? 1)
