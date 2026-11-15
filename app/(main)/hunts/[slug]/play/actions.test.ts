@@ -80,7 +80,7 @@ describe('claimStopAction', () => {
   })
 
   it('rejects malformed input before any lookup', async () => {
-    for (const fields of [{ slug: 'coast-trail', code: '!!' }, { slug: '../x', code: 'stop-code-1' }, { code: 'stop-code-1' }]) {
+    for (const fields of [{ slug: 'coast-trail', code: '!!' }, { slug: '../x', code: 'stop-code-1' }, { code: 'stop-code-1' }] as Record<string, string>[]) {
       expect((await claimStopAction(idle, form(fields))).status).toBe('error')
     }
     expect(mocks.loadScanPlacement).not.toHaveBeenCalled()
