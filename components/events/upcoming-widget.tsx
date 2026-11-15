@@ -1,3 +1,6 @@
+import { memberExperiment } from '@/lib/analytics/experiment-runtime'
+import { EXPERIMENT_CATALOG } from '@/lib/analytics/experiments'
+import { ExperimentExposure } from './experiment-exposure'
 import { SectionHeader } from '@/components/ui/section-header'
 import { CIRCLE_SCOPE_TYPES } from '@/lib/events/circle-upcoming'
 import { readUpcomingSeries } from '@/lib/events/upcoming-series'
@@ -74,12 +77,16 @@ export async function UpcomingEventsWidget({
 
   if (events.length === 0) return null
 
+  const experiment = await memberExperiment('upcoming-next-step')
+  const heading = experiment?.variant === 'treatment' ? EXPERIMENT_CATALOG['upcoming-next-step'].treatment : 'Upcoming'
+  const header = <SectionHeader title={heading} href="/events" />
+
   return (
     <section>
       {/* The house module heading (SectionHeader exists to replace the ad-hoc uppercase
           section labels), with the title itself as the drill-down into /events — the same
           grammar as the rail's Circles module beside it. */}
-      <SectionHeader title="Upcoming" href="/events" />
+      {experiment ? <ExperimentExposure id={experiment.id}>{header}</ExperimentExposure> : header}
       <UpcomingEventRows events={events} />
     </section>
   )

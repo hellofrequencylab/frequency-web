@@ -1,6 +1,6 @@
-// LIVE-190 budget (ADR-1252): BOUNDED BY DESIGN. Four bulk statements per invocation (two DELETEs
+// LIVE-190 budget (ADR-1252): BOUNDED BY DESIGN. Five bulk statements per invocation (three DELETEs
 // and two purges), no per-row round trip, so the work is bounded by the database's statement
-// timeout rather than by a batch this route could take. The stated 4 is the statement count.
+// timeout rather than by a batch this route could take. The stated 5 is the statement count.
 // app/api/cron/budget.test.ts names this route in BOUNDED_BY_DESIGN with that reason.
 // Nightly cron — purges expired member data (ADR-069 Phase 5b). Called by Vercel
 // Cron (see vercel.json). Requires CRON_SECRET.
@@ -20,7 +20,7 @@ async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
-  const budget = cronBudget(4)
+  const budget = cronBudget(5)
   const result = await enforceRetention()
   // One count per TABLE this job bounds, beside the camelCase counts the response has always
   // carried. The question this cron exists to answer is "which tables are kept from growing
@@ -33,9 +33,10 @@ async function handler(req: NextRequest) {
     interaction_events: result.interactionsPurged,
     studio_draft: result.studioDraftsPurged,
     cron_run_markers: result.cronMarkersPurged,
+    analytics_experiment_assignments: result.experimentAssignmentsPurged,
   }
   const summary = budget.summary(
-    result.tagsPurged + result.interactionsPurged + result.studioDraftsPurged + result.cronMarkersPurged,
+    result.tagsPurged + result.interactionsPurged + result.studioDraftsPurged + result.cronMarkersPurged + result.experimentAssignmentsPurged,
     0,
   )
   log.info('cron.enforce_retention', { ...result, purgedByTable, ...summary })

@@ -14,6 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_experiments: {
+        Row: {
+          id: string
+          key: string
+          status: string
+          primary_event: string
+          treatment_percent: number
+          target_per_arm: number
+          minimum_days: number
+          conversion_days: number
+          created_by: string | null
+          updated_by: string | null
+          created_at: string
+          started_at: string | null
+          finished_at: string | null
+          guardrails_reviewed_at: string | null
+          control_excluded: number
+          treatment_excluded: number
+        }
+        Insert: {
+          id?: string
+          key: string
+          status?: string
+          primary_event: string
+          treatment_percent?: number
+          target_per_arm?: number
+          minimum_days?: number
+          conversion_days?: number
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          started_at?: string | null
+          finished_at?: string | null
+          guardrails_reviewed_at?: string | null
+          control_excluded?: number
+          treatment_excluded?: number
+        }
+        Update: {
+          id?: string
+          key?: string
+          status?: string
+          primary_event?: string
+          treatment_percent?: number
+          target_per_arm?: number
+          minimum_days?: number
+          conversion_days?: number
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          started_at?: string | null
+          finished_at?: string | null
+          guardrails_reviewed_at?: string | null
+          control_excluded?: number
+          treatment_excluded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_experiments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_experiments_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analytics_experiment_assignments: {
+        Row: {
+          experiment_id: string
+          profile_id: string
+          variant: string
+          assigned_at: string
+          exposed_at: string | null
+          converted_at: string | null
+        }
+        Insert: {
+          experiment_id: string
+          profile_id: string
+          variant: string
+          assigned_at?: string
+          exposed_at?: string | null
+          converted_at?: string | null
+        }
+        Update: {
+          experiment_id?: string
+          profile_id?: string
+          variant?: string
+          assigned_at?: string
+          exposed_at?: string | null
+          converted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_experiment_assignments_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_experiments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_experiment_assignments_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       // Migration 20270346025300 schema; refresh from the catalog after canonical apply.
       share_link_opens: {
         Row: {
