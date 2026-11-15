@@ -139,7 +139,7 @@ describe('claim adapter', () => {
     expect(await claimAsPlayer('me', input)).toEqual({ ok: false, reason: 'mission_not_eligible' })
     expect(rpc).not.toHaveBeenCalled()
 
-    rows.hunt_progress = [{ mission_key: 'm1' }]
+    rows.hunt_progress = [{ mission_key: 'm1', disposition: 'credited' }]
     rpc.mockResolvedValue({ data: { result: 'credited', claim_id: 'c-2' }, error: null })
     expect(await claimAsPlayer('me', input)).toMatchObject({ ok: true, result: 'credited' })
     expect(rpc).toHaveBeenCalledOnce()
@@ -174,7 +174,7 @@ describe('claim adapter', () => {
   it('refuses a truncated member read even when the returned part of an all-group has credit', async () => {
     scanFacts('m2')
     rows.hunt_missions = [...(rows.hunt_missions as unknown[]), { mission_key: 'm0', title: 'm0', visible_body: null, locked_teaser: null, opens_at: null, closes_at: null }]
-    rows.hunt_progress = [{ mission_key: 'm1' }]
+    rows.hunt_progress = [{ mission_key: 'm1', disposition: 'credited' }]
     counts.set('hunt_rule_group_members', 3)
     expect(await claimAsPlayer('me', claimInput())).toEqual({ ok: false, reason: 'eligibility_unavailable' })
     expect(rpc).not.toHaveBeenCalled()
@@ -186,8 +186,59 @@ describe('claim adapter', () => {
     rpc.mockResolvedValue({ data: { result: 'credited', claim_id: 'c-1' }, error: null })
     expect(await claimAsPlayer('me', input)).toMatchObject({ ok: true, result: 'credited' })
 
-    rows.hunt_progress = [{ mission_key: 'm1' }]
+    rows.hunt_progress = [{ mission_key: 'm1', disposition: 'credited' }]
     expect(await claimAsPlayer('me', input)).toEqual({ ok: true, result: 'already_credited', replayed: false })
+    expect(rpc).toHaveBeenCalledOnce()
+  })
+
+  it('sends the one-snapshot progress count and counts reversed rows without crediting them', async () => {
+    scanFacts('m2')
+    rows.hunt_progress = [{ mission_key: 'm1', disposition: 'credited' }, { mission_key: 'm9', disposition: 'reversed' }]
+    rpc.mockResolvedValue({ data: { result: 'credited', claim_id: 'c-3' }, error: null })
+    expect(await claimAsPlayer('me', claimInput())).toMatchObject({ ok: true, result: 'credited' })
+    expect(rpc).toHaveBeenCalledWith('hunt_claim_apply', expect.objectContaining({ p_expected_progress_count: 2 }))
+  })
+
+  it('rereads and reevaluates once on stale_progress, then retries with the new count', async () => {
+    scanFacts('m2')
+    rows.hunt_progress = [{ mission_key: 'm1', disposition: 'credited' }]
+    rpc.mockImplementationOnce(async () => {
+      rows.hunt_progress = [{ mission_key: 'm1', disposition: 'credited' }, { mission_key: 'm7', disposition: 'reversed' }]
+      return { data: { result: 'stale_progress' }, error: null }
+    })
+    rpc.mockResolvedValueOnce({ data: { result: 'credited', claim_id: 'c-4' }, error: null })
+    expect(await claimAsPlayer('me', claimInput())).toMatchObject({ ok: true, result: 'credited' })
+    expect(rpc).toHaveBeenCalledTimes(2)
+    expect(rpc.mock.calls.map((c) => (c[1] as Record<string, unknown>).p_expected_progress_count)).toEqual([1, 2])
+  })
+
+  it('reevaluates the graph after a stale answer and refuses when the new snapshot no longer makes the mission eligible', async () => {
+    scanFacts('m2')
+    rows.hunt_progress = [{ mission_key: 'm1', disposition: 'credited' }]
+    rpc.mockImplementationOnce(async () => {
+      rows.hunt_progress = [{ mission_key: 'm1', disposition: 'reversed' }]
+      return { data: { result: 'stale_progress' }, error: null }
+    })
+    expect(await claimAsPlayer('me', claimInput())).toEqual({ ok: false, reason: 'mission_not_eligible' })
+    expect(rpc).toHaveBeenCalledOnce()
+  })
+
+  it('is bounded: a second stale answer is returned, never a third call', async () => {
+    scanFacts('m2')
+    rows.hunt_progress = [{ mission_key: 'm1', disposition: 'credited' }]
+    rpc.mockResolvedValue({ data: { result: 'stale_progress' }, error: null })
+    expect(await claimAsPlayer('me', claimInput())).toMatchObject({ ok: true, result: 'stale_progress' })
+    expect(rpc).toHaveBeenCalledTimes(2)
+  })
+
+  it('fails closed when the reread after a stale answer is unavailable', async () => {
+    scanFacts('m2')
+    rows.hunt_progress = [{ mission_key: 'm1', disposition: 'credited' }]
+    rpc.mockImplementationOnce(async () => {
+      failures.add('hunt_progress')
+      return { data: { result: 'stale_progress' }, error: null }
+    })
+    expect(await claimAsPlayer('me', claimInput())).toEqual({ ok: false, reason: 'eligibility_unavailable' })
     expect(rpc).toHaveBeenCalledOnce()
   })
 })
