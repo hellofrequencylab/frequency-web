@@ -103,7 +103,7 @@ export const JOURNEYS: readonly Journey[] = [
         markers: ['account.created'],
         coverage: 'observed',
         note:
-          'The first successful auth callback records account.created once per profile. This starts a separate member cohort: no anonymous-session-to-profile conversion rate is inferred. Retired waitlist and application markers are excluded because they have no current emitters and would empty every later member step.',
+          'The first successful auth callback records account.created once per profile. This starts a separate Member group: no anonymous-session-to-profile conversion rate is inferred. Retired waitlist and application markers are excluded because they have no current emitters and would empty every later member step.',
       },
       {
         key: 'induction_completed',
