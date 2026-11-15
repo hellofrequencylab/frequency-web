@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils'
 
 // JourneyProgressCard — the honest arc for one active Journey on the Journey page.
 // A Journey is finished by logging its Practices on 14 DISTINCT days inside its
-// ~4-week window AND completing its Expression Challenge. This card surfaces that
+// ~4-week window AND completing its Expression Challenge under the original contract.
+// A recorded prospective contract makes Expression optional without changing the day bar. This card surfaces that
 // real bar, never a "0%" frame: it credits the days already done out of 14, names the
 // window dates, and brings the Expression Challenge capstone in-flow so the final step
 // is discovered here, not stumbled onto elsewhere.
@@ -39,6 +40,10 @@ export interface JourneyProgressCardProps {
   hasExpression: boolean
   /** Whether the member has completed the Expression Challenge. */
   expressionDone: boolean
+  /** Only a stored prospective enrollment contract may make Expression optional. */
+  policyVersion?: 2
+  evidenceAvailable?: boolean
+  unknownSupportLogs?: number
   /** The ~4-week window bounds (ISO), when set. */
   windowStartsAt: string | null
   windowEndsAt: string | null
@@ -49,7 +54,8 @@ export interface JourneyProgressCardProps {
 function windowLabel(start: string | null, end: string | null): string | null {
   if (!start && !end) return null
   const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric',
+      ...( /^\d{4}-\d{2}-\d{2}$/.test(iso) ? { timeZone: 'UTC' } : {}) })
   if (start && end) return `${fmt(start)} to ${fmt(end)}`
   if (start) return `Opens ${fmt(start)}`
   return `Closes ${fmt(end as string)}`
@@ -64,12 +70,24 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
     daysRequired,
     hasExpression,
     expressionDone,
+    policyVersion,
+    evidenceAvailable,
+    unknownSupportLogs = 0,
     windowStartsAt,
     windowEndsAt,
     planId,
     learnHref,
   } = props
 
+  if (evidenceAvailable === false) return (
+    <section className="rounded-card border border-border bg-surface p-5">
+      <SectionHeader title={title} />
+      <p className="text-body-sm text-muted">Practice-day progress is unavailable right now. Your recorded practices have not been reset.</p>
+      <Link href={learnHref} className="mt-3 inline-flex min-h-11 items-center text-body-sm font-semibold text-link">Open this Journey</Link>
+    </section>
+  )
+  const expressionOptional = policyVersion === 2
+  const partialSupport = unknownSupportLogs > 0
   const daysDone = Math.min(distinctDays, daysRequired)
   const daysLeft = Math.max(0, daysRequired - daysDone)
   // Goal-gradient fill lives on the bar itself now (ProgressTrack value/max + minVisible),
@@ -81,7 +99,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
   const daysMet = daysDone >= daysRequired
   // The capstone surfaces once the practice-day bar is near or at done (within 2 days),
   // so the member meets the final step right when it becomes reachable.
-  const showCapstone = !finished && hasExpression && (daysMet || daysLeft <= 2)
+  const showCapstone = !finished && hasExpression && (expressionOptional || daysMet || daysLeft <= 2)
 
   const win = windowLabel(windowStartsAt, windowEndsAt)
 
@@ -91,7 +109,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
         title={title}
         action={
           <span className="text-meta font-semibold tabular-nums text-subtle">
-            {finished ? 'Finished' : `${daysDone}/${daysRequired} days`}
+            {finished ? 'Finished' : `${partialSupport ? 'At least ' : ''}${daysDone}/${daysRequired} days`}
           </span>
         }
       />
@@ -111,12 +129,21 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
         )}
       </div>
 
+      {expressionOptional && (
+        <p className="mb-3 text-body-sm text-muted">
+          This enrollment needs {daysRequired} practice days within this window. Expression is an optional invitation and can stay private.
+        </p>
+      )}
+
+      {partialSupport && <p role='status' className='mb-3 text-body-sm text-muted'>Some older practice records are missing support details. The recorded days shown are a minimum.</p>}
+
       {finished ? (
         <div className="space-y-2">
           <p className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-success">
             <CheckCircle2 className="h-4 w-4" /> You finished this Journey
           </p>
-          {hasExpression && <ExpressionPillarLine expressionDone />}
+          {hasExpression && <ExpressionPillarLine expressionDone={expressionOptional ? expressionDone : true} optional={expressionOptional} />}
+          {hasExpression && expressionOptional && !expressionDone && <ExpressionAction journeyId={planId} optional />}
         </div>
       ) : (
         <>
@@ -127,12 +154,12 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
             value={daysDone}
             max={daysRequired}
             minVisible={8}
-            label={`${daysDone} of ${daysRequired} practice days logged`}
+            label={`${partialSupport ? 'At least ' : ''}${daysDone} of ${daysRequired} practice days logged`}
             size="lg"
             animate
           />
           <p className="mt-2 text-meta font-medium text-muted">
-            {daysMet
+            {partialSupport ? `At least ${daysDone} of ${daysRequired} practice days are recorded.` : daysMet
               ? 'All 14 practice days logged.'
               : daysDone === 0
                 ? `Log a Practice on 14 different days to finish. ${daysRequired} to go.`
@@ -144,7 +171,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
               accent so a member sees it is part of THIS Journey, not a separate step. */}
           {hasExpression && !showCapstone && (
             <div className="mt-3">
-              <ExpressionPillarLine expressionDone={expressionDone} />
+              <ExpressionPillarLine expressionDone={expressionDone} optional={expressionOptional} />
             </div>
           )}
 
@@ -153,7 +180,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
           {showCapstone &&
             (expressionDone ? (
               <div className="mt-3">
-                <ExpressionPillarLine expressionDone />
+                <ExpressionPillarLine expressionDone optional={expressionOptional} />
               </div>
             ) : (
               <div
@@ -171,9 +198,9 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
                   style={{ color: 'var(--rank-deep)' }}
                 >
                   <ExpressionIcon className="h-4 w-4" aria-hidden />
-                  Expression Challenge: share what you practiced
+                  {expressionOptional ? 'Expression invitation: make, share or connect' : 'Expression Challenge: share what you practiced'}
                 </p>
-                <ExpressionAction journeyId={planId} />
+                <ExpressionAction journeyId={planId} optional={expressionOptional} />
               </div>
             ))}
 
@@ -193,7 +220,7 @@ export function JourneyProgressCard(props: JourneyProgressCardProps) {
 
 // The Expression Pillar status line — the 4th Pillar made legible on every Journey.
 // In Expression's own accent (plum): a solid done state, or a quiet pending one.
-function ExpressionPillarLine({ expressionDone }: { expressionDone: boolean }) {
+function ExpressionPillarLine({ expressionDone, optional = false }: { expressionDone: boolean; optional?: boolean }) {
   return (
     <p
       className="inline-flex items-center gap-1.5 text-meta font-medium"
@@ -229,7 +256,7 @@ function ExpressionPillarLine({ expressionDone }: { expressionDone: boolean }) {
         {expressionDone ? <CheckCircle2 className="h-3 w-3" /> : <ExpressionIcon className="h-3 w-3" />}
       </span>
       <span style={{ color: 'var(--rank-deep)' }}>
-        {expressionDone ? 'Expression Challenge done' : 'Expression Challenge to come'}
+        {expressionDone ? 'Expression Challenge done' : optional ? 'Expression invitation, whenever you choose' : 'Expression Challenge to come'}
       </span>
     </p>
   )

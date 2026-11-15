@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2291",
+  "title": "Preserve enrollment contracts while making future official Quest Expression optional",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "source": {
+    "file": "lib/quest/completion.ts",
+    "ref": "Daniel's November 14, 2026 authorization to complete the support/practice/expression changeover with three review passes."
+  },
+  "detail": "Prospective official ranked fixed-window enrollments receive an immutable version 2 completion contract: the existing 14 distinct-day threshold stays, while Expression is optional only under that recorded contract. NULL legacy and unenrolled participation retain existing qualification; rank eligibility, reward amounts, grant keys and earned recognition are unchanged. New practice logs capture actual canonical primary, secondary and valid additional authored supports at insertion; later category edits, timer/reward updates and practice deletion preserve that snapshot. No historical third/fourth supports are backfilled. Bounded monotonic owner-scoped reads continue until an empty keyset page, treat provider/read failures as unavailable evidence, count a date once, and use the resolved member day. The actual logger independently considers recorded V2 enrollments beyond its current-primary legacy lookup, deduplicating plans through the same completion evaluator. Same-window completed enrollments can retry the existing idempotent purse path; this is not unlimited cross-season recovery. Expression controls stay available without inventing a performed Expression or showing an action without an actual challenge. Missing old secondary shares remain an explicit lower bound. New nullable database types and two internal trigger-function grant verdicts match the unchanged SQL. The local Auth/PostgREST harness refuses hosted, credentialed and routed URLs, redirects and inherited production credentials; requests are bounded and partial fixtures are cleaned. The combined db-tests workflow preserves every existing room, Launch, calendar and analytics step and adds Quest acceptance before unconditional cleanup. Immutable policy/fan-out probes failed against actual baseline behavior and pass unchanged. Earlier focused verification passed 119 tests across 12 files, changed-file lint, schema/grant guards, exact export cap 150 and required backlog 2703/1010. Early disposable staging on head da3285cb7463f8b346691e5eaffac8d007cfdf62, run 43642194639, passed fresh full-schema replay, 110 pgTAP files with 1714 assertions including all 24 new Quest cases, the skip guard, all existing API checks, seven new real Quest Auth/PostgREST cases and fixture/container cleanup. That earlier head used the same SQL body under version 51000 and is body evidence only, not final 50500-head release acceptance. Current queue reservation in issue 4306 comment 6884539358 orders analytics 50000, Quest 50500, then Hunts 51000. The unpublished Quest migration is retimed to 20270346050500_quest_support_policy.sql with identical SQL SHA256 ec30f6f342bbd51ed693e15b16c7b2da79b4eded6f59a8ec03d7e2c249efe491. Related reader activation references point to 50500; PRACTICE_SUPPORT_EVIDENCE_ENABLED stays blank/off. This draft stacks on temporary reviewed analytics base 5db562158f2b05445652b6c493e450185af99b24 under an explicit temporary-base lease, with 28 own paths. Final exact-head full staging and registration, main retarget, source checks, artifact acceptance, queue lease and production application are not claimed by the earlier run. No production SQL, flag, provider send or earned-recognition change was performed by this build.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --conditions=react-server scripts/probes/quest-support-policy.mjs && node --experimental-strip-types --no-warnings --conditions=react-server scripts/probes/quest-support-fanout.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-14"
+}
