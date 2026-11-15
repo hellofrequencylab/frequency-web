@@ -54,7 +54,7 @@ export default async function PlayPage({ params, searchParams }: {
       width="default"
     >
       <div className="space-y-4">
-        <HuntPlayerSafety banner={view.banner} />
+        <HuntPlayerSafety banner={view.banner} reportSlug={slug} />
         <ol className="space-y-2">
           {view.stops.map((s) => (
             <li key={s.key} className="flex items-start gap-3 rounded-card border border-border bg-surface px-4 py-3">
