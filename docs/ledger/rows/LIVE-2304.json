@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2304",
+  "title": "Join paid checkout conversions to the original validated Google session",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/analytics/track.ts",
+    "ref": "Daniel authorized completing analytics; root approved a bounded actual-chain purchase session attribution fix after main766068a audit."
+  },
+  "detail": "The paid Checkout mapper already retains ga_client_id and ga_session_id metadata. The generic tracker lifted only the client ID, forwarding the session under a nonstandard ga_session_id parameter instead of the standard Measurement Protocol session_id, so purchases could not join the original browser session. The purchase-only mirror now forwards the validated numeric browser client/session pair through the existing transport session option, which adds standard session_id and nominal engagement_time_msec. Missing or malformed session metadata is omitted without suppressing the accepted purchase; nonstandard ga_session_id is removed from the pixel parameter bag while the first-party ledger retains its existing context. Existing account consent, durable settlement idempotency, failed-ledger suppression, production-only transport and legacy client fallback behavior are preserved. This does not broaden guest-purchase consent policy, validate historical client fallback, backfill old sales or claim attribution for sessions without valid browser metadata. No Checkout settings, prices, provider requests, SQL, email sends or schedules are changed. The new actual paid-session mapper to registry to engagement recorder to tracker to Google transport fixture probe fails on untouched main766068a (seven failing assertions, six passing in the final thirteen-case probe) and passes on the implementation; all network/database/automation boundaries are isolated and no real Google event is emitted. No existing tests or probes are edited. Final focused verification passes 100 tests across six files, including existing purchase formatter, GA transport, client-event deduplication, lead conversion and actual request-consent runtime tests. Three changed JavaScript/TypeScript files pass ESLint; whitespace diff checks pass. Root reviewed the source and actual-chain probe before publication. Own new test SHA256 9157b833f627943ae3e3498145ce946425bd1c1de5453834490a679a5b23b6fe; own probe SHA256 45bd12a75a93f9cfbe891ea04219415b42fcf5bc66e8249dae87f31d24a64d6b. Required backlog passes 2714 entries with 1006 run probes agreeing. No full build, typecheck or full test suite is run locally; real source CI and Vercel preview remain required before merge. Independent registration-review agent privacy cross-review passes: the five-line source diff preserves existing actor consent, production gating, ledger deduplication, failed-insert refusal and pixel sanitization; the actorless guest policy is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/purchase-google-session-chain.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-15"
+}
