@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { pixelSafePath, pixelSafeProps, pixelSafeTitle } from '@/lib/analytics/sanitize'
+import { browserAllowsAnalytics, browserGoogleAllowed } from '@/lib/analytics/browser-policy'
 
 // Client-side tracking (ADR-070, ANALYTICS.md). Dual-emit: mirror to GA4 (if the tag
 // is live) AND record first-party via /api/track. PageViewTracker auto-captures
@@ -18,10 +19,10 @@ declare global {
 /** Emit a client analytics event to GA4 + first-party. Only client-emittable
  *  taxonomy events are accepted server-side; unknown ones are dropped there. */
 export function trackClient(event: string, props: Record<string, unknown> = {}): void {
-  if (typeof window === 'undefined') return
+  if (!browserAllowsAnalytics()) return
   // GA4 mirror (dots → underscores for GA's event-name rules). Pixel-safe props only
   // (LIVE-810): first-party keeps the full bag, Google never sees persona, topics or slugs.
-  window.gtag?.('event', event.replace(/\./g, '_'), pixelSafeProps(props))
+  if (browserGoogleAllowed()) window.gtag?.('event', event.replace(/\./g, '_'), pixelSafeProps(props))
   // First-party — sendBeacon survives navigation; fall back to keepalive fetch.
   try {
     const payload = JSON.stringify({ event, props })
@@ -54,20 +55,27 @@ export function PageViewTracker() {
 
   useEffect(() => {
     if (last.current === pathname) return
-    const first = last.current === null
-    last.current = pathname
-    trackClient('nav.page_view', { path: pathname })
-    // LIVE-810: GA's own page_view for in-app navigation, with the Journey/Circle/topic slug
-    // redacted. The bootstrap config already sent (and redacted) the first page view.
-    if (!first && typeof window !== 'undefined') {
-      // SCAN-838: and its title, which gtag.js would otherwise read from document.title.
-      const pageTitle = pixelSafeTitle(pathname, document.title)
-      window.gtag?.('set', { page_title: pageTitle })
-      window.gtag?.('event', 'page_view', {
-        page_location: window.location.origin + pixelSafePath(pathname),
-        page_title: pageTitle,
-      })
+    let sent = false
+    const emit = () => {
+      if (sent || !browserAllowsAnalytics()) return
+      sent = true
+      const first = last.current === null
+      last.current = pathname
+      trackClient('nav.page_view', { path: pathname })
+      // The bootstrap sends the first Google pageview; subsequent member SPA routes remain pixel-safe.
+      if (!first && browserGoogleAllowed()) {
+        const pageTitle = pixelSafeTitle(pathname, document.title)
+        window.gtag?.('set', { page_title: pageTitle })
+        window.gtag?.('event', 'page_view', {
+          page_location: window.location.origin + pixelSafePath(pathname),
+          page_title: pageTitle,
+        })
+      }
     }
+    emit()
+    // A slow policy response must not discard the initial permitted member page marker.
+    window.addEventListener('fq-analytics-policy-ready', emit)
+    return () => window.removeEventListener('fq-analytics-policy-ready', emit)
   }, [pathname])
 
   return null
