@@ -74,36 +74,27 @@ export function stepIdentity(step: JourneyStep): StepIdentity {
 export const JOURNEYS: readonly Journey[] = [
   {
     key: 'land_to_beta',
-    name: 'Land to beta',
-    question: 'Of the people who reach the site, how many end up inside it?',
+    name: 'Sampled visits and joining',
+    question: 'Which sampled page loads land on joining, and how many Members finish induction?',
     steps: [
       {
         key: 'landed',
-        label: 'Loaded a page',
+        label: 'Sampled page load',
         stream: 'interaction',
         markers: ['web_vital'],
         coverage: 'observed',
         note:
-          'The only anonymous marker in the ledger. /api/track and /api/observe both drop anonymous posts, so a visitor who has not signed in leaves no semantic row at all. Every sampled page load emits at least TTFB, which makes the vitals stream a real (if sideways) reach signal, keyed by the ephemeral per-tab session id.',
+          'Web vitals are sampled and keyed by an ephemeral session ID. They describe sampled landing-page reach, not all visits. Anonymous sessions cannot be joined to the member steps below.',
       },
       {
         key: 'reached_the_invitation',
-        label: 'Reached the beta invitation',
+        label: 'Sampled joining-page load',
         stream: 'interaction',
         markers: ['web_vital'],
-        pathLike: '/beta%',
+        pathLike: '/join%',
         coverage: 'observed',
         note:
-          'Counts the /beta invitation page. The per-audience Funnel splashes moved /beta/<slug> → /join/<slug> (ADR-1090), so since 2026-08-19 splash traffic no longer lands in this step; the per-Funnel entered/captured events (onboarding.funnel_entered) are the splash-side signal.',
-      },
-      {
-        key: 'joined_the_waitlist',
-        label: 'Joined the waitlist',
-        stream: 'engagement',
-        markers: ['waitlist.joined', 'application.submitted'],
-        coverage: 'emitted',
-        note:
-          'Both emitters are live (the waitlist action and the application handoff). No rows yet, and the identity seam sits here: the steps above are session-keyed and cannot be linked to this profile-keyed step.',
+          'Counts sampled landing-page vitals on the current /join and /join/<slug> entries. The vitals emitter retains the landing path, so this is not a complete record of later navigation to joining.',
       },
       {
         key: 'account_created',
@@ -112,7 +103,7 @@ export const JOURNEYS: readonly Journey[] = [
         markers: ['account.created'],
         coverage: 'observed',
         note:
-          'app/auth/callback/route.ts emits it on first sign-in, keyed `account.created:<profileId>` so every later sign-in re-attempts the same row and the exactly-once ledger absorbs it. 7 rows in production, most recent 2026-09-01. ⚠️ THIS STEP READ `unimplemented` UNTIL 2026-09-06, with a note saying nothing emitted it and sign-up left no ledger row. Both had stopped being true: the emitter landed and the registry never caught up, so the funnel suppressed the signup conversion it could already compute, which is the one number the sitemap submission makes urgent. The coverage values carry a "verified against prod" date for exactly this reason; re-measure them rather than trusting the constant.',
+          'The first successful auth callback records account.created once per profile. This starts a separate Member group: no anonymous-session-to-profile conversion rate is inferred. Retired waitlist and application markers are excluded because they have no current emitters and would empty every later member step.',
       },
       {
         key: 'induction_completed',
