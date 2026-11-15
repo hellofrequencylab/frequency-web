@@ -10,7 +10,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { purgeExpiredStudioDrafts } from '@/lib/studio/draft-store'
 import { sweepStaleImporterStaging } from '@/lib/importer/harvest/staging-lifecycle'
 import { log } from '@/lib/log'
-import { purgeExpiredExperimentAssignments } from '@/lib/analytics/experiment-retention'
 
 /** How long raw interaction_events rows are kept before purge (PI.1). The durable
  *  signal lives in the PI.2 rollups; the raw firehose is a short-window working set. */
@@ -45,7 +44,6 @@ export const RETENTION_TABLES = [
   'interaction_events',
   'studio_draft',
   'cron_run_markers',
-  'analytics_experiment_assignments',
 ] as const
 export type RetentionTable = (typeof RETENTION_TABLES)[number]
 
@@ -73,7 +71,6 @@ export async function enforceRetention(
   interactionsPurged: number
   studioDraftsPurged: number
   cronMarkersPurged: number
-  experimentAssignmentsPurged: number
   importerStagingPurged: number
 }> {
   const { data: tags } = await db()
@@ -96,7 +93,6 @@ export async function enforceRetention(
   const studioDraftsPurged = await purgeExpiredStudioDrafts(now.getTime())
 
   const cronMarkersPurged = await purgeExpiredCronRunMarkers(now)
-  const experimentAssignmentsPurged = await purgeExpiredExperimentAssignments(now)
 
   // The importer's harvested media has no table row to expire, only a storage prefix per intake,
   // so it is aged out here beside the tables rather than in a cron of its own (the function
@@ -109,7 +105,6 @@ export async function enforceRetention(
     interactionsPurged: (interactions ?? []).length,
     studioDraftsPurged,
     cronMarkersPurged,
-    experimentAssignmentsPurged,
     importerStagingPurged: staging.removed,
   }
 }
