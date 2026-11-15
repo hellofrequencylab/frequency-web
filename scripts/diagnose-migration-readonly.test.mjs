@@ -37,3 +37,24 @@ test('nested or message-only SQLSTATE becomes closed metadata without exposing t
  assert.deepEqual(safeResult(500,{message:'permission denied for private table'}),{httpStatus:500,sqlState:null,category:'permission'})
  assert.deepEqual(safeResult(500,{code:'ABCDE',message:'private unsupported code ABCDE'}),{httpStatus:500,sqlState:null,category:'provider'})
 })
+
+test('strict candidate parity executes trusted main code and candidate remains data',()=>{
+ const w=readFileSync(new URL('../.github/workflows/apply-migration.yml',import.meta.url),'utf8')
+ assert.ok(w.includes('ref: ab99b3bad10e33a2c8a560e8e00de1194d998d16'))
+ assert.ok(w.includes('ref: 38b5b931f6be2eaf4cec42a239f2ffab773b35e9'))
+ assert.ok(w.includes('for source in scripts/check-migrations.mjs scripts/check-adr.mjs scripts/check-id-collisions.mjs scripts/lib/invoked-directly.mjs scripts/lib/ledger.mjs scripts/maintenance/ledger-parity.mjs scripts/pr-size-gate.mjs; do'))
+ assert.ok(w.includes('cmp "$source" "trusted-guard/$source"'))
+ assert.ok(w.includes('run: node scripts/diagnose-strict-migration-parity.mjs'))
+ assert.doesNotMatch(w,/run:.*(?:node|bash|sh) [^\n]*rollback-candidate/)
+})
+
+import { safeParityResult } from './diagnose-strict-migration-parity.mjs'
+test('strict guard output filter never forwards provider bodies or accepts a skipped comparison',()=>{
+ const secret='private provider body token'
+ assert.deepEqual(safeParityResult({status:1,stderr:secret,stdout:secret}),{category:'strict_guard_failed'})
+ assert.deepEqual(safeParityResult({status:0,stdout:'LEDGER COMPARISON SKIPPED '+secret}),{category:'strict_parity_not_proven'})
+ const text='✅ Migration ledger parity: 897 repo file(s) ⇄ 897 applied row(s), identical on version and name.\n   versions sha256 `'+ 'a'.repeat(64) +'` · version+name sha256 `'+ 'b'.repeat(64) +'`\n'+secret
+ const result=safeParityResult({status:0,stdout:text})
+ assert.deepEqual(result,{category:'strict_version_name_parity',guardExit:0,repoCount:897,ledgerCount:897,versionsSha256:'a'.repeat(64),versionNameSha256:'b'.repeat(64)})
+ assert.doesNotMatch(JSON.stringify(result),/private|token/)
+})

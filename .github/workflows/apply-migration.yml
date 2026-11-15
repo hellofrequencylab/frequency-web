@@ -215,3 +215,28 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
         run: node scripts/diagnose-migration-readonly.mjs
+      - name: Read rollback candidate as data only
+        uses: actions/checkout@v7
+        with:
+          ref: ab99b3bad10e33a2c8a560e8e00de1194d998d16
+          path: rollback-candidate
+          persist-credentials: false
+      - name: Read unchanged trusted main guard
+        uses: actions/checkout@v7
+        with:
+          ref: 38b5b931f6be2eaf4cec42a239f2ffab773b35e9
+          path: trusted-guard
+          persist-credentials: false
+      - name: Verify trusted guard and helper source
+        run: |
+          set -euo pipefail
+          test "$(git -C rollback-candidate rev-parse HEAD)" = ab99b3bad10e33a2c8a560e8e00de1194d998d16
+          test "$(git -C trusted-guard rev-parse HEAD)" = 38b5b931f6be2eaf4cec42a239f2ffab773b35e9
+          for source in scripts/check-migrations.mjs scripts/check-adr.mjs scripts/check-id-collisions.mjs scripts/lib/invoked-directly.mjs scripts/lib/ledger.mjs scripts/maintenance/ledger-parity.mjs scripts/pr-size-gate.mjs; do
+            cmp "$source" "trusted-guard/$source"
+          done
+      - name: Strict candidate version and name parity using trusted main guard
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: node scripts/diagnose-strict-migration-parity.mjs
