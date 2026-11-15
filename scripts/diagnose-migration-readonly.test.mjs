@@ -76,6 +76,7 @@ test('fresh untouched ledger JSON reaches only documented trusted guard data inp
  },{SUPABASE_PROJECT_REF:PROJECT,SUPABASE_ACCESS_TOKEN:'secret'})
  assert.equal(result.category,'strict_version_name_parity');assert.equal(existsSync(file),false)
  assert.equal(result.analytics50000Recorded,true);assert.equal(result.analytics50000NameMatches,true);assert.equal(result.hunts51000Recorded,false);assert.equal(result.hunts51000NameMatches,false);assert.equal(result.liveLedgerCount,400)
+ assert.equal(result.hunts52000Recorded,false);assert.equal(result.hunts52000NameMatches,false)
 })
 test('ledger fetch and shape failures remain closed and never execute a guard with invented data',async()=>{
  const env={SUPABASE_PROJECT_REF:PROJECT,SUPABASE_ACCESS_TOKEN:'secret'};let called=false
