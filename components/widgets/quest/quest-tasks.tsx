@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import { Star, CheckCircle, Zap } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCrewContext } from '@/lib/quest/crew-context'
@@ -124,11 +125,7 @@ export async function QuestTasks() {
                     {isDone && lastCompletion?.completed_at && (
                       <p className="mt-0.5 text-meta text-success">
                         Completed{' '}
-                        {new Date(lastCompletion.completed_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
+                        {formatDateMedium(lastCompletion.completed_at)}
                         {isVerified
                           ? ' · Verified'
                           : task.requires_verification

@@ -3151,6 +3151,400 @@
         "Real local service, anon and authenticated growth API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5035,
+      "expiresAt": "2026-11-22T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346063000_guest_rsvp_database_side_cap.sql",
+          "sha256": "abcde1d9119806ee3231e557ed03c6e8998954510a927a1c19189a7adf64b45c"
+        },
+        {
+          "file": "supabase/migrations/20270346064000_signup_lead_first_holder_keeps_the_row.sql",
+          "sha256": "59e38f0c6ab1ee6b927b88db7a2f38d3ac87fda38a62c9ccf85a66adecbb9837"
+        },
+        {
+          "file": "supabase/migrations/20270346065000_tz_names_search_path_and_hunts_fk_indexes.sql",
+          "sha256": "b22f7a004c80b7fb6f82fa2a2769407f7fe89962ca6fa3546262b42b40277fcd"
+        },
+        {
+          "file": "supabase/migrations/20270346066000_public_circles_page.sql",
+          "sha256": "cdb2922e58e56f984eaaf31479be321222d057bcc586635e2b7ccb67a53a1542"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/join/(induction)/lead-actions.test.ts",
+          "status": "modified",
+          "sha256": "7611502cb59c25c83db7ea3d8b235afba5b980274582504fd637877ad5c2bff7",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/join/(induction)/lead-actions.ts",
+          "status": "modified",
+          "sha256": "91d6aad6a33bbb7c4c5df0f8074e0e5b4a1283ea54af501ac1caaa2d0dd89132",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/sitemap.test.ts",
+          "status": "modified",
+          "sha256": "88f2b2897e3064ab72c1ea62b42d62cfd8f2eb5cfcc3c999151e149c75041a32",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/sitemap.ts",
+          "status": "modified",
+          "sha256": "91fbeb561d4e1545dbf50052bce5a3c2928b78467128027ae30573b4219d7f1d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/SCAN-1226.json",
+          "status": "modified",
+          "sha256": "27ced83975322f7be853dd3b95bba8b7ff69f4cefb575e61b45c652cc6eef353",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/SCAN-1238.json",
+          "status": "modified",
+          "sha256": "a3d4458c7a59a7686fe58b02a854c5a2cdcf434d0d555381caea1400b0f7b244",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/SCAN-1245.json",
+          "status": "modified",
+          "sha256": "5c38418989af73278ae7c0b42cef615d8f235d2e6b71d37a37d11a4d2ee7e25f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/SCAN-1246.json",
+          "status": "modified",
+          "sha256": "20bf4d37d35c0ee39cedff420d6be1ec0ed4f3c2f31ac3911ec5e8940e40d6f1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/SCAN-1262.json",
+          "status": "added",
+          "sha256": "859c65cc112b1749255c2b46561b474dc3add6b79ee25e2421d8eb4400720115",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/security/definer-rpc-review.md",
+          "status": "modified",
+          "sha256": "48ee96f58fc4d4341d517340eefb0fb54534d15412784d0f69220becc65b8e10",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "182d6e85c7c0e70ccea7e0ff02f1b1626362ac2a6e01340c77cfa9887a9a5c9b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/discover-circles-walk.test.ts",
+          "status": "added",
+          "sha256": "9283e341e084b80efdff0e27f8e08c1b99dc112f390faf05738ea382fce31113",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/discover.ts",
+          "status": "modified",
+          "sha256": "af86293068dcf8a021c20084823301b16f84d7a6233e2adab43ef14652a9bd54",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "138724ad2346a4139f1df0cbfc9b2a81a7a8ba5286f26590033aeedfbcbd82a4",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346063000_guest_rsvp_database_side_cap.sql",
+          "status": "added",
+          "sha256": "abcde1d9119806ee3231e557ed03c6e8998954510a927a1c19189a7adf64b45c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346064000_signup_lead_first_holder_keeps_the_row.sql",
+          "status": "added",
+          "sha256": "59e38f0c6ab1ee6b927b88db7a2f38d3ac87fda38a62c9ccf85a66adecbb9837",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346065000_tz_names_search_path_and_hunts_fk_indexes.sql",
+          "status": "added",
+          "sha256": "b22f7a004c80b7fb6f82fa2a2769407f7fe89962ca6fa3546262b42b40277fcd",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346066000_public_circles_page.sql",
+          "status": "added",
+          "sha256": "cdb2922e58e56f984eaaf31479be321222d057bcc586635e2b7ccb67a53a1542",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/guest_rsvp_database_cap.test.sql",
+          "status": "added",
+          "sha256": "b7427cceee2c48b2534b01b9b37abacd209fad6b70b43bcdabeb1b8c810732a4",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/public_circles_page.test.sql",
+          "status": "added",
+          "sha256": "9d3a4c15b1e21448ce0635ecdf36e63ecb1474cce0a20f864b3938e7048a63b0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/signup_lead_first_holder.test.sql",
+          "status": "added",
+          "sha256": "6e87c61450b121dd353a603fb682a217fef1599257355a467eb9a2045b122850",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "506e7faa637aed0e801df7bb5d83c24a8dbb681156f7c01768431856d77bffc2",
+      "apiAcceptanceStep": "Real local service, anon and authenticated growth API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated room API acceptance",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Real local service, anon and authenticated calendar suite API acceptance",
+        "Real local service, anon and authenticated analytics experiment API acceptance",
+        "Real local service, anon and authenticated growth API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
+    },
+    {
+      "pullRequest": 5037,
+      "expiresAt": "2026-11-23T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346070000_quest_support_policy.sql",
+          "sha256": "ec30f6f342bbd51ed693e15b16c7b2da79b4eded6f59a8ec03d7e2c249efe491"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": ".env.example",
+          "status": "modified",
+          "sha256": "45f825673654b5fd9e0b67e461aa02d8aa55374ba5cd10f50b60db2b6f5d30da",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": ".github/workflows/db-tests.yml",
+          "status": "modified",
+          "sha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/crew/challenges/expression-action.tsx",
+          "status": "modified",
+          "sha256": "65302cdcc1b41289c26b610e31c8ba5236dfe713eeddcf89663caa70d5bb4646",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/quest/journey-progress-card.tsx",
+          "status": "modified",
+          "sha256": "4a6956bf06a832f93c11d18ea5e0c8b330b76e4c21d0d68d98204f2ec88042ff",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/quest/journey-progress-policy.test.tsx",
+          "status": "added",
+          "sha256": "23a309e55847e632295bf1157903b4c8f7130ae8ee5501840498629d4af44e8a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/widgets/quest/quest-journeys.tsx",
+          "status": "modified",
+          "sha256": "8ec49051ef3af04cd4d7a77c7693e214d1492bae4b3388331f16d9b6e1a9a2a6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/widgets/quest/quest-policy-render.test.tsx",
+          "status": "added",
+          "sha256": "319926e5f99cf1e9f787d8f0dbee23f457c395865a9db4a7829fcb74ab982d86",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ECONOMY-AND-JOURNEYS.md",
+          "status": "modified",
+          "sha256": "9e77fc8f34e016812617b11e92dbde1df0c78de43a3008e8935ebbe1a7581cf6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "b2dd43f6ab4ed4e27570d3df637838a85678078a79b4c12aada0419cd79aef49",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2291.json",
+          "status": "modified",
+          "sha256": "ed9ef23150b9a9fc56d759e788e579e35fc93db2166ace060c15fbf03cd77fbc",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "508993d2636472aa993a8b3c93723a7333fe56df1090c59f8585e37757bdc73b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/practices-support-completion.test.ts",
+          "status": "added",
+          "sha256": "68a32b1c4b72ea277cbe51a327e0a621eb6eab6dbc668032f7338579fb48a988",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/practices.ts",
+          "status": "modified",
+          "sha256": "02bb52685a8c4d432fee40b15c21fa836c8e5ff2a37dc0e501bbe9708e7f5eef",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/quest/completion-support.test.ts",
+          "status": "added",
+          "sha256": "54113344e966a0e809e9dabf0d2f66611ba081de472fb4fc31c900de8a54cc69",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/quest/completion.ts",
+          "status": "modified",
+          "sha256": "5df43e538cfcf43496bae81d20e4dfb008e4cf30314fc2f7df3ed90d81292bcd",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/quest/support-completion-candidates.test.ts",
+          "status": "added",
+          "sha256": "44abbfcfb3abecfc7b73dde006f85dd7966ab7664507fb9a1a5e4b5ab22955f3",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/quest/support-completion-candidates.ts",
+          "status": "added",
+          "sha256": "ebec278d83a7e515f722da69650ab32aa7b7a950f18cc9c46cad600e453a134e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/quest/support-policy-read.test.ts",
+          "status": "added",
+          "sha256": "1a97e99a3b83462e330096d9bddddca7a51dfbf8acab530792686b88d5702575",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/quest/support-policy-read.ts",
+          "status": "added",
+          "sha256": "ec55c6c2b2b9ee8f3a9b0c571c1424c4e7d49e9fb8eb2019466a48d6a32c416c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/quest/support-policy.test.ts",
+          "status": "added",
+          "sha256": "3e481428f2240bc14e0649f1ca52645c34bae27da6d7f028ca1463974207884f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/quest/support-policy.ts",
+          "status": "added",
+          "sha256": "74a428880108f2204533902d65de99e1f5c625c0b239fb54ce53904c581d9214",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "7292c1c160d00cde6ccab8b48d53614dae2d13767dddb67eb838c7cf754c580f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/quest-support-api.mjs",
+          "status": "added",
+          "sha256": "a2ec4583523a3b9fa62724cf3c96fe3cd3c513c22cc058d2c6c509f99722cc12",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/staging/quest-support-api.test.ts",
+          "status": "added",
+          "sha256": "f0cf4b7c4d9eb1980d92f82d6fa572e1a4689a45851c4a991cbdffe95a33224e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346070000_quest_support_policy.sql",
+          "status": "added",
+          "sha256": "ec30f6f342bbd51ed693e15b16c7b2da79b4eded6f59a8ec03d7e2c249efe491",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/quest_support_policy.test.sql",
+          "status": "added",
+          "sha256": "0578cca836062a02afc797f173992b48020a574c3fd7adb7a041e3ec0bb954e1",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Quest support API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated room API acceptance",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Real local service, anon and authenticated calendar suite API acceptance",
+        "Real local service, anon and authenticated analytics experiment API acceptance",
+        "Real local service, anon and authenticated growth API acceptance",
+        "Real local service, anon and authenticated Quest support API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }

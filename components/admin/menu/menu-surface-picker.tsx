@@ -4,6 +4,7 @@ import { useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { MenuSurfaceKey } from '@/lib/menus/types'
 import { AdminSection } from '@/components/templates'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // The Surface picker — the client leaf of the `menu-surface` template block, and the ONLY thing
 // that sets the active surface. Picking a surface navigates to `?surface=<key>` (a client
@@ -60,11 +61,10 @@ export function MenuSurfacePicker({
               aria-selected={isActive}
               disabled={isPending}
               onClick={() => pick(s.key)}
-              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-body-sm font-medium transition-colors disabled:opacity-60 ${
-                isActive
-                  ? 'border-primary bg-primary-bg text-primary-strong'
-                  : 'border-border bg-surface text-muted hover:bg-surface-elevated hover:text-text'
-              }`}
+              className={choiceTileClasses(
+                isActive,
+                `flex items-center gap-2 rounded-xl px-3 py-2 text-body-sm font-medium ${isActive ? 'text-primary-strong' : 'text-muted hover:text-text'}`,
+              )}
             >
               {s.label}
               {defaults[s.key] && (

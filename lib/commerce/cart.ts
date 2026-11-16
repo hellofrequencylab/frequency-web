@@ -11,6 +11,8 @@
 //   • A guest cart merges into a signed-in cart by summing matching lines (clamped), signed-in lines first.
 //   • Pruning drops lines whose item is gone or sold out and clamps the rest to the stock on hand, and says
 //     what it changed so the buyer is told rather than surprised at checkout.
+//   • Paying takes out what was paid for and nothing else: a line bought in full leaves, a line bought in
+//     part keeps the rest, and a line added while the buyer was paying stays.
 //   • A cart read back from storage is untrusted: anything malformed is dropped, not repaired into a line.
 
 export const MAX_QTY_PER_LINE = 99
@@ -80,6 +82,22 @@ export function pruneCart(cart: Cart, available: CartAvailability): { cart: Cart
     out.push({ ...l, qty: to })
   }
   return { cart: out, report }
+}
+
+/** Take what was just paid for out of a cart. A line bought in full leaves; a line bought in part keeps the
+ *  rest; anything the order did not hold is left alone. */
+export function takeOutPaid(cart: Cart, paid: readonly CartLine[]): Cart {
+  const bought = new Map<string, number>()
+  for (const p of paid) {
+    if (!Number.isFinite(p.qty) || p.qty < 1) continue
+    bought.set(lineKey(p), (bought.get(lineKey(p)) ?? 0) + Math.floor(p.qty))
+  }
+  const out: Cart = []
+  for (const l of cart) {
+    const left = l.qty - (bought.get(lineKey(l)) ?? 0)
+    if (left >= 1) out.push(left === l.qty ? l : { ...l, qty: left })
+  }
+  return out
 }
 
 /** Read a cart back from storage. Anything that is not a well-formed line is dropped. */
