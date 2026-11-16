@@ -132,9 +132,11 @@ export async function FrequencyPeople() {
           </div>
           <div className="folk-collage">
             {COLLAGE.map((c, i) => (
+              // The two lead collage photos are the page's LCP (fc2 at 390, fc1 at 1280; 4.4 s on a slow phone,
+              // SCAN-1265): high priority puts their requests ahead of the script bundle. The rest keep the default.
               <figure key={c.src} className={`fc fc${i + 1}${i === 0 ? ' fq-iri-rim' : ''}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- the collage sizes its own img */}
-                <img decoding="async" {...photoImg(c.src, '(max-width: 860px) 50vw, 26vw')} alt={c.alt} />
+                <img decoding="async" fetchPriority={i < 2 ? 'high' : undefined} {...photoImg(c.src, '(max-width: 860px) 50vw, 26vw')} alt={c.alt} />
                 <span className="fq-grain" />
               </figure>
             ))}
