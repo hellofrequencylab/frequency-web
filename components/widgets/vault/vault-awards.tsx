@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import {
   Award, Lock, Trophy, Zap, Flame, Star, Users, Link as LinkIcon,
   Calendar, Mic, Edit, BookOpen, Volume2, MessageCircle, PenTool,
@@ -157,7 +158,7 @@ function AwardsCollection({
                           </p>
                           {a.earned && a.unlockedAt && (
                             <p className="mt-1 text-meta text-subtle">
-                              Unlocked {new Date(a.unlockedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              Unlocked {formatDateMedium(a.unlockedAt)}
                             </p>
                           )}
                           {!a.earned && a.zaps_reward > 0 && !isSecret && (

@@ -1,5 +1,6 @@
 'use client'
 
+import { formatTimeShort } from '@/lib/format-date'
 import { useEffect, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -31,7 +32,7 @@ function formatTime(iso: string) {
   const now = new Date()
   const isToday = d.toDateString() === now.toDateString()
   if (isToday) {
-    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    return formatTimeShort(d)
   }
   return d.toLocaleDateString('en-US', {
     month: 'short',
