@@ -114,7 +114,7 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
   // Mindless's own pictures (the design system's Imagery): the yellow arms-up circle is its hero, a guide on the cushion its portrait.
   // The paint photos follow the accent; the rest are ink mono.
   mindless: {
-    hero: MINDLESS_PHOTO('hero-yellow'), heroPos: '60% 42%', portrait: MINDLESS_PHOTO('guide-mono'), portraitPos: '50% 22%',
+    hero: '/sites/mindless/blob.jpg', heroPos: '50% 50%', portrait: MINDLESS_PHOTO('guide-mono'), portraitPos: '50% 22%',
     strip: [MINDLESS_PHOTO('circle-mono'), MINDLESS_PHOTO('firepit-mono'), MINDLESS_PHOTO('rooftop-mono')], nav1: 'Circles', cta2: 'Start the program',
     covers: [MINDLESS_PHOTO('hero-yellow'), MINDLESS_PHOTO('circle-mono'), MINDLESS_PHOTO('sunset-mono'), MINDLESS_PHOTO('beach-mono')],
     portraits: [MINDLESS_PHOTO('guide-mono'), MINDLESS_PHOTO('small-mono')],
