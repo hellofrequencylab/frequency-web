@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_LINES, MAX_QTY_PER_LINE, addLine, lineKey, mergeCarts, parseCart, pruneCart, removeLine, setQty, type Cart } from './cart'
+import { MAX_LINES, MAX_QTY_PER_LINE, addLine, lineKey, mergeCarts, parseCart, pruneCart, removeLine, setQty, takeOutPaid, type Cart } from './cart'
 
 const L = (productId: string, qty = 1, variantId: string | null = null) => ({ productId, variantId, qty })
 
@@ -58,5 +58,24 @@ describe('cart model', () => {
     const raw = [L('a', 2), null, 'x', { productId: '', qty: 1 }, { productId: 'b', qty: 0 }, { productId: 'c', variantId: 5, qty: 1 }, { productId: 'd', qty: 1 }]
     expect(parseCart(raw)).toEqual([L('a', 2), L('d', 1)])
     expect(parseCart('nope')).toEqual([])
+  })
+})
+
+describe('taking a paid order out of a cart', () => {
+  it('removes a line bought in full and keeps the rest of one bought in part', () => {
+    const c: Cart = [L('a', 2), L('b', 5, 'v'), L('c', 1)]
+    expect(takeOutPaid(c, [L('a', 2), L('b', 2, 'v')])).toEqual([L('b', 3, 'v'), L('c', 1)])
+  })
+  it('leaves a line the order did not hold, and tells a variant from its product', () => {
+    const c: Cart = [L('a', 1), L('a', 1, 'v')]
+    expect(takeOutPaid(c, [L('a', 1, 'v'), L('zzz', 4)])).toEqual([L('a', 1)])
+  })
+  it('adds up an item the order lists twice and never goes below nothing', () => {
+    expect(takeOutPaid([L('a', 3)], [L('a', 2), L('a', 2)])).toEqual([])
+  })
+  it('ignores a malformed paid quantity and returns the same lines when nothing matched', () => {
+    const c: Cart = [L('a', 2)]
+    expect(takeOutPaid(c, [L('a', 0), L('a', Number.NaN)])).toEqual(c)
+    expect(takeOutPaid(c, [])[0]).toBe(c[0])
   })
 })

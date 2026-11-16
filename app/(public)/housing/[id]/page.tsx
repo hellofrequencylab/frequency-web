@@ -1,3 +1,4 @@
+import { formatPriceCents } from '@/lib/commerce/types'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
@@ -70,10 +71,8 @@ const ROOM_LABEL: Record<string, string> = {
   entire_place: 'Entire place',
 }
 
-function money(cents: number | null): string | null {
-  if (cents == null) return null
-  return `$${(cents / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-}
+/** Whole-dollar housing amount, or null when the listing gives none. */
+const housingMoney = (cents: number | null): string | null => (cents == null ? null : formatPriceCents(cents))
 
 function leaseLabel(months: number | null): string | null {
   if (months == null) return null
@@ -147,8 +146,8 @@ export default async function HousingDetailPage({
   if (detail?.bathrooms != null) facts.push({ label: 'Bathrooms', value: String(detail.bathrooms) })
   if (detail?.sqft != null) facts.push({ label: 'Size', value: `${detail.sqft.toLocaleString('en-US')} sq ft` })
   if (detail && leaseLabel(detail.leaseMonths)) facts.push({ label: 'Lease', value: leaseLabel(detail.leaseMonths)! })
-  if (detail && money(detail.depositCents)) facts.push({ label: 'Deposit', value: money(detail.depositCents)! })
-  if (detail && money(detail.moveInCostsCents)) facts.push({ label: 'Move-in costs', value: money(detail.moveInCostsCents)! })
+  if (detail && housingMoney(detail.depositCents)) facts.push({ label: 'Deposit', value: housingMoney(detail.depositCents)! })
+  if (detail && housingMoney(detail.moveInCostsCents)) facts.push({ label: 'Move-in costs', value: housingMoney(detail.moveInCostsCents)! })
   if (detail?.minStayMonths != null) facts.push({ label: 'Minimum stay', value: `${detail.minStayMonths} ${detail.minStayMonths === 1 ? 'month' : 'months'}` })
   if (detail?.maxOccupants != null) facts.push({ label: 'Max occupants', value: String(detail.maxOccupants) })
   if (detail && parkingLabel(detail.parking)) facts.push({ label: 'Parking', value: parkingLabel(detail.parking)! })
