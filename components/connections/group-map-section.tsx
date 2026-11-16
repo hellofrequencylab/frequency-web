@@ -1,3 +1,4 @@
+import { formatDateWeekday } from '@/lib/format-date'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
 import { ModuleCard } from '@/components/modules/module-card'
@@ -28,11 +29,7 @@ type EventRow = {
 }
 
 function formatEventDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
+  return formatDateWeekday(iso)
 }
 
 // Server wrapper for the circle venue map (ADR-186, Connection Layer P4):

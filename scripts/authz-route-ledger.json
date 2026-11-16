@@ -84,9 +84,9 @@
     },
     "app/api/csp-report/route.ts": {
       "verdict": "public",
-      "reason": "CSP violation sink. Browsers post reports with no session, so it cannot be authenticated. Stores nothing, never throws, always 204; the handler only logs three truncated fields. 2026-11-16 re-read (SCAN-1239, SCAN-1232): throttled per address and the body capped at 10KB; still unauthenticated by design, no identity read, same 204 answer.",
+      "reason": "CSP violation sink. Browsers post reports with no session, so it cannot be authenticated. Stores nothing, never throws, always 204; the handler only logs three truncated fields. 2026-11-16 re-read (SCAN-1239, SCAN-1232): throttled per address and the body capped at 10KB; still unauthenticated by design, no identity read, same 204 answer. 2026-11-16 re-read (SCAN-1243): the log line gained four fields (a fixed policy tag from ?policy=, and the report's disposition, source file and script sample, each truncated); the limiter, the 10KB cap and the 204 are unchanged, nothing is stored or reflected.",
       "checked": "2026-11-16",
-      "digest": "d90cdea109873775"
+      "digest": "ddfb130ccdffcdd6"
     },
     "app/api/site-icons/route.ts": {
       "verdict": "public",

@@ -37,6 +37,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { chipClasses } from '@/components/ui/chip'
 
 export function SpaceLoomStudio({
   spaceId,
@@ -257,8 +258,8 @@ export function SpaceLoomStudio({
           />
         </div>
         {tag && (
-          <button type="button" onClick={() => setTag(null)} className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2.5 py-1 text-meta font-medium text-primary-strong">
-            {tag} <X className="h-3 w-3" />
+          <button type="button" onClick={() => setTag(null)} className={chipClasses(true)}>
+            {tag} <X className="h-3 w-3" aria-hidden />
           </button>
         )}
       </div>
@@ -269,7 +270,7 @@ export function SpaceLoomStudio({
               key={t}
               type="button"
               onClick={() => setTag(t)}
-              className="rounded-pill border border-border bg-surface px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:border-primary/50 hover:text-text"
+              className={chipClasses(false)}
             >
               {t}
             </button>

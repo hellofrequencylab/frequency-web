@@ -2,6 +2,7 @@
 // newest first, replayed straight from the cache. No live Vera here, by design:
 // what she said is what stays said.
 
+import { formatDateWeekday } from '@/lib/format-date'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -35,12 +36,7 @@ export const metadata: Metadata = {
 function dayLabel(day: string): string {
   if (day === dispatchDay()) return 'Today'
   if (day === dispatchDay(new Date(Date.now() - 86_400_000))) return 'Yesterday'
-  return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', {
-    timeZone: 'UTC',
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
+  return formatDateWeekday(`${day}T12:00:00Z`, 'UTC')
 }
 
 export default async function DispatchesPage() {
