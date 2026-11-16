@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import { Gem, ShoppingBag, Package, ToggleRight } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -120,7 +121,7 @@ export default async function AdminStorePage() {
       header: 'Waiting since',
       render: (r) => (
         <span className="text-meta text-muted">
-          {new Date(r.redeemed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+          {formatDateMedium(r.redeemed_at)}
         </span>
       ),
     },

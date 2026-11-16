@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import Link from 'next/link'
 import { CalendarRange, ArrowRight } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
@@ -19,7 +20,7 @@ import { StateBadge } from './state-badge'
 
 function fmtDate(d: string | null): string {
   if (!d) return 'Open'
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDateMedium(d)
 }
 
 type SeasonRow = {
