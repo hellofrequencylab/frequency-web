@@ -236,13 +236,10 @@ lifecycle_send_log
 loom_functions
 analytics_experiments
 analytics_experiment_assignments
-<<<<<<< HEAD
 # FH-043 Frequency Hunts Expedition teams: service role only; written by the hunt_team_* functions.
 hunt_teams
 hunt_team_members
 hunt_team_awards
-=======
 
 # SCAN-1210: public.tz_zone_lookup, a keyed IANA zone list public.public_events joins; service role and the definer function only, no policies.
 tz_zone_lookup
->>>>>>> origin/main
