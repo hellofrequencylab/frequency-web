@@ -6,6 +6,7 @@
 // calls the gated actions. After a write it refreshes the server data (router.refresh), the same pattern the
 // listing Q&A uses through revalidatePath.
 
+import { formatDateShort } from '@/lib/format-date'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -28,7 +29,7 @@ function timeAgo(iso: string): string {
   if (hrs < 24) return `${hrs}h ago`
   const days = Math.floor(hrs / 24)
   if (days < 7) return `${days}d ago`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return formatDateShort(iso)
 }
 
 /** A row of five stars, `value` filled. `onPick` (when set) makes them an input. */

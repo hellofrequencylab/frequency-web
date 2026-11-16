@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateMedium } from '@/lib/format-date'
 import { useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
@@ -326,7 +327,7 @@ function MemberRow({
             <div>
               <p className="text-body-sm font-bold text-text mb-1">Details</p>
               <div className="text-meta text-muted space-y-1">
-                {m.created_at && <p>Joined {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>}
+                {m.created_at && <p>Joined {formatDateMedium(m.created_at)}</p>}
                 {m.regionName && <p>Region: {m.regionName}</p>}
                 {m.current_season_rank && <p>Rank: {m.current_season_rank} ({m.current_season_zaps ?? 0} zaps)</p>}
                 <p>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronDown, Lock, X } from 'lucide-react'
 import { MembershipJoinCard } from '@/components/spaces/membership-join-card'
 import type { MembershipTier } from '@/lib/spaces/memberships'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // MEMBERSHIP CHECKOUT FOLD (ADR-826 polish, owner spec): on an event whose ticket a membership
 // includes, the membership price ROW is the package selector — tapping it folds the FULL checkout
@@ -46,9 +47,7 @@ export function MembershipCheckoutFold({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className={`flex w-full items-start justify-between gap-3 rounded-card border px-3.5 py-2.5 text-left transition-colors ${
-          open ? 'border-primary bg-primary-bg/40' : 'border-border hover:border-border-strong'
-        }`}
+        className={choiceTileClasses(open, 'flex w-full items-start justify-between gap-3 rounded-card px-3.5 py-2.5 text-left')}
       >
         <div className="min-w-0">
           <p className="truncate text-body-sm font-semibold text-text">{rowName}</p>

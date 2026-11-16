@@ -33,6 +33,7 @@
 // down: the rail layout stamps `data-owner-console` and members-shell.css hides the box (SCAN-909).
 // No sample numbers, and no Zap rewards on goals or setup.
 
+import { formatTimeShort } from '@/lib/format-date'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
@@ -427,7 +428,7 @@ async function AnonComingUp() {
                 <Link href={`/events/${e.slug}`}>
                   <i aria-hidden />
                   <span>{e.title}</span>
-                  <small>{at.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase()}</small>
+                  <small>{formatTimeShort(at, 'UTC').replace(' ', '').toLowerCase()}</small>
                 </Link>
               </span>
             </div>

@@ -10,6 +10,7 @@ import { HeaderImageField } from '@/components/ui/header-image-field'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { heroAspect } from '@/lib/spaces/hero-config'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
 
@@ -271,9 +272,7 @@ export function ProfileForm({
                 onClick={() => setOverlayStyle(v)}
                 aria-pressed={active}
                 disabled={isPending}
-                className={`rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-60 ${
-                  active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong'
-                }`}
+                className={choiceTileClasses(active, `rounded-control px-3 py-1.5 text-body-sm font-medium ${active ? 'text-text' : 'text-muted'}`)}
               >
                 {label}
               </button>

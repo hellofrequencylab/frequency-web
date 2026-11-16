@@ -259,6 +259,13 @@ const nextConfig: NextConfig = {
     // One worker is about 660 MB less at the exact moment the container is fullest; static
     // generation takes longer, which costs minutes, not money.
     cpus: 1,
+    // NO SERVER SOURCE MAPS (HYG-241 step 2). Turbopack writes a .map beside every server chunk in a
+    // production build unless this is false (the compiled binary reads `serverSourceMaps`), and the
+    // compile peaks at the end, while it emits: 7774 MB of 8192 on 2026-11-16 (a85978d5), with
+    // next-build at 6395 MB. Browser maps are already off (HYG-232). The cost: server stack traces in
+    // the Vercel logs point at built chunks, not source files. Measured on the preview build of this
+    // change before it merged; the reading is on the HYG-241 row.
+    serverSourceMaps: false,
   },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.

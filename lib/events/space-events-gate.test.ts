@@ -80,11 +80,14 @@ describe('exactly one caller opts out, and it is the team calendar loader', () =
     // of the '/spaces/*' layout-module family that no page ever mounted. The positive control below
     // is what makes shrinking this list safe: a reader that still exists but stopped calling
     // listEventsForSpace fails loudly instead of quietly dropping off.
+    //
+    // ⚠️ A THIRD LEFT on 2026-11-16 the same way (SCAN-1240, owner's call): the FILE
+    // components/spaces/dashboard/space-dashboard.tsx was deleted. No page mounted it; the /manage
+    // landing is manage-dashboard.tsx, which does not read events.
     const PUBLIC_READERS = [
       'components/widgets/entity/entity-cta.tsx',
       'lib/spaces/content-data.ts',
       'lib/spaces/profile-stats.ts',
-      'components/spaces/dashboard/space-dashboard.tsx',
     ]
     for (const f of PUBLIC_READERS) {
       const src = code(readFileSync(f, 'utf8'))

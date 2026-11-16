@@ -38,23 +38,18 @@
 // wrapper also resolves the real account before loading; <GaConsentGate/> synchronizes later
 // account/staff changes in the mounted app. Browser and account permission remain ANDed.
 
-import { gaBootstrapScript } from '@/lib/consent/cookie-consent'
-
-const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
-
-/** The deployment we are running in: Vercel's VERCEL_ENV when present, NODE_ENV otherwise. */
-function deployEnv(): string | undefined {
-  return process.env.VERCEL_ENV || process.env.NODE_ENV
-}
+// The script text and the gate come from lib/consent/analytics-head.ts, which the proxy also reads
+// to allow this script by hash under the nonce-based CSP (SCAN-1243). One string, two readers.
+import { analyticsHeadScript, googleTagEnabled } from '@/lib/consent/analytics-head'
 
 export function GoogleAnalytics() {
-  if (!GA_ID || deployEnv() !== 'production') return null
+  if (!googleTagEnabled()) return null
 
-  return <script dangerouslySetInnerHTML={{ __html: gaBootstrapScript(GA_ID, true) }} />
+  return <script dangerouslySetInnerHTML={{ __html: analyticsHeadScript() }} />
 }
 
 /** Product analytics remains request-policy gated when Google is unconfigured or disabled on a preview. */
 export function FirstPartyAnalyticsPolicy() {
-  if (GA_ID && deployEnv() === 'production') return null
-  return <script dangerouslySetInnerHTML={{ __html: gaBootstrapScript('', true, false) }} />
+  if (googleTagEnabled()) return null
+  return <script dangerouslySetInnerHTML={{ __html: analyticsHeadScript() }} />
 }
