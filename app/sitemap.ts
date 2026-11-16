@@ -34,7 +34,7 @@ import { meetsIndexFloor } from "@/lib/seo/index-floor";
 import { listDensityCities } from "@/app/discover/cities/_data";
 import { COMPARISONS, comparisonPath } from "@/lib/marketing/comparisons";
 import { funnelSlugs } from "@/lib/marketing/funnel-config";
-import { GUIDE_LAST_MODIFIED } from "@/lib/seo/guide-dates";
+import { GUIDE_LAST_MODIFIED, pageLastModified } from "@/lib/seo/guide-dates";
 
 // Organizer profiles (/discover/events/organizer/[handle]) — one URL per host with
 // at least one upcoming PUBLIC event. Reads the redaction-safe RPC, which carries the
@@ -298,12 +298,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // in here on 2026-10-14 (301), so this is the one browse-by-town index, at the priority the places
     // hub carried.
     { url: `${SITE_URL}/discover/cities`, changeFrequency: "daily", priority: 0.8 },
+    // The North County hub (SCAN-1209): editorial and always indexable, so it is listed regardless of the
+    // local index floor that keeps every per-town page out of this file until the town has activity.
+    { url: `${SITE_URL}/north-county-san-diego`, lastModified: pageLastModified("north-county-san-diego"), changeFrequency: "monthly", priority: 0.8 },
     // Comparison ("alternative to X") hub + one page per named alternative
     // (GE11-1). The set is a static registry, so the per-page URLs are safe to
     // advertise here directly.
-    { url: `${SITE_URL}/vs`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${SITE_URL}/vs`, lastModified: pageLastModified("vs"), changeFrequency: "monthly", priority: 0.6 },
     ...COMPARISONS.map((c) => ({
       url: `${SITE_URL}${comparisonPath(c.slug)}`,
+      lastModified: pageLastModified("vs"),
       changeFrequency: "monthly" as const,
       priority: 0.6,
     })),
@@ -319,19 +323,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // pages, while being the page that answers the one question a prospect asks out loud and
     // the page every answer engine quotes our money model from. It is now the highest-priority
     // URL after the home page.
-    { url: `${SITE_URL}/pricing`, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${SITE_URL}/pricing`, lastModified: pageLastModified("pricing"), changeFrequency: "monthly", priority: 0.9 },
     // /features exists only under the Frequency design (DAWN answers 404, see its page.tsx), so it is
     // advertised only on a Frequency deploy. SITE_DESIGN is build-time, so this never varies per request.
     ...(SITE_DESIGN === "frequency"
       ? [{ url: `${SITE_URL}/features`, changeFrequency: "monthly" as const, priority: 0.7 }]
       : []),
     ...(SITE_DESIGN === "frequency"
-      ? [{ url: `${SITE_URL}/for`, changeFrequency: "monthly" as const, priority: 0.7 }]
+      ? [{ url: `${SITE_URL}/for`, lastModified: pageLastModified("for"), changeFrequency: "monthly" as const, priority: 0.7 }]
       : []),
     // Operator funnel doors, /for/<niche> (ADR-591). A static registry (lib/marketing/funnel-config), so
     // the per-page URLs are safe to advertise here directly.
     ...funnelSlugs().map((slug) => ({
       url: `${SITE_URL}/for/${slug}`,
+      lastModified: pageLastModified("for"),
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),

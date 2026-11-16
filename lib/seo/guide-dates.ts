@@ -26,3 +26,22 @@ export type GuideSlug = keyof typeof GUIDE_DATES
 export const GUIDE_LAST_MODIFIED: Record<GuideSlug, Date> = Object.fromEntries(
   Object.entries(GUIDE_DATES).map(([slug, d]) => [slug, new Date(d.updated)]),
 ) as Record<GuideSlug, Date>
+
+// The updated day of the pages that change with the offer rather than with an article (SCAN-1226): the
+// pricing page, the operator doors, the comparisons and the North County hub. A page that moves its
+// price table, its door copy or its town list moves its day here in the same change, so a crawler is
+// told the page changed and schedules the recrawl. The day is the last real edit of the page's copy,
+// never "today", and never in the future (a lastmod ahead of the clock gets the whole field distrusted,
+// SCAN-661). Unlike GUIDE_DATES these pages carry no PUBLISHED / UPDATED constants of their own, so
+// there is no page-side twin to drift from.
+export const PAGE_UPDATED = {
+  pricing: '2026-11-14',
+  for: '2026-11-14',
+  vs: '2026-11-14',
+  'north-county-san-diego': '2026-11-16',
+} as const
+
+type PageUpdatedSlug = keyof typeof PAGE_UPDATED
+
+/** The sitemap's lastModified for one of those pages, as a Date. */
+export const pageLastModified = (slug: PageUpdatedSlug): Date => new Date(PAGE_UPDATED[slug])
