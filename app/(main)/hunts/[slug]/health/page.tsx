@@ -9,6 +9,7 @@ import { huntBySlug } from '@/lib/hunts/merchant-report-store'
 import { STALL_HOURS, buildRouteHealth } from '@/lib/hunts/route-health'
 import { loadRouteFacts } from '@/lib/hunts/route-health-store'
 import { authorizeHuntAction } from '@/lib/hunts/store'
+import { formatEventDate } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,9 @@ export const metadata: Metadata = { title: 'Route health', robots: { index: fals
 const STATUS_LABEL: Record<string, string> = { draft: 'Draft', scheduled: 'Scheduled', live: 'Running', paused: 'Paused', ended: 'Ended', cancelled: 'Cancelled', archived: 'Archived' }
 const MEDIUM_LABEL: Record<string, string> = { qr: 'Printed code', nfc: 'Tap tag', staff: 'Staff check', event: 'Event door' }
 const cell = 'px-3 py-2'
+const TERMS_LABEL = { current: 'Current terms', earlier: 'Earlier terms', unknown: 'Not recorded' } as const
+const ENDED_LABEL = { withdrawn: 'Withdrew', suspended: 'Suspended by you', ended: 'Partnership ended' } as const
+const dateLabel = (iso: string | null) => (iso ? formatEventDate(iso) : 'date to be set')
 
 export default async function HuntRouteHealthPage({ params }: { params: Promise<{ slug: string }> }) {
   if (!huntSwitchOn('claims')) notFound()
@@ -32,6 +36,7 @@ export default async function HuntRouteHealthPage({ params }: { params: Promise<
 
   const facts = await loadRouteFacts(hunt.id).catch(() => null)
   const health = facts ? buildRouteHealth(facts, new Date().toISOString()) : null
+  const standing = new Map((health?.partnerStanding ?? []).map((p) => [p.spaceId, p]))
 
   return (
     <FocusTemplate
@@ -121,21 +126,80 @@ export default async function HuntRouteHealthPage({ params }: { params: Promise<
                       <th scope="col" className={cell}>Players</th>
                       <th scope="col" className={cell}>Waiting for review</th>
                       <th scope="col" className={cell}>Rewards handed over</th>
+                      <th scope="col" className={cell}>Steward</th>
+                      <th scope="col" className={cell}>Terms</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {health.venues.map((v) => (
-                      <tr key={v.spaceId} className="border-b border-border">
-                        <th scope="row" className={`${cell} font-medium`}>{v.name}</th>
-                        <td className={cell}>{v.confirmedStops}</td>
-                        <td className={cell}>{v.players}</td>
-                        <td className={cell}>{v.awaitingReview}</td>
-                        <td className={cell}>{v.handedOver}</td>
-                      </tr>
-                    ))}
+                    {health.venues.map((v) => {
+                      const partner = standing.get(v.spaceId)
+                      return (
+                        <tr key={v.spaceId} className="border-b border-border">
+                          <th scope="row" className={`${cell} font-medium`}>{v.name}</th>
+                          <td className={cell}>{v.confirmedStops}</td>
+                          <td className={cell}>{v.players}</td>
+                          <td className={cell}>{v.awaitingReview}</td>
+                          <td className={cell}>{v.handedOver}</td>
+                          <td className={cell}>{partner ? partner.steward ?? 'Not named' : 'Your Space'}</td>
+                          <td className={cell}>{partner ? TERMS_LABEL[partner.terms] : 'Not needed'}</td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
+            )}
+            {health.formerVenues.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-body-sm text-muted">No longer partners. Their past counts stay, so the totals still add up, and they take no new stops.</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-body-sm">
+                    <caption className="sr-only">Venues that were partners and their counts from that time</caption>
+                    <thead className="border-b border-border text-muted">
+                      <tr>
+                        <th scope="col" className={cell}>Venue</th>
+                        <th scope="col" className={cell}>Why</th>
+                        <th scope="col" className={cell}>Confirmed stops</th>
+                        <th scope="col" className={cell}>Players</th>
+                        <th scope="col" className={cell}>Rewards handed over</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {health.formerVenues.map((v) => (
+                        <tr key={v.spaceId} className="border-b border-border">
+                          <th scope="row" className={`${cell} font-medium`}>{v.name}</th>
+                          <td className={cell}>{ENDED_LABEL[v.ended]}</td>
+                          <td className={cell}>{v.confirmedStops}</td>
+                          <td className={cell}>{v.players}</td>
+                          <td className={cell}>{v.handedOver}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section aria-labelledby="route-health-finale" className="space-y-3">
+            <h2 id="route-health-finale" className="text-body font-semibold text-text">Finale</h2>
+            {health.finale.state === 'none' ? (
+              <p className="text-body-sm text-muted">This Trail does not end at an event.</p>
+            ) : health.finale.state === 'unavailable' ? (
+              <p className="text-body-sm text-muted">
+                Players see the finale as not available. The event was cancelled or unpublished, or its host Space is no longer a partner.
+              </p>
+            ) : (
+              <>
+                <p className="text-body-sm text-muted">
+                  Every player&apos;s Trail shows {health.finale.event.title}, {dateLabel(health.finale.event.startsAt)}. Finishing never holds a place.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <StatCard label="Going" value={health.finale.going} />
+                  <StatCard label="Places left" value={health.finale.spotsLeft ?? 'No limit'} />
+                  <StatCard label="Status" value={health.finale.isFull ? 'Full' : 'Open'} />
+                </div>
+              </>
             )}
           </section>
 

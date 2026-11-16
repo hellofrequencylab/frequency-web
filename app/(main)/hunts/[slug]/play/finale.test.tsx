@@ -12,6 +12,8 @@ const store = vi.hoisted(() => ({
   loadPublishedTrail: vi.fn(),
   loadRunCredits: vi.fn(),
   startOrResumeRun: vi.fn(),
+  // The visited-stops map (FH-016T) landed on main beside the finale; the page reads it too.
+  loadVisitedStopPoints: vi.fn(),
   loadRallyFinale: vi.fn(),
 }))
 
@@ -49,6 +51,7 @@ beforeEach(() => {
   store.loadPublishedTrail.mockResolvedValue(trail)
   store.loadRunCredits.mockResolvedValue([])
   store.startOrResumeRun.mockResolvedValue({ runId: 'run-1', state: 'completed' })
+  store.loadVisitedStopPoints.mockResolvedValue([])
 })
 
 afterEach(() => {

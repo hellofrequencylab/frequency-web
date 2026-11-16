@@ -14,9 +14,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowDown, ArrowUp, Check, Lock, Map, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -68,7 +69,12 @@ const stopValue = (s: Stop, path: string): string => {
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
-export function TrailEditor({ initial }: { initial: TrailEditorState }) {
+/**
+ * `routeLinks` (FH-032S): the page passes true when HUNTS_CLAIMS_ENABLED is on, so a published Trail's
+ * manage screen links to route health (organisers) and the venue report (venue staff). Off, both pages
+ * 404, so no link is shown.
+ */
+export function TrailEditor({ initial, routeLinks = false }: { initial: TrailEditorState; routeLinks?: boolean }) {
   const router = useRouter()
   const [draft, setDraft] = useState<TrailDraft>(initial.draft)
   const [revision, setRevision] = useState(initial.revision)
@@ -517,6 +523,16 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
               ? 'Players who finish see the event and how many places are left. Finishing never holds a place: they still need their own ticket or RSVP.'
               : 'A trail can end at an upcoming event you host, or one your Space or a partner Space hosts. There is none to pick yet.'}
           </StudioNote>
+          {published && routeLinks && (
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/hunts/${encodeURIComponent(initial.slug)}/health`} prefetch={false} className={buttonClasses('secondary', 'md')}>
+                Route health
+              </Link>
+              <Link href={`/hunts/${encodeURIComponent(initial.slug)}/report`} prefetch={false} className={buttonClasses('secondary', 'md')}>
+                Venue report
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </SparkShell>

@@ -16,23 +16,38 @@
  * and a crossing says only that one of at least five people did something. No before-and-after pair
  * of views singles a player out, which is what stops a partner rebuilding a trail.
  *
- * PARTNER SEAM (FH-029): `activeVenues` is the one place that decides which Spaces count as venues of
- * the Trail right now. Today it reads the hunt_partners rows that exist on main with the same rule as
- * lib/hunts/authz.ts (accepted, effective, not revoked). When FH-029 lands live partner state (pinned
- * terms, the named steward, withdrawal), it plugs in here and nowhere else.
+ * PARTNERS (FH-029, plugged in by FH-032S): `activeVenues` is the one place that decides which Spaces
+ * count as venues of the Trail right now, and it asks lib/hunts/partners.ts `partnerLive`, the same rule
+ * the claim path and publish use. A venue withdrawn, suspended or revoked through the partner flow
+ * drops out of `venues` on the next read; its counts move to `formerVenues`, so what it already
+ * confirmed still adds up. `partnerStanding` says, for each live partner, who the named steward is and
+ * whether the terms it accepted are the ones in force today.
  *
- * BROADCAST SEAM (FH-031): there is no finale broadcast on main. `messages` reports the Hunt outbox
- * (waiting, sending, sent, failed), which is what carries every Hunt notice today.
+ * FINALE (FH-031, plugged in by FH-032S): `finale` is the finale every player's Trail page shows, from
+ * lib/hunts/rally-finale.ts `projectFinale` over the same host Event and the same Space rule, read
+ * with no player's seat in it. `messages` still reports the Hunt outbox beside it.
  */
 import type { PartnerRow } from './authz'
 import { buildMerchantReport, claimVenues, coarse, type ReportFacts } from './merchant-report'
+import { PARTNER_TERMS, partnerLive } from './partners'
+import { projectFinale, type HostEvent } from './rally-finale'
 
 /** An active run whose last confirmed stop is older than this is stalled, not just between stops. */
 export const STALL_HOURS = 24
 
+/** A partner row with the two facts FH-029 added: the named steward and the terms version it pinned. */
+export type RoutePartner = PartnerRow & { inviteeProfileId?: string | null; termsVersion?: string | null }
+
+/** The current version's finale: the host Event it names, read now, and that Event's confirmed seats. */
+export type RouteFinale = { eventId: string; event: HostEvent | null; going: number }
+
 export type RouteFacts = ReportFacts & {
   hunt: { status: string; ownerSpaceId: string | null; currentVersionId: string | null }
-  partners: readonly PartnerRow[]
+  partners: readonly RoutePartner[]
+  /** Display names of the named stewards, by profile id. */
+  stewardNames?: Readonly<Record<string, string>>
+  /** Null or absent when the current version does not end at an Event. */
+  finale?: RouteFinale | null
   /** The current version's stops. */
   missions: readonly { missionKey: string; title: string }[]
   versionRuns: readonly { id: string; state: string }[]
@@ -42,13 +57,53 @@ export type RouteFacts = ReportFacts & {
   venueNames: Readonly<Record<string, string>>
 }
 
-/** PARTNER SEAM (FH-029). The Spaces that are venues of this Trail at `nowIso`: its own Space, then live partners. */
+/** The Spaces that are venues of this Trail at `nowIso`: its own Space, then partners in force (lib/hunts/partners.ts). */
 export function activeVenues(facts: Pick<RouteFacts, 'hunt' | 'partners'>, nowIso: string): string[] {
-  const now = Date.parse(nowIso)
-  const live = facts.partners.filter(
-    (p) => p.status === 'accepted' && p.effectiveAt !== null && Date.parse(p.effectiveAt) <= now && (p.revokedAt === null || Date.parse(p.revokedAt) > now),
-  )
+  const live = facts.partners.filter((p) => partnerLive(p, nowIso))
   return [...new Set([facts.hunt.ownerSpaceId, ...live.map((p) => p.spaceId)].filter((id): id is string => !!id))]
+}
+
+/** Why a venue that was once live is not any more. */
+type VenueEnd = 'withdrawn' | 'suspended' | 'ended'
+
+/** Partner Spaces that were in force once (accepted with an effective date) and are not now. */
+function formerPartners(facts: Pick<RouteFacts, 'hunt' | 'partners'>, nowIso: string): { spaceId: string; ended: VenueEnd }[] {
+  const active = new Set(activeVenues(facts, nowIso))
+  const out = new Map<string, VenueEnd>()
+  for (const p of facts.partners) {
+    if (active.has(p.spaceId) || p.effectiveAt === null || Date.parse(p.effectiveAt) > Date.parse(nowIso)) continue
+    if (p.status === 'withdrawn' || p.status === 'suspended') out.set(p.spaceId, p.status)
+    else if (p.status === 'accepted') out.set(p.spaceId, 'ended')
+  }
+  return [...out].map(([spaceId, ended]) => ({ spaceId, ended }))
+}
+
+type FinaleState =
+  | { state: 'none' }
+  | { state: 'unavailable' }
+  | { state: 'showing'; event: { title: string; slug: string; startsAt: string | null }; capacity: number | null; going: number; spotsLeft: number | null; isFull: boolean }
+
+/**
+ * What every player's finale panel shows right now: the projection with no player's seat in it, so it
+ * can only say which Event, how full, or that the finale is unavailable. Nothing here is per player.
+ */
+function finaleBroadcast(facts: Pick<RouteFacts, 'hunt' | 'partners' | 'finale'>, nowIso: string): FinaleState {
+  const f = facts.finale
+  if (!f) return { state: 'none' }
+  const p = projectFinale({
+    finale: { eventId: f.eventId },
+    event: f.event,
+    going: f.going,
+    rsvps: [],
+    tickets: [],
+    selfCheckedIn: false,
+    runState: 'active',
+    huntOwnerSpaceId: facts.hunt.ownerSpaceId,
+    livePartnerSpaceIds: activeVenues(facts, nowIso),
+  })
+  if (p.kind === 'none') return { state: 'none' }
+  if (p.kind === 'unavailable') return { state: 'unavailable' }
+  return { state: 'showing', event: { title: p.event.title, slug: p.event.slug, startsAt: p.event.startsAt }, ...p.capacity }
 }
 
 type Stop = {
@@ -68,9 +123,16 @@ type RouteHealth = {
   runs: { started: number; playing: number; finished: number; stopped: number; notStarted: number }
   stops: Stop[]
   placements: { open: number; closed: number; damaged: number; missing: number; unchecked: number }
-  venues: { spaceId: string; name: string; confirmedStops: number; players: number; awaitingReview: number; handedOver: number }[]
+  venues: VenueCounts[]
+  /** Partners that were live and are not now. Their counts stay, so the Trail's totals still reconcile. */
+  formerVenues: (VenueCounts & { ended: VenueEnd })[]
+  /** Each live partner's named steward and whether the terms it accepted are today's. */
+  partnerStanding: { spaceId: string; steward: string | null; terms: 'current' | 'earlier' | 'unknown' }[]
   messages: { waiting: number; sending: number; sent: number; failed: number }
+  finale: FinaleState
 }
+
+type VenueCounts = { spaceId: string; name: string; confirmedStops: number; players: number; awaitingReview: number; handedOver: number }
 
 export function buildRouteHealth(facts: RouteFacts, nowIso: string): RouteHealth {
   const version = facts.hunt.currentVersionId
@@ -129,10 +191,20 @@ export function buildRouteHealth(facts: RouteFacts, nowIso: string): RouteHealth
     if (p.revokedAt === null && (p.healthStatus === 'damaged' || p.healthStatus === 'missing' || p.healthStatus === 'unchecked')) placements[p.healthStatus]++
   }
 
-  const venues = activeVenues(facts, nowIso).map((spaceId) => {
+  const countsFor = (spaceId: string): VenueCounts => {
     const r = buildMerchantReport(facts, spaceId, 'owner_space', 0)
     return { spaceId, name: facts.venueNames[spaceId] ?? 'A venue', confirmedStops: r.visits.total, players: r.visits.visitors, awaitingReview: r.visits.awaitingReview, handedOver: r.redeemedHere }
-  })
+  }
+  const active = activeVenues(facts, nowIso)
+  const venues = active.map(countsFor)
+  const formerVenues = formerPartners(facts, nowIso).map(({ spaceId, ended }) => ({ ...countsFor(spaceId), ended }))
+  const partnerStanding = facts.partners
+    .filter((p) => p.spaceId !== facts.hunt.ownerSpaceId && partnerLive(p, nowIso))
+    .map((p) => ({
+      spaceId: p.spaceId,
+      steward: (p.inviteeProfileId && facts.stewardNames?.[p.inviteeProfileId]) || null,
+      terms: !p.termsVersion ? ('unknown' as const) : p.termsVersion === PARTNER_TERMS.hash ? ('current' as const) : ('earlier' as const),
+    }))
 
   return {
     status: facts.hunt.status,
@@ -140,7 +212,10 @@ export function buildRouteHealth(facts: RouteFacts, nowIso: string): RouteHealth
     stops,
     placements,
     venues,
+    formerVenues,
+    partnerStanding,
     messages: { waiting: facts.outbox.pending, sending: facts.outbox.leased, sent: facts.outbox.done, failed: facts.outbox.dead },
+    finale: finaleBroadcast(facts, nowIso),
   }
 }
 

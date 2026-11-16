@@ -31,6 +31,8 @@ type EventRow = {
   space_id: string | null
 }
 
+const EVENT_COLS = 'id, title, slug, starts_at, capacity, is_cancelled, status, removed_at, host_space_id, space_id'
+
 const toHostEvent = (e: EventRow): HostEvent => ({
   id: e.id,
   title: e.title,
@@ -74,7 +76,7 @@ async function loadFinaleFacts(runId: string, profileId: string, now: string): P
   if (!finale) return empty
 
   const [event, rsvps, tickets, checkin] = await Promise.all([
-    client.from('events').select('id, title, slug, starts_at, capacity, is_cancelled, status, removed_at, host_space_id, space_id').eq('id', finale.eventId).maybeSingle(),
+    client.from('events').select(EVENT_COLS).eq('id', finale.eventId).maybeSingle(),
     client.from('event_rsvps').select('id, event_id, status, approval_status, attended_at').eq('event_id', finale.eventId).eq('profile_id', profileId),
     client.from('event_tickets').select('id, event_id, status, refunded_at, attended_at').eq('event_id', finale.eventId).eq('buyer_profile_id', profileId),
     client.from('engagement_events').select('id').eq('event_type', 'practice.verified').eq('idempotency_key', `event_checkin:${finale.eventId}:${profileId}`).limit(1),
@@ -102,4 +104,16 @@ async function loadFinaleFacts(runId: string, profileId: string, now: string): P
 export async function loadRallyFinale(runId: string, profileId: string, now: string): Promise<FinaleProjection | null> {
   const facts = await loadFinaleFacts(runId, profileId, now)
   return facts ? projectFinale(facts) : null
+}
+
+/**
+ * The host Event alone, for the organiser's route health (FH-032S): the Event row and its confirmed seat
+ * count, with no player's rows. A failed read or a missing Event reads as no Event, which the
+ * projection shows as an unavailable finale.
+ */
+export async function loadHostEvent(eventId: string): Promise<{ event: HostEvent | null; going: number }> {
+  const { data, error } = await db().from('events').select(EVENT_COLS).eq('id', eventId).maybeSingle()
+  if (error || !data) return { event: null, going: 0 }
+  const capacity = await getCapacityInfo(eventId)
+  return { event: toHostEvent(data as EventRow), going: capacity.going }
 }

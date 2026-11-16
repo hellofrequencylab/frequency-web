@@ -22,5 +22,6 @@ export default async function EditTrailPage({ params }: { params: Promise<{ id: 
   if (!profileId) redirect(`/sign-in?next=/hunts/edit/${id}`)
   const state = await loadTrail(id, { profileId })
   if (!state) notFound()
-  return <TrailEditor initial={state} />
+  // FH-032S: link route health and the venue report once the Trail can take claims.
+  return <TrailEditor initial={state} routeLinks={huntSwitchOn('claims')} />
 }
