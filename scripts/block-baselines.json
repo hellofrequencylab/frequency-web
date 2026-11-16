@@ -12,13 +12,13 @@
         "lib/spaces/profile-blocks.ts",
         "lib/spotlight/blocks/schema.ts"
       ],
-      "baseline": 5,
+      "baseline": 4,
       "frozen": {
         "at": "2026-11-16",
-        "value": 5,
-        "direction": "rebased",
+        "value": 4,
+        "direction": "lowered",
         "basis": "b5fa30f34c4a",
-        "reason": "Manifest re-seeded to the five systems in the EDITOR-ARCHITECTURE section 2.1 table (owner approval, Daniel, 2026-11-16, ADR-1953). Out: lib/email-studio/product-block.ts (send-time data binding for a block already in the registry), lib/library/element-catalog.ts (the Loom art catalog), components/spotlight (a directory that cannot disappear). In: lib/widgets/modules.ts, lib/spaces/profile-blocks.ts, lib/spotlight/blocks/schema.ts. The count reads 5 before and after; nothing was consolidated.",
+        "reason": "Space profile sections folded into the entity-block registry (PROG-E2B): lib/spaces/profile-blocks.ts is deleted and its fourteen sections are now derived from ENTITY_BLOCKS in lib/entity-blocks/space-profile.ts. Rendered output and stored layouts unchanged (goldens). Four systems remain: entity blocks, Puck, layout modules, Spotlight.",
         "from": 5
       },
       "history": [
@@ -28,6 +28,13 @@
           "to": 5,
           "direction": "rebased",
           "reason": "Manifest re-seeded to the five systems in the EDITOR-ARCHITECTURE section 2.1 table (owner approval, Daniel, 2026-11-16, ADR-1953). Out: lib/email-studio/product-block.ts (send-time data binding for a block already in the registry), lib/library/element-catalog.ts (the Loom art catalog), components/spotlight (a directory that cannot disappear). In: lib/widgets/modules.ts, lib/spaces/profile-blocks.ts, lib/spotlight/blocks/schema.ts. The count reads 5 before and after; nothing was consolidated."
+        },
+        {
+          "at": "2026-11-16",
+          "from": 5,
+          "to": 4,
+          "direction": "lowered",
+          "reason": "Space profile sections folded into the entity-block registry (PROG-E2B): lib/spaces/profile-blocks.ts is deleted and its fourteen sections are now derived from ENTITY_BLOCKS in lib/entity-blocks/space-profile.ts. Rendered output and stored layouts unchanged (goldens). Four systems remain: entity blocks, Puck, layout modules, Spotlight."
         }
       ]
     }

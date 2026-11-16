@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { getSpaceContentData, type SpaceContentData } from '@/lib/spaces/content-data'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
-import type { ProfileBlockId } from '@/lib/spaces/profile-blocks'
+import type { ProfileBlockId } from '@/lib/entity-blocks/space-profile'
 import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
 import { loadSpaceAuthoredContent } from '@/lib/spaces/page-doc'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { PROFILE_BLOCKS, profileBlockById, defaultProfileLayout } from './profile-blocks'
-import type { SpaceFunctionKey } from './functions'
+import { PROFILE_BLOCKS, profileBlockById, defaultProfileLayout } from './space-profile'
+import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 
 const fns = (...keys: SpaceFunctionKey[]): ReadonlySet<SpaceFunctionKey> => new Set(keys)
 
