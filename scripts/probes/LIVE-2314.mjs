@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2311: the Resonance tab on a Space page (`?panel=manage&area=resonance`) draws its Contacts Workspace,
+// LIVE-2314: the Resonance tab on a Space page (`?panel=manage&area=resonance`) draws its Contacts Workspace,
 // and its person card (where the message composer lives) cannot stay on "Loading their card" forever.
 // The in-place console has no `[data-kit="admin"]` ancestor, so the Workspace needs its own rules under the
 // in-place block, and the card read needs a deadline and a way to be asked again.
@@ -25,7 +25,7 @@ if (!/\[selectedId, needsFetch, ask\]/.test(ws)) fails.push('nothing can ask for
 if (!/onClick=\{\(\) => pick\(m\.id\)\}/.test(ws)) fails.push('picking the same person again does not retry their card')
 
 if (fails.length) {
-  console.error(`FAIL LIVE-2311\n- ${fails.join('\n- ')}`)
+  console.error(`FAIL LIVE-2314\n- ${fails.join('\n- ')}`)
   process.exit(1)
 }
-console.log('PASS LIVE-2311')
+console.log('PASS LIVE-2314')
