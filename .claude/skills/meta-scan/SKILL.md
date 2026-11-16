@@ -8,7 +8,7 @@ description: Full-repo meta scan of Frequency web — sweep every dimension (orp
 `/maintenance` checks operational health (advisors, drift, deps, CI). `/meta-scan` goes
 wider: it hunts orphaned/undeveloped/unplugged code and brings every quality dimension
 toward 10/10. Read the canons first (`docs/NAMING.md`, `docs/CONTENT-VOICE.md`,
-`docs/PAGE-FRAMEWORK.md`, `SEO-AEO-PLAN.md`) — they are the spec you audit against.
+`docs/PAGE-FRAMEWORK.md`, `docs/SEO-AEO-PLAN.md`) — they are the spec you audit against.
 
 ## 0. Sandbox reality (READ FIRST — hard-won)
 

@@ -148,6 +148,8 @@ vi.mock('./journey-fulfilment', () => ({
 }))
 vi.mock('@/lib/journeys/tier-gate', () => tierGate)
 vi.mock('./order-receipt', () => ({ sendOrderReceipts: vi.fn(async () => {}) }))
+const cartStore = vi.hoisted(() => ({ takePaidOutOfStoredCart: vi.fn(async (_profileId: string, _paid: unknown[]) => {}) }))
+vi.mock('./cart-store', () => cartStore)
 
 import {
   createCommerceCheckout,
@@ -1032,5 +1034,99 @@ describe('LIVE-882 full refund required unwind recovers every boundary', () => {
     expect(stockEffects).toBe(1)
     expect(booking.cancelBookingByOrder).toHaveBeenLastCalledWith('o1', { strict: true })
     expect(revokeJourneyByOrder).toHaveBeenLastCalledWith('o1', { strict: true })
+  })
+})
+
+describe('a paid order leaves the saved cart (DEF-ETSY P5 slice 5)', () => {
+  const session = { id: 'cs_cart', metadata: { kind: 'commerce_order' }, payment_status: 'paid', payment_intent: 'pi_cart', amount_total: 1000, currency: 'usd' } as unknown as Stripe.Checkout.Session
+  const row = { id: 'o_cart', owner_kind: 'platform', owner_profile_id: null, owner_space_id: null, entity_id: 'ent-1', amount_cents: 1000, platform_fee_cents: 0, buyer_profile_id: 'buyer-1', currency: 'usd', funds_flow: 'destination' }
+  function paidOnce(over: { buyer?: string | null } = {}) {
+    let paid = false
+    const order = { ...row, buyer_profile_id: over.buyer === undefined ? 'buyer-1' : over.buyer }
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'update') {
+        if (paid) return { data: [] }
+        paid = true
+        return { data: [order] }
+      }
+      if (c.table === 'commerce_orders' && c.op === 'select') return { data: [order] }
+      if (c.table === 'commerce_order_items' && c.op === 'select') {
+        return { data: [{ product_id: 'p1', variant_id: null, qty: 2 }, { product_id: 'p2', variant_id: 'v9', qty: 1 }, { product_id: null, variant_id: null, qty: 1 }] }
+      }
+      return {}
+    })
+  }
+  const on = () => {
+    vi.stubEnv('COMMERCE_CART_ENABLED', '1')
+    vi.stubEnv('COMMERCE_CART_CHECKOUT_ENABLED', '1')
+  }
+
+  it('takes the order lines out of the buyer cart on the paid flip, and only once across redeliveries', async () => {
+    on()
+    paidOnce()
+    try {
+      await recordCommerceOrderFromSession(session)
+      await recordCommerceOrderFromSession(session)
+      await recordCommerceOrderFromSession(session)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+    expect(cartStore.takePaidOutOfStoredCart).toHaveBeenCalledTimes(1)
+    expect(cartStore.takePaidOutOfStoredCart).toHaveBeenCalledWith('buyer-1', [
+      { productId: 'p1', variantId: null, qty: 2 },
+      { productId: 'p2', variantId: 'v9', qty: 1 },
+    ])
+    const read = firstCall((c) => c.table === 'commerce_order_items' && c.op === 'select')!
+    expect(hasFilter(read, 'eq', 'order_id', 'o_cart')).toBe(true)
+  })
+
+  it('does nothing for a session that is not paid', async () => {
+    on()
+    paidOnce()
+    try {
+      await recordCommerceOrderFromSession({ ...session, payment_status: 'unpaid' } as unknown as Stripe.Checkout.Session)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+    expect(state.calls).toHaveLength(0)
+    expect(cartStore.takePaidOutOfStoredCart).not.toHaveBeenCalled()
+  })
+
+  it('is dark with the checkout switch blank: no item read, no cart write', async () => {
+    vi.stubEnv('COMMERCE_CART_ENABLED', '1')
+    vi.stubEnv('COMMERCE_CART_CHECKOUT_ENABLED', '')
+    paidOnce()
+    try {
+      await recordCommerceOrderFromSession(session)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+    expect(firstCall((c) => c.table === 'commerce_order_items' && c.op === 'select')).toBeUndefined()
+    expect(cartStore.takePaidOutOfStoredCart).not.toHaveBeenCalled()
+  })
+
+  it('skips a guest order, which has no saved cart', async () => {
+    on()
+    paidOnce({ buyer: null })
+    try {
+      await recordCommerceOrderFromSession(session)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+    expect(cartStore.takePaidOutOfStoredCart).not.toHaveBeenCalled()
+  })
+
+  it('never fails the settlement when the cart cannot be updated, and logs it', async () => {
+    on()
+    paidOnce()
+    cartStore.takePaidOutOfStoredCart.mockRejectedValueOnce(new Error('[cart] save failed: down'))
+    try {
+      await recordCommerceOrderFromSession(session)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+    expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
+    expect(sendOrderReceipts).toHaveBeenCalledTimes(1)
+    expect(console.error).toHaveBeenCalledWith('[commerce] could not take a paid order out of the saved cart', expect.objectContaining({ orderId: 'o_cart' }))
   })
 })

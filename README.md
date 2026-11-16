@@ -151,7 +151,7 @@ fixed in the same pass.
   (front-end/theming, role-based admin, security, code health, data architecture) and the
   cleanup roadmap it proposed (ADR-246). History: read it for the diagnosis, never for status.
 - [ROADMAP](ROADMAP.md) — the original product feature roadmap (P0–P7), superseded.
-  [SEO-AEO-PLAN](SEO-AEO-PLAN.md) — discovery layer.
+  [SEO-AEO-PLAN](docs/SEO-AEO-PLAN.md) — discovery layer.
 
 > **As-is vs to-be:** `ARCHITECTURE.md`/`DATABASE.md`/`GLOSSARY.md` describe what
 > exists today (`pnpm check:arch-doc` holds `ARCHITECTURE.md` to the tree). The strategy docs

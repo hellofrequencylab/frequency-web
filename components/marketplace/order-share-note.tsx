@@ -1,3 +1,4 @@
+import { formatCentsFixed } from '@/lib/commerce/types'
 import { Badge, type BadgeTone } from '@/components/ui/badge'
 import type { CommerceOrder } from '@/lib/commerce/orders'
 import type { TransferStatus } from '@/lib/commerce/transfers'
@@ -7,10 +8,6 @@ import type { TransferStatus } from '@/lib/commerce/transfers'
 // sellers' order this was, what reaches them after the fee, and where their payout stands. It reads
 // `order.share`, which only a seller's own read sets, so a destination order, the buyer's view and
 // the operator's view render nothing here. Server component; decides nothing about who may see it.
-
-function money(cents: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
-}
 
 /** Where a seller's payout stands, in their words. */
 export const SHARE_STATUS: Record<TransferStatus, { label: string; tone: BadgeTone }> = {
@@ -28,12 +25,12 @@ export function OrderShareNote({ order }: { order: CommerceOrder }) {
   return (
     <div data-order-share={s.transferStatus} className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted">
       <span>
-        Your share of a {order.sellerCount}-seller order. {money(s.netCents, order.currency)} to you after a{' '}
-        {money(s.feeCents, order.currency)} fee.
+        Your share of a {order.sellerCount}-seller order. {formatCentsFixed(s.netCents, order.currency)} to you after a{' '}
+        {formatCentsFixed(s.feeCents, order.currency)} fee.
       </span>
       <Badge tone={status.tone}>{status.label}</Badge>
       {s.reversedCents > 0 && s.transferStatus !== 'reversed' && (
-        <span>{money(s.reversedCents, order.currency)} pulled back.</span>
+        <span>{formatCentsFixed(s.reversedCents, order.currency)} pulled back.</span>
       )}
     </div>
   )

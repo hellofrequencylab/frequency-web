@@ -60,7 +60,7 @@ describe('existing runs keep their rules', () => {
   })
 
   it('the migration pins a run to its edition and freezes a published edition', () => {
-    const sql = readFileSync(join('supabase', 'migrations', '20270346072000_hunt_teams_editions.sql'), 'utf8').toLowerCase()
+    const sql = readFileSync(join('supabase', 'migrations', '20270346082000_hunt_teams_editions.sql'), 'utf8').toLowerCase()
     expect(sql).toContain('before update on public.hunt_runs')
     expect(sql).toContain('if new.version_id is distinct from old.version_id or new.hunt_id is distinct from old.hunt_id then')
     expect(sql).toContain('before update on public.hunt_versions')

@@ -99,7 +99,8 @@
     "lib/themes",
     "lib/frequency/site-nav.ts",
     "components/frequency/site/shell/site-header.tsx",
-    "components/frequency/site/shell/site-footer.tsx"
+    "components/frequency/site/shell/site-footer.tsx",
+    "components/google-mark.tsx"
    ],
    "reason": "The prototype carries the site chrome (menu, footer) too; those words live in the shared header, nav and footer."
   }

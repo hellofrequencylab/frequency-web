@@ -3,7 +3,7 @@
  *
  * A team is a roster that shares ONE run, so the engine's one-credit-per-run-and-stop key is also one
  * credit per team and stop. The database is the authority (supabase/migrations/
- * 20270346072000_hunt_teams_editions.sql): `hunt_team_claim_apply` is the door, and a trigger on
+ * 20270346082000_hunt_teams_editions.sql): `hunt_team_claim_apply` is the door, and a trigger on
  * hunt_claims is the wall, so an outsider or a departed member cannot write a claim on a team run through
  * any path. This file holds what the caller computes around those functions: the invite code and its
  * hash, the same award split and captain succession the database applies (so a screen can say what will

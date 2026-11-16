@@ -5,10 +5,12 @@
 // for this page, then the roles grouped Welcome, Show up, Trust, Answer, More. The card under the pointer or the focus
 // shows a preview beside the list: the role's default variant on this theme, with the Space's own rows when it has
 // them, else the flagged sample (the shell draws it, so the preview wears the same canvas as the page). Picking a
-// card inserts it where the + was, selects it, and is one undo step. A modal: focus stays inside and goes back on close.
+// card inserts it where the + was, selects it, and is one undo step. A modal: the kit focus trap keeps Tab inside and
+// hands focus back on close.
 
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Input } from '@/components/ui/field'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { FqIcon } from '@/components/frequency/icon'
 import { addSheet, type AddCard } from '@/lib/builder/add'
 import type { Data } from '@/lib/page-editor/types'
@@ -33,23 +35,14 @@ export function AddSheet({ cards, doc, at, onPick, onAsk, onClose, preview }: {
   const dialog = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const titleId = useId()
-  useEffect(() => {
-    const before = document.activeElement as HTMLElement | null
-    input.current?.focus()
-    return () => { before?.focus?.() }
-  }, [])
+  // The trap first (it remembers the opener), then the search takes focus.
+  useDialogFocusTrap(true, dialog)
+  useEffect(() => { input.current?.focus() }, [])
 
   function keys(e: KeyboardEvent<HTMLDivElement>) {
-    e.stopPropagation()
+    // Tab goes on to the kit trap; every other key stops here so the builder's shortcuts stay quiet.
+    if (e.key !== 'Tab') e.stopPropagation()
     if (e.key === 'Escape') { e.preventDefault(); onClose() }
-    else if (e.key === 'Tab') {
-      const focusable = [...(dialog.current?.querySelectorAll<HTMLElement>('input, button:not([disabled])') ?? [])]
-      if (!focusable.length) return
-      const i = focusable.indexOf(document.activeElement as HTMLElement)
-      const next = e.shiftKey ? (i <= 0 ? focusable.length - 1 : i - 1) : (i === focusable.length - 1 ? 0 : i + 1)
-      e.preventDefault()
-      focusable[next].focus()
-    }
   }
 
   const card = (c: AddCard, key: string) => (

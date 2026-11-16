@@ -133,7 +133,7 @@ describe('the words', () => {
 
 // The SQL carries the guarantees; this keeps a later edit from dropping them. pgTAP runs the behaviour.
 describe('team migration shape', () => {
-  const sql = readFileSync(join('supabase', 'migrations', '20270346072000_hunt_teams_editions.sql'), 'utf8')
+  const sql = readFileSync(join('supabase', 'migrations', '20270346082000_hunt_teams_editions.sql'), 'utf8')
   const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n').toLowerCase()
 
   it.each(['hunt_teams', 'hunt_team_members', 'hunt_team_awards'])('%s is service role only', (t) => {

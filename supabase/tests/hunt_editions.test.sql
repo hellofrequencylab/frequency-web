@@ -1,4 +1,4 @@
--- pgTAP guard for the edition half of migration 20270346072000_hunt_teams_editions.sql (FH-044).
+-- pgTAP guard for the edition half of migration 20270346082000_hunt_teams_editions.sql (FH-044).
 -- It proves that a run stays on the edition it started on, that a published edition's content cannot
 -- be rewritten, and that releasing a newer edition leaves an existing run's rules and credits alone.
 begin;

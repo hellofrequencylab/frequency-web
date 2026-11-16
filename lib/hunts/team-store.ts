@@ -2,7 +2,7 @@
  * The team door's fact loader (FH-043). Every Hunt table is service role only, so this file is the
  * tenancy wall for team play: each call takes the signed-in profile id the action derived, reads the
  * Hunt, the placement and the caller's own membership fresh, and only then calls the database, which
- * decides again under its own locks (supabase/migrations/20270346072000_hunt_teams_editions.sql).
+ * decides again under its own locks (supabase/migrations/20270346082000_hunt_teams_editions.sql).
  *
  *   myTeam(actorId, slug)              the caller's own team on a Trail: its state and size, never a roster
  *   startTeam / joinMyTeam / lockMyTeam / leaveMyTeam   the roster commands

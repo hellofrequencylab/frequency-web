@@ -13,6 +13,7 @@ import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { CanvasBlock } from './canvas/canvas-block'
 import { ProductCardEditor } from './product-picker'
 import { EventCardEditor, CircleCardEditor } from './data-picker'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // THE ON-CANVAS WYSIWYG EMAIL EDITOR (Email Studio, now the DEFAULT campaign editor). A two-pane surface that
 // reuses the SHARED entity-layout store (same provider, seed, debounced save, compile + preview + test-send as
@@ -380,9 +381,10 @@ function EmailCanvasView({ model, colors, library }: { model: EmailCanvasModel |
             type="button"
             onClick={() => setDevice(d)}
             aria-pressed={device === d}
-            className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-2xs font-semibold transition-colors ${
-              device === d ? 'border-primary bg-primary-bg/40 text-text' : 'border-border bg-surface text-muted hover:text-text'
-            }`}
+            className={choiceTileClasses(
+              device === d,
+              `inline-flex items-center gap-1 rounded-lg px-2 py-1 text-2xs font-semibold ${device === d ? 'text-text' : 'text-muted hover:text-text'}`,
+            )}
           >
             {d === 'desktop' ? <Monitor className="h-3 w-3" aria-hidden /> : <Smartphone className="h-3 w-3" aria-hidden />}
             {d === 'desktop' ? 'Desktop' : 'Phone'}

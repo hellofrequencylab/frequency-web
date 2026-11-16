@@ -36,7 +36,8 @@ interface BlockCoachInput {
   grounding?: { about: string | null; offerings: readonly string[] } | null
 }
 
-export interface BlockCoaching { questions: BlockQuestion[]; source: 'vera' | 'fallback' }
+/** `blockType` is the block's name as the server fixed it, carried so telemetry can say which block was asked about. */
+export interface BlockCoaching { questions: BlockQuestion[]; source: 'vera' | 'fallback'; blockType: string }
 
 /** The user turn: facts about the block, never an instruction. Capped so a long paste cannot crowd the prompt. */
 export function blockCoachContext(input: BlockCoachInput): string {
@@ -55,7 +56,7 @@ export async function coachNewBlock(input: BlockCoachInput): Promise<BlockCoachi
   if (!envFlag('EDITOR_CANVAS')) return null
   const tool = coachTool(input.blockType, input.fields)
   if (!tool) return null
-  const fallback: BlockCoaching = { questions: fallbackBlockCoaching(input.fields), source: 'fallback' }
+  const fallback: BlockCoaching = { questions: fallbackBlockCoaching(input.fields), source: 'fallback', blockType: input.blockType }
   try {
     if (!aiEnabled()) return fallback
     if ((await featureOverBudget(FEATURE, input.spaceId)) || (await aiRateLimited(FEATURE, input.profileId))) return fallback
@@ -70,7 +71,7 @@ export async function coachNewBlock(input: BlockCoachInput): Promise<BlockCoachi
     })
     const call = result.content.find((block) => block.type === 'tool_use' && block.name === tool.name)
     const questions = call && call.type === 'tool_use' ? parseBlockCoaching(call.input, input.fields) : null
-    return questions && questions.length > 0 ? { questions, source: 'vera' } : fallback
+    return questions && questions.length > 0 ? { questions, source: 'vera', blockType: input.blockType } : fallback
   } catch {
     return fallback
   }

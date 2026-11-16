@@ -172,7 +172,7 @@ export function SpotlightShell({
                 src={profile.header_image_url}
                 alt=""
                 fill
-                priority
+                preload
                 sizes="(max-width: 640px) 100vw, 608px"
                 className="object-cover"
                 style={{ objectPosition: `50% ${theme.header.focusY}%` }}

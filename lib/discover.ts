@@ -362,10 +362,51 @@ export function emptyUnlessTransient(source: string): (err: unknown) => never[] 
  *  index pages and the per-city buckets is a count of gatherings for the same reason every other
  *  count site folds (LIVE-198). Over-fetches because the fold spends the limit on rows it discards,
  *  and the RPC caps its own read at 200. */
+// ── SCAN-1210: the last good public_events read, kept per server instance ───────────────────────
+// public.public_events backs /discover, the city pages and the feed. It hit the statement timeout (57014)
+// 576 times between September and November, and a failed read used to resolve [] that ISR cached for an hour.
+// Now a failed read is never an empty list: a fresh snapshot is served without the database; a failed read serves
+// the last good snapshot and logs `[discover] public_events_snapshot stale`; with no snapshot it THROWS so an ISR
+// regeneration fails and the previous page keeps serving. Both paths log under one grep-able tag.
+const SNAPSHOT_TTL_MS = 60_000
+const MAX_STALE_MS = 6 * 60 * 60_000
+
+type Snapshot<T> = { rows: T[]; at: number }
+const store = new Map<string, Snapshot<unknown>>()
+
+export class PublicEventsUnavailableError extends Error {
+  constructor(key: string) {
+    super(`public_events_snapshot: read failed and no snapshot to serve (${key})`)
+    this.name = 'PublicEventsUnavailableError'
+  }
+}
+
+export async function readThroughPublicEventsSnapshot<T>(
+  key: string,
+  read: () => Promise<{ rows: T[]; ok: boolean }>,
+  now: () => number = Date.now,
+): Promise<T[]> {
+  const hit = store.get(key) as Snapshot<T> | undefined
+  if (hit && now() - hit.at < SNAPSHOT_TTL_MS) return hit.rows
+  const result = await read()
+  if (result.ok) {
+    store.set(key, { rows: result.rows, at: now() })
+    return result.rows
+  }
+  if (hit && now() - hit.at < MAX_STALE_MS) {
+    console.error(`[discover] public_events_snapshot stale served (${key}), age ${now() - hit.at}ms`)
+    return hit.rows
+  }
+  console.error(`[discover] public_events_snapshot unavailable (${key}), failing the render so ISR keeps the last page`)
+  throw new PublicEventsUnavailableError(key)
+}
+
 export async function getPublicEvents(limit = 50): Promise<PublicEvent[]> {
   const supabase = createPublicClient()
-  const { rows } = await listRead<PublicEvent>('public_events', () =>
-    supabase.rpc('public_events', { _limit: seriesFetchLimit(limit) }),
+  const fetchLimit = seriesFetchLimit(limit)
+  // SCAN-1210: never a soft [] for a failed read; see the public_events snapshot above.
+  const rows = await readThroughPublicEventsSnapshot<PublicEvent>(`public_events:${fetchLimit}`, () =>
+    listRead<PublicEvent>('public_events', () => supabase.rpc('public_events', { _limit: fetchLimit })),
   )
   const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
   return collapseSeriesRows(rows, { upcomingFrom: floor, perSeries: TEASER_CARDS_PER_SERIES }).slice(0, limit)
@@ -388,6 +429,51 @@ export async function getPublicCircles(limit = 50, opts: { failClosed?: boolean 
   if (opts.failClosed) return listReadFailClosed<PublicCircle>('public_circles', query)
   const { rows } = await listRead<PublicCircle>('public_circles', query)
   return rows
+}
+
+/** The most rows one call to `public_circles` or `public_circles_page` returns: both clamp to it in SQL. */
+export const PUBLIC_CIRCLES_PAGE = 200
+
+/** The most pages `walkPublicCirclesPast` reads, page one included, before it stops and says so. */
+const PUBLIC_CIRCLES_MAX_PAGES = 25
+
+/** The most circles `walkPublicCirclesPast` can return. A caller holding this many has been cut short. */
+export const PUBLIC_CIRCLES_WALK_CAP = PUBLIC_CIRCLES_PAGE * PUBLIC_CIRCLES_MAX_PAGES
+
+/**
+ * The public circles AFTER a first page, a page at a time (SCAN-1226). For the sitemap, which must name
+ * them all. Hand it what `getPublicCircles(PUBLIC_CIRCLES_PAGE)` returned and it returns every circle.
+ *
+ * Page one stays the same `public_circles` read every other caller makes. Only when it came back FULL
+ * does this ask `public_circles_page` (migration 20270346066000) for the rows after it, so a database
+ * that has fewer than 200 circles, or has not had that migration applied yet, is read exactly as
+ * before. A later page that fails is logged by the read and ends the walk with the rows already in
+ * hand; with `failClosed` a transport failure throws, as it does on page one.
+ */
+export async function walkPublicCirclesPast(
+  first: PublicCircle[],
+  opts: { failClosed?: boolean } = {},
+): Promise<PublicCircle[]> {
+  if (first.length < PUBLIC_CIRCLES_PAGE) return first
+  const supabase = createPublicClient()
+  const all = [...first]
+  // The two functions order alike, but a member count can move between two calls, so a row can
+  // appear on two pages. Keyed by id so it is named once.
+  const seen = new Set(first.map((c) => c.id))
+  for (let page = 1; page < PUBLIC_CIRCLES_MAX_PAGES; page++) {
+    const query = () =>
+      supabase.rpc('public_circles_page', { _limit: PUBLIC_CIRCLES_PAGE, _offset: page * PUBLIC_CIRCLES_PAGE })
+    const rows = opts.failClosed
+      ? await listReadFailClosed<PublicCircle>('public_circles_page', query)
+      : (await listRead<PublicCircle>('public_circles_page', query)).rows
+    for (const row of rows) {
+      if (seen.has(row.id)) continue
+      seen.add(row.id)
+      all.push(row)
+    }
+    if (rows.length < PUBLIC_CIRCLES_PAGE) break
+  }
+  return all
 }
 
 export async function getPublicCircleById(id: string): Promise<PublicCircle | null> {

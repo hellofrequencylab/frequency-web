@@ -1,4 +1,4 @@
--- pgTAP guard for the team half of migration 20270346072000_hunt_teams_editions.sql (FH-043).
+-- pgTAP guard for the team half of migration 20270346082000_hunt_teams_editions.sql (FH-043).
 -- One session, one transaction. It proves the two "cannot mutate" guarantees at the database (an
 -- outsider and a departed member write nothing on a team run, through the door or around it), that
 -- two members proving one stop earn one team credit, that the roster locks, that a captain's

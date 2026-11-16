@@ -26,6 +26,7 @@ import {
 } from '@/lib/onboarding/steps'
 import { updateWalkthrough, setWalkthroughActive } from '../actions'
 import { Switch } from '@/components/ui/switch'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // The clever editor (Phase A centerpiece). A SPLIT layout: LEFT = controls (sequence
@@ -430,19 +431,13 @@ export function WalkthroughEditor({ initial, persisted }: { initial: Walkthrough
               {/* Layout toggle */}
               <div>
                 <span className={groupLbl}>Layout</span>
-                <div className="inline-flex rounded-control border border-border bg-surface p-0.5">
-                  {LAYOUTS.map((l) => (
-                    <button
-                      key={l}
-                      type="button"
-                      onClick={() => setStep(selected, { layout: l as StepLayout })}
-                      className={`rounded-md px-3 py-1.5 text-meta font-semibold transition-colors ${
-                        step.layout === l ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
-                      }`}
-                    >
-                      {LAYOUT_LABELS[l]}
-                    </button>
-                  ))}
+                <div>
+                  <SegmentedControl
+                    label="Layout"
+                    value={step.layout}
+                    onChange={(l) => setStep(selected, { layout: l })}
+                    segments={LAYOUTS.map((l) => ({ value: l as StepLayout, label: LAYOUT_LABELS[l] }))}
+                  />
                 </div>
               </div>
 

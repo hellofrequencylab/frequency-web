@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import type { GalleryItem } from '@/lib/spotlight/blocks/schema'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 // The interactive half of the gallery block. render.tsx is a Server Component, so the
 // clickable square thumbnails + the full-image lightbox live here behind 'use client'.
@@ -33,24 +34,23 @@ export function GalleryLightbox({
   // null = closed; otherwise the index of the open image.
   const [open, setOpen] = useState<number | null>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
 
   const count = items.length
   const show = useCallback((i: number) => setOpen(((i % count) + count) % count), [count])
   const close = useCallback(() => setOpen(null), [])
 
-  // Keyboard: Esc closes, arrows page, Tab is trapped to the overlay's controls.
-  // Bound only while the lightbox is open; restores body scroll on close.
+  // The kit trap: Tab cycles through the overlay's own controls (Close, previous, next) and focus
+  // goes back to the thumbnail that opened it. It runs before the effect below, which parks focus on Close.
+  useDialogFocusTrap(open !== null, overlayRef)
+
+  // Keyboard: Esc closes, arrows page. Bound only while the lightbox is open; restores body scroll on close.
   useEffect(() => {
     if (open === null) return
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') close()
       else if (e.key === 'ArrowRight') setOpen((o) => (o === null ? o : (o + 1) % count))
       else if (e.key === 'ArrowLeft') setOpen((o) => (o === null ? o : (o - 1 + count) % count))
-      else if (e.key === 'Tab') {
-        // Focus-trap-lite: keep focus inside the overlay by parking it on Close.
-        e.preventDefault()
-        closeRef.current?.focus()
-      }
     }
     window.addEventListener('keydown', onKey)
     closeRef.current?.focus()
@@ -89,6 +89,7 @@ export function GalleryLightbox({
 
       {open !== null && (
         <div
+          ref={overlayRef}
           role="dialog"
           aria-modal="true"
           aria-label="Image viewer"

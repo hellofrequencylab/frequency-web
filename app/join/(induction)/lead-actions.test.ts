@@ -116,6 +116,40 @@ describe('captureLead', () => {
     expect(Object.keys(second)).toEqual(['ok'])
   })
 
+  // SCAN-1246 (migration 20270346064000): a repeat capture of a known address returns a token that
+  // opens nothing, so the browser that already holds the row must not swap its live token for it.
+  it('🔴 keeps the token this browser already holds when a repeat capture returns the same row', async () => {
+    jar.set('fq_lead', 'lead-1.tok-held')
+    rpc
+      .mockResolvedValueOnce({ data: { id: 'lead-1', claim_token: 'tok-dead' }, error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+    expect(await captureLead({ email: 'jo@example.com', step: 2, displayName: 'Jo Bloggs' })).toEqual({ ok: true })
+
+    expect(rpc).toHaveBeenNthCalledWith(
+      2,
+      'update_signup_lead',
+      expect.objectContaining({ p_lead_id: 'lead-1', p_claim_token: 'tok-held', p_step: 2, p_display_name: 'Jo Bloggs' }),
+    )
+    expect(jar.get('fq_lead')).toBe('lead-1.tok-held')
+  })
+
+  it('takes the returned token when the held one no longer opens the row (a database that still rotates)', async () => {
+    jar.set('fq_lead', 'lead-1.tok-old')
+    rpc
+      .mockResolvedValueOnce({ data: { id: 'lead-1', claim_token: 'tok-new' }, error: null })
+      .mockResolvedValueOnce({ data: false, error: null })
+    expect(await captureLead({ email: 'jo@example.com' })).toEqual({ ok: true })
+    expect(jar.get('fq_lead')).toBe('lead-1.tok-new')
+  })
+
+  it('does not spend an update when the cookie names a different row', async () => {
+    jar.set('fq_lead', 'lead-other.tok-other')
+    rpc.mockResolvedValueOnce({ data: { id: 'lead-1', claim_token: 'tok-1' }, error: null })
+    expect(await captureLead({ email: 'jo@example.com' })).toEqual({ ok: true })
+    expect(rpc).toHaveBeenCalledTimes(1)
+    expect(jar.get('fq_lead')).toBe('lead-1.tok-1')
+  })
+
   it('honours a CONFIGURED rate limiter', async () => {
     vi.mocked(rateLimitOk).mockResolvedValue(false)
     expect(await captureLead({ email: 'jo@example.com', step: 2 })).toEqual({ ok: false })

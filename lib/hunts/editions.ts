@@ -3,7 +3,7 @@
  * The IO half is lib/hunts/edition-store.ts.
  *
  * An edition is a published hunt_versions row (ADR-1940). Three guarantees live here and in the
- * migration beside it (supabase/migrations/20270346072000_hunt_teams_editions.sql):
+ * migration beside it (supabase/migrations/20270346082000_hunt_teams_editions.sql):
  *
  * - Existing runs keep their rules. A run is pinned to the edition it started on (a database trigger
  *   refuses to move it), a published edition is frozen, and `runStanding` says what a pinned run may
