@@ -1,3 +1,4 @@
+import { formatDateShort } from '@/lib/format-date'
 import type { EventRow, EventsIndexData } from '@/app/(main)/events/index-data'
 import { formatWhen } from '@/app/(main)/events/index-data'
 import type { EventMapPin } from '@/components/events/events-map'
@@ -69,7 +70,7 @@ export function toAyItem(e: EventRow, data: ItemData): AyItem {
         ? 'Tomorrow'
         : daysOut > 1 && daysOut < 7
           ? new Date(e.starts_at).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
-          : new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+          : formatDateShort(e.starts_at, 'UTC')
   const circle = e.scope_type === 'circle' ? data.circleNames[e.scope_id] : undefined
   return {
     id: e.id,

@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import { Receipt, Wallet, Landmark, RotateCcw } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/ui/stat-card'
@@ -25,7 +26,7 @@ function usd(cents: number): string {
 function when(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDateMedium(d)
 }
 
 const STATUS_LABEL: Record<string, string> = {

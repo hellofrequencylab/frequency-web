@@ -1,3 +1,4 @@
+import { formatDateShort } from '@/lib/format-date'
 import { Sparkles, Send, Inbox, Flag } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -126,7 +127,7 @@ export default async function AdminContentTipsPage() {
                       : t.content_type === 'event'
                         ? 'their posted events'
                         : `a ${t.content_type}`}{' '}
-                    · {t.sent_at ? new Date(t.sent_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                    · {t.sent_at ? formatDateShort(t.sent_at) : ''}
                   </p>
                   <p className="mt-1 text-body-sm text-text">{t.sent_text ?? t.draft_text}</p>
                 </div>
