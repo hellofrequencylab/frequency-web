@@ -1,4 +1,4 @@
--- pgTAP guard for migration 20270346076000_hunt_pass_snapshot.sql (FH-036S).
+-- pgTAP guard for migration 20270346083000_hunt_pass_snapshot.sql (FH-036S).
 -- One session, one transaction. It proves the snapshot column exists and is NULL for an ordinary ticket,
 -- that a reserved ticket can carry one snapshot object, that a value which is not a snapshot object is
 -- refused, and that no browser role can write a ticket (so no browser can forge a snapshot).
