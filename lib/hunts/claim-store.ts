@@ -9,6 +9,9 @@
  *   openClaim(actorId, placementId, nowEpoch)  the signed-in landing: the run and a claim token for it
  *   claimAsPlayer(actorId, input)              the POST: verifies the token, scope, switch, then credits
  *
+ * A Mystery (a mission of kind `answer`, FH-042) is claimed through the same door: the scan proves the
+ * place, and `answer` is judged on the server by lib/hunts/mystery.ts before the credit is asked for.
+ *
  * Dark: both openClaim and claimAsPlayer answer `disabled` until HUNTS_CLAIMS_ENABLED (which needs
  * HUNTS_ENABLED) is on. A GET never reaches claimAsPlayer.
  */
@@ -19,6 +22,7 @@ import { applyClaim } from './apply-claim'
 import { authorizeClaim, checkScope, type ClaimRefusal, type ScopeFacts } from './claim-guard'
 import { huntSwitchOn } from './flags'
 import { evaluate, validateGraph } from './graph'
+import { judgeAnswer, MAX_ANSWER_ATTEMPTS } from './mystery'
 import { issueClaimToken } from './placement'
 import { isPublishedTrailVersion, loadPublishedTrail, loadRunProgressSnapshot } from './run-store'
 import { huntRpc, loadUniquePlacementMission } from './staff-store'
@@ -115,11 +119,54 @@ export async function openClaim(actorId: string, placementId: string, nowEpoch: 
   return { ok: true, runId: scope.runId, token: issueClaimToken({ secret: secret(), scope: { runId: scope.runId, placementId: scope.placementId }, now: nowEpoch }) }
 }
 
+/** A Mystery guess that did not earn the credit. `hint` is the mission's fallback hint, shown from the second wrong guess. */
+type AnswerRefusal =
+  | { ok: false; reason: 'answer_required' }
+  | { ok: false; reason: 'answer_wrong' | 'answer_locked'; attemptsLeft: number; hint?: string }
+
+/**
+ * Judge a Mystery guess for a mission the run may claim right now. Bounded and server only:
+ * - Each judged guess is one hunt_claims row with evidence `answer:<n>` (state submitted; it records
+ *   whether the guess was right, never the guess). The table allows one row per run, mission and
+ *   evidence id, so of two requests racing for the same attempt number one is recorded and the other
+ *   is told nothing about its guess, right or wrong. No more than MAX_ANSWER_ATTEMPTS numbers exist.
+ * - A run that already answered correctly is not asked again, so a retry after a dropped response or
+ *   a stale claim costs no attempt.
+ * - Only a verdict leaves this function. The stored hash stays here.
+ */
+async function judgeMysteryAttempt(scope: ScanScope, actorId: string, answer: string | undefined): Promise<{ ok: true } | AnswerRefusal | { ok: false; reason: 'eligibility_unavailable' }> {
+  const client = db()
+  const [mission, slots] = await Promise.all([
+    client.from('hunt_missions').select('answer_hash, locked_teaser').eq('version_id', scope.versionId).eq('mission_key', scope.missionKey).maybeSingle(),
+    client.from('hunt_claims').select('evidence_id, correct:policy_result->>correct', { count: 'exact' }).eq('run_id', scope.runId).eq('mission_key', scope.missionKey).like('evidence_id', 'answer:%'),
+  ])
+  const m = mission.error ? null : mission.data as { answer_hash: string | null; locked_teaser: string | null } | null
+  if (!m || typeof m.answer_hash !== 'string' || slots.error || !Array.isArray(slots.data) || slots.count !== slots.data.length) return { ok: false, reason: 'eligibility_unavailable' }
+  const attempts = slots.data as { evidence_id: string; correct: string | null }[]
+  if (attempts.some((a) => a.correct === 'true')) return { ok: true }
+  const used = attempts.length
+  const hint = m.locked_teaser ? { hint: m.locked_teaser } : {}
+  if (used >= MAX_ANSWER_ATTEMPTS) return { ok: false, reason: 'answer_locked', attemptsLeft: 0, ...hint }
+  if (typeof answer !== 'string' || answer.trim() === '') return { ok: false, reason: 'answer_required' }
+
+  const verdict = judgeAnswer({ stored: m.answer_hash, attempt: answer, attemptsUsed: used })
+  const correct = verdict.outcome === 'correct'
+  const recorded = await client.from('hunt_claims').insert({
+    hunt_id: scope.huntId, run_id: scope.runId, version_id: scope.versionId, mission_key: scope.missionKey, actor_profile_id: actorId,
+    evidence_id: `answer:${used + 1}`, state: 'submitted', assurance: 'none', reason: 'answer_attempt', policy_result: { kind: 'answer_attempt', attempt: used + 1, correct },
+  })
+  // Another request took this attempt number (or the write failed). The verdict is dropped unseen.
+  if (recorded.error) return { ok: false, reason: 'eligibility_unavailable' }
+
+  if (verdict.outcome === 'correct') return { ok: true }
+  return { ok: false, reason: verdict.outcome === 'locked' ? 'answer_locked' : 'answer_wrong', attemptsLeft: verdict.attemptsLeft, ...(verdict.showHint ? hint : {}) }
+}
+
 /** The claim POST. Returns the database's answer, or a refusal from the scope checks. */
 export async function claimAsPlayer(
   actorId: string,
-  input: { placementId: string; missionKey?: string; token: string; idempotencyKey: string; nowEpoch: number },
-): Promise<{ ok: true } & Awaited<ReturnType<typeof applyClaim>> | ScopeRefusal | { ok: false; reason: 'disabled' | 'eligibility_unavailable' | 'mission_not_eligible' }> {
+  input: { placementId: string; missionKey?: string; token: string; idempotencyKey: string; nowEpoch: number; /** A Mystery guess. Ignored for any other mission. */ answer?: string },
+): Promise<{ ok: true } & Awaited<ReturnType<typeof applyClaim>> | ScopeRefusal | AnswerRefusal | { ok: false; reason: 'disabled' | 'eligibility_unavailable' | 'mission_not_eligible' }> {
   if (!huntSwitchOn('claims')) return { ok: false, reason: 'disabled' }
   const scope = await loadScope(actorId, input.placementId)
   if (!scope.ok) return scope
@@ -134,6 +181,12 @@ export async function claimAsPlayer(
   if (!trail || trail.huntId !== scope.huntId || trail.versionId !== scope.versionId || trail.huntState !== 'published'
     || !first || !validateGraph(trail.graph).ok) return { ok: false, reason: 'eligibility_unavailable' }
 
+  // FH-042: an exclusive choice needs no command of its own. `evaluate` closes every other branch of a
+  // choice group once one is credited, and the count check below is taken under the run lock, so of two
+  // branches claimed at once the second is answered stale_progress, rereads, and is refused here.
+  const isMystery = trail.graph.missions.some((m) => m.mission_key === scope.missionKey && m.kind === 'answer')
+  let answered = !isMystery
+
   // FH-049T: the credits and the progress count come from one snapshot. The database compares the count
   // under the run lock and answers stale_progress when a progress row landed since. Then the snapshot is
   // reread and the graph reevaluated, once, before one more call: two attempts at most, never a loop.
@@ -142,6 +195,12 @@ export async function claimAsPlayer(
     const evaluation = evaluate(trail.graph, snapshot.credits, input.nowEpoch * 1000)
     if (evaluation.credited.includes(scope.missionKey)) return { ok: true, result: 'already_credited', replayed: false }
     if (!evaluation.eligible.includes(scope.missionKey)) return { ok: false, reason: 'mission_not_eligible' }
+    if (!answered) {
+      // Judged once per request, and only for a mission that is eligible, so a locked stop costs no attempt.
+      const judged = await judgeMysteryAttempt(scope, actorId, input.answer)
+      if (!judged.ok) return judged
+      answered = true
+    }
     const out = await applyClaim(huntRpc() as never, { ...decision.input, expectedProgressCount: snapshot.total })
     if (out.result !== 'stale_progress' || attempt === 1) return { ok: true, ...out }
     const reread = await loadRunProgressSnapshot(scope.runId, actorId)
