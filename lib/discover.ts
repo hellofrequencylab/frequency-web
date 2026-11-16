@@ -390,6 +390,48 @@ export async function getPublicCircles(limit = 50, opts: { failClosed?: boolean 
   return rows
 }
 
+/** The most rows one call to `public_circles` or `public_circles_page` returns: both clamp to it in SQL. */
+const PUBLIC_CIRCLES_PAGE = 200
+
+/** The most pages `getAllPublicCircles` walks before it stops and says so. */
+const PUBLIC_CIRCLES_MAX_PAGES = 25
+
+/** The most circles `getAllPublicCircles` can return. A caller holding this many has been cut short. */
+export const PUBLIC_CIRCLES_WALK_CAP = PUBLIC_CIRCLES_PAGE * PUBLIC_CIRCLES_MAX_PAGES
+
+/**
+ * Every public circle, walked a page at a time (SCAN-1226). For the sitemap, which must name them all.
+ *
+ * Page one is the same `public_circles` read every other caller makes. Only when it comes back FULL does
+ * this ask `public_circles_page` (migration 20270346066000) for the rows after it, so a database that has
+ * fewer than 200 circles, or has not had that migration applied yet, is read exactly as before. A later
+ * page that fails is logged by the read and ends the walk with the rows already in hand; with
+ * `failClosed` a transport failure throws, as it does on page one.
+ */
+export async function getAllPublicCircles(opts: { failClosed?: boolean } = {}): Promise<PublicCircle[]> {
+  const first = await getPublicCircles(PUBLIC_CIRCLES_PAGE, opts)
+  if (first.length < PUBLIC_CIRCLES_PAGE) return first
+  const supabase = createPublicClient()
+  const all = [...first]
+  // The two functions order alike, but a member count can move between two calls, so a row can
+  // appear on two pages. Keyed by id so it is named once.
+  const seen = new Set(first.map((c) => c.id))
+  for (let page = 1; page < PUBLIC_CIRCLES_MAX_PAGES; page++) {
+    const query = () =>
+      supabase.rpc('public_circles_page', { _limit: PUBLIC_CIRCLES_PAGE, _offset: page * PUBLIC_CIRCLES_PAGE })
+    const rows = opts.failClosed
+      ? await listReadFailClosed<PublicCircle>('public_circles_page', query)
+      : (await listRead<PublicCircle>('public_circles_page', query)).rows
+    for (const row of rows) {
+      if (seen.has(row.id)) continue
+      seen.add(row.id)
+      all.push(row)
+    }
+    if (rows.length < PUBLIC_CIRCLES_PAGE) break
+  }
+  return all
+}
+
 export async function getPublicCircleById(id: string): Promise<PublicCircle | null> {
   const supabase = createPublicClient()
   const rows = await detailRead<PublicCircle>(
