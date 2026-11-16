@@ -59,7 +59,9 @@ ${N} .hs-nav-admin-tag{padding:0;color:var(--color-text-muted)}
 ${N} .hs-nav-admin a{padding:8px 12px;color:var(--color-text)}
 ${N} .hs-nav-admin a::after{content:none}
 ${N} .hs-nav-admin-colon,${N} .hs-nav-admin-sep{display:none}
-@media (max-width:939px){${N} .hs-pill{min-height:72px;padding:12px var(--mn-gutter) 0}${N} .hs-nav-track{justify-content:center}}
+/* On a phone the header keeps the logo and the name; its button moves into the menu (LIVE-2310), so a long label
+   never covers the mark. */
+@media (max-width:939px){${N} .hs-pill{min-height:72px;padding:12px var(--mn-gutter) 0}${N} .hs-nav-track{justify-content:center}${N} .hs-header-actions>.hs-btn{display:none}${N} .hs-menu-panel a[data-cta]{display:flex;align-items:center;justify-content:center;min-height:48px;margin-top:8px;padding:12px 22px;font-size:12px;letter-spacing:.14em;line-height:1.3;background:var(--mn-solid);color:var(--mn-on-solid);border:1px solid var(--mn-solid);text-align:center}${N} .hs-menu-panel a[data-cta]:hover{background:var(--mn-solid-hover);color:var(--mn-on-solid)}}
 
 /* The footer: columns of small-caps links over a ruled foot. */
 ${N} .hs-footer-top{max-width:var(--mn-max);margin:0 auto;padding:var(--mn-section-tight) var(--mn-gutter) 48px;border-top:1px solid var(--mn-night-300);gap:48px;grid-template-columns:minmax(0,1.4fr) repeat(auto-fit,minmax(min(100%,10rem),1fr))}
