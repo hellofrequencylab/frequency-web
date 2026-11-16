@@ -2,6 +2,70 @@
   "version": 1,
   "registrations": [
     {
+      "pullRequest": 5004,
+      "expiresAt": "2026-11-16T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346053000_hunt_claim_hold.sql",
+          "sha256": "c6aab04916aa60d60c4868c4013b2fd829818b42eaf7dbc8eb9952d083d8845d"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/FH-020U.json",
+          "status": "modified",
+          "sha256": "809f85f612424f515e54f2a5108d609e7b91d5ade734c24977b764d7eb101e3c",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/FH-020V.json",
+          "status": "added",
+          "sha256": "118ede29959f51e506cf9fba6d6632f7ae0b75b383272ac36ba74a98f938d0e6",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/apply-claim.test.ts",
+          "status": "modified",
+          "sha256": "12b088c33473411bc745b28bc987b1205a83286a34f530395c61ea5ac09334c2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/hunts/apply-claim.ts",
+          "status": "modified",
+          "sha256": "49b40eaeb65c1fd1720031c8991c6933352682367688e4ed2e2a93a22193a3b9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346053000_hunt_claim_hold.sql",
+          "status": "added",
+          "sha256": "c6aab04916aa60d60c4868c4013b2fd829818b42eaf7dbc8eb9952d083d8845d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunt_claim_hold.test.sql",
+          "status": "added",
+          "sha256": "c44a7d71421caa7df9d6512118e84ae59f8f7dc1c5069ce73b1759ff0497e740",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "522262e06e8c2928e73aaf8528faae02a7d3a74116fbe85995df9c3ae3cc6b18",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
+    },
+    {
       "pullRequest": 4994,
       "expiresAt": "2026-11-16T23:59:59Z",
       "migrations": [
