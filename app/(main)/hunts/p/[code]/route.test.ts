@@ -159,6 +159,20 @@ describe('Hunt placement scan', () => {
     expect(response.headers.get('Location')).toBe(`${origin}${landingPath}?claim=unavailable`)
   })
 
+  it('lands a visit kept for staff review on its own answer, not a credit or a refusal (FH-020V)', async () => {
+    claimAsPlayer.mockResolvedValue({ ok: true, result: 'held', claimId: 'c-9', replayed: false })
+
+    const response = await confirm()
+
+    expect(response.status).toBe(303)
+    expect(response.headers.get('Location')).toBe(`${origin}${landingPath}?claim=held`)
+  })
+
+  it.each(['assurance_too_low', 'stale_progress', 'version_superseded'])('lands a %s answer from the database as unavailable', async (result) => {
+    claimAsPlayer.mockResolvedValue({ ok: true, result, replayed: false })
+    expect((await confirm()).headers.get('Location')).toBe(`${origin}${landingPath}?claim=unavailable`)
+  })
+
   it('keeps confirmation on the exact configured preview when that deploy serves the scan', async () => {
     const host = 'frequency-web-my-preview.vercel.app'
     const from = `https://${host}`

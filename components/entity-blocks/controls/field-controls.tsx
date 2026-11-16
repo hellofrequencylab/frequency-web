@@ -25,6 +25,7 @@ import {
 import { searchEmoji, searchLucide } from '@/lib/entity-blocks/icon-tokens'
 import { BlockIcon } from '@/components/entity-blocks/block-icon'
 import { IconButton } from '@/components/ui/icon-button'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Input } from '@/components/ui/field'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { capsLabel } from '@/components/ui/caps-label'
@@ -120,53 +121,23 @@ export function Segmented<V extends string>({
    *  ControlStack (label above, full width). */
   wrap?: boolean
 }) {
-  if (wrap) {
-    return (
-      <div className="flex flex-wrap gap-1" role="group" aria-label={ariaLabel}>
-        {options.map((o) => {
-          const on = value === o.value
-          return (
-            <button
-              key={o.value}
-              type="button"
-              aria-pressed={on}
-              aria-label={o.icon ? o.label : undefined}
-              title={o.label}
-              onClick={() => onSelect(o.value)}
-              className={`flex min-h-[26px] items-center justify-center gap-1 rounded-md border px-2.5 py-1 text-2xs font-semibold transition-colors ${
-                on
-                  ? 'border-primary bg-primary text-on-primary'
-                  : 'border-border bg-surface text-muted hover:bg-surface-elevated hover:text-text'
-              }`}
-            >
-              {o.icon ?? o.label}
-            </button>
-          )
-        })}
-      </div>
-    )
-  }
+  // The kit's compact segmented box. A bar spreads its text options to equal widths across the row; wrap
+  // mode lets each option keep its own width and the track wrap to a second line.
   return (
-    <div className="flex overflow-hidden rounded-md border border-border" role="group" aria-label={ariaLabel}>
-      {options.map((o) => {
-        const on = value === o.value
-        return (
-          <button
-            key={o.value}
-            type="button"
-            aria-pressed={on}
-            aria-label={o.icon ? o.label : undefined}
-            title={o.label}
-            onClick={() => onSelect(o.value)}
-            className={`flex min-h-[26px] items-center justify-center gap-1 px-2 py-1 text-2xs font-semibold transition-colors ${
-              o.icon ? 'w-8' : 'flex-1'
-            } ${on ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated hover:text-text'}`}
-          >
-            {o.icon ?? o.label}
-          </button>
-        )
-      })}
-    </div>
+    <SegmentedControl
+      size="xs"
+      label={ariaLabel}
+      value={value}
+      onChange={onSelect}
+      className={wrap ? undefined : 'w-full'}
+      segments={options.map((o) => ({
+        value: o.value,
+        label: o.icon ?? o.label,
+        ariaLabel: o.icon ? o.label : undefined,
+        title: o.label,
+        className: wrap ? 'px-2.5' : o.icon ? 'w-8' : 'flex-1',
+      }))}
+    />
   )
 }
 

@@ -4,15 +4,16 @@
   "lane": "program",
   "priority": "P1",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/hunts/README.md",
     "ref": "Split from FH-011S (2026-11-15): lib/hunts/legacy-regression.test.ts shipped and passes; the exact-SHA staging note is release engineering acceptance."
   },
-  "detail": "Run lib/hunts/legacy-regression.test.ts and lib/hunts/legacy-paths.test.ts on the release SHA with every Hunt switch off, and write the staging note recording that SHA, the observability reading (commerce guard reports skipped, no [hunts-*] error) and the rollback result (switches on then off restores identical legacy results). Done when: the note exists with the SHA and links the passing run. Requires: FH-011S. Owner role: Release engineering.",
+  "detail": "Run lib/hunts/legacy-regression.test.ts and lib/hunts/legacy-paths.test.ts on the release SHA with every Hunt switch off, and write the staging note recording that SHA, the observability reading (commerce guard reports skipped, no [hunts-*] error) and the rollback result (switches on then off restores identical legacy results). Done when: the note exists with the SHA and links the passing run. Requires: FH-011S. Owner role: Release engineering.\n\nClosed 2026-11-16: docs/hunts/legacy-regression-staging-note.md records the run on main at e2016697d3c000d0d9d39bf3aea9b8618d26aefe with no HUNTS_ variable set: 8 of 8 tests passed in the two files, the commerce guard returned skipped, no [hunts-*] error was logged, no hunt_ table or function was touched, and switches on then off restored identical legacy results. It links the public CI run for the same commit (run 43883956660, job test, success), whose log lists both files as passed. There is no staging deployment (owner rule), so the exact-commit local run and that CI run are the evidence. No production or preview log was read, and a deployment-level rollback stays with each switch's activation gate in docs/RUNBOOKS.md.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"docs/hunts/legacy-regression-staging-note.md\")?0:1)'"
   },
+  "closed": "2026-11-16",
   "wave": "W7"
 }

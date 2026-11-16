@@ -8,6 +8,7 @@
 //   { token }. Older callers can also send scope fields and missionKey, which must match.
 
 import { getCallerProfile } from '@/lib/auth'
+import { deferHuntEvent, reasonClass } from '@/lib/hunts/analytics'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { signingSecret } from '@/lib/signing-secret'
 import { readSignedStaffScope } from '@/lib/hunts/staff-proof'
@@ -50,6 +51,13 @@ export async function POST(request: Request) {
     { secret, rpc: huntRpc(), loadFacts: async () => facts },
     { staffId: caller.id, token, scope, missionKey: facts.missionKey, nowEpoch: Math.floor(Date.now() / 1000) },
   )
+  // FH-025: the door's outcome class. No staff member, player, venue, placement or code is written.
+  deferHuntEvent({
+    event: 'hunt.staff_verify',
+    actorProfileId: null,
+    staff: true,
+    props: { hunt_id: scope.huntId, medium: 'staff', assurance: 'staff', reason_class: reasonClass(out.ok ? 'credited' : out.reason), replayed: out.ok && out.replayed },
+  })
   if (out.ok) return Response.json({ ok: true, replayed: out.replayed })
   if (out.reason === 'forbidden' || out.reason === 'not_found') return notFound()
   return Response.json({ ok: false, reason: out.reason }, { status: 409 })

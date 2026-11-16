@@ -8,6 +8,7 @@ import { TIER_ORDER, TIER_ZAPS, TIER_LABELS } from '@/lib/practices/tiers'
 import { Field, Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 const TASK_TYPES = ['attendance', 'hosting', 'volunteering', 'content', 'referral', 'other'] as const
 type TaskType = typeof TASK_TYPES[number]
@@ -90,11 +91,12 @@ export function NewTaskCompose({
                   aria-checked={active}
                   disabled={isPending}
                   onClick={() => setZapsValue(zaps)}
-                  className={`flex min-h-10 flex-col items-center justify-center rounded-lg border px-2 py-1.5 text-body-sm font-medium transition-colors ${
+                  className={choiceTileClasses(
+                    active,
                     active
-                      ? 'border-primary/50 bg-primary-bg text-primary-strong'
-                      : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
-                  }`}
+                      ? 'flex min-h-10 flex-col items-center justify-center rounded-lg px-2 py-1.5 text-body-sm font-medium text-primary-strong'
+                      : 'flex min-h-10 flex-col items-center justify-center rounded-lg px-2 py-1.5 text-body-sm font-medium text-muted hover:text-text',
+                  )}
                 >
                   <span>{TIER_LABELS[t]}</span>
                   <span className={`text-2xs font-semibold ${active ? 'text-primary-strong' : 'text-muted'}`}>{zaps} Zaps</span>

@@ -1,0 +1,18 @@
+{
+  "id": "FH-030S",
+  "title": "Hunts FH-030S: Author count rules and chapters, and feed live venue closures to the engine",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-030 (2026-11-16): the pure count rules, validation, evaluation and the read path shipped dark; authoring and live closure state move here."
+  },
+  "detail": "Requires FH-030, FH-029. The engine (lib/hunts/graph/count-rules.ts) evaluates N-of-M groups, venue buckets, equivalent placements and regional chapters, but nothing can author them: publishRows in lib/hunts/draft.ts writes ALL groups only and no screen writes hunt_mission_placements.venue_space_id or hunt_versions.policy.chapters. Build the authoring surface through a lib/studio entity (a threshold per group, a venue per placement, a substitute placement, chapters with an on and off control), run validateGraph on the result before publish and before a placement binding is added to a live version, and pass live closures (a revoked placement, a withdrawn or suspended partner Space) as closed placements into that publish guard and into the player evaluation in lib/hunts/run-store.ts. Word the new blockers and a closed stop for the player per docs/NAMING.md. Done when: a resident-built Passport with a 3 of 5 threshold publishes, a planned closure that breaks a chapter is refused before it goes live, and a player sees a closed stop as closed. Owner role: Game systems. Hunts switches stay OFF.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const d=fs.readFileSync(\"lib/hunts/draft.ts\",\"utf8\");const r=fs.readFileSync(\"lib/hunts/run-store.ts\",\"utf8\");process.exit(/min_count/.test(d)&&/closed: /.test(r)?0:1)'"
+  }
+}

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 
@@ -5,11 +6,14 @@ export function HuntDonationAsk({
   beneficiaryName,
   purpose,
   enabled = false,
+  children,
 }: {
   beneficiaryName: string
   purpose: string
   /** The owning surface supplies its independent activation decision after D8 approval. */
   enabled?: boolean
+  /** The live giving control (FH-046S). Without it the ask shows the closed button, as before. */
+  children?: ReactNode
 }) {
   if (!enabled || !huntSwitchOn('enabled')) return null
 
@@ -21,8 +25,12 @@ export function HuntDonationAsk({
         Playing is free. Giving is optional and won’t change your progress or rewards.
       </p>
       <p className="text-body-sm text-muted">Donations have their own receipt. Sponsor pledges are reported separately.</p>
-      <Button type="button" disabled>Donate to {beneficiaryName}</Button>
-      <p className="text-body-sm text-muted">Donations aren’t open yet.</p>
+      {children ?? (
+        <>
+          <Button type="button" disabled>Donate to {beneficiaryName}</Button>
+          <p className="text-body-sm text-muted">Donations aren’t open yet.</p>
+        </>
+      )}
     </section>
   )
 }

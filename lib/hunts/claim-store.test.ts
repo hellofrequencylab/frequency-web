@@ -52,8 +52,8 @@ function scanFacts(missionKey = 'm1') {
   rows.hunt_placements = { id: 'pl-1', hunt_id: 'h-1', revoked_at: null }
   rows.hunts = { id: 'h-1', slug: 'north-county', status: 'live', current_version_id: 'v-1', revision: 1 }
   rows.hunt_versions = { id: 'v-1', trail_title: 'Trail', trail_hook: 'Explore' }
-  rows.hunt_runs = { id: 'run-1', hunt_id: 'h-1', subject_profile_id: 'me', state: 'active' }
-  rows.hunt_mission_placements = [{ mission_key: missionKey }]
+  rows.hunt_runs = { id: 'run-1', hunt_id: 'h-1', version_id: 'v-1', subject_profile_id: 'me', state: 'active' }
+  rows.hunt_mission_placements = [{ mission_key: missionKey, placement_id: 'pl-1', venue_space_id: null }]
   rows.hunt_missions = ['m1', 'm2'].map((key) => ({ mission_key: key, title: key, visible_body: null, locked_teaser: null, opens_at: null, closes_at: null }))
   rows.hunt_rule_groups = [
     { id: 'g1', target_mission_key: 'm2', target_finish: false, logic: 'all', min_count: null, group_key: null },
@@ -105,7 +105,7 @@ describe('claim adapter', () => {
     scanFacts()
     rows.hunt_runs = { id: 'run-1', hunt_id: 'h-1', subject_profile_id: 'someone-else', state: 'active' }
     expect(await claimAsPlayer('me', claimInput())).toEqual({ ok: false, reason: 'no_run' })
-    rows.hunt_runs = { id: 'run-1', hunt_id: 'h-1', subject_profile_id: 'me', state: 'active' }
+    rows.hunt_runs = { id: 'run-1', hunt_id: 'h-1', version_id: 'v-1', subject_profile_id: 'me', state: 'active' }
     expect(await claimAsPlayer('me', { ...claimInput(), token: 'x.y' })).toEqual({ ok: false, reason: 'bad_token' })
     expect(await claimAsPlayer('me', claimInput('another-run'))).toEqual({ ok: false, reason: 'bad_token' })
     expect(filters).not.toHaveBeenCalledWith('hunt_progress', expect.anything(), expect.anything(), expect.anything())
@@ -123,6 +123,29 @@ describe('claim adapter', () => {
     expect(await openClaim('me', 'pl-1', NOW)).toEqual({ ok: false, reason: 'mission_binding_unavailable' })
     expect(await claimAsPlayer('me', claimInput())).toEqual({ ok: false, reason: 'mission_binding_unavailable' })
     expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { label: 'pinned to an earlier version', version: 'v-0' },
+    { label: 'carrying no version', version: undefined },
+  ])('refuses a run $label before a token, a mission lookup or the database (FH-016T)', async ({ version }) => {
+    scanFacts()
+    const input = claimInput()
+    rows.hunt_runs = { id: 'run-1', hunt_id: 'h-1', version_id: version, subject_profile_id: 'me', state: 'active' }
+    filters.mockClear()
+    expect(await openClaim('me', 'pl-1', NOW)).toEqual({ ok: false, reason: 'version_superseded' })
+    expect(await claimAsPlayer('me', input)).toEqual({ ok: false, reason: 'version_superseded' })
+    // The mission binding is never read for a run on another version, on any version.
+    expect(filters).not.toHaveBeenCalledWith('hunt_mission_placements', expect.anything(), expect.anything(), expect.anything())
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('resolves the mission on the version the run row carries (FH-016T)', async () => {
+    scanFacts()
+    expect(await openClaim('me', 'pl-1', NOW)).toMatchObject({ ok: true, runId: 'run-1' })
+    expect(filters).toHaveBeenCalledWith('hunt_runs', 'select', 'id, hunt_id, version_id, subject_profile_id, state')
+    const order = filters.mock.calls.map((call) => call[0])
+    expect(order.indexOf('hunt_mission_placements')).toBeGreaterThan(order.lastIndexOf('hunt_runs'))
   })
 
   it('rechecks placement revocation and refuses a previously issued token', async () => {

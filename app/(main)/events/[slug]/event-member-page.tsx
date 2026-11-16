@@ -1,6 +1,7 @@
 // Member event page. Signed-in visitors reach this file through a proxy rewrite
 // from /events/<slug> to /events/<slug>/full (lib/nav/member-event-rewrite.ts).
 // The public ISR body lives in ./page.tsx.
+import { formatDateMedium, formatDateWeekday, formatTimeShort } from '@/lib/format-date'
 import type { Metadata } from 'next'
 import { Suspense, type ReactNode } from 'react'
 import { notFound } from 'next/navigation'
@@ -188,7 +189,7 @@ function formatFull(iso: string) {
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })
+  return formatTimeShort(iso, 'UTC')
 }
 
 // ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
@@ -2094,7 +2095,7 @@ export default async function EventDetailPage({
         ? [
             recurrenceLineFor(event) ?? 'Part of a recurring series',
             nextRecurrence
-              ? `Next: ${nextRecurrence.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })}`
+              ? `Next: ${formatDateWeekday(nextRecurrence, 'UTC')}`
               : null,
           ]
             .filter(Boolean)
@@ -2351,7 +2352,7 @@ export default async function EventDetailPage({
   const fqSeriesLine = [
     recurrenceLineFor(event) ?? 'Part of a recurring series',
     event.recurrence_until
-      ? `until ${new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      ? `until ${formatDateMedium(event.recurrence_until)}`
       : null,
     fqNext ? `next ${fqNext}` : null,
   ]

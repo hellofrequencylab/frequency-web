@@ -1,0 +1,20 @@
+{
+  "id": "PROG-E2B",
+  "title": "Space profile sections come from the one block registry",
+  "status": "done",
+  "priority": "P2",
+  "lane": "program",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E2"
+  },
+  "detail": "Split from PROG-E2 on 2026-11-16 (owner approval, Daniel, decision \"Fix both, then fold Space profile\"). The first of four folds. The hand-written Space profile catalog (lib/spaces/profile-blocks.ts, fourteen rows restating what the entity-block registry already held) is deleted. lib/entity-blocks/space-profile.ts derives the same list from the registry's Space rows: label, order and function gate come from ENTITY_BLOCKS. Every importer is repointed. The block-system ratchet is lowered 5 to 4 through the gate's own --update path.\n\nOwner rulings kept: the eleven core Space blocks are untouched; no migration; rendered output and stored layouts are byte for byte the same; nothing appears on a palette it was not on (the registry's rows and palette sets are not edited).\n\nThree things stay local in the new module, on purpose: the list of which registry rows are profile sections; one id map (the stored section id `highlights` reads the registry row `stats`, so no stored layout is rewritten and `stats` still does not validate as a flat section id); and three descriptions (About, Highlights, Offerings) where the two catalogs had drifted, kept in the profile wording so nothing a person reads changed.\n\nVERIFIED: goldens (lib/entity-blocks/space-profile.golden.test.ts) written and green against the old catalog first, then green against the derived list with only the import line changed; the registry, profile layout, section nav, memberships registration and updates retirement tests; lint, scoped typecheck and the contract guards through prepush; check:block-baselines at 4. NOT VERIFIED: no browser pass on a Space profile or its settings page, no Vercel build, and the postbuild budget gates (the new module makes lib/spaces/profile-modules.ts import the registry file at runtime, where it imported only types before).\n\nFollow-ups: the renderer map in space-profile-modules.tsx is still a second map; the owner picks one line of copy for the three drifted descriptions. Still on PROG-E2: Spotlight, Layout modules, Puck.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/PROG-E2B.mjs",
+    "note": "Fails on main: lib/entity-blocks/space-profile.ts does not exist, lib/spaces/profile-blocks.ts does, and block-systems reads 5. Passes when the list loaded from the new module equals the frozen fourteen byte for byte, every section matches a live ENTITY_BLOCKS row a Space may hold (label, order, function gate), the default layouts are unchanged, no file under app, components or lib imports the old catalog, and the ratchet reads 4 or lower."
+  },
+  "closed": "2026-11-16"
+}

@@ -69,6 +69,8 @@ import {
 } from '@/lib/billing/tickets'
 import { huntsAfterOrderDispute, huntsAfterOrderRefund, huntsAfterOrderSession } from '@/lib/hunts/order-hooks'
 import { huntsAfterChargeRefund, huntsAfterDisputeClosed, huntsAfterTicketSession } from '@/lib/hunts/commerce-webhook'
+import { huntsAfterDonationRefund, huntsAfterDonationSession } from '@/lib/hunts/donation-sync'
+import { huntsAfterInvoicePaid } from '@/lib/hunts/sponsor-settlement'
 import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
 import {
   recordSpaceDonationFromSession,
@@ -209,6 +211,8 @@ export async function POST(req: Request) {
     // `async_payment_succeeded` consume) is what stops a delayed-payment donation from being the
     // recorder someone forgets.
     await recordSpaceDonationFromSession(s)
+    // FH-046S: mirror a Trail gift. Dark until HUNTS_COMMERCE_ENABLED; it never throws into settlement.
+    await huntsAfterDonationSession(s)
     // LIVE-781: a Space buying a domain. Only after the payment is confirmed does it buy at Vercel, and
     // it claims its `pending` row once, so a redelivery or the on-page settle cannot buy twice.
     await recordDomainPurchaseFromSession(s)
@@ -313,6 +317,7 @@ export async function POST(req: Request) {
         // A donation holds no slot, but a `pending` row that can never settle would sit in the fund
         // view forever and read as money that is coming. Release it (idempotent, pending only).
         await abandonSpaceDonationFromSession(s)
+        await huntsAfterDonationSession(s)
         // LIVE-364: tickets and tips wrote a `pending` row per ATTEMPT and had NO arm here, so every
         // abandoned checkout left one behind forever. Production held 11 such tickets against 9
         // expired sessions and zero completed payments. Each no-ops on a session that is not its
@@ -420,6 +425,9 @@ export async function POST(req: Request) {
         // A membership subscription invoice was paid (first payment or a renewal).
         // Record it as Foundation dues on the partitioned ledger (idempotent per invoice).
         await recordMembershipDuesFromInvoice(event.data.object as Stripe.Invoice)
+        // FH-047S: a sponsor's paid invoice that names a Trail settlement. Dark until
+        // HUNTS_COMMERCE_ENABLED, a no-op for every other invoice, and it never throws.
+        await huntsAfterInvoicePaid(event.data.object as Stripe.Invoice)
         break
       }
 
@@ -438,6 +446,7 @@ export async function POST(req: Request) {
         await huntsAfterOrderRefund(charge)
         await recordTipRefundFromCharge(charge)
         await recordSpaceDonationRefundFromCharge(charge)
+        await huntsAfterDonationRefund(charge)
         break
       }
 

@@ -78,6 +78,17 @@ describe('the optional polish', () => {
     expect(out).toEqual(base)
     expect(applyPolish(base, 'nonsense', passages)).toEqual(base)
   })
+  it('reads the reply through a schema: a wrong-typed rewrite is dropped, the good one beside it is kept (PROG-E8C)', () => {
+    const good = { slot: 'space', field: 'tagline', value: 'Breathwork, for tired founders', snippet: 'Breathwork for tired founders', origin: 'Your Space tagline' }
+    for (const junk of [null, undefined, 7, [], {}, { fields: 'tagline' }, { fields: { 0: good } }]) expect(applyPolish(base, junk, passages)).toEqual(base)
+    const out = applyPolish(base, { fields: [null, { ...good, value: 12 }, { ...good, snippet: null }, { ...good, origin: ['x'] }, { ...good, slot: 3 }, good] }, passages)
+    expect(out.space.tagline).toBe('Breathwork, for tired founders')
+    expect({ ...out, space: { ...out.space, tagline: base.space.tagline }, cites: [] }).toEqual({ ...base, cites: [] })
+  })
+  it('looks only at the first six rewrites, however many are sent', () => {
+    const good = { slot: 'space', field: 'tagline', value: 'Breathwork, for tired founders', snippet: 'Breathwork for tired founders', origin: 'Your Space tagline' }
+    expect(applyPolish(base, { fields: [0, 1, 2, 3, 4, 5, good] }, passages)).toEqual(base)
+  })
   it('caps the calls per launch at two', () => {
     expect(MAX_AI_CALLS).toBe(2)
     expect([0, 1, 2, 3].map(polishCallsLeft)).toEqual([true, true, false, false])

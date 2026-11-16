@@ -16,6 +16,7 @@ import { CardLinkPicker } from './card-link-picker'
 import { CARD_LIMITS, CARD_MODES, normalizeCardLink, type CardFace, type CardMode } from '@/lib/member-cards/face'
 import { saveMyCardFace, saveSpaceCardFace } from '@/lib/member-cards/actions'
 import type { CardStats } from '@/lib/member-cards/store'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // THE CARD FACE EDITOR (LIVE-1282, ADR-1874, docs/LOYALTY.md "Member cards"). One editor for both
 // owners of a face: a member on /crew/card, and a Space in its Check-in workspace's Member cards
@@ -148,11 +149,9 @@ export function CardFaceEditor({
                   role="radio"
                   aria-checked={on}
                   onClick={() => set('mode', m.key)}
-                  className={cn(
-                    'flex flex-col items-start gap-1 rounded-card border p-3 text-left press transition-[background-color,border-color,transform] motion-reduce:transition-none',
-                    on
-                      ? 'border-primary bg-primary-bg text-primary-strong'
-                      : 'border-border bg-surface text-text hover:border-border-strong hover:bg-surface-elevated',
+                  className={choiceTileClasses(
+                    on,
+                    cn('flex flex-col items-start gap-1 rounded-card p-3 text-left press', on ? 'text-primary-strong' : 'text-text'),
                   )}
                 >
                   <Icon aria-hidden className="h-5 w-5" />

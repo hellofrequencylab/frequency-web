@@ -16,14 +16,9 @@ import { completeRaw } from '@/lib/ai/complete'
 import { aiEnabled } from '@/lib/ai/client'
 
 import { featureOverBudget } from '@/lib/ai/usage'
+import { citedField, lenientList, validateModelValue, z } from '@/lib/ai/schema'
 import { PROPERTY_TYPES, AMENITIES } from '@/lib/listings/types'
-import type {
-  ClassifiedsExtraction,
-  HousingExtraction,
-  ListingExtraction,
-  ListingHints,
-  ListingSeedKind,
-} from './types'
+import type { ListingExtraction, ListingHints, ListingSeedKind } from './types'
 
 export const EXTRACT_FEATURE = 'listing-seed-extract'
 const TOOL_NAME = 'save_listing'
@@ -155,6 +150,63 @@ function buildExtractPrompt(pastedText: string, hints?: ListingHints): string {
   return parts.join('\n\n')
 }
 
+// ── The reply schemas: untrusted tool input -> the raw extraction the coercer grounds ──────────
+// (PROG-E8C, the ADR-1287 pattern, lib/ai/schema.ts.) They only say what TYPE each part is: a cited
+// field of the wrong shape reads as absent, a detail row that is not an object is dropped, and one
+// stray value cannot reach the coercer as something it is not. Whether a value is TRUE is still the
+// grounding gate's call (./coerce.ts). They live here, not in ./coerce.ts, because that file is
+// loaded on its own by a probe that allows it three imports and no more.
+
+const text = z.string().optional().catch(undefined)
+
+const CLASSIFIEDS_REPLY = z.object({
+  title: citedField,
+  description: citedField,
+  listingKind: citedField,
+  category: citedField,
+  priceNote: citedField,
+  details: lenientList(z.object({ label: text, value: text })).optional().catch(undefined),
+  neighborhood: citedField,
+  city: citedField,
+  contact: citedField,
+})
+
+const HOUSING_REPLY = z.object({
+  title: citedField,
+  description: citedField,
+  propertyType: citedField,
+  // A row that is not a cited field stays in place as an empty one, so every amenity keeps its index.
+  amenities: lenientList(citedField)
+    .transform((rows) => rows.map((row) => row ?? {}))
+    .optional()
+    .catch(undefined),
+  rentDollars: citedField,
+  deposit: citedField,
+  bedrooms: citedField,
+  bathrooms: citedField,
+  sqft: citedField,
+  availableFrom: citedField,
+  furnished: citedField,
+  petsOk: citedField,
+  utilitiesIncluded: citedField,
+  smokingOk: citedField,
+  cannabisOk: citedField,
+  neighborhood: citedField,
+  city: citedField,
+  contact: citedField,
+})
+
+/** Read a save_listing tool input into the kind's raw extraction through its schema, or null when the reply is not
+ *  an object at all (the caller then seeds the empty draft, as it does when AI is off). PURE + total. */
+function readListingReply(raw: unknown, kind: ListingSeedKind): ListingExtraction | null {
+  if (kind === 'classifieds') {
+    const res = validateModelValue(raw, CLASSIFIEDS_REPLY)
+    return res.ok ? { ...res.data, kind } : null
+  }
+  const res = validateModelValue(raw, HOUSING_REPLY)
+  return res.ok ? { ...res.data, kind } : null
+}
+
 interface ExtractListingInput {
   kind: ListingSeedKind
   pastedText: string
@@ -166,7 +218,8 @@ interface ExtractListingInput {
 /**
  * Extract a cited ListingExtraction from one pasted block (SONNET, forced tool). Gated on aiEnabled +
  * the per-feature budget cap; returns null when off / over-budget / failed / empty so the caller
- * degrades to a manual draft. The returned shape is UNTRUSTED — coerceListingExtraction grounds it.
+ * degrades to a manual draft. The reply is read through the kind's schema (never cast), so the returned
+ * shape is well typed; its VALUES are still untrusted, and coerceListingExtraction grounds them.
  */
 export async function extractListing(input: ExtractListingInput): Promise<ListingExtraction | null> {
   if (!aiEnabled()) return null
@@ -188,11 +241,7 @@ export async function extractListing(input: ExtractListingInput): Promise<Listin
     const block = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
     )
-    if (!block || !block.input || typeof block.input !== 'object' || Array.isArray(block.input)) return null
-    const fields = block.input as Record<string, unknown>
-    return input.kind === 'classifieds'
-      ? ({ ...(fields as Omit<ClassifiedsExtraction, 'kind'>), kind: 'classifieds' } as ClassifiedsExtraction)
-      : ({ ...(fields as Omit<HousingExtraction, 'kind'>), kind: 'housing' } as HousingExtraction)
+    return readListingReply(block?.input, input.kind)
   } catch {
     return null
   }
