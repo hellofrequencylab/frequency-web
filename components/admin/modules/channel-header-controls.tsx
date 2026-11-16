@@ -6,6 +6,7 @@ import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { updateChannelCoverFocus, updateChannelHeroHeight } from '@/app/(main)/channels/admin-actions'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { CHANNEL_HERO_HEIGHTS, type ChannelHeroHeight } from '@/lib/channels/hero'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // The Channel HEADER controls, the twin of EventHeaderControls: the cover FOCAL POINT (where the
 // image sits inside its cropped hero window) beside the hero HEIGHT (Short / Standard / Tall).
@@ -94,12 +95,10 @@ export function ChannelHeaderControls({
                   disabled={heightPending}
                   aria-pressed={on}
                   onClick={() => onHeightChange(h.value)}
-                  className={
-                    'rounded-control px-2.5 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ' +
-                    (on
-                      ? 'bg-primary text-on-primary'
-                      : 'border border-border bg-surface text-text hover:border-border-strong')
-                  }
+                  className={choiceTileClasses(
+                    on,
+                    `rounded-control px-2.5 py-1.5 text-meta font-semibold ${on ? 'text-primary-strong' : 'text-text'}`,
+                  )}
                 >
                   {h.label}
                 </button>

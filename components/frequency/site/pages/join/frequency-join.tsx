@@ -464,7 +464,7 @@ export function FrequencyJoin({
           src={looking ? '/brand/frequency/photos/day-meditation-circle.jpg' : '/brand/frequency/photos/gathering-09.jpg'}
           alt=""
           fill
-          priority
+          preload
           sizes="100vw"
         />
         <span className="rings" />

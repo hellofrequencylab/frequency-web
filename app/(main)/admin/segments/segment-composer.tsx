@@ -6,7 +6,7 @@ import { Check, AlertCircle, Plus, Trash2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea, Label } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { createSegment, updateSegment, previewSegment, type SegmentActionResult } from './actions'
 import { allowedOpsForType, opLabel, clampOp } from './field-ops'
 import type {
@@ -187,28 +187,15 @@ export function SegmentComposer({
       <div className="space-y-3 rounded-card border border-border bg-surface p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-body-sm font-semibold text-text">Members must match</span>
-          <div className="inline-flex overflow-hidden rounded-control border border-border">
-            <button
-              type="button"
-              onClick={() => setCombinator('all')}
-              className={cn(
-                'px-3 py-1.5 text-meta font-semibold transition-colors',
-                combinator === 'all' ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated',
-              )}
-            >
-              all
-            </button>
-            <button
-              type="button"
-              onClick={() => setCombinator('any')}
-              className={cn(
-                'px-3 py-1.5 text-meta font-semibold transition-colors',
-                combinator === 'any' ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated',
-              )}
-            >
-              any
-            </button>
-          </div>
+          <SegmentedControl
+            label="Match all or any of the rules"
+            value={combinator}
+            onChange={setCombinator}
+            segments={[
+              { value: 'all', label: 'all' },
+              { value: 'any', label: 'any' },
+            ]}
+          />
           <span className="text-body-sm text-muted">of these rules</span>
         </div>
 

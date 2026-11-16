@@ -30,7 +30,7 @@ export function TemplePhone({ src, alt, sizes, priority = false, tone = 'light' 
     <span className="tf-ios">
       <span className="tf-ios-body">
         <span className="tf-ios-scr">
-          <Image src={src} alt={alt} width={740} height={1648} sizes={sizes} priority={priority} />
+          <Image src={src} alt={alt} width={740} height={1648} sizes={sizes} preload={priority} />
           <span className={`tf-sb${tone === 'dark' ? ' dk' : ''}`} aria-hidden="true">
             <span>9:41</span>
             <span className="tf-isl" />
@@ -58,7 +58,7 @@ export function TempleBrowser({ src, alt, url, width, height, sizes, priority = 
         <u>{url}</u>
       </div>
       <div className="tf-scr">
-        <Image src={src} alt={alt} width={width} height={height} sizes={sizes} priority={priority} />
+        <Image src={src} alt={alt} width={width} height={height} sizes={sizes} preload={priority} />
       </div>
     </div>
   )
