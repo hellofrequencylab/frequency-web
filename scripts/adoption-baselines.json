@@ -1924,7 +1924,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 64,
+      "baseline": 58,
       "history": [
         {
           "at": "2026-08-05",
@@ -2037,15 +2037,22 @@
           "to": 64,
           "direction": "lowered",
           "reason": "SCAN-1242: onboarding display name and handle render through the kit Input (66 to 64)"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 64,
+          "to": 58,
+          "direction": "lowered",
+          "reason": "SCAN-1242 launch slice: the six text fields in the join induction (both email captures, first and last name, handle, city) render through the kit Input. Inside the site kit on the stage surface the members .input rule is inert, so the live dress is unchanged; 64 to 58"
         }
       ],
       "frozen": {
         "at": "2026-11-16",
-        "value": 64,
+        "value": 58,
         "direction": "lowered",
         "basis": "a76a8556a0ed",
-        "reason": "SCAN-1242: onboarding display name and handle render through the kit Input (66 to 64)",
-        "from": 66
+        "reason": "SCAN-1242 launch slice: the six text fields in the join induction (both email captures, first and last name, handle, city) render through the kit Input. Inside the site kit on the stage surface the members .input rule is inert, so the live dress is unchanged; 64 to 58",
+        "from": 64
       }
     },
     {
