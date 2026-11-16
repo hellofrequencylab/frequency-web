@@ -922,6 +922,8 @@ Six switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on):
 
 Gate to turn one on: every Hunt migration up to the rung is applied in Frequency Community (hunt_outbox for the worker, hunt_claim_apply for claims), the legacy check-in, reward and commerce paths show no change with all switches off, and the rung below has run clean. Order: enabled, claims, authoring, worker, rewards. Rollback is unsetting the switch: no data moves, claims already credited stay credited, and outbox rows wait for the worker to return.
 
+`HUNTS_GUEST_ANALYTICS_ENABLED` (FH-025, `lib/hunts/analytics.ts`, blank = off, needs `HUNTS_ENABLED`) lets a signed-out visitor's Hunt events leave for Google Analytics. Off, a guest's scan is counted in the first-party ledger only. A member's Hunt events are forwarded only with that member's recorded analytics consent, and a venue's staff events are never forwarded, whatever this switch says. Every Hunt event carries only the closed dimensions on the allowlist (reason class, medium, cohort, assurance, the Hunt id, replayed): no location, code, venue or contact. Gate to turn it on: the privacy owner has signed FH-023 and named guest forwarding in that sign-off, and the consent banner covers signed-out visitors in every region the Hunt runs. Rollback is unsetting it.
+
 ### Stripe and progressive-dinner pilot gate
 
 Use the [D7 dinner draft](hunts/PRODUCT-DRAFTS-D4-D7-D8.md), the [Experience Pass binding](hunts/EXPERIENCE-PASS-BINDING.md), [paid ticket authority](hunts/PAID-TICKET-AUTHORITY.md) and [refund and dispute policy](hunts/REFUNDS-AND-DISPUTES.md) to agree the pilot scope before enabling sales.
