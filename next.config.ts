@@ -199,7 +199,10 @@ const PERMISSIONS_POLICY_CAMERA = 'camera=(self), microphone=(), geolocation=(se
 // `/:path((?!scan/?$).*)`: every path but the camera routes (a trailing slash included, and the
 // match is case-insensitive like the router's). The inner group may open with `(?!`; the outer
 // one may not start with `?`, which is path-to-regexp's rule, not ours.
-const notCameraRoute = `/:path((?!(?:${CAMERA_ROUTES.map((r) => r.slice(1)).join('|')})/?$).*)`
+// SCAN-1213: every extension under public/themes, public/sites and public/create-a-space today.
+// A new format (avif, mp4) goes uncached until it is added here, which is the safe way to be wrong.
+const STATIC_ART_EXT = 'jpg|jpeg|png|svg|webp'
+const notCameraRoute =`/:path((?!(?:${CAMERA_ROUTES.map((r) => r.slice(1)).join('|')})/?$).*)`
 
 // Exactly the five faces the active Stage loader opens. Named paths avoid tracing unrelated fonts
 // into every share-card function; the retired Nunito loader's Black/Liberation faces are no longer used.
@@ -368,6 +371,26 @@ const nextConfig: NextConfig = {
       // place, so repeat views can skip revalidation. A week plus stale-while-revalidate keeps a
       // same-name swap from sticking for long.
       ...['/brand/:path*', '/fonts/:path*', '/icons/:path*', '/images/:path*'].map((source) => ({
+        source,
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }],
+      })),
+      // SCAN-1213: the same week for the theme, site and wizard art, which is replaced by renaming
+      // too. Two differences from the list above, both deliberate.
+      //
+      // 1. /themes, /sites and /create-a-space are also PAGE routes (/themes/nocturne,
+      //    /sites/[slug], /create-a-space). A bare `/themes/:path*` would hand a week of browser
+      //    cache to HTML, so these three match on an image extension only. /themes-index and
+      //    /screenshots have no page under them and take the plain form.
+      // 2. /maplibre is NOT here. Its two files are copied unhashed from node_modules on every
+      //    build (scripts/copy-maplibre-worker.mjs) and change IN PLACE when maplibre-gl is bumped.
+      //    A cached worker beside a new library is the version skew that script exists to prevent.
+      ...[
+        `/themes/:asset(.+\\.(?:${STATIC_ART_EXT}))`,
+        `/sites/:asset(.+\\.(?:${STATIC_ART_EXT}))`,
+        `/create-a-space/:asset(.+\\.(?:${STATIC_ART_EXT}))`,
+        '/themes-index/:path*',
+        '/screenshots/:path*',
+      ].map((source) => ({
         source,
         headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }],
       })),
