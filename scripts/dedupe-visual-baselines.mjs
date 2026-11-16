@@ -14,7 +14,7 @@
 //   node scripts/dedupe-visual-baselines.mjs          rewrite the folder and the manifest
 //   node scripts/dedupe-visual-baselines.mjs --check  exit 1 if a rewrite would change anything
 
-import { existsSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const DIR = 'test/e2e/__screenshots__/visual.spec.ts'
@@ -49,17 +49,28 @@ export function planDedupe(files, previous, read) {
   return { shared: sorted, remove: remove.sort() }
 }
 
+/** `read()`, or `fallback` when the path is absent. No exists-then-read: one call, one answer. */
+function orAbsent(read, fallback) {
+  try {
+    return read()
+  } catch (error) {
+    if (error && error.code === 'ENOENT') return fallback
+    throw error
+  }
+}
+
 function main() {
   const check = process.argv.includes('--check')
-  if (!existsSync(DIR)) {
+  const listing = orAbsent(() => readdirSync(DIR), null)
+  if (listing === null) {
     console.log(`${DIR} does not exist; nothing to fold.`)
     return
   }
-  const files = readdirSync(DIR).filter((f) => f.endsWith('.png'))
-  const previous = existsSync(MANIFEST) ? (JSON.parse(readFileSync(MANIFEST, 'utf8')).shared ?? {}) : {}
-  const { shared, remove } = planDedupe(files, previous, (name) => readFileSync(join(DIR, name)))
+  const files = listing.filter((f) => f.endsWith('.png'))
+  const current = orAbsent(() => readFileSync(MANIFEST, 'utf8'), '')
+  const previous = current ? (JSON.parse(current).shared ?? {}) : {}
+  const { shared, remove } = planDedupe(files, previous, (name) => orAbsent(() => readFileSync(join(DIR, name)), null))
   const next = `${JSON.stringify({ _comment: COMMENT, shared }, null, 2)}\n`
-  const current = existsSync(MANIFEST) ? readFileSync(MANIFEST, 'utf8') : ''
   const changed = remove.length > 0 || next !== current
   if (check) {
     if (changed) {
@@ -72,7 +83,7 @@ function main() {
     console.log(`Visual baselines are folded: ${Object.keys(shared).length} shared, no duplicate on disk.`)
     return
   }
-  for (const file of remove) unlinkSync(join(DIR, file))
+  for (const file of remove) rmSync(join(DIR, file), { force: true })
   if (next !== current) writeFileSync(MANIFEST, next)
   console.log(
     `Folded ${remove.length} duplicate baseline(s); ${Object.keys(shared).length} midnight-light baseline(s) now read their dawn-light file.`,
