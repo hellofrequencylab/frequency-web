@@ -1,3 +1,4 @@
+import { formatDateShort } from '@/lib/format-date'
 import Link from 'next/link'
 import { Users, ArrowRight, CheckCircle2, CalendarRange } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -54,8 +55,8 @@ export interface JourneyProgressCardProps {
 function windowLabel(start: string | null, end: string | null): string | null {
   if (!start && !end) return null
   const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric',
-      ...( /^\d{4}-\d{2}-\d{2}$/.test(iso) ? { timeZone: 'UTC' } : {}) })
+    // A date-only window is a calendar day, not an instant: read it in UTC so it never slips a day.
+    formatDateShort(iso, /^\d{4}-\d{2}-\d{2}$/.test(iso) ? 'UTC' : undefined)
   if (start && end) return `${fmt(start)} to ${fmt(end)}`
   if (start) return `Opens ${fmt(start)}`
   return `Closes ${fmt(end as string)}`

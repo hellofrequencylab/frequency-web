@@ -1,0 +1,13 @@
+{
+  "id": "HYG-121",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const need=[[\"app/(main)/settings/notifications/mutes-form.tsx\",\"settings-subject-mutes\"],[\"components/frequency/admin/pages/overview/overview-body.tsx\",\"space-console-stats\"],[\"components/frequency/admin/pages/overview/overview-body.tsx\",\"space-console-needs\"],[\"components/frequency/admin/pages/overview/overview-body.tsx\",\"space-console-upcoming\"]];for(const [f,v] of need){const s=fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";if(!s.includes(\"data-visual-mask=\\\"\"+v+\"\\\"\"))fail(f+\" does not carry data-visual-mask=\\\"\"+v+\"\\\", so that live region still moves the baseline on every data change\")}const reg=fs.readFileSync(\"test/e2e/surfaces.ts\",\"utf8\");for(const [,v] of need){if(!new RegExp(\"value: [\\u0027\\\"]\"+v+\"[\\u0027\\\"]\").test(reg))fail(\"VISUAL_MASK_SITES has no row for \"+v+\", and visual-masks.test.ts fails a mask with no row\")}'",
+      "note": "Measures the four masks that carry the most drift (the mute list that OWN-081 moved, and the three console bands that move on every Plan, contact and event) at their exact sites, plus their registry rows. The remaining five are named in the detail and land in the same change; the probe asks for the load-bearing ones so it cannot be satisfied by masking something else. Fails today on the first arm. Passed 2026-09-22 with the nine masks in place. Repointed 2026-11-16 (SCAN-1240, owner approved): the three console masks sat in space-dashboard.tsx, which no page mounted, so the capture was never masked. They are now asked of overview-body.tsx, the console Home; the old activity list has no successor there, so that arm asks for Needs you (space-console-needs)."
+    }
+  },
+  "append": {
+    "detail": "\n\nPROBE REPOINTED 2026-11-16 (SCAN-1240): the three console arms named components/spaces/dashboard/space-dashboard.tsx, which no page mounted, so the app-space-console capture was photographing unmasked bands while this row read done. The masks now sit on the live console Home (overview-body.tsx and journey-completion-band.tsx, ten sites registered) and the probe asks for three of them there. space-console-stats and space-console-upcoming are path-only changes; space-console-activity becomes space-console-needs because the live Home has no activity list. The six app-space-console baselines need a recapture."
+  }
+}

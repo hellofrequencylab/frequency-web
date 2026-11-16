@@ -5,6 +5,7 @@
 // Pure server read; extracted verbatim from app/(main)/events/page.tsx so behavior
 // is unchanged (mirrors lib/circles/index-data.ts).
 
+import { formatDateShort } from '@/lib/format-date'
 import type { HostSpaceEmbed } from '@/lib/events/platform-credit'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -223,7 +224,7 @@ export function formatWhen(iso: string, now: Date) {
   if (days === 0) return `Today at ${time}`
   if (days === 1) return `Tomorrow at ${time}`
   if (days > 1 && days < 7) return `${d.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })} at ${time}`
-  return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} at ${time}`
+  return `${formatDateShort(d, 'UTC')} at ${time}`
 }
 
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
