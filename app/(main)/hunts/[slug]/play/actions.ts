@@ -11,6 +11,7 @@
 import { createHash } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
+import { deferHuntEvent, reasonClass } from '@/lib/hunts/analytics'
 import { claimAsPlayer, loadScanPlacement, openClaim } from '@/lib/hunts/claim-store'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { HELD_VISIT_MESSAGE } from '@/lib/hunts/player'
@@ -44,6 +45,12 @@ export async function claimStopAction(_previous: ClaimStopState, formData: FormD
   // One key per player, run and placement: a retry or a second device replays instead of double crediting.
   const idempotencyKey = createHash('sha256').update(`play:${caller.id}:${opened.runId}:${placement.id}`).digest('hex')
   const outcome = await claimAsPlayer(caller.id, { placementId: placement.id, token: opened.token, idempotencyKey, nowEpoch })
+  // FH-025: the outcome class only. The code, the placement and the stop never reach the event.
+  deferHuntEvent({
+    event: 'hunt.stop_claim',
+    actorProfileId: caller.id,
+    props: { hunt_id: placement.huntId, medium: 'typed', assurance: 'signed_node', reason_class: reasonClass(outcome.ok ? outcome.result : outcome.reason), replayed: outcome.ok && outcome.replayed },
+  })
   if (!outcome.ok) return error(outcome.reason === 'version_superseded' ? UPDATED : 'This stop could not be confirmed.')
 
   if (outcome.result === 'credited' || outcome.result === 'already_credited') {

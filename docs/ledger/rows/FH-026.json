@@ -1,0 +1,14 @@
+{
+  "id": "FH-026",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-16",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/merchant-report.ts\")?0:1)'"
+    }
+  },
+  "append": {
+    "detail": "\n\nBuilt 2026-11-16: lib/hunts/merchant-report.ts reads one venue Space's report for one Hunt: confirmed stops by assurance (accepted claims, read through the placement binding of the version each was made on), distinct runs, held claims, rewards handed over at that counter, Hunt-wide grant totals, per-offer counts, what the venue's players did next, and the count of contacts from the consent ledger's roster for that one Space (hunt_consent_roster, no email). Standing is decided first and fresh: current staff of the venue (canEditProfile, as at the door) where the venue is the Hunt's own Space or an accepted, effective, unrevoked partner; a removed staff member, a revoked partner and a request for another Space all get the same refusal and nothing is read. Small cells: the floor is 5. A Hunt-wide count shown to a partner is hidden under 5 and rounded down to a multiple of 5; a split beside an exact total is shown whole or withheld, so subtraction cannot recover a hidden part (enumerated in the test). The venue's own counts stay exact. Page: /hunts/<slug>/report (kit Focus shell, counts only). Export: GET /hunts/<slug>/report/export?kind=report|contacts&space=<id>, same gate; the contacts file carries a per-Space hashed reference, consent version and day, never a profile id, name or address. Dark behind HUNTS_CLAIMS_ENABLED. Proof: lib/hunts/merchant-report.test.ts (totals against claim and grant fixtures, revoked staff, cross-Space export, CSV formula defusing). Owed by a person: the page is not linked from a menu yet, and whether a venue should receive email addresses in the contacts file is a privacy decision for FH-023."
+  }
+}
