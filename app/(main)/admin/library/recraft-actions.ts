@@ -1,5 +1,6 @@
 'use server'
 
+import { slugify } from '@/lib/utils'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -36,11 +37,7 @@ const BUCKET = 'library-media'
 
 const dbh = () => createAdminClient()
 
-function slugify(s: string): string {
-  return (
-    s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 80) || 'asset'
-  )
-}
+const assetSlug = (s: string): string => slugify(s).slice(0, 80) || 'asset'
 function extFor(ct: string): string {
   if (ct.includes('svg')) return 'svg'
   if (ct.includes('png')) return 'png'
@@ -53,7 +50,7 @@ function extFor(ct: string): string {
 async function store(spaceId: string, bytes: Uint8Array, contentType: string, base: string) {
   const admin = createAdminClient()
   const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
-  const path = `${spaceId}/${slugify(base)}-${stamp}.${extFor(contentType)}`
+  const path = `${spaceId}/${assetSlug(base)}-${stamp}.${extFor(contentType)}`
   const { error } = await admin.storage.from(BUCKET).upload(path, bytes, { contentType, upsert: false })
   if (error) throw new Error(error.message)
   const { data: pub } = admin.storage.from(BUCKET).getPublicUrl(path)
@@ -106,7 +103,7 @@ export async function generateWithRecraft(input: {
       const { bytes, contentType } = await downloadRecraft(r.url)
       const stored = await store(spaceId, bytes, contentType, prompt)
       const title = results.length > 1 ? `${prompt.slice(0, 60)} ${i + 1}` : prompt.slice(0, 80)
-      const slug = `recraft-${slugify(title)}-${Date.now().toString(36)}-${i}`
+      const slug = `recraft-${assetSlug(title)}-${Date.now().toString(36)}-${i}`
       // INGEST (PROG-D1). The second of the two sites that used to write `library_assets` directly.
       // A generated image never carries EXIF, so the strip is a no-op here — what this call earns is
       // the CHECKSUM and the DIMENSIONS, which matter for a generator: ask Recraft twice for the same

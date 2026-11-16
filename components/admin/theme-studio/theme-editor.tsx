@@ -1,5 +1,6 @@
 'use client'
 
+import { slugify } from '@/lib/utils'
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -34,15 +35,8 @@ import { createTheme, updateTheme } from '../../../app/(main)/admin/appearance/a
 // The only hardcoded colors live inside <ThemePreview> (the user's chosen palette is the
 // point there); this form itself is semantic-token-only.
 
-/** Turn a name into a slug suggestion: lowercase, spaces/punct → hyphens, trimmed. */
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40)
-}
+/** Turn a name into a slug suggestion: the shared accent-safe slug, capped at 40. */
+const themeSlug = (name: string): string => slugify(name).slice(0, 40)
 
 /** An empty draft for the "new" route. */
 export function blankTheme(): ThemeInput {
@@ -98,7 +92,7 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
       ...d,
       name: value,
       // Mirror the name into the slug until the operator edits the slug directly.
-      slug: slugTouched ? d.slug : slugify(value),
+      slug: slugTouched ? d.slug : themeSlug(value),
     }))
     setError(null)
   }

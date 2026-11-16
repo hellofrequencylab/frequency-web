@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: lib/theme/skins.ts:69,82 (label 'Midnight', frequency copy label 'Midnight') feeds components/frequency/members/settings/settings-body.tsx:153 ('your theme (Default or Midnight)'); app/(main)/admin/spaces/[id]/page.tsx:102 'Midnight (built-in)'. next.config.ts redirect comment: 'The Midnight theme is Nocturne (2026-10-27)'; lib/marketing/quick-answers.test.ts:26 bans 'Midnight' in public copy. || app/sign-in/page.tsx:181-184, app/sign-in/frequency-sign-in.tsx:106-109, components/frequency/site/pages/create-space/create-space-claim.tsx:123-126 (#4285F4 #34A853 #FBBC05 #EA4335). Brand colours are legitimate; the triplication is the issue.\n\nWHY IT MATTERS: Same theme has two names; a member who read about Nocturne on /themes finds no Nocturne in Settings. Three places to change; the only raw hex outside token files in the marketing/auth reach (token discipline is otherwise clean: no #5B3FD0 in app/components/lib, no bg-[#...] classes).\n\nFIX DIRECTION: Set the frequency copy label to 'Nocturne' in skins.ts and the admin list; keep the id 'midnight'. Extract one GoogleMark component.",
+  "detail": "EVIDENCE: lib/theme/skins.ts:69,82 (label 'Midnight', frequency copy label 'Midnight') feeds components/frequency/members/settings/settings-body.tsx:153 ('your theme (Default or Midnight)'); app/(main)/admin/spaces/[id]/page.tsx:102 'Midnight (built-in)'. next.config.ts redirect comment: 'The Midnight theme is Nocturne (2026-10-27)'; lib/marketing/quick-answers.test.ts:26 bans 'Midnight' in public copy. || app/sign-in/page.tsx:181-184, app/sign-in/frequency-sign-in.tsx:106-109, components/frequency/site/pages/create-space/create-space-claim.tsx:123-126 (#4285F4 #34A853 #FBBC05 #EA4335). Brand colours are legitimate; the triplication is the issue.\n\nWHY IT MATTERS: Same theme has two names; a member who read about Nocturne on /themes finds no Nocturne in Settings. Three places to change; the only raw hex outside token files in the marketing/auth reach (token discipline is otherwise clean: no #5B3FD0 in app/components/lib, no bg-[#...] classes).\n\nFIX DIRECTION: Set the frequency copy label to 'Nocturne' in skins.ts and the admin list; keep the id 'midnight'. Extract one GoogleMark component.\n\nFIXED 2026-11-16: the Frequency-design Appearance label and the admin built-in list now say Nocturne (skin id stays midnight; lib/theme/design.test.ts expectation updated to the new label, the only test change); one GoogleMark component (components/google-mark.tsx) replaces the four inline Google SVGs.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1236",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }

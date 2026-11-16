@@ -364,7 +364,7 @@ export function TemplateCover({
   priority?: boolean
 }) {
   if (imageUrl) {
-    return <Image src={imageUrl} alt={name} fill sizes={sizes} priority={priority} className="object-cover" />
+    return <Image src={imageUrl} alt={name} fill sizes={sizes} preload={priority} className="object-cover" />
   }
   return <TemplateHeaderArt slug={slug} primaryPillar={primaryPillar} />
 }

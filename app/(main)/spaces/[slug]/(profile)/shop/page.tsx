@@ -80,7 +80,7 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
         className="object-cover"
         style={{ objectPosition: storefront.bannerFocus }}
         sizes="(min-width:768px) 56rem, 100vw"
-        priority
+        preload
       />
     </div>
   ) : null

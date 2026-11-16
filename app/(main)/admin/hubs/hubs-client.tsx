@@ -6,6 +6,7 @@ import { Select } from '@/components/ui/select'
 import { Pencil, Check, X } from 'lucide-react'
 import { updateHub } from '../actions'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -175,9 +176,9 @@ export function HubsClient({ hubs, nexuses, guides, initialEditId = null }: { hu
           />
         )}
         rowActions={(h) => (
-          <button onClick={() => setEditingId(h.id)} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
+          <IconButton label="Edit" onClick={() => setEditingId(h.id)}>
             <Pencil className="h-3.5 w-3.5" aria-hidden />
-          </button>
+          </IconButton>
         )}
         empty={
           <EmptyState
