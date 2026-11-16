@@ -1,3 +1,4 @@
+import { formatDateWeekday } from '@/lib/format-date'
 import Link from 'next/link'
 import { CalendarDays } from 'lucide-react'
 import type { MemberBlockProps } from '@/lib/entity-blocks/member-adapter'
@@ -10,7 +11,7 @@ import { MemberSection } from './section'
 function dayLabel(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+  return formatDateWeekday(d, 'UTC')
 }
 
 export function MemberEventsBlock({ data }: MemberBlockProps) {
