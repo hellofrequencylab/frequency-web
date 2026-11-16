@@ -1,3 +1,4 @@
+import { formatDateWeekday, formatTimeShort } from '@/lib/format-date'
 import { Suspense } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
@@ -186,7 +187,7 @@ export async function EntityCta() {
           <div className="grid gap-4 @lg:grid-cols-2">
             {live.map((e) => {
               const start = new Date(e.starts_at)
-              const when = `${start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · ${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+              const when = `${formatDateWeekday(start)} · ${formatTimeShort(start)}`
               return (
                 <EntityCard
                   key={e.id}
