@@ -42,13 +42,6 @@ import {
 // the button says "Join" (not "Pay") and the helper line says no payment is taken yet. No narrated
 // feelings, no em/en dashes (CONTENT-VOICE §10).
 
-/** Cents to a plain price label, e.g. 2500 -> "$25", 2550 -> "$25.50". Whole dollars drop the
- *  cents. USD only in v1 (a currency column is a later, additive expansion). */
-export function formatPrice(cents: number): string {
-  // The ONE house price format (lib/commerce/types.ts); this was a verbatim copy of it.
-  return formatPriceCents(cents)
-}
-
 /** A short per-interval suffix for the price label. */
 export function intervalLabel(interval: MembershipInterval): string {
   if (interval === 'month') return 'per month'
@@ -243,7 +236,7 @@ export function MembershipJoinCard({
       ) : (
         <>
           <span className="text-stat-sm font-black tabular-nums leading-none text-text">
-            {formatPrice(price.cents)}
+            {formatPriceCents(price.cents)}
           </span>
           <span className="text-body-sm text-muted">{intervalLabel(price.cadence)}</span>
         </>
@@ -336,7 +329,7 @@ export function MembershipJoinCard({
   const payDrawer = open && liveSession && (
     <CheckoutPanel
       clientSecret={liveSession.clientSecret}
-      priceLabel={formatPrice(price.cents)}
+      priceLabel={formatPriceCents(price.cents)}
       onFellBack={fallBackToHosted}
       // 🔴 WITHOUT THIS a paid membership has exactly ONE way to become real. confirm() with
       // redirect:'if_required' never navigates on the common card path, so the return_url that
@@ -436,7 +429,7 @@ export function MembershipJoinCard({
 
           <div className="flex items-baseline gap-1.5">
             <span className="text-stat-md font-black tabular-nums leading-none text-on-ink">
-              {formatPrice(price.cents)}
+              {formatPriceCents(price.cents)}
             </span>
             <span className="text-body-sm text-on-ink-muted">{intervalLabel(price.cadence)}</span>
           </div>

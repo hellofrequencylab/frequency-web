@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Monitor, Smartphone } from 'lucide-react'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags, type EmailColors } from '@/lib/email-studio/render'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
@@ -83,26 +84,15 @@ export function EmailPreview({
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <p className="eyebrow text-subtle">Preview</p>
-        <div className="flex overflow-hidden rounded-lg border border-border" role="group" aria-label="Preview width">
-          {(['desktop', 'mobile'] as const).map((w) => {
-            const on = width === w
-            const Icon = w === 'desktop' ? Monitor : Smartphone
-            return (
-              <button
-                key={w}
-                type="button"
-                aria-pressed={on}
-                aria-label={w === 'desktop' ? 'Desktop width' : 'Mobile width'}
-                onClick={() => setWidth(w)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-2xs font-semibold transition-colors ${
-                  on ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:text-text'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" aria-hidden /> {w === 'desktop' ? 'Desktop' : 'Mobile'}
-              </button>
-            )
-          })}
-        </div>
+        <SegmentedControl
+          label="Preview width"
+          value={width}
+          onChange={setWidth}
+          segments={[
+            { value: 'desktop', label: <><Monitor className="h-3.5 w-3.5" aria-hidden /> Desktop</> },
+            { value: 'mobile', label: <><Smartphone className="h-3.5 w-3.5" aria-hidden /> Mobile</> },
+          ]}
+        />
       </div>
 
       <div className="rounded-2xl border border-border bg-surface-elevated/40 p-3">

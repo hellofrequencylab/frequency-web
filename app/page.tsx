@@ -11,7 +11,7 @@ import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 import { resolvePageContent } from '@/lib/page-content'
-import { OG_SITE, SITE_DESCRIPTION } from '@/lib/site'
+import { OG_SITE } from '@/lib/site'
 import { FrequencyHome } from '@/components/frequency/site/pages/home/frequency-home'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
@@ -23,7 +23,7 @@ import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd } from '@/lib/seo/frequency-pag
 export async function generateMetadata(): Promise<Metadata> {
   const { title, description } = await resolvePageContent('/', {
     title: FREQUENCY_PAGE_SEO.home.title,
-    description: SITE_DESCRIPTION,
+    description: FREQUENCY_PAGE_SEO.home.description,
   })
   return {
     // `absolute` opts out of the root "%s · Frequency" template (the home title
@@ -73,7 +73,7 @@ const EMPTY: Data = { content: [], root: {} }
 //   • THE AUTHORITY IS SPLIT, and the split is the honest answer to "which surface owns `/`?".
 //     The BODY is the published document (this route renders it and nothing else). The <title> and
 //     the meta description are CODE: `page_content` carries no `/` row, so `resolvePageContent`
-//     above falls through to SITE_NAME · SITE_TAGLINE and SITE_DESCRIPTION from lib/site.ts. A
+//     above falls through to FREQUENCY_PAGE_SEO.home's title and description (SCAN-1206). A
 //     copy pass on the front door therefore touches two surfaces, not one.
 //   • A CHANGE TO THE WORDS IS A MIGRATION, not a pull request to this file. The model copy
 //     (CORE-MODEL §5 phase 8 item 6.1: people join free, businesses host free, you pay when you
