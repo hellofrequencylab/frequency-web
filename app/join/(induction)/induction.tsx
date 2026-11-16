@@ -43,6 +43,8 @@ import { TicketsRender } from '@/components/onboarding/renders/tickets-render'
 import { CrmRender } from '@/components/onboarding/renders/crm-render'
 import { WizardProgress } from '@/components/templates'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
+import { Info } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
@@ -705,7 +707,6 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
   const inputInset =
     'w-full rounded-card border border-border bg-canvas px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
   const fieldLabel = 'mb-1.5 block text-left text-meta font-semibold uppercase tracking-wider text-subtle'
-  const backLink = 'text-body-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
   // The primary action on every beat is the kit Button at its large size, the same button the Wizard shell renders.
   const fq = SITE_DESIGN === 'frequency'
   const eyebrow = fq ? 'iw-k' : 'eyebrow text-primary-strong'
@@ -774,16 +775,17 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
             In the real induction this writes your profile and drops you into the feed to make your
             first post. Here it just stops, nothing was saved.
           </p>
-          <button
+          <Button
+            variant="secondary"
             onClick={() => {
               setPreviewDone(false)
               setBeat(0)
               setReelIndex(0)
             }}
-            className="mt-5 w-full rounded-pill border border-border px-6 py-3 text-body-sm font-semibold text-muted transition-colors hover:text-text"
+            className="mt-5 w-full"
           >
             Run it again
-          </button>
+          </Button>
         </div>
       </Dialog>
 
@@ -911,8 +913,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       })}
                     </div>
                     <div className="mt-3 text-center">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         aria-pressed={decideLater}
                         onClick={() => {
                           setDecideLater(true)
@@ -920,10 +923,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                           setInterestKeys([])
                           setReelIndex(0)
                         }}
-                        className={`text-body-sm font-semibold underline-offset-4 hover:underline ${decideLater ? 'text-text' : 'text-muted'}`}
                       >
                         {decideLater ? 'Deciding later. You can change this any time.' : 'Decide later'}
-                      </button>
+                      </Button>
                     </div>
                   </>
                 ) : (
@@ -962,8 +964,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       })}
                     </div>
                     <div className="mt-3 text-center">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         aria-pressed={decideLater}
                         onClick={() => {
                           setDecideLater(true)
@@ -971,10 +974,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                           setInterestKeys([])
                           setReelIndex(0)
                         }}
-                        className={`text-body-sm font-semibold underline-offset-4 hover:underline ${decideLater ? 'text-text' : 'text-muted'}`}
                       >
                         {decideLater ? 'Deciding later. You can change this any time.' : 'Decide later'}
-                      </button>
+                      </Button>
                     </div>
                     {personas.length > 0 && (
                       <ArrivalFollowUp persona={personas[0]} value={archetype} onChange={setArchetype} persist={!preview} />
@@ -1059,7 +1061,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       </div>
                       <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
                         <Button onClick={advanceFromTour} size="lg">{VERA.tour.cta}<ArrowRight /></Button>
-                        <button onClick={() => setBeat(0)} className={backLink}>Back</button>
+                        <Button variant="ghost" onClick={() => setBeat(0)}>Back</Button>
                       </div>
                     </div>
                   </div>
@@ -1097,7 +1099,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                           {isLastSlide ? VERA.tour.cta : 'Next'}
                           <ArrowRight />
                         </Button>
-                        <button onClick={() => setBeat(0)} className={backLink}>Back</button>
+                        <Button variant="ghost" onClick={() => setBeat(0)}>Back</Button>
                       </div>
                     </div>
                   </div>
@@ -1122,15 +1124,16 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                         Your Name (First Last)
                         {/* Not a `title` tooltip: those never appear on touch and cannot be
                             reached by keyboard, which is most of the people this note is for. */}
-                        <button
-                          type="button"
+                        <IconButton
+                          label="Why we ask for your real name"
+                          title={undefined}
                           onClick={() => setNameHintOpen((v) => !v)}
                           aria-expanded={nameHintOpen}
                           aria-controls="induction-name-hint"
-                          className="inline-flex h-4 w-4 items-center justify-center rounded-pill border border-border text-3xs font-bold leading-none text-muted transition-colors hover:bg-surface-elevated"
+                          className="-my-1.5"
                         >
-                          i<span className="sr-only">Why we ask for your real name</span>
-                        </button>
+                          <Info className="h-4 w-4" aria-hidden />
+                        </IconButton>
                       </legend>
                       <div className="flex gap-2">
                         <Input
@@ -1274,12 +1277,12 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
 
                   {/* right: avatar over the copy, button under */}
                   <div className="flex w-full max-w-xs flex-col items-center gap-4 text-center md:items-start md:text-left">
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className="group">
+                    <Button type="button" variant="ghost" onClick={() => fileInputRef.current?.click()} className="group flex-col">
                       <div className="rounded-pill ring-4 ring-surface lift-1">{renderAvatar()}</div>
                       <span className="mt-2 block text-center text-meta font-semibold text-primary group-hover:underline">
                         {avatarPreview ? 'Change photo' : 'Add a photo'}
                       </span>
-                    </button>
+                    </Button>
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                     {uploadError && <p className="text-meta text-danger">{uploadError}</p>}
                     <p className="text-body-lg leading-relaxed text-muted">{VERA.identity.body}</p>
@@ -1287,7 +1290,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       <Button disabled={!identityValid || uploading} onClick={advanceFromIdentity} size="lg">
                         {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
                       </Button>
-                      <button onClick={() => setBeat(1)} className={backLink}>Back</button>
+                      <Button variant="ghost" onClick={() => setBeat(1)}>Back</Button>
                     </div>
                   </div>
                 </div>
@@ -1319,7 +1322,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       <Button onClick={submit} disabled={submitting} size="lg">
                         {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
                       </Button>
-                      <button onClick={() => setBeat(2)} className={backLink}>Back</button>
+                      <Button variant="ghost" onClick={() => setBeat(2)}>Back</Button>
                     </div>
                   </div>
                 </div>
@@ -1372,16 +1375,12 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       <div className="relative flex justify-center text-meta uppercase"><span className="bg-canvas px-2 text-subtle">or</span></div>
                     </div>
 
-                    <button
-                      onClick={deferredGoogle}
-                      disabled={signingIn}
-                      className="flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-body font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
-                    >
+                    <Button variant="secondary" size="lg" onClick={deferredGoogle} disabled={signingIn} className="w-full">
                       <GoogleMark className="h-5 w-5" />
                       Continue with Google
-                    </button>
+                    </Button>
 
-                    <button onClick={() => setBeat(2)} className={`${backLink} mt-4 block`}>Back</button>
+                    <Button variant="ghost" onClick={() => setBeat(2)} className="mt-4">Back</Button>
                     <p className="mt-4 text-meta text-subtle">Free to join. No card. Leave anytime.</p>
                   </div>
                 </div>

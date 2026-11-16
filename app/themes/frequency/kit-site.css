@@ -15,6 +15,13 @@
 [data-design="frequency"] [data-kit="site"] .btn:hover{transform:translateY(-1px)}
 [data-design="frequency"] [data-kit="site"] .btn:active{transform:scale(.97)}
 [data-design="frequency"] [data-kit="site"] .btn-ghost{background:transparent;color:var(--fq-text-strong);box-shadow:inset 0 0 0 1.5px var(--fq-border-strong)}
+/* The quiet text action (Button variant="ghost", `.btn.txt`): Back links, "Decide later", a link-weight
+   action under a primary. The site kit's `.btn` is the glowing primary pill, so without this a ghost Button
+   on the website painted as a second primary. Text weight, no fill, no ring; the 44px floor keeps the tap
+   target, and the -12px inline margin keeps the label flush with the column it sits in. The Commons bridge (members-ui.css part 2) still owns `.fq-commons-body .btn.txt`. */
+[data-design="frequency"] [data-kit="site"] .btn.txt{height:auto;min-height:44px;padding:0 12px;margin-inline:-12px;background:transparent;box-shadow:none;color:var(--fq-text-muted);font:500 15px/1.3 var(--fq-font-sans);white-space:normal;text-align:center}
+[data-design="frequency"] [data-kit="site"] .btn.txt:hover{transform:none;color:var(--fq-text-strong);text-decoration:underline;text-underline-offset:4px}
+[data-design="frequency"] [data-kit="site"] .btn.txt[aria-pressed="true"]{color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="site"] .chip{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 13px;border-radius:999px;font:500 11px/1 var(--fq-font-display);letter-spacing:.1em;text-transform:uppercase}
 [data-design="frequency"] [data-kit="site"] .live{width:8px;height:8px;border-radius:50%;background:var(--fq-accent);box-shadow:0 0 12px var(--fq-accent)}
 [data-design="frequency"] [data-kit="site"] section{position:relative;overflow:hidden}
