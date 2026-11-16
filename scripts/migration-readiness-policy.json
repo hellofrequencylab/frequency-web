@@ -3095,24 +3095,17 @@
           "headMode": "100644"
         },
         {
+          "file": "lib/discover-snapshot.test.ts",
+          "status": "added",
+          "sha256": "7e68e2fd6964f43c0cae1fd224d800a61464d404de828689da1b37b00d9910c7",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
           "file": "lib/discover.ts",
           "status": "modified",
-          "sha256": "7f1d73cc98a7a9b24a13c060d43f67c7bb00953986ecd291b7af2d3ce03f09b0",
+          "sha256": "c07bd51c3f518172574659333242689efb1c9730664bc37fe2e8bdc07b917206",
           "baseMode": "100644",
-          "headMode": "100644"
-        },
-        {
-          "file": "lib/public-events-snapshot.test.ts",
-          "status": "added",
-          "sha256": "ce1e2d4fef1902c9ec1c3993455d5dd386364e10b8bcaabefcec7507f2b98e3c",
-          "baseMode": "000000",
-          "headMode": "100644"
-        },
-        {
-          "file": "lib/public-events-snapshot.ts",
-          "status": "added",
-          "sha256": "9aeb97b3c6f72b4a2a64a818089830e1fc4b470af32bbc62f52e9dbe0ff7f90d",
-          "baseMode": "000000",
           "headMode": "100644"
         },
         {
