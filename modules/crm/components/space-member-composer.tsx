@@ -55,6 +55,9 @@ export interface SpaceMemberComposerProps {
   profileId: string
   /** The member's email — the default (removable) recipient chip. */
   email: string
+  /** Start with these people instead of the one default chip (the CRM roster's "Email selected"). Each is
+   *  still a removable chip, and the send re-resolves and re-gates every one server-side. */
+  initialRecipients?: { email: string; label?: string }[]
   /** The member's display name, preferred for the default chip label. */
   displayName?: string
   /** Resume an EXISTING draft (its campaign id) instead of minting a fresh one, so reopening the popup for
@@ -76,6 +79,7 @@ export function SpaceMemberComposer({
   slug,
   email,
   displayName,
+  initialRecipients,
   initialCampaignId,
   onDraftReady,
   onSent,
@@ -89,9 +93,13 @@ export function SpaceMemberComposer({
   const [initNonce, setInitNonce] = useState(0)
 
   // The composed audience. Defaults to just this member (removable).
-  const [chips, setChips] = useState<Chip[]>(() => [
-    { key: normalize(email), label: displayName?.trim() || email, email },
-  ])
+  const [chips, setChips] = useState<Chip[]>(() =>
+    initialRecipients && initialRecipients.length > 0
+      ? initialRecipients
+          .filter((r) => r.email.trim())
+          .map((r) => ({ key: normalize(r.email), label: r.label?.trim() || r.email, email: r.email }))
+      : [{ key: normalize(email), label: displayName?.trim() || email, email }],
+  )
 
   // Search-to-add recipients (debounced), scoped to this Space's contacts.
   const [query, setQuery] = useState('')

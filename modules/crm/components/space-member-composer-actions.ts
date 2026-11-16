@@ -29,6 +29,8 @@ const MAX_MEMBER_RECIPIENTS = 500
 
 /** One Space-contact search result the composer turns into a removable recipient chip. */
 export interface SpaceRecipientOption {
+  /** This Space's contact row for the person, so a 1:1 conversation send can find its counterparty. */
+  contactId: string
   /** The linked member profile id, or null for a sealed lead. */
   profileId: string | null
   email: string
@@ -121,6 +123,7 @@ export async function searchSpaceMemberRecipientsAction(
     return (data ?? [])
       .filter((c) => c.email)
       .map((c) => ({
+        contactId: String(c.id),
         profileId: typeof c.profile_id === 'string' && c.profile_id ? c.profile_id : null,
         email: String(c.email),
         displayName: (c.display_name as string)?.trim() || String(c.email),

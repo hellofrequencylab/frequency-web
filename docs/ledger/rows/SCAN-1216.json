@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: PLAUSIBLE. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: app/(marketing)/start/actions.ts:30-125 captureLead is a 'use server' action with zero rateLimitOk calls (grep count 0); it upserts contacts with consent_state 'unknown' (line ~102) and calls enrollInNurture({contactId,email,persona}) (line ~121). lib/nurture/enroll.ts:19-40 enrolls with no double opt-in; lib/nurture/runner.ts:155 only skips consent_state === 'unsubscribed', so 'unknown' is mailed. Sibling actions (join/lead-actions.ts, subscribe/actions.ts:38, contact-form-actions.ts:92) do rate-limit.\n\nWHY IT MATTERS: Anyone can script the action with victims' addresses: mail goes out under the Frequency domain to people who never asked, which means complaints, Resend reputation damage and Jan 1 deliverability risk. Also lets bots fill contacts with junk. Only bites if the persona's nurture sequence is enabled in production (could not check the DB).\n\nFIX DIRECTION: Add rateLimitOk by IP and by email plus the same honeypot field the create-space draft uses, and enroll in nurture only after the address is confirmed (or consent_state is subscribed).",
+  "detail": "EVIDENCE: app/(marketing)/start/actions.ts:30-125 captureLead is a 'use server' action with zero rateLimitOk calls (grep count 0); it upserts contacts with consent_state 'unknown' (line ~102) and calls enrollInNurture({contactId,email,persona}) (line ~121). lib/nurture/enroll.ts:19-40 enrolls with no double opt-in; lib/nurture/runner.ts:155 only skips consent_state === 'unsubscribed', so 'unknown' is mailed. Sibling actions (join/lead-actions.ts, subscribe/actions.ts:38, contact-form-actions.ts:92) do rate-limit.\n\nWHY IT MATTERS: Anyone can script the action with victims' addresses: mail goes out under the Frequency domain to people who never asked, which means complaints, Resend reputation damage and Jan 1 deliverability risk. Also lets bots fill contacts with junk. Only bites if the persona's nurture sequence is enabled in production (could not check the DB).\n\nFIX DIRECTION: Add rateLimitOk by IP and by email plus the same honeypot field the create-space draft uses, and enroll in nurture only after the address is confirmed (or consent_state is subscribed).\n\n2026-11-16 fixed (security thread): captureLead now throttles per IP and per mailbox (rateLimitOk, allow when KV is unset), has a honeypot field wired in the host form, and enrolls in nurture only when the contact already has consent_state subscribed.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1216",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }

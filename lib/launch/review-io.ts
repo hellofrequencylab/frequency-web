@@ -1,76 +1,46 @@
 // REVIEW + PUBLISH, the IO half. Reads the draft the screen opens with, and writes the edited draft to the SAME records
 // the launch inventory reads: the Spotlight (through publishSpotlightStep, the one path that makes and publishes it),
-// spaces.tagline and spaces.about, and the step marks. Server-only. Called by the form action after it has checked the
+// spaces.tagline and spaces.about, the website (headline and intro, switched on) and the first email (a Space email
+// draft, never sent), and the step marks. Server-only. Called by the form action after it has checked the
 // switch and the signed-in owner.
 //
-// What Publish does NOT do, on purpose: it does not flip preferences.websitePublished. The site publish seam exists
-// (setWebsitePublished in the Space's layout actions) but a site with a headline and intro we have nowhere to write yet
-// would go live half empty, so the website and the first email are kept as a draft under preferences.launchDraft and
-// shown as such. TEMPORARY loader: lane E's buildout supplies the real BuildoutDraft; loadReviewDraft is replaced then.
+// The draft the screen opens with is the one Vera built from the person's own words and saved on the launch
+// (lib/launch/buildout-io.ts), built on first open. A field she could not quote is empty for them to fill in.
 
 import { revalidatePath } from 'next/cache'
 import type { BuildoutDraft } from './buildout'
+import { buildLaunchDraft } from './buildout-io'
 import type { LaunchCarry } from './carry'
 import { recordLaunchEvent } from './events'
 import { loadSpotlightAnswers } from './flow-io'
 import { publishSpotlightStep } from './spotlight-io'
 import type { LaunchSnapshot } from './state'
 import * as store from './store'
-import { getSpaceById, getSpaceBySlug, patchSpacePreferences, patchSpaceWords } from '@/lib/spaces/store'
+import { readLaunchDraft } from '@/lib/spaces/launch-draft'
+import { handOffFirstEmail, publishWebsiteWords } from './handoff-io'
+import { getSpaceBySlug, patchSpacePreferences, patchSpaceWords } from '@/lib/spaces/store'
 
 const blank = (v: unknown): string => (typeof v === 'string' ? v : '')
 
-function record(v: unknown): Record<string, unknown> {
-  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {}
-}
+const emptyDraft = (spotlight: BuildoutDraft['spotlight']): BuildoutDraft => ({
+  spotlight,
+  space: { tagline: '', about: '' },
+  website: { headline: '', intro: '' },
+  email: { subject: '', body: '' },
+  cites: [],
+})
 
-/** The draft the screen opens with: what the Space and its Spotlight already hold, plus any website and email draft
- *  Publish kept earlier. The cites are the person's own saved words and nothing else. Never throws: a failed read is
- *  an empty draft. */
-export async function loadReviewDraft(launch: LaunchSnapshot): Promise<BuildoutDraft> {
-  const empty: BuildoutDraft = {
-    spotlight: { name: '', line: '', link: '' },
-    space: { tagline: '', about: '' },
-    website: { headline: '', intro: '' },
-    email: { subject: '', body: '' },
-    cites: [],
-  }
+/** The draft the screen opens with: the one saved on this launch, built from the person's own words the first time they
+ *  open the screen. Before there is a Space to read, only the Spotlight answers they already gave. Never throws: a failed
+ *  read is an empty draft. */
+export async function loadReviewDraft(profileId: string, launch: LaunchSnapshot): Promise<BuildoutDraft> {
   try {
-    const spotlight = (await loadSpotlightAnswers(launch)) ?? empty.spotlight
-    const space = launch.spaceId ? await getSpaceById(launch.spaceId) : null
-    const kept = record(record(space?.preferences).launchDraft)
-    const website = record(kept.website)
-    const email = record(kept.email)
-    const draft: BuildoutDraft = {
-      spotlight,
-      space: { tagline: blank(space?.tagline), about: blank(space?.about) },
-      website: {
-        headline: blank(website.headline),
-        intro: blank(website.intro),
-      },
-      email: { subject: blank(email.subject), body: blank(email.body) },
-      cites: [],
-    }
-    if (spotlight.line.trim()) {
-      const origin = 'Your line for the Spotlight'
-      if (draft.space.tagline)
-        draft.cites.push({
-          slot: 'space',
-          field: 'tagline',
-          snippet: spotlight.line,
-          origin,
-        })
-      if (draft.space.about)
-        draft.cites.push({
-          slot: 'space',
-          field: 'about',
-          snippet: spotlight.line,
-          origin,
-        })
-    }
-    return draft
+    const stored = (await store.getBuildout(launch)) ?? (await buildLaunchDraft(profileId, launch))
+    if (stored) return stored.draft
+    const spotlight = (await loadSpotlightAnswers(launch)) ?? { name: '', line: '', link: '' }
+    return emptyDraft(spotlight)
   } catch {
-    return empty
+    return emptyDraft({ name: '', line: '', link: '' })
   }
 }
 
@@ -95,16 +65,26 @@ export async function publishReview(profileId: string, launch: LaunchSnapshot, e
       error: 'We made your Spotlight but could not save your Space words. Try again.',
     }
 
-  const draftKept = edits.website.headline || edits.website.intro || edits.email.subject || edits.email.body
+  // The website goes live with the person's headline and intro (only when they wrote some). It goes first: switching it on
+  // rewrites the preferences blob from its own read, so the key-scoped writes below land after it.
+  const site = await publishWebsiteWords(space, edits.website)
+  if ('error' in site) return site
+
+  // Keep what they wrote beside the hand-off, so a failure in it never loses their words.
+  const kept = readLaunchDraft(space.preferences)
   if (
-    draftKept &&
-    !(await patchSpacePreferences(space.id, {
-      launchDraft: { website: edits.website, email: edits.email },
-    }))
+    (edits.website.headline || edits.website.intro || edits.email.subject || edits.email.body) &&
+    !(await patchSpacePreferences(space.id, { launchDraft: { website: edits.website, email: edits.email, emailCampaignId: kept.emailCampaignId } }))
   )
-    return {
-      error: 'We could not keep your website and email drafts. Try again.',
-    }
+    return { error: 'We could not keep your website and email drafts. Try again.' }
+
+  // The first email is handed to the Space's email drafts and is never sent from here: the owner reads it and sends it
+  // themselves from Marketing.
+  const email = await handOffFirstEmail(space, edits.email)
+  if ('error' in email) return email
+  if (email.id && email.id !== kept.emailCampaignId) {
+    await patchSpacePreferences(space.id, { launchDraft: { website: edits.website, email: edits.email, emailCampaignId: email.id } })
+  }
 
   revalidatePath(`/spaces/${space.slug}`)
   if (tagline && about) {
@@ -117,6 +97,13 @@ export async function publishReview(profileId: string, launch: LaunchSnapshot, e
         launchId: fresh.id,
         step: 'space',
       })
+    }
+  }
+  if (site.live) {
+    const fresh = await store.getActiveLaunch(profileId)
+    if (fresh && fresh.steps.website?.status !== 'published') {
+      await store.markStepPublished(fresh, 'website', space.slug)
+      await recordLaunchEvent(profileId, { type: 'step_published', launchId: fresh.id, step: 'website' })
     }
   }
   return { slug: space.slug }

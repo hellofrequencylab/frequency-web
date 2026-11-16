@@ -32,3 +32,14 @@ jobs:
             echo "::error::cron-freshness answered $code. A cron with no Healthchecks check has gone stale; see the stale list above and docs/RUNBOOKS.md."
             exit 1
           fi
+      # SCAN-1239: every public write door allows when the limiter has no KV, which is the right call and a
+      # silent one. /api/status publishes rateLimitConfigured() (lib/rate-limit.ts) as monitoring.rateLimit; anything but true is a red run.
+      - name: Check the rate limiter is configured
+        run: |
+          set -euo pipefail
+          curl -sS --retry 3 --retry-delay 10 -o status.json https://frequencylocal.com/api/status
+          cat status.json; echo
+          if ! grep -Eq '"rateLimit": ?true' status.json; then
+            echo "::error::The rate limiter reports unconfigured (rateLimit is not true). Set KV_REST_API_URL and KV_REST_API_TOKEN in Vercel Production; see docs/RUNBOOKS.md."
+            exit 1
+          fi

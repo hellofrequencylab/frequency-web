@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: app/sign-in/actions.ts:92-97 (POST_LOGIN_COOKIE, also :147), proxy.ts:248-253 (MARKETPLACE_ENTRY_COOKIE), proxy.ts:284-289 (REF_COOKIE), app/c/[token]/route.ts:76, app/join/(induction)/feature-actions.ts:77. Other cookies in the repo (lead-actions.ts:171, hosted/*/enter routes) do set secure. HSTS preload is on (next.config.ts:163) so exposure is small.\n\nWHY IT MATTERS: Inconsistent hardening; a downgrade or mixed-content request could leak the stashed next path or referral id. No account takeover path found.\n\nFIX DIRECTION: Add secure: process.env.NODE_ENV === 'production' to each, ideally through one shared cookie-options helper.",
+  "detail": "EVIDENCE: app/sign-in/actions.ts:92-97 (POST_LOGIN_COOKIE, also :147), proxy.ts:248-253 (MARKETPLACE_ENTRY_COOKIE), proxy.ts:284-289 (REF_COOKIE), app/c/[token]/route.ts:76, app/join/(induction)/feature-actions.ts:77. Other cookies in the repo (lead-actions.ts:171, hosted/*/enter routes) do set secure. HSTS preload is on (next.config.ts:163) so exposure is small.\n\nWHY IT MATTERS: Inconsistent hardening; a downgrade or mixed-content request could leak the stashed next path or referral id. No account takeover path found.\n\nFIX DIRECTION: Add secure: process.env.NODE_ENV === 'production' to each, ideally through one shared cookie-options helper.\n\n2026-11-16 fixed (security thread): new lib/http/cookie-secure.ts (SECURE_COOKIE, on in production) applied to the post-login target, sign-in notice, referral, marketplace entry, QR ref/variant/lead-grab, view-as, context, network-notice and funnel cohort cookies.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1232",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }

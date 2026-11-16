@@ -12,6 +12,7 @@ import {
 import { ROLE_HIERARCHY, isJanitor, roleRank, type CommunityRole } from '@/lib/core/roles'
 import { getSpaceById } from '@/lib/spaces/store'
 import { spaceManageHref } from '@/lib/spaces/types'
+import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
 
 // "View as a role under you" — Host and above. Sets (or clears) the view-as cookie.
 // The effective-role resolution in lib/view-as.ts only honours a target ranked BELOW
@@ -33,6 +34,7 @@ export async function setViewAsRole(role: CommunityRole | 'visitor' | null): Pro
   } else {
     jar.set(VIEW_AS_COOKIE, role as string, {
       httpOnly: true,
+      secure: SECURE_COOKIE,
       sameSite: 'lax',
       path: '/',
       // Auto-expires so a steward is never silently stuck previewing.
@@ -46,6 +48,7 @@ export async function setViewAsRole(role: CommunityRole | 'visitor' | null): Pro
 
 const ENTITY_PREVIEW_COOKIE_OPTS = {
   httpOnly: true,
+  secure: SECURE_COOKIE,
   sameSite: 'lax' as const,
   path: '/',
   // Same 8-hour auto-expiry as the ladder preview, so a staffer is never silently stuck.

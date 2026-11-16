@@ -1,5 +1,5 @@
 // FlowWeb draft links as Frequency short links (LIVE-2257). FlowWeb's daemon POSTs `{ url, title }` here
-// for each draft it writes, signed with FLOWWEB_OUTCOMES_SECRET as hex HMAC-SHA256 of
+// for each draft it writes, signed with its own secret (FLOWWEB_LINK_SECRET, else the shared one, lib/flowweb/secret.ts) as hex HMAC-SHA256 of
 // `${x-flowweb-timestamp}.${body}` in x-flowweb-signature (the flowweb-claim scheme), and gets back a
 // /q/<slug> short link to put in the draft instead of the long tracked one. The link is an ordinary
 // managed url code in qr_codes, so it shows in the admin link list, counts its scans and keeps every
@@ -8,8 +8,9 @@
 // Logic: lib/flowweb/short-link.ts.
 
 import { NextResponse } from 'next/server'
-import { envStringOrNull } from '@/lib/env/string'
 import { verifySignature } from '@/lib/flowweb/claim'
+import { clientIp, rateLimitOk, tooMany } from '@/lib/rate-limit'
+import { flowwebSecret } from '@/lib/flowweb/secret'
 import { parseLinkRequest } from '@/lib/flowweb/short-link'
 import { generateSlug } from '@/lib/qr/codes'
 import { shortLinkUrl } from '@/lib/qr/links'
@@ -23,7 +24,10 @@ export const runtime = 'nodejs'
 const UNIQUE_VIOLATION = '23505'
 
 export async function POST(req: Request) {
-  const secret = envStringOrNull('FLOWWEB_OUTCOMES_SECRET') ?? ''
+  // Throttled per address before any work (SCAN-1239): the sender is one Mac, so this only ever refuses a
+  // stranger. 'allow' when KV is unset: the signature below is the gate, this only bounds the noise.
+  if (!(await rateLimitOk('flowweb-link', clientIp(req), 120, '1 m', { whenUnconfigured: 'allow' }))) return tooMany()
+  const secret = flowwebSecret('link')
   const body = await req.text()
   const ts = req.headers.get('x-flowweb-timestamp') ?? ''
   const sig = req.headers.get('x-flowweb-signature') ?? ''

@@ -34,6 +34,7 @@ import {
 } from '@/lib/commerce/marketplace-entry'
 import { SITE_CRAWLER_FILES, parseAppHosts, routeSiteHost, subdomainAttributionHop, subdomainSiteRedirect } from '@/lib/sites/host'
 import { lookupLiveSiteDomain } from '@/lib/sites/live-domain-lookup'
+import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
 
 // Extra app hosts beyond Frequency's own domains (PROG-E10 phase 2, lib/sites/host.ts), parsed once.
 const APP_HOSTS = parseAppHosts(process.env.APP_HOSTS)
@@ -92,6 +93,20 @@ const CREATE_SPACE_WIZARD = '/create-a-space'
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // An encoded backslash in a path (/join%5C, /discover/spaces%5C) is a mistyped link or a bot probe, and
+  // reaching the router makes it look for a page file that does not exist and answer a 500 that Sentry
+  // counts (SCAN-1237). A trailing one is a typo for the page before it, so send the visitor there; one
+  // anywhere else is no page of ours.
+  if (/%5c/i.test(pathname)) {
+    const cleaned = pathname.replace(/(?:%5c)+$/i, '')
+    if (cleaned && cleaned !== pathname && !/%5c/i.test(cleaned)) {
+      const to = request.nextUrl.clone()
+      to.pathname = cleaned
+      return NextResponse.redirect(to, 308)
+    }
+    return new NextResponse('Not found', { status: 404 })
+  }
 
   // A SPACE WEBSITE ON ITS OWN DOMAIN (customDomain, PROG-E10 phase 2). Any host that is not one of
   // Frequency's own never reaches the app below: no session read, no attribution cookie, no tenancy.
@@ -247,6 +262,7 @@ export async function proxy(request: NextRequest) {
   if (marketplaceStamp) {
     supabaseResponse.cookies.set(MARKETPLACE_ENTRY_COOKIE, marketplaceStamp, {
       httpOnly: true,
+      secure: SECURE_COOKIE,
       sameSite: 'lax',
       path: '/',
       maxAge: MARKETPLACE_ENTRY_MAX_AGE,
@@ -283,6 +299,7 @@ export async function proxy(request: NextRequest) {
       if (enabled) {
         supabaseResponse.cookies.set(REF_COOKIE, ref, {
           httpOnly: true,
+          secure: SECURE_COOKIE,
           sameSite: 'lax',
           path: '/',
           maxAge: REF_COOKIE_MAX_AGE,

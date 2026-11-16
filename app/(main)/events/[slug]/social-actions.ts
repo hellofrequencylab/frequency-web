@@ -20,6 +20,7 @@ import { sendRsvpApprovedNotice } from '@/lib/events/guest-rsvp-email'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 import { isBlockedBetween } from '@/lib/blocking'
 import { rateLimitOk } from '@/lib/rate-limit'
+import { RASTER_IMAGE_MESSAGE, verifyRasterUpload } from '@/lib/storage/raster-image'
 import { eventOpenForRsvp, MAX_PLUS_ONES } from '@/lib/events/rsvp-gate'
 
 // Post-event social loop (slice B-2): the event activity feed (event_posts), the
@@ -231,7 +232,6 @@ export async function uploadEventMedia(
   const caption = formData.get('caption')
   if (!(file instanceof File) || file.size === 0) return fail('Pick a photo first.')
   if (file.size > MAX_IMAGE_BYTES) return fail('Keep the photo under 10 MB.')
-  if (!file.type.startsWith('image/')) return fail('Only image files work here.')
   const cap = (typeof caption === 'string' ? caption.trim() : '').slice(0, MAX_CAPTION) || null
 
   const admin = createAdminClient()
@@ -242,11 +242,13 @@ export async function uploadEventMedia(
   // the caller's auth uid, and the SSR browser client did not carry that session — so it
   // went out as `anon` and was denied. The admin client side-steps the trap; isOnEvent
   // above is the real authorization gate (host or guest only).
-  const safeName = (file.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '_')
-  const path = `${profileId}/${eventId}/${Date.now()}-${safeName}`
+  // Raster only, type read from the bytes, extension from that type, never the visitor's file name (SCAN-1217).
+  const verified = await verifyRasterUpload(file)
+  if (!verified) return fail(RASTER_IMAGE_MESSAGE)
+  const path = `${profileId}/${eventId}/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${verified.ext}`
   const { error: upErr } = await admin.storage
     .from('event-media')
-    .upload(path, file, { contentType: file.type, upsert: false })
+    .upload(path, verified.bytes, { contentType: verified.type, upsert: false })
   if (upErr) {
     console.error('[uploadEventMedia upload]', upErr.message)
     return fail('Could not upload your photo. Please try again.')

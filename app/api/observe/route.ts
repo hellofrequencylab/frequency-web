@@ -16,6 +16,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { hasConsent } from '@/lib/consent/consent'
 import { normalizeBatch } from '@/lib/analytics/interaction-events'
 import { log } from '@/lib/log'
+import { rateLimitOk } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,6 +41,10 @@ export async function POST(req: NextRequest) {
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!profile) return new NextResponse(null, { status: 204 })
+
+  // Per-member ceiling on batches (SCAN-1239): a batch is capped at 50 events, this caps how many arrive a
+  // minute. Over it the beacon is dropped with the same 204. 'allow' when KV is unset: analytics is best-effort.
+  if (!(await rateLimitOk('observe', profile.id, 60, '1 m', { whenUnconfigured: 'allow' }))) return new NextResponse(null, { status: 204 })
 
   // Consent gate (ADR-069): no analytics consent → silently drop.
   if (!(await hasConsent(profile.id, 'analytics'))) return new NextResponse(null, { status: 204 })
