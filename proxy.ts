@@ -34,6 +34,7 @@ import {
 } from '@/lib/commerce/marketplace-entry'
 import { SITE_CRAWLER_FILES, parseAppHosts, routeSiteHost, subdomainAttributionHop, subdomainSiteRedirect } from '@/lib/sites/host'
 import { lookupLiveSiteDomain } from '@/lib/sites/live-domain-lookup'
+import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
 
 // Extra app hosts beyond Frequency's own domains (PROG-E10 phase 2, lib/sites/host.ts), parsed once.
 const APP_HOSTS = parseAppHosts(process.env.APP_HOSTS)
@@ -247,6 +248,7 @@ export async function proxy(request: NextRequest) {
   if (marketplaceStamp) {
     supabaseResponse.cookies.set(MARKETPLACE_ENTRY_COOKIE, marketplaceStamp, {
       httpOnly: true,
+      secure: SECURE_COOKIE,
       sameSite: 'lax',
       path: '/',
       maxAge: MARKETPLACE_ENTRY_MAX_AGE,
@@ -283,6 +285,7 @@ export async function proxy(request: NextRequest) {
       if (enabled) {
         supabaseResponse.cookies.set(REF_COOKIE, ref, {
           httpOnly: true,
+          secure: SECURE_COOKIE,
           sameSite: 'lax',
           path: '/',
           maxAge: REF_COOKIE_MAX_AGE,

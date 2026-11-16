@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { networkNoticeCookie } from '@/components/people/network-notice-cookie'
+import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
 
 /** Remember that this member closed the Members / Friends / My Contacts how-to notice. A cookie keyed on
  *  the member, so it follows them on this device and needs no column. Signed-out calls do nothing. */
@@ -15,5 +16,6 @@ export async function dismissNetworkNotice(): Promise<void> {
     maxAge: 60 * 60 * 24 * 365,
     sameSite: 'lax',
     httpOnly: true,
+    secure: SECURE_COOKIE,
   })
 }

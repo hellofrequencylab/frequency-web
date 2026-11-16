@@ -5,6 +5,7 @@ import { logCardTap, memberCardsEnabled, resolveTappedCard } from '@/lib/member-
 import { payCardConnect } from '@/lib/member-cards/rewards'
 import { captureQrContact } from '@/lib/connections/qr-capture'
 import { referralsEnabled } from '@/lib/platform-flags'
+import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,7 +74,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   else res = to(`/card/${encodeURIComponent(token)}`)
 
   if (creditOwner && memberOwner) {
-    res.cookies.set(REF_COOKIE, memberOwner, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: REF_MAX_AGE })
+    res.cookies.set(REF_COOKIE, memberOwner, { httpOnly: true, secure: SECURE_COOKIE, sameSite: 'lax', path: '/', maxAge: REF_MAX_AGE })
   }
   res.headers.set('Cache-Control', 'no-store')
   return res
