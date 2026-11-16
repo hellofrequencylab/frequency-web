@@ -27,6 +27,7 @@ import {
   MAX_STOPS,
   MIN_STOPS,
   emptyStop,
+  followStopKey,
   previewTrail,
   publishChecklist,
   stopKey,
@@ -44,6 +45,13 @@ const STOPS_REPEAT = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'stops')
 const STOP_FIELDS: FieldDef[] = (STOPS_REPEAT?.fields ?? []).map((f) => ({ ...f, section: STOPS_REPEAT?.section ?? 'stops' }))
 const VISIBILITY_FIELD = HUNT_MANIFEST.fields.find((f) => f.path === 'visibility')
 const FINALE_FIELD = HUNT_MANIFEST.fields.find((f) => f.path === 'finaleEventId')
+const FINALE_STOP_FIELD = HUNT_MANIFEST.fields.find((f) => f.path === 'finaleStop')
+
+/** The draft with its finale stop set to `key`, or with none. */
+const withFinaleStop = (d: TrailDraft, key: string | null): TrailDraft => {
+  const { finaleStop: _was, ...rest } = d
+  return key ? { ...rest, finaleStop: key } : rest
+}
 
 const STOP_PLACEHOLDER: Record<string, string> = {
   place: 'e.g. The bench under the big fig tree',
@@ -90,6 +98,9 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
   const [finaleEventId, setFinaleEventId] = useState<string>(
     initial.finale.choices.some((e) => e.id === initial.finale.eventId) ? (initial.finale.eventId ?? '') : '',
   )
+  // FH-031V: the stop checked in at the finale Event's door rides on the same tap, so picking it does
+  // not clear the route test. A move or a removal carries the pick with its stop.
+  const [finaleStop, setFinaleStop] = useState<string>(initial.draft.finaleStop ?? '')
 
   // ── Autosave, revision-checked ───────────────────────────────────────────────────────────
   // The latest draft and revision live in refs the effects keep current, so a save that fires from
@@ -184,15 +195,18 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
     })
     setPasted('')
   }
-  const removeStop = (i: number) => edit((d) => ({ ...d, stops: d.stops.filter((_, j) => j !== i) }))
-  const moveStop = (i: number, dir: -1 | 1) =>
-    edit((d) => {
-      const j = i + dir
-      if (j < 0 || j >= d.stops.length) return d
-      const stops = [...d.stops]
-      ;[stops[i], stops[j]] = [stops[j], stops[i]]
-      return { ...d, stops }
-    })
+  const reorder = (order: number[]) => {
+    edit((d) => withFinaleStop({ ...d, stops: order.map((k) => d.stops[k]) }, followStopKey(d.finaleStop, order)))
+    setFinaleStop((k) => followStopKey(k, order) ?? '')
+  }
+  const removeStop = (i: number) => reorder(draft.stops.map((_, k) => k).filter((k) => k !== i))
+  const moveStop = (i: number, dir: -1 | 1) => {
+    const j = i + dir
+    if (j < 0 || j >= draft.stops.length) return
+    const order = draft.stops.map((_, k) => k)
+    ;[order[i], order[j]] = [order[j], order[i]]
+    reorder(order)
+  }
 
   // ── Preview (in memory, writes nothing) ──────────────────────────────────────────────────
   const [credited, setCredited] = useState<string[]>([])
@@ -218,14 +232,18 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
 
   // ── Publish ──────────────────────────────────────────────────────────────────────────────
   const checklist = useMemo(
-    () => publishChecklist({ ...draft, permissionConfirmed: permission }, revision, { venue: initial.hasVenue }),
-    [draft, permission, revision, initial.hasVenue],
+    () => publishChecklist(withFinaleStop({ ...draft, permissionConfirmed: permission }, finaleStop || null), revision, { venue: initial.hasVenue, finale: finaleEventId !== '' }),
+    [draft, permission, revision, initial.hasVenue, finaleStop, finaleEventId],
+  )
+  const stopChoices = useMemo(
+    () => draft.stops.map((s, i) => ({ value: stopKey(i), label: s.place.trim() ? `Stop ${i + 1}: ${s.place.trim()}` : `Stop ${i + 1}` })),
+    [draft.stops],
   )
 
   const publish = async () => {
     setPublishing(true)
     setError(null)
-    const res = await publishTrailAction({ huntId: initial.huntId, baseRevision: revision, visibility, permissionConfirmed: permission, finaleEventId: finaleEventId || null })
+    const res = await publishTrailAction({ huntId: initial.huntId, baseRevision: revision, visibility, permissionConfirmed: permission, finaleEventId: finaleEventId || null, finaleStop: finaleStop || null })
     setPublishing(false)
     if ('error' in res) {
       setError(res.error)
@@ -246,7 +264,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
     // FH-020X: the publish bound a placement to each stop. Keep the ids so the next save carries them
     // and a printed code keeps working in the next version. Not an edit: nothing is marked dirty.
     const placementIds = res.data.placementIds
-    setDraft((d) => ({ ...d, permissionConfirmed: permission, stops: d.stops.map((s, i) => (placementIds[i] ? { ...s, placementId: placementIds[i] } : s)) }))
+    setDraft((d) => withFinaleStop({ ...d, permissionConfirmed: permission, stops: d.stops.map((s, i) => (placementIds[i] ? { ...s, placementId: placementIds[i] } : s)) }, finaleStop || null))
   }
 
   // ── Navigation ───────────────────────────────────────────────────────────────────────────
@@ -517,10 +535,15 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
               <FieldControl def={FINALE_FIELD} loaded={{ finaleEvents: finaleChoices }} value={finaleEventId} onChange={(v) => setFinaleEventId(scalar(v))} disabled={published || conflict !== null} />
             </StudioField>
           )}
+          {FINALE_STOP_FIELD && (finaleEventId !== '' || finaleStop !== '') && stopChoices.length > 0 && (
+            <StudioField label={FINALE_STOP_FIELD.label}>
+              <FieldControl def={FINALE_STOP_FIELD} loaded={{ trailStops: stopChoices }} value={finaleStop} onChange={(v) => setFinaleStop(scalar(v))} disabled={published || conflict !== null} />
+            </StudioField>
+          )}
           <StudioNote>
             <strong>Ending at an event.</strong>{' '}
             {finaleChoices.length > 0
-              ? 'Players who finish see the event and how many places are left. Finishing never holds a place: they still need their own ticket or RSVP.'
+              ? 'Players who finish see the event and how many places are left. Finishing never holds a place: they still need their own ticket or RSVP. One stop can be checked in at the event door instead of a printed code.'
               : 'A trail can end at an upcoming event you host, or one your Space or a partner Space hosts. There is none to pick yet.'}
           </StudioNote>
         </div>

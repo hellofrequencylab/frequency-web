@@ -47,6 +47,11 @@ export const HUNT_MANIFEST: EntityManifest = {
     // FH-031S: the Event the trail ends at. The choices are the Events this Hunt may end at, which the
     // store reads when the editor loads (lib/hunts/store.ts), so the surface loads them.
     { path: 'finaleEventId', label: 'Finale event (optional)', kind: 'reference', section: 'publishing', optionsFrom: 'finaleEvents', placement: 'rail' },
+    // FH-031V: the one stop players prove by checking in at the finale Event's door, instead of a printed
+    // code. One key on the draft (`TrailDraft.finaleStop`), so a version never names two; the choices are
+    // the draft's own stops, which the surface lists. It needs a finale Event (lib/hunts/draft.ts
+    // `publishChecklist`), and the publish binds it through a placement of medium `event`.
+    { path: 'finaleStop', label: 'Stop checked in at the finale event (optional)', kind: 'select', section: 'publishing', optionsFrom: 'trailStops', placement: 'rail' },
   ],
   repeats: [
     {

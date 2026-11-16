@@ -39,6 +39,13 @@ export type TrailDraft = {
   /** Set by the route test on this revision; any edit clears it (see saveDraft). */
   routeTestedAtRevision: number | null
   permissionConfirmed: boolean
+  /**
+   * FH-031V: the one stop a player proves by checking in at the finale Event's door, as its stop key
+   * (`stop-2`). Absent for no such stop. It needs a finale Event (publishChecklist), and the publish
+   * binds it through a placement of medium `event` instead of a printed code (lib/hunts/store.ts).
+   * One key, so a version can never name two.
+   */
+  finaleStop?: string
 }
 
 export const MIN_STOPS = 3
@@ -55,6 +62,24 @@ export function emptyStop(): Stop {
 
 const text = (v: unknown, max: number): string => (typeof v === 'string' ? v.slice(0, max) : '')
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const STOP_KEY = /^stop-([1-9][0-9]*)$/
+
+/** The stop key when it names one of `count` stops, else null. */
+function stopKeyIn(key: unknown, count: number): string | null {
+  const m = typeof key === 'string' ? STOP_KEY.exec(key) : null
+  return m && Number(m[1]) <= count ? key as string : null
+}
+
+/**
+ * Where a stop key points after the stops are reordered or removed. `order[newIndex]` is the stop's old
+ * index, so a removed stop is missing from it and its key follows it out (null). Pure.
+ */
+export function followStopKey(key: string | null | undefined, order: readonly number[]): string | null {
+  const m = typeof key === 'string' ? STOP_KEY.exec(key) : null
+  if (!m) return null
+  const at = order.indexOf(Number(m[1]) - 1)
+  return at < 0 ? null : stopKey(at)
+}
 
 /**
  * Read a draft off untrusted input (an action argument, a stored jsonb). Total: anything that is
@@ -78,6 +103,7 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     }
   })
   const tested = o.routeTestedAtRevision
+  const finaleStop = stopKeyIn(o.finaleStop, stops.length)
   return {
     title: text(o.title, TRAIL_LIMITS.title),
     hook: text(o.hook, TRAIL_LIMITS.line),
@@ -86,6 +112,8 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     stops,
     routeTestedAtRevision: typeof tested === 'number' && Number.isInteger(tested) && tested >= 1 ? tested : null,
     permissionConfirmed: o.permissionConfirmed === true,
+    // Absent unless it names a stop on this draft, so an older draft reads back unchanged.
+    ...(finaleStop ? { finaleStop } : {}),
   }
 }
 
@@ -107,9 +135,10 @@ export type ChecklistItem = { code: string; ok: boolean; message: string; stop?:
 /**
  * The publish checklist. Publishing stays off until every item is ok. `venue` says whether the Trail
  * has a venue Space whose staff can confirm a visit (FH-020X); unknown counts as none, so a stop that
- * staff must confirm never goes live where nobody can confirm it.
+ * staff must confirm never goes live where nobody can confirm it. `finale` says whether the publish
+ * names a finale Event (FH-031S); unknown counts as none, so a finale stop never goes live without one.
  */
-export function publishChecklist(draft: TrailDraft, revision: number, opts: { venue?: boolean } = {}): { ok: boolean; items: ChecklistItem[] } {
+export function publishChecklist(draft: TrailDraft, revision: number, opts: { venue?: boolean; finale?: boolean } = {}): { ok: boolean; items: ChecklistItem[] } {
   const items: ChecklistItem[] = []
   const graph = validateGraph(draftToGraph(draft))
   const blockers: Blocker[] = draft.stops.length >= MIN_STOPS ? graph.blockers : []
@@ -123,13 +152,23 @@ export function publishChecklist(draft: TrailDraft, revision: number, opts: { ve
     ok: blockers.length === 0,
     message: blockers[0]?.message ?? 'The stops lead to a finish.',
   })
+  const finaleStop = draft.finaleStop
   draft.stops.forEach((s, i) => {
     items.push({ code: 'stop_text', ok: s.place.trim() !== '' && s.clue.trim() !== '', stop: i, message: 'This stop needs a place name and a clue.' })
-    items.push({ code: 'stop_placement', ok: s.placementReady, stop: i, message: 'Print or place a code at this stop so people can prove they were here.' })
+    // FH-031V: the finale stop is proved at the Event's door, so it needs no printed code.
+    if (finaleStop === stopKey(i)) {
+      items.push({ code: 'stop_finale', ok: opts.finale === true, stop: i, message: 'Players check in at this stop at the finale event. Pick the finale event, or choose no finale stop.' })
+    } else {
+      items.push({ code: 'stop_placement', ok: s.placementReady, stop: i, message: 'Print or place a code at this stop so people can prove they were here.' })
+    }
     if (s.staffConfirmed === true) {
       items.push({ code: 'stop_staff_venue', ok: opts.venue === true, stop: i, message: 'Staff can confirm visits only on a trail a Space runs. Turn off staff confirming for this stop.' })
     }
   })
+  // A key that names no stop (a stop removed after the pick) is refused, never dropped in silence.
+  if (finaleStop !== undefined && stopKeyIn(finaleStop, draft.stops.length) === null) {
+    items.push({ code: 'stop_finale', ok: false, message: 'The finale stop is no longer on this trail. Choose it again.' })
+  }
   items.push({ code: 'title', ok: draft.title.trim() !== '', message: 'Give the trail a title.' })
   items.push({ code: 'route_test', ok: draft.routeTestedAtRevision === revision, message: 'Walk it once in preview before you publish.' })
   items.push({ code: 'permission', ok: draft.permissionConfirmed, message: 'Confirm you may place a code at each place.' })
@@ -169,7 +208,7 @@ export async function saveDraft(store: DraftStore, input: { huntId: string; base
 
 /** The rows an immutable published version holds (FH-005 tables), derived from the draft. Pure. */
 type PublishRows = {
-  missions: { mission_key: string; title: string; visible_body: string; locked_teaser: string | null; kind: 'visit'; required_assurance: 'signed_node' | 'staff' }[]
+  missions: { mission_key: string; title: string; visible_body: string; locked_teaser: string | null; kind: 'visit'; required_assurance: 'signed_node' | 'staff' | 'event_door' }[]
   /** One prerequisite group per stop after the first, plus the finish group. */
   groups: { key: string; target_mission_key: string | null; target_finish: boolean; logic: 'all'; members: string[] }[]
 }
@@ -183,7 +222,8 @@ export function publishRows(draft: TrailDraft): PublishRows {
     locked_teaser: s.hint?.trim() ? s.hint.trim() : null,
     kind: 'visit' as const,
     // FH-020X: a staff-confirmed stop needs staff assurance; every other stop keeps the signed scan.
-    required_assurance: s.staffConfirmed === true ? ('staff' as const) : ('signed_node' as const),
+    // FH-031V: the finale stop needs the Event door mark, so a scan alone can never credit it.
+    required_assurance: draft.finaleStop === stopKey(i) ? ('event_door' as const) : s.staffConfirmed === true ? ('staff' as const) : ('signed_node' as const),
   }))
   const groups: PublishRows['groups'] = []
   for (const m of graph.missions) {
@@ -236,19 +276,29 @@ export function evidencePolicyUpdates(draft: Pick<TrailDraft, 'stops'>, bindings
  * A stop keeps the placement it names when that placement is live here, else reuses a live placement
  * already bound to its mission on this version. No placement serves two stops, so a scan always names
  * exactly one mission (lib/hunts/staff-store.ts `loadUniquePlacementMission`).
+ *
+ * FH-031V: when `media` gives each live placement's medium, the finale stop reuses only an `event`
+ * placement and every other stop only a placement that is not one, so the Event door names exactly
+ * the finale stop and a printed code never turns into a door check-in.
  */
 export function planStopPlacements(
-  draft: Pick<TrailDraft, 'stops'>,
-  facts: { live: ReadonlySet<string>; bound: readonly { mission_key: string; placement_id: string }[] },
+  draft: Pick<TrailDraft, 'stops' | 'finaleStop'>,
+  facts: { live: ReadonlySet<string>; bound: readonly { mission_key: string; placement_id: string }[]; media?: ReadonlyMap<string, string> },
 ): (string | null)[] {
   const taken = new Set<string>()
-  const pick = (id: string | undefined): string | null => {
+  const pick = (id: string | undefined, i: number): string | null => {
     if (!id || !facts.live.has(id) || taken.has(id)) return null
+    if (facts.media && (facts.media.get(id) === 'event') !== (stopMedium(draft, i) === 'event')) return null
     taken.add(id)
     return id
   }
-  const named = draft.stops.map((s) => pick(s.placementId))
-  return named.map((id, i) => id ?? facts.bound.filter((b) => b.mission_key === stopKey(i)).map((b) => pick(b.placement_id)).find((x) => x !== null) ?? null)
+  const named = draft.stops.map((s, i) => pick(s.placementId, i))
+  return named.map((id, i) => id ?? facts.bound.filter((b) => b.mission_key === stopKey(i)).map((b) => pick(b.placement_id, i)).find((x) => x !== null) ?? null)
+}
+
+/** The medium a new placement for stop `index` takes (FH-031V): the Event door for the finale stop, else a printed QR code. */
+export function stopMedium(draft: Pick<TrailDraft, 'finaleStop'>, index: number): 'event' | 'qr' {
+  return draft.finaleStop === stopKey(index) ? 'event' : 'qr'
 }
 
 /**

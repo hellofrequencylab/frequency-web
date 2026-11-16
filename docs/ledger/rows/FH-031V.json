@@ -4,16 +4,17 @@
   "lane": "program",
   "priority": "P3",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "owner": "agent",
   "source": {
     "file": "lib/hunts/finale-store.ts",
     "ref": "Split from FH-031T (2026-11-16)."
   },
-  "detail": "FH-031T credits an Event stop through hunt_claim_apply with finaleDoorEvidence (checkInAtFinaleAction, loadFinaleStop finds the one mission bound to a live hunt_placements row of medium event). Nothing writes a placement of medium event yet: bindStopPlacements in lib/hunts/store.ts binds qr placements only, so the check-in tap never shows. Owed: the Trail editor lets an author mark one stop as the finale stop when a finale Event is picked, and publish binds that stop to a placement of medium event. Note: hunt_claim_apply trusts the service-role caller for event_door evidence (it does not re-read attended_at); whether to verify the door mark in SQL is a decision to take with the FH-044S hunt_claim_apply redefinition, not a second redefinition. Hunts switches stay OFF.",
+  "detail": "FH-031T credits an Event stop through hunt_claim_apply with finaleDoorEvidence (checkInAtFinaleAction, loadFinaleStop finds the one mission bound to a live hunt_placements row of medium event). Nothing writes a placement of medium event yet: bindStopPlacements in lib/hunts/store.ts binds qr placements only, so the check-in tap never shows. Owed: the Trail editor lets an author mark one stop as the finale stop when a finale Event is picked, and publish binds that stop to a placement of medium event. Note: hunt_claim_apply trusts the service-role caller for event_door evidence (it does not re-read attended_at); whether to verify the door mark in SQL is a decision to take with the FH-044S hunt_claim_apply redefinition, not a second redefinition. Hunts switches stay OFF.\n\nBuilt 2026-11-16. The Hunt Studio entity gains finaleStop (lib/studio/entities/hunt.ts: a select over the draft's own stops, outside the stops repeat, so the pinned stop field kinds are unchanged), one stop key on TrailDraft, so a version can never name two Event stops. The Trail editor's publish step shows it once a finale Event is picked, and it rides on the publish tap like the finale Event (publishTrailAction finaleStop), so picking it does not clear the route test; moving or removing a stop carries the pick with it (followStopKey). publishChecklist refuses a finale stop with no finale Event (code stop_finale) and a key that names no stop; the finale stop needs no printed code. At publish, publishRows sets that mission's required_assurance to event_door, so a scan alone never credits it; bindStopPlacements reads each live placement's medium, planStopPlacements reuses an event placement only for the finale stop and never for another stop, createStopPlacement writes a placement of medium event for it otherwise, and a stale event binding on the unpublished version is dropped on a retry, so loadFinaleStop finds exactly one. Tests: lib/hunts/finale-stop.test.ts. Open decision, not changed here: hunt_claim_apply trusts the service-role caller for event_door evidence and does not re-read attended_at in SQL; whether to verify the door mark in SQL is to be taken with the FH-044S hunt_claim_apply redefinition, not a second redefinition. No migration. Hunts switches stay OFF.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/hunts/store.ts\",\"utf8\");process.exit(/medium:\\s*.event./.test(s)?0:1)'"
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }

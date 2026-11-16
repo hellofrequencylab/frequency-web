@@ -41,6 +41,7 @@ import {
   publishRows,
   stopEvidencePolicy,
   stopKey,
+  stopMedium,
   type ChecklistItem,
   type DraftStore,
   type TrailDraft,
@@ -424,22 +425,27 @@ const contentHash = (draft: TrailDraft): string => createHash('sha256').update(c
  */
 async function bindStopPlacements(client: SupabaseClient, hunt: HuntRow, versionId: string, draft: TrailDraft): Promise<string[]> {
   const [live, bound] = await Promise.all([
-    client.from('hunt_placements').select('id').eq('hunt_id', hunt.id).is('revoked_at', null),
+    client.from('hunt_placements').select('id, medium').eq('hunt_id', hunt.id).is('revoked_at', null),
     client.from('hunt_mission_placements').select('mission_key, placement_id').eq('version_id', versionId).eq('hunt_id', hunt.id),
   ])
   if (live.error) throw new Error(live.error.message)
   if (bound.error) throw new Error(bound.error.message)
   const boundRows = (bound.data ?? []) as { mission_key: string; placement_id: string }[]
-  const plan = planStopPlacements(draft, { live: new Set(((live.data ?? []) as { id: string }[]).map((p) => p.id)), bound: boundRows })
+  const liveRows = (live.data ?? []) as { id: string; medium: string }[]
+  const media = new Map(liveRows.map((p) => [p.id, p.medium]))
+  const plan = planStopPlacements(draft, { live: new Set(media.keys()), bound: boundRows, media })
 
   const ids: string[] = []
-  for (const [i, planned] of plan.entries()) ids.push(planned ?? (await createStopPlacement(client, hunt, draft.stops[i].place)))
+  for (const [i, planned] of plan.entries()) ids.push(planned ?? (await createStopPlacement(client, hunt, draft.stops[i].place, stopMedium(draft, i))))
 
   // A placement this publish reuses may still be bound to another stop's mission on this unpublished
   // version (a stop moved before a retry). Drop that stale pairing so the placement names one mission.
+  // FH-031V: an Event door binding this publish does not keep is dropped too (the finale stop moved or
+  // was cleared before a retry), so the version has one Event stop at most (lib/hunts/finale-store.ts).
   for (const row of boundRows) {
     const at = ids.indexOf(row.placement_id)
-    if (at < 0 || stopKey(at) === row.mission_key) continue
+    const staleDoor = at < 0 && media.get(row.placement_id) === 'event'
+    if (!staleDoor && (at < 0 || stopKey(at) === row.mission_key)) continue
     const { error } = await client.from('hunt_mission_placements').delete()
       .eq('version_id', versionId).eq('hunt_id', hunt.id).eq('mission_key', row.mission_key).eq('placement_id', row.placement_id)
     if (error) throw new Error(error.message)
@@ -459,8 +465,12 @@ async function bindStopPlacements(client: SupabaseClient, hunt: HuntRow, version
   return ids
 }
 
-/** A new hunt node and QR placement for one stop. The short code retries on the rare collision. */
-async function createStopPlacement(client: SupabaseClient, hunt: HuntRow, place: string): Promise<string> {
+/**
+ * A new hunt node and placement for one stop: a QR code, or for the finale stop the Event door
+ * (FH-031V), which no scan can reach (lib/hunts/claim-store.ts looks up `qr` and `nfc` only). The short
+ * code retries on the rare collision.
+ */
+async function createStopPlacement(client: SupabaseClient, hunt: HuntRow, place: string, medium: 'qr' | 'event'): Promise<string> {
   const { data: node, error: nodeError } = await client
     .from('hunt_nodes')
     .insert({
@@ -476,7 +486,7 @@ async function createStopPlacement(client: SupabaseClient, hunt: HuntRow, place:
   for (let attempt = 0; attempt < 3; attempt++) {
     const { data, error } = await client
       .from('hunt_placements')
-      .insert({ hunt_id: hunt.id, hunt_node_id: (node as { id: string }).id, slug: generateSlug(10), medium: 'qr' })
+      .insert({ hunt_id: hunt.id, hunt_node_id: (node as { id: string }).id, slug: generateSlug(10), ...(medium === 'event' ? { medium: 'event' } : { medium: 'qr' }) })
       .select('id')
       .single()
     if (!error && data) return (data as { id: string }).id
@@ -534,14 +544,22 @@ export async function publishTrail(
   permissionConfirmed: boolean,
   /** FH-031S: the host Event the published version names, or null for no finale. Checked again here. */
   finaleEventId: string | null = null,
+  /**
+   * FH-031V: the stop players check in at the finale Event's door, as a stop key, or null for none. It
+   * rides on the publish tap like the finale Event, so picking it does not clear the route test.
+   */
+  finaleStop: string | null = null,
 ): Promise<PublishResult> {
   const client = db()
   const hunt = await authorizeHunt(client, huntId, actor, 'publish')
   if (!hunt) return { ok: false, reason: 'forbidden' }
   const version = await latestVersion(client, huntId)
   if (!version || version.status !== 'draft') return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
+  // The tap's pick replaces the stored one; a key that names no stop fails the checklist below.
   const draft: TrailDraft = { ...trailOf(version), permissionConfirmed }
-  const checklist = publishChecklist(draft, hunt.revision, { venue: hunt.owner_space_id !== null })
+  delete draft.finaleStop
+  if (finaleStop !== null) draft.finaleStop = finaleStop
+  const checklist = publishChecklist(draft, hunt.revision, { venue: hunt.owner_space_id !== null, finale: finaleEventId !== null })
   if (hunt.revision !== baseRevision) return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
   if (!checklist.ok) return { ok: false, reason: 'checklist', items: checklist.items }
   const blockedVenues = await venuesBlockingPublish(client, hunt, version.id)

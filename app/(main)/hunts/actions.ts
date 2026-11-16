@@ -76,15 +76,17 @@ export type PublishTrailResult =
   | { blocked: true; items: ChecklistItem[] }
 
 /** Step 5: the immutable publish. Refused by the store while any checklist item is open. */
-export async function publishTrailAction(input: { huntId: string; baseRevision: number; visibility: string; permissionConfirmed: boolean; finaleEventId?: string | null }): Promise<ActionResult<PublishTrailResult>> {
+export async function publishTrailAction(input: { huntId: string; baseRevision: number; visibility: string; permissionConfirmed: boolean; finaleEventId?: string | null; finaleStop?: string | null }): Promise<ActionResult<PublishTrailResult>> {
   const gate = await authorizeAuthoring()
   if ('error' in gate) return fail(gate.error)
   if (typeof input.huntId !== 'string' || !Number.isInteger(input.baseRevision)) return fail('That trail could not be published.')
   const visibility: PublishVisibility = input.visibility === 'public' ? 'public' : 'unlisted'
   // FH-031S: the finale Event rides on the publish tap; the store checks it against the Events this Hunt may end at.
   const finaleEventId = typeof input.finaleEventId === 'string' && input.finaleEventId ? input.finaleEventId : null
+  // FH-031V: the finale stop rides on the same tap; the store's checklist refuses a key that names no stop.
+  const finaleStop = typeof input.finaleStop === 'string' && input.finaleStop ? input.finaleStop : null
   try {
-    const res = await publishTrail(input.huntId, { profileId: gate.profileId }, input.baseRevision, visibility, input.permissionConfirmed === true, finaleEventId)
+    const res = await publishTrail(input.huntId, { profileId: gate.profileId }, input.baseRevision, visibility, input.permissionConfirmed === true, finaleEventId, finaleStop)
     if (res.ok) return ok({ published: true, visibility: res.visibility, placementIds: res.placementIds })
     if (res.reason === 'conflict') return ok({ conflict: true, currentRevision: res.currentRevision })
     if (res.reason === 'checklist') return ok({ blocked: true, items: res.items })
