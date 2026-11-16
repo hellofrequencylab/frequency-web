@@ -45,7 +45,11 @@ export async function publishStarterSite(spaceId: string, theme: string | null |
     // CyberWitch's wall and founder are shot in each neon: the site opens on the Space's own (ONE ACCENT, 2026-11-05).
     const cw = theme === 'cyberwitch' ? await import('@/lib/theme/cyberwitch') : null
     const neon = cw?.cyberwitchAccentId(space?.brandAccent) ?? null
-    const snapshot = cw && neon ? cw.withCyberWitchAccentPhotos(applied.snapshot, neon) : applied.snapshot
+    const cwSnapshot = cw && neon ? cw.withCyberWitchAccentPhotos(applied.snapshot, neon) : applied.snapshot
+    // Mindless's paint photos are treated in each accent: a Pink Space opens on the pink hero.
+    const ml = theme === 'mindless' ? await import('@/lib/theme/mindless') : null
+    const paint = ml?.mindlessAccentId(space?.brandAccent) ?? null
+    const snapshot = ml && paint ? ml.withMindlessAccentPhotos(cwSnapshot, paint) : cwSnapshot
     const state = nextWebsiteState({ v: 1, revision: 0, draft: snapshot, published: null, versions: [] }, snapshot, true, 'Frequency')
     const landed = await saveStarterWebsiteState(spaceId, state)
     if (landed) {

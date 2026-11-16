@@ -78,6 +78,8 @@ export function AudiencePicker({
   const [newName, setNewName] = useState('')
   const [savePending, startSave] = useTransition()
   const [manageError, setManageError] = useState<string | null>(null)
+  // LIVE-2315: the name of the segment just saved, so the owner sees it landed and where to find it.
+  const [savedName, setSavedName] = useState<string | null>(null)
   // Edit mode (scan2 L9-08): a rename draft keyed to the segment it was typed for. Deriving the field
   // value from (draft, selection) means a new selection shows its own name with no effect and no reset.
   const [editDraft, setEditDraft] = useState<{ id: string; name: string } | null>(null)
@@ -118,6 +120,7 @@ export function AudiencePicker({
 
   function handleSelect(value: string) {
     setManageError(null)
+    setSavedName(null)
     if (value.startsWith('member:')) {
       onFilterChange({ memberSegment: value.slice('member:'.length) })
     } else if (value.startsWith('segment:')) {
@@ -133,6 +136,7 @@ export function AudiencePicker({
     const name = newName.trim()
     if (!name || disabled || savePending) return
     setManageError(null)
+    setSavedName(null)
     const definition: AudienceFilter = { tag: filter.tag ?? null }
     startSave(async () => {
       const res = await createSpaceSegment(spaceId, slug, name, definition)
@@ -141,6 +145,10 @@ export function AudiencePicker({
         return
       }
       setNewName('')
+      setSavedName(name)
+      // Select the new segment so the audience on screen is the one just saved. The refresh brings it
+      // into the Saved segments group.
+      if (res.data?.id) onFilterChange({ segmentId: res.data.id })
       router.refresh()
     })
   }
@@ -310,7 +318,10 @@ export function AudiencePicker({
                 <span className="text-meta font-medium text-muted">Save this as a segment</span>
                 <Input
                   value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
+                  onChange={(e) => {
+                    setNewName(e.target.value)
+                    setSavedName(null)
+                  }}
                   placeholder="Name this audience"
                   maxLength={80}
                   className="max-w-xs"
@@ -337,6 +348,12 @@ export function AudiencePicker({
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete &ldquo;{selectedSegment.name}&rdquo;
             </button>
+          )}
+
+          {savedName && !manageError && (
+            <p className="text-body-sm text-muted" role="status" aria-live="polite">
+              Saved. Find &ldquo;{savedName}&rdquo; under Send to, Saved segments.
+            </p>
           )}
 
           {manageError && (

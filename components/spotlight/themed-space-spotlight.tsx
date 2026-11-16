@@ -13,6 +13,9 @@ import { newWorldKitSpotlightContent, newWorldLinkPageContent, newWorldProfilePa
 import { CyberWitchKitSpotlightLayout } from '@/components/spotlight/cyberwitch-kit-layouts'
 import { CYBERWITCH_FONT_CLASS } from '@/components/sites/cyberwitch-fonts'
 import { cyberwitchSpacePage } from '@/lib/spotlight/cyberwitch-space-page'
+import { MindlessKitSpotlightLayout } from '@/components/spotlight/mindless-kit-layouts'
+import { MINDLESS_FONT_CLASS } from '@/components/sites/mindless-fonts'
+import { mindlessSpacePage } from '@/lib/spotlight/mindless-space-page'
 import { ServicesKitSpotlightLayout } from '@/components/spotlight/services-kit-layouts'
 import { SERVICES_FONT_CLASS } from '@/components/sites/services-fonts'
 import { servicesKitSpotlightContent } from '@/lib/spotlight/services-kit-content'
@@ -33,7 +36,7 @@ import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
 import { FREE_HUMAN_PROFILES } from '@/lib/theme/free-human'
 
 // THE THEMED SPACE SPOTLIGHT. One component draws a Space's Spotlight on any theme that has whole-page layouts (New World,
-// Services, Network, Designer, Temple, Free Human, CyberWitch), in the look the owner picked in the console (default: the
+// Services, Network, Designer, Temple, Free Human, CyberWitch, Mindless), in the look the owner picked in the console (default: the
 // theme's Stack). The public page (components/spotlight/space-spotlight.tsx) and the console preview
 // (app/(main)/spaces/[slug]/manage/spotlight/page.tsx) both draw THIS, so what the editor shows is what the link shows.
 // The owner's Links become the doors and the Button the main call; every other Spotlight block (About, Contact form, ...)
@@ -88,6 +91,11 @@ export function ThemedSpaceSpotlight({ space, tagline, saved, appOrigin }: { spa
     if (!c) return null
     if (facts.button) drop = new Set(['links', 'button'])
     body = wrap(CYBERWITCH_FONT_CLASS, <CyberWitchKitSpotlightLayout layout={layout as `cyberwitch-kit:${SpotlightLook}`} content={c} />)
+  } else if (theme === 'mindless') {
+    const c = mindlessSpacePage(space, tagline, saved.content, appOrigin)
+    if (!c) return null
+    if (facts.button) drop = new Set(['links', 'button'])
+    body = wrap(MINDLESS_FONT_CLASS, <MindlessKitSpotlightLayout layout={layout as `mindless-kit:${SpotlightLook}`} content={c} />)
   } else if (theme === 'new-world') {
     const nwAccent = presetForAccent(NEW_WORLD_ACCENTS, accent) ?? undefined
     let c
