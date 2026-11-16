@@ -82,6 +82,9 @@ change is attrition inside a catalog (Puck 88 to 87, layout modules 157 to 144, 
 same way as the column above). The table keeps the 2026-08-10 reading beside this one, as this doc
 does for every re-measurement; treat this line as current.
 
+**Folded 2026-11-16 (PROG-E2B).** The Space profile row above is history: its catalog file is deleted and
+its sections are a view of `ENTITY_BLOCKS` (`lib/entity-blocks/space-profile.ts`). Four systems remain.
+
 ⚠️ **"Live importers" counts non-test files importing the catalog's own module**, and two rows are
 approximate: `lib/widgets/modules` has **5**, and the Puck row depends what you count — **15** files
 reference `ComponentConfig`, **49** import from `lib/page-editor/types`. Treat the column as
@@ -603,6 +606,11 @@ section 2.1 table: `lib/entity-blocks/registry.ts`, `lib/page-editor/config.tsx`
 seed listed `lib/email-studio/product-block.ts`, `lib/library/element-catalog.ts` and the
 `components/spotlight` directory, none of which is a block system, and missed Layout modules and the
 Space profile catalog. A system leaves the count when its entry file is deleted, not renamed.
+
+**First fold, 2026-11-16 (PROG-E2B): 5 to 4.** `lib/spaces/profile-blocks.ts` is deleted. The Space
+profile sections are derived from `ENTITY_BLOCKS` in `lib/entity-blocks/space-profile.ts`, with stored
+ids and output unchanged. Its renderer map in `space-profile-modules.tsx` is still a second map.
+Remaining, in order: Spotlight, Layout modules, Puck.
 
 ### 7.4 Equivalence harnesses
 
