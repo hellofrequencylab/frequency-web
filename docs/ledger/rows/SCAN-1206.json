@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1206",
+  "title": "The home page title and meta description never name North County San Diego, so Google gets no geographic signal from the most important URL.",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: lib/seo/frequency-pages.ts:52-56 title 'Frequency \u00b7 Local groups and events near you', description = SITE_DESCRIPTION (lib/site.ts:75-76: CATEGORY_LINE + PLAN_STORY, no place). FOUNDING_PLACE (lib/site.ts:311) is used only in Organization JSON-LD and llms.\n\nWHY IT MATTERS: 'near you' ranks for no one. A place name in the title/description is the cheapest local-relevance lift for brand-new-domain queries like 'community groups San Diego'.\n\nFIX DIRECTION: Put 'North County San Diego' in the home title and description (keep under 160 chars) and in the /the-community and /discover titles.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1206",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

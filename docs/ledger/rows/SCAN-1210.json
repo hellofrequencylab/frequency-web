@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1210",
+  "title": "Discover, city pages and the feed time out reading public_events: 576 failures for 387 people since September, latest November 15",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: Vercel runtime errors, 7-day window: \"[discover] public_events failed\" code 57014 statement timeout, count 576, 387 users, routes /discover, /discover/events, /discover/circles, /discover/cities/*, /feed; first 2026-09-14, last 2026-11-15 10:47Z. EXPLAIN ANALYZE of public.public_events(_limit=>60) on Frequency Community just now: 289 ms, 5,212 buffer hits, warm. lib/discover.ts listRead fails soft to [] and ISR (revalidate 3600) can then serve an empty list for an hour.\n\nWHY IT MATTERS: The launch-week front door (Discover, towns, feed) shows empty lists or errors under load, and a soft-failed render can be cached empty for an hour. The 11-03 note said these had stopped; they have not.\n\nFIX DIRECTION: Make the read cheap and cacheable: a narrow snapshot or materialized read for the public list (index-backed), keep listRead from caching an empty failure into ISR, and report soft failures into a gate that notices.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1210",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1221",
+  "title": "Emailing selected contacts, and sending an email as 1:1 conversations, are built and gated but nothing in the UI offers them.",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: lib/spaces/email-drafts.ts:546 sendSpaceEmailDraftToRecipients and :610 sendSpaceEmailDraftAsConversations have zero non-test callers; components/spaces/marketing/space-send-panel.tsx:63 only calls sendSpaceEmailDraft with an audience filter.\n\nWHY IT MATTERS: An owner cannot pick three people from the CRM and send them one designed email or start conversations; the only path is segment/tag blasts. The send-gate hardening (SCAN-866, LIVE-727) protects code nobody reaches.\n\nFIX DIRECTION: Add a Send to selected action on the CRM roster that opens the compose popup with the recipient list, or delete the two senders.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1221",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

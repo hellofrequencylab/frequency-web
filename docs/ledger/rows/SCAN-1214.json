@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1214",
+  "title": "SCAN-1032 open items: CSP script-src eval reports on /people/<handle> and /create-a-space; UNSUBSCRIBE_SECRET must be confirmed set in Vercel production",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: PLAUSIBLE. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: SCAN-1032 detail: \"csp.violation script-src eval reported on /people/<handle> and /create-a-space\"; /admin/qr threw React #441 without UNSUBSCRIBE_SECRET (lib/qr/node-code.ts refuses to sign); .env.example:139 lists it.\n\nWHY IT MATTERS: If the secret is missing in prod, QR signing and unsubscribe links fail; eval violation may hide a dependency needing unsafe-eval.\n\nFIX DIRECTION: Owner confirms the Vercel var (name only); agent finds the eval source with a CSP report-only run.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1214",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

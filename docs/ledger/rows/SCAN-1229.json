@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1229",
+  "title": "Four calendar actions have no UI: hold a plan, set a to-do's phase and time, and remove your own entry comment.",
+  "lane": "program",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: settings/calendar/plan-actions.ts:218 setPlanHold, task-actions.ts:222 setTaskPlanning, entry-record-actions.ts:136 removeEntryComment; none imported by a component. Pass-2 ledger says 'No UI yet: passes 3 to 9 build on it'. Holds cron (api/cron/calendar-holds) and the plan.hold_warning notification exist.\n\nWHY IT MATTERS: Hold warnings and lapsed-hold release can never fire from the UI, and a member cannot take back a comment.\n\nFIX DIRECTION: Wire each into the plan drawer and entry details, or park the backlog rows explicitly.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1229",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

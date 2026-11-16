@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1213",
+  "title": "Long-lived cache headers for public/ assets and a lighter deploy tree (111 MB, three music tracks, 30 MB of theme images)",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: next.config.ts:369-373 sets Cache-Control only for /brand, /fonts, /icons, /images. public/ also holds themes/, sites/, themes-index/, create-a-space/, screenshots/, maplibre/maplibre-gl-worker.mjs (519KB), frequency-wordmark.png; du: themes 30M, sites 27M, themes-index 9.5M. Next serves those at its default (revalidate every request). || du -sh public/*: themes 30M, brand 19M, tracks 14M (drift.mp3 5.8 MB, forest.mp3 5.3 MB, ocean.mp3 2.7 MB), images 11M, themes-index 9.5M. Largest images are 500-600 KB webp/jpg.\n\nWHY IT MATTERS: Repeat visits and the map worker re-validate on every load; any direct (non-optimizer) reference re-downloads 300-600KB files. Modest repeat-view and map-open lift. Static files are served from the CDN, but they bloat clones and Vercel upload; the tracks suggest an audio feature whose loading cost should be checked.\n\nFIX DIRECTION: Add the same week+SWR header for /themes, /sites, /themes-index, /create-a-space, /screenshots, /maplibre (rename-to-replace, like /brand). Move tracks to Blob/Storage, keep only used theme shots.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1213",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

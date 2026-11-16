@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1243",
+  "title": "The enforced CSP still allows 'unsafe-inline' scripts, so it does not stop an injected inline script if any sanitizer ever slips.",
+  "lane": "live",
+  "priority": "P3",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: next.config.ts:36 script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' ... (comment at :31 says it is kept for Next's inline RSC scripts); the team already notes a nonce route at :139. I reviewed all ~60 dangerouslySetInnerHTML sinks: QR/SVG are server-generated, member rich text goes through sanitizeInlineHtml (lib/entity-blocks/block-content.ts:1031), library SVG through safeElementSvg/svg-sanitize, JSON-LD escapes '<' (components/json-ld.tsx:5). No exploitable sink found.\n\nWHY IT MATTERS: Defence in depth only. Nonce-based CSP is a large change with checkout/Stripe interplay, so do it after launch.\n\nFIX DIRECTION: Plan nonce-based script-src via proxy.ts after Jan 1; no action needed for launch.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1243",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

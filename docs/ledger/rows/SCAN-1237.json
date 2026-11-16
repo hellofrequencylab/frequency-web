@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1237",
+  "title": "Clean up the runtime-error tail: encoded-backslash URLs (/join%5C, /discover/spaces%5C) return a 500 instead of a 404, and the space-campaigns cron hit its 300 s limit on 11-12",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: Vercel runtime errors: \"Cannot find module ./.next/server/pages/join%5C.js\" count 2 (last 2026-11-09) and /discover/spaces%5C count 2; \"Task timed out after 300 seconds\" on /api/cron/space-campaigns (last 2026-11-12), despite the 100-item cronBudget in app/api/cron/space-campaigns/route.ts.\n\nWHY IT MATTERS: Bots and mistyped links get a 500 that Sentry counts as an error; one campaign cron run died mid-batch, so a scheduled Space email could resend or slip.\n\nFIX DIRECTION: Redirect or 404 paths ending in an encoded backslash in proxy.ts; lower the per-run campaign budget or time-box the send loop so it ends before 300 s.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1237",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

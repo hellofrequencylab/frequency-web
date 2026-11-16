@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1220",
+  "title": "The Space CRM next-best-action playbook actions are built but no screen calls them.",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: app/(main)/spaces/[slug]/crm/playbook-actions.ts:90 runSpacePlaybookAction and :164 dismissSpacePlaybook are referenced nowhere else (rg across app/components/lib, tests excluded). File header describes the Altitude 3 picker (ADR-382).\n\nWHY IT MATTERS: Space owners never see a suggested next move on a contact; the circuit-breaker, run log and dismissal training signal collect nothing. A paid-tier CRM promise with no surface.\n\nFIX DIRECTION: Mount the picker on the Space contact detail, or retire the actions and the ADR claim.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1220",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}
