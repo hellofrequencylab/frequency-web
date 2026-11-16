@@ -3,6 +3,8 @@
 import { describe, expect, it } from 'vitest'
 import type { PartnerRow } from './authz'
 import { SMALL_CELL } from './merchant-report'
+import { PARTNER_TERMS } from './partners'
+import { finaleBroadcastState } from './rally-finale'
 import { STALL_HOURS, activeVenues, buildRouteHealth, partnerRouteView, type RouteFacts } from './route-health'
 
 const HUNT = 'hunt-1'
@@ -109,10 +111,66 @@ describe('the organiser view', () => {
     expect(activeVenues(facts(base), NOW)).toEqual([OWNER_SPACE, CAFE, BOOKS])
     expect(activeVenues(facts(base, { partners: [partner(CAFE, { status: 'invited' }), partner(BOOKS, { effectiveAt: '2026-12-01T00:00:00Z' })] }), NOW)).toEqual([OWNER_SPACE])
     expect(health.venues).toEqual([
-      { spaceId: OWNER_SPACE, name: 'Town Hall', confirmedStops: 2, players: 2, awaitingReview: 0, handedOver: 0 },
-      { spaceId: CAFE, name: 'Corner Cafe', confirmedStops: 7, players: 7, awaitingReview: 0, handedOver: 1 },
-      { spaceId: BOOKS, name: 'Page One', confirmedStops: 3, players: 3, awaitingReview: 0, handedOver: 0 },
+      { spaceId: OWNER_SPACE, name: 'Town Hall', confirmedStops: 2, players: 2, awaitingReview: 0, handedOver: 0, steward: null, terms: 'own' },
+      { spaceId: CAFE, name: 'Corner Cafe', confirmedStops: 7, players: 7, awaitingReview: 0, handedOver: 1, steward: null, terms: 'not_recorded' },
+      { spaceId: BOOKS, name: 'Page One', confirmedStops: 3, players: 3, awaitingReview: 0, handedOver: 0, steward: null, terms: 'not_recorded' },
     ])
+  })
+
+  // FH-032S. Done when: a venue withdrawn through the partner flow leaves the organiser's active venue
+  // list on the next read while its past counts still reconcile.
+  it('drops a withdrawn venue from the active list on the next read and keeps its past counts', () => {
+    // What the partner flow writes on a withdrawal (lib/hunts/partner-store.ts): status and revoked_at, nothing else.
+    const withdrawn = [partner(CAFE, { status: 'withdrawn', revokedAt: '2026-11-16T11:59:00Z' }), partner(BOOKS)]
+    const after = buildRouteHealth(facts(base, { partners: withdrawn }), NOW)
+    expect(after.venues.map((v) => v.spaceId)).toEqual([OWNER_SPACE, BOOKS])
+    const cafeBefore = health.venues.find((v) => v.spaceId === CAFE)!
+    expect(after.formerVenues).toEqual([
+      { spaceId: CAFE, name: 'Corner Cafe', confirmedStops: cafeBefore.confirmedStops, players: cafeBefore.players, awaitingReview: 0, handedOver: cafeBefore.handedOver, ended: 'withdrawn' },
+    ])
+    // The books reconcile: active plus former is what the active list held before, and the stops did not move.
+    const total = (h: typeof health) => [...h.venues, ...h.formerVenues].reduce((a, v) => a + v.confirmedStops, 0)
+    expect(total(after)).toBe(total(health))
+    expect(after.stops).toEqual(health.stops)
+    // A suspension by the organiser reads the same way, and an invite never answered was never a venue.
+    const others = buildRouteHealth(facts(base, { partners: [partner(CAFE, { status: 'suspended', revokedAt: '2026-11-16T11:00:00Z' }), partner(BOOKS, { status: 'invited', effectiveAt: null })] }), NOW)
+    expect(others.formerVenues.map((v) => [v.spaceId, v.ended])).toEqual([[CAFE, 'suspended']])
+    expect(others.venues.map((v) => v.spaceId)).toEqual([OWNER_SPACE])
+  })
+
+  it('shows the steward each invite named and whether its pinned terms are current', () => {
+    const named = buildRouteHealth(
+      facts(base, {
+        partners: [
+          { ...partner(CAFE), inviteeProfileId: 'steward-1', termsVersion: PARTNER_TERMS.hash },
+          { ...partner(BOOKS), inviteeProfileId: 'steward-2', termsVersion: 'an-older-hash' },
+        ],
+        stewardNames: { 'steward-1': 'Ada Cafe' },
+      }),
+      NOW,
+    )
+    expect(named.venues.map((v) => [v.spaceId, v.steward, v.terms])).toEqual([
+      [OWNER_SPACE, null, 'own'],
+      [CAFE, 'Ada Cafe', 'current'],
+      [BOOKS, null, 'older'],
+    ])
+    // The steward is a name for the organiser, never an id.
+    expect(JSON.stringify(named)).not.toMatch(/steward-\d/)
+  })
+
+  // FH-032S. Done when: the organiser sees whether the finale broadcast went out.
+  it('says whether the finale broadcast went out, beside the outbox counts', () => {
+    const none = { pending: 0, leased: 0, done: 0, dead: 0 }
+    const finale = { eventId: '00000000-0000-4000-8000-000000000001' }
+    expect(health.finaleBroadcast).toBe('no_finale')
+    expect(buildRouteHealth(facts(base, { finale }), NOW).finaleBroadcast).toBe('not_sent')
+    expect(buildRouteHealth(facts(base, { finale, finaleOutbox: { ...none, done: 12 } }), NOW).finaleBroadcast).toBe('sent')
+    expect(buildRouteHealth(facts(base, { finale, finaleOutbox: { ...none, done: 12, leased: 1 } }), NOW).finaleBroadcast).toBe('waiting')
+    expect(buildRouteHealth(facts(base, { finale, finaleOutbox: { pending: 3, leased: 0, done: 12, dead: 1 } }), NOW).finaleBroadcast).toBe('failed')
+    // Sent rows on a Hunt with no finale are not a finale notice.
+    expect(finaleBroadcastState(null, { ...none, done: 5 })).toBe('no_finale')
+    // The whole-outbox counts are untouched by it.
+    expect(buildRouteHealth(facts(base, { finale }), NOW).messages).toEqual(health.messages)
   })
 
   it('reports whether the Trail\'s messages are going out', () => {

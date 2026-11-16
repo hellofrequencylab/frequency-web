@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { huntSwitchOn } from '@/lib/hunts/flags'
@@ -22,5 +23,25 @@ export default async function EditTrailPage({ params }: { params: Promise<{ id: 
   if (!profileId) redirect(`/sign-in?next=/hunts/edit/${id}`)
   const state = await loadTrail(id, { profileId })
   if (!state) notFound()
-  return <TrailEditor initial={state} />
+  // FH-032S: once the Trail has been published and visits can count, the two reading pages are one tap
+  // away. Each page checks its own reader: route health needs a role on the Trail, the venue report
+  // needs a place on a venue's staff, so the link alone opens nothing.
+  const slug = encodeURIComponent(state.slug)
+  return (
+    <>
+      <TrailEditor initial={state} />
+      {state.status !== 'draft' && huntSwitchOn('claims') && (
+        <nav aria-label="How this trail is doing" className="mx-auto w-full max-w-lg space-y-3 px-4 pb-10">
+          <p className="text-body-sm text-muted">
+            <Link href={`/hunts/${slug}/health`} className="font-semibold text-text underline underline-offset-4">Route health</Link>
+            {' '}is for you and your co-organisers: where players are and which stops slow them down.
+          </p>
+          <p className="text-body-sm text-muted">
+            <Link href={`/hunts/${slug}/report`} className="font-semibold text-text underline underline-offset-4">Venue report</Link>
+            {' '}is for the staff of a venue on this trail. Send them the link to see their own counts.
+          </p>
+        </nav>
+      )}
+    </>
+  )
 }

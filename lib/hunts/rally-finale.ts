@@ -20,6 +20,11 @@
  * - Door evidence (assurance `event_door`) exists only when the host marked the seat at this Event. A
  *   player's own check-in is recorded but is not door evidence.
  * - A completion award on a Hunt with a finale is granted only with that access (`grantFinaleReward`).
+ *
+ * THE FINALE BROADCAST (FH-032S). The notice that tells players the finale is on travels through the
+ * Hunt outbox as an event of type `FINALE_BROADCAST_EVENT`. `finaleBroadcastState` reads the outbox
+ * counts for that type and says what an organiser is told on route health. Nothing in this build
+ * sends one yet (ledger row FH-032T), so a Hunt with a finale truthfully reads `not_sent`.
  */
 import { isAdmitted, isPendingApproval } from '@/lib/events/admission'
 import type { Assurance } from './apply-claim'
@@ -32,6 +37,25 @@ export function parseFinale(policy: unknown): { eventId: string } | null {
   const finale = (policy && typeof policy === 'object' ? (policy as { finale?: unknown }).finale : null) as { event_id?: unknown } | null | undefined
   const eventId = finale && typeof finale === 'object' ? finale.event_id : null
   return typeof eventId === 'string' && UUID.test(eventId) ? { eventId: eventId.toLowerCase() } : null
+}
+
+/** The outbox event type a finale announcement is sent as. Route health counts rows of this type. */
+export const FINALE_BROADCAST_EVENT = 'finale.broadcast'
+
+export type FinaleBroadcast = 'no_finale' | 'not_sent' | 'waiting' | 'sent' | 'failed'
+
+/**
+ * Did the finale broadcast go out? A failed row wins over everything, because it needs a replay; a
+ * row still waiting or sending wins over rows already sent, because some players have not been told.
+ */
+export function finaleBroadcastState(
+  finale: { eventId: string } | null,
+  outbox: { pending: number; leased: number; done: number; dead: number },
+): FinaleBroadcast {
+  if (!finale) return 'no_finale'
+  if (outbox.dead > 0) return 'failed'
+  if (outbox.pending + outbox.leased > 0) return 'waiting'
+  return outbox.done > 0 ? 'sent' : 'not_sent'
 }
 
 export type HostEvent = Readonly<{

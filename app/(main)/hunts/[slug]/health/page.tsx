@@ -20,6 +20,17 @@ export const metadata: Metadata = { title: 'Route health', robots: { index: fals
 
 const STATUS_LABEL: Record<string, string> = { draft: 'Draft', scheduled: 'Scheduled', live: 'Running', paused: 'Paused', ended: 'Ended', cancelled: 'Cancelled', archived: 'Archived' }
 const MEDIUM_LABEL: Record<string, string> = { qr: 'Printed code', nfc: 'Tap tag', staff: 'Staff check', event: 'Event door' }
+const TERMS_LABEL = { own: 'Your own Space', current: 'Current terms', older: 'An older version', not_recorded: 'Not on record' } as const
+const ENDED_LABEL = { withdrawn: 'The venue withdrew', suspended: 'You ended it', ended: 'No longer in force' } as const
+// FH-032S: whether the notice for the finale Event went out, read beside the outbox counts.
+const BROADCAST_LABEL = { no_finale: 'No finale', not_sent: 'Not sent', waiting: 'Sending', sent: 'Sent', failed: 'Failed' } as const
+const BROADCAST_DETAIL = {
+  no_finale: 'This Trail does not end at an Event',
+  not_sent: 'Players have not been told about the finale',
+  waiting: 'Some players have not been told yet',
+  sent: 'Every finale notice went out',
+  failed: 'Needs a replay',
+} as const
 const cell = 'px-3 py-2'
 
 export default async function HuntRouteHealthPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -117,6 +128,8 @@ export default async function HuntRouteHealthPage({ params }: { params: Promise<
                   <thead className="border-b border-border text-muted">
                     <tr>
                       <th scope="col" className={cell}>Venue</th>
+                      <th scope="col" className={cell}>Steward</th>
+                      <th scope="col" className={cell}>Partner terms</th>
                       <th scope="col" className={cell}>Confirmed stops</th>
                       <th scope="col" className={cell}>Players</th>
                       <th scope="col" className={cell}>Waiting for review</th>
@@ -127,9 +140,38 @@ export default async function HuntRouteHealthPage({ params }: { params: Promise<
                     {health.venues.map((v) => (
                       <tr key={v.spaceId} className="border-b border-border">
                         <th scope="row" className={`${cell} font-medium`}>{v.name}</th>
+                        <td className={cell}>{v.steward ?? (v.terms === 'own' ? 'You' : 'Not on record')}</td>
+                        <td className={cell}>{TERMS_LABEL[v.terms]}</td>
                         <td className={cell}>{v.confirmedStops}</td>
                         <td className={cell}>{v.players}</td>
                         <td className={cell}>{v.awaitingReview}</td>
+                        <td className={cell}>{v.handedOver}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {health.formerVenues.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-body-sm">
+                  <caption className="pb-2 text-left text-muted">Past venues. They take no new visits, and what players already did there still counts.</caption>
+                  <thead className="border-b border-border text-muted">
+                    <tr>
+                      <th scope="col" className={cell}>Venue</th>
+                      <th scope="col" className={cell}>Why it ended</th>
+                      <th scope="col" className={cell}>Confirmed stops</th>
+                      <th scope="col" className={cell}>Players</th>
+                      <th scope="col" className={cell}>Rewards handed over</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {health.formerVenues.map((v) => (
+                      <tr key={v.spaceId} className="border-b border-border">
+                        <th scope="row" className={`${cell} font-medium`}>{v.name}</th>
+                        <td className={cell}>{ENDED_LABEL[v.ended]}</td>
+                        <td className={cell}>{v.confirmedStops}</td>
+                        <td className={cell}>{v.players}</td>
                         <td className={cell}>{v.handedOver}</td>
                       </tr>
                     ))}
@@ -146,6 +188,7 @@ export default async function HuntRouteHealthPage({ params }: { params: Promise<
               <StatCard label="Waiting" value={health.messages.waiting} />
               <StatCard label="Sending now" value={health.messages.sending} />
               <StatCard label="Failed" value={health.messages.failed} detail="Needs a replay" />
+              <StatCard label="Finale notice" value={BROADCAST_LABEL[health.finaleBroadcast]} detail={BROADCAST_DETAIL[health.finaleBroadcast]} size="sm" />
             </div>
           </section>
         </div>

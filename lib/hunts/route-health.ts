@@ -16,23 +16,30 @@
  * and a crossing says only that one of at least five people did something. No before-and-after pair
  * of views singles a player out, which is what stops a partner rebuilding a trail.
  *
- * PARTNER SEAM (FH-029): `activeVenues` is the one place that decides which Spaces count as venues of
- * the Trail right now. Today it reads the hunt_partners rows that exist on main with the same rule as
- * lib/hunts/authz.ts (accepted, effective, not revoked). When FH-029 lands live partner state (pinned
- * terms, the named steward, withdrawal), it plugs in here and nowhere else.
+ * PARTNERS (FH-029, FH-032S): `activeVenues` is the one place that decides which Spaces count as venues
+ * of the Trail right now, and it asks `partnerLive` (lib/hunts/partners.ts), the same rule publish and
+ * the claim path use. A venue that withdrew, or that the organiser suspended, leaves the active list on
+ * the next read. Its confirmed stops are history, not a live venue, so they move to `formerVenues`
+ * unchanged: the counts of the active and the former venues together are what they were before. Each
+ * partner venue also shows the steward its invite named and whether the terms it pinned are the
+ * current ones.
  *
- * BROADCAST SEAM (FH-031): there is no finale broadcast on main. `messages` reports the Hunt outbox
- * (waiting, sending, sent, failed), which is what carries every Hunt notice today.
+ * FINALE BROADCAST (FH-031, FH-032S): `finaleBroadcast` says whether the notice for the Trail's finale
+ * Event went out (lib/hunts/rally-finale.ts `finaleBroadcastState`), beside the counts for the whole
+ * Hunt outbox in `messages`.
  */
 import type { PartnerRow } from './authz'
 import { buildMerchantReport, claimVenues, coarse, type ReportFacts } from './merchant-report'
+import { PARTNER_TERMS, partnerLive, type PartnerInvite } from './partners'
+import { finaleBroadcastState, type FinaleBroadcast } from './rally-finale'
 
 /** An active run whose last confirmed stop is older than this is stalled, not just between stops. */
 export const STALL_HOURS = 24
 
 export type RouteFacts = ReportFacts & {
   hunt: { status: string; ownerSpaceId: string | null; currentVersionId: string | null }
-  partners: readonly PartnerRow[]
+  /** The partner rows. The steward and the pinned terms are absent until migration 20270346081000 is applied. */
+  partners: readonly (PartnerRow & Partial<Pick<PartnerInvite, 'inviteeProfileId' | 'termsVersion'>>)[]
   /** The current version's stops. */
   missions: readonly { missionKey: string; title: string }[]
   versionRuns: readonly { id: string; state: string }[]
@@ -40,14 +47,16 @@ export type RouteFacts = ReportFacts & {
   placements: readonly { id: string; medium: string; revokedAt: string | null; healthStatus: string }[]
   outbox: { pending: number; leased: number; done: number; dead: number }
   venueNames: Readonly<Record<string, string>>
+  /** Display names of the stewards the partner invites name. */
+  stewardNames?: Readonly<Record<string, string>>
+  /** The host Event the current version names, and the outbox counts for its broadcast. */
+  finale?: { eventId: string } | null
+  finaleOutbox?: RouteFacts['outbox']
 }
 
-/** PARTNER SEAM (FH-029). The Spaces that are venues of this Trail at `nowIso`: its own Space, then live partners. */
+/** The Spaces that are venues of this Trail at `nowIso`: its own Space, then every partner `partnerLive` says is in force. */
 export function activeVenues(facts: Pick<RouteFacts, 'hunt' | 'partners'>, nowIso: string): string[] {
-  const now = Date.parse(nowIso)
-  const live = facts.partners.filter(
-    (p) => p.status === 'accepted' && p.effectiveAt !== null && Date.parse(p.effectiveAt) <= now && (p.revokedAt === null || Date.parse(p.revokedAt) > now),
-  )
+  const live = facts.partners.filter((p) => partnerLive(p, nowIso))
   return [...new Set([facts.hunt.ownerSpaceId, ...live.map((p) => p.spaceId)].filter((id): id is string => !!id))]
 }
 
@@ -63,12 +72,24 @@ type Stop = {
   placements: { medium: string; open: boolean; venueSpaceId: string | null; uses: number }[]
 }
 
+type VenueCounts = { spaceId: string; name: string; confirmedStops: number; players: number; awaitingReview: number; handedOver: number }
+type Venue = VenueCounts & {
+  /** The steward the invite named. Null for the Trail's own Space, or when the name is not on record. */
+  steward: string | null
+  /** `own` for the Trail's own Space; else whether the terms the venue pinned are the current ones. */
+  terms: 'own' | 'current' | 'older' | 'not_recorded'
+}
+
 type RouteHealth = {
   status: string
   runs: { started: number; playing: number; finished: number; stopped: number; notStarted: number }
   stops: Stop[]
   placements: { open: number; closed: number; damaged: number; missing: number; unchecked: number }
-  venues: { spaceId: string; name: string; confirmedStops: number; players: number; awaitingReview: number; handedOver: number }[]
+  venues: Venue[]
+  /** Partners that were in force and no longer are. Their past counts, unchanged. */
+  formerVenues: (VenueCounts & { ended: 'withdrawn' | 'suspended' | 'ended' })[]
+  /** Whether the notice for the finale Event went out. */
+  finaleBroadcast: FinaleBroadcast
   messages: { waiting: number; sending: number; sent: number; failed: number }
 }
 
@@ -129,10 +150,25 @@ export function buildRouteHealth(facts: RouteFacts, nowIso: string): RouteHealth
     if (p.revokedAt === null && (p.healthStatus === 'damaged' || p.healthStatus === 'missing' || p.healthStatus === 'unchecked')) placements[p.healthStatus]++
   }
 
-  const venues = activeVenues(facts, nowIso).map((spaceId) => {
+  const counts = (spaceId: string): VenueCounts => {
     const r = buildMerchantReport(facts, spaceId, 'owner_space', 0)
     return { spaceId, name: facts.venueNames[spaceId] ?? 'A venue', confirmedStops: r.visits.total, players: r.visits.visitors, awaitingReview: r.visits.awaitingReview, handedOver: r.redeemedHere }
+  }
+  const active = activeVenues(facts, nowIso)
+  const venues: Venue[] = active.map((spaceId) => {
+    const row = spaceId === facts.hunt.ownerSpaceId ? undefined : facts.partners.find((p) => p.spaceId === spaceId && partnerLive(p, nowIso))
+    return {
+      ...counts(spaceId),
+      steward: (row?.inviteeProfileId && facts.stewardNames?.[row.inviteeProfileId]) || null,
+      terms: !row ? 'own' : !row.termsVersion ? 'not_recorded' : row.termsVersion === PARTNER_TERMS.hash ? 'current' : 'older',
+    }
   })
+  // A partner that was in force once (it has an effective date in the past) and is not now.
+  const now = Date.parse(nowIso)
+  const formerVenues = facts.partners
+    .filter((p) => !active.includes(p.spaceId) && p.effectiveAt !== null && Date.parse(p.effectiveAt) <= now)
+    .filter((p, i, all) => all.findIndex((q) => q.spaceId === p.spaceId) === i)
+    .map((p) => ({ ...counts(p.spaceId), ended: p.status === 'withdrawn' || p.status === 'suspended' ? p.status : ('ended' as const) }))
 
   return {
     status: facts.hunt.status,
@@ -140,6 +176,8 @@ export function buildRouteHealth(facts: RouteFacts, nowIso: string): RouteHealth
     stops,
     placements,
     venues,
+    formerVenues,
+    finaleBroadcast: finaleBroadcastState(facts.finale ?? null, facts.finaleOutbox ?? { pending: 0, leased: 0, done: 0, dead: 0 }),
     messages: { waiting: facts.outbox.pending, sending: facts.outbox.leased, sent: facts.outbox.done, failed: facts.outbox.dead },
   }
 }
