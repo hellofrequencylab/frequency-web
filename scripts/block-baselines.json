@@ -3,23 +3,22 @@
   "entries": [
     {
       "key": "block-systems",
-      "description": "Independent block systems still in the tree (target 1). Counted as how many of the five system entry points from the EDITOR-ARCHITECTURE section 2.1 table exist: entity blocks, Puck-shaped, layout modules, Space profile, Spotlight.",
+      "description": "Independent block systems still in the tree (target 2 since ADR-1955: the entity-block registry and the website builder's Puck blocks). Counted as how many of the system entry points from the EDITOR-ARCHITECTURE section 2.1 table exist: entity blocks, Puck-shaped, Space profile, Spotlight. Layout modules (lib/widgets/modules.ts) is the page Apps catalog, not a block system (ADR-1955).",
       "mode": "manifest",
       "patterns": [
         "lib/entity-blocks/registry.ts",
         "lib/page-editor/config.tsx",
-        "lib/widgets/modules.ts",
         "lib/spaces/profile-blocks.ts",
         "lib/spotlight/blocks/schema.ts"
       ],
-      "baseline": 3,
+      "baseline": 2,
       "frozen": {
         "at": "2026-11-16",
-        "value": 3,
-        "direction": "lowered",
-        "basis": "b5fa30f34c4a",
-        "reason": "Spotlight block kit folded beside the entity-block registry (PROG-E2C): lib/spotlight/blocks/schema.ts is now lib/entity-blocks/spotlight.ts, and each of its nine types is held to a registry row a member may hold (goldens). Stored layouts, validation and rendered output unchanged. Three systems remain: entity blocks, Puck, layout modules.",
-        "from": 4
+        "value": 2,
+        "direction": "rebased",
+        "basis": "1b3901035ea9",
+        "reason": "Layout modules reclassified by owner ruling (ADR-1955, Daniel 2026-11-16 17:26Z): lib/widgets/modules.ts is the page Apps catalog, a registered menu catalog, not a block system, so it leaves the manifest. No file moved. Two systems remain: the entity-block registry and the website builder's Puck blocks, which is the E2 target (ADR-1955).",
+        "from": 3
       },
       "history": [
         {
@@ -42,6 +41,13 @@
           "to": 3,
           "direction": "lowered",
           "reason": "Spotlight block kit folded beside the entity-block registry (PROG-E2C): lib/spotlight/blocks/schema.ts is now lib/entity-blocks/spotlight.ts, and each of its nine types is held to a registry row a member may hold (goldens). Stored layouts, validation and rendered output unchanged. Three systems remain: entity blocks, Puck, layout modules."
+        },
+        {
+          "at": "2026-11-16",
+          "from": 3,
+          "to": 2,
+          "direction": "rebased",
+          "reason": "Layout modules reclassified by owner ruling (ADR-1955, Daniel 2026-11-16 17:26Z): lib/widgets/modules.ts is the page Apps catalog, a registered menu catalog, not a block system, so it leaves the manifest. No file moved. Two systems remain: the entity-block registry and the website builder's Puck blocks, which is the E2 target (ADR-1955)."
         }
       ]
     }

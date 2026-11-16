@@ -12,7 +12,7 @@ const entry = (led.entries ?? []).find((e) => e.key === 'block-systems')
 if (!entry) bad.push('block-baselines.json has no block-systems entry')
 const manifest = entry?.patterns ?? []
 
-for (const p of ['lib/entity-blocks/registry.ts', 'lib/page-editor/config.tsx', 'lib/widgets/modules.ts', 'lib/spotlight/blocks/schema.ts']) {
+for (const p of ['lib/entity-blocks/registry.ts', 'lib/page-editor/config.tsx', 'lib/spotlight/blocks/schema.ts']) {
   // A system leaves the manifest only by being folded: its entry file is gone from the tree.
   if (!manifest.includes(p) && fs.existsSync(p)) bad.push(`the manifest does not name ${p}, which is still in the tree`)
 }
@@ -33,11 +33,13 @@ if (gate.status !== 0) bad.push(`check:block-baselines fails: ${(gate.stderr || 
 if (!fs.existsSync('scripts/probes/builder/PROG-E2.mjs')) bad.push('PROG-E2 has no probe script that reads entries[]')
 else if (entry && typeof entry.baseline === 'number') {
   const parent = spawnSync(process.execPath, ['scripts/probes/builder/PROG-E2.mjs'], { encoding: 'utf8' })
-  if (entry.baseline > 1) {
+  // The E2 target is 2 since ADR-1955 (owner approval, Daniel, 2026-11-16 17:52Z); it was 1.
+  const TARGET = 2
+  if (entry.baseline > TARGET) {
     if (parent.status === 0) bad.push(`the PROG-E2 probe passes while block-systems is ${entry.baseline}`)
     else if (!parent.stderr.includes(`block-systems is ${entry.baseline}`)) bad.push(`the PROG-E2 probe failed without reading the number: ${parent.stderr.trim()}`)
-  } else if (entry.baseline === 1 && parent.status !== 0 && !/block_type_usage/.test(parent.stderr)) {
-    bad.push(`the PROG-E2 probe cannot read a baseline of 1: ${parent.stderr.trim()}`)
+  } else if (parent.status !== 0 && !/block_type_usage/.test(parent.stderr)) {
+    bad.push(`the PROG-E2 probe cannot read a baseline of ${entry.baseline}: ${parent.stderr.trim()}`)
   }
 }
 
