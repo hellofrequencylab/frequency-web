@@ -49,7 +49,7 @@
 //
 // Usage: node scripts/check-editor-bundle-bytes.mjs [--warn-only]
 
-import { existsSync, globSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, globSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
@@ -189,11 +189,17 @@ export function readArtifact(nextDir) {
   const chunksOnDisk = []
   for (const rel of globSync('static/**/*.js', { cwd: nextDir })) {
     const file = path.join(nextDir, rel)
-    const stat = statSync(file)
-    if (!stat.isFile()) continue // a directory that happens to end in .js is not a chunk
+    // One read, no stat first: checking and then reading is a race on the path.
+    let bytes
+    try {
+      bytes = readFileSync(file)
+    } catch (err) {
+      if (err?.code === 'EISDIR') continue // a directory that happens to end in .js is not a chunk
+      throw err
+    }
     chunksOnDisk.push(path.basename(rel))
-    const packages = packagesIn(readFileSync(file, 'utf8'))
-    if (packages.length) carriers.push({ chunk: path.basename(rel), bytes: stat.size, packages })
+    const packages = packagesIn(bytes.toString('utf8'))
+    if (packages.length) carriers.push({ chunk: path.basename(rel), bytes: bytes.length, packages })
   }
 
   /** @type {{ route: string, chunks: string[] }[]} */
