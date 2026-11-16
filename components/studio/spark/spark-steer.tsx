@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/field'
 import { SEED_MOODS, type SeedMood } from '@/lib/studio/kernel/moods'
 import type { SteerCapabilities } from '@/lib/studio/kernel/manifest'
 import { capsLabel } from '@/components/ui/caps-label'
+import { chipClasses } from '@/components/ui/chip'
 
 export interface SparkSteerProps {
   /** From the manifest. Only the declared dials render. */
@@ -85,11 +86,7 @@ export function SparkSteer({
                 disabled={disabled || busy}
                 aria-pressed={mood === m.key}
                 title={m.description}
-                className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors disabled:opacity-60 ${
-                  mood === m.key
-                    ? 'border-primary/40 bg-primary-bg text-primary-strong'
-                    : 'border-border bg-surface text-muted hover:text-text'
-                }`}
+                className={chipClasses(mood === m.key, 'disabled:opacity-60')}
               >
                 {m.label}
               </button>
@@ -131,11 +128,7 @@ export function SparkSteer({
                 onClick={() => toggleLock(key)}
                 disabled={disabled || busy}
                 aria-pressed={pinned.includes(key)}
-                className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors disabled:opacity-60 ${
-                  pinned.includes(key)
-                    ? 'border-primary/40 bg-primary-bg text-primary-strong'
-                    : 'border-border bg-surface text-muted hover:text-text'
-                }`}
+                className={chipClasses(pinned.includes(key), 'disabled:opacity-60')}
               >
                 {lockLabel?.(key) ?? key}
               </button>

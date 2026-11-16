@@ -17,6 +17,13 @@ import { Button } from '@/components/ui/button'
 import { DeviceNudge } from '@/components/push/device-nudge'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { chipClasses } from '@/components/ui/chip'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+
+// The two answers to a yes/no question, as kit segments.
+const YES_NO = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+] as const
 
 // Detail-page RSVP controls (event Detail template). Three warm states a member
 // can move between — Going · Interested (maybe) · (Join waitlist when full) —
@@ -528,29 +535,15 @@ function EventQuestionnaire({
                 onBlur={(e) => save(q.id, e.target.value)}
               />
             ) : q.type === 'boolean' ? (
-              <div className="inline-flex items-center gap-1 rounded-card border border-border bg-surface p-1">
-                {(['yes', 'no'] as const).map((opt) => {
-                  const selected = value === opt
-                  return (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => {
-                        setLocal(q.id, opt)
-                        save(q.id, opt)
-                      }}
-                      aria-pressed={selected}
-                      className={`rounded-control-nested px-3 py-1.5 text-body-sm font-semibold capitalize transition-colors ${
-                        selected
-                          ? 'bg-primary-bg text-primary-strong'
-                          : 'text-muted hover:bg-surface-elevated hover:text-text'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  )
-                })}
-              </div>
+              <SegmentedControl
+                label={q.prompt}
+                value={value === 'yes' || value === 'no' ? value : null}
+                onChange={(opt) => {
+                  setLocal(q.id, opt)
+                  save(q.id, opt)
+                }}
+                segments={YES_NO}
+              />
             ) : q.type === 'dropdown' ? (
               <Select
                 id={labelId}
