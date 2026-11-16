@@ -18,8 +18,10 @@
 
 import type { InspectorFieldView } from './inspector-fields'
 import type { InspectorDeviceValues } from './inspector-model'
+import type { CanvasInserterView } from './canvas-presets'
+import { withSpacing, type LayerSlot, type LayerTree, type SpacingEdge, type SpacingStep } from './canvas-tree'
 import { upgradeLayout, type BlockNode, type NodeLayout } from '@/lib/entity-blocks/node-tree'
-import { getNode, sanitizeNodeLayout, setNodeContent, setNodeResponsive } from '@/lib/entity-blocks/node-ops'
+import { addNode, findNode, getNode, placeNode, sanitizeNodeLayout, setNodeContent, setNodeResponsive, setNodeStyle } from '@/lib/entity-blocks/node-ops'
 
 /** The preferences keys this document lives under. The draft and published keys are the Space page builder's. */
 export const CANVAS_DRAFT_KEY = 'profileLayoutDraft'
@@ -46,7 +48,12 @@ export interface CanvasNodeView {
   title: string
   fields: InspectorFieldView[]
   elsewhere: number
-  node: Pick<BlockNode, 'nid' | 'type' | 'content' | 'responsive'>
+  node: Pick<BlockNode, 'nid' | 'type' | 'content' | 'responsive' | 'style'>
+}
+
+/** A stored node as it crosses to the canvas: its id, type and the bags it holds, and nothing it does not. */
+export function canvasStoredNode({ nid, type, content, responsive, style }: BlockNode): CanvasNodeView['node'] {
+  return { nid, type, ...(content ? { content } : {}), ...(responsive ? { responsive } : {}), ...(style ? { style } : {}) }
 }
 
 /** What the route hands the canvas for a real document. */
@@ -60,7 +67,18 @@ export interface CanvasDocumentView {
   base: CanvasDraftBase
   nodes: CanvasNodeView[]
   layers: { id: string; label: string }[]
+  /** The same blocks nested as the page holds them: rows, columns, blocks (PROG-E6B). */
+  tree?: LayerTree
+  /** What can be added under the selected block, presets first (PROG-E6B). */
+  inserter?: CanvasInserterView
 }
+
+/** A change to the page that is not a field edit (PROG-E6B): a block moved to a slot, one spacing step on a
+ *  block, or a new block under it. An insert already holds its block: the server resolved the id the tab sent. */
+export type CanvasDocChange =
+  | { kind: 'move'; to: LayerSlot }
+  | { kind: 'spacing'; edge: SpacingEdge; step: SpacingStep }
+  | { kind: 'insert'; type: string; content?: Record<string, unknown> }
 
 /** One device bag as it crosses from the client: field key to a string or a boolean, nothing else. */
 type CanvasFieldBag = Readonly<Partial<Record<string, string | boolean>>>
@@ -147,32 +165,56 @@ export function applyCanvasNodeEdit(layout: NodeLayout, nid: string, values: Can
   })
 }
 
+/** One structural change laid onto the document, with the id of the block it left selected (the new block for an
+ *  insert). `no-node` when the block is not placed on the page. `refused` when the page cannot take the change:
+ *  a slot that is not there, a column that is full, a block at its per-page limit. Nothing is ever dropped to
+ *  make room. Not yet sanitized: the write does that. */
+export function applyCanvasChange(layout: NodeLayout, nid: string, change: CanvasDocChange): { layout: NodeLayout; nid: string } | 'no-node' | 'refused' {
+  const at = findNode(layout, nid)
+  const node = getNode(layout, nid)
+  if (!node || at?.where !== 'placed') return 'no-node'
+  const count = canvasNodes(layout).length
+  if (change.kind === 'spacing') return { layout: setNodeStyle(layout, nid, withSpacing(node.style, change.edge, change.step)), nid }
+  if (change.kind === 'move') {
+    const moved = placeNode(layout, nid, change.to.rowId, change.to.col, change.to.index)
+    return moved !== layout && canvasNodes(moved).length === count && findNode(moved, nid)?.where === 'placed' ? { layout: moved, nid } : 'refused'
+  }
+  const added = addNode(layout, change.type, at.rowId, at.col, at.index + 1)
+  if (!added.nid || canvasNodes(added.layout).length !== count + 1) return 'refused'
+  return { layout: change.content ? setNodeContent(added.layout, added.nid, change.content) : added.layout, nid: added.nid }
+}
+
 type CanvasDraftPlan =
   | { status: 'ready'; preferences: Record<string, unknown>; layout: NodeLayout; node: BlockNode; base: CanvasDraftBase }
   | { status: 'conflict'; current: CanvasDraftBase }
-  | { status: 'no-document' | 'no-node' | 'invalid-document' }
+  | { status: 'no-document' | 'no-node' | 'invalid-document' | 'refused' }
 
 /** Decide one draft write from a FRESH read of the Space's preferences. Pure: it edits nothing. A base that is
  *  not the stored one is a conflict and plans no write. Otherwise the plan holds the next preferences blob (the
  *  sanitized draft under the draft key, the counter moved on by one, every other key as read) and the base the
- *  tab holds after the write lands. The store must still compare the counter in the update itself. */
+ *  tab holds after the write lands. The store must still compare the counter in the update itself. With a
+ *  `change` the same plan carries a move, a spacing step or an insert, and `node` is the block it leaves selected. */
 export function planCanvasDraftWrite({
-  preferences, nid, values, fieldKeys, base,
+  preferences, nid, values, fieldKeys, base, change,
 }: {
   preferences: unknown
   nid: string
   values: CanvasNodeValues
   fieldKeys: readonly string[]
   base: CanvasDraftBase
+  /** A structural change (PROG-E6B). When given, it is applied in place of the field edit. */
+  change?: CanvasDocChange
 }): CanvasDraftPlan {
   const current = readCanvasDocument(preferences)
   if (!current.layout) return { status: 'no-document' }
   if (base.revision !== current.base.revision || base.fingerprint !== current.base.fingerprint) return { status: 'conflict', current: current.base }
   if (current.base.revision >= Number.MAX_SAFE_INTEGER) return { status: 'invalid-document' }
-  const edited = applyCanvasNodeEdit(current.layout, nid, values, fieldKeys)
+  const changed = change ? applyCanvasChange(current.layout, nid, change) : null
+  if (changed === 'no-node' || changed === 'refused') return { status: changed }
+  const edited = changed ? changed.layout : applyCanvasNodeEdit(current.layout, nid, values, fieldKeys)
   if (!edited) return { status: 'no-node' }
   const layout = sanitizeNodeLayout(edited, 'space')
-  const node = layout ? getNode(layout, nid) : null
+  const node = layout ? getNode(layout, changed ? changed.nid : nid) : null
   if (!layout || !node) return { status: 'invalid-document' }
   const revision = current.base.revision + 1
   return {
