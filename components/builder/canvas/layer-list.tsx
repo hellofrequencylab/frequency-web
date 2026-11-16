@@ -10,7 +10,15 @@ import { dropIndex, keyboardMove, LONG_PRESS_MS, longPressStep, reorder } from '
 
 export type Layer = { id: string; label: string }
 
-export function LayerList({ layers, onChange }: { layers: readonly Layer[]; onChange: (next: Layer[]) => void }) {
+/** With `onSelect`, each row also carries an Edit button that picks that layer for the inspector (PROG-E5B). */
+export function LayerList({
+  layers, onChange, selectedId, onSelect,
+}: {
+  layers: readonly Layer[]
+  onChange: (next: Layer[]) => void
+  selectedId?: string | null
+  onSelect?: (id: string) => void
+}) {
   const [dragging, setDragging] = useState<number | null>(null)
   const [gap, setGap] = useState<number | null>(null)
   const [say, setSay] = useState('')
@@ -79,6 +87,9 @@ export function LayerList({ layers, onChange }: { layers: readonly Layer[]; onCh
             onKeyDown={key(i)}
           >
             <span className="flex-1" tabIndex={0} aria-label={`${layer.label}, position ${i + 1} of ${layers.length}`}>{layer.label}</span>
+            {onSelect && (
+              <Button type="button" size="sm" variant={selectedId === layer.id ? 'primary' : 'secondary'} className="min-h-11 min-w-11" aria-pressed={selectedId === layer.id} aria-label={`Edit ${layer.label}`} onClick={() => onSelect(layer.id)}>Edit</Button>
+            )}
             <Button type="button" size="sm" variant="secondary" className="min-h-11 min-w-11" aria-label={`Move ${layer.label} up`} disabled={i === 0} onClick={() => step(i, -1)}>Up</Button>
             <Button type="button" size="sm" variant="secondary" className="min-h-11 min-w-11" aria-label={`Move ${layer.label} down`} disabled={i === layers.length - 1} onClick={() => step(i, 1)}>Down</Button>
           </li>

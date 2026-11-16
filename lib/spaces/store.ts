@@ -472,6 +472,40 @@ export async function patchSpacePreferences(
   }
 }
 
+/** authz-delegated: the canvas draft action calls only after its staff and Space editor checks.
+ *  COMPARE AND WRITE in ONE update (PROG-E5B): the blob lands only while the counter stored at
+ *  `preferences.<revisionKey>` still equals `expected` (an absent counter is 0), so of two tabs
+ *  that read the same revision exactly one writes and the other gets `stale`. The caller puts
+ *  `expected + 1` under the same key in `preferences`. There is no SQL function for this key, so
+ *  it REPLACES the whole blob like `writeSpacePreferences` (SCAN-833 applies: a different key
+ *  saved between the caller's read and this write is reverted). */
+export async function writeSpacePreferencesAtRevision(
+  spaceId: string,
+  preferences: Record<string, unknown>,
+  guard: { revisionKey: string; expected: number },
+): Promise<'written' | 'stale' | 'error'> {
+  if (!spaceId || !/^[A-Za-z]{1,60}$/.test(guard.revisionKey) || !Number.isSafeInteger(guard.expected) || guard.expected < 0) return 'error'
+  type Guarded = {
+    eq: (column: string, value: string) => Guarded
+    is: (column: string, value: null) => Guarded
+    select: (columns: string) => Promise<{ data: { id: string }[] | null; error: { message: string } | null }>
+  }
+  try {
+    const db = createAdminClient() as unknown as { from: (t: string) => { update: (v: Record<string, unknown>) => Guarded } }
+    const stored = `preferences->>${guard.revisionKey}`
+    const scoped = db.from('spaces').update({ preferences }).eq('id', spaceId)
+    const { data, error } = await (guard.expected === 0 ? scoped.is(stored, null) : scoped.eq(stored, String(guard.expected))).select('id')
+    if (error) {
+      log.warn('space_preferences_guarded_write_failed', { spaceId, message: error.message })
+      return 'error'
+    }
+    return data?.length === 1 ? 'written' : 'stale'
+  } catch (err) {
+    log.warn('space_preferences_guarded_write_threw', { spaceId, message: err instanceof Error ? err.message : 'unknown' })
+    return 'error'
+  }
+}
+
 /** Write a Space's tagline and/or about (spaces.tagline, spaces.about) by id. Only the keys given are written, so a
  *  caller that has nothing to say for one leaves what is stored alone. Gating is the CALLER's, as for the writers
  *  above. Used by the launch's Review + Publish. */
