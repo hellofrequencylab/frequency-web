@@ -84,7 +84,7 @@ export function Wordmark({ className, priority = false, tagline = false, mark }:
         alt={SITE_NAME}
         width={WORDMARK_W}
         height={WORDMARK_H}
-        priority={priority}
+        preload={priority}
         className={className}
         data-brand-wordmark
       />
@@ -120,7 +120,7 @@ export function Wordmark({ className, priority = false, tagline = false, mark }:
         alt=""
         width={WORDMARK_W}
         height={WORDMARK_H}
-        priority={priority}
+        preload={priority}
         className="h-[1em] w-auto"
         data-brand-wordmark
       />

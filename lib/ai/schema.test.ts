@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseModelJson, validateModelValue, stripFence, extractJsonSpan, noteList, shortText, jsonObject, z } from './schema'
+import { parseModelJson, validateModelValue, stripFence, extractJsonSpan, noteList, shortText, textOrEmpty, lenientList, jsonObject, z } from './schema'
 
 // The one boundary between model output and typed data (ADR-1287). These drive the helper with
 // the shapes a model actually returns: fenced, prose-wrapped, truncated, wrong-typed, and right.
@@ -85,5 +85,18 @@ describe('validateModelValue + the shared blocks', () => {
 
   it('shortText trims and caps', () => {
     expect(shortText(3).parse('  abcdef ')).toBe('abc')
+  })
+
+  it('textOrEmpty reads a wrong type or a missing key as empty', () => {
+    const row = z.object({ note: textOrEmpty(3) })
+    expect(row.parse({ note: '  abcdef ' })).toEqual({ note: 'abc' })
+    expect(row.parse({ note: 42 })).toEqual({ note: '' })
+    expect(row.parse({})).toEqual({ note: '' })
+  })
+
+  it('lenientList keeps the rows its schema accepts and drops the rest', () => {
+    const list = lenientList(z.object({ id: z.string() }))
+    expect(list.parse([{ id: 'a' }, null, 7, 'x', [], { id: 3 }, { id: 'b', extra: true }])).toEqual([{ id: 'a' }, { id: 'b' }])
+    expect(list.safeParse('not a list').success).toBe(false)
   })
 })

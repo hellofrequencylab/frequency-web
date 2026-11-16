@@ -13,6 +13,7 @@ import {
 } from '../actions'
 import { Button } from '@/components/ui/button'
 import { chipClasses } from '@/components/ui/chip'
+import { IconButton } from '@/components/ui/icon-button'
 import { StatusChip, type StatusTone, Banner } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DangerModal } from '@/components/admin/danger-modal'
@@ -445,43 +446,20 @@ export function DispatchesClient({
 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 pt-0.5">
                   {d.status === 'draft' ? (
-                    <button
-                      onClick={() => handlePublish(d.id)}
-                      disabled={isPending}
-                      className="p-1.5 rounded-control text-subtle hover:text-success hover:bg-success-bg dark:hover:bg-success-bg/30 disabled:opacity-50 transition-colors"
-                      aria-label="Publish"
-                      title="Publish"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                    </button>
+                    <IconButton label="Publish" tone="success" onClick={() => handlePublish(d.id)} disabled={isPending}>
+                      <Send className="w-3.5 h-3.5" aria-hidden />
+                    </IconButton>
                   ) : (
-                    <button
-                      onClick={() => handleUnpublish(d.id)}
-                      disabled={isPending}
-                      className="p-1.5 rounded-control text-subtle hover:text-warning hover:bg-warning-bg dark:hover:bg-warning-bg/30 disabled:opacity-50 transition-colors"
-                      aria-label="Unpublish"
-                      title="Unpublish"
-                    >
-                      <EyeOff className="w-3.5 h-3.5" />
-                    </button>
+                    <IconButton label="Unpublish" tone="warning" onClick={() => handleUnpublish(d.id)} disabled={isPending}>
+                      <EyeOff className="w-3.5 h-3.5" aria-hidden />
+                    </IconButton>
                   )}
-                  <button
-                    onClick={() => setEditingId(d.id)}
-                    className="p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors"
-                    aria-label="Edit"
-                    title="Edit"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(d)}
-                    disabled={isPending}
-                    className="p-1.5 rounded-control text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors motion-reduce:transition-none"
-                    aria-label="Delete"
-                    title="Delete"
-                  >
+                  <IconButton label="Edit" onClick={() => setEditingId(d.id)}>
+                    <Pencil className="w-3.5 h-3.5" aria-hidden />
+                  </IconButton>
+                  <IconButton label="Delete" tone="danger" onClick={() => setConfirmDelete(d)} disabled={isPending}>
                     <Trash2 className="w-3.5 h-3.5" aria-hidden />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             )}

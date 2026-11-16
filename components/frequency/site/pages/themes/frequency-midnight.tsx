@@ -56,7 +56,7 @@ function pad(n: number) {
 
 function Shot({ kit, shot, label, priority = false, sizes }: { kit: NocturneKit; shot: Shot; label: string; priority?: boolean; sizes: string }) {
   const [w, h] = SHOT_DIM[shot]
-  return <Image src={shotSrc(kit.id, shot)} alt={`${kit.name}: ${label}`} width={w} height={h} sizes={sizes} priority={priority} />
+  return <Image src={shotSrc(kit.id, shot)} alt={`${kit.name}: ${label}`} width={w} height={h} sizes={sizes} preload={priority} />
 }
 
 /** An iPhone: bezel, status bar with the island, and the home bar around a 370 by 824 screen of the kit (the design system's ios frame). */

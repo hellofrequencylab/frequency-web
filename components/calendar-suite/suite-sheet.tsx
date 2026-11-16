@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { IconButton } from '@/components/ui/icon-button'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 // A SHEET over the calendar: a centred card on a wide screen, rising from the bottom on a narrow one.
 // It lives inside the calendar's own box rather than in a portal, so the calendar's tokens reach it and
@@ -22,29 +23,15 @@ export function SuiteSheet({
   children: ReactNode
 }) {
   const panel = useRef<HTMLDivElement>(null)
+  // The kit trap first (it remembers the opener and keeps Tab inside), then the panel itself takes focus.
+  useDialogFocusTrap(true, panel)
   useEffect(() => {
-    const before = document.activeElement as HTMLElement | null
     panel.current?.focus()
-    return () => before?.focus?.()
   }, [])
-  const trap = (e: React.KeyboardEvent) => {
-    if (e.key !== 'Tab' || !panel.current) return
-    const items = [...panel.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])')]
-    if (items.length === 0) return
-    const first = items[0]
-    const last = items[items.length - 1]
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault()
-      last.focus()
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault()
-      first.focus()
-    }
-  }
   return (
     <div className="cal-sheet-wrap" data-cal-sheet>
       <div className="cal-sheet-scrim" onClick={onClose} aria-hidden />
-      <div className="cal-sheet fq-panel" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={panel} onKeyDown={trap}>
+      <div className="cal-sheet fq-panel" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={panel}>
         <header className="cal-sheet-head">
           <div>
             <h2 className="cal-sheet-title">{title}</h2>

@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, type KeyboardEvent } from 'react'
 import { X } from 'lucide-react'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { prefetchTheme } from '@/components/sites/theme-preview-swap'
 import { websiteThemeVars } from '@/lib/sites/editor/theme'
 import { themeCards } from '@/lib/builder/theme-lens'
@@ -25,20 +26,15 @@ export function ThemeLens({ draft, trying, onTry, onPick, onClose }: {
   const cards = themeCards(draft)
   const sheet = useRef<HTMLDivElement>(null)
   const titleId = useId()
+  // The kit trap first (it remembers the opener and keeps Tab inside), then the current theme's card takes focus.
+  useDialogFocusTrap(true, sheet)
   useEffect(() => {
-    const before = document.activeElement as HTMLElement | null
     sheet.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus()
-    return () => { onTry(null); before?.focus?.() }
+    return () => { onTry(null) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') { e.stopPropagation(); onClose(); return }
-    if (e.key !== 'Tab' || !sheet.current) return
-    const focusable = [...sheet.current.querySelectorAll<HTMLElement>('button, [href], [tabindex]:not([tabindex="-1"])')].filter((el) => !el.hasAttribute('disabled'))
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus() }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus() }
+    if (e.key === 'Escape') { e.stopPropagation(); onClose() }
   }
   return (
     <div className={styles.scrim} onPointerDown={(e) => { if (e.target === e.currentTarget) onClose() }}>

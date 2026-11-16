@@ -74,7 +74,7 @@
     "",
     "This file stays the desktop gate over four anonymous marketing pages. The member shell on a phone",
     "(the home and the signed-out /feed) is measured by the sibling file on the mobile preset, with a",
-    "script-size assertion. Its assertions start as warns until a few runs have set real numbers."
+    "script-size assertion. Its LCP and CLS became errors in SCAN-1234, set from three measured runs."
   ],
   "ci": {
     "collect": {

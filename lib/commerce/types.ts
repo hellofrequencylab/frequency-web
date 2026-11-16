@@ -449,6 +449,38 @@ export function formatPriceCents(cents: number, currency = 'usd'): string {
   }
 }
 
+/** A MAJOR-unit amount (dollars, not cents) as a price label: 120 -> "$120", 79.5 -> "$79.50". Same house rule
+ *  as formatPriceCents (whole amounts drop the cents). The currency may be any case or missing (USD). PURE. */
+export function formatPriceAmount(amount: number, currency = 'usd'): string {
+  return formatPriceCents(Math.round(amount * 100), currency)
+}
+
+/** Cents as an exact amount with both decimals ("$25.00", "$1,299.50"), for money a person reconciles
+ *  (payout transfers, fees, reversals) where "$25" would hide a cent. PURE. */
+export function formatCentsFixed(cents: number, currency = 'usd'): string {
+  const dollars = cents / 100
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(dollars)
+  } catch {
+    return `${dollars.toFixed(2)}`
+  }
+}
+
+/** Whole cents from an untyped draft field as house price text, or '' when there is no usable number
+ *  (the Studio review board shows a blank, not "$NaN"). PURE. */
+export function formatPriceCentsOrBlank(cents: unknown, currency?: unknown): string {
+  if (typeof cents !== 'number' || !Number.isFinite(cents)) return ''
+  return formatPriceCents(cents, typeof currency === 'string' && currency.trim() ? currency.trim() : 'usd')
+}
+
+/** Minor units plus an ISO code as one readable amount ("120.00 USD"), or '' when unpriced. The Studio
+ *  review board's format for a service or product price. PURE. */
+export function formatCentsWithCode(cents: unknown, currency: unknown): string {
+  if (typeof cents !== 'number' || !Number.isFinite(cents)) return ''
+  const code = typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD'
+  return `${(cents / 100).toFixed(2)} ${code}`
+}
+
 /** A short, voice-compliant label for a Price ("Fixed $40", "From $20", "Choose your price", "Free",
  *  "Enquire", "Donation"). No em / en dashes. PURE. */
 export function describePrice(price: Price): string {

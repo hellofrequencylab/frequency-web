@@ -101,10 +101,13 @@ export async function getVariant(id: string): Promise<CommerceVariant | null> {
 
 /** Fetch a set of variants by id in one query, keyed by id (checkout validation across a cart).
  *  Missing ids are simply absent from the map. */
-export async function getVariantsByIds(ids: string[]): Promise<Map<string, CommerceVariant>> {
+export async function getVariantsByIds(ids: string[], opts?: { strict?: boolean }): Promise<Map<string, CommerceVariant>> {
   const unique = [...new Set(ids.filter(Boolean))]
   if (!unique.length) return new Map()
-  const { data } = await db().from('commerce_variants').select(VARIANT_COLS).in('id', unique)
+  const { data, error } = await db().from('commerce_variants').select(VARIANT_COLS).in('id', unique)
+  // `strict` is for a caller that writes on what it finds (the saved cart drops a line whose variant is gone):
+  // a failed read must not look like a missing variant.
+  if (error && opts?.strict) throw new Error(`[commerce] variant read failed: ${error.message}`)
   const map = new Map<string, CommerceVariant>()
   for (const r of (data ?? []) as Record<string, unknown>[]) {
     const v = rowToVariant(r)
