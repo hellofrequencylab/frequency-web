@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2311",
+  "title": "The Resonance tab on a Space page draws its contacts and person card again, so the message composer is back",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "app/themes/frequency/admin-pages.css",
+    "ref": "Owner report 2026-11-16 20:44Z, House of Fates ?panel=manage&area=resonance: contacts run together, card stuck on Loading their card, message system missing."
+  },
+  "detail": "PREMISE TESTED on production first (the owner's own signed-in browser, House of Fates, 2026-11-16): the Workspace grid computed display:block, 40 roster rows ran together as one paragraph, and the person card stayed on \"Loading their card\" for the auto-picked first person (Toni) well past 30 seconds after the page finished loading. Picking another person and then Toni again loaded both cards, Message Member included. So the message composer was never removed: it lives in the person card, and the card was unstyled under the list and, for the first pick, never filled.\n\nCAUSE. The in-place console (`/spaces/<slug>?panel=manage`) renders the same `.adp` bodies as /manage but with NO `[data-kit=\"admin\"]` ancestor. Every Workspace rule (.adp-ws-grid, -list, -row, -pane, the filters and the search pill) is scoped under that ancestor, so on the Space page none applied. SCAN-909 (2026-10-14) gave the in-place console its own rules for KPI cards, tables, pills and columns, but the Workspace landed the same day (SCAN-872) and was never added there. Not a regression from today's merges. Separately, the card read had no deadline, and picking the same person again set the same state, so nothing ever asked again.\n\nCHANGE. admin-pages.css: the Workspace rules added to the in-place block, tokens only, stacking by the column (container query, as SCAN-909 does) rather than the viewport. contacts-workspace.tsx: each card read has a 12 second deadline, asks once more, then says it could not load; picking a person (the same one included) starts a fresh read.\n\nVERIFIED: the probe fails on main and passes here; the fixture render (scripts/render/contacts.render.tsx with the in-place wrapper) before and after at 390 and 1280 shows the production fault and the fix; eslint clean on the changed file; check:tokens, BLD-002, console-phone-home, admin-switches and editor night-token tests pass unedited. NOT VERIFIED: why the first read never settled on production (it was not a server error: no error lines in the production logs for the window); the deadline covers it either way. The rendered route on a deploy.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2311.mjs",
+    "note": "Fails on main: the in-place console has no Workspace rules (grid, rows, list, pane, narrow stacking) and the card read has no deadline or retry. Passes once the in-place block lays out the Workspace with tokens only and the card read can time out and be asked again."
+  },
+  "closed": "2026-11-16"
+}
