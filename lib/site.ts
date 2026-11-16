@@ -60,9 +60,9 @@ export const CATEGORY_LINE = "Local groups that keep meeting.";
 export const ROOT_OG_IMAGES = [
   { url: SITE_OG_IMAGE, width: 1200, height: 630, alt: `${SITE_NAME} · ${SITE_TAGLINE}` },
 ];
-// The site description: the <meta> description of `/` (page_content carries no `/` row, so
-// app/page.tsx falls through to this), the Organization and WebSite JSON-LD `description`, and the
-// llms-full.txt header. It used to close on "a small, shrinking network-only take-rate", which is the
+// The site description: the root layout's default <meta> description, the Organization and WebSite
+// JSON-LD `description`, and the llms-full.txt header. The home page has its own, which names the
+// founding place (FREQUENCY_PAGE_SEO.home in lib/seo/frequency-pages.ts, SCAN-1206). It used to close on "a small, shrinking network-only take-rate", which is the
 // rate-ladder framing ADR-1350 retired: the reason a business is here is not that the fee goes down.
 // The three lines are READ from the leaf spine (lib/pricing/plan-story.ts, no imports of its own), so
 // this sentence, the home hero and the crawler corpus cannot argue different models (PROG-R8,

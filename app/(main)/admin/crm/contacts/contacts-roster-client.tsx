@@ -34,6 +34,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 // THE CONTACTS ROSTER ISLAND: the thin interactive shell over the pure core (lib/crm/contacts-roster-core).
 // It mirrors the member-viewer's HERO toolbar (live search + a prominent sort selector + facets) but
@@ -212,31 +213,13 @@ export function ContactsRosterClient({
           </div>
 
           {sortOptions.length > 0 && (
-            <div
-              role="group"
-              aria-label="Sort contacts"
-              className="inline-flex min-w-0 flex-wrap items-center gap-0.5 rounded-card border border-border bg-surface p-0.5"
-            >
-              {sortOptions.map((o) => {
-                const active = o.key === sortKey
-                return (
-                  <button
-                    key={o.key}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => chooseSort(o.key)}
-                    className={cn(
-                      'rounded-control px-3 py-1.5 text-body-sm font-semibold transition-colors',
-                      active
-                        ? 'bg-primary text-on-primary'
-                        : 'text-muted hover:bg-surface-elevated hover:text-text',
-                    )}
-                  >
-                    {o.label}
-                  </button>
-                )
-              })}
-            </div>
+            <SegmentedControl
+              label="Sort contacts"
+              value={sortKey}
+              onChange={chooseSort}
+              segments={sortOptions.map((o) => ({ value: o.key, label: o.label }))}
+              className="min-w-0"
+            />
           )}
         </div>
 

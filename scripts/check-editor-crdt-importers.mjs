@@ -12,8 +12,9 @@
 // WHAT IT PROVES: no module outside the allowlist imports the CRDT runtime or lib/editor-crdt/
 // (static, dynamic and `export ... from` forms; type-only imports are erased and skipped).
 // WHAT IT CANNOT SEE: that an ALLOWLISTED file is itself unreachable from a public route, and
-// bytes as measured in a built bundle (the "bundle-byte instrument" E0 still owes: a bundle
-// analyzer over the Vercel build). Green here is a necessary condition, not the whole claim.
+// bytes as measured in a built bundle. scripts/check-editor-bundle-bytes.mjs reads those in
+// postbuild (advisory until it has read one real artifact). Green here is a necessary condition,
+// not the whole claim.
 //
 // Non-triviality (ADR-962): it must find lib/editor-crdt/node-ydoc.ts and see `yjs` imported
 // inside lib/editor-crdt/, or it exits 79 rather than print a ✓ over nothing.
