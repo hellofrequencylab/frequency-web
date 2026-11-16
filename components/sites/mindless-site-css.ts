@@ -55,7 +55,7 @@ ${M} .sv-hero--photo{min-height:clamp(560px,78vh,780px);align-items:center}
 ${M} .sv-hero-bg--photo{background-position:50% 50%}
 ${M} .sv-hero-bg--photo::before{background:none}
 ${M} .sv-hero--photo .sv-hero-in{align-items:center}
-${M} .sv-hero--photo .sv-hero-copy{max-width:min(100%,620px);padding:clamp(28px,4vw,48px);border-radius:var(--ml-corner-lg);background:color-mix(in oklab,var(--ml-pit) 94%,transparent) var(--ml-tex-grain);border:3px solid var(--ml-pit);box-shadow:8px 10px 0 0 var(--ml-pit)}
+${M} .sv-hero--photo .sv-hero-copy{max-width:min(100%,620px);padding:clamp(28px,4vw,48px);border-radius:var(--ml-corner-lg);background:var(--ml-pit);border:3px solid var(--ml-pit);box-shadow:8px 10px 0 0 var(--ml-pit)}
 ${M} .sv-hero .sv-eyebrow{background:none;box-shadow:none;padding:0;${LABEL};font-size:13px;color:var(--ml-accent-text)}
 ${M} .sv-hero .sv-display{font-size:clamp(48px,6.4vw,88px);line-height:1.02;color:var(--ml-head)}
 ${M} .sv-hero .sv-display em{display:block;color:var(--ml-accent)}
@@ -65,7 +65,7 @@ ${DAY} .sv-hero .sv-display,${DAY} .sv-hero-lead{color:var(--ml-paper)}
 ${DAY} .sv-hero .sv-display em{background:none;color:var(--ml-yellow)}
 
 /* BUTTONS: the paint sticker and the bone ghost with its offset ledge. No arrow glyph: the design's buttons are words only. */
-${M} .sv-btn{border-radius:var(--ml-radius-pill)}
+${M} .sv-btn{border-radius:var(--ml-radius-pill);font-family:var(--ml-font-body);font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 ${M} .sv-btn svg{display:none}
 ${M} .sv-btn--accent{background:var(--ml-accent);color:var(--ml-on-accent);border:3px solid var(--ml-pit);box-shadow:var(--ml-shadow-sticker)}
 ${M} .sv-btn--secondary{background:transparent;color:var(--ml-head);border:3px solid var(--ml-bone);box-shadow:3px 4px 0 0 var(--ml-noise-1)}
