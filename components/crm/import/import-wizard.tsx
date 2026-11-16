@@ -30,6 +30,7 @@ import { TARGET_FIELDS, type ColumnMapping, type MappingChoice, type MergeStrate
 import type { ManagedSpace } from '@/lib/spaces/managed'
 import { Button } from '@/components/ui/button'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const input =
   'w-full rounded-control border border-border-strong bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
@@ -107,6 +108,9 @@ export function ImportWizard({
   const [result, setResult] = useState<CommitResult | null>(null)
   const [undone, setUndone] = useState(false)
   const [busy, setBusy] = useState(false)
+  // The owner's confirmation that everyone on this list asked for their emails (LIVE-2312, owner ruling
+  // 2026-11-16). Space imports only. Without it imported contacts stay 'unknown' and cannot be emailed.
+  const [attested, setAttested] = useState(false)
   const [banner, setBanner] = useState<Banner>(null)
   const [showPaste, setShowPaste] = useState(false)
   const [pasted, setPasted] = useState('')
@@ -390,7 +394,7 @@ export function ImportWizard({
     if (!importId) return
     setBusy(true)
     setBanner(null)
-    const res = await commitAction(importId)
+    const res = await commitAction(importId, { attestConsent: targetKind === 'space' && attested })
     setBusy(false)
     if (isError(res)) {
       setBanner({ kind: 'err', text: res.error })
@@ -762,6 +766,17 @@ export function ImportWizard({
             </div>
           )}
 
+          {targetKind === 'space' && (
+            <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
+              <Checkbox
+                checked={attested}
+                onChange={(e) => setAttested(e.target.checked)}
+                label="These people signed up to get my emails"
+                hint="Tick this only if everyone on this list asked to hear from you, like your newsletter subscribers. We keep a record that you confirmed it, and every email has a one-click unsubscribe. Leave it off and you can still see and organize these contacts, but marketing email will not go to them."
+              />
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <button type="button" onClick={() => setStep('map')} className="inline-flex items-center gap-1.5 text-meta font-medium text-muted hover:text-text">
               <ArrowLeft className="h-3.5 w-3.5" /> Back to columns
@@ -785,7 +800,7 @@ export function ImportWizard({
           description={
             undone
               ? 'We removed the contacts this import added. You can import another file any time.'
-              : `Created ${result.created}, merged ${result.merged}, skipped ${result.skipped}${result.failed ? `, ${result.failed} could not be saved` : ''}.${result.overAllowance ? ` ${result.overAllowance} are waiting: this space is at its contact allowance, and everything already here stays. Move up a plan to bring them in.` : ''} You can import another file any time.`
+              : `Created ${result.created}, merged ${result.merged}, skipped ${result.skipped}${result.failed ? `, ${result.failed} could not be saved` : ''}.${result.overAllowance ? ` ${result.overAllowance} are waiting: this space is at its contact allowance, and everything already here stays. Move up a plan to bring them in.` : ''}${result.subscribed ? ` ${result.subscribed} can now get your emails.` : ''} You can import another file any time.`
           }
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -801,7 +816,7 @@ export function ImportWizard({
               )}
               <button
                 type="button"
-                onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setUndone(false); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); setQueue([]); }}
+                onClick={() => { setStep('upload'); setSource(null); setImportId(null); setMapping([]); setValidation(null); setResult(null); setUndone(false); setBanner(null); setFilename(''); setPasted(''); setShowPaste(false); setQueue([]); setAttested(false); }}
                 className="inline-flex items-center gap-2 rounded-control border border-border-strong px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
               >
                 <UploadCloud className="h-4 w-4" /> Import another file

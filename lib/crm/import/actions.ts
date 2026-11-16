@@ -277,14 +277,19 @@ export async function previewImport(
 }
 
 /** Commit the staged import into its scoped target. Idempotent + fail-safe per row. */
-export async function commitAction(id: string): Promise<ActionResult<CommitResult>> {
+export async function commitAction(
+  id: string,
+  opts: { attestConsent?: boolean } = {},
+): Promise<ActionResult<CommitResult>> {
   let profileId: string
   try {
     profileId = await requireProfile()
   } catch {
     return fail('Sign in to continue.')
   }
-  const res = await commitImport(id, profileId)
+  // `attestConsent`: the owner confirmed everyone on the list asked for their emails (LIVE-2312).
+  // Only a strict `true` counts; commitImport records who and when, and ignores it outside a Space.
+  const res = await commitImport(id, profileId, { attestConsent: opts?.attestConsent === true })
   revalidatePath('/network/contacts')
   revalidatePath('/admin/crm/contacts')
   revalidatePath('/admin/crm')

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2312",
+  "title": "A Space owner can confirm an imported list asked for their emails, so imported subscribers can be emailed",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Toni House of Fates QA audit 2026-11-16 (project thread), items 20 and 22. Owner ruling 2026-11-16: option A, owner confirms at import."
+  },
+  "detail": "EVIDENCE: lib/crm/import/commit.ts wrote every imported Space contact as consent_state 'unknown' and nothing let an owner say the list had opted in, so the Marketing composer showed '0 people are currently eligible' and Send stayed disabled for every imported list (House of Fates: 140 of 140 excluded, 'no marketing opt-in').\n\nFIX: the import preview for a Space shows 'These people signed up to get my emails'. When ticked, created contacts land 'subscribed' and existing 'unknown' contacts on the file are confirmed; 'unsubscribed' is never overridden. Each touched contact carries meta.consent_attestation {by, at, import, file}; the result counts them (subscribed). Undo deletes the rows the import created as subscribed and puts confirmed existing contacts back to 'unknown'. Platform and personal imports ignore the flag.\n\nCLOSED 2026-11-16.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const c=fs.readFileSync(\"lib/crm/import/commit.ts\",\"utf8\");const w=fs.readFileSync(\"components/crm/import/import-wizard.tsx\",\"utf8\");const a=fs.readFileSync(\"lib/crm/import/actions.ts\",\"utf8\");process.exit(/export function attestedConsent/.test(c)&&/consent_state: confirmed \\? confirmed.consent_state : .unknown./.test(c)&&/attestConsent: targetKind === .space. && attested/.test(w)&&/commitImport\\(id, profileId, \\{ attestConsent/.test(a)?0:1)'",
+    "note": "Passes when the import commit can subscribe on the owner's confirmation and the Space wizard sends it."
+  },
+  "wave": "W7",
+  "closed": "2026-11-16"
+}
