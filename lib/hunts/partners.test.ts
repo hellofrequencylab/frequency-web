@@ -170,7 +170,7 @@ describe('publish reads live partner state', () => {
 })
 
 describe('the claim side lives in the database', () => {
-  const sql = readFileSync(join(process.cwd(), 'supabase/migrations/20270346075000_hunt_partner_state.sql'), 'utf8')
+  const sql = readFileSync(join(process.cwd(), 'supabase/migrations/20270346081000_hunt_partner_state.sql'), 'utf8')
 
   it('checks the partner row inside hunt_claim_apply and keeps the nine-argument, service-role-only shape', () => {
     expect(sql).toContain("return jsonb_build_object('result', 'venue_not_active')")

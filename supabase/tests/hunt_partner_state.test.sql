@@ -1,4 +1,4 @@
--- pgTAP guard for migration 20270346075000_hunt_partner_state.sql (FH-029).
+-- pgTAP guard for migration 20270346081000_hunt_partner_state.sql (FH-029).
 -- Proves: hunt_partners names the invited steward and stays service role only; a claim through a
 -- placement whose venue has a partner row that is not in force (invited, withdrawn, suspended, revoked,
 -- not yet effective) answers venue_not_active and writes nothing; credit earned before a withdrawal

@@ -14,7 +14,7 @@
  *   revocation end it at once. Nothing here touches a claim, so credit already earned stays.
  * - Publish refuses a stop placed at a venue Space that is not the Hunt's own Space and has no live
  *   partner row. The claim side of the same rule is in SQL (`hunt_claim_apply`, migration
- *   20270346075000), because that function is the only writer of a credit.
+ *   20270346081000), because that function is the only writer of a credit.
  */
 import { createHash } from 'node:crypto'
 import type { PartnerRow } from './authz'
