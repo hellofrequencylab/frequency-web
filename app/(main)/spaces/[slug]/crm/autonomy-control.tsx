@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Check, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
 import type { AutonomyLevel } from '@/lib/spaces/entitlements'
 import { setSpaceAutonomy } from './actions'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // The per-Space autonomy control (Resonance Engine Phase 3 · ADR-384). A small owner-facing dial on
 // the Space CRM cockpit. Two settings, suggest-by-default:
@@ -76,11 +77,7 @@ export function AutonomyControl({ slug, level }: { slug: string; level: Autonomy
               disabled={pending}
               onClick={() => choose(opt.value)}
               aria-pressed={active}
-              className={`rounded-xl border p-3 text-left transition-colors disabled:opacity-60 ${
-                active
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary/40'
-                  : 'border-border bg-canvas hover:bg-surface-elevated'
-              }`}
+              className={choiceTileClasses(active, active ? 'rounded-xl p-3 text-left ring-1 ring-primary/40' : 'rounded-xl p-3 text-left')}
             >
               <span className={`inline-flex items-center gap-1.5 text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
                 <Icon className="h-4 w-4" /> {opt.label}
