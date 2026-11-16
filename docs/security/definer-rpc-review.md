@@ -64,3 +64,5 @@ findings below; revoking becomes safe once the callers use the service role behi
   described above is the full fix.
 - SCAN-1246 (P3): `capture_signup_lead` rotates the claim token for an address already in the table, so a stranger who
   knows an address can take over that lead row and lock out the person's own browser.
+  Migration `20270346064000` (written 2026-11-16, applied through the gated path) stops the rotation and makes the stored
+  names and handle win. The payload still merges newest-wins and stays unverified.
