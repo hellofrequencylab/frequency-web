@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, ClipboardPaste, Home, Tag, ImagePlus, X } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { Input, Textarea } from '@/components/ui/field'
 import { Banner } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
@@ -157,12 +158,7 @@ export function StartImportForm() {
               type="button"
               onClick={() => pickKind(k.key)}
               aria-pressed={active}
-              className={cn(
-                'flex items-start gap-3 rounded-card border p-3 text-left transition-colors',
-                active
-                  ? 'border-primary bg-primary-bg'
-                  : 'border-border bg-surface hover:border-border-strong',
-              )}
+              className={choiceTileClasses(active, 'flex items-start gap-3 rounded-card p-3 text-left')}
             >
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-control bg-surface-elevated text-muted">
                 <Icon className="h-4 w-4" aria-hidden />
