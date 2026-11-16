@@ -1,0 +1,9 @@
+{
+  "id": "LIVE-1689",
+  "patch": {
+    "status": "parked"
+  },
+  "append": {
+    "detail": "\n\n2026-11-16 (SCAN-1240): parked. components/sites/temple-kit-inner/pages-e.ts and its test were deleted as dead code: no page list ever registered the Book page (lib/sites/kits/temple-kit-profile-variants.ts keeps Book out on purpose because every site already owns the reserved /book slug and its own booking page). The probe on this row read the deleted file and is no longer run while parked."
+  }
+}
