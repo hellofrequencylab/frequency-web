@@ -2,7 +2,7 @@
   "what": "A census of every block TYPE present in stored page documents in production, per store. Types only — no tenant copy, no props, no ids. The guard (scripts/check-stored-blocks.test.ts) asserts every type recorded here resolves in the live block registry (lib/page-editor/config.tsx), so retiring a block that stored data still names fails CI instead of silently blanking a section on someone's page.",
   "why": "ADR-978 stopped an unknown type from DESTROYING a document, but nothing noticed that five types were already orphaned — they were found by hand, twice (ADR-977 D-9, then again for LIVE-028). A fail-safe with no gate that notices it fired is an invisible regression (AGENTS.md, Deploy safety).",
   "howToRecapture": "Run the SQL in `recaptureQuery` against production (read-only) and rewrite `stores` from the result, then set `capturedAt`. Re-capture after applying a document migration; the guard reads the registry live, so it does NOT need a re-capture when the registry changes.",
-  "scope": "The Puck-shaped registry only (lib/page-editor/config.tsx). The Spotlight union (lib/spotlight/blocks/schema.ts) and the entity-block registry (lib/entity-blocks/registry.ts) are separate catalogs with separate storage and are NOT covered here.",
+  "scope": "The Puck-shaped registry only (lib/page-editor/config.tsx). The Spotlight union (lib/entity-blocks/spotlight.ts) and the entity-block registry (lib/entity-blocks/registry.ts) are separate catalogs with separate storage and are NOT covered here.",
   "capturedAt": "2026-09-15",
   "recaptureLog": [
     "2026-08-18 — first capture (LIVE-028, ADR-1055), taken after 20270305000000 rewrote the five orphan types.",

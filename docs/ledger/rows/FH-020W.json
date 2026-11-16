@@ -1,0 +1,18 @@
+{
+  "id": "FH-020W",
+  "title": "Hunts FH-020W: Record the release evidence for the held-claim migration and retire its policy entry",
+  "lane": "program",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-020V (2026-11-16): the player wording, the held result routing and the authoring switch shipped; the release evidence is the lead's."
+  },
+  "detail": "Owed by release engineering and Daniel, not by an agent. Migration 20270346053000_hunt_claim_hold.sql is registered (#5005), merged (#5004) and listed in the Frequency Community migration ledger as of a read on 2026-11-16; the ledger proves version and name, not the bytes that ran. Record in docs/hunts/EVIDENCE.md, naming 20270346053000: the exact-head workflow_dispatch db-tests run (full replay and pgTAP, supabase/tests/hunt_claim_hold.test.sql), the real API acceptance step, the approved apply sequence with who applied it and when, and strict ledger parity (pnpm check:migrations with a database) after the apply. Then remove the consumed registrations for 20270346052000 and 20270346053000 from scripts/migration-readiness-policy.json in a policy-only housekeeping PR. Review and appeal UI follow the separate staff authorization ruling. Hunts switches stay OFF until this passes. Done when: EVIDENCE.md carries the record and the policy file no longer registers the migration. Requires: FH-020V. Owner role: Release engineering.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const m=\"20270346053000\";process.exit(fs.readFileSync(\"docs/hunts/EVIDENCE.md\",\"utf8\").includes(m)&&!fs.readFileSync(\"scripts/migration-readiness-policy.json\",\"utf8\").includes(m)?0:1)'"
+  },
+  "wave": "W7"
+}

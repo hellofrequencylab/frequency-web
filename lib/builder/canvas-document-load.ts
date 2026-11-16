@@ -12,8 +12,11 @@ import { renderPathEnabled } from '@/lib/platform-flags'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getSpaceById } from '@/lib/spaces/store'
 import type { Space } from '@/lib/spaces/types'
-import { canvasLayers, canvasNodes, readCanvasDocument, type CanvasDocumentView } from './canvas-document'
+import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
+import { canvasLayers, canvasNodes, canvasStoredNode, readCanvasDocument, type CanvasDocumentView } from './canvas-document'
 import { canvasBlockTitle, canvasInspectorFor } from './canvas-inspector'
+import { canvasInserterView } from './canvas-presets'
+import { canvasTree } from './canvas-tree'
 
 export const CANVAS_READ_ONLY = 'You can look at this page here, but only an editor of the Space can save it.'
 export const CANVAS_OLDER_LAYOUT = 'This Space still saves the older page layout, so the canvas can show it but not save it yet.'
@@ -44,11 +47,19 @@ export async function loadCanvasDocument(spaceId: string): Promise<CanvasDocumen
     canSave,
     notice,
     base: document.base,
-    layers: canvasLayers(document.layout, canvasBlockTitle),
-    nodes: canvasNodes(document.layout).map((node) => ({
-      nid: node.nid,
-      ...canvasInspectorFor(node.type),
-      node: { nid: node.nid, type: node.type, ...(node.content ? { content: node.content } : {}), ...(node.responsive ? { responsive: node.responsive } : {}) },
-    })),
+    ...canvasDocumentParts(document.layout),
+  }
+}
+
+/** Everything about a document that changes when its structure does: the layer list, the same blocks as a tree,
+ *  each block with its controls, and what can be added. The route reads it once; a move or an insert hands the
+ *  tab a fresh one (PROG-E6B), so the tab never rebuilds a block's controls itself. */
+export function canvasDocumentParts(layout: NodeLayout): Required<Pick<CanvasDocumentView, 'layers' | 'tree' | 'nodes' | 'inserter'>> {
+  const layers = canvasLayers(layout, canvasBlockTitle)
+  return {
+    layers,
+    tree: canvasTree(layout, layers),
+    nodes: canvasNodes(layout).map((node) => ({ nid: node.nid, ...canvasInspectorFor(node.type), node: canvasStoredNode(node) })),
+    inserter: canvasInserterView(layout),
   }
 }

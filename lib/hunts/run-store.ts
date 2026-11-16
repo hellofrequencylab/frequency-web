@@ -12,6 +12,8 @@
  * content that `projectForPlayer` takes. It is tested without a database.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { approximatePoint } from '@/lib/maps/approximate'
+import { resolvePrecision } from '@/lib/spaces/location'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Chapter, Credit, HuntGraph } from './graph'
 
@@ -266,4 +268,46 @@ export async function loadRunProgressSnapshot(runId: string, profileId: string):
       ...(typeof row.accepted_at === 'string' ? { at: row.accepted_at } : {}),
     })),
   }
+}
+
+type StopPoint = { missionKey: string; lat: number; lng: number; approximate: boolean }
+
+/**
+ * Where the stops a run already credited are, for the visited-stops map (FH-016T). The source is the
+ * venue Space bound to the stop on the run's own version, at the precision that Space chose to publish.
+ * The read is filtered by the credited keys in the query itself, so the place of a stop the player has
+ * not reached never leaves the database. A stop with no venue Space, or a Space with no point, has no
+ * pin. Any failed or truncated read gives no pins: the list of visited stops still shows.
+ */
+export async function loadVisitedStopPoints(scope: PlayerRunScope, credits: readonly Credit[]): Promise<StopPoint[]> {
+  const keys = [...new Set(credits.map((credit) => credit.mission_key))]
+  if (keys.length === 0) return []
+  const client = db()
+  const bound = await client
+    .from('hunt_mission_placements')
+    .select('mission_key, venue_space_id', { count: 'exact' })
+    .eq('version_id', scope.versionId)
+    .eq('hunt_id', scope.huntId)
+    .in('mission_key', keys)
+  if (!completeRows(bound)) return []
+  const bindings = (bound.data as { mission_key: unknown; venue_space_id: unknown }[])
+    .filter((row): row is { mission_key: string; venue_space_id: string } =>
+      typeof row.mission_key === 'string' && keys.includes(row.mission_key) && typeof row.venue_space_id === 'string')
+  const spaceIds = [...new Set(bindings.map((row) => row.venue_space_id))]
+  if (spaceIds.length === 0) return []
+  const spaces = await client.from('spaces').select('id, latitude, longitude, location_precision', { count: 'exact' }).in('id', spaceIds)
+  if (!completeRows(spaces)) return []
+  const byId = new Map((spaces.data as { id: string; latitude: unknown; longitude: unknown; location_precision: unknown }[]).map((row) => [row.id, row]))
+
+  const points: StopPoint[] = []
+  for (const binding of bindings) {
+    const space = byId.get(binding.venue_space_id)
+    // numeric columns arrive as strings from PostgREST; a missing half of the pair is no point at all.
+    if (!space || space.latitude == null || space.longitude == null) continue
+    const exact = resolvePrecision(space.location_precision) === 'exact'
+    const point = exact ? { lat: Number(space.latitude), lng: Number(space.longitude) } : approximatePoint(Number(space.latitude), Number(space.longitude), space.id)
+    if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng) || Math.abs(point.lat) > 90 || Math.abs(point.lng) > 180) continue
+    points.push({ missionKey: binding.mission_key, lat: point.lat, lng: point.lng, approximate: !exact })
+  }
+  return points
 }

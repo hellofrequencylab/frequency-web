@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { draftToGraph, publishRows } from './draft'
 import { projectForPlayer } from './player'
 import { evaluate, validateGraph } from './graph'
-import { assembleTrail, loadPublicTrailSummary, loadPublishedTrail, playerHuntState } from './run-store'
+import { assembleTrail, loadPublicTrailSummary, loadPublishedTrail, loadVisitedStopPoints, playerHuntState } from './run-store'
 
 const from = vi.fn()
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from }) }))
@@ -92,6 +92,65 @@ describe('loadPublicTrailSummary', () => {
     mockSummaryQueries(visibility, status, versionStatus)
     expect(await loadPublicTrailSummary('north-county')).toBeNull()
     expect(from).not.toHaveBeenCalledWith('hunt_missions')
+  })
+})
+
+describe('loadVisitedStopPoints (FH-016T)', () => {
+  const scope = { huntId: 'h1', versionId: 'v1' }
+  function mockLocations(overrides: { bindingCount?: number } = {}) {
+    const tables: Record<string, Record<string, unknown>[]> = {
+      hunt_mission_placements: [
+        { hunt_id: 'h1', version_id: 'v1', mission_key: 'stop-1', venue_space_id: 's1' },
+        { hunt_id: 'h1', version_id: 'v1', mission_key: 'stop-2', venue_space_id: 's2' },
+        { hunt_id: 'h1', version_id: 'v1', mission_key: 'stop-3', venue_space_id: null },
+        { hunt_id: 'h1', version_id: 'v0', mission_key: 'stop-1', venue_space_id: 's9' },
+      ],
+      spaces: [
+        { id: 's1', latitude: '33.0450', longitude: '-117.2920', location_precision: 'exact' },
+        { id: 's2', latitude: '33.1234', longitude: '-117.3456', location_precision: 'approximate' },
+        { id: 's9', latitude: '10', longitude: '10', location_precision: 'exact' },
+      ],
+    }
+    const asked = vi.fn()
+    from.mockImplementation((table: string) => {
+      let matches = tables[table] ?? []
+      const query = {
+        select: () => query,
+        eq: (column: string, value: unknown) => { asked(table, 'eq', column, value); matches = matches.filter((row) => row[column] === value); return query },
+        in: (column: string, values: unknown[]) => { asked(table, 'in', column, values); matches = matches.filter((row) => values.includes(row[column])); return query },
+        then: (resolve: (response: { data: unknown[]; count: number; error: null }) => unknown) =>
+          resolve({ data: matches, count: table === 'hunt_mission_placements' ? overrides.bindingCount ?? matches.length : matches.length, error: null }),
+      }
+      return query
+    })
+    return asked
+  }
+
+  it('asks only for the credited stops of the run version, and returns only their points', async () => {
+    const asked = mockLocations()
+    const points = await loadVisitedStopPoints(scope, [{ mission_key: 'stop-1' }])
+    expect(points).toEqual([{ missionKey: 'stop-1', lat: 33.045, lng: -117.292, approximate: false }])
+    expect(asked).toHaveBeenCalledWith('hunt_mission_placements', 'in', 'mission_key', ['stop-1'])
+    expect(asked).toHaveBeenCalledWith('hunt_mission_placements', 'eq', 'version_id', 'v1')
+    expect(asked).toHaveBeenCalledWith('spaces', 'in', 'id', ['s1'])
+  })
+
+  it('coarsens a Space that chose an approximate location and skips a stop with no venue', async () => {
+    mockLocations()
+    const points = await loadVisitedStopPoints(scope, [{ mission_key: 'stop-2' }, { mission_key: 'stop-3' }])
+    expect(points).toHaveLength(1)
+    expect(points[0]).toMatchObject({ missionKey: 'stop-2', approximate: true })
+    expect(points[0].lat).not.toBe(33.1234)
+    expect(points[0].lng).not.toBe(-117.3456)
+    expect(Math.abs(points[0].lat - 33.1234)).toBeLessThan(0.05)
+  })
+
+  it('reads nothing with no credits, and gives no pins on a truncated read', async () => {
+    mockLocations()
+    expect(await loadVisitedStopPoints(scope, [])).toEqual([])
+    expect(from).not.toHaveBeenCalled()
+    mockLocations({ bindingCount: 5 })
+    expect(await loadVisitedStopPoints(scope, [{ mission_key: 'stop-1' }])).toEqual([])
   })
 })
 

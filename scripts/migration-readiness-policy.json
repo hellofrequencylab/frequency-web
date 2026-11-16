@@ -3583,6 +3583,13 @@
           "sha256": "fbaad81058115baeb49021d18e66ed6ac4d9ca20eca7c2e3e49c460180f4141d",
           "baseMode": "100644",
           "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346071000_drop_six_zz_backup_tables.sql",
+          "status": "added",
+          "sha256": "6cd4dcc9f3e2582fdb7029889046585cace0b2b114b165aac7996dab2eebf6ae",
+          "baseMode": "000000",
+          "headMode": "100644"
         }
       ],
       "workflowPath": ".github/workflows/db-tests.yml",
