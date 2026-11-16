@@ -3336,6 +3336,60 @@
         "Real local service, anon and authenticated growth API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5047,
+      "expiresAt": "2026-11-22T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346067000_drop_six_zz_backup_tables.sql",
+          "sha256": "6cd4dcc9f3e2582fdb7029889046585cace0b2b114b165aac7996dab2eebf6ae"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/SCAN-1238.json",
+          "status": "modified",
+          "sha256": "102097d39da5f0eec96d004fa2ca43413bb2349180d854a9bd0c2c1e56a795fd",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/render/free-human-heroes-sql.render.tsx",
+          "status": "modified",
+          "sha256": "8f9ad16f9a329d88ee65f1b0844f1a7433e1c36cb9b95d882bbca6b353f4b60e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/render/free-human-pages-sql.render.tsx",
+          "status": "modified",
+          "sha256": "004dc16c9ec4902fad8684186266110e22be5e044243225eb599328844fa3fed",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/render/free-human-space-page-sql.render.tsx",
+          "status": "modified",
+          "sha256": "8b73de938aae3026393fdf1a544a6a9f735d324b6d59291f721f2e78f5d85668",
+          "baseMode": "100644",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "506e7faa637aed0e801df7bb5d83c24a8dbb681156f7c01768431856d77bffc2",
+      "apiAcceptanceStep": "Real local service, anon and authenticated growth API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated room API acceptance",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Real local service, anon and authenticated calendar suite API acceptance",
+        "Real local service, anon and authenticated analytics experiment API acceptance",
+        "Real local service, anon and authenticated growth API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
