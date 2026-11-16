@@ -3072,6 +3072,78 @@
         "Real local service, anon and authenticated growth API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5018,
+      "expiresAt": "2026-11-22T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346061000_public_events_snapshot_index.sql",
+          "sha256": "623ccbea265d84bdb6a7a03baff4c04855f461ffc4125e335233fe2b8244a207"
+        },
+        {
+          "file": "supabase/migrations/20270346062000_public_events_zone_lookup_table.sql",
+          "sha256": "eb8022ee79b6ccf3803e1b59fb3d9fa9ba96877b59f075bf9074b90ddfe150d2"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/SCAN-1210.json",
+          "status": "modified",
+          "sha256": "af5e9b962a5d03e64f2dcab001bd427d82a88b7dabc9a7af1c12bc79335141c8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/discover.ts",
+          "status": "modified",
+          "sha256": "7f1d73cc98a7a9b24a13c060d43f67c7bb00953986ecd291b7af2d3ce03f09b0",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/public-events-snapshot.test.ts",
+          "status": "added",
+          "sha256": "ce1e2d4fef1902c9ec1c3993455d5dd386364e10b8bcaabefcec7507f2b98e3c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/public-events-snapshot.ts",
+          "status": "added",
+          "sha256": "9aeb97b3c6f72b4a2a64a818089830e1fc4b470af32bbc62f52e9dbe0ff7f90d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346061000_public_events_snapshot_index.sql",
+          "status": "added",
+          "sha256": "623ccbea265d84bdb6a7a03baff4c04855f461ffc4125e335233fe2b8244a207",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346062000_public_events_zone_lookup_table.sql",
+          "status": "added",
+          "sha256": "eb8022ee79b6ccf3803e1b59fb3d9fa9ba96877b59f075bf9074b90ddfe150d2",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "506e7faa637aed0e801df7bb5d83c24a8dbb681156f7c01768431856d77bffc2",
+      "apiAcceptanceStep": "Real local service, anon and authenticated growth API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated room API acceptance",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Real local service, anon and authenticated calendar suite API acceptance",
+        "Real local service, anon and authenticated analytics experiment API acceptance",
+        "Real local service, anon and authenticated growth API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
