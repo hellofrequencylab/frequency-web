@@ -8,7 +8,7 @@ import {frequencyHeaderDefaults} from '@/lib/frequency/header-defaults'
 vi.mock('@/lib/supabase/client',()=>({createClient:()=>({auth:{getSession:async()=>({data:{session:null}})}})}))
 vi.mock('next/navigation',()=>({usePathname:()=>'/about',useRouter:()=>({push:vi.fn()})}))
 vi.mock('next/link',()=>({default:({href,children,...props}:{href:string;children:React.ReactNode})=>createElement('a',{href,...props},children)}))
-vi.mock('next/image',()=>({default:({priority:_priority,...props}:Record<string,unknown>)=>createElement('img',props)}))
+vi.mock('next/image',()=>({default:({priority:_priority,preload:_preload,...props}:Record<string,unknown>)=>createElement('img',props)}))
 vi.mock('./site-root',()=>({useSite:()=>({page:{cta:'side'},side:'p'})}))
 const fetcher=vi.fn()
 let host:HTMLDivElement,root:Root
