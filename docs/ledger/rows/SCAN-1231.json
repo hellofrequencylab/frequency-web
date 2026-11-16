@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: lib/vcard.ts:53-55 esc() replaces \\\\, \\n, comma, semicolon but not \\r. Display name, bio, org, title, phone and website all pass through it (lines 71-86); str() at line 29 only trims. Served unauthenticated by app/(main)/people/[handle]/vcard/route.ts. lib/events/ics.ts:55-60 handles \\r correctly, so this is a one-line miss.\n\nWHY IT MATTERS: A malicious profile could add TEL/URL/NOTE lines to the contact a visitor imports (phishing number in a saved contact). Low reach, trivial fix.\n\nFIX DIRECTION: Replace /\\n/g with /\\r\\n|\\r|\\n/g in esc(), matching icsEscape.",
+  "detail": "EVIDENCE: lib/vcard.ts:53-55 esc() replaces \\\\, \\n, comma, semicolon but not \\r. Display name, bio, org, title, phone and website all pass through it (lines 71-86); str() at line 29 only trims. Served unauthenticated by app/(main)/people/[handle]/vcard/route.ts. lib/events/ics.ts:55-60 handles \\r correctly, so this is a one-line miss.\n\nWHY IT MATTERS: A malicious profile could add TEL/URL/NOTE lines to the contact a visitor imports (phishing number in a saved contact). Low reach, trivial fix.\n\nFIX DIRECTION: Replace /\\n/g with /\\r\\n|\\r|\\n/g in esc(), matching icsEscape.\n\n2026-11-16 fixed (security thread): vCard esc() now treats CRLF, lone CR and LF alike (/\\r\\n|\\r|\\n/g), so no field value can start a new contact line.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1231",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }

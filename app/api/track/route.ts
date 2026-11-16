@@ -13,6 +13,7 @@ import { track } from '@/lib/analytics/track'
 import { hasConsent } from '@/lib/consent/consent'
 import { isClientEvent } from '@/lib/analytics/events'
 import { currentViewerAllowsAnalytics } from '@/lib/analytics/audience'
+import { rateLimitOk } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,6 +41,10 @@ export async function POST(req: NextRequest) {
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!profile) return new NextResponse(null, { status: 204 })
+
+  // Per-member ceiling (SCAN-1239): a script on a real login must not bloat the event tables. Over it the
+  // beacon is dropped with the same 204, so it never retries. 'allow' when KV is unset: analytics is best-effort.
+  if (!(await rateLimitOk('track', profile.id, 120, '1 m', { whenUnconfigured: 'allow' }))) return new NextResponse(null, { status: 204 })
 
   // Consent gate (ADR-069): no analytics consent → silently drop (SCAN-765).
   if (!(await hasConsent(profile.id, 'analytics'))) return new NextResponse(null, { status: 204 })

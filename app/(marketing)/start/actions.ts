@@ -9,7 +9,9 @@
 // nurture series exists yet — see ADR-125 follow-ups), so we never mis-mail.
 
 import type { Json } from '@/lib/database.types'
+import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { isSuppressed } from '@/lib/suppression'
 import { resolveAcquisition } from '@/lib/attribution/server'
 import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
@@ -38,7 +40,11 @@ export async function captureLead(input: {
   funnel?: Record<string, string>
   /** The host form's answers (/start/host): what they host, where, and a link to their page. */
   host?: { subject?: string; area?: string; link?: string }
+  /** Honeypot (SCAN-1216): a field people never see. A bot that fills it is not a lead. */
+  website?: string
 }): Promise<LeadResult> {
+  // A filled honeypot ends like a success and writes nothing, so a bot learns nothing.
+  if (typeof input.website === 'string' && input.website.length > 0) return { ok: true }
   const persona = isPersonaId(input.persona) ? input.persona : 'visitor'
   const archetype = resolveArchetype(persona, input.archetype)
   const flow = (input.flow || '').trim().slice(0, 60)
@@ -55,6 +61,16 @@ export async function captureLead(input: {
   if (!EMAIL_RE.test(email)) {
     return { ok: false, error: 'Please enter a valid email address.' }
   }
+  // Throttle per IP and per mailbox (SCAN-1216): this door can enroll a typed address into a mail series.
+  // 'allow' when KV is absent: the failure mode of a deny here is a lost lead, and consent gates the mail below.
+  const hdrs = await headers()
+  const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown'
+  if (
+    !(await rateLimitOk('start-lead', ip, 10, '10 m', { whenUnconfigured: 'allow' })) ||
+    !(await rateLimitOk('start-lead-mail', email, 5, '1 h', { whenUnconfigured: 'allow' }))
+  ) {
+    return { ok: false, error: 'Too many tries. Please wait a few minutes and try again.' }
+  }
   // Never re-touch a hard-bounced / complained address.
   if (await isSuppressed(email)) return { ok: true }
 
@@ -67,7 +83,7 @@ export async function captureLead(input: {
   // trigger), and per-space tenancy (ADR-624) makes an unscoped email lookup a multi-row throw hazard.
   const rootId = await loadRootSpaceId()
   const { data: existing } = rootId
-    ? await admin.from('contacts').select('id, display_name, meta').eq('space_id', rootId).eq('email', email).maybeSingle()
+    ? await admin.from('contacts').select('id, display_name, meta, consent_state').eq('space_id', rootId).eq('email', email).maybeSingle()
     : { data: null }
 
   const existingMeta = (existing?.meta && typeof existing.meta === 'object' ? existing.meta : {}) as Record<string, unknown>
@@ -120,9 +136,10 @@ export async function captureLead(input: {
     return { ok: false, error: 'Something went wrong. Please try again.' }
   }
 
-  // Enroll the lead in their persona's nurture sequence (ADR-131). Fire-safe — a
-  // missing/disabled sequence is a no-op, and it never throws into capture.
-  if (contactId) await enrollInNurture({ contactId, email, persona })
+  // Enroll the lead in their persona's nurture sequence (ADR-131) only when the address has already
+  // said yes (SCAN-1216): a typed address on this door is unconfirmed, and mailing it would let a
+  // stranger make Frequency email a third party. Fire-safe: a missing/disabled sequence is a no-op.
+  if (contactId && existing?.consent_state === 'subscribed') await enrollInNurture({ contactId, email, persona })
 
   return { ok: true }
 }

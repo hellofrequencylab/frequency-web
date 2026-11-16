@@ -51,7 +51,7 @@ export function parseVcard(raw: unknown): VcardConfig {
 
 // vCard 3.0 text escaping.
 function esc(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;')
+  return s.replace(/\\/g, '\\\\').replace(/\r\n|\r|\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;')
 }
 
 export interface VcardProfile {
