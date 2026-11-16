@@ -109,6 +109,7 @@ export async function CrmBody({
               slug={space.slug}
               selectedContactId={null}
               linkBase={boardHref}
+              canEmail={caps.canEditProfile}
             />
           </Suspense>
         </>

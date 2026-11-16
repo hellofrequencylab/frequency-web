@@ -31,7 +31,7 @@ import { entryKind } from '@/lib/calendar/registry'
 import { planEntryDelete } from '@/lib/calendar/series-choice'
 import { productionDoorHref } from '@/lib/calendar/stage-timeline'
 import type { DetailsActions, RecordSubject } from './suite-details-actions'
-import { ChoiceField, DateField, Row, TextField, TodoCheck, useRun } from './suite-details-fields'
+import { ChoiceField, DateField, Row, TextField, TimeField, TodoCheck, useRun } from './suite-details-fields'
 import { SuitePlanSummary } from './suite-plan-summary'
 import { SuiteRecord, useRecord } from './suite-record'
 import type { SuiteContext, SuiteSelection } from './suite-types'
@@ -377,6 +377,14 @@ function runCall(actions: DetailsActions, call: WriteCall) {
 
 // ── A TO-DO ─────────────────────────────────────────────────────────────────────────────────────
 
+/** The phase the panel shows, as the column spells it, and the choices that write it. */
+const PHASE_VALUE: Record<string, string> = { Before: 'before', 'Day of': 'day_of', After: 'after' }
+const PHASE_CHOICES = [
+  { value: 'before', label: 'Before' },
+  { value: 'day_of', label: 'Day of' },
+  { value: 'after', label: 'After' },
+]
+
 function TodoBody({ task, ctx, actions, onClose, say }: PanelProps & { task: SuiteTask }) {
   const canEdit = !!ctx.canEdit
   const { error, busy, run, fail } = useRun()
@@ -424,7 +432,30 @@ function TodoBody({ task, ctx, actions, onClose, say }: PanelProps & { task: Sui
           )}
           {late ? <span className="cal-flag">Overdue</span> : null}
         </Row>
-        {task.phase ? <Row label="Phase">{[task.phase, offsetPhrase(task.dueOffsetDays)].filter(Boolean).join(', ')}</Row> : null}
+        {editable && actions.setTaskPlanning ? (
+          <>
+            <Row label="Phase">
+              <ChoiceField
+                label="Phase"
+                value={PHASE_VALUE[task.phase ?? ''] ?? ''}
+                emptyLabel="No phase"
+                choices={PHASE_CHOICES}
+                disabled={busy}
+                onCommit={(v) => void run(() => (actions.setTaskPlanning as NonNullable<typeof actions.setTaskPlanning>)(task.id, { phase: (v || null) as 'before' | 'day_of' | 'after' | null }))}
+              />
+            </Row>
+            <Row label="Starts at">
+              <TimeField
+                label="Starts at"
+                value={task.startMin ?? null}
+                disabled={busy}
+                onCommit={(minute) => void run(() => (actions.setTaskPlanning as NonNullable<typeof actions.setTaskPlanning>)(task.id, { startMinute: minute }))}
+              />
+            </Row>
+          </>
+        ) : task.phase ? (
+          <Row label="Phase">{[task.phase, offsetPhrase(task.dueOffsetDays)].filter(Boolean).join(', ')}</Row>
+        ) : null}
         {task.plan && editable ? (
           <Row label="Owner">
             <ChoiceField

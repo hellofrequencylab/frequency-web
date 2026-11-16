@@ -1,8 +1,8 @@
-import Link from 'next/link'
-import { ChevronRight, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { getContacts } from '@/lib/crm/pipeline'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { SpaceContactsList } from './space-contacts-list'
 
 // PER-SPACE CONTACTS (ENTITY-SPACES-BUILD Phase 2). A self-fetching server component that lists THIS
 // Space's CRM contacts, scoped by space_id. Each row links to the detail/notes surface for that contact
@@ -16,6 +16,7 @@ export async function SpaceContacts({
   slug,
   selectedContactId,
   linkBase,
+  canEmail = false,
 }: {
   spaceId: string
   slug: string
@@ -23,6 +24,8 @@ export async function SpaceContacts({
   /** The path a contact row links to, with `?contact=<id>` appended. Defaults to the canonical CRM
    *  board; the board passes `/spaces/<slug>/crm` too. */
   linkBase?: string
+  /** A Space editor may pick people and email them (SCAN-1221); the send re-gates server-side. */
+  canEmail?: boolean
 }) {
   const base = linkBase ?? `/spaces/${slug}/crm`
   const contacts = await getContacts(spaceId)
@@ -43,32 +46,14 @@ export async function SpaceContacts({
   return (
     <section>
       <SectionHeader title="Contacts" count={contacts.length} />
-      <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
-        {contacts.map((c) => {
-          const selected = c.id === selectedContactId
-          return (
-            <li key={c.id}>
-              <Link
-                href={`${base}?contact=${c.id}`}
-                aria-current={selected ? 'true' : undefined}
-                className={`flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-surface-elevated ${
-                  selected ? 'bg-surface-elevated' : ''
-                }`}
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-body-sm font-semibold text-text">
-                    {c.display_name || c.email || 'Unnamed contact'}
-                  </p>
-                  {c.display_name && c.email && (
-                    <p className="truncate text-meta text-muted">{c.email}</p>
-                  )}
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
+      <SpaceContactsList
+        spaceId={spaceId}
+        slug={slug}
+        base={base}
+        selectedContactId={selectedContactId}
+        canEmail={canEmail}
+        contacts={contacts.map((c) => ({ id: c.id, email: c.email, displayName: c.display_name }))}
+      />
     </section>
   )
 }

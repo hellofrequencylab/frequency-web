@@ -14,7 +14,7 @@ import { groupByPhase } from '@/lib/calendar/planner/playbook-schedule'
 import type { PlannerData } from '@/lib/calendar/planner/types'
 import type { DetailsActions } from './suite-details-actions'
 import { CohostBlock } from './suite-cohost'
-import { TodoCheck, useRun } from './suite-details-fields'
+import { DateField, Row, TodoCheck, useRun } from './suite-details-fields'
 import type { SuiteContext, SuiteSelection } from './suite-types'
 
 // THE PLAN CONTEXT CARD (README 1.3). Shown under a Plan, and under any date or to-do that belongs to
@@ -80,6 +80,19 @@ export function SuitePlanSummary({
         </div>
       )}
       {plan.stage === 'pencil' && plan.hold ? <p className="cal-serif">{holdSentence(plan.hold, ctx.today)}</p> : null}
+      {plan.stage === 'pencil' && canEdit && mine && !pending && actions.setPlanHold ? (
+        <dl className="cal-dl">
+          <Row label="Hold dates until">
+            <DateField
+              label="Hold dates until"
+              clearable
+              value={plan.hold ?? ''}
+              disabled={busy}
+              onCommit={(day) => void run(() => (actions.setPlanHold as NonNullable<typeof actions.setPlanHold>)(plan.id, day))}
+            />
+          </Row>
+        </dl>
+      ) : null}
       {options.length > 1 ? (
         <ul className="cal-plain" aria-label="Held dates">
           {options.map((i) => (
