@@ -22,6 +22,7 @@ import { aiEnabled } from '@/lib/ai/client'
 
 import { featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
+import { validateModelValue, z } from '@/lib/ai/schema'
 import type { BusinessProfile } from '../schema'
 import { buildGroundingBlock } from './prompt'
 
@@ -65,13 +66,15 @@ Rules:
 
 Call ${DEMOGRAPHIC_TOOL_NAME} once.`
 
-/** Coerce the model's raw save_demographic output into a clean demographic steer, or undefined. Trims,
- *  drops non-strings, caps length. PURE + total. */
+/** The save_demographic reply (PROG-E8B, the ADR-1287 pattern): one string. */
+const DEMOGRAPHIC_REPLY = z.object({ demographic: z.string() })
+
+/** Read the model's raw save_demographic output into a clean demographic steer through the schema, or undefined.
+ *  Collapses whitespace, caps length; a reply that is not the declared shape is undefined. PURE + total. */
 export function coerceDemographic(raw: unknown): string | undefined {
-  const o = (raw ?? {}) as Record<string, unknown>
-  const v = o.demographic
-  if (typeof v !== 'string') return undefined
-  const trimmed = v.replace(/\s+/g, ' ').trim()
+  const res = validateModelValue(raw, DEMOGRAPHIC_REPLY)
+  if (!res.ok) return undefined
+  const trimmed = res.data.demographic.replace(/\s+/g, ' ').trim()
   if (!trimmed) return undefined
   return trimmed.slice(0, DEMOGRAPHIC_MAX_LEN)
 }
