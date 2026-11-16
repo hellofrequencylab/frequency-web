@@ -190,6 +190,9 @@ export interface CommitResult {
    *  rows were duplicates. Absent on a personal import and on any import that stayed inside the
    *  allowance. Nothing already imported is affected: a full meter stops new rows only. */
   overAllowance?: number
+  /** Contacts this import marked as subscribed because the owner confirmed the list asked for their
+   *  emails (LIVE-2312). Absent when the owner did not confirm, or when nobody changed. */
+  subscribed?: number
 }
 
 // ── Status machine ───────────────────────────────────────────────────────────────

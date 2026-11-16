@@ -9,7 +9,7 @@ import type { ContactImportRow, ColumnMapping } from './types'
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Mutable fakes the mocks read (reset per test).
-let existingRows: { id: string; email: string | null; meta: Record<string, unknown> | null }[] = []
+let existingRows: { id: string; email: string | null; meta: Record<string, unknown> | null; consent_state?: string | null }[] = []
 let insertedRows: Record<string, unknown>[] = []
 let updatedRows: { patch: Record<string, unknown>; id: string }[] = []
 let staff = true
@@ -72,7 +72,7 @@ vi.mock('@/lib/spaces/store', () => ({ getSpaceById: vi.fn() }))
 vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: vi.fn() }))
 vi.mock('@/lib/spaces/functions', () => ({ spaceFunctionAccess: vi.fn() }))
 
-import { commitImport } from './commit'
+import { commitImport, attestedConsent } from './commit'
 import { isError } from '@/lib/action-result'
 import { planCommit, type ExistingKeys } from './dedupe'
 import { createContact, updateContact, existingContactKeys, listContactsForMerge } from '@/lib/connections/store'
@@ -311,5 +311,78 @@ describe('planCommit — email AND phone dedupe (pure)', () => {
     const existing: ExistingKeys = { emails: new Set(['known@x.com']), phones: new Set() }
     const plan = planCommit(rows([{ Email: 'known@x.com', Phone: '555-999-8888' }]), MAP, existing, 'fill_empty')
     expect(plan.diff).toMatchObject({ created: 0, merged: 1 })
+  })
+})
+
+// LIVE-2312 (owner ruling 2026-11-16): a Space owner may confirm at import that everyone on the list
+// asked for their emails. The confirmation subscribes new and never-asked contacts, records who and
+// when on each one, and never overrides an unsubscribe.
+describe('commitImport — Space target, owner-confirmed consent', () => {
+  const MAP: ColumnMapping[] = [col('Name', 'displayName'), col('Email', 'email')]
+  const allow = () => {
+    vi.mocked(getSpaceById).mockResolvedValue({ id: 'space1' } as never)
+    vi.mocked(getSpaceCapabilities).mockResolvedValue({ role: 'owner' } as never)
+    vi.mocked(spaceFunctionAccess).mockReturnValue(true)
+  }
+
+  it('without the confirmation, imported contacts stay unknown (ADR-099 unchanged)', async () => {
+    allow()
+    importRow = spaceRow(['Name', 'Email'], MAP, [{ Name: 'Ana', Email: 'ana@x.com' }])
+    const res = await commitImport('imp1', 'owner1')
+    expect(isError(res)).toBe(false)
+    expect(insertedRows[0]).toMatchObject({ consent_state: 'unknown' })
+    expect((insertedRows[0].meta as Record<string, unknown>).consent_attestation).toBeUndefined()
+    if (!isError(res)) expect(res.data.subscribed).toBeUndefined()
+  })
+
+  it('with the confirmation, new contacts are subscribed and carry who, when and which import', async () => {
+    allow()
+    importRow = spaceRow(['Name', 'Email'], MAP, [{ Name: 'Ana', Email: 'ana@x.com' }], { filename: 'subscribers.csv' })
+    const res = await commitImport('imp1', 'owner1', { attestConsent: true })
+    expect(isError(res)).toBe(false)
+    expect(insertedRows[0]).toMatchObject({ consent_state: 'subscribed' })
+    expect((insertedRows[0].meta as Record<string, unknown>).consent_attestation).toMatchObject({
+      by: 'owner1',
+      import: 'imp1',
+      file: 'subscribers.csv',
+    })
+    if (!isError(res)) expect(res.data).toMatchObject({ created: 1, subscribed: 1 })
+  })
+
+  it('confirms an existing never-asked contact, and leaves an unsubscribed one alone', async () => {
+    allow()
+    existingRows = [
+      { id: 'c1', email: 'never@x.com', meta: {}, consent_state: 'unknown' },
+      { id: 'c2', email: 'gone@x.com', meta: {}, consent_state: 'unsubscribed' },
+    ]
+    importRow = spaceRow(['Name', 'Email'], MAP, [
+      { Name: 'Never', Email: 'never@x.com' },
+      { Name: 'Gone', Email: 'gone@x.com' },
+    ])
+    const res = await commitImport('imp1', 'owner1', { attestConsent: true })
+    expect(isError(res)).toBe(false)
+    const byId = Object.fromEntries(updatedRows.map((u) => [u.id, u.patch]))
+    expect(byId.c1).toMatchObject({ consent_state: 'subscribed' })
+    expect(byId.c2.consent_state).toBeUndefined()
+    if (!isError(res)) expect(res.data).toMatchObject({ merged: 2, subscribed: 1 })
+  })
+
+  it('ignores the confirmation outside a Space (the platform hub never self-subscribes)', async () => {
+    importRow = platformRow([{ Name: 'Ana', Email: 'ana@x.com', Phone: '' }])
+    await commitImport('imp1', 'staff1', { attestConsent: true })
+    expect(insertedRows[0]).toMatchObject({ consent_state: 'unknown' })
+  })
+})
+
+describe('attestedConsent (pure)', () => {
+  const att = { by: 'o', at: 't', import: 'i', file: null }
+  it('subscribes unknown and new contacts only when confirmed', () => {
+    expect(attestedConsent(null, att)?.consent_state).toBe('subscribed')
+    expect(attestedConsent('unknown', att)?.consent_state).toBe('subscribed')
+    expect(attestedConsent('unknown', null)).toBeNull()
+  })
+  it('never overrides an unsubscribe, and leaves a subscribed contact as is', () => {
+    expect(attestedConsent('unsubscribed', att)).toBeNull()
+    expect(attestedConsent('subscribed', att)).toBeNull()
   })
 })
