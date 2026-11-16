@@ -43,7 +43,7 @@ end $$;
 select jsonb_array_length(website_editor->'published'->'pages') as pages, website_editor->>'revision' as revision from space_private_state where space_id = (select id from spaces where slug = '${FREE_HUMAN_SLUG}');
 commit;
 -- UNDO: the website state before this ran is in zz_backup_free_human_pages_20261030 (column website_editor); ask Claude to restore it as the next revision.
--- NOTE: the copy this script made when it first ran (zz_backup_free_human_pages_20261030) was dropped on 2026-11-16 by migration 20270346067000_drop_six_zz_backup_tables.sql (SCAN-1238). The UNDO above only works for a fresh run, which makes the copy again.
+-- NOTE: the copy this script made when it first ran (zz_backup_free_human_pages_20261030) was dropped on 2026-11-16 by migration 20270346071000_drop_six_zz_backup_tables.sql (SCAN-1238). The UNDO above only works for a fresh run, which makes the copy again.
 `
   writeFileSync(`${out}/free-human-pages.sql`, sql)
 })
