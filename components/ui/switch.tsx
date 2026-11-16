@@ -12,6 +12,7 @@ export function Switch({
   disabled = false,
   pending = false,
   id,
+  size = 'md',
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
 }: {
@@ -24,6 +25,10 @@ export function Switch({
    *  flight. Distinct from `disabled`, which means "not available at all". */
   pending?: boolean
   id?: string
+  /** `xs` is the 28x16 switch for a dense control rail (the block inspector's 280px column, a table's
+   *  bulk row), where the 46x28 `.sw` would outweigh the label beside it. Same `.sw` behaviour and
+   *  fill; only the geometry shrinks (`.sw.xs` in the kit sheets). SCAN-1133 slice 10. */
+  size?: 'md' | 'xs'
   'aria-label'?: string
   'aria-labelledby'?: string
 }) {
@@ -40,7 +45,7 @@ export function Switch({
       aria-labelledby={ariaLabelledBy}
       disabled={inert}
       onClick={() => onCheckedChange(!checked)}
-      className={cn('sw', checked && 'on', pending && 'mu-pending')}
+      className={cn('sw', size === 'xs' && 'xs', checked && 'on', pending && 'mu-pending')}
     />
   )
 }

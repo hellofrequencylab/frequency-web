@@ -11,6 +11,13 @@ export function canvasViewportWidth(surface: BuilderSurface, device: BuilderDevi
   return surfaceFrame(surface, BUILDER_DEVICE_WIDTH[device]).width
 }
 
+/** How much to shrink a frame `width` wide so it fits `room` pixels (PROG-E6C): 1 when it fits or the room is not
+ *  measured yet, never above 1, and never below a quarter, where nothing in it could be read. */
+export function canvasFitScale(width: number, room: number | null): number {
+  if (!room || !Number.isFinite(room) || room <= 0 || !(width > 0) || room >= width) return 1
+  return Math.max(0.25, Math.floor((room / width) * 1000) / 1000)
+}
+
 type Point = Readonly<{ clientX: number; clientY: number }>
 
 type FrameGeometry = Readonly<{

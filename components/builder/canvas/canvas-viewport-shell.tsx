@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
-import { bubbleEvent, CANVAS_DEVICES, canvasViewportWidth, type CanvasPointerEvent } from '@/lib/builder/canvas-viewport'
+import { bubbleEvent, CANVAS_DEVICES, canvasFitScale, canvasViewportWidth, type CanvasPointerEvent } from '@/lib/builder/canvas-viewport'
 import type { BuilderDevice } from '@/lib/builder/state'
 import type { BuilderSurface } from '@/lib/builder/surfaces'
 
@@ -30,6 +30,22 @@ export function CanvasViewportShell({
     if (loaded?.readyState === 'complete' && loaded.URL === 'about:srcdoc' && loaded.body) setMount(loaded.body)
   }, [])
   const width = canvasViewportWidth(surface, device)
+  // On a screen narrower than the device (a desktop or tablet frame on a phone), the frame is drawn smaller to fit
+  // instead of scrolling sideways (PROG-E6C). The page inside still lays out at the device's own width; pointer
+  // events already map through the scale (toParentViewport).
+  const box = useRef<HTMLDivElement | null>(null)
+  const [room, setRoom] = useState<number | null>(null)
+  useEffect(() => {
+    const el = box.current
+    if (!el) return
+    const measure = () => setRoom(el.clientWidth)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const watch = new ResizeObserver(measure)
+    watch.observe(el)
+    return () => watch.disconnect()
+  }, [])
+  const scale = canvasFitScale(width, room)
 
   const relay = (type: CanvasPointerEvent['type'], event: MouseEvent) => {
     if (!frame.current || !onCanvasEvent) return
@@ -60,17 +76,20 @@ export function CanvasViewportShell({
           </Button>
         ))}
       </div>
-      <div className="overflow-x-auto">
-        <iframe
-          ref={hold}
-          title="Page preview"
-          sandbox="allow-same-origin"
-          srcDoc={FRAME_DOCUMENT}
-          width={width}
-          height={height}
-          className="mx-auto block border-0"
-          onLoad={(event) => setMount(event.currentTarget.contentDocument?.body ?? null)}
-        />
+      <div ref={box} className="overflow-x-auto" data-canvas-scale={scale < 1 ? scale.toFixed(3) : undefined}>
+        <div className="mx-auto overflow-hidden" style={scale < 1 ? { width: width * scale, height: height * scale } : { width }}>
+          <iframe
+            ref={hold}
+            title="Page preview"
+            sandbox="allow-same-origin"
+            srcDoc={FRAME_DOCUMENT}
+            width={width}
+            height={height}
+            className="block border-0"
+            style={scale < 1 ? { transform: `scale(${scale})`, transformOrigin: '0 0' } : undefined}
+            onLoad={(event) => setMount(event.currentTarget.contentDocument?.body ?? null)}
+          />
+        </div>
       </div>
       {mount && createPortal(
         <div

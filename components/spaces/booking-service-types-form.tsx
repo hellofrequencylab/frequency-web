@@ -22,6 +22,11 @@ import { IconButton } from '@/components/ui/icon-button'
 
 const DURATIONS = [15, 30, 45, 60, 90, 120] as const
 
+// Matches the server cap: cleanServiceInput in lib/spaces/booking.ts slices descriptions to
+// 1,000 characters. The counter makes the cap visible, so a full field never silently swallows
+// Return or Space.
+const DESCRIPTION_MAX = 1000
+
 interface ServiceDraft {
   id: string | null
   name: string
@@ -199,8 +204,19 @@ export function BookingServiceTypesForm({
                 onChange={(e) => update(i, { description: e.target.value })}
                 placeholder="What this session covers and who it is for."
                 rows={2}
-                maxLength={1000}
+                maxLength={DESCRIPTION_MAX}
+                aria-describedby={`service-desc-count-${i}`}
               />
+              <span
+                id={`service-desc-count-${i}`}
+                aria-live="polite"
+                className={`text-meta ${r.description.length >= DESCRIPTION_MAX ? 'text-danger' : 'text-muted'}`}
+              >
+                {r.description.length.toLocaleString('en-US')} of {DESCRIPTION_MAX.toLocaleString('en-US')}
+                {r.description.length >= DESCRIPTION_MAX ? (
+                  <span className="block">You&apos;ve hit the limit. Trim a little to keep typing.</span>
+                ) : null}
+              </span>
             </label>
 
             {/* Booking questions (P3): asked when a member books this service. */}

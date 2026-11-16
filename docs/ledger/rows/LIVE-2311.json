@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2311",
+  "title": "Mindless theme suite: kit, website, Space page, Spotlight, email, /themes/mindless, and the Mindless Space on mindless.one",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/DESIGN-SYSTEM-INTAKE.md",
+    "ref": "Daniel 2026-11-16: create the full theme kit for Mindless, find the Mindless Space and redesign everything, get the web theme ready to launch on mindless.one"
+  },
+  "detail": "Mindless is its own theme (id `mindless`, editor theme `Mindless`, tokens --ml-*): a meditation brand for loud lives, built from the Mindless Design System (Claude Design). Warm ink and bone, one paint accent (Yellow, Pink, Blue) and a small offset paint per section, Rubik Wet Paint drip display over Archivo, night first with a Day register (yellow is never text on Day: the accent phrase sits on a highlighter). Built in stages like CyberWitch (LIVE-2111), each its own PR, hidden from every picker until the last lands.\n\nStage 1: tokens (lib/theme/mindless.ts), skin and block sheet, faces (Rubik Wet Paint, Archivo; both OFL), registration in every theme table, theme contract, block-contract map, schema 2 dials (register, type) and three Looks. Stage 2: photos, six starter kits, manifest. Stage 3: Spotlight layouts and emails. Stage 4: design-system intake and /themes/mindless. Then the Mindless Space wears it and mindless.one is attached. Deviation: Pieces NFI (the logotype face) does not ship as a web font, its licence is unverified; the wordmark is the design's SVG.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const f=require('fs');const need=['lib/theme/mindless.ts','components/sites/mindless-css.ts','components/sites/mindless-fonts.ts','lib/sites/kits/mindless-variants.ts','lib/theme/mindless-kit-email.ts','components/spotlight/mindless-kit-layouts.tsx','app/(marketing)/themes/mindless/page.tsx','docs/design-systems/mindless/rules.json','lib/themes/manifests/mindless.manifest.json'];const miss=need.filter(p=>!f.existsSync(p));if(miss.length){console.error('missing: '+miss.join(', '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

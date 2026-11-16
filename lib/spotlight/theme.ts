@@ -105,7 +105,7 @@ export const EMPTY_THEME: SpotlightTheme = {
 }
 
 /** A Spotlight preset read from a Mega Theme's flat token set. */
-function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple-kit' | 'free-human' | 'services' | 'new-world' | 'cyberwitch', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
+function surfacePreset(id: 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple-kit' | 'free-human' | 'services' | 'new-world' | 'cyberwitch' | 'mindless', font: SpotlightTheme['font'], card: SpotlightCard): SpotlightTheme {
   const s = MEGA_SURFACES[id]!
   return {
     accent: s.accent.accent.toLowerCase(), surface: s.raised.toLowerCase(), text: s.text.toLowerCase(), font, card,
@@ -167,6 +167,9 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   // CyberWitch (lib/theme/cyberwitch.ts): iron and bone, one Hex accent, square plate cards. Spectral and UnifrakturCook load on websites only,
   // so the nearest allowlisted faces stand in.
   { id: 'cyberwitch', label: 'CyberWitch', theme: { ...surfacePreset('cyberwitch', { heading: 'display', body: 'serif' }, { radius: 'sm', shadow: 'strong', style: 'solid' }), layout: 'cyberwitch-kit:stack', kit: 'general' } },
+  // Mindless (lib/theme/mindless.ts): warm ink and bone, one Yellow accent, soft raised cards. Rubik Wet Paint and Archivo load on websites
+  // only, so the nearest allowlisted faces stand in.
+  { id: 'mindless', label: 'Mindless', theme: { ...surfacePreset('mindless', { heading: 'display', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }) } },
   {
     id: 'mono', label: 'Mono',
     theme: { accent: '#111111', surface: '#ffffff', text: '#111111', font: { heading: 'sans', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 160, focusY: 50 },

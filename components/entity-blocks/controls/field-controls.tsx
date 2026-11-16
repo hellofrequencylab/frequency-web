@@ -29,6 +29,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Input } from '@/components/ui/field'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { capsLabel } from '@/components/ui/caps-label'
+import { Switch } from '@/components/ui/switch'
 
 // THE REUSABLE INSPECTOR CONTROL PRIMITIVES (ADR-569 C6). A tight, modern, Framer/Webflow/Notion-style set
 // of controls the block editor composes — and that a FEATURE agent attaches to a block by DECLARING a field,
@@ -157,24 +158,7 @@ export function Toggle({
   disabled?: boolean
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={ariaLabel}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-pill transition-colors disabled:opacity-40 ${
-        checked ? 'bg-primary' : 'bg-border-strong/50'
-      }`}
-    >
-      <span
-        aria-hidden
-        className={`inline-block h-3 w-3 transform rounded-pill bg-surface shadow-sm transition-transform ${
-          checked ? 'translate-x-3.5' : 'translate-x-0.5'
-        }`}
-      />
-    </button>
+    <Switch size="xs" aria-label={ariaLabel} checked={checked} onCheckedChange={onChange} disabled={disabled} />
   )
 }
 

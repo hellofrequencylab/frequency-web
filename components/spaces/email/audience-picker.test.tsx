@@ -96,6 +96,27 @@ describe('AudiencePicker edit mode', () => {
     expect(container!.querySelector('input[aria-label="Segment name"]')).toBeNull()
     expect(container!.textContent).toContain('Save this as a segment')
   })
+
+  // LIVE-2315: saving a segment used to clear the name and refresh with no word that it worked.
+  it('confirms a saved segment by name and selects it', async () => {
+    const onFilterChange = vi.fn()
+    await render(
+      <AudiencePicker
+        spaceId="space-A"
+        slug="river-studio"
+        tags={[]}
+        segments={SEGMENTS}
+        filter={{ tag: null }}
+        onFilterChange={onFilterChange}
+      />,
+    )
+    const field = container!.querySelector<HTMLInputElement>('input[placeholder="Name this audience"]')!
+    await act(async () => setInputValue(field, 'Newsletter fans'))
+    const button = [...container!.querySelectorAll('button')].find((b) => b.textContent?.includes('Save segment'))!
+    await act(async () => button.click())
+    expect(container!.textContent).toContain('Saved. Find \u201cNewsletter fans\u201d under Send to, Saved segments.')
+    expect(onFilterChange).toHaveBeenCalledWith({ segmentId: 'x' })
+  })
 })
 
 // MEMBER SEGMENTS (LIVE-293). The retired Space Message center's one irreplaceable capability. These
