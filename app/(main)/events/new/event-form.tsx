@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition, type DragEvent } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -166,6 +166,11 @@ function FormSection({
       {children}
     </section>
   )
+}
+
+/** Cancel a drag/drop the form itself receives, so a stray drop never navigates away (LIVE-2318). */
+function preventStrayDrop(e: DragEvent<HTMLFormElement>) {
+  e.preventDefault()
 }
 
 export function EventForm({
@@ -476,7 +481,14 @@ export function EventForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-8">
+    <form
+      onSubmit={submit}
+      // A file dropped anywhere on the form outside a photo field must not make the browser open it
+      // (Safari navigates to the file and the form is lost). Photo fields handle their own drops.
+      onDragOver={preventStrayDrop}
+      onDrop={preventStrayDrop}
+      className="space-y-8"
+    >
       {/* Instructional header — set the tone: fill in what you have, refine the rest later. */}
       <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
         <h1 className="text-body font-semibold text-text">
