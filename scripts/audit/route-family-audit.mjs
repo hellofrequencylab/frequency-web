@@ -18,9 +18,12 @@ const BASE = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, ''
 const OUT = arg('--out', 'audit-out')
 const ROUTES = (arg('--routes', '') || '').split(',').filter(Boolean)
 export const DEFAULT_ROUTES = [
-  '/', '/pricing', '/features', '/about', '/what-is-frequency', '/create-a-space', '/themes', '/start',
-  '/stories', '/the-community', '/loneliness', '/friendship-as-an-adult', '/how-to-start-a-circle',
-  '/how-to-build-community', '/how-to-be-more-social', '/tools-for-community-builders',
+  // Final URLs only (SCAN-1263): /what-is-frequency, /tools-for-community-builders, /stories and /start
+  // redirect to /about, /how-to-build-community, /the-community and /join, so listing them audited those
+  // three pages twice under the wrong name and never named /join.
+  '/', '/pricing', '/features', '/about', '/create-a-space', '/themes', '/join',
+  '/the-community', '/loneliness', '/friendship-as-an-adult', '/how-to-start-a-circle',
+  '/how-to-build-community', '/how-to-be-more-social',
   '/discover', '/events', '/guidelines', '/privacy', '/accessibility', '/sign-in',
 ]
 const VIEWPORTS = [{ name: '390', width: 390, height: 844 }, { name: '1280', width: 1280, height: 900 }]
