@@ -39,6 +39,7 @@ export function HostFunnelForm({
   const [area, setArea] = useState(initialArea ?? '')
   const [link, setLink] = useState('')
   const [busy, setBusy] = useState(false)
+  const [trap, setTrap] = useState('')
   const [error, setError] = useState('')
 
   const regions = region
@@ -57,6 +58,7 @@ export function HostFunnelForm({
       name,
       funnel: params,
       host: { subject, area, link },
+      website: trap,
     })
     if (!res.ok) {
       setError(res.error)
@@ -124,6 +126,12 @@ export function HostFunnelForm({
                 onChange={(e) => setLink(e.target.value)}
                 placeholder="Instagram, website or class listing"
               />
+            </label>
+
+            {/* A field people never see; a bot that fills it is not a lead. */}
+            <label aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
+              Website
+              <input tabIndex={-1} autoComplete="off" name="website" value={trap} onChange={(e) => setTrap(e.target.value)} />
             </label>
 
             {error && (
