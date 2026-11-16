@@ -29,12 +29,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { decide, type HuntAction, type PartnerRow, type RoleGrant } from '@/lib/hunts/authz'
 import { publishVenueBlocks } from '@/lib/hunts/partners'
 import { slugify } from '@/lib/utils'
+import { generateSlug } from '@/lib/qr/codes'
 import {
   canonicalContent,
   evidencePolicyUpdates,
   parseTrailDraft,
+  planStopPlacements,
   publishChecklist,
   publishRows,
+  stopEvidencePolicy,
+  stopKey,
   type ChecklistItem,
   type DraftStore,
   type TrailDraft,
@@ -81,6 +85,8 @@ export type TrailEditorState = {
   published: boolean
   publishedAt: string | null
   canPublish: boolean
+  /** FH-020X: a venue Space runs this Trail, so its staff can confirm a stop. */
+  hasVenue: boolean
   draft: TrailDraft
 }
 
@@ -208,6 +214,7 @@ export async function loadTrail(huntId: string, actor: Actor): Promise<TrailEdit
     published: version?.status === 'published' || version?.status === 'superseded',
     publishedAt: version?.published_at ?? null,
     canPublish,
+    hasVenue: hunt.owner_space_id !== null,
     draft: trailOf(version),
   }
 }
@@ -324,8 +331,81 @@ export async function markRouteTested(huntId: string, actor: Actor, revision: nu
 
 const contentHash = (draft: TrailDraft): string => createHash('sha256').update(canonicalContent(draft)).digest('hex')
 
+/**
+ * THE placement binding command (FH-020X): every stop of the version being published gets one live
+ * placement bound to its mission. A stop keeps the placement it already has (so a printed code keeps
+ * working in the next version), else one is created: a hunt node at the stop and a QR placement with a
+ * fresh short code (lib/qr/codes.ts). Each binding carries the venue Space (the Space that runs the
+ * Trail, or none) and the evidence policy from `stopEvidencePolicy`, the only writer of
+ * `hold_for_review`. Runs inside publishTrail, after its gate and the authoring switch, before the
+ * version is frozen; every write is idempotent on its keys, so a retry completes instead of duplicating.
+ * Returns the placement id of each stop, in order.
+ */
+async function bindStopPlacements(client: SupabaseClient, hunt: HuntRow, versionId: string, draft: TrailDraft): Promise<string[]> {
+  const [live, bound] = await Promise.all([
+    client.from('hunt_placements').select('id').eq('hunt_id', hunt.id).is('revoked_at', null),
+    client.from('hunt_mission_placements').select('mission_key, placement_id').eq('version_id', versionId).eq('hunt_id', hunt.id),
+  ])
+  if (live.error) throw new Error(live.error.message)
+  if (bound.error) throw new Error(bound.error.message)
+  const boundRows = (bound.data ?? []) as { mission_key: string; placement_id: string }[]
+  const plan = planStopPlacements(draft, { live: new Set(((live.data ?? []) as { id: string }[]).map((p) => p.id)), bound: boundRows })
+
+  const ids: string[] = []
+  for (const [i, planned] of plan.entries()) ids.push(planned ?? (await createStopPlacement(client, hunt, draft.stops[i].place)))
+
+  // A placement this publish reuses may still be bound to another stop's mission on this unpublished
+  // version (a stop moved before a retry). Drop that stale pairing so the placement names one mission.
+  for (const row of boundRows) {
+    const at = ids.indexOf(row.placement_id)
+    if (at < 0 || stopKey(at) === row.mission_key) continue
+    const { error } = await client.from('hunt_mission_placements').delete()
+      .eq('version_id', versionId).eq('hunt_id', hunt.id).eq('mission_key', row.mission_key).eq('placement_id', row.placement_id)
+    if (error) throw new Error(error.message)
+  }
+
+  const rows = ids.map((placement_id, i) => ({
+    version_id: versionId,
+    hunt_id: hunt.id,
+    mission_key: stopKey(i),
+    placement_id,
+    venue_space_id: hunt.owner_space_id,
+    evidence_policy: stopEvidencePolicy(draft.stops[i]),
+  }))
+  // A binding that already exists keeps its row: publishTrail's evidencePolicyUpdates pass then sets its policy.
+  const { error } = await client.from('hunt_mission_placements').upsert(rows, { onConflict: 'version_id,mission_key,placement_id', ignoreDuplicates: true })
+  if (error) throw new Error(error.message)
+  return ids
+}
+
+/** A new hunt node and QR placement for one stop. The short code retries on the rare collision. */
+async function createStopPlacement(client: SupabaseClient, hunt: HuntRow, place: string): Promise<string> {
+  const { data: node, error: nodeError } = await client
+    .from('hunt_nodes')
+    .insert({
+      hunt_id: hunt.id,
+      custodian_space_id: hunt.owner_space_id,
+      custodian_profile_id: hunt.owner_profile_id,
+      safe_descriptor: place.trim().slice(0, 280) || null,
+    })
+    .select('id')
+    .single()
+  if (nodeError || !node) throw new Error(nodeError?.message ?? 'hunt node')
+  let lastError = 'placement'
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, error } = await client
+      .from('hunt_placements')
+      .insert({ hunt_id: hunt.id, hunt_node_id: (node as { id: string }).id, slug: generateSlug(10), medium: 'qr' })
+      .select('id')
+      .single()
+    if (!error && data) return (data as { id: string }).id
+    lastError = error?.message ?? lastError
+  }
+  throw new Error(lastError)
+}
+
 export type PublishResult =
-  | { ok: true; versionNo: number; contentHash: string; visibility: PublishVisibility }
+  | { ok: true; versionNo: number; contentHash: string; visibility: PublishVisibility; placementIds: string[] }
   | { ok: false; reason: 'conflict'; currentRevision: number }
   | { ok: false; reason: 'checklist'; items: ChecklistItem[] }
   | { ok: false; reason: 'forbidden' }
@@ -376,7 +456,7 @@ export async function publishTrail(
   const version = await latestVersion(client, huntId)
   if (!version || version.status !== 'draft') return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
   const draft: TrailDraft = { ...trailOf(version), permissionConfirmed }
-  const checklist = publishChecklist(draft, hunt.revision)
+  const checklist = publishChecklist(draft, hunt.revision, { venue: hunt.owner_space_id !== null })
   if (hunt.revision !== baseRevision) return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
   if (!checklist.ok) return { ok: false, reason: 'checklist', items: checklist.items }
   const blockedVenues = await venuesBlockingPublish(client, hunt, version.id)
@@ -389,6 +469,10 @@ export async function publishTrail(
   const missions = rows.missions.map((m) => ({ ...m, version_id: version.id, hunt_id: huntId }))
   const { error: missionError } = await client.from('hunt_missions').upsert(missions, { onConflict: 'version_id,mission_key' })
   if (missionError) throw new Error(missionError.message)
+
+  // FH-020X: every stop gets a live placement bound to its mission, with the stop's evidence policy.
+  const placementIds = await bindStopPlacements(client, hunt, version.id, draft)
+  const published: TrailDraft = { ...draft, stops: draft.stops.map((s, i) => ({ ...s, placementId: placementIds[i] })) }
 
   // FH-020V: carry each stop's review opt-in onto the placements already bound to this version. A
   // placement bound later takes the same value from `stopEvidencePolicy` for its stop.
@@ -425,7 +509,7 @@ export async function publishTrail(
   const publishedAt = new Date().toISOString()
   const { error: flipError } = await client
     .from('hunt_versions')
-    .update({ status: 'published', content_hash: hash, published_at: publishedAt, policy: { ...(version.policy ?? {}), trail: draft } })
+    .update({ status: 'published', content_hash: hash, published_at: publishedAt, policy: { ...(version.policy ?? {}), trail: published } })
     .eq('id', version.id)
     .eq('hunt_id', huntId)
     .eq('status', 'draft')
@@ -437,5 +521,5 @@ export async function publishTrail(
     .eq('id', huntId)
   if (huntError) throw new Error(huntError.message)
 
-  return { ok: true, versionNo: version.version_no, contentHash: hash, visibility }
+  return { ok: true, versionNo: version.version_no, contentHash: hash, visibility, placementIds }
 }

@@ -39,9 +39,9 @@ Every placement shows the short code as large, high-contrast text and a one-line
 
 ## Staff review opt-in
 
-A resident can switch on "If staff cannot confirm a visit on the spot, keep it for them to check later" for a stop in the Trail editor. The switch is saved on the stop and frozen into the published version. Whoever binds a placement to that stop copies it onto the binding with `stopEvidencePolicy` (`lib/hunts/draft.ts`), which is the only place that writes `evidence_policy.hold_for_review`; publishing does this for placements already bound to the version. Never type the JSON by hand.
+A resident can switch on "If staff cannot confirm a visit on the spot, keep it for them to check later" for a stop in the Trail editor. The switch is saved on the stop and frozen into the published version. Publishing binds a placement to every stop (FH-020X, `bindStopPlacements` in `lib/hunts/store.ts`): a stop keeps the live placement it already has, so a printed code keeps working in the next version, and a stop without one gets a new node and QR placement. Each binding copies the switch with `stopEvidencePolicy` (`lib/hunts/draft.ts`), the only place that writes `evidence_policy.hold_for_review`, and names the Space that runs the Trail as its venue. Never type the JSON by hand.
 
-It only matters at a stop that staff confirm. There, a scan with nobody at the door is kept for staff to check instead of refused, and the player reads that their visit was saved. Nothing is credited until staff approve it.
+It only matters at a stop that staff confirm. The resident marks that with "Staff at this place confirm each visit", which publishes the stop at staff assurance. The publish checklist refuses that switch on a Trail no Space runs, because no staff could confirm the visit. There, a scan with nobody at the door is kept for staff to check instead of refused, and the player reads that their visit was saved. Nothing is credited until staff approve it.
 
 ## Replace or revoke a placement
 

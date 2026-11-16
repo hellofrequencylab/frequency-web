@@ -170,7 +170,7 @@ describe('the Hunt manifest and the draft agree on a stop (FH-020V)', () => {
   const fields = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'stops')?.fields ?? []
   it('offers the review opt-in as a switch, with no raw JSON or policy field', () => {
     expect(fields.find((f) => f.path === 'holdForReview')?.kind).toBe('toggle')
-    expect(fields.map((f) => f.kind).sort()).toEqual(['longtext', 'text', 'text', 'toggle', 'toggle'])
+    expect(fields.map((f) => f.kind).sort()).toEqual(['longtext', 'text', 'text', 'toggle', 'toggle', 'toggle'])
     expect(fields.some((f) => /policy|json/i.test(f.path))).toBe(false)
   })
   it('keeps every manifest stop field through a save', () => {
