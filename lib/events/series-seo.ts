@@ -244,15 +244,13 @@ export async function seriesSeoFacts(row: SeriesSeoRow): Promise<SeriesSeoFacts>
     const live = () =>
       admin
         .from('events')
-        .select('id, crawl_space:spaces!space_id()', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
+        .or(`id.eq.${key},parent_event_id.eq.${key}`)
         .eq('status', 'published')
         .eq('visibility', 'public')
         .eq('is_cancelled', false)
         .eq('is_demo', false)
         .is('removed_at', null)
-        .eq('crawl_space.visibility', 'network')
-        .eq('crawl_space.status', 'active')
-        .or(`and(or(id.eq.${key},parent_event_id.eq.${key}),or(space_id.is.null,crawl_space.not.is.null))`)
         .gte('starts_at', floor)
 
     const { count, error } = await live().lt('starts_at', row.starts_at)
@@ -334,15 +332,12 @@ export async function listSitemapEventEntries(opts: {
     const floor = upcomingFloor()
     const publicRows = () => admin
       .from('events')
-      .select(`id, slug, starts_at, ends_at, time_zone, is_cancelled, cover_image_path, updated_at, ${SERIES_COLUMNS}, crawl_space:spaces!space_id()`)
+      .select(`id, slug, starts_at, ends_at, time_zone, is_cancelled, cover_image_path, updated_at, ${SERIES_COLUMNS}, space_id, crawl_space:spaces!space_id(status, visibility)`)
       .eq('status', 'published')
       .eq('visibility', 'public')
       .eq('is_cancelled', false)
       .eq('is_demo', false)
       .is('removed_at', null)
-      .eq('crawl_space.visibility', 'network')
-      .eq('crawl_space.status', 'active')
-      .or('space_id.is.null,crawl_space.not.is.null')
     const upcomingQuery = () => publicRows()
       .gte('starts_at', floor)
       .order('starts_at', { ascending: true })
@@ -364,6 +359,8 @@ export async function listSitemapEventEntries(opts: {
       recurrence_type: string | null
       recurrence_until: string | null
       parent_event_id: string | null
+      space_id: string | null
+      crawl_space: { status: string; visibility: string } | null
     }
     const rows = data as Row[]
 
@@ -376,7 +373,9 @@ export async function listSitemapEventEntries(opts: {
     })
 
     const now = Date.now()
-    const liveSeriesKeys = new Set(rows.filter(row => !eventHasEnded(row, now)).map(seriesKey))
+    const publiclyReachable = (row: Row) => row.space_id == null
+      || (row.crawl_space?.status === 'active' && row.crawl_space.visibility === 'network')
+    const liveSeriesKeys = new Set(rows.filter(row => publiclyReachable(row) && !eventHasEnded(row, now)).map(seriesKey))
     const upcomingIds = new Set(rows.map(row => row.id))
     // Only fetch earlier anchors for series that still have a public date. The selected IDs have
     // already passed the upcoming reader's cap; batch them to keep PostgREST URLs bounded.
@@ -391,7 +390,7 @@ export async function listSitemapEventEntries(opts: {
         ? await listReadFailClosed('sitemap.events.anchors', anchorsQuery)
         : (await anchorsQuery()).data
       for (const row of (anchors ?? []) as Row[]) {
-        if (row.slug && isSeriesCadence(row.recurrence_type)) olderAnchors.set(row.id, row)
+        if (publiclyReachable(row) && row.slug && isSeriesCadence(row.recurrence_type)) olderAnchors.set(row.id, row)
       }
     }
 
@@ -399,20 +398,20 @@ export async function listSitemapEventEntries(opts: {
     for (const group of groups) {
       const olderAnchor = olderAnchors.get(group.key)
       const candidates = olderAnchor ? [olderAnchor, ...group.representatives] : group.representatives
-      candidates.forEach((row, index) => {
-        if (!row.slug || typeof row.starts_at !== 'string') return
+      candidates.forEach((r, index) => {
+        if (!publiclyReachable(r) || !r.slug || typeof r.starts_at !== 'string') return
         // Fold before dropping ended dates to keep the exact same ordinals as the event pages.
-        const liveAnchor = row.id === group.key && isSeriesCadence(row.recurrence_type)
+        const liveAnchor = r.id === group.key && isSeriesCadence(r.recurrence_type)
           && liveSeriesKeys.has(group.key)
-        if (eventHasEnded(row, now) && !liveAnchor) return
-        const cover = row.cover_image_path
-          ? (admin.storage.from(EVENT_MEDIA_BUCKET).getPublicUrl(row.cover_image_path).data?.publicUrl ?? null)
+        if (eventHasEnded(r, now) && !liveAnchor) return
+        const cover = r.cover_image_path
+          ? (admin.storage.from(EVENT_MEDIA_BUCKET).getPublicUrl(r.cover_image_path).data?.publicUrl ?? null)
           : null
         out.push({
-          slug: row.slug,
-          startsAt: row.starts_at,
+          slug: r.slug,
+          startsAt: r.starts_at,
           isSeriesHome: group.recurring && index === 0,
-          ...(typeof row.updated_at === 'string' ? { updatedAt: row.updated_at } : {}),
+          ...(typeof r.updated_at === 'string' ? { updatedAt: r.updated_at } : {}),
           ...(cover ? { image: cover } : {}),
         })
       })
