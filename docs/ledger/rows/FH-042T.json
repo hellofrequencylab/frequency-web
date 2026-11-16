@@ -1,0 +1,18 @@
+{
+  "id": "FH-042T",
+  "title": "Hunts FH-042T: Decide and test the choice-group race in hunt_claim_apply against real Postgres",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "lib/hunts/claim-store.ts",
+    "ref": "Split from FH-042S (2026-11-16): the answer form, the locked-Mystery projection and the fork and Mystery authoring shipped dark; the SQL decision and the live race run move here."
+  },
+  "detail": "Requires FH-042S. Today an exclusive choice is enforced in TypeScript: claimAsPlayer evaluates the graph and hunt_claim_apply compares the progress count under the run lock, so of two branches claimed at once the second answers stale_progress, rereads and is refused. A staff approval does not take that path, which is the gap named in FH-042. Owed: (1) a decision, recorded as an ADR, on whether hunt_claim_apply should itself refuse a credit for a second member of a choice_group on the same run; if yes, the migration goes through the serial database gate and the staff approval path inherits it; (2) a pgTAP test, or a recorded live two-session run, of two members of one choice group claimed at once on one run against real Postgres, showing exactly one credit. Done when supabase/tests/hunt_choice_race.test.sql exists and passes in the db-tests workflow, and the ADR is filed. Owner role: Game systems. Hunts switches stay OFF.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"node:fs\").existsSync(\"supabase/tests/hunt_choice_race.test.sql\")?0:1)'"
+  }
+}

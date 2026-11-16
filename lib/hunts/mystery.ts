@@ -67,3 +67,37 @@ export function judgeAnswer(input: { stored: string | null | undefined; attempt:
   if (attemptsLeft === 0) return { outcome: 'locked', attemptsLeft: 0, showHint: true }
   return { outcome: 'wrong', attemptsLeft, showHint: used + 1 >= HINT_AFTER_ATTEMPTS }
 }
+
+/**
+ * FH-042S: seal the Mystery answers of a draft as it arrives from the editor, before anything reads or
+ * stores it. Each `mysteries[i].answer` the resident typed becomes `answerHash` and the plain answer is
+ * removed; a row with no new answer keeps the hash it had. Everything else passes through untouched for
+ * lib/hunts/draft.ts `parseTrailDraft`, which keeps only a well-formed hash. Server only (node:crypto).
+ */
+export function sealDraftAnswers(input: unknown): unknown {
+  if (!input || typeof input !== 'object' || !Array.isArray((input as { mysteries?: unknown }).mysteries)) return input
+  const draft = input as Record<string, unknown> & { mysteries: unknown[] }
+  return {
+    ...draft,
+    mysteries: draft.mysteries.map((row) => {
+      if (!row || typeof row !== 'object') return row
+      const { answer, ...rest } = row as Record<string, unknown>
+      return typeof answer === 'string' && answer.trim() !== '' ? { ...rest, answerHash: hashAnswer(answer) } : rest
+    }),
+  }
+}
+
+/**
+ * FH-042S: the Mysteries a run can no longer answer. `attempts` are the run's judged guesses (one per
+ * `answer:<n>` claim row, `correct` as the database returns the policy_result field). A Mystery is
+ * locked once MAX_ANSWER_ATTEMPTS guesses are recorded and none was right. Sorted keys.
+ */
+export function lockedMysteries(attempts: readonly { mission_key: string; correct: string | boolean | null }[]): string[] {
+  const used = new Map<string, number>()
+  const solved = new Set<string>()
+  for (const a of attempts) {
+    if (a.correct === true || a.correct === 'true') solved.add(a.mission_key)
+    used.set(a.mission_key, (used.get(a.mission_key) ?? 0) + 1)
+  }
+  return [...used].filter(([k, n]) => n >= MAX_ANSWER_ATTEMPTS && !solved.has(k)).map(([k]) => k).sort()
+}

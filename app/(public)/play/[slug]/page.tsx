@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
+import { ClaimStopForm } from '@/components/hunts/claim-stop-form'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
@@ -56,6 +57,9 @@ function claimFeedback(result: string | string[] | undefined): string | undefine
     case 'already_credited': return 'You already confirmed this stop.'
     case 'held': return HELD_VISIT_MESSAGE
     case 'unavailable': return 'This stop could not be confirmed.'
+    // FH-042S: a Mystery stop. The answer form below takes it from here.
+    case 'answer': return 'This stop is a Mystery. Type your answer to confirm it.'
+    case 'answer_locked': return 'That was your last try on this Mystery. The Trail has another way on, so open it to keep going.'
   }
 }
 
@@ -69,7 +73,9 @@ export default async function TrailLanding({ params, searchParams }: TrailLandin
   const { p: code, claim } = await searchParams
   const confirmation = profileId ? await loadConfirmation(profileId, trail.slug, code) : null
 
-  const feedback = profileId && !confirmation ? claimFeedback(claim) : undefined
+  // FH-042S: a Mystery answer goes through the same form as the Trail page, with the scanned code kept.
+  const answering = Boolean(confirmation) && claim === 'answer' && typeof code === 'string'
+  const feedback = profileId && (!confirmation || answering) ? claimFeedback(claim) : undefined
   const hero = await resolveDetailHero(`/play/${encodeURIComponent(trail.slug)}`)
   const playPath = `/hunts/${encodeURIComponent(trail.slug)}/play`
   return (
@@ -79,7 +85,9 @@ export default async function TrailLanding({ params, searchParams }: TrailLandin
           <div className="space-y-4">
             <p className="text-body text-muted">{trail.stopCount} {trail.stopCount === 1 ? 'stop' : 'stops'}</p>
             {feedback && <p className="text-body" role="status">{feedback}</p>}
-            {confirmation ? (
+            {answering && typeof code === 'string' ? (
+              <ClaimStopForm slug={trail.slug} code={code} mystery />
+            ) : confirmation ? (
               <form method="post" action={confirmation.action}>
                 <input type="hidden" name="token" value={confirmation.token} />
                 <Button type="submit">Confirm stop</Button>

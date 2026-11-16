@@ -31,6 +31,14 @@ type PlayerStop = {
   /** Only for the current stop when the player asks to reveal it. */
   hint?: string
   canRevealHint?: true
+  /** FH-042S: a playable Mystery stop: prove the place with its code, then type the answer. */
+  mystery?: true
+  /**
+   * FH-042S: why a closed stop is closed for this run, when it is the run's own doing rather than the
+   * place: another stop of its fork was taken, its Mystery stand-in is no longer needed, or the run used
+   * every try on this Mystery (the stand-in is the way on).
+   */
+  closedBecause?: 'other_path' | 'not_needed' | 'answer_locked'
 }
 
 type Projection = {
@@ -52,18 +60,44 @@ export function projectForPlayer(input: {
   revision: number
   /** Omitted for callers that still show a locked teaser. */
   hints?: { enabled: boolean; requestedKey?: string }
+  /**
+   * FH-042S: the Mysteries this run has used every try on (lib/hunts/claim-store.ts `loadLockedAnswers`).
+   * Such a stop is closed for the run and is never the next stop: its stand-in is.
+   */
+  lockedAnswers?: readonly string[]
 }): Projection {
   const ev = evaluate(input.graph, input.credits, input.now)
   const view = playerView(input.huntState)
+  const locked = new Set(input.lockedAnswers ?? [])
+  const stateOf = (key: string): MissionState => {
+    const state = ev.status[key] ?? 'locked'
+    return state === 'eligible' && locked.has(key) ? 'closed' : state
+  }
   const nextKey = view.canClaim && !ev.finished
-    ? input.content.find((c) => ev.status[c.mission_key] === 'eligible')?.mission_key ?? null
+    ? input.content.find((c) => stateOf(c.mission_key) === 'eligible')?.mission_key ?? null
     : null
+  const mission = new Map(input.graph.missions.map((m) => [m.mission_key, m]))
+  const credited = new Set(ev.credited)
+  // A closed stop whose group already holds another credit was closed by the run's own pick.
+  const siblingCredited = (key: string, field: 'choice_group' | 'fallback_group'): boolean => {
+    const g = mission.get(key)?.[field]
+    return typeof g === 'string' && g !== '' && input.graph.missions.some((m) => m.mission_key !== key && m[field] === g && credited.has(m.mission_key))
+  }
+  const closedBecause = (key: string): PlayerStop['closedBecause'] | undefined =>
+    locked.has(key) && ev.status[key] === 'eligible' ? 'answer_locked'
+      : siblingCredited(key, 'choice_group') ? 'other_path'
+        : siblingCredited(key, 'fallback_group') ? 'not_needed'
+          : undefined
   const stops: PlayerStop[] = input.content.map((c, i) => {
-    const state = ev.status[c.mission_key] ?? 'locked'
+    const state = stateOf(c.mission_key)
     const base = { key: c.mission_key, position: i + 1, state }
     if (state === 'credited') return { ...base, place: c.title, clue: c.visible_body }
+    if (state === 'closed') {
+      const why = closedBecause(c.mission_key)
+      if (why) return { ...base, closedBecause: why }
+    }
     if (state === 'eligible') {
-      const visible = { ...base, clue: c.visible_body }
+      const visible = { ...base, clue: c.visible_body, ...(mission.get(c.mission_key)?.kind === 'answer' ? { mystery: true as const } : {}) }
       if (!input.hints?.enabled || c.mission_key !== nextKey || !c.locked_teaser) return visible
       if (input.hints.requestedKey === nextKey) return { ...visible, hint: c.locked_teaser }
       return { ...visible, canRevealHint: true }
@@ -79,6 +113,45 @@ export function projectForPlayer(input: {
     canClaim: view.canClaim && nextKey !== null,
   }
 }
+
+/**
+ * FH-042S: the stops that stand in for a Mystery when its tries run out (the other members of its
+ * fallback group), as 1-based positions on the Trail.
+ */
+export function standInPositions(graph: HuntGraph, content: readonly Pick<StopContent, 'mission_key'>[], missionKey: string): number[] {
+  const group = graph.missions.find((m) => m.mission_key === missionKey)?.fallback_group
+  if (!group) return []
+  const members = new Set(graph.missions.filter((m) => m.fallback_group === group && m.mission_key !== missionKey).map((m) => m.mission_key))
+  return content.flatMap((c, i) => (members.has(c.mission_key) ? [i + 1] : []))
+}
+
+const stopList = (positions: readonly number[]): string =>
+  positions.length === 0 ? '' : positions.length === 1 ? `stop ${positions[0]}` : `stops ${positions.slice(0, -1).join(', ')} or ${positions[positions.length - 1]}`
+
+const tries = (n: number): string => (n === 1 ? '1 try' : `${n} tries`)
+
+/** What a refused Mystery answer says (FH-042S). The hint is the stop's own, released from the second wrong try on. */
+type AnswerRefusalWords = { message: string; hint?: string }
+
+/**
+ * The player's words for a Mystery the claim door did not credit. Plain, warm, no blame, and always a
+ * way on: a wrong answer says how many tries are left, and a locked one names the stand-in stop.
+ */
+export function answerRefusalWords(
+  refusal: { reason: 'answer_required' } | { reason: 'answer_wrong' | 'answer_locked'; attemptsLeft: number; hint?: string },
+  standIns: readonly number[] = [],
+): AnswerRefusalWords {
+  if (refusal.reason === 'answer_required') return { message: 'This stop is a Mystery. Type your answer to confirm it.' }
+  const hint = refusal.hint ? { hint: refusal.hint } : {}
+  if (refusal.reason === 'answer_wrong') {
+    return { message: `Not quite. You have ${tries(Math.max(1, refusal.attemptsLeft))} left.`, ...hint }
+  }
+  const way = standIns.length > 0 ? ` Head to ${stopList(standIns)} instead. It counts the same.` : ' The Trail has another way on, so keep going.'
+  return { message: `That was your last try on this Mystery.${way}`, ...hint }
+}
+
+/** A stop closed because the run took another stop of its fork (FH-042S). */
+export const OTHER_PATH_MESSAGE = 'You took the other path at this fork, so this stop is closed on your run.'
 
 type VisitedPin = { id: string; lat: number; lng: number; title: string; badge?: string; approximate?: true }
 

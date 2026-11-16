@@ -24,6 +24,8 @@ import { FieldControl, SparkShell, StudioField, StudioNote } from '@/components/
 import { HUNT_MANIFEST, HUNT_OPTIONS } from '@/lib/studio/entities/hunt'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import {
+  MAX_CHOICES,
+  MAX_MYSTERIES,
   MAX_REGIONS,
   MAX_STOPS,
   MIN_STOPS,
@@ -33,6 +35,8 @@ import {
   publishChecklist,
   reorderStops,
   stopKey,
+  type DraftChoice,
+  type DraftMystery,
   type DraftRegion,
   type Stop,
   type StopVenue,
@@ -56,6 +60,9 @@ const repeatFields = (arrayPath: string): FieldDef[] => {
 }
 const VENUE_FIELDS = repeatFields('venues')
 const REGION_FIELDS = repeatFields('regions')
+// FH-042S: forks and Mystery stops, from the manifest too.
+const CHOICE_FIELDS = repeatFields('choices')
+const MYSTERY_FIELDS = repeatFields('mysteries')
 
 const STOP_PLACEHOLDER: Record<string, string> = {
   place: 'e.g. The bench under the big fig tree',
@@ -233,6 +240,26 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
   const addRegion = () =>
     edit((d) => ((d.regions ?? []).length >= MAX_REGIONS ? d : { ...d, regions: [...(d.regions ?? []), { name: '', enabled: true, stops: [] }] }))
   const removeRegion = (i: number) => edit((d) => ({ ...d, regions: (d.regions ?? []).filter((_, j) => j !== i) }))
+
+  // ── Forks and Mysteries (FH-042S) ───────────────────────────────────────────────────────
+  // The Mystery answer is write-only: it rides on the next save, where the server keeps only its hash
+  // (app/(main)/hunts/actions.ts). Reloaded, the box is empty and says an answer is set.
+  const setChoice = (i: number, path: string, value: string | string[]) =>
+    edit((d) => ({
+      ...d,
+      choices: (d.choices ?? []).map((c, j) => (j === i ? ({ ...c, [path]: path === 'stops' ? (Array.isArray(value) ? value : [value]) : scalar(value) } as DraftChoice) : c)),
+    }))
+  const addChoice = () => edit((d) => ((d.choices ?? []).length >= MAX_CHOICES ? d : { ...d, choices: [...(d.choices ?? []), { name: '', stops: [] }] }))
+  const removeChoice = (i: number) => edit((d) => ({ ...d, choices: (d.choices ?? []).filter((_, j) => j !== i) }))
+  const setMystery = (i: number, path: string, value: string) =>
+    edit((d) => ({ ...d, mysteries: (d.mysteries ?? []).map((m, j) => (j === i ? ({ ...m, [path]: value } as DraftMystery) : m)) }))
+  const addMystery = () =>
+    edit((d) => {
+      const used = new Set([...(d.choices ?? []).flatMap((c) => c.stops), ...(d.mysteries ?? []).flatMap((m) => [m.stop, m.fallback])])
+      const free = d.stops.map((_, i) => stopKey(i)).filter((k) => !used.has(k))
+      return (d.mysteries ?? []).length >= MAX_MYSTERIES || free.length < 2 ? d : { ...d, mysteries: [...(d.mysteries ?? []), { stop: free[0], fallback: free[1] }] }
+    })
+  const removeMystery = (i: number) => edit((d) => ({ ...d, mysteries: (d.mysteries ?? []).filter((_, j) => j !== i) }))
 
   // ── Preview (in memory, writes nothing) ──────────────────────────────────────────────────
   const [credited, setCredited] = useState<string[]>([])
@@ -494,6 +521,61 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
             </section>
           )}
 
+          <section className="space-y-3" aria-label="Forks">
+            <p className="text-body font-semibold text-text">Forks</p>
+            <p className="text-body-sm text-muted">Optional. A player picks one stop of a fork and the others close for them. Every pick has to lead on to the finish.</p>
+            {(draft.choices ?? []).map((c, i) => (
+              <div key={i} className="space-y-3 rounded-card border border-border bg-surface p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-body font-semibold text-text">{c.name.trim() || `Fork ${i + 1}`}</p>
+                  <Button variant="ghost" size="xs" onClick={() => removeChoice(i)} aria-label={`Remove fork ${i + 1}`}>
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  </Button>
+                </div>
+                {CHOICE_FIELDS.map((def) => (
+                  <StudioField key={def.path} label={def.label}>
+                    <FieldControl def={def} value={def.path === 'stops' ? c.stops : c.name} onChange={(v) => setChoice(i, def.path, v)} loaded={loaded} disabled={conflict !== null} />
+                  </StudioField>
+                ))}
+              </div>
+            ))}
+            <Button variant="secondary" size="sm" onClick={addChoice} disabled={(draft.choices ?? []).length >= MAX_CHOICES || conflict !== null}>
+              <Plus className="h-4 w-4" aria-hidden />
+              Add a fork
+            </Button>
+          </section>
+
+          <section className="space-y-3" aria-label="Mystery stops">
+            <p className="text-body font-semibold text-text">Mystery stops</p>
+            <p className="text-body-sm text-muted">Optional. At a Mystery stop a player finds the code, then types the answer to your clue. They get five tries, and the stop&apos;s hint shows after the second. Pick a stand-in stop, a staffed desk say, for anyone who runs out of tries.</p>
+            {(draft.mysteries ?? []).map((m, i) => (
+              <div key={i} className="space-y-3 rounded-card border border-border bg-surface p-4">
+                <div className="flex items-center justify-end">
+                  <Button variant="ghost" size="xs" onClick={() => removeMystery(i)} aria-label={`Remove Mystery ${i + 1}`}>
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  </Button>
+                </div>
+                {MYSTERY_FIELDS.map((def) => (
+                  <StudioField key={def.path} label={def.label}>
+                    <FieldControl
+                      def={def}
+                      value={(m as Record<string, string | undefined>)[def.path] ?? ''}
+                      onChange={(next) => setMystery(i, def.path, scalar(next))}
+                      loaded={loaded}
+                      placeholder={def.path === 'answer' && m.answerHash ? 'An answer is set. Type a new one to replace it.' : undefined}
+                      hint={def.path === 'answer' ? 'Only a scrambled copy is kept, so nobody can read it back. Spelling counts, capital letters do not.' : undefined}
+                      disabled={conflict !== null}
+                    />
+                  </StudioField>
+                ))}
+              </div>
+            ))}
+            <Button variant="secondary" size="sm" onClick={addMystery} disabled={(draft.mysteries ?? []).length >= MAX_MYSTERIES || draft.stops.length < 2 || conflict !== null}>
+              <Plus className="h-4 w-4" aria-hidden />
+              Add a Mystery stop
+            </Button>
+          </section>
+
           {initial.venueOptions.length > 0 && (
             <section className="space-y-3" aria-label="Partner places">
               <p className="text-body font-semibold text-text">Partner places</p>
@@ -558,7 +640,11 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
                   </>
                 )}
                 {state === 'locked' && <p className="mt-1 text-body-sm text-muted">Opens after stop {i}.</p>}
-                {state === 'closed' && <p className="mt-1 text-body-sm text-muted">Closed for now. This stop is not taking visits.</p>}
+                {state === 'closed' && (
+                  <p className="mt-1 text-body-sm text-muted">
+                    {(draft.choices ?? []).some((c) => c.stops.includes(key)) ? 'You took the other path at this fork.' : (draft.mysteries ?? []).some((m) => m.stop === key || m.fallback === key) ? 'Not needed now. Its Mystery or stand-in was already found.' : 'Closed for now. This stop is not taking visits.'}
+                  </p>
+                )}
               </div>
             )
           })}
@@ -606,7 +692,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
                       </button>
                     </>
                   )}
-                  {!item.ok && (item.code === 'graph' || item.code === 'venue_closure' || item.code === 'stop_venue') && (
+                  {!item.ok && (item.code === 'graph' || item.code === 'venue_closure' || item.code === 'stop_venue' || item.code === 'mystery_answer') && (
                     <>
                       {' '}
                       <button type="button" className="underline underline-offset-4" onClick={() => setStep('shape')}>

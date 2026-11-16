@@ -8,7 +8,10 @@
 //
 // The field paths mirror `TrailDraft` (lib/hunts/draft.ts), the shape the editor saves and the
 // publish checklist reads. The resident never edits graph edges: the Trail preset derives them, and
-// the Passport preset (FH-030S) derives a count group from one number.
+// the Passport preset (FH-030S) derives a count group from one number. Forks and Mystery stops
+// (FH-042S) are chosen by stop, never typed as groups: lib/hunts/draft.ts names each fork's
+// `choice_group` and each Mystery's `fallback_group`, and the save action hashes a Mystery answer
+// (lib/hunts/mystery.ts `hashAnswer`) before the draft is stored, so the plain answer never is.
 //
 // NO LEDGER (`verify: 'none'`): the resident is the source. The clue coach only asks questions
 // (docs/hunts/CREATOR-FLOW.md, the same rule as Vera), so nothing here is drafted by a model.
@@ -51,6 +54,7 @@ export const HUNT_MANIFEST: EntityManifest = {
     { key: 'identity', title: 'Name it', desc: 'The title, the one-line hook, the area and who it is for.' },
     { key: 'stops', title: 'Stops', desc: 'Three to ten stops in order. Each one has a place, a clue and a way to prove the visit.' },
     { key: 'shape', title: 'Shape', desc: 'In order or any order, how many places finish it, and the regions a player can finish on their own.' },
+    { key: 'branches', title: 'Forks and Mysteries', desc: 'A fork lets a player pick one of several stops. A Mystery asks for an answer, with a stand-in stop for anyone who runs out of tries.' },
     { key: 'venues', title: 'Partner places', desc: 'The venue whose code a stop uses, and a second place that can stand in for it.' },
     { key: 'publishing', title: 'Publish', desc: 'Where the trail can be found once it is live.' },
   ],
@@ -111,6 +115,35 @@ export const HUNT_MANIFEST: EntityManifest = {
         { path: 'name', label: 'Region name', kind: 'text', required: true },
         { path: 'enabled', label: 'Open to visits', kind: 'toggle' },
         { path: 'stops', label: 'Stops in this region', kind: 'multiselect', optionsFrom: HUNT_OPTIONS.stops },
+      ],
+    },
+    // FH-042S: a fork. Its stops publish under one graph `choice_group` (`choice-1`, ...): the first one a
+    // player is credited for is their pick, and the others close for that run. Kept apart from the stop
+    // fields, like the partner places, so a stop stays a place and a clue.
+    {
+      arrayPath: 'choices',
+      label: 'Forks',
+      over: 'array',
+      section: 'branches',
+      itemLabel: (item, index) => (typeof item.name === 'string' && item.name) || `Fork ${index + 1}`,
+      fields: [
+        { path: 'name', label: 'Fork name', kind: 'text' },
+        { path: 'stops', label: 'Stops a player picks one of', kind: 'multiselect', optionsFrom: HUNT_OPTIONS.stops, required: true },
+      ],
+    },
+    // FH-042S: a Mystery stop (a mission of kind `answer`). The answer is write-only: the editor sends it,
+    // the save action stores only its hash, and the field reads back empty. The stand-in shares the
+    // Mystery's `fallback_group`, so either one counts once and a player out of tries still finishes.
+    {
+      arrayPath: 'mysteries',
+      label: 'Mystery stops',
+      over: 'array',
+      section: 'branches',
+      itemLabel: (item, index) => (typeof item.stop === 'string' && item.stop ? item.stop.replace('stop-', 'Mystery at stop ') : `Mystery ${index + 1}`),
+      fields: [
+        { path: 'stop', label: 'Mystery stop', kind: 'select', optionsFrom: HUNT_OPTIONS.stops, required: true },
+        { path: 'answer', label: 'Answer', kind: 'text', veraDrafts: false },
+        { path: 'fallback', label: 'Stand-in stop (counts the same once the tries run out)', kind: 'select', optionsFrom: HUNT_OPTIONS.stops, required: true },
       ],
     },
   ],

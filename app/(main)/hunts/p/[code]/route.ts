@@ -72,12 +72,21 @@ export async function GET(request: Request, { params }: Context) {
   return redirect(landing, 302)
 }
 
-async function readToken(request: Request): Promise<string | null> {
+/**
+ * The confirm form: one `token`, and (FH-042S) at most one `answer` for a Mystery stop. Any other field,
+ * or a repeat, refuses the form before any lookup.
+ */
+async function readForm(request: Request): Promise<{ token: string; answer?: string } | null> {
   try {
     const fields = [...(await request.formData()).entries()]
-    if (fields.length !== 1) return null
-    const [name, value] = fields[0]
-    return name === 'token' && typeof value === 'string' && value.length > 0 && value.length <= 2000 ? value : null
+    const tokens = fields.filter(([name]) => name === 'token')
+    const answers = fields.filter(([name]) => name === 'answer')
+    if (tokens.length !== 1 || answers.length > 1 || tokens.length + answers.length !== fields.length) return null
+    const token = tokens[0][1]
+    const answer = answers[0]?.[1]
+    if (typeof token !== 'string' || token.length === 0 || token.length > 2000) return null
+    if (answer !== undefined && (typeof answer !== 'string' || answer.length > 200)) return null
+    return { token, ...(typeof answer === 'string' && answer.trim() ? { answer: answer.trim() } : {}) }
   } catch {
     return null
   }
@@ -94,8 +103,8 @@ export async function POST(request: Request, { params }: Context) {
 
   const caller = await getCallerProfile()
   if (!caller) return new Response('Sign in to confirm this stop.', { status: 401, headers: privateHeaders })
-  const token = await readToken(request)
-  if (!token) return new Response('Open the stop and try again.', { status: 400, headers: privateHeaders })
+  const form = await readForm(request)
+  if (!form) return new Response('Open the stop and try again.', { status: 400, headers: privateHeaders })
 
   const { code } = await params
   const placement = await loadScanPlacement({ code })
@@ -103,9 +112,11 @@ export async function POST(request: Request, { params }: Context) {
 
   const outcome = await claimAsPlayer(caller.id, {
     placementId: placement.id,
-    token,
-    idempotencyKey: createHash('sha256').update(token).digest('hex'),
+    token: form.token,
+    idempotencyKey: createHash('sha256').update(form.token).digest('hex'),
     nowEpoch: Math.floor(Date.now() / 1000),
+    // FH-042S: a Mystery guess, judged on the server against the stored hash. Ignored at any other stop.
+    ...(form.answer ? { answer: form.answer } : {}),
   })
   deferHuntEvent({
     event: 'hunt.stop_claim',
@@ -114,6 +125,17 @@ export async function POST(request: Request, { params }: Context) {
   })
   const landing = new URL(`/play/${encodeURIComponent(placement.huntSlug)}`, origin)
   const result = outcome.ok ? outcome.result : null
+  // FH-042S: a Mystery that wants an answer lands back on the stop with the code, so the landing asks for
+  // the answer (and a fresh token) there. A locked one says so. Nothing about the answer is in the URL.
+  if (!outcome.ok && (outcome.reason === 'answer_required' || outcome.reason === 'answer_wrong')) {
+    landing.searchParams.set('p', code)
+    landing.searchParams.set('claim', 'answer')
+    return redirect(landing, 303)
+  }
+  if (!outcome.ok && outcome.reason === 'answer_locked') {
+    landing.searchParams.set('claim', 'answer_locked')
+    return redirect(landing, 303)
+  }
   // FH-020V: a visit kept for staff review is its own answer on the landing, never a credit and never a refusal.
   landing.searchParams.set('claim', result === 'credited' || result === 'already_credited' || result === 'held' ? result : 'unavailable')
   return redirect(landing, 303)

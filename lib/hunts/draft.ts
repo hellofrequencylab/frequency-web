@@ -44,6 +44,23 @@ export type StopVenue = { stop: string; venue: string; substitute?: string }
  */
 export type DraftRegion = { name: string; enabled: boolean; stops: string[] }
 
+/**
+ * FH-042S: a fork. A player takes one of these stops and the others close for their run (the graph's
+ * `choice_group`). On a Trail the stops of one fork share the step before them, and the next step opens
+ * once any one of them is found.
+ */
+export type DraftChoice = { name: string; stops: string[] }
+
+/**
+ * FH-042S: a Mystery stop. The player proves the place with its code and then types an answer, which
+ * the server checks against `answerHash` (lib/hunts/mystery.ts). The plain answer is never stored: the
+ * editor may hold `answer` while the resident types, and the save action (app/(main)/hunts/actions.ts)
+ * turns it into `answerHash` before the draft is read, so this module only ever keeps the hash. When a
+ * player runs out of tries, `fallback` (another stop, a staffed desk say) stands in: both share one
+ * `fallback_group`, so either one counts once.
+ */
+export type DraftMystery = { stop: string; fallback: string; answerHash?: string; answer?: string }
+
 /** `trail`: stops in order, finish at the last. `passport`: any order, finish after `finishCount` places. */
 type TrailShape = 'trail' | 'passport'
 
@@ -65,12 +82,21 @@ export type TrailDraft = {
   venues?: StopVenue[]
   /** FH-030S: the regions of a Passport, each with its own on and off switch. */
   regions?: DraftRegion[]
+  /** FH-042S: forks, each a set of stops a player picks one of. */
+  choices?: DraftChoice[]
+  /** FH-042S: Mystery stops, each with the stop that stands in when the tries run out. */
+  mysteries?: DraftMystery[]
 }
 
 export const MIN_STOPS = 3
 export const MAX_STOPS = 10
 /** FH-030S: at most this many regions on one Passport. */
 export const MAX_REGIONS = 5
+/** FH-042S: at most this many forks, and this many Mystery stops, on one Hunt. */
+export const MAX_CHOICES = 3
+export const MAX_MYSTERIES = 3
+/** The stored form of a Mystery answer (lib/hunts/mystery.ts `hashAnswer`). Anything else is dropped on read. */
+const ANSWER_HASH = /^s1:[0-9a-f]{32}:[0-9a-f]{64}$/
 /** Field caps, the same numbers the hunt_missions columns hold (title 120) plus plain room for a clue. */
 const TRAIL_LIMITS = { title: 120, line: 200, clue: 1000 } as const
 
@@ -123,6 +149,27 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     const members = Array.isArray(r.stops) ? r.stops.filter((k): k is string => typeof k === 'string' && keys.has(k)) : []
     return { name: text(r.name, TRAIL_LIMITS.line), enabled: r.enabled === true, stops: [...new Set(members)] }
   })
+  // FH-042S. A stop sits in one fork or one Mystery at most; the first row that names it keeps it.
+  const grouped = new Set<string>()
+  const choices: DraftChoice[] = []
+  for (const raw of Array.isArray(o.choices) ? o.choices.slice(0, MAX_CHOICES) : []) {
+    const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+    const members = [...new Set(Array.isArray(r.stops) ? r.stops.filter((k): k is string => typeof k === 'string' && keys.has(k) && !grouped.has(k)) : [])]
+    members.forEach((k) => grouped.add(k))
+    choices.push({ name: text(r.name, TRAIL_LIMITS.line), stops: members })
+  }
+  const mysteries: DraftMystery[] = []
+  for (const raw of Array.isArray(o.mysteries) ? o.mysteries.slice(0, MAX_MYSTERIES) : []) {
+    const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+    const at = typeof r.stop === 'string' && keys.has(r.stop) && !grouped.has(r.stop) ? r.stop : undefined
+    const fallback = typeof r.fallback === 'string' && keys.has(r.fallback) && !grouped.has(r.fallback) && r.fallback !== at ? r.fallback : undefined
+    if (!at || !fallback) continue
+    grouped.add(at)
+    grouped.add(fallback)
+    // Only the hash is ever read back. A plain `answer` here is dropped: sealing it is the save action's job.
+    const answerHash = typeof r.answerHash === 'string' && ANSWER_HASH.test(r.answerHash) ? r.answerHash : undefined
+    mysteries.push({ stop: at, fallback, ...(answerHash ? { answerHash } : {}) })
+  }
   const count = o.finishCount
   return {
     title: text(o.title, TRAIL_LIMITS.title),
@@ -136,6 +183,8 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     ...(typeof count === 'number' && Number.isInteger(count) && count >= 1 && count <= MAX_STOPS ? { finishCount: count } : {}),
     ...(venues.length > 0 ? { venues } : {}),
     ...(regions.length > 0 ? { regions } : {}),
+    ...(choices.length > 0 ? { choices } : {}),
+    ...(mysteries.length > 0 ? { mysteries } : {}),
   }
 }
 
@@ -148,12 +197,17 @@ export function reorderStops(draft: TrailDraft, order: readonly number[]): Trail
   const rename = new Map(order.map((from, to) => [stopKey(from), stopKey(to)]))
   const venues = (draft.venues ?? []).flatMap((v) => (rename.has(v.stop) ? [{ ...v, stop: rename.get(v.stop)! }] : []))
   const regions = (draft.regions ?? []).map((r) => ({ ...r, stops: r.stops.flatMap((k) => (rename.has(k) ? [rename.get(k)!] : [])) }))
-  const { venues: _v, regions: _r, ...rest } = draft
+  // FH-042S: a fork keeps the stops that are still there; a Mystery whose stop or stand-in is gone is dropped.
+  const choices = (draft.choices ?? []).map((c) => ({ ...c, stops: c.stops.flatMap((k) => (rename.has(k) ? [rename.get(k)!] : [])) }))
+  const mysteries = (draft.mysteries ?? []).flatMap((m) => (rename.has(m.stop) && rename.has(m.fallback) ? [{ ...m, stop: rename.get(m.stop)!, fallback: rename.get(m.fallback)! }] : []))
+  const { venues: _v, regions: _r, choices: _c, mysteries: _m, ...rest } = draft
   return {
     ...rest,
     stops: order.map((from) => draft.stops[from]),
     ...(venues.length > 0 ? { venues } : {}),
     ...(draft.regions ? { regions } : {}),
+    ...(draft.choices ? { choices } : {}),
+    ...(mysteries.length > 0 ? { mysteries } : {}),
   }
 }
 
@@ -165,10 +219,16 @@ type VenueFacts = {
   closedVenues?: ReadonlySet<string>
 }
 
-/** How many distinct places finish a Passport: the draft's number, capped at the stop count. */
-export function passportCount(draft: Pick<TrailDraft, 'stops' | 'finishCount'>): number {
+/**
+ * How many distinct places finish a Passport: the draft's number, capped at the stop count. Without a
+ * number it is every objective a player can reach (FH-042S): a fork counts as one, and a Mystery and
+ * its stand-in count as one.
+ */
+export function passportCount(draft: Pick<TrailDraft, 'stops' | 'finishCount' | 'choices' | 'mysteries'>): number {
   const n = draft.stops.length
-  return draft.finishCount !== undefined ? Math.min(draft.finishCount, n) : n
+  if (draft.finishCount !== undefined) return Math.min(draft.finishCount, n)
+  const forks = (draft.choices ?? []).reduce((sum, c) => sum + Math.max(0, c.stops.length - 1), 0)
+  return Math.max(1, n - forks - (draft.mysteries ?? []).length)
 }
 
 const isPassport = (draft: Pick<TrailDraft, 'shape'>): boolean => draft.shape === 'passport'
@@ -179,14 +239,52 @@ function draftChapters(draft: Pick<TrailDraft, 'stops' | 'regions'>): Chapter[] 
   return (draft.regions ?? []).map((r, i) => ({ chapter_key: `region-${i + 1}`, enabled: r.enabled, members: r.stops.filter((k) => keys.has(k)) }))
 }
 
+/** FH-042S: the graph group names. `choice-1`, ... for forks and `mystery-1`, ... for a Mystery and its stand-in. */
+const choiceGroupOf = (draft: Pick<TrailDraft, 'choices'>, key: string): string | null => {
+  const i = (draft.choices ?? []).findIndex((c) => c.stops.includes(key))
+  return i >= 0 ? `choice-${i + 1}` : null
+}
+const fallbackGroupOf = (draft: Pick<TrailDraft, 'mysteries'>, key: string): string | null => {
+  const i = (draft.mysteries ?? []).findIndex((m) => m.stop === key || m.fallback === key)
+  return i >= 0 ? `mystery-${i + 1}` : null
+}
+const mysteryOf = (draft: Pick<TrailDraft, 'mysteries'>, key: string): DraftMystery | undefined => (draft.mysteries ?? []).find((m) => m.stop === key)
+
+/**
+ * FH-042S: the steps of a Trail. Each stop is its own step, except that the stops of one fork, or a
+ * Mystery and its stand-in, share the step of the first of them. Steps keep the order of their first stop.
+ */
+function trailSteps(draft: Pick<TrailDraft, 'stops' | 'choices' | 'mysteries'>): string[][] {
+  const steps: string[][] = []
+  const stepOfGroup = new Map<string, number>()
+  draft.stops.forEach((_, i) => {
+    const key = stopKey(i)
+    const groups = [choiceGroupOf(draft, key), fallbackGroupOf(draft, key)].filter((g): g is string => g !== null)
+    const known = groups.map((g) => stepOfGroup.get(g)).find((n) => n !== undefined)
+    const at = known ?? steps.push([]) - 1
+    steps[at].push(key)
+    groups.forEach((g) => stepOfGroup.set(g, at))
+  })
+  return steps
+}
+
+/** One stop needs the step before it: that stop when it stands alone, else any one of the step's stops. */
+const needsStep = (step: readonly string[]): RuleGroup => (step.length === 1 ? { logic: 'all', members: [...step] } : { logic: 'any', members: [...step] })
+
 /**
  * The graph for a draft. A Trail: each stop needs the one before it, the finish needs the last. A
  * Passport (FH-030S): every stop is open from the start and the finish counts `passportCount` distinct
  * places. A stop with a chosen venue carries its codes as equivalent placements; a code at the Hunt's
  * own Space has no venue for counting, so a Space-run Passport still counts each stop.
+ *
+ * FH-042S: a fork's stops carry one `choice_group`, a Mystery is a mission of kind `answer`, and it
+ * shares a `fallback_group` with its stand-in. On a Trail they share a step (`trailSteps`). The answer
+ * itself is never part of the graph.
  */
-export function draftToGraph(draft: Pick<TrailDraft, 'stops' | 'shape' | 'finishCount' | 'venues' | 'regions'>, facts: VenueFacts = {}): HuntGraph {
+export function draftToGraph(draft: Pick<TrailDraft, 'stops' | 'shape' | 'finishCount' | 'venues' | 'regions' | 'choices' | 'mysteries'>, facts: VenueFacts = {}): HuntGraph {
   const passport = isPassport(draft)
+  const steps = trailSteps(draft)
+  const stepIndex = new Map(steps.flatMap((step, n) => step.map((k): [string, number] => [k, n])))
   const countVenue = (v: string): string | null => (v === facts.ownerSpaceId ? null : v)
   const missions: Mission[] = draft.stops.map((_, i) => {
     const key = stopKey(i)
@@ -198,19 +296,24 @@ export function draftToGraph(draft: Pick<TrailDraft, 'stops' | 'shape' | 'finish
           ...(facts.closedVenues?.has(venue) ? { closed: true } : {}),
         }))
       : []
+    const step = stepIndex.get(key) ?? 0
+    const choice = choiceGroupOf(draft, key)
+    const fallback = fallbackGroupOf(draft, key)
     return {
       mission_key: key,
+      ...(mysteryOf(draft, key) ? { kind: 'answer' } : {}),
       ...(placements.length > 0 ? { placements } : {}),
-      rule_groups: passport || i === 0 ? [] : [{ logic: 'all' as const, members: [stopKey(i - 1)] }],
+      ...(choice ? { choice_group: choice } : {}),
+      ...(fallback ? { fallback_group: fallback } : {}),
+      rule_groups: passport || step === 0 ? [] : [needsStep(steps[step - 1])],
     }
   })
-  const last = draft.stops.length - 1
   const finish: RuleGroup[] =
-    last < 0
+    steps.length === 0
       ? []
       : passport
         ? [{ logic: 'count', min_count: passportCount(draft), members: draft.stops.map((_, i) => stopKey(i)) }]
-        : [{ logic: 'all', members: [stopKey(last)] }]
+        : [needsStep(steps[steps.length - 1])]
   const chapters = draftChapters(draft)
   return { missions, finish: { rule_groups: finish }, ...(chapters.length > 0 ? { chapters } : {}) }
 }
@@ -242,6 +345,17 @@ export function blockerMessage(b: Blocker, draft: Pick<TrailDraft, 'regions'> = 
       return `${region()} can only be finished through a paid stop. Each region needs a free way to finish.`
     case 'FINISH_UNREACHABLE':
       return 'No player could reach the finish. Check the number of places, and any stop whose venue is closed.'
+    // FH-042S: forks and Mystery stops.
+    case 'BRANCH_INVALID':
+      return b.message.includes('choice group and a fallback group')
+        ? `${stops[0] ? `${stops[0][0].toUpperCase()}${stops[0].slice(1)}` : 'A stop'} is in a fork and a Mystery. Keep it in one of them.`
+        : 'Each fork needs at least two stops to pick from.'
+    case 'CHOICE_LIMIT':
+      return 'The forks on this trail make too many different routes to check. Use fewer forks, or fewer stops in each.'
+    case 'BRANCH_DEAD_END':
+      return `A player who picks ${stops.join(' and ') || 'one of the fork\'s stops'} could never finish. Every pick has to lead on to the finish.`
+    case 'MYSTERY_NO_FALLBACK':
+      return 'A player who runs out of tries on a Mystery would be stuck. Give each Mystery a stand-in stop that leads on to the finish.'
     default:
       return b.message
   }
@@ -303,6 +417,12 @@ export function publishChecklist(
       message: 'This stop names a place that is not this Hunt\'s Space or a partner that has accepted. Choose another place or invite the venue.',
     })
   }
+  // FH-042S: a Mystery needs its answer set. Only the hash is stored, so a set answer reads as a hash.
+  for (const m of draft.mysteries ?? []) {
+    const index = draft.stops.findIndex((_, i) => stopKey(i) === m.stop)
+    if (index < 0) continue
+    items.push({ code: 'mystery_answer', ok: Boolean(m.answerHash) || Boolean(m.answer?.trim()), stop: index, message: 'This Mystery needs an answer. Type the answer a player should give.' })
+  }
   draft.stops.forEach((s, i) => {
     items.push({ code: 'stop_text', ok: s.place.trim() !== '' && s.clue.trim() !== '', stop: i, message: 'This stop needs a place name and a clue.' })
     items.push({ code: 'stop_placement', ok: s.placementReady, stop: i, message: 'Print or place a code at this stop so people can prove they were here.' })
@@ -320,7 +440,7 @@ export function publishChecklist(
  * Preview: what a player would see after earning `credited` stops, evaluated in memory. Writes nothing.
  * Returns keys and states only, like the real evaluator.
  */
-export function previewTrail(draft: Pick<TrailDraft, 'stops' | 'shape' | 'finishCount' | 'venues' | 'regions'>, credited: readonly string[], now: Date = new Date()) {
+export function previewTrail(draft: Pick<TrailDraft, 'stops' | 'shape' | 'finishCount' | 'venues' | 'regions' | 'choices' | 'mysteries'>, credited: readonly string[], now: Date = new Date()) {
   return evaluate(
     draftToGraph(draft),
     credited.map((mission_key) => ({ mission_key })),
@@ -349,36 +469,50 @@ export async function saveDraft(store: DraftStore, input: { huntId: string; base
 
 /** The rows an immutable published version holds (FH-005 tables), derived from the draft. Pure. */
 type PublishRows = {
-  missions: { mission_key: string; title: string; visible_body: string; locked_teaser: string | null; kind: 'visit'; required_assurance: 'signed_node' | 'staff' }[]
+  missions: ({
+    mission_key: string; title: string; visible_body: string; locked_teaser: string | null; kind: 'visit' | 'answer'; required_assurance: 'signed_node' | 'staff'
+    /** FH-042S. Each is written only when the stop is in a fork or a Mystery, so an older Trail hashes the same. */
+    choice_group?: string; fallback_group?: string; answer_hash?: string
+  })[]
   /**
    * A Trail: one prerequisite group per stop after the first, plus the finish group. A Passport
    * (FH-030S): the finish group alone, `count` with its `min_count`, the column check
    * `hunt_rule_groups` holds (min_count only on a count group).
    */
-  groups: ({ key: string; target_mission_key: string | null; target_finish: boolean; members: string[] } & ({ logic: 'all' } | { logic: 'count'; min_count: number }))[]
+  groups: ({ key: string; target_mission_key: string | null; target_finish: boolean; members: string[] } & ({ logic: 'all' | 'any' } | { logic: 'count'; min_count: number }))[]
 }
 
 export function publishRows(draft: TrailDraft): PublishRows {
   const graph = draftToGraph(draft)
-  const missions = draft.stops.map((s, i) => ({
-    mission_key: stopKey(i),
-    title: s.place.trim(),
-    visible_body: s.clue.trim(),
-    locked_teaser: s.hint?.trim() ? s.hint.trim() : null,
-    kind: 'visit' as const,
-    // FH-020X: a staff-confirmed stop needs staff assurance; every other stop keeps the signed scan.
-    required_assurance: s.staffConfirmed === true ? ('staff' as const) : ('signed_node' as const),
-  }))
+  const missions = draft.stops.map((s, i) => {
+    const key = stopKey(i)
+    const mission = graph.missions[i]
+    // FH-042S: the hash, never the answer. A Mystery whose answer is not set yet is refused by the checklist.
+    const answerHash = mysteryOf(draft, key)?.answerHash
+    return {
+      mission_key: key,
+      title: s.place.trim(),
+      visible_body: s.clue.trim(),
+      locked_teaser: s.hint?.trim() ? s.hint.trim() : null,
+      kind: mission?.kind === 'answer' ? ('answer' as const) : ('visit' as const),
+      // FH-020X: a staff-confirmed stop needs staff assurance; every other stop keeps the signed scan.
+      required_assurance: s.staffConfirmed === true ? ('staff' as const) : ('signed_node' as const),
+      ...(mission?.choice_group ? { choice_group: mission.choice_group } : {}),
+      ...(mission?.fallback_group ? { fallback_group: mission.fallback_group } : {}),
+      ...(mission?.kind === 'answer' && answerHash ? { answer_hash: answerHash } : {}),
+    }
+  })
   const groups: PublishRows['groups'] = []
   for (const m of graph.missions) {
     for (const g of m.rule_groups) {
-      groups.push({ key: `${m.mission_key}:needs`, target_mission_key: m.mission_key, target_finish: false, logic: 'all', members: g.members })
+      // FH-042S: the step after a fork or a Mystery opens on any one of its stops.
+      groups.push({ key: `${m.mission_key}:needs`, target_mission_key: m.mission_key, target_finish: false, logic: g.logic === 'any' ? 'any' : 'all', members: g.members })
     }
   }
   for (const g of graph.finish.rule_groups) {
     // FH-030S: the threshold of a count group travels with it as min_count; an all group has none.
     if (g.logic === 'count') groups.push({ key: 'finish', target_mission_key: null, target_finish: true, logic: 'count', min_count: g.min_count ?? g.members.length, members: g.members })
-    else groups.push({ key: 'finish', target_mission_key: null, target_finish: true, logic: 'all', members: g.members })
+    else groups.push({ key: 'finish', target_mission_key: null, target_finish: true, logic: g.logic === 'any' ? 'any' : 'all', members: g.members })
   }
   return { missions, groups }
 }

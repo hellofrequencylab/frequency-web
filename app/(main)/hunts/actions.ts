@@ -9,6 +9,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { huntSwitchOn } from '@/lib/hunts/flags'
+import { sealDraftAnswers } from '@/lib/hunts/mystery'
 import { parseTrailDraft, saveDraft, type ChecklistItem, type TrailDraft } from '@/lib/hunts/draft'
 import { createTrailDraft, markRouteTested, publishTrail, trailStoreFor, type PublishVisibility } from '@/lib/hunts/store'
 
@@ -40,7 +41,11 @@ export async function createTrailAction(input: { title: string; hook?: string; a
 
 export type SaveTrailResult = { revision: number } | { conflict: true; currentRevision: number }
 
-/** Steps 2 to 5: one revision-checked save. A stale tab gets `conflict` and nothing is written. */
+/**
+ * Steps 2 to 5: one revision-checked save. A stale tab gets `conflict` and nothing is written.
+ * FH-042S: a Mystery answer typed in the editor is hashed here, before the draft is read, so the plain
+ * answer is never stored (lib/hunts/mystery.ts `sealDraftAnswers`).
+ */
 export async function saveTrailAction(input: { huntId: string; baseRevision: number; draft: unknown }): Promise<ActionResult<SaveTrailResult>> {
   const gate = await authorizeAuthoring()
   if ('error' in gate) return fail(gate.error)
@@ -49,7 +54,7 @@ export async function saveTrailAction(input: { huntId: string; baseRevision: num
     const res = await saveDraft(trailStoreFor({ profileId: gate.profileId }), {
       huntId: input.huntId,
       baseRevision: input.baseRevision,
-      draft: parseTrailDraft(input.draft),
+      draft: parseTrailDraft(sealDraftAnswers(input.draft)),
     })
     return ok(res.ok ? { revision: res.revision } : { conflict: true, currentRevision: res.currentRevision })
   } catch {

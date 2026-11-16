@@ -10,8 +10,9 @@ import { VisitedStops } from '@/components/hunts/visited-stops'
 import { VisitedStopsMap } from '@/components/hunts/visited-stops-map'
 import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
+import { loadLockedAnswers } from '@/lib/hunts/claim-store'
 import { huntSwitchOn } from '@/lib/hunts/flags'
-import { projectForPlayer, visitedPins } from '@/lib/hunts/player'
+import { OTHER_PATH_MESSAGE, projectForPlayer, visitedPins } from '@/lib/hunts/player'
 import { loadPlayerRun, loadPublishedTrail, loadRunCredits, loadVisitedStopPoints, startOrResumeRun } from '@/lib/hunts/run-store'
 
 export const dynamic = 'force-dynamic'
@@ -21,6 +22,15 @@ export const dynamic = 'force-dynamic'
 // a locked stop shows its position, an open stop shows its clue without the place, and a visited
 // stop shows both. The current stop's optional hint requires an explicit request. The map (FH-016T)
 // gets pins for visited stops only: the loader asks for credited stops and `visitedPins` drops the rest.
+// FH-042S: a Mystery the run used every try on reads closed and its stand-in becomes the next stop, a
+// stop closed by the run's own pick at a fork says so, and the form asks for an answer at a Mystery.
+
+/** Why a stop is closed for this run, in the player's words (FH-042S). The place closing keeps its own line. */
+const CLOSED_BECAUSE = {
+  other_path: OTHER_PATH_MESSAGE,
+  not_needed: 'Not needed now. You already solved this one another way.',
+  answer_locked: 'No tries left on this Mystery. Its stand-in stop counts the same.',
+} as const
 
 export const metadata: Metadata = { title: 'Play a Trail', robots: { index: false } }
 
@@ -37,7 +47,7 @@ export default async function PlayPage({ params, searchParams }: {
 
   const { hint } = await searchParams
   const run = hint === undefined ? await startOrResumeRun(trail, profileId) : await loadPlayerRun(trail, profileId)
-  const credits = run ? await loadRunCredits(run.runId, profileId) : []
+  const [credits, lockedAnswers] = run ? await Promise.all([loadRunCredits(run.runId, profileId), loadLockedAnswers(run.runId, profileId)]) : [[], []]
   const view = projectForPlayer({
     graph: trail.graph,
     content: trail.content,
@@ -45,6 +55,7 @@ export default async function PlayPage({ params, searchParams }: {
     now: new Date(),
     huntState: trail.huntState,
     revision: trail.revision,
+    lockedAnswers,
     hints: {
       enabled: huntSwitchOn('claims') && run?.state === 'active',
       requestedKey: typeof hint === 'string' ? hint : undefined,
@@ -52,6 +63,7 @@ export default async function PlayPage({ params, searchParams }: {
   })
   const pins = visitedPins(view.stops, run ? await loadVisitedStopPoints(trail, credits) : [])
   const canConfirm = huntSwitchOn('claims') && view.canClaim && run?.state === 'active'
+  const nextIsMystery = view.stops.some((s) => s.key === view.nextKey && s.mystery === true)
 
   return (
     <FocusTemplate
@@ -77,10 +89,16 @@ export default async function PlayPage({ params, searchParams }: {
                 <p className="text-body font-semibold text-text">
                   Stop {s.position}
                   {s.place ? `: ${s.place}` : ''}
+                  {s.mystery ? ', a Mystery' : ''}
                 </p>
                 {s.clue ? <p className="text-body-sm text-muted">{s.clue}</p> : null}
                 {/* FH-030S: a stop whose every code is closed (a venue left, a code was pulled) says so, not "locked". */}
-                {!s.clue ? <p className="text-body-sm text-subtle">{s.state === 'closed' ? 'Closed for now. This stop is not taking visits.' : 'Locked for now.'}</p> : null}
+                {!s.clue ? (
+                  <p className="text-body-sm text-subtle">
+                    {s.closedBecause ? CLOSED_BECAUSE[s.closedBecause] : s.state === 'closed' ? 'Closed for now. This stop is not taking visits.' : 'Locked for now.'}
+                  </p>
+                ) : null}
+                {s.mystery ? <p className="text-body-sm text-muted">Find the code here, then type your answer below.</p> : null}
                 {s.hint ? <p className="mt-2 break-words text-body-sm text-muted">Hint: {s.hint}</p> : null}
                 {s.canRevealHint && (
                   <Link
@@ -103,7 +121,7 @@ export default async function PlayPage({ params, searchParams }: {
             <Link href={{ pathname: '/scan', query: { hint: 'trail' } }} prefetch={false} className={buttonClasses('primary', 'md')}>
               Scan the code at this stop
             </Link>
-            <ClaimStopForm slug={slug} />
+            <ClaimStopForm slug={slug} mystery={nextIsMystery} />
           </div>
         )}
         <HuntFundraising huntId={trail.huntId} />

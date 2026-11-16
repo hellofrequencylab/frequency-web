@@ -22,7 +22,7 @@ import { applyClaim } from './apply-claim'
 import { authorizeClaim, checkScope, type ClaimRefusal, type ScopeFacts } from './claim-guard'
 import { huntSwitchOn } from './flags'
 import { evaluate, validateGraph } from './graph'
-import { judgeAnswer, MAX_ANSWER_ATTEMPTS } from './mystery'
+import { judgeAnswer, lockedMysteries, MAX_ANSWER_ATTEMPTS } from './mystery'
 import { issueClaimToken } from './placement'
 import { isPublishedTrailVersion, loadPublishedTrail, loadRunProgressSnapshot } from './run-store'
 import { huntRpc, loadUniquePlacementMission } from './staff-store'
@@ -169,6 +169,30 @@ async function judgeMysteryAttempt(scope: ScanScope, actorId: string, answer: st
 
   if (verdict.outcome === 'correct') return { ok: true }
   return { ok: false, reason: verdict.outcome === 'locked' ? 'answer_locked' : 'answer_wrong', attemptsLeft: verdict.attemptsLeft, ...(verdict.showHint ? hint : {}) }
+}
+
+/**
+ * FH-042S: the Mysteries this run has no tries left on, for the player page. Read from the same
+ * `answer:<n>` rows the claim door writes, scoped to the run's own subject. A failed or truncated read
+ * locks nothing: the claim door still refuses a locked answer, so the page can only show one stop too many.
+ */
+export async function loadLockedAnswers(runId: string, profileId: string): Promise<string[]> {
+  try {
+    return await readLockedAnswers(runId, profileId)
+  } catch {
+    return []
+  }
+}
+
+async function readLockedAnswers(runId: string, profileId: string): Promise<string[]> {
+  const client = db()
+  const run = await client.from('hunt_runs').select('id').eq('id', runId).eq('subject_profile_id', profileId).maybeSingle()
+  if (run.error || !run.data) return []
+  const rows = await client.from('hunt_claims').select('mission_key, correct:policy_result->>correct', { count: 'exact' }).eq('run_id', runId).like('evidence_id', 'answer:%')
+  if (rows.error || !Array.isArray(rows.data) || rows.count !== rows.data.length) return []
+  const attempts = (rows.data as { mission_key: unknown; correct: unknown }[])
+    .filter((r): r is { mission_key: string; correct: string | null } => typeof r.mission_key === 'string')
+  return lockedMysteries(attempts)
 }
 
 /** The claim POST. Returns the database's answer, or a refusal from the scope checks. */
