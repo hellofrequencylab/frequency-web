@@ -5,17 +5,17 @@
 const PHOTO = (name: string) => `/sites/mindless/photos/${name}.jpg`
 
 export const MINDLESS_HERO = {
-  eyebrow: 'Meditation circles · In person and online',
+  eyebrow: 'Meditation circles · San Diego and online',
   sticker: 'First sit’s on us',
   title: 'Unwind *your mind.*',
   lead: 'Your head won’t shut up. Good. That’s where it starts. A few people, twenty quiet minutes, and something you carry back into the rest of your day.',
   primaryLabel: 'Find a circle',
-  primaryHref: '~/circles',
+  primaryHref: '~/booking',
   secondaryLabel: 'Start the program',
   secondaryHref: '~/services',
-  image: PHOTO('hero-yellow'),
-  alt: 'A circle of people with arms raised',
-  pos: '55% 40%',
+  image: PHOTO('circle-yellow'),
+  alt: 'People meditating in a circle',
+  pos: '50% 50%',
 }
 
 export const MINDLESS_PAGE_HEAD = {
@@ -101,6 +101,8 @@ export const MINDLESS_CIRCLES = {
   rows: [
     { month: 'Dec', day: '4', host: 'Hosted by Maya R.', title: 'Thursday night circle', meta: 'Thu 7:00pm · Downtown', spots: '12 spots left', buttonLabel: 'Save a spot', href: '~/booking', tone: 'accent' },
     { month: 'Dec', day: '6', host: 'Hosted by Dev K.', title: 'Saturday morning circle', meta: 'Sat 9:00am · North Park', spots: '6 spots left', buttonLabel: 'Save a spot', href: '~/booking', tone: 'pink' },
+    { month: 'Dec', day: '8', host: 'Hosted by Jo T.', title: 'Monday reset', meta: 'Mon 5:30pm · North County', spots: '14 spots left', buttonLabel: 'Save a spot', href: '~/booking', tone: 'blue' },
+    { month: 'Dec', day: '10', host: 'Hosted by Daniel', title: 'Midweek circle', meta: 'Wed 12:15pm · Online · 20 min', spots: '40 spots left', buttonLabel: 'Save a spot', href: '~/booking', tone: 'accent' },
   ],
   liveLabel: 'Can’t make it out?',
   liveTitle: 'Sit with us *live.*',
@@ -108,6 +110,7 @@ export const MINDLESS_CIRCLES = {
   live: [
     { day: 'Sun', time: '8', ampm: 'am', badge: 'Live Sunday', title: 'Sunday sit, live', body: 'Weekly stream · 30 min · on Frequency', buttonLabel: 'Set a reminder', href: '~/booking' },
     { day: 'Wed', time: '6', ampm: 'pm', badge: '45 min', title: 'Ask a guide', body: 'Live Q&A · 45 min · on Frequency', buttonLabel: 'Add to calendar', href: '~/booking' },
+    { day: 'Fri', time: '9', ampm: 'pm', badge: '20 min', title: 'Hard week sit', body: 'Late stream · 20 min · on Frequency', buttonLabel: 'Add to calendar', href: '~/booking' },
   ],
 }
 
@@ -116,14 +119,19 @@ export const MINDLESS_PEOPLE = {
   num: '04',
   label: 'Real people',
   title: 'Same faces. *Every week.*',
-  lead: 'Nobody here has it figured out. That’s why it works.',
+  lead: 'Nurses, cooks, parents, people between jobs. Nobody here has it figured out. That’s why it works.',
   photos: [
     { image: PHOTO('rooftop-mono'), alt: 'A circle seen from above', pos: '50% 55%' },
     { image: PHOTO('circle-mono'), alt: 'A circle with arms raised', pos: '50% 45%' },
     { image: PHOTO('beach-mono'), alt: 'People sitting on the beach at dawn', pos: '50% 50%' },
     { image: PHOTO('sunset-mono'), alt: 'A circle at dusk', pos: '50% 55%' },
   ],
-  quotes: [],
+  quotes: [
+    { quote: 'I came for my anxiety. I stayed for the people.', name: 'Priya', where: 'Thursday circle' },
+    { quote: 'First meditation thing that didn’t make me feel like I was failing at it.', name: 'Marcus', where: 'the program' },
+    { quote: 'The dish sit ruined dishes for me. In a good way.', name: 'Lena', where: 'supporter' },
+    { quote: 'Sat by a fire with three guys I barely knew. Went home quiet.', name: 'Theo', where: 'Monday reset' },
+  ],
 }
 
 export const MINDLESS_CARRY = {
@@ -132,14 +140,18 @@ export const MINDLESS_CARRY = {
   label: 'It’s yours to carry',
   title: 'Start a circle. *We’ll back you.*',
   lead: 'Every circle starts with one person who keeps showing up. If that’s you, we’ll give you what you need and help people find you.',
-  image: PHOTO('guide-yellow'),
+  image: PHOTO('guide-mono'),
   alt: 'A guide sitting cross-legged, one hand on the chest, eyes closed',
   pos: '50% 25%',
   offers: [
     { title: 'Host a circle', body: 'Pick a time. Invite a few people. We’ll handle the rest.', price: 'Free', buttonLabel: 'Choose', href: '~/booking', tone: 'pink' },
     { title: 'Become a guide', body: 'Learn to hold the room. Then hold it.', price: 'Free training', buttonLabel: 'Choose', href: '~/booking', tone: 'blue' },
   ],
-  guides: [],
+  guides: [
+    { name: 'Maya R.', where: 'Guide · Downtown', body: 'Night-shift nurse. Learned to sit because the ward never goes quiet.', image: '' },
+    { name: 'Dev K.', where: 'Guide · North Park', body: 'Line cook. Started a circle on his day off and kept it.', image: '' },
+    { name: 'Jo T.', where: 'Guide · North County', body: 'Works nights. Holds a sit before the week starts.', image: '' },
+  ],
 }
 
 export const MINDLESS_OFFERS = {
@@ -181,7 +193,7 @@ export const MINDLESS_CTA = {
   em: 'Now come sit with us.',
   lead: 'A few people. Twenty minutes. Every week.',
   primaryLabel: 'Find a circle',
-  primaryHref: '~/circles',
+  primaryHref: '~/booking',
   secondaryLabel: 'Start one',
   secondaryHref: '~/booking',
   image: PHOTO('rooftop-mono'),
