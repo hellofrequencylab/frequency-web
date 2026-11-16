@@ -5,7 +5,8 @@
  * only, so each read here is scoped to one Hunt that is visible to players and to one signed-in
  * profile. The caller (a server action or route) establishes the profile and the HUNTS_ENABLED switch;
  * this module trusts neither a profile id nor a slug it did not get from them. Credits are written only
- * by `hunt_claim_apply` (lib/hunts/apply-claim.ts). Nothing here writes a credit or reads an answer.
+ * by `hunt_claim_apply` (lib/hunts/apply-claim.ts). Nothing here writes a credit or reads an answer:
+ * a Mystery's `answer_hash` is selected by no query in this file, so it cannot reach a player view.
  *
  * `assembleTrail` is the pure half: it turns the published rows into the graph and the player-safe
  * content that `projectForPlayer` takes. It is tested without a database.
@@ -17,7 +18,11 @@ import type { Chapter, Credit, HuntGraph } from './graph'
 // eslint-disable-next-line no-restricted-syntax -- the FH-005 hunt tables are not in the generated types yet (ADR-246 exception)
 const db = () => createAdminClient() as unknown as SupabaseClient
 
-type MissionRow = { mission_key: string; title: string; visible_body: string | null; locked_teaser: string | null; opens_at: string | null; closes_at: string | null }
+type MissionRow = {
+  mission_key: string; title: string; visible_body: string | null; locked_teaser: string | null; opens_at: string | null; closes_at: string | null
+  /** FH-042 branch fields. Optional so rows read before them still assemble. `answer_hash` is never read here. */
+  kind?: string | null; choice_group?: string | null; fallback_group?: string | null
+}
 type GroupRow = { id: string; target_mission_key: string | null; target_finish: boolean; logic: 'all' | 'any' | 'count'; min_count: number | null; group_key: string | null }
 type MemberRow = { group_id: string; member_mission_key: string }
 type PlacementRow = { mission_key: string; placement_id: string; venue_space_id: string | null }
@@ -63,6 +68,9 @@ export function assembleTrail(missions: readonly MissionRow[], groups: readonly 
         open: m.opens_at,
         close: m.closes_at,
         ...(placements.length > 0 ? { placements } : {}),
+        ...(m.kind === 'answer' ? { kind: m.kind } : {}),
+        ...(m.choice_group ? { choice_group: m.choice_group } : {}),
+        ...(m.fallback_group ? { fallback_group: m.fallback_group } : {}),
         rule_groups: groups.filter((g) => g.target_mission_key === m.mission_key).map(toGroup),
       }
     }),
@@ -157,7 +165,7 @@ export async function loadPublishedTrail(slug: string): Promise<PublishedTrail |
   if (!version) return null
 
   const [m, g, mem, bound, policy] = await Promise.all([
-    client.from('hunt_missions').select('mission_key, title, visible_body, locked_teaser, opens_at, closes_at', { count: 'exact' }).eq('version_id', version.versionId),
+    client.from('hunt_missions').select('mission_key, title, visible_body, locked_teaser, opens_at, closes_at, kind, choice_group, fallback_group', { count: 'exact' }).eq('version_id', version.versionId),
     client.from('hunt_rule_groups').select('id, target_mission_key, target_finish, logic, min_count, group_key', { count: 'exact' }).eq('version_id', version.versionId),
     client.from('hunt_rule_group_members').select('group_id, member_mission_key', { count: 'exact' }).eq('version_id', version.versionId),
     client.from('hunt_mission_placements').select('mission_key, placement_id, venue_space_id', { count: 'exact' }).eq('version_id', version.versionId),
@@ -246,12 +254,16 @@ export async function loadRunProgressSnapshot(runId: string, profileId: string):
   // Ownership first: a run id is not a secret, so the read is scoped to its subject.
   const { data: run, error: runError } = await client.from('hunt_runs').select('id').eq('id', runId).eq('subject_profile_id', profileId).maybeSingle()
   if (runError || !run) return null
-  const progress = await client.from('hunt_progress').select('mission_key, disposition', { count: 'exact' }).eq('run_id', runId)
+  const progress = await client.from('hunt_progress').select('mission_key, disposition, accepted_at', { count: 'exact' }).eq('run_id', runId)
   if (!completeRows(progress)) return null
-  const rows = progress.data as { mission_key: unknown; disposition?: unknown }[]
+  const rows = progress.data as { mission_key: unknown; disposition?: unknown; accepted_at?: unknown }[]
   if (rows.some((row) => typeof row.mission_key !== 'string')) return null
   return {
     total: rows.length,
-    credits: rows.filter((row) => row.disposition === 'credited').map((row) => ({ mission_key: row.mission_key as string })),
+    // `at` orders two credits inside one exclusive group (FH-042): the earlier one is the run's choice.
+    credits: rows.filter((row) => row.disposition === 'credited').map((row) => ({
+      mission_key: row.mission_key as string,
+      ...(typeof row.accepted_at === 'string' ? { at: row.accepted_at } : {}),
+    })),
   }
 }

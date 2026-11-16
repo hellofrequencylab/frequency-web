@@ -12,9 +12,10 @@
  * sit in, every placement bound to a mission is equivalent (one credit whichever is
  * scanned), and `chapters` group missions into regional chapters that can be switched off.
  *
- * TODO(FH-042): exclusive branches. `choice_group` and `fallback_group` are carried
- * on the type so graphs round-trip, but neither the validator nor the evaluator
- * gives them meaning yet.
+ * Exclusive branches (FH-042, branches.ts): missions sharing a `choice_group` are an
+ * exclusive choice, and missions sharing a `fallback_group` are one objective by
+ * different means. A mission of kind `answer` is a Mystery: its answer is checked on
+ * the server (lib/hunts/mystery.ts) and is never part of this graph.
  */
 
 export const MAX_MISSIONS = 30
@@ -65,7 +66,9 @@ export interface Mission {
   placements?: MissionPlacement[]
   /** True when the mission needs a paid entitlement. The free finish may not depend on one. */
   requires_entitlement?: boolean
+  /** Exclusive choice: the first member credited is the run's choice and the others close. */
   choice_group?: string | null
+  /** Alternative path: one credit satisfies every member and the others close. */
   fallback_group?: string | null
   /** Prerequisites. Several groups on one mission combine with AND. */
   rule_groups: RuleGroup[]
@@ -88,6 +91,8 @@ export interface Credit {
   mission_key: string
   /** Overrides the mission's default bucket (for example the Space an alternate placement belongs to). */
   bucket?: string | null
+  /** When the credit was accepted (an ISO instant). Orders two credits inside one exclusive group. */
+  at?: string | null
 }
 
 export type BlockerCode =
@@ -110,6 +115,10 @@ export type BlockerCode =
   | 'CHAPTER_INVALID'
   | 'CHAPTER_INFEASIBLE'
   | 'CHAPTER_NO_FREE_FINISH'
+  | 'BRANCH_INVALID'
+  | 'CHOICE_LIMIT'
+  | 'BRANCH_DEAD_END'
+  | 'MYSTERY_NO_FALLBACK'
 
 export interface Blocker {
   code: BlockerCode

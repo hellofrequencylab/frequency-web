@@ -1,3 +1,4 @@
+import { branchBlockers, choicePaths, withFallbackAliases } from './branches'
 import { chapterScopes, countRuleBlockers, missionBucket, playableKeys } from './count-rules'
 import { allGroupsSatisfied, blocker, distinctMembers, edgeCount, parseInstant } from './rules'
 import { MAX_EDGES, MAX_MISSIONS } from './types'
@@ -125,12 +126,13 @@ function reach(
       if (creditable.has(m.mission_key)) continue
       if (!validWindow.has(m.mission_key) || !opts.scope.has(m.mission_key)) continue
       if (opts.freeOnly && m.requires_entitlement) continue
-      const view = new Map<string, string>()
+      const seen = new Map<string, string>()
       for (const [k, b] of creditable) {
         if (opts.timed && openOf(byKey.get(k)!) >= closeOf(m)) continue
-        view.set(k, b)
+        seen.set(k, b)
       }
-      if (allGroupsSatisfied(m.rule_groups, view)) {
+      // One credit in a fallback group stands for every member (branches.ts).
+      if (allGroupsSatisfied(m.rule_groups, withFallbackAliases(missions, seen))) {
         creditable.set(m.mission_key, missionBucket(m))
         changed = true
       }
@@ -151,8 +153,11 @@ function reach(
  * impossible; and every enabled chapter must hold a route to the finish, and one
  * that needs no purchase (CHAPTER_INFEASIBLE, CHAPTER_NO_FREE_FINISH).
  *
- * TODO(FH-042): bounded enumeration of exclusive-branch (choice_group) paths and
- * fallback_group substitutes.
+ * Exclusive branches (FH-042): reachability is worked out once per choice path
+ * (branches.ts `choicePaths`, bounded). Whatever a player has committed to, some
+ * path must still finish (BRANCH_DEAD_END), and the finish must hold with every
+ * answer mission out of play, because a Mystery can run out of attempts
+ * (MYSTERY_NO_FALLBACK).
  */
 export function validateGraph(graph: HuntGraph): ValidationResult {
   try {
@@ -238,6 +243,7 @@ function validateInner(graph: HuntGraph): ValidationResult {
   }
 
   blockers.push(...countRuleBlockers(graph))
+  blockers.push(...branchBlockers(missions))
 
   // Windows.
   const validWindow = new Set<string>()
@@ -269,12 +275,33 @@ function validateInner(graph: HuntGraph): ValidationResult {
   // Reachability. Skipped when the structure is already broken: those blockers
   // say what to fix and reachability would only add noise.
   const structurallyBroken = blockers.some((b) =>
-    ['GROUP_EMPTY', 'COUNT_INVALID', 'MISSING_REF', 'DUPLICATE_MISSION', 'FINISH_EMPTY', 'CHAPTER_INVALID'].includes(b.code),
+    ['GROUP_EMPTY', 'COUNT_INVALID', 'MISSING_REF', 'DUPLICATE_MISSION', 'FINISH_EMPTY', 'CHAPTER_INVALID', 'BRANCH_INVALID', 'CHOICE_LIMIT'].includes(b.code),
   )
-  if (!structurallyBroken) {
-    const untimed = reach(missions, { timed: false, freeOnly: false, scope: playable }, validWindow)
-    const timed = reach(missions, { timed: true, freeOnly: false, scope: playable }, validWindow)
-    const free = reach(missions, { timed: true, freeOnly: true, scope: playable }, validWindow)
+  const paths = structurallyBroken ? null : choicePaths(missions)
+  if (paths) {
+    const finishes = (credited: ReadonlyMap<string, string>) => allGroupsSatisfied(graph.finish.rule_groups, withFallbackAliases(missions, credited))
+    /** Reachability of one scope, once per choice path. */
+    const analyse = (scope: ReadonlySet<string>) => {
+      const runs = paths.map((path) => {
+        const inPath = new Set([...scope].filter((k) => !path.excluded.has(k)))
+        const timed = reach(missions, { timed: true, freeOnly: false, scope: inPath }, validWindow)
+        const free = reach(missions, { timed: true, freeOnly: true, scope: inPath }, validWindow)
+        return { path, inPath, timed, finishes: finishes(timed), free: finishes(free) }
+      })
+      // A player holds the picks of a path that they could actually reach. From there some path that
+      // keeps those picks must finish; if none does, those picks are a dead end.
+      const deadEnds = new Map<string, string[]>()
+      for (const run of runs) {
+        const held = [...run.path.picks].filter(([, pick]) => run.timed.has(pick))
+        const ok = runs.some((other) => other.finishes && held.every(([group, pick]) => other.path.picks.get(group) === pick))
+        if (!ok) deadEnds.set(held.map(([, pick]) => pick).sort().join(','), held.map(([, pick]) => pick).sort())
+      }
+      return { runs, canFinish: runs.some((r) => r.finishes), canFinishFree: runs.some((r) => r.free), deadEnds: [...deadEnds.values()] }
+    }
+
+    const whole = analyse(playable)
+    const timed = new Set(whole.runs.flatMap((r) => [...r.timed.keys()]))
+    const untimed = new Set(whole.runs.flatMap((r) => [...reach(missions, { timed: false, freeOnly: false, scope: r.inPath }, validWindow).keys()]))
 
     for (const m of missions) {
       if (untimed.has(m.mission_key) && !timed.has(m.mission_key)) {
@@ -287,7 +314,7 @@ function validateInner(graph: HuntGraph): ValidationResult {
         )
       }
     }
-    if (!allGroupsSatisfied(graph.finish.rule_groups, timed)) {
+    if (!whole.canFinish) {
       const stuck = missions.map((m) => m.mission_key).filter((k) => !timed.has(k) && !cyclic.has(k))
       blockers.push(
         blocker(
@@ -296,17 +323,43 @@ function validateInner(graph: HuntGraph): ValidationResult {
           stuck,
         ),
       )
-    } else if (!allGroupsSatisfied(graph.finish.rule_groups, free)) {
-      const paid = missions.filter((m) => m.requires_entitlement).map((m) => m.mission_key)
-      blockers.push(
-        blocker('NO_FREE_PATH', 'The finish can only be reached through a paid mission. A free route to the finish has to exist.', paid),
-      )
+    } else {
+      for (const picks of whole.deadEnds) {
+        blockers.push(
+          blocker(
+            'BRANCH_DEAD_END',
+            `A player who chooses ${picks.map((k) => `"${k}"`).join(' and ')} can never finish. Every choice has to lead to the finish: add a route from it or remove the choice.`,
+            picks,
+          ),
+        )
+      }
+      if (!whole.canFinishFree) {
+        const paid = missions.filter((m) => m.requires_entitlement).map((m) => m.mission_key)
+        blockers.push(
+          blocker('NO_FREE_PATH', 'The finish can only be reached through a paid mission. A free route to the finish has to exist.', paid),
+        )
+      }
+      // A Mystery answer has a bounded number of attempts, so it can be lost for good. With every
+      // answer mission out of play, each choice must still finish (through its fallback).
+      const answers = missions.filter((m) => m.kind === 'answer').map((m) => m.mission_key)
+      if (answers.length > 0 && whole.deadEnds.length === 0) {
+        const without = analyse(new Set([...playable].filter((k) => !answers.includes(k))))
+        if (!without.canFinish || without.deadEnds.length > 0) {
+          blockers.push(
+            blocker(
+              'MYSTERY_NO_FALLBACK',
+              'A player who runs out of attempts on a Mystery answer would be stuck. Give each answer mission a fallback mission in the same fallback group, or keep it off the route to the finish.',
+              answers,
+            ),
+          )
+        }
+      }
     }
 
     // Every enabled chapter: a player who stays inside it can finish, and can finish free.
     for (const scope of chapterScopes(graph)) {
-      const inChapter = reach(missions, { timed: true, freeOnly: false, scope: scope.keys }, validWindow)
-      if (!allGroupsSatisfied(graph.finish.rule_groups, inChapter)) {
+      const inChapter = analyse(scope.keys)
+      if (!inChapter.canFinish) {
         blockers.push(
           blocker(
             'CHAPTER_INFEASIBLE',
@@ -314,10 +367,7 @@ function validateInner(graph: HuntGraph): ValidationResult {
             scope.members,
           ),
         )
-        continue
-      }
-      const inChapterFree = reach(missions, { timed: true, freeOnly: true, scope: scope.keys }, validWindow)
-      if (!allGroupsSatisfied(graph.finish.rule_groups, inChapterFree)) {
+      } else if (!inChapter.canFinishFree) {
         blockers.push(
           blocker(
             'CHAPTER_NO_FREE_FINISH',
