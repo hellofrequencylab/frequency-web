@@ -6,6 +6,7 @@
 // completion, rewards, and the member /crew/challenges surface are all reused.
 // Host+ only; service-role writes.
 
+import { slugify } from '@/lib/utils'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -26,9 +27,7 @@ export interface CampaignInput {
   validUntil: string | null
 }
 
-function slugify(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'qr-campaign'
-}
+const campaignSlug = (s: string): string => slugify(s).slice(0, 40) || 'qr-campaign'
 
 export async function createCampaign(input: CampaignInput): Promise<ActionResult<{ id: string }>> {
   await requireAdmin('host', { staff: 'qr' })
@@ -46,7 +45,7 @@ export async function createCampaign(input: CampaignInput): Promise<ActionResult
 
   const db = createAdminClient()
   const season = (await getCurrentSeason())?.season_number ?? 1
-  const slug = `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`
+  const slug = `${campaignSlug(title)}-${Math.random().toString(36).slice(2, 6)}`
 
   const { data: challenge, error } = await db
     .from('season_challenges')
