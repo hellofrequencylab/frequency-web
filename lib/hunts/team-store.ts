@@ -7,6 +7,8 @@
  *   myTeam(actorId, slug)              the caller's own team on a Trail: its state and size, never a roster
  *   startTeam / joinMyTeam / lockMyTeam / leaveMyTeam   the roster commands
  *   claimAsTeamMember(actorId, input)  a member credits a stop on the team's run
+ *   myTeamView(actorId, slug)          the caller's team and, once locked, the team run's credited stops
+ *   grantTeamReward(actorId, input)    the captain claims a reward on the team run; a split is written once
  *
  * Nothing here returns another member's name or traversal: docs/hunts/ROLE-MATRIX.md has no roster view.
  * Dark: every function answers `disabled` until HUNTS_CLAIMS_ENABLED (which needs HUNTS_ENABLED) is on.
@@ -16,9 +18,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { loadScanPlacement } from './claim-store'
 import { huntSwitchOn } from './flags'
 import { evaluate, validateGraph } from './graph'
+import { grantReward } from './rewards'
 import { loadPublishedTrail } from './run-store'
 import { huntRpc, loadUniquePlacementMission } from './staff-store'
-import { applyTeamClaim, createTeam, joinTeam, leaveTeam, lockTeam, type TeamResult } from './teams'
+import { allocateTeamAward, applyTeamClaim, createTeam, joinTeam, leaveTeam, lockTeam, type TeamResult } from './teams'
 
 // eslint-disable-next-line no-restricted-syntax -- the hunt tables are not in the generated types yet (ADR-246 exception)
 const db = () => createAdminClient() as unknown as SupabaseClient
@@ -113,6 +116,18 @@ async function teamProgress(client: SupabaseClient, runId: string): Promise<{ cr
   return { total: rows.length, credits: rows.filter((r) => r.disposition === 'credited').map((r) => ({ mission_key: r.mission_key as string })) }
 }
 
+/**
+ * The caller's team on a Trail and, once the roster is locked, the stops the team run holds, for the
+ * Trail page. A roster member may read the team's progress; nobody else reaches this read, because the
+ * run comes from the caller's own membership. Credits are null when the read failed or was truncated.
+ */
+export async function myTeamView(actorId: string, slug: string): Promise<{ team: MyTeam; credits: { mission_key: string }[] | null } | null> {
+  const team = await myTeam(actorId, slug)
+  if (!team) return null
+  if (team.state !== 'locked' || !team.runId) return { team, credits: null }
+  return { team, credits: (await teamProgress(db(), team.runId))?.credits ?? null }
+}
+
 type TeamClaimRefusal = 'not_on_team' | 'roster_not_locked' | 'placement_not_found' | 'mission_binding_unavailable' | 'eligibility_unavailable' | 'mission_not_eligible'
 
 /**
@@ -165,4 +180,38 @@ export async function claimAsTeamMember(
     snapshot = reread
   }
   return { ok: false, reason: 'eligibility_unavailable' }
+}
+
+/**
+ * How a team reward is held (ADR-1972, open question b). `captain`: the one grant the captain's run
+ * earns, nothing else written. `split`: the grant lands, then hunt_team_award_allocate writes who holds
+ * each of `units` once (equal shares, spare units to the longest standing). Which rewards split is the
+ * owner's call per reward; until it is made a caller has to name one.
+ */
+type TeamAwardPolicy = { hold: 'captain' } | { hold: 'split'; units: number }
+
+type TeamGrantAnswer =
+  | Awaited<ReturnType<typeof grantReward>> & { split?: Awaited<ReturnType<typeof allocateTeamAward>>['result']; shares?: { profileId: string; units: number }[] }
+  | { result: 'disabled' | 'not_on_team' | 'roster_not_locked' | 'not_captain' }
+
+/**
+ * The team's reward. hunt_reward_grant writes only for the run's subject, and the team run's subject is
+ * always the captain, so the captain claims it. When the grant lands (or a retry reads it back) and the
+ * policy splits it, the allocation is written once per team and reward; a second call reads the first.
+ */
+export async function grantTeamReward(
+  actorId: string,
+  input: { slug: string; rewardKey: string; idempotencyKey: string; policy: TeamAwardPolicy },
+): Promise<TeamGrantAnswer> {
+  if (!huntSwitchOn('rewards')) return { result: 'disabled' }
+  const team = await myTeam(actorId, input.slug)
+  if (!team) return { result: 'not_on_team' }
+  if (team.state !== 'locked' || !team.runId) return { result: 'roster_not_locked' }
+  if (!team.captain) return { result: 'not_captain' }
+
+  const granted = await grantReward(huntRpc(), { actorId, runId: team.runId, rewardKey: input.rewardKey, idempotencyKey: input.idempotencyKey })
+  if (input.policy.hold !== 'split' || (granted.result !== 'granted' && granted.result !== 'already_granted')) return granted
+  const split = await allocateTeamAward(huntRpc(), { actorId, teamId: team.teamId, awardKey: `reward:${input.rewardKey}`, units: input.policy.units })
+  // The grant stands either way; a split the database refused is reported as refused, never as written.
+  return split.result === 'allocated' ? { ...granted, split: split.result, shares: split.shares } : { ...granted, split: split.result }
 }

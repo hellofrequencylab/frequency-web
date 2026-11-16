@@ -13,7 +13,7 @@ vi.mock('./claim-store', () => ({ loadScanPlacement: mocks.loadScanPlacement }))
 vi.mock('./run-store', () => ({ loadPublishedTrail: mocks.loadPublishedTrail }))
 vi.mock('./staff-store', () => ({ huntRpc: () => mocks.rpc, loadUniquePlacementMission: mocks.loadUniquePlacementMission }))
 
-import { claimAsTeamMember, joinMyTeam, leaveMyTeam, lockMyTeam, myTeam, startTeam } from './team-store'
+import { claimAsTeamMember, grantTeamReward, joinMyTeam, leaveMyTeam, lockMyTeam, myTeam, myTeamView, startTeam } from './team-store'
 
 const TEAM = '00000000-0000-4000-a043-0000000000aa'
 type Row = Record<string, unknown>
@@ -166,5 +166,63 @@ describe('dark', () => {
     expect(mocks.from).not.toHaveBeenCalled()
     expect(mocks.rpc).not.toHaveBeenCalled()
     expect(mocks.loadScanPlacement).not.toHaveBeenCalled()
+  })
+})
+
+describe('the team run on the Trail page (FH-043S)', () => {
+  it('gives a roster member the team run\'s credited stops, and nobody else anything', async () => {
+    tables.hunt_progress = [
+      { run_id: 'team-run', mission_key: 'stop-1', disposition: 'credited' },
+      { run_id: 'team-run', mission_key: 'stop-2', disposition: 'held' },
+      { run_id: 'other-run', mission_key: 'stop-2', disposition: 'credited' },
+    ]
+    expect(await myTeamView('member', 'coast-trail')).toMatchObject({ team: { teamId: TEAM, size: 2 }, credits: [{ mission_key: 'stop-1' }] })
+    expect(await myTeamView('outsider', 'coast-trail')).toBeNull()
+    expect(await myTeamView('departed', 'coast-trail')).toBeNull()
+  })
+
+  it('reads no progress before the roster locks', async () => {
+    tables.hunt_teams[0] = { ...tables.hunt_teams[0], state: 'forming', run_id: null }
+    expect(await myTeamView('member', 'coast-trail')).toMatchObject({ team: { state: 'forming' }, credits: null })
+  })
+})
+
+describe('team rewards (FH-043S)', () => {
+  const reward = (policy: Parameters<typeof grantTeamReward>[1]['policy']) => ({ slug: 'coast-trail', rewardKey: 'finish-badge', idempotencyKey: 'grant-key-1', policy })
+
+  beforeEach(() => vi.stubEnv('HUNTS_REWARDS_ENABLED', '1'))
+
+  it('the captain claims on the team run, and a split is written once when the grant lands', async () => {
+    mocks.rpc.mockImplementation(async (fn: string) => fn === 'hunt_reward_grant'
+      ? { data: { result: 'granted', grant_id: 'g1' }, error: null }
+      : { data: { result: 'allocated', shares: [{ profile_id: 'captain', units: 2 }, { profile_id: 'member', units: 1 }] }, error: null })
+    const out = await grantTeamReward('captain', reward({ hold: 'split', units: 3 }))
+    expect(out).toMatchObject({ result: 'granted', split: 'allocated', shares: [{ profileId: 'captain', units: 2 }, { profileId: 'member', units: 1 }] })
+    expect(mocks.rpc.mock.calls.map((c) => c[0])).toEqual(['hunt_reward_grant', 'hunt_team_award_allocate'])
+    expect(mocks.rpc.mock.calls[0][1]).toMatchObject({ p_actor: 'captain', p_run_id: 'team-run', p_reward_key: 'finish-badge' })
+    expect(mocks.rpc.mock.calls[1][1]).toEqual({ p_actor: 'captain', p_team_id: TEAM, p_award_key: 'reward:finish-badge', p_units: 3 })
+  })
+
+  it('a captain-held reward writes no split, and a grant that did not land splits nothing', async () => {
+    mocks.rpc.mockResolvedValue({ data: { result: 'granted', grant_id: 'g1' }, error: null })
+    expect(await grantTeamReward('captain', reward({ hold: 'captain' }))).toMatchObject({ result: 'granted' })
+    mocks.rpc.mockResolvedValue({ data: { result: 'sold_out', terms: 'Gone.' }, error: null })
+    expect(await grantTeamReward('captain', reward({ hold: 'split', units: 3 }))).toMatchObject({ result: 'sold_out' })
+    expect(mocks.rpc.mock.calls.map((c) => c[0])).toEqual(['hunt_reward_grant', 'hunt_reward_grant'])
+  })
+
+  it('refuses a non-captain, an outsider, a departed member and an unlocked roster before any write', async () => {
+    expect(await grantTeamReward('member', reward({ hold: 'captain' }))).toEqual({ result: 'not_captain' })
+    expect(await grantTeamReward('outsider', reward({ hold: 'captain' }))).toEqual({ result: 'not_on_team' })
+    expect(await grantTeamReward('departed', reward({ hold: 'captain' }))).toEqual({ result: 'not_on_team' })
+    tables.hunt_teams[0] = { ...tables.hunt_teams[0], state: 'forming', run_id: null }
+    expect(await grantTeamReward('captain', reward({ hold: 'captain' }))).toEqual({ result: 'roster_not_locked' })
+    expect(mocks.rpc).not.toHaveBeenCalled()
+  })
+
+  it('stays dark with the rewards switch off', async () => {
+    vi.stubEnv('HUNTS_REWARDS_ENABLED', '')
+    expect(await grantTeamReward('captain', reward({ hold: 'captain' }))).toEqual({ result: 'disabled' })
+    expect(mocks.from).not.toHaveBeenCalled()
   })
 })

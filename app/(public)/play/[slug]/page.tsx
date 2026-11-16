@@ -11,6 +11,8 @@ import { huntSwitchOn } from '@/lib/hunts/flags'
 import { isCrawler } from '@/lib/hunts/placement'
 import { HELD_VISIT_MESSAGE } from '@/lib/hunts/player'
 import { loadPublicTrailSummary } from '@/lib/hunts/run-store'
+import { myTeam } from '@/lib/hunts/team-store'
+import { teamMessage } from '@/lib/hunts/teams'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
@@ -41,13 +43,25 @@ export async function generateMetadata({ params }: Pick<TrailLandingProps, 'para
   }
 }
 
-async function loadConfirmation(profileId: string, slug: string, code: string | string[] | undefined) {
+type Confirmation = { action: string; field: { name: 'token' | 'team'; value: string }; team: boolean } | { notice: string }
+
+async function loadConfirmation(profileId: string, slug: string, code: string | string[] | undefined): Promise<Confirmation | null> {
   if (!huntSwitchOn('claims') || typeof code !== 'string' || !code) return null
   const placement = await loadScanPlacement({ code })
   if (!placement || placement.revokedAt !== null || placement.huntSlug !== slug) return null
+  const action = `/hunts/p/${encodeURIComponent(code)}`
+
+  // FH-043S: a member of a team on this Trail confirms for the team. No solo token is opened for them,
+  // and until the captain locks the roster there is nothing to confirm yet.
+  const team = await myTeam(profileId, slug)
+  if (team) {
+    return team.state === 'locked' && team.runId
+      ? { action, field: { name: 'team', value: '1' }, team: true }
+      : { notice: teamMessage('roster_not_locked') }
+  }
 
   const claim = await openClaim(profileId, placement.id, Math.floor(Date.now() / 1000))
-  return claim.ok ? { action: `/hunts/p/${encodeURIComponent(code)}`, token: claim.token } : null
+  return claim.ok ? { action, field: { name: 'token', value: claim.token }, team: false } : null
 }
 
 function claimFeedback(result: string | string[] | undefined): string | undefined {
@@ -55,6 +69,7 @@ function claimFeedback(result: string | string[] | undefined): string | undefine
     case 'credited': return 'Stop confirmed.'
     case 'already_credited': return 'You already confirmed this stop.'
     case 'held': return HELD_VISIT_MESSAGE
+    case 'roster_not_locked': return teamMessage('roster_not_locked')
     case 'unavailable': return 'This stop could not be confirmed.'
   }
 }
@@ -69,7 +84,8 @@ export default async function TrailLanding({ params, searchParams }: TrailLandin
   const { p: code, claim } = await searchParams
   const confirmation = profileId ? await loadConfirmation(profileId, trail.slug, code) : null
 
-  const feedback = profileId && !confirmation ? claimFeedback(claim) : undefined
+  const confirm = confirmation && 'action' in confirmation ? confirmation : null
+  const feedback = profileId && !confirm ? (confirmation && 'notice' in confirmation ? confirmation.notice : claimFeedback(claim)) : undefined
   const hero = await resolveDetailHero(`/play/${encodeURIComponent(trail.slug)}`)
   const playPath = `/hunts/${encodeURIComponent(trail.slug)}/play`
   return (
@@ -79,10 +95,10 @@ export default async function TrailLanding({ params, searchParams }: TrailLandin
           <div className="space-y-4">
             <p className="text-body text-muted">{trail.stopCount} {trail.stopCount === 1 ? 'stop' : 'stops'}</p>
             {feedback && <p className="text-body" role="status">{feedback}</p>}
-            {confirmation ? (
-              <form method="post" action={confirmation.action}>
-                <input type="hidden" name="token" value={confirmation.token} />
-                <Button type="submit">Confirm stop</Button>
+            {confirm ? (
+              <form method="post" action={confirm.action}>
+                <input type="hidden" name={confirm.field.name} value={confirm.field.value} />
+                <Button type="submit">{confirm.team ? 'Confirm stop for your team' : 'Confirm stop'}</Button>
               </form>
             ) : (
               <Link

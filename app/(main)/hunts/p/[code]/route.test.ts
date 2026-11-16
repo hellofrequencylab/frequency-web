@@ -2,8 +2,9 @@ import { createHash } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET, POST } from './route'
 
-const { getCallerProfile, loadScanPlacement, claimAsPlayer, from, rpc } = vi.hoisted(() => ({
+const { getCallerProfile, loadScanPlacement, claimAsPlayer, claimAsTeamMember, from, rpc } = vi.hoisted(() => ({
   getCallerProfile: vi.fn(),
+  claimAsTeamMember: vi.fn(),
   loadScanPlacement: vi.fn(),
   claimAsPlayer: vi.fn(),
   from: vi.fn(),
@@ -12,6 +13,7 @@ const { getCallerProfile, loadScanPlacement, claimAsPlayer, from, rpc } = vi.hoi
 
 vi.mock('@/lib/auth', () => ({ getCallerProfile }))
 vi.mock('@/lib/hunts/claim-store', () => ({ loadScanPlacement, claimAsPlayer }))
+vi.mock('@/lib/hunts/team-store', () => ({ claimAsTeamMember }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from, rpc }) }))
 
 const origin = 'https://frequencylocal.com'
@@ -182,6 +184,47 @@ describe('Hunt placement scan', () => {
     expect((await scan({ from })).headers.get('Location')).toBe(`${from}${landingPath}?p=trail-stop`)
     expect((await confirm({ from })).headers.get('Location')).toBe(`${from}${landingPath}?claim=credited`)
     expect((await confirm({ from: 'https://foreign.vercel.app' })).status).toBe(403)
+  })
+})
+
+describe('A team member\'s scan (FH-043S)', () => {
+  const team = () => confirm({ fields: new URLSearchParams({ team: '1' }) })
+
+  it('credits the team run through the team door with the key the typed code uses, and opens no solo claim', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_123)
+    claimAsTeamMember.mockResolvedValue({ ok: true, result: 'credited', replayed: false })
+
+    const response = await team()
+
+    const key = createHash('sha256').update('team-play:player-1:neighborhood-trail:trail-stop').digest('hex')
+    expect(claimAsTeamMember).toHaveBeenCalledExactlyOnceWith('player-1', { slug: 'neighborhood-trail', code: 'trail-stop', idempotencyKey: key, nowEpoch: 1_700_000_000 })
+    expect(claimAsPlayer).not.toHaveBeenCalled()
+    expect(response.status).toBe(303)
+    expect(response.headers.get('Location')).toBe(`${origin}${landingPath}?claim=credited`)
+  })
+
+  it('a second member scanning a stop the team holds reads it as already confirmed', async () => {
+    claimAsTeamMember.mockResolvedValue({ ok: true, result: 'already_credited', replayed: false })
+    expect((await team()).headers.get('Location')).toBe(`${origin}${landingPath}?claim=already_credited`)
+  })
+
+  it('an outsider or a departed member gets the same refusal, and an unlocked roster says so', async () => {
+    claimAsTeamMember.mockResolvedValue({ ok: false, reason: 'not_on_team' })
+    expect((await team()).headers.get('Location')).toBe(`${origin}${landingPath}?claim=unavailable`)
+    claimAsTeamMember.mockResolvedValue({ ok: false, reason: 'roster_not_locked' })
+    expect((await team()).headers.get('Location')).toBe(`${origin}${landingPath}?claim=roster_not_locked`)
+  })
+
+  it('keeps a signed-out visitor, a foreign origin and a malformed team field off the team door', async () => {
+    getCallerProfile.mockResolvedValue(null)
+    expect((await team()).status).toBe(401)
+    getCallerProfile.mockResolvedValue({ id: 'player-1' })
+    expect((await confirm({ sentOrigin: 'https://foreign.example', fields: new URLSearchParams({ team: '1' }) })).status).toBe(403)
+    for (const body of ['team=2', 'team=1&token=x', 'team=1&team=1']) {
+      expect((await confirm({ fields: new URLSearchParams(body) })).status).toBe(400)
+    }
+    expect(claimAsTeamMember).not.toHaveBeenCalled()
+    expect(loadScanPlacement).not.toHaveBeenCalled()
   })
 })
 

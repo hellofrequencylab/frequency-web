@@ -6,6 +6,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { ClaimStopForm } from '@/components/hunts/claim-stop-form'
 import { HuntFundraising } from '@/components/hunts/hunt-fundraising'
 import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
+import { TeamClaimForm, TeamPanel } from '@/components/hunts/team-panel'
 import { VisitedStops } from '@/components/hunts/visited-stops'
 import { VisitedStopsMap } from '@/components/hunts/visited-stops-map'
 import { FocusTemplate } from '@/components/templates'
@@ -13,6 +14,8 @@ import { buttonClasses } from '@/components/ui/button'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { projectForPlayer, visitedPins } from '@/lib/hunts/player'
 import { loadPlayerRun, loadPublishedTrail, loadRunCredits, loadVisitedStopPoints, startOrResumeRun } from '@/lib/hunts/run-store'
+import { myTeamView } from '@/lib/hunts/team-store'
+import { TEAM_LIMITS } from '@/lib/hunts/teams'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,12 +24,17 @@ export const dynamic = 'force-dynamic'
 // a locked stop shows its position, an open stop shows its clue without the place, and a visited
 // stop shows both. The current stop's optional hint requires an explicit request. The map (FH-016T)
 // gets pins for visited stops only: the loader asks for credited stops and `visitedPins` drops the rest.
+// Teams (FH-043S): a member of a locked team plays the team's one run, so the stops, hints, map and
+// confirm form read the team run's credits and confirm through the team door. A member of a forming
+// team waits for the captain to lock the roster. The panel gets the caller's own team as a count.
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const metadata: Metadata = { title: 'Play a Trail', robots: { index: false } }
 
 export default async function PlayPage({ params, searchParams }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ hint?: string | string[] }>
+  searchParams: Promise<{ hint?: string | string[]; team?: string | string[] }>
 }) {
   const { slug } = await params
   if (!huntSwitchOn('enabled')) notFound()
@@ -35,9 +43,14 @@ export default async function PlayPage({ params, searchParams }: {
   const profileId = await getMyProfileId()
   if (!profileId) redirect(`/sign-in?next=/hunts/${slug}/play`)
 
-  const { hint } = await searchParams
-  const run = hint === undefined ? await startOrResumeRun(trail, profileId) : await loadPlayerRun(trail, profileId)
-  const credits = run ? await loadRunCredits(run.runId, profileId) : []
+  const { hint, team: teamLink } = await searchParams
+  const teamPlay = huntSwitchOn('claims') ? await myTeamView(profileId, slug) : null
+  const team = teamPlay && teamPlay.team.state !== 'disbanded' ? teamPlay.team : null
+  const onTeamRun = team?.state === 'locked'
+  // A team member never opens a solo run here: the team's run is the one they play.
+  const run = team ? null : hint === undefined ? await startOrResumeRun(trail, profileId) : await loadPlayerRun(trail, profileId)
+  const credits = onTeamRun ? teamPlay?.credits ?? [] : run ? await loadRunCredits(run.runId, profileId) : []
+  const playing = onTeamRun || run?.state === 'active'
   const view = projectForPlayer({
     graph: trail.graph,
     content: trail.content,
@@ -46,12 +59,13 @@ export default async function PlayPage({ params, searchParams }: {
     huntState: trail.huntState,
     revision: trail.revision,
     hints: {
-      enabled: huntSwitchOn('claims') && run?.state === 'active',
+      enabled: huntSwitchOn('claims') && playing,
       requestedKey: typeof hint === 'string' ? hint : undefined,
     },
   })
-  const pins = visitedPins(view.stops, run ? await loadVisitedStopPoints(trail, credits) : [])
-  const canConfirm = huntSwitchOn('claims') && view.canClaim && run?.state === 'active'
+  const pins = visitedPins(view.stops, onTeamRun || run ? await loadVisitedStopPoints(trail, credits) : [])
+  const canConfirm = huntSwitchOn('claims') && view.canClaim && playing
+  const joinTeamId = typeof teamLink === 'string' && UUID.test(teamLink) ? teamLink : null
 
   return (
     <FocusTemplate
@@ -102,8 +116,17 @@ export default async function PlayPage({ params, searchParams }: {
             <Link href={{ pathname: '/scan', query: { hint: 'trail' } }} prefetch={false} className={buttonClasses('primary', 'md')}>
               Scan the code at this stop
             </Link>
-            <ClaimStopForm slug={slug} />
+            {onTeamRun ? <TeamClaimForm slug={slug} /> : <ClaimStopForm slug={slug} />}
           </div>
+        )}
+        {huntSwitchOn('claims') && (
+          <TeamPanel
+            slug={slug}
+            team={team && { teamId: team.teamId, name: team.name, state: team.state, captain: team.captain, size: team.size }}
+            progress={onTeamRun ? { done: view.progress.done, total: view.progress.total } : null}
+            joinTeamId={joinTeamId}
+            limits={{ sizeMax: TEAM_LIMITS.sizeMax, nameMax: TEAM_LIMITS.nameMax }}
+          />
         )}
         <HuntFundraising huntId={trail.huntId} />
       </div>

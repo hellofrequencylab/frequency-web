@@ -32,6 +32,14 @@ export function inviteHash(code: string): string {
   return createHash('sha256').update(code.replace(/[\s-]/g, '').toUpperCase()).digest('hex')
 }
 
+/**
+ * The idempotency key of a team member's stop confirmation. The typed code on the Trail page and the
+ * scan's confirm step use the same key, so a scan and a typed retry by one member replay one claim.
+ */
+export function teamClaimKey(profileId: string, slug: string, code: string): string {
+  return createHash('sha256').update(`team-play:${profileId}:${slug}:${code.trim().toLowerCase()}`).digest('hex')
+}
+
 export type RosterMember = { profileId: string; joinedAt: string; leftAt: string | null }
 
 /** Active members, longest standing first; the profile id breaks a tie so the order never depends on row order. */

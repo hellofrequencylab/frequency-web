@@ -15,6 +15,8 @@ const store = vi.hoisted(() => ({
 
 vi.mock('@/lib/auth', () => ({ getMyProfileId: store.getMyProfileId }))
 vi.mock('@/lib/hunts/run-store', () => store)
+const teams = vi.hoisted(() => ({ myTeamView: vi.fn() }))
+vi.mock('@/lib/hunts/team-store', () => teams)
 vi.mock('@/components/templates', () => ({ FocusTemplate: ({ children }: { children: ReactNode }) => <main>{children}</main> }))
 // The map is a client leaf: what the server passes it is what reaches the browser, so capture it whole.
 const mapProps = vi.hoisted(() => ({ sent: [] as string[] }))
@@ -41,8 +43,8 @@ const trail = {
   graph: draftToGraph(draft), content: publishRows(draft).missions,
 }
 const run = { runId: 'run-1', state: 'active' }
-const render = async (hint?: string | string[]) => renderToStaticMarkup(await PlayPage({
-  params: Promise.resolve({ slug: 'coast-trail' }), searchParams: Promise.resolve({ hint }),
+const render = async (hint?: string | string[], team?: string) => renderToStaticMarkup(await PlayPage({
+  params: Promise.resolve({ slug: 'coast-trail' }), searchParams: Promise.resolve({ hint, team }),
 }))
 
 beforeEach(() => {
@@ -55,6 +57,7 @@ beforeEach(() => {
   mapProps.sent.length = 0
   store.startOrResumeRun.mockResolvedValue(run)
   store.loadPlayerRun.mockResolvedValue(run)
+  teams.myTeamView.mockResolvedValue(null)
 })
 
 afterEach(() => {
@@ -170,5 +173,59 @@ describe('Trail player hint reveal', () => {
     await expect(render('stop-1')).rejects.toThrow('/sign-in?next=/hunts/coast-trail/play')
     expect(store.loadPlayerRun).not.toHaveBeenCalled()
     expect(store.startOrResumeRun).not.toHaveBeenCalled()
+  })
+})
+
+describe('Trail teams (FH-043S)', () => {
+  const TEAM = '00000000-0000-4000-a043-0000000000aa'
+  const team = (over: Record<string, unknown> = {}) => ({
+    team: { teamId: TEAM, huntId: 'hunt-1', versionId: 'version-1', name: 'The Lanterns', state: 'locked', runId: 'team-run', captain: false, size: 3, ...over },
+    credits: [{ mission_key: 'stop-1' }],
+  })
+
+  it('offers a player on no team a way to start one, and a join form only from a team link', async () => {
+    const html = await render()
+    expect(html).toContain('Play as a team')
+    expect(html).toContain('Start a team')
+    expect(html).not.toContain('Join the team')
+    expect(teams.myTeamView).toHaveBeenCalledWith('player-1', 'coast-trail')
+    const linked = await render(undefined, TEAM)
+    expect(linked).toContain('Join the team')
+    expect(linked).toContain(`value="${TEAM}"`)
+    expect(await render(undefined, 'not-a-team-id')).not.toContain('Join the team')
+  })
+
+  it('plays a locked team member on the team run: its stops, its progress and the team confirm form, no solo run', async () => {
+    teams.myTeamView.mockResolvedValue(team())
+    const html = await render()
+    expect(html).toContain('The Lanterns')
+    expect(html).toContain('3 people on the team')
+    expect(html).toContain('1 of 3 stops confirmed for your team.')
+    expect(html).toContain('Place 1')
+    expect(html).toContain('Confirm stop for your team')
+    expect(html).toContain('Leave the team')
+    expect(html).not.toMatch(/Lock the roster|Start a team|team-run|Private hint|Place [23]|Clue 3/)
+    expect(store.startOrResumeRun).not.toHaveBeenCalled()
+    expect(store.loadRunCredits).not.toHaveBeenCalled()
+    expect(store.loadVisitedStopPoints).toHaveBeenCalledWith(trail, [{ mission_key: 'stop-1' }])
+  })
+
+  it('lets only the captain of a forming team lock it, and confirms nothing until then', async () => {
+    teams.myTeamView.mockResolvedValue({ ...team({ state: 'forming', runId: null, captain: true, size: 2 }), credits: null })
+    const captain = await render()
+    expect(captain).toContain('Lock the roster')
+    expect(captain).toContain('You are the captain.')
+    expect(captain).not.toMatch(/Confirm stop|stops confirmed for your team/)
+    teams.myTeamView.mockResolvedValue({ ...team({ state: 'forming', runId: null }), credits: null })
+    const member = await render()
+    expect(member).not.toContain('Lock the roster')
+    expect(member).toContain('Your captain locks the roster')
+    expect(store.startOrResumeRun).not.toHaveBeenCalled()
+  })
+
+  it('shows no team panel and reads no team while claims are off', async () => {
+    vi.stubEnv('HUNTS_CLAIMS_ENABLED', '')
+    expect(await render()).not.toMatch(/Play as a team|Start a team/)
+    expect(teams.myTeamView).not.toHaveBeenCalled()
   })
 })

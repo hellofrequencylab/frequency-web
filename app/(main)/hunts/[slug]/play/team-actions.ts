@@ -6,12 +6,11 @@
 // database's (lib/hunts/teams.ts); these only carry the answer back in words.
 // Dark until HUNTS_CLAIMS_ENABLED is on.
 
-import { createHash } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { claimAsTeamMember, joinMyTeam, leaveMyTeam, lockMyTeam, startTeam } from '@/lib/hunts/team-store'
-import { teamMessage, type TeamResult } from '@/lib/hunts/teams'
+import { teamClaimKey, teamMessage, type TeamResult } from '@/lib/hunts/teams'
 
 export type TeamActionState = { status: 'idle' | 'done' | 'error'; message: string; teamId?: string; inviteCode?: string }
 
@@ -75,8 +74,8 @@ export async function claimTeamStopAction(_previous: TeamActionState, formData: 
   if ('status' in who) return who
   const code = field(formData, 'code').toLowerCase()
   if (!CODE.test(code)) return error('That code does not look right. Check it and try again.')
-  // One key per member, Trail and stop code: a retry or a second device replays instead of double crediting.
-  const idempotencyKey = createHash('sha256').update(`team-play:${who.profileId}:${who.slug}:${code}`).digest('hex')
+  // One key per member, Trail and stop code: a retry, a scan or a second device replays instead of double crediting.
+  const idempotencyKey = teamClaimKey(who.profileId, who.slug, code)
   const out = await claimAsTeamMember(who.profileId, { slug: who.slug, code, idempotencyKey, nowEpoch: Math.floor(Date.now() / 1000) })
   if (!out.ok) {
     return error(out.reason === 'disabled' ? OFF : out.reason === 'not_on_team' || out.reason === 'roster_not_locked' ? teamMessage(out.reason) : 'This stop could not be confirmed.')

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   loadPublicTrailSummary: vi.fn(),
   loadScanPlacement: vi.fn(),
   openClaim: vi.fn(),
+  myTeam: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({ headers: mocks.headers }))
@@ -25,6 +26,7 @@ vi.mock('@/lib/elements/header', () => ({
 }))
 vi.mock('@/lib/auth', () => ({ getMyProfileId: mocks.getMyProfileId }))
 vi.mock('@/lib/hunts/run-store', () => ({ loadPublicTrailSummary: mocks.loadPublicTrailSummary }))
+vi.mock('@/lib/hunts/team-store', () => ({ myTeam: mocks.myTeam }))
 vi.mock('@/lib/hunts/claim-store', () => ({
   loadScanPlacement: mocks.loadScanPlacement,
   openClaim: mocks.openClaim,
@@ -51,6 +53,7 @@ beforeEach(() => {
   mocks.loadPublicTrailSummary.mockResolvedValue(trail)
   mocks.loadScanPlacement.mockResolvedValue(placement)
   mocks.openClaim.mockResolvedValue({ ok: true, runId: 'private-run-id', token: 'signed-fixture' })
+  mocks.myTeam.mockResolvedValue(null)
 })
 
 afterEach(() => {
@@ -165,5 +168,28 @@ describe('Public Trail landing', () => {
     expect(mocks.getMyProfileId).not.toHaveBeenCalled()
     expect(mocks.loadScanPlacement).not.toHaveBeenCalled()
     expect(mocks.openClaim).not.toHaveBeenCalled()
+  })
+
+  it('hands a member of a locked team a team confirmation with no solo token (FH-043S)', async () => {
+    mocks.getMyProfileId.mockResolvedValue('member-1')
+    mocks.myTeam.mockResolvedValue({ teamId: 'team-secret-id', huntId: 'hunt-1', versionId: 'v1', name: 'The Lanterns', state: 'locked', runId: 'team-run-id', captain: false, size: 3 })
+    const html = await render('coast-001')
+    expect(html).toContain('<form action="/hunts/p/coast-001" method="post">')
+    expect(html.match(/<input\b[^>]*>/g)).toEqual([expect.stringMatching(/type="hidden".*name="team".*value="1"/)])
+    expect(html).toContain('Confirm stop for your team')
+    expect(html).not.toMatch(/token|team-secret-id|team-run-id|Lanterns/)
+    expect(mocks.myTeam).toHaveBeenCalledWith('member-1', 'coast-trail')
+    expect(mocks.openClaim).not.toHaveBeenCalled()
+  })
+
+  it('tells a member of a forming team to wait for the lock, with no form (FH-043S)', async () => {
+    mocks.getMyProfileId.mockResolvedValue('member-1')
+    mocks.myTeam.mockResolvedValue({ teamId: 't', huntId: 'hunt-1', versionId: 'v1', name: 'The Lanterns', state: 'forming', runId: null, captain: false, size: 2 })
+    const html = await render('coast-001')
+    expect(html).toContain('Your captain needs to lock the roster before stops count.')
+    expect(html).not.toContain('<form')
+    expect(mocks.openClaim).not.toHaveBeenCalled()
+    mocks.myTeam.mockResolvedValue(null)
+    expect(await render(undefined, 'roster_not_locked')).toContain('Your captain needs to lock the roster before stops count.')
   })
 })

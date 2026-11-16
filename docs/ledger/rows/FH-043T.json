@@ -1,0 +1,18 @@
+{
+  "id": "FH-043T",
+  "title": "Hunts FH-043T: Team screens on a real phone, the team reward rule, and the live two-member check",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-043S (2026-11-16): the team panel, scan hand-off and award wiring shipped dark with tests; what needs a person, a phone, an owner decision and a database moves here."
+  },
+  "detail": "Owed by Web with Game systems, Identity and the database owner, not by an agent. (1) Design: look at the team panel on /hunts/[slug]/play and the team confirm step on /play/[slug] on a real phone (start, the invite code shown once, join from a team link, lock, leave, progress) and fix what reads wrong. (2) Owner decision (ADR-1972 open question b): for each reward kind, whether a team holds one unit (the captain) or a split across the roster, and how many units a split is; then the reward screen calls lib/hunts/team-store.ts grantTeamReward with that policy (nothing in the app grants a Hunt reward yet). (3) Owner decision: whether teammates may see each other's display names (the store returns a count only; docs/hunts/ROLE-MATRIX.md has no roster view). (4) Database owner: apply migration 20270346082000_hunt_teams_editions.sql through the serialized gate, confirm supabase/tests/hunt_teams.test.sql passes in db-tests, and check with two sessions that two members confirming one stop queue on the team row lock. Record in docs/hunts/TEAM-ACCEPTANCE.md, with the date and release SHA: a non-captain member scans a stop's code on a staging database and the team run is credited once; a second member scanning the same stop reads already confirmed; a signed-out visitor, an outsider and a departed member see no team data; the design look passed. Done when: the note exists with those results. Requires: FH-043S, FH-016V. Owner role: Web.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"docs/hunts/TEAM-ACCEPTANCE.md\")?0:1)'"
+  }
+}
