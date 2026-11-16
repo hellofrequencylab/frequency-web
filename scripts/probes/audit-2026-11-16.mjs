@@ -52,6 +52,35 @@ const REWRITTEN = {
     for (const p of stray) console.error('  stray:  ' + p)
     return stray.length === 0
   },
+
+  // SCAN-1225. The finding: modal dialogs that hand-roll focus handling instead of taking it from
+  // the kit (components/ui/dialog, or its hook components/ui/use-dialog-focus-trap). The old check
+  // counted every file containing the text role="dialog" or aria-modal, which also counted
+  // popovers and side panels that are not modal (role="dialog" with no aria-modal, where a focus
+  // trap would be a bug), a selector string, a comment, and the kit itself. It read 20 with the nine
+  // conversions of #5029 in, against a ceiling of 10 that converting modals alone could not reach.
+  // This one counts only files that render a MODAL: an aria-modal attribute that is not "false",
+  // or role="alertdialog", in code (comments stripped, selector strings not matched). A file is
+  // off the kit when it imports neither kit module. The ceiling is the row's own: 10.
+  // It is per file, so a file with one kit dialog and one hand-rolled modal reads as on the kit.
+  'SCAN-1225': () => {
+    const CEILING = 10
+    const KIT_FILES = ['components/ui/dialog.tsx', 'components/ui/use-dialog-focus-trap.ts']
+    const rendersModal = (s) =>
+      /[\s{]aria-modal(?!\s*=\s*(?:"false"|'false'|\{\s*false\s*\}))/.test(s) ||
+      /['"]aria-modal['"]\s*:\s*(?!false|['"]false['"])/.test(s) ||
+      /\srole=(?:"alertdialog"|'alertdialog'|\{\s*['"]alertdialog['"]\s*\})/.test(s)
+    const onKit = (s) => /ui\/dialog['"]|use-dialog-focus-trap['"]/.test(s)
+    if (!KIT_FILES.every((p) => existsSync(p))) {
+      console.error('SCAN-1225: the kit dialog or its focus-trap hook is gone')
+      return false
+    }
+    const modal = tracked('components', 'app').filter((p) => isSource(p) && !KIT_FILES.includes(p) && rendersModal(code(p)))
+    const off = modal.filter((p) => !onKit(code(p)))
+    console.log(`SCAN-1225: ${modal.length} files write their own modal markup (aria-modal or alertdialog); ${modal.length - off.length} take focus handling from the kit, ${off.length} do not (ceiling ${CEILING})`)
+    for (const p of off) console.log('  off the kit: ' + p)
+    return off.length <= CEILING
+  },
 }
 
 const CHECKS = {
@@ -73,7 +102,6 @@ const CHECKS = {
   "SCAN-1222": "node -e \"const o=require('child_process').execSync('git ls-files -z test/e2e/__screenshots__ | xargs -0 du -ck | tail -1').toString();process.exit(parseInt(o)>50000?1:0)\"",
   "SCAN-1223": "git grep -qiE 'north county' -- lib/marketing/quick-answers.ts app/llms-full.txt/route.ts",
   "SCAN-1224": "test -f docs/security/definer-rpc-review.md",
-  "SCAN-1225": "test $(for f in $(git grep -lE 'role=\"dialog\"|aria-modal' -- components app ':!*.test.*'); do grep -qE 'ui/dialog|use-dialog-focus-trap' $f || echo $f; done | wc -l) -le 10",
   "SCAN-1226": "node -e \"const s=require('fs').readFileSync('app/sitemap.ts','utf8');process.exit(/\\/pricing[^}]*lastModified/.test(s)?0:1)\" && ! git grep -q 'CIRCLE_SITEMAP_CAP = 200' -- app/sitemap.ts && git grep -q FOUNDING_CITIES -- app/llms.txt/route.ts",
   "SCAN-1227": "test ! -e MARKETING-BRIEF.md && test ! -e funnels-brief.md && test ! -e claude-design-briefs.md && ! git grep -q COMPLETE -- SEO-AEO-PLAN.md",
   "SCAN-1228": "grep -q 'metadata' 'app/(main)/admin/qr/page.tsx'",
