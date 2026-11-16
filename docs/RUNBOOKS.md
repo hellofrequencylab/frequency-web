@@ -964,6 +964,8 @@ Gate to turn it on: migration 20270346039000 (`commerce_carts`) is applied in Fr
 
 Gate to turn it on: two browsers signed in as owners of one Space both open the page builder; an edit in one appears in the other within a couple of seconds and neither page doubles its rows. A signed-out or non-owner session must be refused the channel (it fails closed). Turn it off by unsetting it: no data moves, the draft is still saved by the normal autosave.
 
+Editor bytes in the bundle: `check:editor-bundle-bytes` runs last in `postbuild` and prints one line per build saying whether any route outside `/pages/canvas` names a chunk that carries the CRDT runtime, with the byte counts. It is advisory and cannot fail a build. It has not read a real artifact yet, so treat its first lines as a reading to confirm, not a verdict. To make it blocking: confirm on one production build log that the editor route shows bytes and no other route is named, then change the pin at the bottom of `scripts/check-editor-bundle-bytes.test.ts` in the same change (PROG-E0).
+
 Known edges: a remote edit enters the editing tab's undo history; every open tab saves the same draft (idempotent); two tabs opening in the same instant may briefly seed twice and repair on the next edit.
 
 ## PostGIS reference table (`public.spatial_ref_sys`)
