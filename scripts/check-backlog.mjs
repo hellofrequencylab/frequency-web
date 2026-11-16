@@ -463,6 +463,17 @@ function parseProbeReport(text) {
   return total
 }
 
+/** THE RUNNER-SPEED REFERENCE (HYG-242). CPU time is not load-independent on a shared CI runner:
+ *  SCAN-502 reads 1.8 s alone and 4.58 s inside the test job, and the full sweep read 440 s there
+ *  against about 300 s on an idle 4-core box. So the sweep carries its own yardstick: one fixed
+ *  piece of work (a node start plus a counted loop, nothing read from the tree) run through the
+ *  same collector once per REFERENCE_EVERY probes, in the same lanes, under the same load. Its
+ *  median is printed as `runner-speed:` so a reading of the sweep can be compared with a reading
+ *  of the runner taken in the same minute. It is never a verdict on any row. */
+const REFERENCE_CMD = 'node -e "let s=0;for(let i=0;i<3e6;i++)s=(s+i*i)%1000003"'
+const REFERENCE_EVERY = 100
+const referenceCosts = []
+
 /** Per-probe CPU, for the summary line the contract test parses. Filled in entry order. */
 const probeCosts = []
 let unattributed = 0
@@ -789,6 +800,10 @@ const outcomes = new Array(toProbe.length)
 await runPool(
   toProbe.map((e, i) => async () => {
     outcomes[i] = await runProbe(e.verify)
+    if (i % REFERENCE_EVERY === REFERENCE_EVERY >> 1) {
+      const ref = await spawnProbe(REFERENCE_CMD)
+      if (typeof ref.cpuMs === 'number' && ref.status === 0) referenceCosts.push(ref.cpuMs)
+    }
   }),
   PROBE_PARALLELISM,
 )
@@ -887,12 +902,19 @@ function printCost() {
   // probes ran one at a time; each probe now reports its own (backlog-probe-cpu.cjs), and the in-
   // process grep kinds are inside the self figure.
   const selfCpu = process.cpuUsage()
-  const guardCpuMs = Math.round((selfCpu.user + selfCpu.system) / 1000 + total)
+  const guardCpuMs = Math.round((selfCpu.user + selfCpu.system) / 1000 + total + referenceCosts.reduce((n, c) => n + c, 0))
   console.log(
     `  probe-cost: n=${probeCosts.length} totalCpuMs=${total} maxCpuMs=${Math.round(worst.cpuMs)} slowest=${worst.id}` +
       (unattributed ? ` unattributed=${unattributed}` : ''),
   )
   console.log(`  guard-cost: guardCpuMs=${guardCpuMs} (probes ${total} + this process, ${PROBE_PARALLELISM} in flight)`)
+  if (referenceCosts.length) {
+    const ref = [...referenceCosts].sort((x, y) => x - y)
+    const median = ref[ref.length >> 1]
+    console.log(
+      `  runner-speed: n=${ref.length} medianCpuMs=${median.toFixed(1)} minCpuMs=${ref[0].toFixed(1)} maxCpuMs=${ref[ref.length - 1].toFixed(1)} (fixed reference work, same lanes)`,
+    )
+  }
   // The three most expensive, always — `--report` returns before any probe runs, so gating this
   // on it would have printed the list exactly never.
   for (const c of sorted.slice(0, 3)) {
