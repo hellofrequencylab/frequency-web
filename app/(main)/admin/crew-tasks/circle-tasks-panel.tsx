@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateShort } from '@/lib/format-date'
 import { buttonClasses } from '@/components/ui/button'
 // Host flow for circle-task assignment (BUILD-LIST P4.7): create a task scoped
 // to a circle you host, see who claimed what, release a stalled claim, or
@@ -170,7 +171,7 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
                 </span>
               )}
               Claimed by {task.assignee.displayName}
-              {task.claimedAt && <> · {new Date(task.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>}
+              {task.claimedAt && <> · {formatDateShort(task.claimedAt)}</>}
             </>
           ) : (
             <><Hand className="w-3 h-3" /> Open, waiting for a member to claim it</>

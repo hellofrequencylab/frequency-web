@@ -16,6 +16,7 @@ import {
 import type { OpenSlot, BookingQuestion } from '@/lib/spaces/booking'
 import { groupSlotsByDay, sessionLengthLabel, timezoneLabel } from '@/lib/spaces/booking-format'
 import { cn } from '@/lib/utils'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // MEMBER BOOKING PICKER (client). The interactive half of the Practitioner Book tab: a member taps a
 // time, optionally adds a note, and confirms via the createBooking server action. The server
@@ -238,11 +239,9 @@ export function BookingPicker({
                       setError(null)
                     }}
                     aria-pressed={active}
-                    className={cn(
-                      'rounded-control border px-3 py-1.5 text-body-sm font-semibold tabular-nums transition-colors',
-                      active
-                        ? 'border-primary bg-primary-bg text-primary-strong'
-                        : 'border-border text-text hover:border-border-strong hover:bg-surface-elevated',
+                    className={choiceTileClasses(
+                      active,
+                      cn('rounded-control px-3 py-1.5 text-body-sm font-semibold tabular-nums', active ? 'text-primary-strong' : 'text-text'),
                     )}
                   >
                     {timeFmt.format(new Date(slot.startsAt))}

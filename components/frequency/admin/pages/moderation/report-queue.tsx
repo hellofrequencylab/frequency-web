@@ -1,7 +1,7 @@
 'use client'
 
 import { HOME_TZ } from '@/lib/time/home-zone'
-import { useState, useTransition, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react'
 import Link from 'next/link'
 import { reviewReport, warnMember, suspendMember, cancelEventFromReport } from '@/app/(main)/feed/report-actions'
 import { isError, type ActionResult } from '@/lib/action-result'
@@ -9,6 +9,7 @@ import { relativeTime } from '@/lib/utils'
 import type { ReportWithPreview } from '@/components/widgets/admin/admin-moderation-queue'
 import type { BlockedMember, ResolvedReport } from './moderation-reads'
 import { FqIcon } from '@/components/frequency/icon'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { Av, EMPTY } from '../shared'
 
 // HOME_TZ from lib/time/zone.ts, written out: that module carries tz-lookup, too heavy for a client bundle.
@@ -239,17 +240,14 @@ export function ReportQueue({ reports, resolved, blocked }: { reports: ReportWit
                   </button>
                 </div>
                 {confirm?.reportId === r.id && (
-                  <div className="soft stack adp-tight" role="alertdialog" aria-label="Confirm moderation action">
-                    <span className="t1">{confirm.ask}</span>
-                    <div className="row wrap">
-                      <button type="button" className="btn sm ink" disabled={isPending} onClick={() => run(r.id, confirm.action)}>
-                        {isPending ? 'Working' : confirm.yes}
-                      </button>
-                      <button type="button" className="btn sm txt" disabled={isPending} onClick={() => setConfirm(null)}>
-                        Keep
-                      </button>
-                    </div>
-                  </div>
+                  <ConfirmPrompt
+                    key={r.id}
+                    ask={confirm.ask}
+                    yes={confirm.yes}
+                    pending={isPending}
+                    onYes={() => run(r.id, confirm.action)}
+                    onKeep={() => setConfirm(null)}
+                  />
                 )}
                 {suspendFor === r.id && (
                   <div className="stack adp-tight">
@@ -285,6 +283,54 @@ export function ReportQueue({ reports, resolved, blocked }: { reports: ReportWit
       )}
       {tab !== 'rules' && <HouseRules />}
     </>
+  )
+}
+
+// The inline confirm under a report's actions. It is an alertdialog, so it takes the kit trap
+// (SCAN-1225 follow-up): Tab stays inside it and focus returns to the button that opened it. First
+// focus goes to Keep, the safe answer, in the effect BEFORE the trap's own, so the trap finds focus
+// inside and leaves it; its default is the first button, which here is the destructive one. Escape
+// answers Keep. Its own component, keyed by report, so the trap binds to the prompt that is on screen.
+function ConfirmPrompt({
+  ask,
+  yes,
+  pending,
+  onYes,
+  onKeep,
+}: {
+  ask: string
+  yes: string
+  pending: boolean
+  onYes: () => void
+  onKeep: () => void
+}) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  const keepRef = useRef<HTMLButtonElement>(null)
+  const onKeepRef = useRef(onKeep)
+  useEffect(() => {
+    onKeepRef.current = onKeep
+  })
+  useEffect(() => {
+    keepRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !keepRef.current?.disabled) onKeepRef.current()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+  useDialogFocusTrap(true, panelRef)
+  return (
+    <div ref={panelRef} className="soft stack adp-tight" role="alertdialog" aria-label="Confirm moderation action">
+      <span className="t1">{ask}</span>
+      <div className="row wrap">
+        <button type="button" className="btn sm ink" disabled={pending} onClick={onYes}>
+          {pending ? 'Working' : yes}
+        </button>
+        <button ref={keepRef} type="button" className="btn sm txt" disabled={pending} onClick={onKeep}>
+          Keep
+        </button>
+      </div>
+    </div>
   )
 }
 

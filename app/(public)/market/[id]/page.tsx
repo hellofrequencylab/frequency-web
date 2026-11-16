@@ -356,6 +356,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                 priceCents={product.priceCents}
                 currency={product.currency}
                 variants={variants}
+                cart={cartEnabled()}
               />
             ) : (
               // LIVE-220: the Market page is a discovery surface. proxy.ts stamps the product id
