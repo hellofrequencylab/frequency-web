@@ -131,7 +131,7 @@ export function HostFunnelForm({
             {/* A field people never see; a bot that fills it is not a lead. */}
             <label aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
               Website
-              <input tabIndex={-1} autoComplete="off" name="website" value={trap} onChange={(e) => setTrap(e.target.value)} />
+              <Input tabIndex={-1} autoComplete="off" name="website" value={trap} onChange={(e) => setTrap(e.target.value)} />
             </label>
 
             {error && (
