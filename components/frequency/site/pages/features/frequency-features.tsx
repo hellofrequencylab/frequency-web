@@ -117,7 +117,8 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
               <p>{job.line}</p>
               <div className="jph fq-iri-rim" data-px=".08">
                 {/* eslint-disable-next-line @next/next/no-img-element -- sized by .jph img */}
-                <img loading="lazy" decoding="async" {...photoImg(photo(job.photo), '(max-width: 900px) 100vw, 33vw')} alt={job.photoAlt} />
+                {/* suppressHydrationWarning: the pre-paint script below may switch this photo to eager first. */}
+                <img loading="lazy" decoding="async" {...photoImg(photo(job.photo), '(max-width: 900px) 100vw, 33vw')} alt={job.photoAlt} suppressHydrationWarning />
                 <span className="fq-grain" />
               </div>
             </div>
@@ -206,10 +207,13 @@ export function FrequencyFeatures() {
         // pushed the cards below it 400 px down while the visitor read them: CLS 0.301. This runs as the
         // parser reaches it, while every feature is already in the DOM. FeaturesMotion still handles a
         // hash change after load and the scroll offset.
+        // FETCH ITS PHOTO NOW, TOO. The landing scrolls straight to that job, so the job's photo is the LCP
+        // element, and `loading="lazy"` held its request until layout found it in view: 5.2 s on a slow phone.
+        // Switching that one photo to eager and high priority starts the request here, during the parse.
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var h=location.hash;if(h.indexOf('#f-')!==0)return;var d=document.getElementById(h.slice(1));if(d&&d.tagName==='DETAILS')d.open=true}catch(e){}})()",
+              "(function(){try{var h=location.hash;if(h.indexOf('#f-')!==0)return;var d=document.getElementById(h.slice(1));if(!d||d.tagName!=='DETAILS')return;d.open=true;var j=d.closest('.job'),i=j&&j.querySelector('.jph img');if(i){i.loading='eager';i.fetchPriority='high'}}catch(e){}})()",
           }}
         />
       }
