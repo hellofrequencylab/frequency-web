@@ -30,6 +30,7 @@ import { decide, type HuntAction, type RoleGrant } from '@/lib/hunts/authz'
 import { slugify } from '@/lib/utils'
 import {
   canonicalContent,
+  evidencePolicyUpdates,
   parseTrailDraft,
   publishChecklist,
   publishRows,
@@ -360,6 +361,21 @@ export async function publishTrail(
   const missions = rows.missions.map((m) => ({ ...m, version_id: version.id, hunt_id: huntId }))
   const { error: missionError } = await client.from('hunt_missions').upsert(missions, { onConflict: 'version_id,mission_key' })
   if (missionError) throw new Error(missionError.message)
+
+  // FH-020V: carry each stop's review opt-in onto the placements already bound to this version. A
+  // placement bound later takes the same value from `stopEvidencePolicy` for its stop.
+  const bound = await client.from('hunt_mission_placements').select('mission_key, placement_id, evidence_policy').eq('version_id', version.id).eq('hunt_id', huntId)
+  if (bound.error) throw new Error(bound.error.message)
+  for (const update of evidencePolicyUpdates(draft, (bound.data ?? []) as { mission_key: string; placement_id: string; evidence_policy: unknown }[])) {
+    const { error: policyError } = await client
+      .from('hunt_mission_placements')
+      .update({ evidence_policy: update.evidence_policy })
+      .eq('version_id', version.id)
+      .eq('hunt_id', huntId)
+      .eq('mission_key', update.mission_key)
+      .eq('placement_id', update.placement_id)
+    if (policyError) throw new Error(policyError.message)
+  }
 
   // Rule groups have generated ids, so a retry clears this version's groups before writing them.
   await client.from('hunt_rule_groups').delete().eq('version_id', version.id).eq('hunt_id', huntId)

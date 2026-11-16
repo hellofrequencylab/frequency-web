@@ -51,7 +51,7 @@ export async function loadScanPlacement(lookup: string | { code: string }): Prom
   return { id: p.id, huntId: p.hunt_id, revokedAt: p.revoked_at, huntSlug }
 }
 
-type ScopeRefusal = { ok: false; reason: ClaimRefusal | 'mission_binding_unavailable' }
+type ScopeRefusal = { ok: false; reason: ClaimRefusal | 'mission_binding_unavailable' | 'version_superseded' }
 type ScanScope = {
   ok: true
   facts: ScopeFacts
@@ -63,7 +63,13 @@ type ScanScope = {
   placementId: string
 }
 
-/** A scan can only target a QR/NFC placement uniquely bound on the actor's current run version. */
+/**
+ * A scan can only target a QR/NFC placement uniquely bound on the version the actor's run is pinned to.
+ * FH-016T: the version comes from the run row, never from the Hunt's current pointer. The mission is
+ * looked up on that pinned version only, and only after the run is known. A run whose version is no
+ * longer the Hunt's current one is refused here, before a token is issued or a mission is resolved, so
+ * a placement rebound in a newer version can never pick a mission for an older run.
+ */
 async function loadScope(actorId: string, placementId: string): Promise<ScanScope | ScopeRefusal> {
   const client = db()
   const { data: placement, error: placementError } = await client
@@ -85,22 +91,25 @@ async function loadScope(actorId: string, placementId: string): Promise<ScanScop
     .maybeSingle()
   const h = hunt as { slug: string; current_version_id: string | null } | null
   if (huntError || !h?.current_version_id) return { ok: false, reason: 'placement_not_found' }
-  const versionId = h.current_version_id
 
-  const [run, missionKey, published] = await Promise.all([
-    client.from('hunt_runs').select('id, hunt_id, subject_profile_id, state')
-      .eq('hunt_id', p.hunt_id).eq('version_id', versionId).eq('subject_profile_id', actorId)
-      .order('attempt_no', { ascending: false }).limit(1).maybeSingle(),
-    loadUniquePlacementMission(p.hunt_id, versionId, p.id),
-    isPublishedTrailVersion(p.hunt_id, versionId),
-  ])
-  const r = run.error ? null : run.data as { id: string; hunt_id: string; subject_profile_id: string; state: string } | null
+  const run = await client.from('hunt_runs').select('id, hunt_id, version_id, subject_profile_id, state')
+    .eq('hunt_id', p.hunt_id).eq('version_id', h.current_version_id).eq('subject_profile_id', actorId)
+    .order('attempt_no', { ascending: false }).limit(1).maybeSingle()
+  const r = run.error ? null : run.data as { id: string; hunt_id: string; version_id?: unknown; subject_profile_id: string; state: string } | null
   const facts: ScopeFacts = {
     placement: { id: p.id, huntId: p.hunt_id, revokedAt: p.revoked_at },
     run: r ? { id: r.id, huntId: r.hunt_id, subjectProfileId: r.subject_profile_id, state: r.state } : null,
   }
   const scope = checkScope(actorId, facts)
   if (!scope.ok) return scope
+  // The run row is the authority for the version. A row without one, or pinned elsewhere, fails closed.
+  const versionId = typeof r?.version_id === 'string' ? r.version_id : null
+  if (!versionId || versionId !== h.current_version_id) return { ok: false, reason: 'version_superseded' }
+
+  const [missionKey, published] = await Promise.all([
+    loadUniquePlacementMission(p.hunt_id, versionId, p.id),
+    isPublishedTrailVersion(p.hunt_id, versionId),
+  ])
   if (!published) return { ok: false, reason: 'placement_not_found' }
   if (!missionKey) return { ok: false, reason: 'mission_binding_unavailable' }
 

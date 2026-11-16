@@ -27,6 +27,7 @@ const HINT_COPY: Record<string, { title: string; line: string }> = {
   checkin: { title: 'Check in', line: 'Point at the event code at the door.' },
   node: { title: 'Ghost Node', line: 'Found one? Point at the node to capture it.' },
   partner: { title: 'Partners', line: 'Point at the partner\u2019s plaque or code.' },
+  trail: { title: 'Trail', line: 'Point at the code at this stop.' },
   default: { title: 'Scan', line: 'Point at any Frequency code.' },
 }
 
