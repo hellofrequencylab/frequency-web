@@ -1,6 +1,6 @@
 /**
  * The application side of the Hunt claim command (FH-010). The database does the work in one
- * transaction (supabase/migrations/20270346037000_hunt_claim_apply.sql, then 20270346052000_hunt_claim_progress_guard.sql, then 20270346053000_hunt_claim_hold.sql, `hunt_claim_apply`); this file
+ * transaction (supabase/migrations/20270346037000_hunt_claim_apply.sql, then 20270346052000_hunt_claim_progress_guard.sql, then 20270346053000_hunt_claim_hold.sql, then 20270346075000_hunt_partner_state.sql, `hunt_claim_apply`); this file
  * holds the two things the caller computes around it: the request hash that makes an idempotency key
  * mean one payload, and the call itself with the answer narrowed to a known set.
  *
@@ -42,6 +42,8 @@ const RESULTS = [
   'stale_progress',
   /** FH-020U: kept for staff review (an opted-in placement); no progress, reward or outbox event. */
   'held',
+  /** FH-029: the placement's venue has a partner row that is not in force (withdrawn, suspended, unanswered). Nothing is written. */
+  'venue_not_active',
 ] as const
 
 type ClaimResult = (typeof RESULTS)[number]
