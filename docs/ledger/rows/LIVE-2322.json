@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2322",
+  "title": "House of Fates' Book buttons go to the Space's booking page now that her weekly hours are saved (code side)",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/sites/house-of-fates-site.ts",
+    "ref": "Toni House of Fates QA audit 2026-11-16 (project thread), item 4"
+  },
+  "detail": "EVIDENCE: lib/sites/house-of-fates-site.ts:20 HOF_BOOKING_LIVE = false pointed every Book button of the House of Fates site seed (the block buttons, the footer's Book a session, the header menu's Book and the header's Book a free consultation) at ~/contact-us. The constant waited for Toni's weekly hours; the Space now has them saved (5 space_availability rows, 1 schedule), so /book has something to offer.\n\nCLOSED 2026-11-16 (code side): HOF_BOOKING_LIVE is true, so the seed sends every Book seam to /book (feature:book for the menu). lib/sites/house-of-fates-site.test.ts now treats ~/book as the Space's own reserved booking route and asserts each seam. No probe or test pinned the old false value (scripts/probes/house-of-fates-site.mjs only requires the name).\n\nSTILL TRUE ON PRODUCTION: her saved live site document still holds the old /contact-us links. The constant only feeds the seed; the live copy changes when scripts/seed-house-of-fates-update.mts is re-applied (node --experimental-strip-types --no-warnings scripts/seed-house-of-fates-update.mts > house-of-fates-update.sql, then the SQL pasted into the Supabase SQL editor by the owner). That script is guarded to stop unless the saved site is still revision 1, and it rewrites the whole site from the seed, so it would also overwrite anything she has edited in the editor since. Not run by this change. The alternative that keeps her edits is changing the Book links by hand in her editor.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2322.mjs",
+    "note": "Fails on main: HOF_BOOKING_LIVE is false, so the seed's Book buttons open the contact page. Passes once it is true and every Book seam reads it. Measures the seed, not the live saved document."
+  },
+  "wave": "W7",
+  "closed": "2026-11-16"
+}
