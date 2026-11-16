@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Input } from '@/components/ui/field'
 import { formatPriceCents, type Price } from '@/lib/commerce/types'
 import { initialChosenCents, validateChosenAmount } from '@/lib/commerce/buyer-price'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // BUYER PRICE INPUT (Pricing Options P2). ONE reusable buyer-side control for every sellable thing.
 // Given a Price it renders the buyer's choice and reports the amount they would pay + whether it is
@@ -154,11 +155,7 @@ export function PriceInput({
                 onClick={() => pickChip(amount)}
                 disabled={disabled}
                 aria-pressed={active}
-                className={`rounded-control border px-3 py-1.5 text-body-sm font-semibold transition-colors disabled:opacity-50 ${
-                  active
-                    ? 'border-primary bg-primary-bg text-text'
-                    : 'border-border bg-surface text-text hover:border-border-strong'
-                }`}
+                className={choiceTileClasses(active, 'rounded-control px-3 py-1.5 text-body-sm font-semibold text-text')}
               >
                 {formatPriceCents(amount)}
               </button>

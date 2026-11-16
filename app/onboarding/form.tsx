@@ -9,6 +9,7 @@ import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { WizardShell } from '@/components/templates'
 import { EmailOptInCard } from '@/components/onboarding/email-opt-in'
 import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/field'
 import { SITE_DESIGN } from '@/lib/theme/design'
 
 // FREQUENCY (ADR-1737, build-time): the fields wear the members kit's `.input` (WizardShell stamps and
@@ -216,8 +217,9 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
     )
   }
 
+  // The kit Input supplies `input` itself, so the Frequency branch adds nothing (SCAN-1242).
   const inputBase = FREQUENCY
-    ? 'input'
+    ? ''
     : 'w-full rounded-card border border-border bg-surface px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
 
   // ── Steps ─────────────────────────────────────────────────────────────────
@@ -283,7 +285,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                     <label htmlFor="displayName" className="mb-1.5 block text-body-sm font-medium text-text">
                       Display name <span className="text-danger">*</span>
                     </label>
-                    <input
+                    <Input
                       id="displayName"
                       type="text"
                       value={displayName}
@@ -307,7 +309,7 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
                       <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-body text-subtle">
                         @
                       </span>
-                      <input
+                      <Input
                         id="handle"
                         type="text"
                         value={handle}

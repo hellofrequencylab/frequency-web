@@ -1,0 +1,10 @@
+{
+  "id": "FH-030",
+  "append": {
+    "detail": "\n\nBuilt 2026-11-16: lib/hunts/graph/count-rules.ts. A mission holds one credit and every placement bound to it is equivalent, so a second code in the shop or a substitute venue cannot add a count; a mission's bucket is fixed by the version (explicit bucket, else the venue of its placements, else its key), so two missions in one shop count once toward ANY and N-of-M. validateGraph now refuses a count group where two differently bucketed missions share a venue (VENUE_COUNTS_TWICE), counts thresholds only over missions that can still be played (a closed venue or a disabled chapter counts for nothing), and for every enabled regional chapter requires a route to the finish and one that needs no purchase (CHAPTER_INFEASIBLE, CHAPTER_NO_FREE_FINISH, CHAPTER_INVALID). evaluate reads the same buckets and marks a closed-venue or disabled-chapter mission closed while keeping earned credit. lib/hunts/run-store.ts loads each version's mission-to-placement venues and policy.chapters into the graph that the play page and the claim path evaluate, failing closed on a truncated or malformed read. No migration: the tables from FH-005 carry it. What the database enforces: one hunt_progress row per run and mission, and a revoked placement is refused by hunt_claim_apply. What it does not: distinct-bucket counting, thresholds and chapter feasibility are evaluated in the application graph engine only, as FH-010 left them. Not built here, moved to FH-030S: authoring (the editor still publishes linear ALL trails only, so no live version carries a count group, venue binding or chapter yet), and feeding live closures (revoked placements, withdrawn partners from FH-029) into the publish guard and the player evaluation."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-16"
+  }
+}

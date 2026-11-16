@@ -430,7 +430,8 @@ right now. A merge to `main` is a deploy.
   (`app/api/status/route.ts`).
 - **Sentry**, when armed, opens a new issue tagged with the release, which is the commit SHA.
 - **A `postbuild` gate failed the build:** `check:build-budget`, `check:og-trace`,
-  `check:cache-budget`, `check:shell-weight`, `check:build-fanout`, `check:notfound-routes`. The gate
+  `check:cache-budget`, `check:shell-weight`, `check:build-fanout`, `check:notfound-routes`,
+  `check:editor-bundle-bytes`. The gate
   prints the fan-out that tripped it. That build did not ship, which is the gate working.
 
 **What to open first.**
@@ -464,7 +465,7 @@ right now. A merge to `main` is a deploy.
 6. **If it was a size gate:** fix the fan-out the gate printed, never the budget (rule 2). **agent**
 
 **How you know it is over.** The production deployment is `READY`, `/api/status` `build.commit` is
-the SHA you expect, the Sentry group has stopped, the next real deploy prints all six gates green,
+the SHA you expect, the Sentry group has stopped, the next real deploy prints all seven gates green,
 and the cause is an ADR in [`DECISIONS.md`](DECISIONS.md) if it taught a rule, or a row if it did
 not.
 
@@ -928,6 +929,8 @@ Six switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on):
 
 Gate to turn one on: every Hunt migration up to the rung is applied in Frequency Community (hunt_outbox for the worker, hunt_claim_apply for claims), the legacy check-in, reward and commerce paths show no change with all switches off, and the rung below has run clean. Order: enabled, claims, authoring, worker, rewards. Rollback is unsetting the switch: no data moves, claims already credited stay credited, and outbox rows wait for the worker to return.
 
+`HUNTS_GUEST_ANALYTICS_ENABLED` (FH-025, `lib/hunts/analytics.ts`, blank = off, needs `HUNTS_ENABLED`) lets a signed-out visitor's Hunt events leave for Google Analytics. Off, a guest's scan is counted in the first-party ledger only. A member's Hunt events are forwarded only with that member's recorded analytics consent, and a venue's staff events are never forwarded, whatever this switch says. Every Hunt event carries only the closed dimensions on the allowlist (reason class, medium, cohort, assurance, the Hunt id, replayed): no location, code, venue or contact. Gate to turn it on: the privacy owner has signed FH-023 and named guest forwarding in that sign-off, and the consent banner covers signed-out visitors in every region the Hunt runs. Rollback is unsetting it.
+
 ### Stripe and progressive-dinner pilot gate
 
 Use the [D7 dinner draft](hunts/PRODUCT-DRAFTS-D4-D7-D8.md), the [Experience Pass binding](hunts/EXPERIENCE-PASS-BINDING.md), [paid ticket authority](hunts/PAID-TICKET-AUTHORITY.md) and [refund and dispute policy](hunts/REFUNDS-AND-DISPUTES.md) to agree the pilot scope before enabling sales.
@@ -960,11 +963,17 @@ Gate to turn it on: migration 20270346039000 (`commerce_carts`) is applied in Fr
 
 `EDITOR_COLLAB` (blank by default) makes the Space page builder join a private Realtime channel (`editor:space:<id>`) so two people editing the same Space see each other's changes. Needs `render_path_space_profile` on (the node builder) and migration 20270346033000 applied (it is). Off, each owner edits alone as before.
 
-`EDITOR_CANVAS` (blank by default) turns on the staff-only canvas preview at `/pages/canvas`: the viewport shell holding a shared-document text editor. Off, the route is a 404. With `?space=<space id>` the canvas joins that Space's live editing room (same as `EDITOR_COLLAB`, which it does not need); without it the document is local. Text is not saved. Also the switch for versioned page publishing (PROG-E0): with it on, publishing a page calls `publish_page_version` (migration 20270346043000, apply it BEFORE turning the switch on), which writes an immutable `page_versions` row and swaps `pages.published_version_id` in one transaction while still dual-writing `published_data`. Off, publish is the old upsert. It also opens the staff-only Loom composer at `/pages/loom` (PROG-E9): an operator saves a function declaration as JSON data, and `lib/loom/store.ts` writes it to `loom_functions` only after `validateLoomFunction` accepts it (migration 20270346048000, apply it BEFORE turning the switch on, or every save fails and the saved list is empty). Off, the route is a 404, the store reads nothing and refuses every write.
+`EDITOR_CANVAS` (blank by default) turns on the staff-only canvas preview at `/pages/canvas`: the viewport shell holding a shared-document text editor. Off, the route is a 404. With `?space=<space id>` the canvas joins that Space's live editing room (same as `EDITOR_COLLAB`, which it does not need); without it the document is local. Text is not saved. With `?space=<space id or address>` the canvas also opens that Space page's node document (PROG-E5B): the inspector edits the block picked in the layer list and saves to the Space's page draft (`spaces.preferences.profileLayoutDraft`, never the published page) for an editor of that Space, and only while `render_path_space_profile` is on; staff who are not editors of the Space see it read only. A save from a stale tab is refused, not merged. Also the switch for versioned page publishing (PROG-E0): with it on, publishing a page calls `publish_page_version` (migration 20270346043000, apply it BEFORE turning the switch on), which writes an immutable `page_versions` row and swaps `pages.published_version_id` in one transaction while still dual-writing `published_data`. Off, publish is the old upsert. It also opens the staff-only Loom composer at `/pages/loom` (PROG-E9): an operator saves a function declaration as JSON data, and `lib/loom/store.ts` writes it to `loom_functions` only after `validateLoomFunction` accepts it (migration 20270346048000, apply it BEFORE turning the switch on, or every save fails and the saved list is empty). Off, the route is a 404, the store reads nothing and refuses every write.
 
 Gate to turn it on: two browsers signed in as owners of one Space both open the page builder; an edit in one appears in the other within a couple of seconds and neither page doubles its rows. A signed-out or non-owner session must be refused the channel (it fails closed). Turn it off by unsetting it: no data moves, the draft is still saved by the normal autosave.
 
-Editor bytes in the bundle: `check:editor-bundle-bytes` runs last in `postbuild` and prints one line per build saying whether any route outside `/pages/canvas` names a chunk that carries the CRDT runtime, with the byte counts. It is advisory and cannot fail a build. It has not read a real artifact yet, so treat its first lines as a reading to confirm, not a verdict. To make it blocking: confirm on one production build log that the editor route shows bytes and no other route is named, then change the pin at the bottom of `scripts/check-editor-bundle-bytes.test.ts` in the same change (PROG-E0).
+Editor bytes in the bundle: `check:editor-bundle-bytes` runs last in `postbuild` and fails the build when a route outside `/pages/canvas` names a chunk that carries the collaboration runtime. It was advisory until 2026-11-16 and was armed after the production build of `main` printed it green (PROG-E0C; the rule is DEPLOY-SAFETY.md rule 13). A failed build did not ship: the previous deployment keeps serving. Read the gate line in the build log, then:
+
+- **`❌ ... the CRDT runtime is in a chunk named by N route(s) outside the editor` (exit 1).** A real finding. The log lists each route and chunk. Find the import that pulled `yjs`, `y-prosemirror` or `lib/editor-crdt` into that route (`pnpm check:editor-crdt-importers` lists who may import them; the usual cause is a static import of an editor component from a shared layout, a barrel file or a member page). Move it behind the editor route or behind a dynamic `import()`, as `components/entity-blocks/editor-collab.tsx` does. If production is waiting, revert the PR first and fix after (section 6). **agent**
+- **`❌ ... COULD NOT LOOK` or `CRASHED` (exit 79).** The gate could not read the artifact. It is not a finding about the artifact and it is not a pass. The line names which: no route manifests, the runtime in no chunk, no manifest matching `EDITOR_ROUTES` (the canvas route moved: update `EDITOR_ROUTES` to the new path in the same change as the move), or chunk names that resolve to nothing on disk (a compiler upgrade changed the manifest shape: fix the reader in `scripts/check-editor-bundle-bytes.mjs` and add the new shape to its test). Revert the change that caused it, then repair the gate with a fixture of the new shape. **agent**
+- **A `⚠️` line under a green `✅`.** The build shipped. One manifest would not load, or the editor route names no carrier. Open a backlog row; do not ignore it twice.
+
+Never make it pass by adding a route to `EDITOR_ROUTES` that is not an editor, by re-adding `|| true` or `--warn-only` in `postbuild` (a test fails both), or by deleting a fingerprint. A member page that is not an editor does not pay for multiplayer.
 
 Known edges: a remote edit enters the editing tab's undo history; every open tab saves the same draft (idempotent); two tabs opening in the same instant may briefly seed twice and repair on the next edit.
 

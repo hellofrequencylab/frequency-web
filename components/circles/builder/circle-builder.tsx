@@ -23,6 +23,8 @@ import { CircleVeraPanel } from './circle-vera-panel'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { FunnelNextStep } from '@/components/funnels/next-step-link'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
+import { chipClasses } from '@/components/ui/chip'
 
 // The member-facing Starter Circle BUILDER (Stage 4). A full-page editor that
 // mirrors the Journey builder's chrome (deferred creation already happened on
@@ -183,11 +185,12 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                         setType(t)
                         saveIfChanged('type', t, draft.type)
                       }}
-                      className={`flex-1 rounded-control border px-3 py-2 text-body-sm font-medium transition-colors ${
+                      className={choiceTileClasses(
+                        type === t,
                         type === t
-                          ? 'border-primary/50 bg-primary-bg text-primary-strong'
-                          : 'border-border bg-surface text-muted hover:text-text'
-                      }`}
+                          ? 'flex-1 rounded-control px-3 py-2 text-body-sm font-medium text-primary-strong'
+                          : 'flex-1 rounded-control px-3 py-2 text-body-sm font-medium text-muted hover:text-text',
+                      )}
                     >
                       {t === 'in-person' ? 'In person' : 'Online'}
                     </button>
@@ -221,11 +224,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
                       setPrimaryPillar(next)
                       saveIfChanged('primaryPillar', next, draft.primaryPillar)
                     }}
-                    className={`rounded-pill border px-3.5 py-1.5 text-body-sm font-medium transition-colors ${
-                      primaryPillar === p
-                        ? 'border-primary/50 bg-primary-bg text-primary-strong'
-                        : 'border-border bg-surface text-muted hover:text-text'
-                    }`}
+                    className={chipClasses(primaryPillar === p)}
                   >
                     {PILLAR_LABELS[p]}
                   </button>

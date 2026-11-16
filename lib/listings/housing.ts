@@ -397,6 +397,10 @@ interface HousingFacets {
   /** Every slug must be present on the listing (AND semantics). */
   amenities?: AmenitySlug[]
   limit?: number
+  /** Rows to skip, for a caller that walks every page (app/sitemap.ts, SCAN-1262). Naming it,
+   *  0 included, makes the read a page: ordered by `id` after `created_at` so no row sits on two
+   *  pages. Left out, the read is the same query it always was. */
+  offset?: number
 }
 
 /** Active housing listings narrowed by the Phase-2 facets (property type, price
@@ -419,13 +423,14 @@ export async function listHousingListings(facets: HousingFacets = {}): Promise<L
       .eq('vertical', 'housing')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
-      .limit(limit)
 
     if (facets.propertyType) query = query.eq('housing.property_type', facets.propertyType)
     if (facets.minPriceCents != null) query = query.gte('housing.rent_cents', facets.minPriceCents)
     if (facets.maxPriceCents != null) query = query.lte('housing.rent_cents', facets.maxPriceCents)
     if (wanted.length) query = query.contains('housing.amenities', wanted)
-    return query
+    if (facets.offset === undefined) return query.limit(limit)
+    const from = Math.max(Math.floor(facets.offset), 0)
+    return query.order('id', { ascending: false }).range(from, from + limit - 1)
   }
 
   // Resolve the seed owner once per query (process-memoized) so each row can carry seededUnclaimed.

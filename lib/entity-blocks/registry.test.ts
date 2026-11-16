@@ -7,7 +7,7 @@ import {
   profilePaletteForKind,
   MEMBER_CHROME_BLOCK_IDS,
 } from './registry'
-import { PROFILE_BLOCKS } from '@/lib/spaces/profile-blocks'
+import { PROFILE_BLOCKS } from '@/lib/entity-blocks/space-profile'
 
 describe('unified entity-block registry', () => {
   it('has unique ids and ascending order', () => {
