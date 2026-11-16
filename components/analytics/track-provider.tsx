@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
-import { pixelSafePath, pixelSafeProps, pixelSafeTitle } from '@/lib/analytics/sanitize'
+import { pixelAllowsEvent, pixelSafePath, pixelSafeProps, pixelSafeTitle } from '@/lib/analytics/sanitize'
 import { browserAllowsAnalytics, browserGoogleAllowed } from '@/lib/analytics/browser-policy'
 
 // Client-side tracking (ADR-070, ANALYTICS.md). Dual-emit: mirror to GA4 (if the tag
@@ -22,7 +22,8 @@ export function trackClient(event: string, props: Record<string, unknown> = {}):
   if (!browserAllowsAnalytics()) return
   // GA4 mirror (dots → underscores for GA's event-name rules). Pixel-safe props only
   // (LIVE-810): first-party keeps the full bag, Google never sees persona, topics or slugs.
-  if (browserGoogleAllowed()) window.gtag?.('event', event.replace(/\./g, '_'), pixelSafeProps(props))
+  // A first-party-only event (pixelAllowsEvent false) skips Google entirely and is only recorded below.
+  if (pixelAllowsEvent(event) && browserGoogleAllowed()) window.gtag?.('event', event.replace(/\./g, '_'), pixelSafeProps(props))
   // First-party — sendBeacon survives navigation; fall back to keepalive fetch.
   try {
     const payload = JSON.stringify({ event, props })

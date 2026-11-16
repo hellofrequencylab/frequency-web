@@ -1,7 +1,7 @@
 // What /cart shows for a saved cart (DEF-ETSY P5). PURE: the page reads the products and variants, this decides
 // what is on sale right now, prices each line from the live rows, and adds the totals up per currency. The saved
-// cart still holds no price, so nothing here is ever written back and nothing here is what a buyer is charged:
-// checkout reads the same rows again.
+// cart still holds no price: the one caller (./cart-load) writes back only which lines were left out or lowered,
+// never a price, and nothing here is what a buyer is charged: checkout reads the same rows again.
 
 import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
 import type { CommerceProduct, CommerceVariant } from './types'

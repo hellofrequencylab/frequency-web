@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { COACHING_QUESTION_CATALOG } from '@/lib/ai/coaching-question-catalog'
 import { photoHeroBlock } from '@/lib/entity-blocks/contract/photoHero'
 import { inspectorFields } from './inspector-model'
-import { coachTool, coachableFields, fallbackBlockCoaching, parseBlockCoaching, veraMayCoachBlock, type BlockCoachTrigger } from './vera-coach'
+import { isClientEvent } from '@/lib/analytics/events'
+import { pixelAllowsEvent } from '@/lib/analytics/sanitize'
+import { VERA_QUESTION_EVENT, coachTool, coachableFields, fallbackBlockCoaching, parseBlockCoaching, veraMayCoachBlock, veraQuestionProps, type BlockCoachTrigger } from './vera-coach'
 
 const fields = inspectorFields(photoHeroBlock, 'space-site')
 const wordKeys = coachableFields(fields).map((f) => f.key)
@@ -61,8 +63,8 @@ describe('the reply is read against this block', () => {
   it('turns ids into the catalog wording, labelled by the field', () => {
     const out = parseBlockCoaching({ questions: [{ field: 'title', questionId: 'audience' }, { field: 'subtitle', questionId: 'newcomer' }] }, fields)
     expect(out).toEqual([
-      { field: 'title', label: 'Headline', question: COACHING_QUESTION_CATALOG.audience },
-      { field: 'subtitle', label: 'Subtitle', question: COACHING_QUESTION_CATALOG.newcomer },
+      { field: 'title', label: 'Headline', questionId: 'audience', question: COACHING_QUESTION_CATALOG.audience },
+      { field: 'subtitle', label: 'Subtitle', questionId: 'newcomer', question: COACHING_QUESTION_CATALOG.newcomer },
     ])
   })
 
@@ -79,6 +81,13 @@ describe('the reply is read against this block', () => {
     ['too many questions', { questions: Array.from({ length: 4 }, () => ({ field: 'title', questionId: 'audience' })) }],
     ['no questions', { questions: [] }],
     ['prose', 'Here is a better headline'],
+    ['nothing', null],
+    ['a list', [{ field: 'title', questionId: 'audience' }]],
+    ['questions that is not a list', { questions: { field: 'title', questionId: 'audience' } }],
+    ['a question that is not an object', { questions: ['audience'] }],
+    ['a field that is a number', { questions: [{ field: 1, questionId: 'audience' }] }],
+    ['an inherited id', { questions: [{ field: 'title', questionId: 'constructor' }] }],
+    ['a question with no id', { questions: [{ field: 'title' }] }],
   ])('rejects %s whole', (_name, raw) => {
     expect(parseBlockCoaching(raw, fields)).toBeNull()
   })
@@ -90,5 +99,30 @@ describe('the fallback needs no model', () => {
     expect(out.map((q) => q.field)).toEqual(['eyebrow', 'title', 'subtitle'])
     const reviewed: string[] = Object.values(COACHING_QUESTION_CATALOG)
     for (const q of out) expect(reviewed).toContain(q.question)
+    for (const q of out) expect(COACHING_QUESTION_CATALOG[q.questionId as keyof typeof COACHING_QUESTION_CATALOG]).toBe(q.question)
+  })
+
+  it('a block with no word fields has no reply to read', () => {
+    expect(parseBlockCoaching({ questions: [{ field: 'title', questionId: 'audience' }] }, [])).toBeNull()
+  })
+})
+
+describe('telemetry for one question carries ids and counts only', () => {
+  const question = { field: 'title', label: 'Headline', questionId: 'audience', question: COACHING_QUESTION_CATALOG.audience }
+
+  it('names two registered, client-emittable events that no pixel may receive', () => {
+    expect(Object.keys(VERA_QUESTION_EVENT)).toEqual(['accepted', 'dismissed'])
+    for (const name of Object.values(VERA_QUESTION_EVENT)) {
+      expect(isClientEvent(name)).toBe(true)
+      expect(pixelAllowsEvent(name)).toBe(false)
+    }
+  })
+
+  it('has a closed payload with no wording, no label and no field content', () => {
+    const props = veraQuestionProps(question, { blockType: 'Banner', source: 'vera', position: 1, count: 3 })
+    expect(props).toEqual({ blockType: 'Banner', field: 'title', questionId: 'audience', source: 'vera', position: 1, shown: 3 })
+    const sent = Object.values(props).map(String)
+    expect(sent).not.toContain(question.question)
+    expect(sent).not.toContain(question.label)
   })
 })

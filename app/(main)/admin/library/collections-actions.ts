@@ -1,5 +1,6 @@
 'use server'
 
+import { slugify } from '@/lib/utils'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -23,13 +24,7 @@ function cleanIds(ids: string[]): string[] {
   return Array.from(new Set((ids ?? []).filter((s) => typeof s === 'string' && s.length > 0))).slice(0, MAX_BATCH)
 }
 
-function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-    .slice(0, 80)
-}
+const collectionSlug = (s: string): string => slugify(s).slice(0, 80)
 
 /** Create a collection (folder) in the shared library. Returns its id. */
 export async function createCollection(
@@ -44,7 +39,7 @@ export async function createCollection(
   const spaceId = await getRootSpaceId()
   if (!spaceId) return { error: 'No root space found; cannot scope the collection.' }
 
-  const base = slugify(t) || 'collection'
+  const base = collectionSlug(t) || 'collection'
   const row = {
     space_id: spaceId,
     title: t,
