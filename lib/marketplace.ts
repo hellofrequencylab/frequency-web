@@ -87,6 +87,10 @@ interface ListOpts {
   q?: string | null
   hideDemo?: boolean
   limit?: number
+  /** Rows to skip, for a caller that walks every page (app/sitemap.ts, SCAN-1262). Naming it,
+   *  0 included, makes the read a page: ordered by `id` after `created_at` so no row sits on two
+   *  pages. Left out, the read is the same query it always was. */
+  offset?: number
 }
 
 /** Active listings, newest first, with author. Optional kind + text filter. A failed read is
@@ -101,14 +105,16 @@ export async function listListings(opts: ListOpts = {}): Promise<MarketListingWi
       .select(`${COLS}, ${AUTHOR}`)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
-      .limit(opts.limit ?? 60)
     if (opts.kind) query = query.eq('kind', opts.kind)
     if (opts.hideDemo) query = query.eq('is_demo', false)
     if (opts.q && opts.q.trim()) {
       const needle = opts.q.trim().replace(/[%,()]/g, ' ').slice(0, 80)
       if (needle.trim()) query = query.or(`title.ilike.%${needle}%,description.ilike.%${needle}%,category.ilike.%${needle}%`)
     }
-    return query
+    const limit = opts.limit ?? 60
+    if (opts.offset === undefined) return query.limit(limit)
+    const from = Math.max(Math.floor(opts.offset), 0)
+    return query.order('id', { ascending: false }).range(from, from + limit - 1)
   }
   // Resolve the seed owner once per query (process-memoized) so each row can carry seededUnclaimed.
   const [rows, seedOwnerId] = await Promise.all([
