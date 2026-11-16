@@ -270,6 +270,13 @@ Baselines live in `test/e2e/__screenshots__/visual.spec.ts/` and are named
 Member-shell files are the `app-*` ones (`app-feed`, `app-room`, `app-settings`,
 `app-space-console`) and are captured only with `capture_shell` ticked.
 
+A `midnight-light` baseline that is byte-identical to the `dawn-light` one for the same
+surface and project is not committed twice (SCAN-1222). It is listed in
+`test/e2e/__screenshots__/shared-baselines.json`, and the midnight-light test compares
+against the dawn-light file (`test/e2e/shared-baselines.ts`). The capture job runs
+`node scripts/dedupe-visual-baselines.mjs` before it commits: it folds the pairs that came
+back identical and unlists a pair that no longer is. Do not edit the list by hand.
+
 ### What a full-page mobile baseline photographs (ADR-1545)
 
 A full-page capture on a project with `hasTouch` (`mobile`, `narrow`) drops Chromium's

@@ -30,23 +30,11 @@ export async function QuestJourneys() {
             <ActiveJourneys profileId={profileId} active={active} season={season} />
           </Suspense>
         )}
-        {finished.map((j) => (
-          <JourneyProgressCard
-            key={j.planId}
-            planId={j.planId}
-            slug={j.slug}
-            title={j.title}
-            inCohort={j.inCohort}
-            finished
-            distinctDays={14}
-            daysRequired={14}
-            hasExpression
-            expressionDone
-            windowStartsAt={null}
-            windowEndsAt={null}
-            learnHref={`/journeys/${j.slug}/learn`}
-          />
-        ))}
+        {finished.length > 0 && (
+          <Suspense fallback={null}>
+            <FinishedJourneys profileId={profileId} finished={finished} season={season} />
+          </Suspense>
+        )}
       </div>
     </section>
   )
@@ -105,10 +93,13 @@ async function ActiveJourneys({
             finished={e?.finished ?? false}
             distinctDays={e?.distinctDays ?? 0}
             daysRequired={e?.daysRequired ?? 14}
-            hasExpression={hasExpression.has(j.planId)}
+            hasExpression={e?.hasExpression ?? hasExpression.has(j.planId)}
             expressionDone={e?.expressionDone ?? false}
-            windowStartsAt={win?.start ?? null}
-            windowEndsAt={win?.end ?? null}
+            policyVersion={e?.policyVersion}
+            evidenceAvailable={e?.evidenceAvailable}
+            unknownSupportLogs={e?.unknownSupportLogs}
+            windowStartsAt={e?.windowStartsAt ?? win?.start ?? null}
+            windowEndsAt={e?.windowEndsAt ?? win?.end ?? null}
             learnHref={j.nextLesson?.href ?? `/journeys/${j.slug}/learn`}
           />
         )
@@ -130,4 +121,20 @@ function ActiveJourneysSkeleton({ count }: { count: number }) {
       ))}
     </div>
   )
+}
+
+
+async function FinishedJourneys({ profileId, finished, season }: {
+  profileId: string; finished: MemberJourneyProgress[]; season: number | null
+}) {
+  const evaluations = await Promise.all(finished.map((journey) => season == null
+    ? Promise.resolve(null) : evaluateJourneyCompletion(profileId, journey.planId, season)))
+  return <>{finished.map((j, index) => {
+    const e = evaluations[index]
+    return <JourneyProgressCard key={j.planId} planId={j.planId} slug={j.slug} title={j.title}
+      inCohort={j.inCohort} finished distinctDays={e?.daysRequired ?? 14} daysRequired={e?.daysRequired ?? 14}
+      hasExpression={e?.evidenceAvailable !== false && (e?.policyVersion !== 2 || e.hasExpression === true)} expressionDone={e?.policyVersion === 2 ? e.expressionDone : true}
+      policyVersion={e?.policyVersion} unknownSupportLogs={e?.unknownSupportLogs} windowStartsAt={e?.windowStartsAt ?? null}
+      windowEndsAt={e?.windowEndsAt ?? null} learnHref={`/journeys/${j.slug}/learn`} />
+  })}</>
 }
