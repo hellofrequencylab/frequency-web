@@ -39,7 +39,7 @@ const ICONS: Record<Icon, LucideIcon> = {
 
 function Glyph({ icon, size = 22 }: { icon: Icon; size?: number }) {
   const I = ICONS[icon]
-  return <span className="mls-glyph" aria-hidden><I size={size} strokeWidth={1.75} /></span>
+  return <span className="mls-glyph" aria-hidden><I size={size} strokeWidth={2} /></span>
 }
 /** The design's paint sticker (accent) or the bone outline (secondary). */
 function Btn({ href, children, tone = 'accent', full }: { href: string; children: ReactNode; tone?: 'accent' | 'secondary'; full?: boolean }) {

@@ -18,7 +18,8 @@ export const MINDLESS_KIT_LAYOUTS_CSS = `
 .mls-d em{font-style:normal;color:var(--ml-accent-text)}
 .mls-label{${LABEL};font-size:11px;color:var(--ml-muted)}
 .mls-scrawl{display:inline-flex;align-items:center;padding:5px 12px;border-radius:var(--ml-radius-pill);background:var(--ml-noise-1);color:var(--ml-ink);border:2px solid var(--ml-pit);box-shadow:2px 3px 0 0 var(--ml-pit);${LABEL};font-size:11px;line-height:1;transform:rotate(-3deg)}
-.mls-glyph{display:inline-flex;flex:none;color:var(--ml-noise-1-text)}
+.mls-glyph{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;border-radius:var(--ml-corner-sm);background:var(--ml-accent);color:var(--ml-on-accent);border:3px solid var(--ml-pit);box-shadow:var(--ml-shadow-sticker);transform:rotate(-4deg)}
+.mls-glyph svg{width:22px;height:22px;stroke-width:2}
 .mls-col{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:18px}
 .mls-body{font-size:15px;line-height:var(--ml-lh-body);color:var(--ml-body)}
 .mls-foot{display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px 20px 8px}
@@ -58,7 +59,8 @@ export const MINDLESS_KIT_LAYOUTS_CSS = `
 .mls-sq{display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:1;padding:14px;color:var(--ml-head)}
 .mls-sq b{font-family:var(--ml-font-display);font-weight:400;font-size:19px;line-height:1;text-transform:uppercase}
 .mls-grid>.mls-sq:nth-child(2){box-shadow:inset 0 0 0 2px var(--ml-accent)}
-.mls-grid>.mls-sq:nth-child(2) .mls-glyph{color:var(--ml-accent-text)}
+.mls-grid>.mls-sq:nth-child(3n+2) .mls-glyph{background:var(--ml-noise-1);color:var(--ml-ink)}
+.mls-grid>.mls-sq:nth-child(3n) .mls-glyph{background:var(--ml-noise-2);color:var(--ml-ink)}
 /* Story: the paint photo, an ink fade at the foot, the headline over it. */
 .mls-story-photo{position:relative;height:380px;display:flex;flex-direction:column;justify-content:space-between;padding:44px 22px 22px;overflow:hidden;background:var(--ml-band-pit)}
 .mls-story-photo::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,var(--ml-ground) 4%,color-mix(in oklab,var(--ml-ground) 55%,transparent) 42%,transparent 70%)}
