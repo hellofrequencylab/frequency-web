@@ -5,6 +5,8 @@ import { SITE_DESIGN } from "@/lib/theme/design";
 import {
   getTopicalChannels,
   getPublicCircles,
+  walkPublicCirclesPast,
+  PUBLIC_CIRCLES_WALK_CAP,
   isTransientDiscoverError,
   isTransientDiscoverStatus,
 } from "@/lib/discover";
@@ -80,7 +82,7 @@ async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
 
 // ── The row caps below are DELIBERATE, and these are the numbers that reopen them (SCAN-203) ──
 //
-// The commerce verticals and the circles read are the only sections here that take a bare row
+// The commerce verticals are the only sections here that take a bare row
 // limit with no follow-up page, so at scale they drop entries SILENTLY: the sitemap still
 // validates, still gets submitted, and simply stops advertising whatever sorted past the cap
 // (every one of these readers orders created_at DESC, so it is the OLDEST listings that vanish).
@@ -88,18 +90,22 @@ async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
 // PAGING WAS CONSIDERED AND IS NOT A CHANGE THIS FILE CAN MAKE. The podcast section a few hundred
 // lines down pages exactly the way this would want to (`listPublicShowsBySpace` walks `.range()`
 // until it gets a short page), but it could do that because the reader itself was rewritten to
-// page. These five cannot be paged from here:
+// page. These four cannot be paged from here:
 //
 //   · listShopProducts / listMarketListings / listHousingListings each CLAMP the caller's limit
 //     server-side — `Math.min(Math.max(opts.limit ?? …, 1), 100)` — and expose no offset, range or
 //     cursor, so passing a bigger number is silently ignored and there is no second page to ask for.
 //   · listListings (classifieds) does not clamp, but likewise takes no offset.
-//   · getPublicCircles rides the `public_circles` RPC, whose SQL ends
-//     `LIMIT GREATEST(1, LEAST(_limit, 200))` — the ceiling is in the database, so raising it is a
-//     migration, not an argument.
 //
-// So paging is a reader + RPC change (lib/commerce/products.ts, lib/listings/housing.ts,
-// lib/marketplace.ts, and a migration for public_circles), deliberately not smuggled into the
+// CIRCLES ARE PAGED NOW (SCAN-1226). `public_circles` still ends
+// `LIMIT GREATEST(1, LEAST(_limit, 200))`, so the walk lives in the reader: the first page is the
+// same `getPublicCircles` read as before and `walkPublicCirclesPast` (lib/discover.ts), only when
+// that page comes back full, asks `public_circles_page` (migration 20270346066000) for the rows
+// after it. Its own ceiling is
+// PUBLIC_CIRCLES_WALK_CAP, and `atCap` below is still what says so if a network ever reaches it.
+//
+// So paging the other four is a reader change (lib/commerce/products.ts, lib/listings/housing.ts,
+// lib/marketplace.ts), deliberately not smuggled into the
 // sitemap. Until then the cap is stated rather than implied, and `atCap` below makes it LOUD
 // instead of silent — a fail-safe nobody can see fire is an invisible regression.
 //
@@ -112,7 +118,9 @@ async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
  *  clamp inside those readers — the largest limit they will honour. */
 const COMMERCE_SITEMAP_CAP = 100;
 
-/** Row cap on the public circles read. Matches the `public_circles` RPC's own SQL ceiling. */
+/** The FIRST page of the public circles read: one call's ceiling in the `public_circles` RPC's own
+ *  SQL (the same 200 as PUBLIC_CIRCLES_PAGE in lib/discover.ts). No longer the section's cap
+ *  (SCAN-1226): `walkPublicCirclesPast` reads on from here. */
 const CIRCLE_SITEMAP_CAP = 200;
 
 /** Pass a section's rows through on the way to the map, and say so in the log when it came back
@@ -432,8 +440,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const { indexedOccurrences } = await getSeriesDisplayConfig();
     const [channels, circles, events, journeys, organizers, spotlights, hubs, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
       sectionRead("channels", getTopicalChannels({ failClosed: true })),
-      // Capped, not paged — see the cap note above this function. The RPC's own SQL ceiling.
-      sectionRead("circles", getPublicCircles(CIRCLE_SITEMAP_CAP, { failClosed: true })),
+      // Paged (SCAN-1226): every public circle, 200 at a time. See the cap note above this function.
+      sectionRead(
+        "circles",
+        getPublicCircles(CIRCLE_SITEMAP_CAP, { failClosed: true }).then((first) =>
+          walkPublicCirclesPast(first, { failClosed: true }),
+        ),
+      ),
       // Event URLs, FOLDED per series (ADR-897). Before this, one weekly cowork series advertised
       // ~9 URLs and ~9 image entries and a daily one ~61, all with the same title and description,
       // out of a GLOBAL 200-row cap — so a single daily series could crowd real one-offs out of the
@@ -586,9 +599,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const circleRoutes: MetadataRoute.Sitemap = atCap(
       circles,
-      CIRCLE_SITEMAP_CAP,
+      PUBLIC_CIRCLES_WALK_CAP,
       "circles",
-      "the public_circles RPC",
+      "walkPublicCirclesPast further (PUBLIC_CIRCLES_MAX_PAGES in lib/discover.ts)",
     ).map((c) => ({
       // The slug, not the uuid (LIVE-182). circles.slug is NOT NULL and public_circles has always
       // returned it; advertising the uuid froze a keyword-free URL into every citation and QR code.

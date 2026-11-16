@@ -64,6 +64,10 @@ async function countSpaceEvents(eventType: string, spaceId: string, since: strin
  * Read how a Space profile performed over the trailing window: profile views (one per viewer per
  * day) and primary-button clicks. Server-only (admin client); the caller gates on manage access,
  * exactly as every other read on the Space Home dashboard does. Fail-safe: zeros, never a throw.
+ *
+ * NO PAGE CALLS THIS since 2026-11-16: its one caller, the old Space dashboard
+ * (components/spaces/dashboard/space-dashboard.tsx), was deleted (SCAN-1240). It stays because its
+ * tests are what pin the event-type, space and window binding of the shared count read below.
  */
 export async function getSpaceProfileStats(spaceId: string, windowDays = 30): Promise<SpaceProfileStats> {
   const evidence = await getSpaceProfileEvidence(spaceId, windowDays)

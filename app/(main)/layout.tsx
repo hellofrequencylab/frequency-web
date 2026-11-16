@@ -635,6 +635,11 @@ export default async function MainLayout({
         // The injected value is a server-resolved id from a closed registry (lib/theme/generations,
         // passed through `resolveGeneration`'s guard) and JSON-encoded on the way in, so no member
         // string reaches this sink. The `themeCss` <style> directly above takes the same shape.
+        //
+        // The nonce (SCAN-1243, lib/security/csp-nonce.ts): this script's text varies per request, so
+        // the nonce-based policy cannot allow it by hash. The proxy sets `x-nonce` only when it sends
+        // that policy; otherwise the header is absent and no attribute is rendered.
+        nonce={reqHeaders.get('x-nonce') ?? undefined}
         dangerouslySetInnerHTML={{
           __html: `document.documentElement.setAttribute('data-generation',${JSON.stringify(theme.generation)})`,
         }}
