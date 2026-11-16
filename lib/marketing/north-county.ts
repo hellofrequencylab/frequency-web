@@ -15,7 +15,7 @@ import { localAnswers } from '@/lib/marketing/quick-answers'
 
 export const NORTH_COUNTY_PATH = '/north-county-san-diego'
 
-export interface NorthCountyTown {
+interface NorthCountyTown {
   name: string
   /** The same form as citySlug() in app/discover/events/_data.ts: lowercase, spaces to hyphens. */
   slug: string

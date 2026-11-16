@@ -41,7 +41,7 @@ export const PAGE_UPDATED = {
   'north-county-san-diego': '2026-11-16',
 } as const
 
-export type PageUpdatedSlug = keyof typeof PAGE_UPDATED
+type PageUpdatedSlug = keyof typeof PAGE_UPDATED
 
 /** The sitemap's lastModified for one of those pages, as a Date. */
 export const pageLastModified = (slug: PageUpdatedSlug): Date => new Date(PAGE_UPDATED[slug])
