@@ -1,5 +1,6 @@
 'use server'
 
+import { slugify } from '@/lib/utils'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { getJanitor } from '@/lib/page-editor/guard'
@@ -25,15 +26,13 @@ import { listCodeFunnels, templateSeed, DEFAULT_FUNNEL } from '@/lib/funnels/def
 // would be shadowed by the induction's own routes, so the builder refuses them.
 const RESERVED_JOIN_SEGMENTS = ['complete', 'preview']
 
-function slugify(s: string): string {
-  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48)
-}
+const funnelSlug = (s: string): string => slugify(s).slice(0, 48)
 
 /** A slug guaranteed not to collide with a code Funnel, the reserved default, a static
  *  /join sibling route, OR an existing DB Funnel. Reads the live list so a duplicate/new
  *  Funnel can never overwrite another via the slug primary key. */
 async function uniqueSlug(base: string): Promise<string> {
-  const seed = slugify(base) || 'funnel'
+  const seed = funnelSlug(base) || 'funnel'
   const taken = new Set<string>([
     ...listCodeFunnels().map((s) => s.slug),
     DEFAULT_FUNNEL,
@@ -84,7 +83,7 @@ export async function renameFunnelSlug(
   if (oldSlug === DEFAULT_FUNNEL || listCodeFunnels().some((s) => s.slug === oldSlug)) {
     return { ok: false, error: 'This funnel’s permalink is fixed and cannot be changed.' }
   }
-  const next = slugify(desiredSlug)
+  const next = funnelSlug(desiredSlug)
   if (!next) return { ok: false, error: 'Enter a permalink using letters, numbers, and dashes.' }
   if (next === oldSlug) return { ok: true, slug: oldSlug }
   const taken = new Set<string>([
