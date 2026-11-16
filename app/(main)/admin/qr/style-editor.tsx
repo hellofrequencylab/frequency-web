@@ -17,6 +17,7 @@ import {
 import { scannabilityWarnings } from '@/lib/qr/scannability'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { DEFAULT_QR_STUDIO_CONFIG, type QrStudioConfig } from '@/lib/elements/qr-studio-config'
+import { chipClasses } from '@/components/ui/chip'
 
 // The "make them beautiful" editor: live-previewed controls over a QrStyle.
 // Renders the exact same SVG the server/Studio/download produce, so what the
@@ -84,7 +85,7 @@ export function StyleEditor({
             key={p.key}
             type="button"
             onClick={() => onChange({ ...p.style })}
-            className="rounded-pill border border-border px-2.5 py-1 text-2xs font-medium text-muted transition-colors hover:border-primary hover:bg-primary-bg hover:text-primary-strong"
+            className={chipClasses(false)}
           >
             {p.label}
           </button>

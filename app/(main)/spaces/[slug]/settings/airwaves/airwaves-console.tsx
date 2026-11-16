@@ -24,6 +24,7 @@ import {
   deleteRecordingAction,
 } from './actions'
 import { Button } from '@/components/ui/button'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 const VISIBILITY_LABEL: Record<RecordingVisibility, string> = {
   public: 'Anyone',
@@ -104,24 +105,16 @@ export function AirwavesConsole({
   return (
     <div className="space-y-8">
       {canEdit && (
-        <nav className="flex gap-1 rounded-card border border-border bg-surface p-1" role="tablist" aria-label="Airwaves sections">
-          {(['recordings', 'shows'] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="tab"
-              aria-selected={tab === t}
-              onClick={() => setTab(t)}
-              className={
-                tab === t
-                  ? 'flex-1 rounded-control-nested bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary'
-                  : 'flex-1 rounded-control-nested px-3 py-1.5 text-body-sm font-semibold text-muted transition-colors hover:text-text'
-              }
-            >
-              {t === 'recordings' ? 'Recordings' : 'Shows'}
-            </button>
-          ))}
-        </nav>
+        <SegmentedControl
+          label="Airwaves sections"
+          value={tab}
+          onChange={setTab}
+          className="w-full"
+          segments={[
+            { value: 'recordings', label: 'Recordings', className: 'flex-1' },
+            { value: 'shows', label: 'Shows', className: 'flex-1' },
+          ]}
+        />
       )}
 
       <div className={canEdit && tab !== 'recordings' ? 'hidden' : 'space-y-8'}>
