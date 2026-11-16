@@ -14,7 +14,7 @@ import { completeRaw } from './complete'
 import { type ModelTier } from './models'
 
 import { withVoice } from './voice'
-import { coerceExtraction } from '@/lib/connections/normalize'
+import { coerceExtraction } from '@/lib/connections/extraction'
 import type { ExtractedContact } from '@/lib/connections/types'
 
 type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/webp'

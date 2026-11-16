@@ -12,6 +12,14 @@
 // resolves to. The block is a BlockNode whose tablet and phone edits are stored as sparse `responsive` overrides; the page holds it locally. Under it, Vera's questions for the block
 // (PROG-E8): questions only, at creation or when asked, never a write to a field.
 //
+// A real document (PROG-E5B): given `document`, the inspector edits the node picked in the layer list instead of
+// the demo block, and each edit is saved to that Space page's draft (use-canvas-document.ts). The demo block and
+// Vera's demo coach stay for a canvas with no document.
+//
+// The page's shape (PROG-E6B): on a real document the layer list is the page's tree (rows, columns, blocks) and a
+// move in it is saved; the selected block carries spacing handles in the frame; and a block can be added under it,
+// presets first. All three go through the same draft write as a field edit.
+//
 // Presence (BLD-401): on a shared Space the link also carries who is here (faces above the canvas) and which node
 // each person is in (an outline on that node inside the frame). It rides the channel, never the doc.
 
@@ -20,13 +28,18 @@ import * as Y from 'yjs'
 import type { BuilderDevice } from '@/lib/builder/state'
 import type { InspectorFieldView } from '@/lib/builder/inspector-fields'
 import type { InspectorDeviceValues } from '@/lib/builder/inspector-model'
+import type { CanvasDocumentView } from '@/lib/builder/canvas-document'
 import { nodeDeviceValues, resolveNodeContent, withDeviceValues } from '@/lib/builder/node-responsive'
 import type { BlockNode } from '@/lib/entity-blocks/node-tree'
 import { ResponsiveInspector } from '@/components/builder/inspector/responsive-inspector'
 import { VeraBlockCoach } from '@/components/builder/inspector/vera-block-coach'
+import { BlockInserter } from './block-inserter'
+import { CanvasDocumentStatus } from './canvas-document-status'
 import { CanvasViewportShell } from './canvas-viewport-shell'
 import { CollabTextEditor } from './collab-text-editor'
 import { LayerList, type Layer } from './layer-list'
+import { SpacingHandles } from './spacing-handles'
+import { useCanvasDocument } from './use-canvas-document'
 import { EditorPresenceFaces } from '@/components/builder/presence/presence-ui'
 import type { PresenceState } from '@/lib/editor-crdt/awareness'
 
@@ -55,21 +68,46 @@ type CanvasInspector = {
   initial: Readonly<Record<string, string | boolean>>
 }
 
-export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspector?: CanvasInspector }) {
+/** Word fields may hold inline marks (bold, links); the frame's plain preview shows the words only. Tags are
+ *  dropped until none is left, so a tag split around another (`<scr<b>ipt>`) cannot survive one pass. The result
+ *  is only ever a React text child, which is escaped on render. */
+function plainWords(value: unknown): string {
+  if (typeof value !== 'string') return ''
+  let words = value
+  for (let prev = ''; prev !== words; ) {
+    prev = words
+    words = words.replace(/<[^>]*>/g, '')
+  }
+  return words.trim()
+}
+
+export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: string; inspector?: CanvasInspector; document?: CanvasDocumentView }) {
   const [doc] = useState(() => new Y.Doc())
   const [device, setDevice] = useState<BuilderDevice>('desktop')
   // The demo block is a real BlockNode: desktop is its `content`, tablet and phone its sparse `responsive` bags
   // (the stored form), so what the inspector edits is what a document would hold.
-  const [node, setNode] = useState<BlockNode>(() => ({ nid: CANVAS_BLOCK_NID, type: 'photoHero', content: { ...(inspector?.initial ?? {}) } }))
+  const [demoNode, setDemoNode] = useState<BlockNode>(() => ({ nid: CANVAS_BLOCK_NID, type: 'photoHero', content: { ...(inspector?.initial ?? {}) } }))
+  // A real document wins: the inspector then edits the node picked in the layer list, saved to the draft.
+  const real = useCanvasDocument(document)
+  const panel = real.selected ?? (inspector && !document ? { title: inspector.title, fields: inspector.fields, elsewhere: inspector.elsewhere, node: demoNode } : null)
+  const node = panel?.node ?? demoNode
   // The inspector only draws string and toggle controls, so those are the values it reads and writes.
   const blockValues = nodeDeviceValues(node) as InspectorDeviceValues<Record<string, string | boolean>>
   // Vera (PROG-E8): the block counts as just created when every word field starts empty. Read once, at mount.
   const [fresh] = useState(() => !!inspector && inspector.fields.every((f) => (f.kind !== 'text' && f.kind !== 'textarea') || !inspector.initial[f.key]))
-  const shown = (key: string) => {
-    const value = resolveNodeContent(node, device)[key]
-    return typeof value === 'string' ? value : ''
-  }
-  const [layers, setLayers] = useState<Layer[]>(DEMO_LAYERS)
+  const resolved = resolveNodeContent(node, device)
+  // The frame draws the block's word fields as plain lines; its headline is `title` when the block has one.
+  const words = (panel?.fields ?? []).filter((f) => f.kind === 'text' || f.kind === 'textarea')
+  const headline = words.find((f) => f.key === 'title')?.key ?? words[0]?.key
+  const [layers, setLayers] = useState<Layer[]>(() => document?.layers ?? DEMO_LAYERS)
+  const preview = panel && (
+    <>
+      {words.length === 0 && <p style={{ margin: '4px 0', fontWeight: 700 }}>{panel.title}</p>}
+      {words.map((f) => f.key === headline
+        ? <p key={f.key} style={{ margin: '4px 0', fontSize: device === 'phone' ? 24 : 32, fontWeight: 700 }}>{plainWords(resolved[f.key]) || panel.title}</p>
+        : plainWords(resolved[f.key]) ? <p key={f.key} style={{ margin: 0 }}>{plainWords(resolved[f.key])}</p> : null)}
+    </>
+  )
   const [link, setLink] = useState<Link>(spaceId ? 'connecting' : 'local')
   const [peers, setPeers] = useState<PresenceState[]>([])
   const select = useRef<(nid: string | null) => void>(() => {})
@@ -115,7 +153,7 @@ export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspect
       </p>
       <EditorPresenceFaces peers={peers} />
       </div>
-    <div className={inspector ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' : undefined}>
+    <div className={panel ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' : undefined}>
     <CanvasViewportShell surface="site" device={device} onDeviceChange={setDevice}>
       <div style={{ padding: 24, font: '16px/1.5 system-ui, sans-serif' }}>
         <div
@@ -131,31 +169,51 @@ export function CollabCanvas({ spaceId, inspector }: { spaceId?: string; inspect
           )}
           <CollabTextEditor doc={doc} nid={CANVAS_NID} field="body" seed={SEED} label="Page text" />
         </div>
-        {inspector && (
-          <div data-inspector-preview="" style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid currentColor' }}>
-            {/* token-ok: preview mimics the page's own eyebrow size, not a UI chrome size */}
-            {shown('eyebrow') && <p style={{ margin: 0, fontSize: 12, textTransform: 'uppercase' }}>{shown('eyebrow')}</p>}
-            <p style={{ margin: '4px 0', fontSize: device === 'phone' ? 24 : 32, fontWeight: 700 }}>{shown('title') || inspector.title}</p>
-            {shown('subtitle') && <p style={{ margin: 0 }}>{shown('subtitle')}</p>}
+        {panel && (
+          <div data-inspector-preview={node.nid} style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid currentColor' }}>
+            {document && real.selected ? <SpacingHandles style={real.selected.node.style} onChange={real.space} readOnly={!document.canSave}>{preview}</SpacingHandles> : preview}
           </div>
         )}
       </div>
     </CanvasViewportShell>
-    {inspector && (
+    {panel && (
       <div className="min-w-0">
+      {document && <CanvasDocumentStatus document={document} save={real.save} problem={real.problem} />}
+      {panel.fields.length === 0 ? (
+        <p className="text-body-sm text-muted">{panel.title} has no fields this inspector can edit yet. Pick another layer below.</p>
+      ) : (
       <ResponsiveInspector
-        title={inspector.title}
-        fields={inspector.fields}
-        elsewhere={inspector.elsewhere}
+        key={node.nid}
+        title={panel.title}
+        fields={panel.fields}
+        elsewhere={panel.elsewhere}
         device={device}
         values={blockValues}
-        onChange={(next) => setNode((cur) => withDeviceValues(cur, next as InspectorDeviceValues<Record<string, unknown>>))}
+        onChange={(next) => (document ? real.edit(next) : setDemoNode((cur) => withDeviceValues(cur, next as InspectorDeviceValues<Record<string, unknown>>)))}
       />
-      <VeraBlockCoach title={inspector.title} values={blockValues.desktop ?? {}} fresh={fresh} spaceId={spaceId} />
+      )}
+      {inspector && !document && <VeraBlockCoach title={inspector.title} values={blockValues.desktop ?? {}} fresh={fresh} spaceId={spaceId} />}
       </div>
     )}
     </div>
-    <div className="mt-4"><LayerList layers={layers} onChange={setLayers} /></div>
+    <div className="mt-4">
+      <LayerList layers={layers} onChange={setLayers} selectedId={document ? real.selectedId : undefined} onSelect={document ? real.select : undefined} tree={document ? real.tree : undefined} onMove={document ? real.move : undefined} />
+      {document && (
+        <p className="mt-2 text-meta text-muted">
+          Edit picks the block the inspector shows. {!real.tree ? 'Moving a layer here is not saved yet.' : document.canSave ? 'A move is saved to the draft.' : 'A move here is not saved: this page is read only.'}
+        </p>
+      )}
+    </div>
+    {document && real.inserter && (
+      <div className="mt-4">
+        <BlockInserter
+          inserter={real.inserter}
+          under={real.selected?.title ?? null}
+          off={!document.canSave ? 'This page is read only here, so nothing can be added.' : real.save === 'conflict' ? 'Reload to add a block: this page was changed somewhere else.' : null}
+          onInsert={real.insert}
+        />
+      </div>
+    )}
     </>
   )
 }

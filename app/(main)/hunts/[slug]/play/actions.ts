@@ -5,18 +5,22 @@
 // fresh, opens a run-bound claim token and credits through claimAsPlayer, which checks scope and
 // eligibility and calls hunt_claim_apply (lib/hunts/apply-claim.ts). It never takes a profile id,
 // run id or mission key from the request: the placement binding picks the mission.
+// A visit kept for staff review (FH-020V) answers `held` with its own words; nothing is credited.
 // Dark until HUNTS_CLAIMS_ENABLED is on.
 
 import { createHash } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
+import { deferHuntEvent, reasonClass } from '@/lib/hunts/analytics'
 import { claimAsPlayer, loadScanPlacement, openClaim } from '@/lib/hunts/claim-store'
 import { huntSwitchOn } from '@/lib/hunts/flags'
+import { HELD_VISIT_MESSAGE } from '@/lib/hunts/player'
 
-export type ClaimStopState = { status: 'idle' | 'credited' | 'already_credited' | 'error'; message: string }
+export type ClaimStopState = { status: 'idle' | 'credited' | 'already_credited' | 'held' | 'error'; message: string }
 
 const CODE = /^[a-z0-9-]{6,80}$/
 const SLUG = /^[a-z0-9-]{1,120}$/
+const UPDATED = 'This Trail changed since you started. Open the Trail again to carry on.'
 const error = (message: string): ClaimStopState => ({ status: 'error', message })
 
 export async function claimStopAction(_previous: ClaimStopState, formData: FormData): Promise<ClaimStopState> {
@@ -35,12 +39,19 @@ export async function claimStopAction(_previous: ClaimStopState, formData: FormD
 
   const nowEpoch = Math.floor(Date.now() / 1000)
   const opened = await openClaim(caller.id, placement.id, nowEpoch)
-  if (!opened.ok) return error('This stop could not be confirmed.')
+  // FH-016T: a run pinned to an earlier version of the Trail is refused before any token exists.
+  if (!opened.ok) return error(opened.reason === 'version_superseded' ? UPDATED : 'This stop could not be confirmed.')
 
   // One key per player, run and placement: a retry or a second device replays instead of double crediting.
   const idempotencyKey = createHash('sha256').update(`play:${caller.id}:${opened.runId}:${placement.id}`).digest('hex')
   const outcome = await claimAsPlayer(caller.id, { placementId: placement.id, token: opened.token, idempotencyKey, nowEpoch })
-  if (!outcome.ok) return error('This stop could not be confirmed.')
+  // FH-025: the outcome class only. The code, the placement and the stop never reach the event.
+  deferHuntEvent({
+    event: 'hunt.stop_claim',
+    actorProfileId: caller.id,
+    props: { hunt_id: placement.huntId, medium: 'typed', assurance: 'signed_node', reason_class: reasonClass(outcome.ok ? outcome.result : outcome.reason), replayed: outcome.ok && outcome.replayed },
+  })
+  if (!outcome.ok) return error(outcome.reason === 'version_superseded' ? UPDATED : 'This stop could not be confirmed.')
 
   if (outcome.result === 'credited' || outcome.result === 'already_credited') {
     revalidatePath(`/hunts/${slug}/play`)
@@ -48,5 +59,8 @@ export async function claimStopAction(_previous: ClaimStopState, formData: FormD
       ? { status: 'credited', message: 'Stop confirmed.' }
       : { status: 'already_credited', message: 'You already confirmed this stop.' }
   }
+  // FH-020V: the stop's placement opted in to staff review, so the visit is kept, not refused. Nothing
+  // is credited yet, so the page is not revalidated; a repeat gets this same answer.
+  if (outcome.result === 'held') return { status: 'held', message: HELD_VISIT_MESSAGE }
   return error('This stop could not be confirmed.')
 }

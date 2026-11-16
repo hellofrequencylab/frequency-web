@@ -8,6 +8,7 @@
 //   { action: 'preview' | 'redeem' | 'void', token, idempotencyKey?, reason? }
 
 import { getCallerProfile } from '@/lib/auth'
+import { deferHuntEvent, reasonClass } from '@/lib/hunts/analytics'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { signingSecret } from '@/lib/signing-secret'
 import { mayRedeem, readRedeemToken, redeemGrant, redeemMessage, stationView, voidGrant } from '@/lib/hunts/redemption'
@@ -55,9 +56,12 @@ export async function POST(request: Request) {
 
   if (action === 'redeem') {
     const out = await redeemGrant(huntRpc(), { staffId: caller.id, grantId: grant.id, venueSpaceId: facts.venueSpaceId, idempotencyKey: idempotencyKey as string })
+    // FH-025: the outcome class only. No staff member, player, venue, grant or token is written.
+    deferHuntEvent({ event: 'hunt.reward_redeem', actorProfileId: null, staff: true, props: { hunt_id: grant.hunt_id, medium: 'staff', reason_class: reasonClass(out.result), replayed: out.replayed } })
     return Response.json({ ok: out.result === 'redeemed', result: out.result, message: redeemMessage(out.result), replayed: out.replayed }, { status: out.result === 'redeemed' ? 200 : 409 })
   }
 
   const out = await voidGrant(huntRpc(), { actorId: caller.id, grantId: grant.id, reason: reason as string, idempotencyKey: idempotencyKey as string })
+  deferHuntEvent({ event: 'hunt.reward_void', actorProfileId: null, staff: true, props: { hunt_id: grant.hunt_id, medium: 'staff', reason_class: reasonClass(out.result), replayed: out.replayed } })
   return Response.json({ ok: out.result === 'voided', result: out.result, message: redeemMessage(out.result), replayed: out.replayed }, { status: out.result === 'voided' ? 200 : 409 })
 }
