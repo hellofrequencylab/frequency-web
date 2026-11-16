@@ -62,8 +62,18 @@ type CanvasInspector = {
   initial: Readonly<Record<string, string | boolean>>
 }
 
-/** Word fields may hold inline marks (bold, links); the frame's plain preview shows the words only. */
-const plainWords = (value: unknown) => (typeof value === 'string' ? value.replace(/<[^>]*>/g, '').trim() : '')
+/** Word fields may hold inline marks (bold, links); the frame's plain preview shows the words only. Tags are
+ *  dropped until none is left, so a tag split around another (`<scr<b>ipt>`) cannot survive one pass. The result
+ *  is only ever a React text child, which is escaped on render. */
+function plainWords(value: unknown): string {
+  if (typeof value !== 'string') return ''
+  let words = value
+  for (let prev = ''; prev !== words; ) {
+    prev = words
+    words = words.replace(/<[^>]*>/g, '')
+  }
+  return words.trim()
+}
 
 export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: string; inspector?: CanvasInspector; document?: CanvasDocumentView }) {
   const [doc] = useState(() => new Y.Doc())
