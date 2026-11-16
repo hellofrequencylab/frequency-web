@@ -70,6 +70,7 @@ import {
 import { huntsAfterOrderDispute, huntsAfterOrderRefund, huntsAfterOrderSession } from '@/lib/hunts/order-hooks'
 import { huntsAfterChargeRefund, huntsAfterDisputeClosed, huntsAfterTicketSession } from '@/lib/hunts/commerce-webhook'
 import { huntsAfterDonationRefund, huntsAfterDonationSession } from '@/lib/hunts/donation-sync'
+import { huntsAfterInvoicePaid } from '@/lib/hunts/sponsor-settlement'
 import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
 import {
   recordSpaceDonationFromSession,
@@ -424,6 +425,9 @@ export async function POST(req: Request) {
         // A membership subscription invoice was paid (first payment or a renewal).
         // Record it as Foundation dues on the partitioned ledger (idempotent per invoice).
         await recordMembershipDuesFromInvoice(event.data.object as Stripe.Invoice)
+        // FH-047S: a sponsor's paid invoice that names a Trail settlement. Dark until
+        // HUNTS_COMMERCE_ENABLED, a no-op for every other invoice, and it never throws.
+        await huntsAfterInvoicePaid(event.data.object as Stripe.Invoice)
         break
       }
 

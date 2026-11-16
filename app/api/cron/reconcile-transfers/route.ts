@@ -20,6 +20,7 @@ import { cronBudget } from '@/lib/cron/budget'
 import { reconcileTransfers } from '@/lib/commerce/transfers'
 import { reconcileSplitReversals } from '@/lib/commerce/split-refund'
 import { huntsRepairPass } from '@/lib/hunts/commerce-webhook'
+import { huntsSponsorPass } from '@/lib/hunts/sponsor-settlement'
 import { log, briefError } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -38,9 +39,14 @@ async function handler(req: NextRequest) {
       log.error('cron.reconcile_transfers.hunt_repair_failed', { error: briefError(err) })
       return null
     })
+    // FH-047S: freeze and invoice any sponsor milestone that is owed. Same rules: dark, logged, never fatal.
+    const sponsors = await huntsSponsorPass(budget.items).catch((err) => {
+      log.error('cron.reconcile_transfers.hunt_sponsor_failed', { error: briefError(err) })
+      return null
+    })
     const summary = budget.summary(result.orders + reversals.orders, result.remainingOrders + reversals.remainingOrders)
     log.info('cron.reconcile_transfers', { ...result, reversals, ...summary })
-    return NextResponse.json({ ok: true, ...result, reversals, hunts, budget: summary })
+    return NextResponse.json({ ok: true, ...result, reversals, hunts, sponsors, budget: summary })
   } catch (err) {
     log.error('cron.reconcile_transfers.failed', { error: briefError(err) })
     return NextResponse.json({ error: 'transfer reconcile failed' }, { status: 500 })
