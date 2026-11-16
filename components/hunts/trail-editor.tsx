@@ -38,6 +38,7 @@ import {
 import type { TrailEditorState } from '@/lib/hunts/store'
 import { publishTrailAction, routeTestedAction, saveTrailAction } from '@/app/(main)/hunts/actions'
 import { EDITOR_STEPS, TRAIL_STEPS, stepNumber, type EditorStep } from './trail-steps'
+import { FinaleEventField } from './finale-event-field'
 
 // The stop fields, from the manifest's repeat. The kernel keeps a repeat field's `section` on the
 // group, so each def gets it back here before the control renders it.
@@ -72,7 +73,7 @@ const stopValue = (s: Stop, path: string): string => {
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
-export function TrailEditor({ initial }: { initial: TrailEditorState }) {
+export function TrailEditor({ initial, finaleEvents = [] }: { initial: TrailEditorState; finaleEvents?: readonly { value: string; label: string }[] }) {
   const router = useRouter()
   const [draft, setDraft] = useState<TrailDraft>(initial.draft)
   const [revision, setRevision] = useState(initial.revision)
@@ -539,6 +540,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
               <p className="text-body-sm text-subtle">Changing this list is an edit, so the trail asks for one more preview walk and a fresh publish.</p>
             </section>
           )}
+          <FinaleEventField options={finaleEvents} value={draft.finaleEventId} onChange={(finaleEventId) => edit((d) => ({ ...d, finaleEventId }))} disabled={conflict !== null} />
           {VISIBILITY_FIELD && (
             <StudioField label={VISIBILITY_FIELD.label}>
               <FieldControl def={{ ...VISIBILITY_FIELD, required: true }} value={visibility} onChange={(v) => setVisibility(scalar(v))} disabled={published || conflict !== null} />

@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { Check, Lock, MapPin } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { ClaimStopForm } from '@/components/hunts/claim-stop-form'
+import { FinalePanel } from '@/components/hunts/finale-panel'
 import { HuntFundraising } from '@/components/hunts/hunt-fundraising'
 import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
 import { TrailStoreLinks, loadTrailStoreLinks } from '@/components/hunts/trail-store-links'
@@ -13,6 +14,7 @@ import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { projectForPlayer, visitedPins } from '@/lib/hunts/player'
+import { loadRallyFinale } from '@/lib/hunts/rally-finale-store'
 import { loadPlayerRun, loadPublishedTrail, loadRunCredits, loadVisitedStopPoints, startOrResumeRun } from '@/lib/hunts/run-store'
 
 export const dynamic = 'force-dynamic'
@@ -106,6 +108,7 @@ export default async function PlayPage({ params, searchParams }: {
             <ClaimStopForm slug={slug} />
           </div>
         )}
+        <FinalePanel finale={run ? await loadRallyFinale(run.runId, profileId, new Date().toISOString()).catch(() => null) : null} />
         <HuntFundraising huntId={trail.huntId} />
         <TrailStoreLinks links={await loadTrailStoreLinks(trail.huntId)} />
       </div>

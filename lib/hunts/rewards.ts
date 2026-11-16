@@ -74,7 +74,7 @@ export function stockLeft(spec: Pick<RewardSpec, 'stock'>, grantedCount: number)
 
 // ── The call ─────────────────────────────────────────────────────────────────────────────────────
 
-const RESULTS = ['granted', 'already_granted', 'sold_out', 'not_eligible', 'run_not_found', 'hunt_not_live', 'reward_not_found', 'key_conflict'] as const
+const RESULTS = ['granted', 'already_granted', 'sold_out', 'not_eligible', 'run_not_found', 'hunt_not_live', 'reward_not_found', 'key_conflict', 'not_admitted'] as const
 type GrantResult = (typeof RESULTS)[number]
 
 type Rpc = (fn: 'hunt_reward_grant', args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>
@@ -117,6 +117,9 @@ export function grantMessage(out: { result: GrantResult; terms?: string }): stri
       return 'This trail is not running right now.'
     case 'key_conflict':
       return 'That tap was already used. Try again.'
+    // FH-031S: the database's own seat check on a Trail that ends at an Event (migration 20270346085000).
+    case 'not_admitted':
+      return 'The finale needs its own ticket or RSVP. Get yours on the event page.'
     default:
       return 'We could not find that reward.'
   }

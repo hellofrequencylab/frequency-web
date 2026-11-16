@@ -9,6 +9,7 @@
 import { evaluate, validateGraph } from '@/lib/hunts/graph'
 import type { Blocker, HuntGraph } from '@/lib/hunts/graph'
 import { BENEFIT_CODE } from '@/lib/hunts/pass-binding'
+import { applyFinalePolicy, finaleContent, finaleDraftField } from '@/lib/hunts/finale-draft'
 
 export type Stop = {
   place: string
@@ -37,6 +38,8 @@ export type TrailDraft = {
   permissionConfirmed: boolean
   /** What a paid pass for this trail includes. Absent on a trail that sells nothing, which is most of them. */
   benefits?: DraftBenefit[]
+  /** FH-031S: the host Event the trail ends at. Absent on a trail with no finale. */
+  finaleEventId?: string
 }
 
 export const MIN_STOPS = 3
@@ -88,6 +91,7 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     permissionConfirmed: o.permissionConfirmed === true,
     // Present only when there is one, so a trail with no benefits is stored exactly as it always was.
     ...(benefits.length > 0 ? { benefits } : {}),
+    ...finaleDraftField(o.finaleEventId),
   }
 }
 
@@ -261,6 +265,7 @@ export function canonicalContent(draft: TrailDraft): string {
       : {}),
     // Only when the trail has any, so a trail with none hashes exactly as it did before benefits existed.
     ...(benefits.length > 0 ? { benefits } : {}),
+    ...finaleContent(draft.finaleEventId),
   })
 }
 
@@ -273,5 +278,6 @@ export function publishedPolicy(prior: Record<string, unknown> | null, draft: Tr
   const policy: Record<string, unknown> = { ...(prior ?? {}), trail: draft }
   if (draft.benefits?.length) policy.benefits = draft.benefits.map((b) => ({ code: b.code, label: b.label.trim() }))
   else delete policy.benefits
+  applyFinalePolicy(policy, draft.finaleEventId)
   return policy
 }

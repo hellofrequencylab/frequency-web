@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { huntSwitchOn } from '@/lib/hunts/flags'
+import { loadFinaleEventOptions } from '@/lib/hunts/finale-store'
 import { loadTrail } from '@/lib/hunts/store'
 import { TrailEditor } from '@/components/hunts/trail-editor'
 
@@ -29,7 +30,8 @@ export default async function EditTrailPage({ params }: { params: Promise<{ id: 
   const slug = encodeURIComponent(state.slug)
   return (
     <>
-      <TrailEditor initial={state} />
+      {/* FH-031S: the Events this trail may end at, loaded after loadTrail authorised the caller. */}
+      <TrailEditor initial={state} finaleEvents={await loadFinaleEventOptions(state.huntId)} />
       {state.status !== 'draft' && huntSwitchOn('claims') && (
         <nav aria-label="How this trail is doing" className="mx-auto w-full max-w-lg space-y-3 px-4 pb-10">
           <p className="text-body-sm text-muted">

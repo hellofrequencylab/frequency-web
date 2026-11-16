@@ -1,0 +1,18 @@
+{
+  "id": "FH-031T",
+  "title": "Hunts FH-031T: Credit the Event stop at the door and prove the finale on a preview deployment",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/hunts/rally-finale.ts",
+    "ref": "Split from FH-031S (2026-11-16)."
+  },
+  "detail": "FH-031S put the finale on the author and player screens and behind the reward grant. Still owed. By an agent: (1) an Event stop credits through hunt_claim_apply with finaleDoorEvidence at assurance event_door, only for a seat the host marked present at the host Event (the function exists in lib/hunts/rally-finale.ts and nothing calls it); (2) the player's Trail page lists the rewards of the run and calls POST /api/hunts/rewards/grant, which today has no caller on a screen, and nothing lets an author create a reward. By the owner (Daniel) or a person he names: (3) apply migration 20270346085000_hunt_reward_finale_seat.sql after its pgTAP test is green in CI; (4) the acceptance run on a preview deployment with the Hunts switches on there only: a finished player with no seat at a full host Event sees the full message and holds no RSVP, ticket or reward afterwards. Requires FH-031S and FH-020. Hunts switches stay OFF in production.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(\"fs\");const walk=d=>f.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(d+\"/\"+e.name):[d+\"/\"+e.name]);process.exit([\"lib/hunts\",\"app/(main)/hunts\",\"app/api/hunts\"].flatMap(walk).some(p=>/\\.tsx?$/.test(p)&&!p.includes(\".test.\")&&!p.endsWith(\"rally-finale.ts\")&&f.readFileSync(p,\"utf8\").includes(\"finaleDoorEvidence\"))?0:1)'"
+  },
+  "wave": "W7"
+}

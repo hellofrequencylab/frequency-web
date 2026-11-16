@@ -44,6 +44,8 @@ export const HUNT_MANIFEST: EntityManifest = {
     { path: 'area', label: 'Area', kind: 'text', section: 'identity', placement: 'spark', editPlane: 'rail' },
     { path: 'audience', label: 'Who it is for', kind: 'text', section: 'identity', placement: 'spark', editPlane: 'rail' },
     { path: 'visibility', label: 'Who can find it', kind: 'select', section: 'publishing', options: HUNT_PUBLISH_VISIBILITY, placement: 'rail' },
+    // FH-031S: the host Event a trail ends at. The editor loads the choices (lib/hunts/finale-store.ts): Events of the Hunt's own Space or a live partner.
+    { path: 'finaleEventId', label: 'Finale event (optional)', kind: 'reference', section: 'publishing', optionsFrom: 'finaleEvents', placement: 'rail' },
   ],
   repeats: [
     {

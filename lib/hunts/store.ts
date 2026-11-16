@@ -29,6 +29,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { decide, type HuntAction, type PartnerRow, type RoleGrant } from '@/lib/hunts/authz'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { publishVenueBlocks } from '@/lib/hunts/partners'
+import { finaleBlocksPublish } from '@/lib/hunts/finale-store'
 import { slugify } from '@/lib/utils'
 import {
   canonicalContent,
@@ -386,6 +387,8 @@ export async function publishTrail(
   if (!checklist.ok) return { ok: false, reason: 'checklist', items: checklist.items }
   const blockedVenues = await venuesBlockingPublish(client, hunt, version.id)
   if (blockedVenues.length > 0) return { ok: false, reason: 'partners', spaceIds: blockedVenues }
+  const finaleBlock = await finaleBlocksPublish(hunt, draft.finaleEventId)
+  if (finaleBlock) return { ok: false, reason: 'checklist', items: [finaleBlock] }
 
   const bumped = await bumpRevision(client, huntId, baseRevision)
   if (!bumped.applied) return { ok: false, reason: 'conflict', currentRevision: bumped.currentRevision }
