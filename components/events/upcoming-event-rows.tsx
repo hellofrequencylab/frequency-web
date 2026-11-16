@@ -1,3 +1,4 @@
+import { formatDateWeekday, formatTimeShort } from '@/lib/format-date'
 import { MapPin } from 'lucide-react'
 import { RowCard } from '@/components/cards/row-card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -26,20 +27,11 @@ export interface UpcomingEventRow {
 
 export function formatShort(iso: string) {
   const d = new Date(iso)
-  return d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  })
+  return formatDateWeekday(d, 'UTC')
 }
 
 export function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone: 'UTC',
-  })
+  return formatTimeShort(iso, 'UTC')
 }
 
 export function DateChip({ iso }: { iso: string }) {

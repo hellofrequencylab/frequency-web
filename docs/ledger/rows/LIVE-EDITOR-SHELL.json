@@ -1,0 +1,6 @@
+{
+  "id": "LIVE-EDITOR-SHELL",
+  "append": {
+    "detail": "PROGRESS 2026-11-16 (LIVE-2308, done): the SCAN-862 half of this row is closed. The editor sheet (components/sites/editor/editor.css) no longer keeps its own copy of the colours: its names are aliases of the shared --fq- tokens, pinned on the editor root so a Site theme cannot restyle the chrome, and the canvas root sets only we- prefixed names so nothing the editor declares reaches the Site content. Three live faults went with it: the Editing banner and the inspector lit row took the Site colours, and a text-body paragraph in the canvas took its size from the theme. Before and after pictures of the real shell on the default and Wildheart themes are in the project files under editor/shell-tokens. STILL OPEN ON THIS ROW: the manual gate is unchanged and nothing here stands in for it. Someone signed in still has to put the live /admin/editor beside the supplied handoff at desktop and phone widths for all three themes and exercise selection, inline text, reorder, device override and reset, draft save against publish, SEO, comments and version restore. Also open, found by this slice: the editor chrome at night (the generated kit keeps light glass on the toolbar and rails under night text), and a check of the canvas selection chrome in Safari and Firefox."
+  }
+}

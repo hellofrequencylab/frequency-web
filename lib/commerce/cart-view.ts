@@ -6,8 +6,9 @@
 import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
 import type { CommerceProduct, CommerceVariant } from './types'
 import { lineKey, pruneCart, type Cart } from './cart'
+import { planCartCheckout, type CartCheckoutPlan } from './cart-plan'
 
-interface CartViewLine {
+export interface CartViewLine {
   key: string
   productId: string
   variantId: string | null
@@ -22,12 +23,14 @@ interface CartViewLine {
   currency: string
 }
 
-interface CartView {
+export interface CartView {
   lines: CartViewLine[]
   /** What the saved cart held that is no longer on sale, by line key, for a plain-words notice. */
   removed: string[]
   reduced: { key: string; from: number; to: number }[]
   totals: { currency: string; cents: number }[]
+  /** Who sells what, whether an address is asked for, and whether the door would refuse (./cart-plan). */
+  checkout: CartCheckoutPlan
 }
 
 const ON_SALE: ReadonlySet<string> = new Set(['active'])
@@ -70,5 +73,6 @@ export function buildCartView(
   })
   const byCurrency = new Map<string, number>()
   for (const l of lines) byCurrency.set(l.currency, (byCurrency.get(l.currency) ?? 0) + l.lineCents)
-  return { lines, removed: report.removed, reduced: report.reduced, totals: [...byCurrency].map(([currency, cents]) => ({ currency, cents })) }
+  const checkout = planCartCheckout(lines.map((l) => ({ key: l.key, product: products.get(l.productId)!, qty: l.qty, unitCents: l.unitCents })))
+  return { lines, removed: report.removed, reduced: report.reduced, totals: [...byCurrency].map(([currency, cents]) => ({ currency, cents })), checkout }
 }

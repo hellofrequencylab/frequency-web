@@ -1,3 +1,4 @@
+import { formatDateShort } from '@/lib/format-date'
 import Link from 'next/link'
 import { MapPin, Store, Tag, Check, ScanLine } from 'lucide-react'
 import {
@@ -136,7 +137,7 @@ function PartnerCard({ partner }: { partner: PartnerSummary }) {
 // state rides as the passive trailing chip.
 function OfferCard({ offer }: { offer: LiveOffer }) {
   const until = offer.validUntil
-    ? new Date(offer.validUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    ? formatDateShort(offer.validUntil)
     : null
   return (
     <RowCard
