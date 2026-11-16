@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -42,7 +43,7 @@ const ORDER_STATUS_LABEL: Record<string, string> = {
 // their gross, a share line with the net and the payout state, and a door that moves the maker's own
 // share (LIVE-705, ADR-1652: the writer finds it through their transfer row).
 function SaleRow({ o }: { o: CommerceOrder }) {
-  const when = new Date(o.paidAt ?? o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const when = formatDateMedium(o.paidAt ?? o.createdAt)
   return (
     <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex items-center justify-between gap-3">

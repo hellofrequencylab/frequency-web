@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateShort } from '@/lib/format-date'
 import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from 'react'
 import { Copy, Loader2, Mail, Plus, Trash2 } from 'lucide-react'
@@ -75,7 +76,7 @@ function statusTone(status: string): string {
 function formatWhen(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return formatDateShort(d)
 }
 
 export function EmailStudioWorkspace({

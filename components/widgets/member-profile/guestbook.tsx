@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
@@ -28,7 +29,7 @@ import { MemberSection } from './section'
 function whenLabel(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDateMedium(d)
 }
 
 function EntryRow({
