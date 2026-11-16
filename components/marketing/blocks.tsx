@@ -1,3 +1,4 @@
+import { formatDateWeekday } from '@/lib/format-date'
 import { BETA_CTA_HREF } from '@/lib/site'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -150,7 +151,7 @@ export function LiveEventsBlock({ live, pad, vis = '' }: { live?: LiveData; pad?
           const d = new Date(event.starts_at)
           const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
           const day = d.getDate()
-          const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+          const dateStr = formatDateWeekday(d)
           return (
             <div key={event.id} className="flex items-center gap-4 rounded-card border border-border bg-surface px-5 py-4">
               <div className="shrink-0 w-12 h-12 rounded-xl bg-primary-bg flex flex-col items-center justify-center">
