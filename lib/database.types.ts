@@ -20898,6 +20898,21 @@ export type Database = {
           type: string
         }[]
       }
+      public_circles_page: {
+        Args: { _limit?: number; _offset?: number }
+        Returns: {
+          about: string
+          channel_name: string
+          channel_slug: string
+          city: string
+          id: string
+          member_count: number
+          name: string
+          slug: string
+          status: string
+          type: string
+        }[]
+      }
       public_event_by_slug: {
         Args: { _slug: string }
         Returns: {

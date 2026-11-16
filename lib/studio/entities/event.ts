@@ -27,6 +27,7 @@
 // numbers, so this is correct rather than a compromise.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { formatPriceCentsOrBlank } from '@/lib/commerce/types'
 import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
 // The canonical event vocabularies (ADR-879/887, enforced by `pnpm check:vocab`). This module is
 // genuinely PURE (zero imports), so the manifest reads the source rather than restating it. An
@@ -111,13 +112,6 @@ function str(v: unknown): string {
 function list(v: unknown): string {
   if (!Array.isArray(v)) return ''
   return v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).join(', ')
-}
-
-/** Whole cents as plain money ("$25", "$12.50"). Empty when there is no usable number. PURE. */
-function money(cents: unknown): string {
-  if (typeof cents !== 'number' || !Number.isFinite(cents)) return ''
-  const dollars = cents / 100
-  return `$${Number.isInteger(dollars) ? dollars.toFixed(0) : dollars.toFixed(2)}`
 }
 
 export const EVENT_MANIFEST: EntityManifest = {
@@ -240,7 +234,7 @@ export const EVENT_MANIFEST: EntityManifest = {
       // Edited in the rail after creation (ADR-1281); an emptied price is a free RSVP event.
       editPlane: 'rail',
       omitWhenEmpty: true,
-      read: (d) => (d.isFree ? 'Free' : money(d.priceCents)),
+      read: (d) => (d.isFree ? 'Free' : formatPriceCentsOrBlank(d.priceCents)),
     },
     // The three the settings rail persisted without declaring until ADR-1281. The join mode is
     // its own column; the RSVP window is the real persisted path inside `events.details`, so the
@@ -296,7 +290,7 @@ export const EVENT_MANIFEST: EntityManifest = {
       itemLabel: (item, index) => str(item.label) || `Tier ${index + 1}`,
       fields: [
         { path: 'label', label: 'tier', kind: 'text' },
-        { path: 'priceCents', label: 'price', kind: 'price', read: (t) => money(t.priceCents) },
+        { path: 'priceCents', label: 'price', kind: 'price', read: (t) => formatPriceCentsOrBlank(t.priceCents) },
         { path: 'note', label: 'note', kind: 'text', omitWhenEmpty: true },
       ],
     },
