@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { linktreeComponents, LINKTREE_CATEGORY_COMPONENTS } from './linktree'
 import { SPOTLIGHT_PUCK_TYPES } from '@/lib/spotlight/puck/convert'
-import { MAX_LINKS_PER_BLOCK, MAX_GALLERY_IMAGES, SPOTLIGHT_STAT_KEYS } from '@/lib/spotlight/blocks/schema'
+import { MAX_LINKS_PER_BLOCK, MAX_GALLERY_IMAGES, SPOTLIGHT_STAT_KEYS } from '@/lib/entity-blocks/spotlight'
 
 // The link-tree block registry contract: every Spotlight block is registered, each has the
 // field schema + defaultProps the converter + editor rely on, and the privacy-shaped blocks
