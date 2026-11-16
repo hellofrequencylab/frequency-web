@@ -4,7 +4,7 @@ import {renderToStaticMarkup} from 'react-dom/server'
 const mock=vi.hoisted(()=>({menu:vi.fn()}))
 vi.mock('@/lib/menus/read',()=>({getMenu:mock.menu}))
 vi.mock('next/navigation',()=>({usePathname:()=>'/about',useRouter:()=>({push:vi.fn()})}))
-vi.mock('next/image',()=>({default:({priority:_priority,...props}:Record<string,unknown>)=>createElement('img',props)}))
+vi.mock('next/image',()=>({default:({priority:_priority,preload:_preload,...props}:Record<string,unknown>)=>createElement('img',props)}))
 vi.mock('./site-root',()=>({useSite:()=>({page:{cta:'side'},side:'p'})}))
 import {PublicHeader} from './public-header'
 import {frequencyHeaderDefaults} from '@/lib/frequency/header-defaults'

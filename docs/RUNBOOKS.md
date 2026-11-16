@@ -914,6 +914,12 @@ The cutover runs in three steps (BLD-108, shadow render and cutover):
 2. **Cohort.** `BUILDER_V3_SPACES` (blank by default) lists Space slugs, comma separated, that get the new builder as their website editor; start with `danieltyack` and the Frequency-owned demo Spaces, then the owner's cohort. `?builder=classic` still opens the current editor for them. Gate for step 3: the owner has used it on danieltyack.com and said it is ready, and the log stayed clean for the cohort.
 3. **Everyone.** Set `BUILDER_V3`; then clear `BUILDER_V3_SPACES`. Rolling back is unsetting the switch: no data moves, both editors write the same draft.
 
+## Site theme stylesheet pilot
+
+`SITE_THEME_STYLESHEET_PILOT` (blank by default, read through `envFlag`) makes the site render link a hashed theme stylesheet from `public/_site-theme-assets` instead of inlining the theme CSS (LIVE-1862). It only takes effect on a non-production built preview: `components/sites/site-theme-stylesheet.ts` ignores it when `NODE_ENV` is not production or `VERCEL_ENV` is production. Set it for both `pnpm build` and `pnpm start` on a test host, because prebuild generates the assets.
+
+Gate before it is ever wanted on production: measure first-visit and repeat-visit cost on a built site (`scripts/site-theme-css-measurement.mjs`), keep inline if the first visit regresses, and keep `check:build-budget` and `check:shell-weight` green. Roll back by unsetting the switch; the inline path is the default.
+
 ## Frequency Hunts switches
 
 Six switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on): `HUNTS_ENABLED` (browse, entry, the player's own run), `HUNTS_CLAIMS_ENABLED` (a scan may credit a mission), `HUNTS_REWARDS_ENABLED` (a credit may grant a reward), `HUNTS_AUTHORING_ENABLED` (creators draft and publish), `HUNTS_WORKER_ENABLED` (the outbox worker delivers), `HUNTS_COMMERCE_ENABLED` (paid Experience Passes, store-item benefits, the finance view; activation gate: the D7 funds-flow sign-off on FH-035 and a green `hunt_commerce_state` kill switch drill). Each is on only when its parent is: claims, authoring, the worker and commerce need `HUNTS_ENABLED`; rewards need claims. Setting a lower rung alone never opens a higher one.

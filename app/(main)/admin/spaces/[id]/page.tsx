@@ -99,7 +99,7 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
   // Built-in code skins (app/globals.css) are always assignable; active skin themes layer on.
   const builtins: SkinOption[] = [
     { slug: 'default', name: 'Default (built-in)' },
-    { slug: 'midnight', name: 'Midnight (built-in)' },
+    { slug: 'midnight', name: 'Nocturne (built-in)' },
   ]
   const dbSkins: SkinOption[] = themes
     .filter((t) => t.kind === 'skin' && t.status === 'active')

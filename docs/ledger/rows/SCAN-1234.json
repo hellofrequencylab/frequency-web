@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: lighthouserc.mobile.json: LCP, CLS, TBT and script size are all \"warn\" (4000/0.1/600/600000). lighthouserc.json uses preset desktop on 4 URLs. Field budgets live separately in lib/analytics/vitals-budgets.ts.\n\nWHY IT MATTERS: Most visitors are on phones; a mobile LCP or JS regression on /, /pricing or /create-a-space cannot fail a PR. The build-time shell-weight gate (1100KB, blocking in package.json postbuild) is the only hard phone-JS guard.\n\nFIX DIRECTION: Once 3-4 baseline runs exist, flip mobile LCP/CLS to error at about 2x the measured median and add /create-a-space and /themes/nocturne.",
+  "detail": "EVIDENCE: lighthouserc.mobile.json: LCP, CLS, TBT and script size are all \"warn\" (4000/0.1/600/600000). lighthouserc.json uses preset desktop on 4 URLs. Field budgets live separately in lib/analytics/vitals-budgets.ts.\n\nWHY IT MATTERS: Most visitors are on phones; a mobile LCP or JS regression on /, /pricing or /create-a-space cannot fail a PR. The build-time shell-weight gate (1100KB, blocking in package.json postbuild) is the only hard phone-JS guard.\n\nFIX DIRECTION: Once 3-4 baseline runs exist, flip mobile LCP/CLS to error at about 2x the measured median and add /create-a-space and /themes/nocturne.\n\nCLOSED 2026-11-16: lighthouserc.mobile.json now fails the lighthouse job on phone LCP over 10000 ms or CLS over 0.1 for / and /feed. The numbers come from three real runs (jobs 128040514401, 128049408624, 128084620428, 2026-11-04 to 11-06): LCP median 4909 ms on / and 6305 ms on /feed, CLS 0.000 on both. The old 4000 ms warn was already breached on every run, so the limit is about 2x the home median, not the old number. /create-a-space and /themes/nocturne were added to the phone run; they are measured and reported but not yet gated (matchingUrlPattern), because they have no reading. TBT and script size stay warns (TBT swung 194 to 427 ms between runs; /feed script is 728 KB against the 600 KB line). Two reporting faults found on the way and fixed in .github/workflows/e2e.yml: the phone table in the job summary had been empty on every run (it looked for lhr-*.json in a folder that holds *.report.json), and the desktop table was printing phone readings against desktop budgets (the phone pass rewrites the lhr-*.json files it read). Not verified on a live run: the job only runs on pull requests labelled full-ci. The gate, the URL scoping and both report steps were exercised offline with lhci 0.15.1 on synthetic results. Follow-up: widen the gate to the two new pages once three runs exist.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1234",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }
