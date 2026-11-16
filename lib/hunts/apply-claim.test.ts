@@ -55,6 +55,11 @@ describe('applyClaim', () => {
     expect(seen[0].p_request_hash).toBe(seen[1].p_request_hash)
   })
 
+  it('accepts a held answer', async () => {
+    const out = await applyClaim(async () => ({ data: { result: 'held', claim_id: 'c9' }, error: null }), input)
+    expect(out).toEqual({ result: 'held', claimId: 'c9', replayed: false })
+  })
+
   it('reports a replay', async () => {
     const out = await applyClaim(async () => ({ data: { result: 'credited', replayed: true }, error: null }), input)
     expect(out.replayed).toBe(true)
@@ -79,6 +84,24 @@ describe('the progress guard migration', () => {
     expect(code.indexOf('for update')).toBeLessThan(code.indexOf('stale_progress'))
     expect(code.indexOf('stale_progress')).toBeLessThan(code.indexOf('insert into public.hunt_claims'))
     expect(code).toContain('revoke all on function public.hunt_claim_apply(uuid, uuid, text, uuid, text, text, text, text, integer) from public, anon, authenticated')
+    expect(code).toContain('grant execute on function public.hunt_claim_apply(uuid, uuid, text, uuid, text, text, text, text, integer) to service_role')
+  })
+})
+
+describe('the held claim migration', () => {
+  const code = readFileSync(join('supabase', 'migrations', '20270346053000_hunt_claim_hold.sql'), 'utf8')
+    .split('\n')
+    .filter((l) => !l.trim().startsWith('--'))
+    .join('\n')
+    .toLowerCase()
+
+  it('keeps the default refusal, holds only on an opted-in binding, and writes no progress or outbox for a hold', () => {
+    expect(code).toContain("return jsonb_build_object('result', 'assurance_too_low')")
+    expect(code).toContain("evidence_policy -> 'hold_for_review' = 'true'::jsonb")
+    const hold = code.slice(code.indexOf("'needs_review'"), code.indexOf("return answer;"))
+    expect(hold).not.toContain('hunt_progress')
+    expect(hold).not.toContain('hunt_outbox')
+    expect(code).not.toContain('drop function')
     expect(code).toContain('grant execute on function public.hunt_claim_apply(uuid, uuid, text, uuid, text, text, text, text, integer) to service_role')
   })
 })

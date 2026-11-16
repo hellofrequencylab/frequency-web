@@ -1,0 +1,16 @@
+{
+  "id": "HYG-240",
+  "title": "Return freed memory to the OS during the Next compile (MIMALLOC_PURGE_DELAY=0) for build headroom on the 8 GB machine",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-15",
+  "source": {
+    "file": "package.json",
+    "ref": "HYG-221 / HYG-232. Production container peak was 7936 MB of 8192 MB after source maps went off, a 64 MB margin."
+  },
+  "detail": "MEASURED 2026-11-15 on Vercel previews with the HYG-224 sampler, container peak (8 GB machine, no source maps): baseline 7937 MB (that build was OOM-killed), MIMALLOC_PURGE_DELAY=0 7636 MB, plus RAYON_NUM_THREADS=2 7618 MB. So the allocator purge is worth about 300 MB and thread count nothing. Also measured and rejected: turbopackScopeHoisting false (7937, no change), a 2 GB Node heap cap (7894 with source maps), turbopackPluginRuntimeStrategy workerThreads (7928 with source maps). With productionBrowserSourceMaps on, purge alone peaked at 7903 MB and went READY on a preview, but that is about 290 MB of margin on a machine that was killed at 7937, so Sentry source maps stay off (HYG-232) and the compile itself is the next thing to shrink. HYG-221 stays the umbrella and closes on 20 consecutive READY deploys.",
+  "verify": { "kind": "cmd", "cmd": "node scripts/probes/build-allocator-purge.mjs" },
+  "wave": "W7"
+}
