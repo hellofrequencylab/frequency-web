@@ -227,7 +227,7 @@ export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: strin
     )}
     </div>
     <div className="mt-4">
-      <LayerList layers={layers} onChange={setLayers} selectedId={document ? real.selectedId : undefined} onSelect={document ? real.select : undefined} tree={document ? real.tree : undefined} onMove={document ? real.move : undefined} />
+      <LayerList layers={layers} onChange={setLayers} selectedId={document ? real.selectedId : undefined} onSelect={document ? real.select : undefined} tree={document ? real.tree : undefined} onMove={document ? real.move : undefined} onRow={document?.canSave ? real.row : undefined} />
       {document && (
         <p className="mt-2 text-meta text-muted">
           Edit picks the block the inspector shows. {!real.tree ? 'Moving a layer here is not saved yet.' : document.canSave ? 'A move is saved to the draft.' : 'A move here is not saved: this page is read only.'}
