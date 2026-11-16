@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { getPageContent } from '@/lib/page-content'
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
+import { FREQUENCY_PAGE_SEO } from '@/lib/seo/frequency-pages'
 import { AdminPage } from '@/components/admin/admin-page'
 import { HomeSeoForm } from './form'
 
@@ -19,7 +19,8 @@ export default async function HomeSeoPage() {
   if (!(await getJanitor())) notFound()
 
   const current = await getPageContent('/')
-  const fallback = { title: `${SITE_NAME} · ${SITE_TAGLINE}`, description: SITE_DESCRIPTION }
+  // The same coded fallback app/page.tsx serves when the fields are blank (SCAN-1206).
+  const fallback = { title: FREQUENCY_PAGE_SEO.home.title, description: FREQUENCY_PAGE_SEO.home.description }
 
   return (
     <AdminPage
