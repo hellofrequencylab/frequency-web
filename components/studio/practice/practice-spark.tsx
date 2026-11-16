@@ -46,6 +46,7 @@ import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import { sparkPracticeAction, createPracticeFromSparkAction } from '@/app/(main)/practices/create-actions'
 import { createPracticeDraftAction } from '@/app/(main)/practices/actions'
 import type { PracticePace, PracticeCadenceHint, PracticeSparkTimer } from '@/lib/ai/practice-spark'
+import { chipClasses } from '@/components/ui/chip'
 
 // The Be Still sub-mode LABELS (naming canon: member copy never shows raw enum slugs).
 
@@ -417,11 +418,7 @@ export function PracticeSpark() {
                   disabled={pending}
                   onClick={() => setPillars((prev) => (prev.includes(p.key) ? prev.filter((x) => x !== p.key) : [...prev, p.key]))}
                   aria-pressed={pillars.includes(p.key)}
-                  className={`rounded-pill border px-3 py-1 text-meta font-medium transition-colors disabled:opacity-60 ${
-                    pillars.includes(p.key)
-                      ? 'border-primary/40 bg-primary-bg text-primary-strong'
-                      : 'border-border bg-surface text-muted hover:text-text'
-                  }`}
+                  className={chipClasses(pillars.includes(p.key), 'disabled:opacity-60')}
                 >
                   {p.label}
                 </button>

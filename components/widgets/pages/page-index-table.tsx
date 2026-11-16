@@ -1,3 +1,4 @@
+import { formatDateShort } from '@/lib/format-date'
 import Link from 'next/link'
 import { ExternalLink, Pencil, ArrowRight } from 'lucide-react'
 import { EDITOR_LABEL, type IndexedPage } from '@/lib/pages/index-catalog'
@@ -14,7 +15,7 @@ function publishedLabel(row: PageRow | undefined): { text: string; live: boolean
   if (row?.status !== 'published' || !row.published_at) return { text: 'Default template', live: false }
   const date = new Date(row.published_at)
   if (isNaN(date.getTime())) return { text: 'Default template', live: false }
-  return { text: `Published ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, live: true }
+  return { text: `Published ${formatDateShort(date)}`, live: true }
 }
 
 export function PageIndexTable({

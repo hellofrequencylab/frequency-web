@@ -1,3 +1,4 @@
+import { formatDateShort } from '@/lib/format-date'
 import Link from 'next/link'
 import {
   Check,
@@ -53,7 +54,7 @@ import { listEventGuests, type EventGuestListItem, type GuestRsvpStatus } from '
 // host/cohost; these only read.
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return formatDateShort(iso)
 }
 
 const STATUS_CHIP: Record<
