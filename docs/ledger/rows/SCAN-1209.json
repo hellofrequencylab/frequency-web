@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: app/discover/cities/[citySlug]/page.tsx:68 sets noindex unless the town has >=3 upcoming events or >=2 Spaces (lib/seo/index-floor.ts:12); app/sitemap.ts:559-566 lists towns only above that floor; page 404s when a town has nothing public (page.tsx:91). generateStaticParams only covers density cities (page.tsx:30).\n\nWHY IT MATTERS: Frequency opens 1 Jan 2027 with near-zero events, so every town page is noindex and out of the sitemap. The whole local-SEO and AI-answer plan for Encinitas, Carlsbad, Oceanside, Vista, San Marcos, Escondido, Solana Beach and Del Mar depends on these pages.\n\nFIX DIRECTION: Add editorial, always-indexable pages for the founding towns (or one /north-county-san-diego hub plus town sections) with real copy, FAQ, breadcrumb schema, and list them in the sitemap regardless of the density floor.",
+  "detail": "EVIDENCE: app/discover/cities/[citySlug]/page.tsx:68 sets noindex unless the town has >=3 upcoming events or >=2 Spaces (lib/seo/index-floor.ts:12); app/sitemap.ts:559-566 lists towns only above that floor; page 404s when a town has nothing public (page.tsx:91). generateStaticParams only covers density cities (page.tsx:30).\n\nWHY IT MATTERS: Frequency opens 1 Jan 2027 with near-zero events, so every town page is noindex and out of the sitemap. The whole local-SEO and AI-answer plan for Encinitas, Carlsbad, Oceanside, Vista, San Marcos, Escondido, Solana Beach and Del Mar depends on these pages.\n\nFIX DIRECTION: Add editorial, always-indexable pages for the founding towns (or one /north-county-san-diego hub plus town sections) with real copy, FAQ, breadcrumb schema, and list them in the sitemap regardless of the density floor.\n\n2026-11-16: /north-county-san-diego is an always-indexable hub (FrequencyNorthCounty kit page, one section per FOUNDING_CITIES town, answer-first FAQ with FAQPage, breadcrumb and CollectionPage JSON-LD) listed in the sitemap regardless of the density floor. The per-town /discover/cities pages keep their floor by design.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1209",
-    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1209"
   },
+  "closed": "2026-11-16",
   "wave": "W7"
 }

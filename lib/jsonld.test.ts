@@ -399,7 +399,7 @@ describe('organizationSchema', () => {
 
   it('includes a logo URL and contact email', () => {
     const result = organizationSchema()
-    expect(result.logo).toContain('/icons/icon-192.png')
+    expect(result.logo).toContain('/icons/icon-512.png')
     expect(result.email).toMatch(/@/)
   })
 
@@ -431,7 +431,7 @@ describe('organizationSchema', () => {
     expect(result.foundingLocation).toEqual({
       '@type': 'Place',
       name: 'North County San Diego',
-      address: { '@type': 'PostalAddress', addressRegion: 'CA', addressCountry: 'US' },
+      address: { '@type': 'PostalAddress', addressLocality: 'North County San Diego', addressRegion: 'CA', addressCountry: 'US' },
     })
     // Privacy contract: the founding location is never a precise street address.
     const place = result.foundingLocation as { address: Record<string, unknown> }

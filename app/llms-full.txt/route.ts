@@ -1,5 +1,5 @@
 import { getAllCategories, helpHref } from '@/lib/help/content'
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CATEGORY_LINE, CONTACT_EMAIL, FOUNDING_PLACE, OPENING_DATE_LABEL } from '@/lib/site'
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CATEGORY_LINE, CONTACT_EMAIL, FOUNDING_CITIES, FOUNDING_PLACE, OPENING_DATE_LABEL } from '@/lib/site'
 import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { allOfferings, type Offering } from '@/lib/pricing/pricing-grid'
 import { offeringLadderLabel, paidWallsPhrase, PLAN_STORY } from '@/lib/pricing/pricing-page'
@@ -12,7 +12,8 @@ import { spec as friendshipAsAnAdult } from '@/lib/page-editor/templates/friends
 import { spec as howToBeMoreSocial } from '@/lib/page-editor/templates/how-to-be-more-social'
 import { COMPARISONS, comparisonCopy, comparisonPath } from '@/lib/marketing/comparisons'
 import { WHO_FREQUENCY_IS_FOR, WHO_FREQUENCY_IS_FOR_HEADING } from '@/lib/marketing/who-its-for'
-import { quickAnswers } from '@/lib/marketing/quick-answers'
+import { quickAnswers, localAnswers } from '@/lib/marketing/quick-answers'
+import { NORTH_COUNTY_PATH, NORTH_COUNTY_TOWNS } from '@/lib/marketing/north-county'
 import { SELECTABLE_SKINS } from '@/lib/theme/skins'
 
 // /llms-full.txt — the comprehensive, self-maintaining companion to the curated /llms.txt route
@@ -112,6 +113,16 @@ export async function GET() {
       abs: (path) => `${SITE_URL}${path}`,
       memberThemes: SELECTABLE_SKINS.map((s) => s.label),
     }).flatMap((x) => [`Q: ${x.q}`, `A: ${x.a}`]),
+    '',
+    // The local questions (SCAN-1223) and the founding towns (SCAN-1226), the same answers the
+    // North County page shows and marks up as FAQPage.
+    '### North County San Diego',
+    '',
+    `${SITE_URL}${NORTH_COUNTY_PATH}`,
+    `Founding towns of ${FOUNDING_PLACE}: ${FOUNDING_CITIES.join(', ')}.`,
+    ...NORTH_COUNTY_TOWNS.map((t) => `- ${t.name} (${SITE_URL}${NORTH_COUNTY_PATH}#${t.slug}): ${t.blurb}`),
+    '',
+    ...localAnswers({ abs: (path) => `${SITE_URL}${path}` }).flatMap((x) => [`Q: ${x.q}`, `A: ${x.a}`]),
     '',
     `### ${WHO_FREQUENCY_IS_FOR_HEADING}`,
     '',

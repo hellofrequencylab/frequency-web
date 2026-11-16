@@ -44,7 +44,7 @@ export function organizationSchema(opts?: {
     // slogan carries it as an entity attribute so an answer engine resolves Frequency by its positioning.
     slogan: SITE_TAGLINE,
     url: SITE_URL,
-    logo: abs('/icons/icon-192.png'),
+    logo: abs('/icons/icon-512.png'),
     description: SITE_DESCRIPTION,
     email: CONTACT_EMAIL,
     contactPoint: {
@@ -64,7 +64,9 @@ export function organizationSchema(opts?: {
           foundingLocation: {
             '@type': 'Place',
             name: opts.foundingLocation,
-            address: { '@type': 'PostalAddress', addressRegion: 'CA', addressCountry: 'US' },
+            // City-level only, never a street: Frequency is a service-area organization with no public storefront.
+            // The named region stands in for the locality until a public city and postal code are chosen.
+            address: { '@type': 'PostalAddress', addressLocality: opts.foundingLocation, addressRegion: 'CA', addressCountry: 'US' },
           },
         }
       : {}),
@@ -1062,7 +1064,7 @@ export function articleSchema(article: {
       '@id': ORG_ID,
       name: SITE_NAME,
       url: SITE_URL,
-      logo: { '@type': 'ImageObject', url: abs('/icons/icon-192.png') },
+      logo: { '@type': 'ImageObject', url: abs('/icons/icon-512.png') },
     },
   }
 }
