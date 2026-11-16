@@ -85,8 +85,12 @@ describe('viewportDependentBoxes: the CSSOM scan, against a real DOM', () => {
     const found = await run()
     const rules = found.map((f) => f.rule)
     expect(rules).toContain('min-height: 100dvh')
-    expect(rules).toContain('min-height: calc(100vh - 3.5rem)')
-    const inner = found.find((f) => f.rule === 'min-height: calc(100vh - 3.5rem)')
+    // jsdom 31 hands the calc() back in the spec's canonical order, `calc(-3.5rem + 100vh)`,
+    // so match the declaration in either order, not one serialisation of it.
+    const isInner = (rule: string) =>
+      /^min-height: calc\((100vh - 3\.5rem|-3\.5rem \+ 100vh)\)$/.test(rule)
+    expect(rules.some(isInner)).toBe(true)
+    const inner = found.find((f) => isInner(f.rule))
     expect(inner!.desc).toContain('div')
     // The path must lead somewhere a person can follow, not stop at the body.
     expect(inner!.path.startsWith('body>')).toBe(true)
