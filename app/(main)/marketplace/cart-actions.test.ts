@@ -85,3 +85,16 @@ describe('checkout from the saved cart', () => {
     expect(store.clearStoredCart).toHaveBeenCalledWith('p1')
   })
 })
+
+describe('checkout when the saved cart just changed', () => {
+  it('charges nothing and asks the buyer to look again', async () => {
+    vi.stubEnv('COMMERCE_CART_ENABLED', '1')
+    vi.stubEnv('COMMERCE_CART_CHECKOUT_ENABLED', '1')
+    const line = { productId: 'a', variantId: null, qty: 1 }
+    cartLoad.loadCartView.mockResolvedValueOnce({ lines: [line], removed: ['gone:'], reduced: [], totals: [] })
+    expect((await startCartCheckoutAction()).error).toMatch(/changed/)
+    cartLoad.loadCartView.mockResolvedValueOnce({ lines: [line], removed: [], reduced: [{ key: 'a:', from: 3, to: 1 }], totals: [] })
+    expect((await startCartCheckoutAction()).error).toMatch(/changed/)
+    expect(checkout.createCommerceCheckout).not.toHaveBeenCalled()
+  })
+})
