@@ -1006,8 +1006,9 @@ describe('the real tree', () => {
     // how the next reader re-checks it without breaking a build to do so.
     const costLine = /probe-cost: n=(\d+) totalCpuMs=(\d+) maxCpuMs=(\d+) slowest=(\S+)/.exec(withRg.out)
     const selfReported = /guard-cost: guardCpuMs=(\d+)/.exec(withRg.out)
+    const runnerSpeed = /runner-speed: n=(\d+) medianCpuMs=(\d+(?:\.\d+)?)/.exec(withRg.out)
     console.log(
-      `[backlog-budget] guardCpuMs=${guardCpuMs ?? 'n/a'} guardWallMs=${guardWallMs} ${costLine?.[0] ?? 'probe-cost=MISSING'}`,
+      `[backlog-budget] guardCpuMs=${guardCpuMs ?? 'n/a'} guardWallMs=${guardWallMs} ${costLine?.[0] ?? 'probe-cost=MISSING'} ${runnerSpeed?.[0] ?? 'runner-speed=MISSING'}`,
     )
 
     // ⚠️ A STRUCTURAL FAILURE EXITS BEFORE ANY PROBE RUNS, so there is genuinely no cost to print
@@ -1076,14 +1077,52 @@ describe('the real tree', () => {
 
     // (2) THE COUNT-SCALED TOTAL. Adding a normal row raises the budget by more than a normal row
     // costs, so the list can grow; a round of rows that are each quietly expensive still trips it.
-    const budget = BASE_CPU_MS + PER_PROBE_ALLOWANCE_MS * probeCount
+    //
+    // 📏 THE TOTAL IS RELATIVE TO THE RUNNER (HYG-242, owner pick "A", 2026-11-16).
+    //
+    // LIVE-047 above measured CPU time flat under load on one box. Across CI runners it is not:
+    //
+    //   same sweep, same day (n=2424/2425)        guardCpuMs     against the flat 438s
+    //   #5044, test job                             440.0s        FAILED by 0.5%, every probe green
+    //   #5064, test job (run 43901703663)           265.2s        40% clear
+    //   local 4-core box, six runs                  276-292s
+    //
+    // A 1.66x spread on an unchanged list is the RUNNER, and a flat number cannot tell that from the
+    // check getting slower. So the guard now carries a yardstick: one fixed piece of work run through
+    // the same collector once per 100 probes, in the same lanes, in the same minute, printed as
+    // `runner-speed:`. The total scales by how much slower than the reference runner this one read.
+    //
+    //   paired reading of the yardstick      medianCpuMs
+    //   CI, checks job (run 43901703663)        73.2
+    //   local 4-core box, three runs         86.7-87.3
+    //
+    // REFERENCE_MS is the CI half, rounded up. The scale never goes BELOW 1, so no run is judged more
+    // strictly than the flat budget did; it is CAPPED so a broken yardstick cannot wave anything
+    // through. What still fails: the sweep costing more RELATIVE to the yardstick, which is the check
+    // itself getting slower. A missing yardstick fails outright (a fail-safe that stops firing must be
+    // noticed), exactly like the probe-cost line above.
+    const REFERENCE_MS = 75
+    const MAX_RUNNER_SCALE = 2.5
+    expect(
+      runnerSpeed,
+      'check:backlog stopped printing its `runner-speed:` line on a full sweep, so the total below has\n' +
+        'no yardstick and would silently fall back to a flat number that fails on a slow runner.\n' +
+        'Restore the line in scripts/check-backlog.mjs rather than deleting this assertion.',
+    ).not.toBeNull()
+    const runnerMs = Number(runnerSpeed![2])
+    const runnerScale = Math.min(MAX_RUNNER_SCALE, Math.max(1, runnerMs / REFERENCE_MS))
+    const budget = (BASE_CPU_MS + PER_PROBE_ALLOWANCE_MS * probeCount) * runnerScale
+    console.log(
+      `[backlog-budget] runnerMs=${runnerMs} referenceMs=${REFERENCE_MS} scale=${runnerScale.toFixed(2)} budgetMs=${Math.round(budget)}`,
+    )
     if (guardCpuMs === null) {
       expect(guardWallMs, 'the guard should at least finish inside its own 60s timeout').toBeLessThan(60_000)
     } else {
       expect(
         guardCpuMs,
         `check:backlog burned ${(guardCpuMs / 1000).toFixed(1)}s of CPU, over its ${(budget / 1000).toFixed(1)}s budget\n` +
-          `(${BASE_CPU_MS / 1000}s base + ${PER_PROBE_ALLOWANCE_MS}ms x ${probeCount} probes).\n` +
+          `(${BASE_CPU_MS / 1000}s base + ${PER_PROBE_ALLOWANCE_MS}ms x ${probeCount} probes, x ${runnerScale.toFixed(2)} because this runner read\n` +
+          `${runnerMs}ms on the ${REFERENCE_MS}ms reference work).\n` +
           `(Wall clock was ${(guardWallMs / 1000).toFixed(1)}s, which is load-dependent and NOT what this asserts.)\n` +
           `The worst single probe was ${worstProbeId} at ${(worstProbeMs / 1000).toFixed(2)}s, under the per-probe\n` +
           'ceiling — so this is COST SPREAD ACROSS PROBES, not one bad row. Several probes got more\n' +

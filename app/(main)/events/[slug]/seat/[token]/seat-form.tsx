@@ -8,6 +8,13 @@ import { Select } from '@/components/ui/select'
 import { Input, Textarea } from '@/components/ui/field'
 import { MAX_GUEST_PLUS_ONES, type GuestSeatQuestion, type GuestSeatState } from '@/lib/events/guest-seat'
 import { releaseGuestSeat, updateGuestSeat } from './seat-actions'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+
+// The two answers to a yes/no question, as kit segments.
+const YES_NO = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+] as const
 
 // The submits the seat page waits for (PROG-GD2). Nothing here runs on mount: every server action
 // is behind a tap, and the release is behind two. The member RSVP control
@@ -215,25 +222,15 @@ function QuestionField({
       ) : q.type === 'number' ? (
         <Input id={id} type="number" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} />
       ) : q.type === 'boolean' ? (
-        <div className="inline-flex items-center gap-1 rounded-card border border-border bg-surface p-1">
-          {(['yes', 'no'] as const).map((opt) => {
-            const selected = value === opt
-            return (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => onChange(opt)}
-                aria-pressed={selected}
-                disabled={disabled}
-                className={`rounded-control-nested px-3 py-1.5 text-body-sm font-semibold capitalize transition-colors ${
-                  selected ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'
-                }`}
-              >
-                {opt}
-              </button>
-            )
-          })}
-        </div>
+        // A disabled fieldset disables the segments natively, so the kit control needs no prop for it.
+        <fieldset disabled={disabled} className="min-w-0">
+          <SegmentedControl
+            label={q.prompt}
+            value={value === 'yes' || value === 'no' ? value : null}
+            onChange={onChange}
+            segments={YES_NO}
+          />
+        </fieldset>
       ) : q.type === 'dropdown' ? (
         <Select
           id={id}

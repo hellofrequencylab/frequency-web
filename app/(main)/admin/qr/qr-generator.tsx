@@ -82,7 +82,7 @@ export function QrGenerator({
                   key={p.key}
                   type="button"
                   onClick={() => setStyle({ ...p.style })}
-                  className="rounded-pill border border-border px-2.5 py-1 text-2xs font-medium text-muted transition-colors hover:border-primary hover:bg-primary-bg hover:text-primary-strong"
+                  className={chipClasses(false)}
                 >
                   {p.label}
                 </button>
