@@ -20,6 +20,14 @@ describe('manageQuickLinks (SCAN-971)', () => {
     expect(builder?.external).toBeUndefined()
   })
 
+  it('marks the Website builder door as a handoff, the only one, so it is never prefetched (SCAN-1244)', () => {
+    for (const inPanel of [true, false]) {
+      const links = manageQuickLinks({ slug: 'the-group', published: true, inPanel })
+      expect(links.filter((l) => l.handoff).map((l) => l.key)).toEqual(['builder'])
+      expect(links.filter((l) => l.href.includes('/manage/leadership/open')).every((l) => l.handoff)).toBe(true)
+    }
+  })
+
   it('opens a published website in a new tab, and drops the console door on /manage itself', () => {
     const links = manageQuickLinks({ slug: 'the-group', published: true, inPanel: false })
     expect(links.find((l) => l.key === 'console')).toBeUndefined()

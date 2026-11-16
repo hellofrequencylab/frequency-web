@@ -9,6 +9,7 @@ import Image from 'next/image'
 import type { CSSProperties } from 'react'
 import { useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
+import { Input } from '@/components/ui/field'
 import type { BuilderDraft } from '@/lib/create-space/builder'
 import type { KitImagery } from '@/lib/create-space/preview-site'
 import type { UploadKind } from '@/lib/create-space/uploads'
@@ -40,7 +41,7 @@ interface PhotosCardProps {
 function UploadTile({ kind, label, round, onUpload }: { kind: UploadKind; label: string; round?: boolean; onUpload: PhotosCardProps['onUpload'] }) {
   return (
     <label className={round ? 'cs-upload cs-photo-round' : 'cs-upload'}>
-      <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(kind, f); e.target.value = '' }} />
+      <Input variant="seamless" type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(kind, f); e.target.value = '' }} />
       <FqIcon name="plus" size={18} />{label}
     </label>
   )

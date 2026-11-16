@@ -236,3 +236,6 @@ lifecycle_send_log
 loom_functions
 analytics_experiments
 analytics_experiment_assignments
+
+# SCAN-1210: public.tz_zone_lookup, a keyed IANA zone list public.public_events joins; service role and the definer function only, no policies.
+tz_zone_lookup
