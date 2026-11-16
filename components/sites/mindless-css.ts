@@ -1,4 +1,5 @@
 import { SERVICES_CSS } from '@/components/sites/services-css'
+import { MINDLESS_SITE_CSS } from '@/components/sites/mindless-site-css'
 import { MINDLESS_ACCENT_CSS, MINDLESS_DIALS_CSS, MINDLESS_TOKENS_CSS } from '@/lib/theme/mindless'
 
 // THE MINDLESS SKIN (design: the Mindless design system, components/bundle.css + ui_kits/website app.css). Scoped under
@@ -203,4 +204,5 @@ ${M} .sv-input,${M} .sv-field input,${M} .sv-field textarea,${M} .sv-field selec
 /* Motion is fixed off; prefers-reduced-motion is honoured regardless. */
 ${M} .sv-ticker-track{animation:none}
 @media (prefers-reduced-motion:reduce){${M} *{transition:none!important;animation:none!important}}
+${MINDLESS_SITE_CSS}
 `
