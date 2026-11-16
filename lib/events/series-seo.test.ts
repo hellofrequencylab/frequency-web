@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
 import {
   isOccurrenceIndexed,
+  listSitemapEventEntries,
   publicEventIndexPlan,
   seriesRobots,
   suppressPastNoindex,
@@ -405,4 +406,43 @@ describe('event page robots wiring', () => {
 
   // The /discover/events/<slug> twin carried the same two rules until SCAN-672 retired it (a 308 to
   // /events/<slug> in next.config.ts), so there is no second public page left to pin.
+})
+
+const { from } = vi.hoisted(() => ({ from: vi.fn() }))
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from }) }))
+
+describe('event sitemap series anchors', () => {
+  it('adds the published older anchor without displacing allowed upcoming occurrences', async () => {
+    const anchorId = '00000000-0000-4000-8000-000000000001'
+    const parentEvent = { id: anchorId, slug: 'weekly', starts_at: '2000-01-01T19:00:00Z', recurrence_type: 'weekly' }
+    const upcoming = [1, 2, 3].map(day => ({
+      id: `date-${day}`,
+      parent_event_id: anchorId,
+      slug: `weekly-${day}`,
+      starts_at: `2099-11-0${day}T19:00:00Z`,
+    }))
+    const withRows = (rows: unknown[]) => {
+      const query = new Proxy({}, {
+        get: (_, key) => key === 'then'
+          ? (resolve: (answer: { data: unknown[]; error: null }) => void) => resolve({ data: rows, error: null })
+          : () => query,
+      })
+      return query
+    }
+    from.mockReset()
+    from.mockReturnValueOnce(withRows(upcoming)).mockReturnValueOnce(withRows([parentEvent]))
+    const entries = await listSitemapEventEntries({ occurrences: 1 })
+    expect(entries.map(({ slug, isSeriesHome }) => [slug, isSeriesHome])).toEqual([
+      ['weekly', true],
+      ['weekly-1', false],
+      ['weekly-2', false],
+    ])
+
+    from.mockReturnValueOnce(withRows(upcoming)).mockReturnValueOnce(withRows([]))
+    const withoutAnchor = await listSitemapEventEntries({ occurrences: 1 })
+    expect(withoutAnchor.map(({ slug, isSeriesHome }) => [slug, isSeriesHome])).toEqual([
+      ['weekly-1', true],
+      ['weekly-2', false],
+    ])
+  })
 })

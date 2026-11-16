@@ -68,7 +68,7 @@ export interface SitemapEventEntry {
    * Absent beats invented, the same rule LIVE-197 applied to `lastModified`.
    */
   image?: string
-  /** The earliest live date of its series, i.e. the URL a crawler should treat as the series page.
+  /** The indexable series anchor, or the earliest elected date when there is no eligible anchor.
    *  FALSE for every one-off, so `isSeriesHome` is never a synonym for "an event". */
   isSeriesHome: boolean
 }
@@ -249,6 +249,7 @@ export async function seriesSeoFacts(row: SeriesSeoRow): Promise<SeriesSeoFacts>
         .eq('status', 'published')
         .eq('visibility', 'public')
         .eq('is_cancelled', false)
+        .eq('is_demo', false)
         .is('removed_at', null)
         .gte('starts_at', floor)
 
@@ -310,12 +311,11 @@ export async function seriesSeoFactsBySlug(slug: string): Promise<SeriesSeoFacts
 }
 
 /**
- * Every event URL the sitemap should advertise: the series page plus its next `occurrences` dates,
- * and one entry per one-off. Fail-safe to `[]` — a data hiccup must never break the sitemap.
+ * Every event URL the sitemap should advertise: the indexable series anchor, the allowed
+ * upcoming dates, and one entry per one-off. The same date ordinal is used by page metadata.
  *
- * `occurrences` is the count of dates AFTER the series home, so `occurrences = 2` yields at most
- * three URLs per series (home + 2), whatever the cadence. That is the whole point: a daily series
- * drops from ~61 URLs and ~61 image entries to 3.
+ * `occurrences` counts dates after the first upcoming date. An earlier live series anchor
+ * gets its own entry without displacing an indexable occurrence.
  */
 export async function listSitemapEventEntries(opts: {
   failClosed?: boolean
@@ -330,24 +330,22 @@ export async function listSitemapEventEntries(opts: {
   try {
     const admin = createAdminClient()
     const floor = upcomingFloor()
-    const query = () => admin
+    const publicRows = () => admin
       .from('events')
-      // SERIES_COLUMNS verbatim: without them collapseSeries is a silent no-op and this ships
-      // looking finished while the sitemap still carries every date.
-      // `cover_image_path` rides along for the image-sitemap entry — the PUBLIC bucket only; see
-      // the note on SitemapEventEntry.image for why the other two hero sources must never appear.
-      .select(`id, slug, starts_at, ends_at, time_zone, is_cancelled, cover_image_path, updated_at, ${SERIES_COLUMNS}`)
+      .select(`id, slug, starts_at, ends_at, time_zone, is_cancelled, cover_image_path, updated_at, ${SERIES_COLUMNS}, space_id, crawl_space:spaces!space_id(status, visibility)`)
       .eq('status', 'published')
       .eq('visibility', 'public')
       .eq('is_cancelled', false)
+      .eq('is_demo', false)
       .is('removed_at', null)
+    const upcomingQuery = () => publicRows()
       .gte('starts_at', floor)
       .order('starts_at', { ascending: true })
       .limit(limit)
     const { data, error } = opts.failClosed
-      ? { data: await listReadFailClosed('sitemap.events', query), error: null }
-      : await query()
-    if (error || !Array.isArray(data)) return []
+      ? { data: await listReadFailClosed('sitemap.events', upcomingQuery), error: null }
+      : await upcomingQuery()
+    if (error || !Array.isArray(data) || data.length === 0) return []
 
     type Row = {
       id: string
@@ -361,6 +359,8 @@ export async function listSitemapEventEntries(opts: {
       recurrence_type: string | null
       recurrence_until: string | null
       parent_event_id: string | null
+      space_id: string | null
+      crawl_space: { status: string; visibility: string } | null
     }
     const rows = data as Row[]
 
@@ -372,27 +372,45 @@ export async function listSitemapEventEntries(opts: {
       maxDates: 1 + occurrences,
     })
 
-    const out: SitemapEventEntry[] = []
     const now = Date.now()
-    const liveSeriesKeys = new Set(rows.filter(row => !eventHasEnded(row, now)).map(seriesKey))
+    const publiclyReachable = (row: Row) => row.space_id == null
+      || (row.crawl_space?.status === 'active' && row.crawl_space.visibility === 'network')
+    const liveSeriesKeys = new Set(rows.filter(row => publiclyReachable(row) && !eventHasEnded(row, now)).map(seriesKey))
+    const upcomingIds = new Set(rows.map(row => row.id))
+    // Only fetch earlier anchors for series that still have a public date. The selected IDs have
+    // already passed the upcoming reader's cap; batch them to keep PostgREST URLs bounded.
+    const anchorIds = [...liveSeriesKeys].filter(id => UUID.test(id) && !upcomingIds.has(id))
+    const olderAnchors = new Map<string, Row>()
+    for (let offset = 0; offset < anchorIds.length; offset += 100) {
+      const anchorsQuery = () => publicRows()
+        .in('id', anchorIds.slice(offset, offset + 100))
+        .is('parent_event_id', null)
+        .lt('starts_at', floor)
+      const anchors = opts.failClosed
+        ? await listReadFailClosed('sitemap.events.anchors', anchorsQuery)
+        : (await anchorsQuery()).data
+      for (const row of (anchors ?? []) as Row[]) {
+        if (publiclyReachable(row) && row.slug && isSeriesCadence(row.recurrence_type)) olderAnchors.set(row.id, row)
+      }
+    }
+
+    const out: SitemapEventEntry[] = []
     for (const group of groups) {
-      group.representatives.forEach((r, i) => {
-        if (!r.slug || typeof r.starts_at !== 'string') return
-        // Keep the day-floor ordinal fold: filtering ended rows before it would promote dates
-        // beyond the page's indexed-occurrence allowance. Apply the shared page end rule AFTER.
-        const liveAnchor = r.parent_event_id == null && isSeriesCadence(r.recurrence_type)
+      const olderAnchor = olderAnchors.get(group.key)
+      const candidates = olderAnchor ? [olderAnchor, ...group.representatives] : group.representatives
+      candidates.forEach((r, index) => {
+        if (!publiclyReachable(r) || !r.slug || typeof r.starts_at !== 'string') return
+        // Fold before dropping ended dates to keep the exact same ordinals as the event pages.
+        const liveAnchor = r.id === group.key && isSeriesCadence(r.recurrence_type)
           && liveSeriesKeys.has(group.key)
         if (eventHasEnded(r, now) && !liveAnchor) return
-        // isSeriesHome is the ELECTED earliest live row, not "the anchor". A long-running series'
-        // anchor row is gone from an upcoming-only read the moment its own date passes; electing the
-        // anchor would drop established series out of the sitemap entirely.
         const cover = r.cover_image_path
           ? (admin.storage.from(EVENT_MEDIA_BUCKET).getPublicUrl(r.cover_image_path).data?.publicUrl ?? null)
           : null
         out.push({
           slug: r.slug,
           startsAt: r.starts_at,
-          isSeriesHome: group.recurring && i === 0,
+          isSeriesHome: group.recurring && index === 0,
           ...(typeof r.updated_at === 'string' ? { updatedAt: r.updated_at } : {}),
           ...(cover ? { image: cover } : {}),
         })
