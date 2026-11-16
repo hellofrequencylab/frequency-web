@@ -220,9 +220,9 @@ function Profile({ c }: { c: C }) {
   return (
     <>
       <div className={`nws-profile-head${page?.cover ? ' nws-profile-head--cover' : ''}`}>
-        {page?.cover && <Image src={page.cover} alt="" fill sizes="(min-width: 640px) 576px, 100vw" className="nws-profile-cover" priority />}
+        {page?.cover && <Image src={page.cover} alt="" fill sizes="(min-width: 640px) 576px, 100vw" className="nws-profile-cover" preload />}
         <div className="nws-portrait">
-          {page?.portrait ? <Image src={page.portrait} alt={c.owner} width={112} height={112} className="nws-portrait-img" priority /> : <span aria-hidden>{c.owner.charAt(0)}</span>}
+          {page?.portrait ? <Image src={page.portrait} alt={c.owner} width={112} height={112} className="nws-portrait-img" preload /> : <span aria-hidden>{c.owner.charAt(0)}</span>}
         </div>
         <div className="nws-d nws-profile-name">{c.owner}</div>
         {c.role && <Eyebrow>{page ? c.role : `${c.role} · ${c.name}`}</Eyebrow>}

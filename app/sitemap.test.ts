@@ -120,6 +120,9 @@ vi.mock('@/lib/discover', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/discover')>()),
   getTopicalChannels: async () => [],
   getPublicCircles: async () => [],
+  walkPublicCirclesPast: async (first: unknown[]) => first,
+  PUBLIC_CIRCLES_PAGE: 200,
+  PUBLIC_CIRCLES_WALK_CAP: 5000,
 }))
 vi.mock('@/lib/events/series-seo', () => ({ listSitemapEventEntries: async () => [] }))
 vi.mock('@/lib/events/series-config', () => ({ getSeriesDisplayConfig: async () => ({ indexedOccurrences: 2 }) }))

@@ -6,6 +6,7 @@
 // Scripted Vera (hot register). The `preview` prop mocks the auth writes; the
 // city search + reel run for real in preview too.
 
+import { GoogleMark } from '@/components/google-mark'
 import { useState, useEffect, useId, useRef } from 'react'
 import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
@@ -40,7 +41,8 @@ import { CheckinRender } from '@/components/onboarding/renders/checkin-render'
 import { DonateRender } from '@/components/onboarding/renders/donate-render'
 import { TicketsRender } from '@/components/onboarding/renders/tickets-render'
 import { CrmRender } from '@/components/onboarding/renders/crm-render'
-import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
+import { WizardProgress } from '@/components/templates'
+import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Select } from '@/components/ui/select'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
@@ -703,8 +705,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
     'w-full rounded-card border border-border bg-canvas px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
   const fieldLabel = 'mb-1.5 block text-left text-meta font-semibold uppercase tracking-wider text-subtle'
   const backLink = 'text-body-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
-  // Primary action — the shared Wizard button (app register), used across the beats.
-  const btnPrimary = wizardPrimaryClass
+  // The primary action on every beat is the kit Button at its large size, the same button the Wizard shell renders.
   const fq = SITE_DESIGN === 'frequency'
   const eyebrow = fq ? 'iw-k' : 'eyebrow text-primary-strong'
   const heading = 'font-display uppercase leading-none text-text'
@@ -1003,9 +1004,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                         className={inputInset}
                       />
                     </div>
-                    <button onClick={advanceFromIntro} disabled={capturing} className={`${btnPrimary} shrink-0`}>
+                    <Button onClick={advanceFromIntro} disabled={capturing} size="lg" className="shrink-0">
                       {capturing ? 'One sec…' : VERA.intro.cta}{!capturing && <ArrowRight />}
-                    </button>
+                    </Button>
                   </div>
                   <p id="induction-email-note" role={emailError ? 'alert' : undefined} className={emailError ? 'text-body-sm text-danger' : 'text-meta text-subtle'}>
                     {emailError || 'Your email saves your spot so you can finish later. It does not put you on a mailing list.'}
@@ -1056,7 +1057,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                         })}
                       </div>
                       <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
-                        <button onClick={advanceFromTour} className={btnPrimary}>{VERA.tour.cta}<ArrowRight /></button>
+                        <Button onClick={advanceFromTour} size="lg">{VERA.tour.cta}<ArrowRight /></Button>
                         <button onClick={() => setBeat(0)} className={backLink}>Back</button>
                       </div>
                     </div>
@@ -1091,10 +1092,10 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                         ))}
                       </div>
                       <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
-                        <button onClick={() => (isLastSlide ? advanceFromTour() : setReelIndex(reelIndex + 1))} className={btnPrimary}>
+                        <Button onClick={() => (isLastSlide ? advanceFromTour() : setReelIndex(reelIndex + 1))} size="lg">
                           {isLastSlide ? VERA.tour.cta : 'Next'}
                           <ArrowRight />
-                        </button>
+                        </Button>
                         <button onClick={() => setBeat(0)} className={backLink}>Back</button>
                       </div>
                     </div>
@@ -1282,9 +1283,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                     {uploadError && <p className="text-meta text-danger">{uploadError}</p>}
                     <p className="text-body-lg leading-relaxed text-muted">{VERA.identity.body}</p>
                     <div className="mt-2 flex flex-col items-center gap-3 md:items-start">
-                      <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
+                      <Button disabled={!identityValid || uploading} onClick={advanceFromIdentity} size="lg">
                         {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
-                      </button>
+                      </Button>
                       <button onClick={() => setBeat(1)} className={backLink}>Back</button>
                     </div>
                   </div>
@@ -1314,9 +1315,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                     <p className="text-body-lg leading-relaxed text-muted">{VERA.enter.body}</p>
                     {submitError && <p className="mt-3 text-body-sm text-danger">{submitError}</p>}
                     <div className="mt-6 flex flex-col items-center gap-3 md:items-start">
-                      <button onClick={submit} disabled={submitting} className={btnPrimary}>
+                      <Button onClick={submit} disabled={submitting} size="lg">
                         {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
-                      </button>
+                      </Button>
                       <button onClick={() => setBeat(2)} className={backLink}>Back</button>
                     </div>
                   </div>
@@ -1357,13 +1358,13 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       aria-label="Email address"
                       className={`${inputInset} mt-4`}
                     />
-                    <button
+                    <Button
                       onClick={deferredMagicLink}
                       disabled={!email.trim() || signingIn}
-                      className={`${btnPrimary} mt-3 w-full`}
+                      size="lg" className="mt-3 w-full"
                     >
                       {signingIn ? 'One sec…' : 'Step in'}{!signingIn && <ArrowRight />}
-                    </button>
+                    </Button>
 
                     <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
@@ -1375,12 +1376,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       disabled={signingIn}
                       className="flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-body font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
                     >
-                      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                      </svg>
+                      <GoogleMark className="h-5 w-5" />
                       Continue with Google
                     </button>
 

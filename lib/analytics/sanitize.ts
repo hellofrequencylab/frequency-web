@@ -127,6 +127,24 @@ const PIXEL_SENSITIVE_KEYS: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * Events that never leave for a pixel AT ALL, whatever their props (PROG-E8B). The key list above
+ * strips a prop; this strips the whole event. An editor event says what an owner did while building
+ * a page with Vera, which is ours to learn from and nobody else's, so both mirrors (the browser gtag
+ * in components/analytics/track-provider.tsx and the server Measurement Protocol in ./track.ts) ask
+ * `pixelAllowsEvent` first. The first-party ledger still records it. lib/analytics/events.test.ts
+ * pins that every registered `editor.*` event is in this set.
+ */
+const FIRST_PARTY_ONLY_EVENTS: ReadonlySet<string> = new Set([
+  'editor.vera_question_accepted',
+  'editor.vera_question_dismissed',
+])
+
+/** May this event be mirrored to a third-party pixel? False for the first-party-only set. */
+export function pixelAllowsEvent(event: string): boolean {
+  return !FIRST_PARTY_ONLY_EVENTS.has(event)
+}
+
+/**
  * Route prefixes whose next segment names a Journey, Circle, topic, Practice or Channel. A page
  * view on `/journeys/grief-walks` would tell the pixel what someone is working through, so the
  * slug is replaced with `[slug]` before any path reaches one.

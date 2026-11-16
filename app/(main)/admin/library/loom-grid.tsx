@@ -1,6 +1,6 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
@@ -511,29 +512,24 @@ function BulkBar({
                     placeholder="Style name (e.g. Warm icon set)"
                     className="mb-2 px-2.5 py-1.5"
                   />
-                  <div className="mb-2 inline-flex rounded-card border border-border p-0.5">
-                    {(['vector', 'raster'] as const).map((l) => (
-                      <button
-                        key={l}
-                        type="button"
-                        onClick={() => setStyleLane(l)}
-                        aria-pressed={styleLane === l}
-                        className={`rounded-control px-2.5 py-1 text-meta font-semibold ${
-                          styleLane === l ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
-                        }`}
-                      >
-                        {l === 'vector' ? 'Vector' : 'Raster'}
-                      </button>
-                    ))}
-                  </div>
-                  <button
+                  <SegmentedControl
+                    label="Style kind"
+                    value={styleLane}
+                    onChange={setStyleLane}
+                    segments={[
+                      { value: 'vector', label: 'Vector' },
+                      { value: 'raster', label: 'Raster' },
+                    ]}
+                    className="mb-2"
+                  />
+                  <Button
                     type="button"
                     onClick={trainStyle}
                     disabled={pending || !styleName.trim()}
-                    className={buttonClasses('primary', 'sm', 'w-full')}
+                    size="sm" className="w-full"
                   >
                     <Palette className="h-4 w-4" /> Train style
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -1011,16 +1007,16 @@ function DetailDrawer({
                 colors.
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <button
+                <Button
                   type="button"
                   onClick={() => askVera('tweak')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
                   title="A small, surgical change that keeps the graphic nearly identical"
-                  className={buttonClasses('primary', 'sm')}
+                  size="sm"
                 >
                   {veraBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                   {veraBusy ? 'Working…' : 'Tweak'}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={() => askVera('redraw')}
@@ -1174,14 +1170,14 @@ function DetailDrawer({
           {err && <p className="text-body-sm text-danger">{err}</p>}
 
           <div className="flex items-center gap-2 pt-1">
-            <button
+            <Button
               type="button"
               onClick={save}
               disabled={pending}
-              className={buttonClasses('primary', 'sm')}
+              size="sm"
             >
               {pending ? 'Saving…' : 'Save'}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={archive}

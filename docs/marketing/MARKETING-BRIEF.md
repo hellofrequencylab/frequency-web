@@ -1,11 +1,11 @@
 # Frequency: Strategy & Product Briefing (for marketing)
 
-> ## ⚠️ SUPERSEDED on pricing by [ADR-1709](docs/DECISIONS.md) (2026-10-06).
+> ## ⚠️ SUPERSEDED on pricing by [ADR-1709](../DECISIONS.md) (2026-10-06).
 >
 > Any plan, price or rate named below predates the five-tier ladder: members join, Crew hosts, a
 > Space runs, Business sells, Collective connects. Tips are 0% on every tier and selling opens at
 > Business. Use `docs/PRICING.md` (top banner) and `lib/pricing/plan-story.ts` for the live story.
-> Status lives in [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json).
+> Status lives in [`docs/BUILD-BACKLOG.json`](../BUILD-BACKLOG.json).
 
 
 > A self-contained overview of Frequency's strategy and features, written to be handed
@@ -101,8 +101,8 @@ Relating, Activism, Creative, Business Support.** Each holds virtual discussion 
 cap and scarcity cues. In-person is the high-intent path and the engine of geographic
 spread.
 
-> ✅ **Naming and voice are locked. The two sources of truth are [`docs/NAMING.md`](docs/NAMING.md)
-> (terminology) and [`docs/CONTENT-VOICE.md`](docs/CONTENT-VOICE.md) (voice + punctuation);
+> ✅ **Naming and voice are locked. The two sources of truth are [`docs/NAMING.md`](../NAMING.md)
+> (terminology) and [`docs/CONTENT-VOICE.md`](../CONTENT-VOICE.md) (voice + punctuation);
 > defer to them on every word.** **The Quest** = the game; a **Quest** = one season; the engine
 > hierarchy is **Quest, Journey, Practice**. **Zaps/Gems** = the currencies (never "points");
 > ranks are **Ghost, Echo, Signal, Beacon, Conduit, Luminary**; depth tiers are
@@ -307,7 +307,7 @@ real members arrive. Location search *always* excludes demo content.
 > brainstorm.
 
 ### The audience
-Two readers, four families ([`docs/CONTENT-VOICE.md`](docs/CONTENT-VOICE.md) §2, ADR-1715): **the Seeker** and **the Latent Leader**, with the Seekers, Latent Leaders, a Supporter and the Builders who run a Space. They are **allergic to funnels.** The
+Two readers, four families ([`docs/CONTENT-VOICE.md`](../CONTENT-VOICE.md) §2, ADR-1715): **the Seeker** and **the Latent Leader**, with the Seekers, Latent Leaders, a Supporter and the Builders who run a Space. They are **allergic to funnels.** The
 governing law: **marketing that *persuades* repels them; marketing that *recognizes* them
 converts.** The goal is *"a magical connection, not an advertisement"*, copy that
 *"reflects the collective ache back so precisely they feel seen."*

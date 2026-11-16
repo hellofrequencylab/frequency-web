@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type CSSProperties } from 'react'
 import { Sun, Moon } from 'lucide-react'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import type { ThemeTokens } from '@/lib/theme/admin-types'
 
 // The live preview panel. It applies the in-progress theme tokens as inline CSS custom
@@ -34,32 +35,15 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="eyebrow text-muted">Live preview</p>
-        <div
-          className="inline-flex rounded-lg border border-border bg-surface p-0.5"
-          role="group"
-          aria-label="Preview mode"
-        >
-          <button
-            type="button"
-            aria-pressed={mode === 'light'}
-            onClick={() => setMode('light')}
-            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-meta font-semibold transition-colors ${
-              mode === 'light' ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
-            }`}
-          >
-            <Sun className="h-3.5 w-3.5" aria-hidden /> Light
-          </button>
-          <button
-            type="button"
-            aria-pressed={mode === 'dark'}
-            onClick={() => setMode('dark')}
-            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-meta font-semibold transition-colors ${
-              mode === 'dark' ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
-            }`}
-          >
-            <Moon className="h-3.5 w-3.5" aria-hidden /> Dark
-          </button>
-        </div>
+        <SegmentedControl
+          label="Preview mode"
+          value={mode}
+          onChange={setMode}
+          segments={[
+            { value: 'light', label: <><Sun className="h-3.5 w-3.5" aria-hidden /> Light</> },
+            { value: 'dark', label: <><Moon className="h-3.5 w-3.5" aria-hidden /> Dark</> },
+          ]}
+        />
       </div>
 
       {/* The skinned surface — every child reads the SAME semantic tokens the real app uses,
