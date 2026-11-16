@@ -1,0 +1,18 @@
+{
+  "id": "FH-048S",
+  "title": "Hunts FH-048S: Compare the pilot readings and decide each expansion's launch",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/EXPANSION-REVIEW.md",
+    "ref": "Split from FH-048 (2026-11-16): the review framework, per-expansion gates and legacy inventory were written before any pilot ran; the evidence comparison waits on the pilots."
+  },
+  "detail": "Owed after the pilots FH-019, FH-027, FH-033 and FH-034 have run. Owner role: Product and release, with Analytics. (1) Fill section 5 of docs/hunts/EXPANSION-REVIEW.md: one comparison table per pilot Hunt from the section 3 template (the five FH-025 events by reason class, medium, cohort and assurance; route health; merchant report; hunt_outbox), operational cost and merchant benefit quoted from each pilot's field report, and the field risks found. (2) The owner's call per expansion (teams, branches and Mystery, fundraiser and sponsor, commerce, editions, partners and finale): launch, wait or drop. (3) For any expansion chosen to launch apart from the others, decide whether it needs its own switch; teams have no per-Hunt gate in the FH-043 code, so a team launch held apart from solo play needs a per-Hunt opt-in or a team switch built first (its own row). (4) Run the section 4 read-only counts for the legacy paths and record whether any retirement row should open. Then write the line `Pilot readings recorded: YYYY-MM-DD` near the top of the doc. No readings may be invented: every number cites its source.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const f=\"docs/hunts/EXPANSION-REVIEW.md\";process.exit(fs.existsSync(f)&&/^Pilot readings recorded: \\d{4}-\\d{2}-\\d{2}/m.test(fs.readFileSync(f,\"utf8\"))?0:1)'"
+  }
+}

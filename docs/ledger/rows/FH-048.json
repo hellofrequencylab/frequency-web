@@ -1,0 +1,10 @@
+{
+  "id": "FH-048",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-16"
+  },
+  "append": {
+    "detail": "\n\nWritten 2026-11-16 before any pilot ran: docs/hunts/EXPANSION-REVIEW.md defines, for teams, branches and Mystery, fundraiser and sponsor, commerce and the Experience Pass, editions, and partners with the Event finale, each one's approval rows, the switches and per-Hunt data gate it rides, its monitoring (route health, merchant report, the FH-025 event registry, hunt_outbox) and its rollback with what data stays. It sets the cohort comparison template on the five registered events, and inventories the three legacy paths (Regulars Hunts, QR campaigns, check-in capture) with their obligations, retirement conditions and read-only counting SQL (not run). Finding: no expansion has its own switch, and teams have no per-Hunt gate in the FH-043 code. No readings exist; the comparison after the pilots, and the owner's launch call per expansion, is FH-048S. Docs only: no runtime, switch or migration changed."
+  }
+}
