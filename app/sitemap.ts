@@ -6,7 +6,6 @@ import {
   getTopicalChannels,
   getPublicCircles,
   walkPublicCirclesPast,
-  PUBLIC_CIRCLES_PAGE,
   PUBLIC_CIRCLES_WALK_CAP,
   isTransientDiscoverError,
   isTransientDiscoverStatus,
@@ -120,8 +119,9 @@ async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
 const COMMERCE_SITEMAP_CAP = 100;
 
 /** The FIRST page of the public circles read: one call's ceiling in the `public_circles` RPC's own
- *  SQL. No longer the section's cap (SCAN-1226): `walkPublicCirclesPast` reads on from here. */
-const CIRCLE_SITEMAP_CAP = PUBLIC_CIRCLES_PAGE;
+ *  SQL (the same 200 as PUBLIC_CIRCLES_PAGE in lib/discover.ts). No longer the section's cap
+ *  (SCAN-1226): `walkPublicCirclesPast` reads on from here. */
+const CIRCLE_SITEMAP_CAP = 200;
 
 /** Pass a section's rows through on the way to the map, and say so in the log when it came back
  *  full. Never throws and never alters the rows: the sitemap's job is to emit what it read. */
