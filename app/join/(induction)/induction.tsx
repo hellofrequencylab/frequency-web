@@ -40,7 +40,8 @@ import { CheckinRender } from '@/components/onboarding/renders/checkin-render'
 import { DonateRender } from '@/components/onboarding/renders/donate-render'
 import { TicketsRender } from '@/components/onboarding/renders/tickets-render'
 import { CrmRender } from '@/components/onboarding/renders/crm-render'
-import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
+import { WizardProgress } from '@/components/templates'
+import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Select } from '@/components/ui/select'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
@@ -703,8 +704,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
     'w-full rounded-card border border-border bg-canvas px-4 py-3 text-body text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus-visible:shadow-none'
   const fieldLabel = 'mb-1.5 block text-left text-meta font-semibold uppercase tracking-wider text-subtle'
   const backLink = 'text-body-sm font-medium text-subtle underline-offset-4 transition-colors hover:text-muted hover:underline'
-  // Primary action — the shared Wizard button (app register), used across the beats.
-  const btnPrimary = wizardPrimaryClass
+  // The primary action on every beat is the kit Button at its large size, the same button the Wizard shell renders.
   const fq = SITE_DESIGN === 'frequency'
   const eyebrow = fq ? 'iw-k' : 'eyebrow text-primary-strong'
   const heading = 'font-display uppercase leading-none text-text'
@@ -1003,9 +1003,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                         className={inputInset}
                       />
                     </div>
-                    <button onClick={advanceFromIntro} disabled={capturing} className={`${btnPrimary} shrink-0`}>
+                    <Button onClick={advanceFromIntro} disabled={capturing} size="lg" className="shrink-0">
                       {capturing ? 'One sec…' : VERA.intro.cta}{!capturing && <ArrowRight />}
-                    </button>
+                    </Button>
                   </div>
                   <p id="induction-email-note" role={emailError ? 'alert' : undefined} className={emailError ? 'text-body-sm text-danger' : 'text-meta text-subtle'}>
                     {emailError || 'Your email saves your spot so you can finish later. It does not put you on a mailing list.'}
@@ -1056,7 +1056,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                         })}
                       </div>
                       <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
-                        <button onClick={advanceFromTour} className={btnPrimary}>{VERA.tour.cta}<ArrowRight /></button>
+                        <Button onClick={advanceFromTour} size="lg">{VERA.tour.cta}<ArrowRight /></Button>
                         <button onClick={() => setBeat(0)} className={backLink}>Back</button>
                       </div>
                     </div>
@@ -1091,10 +1091,10 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                         ))}
                       </div>
                       <div className="mt-7 flex flex-col items-center gap-3 md:items-start">
-                        <button onClick={() => (isLastSlide ? advanceFromTour() : setReelIndex(reelIndex + 1))} className={btnPrimary}>
+                        <Button onClick={() => (isLastSlide ? advanceFromTour() : setReelIndex(reelIndex + 1))} size="lg">
                           {isLastSlide ? VERA.tour.cta : 'Next'}
                           <ArrowRight />
-                        </button>
+                        </Button>
                         <button onClick={() => setBeat(0)} className={backLink}>Back</button>
                       </div>
                     </div>
@@ -1282,9 +1282,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                     {uploadError && <p className="text-meta text-danger">{uploadError}</p>}
                     <p className="text-body-lg leading-relaxed text-muted">{VERA.identity.body}</p>
                     <div className="mt-2 flex flex-col items-center gap-3 md:items-start">
-                      <button disabled={!identityValid || uploading} onClick={advanceFromIdentity} className={btnPrimary}>
+                      <Button disabled={!identityValid || uploading} onClick={advanceFromIdentity} size="lg">
                         {uploading ? 'Uploading…' : 'Continue'}{!uploading && <ArrowRight />}
-                      </button>
+                      </Button>
                       <button onClick={() => setBeat(1)} className={backLink}>Back</button>
                     </div>
                   </div>
@@ -1314,9 +1314,9 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                     <p className="text-body-lg leading-relaxed text-muted">{VERA.enter.body}</p>
                     {submitError && <p className="mt-3 text-body-sm text-danger">{submitError}</p>}
                     <div className="mt-6 flex flex-col items-center gap-3 md:items-start">
-                      <button onClick={submit} disabled={submitting} className={btnPrimary}>
+                      <Button onClick={submit} disabled={submitting} size="lg">
                         {submitting ? 'Stepping in…' : VERA.enter.cta}{!submitting && <ArrowRight />}
-                      </button>
+                      </Button>
                       <button onClick={() => setBeat(2)} className={backLink}>Back</button>
                     </div>
                   </div>
@@ -1357,13 +1357,13 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       aria-label="Email address"
                       className={`${inputInset} mt-4`}
                     />
-                    <button
+                    <Button
                       onClick={deferredMagicLink}
                       disabled={!email.trim() || signingIn}
-                      className={`${btnPrimary} mt-3 w-full`}
+                      size="lg" className="mt-3 w-full"
                     >
                       {signingIn ? 'One sec…' : 'Step in'}{!signingIn && <ArrowRight />}
-                    </button>
+                    </Button>
 
                     <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
