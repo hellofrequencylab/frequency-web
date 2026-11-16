@@ -21,6 +21,8 @@ import type { CampaignCard, CampaignCodeOption } from './campaigns'
 import type { MemberProfileCode } from './member-profile-codes'
 import type { MarketingCodeAdmin } from './marketing-codes-admin'
 
+export const metadata = { title: 'QR Studio · Admin' }
+
 export const dynamic = 'force-dynamic'
 
 // QR Studio — the home for everything codes. Three tabs:

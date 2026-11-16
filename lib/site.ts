@@ -312,8 +312,10 @@ export const FOUNDING_PLACE = "North County San Diego";
 // The public opening day. One constant: copy and structured data read it, nothing types the date.
 export const OPENING_DATE_ISO = "2027-01-01";
 export const OPENING_DATE_LABEL = "January 1, 2027";
-// Cities of the founding region, emitted as areaServed on the Organization node.
-export const FOUNDING_CITIES = ["Oceanside", "Carlsbad", "Encinitas", "Vista", "San Marcos", "Escondido"] as const;
+// Towns of the founding region, emitted as areaServed on the Organization node, listed in llms.txt, and the
+// source of the /north-county-san-diego hub's town sections (SCAN-1209, SCAN-1212, SCAN-1226). Cardiff and
+// Leucadia are neighbourhoods of Encinitas that people search by name; each carries a centroid in lib/maps/city-centroids.ts.
+export const FOUNDING_CITIES = ["Oceanside", "Carlsbad", "Encinitas", "Cardiff", "Leucadia", "Solana Beach", "Del Mar", "Vista", "San Marcos", "Escondido"] as const;
 
 // Canonical social profiles, emitted as the Organization node's `sameAs` (SCAN-205).
 // This is an entity-disambiguation signal: it is how a search or answer engine confirms
