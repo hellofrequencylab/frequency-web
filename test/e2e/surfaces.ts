@@ -1531,36 +1531,6 @@ export const VISUAL_MASK_SITES: readonly {
     kind: 'live',
     why: 'The "Live · last updated" stamp: a plain-text toLocaleString() clock with no <time> element, which the global `time, [datetime]` selector misses. The span only; the min-h status line around it carries three other messages that are fixed copy. It renders in a fixed-height line, so the box holds.',
   },
-  {
-    value: 'space-console-stats',
-    file: 'components/spaces/dashboard/space-dashboard.tsx',
-    kind: 'live',
-    why: 'The console’s top row: revenue over 30 days, member count, mean health and at-risk count, four DB readings in StatCards. The values are `tabular-nums` and the grid is a fixed 2x2 / 1x4, so the box holds as digits change.',
-  },
-  {
-    value: 'space-console-profile-stats',
-    file: 'components/spaces/dashboard/space-dashboard.tsx',
-    kind: 'live',
-    why: 'Profile views and button clicks over a rolling 30-day window, two telemetry tallies. The grid only, not the section, so the SectionHeader above it stays photographed. `tabular-nums` StatCards; the box holds.',
-  },
-  {
-    value: 'space-console-journey-stats',
-    file: 'components/spaces/dashboard/space-dashboard.tsx',
-    kind: 'live',
-    why: 'Enrolled, finished, still going and finish rate across the Space’s Journeys, four completion tallies. The grid only, not the section, so the SectionHeader stays photographed. `tabular-nums` StatCards; the box holds.',
-  },
-  {
-    value: 'space-console-activity',
-    file: 'components/spaces/dashboard/space-dashboard.tsx',
-    kind: 'live',
-    why: 'Latest activity: up to eight rows of the contact touch stream, each with a summary and relativeTime(). The <ul> only; the EmptyState beside it is not masked. A row-count change is a height the mask cannot hold, and is accepted.',
-  },
-  {
-    value: 'space-console-upcoming',
-    file: 'components/spaces/dashboard/space-dashboard.tsx',
-    kind: 'live',
-    why: 'Coming up: the next five events with their dates, from a `upcomingOnly` window that slides continuously. The <ul> only; the EmptyState beside it is not masked. A row-count change is a height the mask cannot hold, and is accepted.',
-  },
 ]
 
 /** Escape hatch for the flaky-surface policy: quiet a surface the same week it flakes,
