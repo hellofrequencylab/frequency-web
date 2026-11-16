@@ -1055,3 +1055,37 @@ The drain also recognizes already queued EMAIL-049 resource copies by their cano
 **Activation gate:** keep the variable blank until the owner approves requested-resource sending and exact-head checks/real preview verify default-off inline access, opted-in transactional enqueue, suppression/dedupe and off-to-enabled drain replay. Review the existing held resource backlog and link freshness before enabling; enabling allows due held copies to resume. Confirm deployed identity and configuration in both the public form runtime and queue worker before acceptance. Tests and fixture renders are not production sending approval.
 
 **Rollback:** blank the flag in both runtimes and redeploy/restart if required. New resource copies stop being queued; queued canonical resource copies defer without spending attempts. Keep the resource available inline. Do not cancel jobs or change unrelated email controls to perform this rollback. This cannot recall mail already accepted by the provider or stop an old worker before the new deployment takes over.
+
+## Nonce-based script policy
+
+Status is row SCAN-1243 in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`pnpm ledger:view SCAN-1243`). Design and the script inventory: [`security/csp-nonce.md`](security/csp-nonce.md). Code: `lib/security/csp-nonce.ts`, called from `proxy.ts`.
+
+Two on/off env switches, both blank by default, both read through `envFlag` (`1` / `true` / `on`). Blank, the site sends exactly the policy it sent before the switches existed. They only ever touch member-app pages (everything rendered under `app/(main)`: Feed, Circles, messages, settings, admin, a Space's manage pages). Marketing, discover, help, share pages and Space websites are static and are never touched.
+
+| Switch | What it does |
+|---|---|
+| `CSP_NONCE_REPORT_ONLY` | The test run. Member-app pages get the strict script policy as `Content-Security-Policy-Report-Only`, beside today's enforced policy. Nothing is blocked. Browsers report what the strict policy would have blocked. |
+| `CSP_NONCE_ENFORCE` | Member-app pages get the strict policy as `Content-Security-Policy`. Inline scripts without the page's nonce or a listed hash are blocked. Wins over the first switch. |
+
+**Start the test run.** Vercel, Project, Settings, Environment Variables: add `CSP_NONCE_REPORT_ONLY` = `1` for Production (and Preview if you want it there). Redeploy production: an env change only reaches a new deployment. Check it took: open `/feed` signed in, DevTools, Network, the document request, Response Headers. There are two policy headers: `content-security-policy` (unchanged) and `content-security-policy-report-only` with `'nonce-…' 'strict-dynamic'` in `script-src`. `/pricing` has only the first.
+
+**Read the test run.** Vercel runtime logs, query `csp.violation`. Each line has `policy`: `nonce` is the strict policy's report, `enforced` is today's. For `policy: nonce` lines read `directive`, `blocked`, `document`, `source` and `sample` (the first characters of a blocked inline script). What to expect:
+
+- `blocked: eval` and `blocked` on a `chrome-extension://` or `moz-extension://` address: browser extensions and audit tooling, already traced in [`security/csp-eval-trace.md`](security/csp-eval-trace.md). Not ours.
+- `blocked: https://vercel.live/...` on preview deployments only: the Vercel preview toolbar, which Vercel injects into the HTML without a nonce. Not present in production.
+- `blocked: inline` with a `sample` starting `(function(){try{` followed by `var ID=`: the analytics head script's hash did not match (see the warning in `lib/security/csp-nonce.ts`). This one must be fixed before enforcing, or member pages lose analytics.
+- `blocked: inline` on a `document` that is a not-found address under a member path (a mistyped `/feed/...`): the not-found page may be served from a prerendered copy with no nonce. Count them; see the open question in `security/csp-nonce.md`.
+- Anything else with `policy: nonce` from many different visitors is a real gap: a script the inventory missed. File it on SCAN-1243 with the `sample` and `document` before going further.
+
+**Activation gate for `CSP_NONCE_ENFORCE`.** All of these, in order:
+
+1. `CSP_NONCE_REPORT_ONLY` has been on in production for at least 7 days that include normal member traffic.
+2. Over those days there is no `policy: nonce` report with `blocked: inline` or a first-party `blocked` address, other than the expected lines above. The analytics-hash line and the not-found line are either absent or fixed.
+3. On a preview deployment with `CSP_NONCE_ENFORCE=1`, signed in, these work with a clean console: Feed loads and posts, a map opens (Nearby or an event), a Stripe checkout panel mounts its card field, the theme switch in Settings applies without a flash, the Space manage pages open, sign-out and sign-in complete.
+4. Daniel says go.
+
+Then set `CSP_NONCE_ENFORCE` = `1` for Production and redeploy. Leave `CSP_NONCE_REPORT_ONLY` as it is; enforce wins. Check `/feed` signed in: the `content-security-policy` header now carries the nonce. SCAN-1243 closes only after this step, and only for the member app: static pages keep `'unsafe-inline'` (see the design doc for why).
+
+**Rollback.** Blank `CSP_NONCE_ENFORCE` (or delete it) in Vercel and redeploy, or use Vercel's Instant Rollback to the deployment before the switch was set, which is faster. Member pages go back to today's policy on the next page load; nothing is stored, so there is nothing to clean up. To stop the test run as well, blank `CSP_NONCE_REPORT_ONLY` and redeploy. If member pages show a blank or frozen screen right after enforcing, roll back first and read `csp.violation` afterwards.
+
+**If `csp.nonce.failed` appears in the logs** (error level): the proxy could not build the policy and sent today's policy instead. Pages work; the strict policy is not being applied. Treat as a failed test run, not an outage.
