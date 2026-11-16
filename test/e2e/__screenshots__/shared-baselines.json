@@ -1,0 +1,38 @@
+{
+  "_comment": [
+    "Written by scripts/dedupe-visual-baselines.mjs. Do not edit by hand.",
+    "Each key is a midnight-light baseline that was byte-identical to the dawn-light file it names, so only the dawn-light file is committed (SCAN-1222).",
+    "test/e2e/shared-baselines.ts resolves the midnight-light test through this list; test/e2e/shared-baselines.test.ts holds it honest."
+  ],
+  "shared": {
+    "about--midnight-light-desktop.png": "about--dawn-light-desktop.png",
+    "for-coaches-and-healers--midnight-light-mobile.png": "for-coaches-and-healers--dawn-light-mobile.png",
+    "for-event-hosts--midnight-light-mobile.png": "for-event-hosts--dawn-light-mobile.png",
+    "for-networks--midnight-light-desktop.png": "for-networks--dawn-light-desktop.png",
+    "for-networks--midnight-light-mobile.png": "for-networks--dawn-light-mobile.png",
+    "for-nonprofits--midnight-light-desktop.png": "for-nonprofits--dawn-light-desktop.png",
+    "for-nonprofits--midnight-light-mobile.png": "for-nonprofits--dawn-light-mobile.png",
+    "friendship-as-an-adult--midnight-light-desktop.png": "friendship-as-an-adult--dawn-light-desktop.png",
+    "friendship-as-an-adult--midnight-light-mobile.png": "friendship-as-an-adult--dawn-light-mobile.png",
+    "help--midnight-light-desktop.png": "help--dawn-light-desktop.png",
+    "help--midnight-light-mobile.png": "help--dawn-light-mobile.png",
+    "home--midnight-light-desktop.png": "home--dawn-light-desktop.png",
+    "how-to-be-more-social--midnight-light-desktop.png": "how-to-be-more-social--dawn-light-desktop.png",
+    "how-to-be-more-social--midnight-light-mobile.png": "how-to-be-more-social--dawn-light-mobile.png",
+    "how-to-build-community--midnight-light-desktop.png": "how-to-build-community--dawn-light-desktop.png",
+    "how-to-build-community--midnight-light-mobile.png": "how-to-build-community--dawn-light-mobile.png",
+    "how-to-start-a-circle--midnight-light-desktop.png": "how-to-start-a-circle--dawn-light-desktop.png",
+    "how-to-start-a-circle--midnight-light-mobile.png": "how-to-start-a-circle--dawn-light-mobile.png",
+    "join--midnight-light-desktop.png": "join--dawn-light-desktop.png",
+    "join--midnight-light-mobile.png": "join--dawn-light-mobile.png",
+    "loneliness--midnight-light-desktop.png": "loneliness--dawn-light-desktop.png",
+    "loneliness--midnight-light-mobile.png": "loneliness--dawn-light-mobile.png",
+    "spaces--midnight-light-mobile.png": "spaces--dawn-light-mobile.png",
+    "the-community--midnight-light-desktop.png": "the-community--dawn-light-desktop.png",
+    "the-community--midnight-light-mobile.png": "the-community--dawn-light-mobile.png",
+    "tools-for-community-builders--midnight-light-desktop.png": "tools-for-community-builders--dawn-light-desktop.png",
+    "tools-for-community-builders--midnight-light-mobile.png": "tools-for-community-builders--dawn-light-mobile.png",
+    "what-is-frequency--midnight-light-desktop.png": "what-is-frequency--dawn-light-desktop.png",
+    "what-is-frequency--midnight-light-mobile.png": "what-is-frequency--dawn-light-mobile.png"
+  }
+}

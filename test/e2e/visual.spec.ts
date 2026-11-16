@@ -50,6 +50,9 @@ import {
   readCaptureStamp,
   writeCaptureStamp,
 } from './capture-env'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { BASELINE_DIR, baselineNameFor, readSharedBaselines } from './shared-baselines'
 import {
   NARROW_PROJECT,
   PUBLIC_RENDER_STATES,
@@ -253,8 +256,23 @@ async function capture(
   // reads: nothing here scrolls, resizes or writes to the page (see the 🔴 note in `settle()`).
   const before = await boxSnapshot(page)
   await armViewportProbe(page)
+  // A midnight-light baseline that was byte-identical to its dawn-light twin is not committed
+  // twice (SCAN-1222): the comparison reads the dawn file, by an explicit list. A capture run
+  // always writes this state's own file. See test/e2e/shared-baselines.ts.
+  const ownName = `${surface.slug}--${state.id}.png`
+  const baselineName = baselineNameFor(ownName, test.info().project.name, {
+    capturing: isCaptureRun(test.info().config.updateSnapshots),
+    shared: readSharedBaselines(),
+    ownFileExists: (file) => existsSync(join(BASELINE_DIR, file)),
+  })
+  if (baselineName !== ownName) {
+    test.info().annotations.push({
+      type: 'shared-baseline',
+      description: `${label}: compared against ${baselineName}, which was byte-identical to this state's own capture when it was folded.`,
+    })
+  }
   try {
-    await expect(page).toHaveScreenshot(`${surface.slug}--${state.id}.png`, {
+    await expect(page).toHaveScreenshot(baselineName, {
       fullPage: !surface.viewportOnly,
       // A full-page desktop shot of Home is many screens of blur and mask compositing on a
       // GPU-less runner. On run 38540677414 the FIRST shot had not returned when the 5s default
