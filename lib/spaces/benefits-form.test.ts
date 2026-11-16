@@ -1,3 +1,4 @@
+import { formatPriceCents as formatPrice } from '@/lib/commerce/types'
 import { describe, it, expect } from 'vitest'
 
 // MEMBER BENEFITS — THE EDITOR'S DRAFT LAYER (ADR-1372, backlog LIVE-093). Network-free: every
@@ -22,7 +23,6 @@ import {
   draftsToBenefits,
   emptyDraft,
   formatBenefitValue,
-  formatPrice,
   isoToDate,
   joinNames,
   parseBenefitValue,
