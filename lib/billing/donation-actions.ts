@@ -15,6 +15,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { createSpaceDonationCheckout, recordSpaceDonationFromSessionId } from './space-donation-checkout'
 import { onPageCheckoutAvailable } from './stripe-browser'
+import { huntGiftAskId, mirrorGiftForSession } from '@/lib/hunts/donation-sync'
 
 /**
  * Start a gift to a Space's fund. Returns EITHER an on-page client secret or the hosted Checkout
@@ -33,20 +34,27 @@ export async function startSpaceDonationCheckout(
    *  to. Without it the fallback re-asks for elements, gets another client secret, finds no `url`
    *  and dead-ends the buyer -- the live 2026-09-15 ticket failure. */
     forceHosted?: boolean
+    /** FH-046S: the Trail whose approved donation ask this gift answers. The id is only a claim: the
+     *  server re-checks every gate (lib/hunts/donation-sync.ts) and refuses the gift when one is closed. */
+    huntId?: string
   },
 ): Promise<ActionResult<{ url?: string; clientSecret?: string; sessionId?: string }>> {
   if (!spaceId) return fail('This fund is not available.')
+  const huntAskId = opts?.huntId ? await huntGiftAskId(opts.huntId, spaceId) : null
+  if (opts?.huntId && !huntAskId) return fail('This fund is not open right now.')
   const donorProfileId = await getMyProfileId()
   const result = await createSpaceDonationCheckout({
     spaceId,
     amountCents,
     donorProfileId,
     message: message ?? null,
+    huntAskId,
     // Ask for the on-page form only when the browser can actually mount it.
     ui: opts?.forceHosted ? 'hosted' : onPageCheckoutAvailable() ? 'elements' : 'hosted',
   })
   // `sessionId` rides ALONGSIDE the secret so the control can settle from its own success
   // handler instead of waiting on the webhook. See `settleDonationAction` below.
+  if (huntAskId && result.sessionId) await mirrorGiftForSession(result.sessionId, huntAskId)
   if (result.clientSecret) return ok({ clientSecret: result.clientSecret, sessionId: result.sessionId })
   if (result.url) return ok({ url: result.url })
   return fail(result.error ?? 'Could not start your gift. Please try again.')
