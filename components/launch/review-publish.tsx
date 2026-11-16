@@ -122,7 +122,7 @@ export function ReviewPublish({ draft, errorCode }: { draft: BuildoutDraft; erro
       </Card>
 
       {siteDrafted ? (
-        <Card id="website" title="Website" note="Kept as a draft with your Space. Your website goes live when you turn it on from its own page, so Publish here does not.">
+        <Card id="website" title="Website" note="This is what your website leads with. Publish turns your website on, and you can change it any time.">
           <Row draft={draft} slot="website" field="headline">
             <Field label="Headline">
               <Input name="web_headline" defaultValue={draft.website.headline} maxLength={120} />
@@ -139,7 +139,7 @@ export function ReviewPublish({ draft, errorCode }: { draft: BuildoutDraft; erro
       )}
 
       {emailDrafted ? (
-        <Card id="email" title="First email" note="Kept as a draft. Nothing is sent until you send it yourself.">
+        <Card id="email" title="First email" note="Publish saves this as a draft in your email drafts. Nothing is sent until you send it yourself.">
           <Row draft={draft} slot="email" field="subject">
             <Field label="Subject">
               <Input name="email_subject" defaultValue={draft.email.subject} maxLength={120} />
@@ -186,7 +186,7 @@ export function ReviewPublish({ draft, errorCode }: { draft: BuildoutDraft; erro
       </section>
 
       <section className="panel" style={{ display: 'grid', gap: 12 }}>
-        <p className="t2">Publishing puts your Space and Spotlight live. You can change every word again afterwards.</p>
+        <p className="t2">Publishing puts your Space, Spotlight and website live. You can change every word again afterwards.</p>
         {errorCode === 'retry' && error ? (
           <p className="mu-err" role="alert">
             {error}
