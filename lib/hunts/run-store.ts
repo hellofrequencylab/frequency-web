@@ -12,7 +12,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Credit, HuntGraph } from './graph'
+import type { Chapter, Credit, HuntGraph } from './graph'
 
 // eslint-disable-next-line no-restricted-syntax -- the FH-005 hunt tables are not in the generated types yet (ADR-246 exception)
 const db = () => createAdminClient() as unknown as SupabaseClient
@@ -20,6 +20,9 @@ const db = () => createAdminClient() as unknown as SupabaseClient
 type MissionRow = { mission_key: string; title: string; visible_body: string | null; locked_teaser: string | null; opens_at: string | null; closes_at: string | null }
 type GroupRow = { id: string; target_mission_key: string | null; target_finish: boolean; logic: 'all' | 'any' | 'count'; min_count: number | null; group_key: string | null }
 type MemberRow = { group_id: string; member_mission_key: string }
+type PlacementRow = { mission_key: string; placement_id: string; venue_space_id: string | null }
+/** FH-030 count rules a version may carry: its mission-to-placement bindings and `policy.chapters`. */
+type CountRuleRows = { placements?: readonly PlacementRow[]; chapters?: readonly Chapter[] }
 
 /** Players see a Hunt that is running or paused (paused shows its banner). Everything else is not found. */
 export function playerHuntState(status: string): 'published' | 'paused' | 'closed' | null {
@@ -32,8 +35,12 @@ export function playerHuntState(status: string): 'published' | 'paused' | 'close
 /**
  * Rows to graph. Missions keep the order the author gave them (mission_key sorts stop-1, stop-2, ...
  * as written by publishRows, and the numeric part is compared as a number so stop-10 follows stop-9).
+ *
+ * `rules` adds what the count rules read (FH-030): each mission's equivalent placements with their
+ * venue, so two missions in one shop share a bucket, and the version's regional chapters. A revoked
+ * placement is not marked closed here: `hunt_claim_apply` refuses it under the run lock.
  */
-export function assembleTrail(missions: readonly MissionRow[], groups: readonly GroupRow[], members: readonly MemberRow[]) {
+export function assembleTrail(missions: readonly MissionRow[], groups: readonly GroupRow[], members: readonly MemberRow[], rules: CountRuleRows = {}) {
   const num = (k: string) => Number(k.match(/(\d+)$/)?.[1] ?? 0)
   const ordered = [...missions].sort((a, b) => num(a.mission_key) - num(b.mission_key) || (a.mission_key < b.mission_key ? -1 : 1))
   const membersOf = (groupId: string) => members.filter((m) => m.group_id === groupId).map((m) => m.member_mission_key).sort()
@@ -43,14 +50,24 @@ export function assembleTrail(missions: readonly MissionRow[], groups: readonly 
     ...(g.min_count !== null ? { min_count: g.min_count } : {}),
     members: membersOf(g.id),
   })
+  const placementsOf = (missionKey: string) =>
+    (rules.placements ?? [])
+      .filter((p) => p.mission_key === missionKey)
+      .map((p) => ({ placement_key: p.placement_id, venue: p.venue_space_id }))
+      .sort((a, b) => (a.placement_key < b.placement_key ? -1 : 1))
   const graph: HuntGraph = {
-    missions: ordered.map((m) => ({
-      mission_key: m.mission_key,
-      open: m.opens_at,
-      close: m.closes_at,
-      rule_groups: groups.filter((g) => g.target_mission_key === m.mission_key).map(toGroup),
-    })),
+    missions: ordered.map((m) => {
+      const placements = placementsOf(m.mission_key)
+      return {
+        mission_key: m.mission_key,
+        open: m.opens_at,
+        close: m.closes_at,
+        ...(placements.length > 0 ? { placements } : {}),
+        rule_groups: groups.filter((g) => g.target_mission_key === m.mission_key).map(toGroup),
+      }
+    }),
     finish: { rule_groups: groups.filter((g) => g.target_finish).map(toGroup) },
+    ...(rules.chapters && rules.chapters.length > 0 ? { chapters: [...rules.chapters] } : {}),
   }
   const content = ordered.map((m) => ({
     mission_key: m.mission_key,
@@ -139,24 +156,32 @@ export async function loadPublishedTrail(slug: string): Promise<PublishedTrail |
   const version = await readPublishedVersion(client, slug, false)
   if (!version) return null
 
-  const [m, g, mem] = await Promise.all([
+  const [m, g, mem, bound, policy] = await Promise.all([
     client.from('hunt_missions').select('mission_key, title, visible_body, locked_teaser, opens_at, closes_at', { count: 'exact' }).eq('version_id', version.versionId),
     client.from('hunt_rule_groups').select('id, target_mission_key, target_finish, logic, min_count, group_key', { count: 'exact' }).eq('version_id', version.versionId),
     client.from('hunt_rule_group_members').select('group_id, member_mission_key', { count: 'exact' }).eq('version_id', version.versionId),
+    client.from('hunt_mission_placements').select('mission_key, placement_id, venue_space_id', { count: 'exact' }).eq('version_id', version.versionId),
+    client.from('hunt_versions').select('chapters:policy->chapters').eq('id', version.versionId).maybeSingle(),
   ])
   // Neither a failed read nor a response truncated by the API row cap may drop prerequisites.
-  if (!completeRows(m) || !completeRows(g) || !completeRows(mem)) return null
+  if (!completeRows(m) || !completeRows(g) || !completeRows(mem) || !completeRows(bound) || policy.error) return null
   const missions = m.data as MissionRow[]
   const groups = g.data as GroupRow[]
   const members = mem.data as MemberRow[]
+  const placements = bound.data as PlacementRow[]
+  // A version with no chapters has no key; anything else must be a list, and validateGraph reads its shape.
+  const rawChapters: unknown = (policy.data as { chapters?: unknown } | null)?.chapters ?? []
+  if (!Array.isArray(rawChapters)) return null
   const missionKeys = new Set(missions.map((mission) => mission.mission_key))
   const groupIds = new Set(groups.map((group) => group.id))
   if (missions.some((mission) => typeof mission.mission_key !== 'string')
     || groups.some((group) => typeof group.id !== 'string' || typeof group.target_finish !== 'boolean'
       || (group.target_finish ? group.target_mission_key !== null : !missionKeys.has(group.target_mission_key ?? '')))
-    || members.some((member) => !groupIds.has(member.group_id) || !missionKeys.has(member.member_mission_key))) return null
+    || members.some((member) => !groupIds.has(member.group_id) || !missionKeys.has(member.member_mission_key))
+    || placements.some((p) => !missionKeys.has(p.mission_key) || typeof p.placement_id !== 'string' || !p.placement_id
+      || (p.venue_space_id !== null && p.venue_space_id !== undefined && typeof p.venue_space_id !== 'string'))) return null
 
-  const { graph, content } = assembleTrail(missions, groups, members)
+  const { graph, content } = assembleTrail(missions, groups, members, { placements, chapters: rawChapters as Chapter[] })
   return {
     huntId: version.huntId,
     slug: version.slug,

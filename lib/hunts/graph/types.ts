@@ -8,6 +8,10 @@
  * Windows are half-open [open, close) UTC instants written as ISO strings with a
  * trailing Z. The organizer's IANA timezone is converted at publish, never here.
  *
+ * Count rules (FH-030, count-rules.ts): a mission's bucket is the venue its placements
+ * sit in, every placement bound to a mission is equivalent (one credit whichever is
+ * scanned), and `chapters` group missions into regional chapters that can be switched off.
+ *
  * TODO(FH-042): exclusive branches. `choice_group` and `fallback_group` are carried
  * on the type so graphs round-trip, but neither the validator nor the evaluator
  * gives them meaning yet.
@@ -27,6 +31,23 @@ export interface RuleGroup {
   members: string[]
 }
 
+/** One place a mission can be proven. Every placement of a mission is equivalent: any one credits it, once. */
+export interface MissionPlacement {
+  placement_key: string
+  /** The venue (a Space key) the placement sits in. */
+  venue?: string | null
+  /** Live state, never version content: the venue is shut or the placement was pulled. */
+  closed?: boolean
+}
+
+/** A regional chapter: a named cluster of missions. A mission in no chapter is shared by all of them. */
+export interface Chapter {
+  chapter_key: string
+  /** A disabled chapter takes no new credit. Credits already earned in it still count. */
+  enabled: boolean
+  members: string[]
+}
+
 export interface Mission {
   mission_key: string
   kind?: string
@@ -36,9 +57,12 @@ export interface Mission {
   close?: string | null
   /**
    * Default credit bucket (for example a Space key). Two missions sharing a bucket
-   * count once toward ANY and N-of-M. Defaults to the mission key.
+   * count once toward ANY and N-of-M. Defaults to the venue of its placements, then
+   * to the mission key (count-rules.ts `missionBucket`).
    */
   bucket?: string | null
+  /** Equivalent placements. Absent means the mission is not tied to a venue. */
+  placements?: MissionPlacement[]
   /** True when the mission needs a paid entitlement. The free finish may not depend on one. */
   requires_entitlement?: boolean
   choice_group?: string | null
@@ -55,6 +79,8 @@ export interface FinishRule {
 export interface HuntGraph {
   missions: Mission[]
   finish: FinishRule
+  /** Regional chapters. Absent means one undivided Hunt. */
+  chapters?: Chapter[]
 }
 
 /** One earned credit. A mission yields at most one bucket per run. */
@@ -80,6 +106,10 @@ export type BlockerCode =
   | 'FINISH_EMPTY'
   | 'FINISH_UNREACHABLE'
   | 'NO_FREE_PATH'
+  | 'VENUE_COUNTS_TWICE'
+  | 'CHAPTER_INVALID'
+  | 'CHAPTER_INFEASIBLE'
+  | 'CHAPTER_NO_FREE_FINISH'
 
 export interface Blocker {
   code: BlockerCode

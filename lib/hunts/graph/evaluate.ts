@@ -1,4 +1,5 @@
-import { allGroupsSatisfied, defaultBucket, parseInstant } from './rules'
+import { missionBucket, playableKeys } from './count-rules'
+import { allGroupsSatisfied, parseInstant } from './rules'
 import type { Credit, Evaluation, HuntGraph, MissionState } from './types'
 
 export type Instant = Date | number | string
@@ -20,6 +21,10 @@ function toMs(now: Instant): number {
  *   mission can still be claimed (`eligible`), never whether an earned credit counts.
  * - Unlock = every prerequisite group passes. Eligible = unlocked, window open
  *   ([open, close) against `now`), and not yet credited.
+ * - A credit counts under the mission's fixed bucket (count-rules.ts), so a second
+ *   placement or a substitute venue never adds a second count.
+ * - A mission whose placements are all closed, or whose chapter is disabled, reads
+ *   `closed`: it takes no new credit, and a credit already earned still counts.
  * - An unparseable `now` leaves every windowed mission closed (fail shut).
  * - Output is keys and states only. Titles, answers and locations are not part of
  *   the graph, so nothing locked can leak from here.
@@ -33,11 +38,12 @@ export function evaluate(graph: HuntGraph, credits: readonly Credit[], now: Inst
   for (const c of credits) {
     const m = byKey.get(c.mission_key)
     if (!m) continue
-    const b = c.bucket ? c.bucket : defaultBucket(m)
+    const b = c.bucket ? c.bucket : missionBucket(m)
     const prev = buckets.get(m.mission_key)
     if (prev === undefined || b < prev) buckets.set(m.mission_key, b)
   }
 
+  const playable = playableKeys(graph)
   const status: Record<string, MissionState> = {}
   const eligible: string[] = []
   const unlocked: string[] = []
@@ -53,6 +59,10 @@ export function evaluate(graph: HuntGraph, credits: readonly Credit[], now: Inst
     }
     if (!isUnlocked) {
       status[m.mission_key] = 'locked'
+      continue
+    }
+    if (!playable.has(m.mission_key)) {
+      status[m.mission_key] = 'closed'
       continue
     }
     const open = m.open ? parseInstant(m.open) : -Infinity
