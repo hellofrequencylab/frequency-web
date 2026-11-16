@@ -1903,7 +1903,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 66,
+      "baseline": 64,
       "history": [
         {
           "at": "2026-08-05",
@@ -2009,15 +2009,22 @@
           "to": 66,
           "direction": "lowered",
           "reason": "Create a Space hero builder (create-space-steps, create-space-photos) and the lead capture honeypot moved onto the kit Input (seamless); floor back to the pre-raise 66 (SCAN-1242)"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 66,
+          "to": 64,
+          "direction": "lowered",
+          "reason": "SCAN-1242: onboarding display name and handle render through the kit Input (66 to 64)"
         }
       ],
       "frozen": {
         "at": "2026-11-16",
-        "value": 66,
+        "value": 64,
         "direction": "lowered",
         "basis": "a76a8556a0ed",
-        "reason": "Create a Space hero builder (create-space-steps, create-space-photos) and the lead capture honeypot moved onto the kit Input (seamless); floor back to the pre-raise 66 (SCAN-1242)",
-        "from": 75
+        "reason": "SCAN-1242: onboarding display name and handle render through the kit Input (66 to 64)",
+        "from": 66
       }
     },
     {
