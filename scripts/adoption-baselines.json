@@ -758,14 +758,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 94,
+      "baseline": 73,
       "frozen": {
         "at": "2026-11-16",
-        "value": 94,
+        "value": 73,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice 7: 30 admin raw button backgrounds moved to the kit (IconButton row actions, SegmentedControl pairs, chipClasses pills, choiceTileClasses tiles); floor re-frozen to the measured 94",
-        "from": 124
+        "reason": "SCAN-1133 slice 8: 21 raw button backgrounds in events, spaces, settings, studio and three admin leftovers moved to the kit (chipClasses pills, choiceTileClasses tiles, SegmentedControl switches, the kit Switch); floor re-frozen to the measured 73",
+        "from": 94
       },
       "history": [
         {
@@ -1054,6 +1054,13 @@
           "to": 94,
           "direction": "lowered",
           "reason": "SCAN-1133 slice 7: 30 admin raw button backgrounds moved to the kit (IconButton row actions, SegmentedControl pairs, chipClasses pills, choiceTileClasses tiles); floor re-frozen to the measured 94"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 94,
+          "to": 73,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 8: 21 raw button backgrounds in events, spaces, settings, studio and three admin leftovers moved to the kit (chipClasses pills, choiceTileClasses tiles, SegmentedControl switches, the kit Switch); floor re-frozen to the measured 73"
         }
       ]
     },

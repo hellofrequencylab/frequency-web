@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-1263",
+  "title": "The full-app audit's default route list named four redirecting paths, so three pages were audited twice and Join never",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "scripts/audit/route-family-audit.mjs",
+    "ref": "SCAN-1032 production header sweep, 2026-11-16: /what-is-frequency lands on /about, /tools-for-community-builders on /how-to-build-community, /stories on /the-community, /start on /join."
+  },
+  "detail": "MEASURED 2026-11-16 by fetching all 22 DEFAULT_ROUTES from production: four of them answer with another page's content (x-matched-path names the target). The audit therefore screenshotted and scored /about, /how-to-build-community and /the-community twice under old names, and /join was never in the list under its own name. FIXED in the same change: the list now holds final URLs only, with /join added. The redirects themselves are intended and stay.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"scripts/audit/route-family-audit.mjs\",\"utf8\");const m=/DEFAULT_ROUTES = \\[([^\\]]*)\\]/.exec(s);if(!m)process.exit(1);const bad=[\"/what-is-frequency\",\"/tools-for-community-builders\",\"/stories\",\"/start\"].filter(r=>m[1].includes(String.fromCharCode(39)+r+String.fromCharCode(39)));if(bad.length||!m[1].includes(\"/join\")){console.error(bad.join(\" \"));process.exit(1)}'"
+  },
+  "wave": "W7"
+}

@@ -8,6 +8,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { switchSpaceFocus, resetModeOverrides } from './actions'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // SPACE MODE settings - the client surface (Space Modes M3, ADR-461/464). Renders the current Mode +
 // Focus, a read-only "what this preset leads with" preview, a non-destructive Focus switcher, and the
@@ -224,12 +225,7 @@ export function ModeSettings({
                 disabled={readOnly || pending || c.active}
                 onClick={() => run(() => switchSpaceFocus(slug, c.variant))}
                 aria-pressed={c.active}
-                className={cn(
-                  'rounded-xl border p-4 text-left transition-colors disabled:cursor-default',
-                  c.active
-                    ? 'border-primary bg-primary-bg'
-                    : 'border-border bg-surface hover:border-border-strong',
-                )}
+                className={choiceTileClasses(c.active, 'rounded-xl p-4 text-left disabled:cursor-default disabled:opacity-100')}
               >
                 <span className="flex items-center gap-2 text-body-sm font-semibold text-text">
                   {c.label}

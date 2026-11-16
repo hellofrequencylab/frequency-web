@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { ArrowUpDown, Check } from 'lucide-react'
+import { chipClasses } from '@/components/ui/chip'
 
 // The Spaces catalog sort control uses the URL-driven catalog filter idiom:
 // a single-select menu that writes the `sort` search param and preserves the rest, so the catalog
@@ -74,11 +75,7 @@ export function SpacesSort({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`inline-flex items-center gap-1.5 rounded-control border px-2.5 py-1 text-meta font-medium transition-colors ${
-          active
-            ? 'border-primary bg-primary-bg text-primary-strong'
-            : 'border-border bg-surface text-muted hover:border-primary'
-        }`}
+        className={chipClasses(active)}
       >
         <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
         <span>Sort: {currentLabel}</span>
