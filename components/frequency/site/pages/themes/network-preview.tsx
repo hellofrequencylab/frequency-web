@@ -30,7 +30,7 @@ export function NetworkPhone({ src, alt, sizes, priority = false, tone = 'light'
     <span className="nf-ios">
       <span className="nf-ios-body">
         <span className="nf-ios-scr">
-          <Image src={src} alt={alt} width={740} height={1648} sizes={sizes} priority={priority} />
+          <Image src={src} alt={alt} width={740} height={1648} sizes={sizes} preload={priority} />
           <span className={`nf-sb${tone === 'dark' ? ' dk' : ''}`} aria-hidden="true">
             <span>9:41</span>
             <span className="nf-isl" />
@@ -58,7 +58,7 @@ export function NetworkBrowser({ src, alt, url, width, height, sizes, priority =
         <u>{url}</u>
       </div>
       <div className="nf-scr">
-        <Image src={src} alt={alt} width={width} height={height} sizes={sizes} priority={priority} />
+        <Image src={src} alt={alt} width={width} height={height} sizes={sizes} preload={priority} />
       </div>
     </div>
   )

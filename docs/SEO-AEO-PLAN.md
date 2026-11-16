@@ -1,16 +1,16 @@
 # Frequency — SEO / AEO Plan
 
-> **Status lives in [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json)** — run `pnpm backlog`.
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
 > This document is the spec and the rationale. It does **not** record what is done, because prose
-> cannot be verified and this repo has lost that bet five times ([ADR-1043](docs/DECISIONS.md)).
+> cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).
 
-**Status:** Phases 1–3 COMPLETE and pushed to `origin/main` (2026-05-28).
 **Owner:** Daniel.
-- Phase 1 (safety + foundation): leak closed, column-safe RPCs live, landing rewired, robots/sitemap/OG. Migrations pushed to prod.
-- Phase 2 (public pages): `/discover` hub + topics/circles/events on the safe RPCs, dynamic sitemap. Commit `02693ac`.
-- Phase 3 (AEO): JSON-LD (Organization/WebSite site-wide; Event/ItemList/BreadcrumbList; FAQPage on hub).
-**Remaining manual step:** submit `sitemap.xml` via Google Search Console + Bing Webmaster
-once the production domain is verified (can't be automated without those credentials).
+**Read this as the original rationale (2026-05-28), not the live map.** What crawlers and answer engines
+actually see today is defined in code: `app/robots.ts` and `app/sitemap.ts` (crawl map), `app/llms.txt` and
+`app/llms-full.txt` (answer-engine summaries), `app/api/cron/indexnow` (change pings), the local index floor
+and town pages. This plan does not describe those, and what is done or open lives in the backlog JSON above.
+The launch-day Search Console and Bing submission steps, the Google Business Profile and the local-SEO phase
+are backlog rows, not prose here.
 
 ## Goal
 
