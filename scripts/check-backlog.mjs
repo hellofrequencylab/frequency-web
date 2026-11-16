@@ -69,10 +69,10 @@
 //   node scripts/check-backlog.mjs --report  # print the working view (open + owner rows), exit 0
 //   node scripts/check-backlog.mjs --lane owner   # filter the report to one lane
 
-import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs'
+import { readFileSync, existsSync, statSync, readdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { parseShellCommands } from './lib/shell-parse.mjs'
 import { spawn } from 'node:child_process'
-import { availableParallelism } from 'node:os'
+import { availableParallelism, tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { waveToken, readBacklogView, fragmentCount, COMPACT_AT, ROWS_DIR } from './lib/ledger.mjs'
@@ -423,6 +423,32 @@ const PROBE_CPU_PRELOAD = join(dirname(fileURLToPath(import.meta.url)), 'backlog
 function probeEnv() {
   const inherited = process.env.NODE_OPTIONS ? `${process.env.NODE_OPTIONS} ` : ''
   return { ...process.env, NODE_OPTIONS: `${inherited}--require ${JSON.stringify(PROBE_CPU_PRELOAD)}` }
+}
+
+/** ONE V8 COMPILE CACHE FOR THE WHOLE SWEEP (HYG-242). 240 of the 2,424 probes start a test runner
+ *  or a heavy script, and each of those nodes compiled the same large modules (typescript, vitest,
+ *  vite) from source again. Node keeps compiled code on disk when NODE_COMPILE_CACHE names a
+ *  directory, keyed by file content, so the first probe to load a module pays and the rest read it.
+ *  Measured 2026-11-16 on the 4-core box, full sweep: 297 to 316 s of CPU without, 276 to 292 s
+ *  with (means 302 and 281), from a cold directory each time. A directory the caller already named is kept; otherwise
+ *  it is a fresh temp directory removed on exit, so nothing outlives the run and a stale cache
+ *  cannot be the reason a probe passed. A node too old to know the variable ignores it.
+ *  Set on THIS process's environment, which probeEnv() spreads, rather than inside probeEnv():
+ *  HYG-181's probe lifts probeEnv out by name and runs it alone, so it must stay self-contained. */
+if (!process.env.NODE_COMPILE_CACHE) {
+  try {
+    const dir = mkdtempSync(join(tmpdir(), 'backlog-probe-cc-'))
+    process.on('exit', () => {
+      try {
+        rmSync(dir, { recursive: true, force: true })
+      } catch {
+        // a temp directory the OS will clear; never a reason to fail the guard
+      }
+    })
+    process.env.NODE_COMPILE_CACHE = dir
+  } catch {
+    // no writable temp: the probes run uncached, exactly as before
+  }
 }
 
 /** The probe's own cost, summed from every `probe-cpu <ms>` line it (and any node it started that
