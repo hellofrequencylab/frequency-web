@@ -26,7 +26,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       adminBar={false}
       width="default"
     >
-      <ReviewPublish draft={await loadReviewDraft(launch)} errorCode={errorCode} />
+      <ReviewPublish draft={await loadReviewDraft(profileId, launch)}errorCode={errorCode} />
     </DashboardTemplate>
   )
 }

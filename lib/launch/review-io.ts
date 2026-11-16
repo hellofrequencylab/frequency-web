@@ -3,74 +3,41 @@
 // spaces.tagline and spaces.about, and the step marks. Server-only. Called by the form action after it has checked the
 // switch and the signed-in owner.
 //
-// What Publish does NOT do, on purpose: it does not flip preferences.websitePublished. The site publish seam exists
-// (setWebsitePublished in the Space's layout actions) but a site with a headline and intro we have nowhere to write yet
-// would go live half empty, so the website and the first email are kept as a draft under preferences.launchDraft and
-// shown as such. TEMPORARY loader: lane E's buildout supplies the real BuildoutDraft; loadReviewDraft is replaced then.
+// The draft the screen opens with is the one Vera built from the person's own words and saved on the launch
+// (lib/launch/buildout-io.ts), built on first open. A field she could not quote is empty for them to fill in.
 
 import { revalidatePath } from 'next/cache'
 import type { BuildoutDraft } from './buildout'
+import { buildLaunchDraft } from './buildout-io'
 import type { LaunchCarry } from './carry'
 import { recordLaunchEvent } from './events'
 import { loadSpotlightAnswers } from './flow-io'
 import { publishSpotlightStep } from './spotlight-io'
 import type { LaunchSnapshot } from './state'
 import * as store from './store'
-import { getSpaceById, getSpaceBySlug, patchSpacePreferences, patchSpaceWords } from '@/lib/spaces/store'
+import { getSpaceBySlug, patchSpacePreferences, patchSpaceWords } from '@/lib/spaces/store'
 
 const blank = (v: unknown): string => (typeof v === 'string' ? v : '')
 
-function record(v: unknown): Record<string, unknown> {
-  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {}
-}
+const emptyDraft = (spotlight: BuildoutDraft['spotlight']): BuildoutDraft => ({
+  spotlight,
+  space: { tagline: '', about: '' },
+  website: { headline: '', intro: '' },
+  email: { subject: '', body: '' },
+  cites: [],
+})
 
-/** The draft the screen opens with: what the Space and its Spotlight already hold, plus any website and email draft
- *  Publish kept earlier. The cites are the person's own saved words and nothing else. Never throws: a failed read is
- *  an empty draft. */
-export async function loadReviewDraft(launch: LaunchSnapshot): Promise<BuildoutDraft> {
-  const empty: BuildoutDraft = {
-    spotlight: { name: '', line: '', link: '' },
-    space: { tagline: '', about: '' },
-    website: { headline: '', intro: '' },
-    email: { subject: '', body: '' },
-    cites: [],
-  }
+/** The draft the screen opens with: the one saved on this launch, built from the person's own words the first time they
+ *  open the screen. Before there is a Space to read, only the Spotlight answers they already gave. Never throws: a failed
+ *  read is an empty draft. */
+export async function loadReviewDraft(profileId: string, launch: LaunchSnapshot): Promise<BuildoutDraft> {
   try {
-    const spotlight = (await loadSpotlightAnswers(launch)) ?? empty.spotlight
-    const space = launch.spaceId ? await getSpaceById(launch.spaceId) : null
-    const kept = record(record(space?.preferences).launchDraft)
-    const website = record(kept.website)
-    const email = record(kept.email)
-    const draft: BuildoutDraft = {
-      spotlight,
-      space: { tagline: blank(space?.tagline), about: blank(space?.about) },
-      website: {
-        headline: blank(website.headline),
-        intro: blank(website.intro),
-      },
-      email: { subject: blank(email.subject), body: blank(email.body) },
-      cites: [],
-    }
-    if (spotlight.line.trim()) {
-      const origin = 'Your line for the Spotlight'
-      if (draft.space.tagline)
-        draft.cites.push({
-          slot: 'space',
-          field: 'tagline',
-          snippet: spotlight.line,
-          origin,
-        })
-      if (draft.space.about)
-        draft.cites.push({
-          slot: 'space',
-          field: 'about',
-          snippet: spotlight.line,
-          origin,
-        })
-    }
-    return draft
+    const stored = (await store.getBuildout(launch)) ?? (await buildLaunchDraft(profileId, launch))
+    if (stored) return stored.draft
+    const spotlight = (await loadSpotlightAnswers(launch)) ?? { name: '', line: '', link: '' }
+    return emptyDraft(spotlight)
   } catch {
-    return empty
+    return emptyDraft({ name: '', line: '', link: '' })
   }
 }
 
