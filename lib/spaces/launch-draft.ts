@@ -2,7 +2,7 @@
 // website words and first email here while it hands them on, then records which Space email draft it made so a second
 // Publish never makes a second one. PURE and tolerant: any shape reads as "nothing kept".
 
-export interface LaunchDraftKept {
+interface LaunchDraftKept {
   website: { headline: string; intro: string }
   email: { subject: string; body: string }
   /** The Space email draft (campaigns.id) the first email was handed to. Empty until it was. */
