@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { stepSlot, type LayerSlot, type LayerTree } from '@/lib/builder/canvas-tree'
 import { dropIndex, keyboardMove, LONG_PRESS_MS, longPressStep, reorder } from '@/lib/builder/gesture'
 
-export type Layer = { id: string; label: string }
+export type Layer = { id: string; label: string; hidden?: true }
 
 /** One reorderable stack of rows: the whole flat list, or one column of the tree. `leave` says whether a row at
  *  this stack's top or bottom has somewhere further to go, and `onLeave` takes it there. */
@@ -97,7 +97,10 @@ function LayerRows({
           onPointerCancel={end}
           onKeyDown={key(i)}
         >
-          <span className="min-w-0 flex-1" tabIndex={0} aria-label={`${layer.label}, position ${i + 1} of ${layers.length}`}>{layer.label}</span>
+          <span className="min-w-0 flex-1 break-words" tabIndex={0} aria-label={`${layer.label}${layer.hidden ? ', hidden' : ''}, position ${i + 1} of ${layers.length}`}>
+            {layer.label}
+            {layer.hidden && <span className="ml-2 text-meta text-muted">Hidden</span>}
+          </span>
           {onSelect && (
             <Button type="button" size="sm" variant={selectedId === layer.id ? 'primary' : 'secondary'} className="min-h-11 min-w-11" aria-pressed={selectedId === layer.id} aria-label={`Edit ${layer.label}`} onClick={() => onSelect(layer.id)}>Edit</Button>
           )}
