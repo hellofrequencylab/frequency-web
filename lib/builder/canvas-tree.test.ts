@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canvasTree, dragSpacing, moveInTree, SPACING_SCALE, spacingStepOf, spacingWord, stepSlot, stepSpacing, treeLayers, undoChange, undoWords, UNDO_ADD, withSpacing, type LayerTree } from './canvas-tree'
+import { canSplit, canvasTree, dragSpacing, rowSplitOf, moveInTree, SPACING_SCALE, spacingStepOf, spacingWord, stepSlot, stepSpacing, treeLayers, undoChange, undoWords, UNDO_ADD, withSpacing, type LayerTree } from './canvas-tree'
 import { sanitizeBlockStyle } from '@/lib/entity-blocks/block-content'
 import { placeNode } from '@/lib/entity-blocks/node-ops'
 import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
@@ -137,5 +137,37 @@ describe('undoChange', () => {
     expect(['move', 'spacing'].map((kind) => undoWords({ kind } as never))).toEqual(['Undo move', 'Undo spacing'])
     expect(undoWords(UNDO_ADD)).toBe('Undo add')
     expect(undoWords({ kind: 'restore', to: { rowId: 'r1', col: 0, index: 0 } })).toBe('Undo remove')
+  })
+})
+
+describe('rows (PROG-E6D)', () => {
+  const rows: LayerTree = [
+    { id: 'r1', label: 'Row 1', split: 'full', columns: [[{ id: 'a', label: 'A' }]] },
+    { id: 'r2', label: 'Row 2', split: 'lead', columns: [[{ id: 'b', label: 'B' }], []] },
+    { id: 'r3', label: 'Row 3', split: 'even', columns: [[], [{ id: 'c', label: 'C' }]] },
+  ]
+  it('reads a stored row as a split', () => {
+    expect([rowSplitOf(1), rowSplitOf(2), rowSplitOf(2, 'lead'), rowSplitOf(2, 'trail')]).toEqual(['full', 'even', 'lead', 'sidebar'])
+    expect(canvasTree({ rows: [{ id: 'r9', columns: 2, ratio: 'trail', cells: [[], []] }], bench: [] }, [])[0]!.split).toBe('sidebar')
+  })
+  it('lets a split drop only empty columns', () => {
+    expect(canSplit(rows[1]!, 'full')).toBe(true)
+    expect(canSplit(rows[2]!, 'full')).toBe(false)
+    expect(canSplit(rows[2]!, 'sidebar')).toBe(true)
+  })
+  it.each([
+    [{ kind: 'row-move', rowId: 'r2', by: 1 }, { kind: 'row-move', rowId: 'r2', by: -1 }],
+    [{ kind: 'row-split', rowId: 'r2', split: 'full' }, { kind: 'row-split', rowId: 'r2', split: 'lead' }],
+    [{ kind: 'row-remove', rowId: 'r3' }, { kind: 'row-add', at: 2 }],
+    [{ kind: 'row-remove', rowId: 'gone' }, null],
+    [{ kind: 'row-add', at: 1 }, null],
+  ] as const)('undoes %j', (change, back) => {
+    expect(undoChange(rows, 'a', change, {})).toEqual(back)
+  })
+  it('names a row undo', () => {
+    expect([
+      undoWords({ kind: 'row-add', at: 0 }), undoWords({ kind: 'row-remove', rowId: 'r1' }),
+      undoWords({ kind: 'row-move', rowId: 'r1', by: 1 }), undoWords({ kind: 'row-split', rowId: 'r1', split: 'even' }),
+    ]).toEqual(['Undo remove row', 'Undo add row', 'Undo row move', 'Undo columns'])
   })
 })
