@@ -27,10 +27,12 @@ import { createHash, randomBytes } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { decide, type HuntAction, type RoleGrant } from '@/lib/hunts/authz'
+import { huntSwitchOn } from '@/lib/hunts/flags'
 import { slugify } from '@/lib/utils'
 import {
   canonicalContent,
   evidencePolicyUpdates,
+  publishedPolicy,
   parseTrailDraft,
   publishChecklist,
   publishRows,
@@ -80,6 +82,8 @@ export type TrailEditorState = {
   published: boolean
   publishedAt: string | null
   canPublish: boolean
+  /** HUNTS_COMMERCE_ENABLED: only then does the editor offer the pass benefits. */
+  passBenefits: boolean
   draft: TrailDraft
 }
 
@@ -207,6 +211,7 @@ export async function loadTrail(huntId: string, actor: Actor): Promise<TrailEdit
     published: version?.status === 'published' || version?.status === 'superseded',
     publishedAt: version?.published_at ?? null,
     canPublish,
+    passBenefits: huntSwitchOn('commerce'),
     draft: trailOf(version),
   }
 }
@@ -397,7 +402,7 @@ export async function publishTrail(
   const publishedAt = new Date().toISOString()
   const { error: flipError } = await client
     .from('hunt_versions')
-    .update({ status: 'published', content_hash: hash, published_at: publishedAt, policy: { ...(version.policy ?? {}), trail: draft } })
+    .update({ status: 'published', content_hash: hash, published_at: publishedAt, policy: publishedPolicy(version.policy, draft) })
     .eq('id', version.id)
     .eq('hunt_id', huntId)
     .eq('status', 'draft')

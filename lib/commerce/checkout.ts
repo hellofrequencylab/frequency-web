@@ -46,6 +46,7 @@ import { SHIP_TO_COUNTRIES, cartNeedsShipping, shippingDetailsFromSession } from
 import { emitDisputeLost } from '@/lib/trust/emitters'
 import { cartCheckoutEnabled } from './cart-checkout-flag'
 import { takePaidOutOfStoredCart } from './cart-store'
+import { huntsAfterOrderReturn } from '@/lib/hunts/merch-hooks'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -865,6 +866,9 @@ export async function recordCommerceOrderFromSessionId(sessionId: string): Promi
   }
   if (session.metadata?.kind !== 'commerce_order' || session.payment_status !== 'paid') return false
   await recordCommerceOrderFromSession(session)
+  // FH-038S: the checkout return projects the same Hunt benefits the webhook does for a bound store line.
+  // Best effort and replay-safe, a no-op until HUNTS_COMMERCE_ENABLED is on; it never throws into settlement.
+  await huntsAfterOrderReturn(sessionId)
   return true
 }
 
