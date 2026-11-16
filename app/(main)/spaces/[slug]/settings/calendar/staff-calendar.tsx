@@ -26,6 +26,7 @@ import {
 } from '@/lib/calendar/series-choice'
 import { describeRepeat, parseRepeat } from '@/lib/events/repeat-rule'
 import { PUBLISH_STEP, productionDoorHref, stageTimeline } from '@/lib/calendar/stage-timeline'
+import { withReturnPath } from '@/lib/events/return-path'
 import { shortDateLabel } from '@/lib/calendar/short-date'
 import { newDateZone } from '@/lib/calendar/browser-zone'
 import type { EntryMove } from '@/lib/calendar/date-move'
@@ -235,6 +236,9 @@ export function StaffCalendar({
   quickAdd?: { newEventHref: string }
 }) {
   const router = useRouter()
+  // The Space calendar this lives on (components/spaces/calendar-workspace.tsx, the Space's Calendar
+  // tab): a create started here comes back here once published (LIVE-2319).
+  const calendarPath = `/spaces/${slug}/calendar`
   const [draft, setDraft] = useState<Draft | null>(null)
   const [openPlan, setOpenPlan] = useState<SpacePlan | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -477,7 +481,7 @@ export function StaffCalendar({
   const publish = () => {
     if (!draft?.id) return
     const id = draft.id
-    const href = productionDoorHref(spaceId, id, draft.input.planId)
+    const href = productionDoorHref(spaceId, id, draft.input.planId, calendarPath)
     const dirty = draft.saved !== JSON.stringify(draft.input)
     setError(null)
     startTransition(async () => {
@@ -1067,7 +1071,7 @@ export function StaffCalendar({
             </h2>
             <ul className="grid gap-1.5">
               <li>
-                <a href={quickAdd.newEventHref} className="block rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated">
+                <a href={withReturnPath(quickAdd.newEventHref, calendarPath)} className="block rounded-control border border-border px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated">
                   New event
                   <span className="block text-meta font-normal text-muted">Published on your calendar. You set the date in the form.</span>
                 </a>

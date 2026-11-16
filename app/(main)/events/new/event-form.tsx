@@ -10,6 +10,7 @@ import { isError } from '@/lib/action-result'
 import { Field, Input, Textarea, Label, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { safeReturnPath } from '@/lib/events/return-path'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import type { PlaceResult } from '@/lib/geocode'
@@ -187,6 +188,7 @@ export function EventForm({
   payoutSelfByScope,
   paymentsRefusedByScope,
   upgradeOffer,
+  returnTo,
 }: {
   groups: Group[]
   /** Journeys the caller may link this event to (create AND edit). Empty/absent hides the field. */
@@ -227,6 +229,9 @@ export function EventForm({
   paymentsRefusedByScope?: Record<string, UpgradeTarget>
   /** The Business offer the upgrade moment shows (trial, catalog price). Absent hides the panel. */
   upgradeOffer?: UpgradeOffer
+  /** Where a CREATE lands once published, when it started from a Space calendar (LIVE-2319). The page
+   *  validates it (lib/events/return-path.ts). Absent keeps the old road: the new event's page. */
+  returnTo?: string
 }) {
   const isEdit = !!eventId
   // Sentinel scope for a standalone PUBLIC event (any nearby member — no circle/space needed).
@@ -476,7 +481,10 @@ export function EventForm({
         setSubmitError(res.error)
         return
       }
-      router.push(`/events/${res.data.slug}`)
+      // A create started from a Space calendar goes back there (LIVE-2319); everything else opens the
+      // event. Re-checked here so the form never trusts a prop it did not validate itself.
+      const back = !isEdit ? safeReturnPath(returnTo) : null
+      router.push(back ?? `/events/${res.data.slug}`)
     })
   }
 
