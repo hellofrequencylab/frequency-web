@@ -40,12 +40,17 @@ describe('active share-card font bytes', () => {
 describe('share-card trace scope', () => {
   const cfg = readFileSync('next.config.ts', 'utf8')
   const block = cfg.match(/outputFileTracingIncludes:\s*\{([\s\S]*?)\n {2}\}/)?.[1] ?? ''
-  it('keeps explicit font lists off the catch-all and preserves help content', () => {
+  it('keeps explicit font lists off the catch-all and puts help content on the routes that read it', () => {
     for (const key of ["'/opengraph-image'", "'/twitter-image'"]) expect(block).toContain(`${key}: OG_CARD_FONTS`)
     expect(block).toContain("'/dev/og-root-card': ROOT_CARD_FONTS")
     expect(block.match(/'\/\*\*':\s*\[([\s\S]*?)\]/)?.[1] ?? '').not.toContain('public/fonts')
     expect(cfg).not.toContain("'./public/fonts/*.ttf'")
-    expect(block).toMatch(/'\/\*\*': \[[\s\S]*?'\.\/content\/help\/\*\*\/\*'/)
+    // HYG-245 (owner approval 2026-11-16, decision card): help Markdown rides only on the routes that
+    // read it at runtime, not on every function. Each reader of lib/help/content-core keeps its key.
+    for (const key of ['/api/cron/embed-help', '/api/cron/indexnow', '/admin/vera-ai', '/admin/content/training', '/help', '/support', '/feed', '/llms', '/sitemap']) {
+      expect(block, key).toMatch(new RegExp(`'${key.replace(/[/.]/g, '\\$&')}': \\['\\./content/help/\\*\\*/\\*'\\]`))
+    }
+    expect(block.match(/'\/\*\*':\s*\[([\s\S]*?)\]/)?.[1] ?? '').not.toContain('content/help')
     const keys = [...block.matchAll(/^\s*'([^']+)':/gm)].map(m => m[1])
     expect(keys.length).toBe(new Set(keys).size)
   })
