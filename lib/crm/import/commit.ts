@@ -43,7 +43,7 @@ const empty = (v: string | null | undefined) => !((v ?? '').trim())
 // import can carry it (never the platform hub or a personal book).
 
 /** Who confirmed an imported list's consent, and where it came from. Stored on each contact's meta. */
-export interface ConsentAttestation {
+interface ConsentAttestation {
   by: string
   at: string
   import: string
