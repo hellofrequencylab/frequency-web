@@ -18,6 +18,7 @@ import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },
@@ -208,9 +209,7 @@ export function ReportDialog({
                     type="button"
                     onClick={() => setType(key)}
                     aria-pressed={active}
-                    className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-2xs font-semibold transition-colors ${
-                      active ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:bg-surface-elevated'
-                    }`}
+                    className={choiceTileClasses(active, `flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-2xs font-semibold ${active ? 'text-primary-strong' : 'text-muted'}`)}
                   >
                     <Icon className="h-4 w-4" />
                     {TYPE_LABELS[key]}

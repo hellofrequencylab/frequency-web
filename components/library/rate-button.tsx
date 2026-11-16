@@ -6,6 +6,7 @@ import { Heart } from 'lucide-react'
 import { rateContent } from '@/app/(main)/library/actions'
 import { isError } from '@/lib/action-result'
 import type { ContentType } from '@/lib/library'
+import { chipClasses } from '@/components/ui/chip'
 
 // A "love" toggle: the ratings signal that feeds the best-of score (community_library RPC).
 // Moved here from the retired /library page (LIVE-681, ADR-1678) so the practices-best-of block on
@@ -30,9 +31,7 @@ export function RateButton({ type, id, count, rated }: { type: ContentType; id: 
         })
       }
       aria-pressed={on}
-      className={`inline-flex items-center gap-1 rounded-pill border px-2.5 py-1 text-meta font-semibold transition-colors disabled:opacity-50 ${
-        on ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:text-text'
-      }`}
+      className={chipClasses(on, 'gap-1 disabled:opacity-50')}
       title={on ? 'Remove your rating' : 'Rate this'}
     >
       <Heart className={`h-3.5 w-3.5 ${on ? 'fill-current' : ''}`} /> {n}
