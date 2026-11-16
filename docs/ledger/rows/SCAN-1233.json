@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: PLAUSIBLE. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: components/marketing/site-image.tsx:26 ('Next 16 replaced priority with preload'); package.json next 16.4.3; priority still used in components/layout/marketing-header.tsx:144, components/frequency/site/shell/site-header.tsx:401, create-space-studio.tsx:568, frequency-join.tsx:467, niche-door.tsx:168, frequency-midnight.tsx:59 and ~35 more. node_modules absent so I could not read the Next docs to confirm it is a no-op or a warning.\n\nWHY IT MATTERS: If deprecated it logs warnings and may be removed; if it already has no effect, those LCP images lose their preload and LCP slips on the join, create-a-space and theme pages.\n\nFIX DIRECTION: Swap priority for preload across components; confirm against node_modules/next/dist/docs image page.",
+  "detail": "EVIDENCE: components/marketing/site-image.tsx:26 ('Next 16 replaced priority with preload'); package.json next 16.4.3; priority still used in components/layout/marketing-header.tsx:144, components/frequency/site/shell/site-header.tsx:401, create-space-studio.tsx:568, frequency-join.tsx:467, niche-door.tsx:168, frequency-midnight.tsx:59 and ~35 more. node_modules absent so I could not read the Next docs to confirm it is a no-op or a warning.\n\nWHY IT MATTERS: If deprecated it logs warnings and may be removed; if it already has no effect, those LCP images lose their preload and LCP slips on the join, create-a-space and theme pages.\n\nFIX DIRECTION: Swap priority for preload across components; confirm against node_modules/next/dist/docs image page.\n\nFIXED 2026-11-16: every next/image priority attribute in app and components is now preload (Next 16 replacement); local component props named priority keep their name and feed preload. The two next/image test mocks also strip preload.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1233",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }

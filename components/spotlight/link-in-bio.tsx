@@ -62,7 +62,7 @@ export function LinkInBioPage({
             alt={name}
             width={96}
             height={96}
-            priority
+            preload
             className="h-24 w-24 rounded-pill object-cover ring-4 ring-canvas lift-1"
             style={avatarFocusStyle(profile.avatar_url)}
           />
