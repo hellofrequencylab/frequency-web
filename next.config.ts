@@ -259,6 +259,13 @@ const nextConfig: NextConfig = {
     // One worker is about 660 MB less at the exact moment the container is fullest; static
     // generation takes longer, which costs minutes, not money.
     cpus: 1,
+    // NO SERVER SOURCE MAPS (HYG-241 step 2). Turbopack writes a .map beside every server chunk in a
+    // production build unless this is false (the compiled binary reads `serverSourceMaps`), and the
+    // compile peaks at the end, while it emits: 7774 MB of 8192 on 2026-11-16 (a85978d5), with
+    // next-build at 6395 MB. Browser maps are already off (HYG-232). The cost: server stack traces in
+    // the Vercel logs point at built chunks, not source files. Measured on the preview build of this
+    // change before it merged; the reading is on the HYG-241 row.
+    serverSourceMaps: false,
   },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
@@ -272,12 +279,25 @@ const nextConfig: NextConfig = {
   // tracer can't follow those dynamic fs reads, so without an explicit include the
   // files are absent from the serverless bundle: every read returns [], the
   // help_chunks index builds empty, and "Ask Vera" can only ever deflect. The
-  // content is tiny, so bundle it into the routes that need it. (Help *pages* are
-  // unaffected — they're statically generated at build time.) See docs/SUPPORT-SYSTEM.md.
+  // content is small, but it is NOT free: on '/**' it was 293 KB copied into every one of ~640
+  // functions, about 185 MB of the deploy (HYG-245). The (main) layout was the reason for '/**' (it
+  // built Vera's search index from disk on every member request); that index is now a static file
+  // (app/api/help/search-index), so the include is keyed on the routes that still read the Markdown
+  // at runtime. Route keys are SUBSTRING tests (see the share-card note below), so '/help' covers
+  // the help center and the index route, '/support' covers /support, /support/[id] and
+  // /admin/support/[id], and '/llms' covers llms.txt and llms-full.txt. A route that starts reading
+  // content/help (lib/help/content-core.ts) needs a key here, or its reads return [] on Vercel.
+  // See docs/SUPPORT-SYSTEM.md.
   outputFileTracingIncludes: {
     '/api/cron/embed-help': ['./content/help/**/*'],
+    '/api/cron/indexnow': ['./content/help/**/*'],
     '/admin/vera-ai': ['./content/help/**/*'],
-    '/**': ['./content/help/**/*'],
+    '/admin/content/training': ['./content/help/**/*'],
+    '/help': ['./content/help/**/*'],
+    '/support': ['./content/help/**/*'],
+    '/feed': ['./content/help/**/*'],
+    '/llms': ['./content/help/**/*'],
+    '/sitemap': ['./content/help/**/*'],
     // The share-card fonts, on the routes that rasterise. Belt-and-braces, not the delivery
     // mechanism: load-nunito's reads are literal-pathed, so the tracer already resolves each face
     // into every function that reaches the module. These keys re-state them because an OG card that
@@ -298,7 +318,7 @@ const nextConfig: NextConfig = {
     // seven discover/spotlight cards, which draw with no custom face, for ~4.7MB. Under-matching
     // breaks a card silently; over-matching costs bytes the budget gate prints.
     //
-    // ⚠️ The help content above must stay on its own '/**' entry. A duplicate key is a TS error and,
+    // ⚠️ The help content above must stay on its own keys. A duplicate key is a TS error and,
     // worse, the later one silently wins — which would drop the help content and leave "Ask Vera"
     // deflecting every question, the exact failure its own comment warns about.
     '/opengraph-image': OG_CARD_FONTS,

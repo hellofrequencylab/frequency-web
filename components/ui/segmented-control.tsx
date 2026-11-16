@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils'
 // is the difference between "the adoption is real" and "the import path is still spelled correctly" —
 // the shape-not-truth failure HYG-105's first probe shipped with.
 
-export type SegmentedSize = 'sm' | 'md'
+export type SegmentedSize = 'xs' | 'sm' | 'md'
 export type SegmentedOrientation = 'horizontal' | 'vertical'
 
 export type Segment<V extends string> = {
@@ -54,6 +54,10 @@ export type Segment<V extends string> = {
   className?: string
   /** `data-*` hooks the callers' tests and e2e specs read off the segment. */
   data?: Record<`data-${string}`, string | undefined>
+  /** The accessible name of a segment whose label is a glyph (an alignment icon, a column sketch). */
+  ariaLabel?: string
+  /** The hover tooltip, for the same icon-only segments. */
+  title?: string
 }
 
 export type SegmentedLink = { href: string; label: ReactNode }
@@ -67,9 +71,38 @@ const BOX_BY_ORIENTATION: Record<SegmentedOrientation, string> = {
   vertical: 'mu-v flex w-full flex-col',
 }
 const SEGMENT = 'press tap-target focus-visible:z-10'
-const SIZE: Record<SegmentedSize, string> = { sm: '', md: 'mu-md' }
+const SIZE: Record<Exclude<SegmentedSize, 'xs'>, string> = { sm: '', md: 'mu-md' }
 // The selected fill: the kit's `.on`. The idle segment carries no class of its own.
 const SELECTED = 'on'
+
+// THE COMPACT SIZE (`xs`, SCAN-1133 slice 9). The editor inspectors, the canvas section header and
+// the sticky preview bars are pointer-first rails about 280px wide, where the 36px segment (44px
+// box) cannot sit on one control row; every one of them hand-rolled a 24 to 28px bar instead, and
+// those bars are what the adoption ratchet kept counting. `xs` is the same form at that density:
+// one quiet track, the options as segments inside it, the selected one filled.
+//
+// It is spelled in Tailwind constants, not in the `.mu-seg` sheet, for two reasons. The inspectors
+// open in body-portaled sheets and dialogs outside `[data-kit]`, and utilities style there with no
+// scoped rule to miss. And `.mu-seg > *` sets its height under a three-attribute selector, which a
+// utility could never shrink (`cn` is a plain join; the sheet would win).
+//
+// `xs` deliberately does NOT carry `tap-target`: a 44px floor is the size the inspector could not
+// hold. Keep it to dense editor chrome. A member page uses `sm`.
+const XS_BOX = 'inline-flex max-w-full flex-wrap gap-0.5 rounded-control bg-surface-elevated p-0.5'
+const XS_SEGMENT =
+  'inline-flex min-h-6 items-center justify-center gap-1 rounded-control-nested px-1.5 text-2xs font-semibold transition-colors motion-reduce:transition-none focus-visible:z-10'
+const XS_IDLE = 'text-muted hover:bg-surface hover:text-text'
+const XS_SELECTED = 'bg-primary text-on-primary'
+
+function boxClasses(size: SegmentedSize, orientation: SegmentedOrientation, className?: string): string {
+  if (size === 'xs') return cn(XS_BOX, orientation === 'vertical' && 'flex-col', className)
+  return cn(BOX, BOX_BY_ORIENTATION[orientation], className)
+}
+
+function segmentClasses(size: SegmentedSize, selected: boolean, selectedClassName?: string, className?: string): string {
+  if (size === 'xs') return cn(XS_SEGMENT, selected ? (selectedClassName ?? XS_SELECTED) : XS_IDLE, className)
+  return cn(SEGMENT, SIZE[size], selected && (selectedClassName ?? SELECTED), className)
+}
 
 export function SegmentedControl<V extends string>({
   label,
@@ -91,7 +124,7 @@ export function SegmentedControl<V extends string>({
   className?: string
 }) {
   return (
-    <div role="group" data-segmented="buttons" aria-label={label} className={cn(BOX, BOX_BY_ORIENTATION[orientation], className)}>
+    <div role="group" data-segmented="buttons" aria-label={label} className={boxClasses(size, orientation, className)}>
       {segments.map((segment) => {
         const selected = segment.value === value
         return (
@@ -99,14 +132,11 @@ export function SegmentedControl<V extends string>({
             key={segment.value}
             type="button"
             aria-pressed={selected}
+            aria-label={segment.ariaLabel}
+            title={segment.title}
             onClick={() => onChange(segment.value)}
             {...segment.data}
-            className={cn(
-              SEGMENT,
-              SIZE[size],
-              selected && (segment.selectedClassName ?? SELECTED),
-              segment.className,
-            )}
+            className={segmentClasses(size, selected, segment.selectedClassName, segment.className)}
           >
             {segment.label}
           </button>
@@ -135,7 +165,7 @@ export function SegmentedLinks({
   className?: string
 }) {
   return (
-    <nav aria-label={label} data-segmented="links" className={cn(BOX, BOX_BY_ORIENTATION.horizontal, className)}>
+    <nav aria-label={label} data-segmented="links" className={boxClasses(size, 'horizontal', className)}>
       {links.map((link) => {
         const current = link.href === activeHref
         return (
@@ -144,7 +174,7 @@ export function SegmentedLinks({
             href={link.href}
             scroll={scroll}
             aria-current={current ? 'page' : undefined}
-            className={cn(SEGMENT, SIZE[size], current && SELECTED)}
+            className={segmentClasses(size, current)}
           >
             {link.label}
           </Link>

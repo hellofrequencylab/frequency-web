@@ -1,0 +1,18 @@
+{
+  "id": "FH-020Y",
+  "title": "Hunts FH-020Y: Let a resident Trail name a partner venue for a staff-confirmed stop",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/PLACEMENT-KIT.md",
+    "ref": "Split from FH-020X (2026-11-16)."
+  },
+  "detail": "FH-020X binds every stop and takes the venue Space from the Space that runs the Trail. A resident creates Trails as a profile owner (createTrailDraft), so the publish checklist refuses a staff-confirmed stop there (stop_staff_venue): no venue means no staff can confirm a visit or review a held one (lib/hunts/staff-queue-store.ts drops a claim with no venue). Add a per-stop venue choice limited to Spaces with an active hunt_partners row for the Hunt (authz partnerAllows), write it as the binding's venue_space_id in bindStopPlacements, and let the checklist pass when each staff-confirmed stop has one. Needs the partner invite flow or an owner decision on who may name a venue. Requires: FH-020X. Owner role: Web.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");process.exit(/venueSpaceId/.test(fs.readFileSync(\"lib/studio/entities/hunt.ts\",\"utf8\"))&&/venueSpaceId/.test(fs.readFileSync(\"lib/hunts/store.ts\",\"utf8\"))?0:1)'"
+  },
+  "wave": "W7"
+}

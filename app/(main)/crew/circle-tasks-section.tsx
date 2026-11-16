@@ -5,6 +5,7 @@
 // (circle.assignTask), and the EXISTING CompleteButton for the claimer so
 // completion stays on the crew_completions flow unchanged.
 
+import { formatDateShort } from '@/lib/format-date'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ClipboardList, Settings2 } from 'lucide-react'
@@ -123,7 +124,7 @@ export async function CircleTasksSection({
                     <span className="text-meta text-muted">
                       {mine ? 'Claimed by you' : `Claimed by ${task.assignee?.displayName ?? 'a member'}`}
                       {task.claimedAt && (
-                        <> · {new Date(task.claimedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
+                        <> · {formatDateShort(task.claimedAt)}</>
                       )}
                     </span>
                   </span>

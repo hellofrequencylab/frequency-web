@@ -62,6 +62,7 @@ import { BlockEditPanel } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { Input } from '@/components/ui/field'
 import { capsLabel } from '@/components/ui/caps-label'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { SaveErrorOrCapPanel } from './spotlight-cap-panel'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
@@ -1454,37 +1455,26 @@ export function RowLayoutPicker({
     { choice: 'lead', label: 'Main and side', bars: ['flex-[2]', 'flex-1'] },
   ]
   return (
-    <div
-      className="flex overflow-hidden rounded-md border border-border"
-      role="group"
-      aria-label={`Layout for row ${index + 1}`}
-    >
-      {options.map(({ choice, label, bars }) => {
-        const on = active === choice
-        return (
-          <button
-            key={choice}
-            type="button"
-            aria-pressed={on}
-            aria-label={label}
-            title={label}
-            onClick={() => onChoose(choice)}
-            className={`flex min-h-[28px] w-8 items-center justify-center px-1.5 py-1 ${
-              on ? 'bg-primary' : 'bg-surface hover:bg-surface-elevated'
-            }`}
-          >
-            <span className="flex w-full gap-0.5" aria-hidden>
-              {bars.map((b, i) => (
-                <span
-                  key={i}
-                  className={`h-3 rounded-[1px] ${b} ${on ? 'bg-on-primary' : 'bg-border-strong'}`}
-                />
-              ))}
-            </span>
-          </button>
-        )
-      })}
-    </div>
+    <SegmentedControl
+      size="xs"
+      label={`Layout for row ${index + 1}`}
+      value={active}
+      onChange={onChoose}
+      segments={options.map(({ choice, label, bars }) => ({
+        value: choice,
+        ariaLabel: label,
+        title: label,
+        className: 'w-8',
+        // The sketch takes the segment's own text colour when chosen, so it reads on whatever fill the kit paints.
+        label: (
+          <span className="flex w-full gap-0.5" aria-hidden>
+            {bars.map((b, i) => (
+              <span key={i} className={`h-3 rounded-[1px] ${b} ${active === choice ? 'bg-current' : 'bg-border-strong'}`} />
+            ))}
+          </span>
+        ),
+      }))}
+    />
   )
 }
 

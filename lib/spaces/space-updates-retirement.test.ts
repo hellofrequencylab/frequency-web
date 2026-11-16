@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { config } from '@/lib/page-editor/config'
 import { spacesComponents } from '@/components/page-editor/blocks/spaces'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
-import { PROFILE_BLOCKS } from '@/lib/spaces/profile-blocks'
+import { PROFILE_BLOCKS } from '@/lib/entity-blocks/space-profile'
 
 // ── Drift guard: SpaceUpdates stays retired, its TABLE stays kept (LIVE-062 batch 6) ─────────────
 // OWNER RULING (2026-08-20): retire the SpaceUpdates UI + write actions, KEEP the space_updates

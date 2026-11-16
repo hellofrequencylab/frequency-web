@@ -8,6 +8,7 @@ import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-pan
 import { hasUnpublishedWork, subscribeUnpublishedWork, UNPUBLISHED_WARNING } from '@/lib/layout/unpublished-work'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/field'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { AdminBarBody } from '@/components/layout/admin-bar/admin-bar-body'
 import { OPEN_ADMIN_BAR, type OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 
@@ -151,6 +152,7 @@ export function AdminBar({
   const [query, setQuery] = useState('')
 
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
   const bodyScrollRef = useRef<HTMLDivElement>(null)
   const requestedAppId = detail?.appId
   const requestedApp = useCallback(() => {
@@ -317,6 +319,18 @@ export function AdminBar({
     }
   }, [open, hydrated, isDesktop, requestedApp])
 
+  // Phone sheet: the same first focus as the desktop bar (Close, unless the body already focused a
+  // requested app entry), then the kit trap keeps Tab inside the sheet and returns focus to the
+  // trigger on close (SCAN-1225 follow-up). Close is focused HERE, before the trap's own effect, so
+  // the trap finds focus already inside and leaves it: its default is the first focusable, which is
+  // the backdrop button, and the next is the search field, which would raise the keyboard on a phone.
+  const sheetOpen = open && hasContent && !isDesktop
+  useEffect(() => {
+    if (!sheetOpen) return
+    if (!sheetRef.current?.contains(document.activeElement)) closeButtonRef.current?.focus()
+  }, [sheetOpen])
+  useDialogFocusTrap(sheetOpen, sheetRef)
+
   // ── Resize handle (pointer): drag the LEFT edge. Dragging LEFT widens. ──
   const onHandlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -415,7 +429,7 @@ export function AdminBar({
   // `hidden lg:flex` rail column this component mounts inside and covers the viewport. ──
   if (typeof document === 'undefined') return null
   const sheet = (
-    <div className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label="Page settings">
+    <div ref={sheetRef} className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label="Page settings">
       {/* Backdrop — tap to dismiss. */}
       <button
         type="button"
@@ -431,7 +445,7 @@ export function AdminBar({
       <div className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-surface shadow-pop">
         {/* The fixed top bar (search + close) sits ABOVE the scroll region, so nothing can render above the
             search on scroll — the search is the top of the sheet (ADR-516 Phase E). */}
-        <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={closeGuarded} unpublished={unpublished} />
+        <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={closeGuarded} unpublished={unpublished} closeRef={closeButtonRef} />
         <div ref={bodyScrollRef} className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
           <AdminBarBody key={`${resetKey}:${detail?.appId ?? ''}`} model={model} query={query} onQueryChange={setQuery} focusAppId={detail?.appId} />
         </div>

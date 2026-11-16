@@ -1,6 +1,6 @@
 // The MODULE-ENGINE resolver for the block-picker space profile (Epic 1.7, S2 staff-preview). PURE +
 // framework-independent (no React / Next / Supabase imports) so it is trivially unit-testable, like
-// lib/spaces/profile-blocks.ts and lib/spaces/functions.ts. It answers the one question the non-Puck
+// lib/entity-blocks/space-profile.ts and lib/spaces/functions.ts. It answers the one question the non-Puck
 // renderer needs before it fetches anything: "which profile block ids, in what order, does THIS space
 // render?" — by composing the S1 registry (defaultProfileLayout) over the space's live function set.
 //
@@ -16,7 +16,7 @@ import {
   spaceFunctionEnabled,
   type SpaceFunctionKey,
 } from './functions'
-import { defaultProfileLayout, type ProfileBlockId } from './profile-blocks'
+import { defaultProfileLayout, type ProfileBlockId } from '@/lib/entity-blocks/space-profile'
 import { withoutLeadershipPreferences } from './leadership'
 import { withoutWebsiteDrafts } from '@/lib/sites/editor/state'
 

@@ -27,6 +27,9 @@ const CHIPS = [
 ] as const
 
 const PAGE = 40
+/** How long one card read may take before it is asked again, and how many times it is asked again. */
+const DETAIL_DEADLINE_MS = 12000
+const RETRIES = 1
 
 type Loaded = { id: string; detail: MemberDetail | null }
 
@@ -78,17 +81,49 @@ export function ContactsWorkspace({
     loadRef.current = loadDetail
   }, [loadDetail])
   const needsFetch = !!selected && !selected.detail
+  // A read that never settles left the card on "Loading their card" for good: the first person's card,
+  // asked for while the page was still streaming in, never came back (2026-11-16, House of Fates), and
+  // picking the same person again changed nothing, so nothing asked again. Each attempt now has a deadline
+  // after which it asks once more, then says it could not load; picking the person again starts over.
+  const [ask, setAsk] = useState(0)
+  const retried = useRef(0)
   useEffect(() => {
     if (!selectedId || !needsFetch) return
     let cancelled = false
+    let settled = false
+    const deadline = window.setTimeout(() => {
+      if (cancelled || settled) return
+      if (retried.current < RETRIES) {
+        retried.current += 1
+        setAsk((a) => a + 1)
+      } else setFailed(selectedId)
+    }, DETAIL_DEADLINE_MS)
     loadRef.current(selectedId).then(
-      (detail) => !cancelled && (setFailed(null), setLoaded({ id: selectedId, detail })),
-      () => !cancelled && setFailed(selectedId),
+      (detail) => {
+        settled = true
+        if (!cancelled) {
+          setFailed(null)
+          setLoaded({ id: selectedId, detail })
+        }
+      },
+      () => {
+        settled = true
+        if (!cancelled) setFailed(selectedId)
+      },
     )
     return () => {
       cancelled = true
+      window.clearTimeout(deadline)
     }
-  }, [selectedId, needsFetch])
+  }, [selectedId, needsFetch, ask])
+
+  const pick = (id: string) => {
+    setPicked(id)
+    setFailed(null)
+    retried.current = 0
+    // The same person again, with no card yet: ask again (a new key re-runs the read).
+    if (id === selectedId && loaded?.id !== id) setAsk((a) => a + 1)
+  }
 
   const mounted = useRef(false)
   useEffect(() => {
@@ -180,7 +215,7 @@ export function ContactsWorkspace({
                   role="option"
                   aria-selected={m.id === selectedId}
                   className={m.id === selectedId ? 'adp-ws-row on' : 'adp-ws-row'}
-                  onClick={() => setPicked(m.id)}
+                  onClick={() => pick(m.id)}
                 >
                   <Av url={m.avatarUrl} />
                   <span className="grow">

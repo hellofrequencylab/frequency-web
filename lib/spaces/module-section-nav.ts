@@ -1,5 +1,5 @@
 import type { RowDef } from '@/lib/entity-blocks/layout'
-import type { ProfileBlockId } from '@/lib/spaces/profile-blocks'
+import type { ProfileBlockId } from '@/lib/entity-blocks/space-profile'
 import { MAX_SECTION_ANCHORS, type SectionNavItem, type SectionPresence } from '@/lib/spaces/section-anchors'
 
 // ─────────────────────────────────────────────────────────────────────────────

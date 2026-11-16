@@ -36,6 +36,10 @@ import { MotionLinks, OwnersMotion, PlanLadderMotion } from './plan-motion'
 import { PricingAddOns } from './pricing-addons'
 import { PricingCalculator } from './pricing-calculator'
 import { photoBg, photoImg } from '../shared/parts'
+import { PhotoBgPreload } from '../shared/photo-bg-preload'
+
+// The hero still, preloaded from the HTML so it is not found last (SCAN-1265).
+const HERO_PHOTO = '/brand/frequency/photos/day-park-yoga.jpg'
 
 export { splitPrice }
 
@@ -218,7 +222,8 @@ export function FrequencyPricing({
   return (
     <>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={photoBg('/brand/frequency/photos/day-park-yoga.jpg')} />
+        <PhotoBgPreload src={HERO_PHOTO} />
+        <div className="bg" style={photoBg(HERO_PHOTO)} />
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.3 })} />
         <div className="shade" />
         <div className="fq-grain" />

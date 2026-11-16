@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { bubbleEvent, canvasViewportWidth, toParentViewport, type CanvasPointerEvent } from './canvas-viewport'
+import { bubbleEvent, canvasFitScale, canvasViewportWidth, toParentViewport, type CanvasPointerEvent } from './canvas-viewport'
 
 const frame = { left: 100, top: 50, width: 820, height: 700, layoutWidth: 820, layoutHeight: 700, borderLeft: 2, borderTop: 3 }
 const point = { clientX: 40, clientY: 60 }
@@ -33,4 +33,16 @@ it.each([
   ['email', 'phone', 390],
 ] as const)('uses the existing %s and %s width contracts', (surface, device, width) => {
   expect(canvasViewportWidth(surface, device)).toBe(width)
+})
+
+// PROG-E6C: a frame wider than the room is drawn smaller to fit, never larger, and never unreadably small.
+it.each([
+  [1280, 358, 0.279],
+  [390, 358, 0.917],
+  [390, 800, 1],
+  [1280, null, 1],
+  [1280, 0, 1],
+  [4000, 100, 0.25],
+] as const)('fits a %ipx frame into %spx of room', (width, room, scale) => {
+  expect(canvasFitScale(width, room)).toBe(scale)
 })

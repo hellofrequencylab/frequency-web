@@ -1,15 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import {
-  normalizeTag,
-  dedupeTags,
-  clampBox,
-  coerceExtraction,
-  coerceContactDetails,
-  coerceCardCorners,
-  hasAnyContent,
-  hasAnyDetails,
-  squareCropRect,
-} from './normalize'
+import { normalizeTag, dedupeTags, hasAnyContent, hasAnyDetails, squareCropRect } from './normalize'
+import { clampBox, coerceExtraction, coerceContactDetails, coerceCardCorners } from './extraction'
 
 describe('normalizeTag', () => {
   it('trims, collapses whitespace, and strips leading #', () => {
@@ -71,6 +62,69 @@ describe('coerceExtraction', () => {
   it('handles garbage input without throwing', () => {
     expect(() => coerceExtraction(undefined)).not.toThrow()
     expect(coerceExtraction('nope').displayName).toBe('')
+  })
+  it('reads a full valid reply through the schema (PROG-E8C)', () => {
+    const e = coerceExtraction({
+      displayName: ' Sam Lee ',
+      email: ' SAM@X.COM ',
+      phone: '555',
+      socials: { instagram: '@sam', twitter: '@samx' },
+      tags: ['#Yoga', 'yoga', 4],
+      note: 'met at expo',
+      photo: { box: { x: 0.1, y: '0.2', w: 0.5, h: 0.4 }, imageIndex: 2.7 },
+      quality: { glare: true },
+      details: { phones: [{ phone: '777' }], links: [{ url: 'a.test', kind: 'Booking' }], confidence: 'HIGH' },
+    })
+    expect(e).toEqual({
+      displayName: 'Sam Lee',
+      email: 'sam@x.com',
+      phone: '555',
+      title: '',
+      company: '',
+      city: '',
+      website: '',
+      socials: { instagram: '@sam', x: '@samx' },
+      tags: ['Yoga'],
+      connectionNote: 'met at expo',
+      photo: { found: true, box: { x: 0.1, y: 0.2, w: 0.5, h: 0.4 }, imageIndex: 2 },
+      logo: { found: false, box: null, imageIndex: 0 },
+      corners: [],
+      quality: { legible: true, glare: true, skew: false, note: null },
+      details: { phones: [{ label: '', number: '777' }], links: [{ label: 'a.test', url: 'a.test', kind: 'booking' }], confidence: 'high' },
+    })
+  })
+  it('lets each wrong-typed field fall to its own safe reading and keeps the rest', () => {
+    const e = coerceExtraction({
+      displayName: 7, // a wrong type does not fall through to the older key
+      name: 'Alt',
+      email: ['a@b.c'],
+      company: 'Acme',
+      socials: 'instagram',
+      tags: 'yoga',
+      connectionNote: {},
+      photo: 3,
+      logo: { found: 'yes', box: { x: 0, y: 0, w: 'wide', h: 1 }, imageIndex: -2 },
+      corners: { 0: [] },
+      quality: [],
+      details: [{ phones: [] }],
+    })
+    expect(e).toEqual({
+      displayName: '',
+      email: '',
+      phone: '',
+      title: '',
+      company: 'Acme',
+      city: '',
+      website: '',
+      socials: {},
+      tags: [],
+      connectionNote: '',
+      photo: { found: false, box: null, imageIndex: 0 },
+      logo: { found: false, box: null, imageIndex: 0 },
+      corners: [],
+      quality: { legible: true, glare: false, skew: false, note: null },
+      details: {},
+    })
   })
   it('fills safe defaults for the new card fields (backward compatible)', () => {
     const e = coerceExtraction({ name: 'Ada' })

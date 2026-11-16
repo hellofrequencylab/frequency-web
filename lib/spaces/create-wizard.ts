@@ -150,6 +150,7 @@ const WIZARD_HINTS: Partial<Record<MegaThemeId, string>> = {
   'new-world': 'Night and Day in one look. Tide teal to start.',
   services: 'Night-first and glossy. Built for bookings.',
   cyberwitch: 'Concrete, chain-link and blackletter under one neon accent. Dark only.',
+  mindless: 'Warm ink, bone and one paint accent under a drip headline. Night or Day.',
 }
 
 /** The themes the look step offers: every Mega Theme the pickers offer (SITE_THEMES, which drops RETIRED_FROM_PICKERS: the

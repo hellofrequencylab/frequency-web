@@ -369,6 +369,12 @@
       "reason": "Anonymous read of one Space's live site domain, used by proxy.ts to carry campaign tags across the subdomain to live-domain hop. Reads through the ISR site cache (getSiteSpace, anonymous client, never cookies), accepts only a lowercase slug, and returns a single field (`domain`) that the public site already advertises in its own canonical link; null when the Space has no live domain. No write, no viewer data.",
       "checked": "2026-11-09",
       "digest": "befca910f8b4781f"
+    },
+    "app/api/help/search-index/route.ts": {
+      "verdict": "public",
+      "reason": "HYG-245: the help center's search index (titles, summaries and keywords from content/help), built once at deploy time with dynamic = 'force-static' and served from the edge. Anonymous by design: it is the same public help center a signed-out visitor reads at /help. The handler takes no session, reads no headers, cookies or DB, holds no admin client, and returns the same body to every caller.",
+      "checked": "2026-11-16",
+      "digest": "a26da5a2f8fe8a76"
     }
   }
 }
