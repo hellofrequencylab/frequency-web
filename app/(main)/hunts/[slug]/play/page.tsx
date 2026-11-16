@@ -5,6 +5,7 @@ import { Check, Lock, MapPin } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { ClaimStopForm } from '@/components/hunts/claim-stop-form'
 import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
+import { TrailStoreLinks, loadTrailStoreLinks } from '@/components/hunts/trail-store-links'
 import { VisitedStops } from '@/components/hunts/visited-stops'
 import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
@@ -90,6 +91,7 @@ export default async function PlayPage({ params, searchParams }: {
           ))}
         </ol>
         <VisitedStops stops={view.stops} />
+        <TrailStoreLinks links={await loadTrailStoreLinks(trail.huntId)} />
         {huntSwitchOn('claims') && view.canClaim && run?.state === 'active' && <ClaimStopForm slug={slug} />}
       </div>
     </FocusTemplate>
