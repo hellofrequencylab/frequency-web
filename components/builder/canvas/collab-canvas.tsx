@@ -23,6 +23,9 @@
 // Duplicate, hide, remove and undo (PROG-E6C): the selected block carries those four above its inspector, through
 // the same write. On a phone the frame, the inspector and Layers stack in one column with nothing wider than it.
 //
+// The whole page (PROG-E6E): on a real document the frame draws every block, row by row at each row's split (one
+// column on Phone), and tapping one selects it. Before, it drew only the selected block.
+//
 // Presence (BLD-401): on a shared Space the link also carries who is here (faces above the canvas) and which node
 // each person is in (an outline on that node inside the frame). It rides the channel, never the doc.
 
@@ -32,13 +35,14 @@ import type { BuilderDevice } from '@/lib/builder/state'
 import type { InspectorFieldView } from '@/lib/builder/inspector-fields'
 import type { InspectorDeviceValues } from '@/lib/builder/inspector-model'
 import type { CanvasDocumentView } from '@/lib/builder/canvas-document'
-import { nodeDeviceValues, resolveNodeContent, withDeviceValues } from '@/lib/builder/node-responsive'
+import { nodeDeviceValues, withDeviceValues } from '@/lib/builder/node-responsive'
 import type { BlockNode } from '@/lib/entity-blocks/node-tree'
 import { ResponsiveInspector } from '@/components/builder/inspector/responsive-inspector'
 import { VeraBlockCoach } from '@/components/builder/inspector/vera-block-coach'
 import { BlockActions } from './block-actions'
 import { BlockInserter } from './block-inserter'
 import { CanvasDocumentStatus } from './canvas-document-status'
+import { BlockWords, CanvasPagePreview } from './canvas-page-preview'
 import { CanvasViewportShell } from './canvas-viewport-shell'
 import { CollabTextEditor } from './collab-text-editor'
 import { LayerList, type Layer } from './layer-list'
@@ -72,19 +76,6 @@ type CanvasInspector = {
   initial: Readonly<Record<string, string | boolean>>
 }
 
-/** Word fields may hold inline marks (bold, links); the frame's plain preview shows the words only. Tags are
- *  dropped until none is left, so a tag split around another (`<scr<b>ipt>`) cannot survive one pass. The result
- *  is only ever a React text child, which is escaped on render. */
-function plainWords(value: unknown): string {
-  if (typeof value !== 'string') return ''
-  let words = value
-  for (let prev = ''; prev !== words; ) {
-    prev = words
-    words = words.replace(/<[^>]*>/g, '')
-  }
-  return words.trim()
-}
-
 /** A phone-width screen, read live so a turned phone follows. */
 const NARROW = '(max-width: 639px)'
 const isNarrow = () => typeof window !== 'undefined' && !!window.matchMedia?.(NARROW).matches
@@ -113,19 +104,8 @@ export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: strin
   const blockValues = nodeDeviceValues(node) as InspectorDeviceValues<Record<string, string | boolean>>
   // Vera (PROG-E8): the block counts as just created when every word field starts empty. Read once, at mount.
   const [fresh] = useState(() => !!inspector && inspector.fields.every((f) => (f.kind !== 'text' && f.kind !== 'textarea') || !inspector.initial[f.key]))
-  const resolved = resolveNodeContent(node, device)
-  // The frame draws the block's word fields as plain lines; its headline is `title` when the block has one.
-  const words = (panel?.fields ?? []).filter((f) => f.kind === 'text' || f.kind === 'textarea')
-  const headline = words.find((f) => f.key === 'title')?.key ?? words[0]?.key
   const [layers, setLayers] = useState<Layer[]>(() => document?.layers ?? DEMO_LAYERS)
-  const preview = panel && (
-    <>
-      {words.length === 0 && <p style={{ margin: '4px 0', fontWeight: 700 }}>{panel.title}</p>}
-      {words.map((f) => f.key === headline
-        ? <p key={f.key} style={{ margin: '4px 0', fontSize: device === 'phone' ? 24 : 32, fontWeight: 700 }}>{plainWords(resolved[f.key]) || panel.title}</p>
-        : plainWords(resolved[f.key]) ? <p key={f.key} style={{ margin: 0 }}>{plainWords(resolved[f.key])}</p> : null)}
-    </>
-  )
+  const preview = panel && <BlockWords block={panel} device={device} />
   const [link, setLink] = useState<Link>(spaceId ? 'connecting' : 'local')
   const [peers, setPeers] = useState<PresenceState[]>([])
   const select = useRef<(nid: string | null) => void>(() => {})
@@ -187,9 +167,21 @@ export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: strin
           )}
           <CollabTextEditor doc={doc} nid={CANVAS_NID} field="body" seed={SEED} label="Page text" />
         </div>
-        {panel && (
+        {document && real.tree ? (
+          // A real page: every block, as the page holds it; the selected one carries its spacing handles (PROG-E6E).
+          <div data-inspector-preview={real.selectedId ?? ''} style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid currentColor' }}>
+            <CanvasPagePreview
+              tree={real.tree}
+              blocks={real.blocks}
+              device={device}
+              selectedId={real.selectedId}
+              onSelect={real.select}
+              renderSelected={(words) => (real.selected ? <SpacingHandles style={real.selected.node.style} onChange={real.space} readOnly={!document.canSave}>{words}</SpacingHandles> : words)}
+            />
+          </div>
+        ) : panel && (
           <div data-inspector-preview={node.nid} style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid currentColor' }}>
-            {document && real.selected ? <SpacingHandles style={real.selected.node.style} onChange={real.space} readOnly={!document.canSave}>{preview}</SpacingHandles> : preview}
+            {preview}
           </div>
         )}
       </div>
