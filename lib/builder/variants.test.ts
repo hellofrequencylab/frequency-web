@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement } from 'react'
-import { config } from '@/lib/page-editor/config'
+import { rolesComponents } from '@/components/page-editor/blocks/roles'
 import { ROLES, ROLE_IDS, roleVariant, type RoleId } from '@/lib/blocks/roles/roles'
 import { presentationDefault } from '@/components/sites/presentation'
-import { tuneProjection } from './tune'
 import { layoutChips, needMet, pinLayout, unpinLayout } from './variants'
 
 const THEMES = ['DAWN', 'Menswork', 'Midnight', 'Wildheart', 'Network', 'NetworkKit', 'Temple', 'TempleKit', 'Designer', 'FreeHuman', 'Services', 'NewWorld', 'CyberWitch'] as const
@@ -42,8 +41,10 @@ describe('layout chips (BLD-203)', () => {
     expect(needMet({ items: tiers.map((t, i) => ({ ...t, featured: i === 0 })) }, 'featured')).toBe(true)
   })
 
-  it('the Tune rail leaves a role\'s layout to the chips', () => {
-    for (const r of ROLE_IDS) expect([...tuneProjection(ROLES[r].type, config).layer1, ...tuneProjection(ROLES[r].type, config).layer2].some((f) => f.key === 'variant')).toBe(false)
+  // The Tune rail half of this case is in variants-tune.test.ts, with the check that the editor config serves these
+  // same role blocks: both need the whole editor block config, about 2s to import, and this file is what the
+  // BLD-203 probe runs (HYG-242, owner approval 2026-11-16). pnpm test runs both files.
+  it('a block that is not a role gets no layout chips', () => {
     expect(layoutChips('ServicesStory', {}, 'DAWN')).toBeNull()
   })
 })
@@ -60,7 +61,7 @@ describe('every variant renders non-empty with sample content on every theme (BL
   }
   for (const role of ROLE_IDS) {
     it(role, () => {
-      const render = config.components[ROLES[role].type].render as (p: unknown) => React.ReactElement
+      const render = (rolesComponents as Record<string, { render: unknown }>)[ROLES[role].type].render as (p: unknown) => React.ReactElement
       for (const theme of THEMES) for (const variant of Object.keys(ROLES[role].variants)) {
         const html = renderToStaticMarkup(createElement(() => render({ ...fill(role, variant), puck: { metadata: { theme } } })))
         expect(html, `${role} ${variant} on ${theme}`).toContain(`data-variant="${variant}"`)
