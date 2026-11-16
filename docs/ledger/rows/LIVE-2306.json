@@ -13,7 +13,7 @@
   "detail": "Add a section to docs/RUNBOOKS.md that lists, in order: verify the production domain in Google Search Console and Bing Webmaster, submit /sitemap.xml to both, confirm the IndexNow cron (app/api/cron/indexnow) is pinging, claim and fill the Google Business Profile, and spot-check the town pages and llms.txt render and are in the sitemap. The submissions themselves need Daniel's accounts; the runbook is the part a build thread can write.",
   "verify": {
     "kind": "cmd",
-    "cmd": "grep -q 'Search Console' docs/RUNBOOKS.md && grep -q 'Google Business Profile' docs/RUNBOOKS.md",
+    "cmd": "node -e \"const t=require('fs').readFileSync('docs/RUNBOOKS.md','utf8');process.exit(t.includes('Search Console')&&t.includes('Google Business Profile')?0:1)\"",
     "note": "Passes once the runbook section exists."
   },
   "wave": "W7"
