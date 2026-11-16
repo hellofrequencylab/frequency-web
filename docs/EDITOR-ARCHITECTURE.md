@@ -85,6 +85,10 @@ does for every re-measurement; treat this line as current.
 **Folded 2026-11-16 (PROG-E2B).** The Space profile row above is history: its catalog file is deleted and
 its sections are a view of `ENTITY_BLOCKS` (`lib/entity-blocks/space-profile.ts`). Four systems remain.
 
+**Folded 2026-11-16 (PROG-E2C).** The Spotlight row above is history too: its kit is
+`lib/entity-blocks/spotlight.ts`, beside the registry, and each of its nine types is held to a registry row a
+member may hold. Three systems remain.
+
 ⚠️ **"Live importers" counts non-test files importing the catalog's own module**, and two rows are
 approximate: `lib/widgets/modules` has **5**, and the Puck row depends what you count — **15** files
 reference `ComponentConfig`, **49** import from `lib/page-editor/types`. Treat the column as
@@ -611,6 +615,17 @@ Space profile catalog. A system leaves the count when its entry file is deleted,
 profile sections are derived from `ENTITY_BLOCKS` in `lib/entity-blocks/space-profile.ts`, with stored
 ids and output unchanged. Its renderer map in `space-profile-modules.tsx` is still a second map.
 Remaining, in order: Spotlight, Layout modules, Puck.
+
+**Second fold, 2026-11-16 (PROG-E2C): 4 to 3.** `lib/spotlight/blocks/schema.ts` is now
+`lib/entity-blocks/spotlight.ts`. It keeps only what the registry does not hold: each block's stored shape and
+the validator's limits. Goldens (`lib/entity-blocks/spotlight.golden.test.tsx`), written against the old file
+first, freeze the limits, the validated layout and the markup of all nine types, and hold every type to a
+registry row a member may hold. The renderer and validator still switch on the nine types themselves.
+
+**Closed at 2, 2026-11-16 (ADR-1955).** Layout modules (`lib/widgets/modules.ts`) is the page Apps catalog,
+a registered menu catalog, not a block system: it leaves the manifest and no file moves. The E2 target is
+**2**: the entity-block registry and the website builder's Puck blocks (314 blocks, about 33 matching a
+registry row). The full Puck merge is not scheduled. PROG-E2 is closed.
 
 ### 7.4 Equivalence harnesses
 
