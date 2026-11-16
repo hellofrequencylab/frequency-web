@@ -61,7 +61,6 @@ import { ObserveProvider } from '@/components/analytics/observe-provider'
 import { GaConsentGate } from '@/components/analytics/ga-consent-gate'
 import { GaStaffOptOut } from '@/components/analytics/ga-staff-optout'
 import { hasConsent } from '@/lib/consent/consent'
-import { getSearchIndex } from '@/lib/help/content'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
 import { TimezoneSync } from '@/components/layout/timezone-sync'
 import { SupportLauncher } from '@/components/support/support-launcher'
@@ -453,9 +452,9 @@ export default async function MainLayout({
     NAV_AREAS.map((a) => [a.key, a.surface ? accessTo(a.surface as Surface, navHats) : 'full']),
   )
 
-  // The Vera launcher inputs (help index + upsell tease gate) are OVERLAY chrome — they feed
-  // neither a redirect nor the theme — so their reads are pushed into VeraLauncherSlot below and
-  // stream in without blocking the shell's first byte (PAGE-FRAMEWORK §5).
+  // The Vera launcher input (the upsell tease gate) is OVERLAY chrome — it feeds
+  // neither a redirect nor the theme — so its read is pushed into VeraLauncherSlot below and
+  // streams in without blocking the shell's first byte (PAGE-FRAMEWORK §5).
   //
   // ONE ONBOARDING ENGINE (LIVE-240). The shell used to mount two more: the chores / Founder's
   // First Week coach (CoachOverlaySlot, gated `next_steps_enabled`) and the deterministic
@@ -572,8 +571,8 @@ export default async function MainLayout({
       {/* One-time browser→home_timezone sync so the practice "day" resolves in the
           member's own tz server-side (their Log Practice buttons reset at THEIR midnight). */}
       <TimezoneSync />
-      {/* Vera launcher — its help index (parsed Markdown, now React-cached) + the upsell tease
-          gate resolve in their own Suspense slot, so they never block the shell's first byte. */}
+      {/* Vera launcher — its upsell tease gate resolves in its own Suspense slot, so it never
+          blocks the shell's first byte. The help search index is a static file it fetches itself. */}
       <Suspense fallback={null}>
         <VeraLauncherSlot />
       </Suspense>
@@ -698,13 +697,11 @@ export default async function MainLayout({
 // here (under a <Suspense fallback={null}> in the shell) instead of blocking the shell's first
 // byte. Behavior is identical to the prior inline derivations; only the timing changes.
 
-// Vera's launcher inputs. getSearchIndex parses the help-center Markdown (now React-cached, so
-// once per request) and resolvePersonalTeaseGate reads the (dormant-until-billing) upsell gate.
+// Vera's launcher input. resolvePersonalTeaseGate reads the (dormant-until-billing) upsell gate.
+// The help search index is no longer built here: the launcher fetches /api/help/search-index, a
+// static file built with the deploy (HYG-245), so no member page carries the help Markdown.
 async function VeraLauncherSlot() {
-  const [index, veraTease] = await Promise.all([
-    getSearchIndex(),
-    resolvePersonalTeaseGate('vera_unlimited'),
-  ])
-  return <VeraLauncher index={index} veraTease={veraTease} />
+  const veraTease = await resolvePersonalTeaseGate('vera_unlimited')
+  return <VeraLauncher veraTease={veraTease} />
 }
 

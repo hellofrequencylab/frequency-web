@@ -3607,6 +3607,110 @@
         "Real local service, anon and authenticated Quest support API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5071,
+      "expiresAt": "2026-11-22T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346081000_hunt_partner_state.sql",
+          "sha256": "7898f99488d3cf955a9fd1b62c486f50e17f0a07c3557d3f535616818abd868d"
+        },
+        {
+          "file": "supabase/migrations/20270346082000_hunt_teams_editions.sql",
+          "sha256": "34ed937c2362c974aeb037d8bb15861a0d1309a666140e45b8ad9e27552ba02e"
+        },
+        {
+          "file": "supabase/migrations/20270346083000_hunt_pass_snapshot.sql",
+          "sha256": "061fed00ecc615178dfe9efd2b1a4e1e3eae08d15ba0ad512a99f7f15c5a5767"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "149efa036bb0260aa8b4d18957f2d66848fb1474e3e1e1533806cfa373cd74e5",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "112370af6dc0524ae179d99855046c5375e05ecde06ac4713f127f520fe30834",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "7f063b9168324d0e4d224beaaa5426725ec0322af039bfb7ddd0009531e72da3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346081000_hunt_partner_state.sql",
+          "status": "added",
+          "sha256": "7898f99488d3cf955a9fd1b62c486f50e17f0a07c3557d3f535616818abd868d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346082000_hunt_teams_editions.sql",
+          "status": "added",
+          "sha256": "34ed937c2362c974aeb037d8bb15861a0d1309a666140e45b8ad9e27552ba02e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346083000_hunt_pass_snapshot.sql",
+          "status": "added",
+          "sha256": "061fed00ecc615178dfe9efd2b1a4e1e3eae08d15ba0ad512a99f7f15c5a5767",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunt_editions.test.sql",
+          "status": "added",
+          "sha256": "10e9b7b9124ccfa12baefe77e46f63b8b0895d0e63da940243de75e9f8c24f93",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunt_partner_state.test.sql",
+          "status": "added",
+          "sha256": "92bd422e785a9a117099927e55aadcb13e55bf9be235dd4c4486f6fc960b62c5",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunt_pass_snapshot.test.sql",
+          "status": "added",
+          "sha256": "19657ad7d2d580e1faffa0c2d6702088184d36e5c1095e73c969cceb52426745",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hunt_teams.test.sql",
+          "status": "added",
+          "sha256": "19d5fd700c6369258eb58c3876349cf92b3abf8fbc84a07fd8c3246eebf51793",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated growth API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated room API acceptance",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Real local service, anon and authenticated calendar suite API acceptance",
+        "Real local service, anon and authenticated analytics experiment API acceptance",
+        "Real local service, anon and authenticated growth API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }

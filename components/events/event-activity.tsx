@@ -15,6 +15,7 @@ import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { safeImageSrc, safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -371,30 +372,24 @@ export function EventActivity({
               {/* Image + GIF — for a comment only; a Dispatch is a text announcement. */}
               {!asDispatch && (
                 <>
-                  <button
-                    type="button"
+                  <IconButton
+                    size="xs"
+                    variant={imageFile ? 'soft' : 'plain'}
+                    label="Attach image"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={pending}
-                    aria-label="Attach image"
-                    className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
-                      imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                    }`}
                   >
                     <ImagePlus className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
+                  </IconButton>
+                  <IconButton
+                    size="xs"
+                    variant={gifUrl || showGifInput ? 'soft' : 'plain'}
+                    label="Add a GIF"
                     onClick={() => setShowGifInput((v) => !v)}
                     disabled={pending}
-                    aria-label="Add a GIF"
-                    className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
-                      gifUrl || showGifInput
-                        ? 'bg-primary-bg text-primary-strong'
-                        : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                    }`}
                   >
                     <Film className="h-4 w-4" />
-                  </button>
+                  </IconButton>
                 </>
               )}
               {/* Host/cohost: turn this post into an event announcement (Dispatch). Turning it on

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canvasTree, dragSpacing, moveInTree, SPACING_SCALE, spacingStepOf, spacingWord, stepSlot, stepSpacing, treeLayers, withSpacing, type LayerTree } from './canvas-tree'
+import { canvasTree, dragSpacing, moveInTree, SPACING_SCALE, spacingStepOf, spacingWord, stepSlot, stepSpacing, treeLayers, undoChange, undoWords, UNDO_ADD, withSpacing, type LayerTree } from './canvas-tree'
 import { sanitizeBlockStyle } from '@/lib/entity-blocks/block-content'
 import { placeNode } from '@/lib/entity-blocks/node-ops'
 import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
@@ -115,5 +115,27 @@ describe('spacing is a named step, never a length', () => {
     expect(spacingWord('mt', 'default')).toBe('Default')
     expect(spacingWord('pad', 'default')).toBe('None')
     expect(spacingWord('mb', 'xl')).toBe('Extra large')
+  })
+})
+
+// PROG-E6C: each change to the page's shape has an opposite, worked out from the page before it is sent.
+describe('undoChange', () => {
+  const tree: LayerTree = [{ id: 'r1', label: 'Row 1', columns: [[{ id: 'a', label: 'A' }, { id: 'b', label: 'B', hidden: true }]] }]
+  it.each([
+    [{ kind: 'move', to: { rowId: 'r1', col: 0, index: 0 } }, 'b', { kind: 'move', to: { rowId: 'r1', col: 0, index: 1 } }],
+    [{ kind: 'spacing', edge: 'mb', step: 'xl' }, 'a', { kind: 'spacing', edge: 'mb', step: 'sm' }],
+    [{ kind: 'hide', hidden: false }, 'b', { kind: 'hide', hidden: true }],
+    [{ kind: 'remove', keep: true }, 'a', { kind: 'restore', to: { rowId: 'r1', col: 0, index: 0 } }],
+    [{ kind: 'restore', to: { rowId: 'r1', col: 0, index: 0 } }, 'z', { kind: 'remove', keep: true }],
+    [{ kind: 'remove', keep: false }, 'a', null],
+    [{ kind: 'duplicate' }, 'a', null],
+    [{ kind: 'insert', source: 'preset', id: 'welcome' }, 'a', null],
+  ] as const)('undoes %j', (change, nid, back) => {
+    expect(undoChange(tree, nid, change, { style: { mb: 'sm' }, hidden: nid === 'b' })).toEqual(back)
+  })
+  it('names what Undo takes back', () => {
+    expect(['move', 'spacing'].map((kind) => undoWords({ kind } as never))).toEqual(['Undo move', 'Undo spacing'])
+    expect(undoWords(UNDO_ADD)).toBe('Undo add')
+    expect(undoWords({ kind: 'restore', to: { rowId: 'r1', col: 0, index: 0 } })).toBe('Undo remove')
   })
 })

@@ -112,7 +112,7 @@ export interface NodeLayout {
 // be larger than a parsed one. MAX_BENCH is new: the bench was derived, so it never needed a cap.
 const MAX_ROWS = 24
 const MAX_STACK = 12
-const MAX_BENCH = 48
+export const MAX_BENCH = 48
 const VALID_COLUMNS: ReadonlySet<number> = new Set([1, 2, 3, 4])
 const ROW_ID_RE = /^r[0-9a-z]+$/i
 
