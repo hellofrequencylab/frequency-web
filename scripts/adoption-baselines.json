@@ -477,14 +477,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 47,
+      "baseline": 46,
       "frozen": {
-        "at": "2026-11-03",
-        "value": 47,
-        "direction": "raised",
+        "at": "2026-11-16",
+        "value": 46,
+        "direction": "lowered",
         "basis": "fa00e74e05ee",
-        "reason": "Create a Space v3 hero builder and Services kit CSS added literal shadows; counter re-frozen to the measured count",
-        "from": 38
+        "reason": "SCAN-1133 slice 11: the hand-rolled email preference switch knobs (with their literal shadow) are replaced by the kit Switch",
+        "from": 47
       },
       "history": [
         {
@@ -584,6 +584,13 @@
           "to": 47,
           "direction": "raised",
           "reason": "Create a Space v3 hero builder and Services kit CSS added literal shadows; counter re-frozen to the measured count"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 47,
+          "to": 46,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 11: the hand-rolled email preference switch knobs (with their literal shadow) are replaced by the kit Switch"
         }
       ]
     },
@@ -765,14 +772,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 51,
+      "baseline": 48,
       "frozen": {
         "at": "2026-11-16",
-        "value": 51,
+        "value": 48,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice 10: IconButton gains size xs and variant soft, Switch gains size xs; composer tools, emoji trigger, event attach and GIF, listing Q&A attach move to IconButton xs, field-controls Toggle moves to Switch xs",
-        "from": 57
+        "reason": "SCAN-1133 slice 11: the two email preference toggles (unsubscribe and manage-emails) move to Switch and the Space reviews sort moves to SegmentedControl",
+        "from": 51
       },
       "history": [
         {
@@ -1082,6 +1089,13 @@
           "to": 51,
           "direction": "lowered",
           "reason": "SCAN-1133 slice 10: IconButton gains size xs and variant soft, Switch gains size xs; composer tools, emoji trigger, event attach and GIF, listing Q&A attach move to IconButton xs, field-controls Toggle moves to Switch xs"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 51,
+          "to": 48,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 11: the two email preference toggles (unsubscribe and manage-emails) move to Switch and the Space reviews sort moves to SegmentedControl"
         }
       ]
     },
@@ -1910,7 +1924,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 64,
+      "baseline": 58,
       "history": [
         {
           "at": "2026-08-05",
@@ -2023,15 +2037,22 @@
           "to": 64,
           "direction": "lowered",
           "reason": "SCAN-1242: onboarding display name and handle render through the kit Input (66 to 64)"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 64,
+          "to": 58,
+          "direction": "lowered",
+          "reason": "SCAN-1242 launch slice: the six text fields in the join induction (both email captures, first and last name, handle, city) render through the kit Input. Inside the site kit on the stage surface the members .input rule is inert, so the live dress is unchanged; 64 to 58"
         }
       ],
       "frozen": {
         "at": "2026-11-16",
-        "value": 64,
+        "value": 58,
         "direction": "lowered",
         "basis": "a76a8556a0ed",
-        "reason": "SCAN-1242: onboarding display name and handle render through the kit Input (66 to 64)",
-        "from": 66
+        "reason": "SCAN-1242 launch slice: the six text fields in the join induction (both email captures, first and last name, handle, city) render through the kit Input. Inside the site kit on the stage surface the members .input rule is inert, so the live dress is unchanged; 64 to 58",
+        "from": 64
       }
     },
     {

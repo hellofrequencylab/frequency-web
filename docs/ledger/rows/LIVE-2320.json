@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2320",
+  "title": "The Finish setup pill shows in the Space console header (Manage, Marketing, Offerings), not only on member pages",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/admin/space-console.tsx",
+    "ref": "Toni House of Fates QA audit 2026-11-16 (project thread), item 23"
+  },
+  "detail": "EVIDENCE: the Finish setup / Your launch pill (components/frequency/members/shell/launch-box.tsx) was mounted only in the members header (header.tsx, fed by members-shell.tsx loadLaunchBox()). On a console route that header steps aside (members-shell.css [data-console]), and the Space console wears its own shell (components/frequency/admin/admin-shell.tsx via space-console.tsx, mounted by the /manage and /marketing layouts), so an owner working in Manage, Marketing or Offerings lost the pill and her setup list.\n\nCLOSED 2026-11-16: FrequencySpaceConsole passes the same loader (launchSystemEnabled() ? loadLaunchBox() : undefined) to AdminShell, which draws it left of the avatar in its top bar through a small client island (components/frequency/admin/console-launch.tsx) that reuses LaunchPill and LaunchSheet unchanged. The sheet opens under the pill, closes on Escape, an outside click or a route change, and carries its own id so it never collides with the hidden members sheet. Nothing new is reachable from the members shell: the island is imported only by the console shell. Render test: components/frequency/admin/console-launch.test.tsx.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2320.mjs",
+    "note": "Fails on main: the Space console passes no launch box to its shell and its top bar draws no pill. Passes once the console reuses loadLaunchBox and the members LaunchPill in its top bar."
+  },
+  "wave": "W7",
+  "closed": "2026-11-16"
+}

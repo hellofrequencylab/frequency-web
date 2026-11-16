@@ -45,6 +45,7 @@ import { WizardProgress } from '@/components/templates'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/field'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
 
@@ -988,7 +989,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                   <div className="flex w-full max-w-lg flex-col gap-3 sm:flex-row sm:items-start">
                     <div className="min-w-0 flex-1 text-left">
                       <label htmlFor="induction-email" className="sr-only">Your email</label>
-                      <input
+                      <Input
                         id="induction-email"
                         type="email"
                         value={email}
@@ -1132,7 +1133,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                         </button>
                       </legend>
                       <div className="flex gap-2">
-                        <input
+                        <Input
                           id="induction-name"
                           type="text"
                           value={firstName}
@@ -1153,7 +1154,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                         />
                         {/* Optional on purpose. A mononym is a real name, and `identityValid` only
                             needs the assembled display name to be non-empty. */}
-                        <input
+                        <Input
                           id="induction-last-name"
                           type="text"
                           value={lastName}
@@ -1181,7 +1182,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       <label htmlFor="induction-handle" className={fieldLabel}>Handle</label>
                       <div className="relative">
                         <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-body text-subtle" aria-hidden>@</span>
-                        <input
+                        <Input
                           id="induction-handle"
                           type="text"
                           value={handle}
@@ -1214,7 +1215,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                     <div>
                       <label htmlFor="induction-city" className={fieldLabel}>Your city</label>
                       <div className="relative">
-                        <input
+                        <Input
                           id="induction-city"
                           type="text"
                           role="combobox"
@@ -1348,7 +1349,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       You’re almost in. Sign in and everything you just set up is saved.
                     </p>
 
-                    <input
+                    <Input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
