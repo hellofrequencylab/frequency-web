@@ -29,3 +29,30 @@ The [build backlog](../BUILD-BACKLOG.json) is the status record. Use `pnpm ledge
 | New Hunts | `20270346031000_hunts_schema.sql`, `20270346032000_hunt_runs.sql`, `20270346036000_hunt_outbox.sql` and `20270346037000_hunt_claim_apply.sql`. | The [dated outbox checkpoint](https://github.com/hellofrequencylab/frequency-web/issues/4306#issuecomment-6770923613) observed migration `20270346036000` and its tables and lease function in Frequency Community. The [claim checkpoint](https://github.com/hellofrequencylab/frequency-web/issues/4306#issuecomment-6772601615) later observed `20270346037000` and `public.hunt_claim_apply`. No migration replay or claim was run for this pin. |
 
 FH-002 uses this baseline to reproduce interruption and retry outcomes in isolation. Keep production payment, signed-in check-in, device and field acceptance with their existing owners and gates.
+
+## Legacy seams in isolation
+
+Observed November 16, 2026 on main at `e2016697d3c000d0d9d39bf3aea9b8618d26aefe`. Use `pnpm ledger:view FH-002` and `pnpm ledger:view FH-002S` for status. One command runs all five seams and exits non-zero when a surviving record differs from the table:
+
+```
+node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/probes/hunts/legacy-seams.mjs
+```
+
+It runs the shipped orchestrators (`createCampaign`, `recordEngagementEvent`, `captureNode`, `recordLoyaltyVisit`, `applyClaim`, `grantReward`) against the in-memory fixture in `scripts/probes/hunts/legacy-seams-fixture.mjs`. No database, provider or network is used.
+
+| Seam | Injected condition | Records that survive | Adapter boundary |
+|---|---|---|---|
+| Duplicate QR membership | One code enrolled twice, then scanned twice | Two campaign code rows for three inputs, one progress credit per code, one reward grant and one Zap entry at completion | `qrscan:<code>:<profile>` idempotency key in the engagement ledger |
+| Lost post-capture side effect | The Zap award throws after the capture is written | The ledger row and the capture row. No Zap entry, and the retry answers `already_captured`, so the award is never replayed | Hunt credits leave through the durable outbox (`hunt_outbox`), not an inline award |
+| Scarcity, cap already reached | Two members scan a code whose cap is spent | The earlier capture only. Both are refused `capacity_reached`, no ledger row, no Zaps | `verifyCapture` count |
+| Scarcity, last unit | Two members scan together with one unit left | **Two** captures, two ledger rows and two Zap awards against a cap of one. A member arriving afterwards is refused | Legacy has none: `lib/engagement/verify.ts` counts and `lib/engagement/capture.ts` inserts later, with no lock or constraint between them. The Hunt boundary is `public.hunt_reward_grant` |
+| Existing Zap grant | A reward grant already exists when the scan completes the campaign | The original grant and its one Zap entry. Progress still moves | Unique `(rule_key, profile_id)` on `reward_grants` |
+| Already checked-in member | Same-day Regulars stamp, then fresh Hunt evidence twice | One stamp and one check-in award. One Hunt claim, replayed on the second call | `hunt_claim_apply` idempotency key and request hash, independent of the stamp |
+
+### What the scarcity result does and does not prove
+
+- **Proven in the fixture.** The legacy last-unit oversell follows from the order of calls the shipped code makes: a count, then an insert, under two different ledger keys. The fixture replays that order. Any database without a lock or a constraint on the cap gives the same answer, and [the cap migration](../../supabase/migrations/20260605150000_node_max_claims.sql) adds only the column.
+- **Proven in the fixture.** Given the answers `hunt_reward_grant` returns when its check and write are one step, the shipped caller `grantReward` leaves one grant record and tells the other player `sold_out` with the published terms. The fixture stands in for the row lock; it does not exercise it.
+- **Proven by pgTAP, sequentially.** [`supabase/tests/hunt_rewards.test.sql`](../../supabase/tests/hunt_rewards.test.sql) grants the last unit to the first qualifying player, answers the second `sold_out` with terms, keeps one grant and a count of one, and shows a direct write cannot push `granted_count` past `stock` (check constraint, `23514`).
+- **Not proven here.** No Postgres race was run. Two live sessions competing for the last reward unit are carried by the reward row lock (`select ... for update` in [the rewards migration](../../supabase/migrations/20270346042000_hunt_rewards.sql)); that test file's header records a by-hand two-session check and says one pgTAP session cannot repeat it. `hunt_claim_apply` has no capacity concept: it serialises one player's evidence, and scarcity belongs to the reward grant.
+- **Not proven here.** Nothing was observed on the production database, and no real capped code was scanned.
