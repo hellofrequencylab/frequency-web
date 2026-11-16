@@ -8,7 +8,7 @@
 // Default or Bold (ADR-1726, ADR-1748), and tips carry no platform fee, plus card processing (LIVE-913).
 // No em dashes (CONTENT-VOICE). PURE: no Supabase, no React, no Next.
 
-import { CATEGORY_LINE, FOUNDING_PLACE, OPENING_DATE_LABEL, SITE_NAME, SITE_TAGLINE } from '@/lib/site'
+import { CATEGORY_LINE, FOUNDING_CITIES, FOUNDING_PLACE, OPENING_DATE_LABEL, SITE_NAME, SITE_TAGLINE } from '@/lib/site'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { HOME_TZ } from '@/lib/time/zone'
 
@@ -63,6 +63,34 @@ export function quickAnswers(opts: {
 /** The answers as llms.txt-style lines: a `###` question, then the answer. */
 export function quickAnswerLines(answers: readonly QuickAnswer[]): string[] {
   return answers.flatMap((x) => [`### ${x.q}`, x.a, ''])
+}
+
+/** Local answers (SCAN-1223): the questions people type with a place name in them. Kept apart from
+ *  `quickAnswers` because the home page's visible Questions section renders that list one for one. Read by
+ *  the North County hub (visible FAQ and its FAQPage node), /llms.txt and /llms-full.txt, so the page and
+ *  both corpora say the same thing. Every answer is honest about the stage: Frequency opens on
+ *  OPENING_DATE_LABEL, and a group or event appears only when a host posts it. */
+export function localAnswers(opts: { abs: (path: string) => string }): QuickAnswer[] {
+  const { abs } = opts
+  const towns = FOUNDING_CITIES.join(', ')
+  return [
+    {
+      q: 'Where can I find community groups in North County San Diego?',
+      a: `${SITE_NAME} is where local groups (Circles) and their public Events are listed for ${FOUNDING_PLACE}, starting ${OPENING_DATE_LABEL}. The founding towns are ${towns}. Browse them on ${abs('/north-county-san-diego')}, or open What's happening (${abs('/discover/events')}) to see what hosts have posted.`,
+    },
+    {
+      q: 'Where can I find yoga, run clubs or movement groups in North County San Diego?',
+      a: `Open Circles (${abs('/discover/circles')}) and filter by Channel to find movement groups such as yoga, run clubs and walking groups in ${FOUNDING_PLACE}. A group shows up once a host starts it, and anyone can start one for free. If nothing meets near you yet, start the first.`,
+    },
+    {
+      q: 'What are things to do in Encinitas, Carlsbad and Oceanside?',
+      a: `What's happening (${abs('/discover/events')}) lists the public Events hosts post in Encinitas, Carlsbad, Oceanside and the other founding towns, each shown in local Pacific time. Each town has its own page: ${abs('/discover/cities/encinitas')}, ${abs('/discover/cities/carlsbad')} and ${abs('/discover/cities/oceanside')}.`,
+    },
+    {
+      q: 'What is a good app for finding local community groups in San Diego?',
+      a: `${SITE_NAME} is a community app built for in-person groups: a network of small local Circles, the Events they hold, and the Spaces (studios, cafes, shops, clubs and nonprofits) that host them. It is free to join, it opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}, and it is made to get people into the same room.`,
+    },
+  ]
 }
 
 /** The questions the home page shows and marks up (SCAN-1112). One list for the visible Questions section

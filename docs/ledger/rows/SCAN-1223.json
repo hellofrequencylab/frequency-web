@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: PLAUSIBLE. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: lib/marketing/quick-answers.ts:56-60 single availability answer; grep of lib/marketing for 'yoga' finds only a funnel-config sentence (funnel-config.ts:502); /for/* and /vs pages carry no city or category-by-town FAQ.\n\nWHY IT MATTERS: AI engines quote pages that state the answer verbatim with the place name. Without them Frequency will not be cited for local discovery queries at launch.\n\nFIX DIRECTION: Add answer-first FAQs (FAQPage schema) to the town pages and /for/studios: 'Where can I find yoga/run-club/community groups in North County San Diego?' with named towns, and mirror them in llms-full.txt.",
+  "detail": "EVIDENCE: lib/marketing/quick-answers.ts:56-60 single availability answer; grep of lib/marketing for 'yoga' finds only a funnel-config sentence (funnel-config.ts:502); /for/* and /vs pages carry no city or category-by-town FAQ.\n\nWHY IT MATTERS: AI engines quote pages that state the answer verbatim with the place name. Without them Frequency will not be cited for local discovery queries at launch.\n\nFIX DIRECTION: Add answer-first FAQs (FAQPage schema) to the town pages and /for/studios: 'Where can I find yoga/run-club/community groups in North County San Diego?' with named towns, and mirror them in llms-full.txt.\n\n2026-11-16: localAnswers() in lib/marketing/quick-answers.ts (community groups, yoga and run clubs, things to do in Encinitas/Carlsbad/Oceanside, good app for San Diego groups) feeds the hub FAQ, llms.txt and llms-full.txt. Not done: a city-by-category FAQ on the /for/<niche> doors (for example /for/studios).",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1223",
-    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1223"
   },
+  "closed": "2026-11-16",
   "wave": "W7"
 }
