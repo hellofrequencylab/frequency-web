@@ -14,6 +14,7 @@ import { isEndorsed } from '@/lib/season-ranks'
 import { ReactionBar, ReactionCounts, ReactionInlinePicker, usePostReactions, type ReactionRow } from './reaction-button'
 import type { CommentNode, CommentLeaf, CommentThread } from '@/lib/feed/comment-thread'
 import { Textarea } from '@/components/ui/field'
+import { IconButton } from '@/components/ui/icon-button'
 
 // ── The markdown body, loaded on demand ──────────────────────────────────────
 // `PostBody` pulls react-markdown and the remark pipeline behind it (~35-45 KB gz). THIS file is
@@ -232,14 +233,9 @@ function ReplyComposer({
         // nothing and keeps a long unbroken paste inside the card.
         className="min-w-0 flex-1 resize-none overflow-y-auto rounded-card px-3.5 text-meta leading-relaxed"
       />
-      <button
-        type="submit"
-        disabled={!value.trim() || disabled}
-        aria-label="Send comment"
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-pill bg-primary-bg text-primary-strong transition-colors hover:bg-primary/20 disabled:opacity-40"
-      >
+      <IconButton type="submit" variant="soft" label="Send comment" disabled={!value.trim() || disabled} className="shrink-0">
         {disabled ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-      </button>
+      </IconButton>
     </form>
   )
 }
