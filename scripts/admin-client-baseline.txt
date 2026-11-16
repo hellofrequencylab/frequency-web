@@ -1336,3 +1336,4 @@ app/(main)/admin/insights/experiment-actions.ts
 lib/analytics/experiment-runtime.ts
 lib/analytics/experiment-retention.ts
 lib/analytics/server-google-policy.ts
+lib/analytics/growth-read.ts
