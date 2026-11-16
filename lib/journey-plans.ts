@@ -21,7 +21,6 @@ import { acceptedCrossListingSubjects } from '@/lib/collective/cross-listing-sto
 // module that reaches this file now breaks the build instead of quietly shipping the database to a
 // phone. The pure `meeting` helpers live in lib/journeys/meeting.ts so a client CAN import them.
 import 'server-only'
-import { slugify } from '@/lib/utils'
 import { listReadFailClosed } from '@/lib/discover'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -179,22 +178,28 @@ const ITEM_COLS =
   // journey-view load. The item's own est_minutes is the source of truth for a step's time.
   'practice:practices(id, title, description, domain_id, cadence)'
 
-/** The url-safe ROOT of a title, before the uniqueness suffix. Split out of `slugWithSuffix` for
+/** The url-safe ROOT of a title, before the uniqueness suffix. Split out of `slugify` for
  *  LIVE-202: the re-mint gate below has to ask "is this slug still the untitled placeholder"
  *  and "does the new title yield a real root", and neither question can be asked of a function
  *  that appends randomness. */
 function slugRoot(title: string): string {
-  return slugify(title).slice(0, 48).replace(/-+$/, '') || 'journey'
+  return (
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48) || 'journey'
+  )
 }
 
 /** A url-safe slug from the title + a short random suffix (slugs are unique). */
-function slugWithSuffix(title: string): string {
+function slugify(title: string): string {
   return `${slugRoot(title)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 /** The title `app/(main)/journeys/create-actions.ts` stamps on a journey nobody has named yet
  *  (the no-template path), plus the slug shape `updatePlan`'s re-mint reads as "this URL was
- *  never chosen by anyone". `slugWithSuffix` appends `Math.random().toString(36).slice(2, 8)`, which is
+ *  never chosen by anyone". `slugify` appends `Math.random().toString(36).slice(2, 8)`, which is
  *  one to six base-36 characters, so the placeholder shape is the root plus that suffix — and
  *  nothing else, so `untitled-journey-recipes` (a real title) is never mistaken for one. */
 const PLACEHOLDER_JOURNEY_TITLE = 'Untitled journey'
@@ -424,7 +429,7 @@ export async function createPlan(input: {
   const { data } = await db()
     .from('journey_plans')
     .insert({
-      slug: slugWithSuffix(input.title),
+      slug: slugify(input.title),
       title: input.title.trim(),
       summary: input.summary?.trim() || null,
       emoji: input.emoji?.trim() || null,
@@ -691,7 +696,7 @@ export async function updatePlan(
   },
 ): Promise<JourneyWriteResult> {
   const update: Record<string, unknown> = {}
-  // 🔴 SLUG RE-MINT (LIVE-202, ported from the fix LIVE-201 shipped on practices). `slugWithSuffix` was
+  // 🔴 SLUG RE-MINT (LIVE-202, ported from the fix LIVE-201 shipped on practices). `slugify` was
   // called at CREATE, FORK and DUPLICATE and nowhere else, so a journey's public URL was frozen at
   // the moment it was created — and a journey is created BEFORE it is named: the no-template path
   // of app/(main)/journeys/create-actions.ts stamps the literal title 'Untitled journey', which
@@ -723,7 +728,7 @@ export async function updatePlan(
         .maybeSingle()
       const before = data as { slug: string | null; visibility: string | null } | null
       if (before?.visibility === 'private' && before.slug && PLACEHOLDER_JOURNEY_SLUG.test(before.slug)) {
-        update.slug = slugWithSuffix(nextTitle)
+        update.slug = slugify(nextTitle)
       }
     }
   }
@@ -1290,7 +1295,7 @@ export async function forkPlan(profileId: string, planId: string): Promise<Journ
   const { data: forkRow } = await client
     .from('journey_plans')
     .insert({
-      slug: slugWithSuffix(src.title),
+      slug: slugify(src.title),
       title: src.title,
       summary: src.summary,
       author_id: profileId,
@@ -1346,7 +1351,7 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
   const { data: dupRow } = await client
     .from('journey_plans')
     .insert({
-      slug: slugWithSuffix(src.title),
+      slug: slugify(src.title),
       title: `${src.title} (copy)`.slice(0, 120),
       summary: src.summary,
       intro: src.intro,

@@ -4,17 +4,16 @@
   "lane": "hygiene",
   "priority": "P2",
   "size": "S",
-  "status": "done",
+  "status": "open",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: lib/utils.ts:76 is the canonical slugify (NFKD, accent-stripping; its comment says the others delegate to it). Local re-implementations that do NOT: app/(main)/admin/library/collections-actions.ts:26, recraft-actions.ts:39, app/(main)/admin/qr/campaign-actions.ts:29, app/(main)/admin/walkthroughs/actions.ts:42, app/(main)/pages/sequences/builder-actions.ts:28, components/admin/theme-studio/theme-editor.tsx:38, lib/journey-plans.ts:196, lib/loom/cover-actions.ts:86 (no NFKD, so 'Café' becomes 'caf').\n\nWHY IT MATTERS: Accented names produce truncated or different slugs depending on which door created the record (QR campaign, walkthrough, journey plan, collection). Slugs are URLs, so this shows up as wrong or colliding links.\n\nFIX DIRECTION: Replace the 8 local copies with the import from @/lib/utils; add a lint/check that bans new `function slugify` outside lib/utils.ts.\n\nFIXED 2026-11-16: the eight local slugify copies now import slugify from @/lib/utils (each keeps only its length cap and fallback; lib/journey-plans.ts slugRoot delegates and its suffixed helper is renamed slugWithSuffix). lib/slug-parity.test.ts frozen list drops the eight rows and already fails on any new private copy.",
+  "detail": "EVIDENCE: lib/utils.ts:76 is the canonical slugify (NFKD, accent-stripping; its comment says the others delegate to it). Local re-implementations that do NOT: app/(main)/admin/library/collections-actions.ts:26, recraft-actions.ts:39, app/(main)/admin/qr/campaign-actions.ts:29, app/(main)/admin/walkthroughs/actions.ts:42, app/(main)/pages/sequences/builder-actions.ts:28, components/admin/theme-studio/theme-editor.tsx:38, lib/journey-plans.ts:196, lib/loom/cover-actions.ts:86 (no NFKD, so 'Café' becomes 'caf').\n\nWHY IT MATTERS: Accented names produce truncated or different slugs depending on which door created the record (QR campaign, walkthrough, journey plan, collection). Slugs are URLs, so this shows up as wrong or colliding links.\n\nFIX DIRECTION: Replace the 8 local copies with the import from @/lib/utils; add a lint/check that bans new `function slugify` outside lib/utils.ts.\n\nPARTIAL 2026-11-16 (row stays open): six of the eight local slugify copies now import slugify from @/lib/utils and keep only their length cap and fallback (collections-actions, recraft-actions, walkthroughs/actions, sequences/builder-actions, theme-editor, loom/cover-actions); lib/slug-parity.test.ts frozen list drops those six. NOT done: app/(main)/admin/qr/campaign-actions.ts and lib/journey-plans.ts keep their local copy. Two guards load those modules with a fixed import list and refuse a new dependency on @/lib/utils: the Hunts FH-002 fixture (scripts/probes/hunts/legacy-seam-evidence.mjs, campaign-actions) and the LIVE-765 probe (scripts/live-765-probe.mjs, journey-plans). Converting them means changing those guards, which is the owner's call, so this row's probe (at most one function slugify) stays red at three.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1215",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7",
-  "closed": "2026-11-16"
+  "wave": "W7"
 }

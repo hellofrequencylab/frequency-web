@@ -191,6 +191,7 @@ describe('4. the remaining private copies are a frozen list (fails on a new one 
     'app/(main)/admin/content/actions.ts',
     'app/(main)/admin/library/actions.ts',
     'app/(main)/admin/library/vera-actions.ts',
+    'app/(main)/admin/qr/campaign-actions.ts',
     'app/join/(induction)/induction.tsx',
     'components/studio/spark/draft/draft-store.ts',
     'components/studio/spark/spark-doors.tsx',
@@ -202,6 +203,7 @@ describe('4. the remaining private copies are a frozen list (fails on a new one 
     'lib/funnels/resolve.ts',
     'lib/importer/excerpt.ts',
     'lib/importer/materialize.ts',
+    'lib/journey-plans.ts',
     'lib/page-editor/loom-field-actions.ts',
     'lib/utils.ts',
   ].sort()
