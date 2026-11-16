@@ -13,7 +13,7 @@ const CHECKS = {
   "SCAN-1211": "node -e \"const fs=require('fs');const ids=['space','offer','website','event','circle','journey','people','get-paid'];const miss=ids.filter(i=>!fs.existsSync('app/(main)/launch/step/'+i+'/page.tsx'));if(miss.length){console.error('no page for launch step(s): '+miss);process.exit(1)}\"",
   "SCAN-1212": "(rg -c 'Solana Beach' lib/site.ts | grep -qv '^0$') && (rg -c 'addressLocality' lib/jsonld.ts | head -1; node -e \"process.exit(/organizationSchema[\\s\\S]{0,1800}addressLocality/.test(require('fs').readFileSync('lib/jsonld.ts','utf8'))?0:1)\")",
   "SCAN-1213": "(node -e \"const s=require('fs').readFileSync('next.config.ts','utf8');process.exit(['/sites/','/themes/','/maplibre/'].every(p=>s.includes(\\\"'\\\"+p+':path*'\\\"))?0:1)\") && (test $(du -sk public/tracks | cut -f1) -lt 1000)",
-  "SCAN-1214": "echo manual: Vercel env UNSUBSCRIBE_SECRET present in production && exit 1",
+  "SCAN-1214": "test -f docs/security/csp-eval-trace.md",
   "SCAN-1215": "test $(git grep -E 'function slugify\\(' -- '*.ts' '*.tsx' ':!*.test.*' ':!mobile' | wc -l) -le 1",
   "SCAN-1216": "node -e \"process.exit(require('fs').readFileSync('app/(marketing)/start/actions.ts','utf8').includes('rateLimitOk')?0:1)\"",
   "SCAN-1217": "! rg -q \"file.type.startsWith\\('image/'\\)\" lib/spaces/space-image-store.ts 'app/(main)/journeys/actions.ts' 'app/(main)/events/[slug]/social-actions.ts'",

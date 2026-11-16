@@ -9,7 +9,7 @@
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: lib/seo/frequency-pages.ts:52-56 title 'Frequency \u00b7 Local groups and events near you', description = SITE_DESCRIPTION (lib/site.ts:75-76: CATEGORY_LINE + PLAN_STORY, no place). FOUNDING_PLACE (lib/site.ts:311) is used only in Organization JSON-LD and llms.\n\nWHY IT MATTERS: 'near you' ranks for no one. A place name in the title/description is the cheapest local-relevance lift for brand-new-domain queries like 'community groups San Diego'.\n\nFIX DIRECTION: Put 'North County San Diego' in the home title and description (keep under 160 chars) and in the /the-community and /discover titles.",
+  "detail": "EVIDENCE: lib/seo/frequency-pages.ts:52-56 title 'Frequency \u00b7 Local groups and events near you', description = SITE_DESCRIPTION (lib/site.ts:75-76: CATEGORY_LINE + PLAN_STORY, no place). FOUNDING_PLACE (lib/site.ts:311) is used only in Organization JSON-LD and llms.\n\nWHY IT MATTERS: 'near you' ranks for no one. A place name in the title/description is the cheapest local-relevance lift for brand-new-domain queries like 'community groups San Diego'.\n\nFIX DIRECTION: Put 'North County San Diego' in the home title and description (keep under 160 chars) and in the /the-community and /discover titles.\n\nOWNER NOTE: the title wording was an owner ruling on 2026-10-19 (SCAN-1017). Ask Daniel (multiple choice) before changing the <title>; the meta description and an on-page line can name North County now.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1206",
