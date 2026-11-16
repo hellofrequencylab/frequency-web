@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2319",
+  "title": "An event created from a Space calendar returns to that calendar once published, not to the main Events page",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/events/new/event-form.tsx",
+    "ref": "Toni House of Fates QA audit 2026-11-16 (project thread), item 29"
+  },
+  "detail": "EVIDENCE: after a create, app/(main)/events/new/event-form.tsx always did router.push(`/events/${slug}`). A host who started from her Space calendar (the Calendar tab or the calendar console) published and landed on the main Events side, away from the calendar she was filling in.\n\nCLOSED 2026-11-16: the Space calendar create doors now carry ?return=<the calendar they sit on>: the calendar console's new-event link (settings/calendar/page.tsx), the Go live door (lib/calendar/stage-timeline.ts productionDoorHref, fed from the calendar suite's context and the Calendar tab's StaffCalendar) and the Plan board's event door (lib/calendar/plans.ts). /events/new reads ?return= through lib/events/return-path.ts safeReturnPath, which lets only a same-origin relative path under /spaces/ through (no scheme, no //host, no backslash, no dot segments; unit-tested), and passes it through EventSpark to EventForm. After a successful CREATE the form re-checks it and pushes it; an edit, or a create with no valid return path, keeps the old road to the new event's page. The wizard (Vera) path still goes to the draft, unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2319.mjs",
+    "note": "Fails on main: there is no return-path validator, the form always pushes /events/<slug>, and no Space calendar create door carries a return path. Passes once all are in source."
+  },
+  "wave": "W7",
+  "closed": "2026-11-16"
+}
