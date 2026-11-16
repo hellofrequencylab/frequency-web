@@ -1,8 +1,8 @@
 // PROG-E0B: the bundle-byte instrument reads a built artifact and tells a leak from a clean build. This probe builds two
 // small `.next` trees on disk and runs the instrument's own reader and verdict over them: a public route that names a chunk
 // carrying yjs must be reported by route and chunk, and the same tree without that reference must pass with the editor
-// route's bytes counted. It also holds the wiring: runnable on demand, in postbuild as advisory only (never --strict), and
-// each fingerprint a real literal in the installed package.
+// route's bytes counted. It also holds the wiring: runnable on demand, in postbuild (blocking since PROG-E0C, whose probe
+// holds that half), and each fingerprint a real literal in the installed package.
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -53,7 +53,8 @@ const scripts = JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts
 if (!/check-editor-bundle-bytes\.mjs/.test(scripts['check:editor-bundle-bytes'] ?? '')) bad.push('pnpm check:editor-bundle-bytes must run the instrument')
 const step = /check-editor-bundle-bytes\.mjs([^&;)]*)/.exec(scripts.postbuild ?? '')
 if (!step) bad.push('the instrument must run in postbuild, the only place a real artifact exists')
-else if (/--strict/.test(step[1]) || !/\|\|\s*true/.test(step[1])) bad.push('postbuild must run it advisory (no --strict, and unable to fail the build) until it has read one real artifact')
+// This clause required the advisory spelling (`|| true`) until the instrument had read one real artifact. It has
+// (production build of main, 2026-11-16), and PROG-E0C armed it; the blocking wiring is held by PROG-E0C's probe.
 if (!fs.existsSync('scripts/check-editor-bundle-bytes.test.ts')) bad.push('the fixture test must exist')
 
 if (bad.length) { console.error(bad.join('\n')); process.exit(1) }

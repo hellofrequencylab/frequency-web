@@ -16,6 +16,7 @@ import { aiEnabled } from '@/lib/ai/client'
 
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
+import { lenientList, rowsOrNone, textOrEmpty, validateModelValue, z } from '@/lib/ai/schema'
 import { coerceEventExtraction } from '@/lib/events/normalize'
 import type { FieldConfidence } from '@/lib/events/types'
 import type { HousingType, RoomType } from '@/lib/listings/types'
@@ -31,9 +32,9 @@ const BATCH_SIZE = 28
 const MAX_MESSAGES = 700 // per run; beyond this the preview is marked truncated
 const MAX_TOKENS = 4096
 
-const HOUSING_TYPES: readonly HousingType[] = ['rental', 'roommate', 'sublet']
-const ROOM_TYPES: readonly RoomType[] = ['private_room', 'shared_room', 'entire_place']
-const CATEGORIES: readonly ImportCategory[] = ['event', 'housing', 'roommate', 'other']
+const HOUSING_TYPES = ['rental', 'roommate', 'sublet'] as const satisfies readonly HousingType[]
+const ROOM_TYPES = ['private_room', 'shared_room', 'entire_place'] as const satisfies readonly RoomType[]
+const CATEGORIES = ['event', 'housing', 'roommate', 'other'] as const satisfies readonly ImportCategory[]
 
 const EXTRACTION_TOOL: Anthropic.Tool = {
   name: TOOL_NAME,
@@ -126,91 +127,90 @@ You will get a batch of messages, each prefixed with a [ref] number and the send
 - housing.rentCents: whole cents (120000 for $1200/mo). roomType only when clear.
 - Leave any field blank when the message does not give it. Skip a message entirely when it is just 'other' and not worth posting (do not emit an 'other' item for every reply).`
 
-// ── Coercion (never trust raw model JSON) ───────────────────────────────────────────
+// ── Reading the reply (never trust raw model JSON) ──────────────────────────────────
+// The save_items reply is read through one schema (PROG-E8C, the ADR-1287 pattern, lib/ai/schema.ts). A field of the
+// wrong type falls to its safe reading on its own, a row that is not an object is dropped, and a reply that is not
+// the declared shape yields no items.
 
-function str(v: unknown, max: number): string {
-  return typeof v === 'string' ? v.trim().slice(0, max) : ''
-}
+/** A whole number above zero, or null. */
+const POSITIVE_INT = z
+  .number()
+  .transform((n) => (n > 0 ? Math.round(n) : null))
+  .nullable()
+  .catch(null)
 
-function posInt(v: unknown): number | null {
-  const n = typeof v === 'number' ? v : NaN
-  return Number.isFinite(n) && n > 0 ? Math.round(n) : null
-}
+/** The housing half of an item as sent. A type outside its closed set reads as "not stated". */
+const HOUSING_REPLY = z.object({
+  title: textOrEmpty(160),
+  description: textOrEmpty(1200),
+  listingType: textOrEmpty(20).pipe(z.enum(HOUSING_TYPES)).nullable().catch(null),
+  roomType: textOrEmpty(20).pipe(z.enum(ROOM_TYPES)).nullable().catch(null),
+  rentCents: POSITIVE_INT,
+  bedrooms: POSITIVE_INT,
+  neighborhood: textOrEmpty(120),
+  city: textOrEmpty(120),
+  availableFrom: textOrEmpty(40),
+})
 
-function coerceCategory(v: unknown): ImportCategory {
-  return CATEGORIES.includes(v as ImportCategory) ? (v as ImportCategory) : 'other'
-}
+/** One item as sent. `event` is handed whole to the events reader, which has its own schema. An unknown category is
+ *  'other'; confidence is 'high' unless the model says 'low'; refs that are not numbers are dropped. */
+const ITEM_REPLY = z.object({
+  category: z.enum(CATEGORIES).catch('other'),
+  refs: rowsOrNone(z.number().transform((n) => Math.round(n)).pipe(z.number().positive())),
+  confidence: z.enum(['high', 'low'] as const satisfies readonly FieldConfidence[]).catch('high'),
+  note: textOrEmpty(240),
+  event: z.unknown().optional(),
+  housing: HOUSING_REPLY.nullable().catch(null),
+})
 
-function coerceConfidence(v: unknown): FieldConfidence {
-  return v === 'low' ? 'low' : 'high'
-}
+const ITEMS_REPLY = z.object({ items: lenientList(ITEM_REPLY) })
 
-function coerceRefs(v: unknown): number[] {
-  if (!Array.isArray(v)) return []
-  const out: number[] = []
-  for (const r of v) {
-    const n = typeof r === 'number' ? Math.round(r) : NaN
-    if (Number.isFinite(n) && n > 0 && !out.includes(n)) out.push(n)
-  }
-  return out.slice(0, 24)
-}
-
-/** Raw housing JSON → a safe HousingExtract, with the description redacted and any
+/** A parsed housing reply → a safe HousingExtract, with the description redacted and any
  *  inline contacts lifted out (kept off public copy until the listing is claimed). */
-function coerceHousing(raw: unknown, fallbackType: ImportCategory): HousingExtract | undefined {
-  if (!raw || typeof raw !== 'object') {
-    // A roommate item with no housing object still deserves a minimal shell so the
-    // operator sees it; an event/other does not.
-    if (fallbackType !== 'roommate') return undefined
-    raw = {}
-  }
-  const r = raw as Record<string, unknown>
-  const { redacted, contacts } = redactContacts(str(r.description, 1200))
-  const typeRaw = str(r.listingType, 20)
-  const listingType: HousingType = HOUSING_TYPES.includes(typeRaw as HousingType)
-    ? (typeRaw as HousingType)
-    : fallbackType === 'roommate'
-      ? 'roommate'
-      : 'rental'
-  const roomTypeRaw = str(r.roomType, 20)
-  const roomType: RoomType | null = ROOM_TYPES.includes(roomTypeRaw as RoomType)
-    ? (roomTypeRaw as RoomType)
-    : null
+function toHousing(r: z.infer<typeof HOUSING_REPLY>, fallbackType: ImportCategory): HousingExtract {
+  const { redacted, contacts } = redactContacts(r.description)
   return {
-    title: str(r.title, 160),
+    title: r.title,
     description: redacted,
-    listingType,
-    roomType,
-    rentCents: posInt(r.rentCents),
-    bedrooms: posInt(r.bedrooms),
-    neighborhood: str(r.neighborhood, 120),
-    city: str(r.city, 120),
-    availableFrom: str(r.availableFrom, 40),
+    listingType: r.listingType ?? (fallbackType === 'roommate' ? 'roommate' : 'rental'),
+    roomType: r.roomType,
+    rentCents: r.rentCents,
+    bedrooms: r.bedrooms,
+    neighborhood: r.neighborhood,
+    city: r.city,
+    availableFrom: r.availableFrom,
     contacts,
   }
 }
 
-function coerceItem(raw: unknown): ClassifiedItem | null {
-  if (!raw || typeof raw !== 'object') return null
-  const r = raw as Record<string, unknown>
-  const category = coerceCategory(r.category)
-  const refs = coerceRefs(r.refs)
+/** A roommate item with no housing object still deserves a minimal shell so the operator sees it. */
+const NO_HOUSING = HOUSING_REPLY.parse({})
+
+function toItem(r: z.infer<typeof ITEM_REPLY>): ClassifiedItem | null {
   const item: ClassifiedItem = {
-    refs,
-    category,
-    confidence: coerceConfidence(r.confidence),
-    note: str(r.note, 240),
+    refs: [...new Set(r.refs)].slice(0, 24),
+    category: r.category,
+    confidence: r.confidence,
+    note: r.note,
     imageNames: [], // filled by the action from the parsed chat (lib/whatsapp/associate)
   }
-  if (category === 'event') {
+  if (r.category === 'event') {
     item.event = coerceEventExtraction(r.event)
     // Drop an event the model couldn't actually name (keeps junk out of the review).
     if (!item.event.title) return null
-  } else if (category === 'housing' || category === 'roommate') {
-    item.housing = coerceHousing(r.housing, category)
+  } else if (r.category === 'housing' || r.category === 'roommate') {
+    const housing = r.housing ?? (r.category === 'roommate' ? NO_HOUSING : null)
+    item.housing = housing ? toHousing(housing, r.category) : undefined
     if (!item.housing || (!item.housing.title && !item.housing.description)) return null
   }
   return item
+}
+
+/** Read one save_items reply into staged items. PURE + total: anything that is not the declared shape is []. */
+function readItems(raw: unknown): ClassifiedItem[] {
+  const res = validateModelValue(raw, ITEMS_REPLY)
+  if (!res.ok) return []
+  return res.data.items.map(toItem).filter((x): x is ClassifiedItem => x !== null)
 }
 
 // ── Batch runner ────────────────────────────────────────────────────────────────────
@@ -245,9 +245,7 @@ async function runBatch(
     const block = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
     )
-    const rawItems = (block?.input as { items?: unknown })?.items
-    if (!Array.isArray(rawItems)) return []
-    return rawItems.map(coerceItem).filter((x): x is ClassifiedItem => x !== null)
+    return readItems(block?.input)
   } catch {
     // One bad batch must not sink the whole run — skip it and keep going.
     return []

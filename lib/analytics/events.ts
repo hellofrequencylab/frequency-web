@@ -70,6 +70,13 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   { name: 'createspace.photos', category: 'lifecycle', description: 'A visitor finished the photos step (props.uploaded, props.kept_theme).', clientEmittable: false },
   { name: 'createspace.resume', category: 'lifecycle', description: 'A visitor picked a draft back up (props.source: local or email).', clientEmittable: false },
   { name: 'createspace.dock_click', category: 'lifecycle', description: 'A visitor used the sticky dock to get back to the builder.', clientEmittable: false },
+  // ── Frequency Hunts (FH-025). Server-only, and the only props are the closed dimensions lib/hunts/analytics.ts
+  // allows (reason_class, medium, cohort, assurance, hunt_id, replayed): never a location, a code or a contact.
+  { name: 'hunt.placement_scan', category: 'engagement', description: 'A printed or tapped Hunt placement was opened (props.medium).', clientEmittable: false },
+  { name: 'hunt.stop_claim', category: 'engagement', description: 'A player asked to confirm a stop (props.reason_class, props.assurance).', clientEmittable: false },
+  { name: 'hunt.staff_verify', category: 'engagement', description: 'A venue checked a player proof at the door (props.reason_class).', clientEmittable: false },
+  { name: 'hunt.reward_redeem', category: 'engagement', description: 'A venue handed over a Hunt reward (props.reason_class).', clientEmittable: false },
+  { name: 'hunt.reward_void', category: 'engagement', description: 'A venue cancelled a Hunt reward (props.reason_class).', clientEmittable: false },
   // ── Editor (PROG-E8B, EDITOR-ARCHITECTURE 8.1 item 8). Vera asks a block's owner reviewed questions and never
   // writes a word (ADR-1939 section 4). These two say what the owner did with one question: went to the field to
   // answer it, or put it away. Ids, the block type, a position and a count only: never the question's wording,

@@ -430,7 +430,8 @@ right now. A merge to `main` is a deploy.
   (`app/api/status/route.ts`).
 - **Sentry**, when armed, opens a new issue tagged with the release, which is the commit SHA.
 - **A `postbuild` gate failed the build:** `check:build-budget`, `check:og-trace`,
-  `check:cache-budget`, `check:shell-weight`, `check:build-fanout`, `check:notfound-routes`. The gate
+  `check:cache-budget`, `check:shell-weight`, `check:build-fanout`, `check:notfound-routes`,
+  `check:editor-bundle-bytes`. The gate
   prints the fan-out that tripped it. That build did not ship, which is the gate working.
 
 **What to open first.**
@@ -464,7 +465,7 @@ right now. A merge to `main` is a deploy.
 6. **If it was a size gate:** fix the fan-out the gate printed, never the budget (rule 2). **agent**
 
 **How you know it is over.** The production deployment is `READY`, `/api/status` `build.commit` is
-the SHA you expect, the Sentry group has stopped, the next real deploy prints all six gates green,
+the SHA you expect, the Sentry group has stopped, the next real deploy prints all seven gates green,
 and the cause is an ADR in [`DECISIONS.md`](DECISIONS.md) if it taught a rule, or a row if it did
 not.
 
@@ -928,6 +929,8 @@ Six switches (`lib/hunts/flags.ts`, all blank = dark, `1` / `true` / `on` = on):
 
 Gate to turn one on: every Hunt migration up to the rung is applied in Frequency Community (hunt_outbox for the worker, hunt_claim_apply for claims), the legacy check-in, reward and commerce paths show no change with all switches off, and the rung below has run clean. Order: enabled, claims, authoring, worker, rewards. Rollback is unsetting the switch: no data moves, claims already credited stay credited, and outbox rows wait for the worker to return.
 
+`HUNTS_GUEST_ANALYTICS_ENABLED` (FH-025, `lib/hunts/analytics.ts`, blank = off, needs `HUNTS_ENABLED`) lets a signed-out visitor's Hunt events leave for Google Analytics. Off, a guest's scan is counted in the first-party ledger only. A member's Hunt events are forwarded only with that member's recorded analytics consent, and a venue's staff events are never forwarded, whatever this switch says. Every Hunt event carries only the closed dimensions on the allowlist (reason class, medium, cohort, assurance, the Hunt id, replayed): no location, code, venue or contact. Gate to turn it on: the privacy owner has signed FH-023 and named guest forwarding in that sign-off, and the consent banner covers signed-out visitors in every region the Hunt runs. Rollback is unsetting it.
+
 ### Stripe and progressive-dinner pilot gate
 
 Use the [D7 dinner draft](hunts/PRODUCT-DRAFTS-D4-D7-D8.md), the [Experience Pass binding](hunts/EXPERIENCE-PASS-BINDING.md), [paid ticket authority](hunts/PAID-TICKET-AUTHORITY.md) and [refund and dispute policy](hunts/REFUNDS-AND-DISPUTES.md) to agree the pilot scope before enabling sales.
@@ -946,7 +949,7 @@ Keep FH-041 open until the pilot gate has named sign-offs and the parent probe p
 
 Gate to turn it on: migration 20270346039000 (`commerce_carts`) is applied in Frequency Community, a signed-in member can add a product, reload and see it saved, and a signed-out visitor is told to sign in rather than shown an error, and `/cart` lists the saved lines with today's price, lets the buyer change a quantity or remove a line, and says what is no longer for sale. Off, `/cart` answers 404. Turning this on only saves and shows lines. `/cart` lays the lines out by seller with a subtotal each and says what checkout will do before the buyer pays (`lib/commerce/cart-plan.ts`, which asks the same seams the checkout door asks): several sellers are paid in one go, an address is asked for on the secure payment page when something ships, and a cart the door would refuse (two currencies, Frequency Store items with another seller's, a contact-only seller) says why and shows no Check out control. A product with options offers Add to cart for the chosen option.
 
-`COMMERCE_CART_CHECKOUT_ENABLED` (blank by default, `lib/commerce/cart-checkout-flag.ts`) adds the Check out control to `/cart` and opens `startCartCheckoutAction`. It needs `COMMERCE_CART_ENABLED` too. The lines are priced and pruned from the live rows and paid through `createCommerceCheckout` unchanged, so single and multi-seller carts take the funds flow they already have; what was paid for leaves the cart when the order is confirmed paid (the `pending` to `paid` flip in `recordCommerceOrderFromSession`, so the webhook, the hosted return and the on-page settle all do it, once), and a line that is no longer for sale or was lowered to stock is saved that way the first time the buyer is told (`lib/commerce/cart-load.ts`); checkout refuses and asks the buyer to look again when that happens at pay time. Gate to turn it on: the cart switch has run for a day with no errors, a Stripe test-mode cart of two products from two sellers pays and appears in Orders as one split order, and a one-seller cart pays as a normal order. Off, no control renders and the action refuses without reading the cart. Turn it off by unsetting it: no data moves. Turn it off by unsetting it: no data moves.
+`COMMERCE_CART_CHECKOUT_ENABLED` (blank by default, `lib/commerce/cart-checkout-flag.ts`) adds the Check out control to `/cart` and opens `startCartCheckoutAction`. It needs `COMMERCE_CART_ENABLED` too. The lines are priced and pruned from the live rows and paid through `createCommerceCheckout` unchanged, so single and multi-seller carts take the funds flow they already have; the cart is emptied after the on-page payment settles, and a buyer who is sent to hosted checkout keeps it until they clear it. Gate to turn it on: the cart switch has run for a day with no errors, a Stripe test-mode cart of two products from two sellers pays and appears in Orders as one split order, and a one-seller cart pays as a normal order. Off, no control renders and the action refuses without reading the cart. Turn it off by unsetting it: no data moves. Turn it off by unsetting it: no data moves.
 
 ## Site token requests
 
@@ -964,7 +967,13 @@ Gate to turn it on: migration 20270346039000 (`commerce_carts`) is applied in Fr
 
 Gate to turn it on: two browsers signed in as owners of one Space both open the page builder; an edit in one appears in the other within a couple of seconds and neither page doubles its rows. A signed-out or non-owner session must be refused the channel (it fails closed). Turn it off by unsetting it: no data moves, the draft is still saved by the normal autosave.
 
-Editor bytes in the bundle: `check:editor-bundle-bytes` runs last in `postbuild` and prints one line per build saying whether any route outside `/pages/canvas` names a chunk that carries the CRDT runtime, with the byte counts. It is advisory and cannot fail a build. It has not read a real artifact yet, so treat its first lines as a reading to confirm, not a verdict. To make it blocking: confirm on one production build log that the editor route shows bytes and no other route is named, then change the pin at the bottom of `scripts/check-editor-bundle-bytes.test.ts` in the same change (PROG-E0).
+Editor bytes in the bundle: `check:editor-bundle-bytes` runs last in `postbuild` and fails the build when a route outside `/pages/canvas` names a chunk that carries the collaboration runtime. It was advisory until 2026-11-16 and was armed after the production build of `main` printed it green (PROG-E0C; the rule is DEPLOY-SAFETY.md rule 13). A failed build did not ship: the previous deployment keeps serving. Read the gate line in the build log, then:
+
+- **`❌ ... the CRDT runtime is in a chunk named by N route(s) outside the editor` (exit 1).** A real finding. The log lists each route and chunk. Find the import that pulled `yjs`, `y-prosemirror` or `lib/editor-crdt` into that route (`pnpm check:editor-crdt-importers` lists who may import them; the usual cause is a static import of an editor component from a shared layout, a barrel file or a member page). Move it behind the editor route or behind a dynamic `import()`, as `components/entity-blocks/editor-collab.tsx` does. If production is waiting, revert the PR first and fix after (section 6). **agent**
+- **`❌ ... COULD NOT LOOK` or `CRASHED` (exit 79).** The gate could not read the artifact. It is not a finding about the artifact and it is not a pass. The line names which: no route manifests, the runtime in no chunk, no manifest matching `EDITOR_ROUTES` (the canvas route moved: update `EDITOR_ROUTES` to the new path in the same change as the move), or chunk names that resolve to nothing on disk (a compiler upgrade changed the manifest shape: fix the reader in `scripts/check-editor-bundle-bytes.mjs` and add the new shape to its test). Revert the change that caused it, then repair the gate with a fixture of the new shape. **agent**
+- **A `⚠️` line under a green `✅`.** The build shipped. One manifest would not load, or the editor route names no carrier. Open a backlog row; do not ignore it twice.
+
+Never make it pass by adding a route to `EDITOR_ROUTES` that is not an editor, by re-adding `|| true` or `--warn-only` in `postbuild` (a test fails both), or by deleting a fingerprint. A member page that is not an editor does not pay for multiplayer.
 
 Known edges: a remote edit enters the editing tab's undo history; every open tab saves the same draft (idempotent); two tabs opening in the same instant may briefly seed twice and repair on the next edit.
 
@@ -1057,37 +1066,3 @@ The drain also recognizes already queued EMAIL-049 resource copies by their cano
 **Activation gate:** keep the variable blank until the owner approves requested-resource sending and exact-head checks/real preview verify default-off inline access, opted-in transactional enqueue, suppression/dedupe and off-to-enabled drain replay. Review the existing held resource backlog and link freshness before enabling; enabling allows due held copies to resume. Confirm deployed identity and configuration in both the public form runtime and queue worker before acceptance. Tests and fixture renders are not production sending approval.
 
 **Rollback:** blank the flag in both runtimes and redeploy/restart if required. New resource copies stop being queued; queued canonical resource copies defer without spending attempts. Keep the resource available inline. Do not cancel jobs or change unrelated email controls to perform this rollback. This cannot recall mail already accepted by the provider or stop an old worker before the new deployment takes over.
-
-## Nonce-based script policy
-
-Status is row SCAN-1243 in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`pnpm ledger:view SCAN-1243`). Design and the script inventory: [`security/csp-nonce.md`](security/csp-nonce.md). Code: `lib/security/csp-nonce.ts`, called from `proxy.ts`.
-
-Two on/off env switches, both blank by default, both read through `envFlag` (`1` / `true` / `on`). Blank, the site sends exactly the policy it sent before the switches existed. They only ever touch member-app pages (everything rendered under `app/(main)`: Feed, Circles, messages, settings, admin, a Space's manage pages). Marketing, discover, help, share pages and Space websites are static and are never touched.
-
-| Switch | What it does |
-|---|---|
-| `CSP_NONCE_REPORT_ONLY` | The test run. Member-app pages get the strict script policy as `Content-Security-Policy-Report-Only`, beside today's enforced policy. Nothing is blocked. Browsers report what the strict policy would have blocked. |
-| `CSP_NONCE_ENFORCE` | Member-app pages get the strict policy as `Content-Security-Policy`. Inline scripts without the page's nonce or a listed hash are blocked. Wins over the first switch. |
-
-**Start the test run.** Vercel, Project, Settings, Environment Variables: add `CSP_NONCE_REPORT_ONLY` = `1` for Production (and Preview if you want it there). Redeploy production: an env change only reaches a new deployment. Check it took: open `/feed` signed in, DevTools, Network, the document request, Response Headers. There are two policy headers: `content-security-policy` (unchanged) and `content-security-policy-report-only` with `'nonce-…' 'strict-dynamic'` in `script-src`. `/pricing` has only the first.
-
-**Read the test run.** Vercel runtime logs, query `csp.violation`. Each line has `policy`: `nonce` is the strict policy's report, `enforced` is today's. For `policy: nonce` lines read `directive`, `blocked`, `document`, `source` and `sample` (the first characters of a blocked inline script). What to expect:
-
-- `blocked: eval` and `blocked` on a `chrome-extension://` or `moz-extension://` address: browser extensions and audit tooling, already traced in [`security/csp-eval-trace.md`](security/csp-eval-trace.md). Not ours.
-- `blocked: https://vercel.live/...` on preview deployments only: the Vercel preview toolbar, which Vercel injects into the HTML without a nonce. Not present in production.
-- `blocked: inline` with a `sample` starting `(function(){try{` followed by `var ID=`: the analytics head script's hash did not match (see the warning in `lib/security/csp-nonce.ts`). This one must be fixed before enforcing, or member pages lose analytics.
-- `blocked: inline` on a `document` that is a not-found address under a member path (a mistyped `/feed/...`): the not-found page may be served from a prerendered copy with no nonce. Count them; see the open question in `security/csp-nonce.md`.
-- Anything else with `policy: nonce` from many different visitors is a real gap: a script the inventory missed. File it on SCAN-1243 with the `sample` and `document` before going further.
-
-**Activation gate for `CSP_NONCE_ENFORCE`.** All of these, in order:
-
-1. `CSP_NONCE_REPORT_ONLY` has been on in production for at least 7 days that include normal member traffic.
-2. Over those days there is no `policy: nonce` report with `blocked: inline` or a first-party `blocked` address, other than the expected lines above. The analytics-hash line and the not-found line are either absent or fixed.
-3. On a preview deployment with `CSP_NONCE_ENFORCE=1`, signed in, these work with a clean console: Feed loads and posts, a map opens (Nearby or an event), a Stripe checkout panel mounts its card field, the theme switch in Settings applies without a flash, the Space manage pages open, sign-out and sign-in complete.
-4. Daniel says go.
-
-Then set `CSP_NONCE_ENFORCE` = `1` for Production and redeploy. Leave `CSP_NONCE_REPORT_ONLY` as it is; enforce wins. Check `/feed` signed in: the `content-security-policy` header now carries the nonce. SCAN-1243 closes only after this step, and only for the member app: static pages keep `'unsafe-inline'` (see the design doc for why).
-
-**Rollback.** Blank `CSP_NONCE_ENFORCE` (or delete it) in Vercel and redeploy, or use Vercel's Instant Rollback to the deployment before the switch was set, which is faster. Member pages go back to today's policy on the next page load; nothing is stored, so there is nothing to clean up. To stop the test run as well, blank `CSP_NONCE_REPORT_ONLY` and redeploy. If member pages show a blank or frozen screen right after enforcing, roll back first and read `csp.violation` afterwards.
-
-**If `csp.nonce.failed` appears in the logs** (error level): the proxy could not build the policy and sent today's policy instead. Pages work; the strict policy is not being applied. Treat as a failed test run, not an outage.

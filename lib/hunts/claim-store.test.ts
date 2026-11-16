@@ -53,7 +53,7 @@ function scanFacts(missionKey = 'm1') {
   rows.hunts = { id: 'h-1', slug: 'north-county', status: 'live', current_version_id: 'v-1', revision: 1 }
   rows.hunt_versions = { id: 'v-1', trail_title: 'Trail', trail_hook: 'Explore' }
   rows.hunt_runs = { id: 'run-1', hunt_id: 'h-1', subject_profile_id: 'me', state: 'active' }
-  rows.hunt_mission_placements = [{ mission_key: missionKey }]
+  rows.hunt_mission_placements = [{ mission_key: missionKey, placement_id: 'pl-1', venue_space_id: null }]
   rows.hunt_missions = ['m1', 'm2'].map((key) => ({ mission_key: key, title: key, visible_body: null, locked_teaser: null, opens_at: null, closes_at: null }))
   rows.hunt_rule_groups = [
     { id: 'g1', target_mission_key: 'm2', target_finish: false, logic: 'all', min_count: null, group_key: null },
