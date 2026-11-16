@@ -906,6 +906,10 @@ jobs:
           # first navigation and there is nothing here to commit: see the message it printed. A
           # deliberate move of the whole set to another environment is a commit that deletes the
           # stamp, which is one visible line in a diff.
+          # A capture writes one PNG per render state. Where midnight-light came back byte-identical
+          # to dawn-light, the second copy is deleted and listed in shared-baselines.json instead
+          # (SCAN-1222); test/e2e/shared-baselines.test.ts fails a commit that skips this.
+          node scripts/dedupe-visual-baselines.mjs
           git add test/e2e/__screenshots__/ test/e2e/template-fingerprints.json
           if git diff --cached --quiet; then
             echo "No baseline changes to commit."

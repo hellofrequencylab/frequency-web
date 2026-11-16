@@ -1,6 +1,6 @@
 'use server'
 
-import { recordConfirmedRsvp } from '@/lib/analytics/rsvp-telemetry'
+import { scheduleConfirmedRsvp } from '@/lib/analytics/rsvp-telemetry'
 import { revalidatePath } from 'next/cache'
 import { approvalResetOnEdit } from '@/lib/collective/network-tools'
 import { clearEventDecisions } from '@/lib/collective/network-tools-store'
@@ -1164,10 +1164,11 @@ function rsvpWriteFailure(error: { message?: string } | null | undefined): Actio
 // their own event does count here — the reward paths exclude that for anti-farming reasons, which
 // is about payouts, not about whether an RSVP happened.
 //
-// FAIL-SAFE: `track()` already swallows its ledger write, and this is called un-awaited. An
+// FAIL-SAFE: `track()` already swallows its ledger write, and the work is registered with
+// `after()` (LIVE-2307), so it finishes inside the request without delaying the RSVP. An
 // analytics row never delays or breaks an RSVP.
 function recordRsvpConversion(eventId: string, profileId: string): void {
-  void recordConfirmedRsvp(eventId, profileId)
+  scheduleConfirmedRsvp(eventId, profileId)
 }
 
 // Does this event make people wait for the host? Reads `events.rsvp_requires_approval`
