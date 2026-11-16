@@ -114,6 +114,7 @@ export async function POST(request: Request, { params }: Context) {
   })
   const landing = new URL(`/play/${encodeURIComponent(placement.huntSlug)}`, origin)
   const result = outcome.ok ? outcome.result : null
-  landing.searchParams.set('claim', result === 'credited' || result === 'already_credited' ? result : 'unavailable')
+  // FH-020V: a visit kept for staff review is its own answer on the landing, never a credit and never a refusal.
+  landing.searchParams.set('claim', result === 'credited' || result === 'already_credited' || result === 'held' ? result : 'unavailable')
   return redirect(landing, 303)
 }

@@ -15,6 +15,8 @@ export type Stop = {
   hint?: string
   /** A live placement the resident has marked as placed (FH-014 owns real placements). */
   placementReady: boolean
+  /** FH-020V: keep a visit that staff could not confirm on the spot for review, instead of refusing it. */
+  holdForReview?: boolean
 }
 
 export type TrailDraft = {
@@ -58,6 +60,8 @@ export function parseTrailDraft(input: unknown): TrailDraft {
       clue: text(r.clue, TRAIL_LIMITS.clue),
       hint: text(r.hint, TRAIL_LIMITS.line),
       placementReady: r.placementReady === true,
+      // A strict true only, like placementReady; absent otherwise so older drafts read back unchanged.
+      ...(r.holdForReview === true ? { holdForReview: true } : {}),
     }
   })
   const tested = o.routeTestedAtRevision
@@ -172,6 +176,39 @@ export function publishRows(draft: TrailDraft): PublishRows {
   return { missions, groups }
 }
 
+type BindingPolicy = { mission_key: string; placement_id: string; evidence_policy: unknown }
+
+/**
+ * The stop's opt-in as the database reads it (FH-020V). `hunt_claim_apply` keeps a qualifying shortfall
+ * for staff review only when the mission placement carries `evidence_policy.hold_for_review = true`
+ * (supabase/migrations/20270346053000_hunt_claim_hold.sql). The resident sets a switch on the stop; this
+ * is the only place that turns it into the stored key, so no screen ever edits the JSON.
+ */
+export function stopEvidencePolicy(stop: Pick<Stop, 'holdForReview'> | undefined): { hold_for_review?: true } {
+  return stop?.holdForReview === true ? { hold_for_review: true } : {}
+}
+
+/**
+ * Which mission placements need their evidence policy rewritten to match the draft. Other keys on a
+ * binding's policy are kept. A binding for a stop the draft no longer has is left alone. Pure: the
+ * store reads the bindings and writes what this returns.
+ */
+export function evidencePolicyUpdates(draft: Pick<TrailDraft, 'stops'>, bindings: readonly BindingPolicy[]): { mission_key: string; placement_id: string; evidence_policy: Record<string, unknown> }[] {
+  const updates: { mission_key: string; placement_id: string; evidence_policy: Record<string, unknown> }[] = []
+  for (const binding of bindings) {
+    const index = draft.stops.findIndex((_, i) => stopKey(i) === binding.mission_key)
+    if (index < 0) continue
+    const current = binding.evidence_policy && typeof binding.evidence_policy === 'object' && !Array.isArray(binding.evidence_policy)
+      ? binding.evidence_policy as Record<string, unknown>
+      : {}
+    const { hold_for_review: was, ...rest } = current
+    const wanted = stopEvidencePolicy(draft.stops[index])
+    if ((was === true) === (wanted.hold_for_review === true) && (was === undefined || was === true)) continue
+    updates.push({ mission_key: binding.mission_key, placement_id: binding.placement_id, evidence_policy: { ...rest, ...wanted } })
+  }
+  return updates
+}
+
 /**
  * The published content as one canonical string, so two publishes of the same draft hash the same
  * and any material change hashes differently. Key order is fixed here; the hash itself is the
@@ -187,5 +224,9 @@ export function canonicalContent(draft: TrailDraft): string {
     audience: draft.audience.trim(),
     missions: rows.missions,
     groups: rows.groups,
+    // Only when a stop opts in, so every Trail published before FH-020V keeps its hash.
+    ...(draft.stops.some((stop) => stop.holdForReview === true)
+      ? { review_holds: draft.stops.flatMap((stop, i) => (stop.holdForReview === true ? [stopKey(i)] : [])) }
+      : {}),
   })
 }
