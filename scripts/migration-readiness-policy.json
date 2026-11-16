@@ -3083,7 +3083,7 @@
         },
         {
           "file": "supabase/migrations/20270346062000_public_events_zone_lookup_table.sql",
-          "sha256": "eb8022ee79b6ccf3803e1b59fb3d9fa9ba96877b59f075bf9074b90ddfe150d2"
+          "sha256": "f1e7e7ad60328483aa530afeab071dc591091edab7e7e58d7b827ac56e47ed17"
         }
       ],
       "reviewedChanges": [
@@ -3116,6 +3116,20 @@
           "headMode": "100644"
         },
         {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "6cce25deef4b572a63679a13531a9316bfceb331e6192d44b0b548e22c4859c9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "e717f703dcb3e5b1034fe916cdb4b3257ba25d0edb9636f9b5fb7502241f3263",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
           "file": "supabase/migrations/20270346061000_public_events_snapshot_index.sql",
           "status": "added",
           "sha256": "623ccbea265d84bdb6a7a03baff4c04855f461ffc4125e335233fe2b8244a207",
@@ -3125,7 +3139,7 @@
         {
           "file": "supabase/migrations/20270346062000_public_events_zone_lookup_table.sql",
           "status": "added",
-          "sha256": "eb8022ee79b6ccf3803e1b59fb3d9fa9ba96877b59f075bf9074b90ddfe150d2",
+          "sha256": "f1e7e7ad60328483aa530afeab071dc591091edab7e7e58d7b827ac56e47ed17",
           "baseMode": "000000",
           "headMode": "100644"
         }
