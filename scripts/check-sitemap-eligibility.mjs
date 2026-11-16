@@ -39,10 +39,13 @@ export async function verifySitemapEligibility() {
     row(10, past, past, { recurrence_type: 'weekly' }),
     row(11, later, later, { parent_event_id: uuid(10) }),
     row(12, '2026-10-09T20:00:00Z', null, { parent_event_id: uuid(10) }),
+    row(99, '2026-10-01T20:00:00Z', null, { recurrence_type: 'weekly' }),
     row(20, past, past, { parent_event_id: uuid(99) }),
     row(21, later, later, { parent_event_id: uuid(99) }),
     row(22, '2026-10-09T20:00:00Z', null, { parent_event_id: uuid(99) }),
     row(23, '2026-10-10T20:00:00Z', null, { parent_event_id: uuid(99) }),
+    row(98, '2026-10-01T20:00:00Z', null, { recurrence_type: 'weekly', space_id: uuid(200), crawl_space: { status: 'active', visibility: 'private' } }),
+    row(31, later, later, { parent_event_id: uuid(98), space_id: uuid(200), crawl_space: { status: 'active', visibility: 'private' } }),
     row(30, past, past, { recurrence_type: 'weekly' }),
     row(40, '2026-10-08T13:00:00Z', '2026-10-08T13:00:00Z'), // exact boundary matches page
   ]
@@ -53,6 +56,9 @@ export async function verifySitemapEligibility() {
     let filtered = rows
     const query = {
       select(value) { selections.push(value); return query },
+      in(key, values) { filtered = filtered.filter(r => values.includes(r[key])); return query },
+      lt(key, value) { filtered = filtered.filter(r => Date.parse(r[key]) < Date.parse(value)); return query },
+      then(resolve, reject) { return Promise.resolve({ data: filtered, error: null }).then(resolve, reject) },
       eq(key, value) { filtered = filtered.filter(r => !(key in r) || r[key] === value); return query }, is() { return query },
       async maybeSingle() { return { data: filtered[0] ?? null, error: null } },
       gte(key, value) { filtered = filtered.filter(r => Date.parse(r[key]) >= Date.parse(value)); return query },
@@ -76,7 +82,8 @@ export async function verifySitemapEligibility() {
   const entries = await crawl.listSitemapEventEntries({ occurrences: 2 })
   assert.deepEqual(await crawl.listSitemapEventEntries({ occurrences: 2, failClosed: true }), entries, 'Strict healthy reads preserve every fold and eligibility consequence')
   const slugs = entries.map(r => r.slug)
-  assert.deepEqual(slugs, ['event-2', 'event-4', 'event-10', 'event-11', 'event-12', 'event-21', 'event-22', 'event-40', 'event-50'])
+  assert.deepEqual(slugs, ['event-2', 'event-4', 'event-10', 'event-11', 'event-12', 'event-99', 'event-21', 'event-22', 'event-40', 'event-50'])
+  assert.equal(entries.find(r => r.slug === 'event-99')?.isSeriesHome, true, 'An older live anchor keeps its series home')
   assert.ok(selections.some(s => s.includes('ends_at')), 'Reader projects the actual event end')
   assert.ok(selections.some(s => s.includes('time_zone')), 'Reader projects the host timezone')
   for (const n of [1, 3, 20, 30, 51]) assert.equal(pageEnded(rows.find(r => r.id === uuid(n))), true)
