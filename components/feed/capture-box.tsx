@@ -197,7 +197,8 @@ export function CaptureBox({
               ? 'Jot a note: what happened, what you noticed…'
               : placeholder
         }
-        submitLabel={spaceDispatch ? 'Send Dispatch' : 'Capture'}
+        // LIVE-2317: the button says what it does in this mode. "Capture" named the box, not the act.
+        submitLabel={mode === 'dispatch' ? 'Send Dispatch' : mode === 'note' ? 'Save note' : 'Post'}
         // THE ONE WRITE SEAM. Only a space mount ON the Dispatch mode overrides the send, and the
         // override names its Space explicitly. Everything else keeps the default createPost path, so
         // no existing surface changes shape.
