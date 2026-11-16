@@ -1202,9 +1202,11 @@ jobs:
           || { echo "::warning title=Lighthouse::assertions failed -- see the job log and the uploaded .lighthouseci report"; exit 1; }
 
       # SCAN-1138: the same preview on the MOBILE preset, over the marketing home and the member shell
-      # (/feed signed out renders the real shell, SCAN-889). Config and the reasons for its warn-only
-      # start live in lighthouserc.mobile.json. Assertions here are warns, so this step reports and
-      # does not fail the job until the numbers have been read and tightened.
+      # (/feed signed out renders the real shell, SCAN-889). SCAN-1234 made LCP and CLS on those two
+      # URLs errors, from three measured runs, and added /create-a-space and /themes/nocturne. The
+      # two new pages are measured and reported only: the config's matchingUrlPattern keeps every
+      # assertion off them until they have readings. Numbers and reasons live in
+      # lighthouserc.mobile.json.
       - name: Lighthouse (mobile, member shell)
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         env:
@@ -1214,7 +1216,7 @@ jobs:
           set -euo pipefail
           [[ "${PREVIEW_URL}" =~ ^https://[^[:space:]]+$ ]] || { echo "::error title=No preview URL::PREVIEW_URL is not an https URL ('${PREVIEW_URL}'), so Lighthouse would audit nothing (HYG-151)."; exit 1; }
           urls=""
-          for path in "/" "/feed"; do
+          for path in "/" "/feed" "/create-a-space" "/themes/nocturne"; do
             urls="${urls} --collect.url=${PREVIEW_URL}${path}"
           done
           npx --yes @lhci/cli@0.15.1 autorun \
@@ -1223,6 +1225,10 @@ jobs:
             --collect.settings.extraHeaders="{\"x-vercel-protection-bypass\":\"${BYPASS}\"}" \
           || { echo "::warning title=Lighthouse mobile::assertions failed -- see the job log and the uploaded .lighthouseci-mobile report"; exit 1; }
 
+      # SCAN-1234: this table was EMPTY on every run (jobs 128040514401, 128049408624, 128084620428
+      # all printed the header and nothing under it). It looked for lhr-*.json, which is the name
+      # lighthouse-ci gives its working files in .lighthouseci/. The filesystem upload writes
+      # <host>-<path>-<time>.report.json into the outputDir instead, so nothing ever matched.
       - name: Report the mobile numbers
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         run: |
@@ -1232,7 +1238,7 @@ jobs:
             if (!fs.existsSync(dir)) { console.log("no .lighthouseci-mobile dir"); process.exit(0); }
             const median = (xs) => { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
             const byUrl = new Map();
-            for (const f of fs.readdirSync(dir).filter((f) => f.startsWith("lhr-") && f.endsWith(".json"))) {
+            for (const f of fs.readdirSync(dir).filter((f) => f.endsWith(".report.json"))) {
               let lhr; try { lhr = JSON.parse(fs.readFileSync(`${dir}/${f}`, "utf8")); } catch { continue; }
               const url = lhr.finalDisplayedUrl || lhr.requestedUrl || "?";
               if (!byUrl.has(url)) byUrl.set(url, []);
@@ -1299,7 +1305,11 @@ jobs:
             ].map(([id, label, unit]) => [id, label, unit, ruleOf(id)])
              .filter(([, , , rule]) => typeof rule.budget === "number");
             const byUrl = new Map();
-            for (const f of fs.readdirSync(dir).filter((f) => f.startsWith("lhr-") && f.endsWith(".json"))) {
+            // SCAN-1234: read the DESKTOP reports the filesystem upload dumped here
+            // (*.report.json), never lhr-*.json. Those are lighthouse-ci working files, and the
+            // mobile step that runs after the desktop one clears and rewrites them, so this table
+            // was printing the phone readings for / and /feed against the desktop budgets.
+            for (const f of fs.readdirSync(dir).filter((f) => f.endsWith(".report.json"))) {
               let lhr; try { lhr = JSON.parse(fs.readFileSync(`${dir}/${f}`, "utf8")); } catch { continue; }
               const url = lhr.finalDisplayedUrl || lhr.requestedUrl || "?";
               if (!byUrl.has(url)) byUrl.set(url, []);
