@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1245",
+  "title": "A stranger can call capture_guest_rsvp straight over the public API and fill an event with made-up guests, because its only rate limit lives in the app.",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/security/definer-rpc-review.md",
+    "ref": "SCAN-1224 review of the anon-callable SECURITY DEFINER functions, 2026-11-16 (security thread, requested by Daniel). Confidence: PLAUSIBLE (read from the live function body; not exercised)."
+  },
+  "detail": "EVIDENCE: public.capture_guest_rsvp(uuid,text,text,uuid) is SECURITY DEFINER and granted to anon. It validates the email shape and the event's state, then inserts an event_rsvps row with status 'going'; enforce_event_rsvp_capacity demotes to waitlist when full. The only throttle is rateLimitOk in app/(main)/events/guest-rsvp-actions.ts, which a caller using the public anon key against PostgREST never passes through. An event id is public on any event page.\n\nWHY IT MATTERS: A script can take every seat of a public free event with generated addresses (real guests then land on the waitlist), and can write junk emails into the host's roster. No data leaks; the damage is capacity and roster pollution.\n\nFIX DIRECTION: Revoke execute on capture_guest_rsvp from anon and call it from the server action with the service-role client (the action already rate-limits per IP and per event), or add a DB-side limit (a per-event hourly cap on guest rows created by this function). Apply as a migration through the normal gated path; the same move is the template for the other write functions in the review.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-16",
+    "evidence": "Open: anon still holds EXECUTE on capture_guest_rsvp. Close when has_function_privilege('anon', 'public.capture_guest_rsvp(uuid,text,text,uuid)', 'EXECUTE') is false and the guest RSVP action still works, or a DB-side cap is in place."
+  },
+  "wave": "W7"
+}
