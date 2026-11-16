@@ -12,12 +12,18 @@ import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
 // The Website builder door (SCAN-1015, owner ruling 2026-10-19 "Add builder") opens the site's own editor
 // through the leadership handoff; Web editor keeps opening the Space page's sidebar, which is the page
 // editor (SCAN-971's door).
+// The builder door is a HANDOFF (SCAN-1244): its address is a route handler that mints a signed pass and
+// redirects to the website's own host. A next/link prefetches whatever it points at, so a Link here fetched
+// that redirect on every view of the panel, minting a pass each time and tripping connect-src. A handoff
+// link is a plain anchor in the same tab, the way the Leadership page's own buttons already are.
 
 export type ManageQuickLink = {
   key: 'console' | 'editor' | 'builder' | 'website' | 'checkin' | 'menu'
   label: string
   href: string
   external?: boolean
+  /** A same-tab link to a route that redirects off this origin. Rendered as a plain anchor, never prefetched. */
+  handoff?: boolean
 }
 
 export function manageQuickLinks({
@@ -35,7 +41,7 @@ export function manageQuickLinks({
   const links: ManageQuickLink[] = []
   if (inPanel) links.push({ key: 'console', label: 'Full console', href: `/spaces/${slug}/manage` })
   links.push({ key: 'editor', label: 'Web editor', href: `/spaces/${slug}/edit-page` })
-  links.push({ key: 'builder', label: 'Website builder', href: siteAdminHandoffPath(slug, 'editor') })
+  links.push({ key: 'builder', label: 'Website builder', href: siteAdminHandoffPath(slug, 'editor'), handoff: true })
   links.push(
     published
       ? { key: 'website', label: 'Website', href: siteUrl, external: true }
@@ -74,6 +80,10 @@ export function ManageQuickLinks(props: { slug: string; published: boolean; inPa
         )
         return link.external ? (
           <a key={link.key} href={link.href} target="_blank" rel="noopener noreferrer" className={className}>
+            {body}
+          </a>
+        ) : link.handoff ? (
+          <a key={link.key} href={link.href} className={className}>
             {body}
           </a>
         ) : (
