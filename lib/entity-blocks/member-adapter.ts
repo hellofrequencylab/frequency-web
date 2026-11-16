@@ -9,7 +9,7 @@ import {
   type LinkItem,
   type SpotlightBlock,
   type SpotlightStatKey,
-} from '@/lib/entity-blocks/spotlight'
+} from '@/lib/spotlight/blocks/schema'
 
 // The MEMBER (Spotlight) side of the unified entity-block adapter (ADR-508, U2a). Mirrors the SPACE
 // adapter (lib/spaces/profile-modules toProfileContext) so the SAME registry + module renderer drive a

@@ -1,6 +1,6 @@
 import { BlockView } from '@/components/spotlight/blocks/render'
 import { EMPTY_SPOTLIGHT_META } from '@/lib/spotlight/puck/metadata'
-import type { SpotlightBlock } from '@/lib/entity-blocks/spotlight'
+import type { SpotlightBlock } from '@/lib/spotlight/blocks/schema'
 import { MemberSection } from './section'
 
 // Shared render for an AUTHORED content block type (heading/text/image/gallery/quote/embed/divider).

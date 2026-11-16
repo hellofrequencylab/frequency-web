@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import type { GalleryItem } from '@/lib/entity-blocks/spotlight'
+import type { GalleryItem } from '@/lib/spotlight/blocks/schema'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 // The interactive half of the gallery block. render.tsx is a Server Component, so the

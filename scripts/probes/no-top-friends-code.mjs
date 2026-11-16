@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs'
 const read = (f) => (existsSync(f) ? readFileSync(f, 'utf8') : '')
 const bad = []
 if (existsSync('lib/spotlight/top-friends.ts')) bad.push('the Top friends reader and writers still exist')
-if (/'topfriends'/.test(read('lib/entity-blocks/spotlight.ts'))) bad.push('the Spotlight block type still names topfriends')
+if (/'topfriends'/.test(read('lib/spotlight/blocks/schema.ts'))) bad.push('the Spotlight block type still names topfriends')
 if (/Top Friends/.test(read('components/admin/modules/personal-appearance-module.tsx'))) bad.push('the appearance panel still offers Top friends')
 if (bad.length) {
   console.error(bad.join('\n'))

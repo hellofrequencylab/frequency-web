@@ -34,7 +34,7 @@ import {
   SPOTLIGHT_STAT_KEYS,
   type SpotlightStatKey,
   type BlockTint,
-} from '@/lib/entity-blocks/spotlight'
+} from '@/lib/spotlight/blocks/schema'
 import { buildEmbedSrc, embedHeight, EMBED_PROVIDERS, type EmbedProvider } from '@/lib/spotlight/embeds'
 import type { SpotlightPuckMetadata, SpotlightRenderMeta } from '@/lib/spotlight/puck/metadata'
 import { EMPTY_SPOTLIGHT_META } from '@/lib/spotlight/puck/metadata'

@@ -11,7 +11,7 @@ import {
   validateSpotlightLayout,
   validateSpotlightBackground,
 } from '@/lib/spotlight/blocks/validate'
-import type { SpotlightLayout, SpotlightBackground } from '@/lib/entity-blocks/spotlight'
+import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { pickThemeSpaceAccent, themeOfLayout } from './space-accent'
 import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'

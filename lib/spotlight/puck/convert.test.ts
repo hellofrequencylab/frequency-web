@@ -11,7 +11,7 @@ import {
   type SpotlightLayout,
   type SpotlightBlock,
   SPOTLIGHT_LAYOUT_VERSION,
-} from '@/lib/entity-blocks/spotlight'
+} from '@/lib/spotlight/blocks/schema'
 import { linktreeComponents } from '@/components/page-editor/blocks/linktree'
 
 // The migration-free bridge (lib/spotlight/puck/convert.ts). The core contract: a stored

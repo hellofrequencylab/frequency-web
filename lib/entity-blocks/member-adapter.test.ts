@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { resolveMemberBlockData, toMemberEntity } from './member-adapter'
-import { SPOTLIGHT_STAT_KEYS, type SpotlightLayout } from '@/lib/entity-blocks/spotlight'
+import { SPOTLIGHT_STAT_KEYS, type SpotlightLayout } from '@/lib/spotlight/blocks/schema'
 import type { SpotlightData } from '@/lib/spotlight/data'
 import type { SpotlightRow } from '@/lib/spotlight/privacy'
 

@@ -12,14 +12,14 @@
         "lib/spaces/profile-blocks.ts",
         "lib/spotlight/blocks/schema.ts"
       ],
-      "baseline": 3,
+      "baseline": 4,
       "frozen": {
         "at": "2026-11-16",
-        "value": 3,
+        "value": 4,
         "direction": "lowered",
         "basis": "b5fa30f34c4a",
-        "reason": "Spotlight block kit folded beside the entity-block registry (PROG-E2C): lib/spotlight/blocks/schema.ts is now lib/entity-blocks/spotlight.ts, and each of its nine types is held to a registry row a member may hold (goldens). Stored layouts, validation and rendered output unchanged. Three systems remain: entity blocks, Puck, layout modules.",
-        "from": 4
+        "reason": "Space profile sections folded into the entity-block registry (PROG-E2B): lib/spaces/profile-blocks.ts is deleted and its fourteen sections are now derived from ENTITY_BLOCKS in lib/entity-blocks/space-profile.ts. Rendered output and stored layouts unchanged (goldens). Four systems remain: entity blocks, Puck, layout modules, Spotlight.",
+        "from": 5
       },
       "history": [
         {
@@ -35,13 +35,6 @@
           "to": 4,
           "direction": "lowered",
           "reason": "Space profile sections folded into the entity-block registry (PROG-E2B): lib/spaces/profile-blocks.ts is deleted and its fourteen sections are now derived from ENTITY_BLOCKS in lib/entity-blocks/space-profile.ts. Rendered output and stored layouts unchanged (goldens). Four systems remain: entity blocks, Puck, layout modules, Spotlight."
-        },
-        {
-          "at": "2026-11-16",
-          "from": 4,
-          "to": 3,
-          "direction": "lowered",
-          "reason": "Spotlight block kit folded beside the entity-block registry (PROG-E2C): lib/spotlight/blocks/schema.ts is now lib/entity-blocks/spotlight.ts, and each of its nine types is held to a registry row a member may hold (goldens). Stored layouts, validation and rendered output unchanged. Three systems remain: entity blocks, Puck, layout modules."
         }
       ]
     }

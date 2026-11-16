@@ -21,7 +21,7 @@ import {
   type SpotlightLayout,
   type SpotlightStatKey,
   SPOTLIGHT_LAYOUT_VERSION,
-} from '@/lib/entity-blocks/spotlight'
+} from '@/lib/spotlight/blocks/schema'
 
 // The Puck block `type` keys for each Spotlight block, kept in ONE map so the converter,
 // the block registry (components/page-editor/blocks/linktree.tsx), and the preset all

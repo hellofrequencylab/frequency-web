@@ -4,7 +4,7 @@ import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 // space (Spaces) profile can show, so the same block is a Loom App applicable to any entity and the
 // shared grid block-picker (U2) reads one source. It unifies the two prior systems:
 //   • Space profile sections  (once lib/spaces/profile-blocks.ts; since PROG-E2B a view of this file, ./space-profile.ts).
-//   • Spotlight blocks         (lib/entity-blocks/spotlight.ts) — CONTENT blocks the member authors
+//   • Spotlight blocks         (lib/spotlight/blocks/schema.ts)  — CONTENT blocks the member authors
 //                                                                  + a couple of member DATA blocks.
 // PURE (types + data only), so it is trivially testable and safe to import anywhere. ADDITIVE: this is
 // the new source of truth the U2 editor + U3 cutover build on; the live Spotlight (Puck) and Space

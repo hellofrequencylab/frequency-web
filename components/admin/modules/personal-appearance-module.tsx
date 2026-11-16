@@ -14,7 +14,7 @@ import {
 import { updateProfileTheme } from '@/lib/profile/profile-theme-actions'
 import { PROFILE_SKINS } from '@/lib/theme/profile-skins'
 import { SPOTLIGHT_FONTS, type SpotlightTheme } from '@/lib/spotlight/theme'
-import type { SpotlightBackground } from '@/lib/entity-blocks/spotlight'
+import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { unlockedCosmetics } from '@/lib/spotlight/cosmetics'
 import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'

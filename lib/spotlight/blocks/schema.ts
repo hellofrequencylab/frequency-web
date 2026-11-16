@@ -1,23 +1,15 @@
-// THE SPOTLIGHT BLOCK KIT, BESIDE THE ONE BLOCK REGISTRY (PROG-E2C, 2026-11-16).
+// The Spotlight "block kit": a member arranges a small set of governed section types
+// into their page. Stored as structured JSON at profiles.meta.spotlight.layout and
+// RENDERED SERVER-SIDE from a fixed allowlist — never raw HTML/JS. This file is the
+// single source of truth (types + limits); the validator, the renderer, and the
+// editor palette all read it, so adding a block type is one place.
 //
-// Until this fold the kit lived at lib/spotlight/blocks/schema.ts and was counted as its own block system.
-// Every one of its nine types was already a row in the entity-block registry (./registry.ts, kind `member`):
-// same id, and the registry carries the label, description and palette order. What this file adds is only
-// what the registry does not hold: the STORED SHAPE of each block (the fields a member's saved layout
-// carries at profiles.meta.spotlight.layout) and the limits the validator enforces. The goldens
-// (./spotlight.golden.test.tsx) fail if any of the nine stops being a registry row a member may hold.
-// Stored data, rendered output and the validator are byte for byte what they were; nothing was migrated.
-//
-// Said plainly, what is NOT unified: the renderer (components/spotlight/blocks/render.tsx) and the
-// validator (lib/spotlight/blocks/validate.ts) still switch on these nine types themselves. They read this
-// file for types and limits, as they read the old one.
-//
-// The kit itself, as before: a member arranges a small set of governed section types into their page.
-// Stored as structured JSON and RENDERED SERVER-SIDE from a fixed allowlist, never raw HTML/JS. Round 1
-// shipped 5 safe types (heading, text, links, image, divider); round 2 turned on image/background UPLOAD;
-// round 3 added gallery, quote and stats; embeds landed behind a per-host allowlist (lib/spotlight/embeds.ts).
-// The sticker layer (ADR-1275) is page CHROME beside `background`, not a block.
-// PURE (types and data only, no runtime import), so the probes can load it on its own.
+// Round 1 shipped 5 safe types (heading, text, links, image, divider); round 2 turned on
+// image/background UPLOAD. Round 3 adds 3 more SELF-CONTAINED composition blocks — gallery
+// (multi-image), quote (callout), stats (member picks which gamification numbers to show) —
+// all rendered from the same closed allowlist, no new external hosts. Embeds landed later behind a
+// per-host allowlist (lib/spotlight/embeds.ts). The sticker layer (ADR-1275) is page CHROME beside
+// `background`, not a block; earned cosmetics are still deferred.
 
 export const SPOTLIGHT_LAYOUT_VERSION = 1
 export const MAX_BLOCKS = 40
@@ -30,11 +22,9 @@ export const CITE_MAX = 80
 export const LABEL_MAX = 60
 export const ALT_MAX = 140
 
-import type { EmbedProvider } from '../spotlight/embeds'
+import type { EmbedProvider } from '../embeds'
 
 export type BlockType = 'heading' | 'text' | 'links' | 'image' | 'gallery' | 'quote' | 'stats' | 'embed' | 'divider'
-// Each BlockType is an ENTITY_BLOCKS row a member may hold, with the same id; the goldens hold the nine to the
-// registry. Adding a type = a registry row first, then its stored shape here.
 
 /** The gamification numbers a `stats` block can surface. Values are read SERVER-SIDE from
  *  the allowlisted profile row (privacy.ts) — the block only stores WHICH to show, never a

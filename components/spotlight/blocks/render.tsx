@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import type { CSSProperties } from 'react'
 import { Flame, Gem, CalendarDays, MapPin, Zap } from 'lucide-react'
-import type { SpotlightBlock, SpotlightStatKey, BlockTint } from '@/lib/entity-blocks/spotlight'
+import type { SpotlightBlock, SpotlightStatKey, BlockTint } from '@/lib/spotlight/blocks/schema'
 import { buildEmbedSrc, embedHeight } from '@/lib/spotlight/embeds'
 import { GalleryLightbox } from './gallery-lightbox'
 

@@ -15,8 +15,8 @@ function load(path, dependencies = {}) {
   return exports
 }
 const year = load('lib/spotlight/member-year.ts')
-const schema = load('lib/entity-blocks/spotlight.ts')
-const adapter = load('lib/entity-blocks/member-adapter.ts', { '@/lib/spotlight/member-year': year, '@/lib/entity-blocks/spotlight': schema })
+const schema = load('lib/spotlight/blocks/schema.ts')
+const adapter = load('lib/entity-blocks/member-adapter.ts', { '@/lib/spotlight/member-year': year, '@/lib/spotlight/blocks/schema': schema })
 const bridge = load('lib/spotlight/puck/resolve.ts', {
   '@/lib/spotlight/member-year': year,
   '@/lib/spotlight/puck/convert': {},

@@ -89,7 +89,7 @@ export function withSpotlightTheme(meta: unknown, theme: unknown): Record<string
 
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
-import type { SpotlightBackground } from '@/lib/entity-blocks/spotlight'
+import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 
 /** The most saved theme slots a member may keep. */
 export const MAX_SPOTLIGHT_THEMES = 3
