@@ -217,3 +217,96 @@ describe('the ratchet promise', () => {
     expect(read('components/marketplace/facet-nav.tsx')).not.toContain('rounded-pill')
   })
 })
+
+// THE COMPACT SIZE (SCAN-1133 slice 9). `xs` is the editor inspector's density: utility classes
+// only, so it styles in a body-portaled sheet outside `[data-kit]`, where the `.mu-seg` sheet does
+// not reach. It is additive: `sm` and `md` must render exactly what they rendered before.
+describe('SegmentedControl size="xs" (compact)', () => {
+  const ALIGN = [
+    { value: 'left', label: <svg data-glyph="left" />, ariaLabel: 'Align left', title: 'Align left', className: 'w-8' },
+    { value: 'center', label: <svg data-glyph="center" />, ariaLabel: 'Align center', title: 'Align center', className: 'w-8' },
+  ] as const
+
+  it('is the same named group of pressed buttons, drawn without the kit sheet', () => {
+    const el = mount(<SegmentedControl size="xs" label="Shape" value="list" onChange={() => {}} segments={VIEWS} />)
+    const group = el.querySelector('[role="group"]')!
+    expect(group.getAttribute('aria-label')).toBe('Shape')
+    expect(group.getAttribute('data-segmented')).toBe('buttons')
+    // No `.mu-seg`: that sheet is scoped to the kit and fixes a 36px segment a utility cannot shrink.
+    expect(group.className.split(/\s+/)).not.toContain('mu-seg')
+    expect(group.className).toContain('bg-surface-elevated')
+    expect(group.className).toContain('flex-wrap')
+    expect(group.className).not.toContain('overflow-hidden')
+    const buttons = [...el.querySelectorAll('button')]
+    expect(buttons.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false'])
+    expect(buttons.map((b) => b.getAttribute('type'))).toEqual(['button', 'button', 'button'])
+    expect(buttons[1].className).toContain('bg-primary text-on-primary')
+    expect(buttons[0].className).not.toContain('bg-primary')
+    expect(buttons[0].className).toContain('text-muted')
+    for (const b of buttons) {
+      expect(b.className).toContain('min-h-6')
+      expect(b.className).toContain('focus-visible:z-10')
+      // Dense on purpose: the 44px touch floor is the size the inspector could not hold.
+      expect(b.className).not.toContain('tap-target')
+      expect(b.className.split(/\s+/)).not.toContain('on')
+    }
+  })
+
+  it('tokens only: no hex and no arbitrary pixel value in any compact class', () => {
+    const el = mount(<SegmentedControl size="xs" label="Shape" value="list" onChange={() => {}} segments={VIEWS} />)
+    const classes = [el.querySelector('[role="group"]')!, ...el.querySelectorAll('button')].map((n) => n.className).join(' ')
+    expect(classes).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+    expect(classes).not.toMatch(/\[[^\]]*px\]/)
+  })
+
+  it('names an icon-only segment and reports the pressed one', () => {
+    const onChange = vi.fn()
+    const el = mount(<SegmentedControl size="xs" label="Align" value="left" onChange={onChange} segments={ALIGN} />)
+    const buttons = [...el.querySelectorAll('button')]
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Align left', 'Align center'])
+    expect(buttons.map((b) => b.getAttribute('title'))).toEqual(['Align left', 'Align center'])
+    expect(buttons[0].className).toContain('w-8')
+    act(() => buttons[1].dispatchEvent(new MouseEvent('click', { bubbles: true })))
+    expect(onChange).toHaveBeenCalledWith('center')
+  })
+
+  it('lets a caller own the selected look, as the larger sizes do', () => {
+    const el = mount(
+      <SegmentedControl
+        size="xs"
+        label="Stage"
+        value="a"
+        onChange={() => {}}
+        segments={[{ value: 'a', label: 'Called off', selectedClassName: 'bg-surface line-through' }, { value: 'b', label: 'On' }]}
+      />,
+    )
+    const selected = el.querySelector('button')!
+    expect(selected.className).toContain('line-through')
+    expect(selected.className).not.toContain('bg-primary')
+  })
+
+  it('is additive: sm and md render exactly the classes they rendered before xs existed', () => {
+    const sm = mount(<SegmentedControl label="Calendar views" value="list" onChange={() => {}} segments={VIEWS} />)
+    expect(sm.querySelector('[role="group"]')!.className).toBe('mu-seg inline-flex max-w-full flex-wrap')
+    expect([...sm.querySelectorAll('button')].map((b) => b.className)).toEqual([
+      'press tap-target focus-visible:z-10',
+      'press tap-target focus-visible:z-10 on',
+      'press tap-target focus-visible:z-10',
+    ])
+    // A plain segment carries no name or tooltip of its own: the visible text is the name.
+    expect([...sm.querySelectorAll('button')].every((b) => !b.hasAttribute('aria-label') && !b.hasAttribute('title'))).toBe(true)
+    act(() => root!.unmount())
+    container!.remove()
+    const md = mount(<SegmentedControl size="md" orientation="vertical" label="Gatherings" value="list" onChange={() => {}} segments={VIEWS} />)
+    expect(md.querySelector('[role="group"]')!.className).toBe('mu-seg mu-v flex w-full flex-col')
+    expect(md.querySelectorAll('button')[1]!.className).toBe('press tap-target focus-visible:z-10 mu-md on')
+    act(() => root!.unmount())
+    container!.remove()
+    const links = mount(<SegmentedLinks label="Browse areas" activeHref="/b" links={[{ href: '/a', label: 'A' }, { href: '/b', label: 'B' }]} />)
+    expect(links.querySelector('nav')!.className).toBe('mu-seg inline-flex max-w-full flex-wrap')
+    expect([...links.querySelectorAll('a')].map((a) => a.className)).toEqual([
+      'press tap-target focus-visible:z-10',
+      'press tap-target focus-visible:z-10 on',
+    ])
+  })
+})
