@@ -32,7 +32,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 // sanitizeProps lives in ./sanitize (dependency-free) rather than here, so client code
 // can reach it without dragging THIS module's database imports into the browser bundle.
 // Imported for local use and re-exported, because callers already import it from track.
-import { pixelSafeProps, sanitizeProps } from './sanitize'
+import { pixelAllowsEvent, pixelSafeProps, sanitizeProps } from './sanitize'
 export { sanitizeProps } from './sanitize'
 import { isTrackedEvent } from './events'
 import { gaServerEnabled, sendGa4Event } from './ga-server'
@@ -98,7 +98,8 @@ export async function track(
   // drops the repeat; the GA4 mirror must too, or every later sign-in re-sends it and a conversion
   // counts once per login instead of once per person.
   if (opts.idempotencyKey && !recorded) return false
-  if (opts.mirrorGa === false) return recorded
+  // A first-party-only event (the editor's Vera telemetry) is never mirrored, whoever calls and whatever they pass.
+  if (opts.mirrorGa === false || !pixelAllowsEvent(event)) return recorded
   if (event === 'lead.captured') {
     const identity = opts.gaIdentity
     const source = gaParams.source
