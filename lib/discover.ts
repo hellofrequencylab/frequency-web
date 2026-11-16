@@ -28,7 +28,6 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { eventHasEnded } from '@/lib/events/end-time'
 import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
-import { readThroughPublicEventsSnapshot } from '@/lib/public-events-snapshot'
 import { cityCentroid } from '@/lib/maps/city-centroids'
 
 // ── Row shapes (mirror the RPC RETURNS TABLE columns) ─────────────────────────
@@ -363,10 +362,49 @@ export function emptyUnlessTransient(source: string): (err: unknown) => never[] 
  *  index pages and the per-city buckets is a count of gatherings for the same reason every other
  *  count site folds (LIVE-198). Over-fetches because the fold spends the limit on rows it discards,
  *  and the RPC caps its own read at 200. */
+// ── SCAN-1210: the last good public_events read, kept per server instance ───────────────────────
+// public.public_events backs /discover, the city pages and the feed. It hit the statement timeout (57014)
+// 576 times between September and November, and a failed read used to resolve [] that ISR cached for an hour.
+// Now a failed read is never an empty list: a fresh snapshot is served without the database; a failed read serves
+// the last good snapshot and logs `[discover] public_events_snapshot stale`; with no snapshot it THROWS so an ISR
+// regeneration fails and the previous page keeps serving. Both paths log under one grep-able tag.
+const SNAPSHOT_TTL_MS = 60_000
+const MAX_STALE_MS = 6 * 60 * 60_000
+
+type Snapshot<T> = { rows: T[]; at: number }
+const store = new Map<string, Snapshot<unknown>>()
+
+export class PublicEventsUnavailableError extends Error {
+  constructor(key: string) {
+    super(`public_events_snapshot: read failed and no snapshot to serve (${key})`)
+    this.name = 'PublicEventsUnavailableError'
+  }
+}
+
+export async function readThroughPublicEventsSnapshot<T>(
+  key: string,
+  read: () => Promise<{ rows: T[]; ok: boolean }>,
+  now: () => number = Date.now,
+): Promise<T[]> {
+  const hit = store.get(key) as Snapshot<T> | undefined
+  if (hit && now() - hit.at < SNAPSHOT_TTL_MS) return hit.rows
+  const result = await read()
+  if (result.ok) {
+    store.set(key, { rows: result.rows, at: now() })
+    return result.rows
+  }
+  if (hit && now() - hit.at < MAX_STALE_MS) {
+    console.error(`[discover] public_events_snapshot stale served (${key}), age ${now() - hit.at}ms`)
+    return hit.rows
+  }
+  console.error(`[discover] public_events_snapshot unavailable (${key}), failing the render so ISR keeps the last page`)
+  throw new PublicEventsUnavailableError(key)
+}
+
 export async function getPublicEvents(limit = 50): Promise<PublicEvent[]> {
   const supabase = createPublicClient()
   const fetchLimit = seriesFetchLimit(limit)
-  // SCAN-1210: never a soft [] for a failed read; see lib/public-events-snapshot.ts.
+  // SCAN-1210: never a soft [] for a failed read; see the public_events snapshot above.
   const rows = await readThroughPublicEventsSnapshot<PublicEvent>(`public_events:${fetchLimit}`, () =>
     listRead<PublicEvent>('public_events', () => supabase.rpc('public_events', { _limit: fetchLimit })),
   )

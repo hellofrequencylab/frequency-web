@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { readThroughPublicEventsSnapshot, PublicEventsUnavailableError } from './public-events-snapshot'
+import { readThroughPublicEventsSnapshot, PublicEventsUnavailableError } from './discover'
 
 describe('readThroughPublicEventsSnapshot', () => {
   it('throws on a failed read with no snapshot instead of returning []', async () => {
