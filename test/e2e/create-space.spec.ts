@@ -49,12 +49,11 @@ test.describe('create a space, signed out', { tag: '@smoke' }, () => {
     await name.click()
     await page.keyboard.type('Limewell Studio')
     await expect(page.locator('.cs-hero-building')).toBeVisible()
-    // Locked until an accent is picked (aria-disabled, so Enter and the pointer both wait).
+    // Nothing blocks Next: the accent row is optional and restyles the preview (owner 2026-11-16).
     const next = page.getByRole('button', { name: /^Next/ }).first()
-    await expect(next).toHaveAttribute('aria-disabled', 'true')
+    await expect(next).not.toHaveAttribute('aria-disabled', 'true')
     await expect(page.locator('.cs-swatch').first()).toBeVisible()
     await page.locator('.cs-swatch').nth(1).click()
-    await expect(next).toHaveAttribute('aria-disabled', 'false')
     await next.click()
     await expect(page.locator('.cs-toast')).toContainText(/accent saved/i)
 

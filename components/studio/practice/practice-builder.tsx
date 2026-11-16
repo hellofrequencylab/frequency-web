@@ -650,9 +650,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                       setMovementMode(m.mode)
                       saveMovement({}, m.mode)
                     }}
-                    className={`flex min-h-11 items-center justify-center rounded-control border px-2 py-2 text-body-sm font-medium transition-colors ${
-                      active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
-                    }`}
+                    className={choiceTileClasses(active, `flex min-h-11 items-center justify-center rounded-control px-2 py-2 text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-muted'}`)}
                   >
                     {m.label}
                   </button>

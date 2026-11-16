@@ -1,3 +1,4 @@
+import { formatDateWeekday } from '@/lib/format-date'
 import Link from 'next/link'
 import { MapPin, Megaphone, Zap, Gem, Compass, ArrowRight, Users, Sparkles, CalendarDays, CircleDot } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -124,7 +125,7 @@ export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
             <div className="flex-1 min-w-0">
               <p className="text-body-sm font-semibold text-text truncate">{event.title}</p>
               <p className="text-meta text-subtle mt-0.5">
-                {new Date(event.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {formatDateWeekday(event.starts_at)}
                 {event.location && (
                   <span className="ml-1.5 inline-flex items-center gap-0.5">
                     <MapPin className="w-2.5 h-2.5 inline" />

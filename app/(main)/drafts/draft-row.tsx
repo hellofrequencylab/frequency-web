@@ -7,6 +7,7 @@
 // check, the expiry and the single-use claim live server-side in lib/ai/vera/create-entity.ts, so
 // nothing here can be defeated by editing the page.
 
+import { formatDateShort } from '@/lib/format-date'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Trash2 } from 'lucide-react'
@@ -17,7 +18,7 @@ import { confirmDraftAction, dismissDraftAction } from './actions'
 import type { PendingCreateProposal } from '@/lib/ai/vera/create-entity'
 
 function whenText(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return formatDateShort(iso)
 }
 
 /** The first thing worth reading off a draft: whatever it calls itself. */

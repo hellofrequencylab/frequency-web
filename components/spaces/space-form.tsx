@@ -5,6 +5,7 @@ import { Check } from 'lucide-react'
 import { Input, Textarea, Label } from '@/components/ui/field'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // SHARED SPACE FORM KIT (ENTITY-SPACES-BUILD Wave B). The small set of labeled field primitives
 // the create wizard (/spaces/new) and the owner settings surface (/spaces/<slug>/settings) both
@@ -254,11 +255,9 @@ export function AccentPicker({
               onClick={() => onChange('')}
               disabled={disabled}
               aria-pressed={value === ''}
-              className={cn(
-                'rounded-control border px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-60',
-                value === ''
-                  ? 'border-primary bg-primary-bg text-primary-strong'
-                  : 'border-border text-muted hover:border-border-strong',
+              className={choiceTileClasses(
+                value === '',
+                cn('rounded-control px-3 py-1.5 text-meta font-semibold', value === '' ? 'text-primary-strong' : 'text-muted'),
               )}
             >
               Default
