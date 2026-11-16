@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { classifyLoomUpload, effectiveFileMime, effectiveMime, isPrivateUploadBucket, looksLikeImage } from './upload-kinds'
+import {
+  DROPPED_PDF_MESSAGE,
+  classifyLoomUpload,
+  droppedFileProblem,
+  effectiveFileMime, effectiveMime, isPrivateUploadBucket, looksLikeImage } from './upload-kinds'
 
 describe('effectiveMime', () => {
   it('uses the browser-reported type when present', () => {
@@ -69,5 +73,22 @@ describe('the font and document lanes (LIVE-692)', () => {
   it('marks only library-files as private', () => {
     expect(isPrivateUploadBucket('library-files')).toBe(true)
     expect(isPrivateUploadBucket('library-media')).toBe(false)
+  })
+})
+
+describe('droppedFileProblem (LIVE-2318)', () => {
+  it('lets an image through', () => {
+    expect(droppedFileProblem('image/png', 'cover.png')).toBeNull()
+    expect(droppedFileProblem('', 'IMG_1.HEIC')).toBeNull()
+  })
+
+  it('names a PDF plainly, by type or by extension', () => {
+    expect(droppedFileProblem('application/pdf', 'flyer.pdf')).toBe(DROPPED_PDF_MESSAGE)
+    expect(droppedFileProblem('', 'Flyer.PDF')).toBe(DROPPED_PDF_MESSAGE)
+    expect(DROPPED_PDF_MESSAGE).toBe('That is a PDF. Cover images need to be a photo (JPG or PNG).')
+  })
+
+  it('turns away any other file with a message', () => {
+    expect(droppedFileProblem('application/zip', 'pack.zip')).toMatch(/not a photo/)
   })
 })
