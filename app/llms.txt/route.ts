@@ -248,20 +248,25 @@ async function helpSection(): Promise<string[]> {
   }
 }
 
+// The founding towns (SCAN-1226), always listed so the place is named in the file on opening day, when no
+// town has cleared the density gate yet. Its own section, so "## Cities" stays the density-gated list.
+function foundingSection(): string[] {
+  return [
+    `## ${FOUNDING_PLACE}`,
+    ...NORTH_COUNTY_TOWNS.map(
+      (t) => `- [${t.name}](${abs(`${NORTH_COUNTY_PATH}#${t.slug}`)}): Founding town. Circles and Events in ${t.name} appear as hosts post them.`,
+    ),
+    '',
+  ]
+}
+
 // The live city landing pages (density-gated, the same set the sitemap advertises), so
 // "Frequency in <city>" has a citable URL (SCAN-662).
 async function citiesSection(): Promise<string[]> {
   try {
     const cities = await listDensityCities()
-    // The founding towns (SCAN-1226) come first and always, so the place is named in the file on opening
-    // day, when no town has cleared the density gate yet. A founding town that is also a density city is
-    // listed once, under its city page.
-    const dense = new Set(cities.map((c) => c.slug))
-    const founding = NORTH_COUNTY_TOWNS.filter((t) => !dense.has(t.slug)).map(
-      (t) => `- [${t.name}](${abs(`${NORTH_COUNTY_PATH}#${t.slug}`)}): Founding town of ${FOUNDING_PLACE}. Circles and Events in ${t.name} appear as hosts post them.`,
-    )
-    if (!cities.length && !founding.length) return []
-    return ['## Cities', ...founding, ...cities.map((c) => `- [${c.city}](${abs(`/discover/cities/${c.slug}`)}): Circles meeting and events happening in ${c.city}.`), '']
+    if (!cities.length) return []
+    return ['## Cities', ...cities.map((c) => `- [${c.city}](${abs(`/discover/cities/${c.slug}`)}): Circles meeting and events happening in ${c.city}.`), '']
   } catch {
     return []
   }
@@ -314,6 +319,7 @@ export async function GET() {
     ...COMPARE.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
     ...help,
+    ...foundingSection(),
     ...cities,
     '## Pricing for Spaces (not a tax on your work)',
     `The core promise: people join free, hosting is free with Crew, and you pay when you start charging. Selling starts at Business. Your own people are always free, on every tier, forever, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective). ${PLAN_STORY.rate} The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
