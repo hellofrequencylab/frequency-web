@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { ANALYTICS_EVENTS, isTrackedEvent, isClientEvent } from './events'
 import { sanitizeProps } from './track'
+import { pixelAllowsEvent } from './sanitize'
 
 describe('analytics taxonomy', () => {
   it('has unique, namespaced event names', () => {
@@ -51,6 +52,24 @@ describe('analytics taxonomy', () => {
     ]
     const missing = files.filter((f) => !readFileSync(f, 'utf8').includes("trackClient('commerce.checkout_started'"))
     expect(missing).toEqual([])
+  })
+})
+
+describe('first-party-only events (PROG-E8B)', () => {
+  it('registers accept and dismiss for the questions Vera asks as client-emittable feature events', () => {
+    for (const name of ['editor.vera_question_accepted', 'editor.vera_question_dismissed']) {
+      expect(isTrackedEvent(name)).toBe(true)
+      expect(isClientEvent(name)).toBe(true)
+      expect(ANALYTICS_EVENTS.find((e) => e.name === name)?.category).toBe('feature')
+    }
+  })
+
+  it('keeps every registered editor event off the pixels, and leaves ordinary events alone', () => {
+    const editor = ANALYTICS_EVENTS.filter((e) => e.name.startsWith('editor.'))
+    expect(editor.length).toBeGreaterThanOrEqual(2)
+    for (const e of editor) expect(pixelAllowsEvent(e.name)).toBe(false)
+    expect(pixelAllowsEvent('feature.used')).toBe(true)
+    expect(pixelAllowsEvent('nav.page_view')).toBe(true)
   })
 })
 
