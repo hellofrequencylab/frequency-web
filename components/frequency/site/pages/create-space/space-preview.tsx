@@ -50,7 +50,7 @@ const STRIP_SIZES = '(min-width: 1280px) 220px, 40vw'
 function Photo({ src, pos, sizes, priority }: { src: string; pos?: string; sizes: string; priority?: boolean }) {
   // Their own pictures are object URLs in the browser; those cannot go through the image optimizer.
   const own = src.startsWith('blob:') || src.startsWith('data:')
-  return <Image key={src} src={src} alt="" fill sizes={sizes} priority={priority} unoptimized={own} style={{ objectFit: 'cover', objectPosition: pos ?? 'center' }} />
+  return <Image key={src} src={src} alt="" fill sizes={sizes} preload={priority} unoptimized={own} style={{ objectFit: 'cover', objectPosition: pos ?? 'center' }} />
 }
 
 export function SpacePreview(props: SpacePreviewProps) {

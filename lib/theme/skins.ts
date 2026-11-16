@@ -79,7 +79,7 @@ export const SKINS: readonly SkinDef[] = [
     // hour by day, the UV temple at night, built from the export's tokens) in app/themes/frequency.css.
     selectable: true,
     designs: ['dawn', 'frequency'],
-    copy: { frequency: { label: 'Midnight', description: 'A cooler, deeper take: blue hour by day, the UV room at night.' } },
+    copy: { frequency: { label: 'Nocturne', description: 'A cooler, deeper take: blue hour by day, the UV room at night.' } },
   },
 ]
 

@@ -654,12 +654,21 @@ export async function listMyPastDueSpaceMemberships(): Promise<PastDueSpaceMembe
       .eq('status', 'active')
       .eq('payment_status', 'past_due')
     if (error || !data?.length) return []
+    const pastDue = (data as MembershipRow[]).filter((row) => isPastDueSpaceMembership(row.payment_status))
+    // One read of each Space and its tiers, all Spaces at once, instead of two awaits per row in turn.
+    const bySpace = new Map<string, { space: NonNullable<Awaited<ReturnType<typeof getSpaceById>>>; tiers: Awaited<ReturnType<typeof readTiers>> }>()
+    await Promise.all(
+      [...new Set(pastDue.map((row) => row.space_id))].map(async (spaceId) => {
+        const space = await getSpaceById(spaceId)
+        if (!space || space.type === 'root') return
+        bySpace.set(spaceId, { space, tiers: await readTiers(spaceId, false) })
+      }),
+    )
     const out: PastDueSpaceMembership[] = []
-    for (const row of data as MembershipRow[]) {
-      if (!isPastDueSpaceMembership(row.payment_status)) continue
-      const space = await getSpaceById(row.space_id)
-      if (!space || space.type === 'root') continue
-      const tiers = await readTiers(row.space_id, false)
+    for (const row of pastDue) {
+      const found = bySpace.get(row.space_id)
+      if (!found) continue
+      const { space, tiers } = found
       const tier = tiers.find((t) => t.id === row.tier_id)
       out.push({
         membershipId: row.id,
