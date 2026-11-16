@@ -48,7 +48,7 @@ describe('share-card trace scope', () => {
     // HYG-245 (owner approval 2026-11-16, decision card): help Markdown rides only on the routes that
     // read it at runtime, not on every function. Each reader of lib/help/content-core keeps its key.
     for (const key of ['/api/cron/embed-help', '/api/cron/indexnow', '/admin/vera-ai', '/admin/content/training', '/help', '/support', '/feed', '/llms', '/sitemap']) {
-      expect(block, key).toMatch(new RegExp(`'${key.replace(/[/.]/g, '\\$&')}': \\['\\./content/help/\\*\\*/\\*'\\]`))
+      expect(block, key).toContain(`'${key}': ['./content/help/**/*']`)
     }
     expect(block.match(/'\/\*\*':\s*\[([\s\S]*?)\]/)?.[1] ?? '').not.toContain('content/help')
     const keys = [...block.matchAll(/^\s*'([^']+)':/gm)].map(m => m[1])
