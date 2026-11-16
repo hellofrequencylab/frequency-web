@@ -7,6 +7,7 @@
 import type { KeyboardEvent, RefObject } from 'react'
 import { useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
+import { Input, Textarea } from '@/components/ui/field'
 import type { BuilderDraft } from '@/lib/create-space/builder'
 import { claimedHandle, cleanHandleInput } from '@/lib/create-space/builder'
 import type { HandleStatus } from '@/lib/create-space/handle'
@@ -62,7 +63,7 @@ export function NameCard({ draft, patch, intro, status, err, onNext, resumeName,
     <div data-morph="name" className={intro ? 'cs-card-name' : 'cs-card-name fq-iri-rim'}>
       <label htmlFor="cs-name" className="cs-label">{NAME_QUESTION}</label>
       <div className="cs-name-wrap">
-        <input
+        <Input variant="seamless"
           id="cs-name"
           ref={inputRef}
           className="cs-name"
@@ -93,7 +94,7 @@ export function NameCard({ draft, patch, intro, status, err, onNext, resumeName,
           {editing || err === 'slug' ? (
             <span className="cs-slug">
               <span>/</span>
-              <input value={draft.slug || handle} onChange={(e) => patch({ slug: cleanHandleInput(e.target.value) })} onKeyDown={onEnter} aria-label="Handle" placeholder="yourhandle" maxLength={40} />
+              <Input variant="seamless" value={draft.slug || handle} onChange={(e) => patch({ slug: cleanHandleInput(e.target.value) })} onKeyDown={onEnter} aria-label="Handle" placeholder="yourhandle" maxLength={40} />
             </span>
           ) : null}
         </div>
@@ -140,7 +141,7 @@ export function OfferCard({ draft, patch, busyLine, err, onNext, onExample, inpu
   return (
     <div className="cs-card fq-iri-rim">
       <h2 className="cs-card-h">What does your business <em>offer?</em></h2>
-      <textarea
+      <Textarea variant="seamless"
         ref={inputRef}
         className="cs-offer"
         value={draft.offer}
@@ -181,12 +182,12 @@ export function ContactCard({ draft, patch, err, onNext, inputRef, onTrap }: Con
     <div className="cs-card fq-iri-rim">
       <h2 className="cs-card-h">How do clients <em>find you?</em></h2>
       <div className="cs-fields">
-        <label className="cs-field"><span>Your name</span><input ref={inputRef} value={draft.hostName} onChange={(e) => patch({ hostName: e.target.value.slice(0, 80) })} onKeyDown={onEnter} placeholder="Sam Rivera" autoComplete="name" /></label>
-        <label className="cs-field"><span>Email</span><input type="email" inputMode="email" value={draft.email} onChange={(e) => patch({ email: e.target.value.slice(0, 254) })} onKeyDown={onEnter} placeholder="you@example.com" autoComplete="email" /></label>
-        <label className="cs-field"><span>Phone <i>· optional</i></span><input type="tel" inputMode="tel" value={draft.phone} onChange={(e) => patch({ phone: e.target.value.slice(0, 30) })} onKeyDown={onEnter} placeholder="+1 555 014 2290" autoComplete="tel" /></label>
-        <label className="cs-field"><span>Where you work <i>· optional</i></span><input value={draft.where} onChange={(e) => patch({ where: e.target.value.slice(0, 80) })} onKeyDown={onEnter} placeholder="A city, or Online" autoComplete="address-level2" /></label>
+        <label className="cs-field"><span>Your name</span><Input variant="seamless" ref={inputRef} value={draft.hostName} onChange={(e) => patch({ hostName: e.target.value.slice(0, 80) })} onKeyDown={onEnter} placeholder="Sam Rivera" autoComplete="name" /></label>
+        <label className="cs-field"><span>Email</span><Input variant="seamless" type="email" inputMode="email" value={draft.email} onChange={(e) => patch({ email: e.target.value.slice(0, 254) })} onKeyDown={onEnter} placeholder="you@example.com" autoComplete="email" /></label>
+        <label className="cs-field"><span>Phone <i>· optional</i></span><Input variant="seamless" type="tel" inputMode="tel" value={draft.phone} onChange={(e) => patch({ phone: e.target.value.slice(0, 30) })} onKeyDown={onEnter} placeholder="+1 555 014 2290" autoComplete="tel" /></label>
+        <label className="cs-field"><span>Where you work <i>· optional</i></span><Input variant="seamless" value={draft.where} onChange={(e) => patch({ where: e.target.value.slice(0, 80) })} onKeyDown={onEnter} placeholder="A city, or Online" autoComplete="address-level2" /></label>
         {/* A field people never see; a bot that fills it is not a lead. */}
-        <label className="cs-honey" aria-hidden="true"><span>Website</span><input tabIndex={-1} autoComplete="off" name="website" onChange={(e) => onTrap(e.target.value.length > 0)} /></label>
+        <label className="cs-honey" aria-hidden="true"><span>Website</span><Input variant="seamless" tabIndex={-1} autoComplete="off" name="website" onChange={(e) => onTrap(e.target.value.length > 0)} /></label>
       </div>
       {err === 'fullName' || err === 'email' ? <p role="alert" className="cs-err">{ERROR_TEXT[err]}</p> : null}
       <p className="cs-fine">We save your draft to this address, so you can pick it up on any device. It stays private.</p>

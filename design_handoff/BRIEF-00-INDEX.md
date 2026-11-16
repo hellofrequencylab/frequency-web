@@ -25,8 +25,8 @@
 
 | Doc | What it covers | Fetch |
 |---|---|---|
-| Teaser design briefs | Production-ready visual specs for the six teaser infographics (shared canvas/palette/type system + per-flow specs) | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/claude-design-briefs.md |
-| Funnels brief | The copy rationale and sources behind the six teaser flows | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/funnels-brief.md |
+| Teaser design briefs | Production-ready visual specs for the six teaser infographics (shared canvas/palette/type system + per-flow specs) | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/docs/marketing/claude-design-briefs.md |
+| Funnels brief | The copy rationale and sources behind the six teaser flows | https://raw.githubusercontent.com/hellofrequencylab/frequency-web/main/docs/marketing/funnels-brief.md |
 
 ## For humans
 

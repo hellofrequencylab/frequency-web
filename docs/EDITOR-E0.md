@@ -568,7 +568,9 @@ entries) and is otherwise parallel to §2–§6.
 
 ## 8. The ordered task list
 
-Sequenced by hard dependency, not by size. One PR per row unless noted.
+Sequenced by hard dependency, not by size. One PR per row unless noted. The status marks in this
+table are dated and several are behind the tree: `pnpm ledger:view PROG-E0` carries the status of
+every task as re-tested on 2026-11-16.
 
 | # | Task | Depends on | Lift | Gate to land it |
 |---:|---|---|:---:|---|

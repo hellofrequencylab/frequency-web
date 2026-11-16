@@ -11,7 +11,7 @@ export function ThemePicture({ theme, label, slot, priority = false }: { theme: 
   const def = THEME_ASSET_SLOTS.find((s) => s.slot === slot)!
   const [width, height] = def.size.split(' x ').map(Number)
   if (THEME_ASSETS_READY.has(`${theme}/${slot}`)) {
-    return <Image src={themeAssetPath(theme, slot)} alt={`${label}: ${def.label.toLowerCase()}`} width={width} height={height} sizes={SIZES} priority={priority} quality={80} />
+    return <Image src={themeAssetPath(theme, slot)} alt={`${label}: ${def.label.toLowerCase()}`} width={width} height={height} sizes={SIZES} preload={priority} quality={80} />
   }
   return (
     <div className="tg-card" data-slot={`${theme}/${slot}`}>

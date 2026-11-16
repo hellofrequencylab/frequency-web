@@ -150,6 +150,18 @@ export const COMPOSITIONS = {
   // console shell's AdminPageFrame (ADR-1880).
   ConsoleFocusTemplate: 'components/templates/console-templates.tsx',
   ConsoleDashboardTemplate: 'components/templates/console-templates.tsx',
+  // Whole-page client views a server page gates and then hands the route to (SCAN-1242). Each one
+  // renders its shell on EVERY return path of the named component, read in source on 2026-11-16, and
+  // each name is rendered by its own page(s) only. A view with a path that skips the shell (the Event,
+  // Journey and Practice Sparks hand off to a builder) is deliberately NOT here.
+  //   AdminTemplate: the Theme Studio editor (new and edit) and the Walkthrough editor.
+  ThemeEditor: 'components/admin/theme-studio/theme-editor.tsx',
+  WalkthroughEditor: 'app/(main)/admin/walkthroughs/[id]/editor.tsx',
+  //   DetailTemplate: one Pipeline deal.
+  DealDetail: 'app/(main)/admin/crm/pipeline/[id]/deal-detail.tsx',
+  //   SparkShell: the Circle wizard and the Space setup walk.
+  CircleWizard: 'components/circles/builder/circle-wizard.tsx',
+  SpaceSetupSpark: 'app/(main)/spaces/[slug]/setup/space-setup-spark.tsx',
 }
 
 /** Exported by the SAME barrel and deliberately NOT shells. Listed so the distinction is explicit

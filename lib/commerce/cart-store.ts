@@ -7,7 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { addLine, mergeCarts, parseCart, removeLine, setQty, type Cart } from './cart'
+import { addLine, lineKey, mergeCarts, parseCart, removeLine, setQty, takeOutPaid, type Cart } from './cart'
 
 // eslint-disable-next-line no-restricted-syntax -- commerce_carts is not in the generated types yet (ADR-246 exception)
 const db = () => createAdminClient() as unknown as SupabaseClient
@@ -56,4 +56,35 @@ export async function mergeGuestIntoStored(profileId: string, guestRaw: unknown)
 /** Empty the saved cart, after what was in it has been paid for. */
 export async function clearStoredCart(profileId: string): Promise<void> {
   await saveCart(profileId, [])
+}
+
+const sameCart = (a: Cart, b: Cart) => a.length === b.length && a.every((l, i) => lineKey(l) === lineKey(b[i]) && l.qty === b[i].qty)
+
+/** Save the cart as the buyer was just shown it: without the lines that are no longer for sale and with
+ *  the rest lowered to stock. `read` is the cart the caller looked at and `pruned` what was left of it. The
+ *  change is applied to the cart as it stands now, so a line added in between is kept and a line is only
+ *  ever dropped or lowered, never put back or raised. Writes nothing when nothing changes. */
+export async function savePrunedCart(profileId: string, read: Cart, pruned: Cart): Promise<void> {
+  const looked = new Set(read.map(lineKey))
+  const kept = new Map(pruned.map((l) => [lineKey(l), l.qty]))
+  const now = await loadCart(profileId)
+  const next: Cart = []
+  for (const l of now) {
+    const k = lineKey(l)
+    if (!looked.has(k)) next.push(l)
+    else if (kept.has(k)) next.push({ ...l, qty: Math.min(l.qty, kept.get(k)!) })
+  }
+  if (!sameCart(now, next)) await saveCart(profileId, next)
+}
+
+/** Take the lines of a paid order out of the buyer's saved cart. Writes nothing when the cart held none
+ *  of them. The CALLER makes this happen once per order (it runs on the pending to paid flip), because
+ *  taking the same quantity out twice would eat a line the buyer added afterwards. */
+export async function takePaidOutOfStoredCart(
+  profileId: string,
+  paid: readonly { productId: string; variantId: string | null; qty: number }[],
+): Promise<void> {
+  const cart = await loadCart(profileId)
+  const next = takeOutPaid(cart, paid)
+  if (!sameCart(cart, next)) await saveCart(profileId, next)
 }

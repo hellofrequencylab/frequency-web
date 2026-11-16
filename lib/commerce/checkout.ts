@@ -44,6 +44,8 @@ import { sendOrderReceipts } from './order-receipt'
 import type { CheckoutInput, CommerceVariant, OrderOwnerKind, ServiceConfig } from './types'
 import { SHIP_TO_COUNTRIES, cartNeedsShipping, shippingDetailsFromSession } from './shipping'
 import { emitDisputeLost } from '@/lib/trust/emitters'
+import { cartCheckoutEnabled } from './cart-checkout-flag'
+import { takePaidOutOfStoredCart } from './cart-store'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -653,6 +655,29 @@ async function markPendingOrderFailed(orderId: string, reason: string): Promise<
   }
 }
 
+/** What a member just paid for leaves their saved cart (DEF-ETSY P5 slice 5). Called ONLY for the rows the
+ *  pending to paid flip returned, which the database hands to exactly one caller (webhook, hosted return or
+ *  on-page settle, whichever is first), so a redelivery takes nothing out twice. It reads the order's own
+ *  items, so a line added while the buyer was paying stays. Dark with the cart checkout switch. Never fatal:
+ *  the buyer has paid and the settlement steps below matter more than a tidy cart; a miss leaves lines that
+ *  /cart still prices and prunes, and it is logged. */
+async function takePaidOrdersOutOfCart(rows: readonly { id: string; buyer_profile_id: string | null }[]): Promise<void> {
+  if (!cartCheckoutEnabled()) return
+  for (const row of rows) {
+    if (!row.buyer_profile_id) continue
+    try {
+      const { data, error } = await db().from('commerce_order_items').select('product_id, variant_id, qty').eq('order_id', row.id)
+      if (error) throw new Error(error.message)
+      const paid = ((data ?? []) as { product_id: string | null; variant_id: string | null; qty: number }[]).flatMap((i) =>
+        i.product_id ? [{ productId: i.product_id, variantId: i.variant_id, qty: i.qty }] : [],
+      )
+      if (paid.length) await takePaidOutOfStoredCart(row.buyer_profile_id, paid)
+    } catch (err) {
+      console.error('[commerce] could not take a paid order out of the saved cart', { orderId: row.id, err })
+    }
+  }
+}
+
 /** Settle the order behind a completed Checkout session (idempotent). Platform
  *  (first-party) revenue = the full amount; a destination charge's revenue = the
  *  application fee (seller gross is off-ledger). */
@@ -711,6 +736,8 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     funds_flow: string | null
   }
   let rows = (updated ?? []) as SettlementRow[]
+  // Before the replay read below widens `rows`: only the orders THIS call flipped to paid.
+  await takePaidOrdersOutOfCart(rows)
   if (rows.length === 0) {
     // A redelivery must resume required steps, but only for the original verified payment.
     const { data, error } = await db().from('commerce_orders')

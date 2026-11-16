@@ -27,6 +27,7 @@
 // Every one of those is re-checked here; the client is never trusted.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { slugify } from '@/lib/utils'
 import { getCallerProfile } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -83,9 +84,7 @@ async function resolveWriteScope(callerId: string, scopeKey: string | undefined)
   }
 }
 
-function slugify(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || 'cover'
-}
+const coverSlug = (s: string): string => slugify(s).slice(0, 60) || 'cover'
 
 function extFor(contentType: string): string {
   if (contentType.includes('svg')) return 'svg'
@@ -178,7 +177,7 @@ export async function generateEntityCoverAction(input: {
     const { bytes, contentType } = await downloadRecraft(first.url)
     const mime = contentType.startsWith('image/') ? contentType : 'image/png'
     const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
-    const path = `${spaceId}/${slugify(title)}-cover-${stamp}.${extFor(mime)}`
+    const path = `${spaceId}/${coverSlug(title)}-cover-${stamp}.${extFor(mime)}`
 
     // INGEST (PROG-D1): checksum + dimensions for a generated cover. The strip is a no-op on a
     // Recraft render, but the dimensions are not — a cover that does not know its own aspect ratio
@@ -201,7 +200,7 @@ export async function generateEntityCoverAction(input: {
     const assetId = await insertSpaceLibraryImage({
       spaceId,
       title: coverAssetTitle(manifest.label, title),
-      slug: `vera-cover-${slugify(title)}-${stamp}`,
+      slug: `vera-cover-${coverSlug(title)}-${stamp}`,
       storageBucket: LIBRARY_MEDIA_BUCKET,
       storagePath: path,
       url: pub.publicUrl,

@@ -19,6 +19,7 @@ import { unlockedCosmetics } from '@/lib/spotlight/cosmetics'
 import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { SectionHeader } from '@/components/ui/section-header'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // Personal "You" module (ADR-525): the grid-side APPEARANCE surface for the Spotlight looks that lost their
 // editor when the Puck Spotlight editor was retired (ADR-524). Their VALUES still render on the public
@@ -163,11 +164,10 @@ export function PersonalAppearanceModule({ onSkinChange }: { onSkinChange?: (ski
                 disabled={pending}
                 aria-pressed={active}
                 title={s.description}
-                className={`rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors disabled:opacity-50 motion-reduce:transition-none ${
-                  active
-                    ? 'border-primary bg-primary-bg text-primary-strong'
-                    : 'border-border text-text hover:bg-surface-elevated'
-                }`}
+                className={choiceTileClasses(
+                  active,
+                  `rounded-control px-3 py-1.5 text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`,
+                )}
               >
                 {s.label}
               </button>

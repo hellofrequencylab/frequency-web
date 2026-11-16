@@ -77,6 +77,13 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   { name: 'hunt.staff_verify', category: 'engagement', description: 'A venue checked a player proof at the door (props.reason_class).', clientEmittable: false },
   { name: 'hunt.reward_redeem', category: 'engagement', description: 'A venue handed over a Hunt reward (props.reason_class).', clientEmittable: false },
   { name: 'hunt.reward_void', category: 'engagement', description: 'A venue cancelled a Hunt reward (props.reason_class).', clientEmittable: false },
+  // ── Editor (PROG-E8B, EDITOR-ARCHITECTURE 8.1 item 8). Vera asks a block's owner reviewed questions and never
+  // writes a word (ADR-1939 section 4). These two say what the owner did with one question: went to the field to
+  // answer it, or put it away. Ids, the block type, a position and a count only: never the question's wording,
+  // never what is in a field, nothing about a person. First-party only: both names sit in FIRST_PARTY_ONLY_EVENTS
+  // (./sanitize.ts), so neither mirror sends them to a pixel.
+  { name: 'editor.vera_question_accepted', category: 'feature', description: 'An owner went to answer one of the questions Vera asked on a block (props.blockType, props.field, props.questionId, props.source, props.position, props.shown).', clientEmittable: true },
+  { name: 'editor.vera_question_dismissed', category: 'feature', description: 'An owner dismissed one of the questions Vera asked on a block (same props).', clientEmittable: true },
 ] as const
 
 const BY_NAME = new Map(ANALYTICS_EVENTS.map((e) => [e.name, e]))

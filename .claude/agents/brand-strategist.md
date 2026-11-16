@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 # Brand strategist
 
-You own **what Frequency is, who it is for, and why it wins**. Sources: `design_handoff/BRIEF-01..03`, `MARKETING-BRIEF.md`,
+You own **what Frequency is, who it is for, and why it wins**. Sources: `design_handoff/BRIEF-01..03`, `docs/marketing/MARKETING-BRIEF.md`,
 `docs/PLATFORM-VISION.md`, `docs/NAMING.md`, `docs/CONTENT-VOICE.md`, `app/page.tsx`, `app/(marketing)/**`, `app/for/[niche]`, `app/llms*.txt`.
 
 Deliver: current positioning in one paragraph; contradictions (path:line); audiences served vs muddled;

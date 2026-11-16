@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import type { ChannelRow } from './load-channels'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 
 // Channel list shared by the /admin/channels page and the in-place Spaces·Channels module
 // (ADR-138). Each public channel now edits in place (name + description) and can be hidden;
@@ -98,12 +99,12 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
         {ch.description && <p className="mt-0.5 truncate text-meta text-subtle">{ch.description}</p>}
       </div>
       <div className="flex items-center gap-1">
-        <button type="button" onClick={() => setEditing(true)} title="Edit" aria-label={`Edit ${ch.name}`} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none">
+        <IconButton label={`Edit ${ch.name}`} title="Edit" onClick={() => setEditing(true)}>
           <Pencil className="h-3.5 w-3.5" aria-hidden />
-        </button>
-        <button type="button" onClick={() => setConfirmHide(true)} disabled={pending} title="Hide from discovery" aria-label={`Hide ${ch.name}`} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-warning-bg hover:text-warning disabled:opacity-50 motion-reduce:transition-none">
+        </IconButton>
+        <IconButton label={`Hide ${ch.name}`} title="Hide from discovery" tone="warning" onClick={() => setConfirmHide(true)} disabled={pending}>
           <EyeOff className="h-3.5 w-3.5" aria-hidden />
-        </button>
+        </IconButton>
       </div>
 
       <DangerModal

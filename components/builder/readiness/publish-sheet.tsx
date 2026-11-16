@@ -6,7 +6,8 @@
 // sample words and publish", said in so many words; warnings publish through "Publish anyway". A modal: focus moves
 // in, Tab stays inside, Esc closes and focus goes back to Publish.
 
-import { useEffect, useId, useRef, type KeyboardEvent } from 'react'
+import { useId, useRef, type KeyboardEvent } from 'react'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import type { Readiness, ReadinessItem } from '@/lib/builder/readiness'
 import styles from './readiness.module.css'
 
@@ -20,23 +21,13 @@ export function PublishSheet({ readiness, onFix, onPublish, onClose }: {
   const { items, count, gate } = readiness
   const dialog = useRef<HTMLDivElement>(null)
   const titleId = useId()
-  useEffect(() => {
-    const before = document.activeElement as HTMLElement | null
-    dialog.current?.querySelector<HTMLElement>('button')?.focus()
-    return () => { before?.focus?.() }
-  }, [])
+  // The kit trap moves focus to the first button, keeps Tab inside and hands focus back to Publish.
+  useDialogFocusTrap(true, dialog)
 
   function keys(e: KeyboardEvent<HTMLDivElement>) {
-    e.stopPropagation()
+    // Tab goes on to the kit trap; every other key stops here so the builder's shortcuts stay quiet.
+    if (e.key !== 'Tab') e.stopPropagation()
     if (e.key === 'Escape') { e.preventDefault(); onClose() }
-    else if (e.key === 'Tab') {
-      const focusable = [...(dialog.current?.querySelectorAll<HTMLElement>('button:not([disabled])') ?? [])]
-      if (!focusable.length) return
-      const i = focusable.indexOf(document.activeElement as HTMLElement)
-      const next = e.shiftKey ? (i <= 0 ? focusable.length - 1 : i - 1) : (i === focusable.length - 1 ? 0 : i + 1)
-      e.preventDefault()
-      focusable[next].focus()
-    }
   }
 
   const lead = gate === 'blocked'
