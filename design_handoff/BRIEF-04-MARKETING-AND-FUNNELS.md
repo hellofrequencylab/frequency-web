@@ -1,7 +1,7 @@
 # Frequency brief 04 — Marketing & funnels (for Claude Design)
 
 > Part of the project-orientation set for Claude Design. Sources:
-> `MARKETING-BRIEF.md`, `SEO-AEO-PLAN.md`, `funnels-brief.md`,
+> `docs/marketing/MARKETING-BRIEF.md`, `docs/SEO-AEO-PLAN.md`, `docs/marketing/funnels-brief.md`,
 > `docs/MARKETING-BUILD-PLAN.md`, `docs/PUBLIC-SITE-PLAN.md`,
 > `docs/ENTRY-POINTS.md`, `docs/FUNNELS.md`, `docs/OPERATOR-FUNNELS.md`.
 
