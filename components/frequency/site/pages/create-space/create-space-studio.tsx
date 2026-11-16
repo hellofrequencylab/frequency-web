@@ -85,7 +85,9 @@ const slotSrc = (slot: string, list: readonly string[], fallback: string, own?: 
 
 type Phase = 'build' | 'saved'
 
-function Island({ arrival, draftToken, initialResume = null, timedEntry = false, nicheChoices = [] }: { arrival: DoorArrival & { modeHint?: string }; draftToken: string | null; initialResume?: WizardResume | null; timedEntry?: boolean; nicheChoices?: readonly NicheChoice[] }) {
+// `shell` is the Suspense fallback streamed before the address is read. It renders the same hero without a heading
+// element or the heading's id, so the server HTML carries one h1 and one #cs-h1, not two (SCAN-1264).
+function Island({ arrival, draftToken, initialResume = null, timedEntry = false, nicheChoices = [], shell = false }: { arrival: DoorArrival & { modeHint?: string }; draftToken: string | null; initialResume?: WizardResume | null; timedEntry?: boolean; nicheChoices?: readonly NicheChoice[]; shell?: boolean }) {
   // A door's hints (lib/create-space/door.ts) prime the start: the name is typed in, the goals light the preview's
   // offer cards before a sentence is written, and the niche rides to the launch. Nothing is marked done for them.
   // The accent picked beside the kit's Use button arrives picked: they chose it there, so it is not asked again.
@@ -491,9 +493,10 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false,
     if (building) focusStep(step)
   }
 
+  const Heading = shell ? 'p' : 'h1'
   return (
     <>
-      <section ref={heroRef} id="get-started" className={HERO_CLASS[mode]} aria-labelledby="cs-h1" data-screen-label="01 Build your Space">
+      <section ref={heroRef} id="get-started" className={HERO_CLASS[mode]} aria-labelledby={shell ? undefined : 'cs-h1'} data-screen-label="01 Build your Space">
         <link rel="stylesheet" href={PREVIEW_FONT_SHEET} precedence="default" />
         <div className="fq-aura" aria-hidden="true" />
         <div className="fq-grain" aria-hidden="true" />
@@ -507,10 +510,10 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false,
                 <span>Only you can see this</span>
               </div>
             </div>
-            <h1 id="cs-h1" className="cs-h1" data-morph="h1">
+            <Heading id={shell ? undefined : 'cs-h1'} className="cs-h1" data-morph="h1">
               <span>{h1Lead}</span><em className="fq-iri-text">{h1Time}</em>
               {intro ? <span className="cs-sr"> {INTRO_H1_CLAUSE}</span> : null}
-            </h1>
+            </Heading>
           </div>
 
           <div className="cs-col">
@@ -635,7 +638,7 @@ function FromUrl({ initialResume, nicheChoices }: { initialResume: WizardResume 
 
 export function CreateSpaceStudio({ initialResume = null, nicheChoices = [] }: { initialResume?: WizardResume | null; nicheChoices?: readonly NicheChoice[] }) {
   return (
-    <Suspense fallback={<Island arrival={doorArrival(() => null)} draftToken={null} nicheChoices={nicheChoices} />}>
+    <Suspense fallback={<Island arrival={doorArrival(() => null)} draftToken={null} nicheChoices={nicheChoices} shell />}>
       <FromUrl initialResume={initialResume} nicheChoices={nicheChoices} />
     </Suspense>
   )
