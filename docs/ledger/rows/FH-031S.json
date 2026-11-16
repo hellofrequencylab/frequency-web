@@ -1,0 +1,18 @@
+{
+  "id": "FH-031S",
+  "title": "Hunts FH-031S: Put the Event finale on the player and author screens",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/hunts/rally-finale.ts",
+    "ref": "Split from FH-031 (2026-11-16)."
+  },
+  "detail": "FH-031 built the finale read model and its gate (lib/hunts/rally-finale.ts, lib/hunts/rally-finale-store.ts) and nothing calls them from a screen yet. Owed: (1) the author picks the host Event in the Trail editor, limited to Events of the Hunt's own Space or a live partner, and publish writes it to hunt_versions.policy.finale.event_id; (2) the player's Trail page shows the finale panel from loadRallyFinale (the Event, places left, the player's seat or the reason there is none, a link to the Event page) and never a button that claims a seat; (3) the first route that grants a completion reward calls grantFinaleReward, and hunt_reward_grant gets the same seat check in SQL so the rule does not rest on one caller; (4) an Event stop credits through hunt_claim_apply with finaleDoorEvidence at assurance event_door. Done when a finished player with no seat at a full host Event sees the full message on a preview deployment and holds no RSVP, ticket or reward afterwards. Requires FH-016, FH-021 and FH-030. Hunts switches stay OFF.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/(main)/hunts/[slug]/play/page.tsx\",\"utf8\");process.exit(s.includes(\"rally-finale\")?0:1)'"
+  },
+  "wave": "W7"
+}
