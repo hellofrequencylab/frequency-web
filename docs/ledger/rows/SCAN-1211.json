@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P1",
   "size": "L",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: lib/launch/steps.ts:54 launchStepHref() returns /launch/step/{space,offer,website,event,circle,journey,people,get-paid}; app/(main)/launch/step/ only holds spotlight/, review/ and [step]/published/ (find app/(main)/launch). Consumers: lib/launch/resume.ts:35, lib/launch/published.ts:43 (next step after Spotlight is 'Your Space' -> /launch/step/space), get-started.ts:54, reminder/comeback emails. next.config.ts/proxy.ts have no rewrite for /launch/step.\n\nWHY IT MATTERS: The moment someone finishes the Spotlight step (the only built one) the 'next' button and every launch reminder email lead to a 404. Blocks the guided launch the Jan 1 push depends on; every launch email click is wasted. Verified 2026-11-16: LAUNCH_SYSTEM_ENABLED=1 in Vercel production, so this is live today.\n\nFIX DIRECTION: Either build the remaining step screens or make launchStepHref/published/resume fall back to the real destinations (/spaces/new, the Space settings pages) until each step ships; add a test that every launchStepHref(id) resolves to a page.",
+  "detail": "EVIDENCE: lib/launch/steps.ts:54 launchStepHref() returns /launch/step/{space,offer,website,event,circle,journey,people,get-paid}; app/(main)/launch/step/ only holds spotlight/, review/ and [step]/published/ (find app/(main)/launch). Consumers: lib/launch/resume.ts:35, lib/launch/published.ts:43 (next step after Spotlight is 'Your Space' -> /launch/step/space), get-started.ts:54, reminder/comeback emails. next.config.ts/proxy.ts have no rewrite for /launch/step.\n\nWHY IT MATTERS: The moment someone finishes the Spotlight step (the only built one) the 'next' button and every launch reminder email lead to a 404. Blocks the guided launch the Jan 1 push depends on; every launch email click is wasted. Verified 2026-11-16: LAUNCH_SYSTEM_ENABLED=1 in Vercel production, so this is live today.\n\nFIX DIRECTION: Either build the remaining step screens or make launchStepHref/published/resume fall back to the real destinations (/spaces/new, the Space settings pages) until each step ships; add a test that every launchStepHref(id) resolves to a page.\n\nCLOSED 2026-11-16: Added /launch/step/{space,offer,website,event,circle,journey,people,get-paid}: thin screens that open the real tool for each step (lib/launch/step-screens.ts, step-screen-io.ts). lib/launch/step-screens.test.ts asserts every launchStepHref resolves to a page.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1211",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }
