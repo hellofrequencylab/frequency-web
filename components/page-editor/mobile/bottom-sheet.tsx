@@ -12,11 +12,13 @@
 // Long block forms still live on full-screen pushed screens, never here, and we never
 // nest a sheet inside a sheet.
 //
-// Chrome only: backdrop click + ESC to close, body scroll-lock, focus moved into the
-// panel on open, Tab trapped inside it, focus returned to the trigger on close (a11y), slides up from the bottom (motion-safe). Caller supplies content.
+// Chrome only: backdrop click + ESC to close, body scroll-lock, slides up from the bottom
+// (motion-safe). Focus is the kit trap's (components/ui/use-dialog-focus-trap): Tab stays inside
+// the panel and focus returns to the trigger on close (a11y). Caller supplies content.
 
 import { useEffect, useRef, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 export function BottomSheet({
   open,
@@ -49,52 +51,28 @@ export function BottomSheet({
     onCloseRef.current = onClose
   }, [onClose])
 
+  // The kit trap runs first: it remembers the trigger (WCAG 2.4.3), keeps Tab inside the sheet and
+  // hands focus back on close. The effect below then puts focus on the PANEL, not its first field,
+  // so a quick-edit sheet does not raise the phone keyboard just by opening.
+  useDialogFocusTrap(open, panelRef)
+
   useEffect(() => {
     if (!open) return
     const panel = panelRef.current
-    // Where focus was before the sheet opened, so closing hands it back (WCAG 2.4.3).
-    const previouslyFocused = document.activeElement as HTMLElement | null
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        onCloseRef.current()
-        return
-      }
-      if (e.key !== 'Tab' || !panel) return
-      // Trap Tab inside the sheet: wrap at the ends, and pull focus back in if it escaped.
-      const els = Array.from(
-        panel.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((el) => el.getClientRects().length > 0)
-      if (els.length === 0) {
-        e.preventDefault()
-        panel.focus()
-        return
-      }
-      const first = els[0]!
-      const last = els[els.length - 1]!
-      const active = document.activeElement
-      const inside = panel.contains(active)
-      if (e.shiftKey) {
-        if (!inside || active === first || active === panel) {
-          e.preventDefault()
-          last.focus()
-        }
-      } else if (!inside || active === last) {
-        e.preventDefault()
-        first.focus()
-      }
+      if (e.key === 'Escape') onCloseRef.current()
     }
     document.addEventListener('keydown', onKey)
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    // Move focus into the sheet so keyboard + screen-reader users land inside it.
+    // Move focus onto the sheet so keyboard + screen-reader users land inside it: now, and again
+    // after the opening tap has finished settling its own focus.
+    panel?.focus()
     const t = window.setTimeout(() => panel?.focus(), 0)
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = prevOverflow
       window.clearTimeout(t)
-      if (previouslyFocused && document.contains(previouslyFocused)) previouslyFocused.focus?.()
     }
   }, [open])
 

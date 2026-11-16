@@ -89,7 +89,7 @@ import {
 } from '@/lib/on-air/active-session'
 import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
 import { Field, Textarea } from '@/components/ui/field'
-import { Button, buttonClasses } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
 
@@ -1516,13 +1516,13 @@ export function OnAirSession({
             {/* After an automatic resume, a small non-blocking chip to re-arm sound (item #4). The
                 clock is already running; this is optional. */}
             {needRestore && (
-              <button
+              <Button
                 type="button"
                 onClick={restoreCues}
-                className={buttonClasses('primarySoft', 'sm')}
+                variant="primarySoft" size="sm"
               >
                 Tap to restore sound
-              </button>
+              </Button>
             )}
           </div>
         </div>

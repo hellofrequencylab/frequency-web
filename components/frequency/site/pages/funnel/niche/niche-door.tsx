@@ -165,7 +165,7 @@ export function NicheDoor({ config, week }: { config: FunnelConfig; week: readon
             src={`${NICHE_PHOTO_DIR}/${d.photo}`}
             alt=""
             fill
-            priority
+            preload
             sizes="100vw"
             quality={70}
           />

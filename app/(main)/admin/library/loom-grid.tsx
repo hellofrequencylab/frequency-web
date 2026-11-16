@@ -1,6 +1,6 @@
 'use client'
 
-import { buttonClasses } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -522,14 +522,14 @@ function BulkBar({
                     ]}
                     className="mb-2"
                   />
-                  <button
+                  <Button
                     type="button"
                     onClick={trainStyle}
                     disabled={pending || !styleName.trim()}
-                    className={buttonClasses('primary', 'sm', 'w-full')}
+                    size="sm" className="w-full"
                   >
                     <Palette className="h-4 w-4" /> Train style
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -1007,16 +1007,16 @@ function DetailDrawer({
                 colors.
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <button
+                <Button
                   type="button"
                   onClick={() => askVera('tweak')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
                   title="A small, surgical change that keeps the graphic nearly identical"
-                  className={buttonClasses('primary', 'sm')}
+                  size="sm"
                 >
                   {veraBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                   {veraBusy ? 'Working…' : 'Tweak'}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={() => askVera('redraw')}
@@ -1170,14 +1170,14 @@ function DetailDrawer({
           {err && <p className="text-body-sm text-danger">{err}</p>}
 
           <div className="flex items-center gap-2 pt-1">
-            <button
+            <Button
               type="button"
               onClick={save}
               disabled={pending}
-              className={buttonClasses('primary', 'sm')}
+              size="sm"
             >
               {pending ? 'Saving…' : 'Save'}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={archive}
