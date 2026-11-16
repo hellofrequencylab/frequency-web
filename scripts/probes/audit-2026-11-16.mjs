@@ -2,7 +2,57 @@
 // `node scripts/probes/audit-2026-11-16.mjs <ROW-ID>`; the check for that row runs below and exits 0 only
 // when the finding is fixed. They are direction checks written by the audit: they fail today by design.
 // A row's own fix may retime its check only with the owner's phrase for that row.
+//
+// REWRITTEN CHECKS. Daniel approved rewriting four of these on 2026-11-16 15:02Z ("rewrite the
+// audit-written checks for SCAN-1226, 1213, 1225 and 1215 to measure the real fix"). Each of the four
+// is a function in REWRITTEN below, with what the old check got wrong written above it. A rewritten
+// check prints what it found, so a red run names the files. No other entry in CHECKS was changed.
 import { spawnSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
+
+/** Tracked files matching the pathspecs that are present in the tree on disk. */
+function tracked(...pathspecs) {
+  const r = spawnSync('git', ['ls-files', '-z', '--', ...pathspecs], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+  if (r.status !== 0) throw new Error('git ls-files failed: ' + r.stderr)
+  return r.stdout.split('\0').filter((p) => p && existsSync(p))
+}
+
+/** Source text with block and line comments removed, so a word in a comment never counts as code. */
+function code(path) {
+  return readFileSync(path, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1')
+}
+
+const isSource = (p) => /\.tsx?$/.test(p) && !/\.test\./.test(p) && !p.startsWith('mobile/')
+
+const REWRITTEN = {
+  // SCAN-1215. The finding: private copies of the slug rule that do not fold accents, so "Café"
+  // becomes "caf" through one door and "cafe" through another. The old check allowed one
+  // `function slugify(` in the whole tree, which cannot pass while two copies are held in place by
+  // other guards: the Hunts FH-002 fixture (scripts/probes/hunts/legacy-seam-evidence.mjs) loads
+  // app/(main)/admin/qr/campaign-actions.ts with a fixed import list, and the LIVE-765 probe
+  // (scripts/live-765-probe.mjs) does the same for lib/journey-plans.ts; both refuse a new import of
+  // @/lib/utils. Those two are the named exception, counted, and nothing else may join them.
+  // Green means: lib/utils.ts still exports the shared rule, and no file outside PINNED declares
+  // its own. Converting a pinned file shrinks the count and stays green; a new copy turns it red.
+  'SCAN-1215': () => {
+    const SHARED = 'lib/utils.ts'
+    const PINNED = ['app/(main)/admin/qr/campaign-actions.ts', 'lib/journey-plans.ts']
+    const declares = (p) => /\bfunction\s+slugify\s*\(/.test(code(p))
+    if (!existsSync(SHARED) || !/\bexport\s+function\s+slugify\s*\(/.test(code(SHARED))) {
+      console.error('SCAN-1215: lib/utils.ts no longer exports the shared slugify')
+      return false
+    }
+    const copies = tracked('*.ts', '*.tsx').filter((p) => isSource(p) && p !== SHARED && declares(p))
+    const pinned = copies.filter((p) => PINNED.includes(p))
+    const stray = copies.filter((p) => !PINNED.includes(p))
+    console.log(`SCAN-1215: ${copies.length} private slugify cop${copies.length === 1 ? 'y' : 'ies'}: ${pinned.length} pinned (allowed, at most ${PINNED.length}), ${stray.length} stray (allowed 0)`)
+    for (const p of pinned) console.log('  pinned: ' + p)
+    for (const p of stray) console.error('  stray:  ' + p)
+    return stray.length === 0
+  },
+}
 
 const CHECKS = {
   "SCAN-1206": "node -e \"const fs=require('fs');const a=fs.readFileSync('lib/site.ts','utf8');const i=a.indexOf('export const SITE_DESCRIPTION');const d=a.slice(i,a.indexOf(';',i));const h=fs.readFileSync('lib/seo/frequency-pages.ts','utf8');process.exit(/North County/.test(d)||/North County/.test(h.slice(h.indexOf(\\\"path: '/',\\\"),h.indexOf(\\\"path: '/the-community'\\\")))?0:1)\"",
@@ -14,7 +64,6 @@ const CHECKS = {
   "SCAN-1212": "git grep -q 'Solana Beach' -- lib/site.ts && node -e \"process.exit(/organizationSchema[\\s\\S]{0,1800}addressLocality/.test(require('fs').readFileSync('lib/jsonld.ts','utf8'))?0:1)\"",
   "SCAN-1213": "(node -e \"const s=require('fs').readFileSync('next.config.ts','utf8');process.exit(['/sites/','/themes/','/maplibre/'].every(p=>s.includes(\\\"'\\\"+p+':path*'\\\"))?0:1)\") && (test $(du -sk public/tracks | cut -f1) -lt 1000)",
   "SCAN-1214": "test -f docs/security/csp-eval-trace.md",
-  "SCAN-1215": "test $(git grep -E 'function slugify\\(' -- '*.ts' '*.tsx' ':!*.test.*' ':!mobile' | wc -l) -le 1",
   "SCAN-1216": "node -e \"process.exit(require('fs').readFileSync('app/(marketing)/start/actions.ts','utf8').includes('rateLimitOk')?0:1)\"",
   "SCAN-1217": "! git grep -qE \"file.type.startsWith\\('image/'\\)\" -- ':(literal)lib/spaces/space-image-store.ts' ':(literal)app/(main)/journeys/actions.ts' ':(literal)app/(main)/events/[slug]/social-actions.ts'",
   "SCAN-1218": "test -f docs/perf/public-cwv-baseline.md",
@@ -46,6 +95,16 @@ const CHECKS = {
 }
 
 const id = process.argv[2]
+const rewritten = REWRITTEN[id]
+if (rewritten) {
+  let ok = false
+  try {
+    ok = (await rewritten()) === true
+  } catch (e) {
+    console.error(id + ': the check itself threw, which counts as red: ' + (e?.stack ?? e))
+  }
+  process.exit(ok ? 0 : 1)
+}
 const cmd = CHECKS[id]
 if (!cmd) {
   console.error('unknown audit row: ' + id)
