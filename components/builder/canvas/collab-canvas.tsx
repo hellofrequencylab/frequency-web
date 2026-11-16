@@ -16,6 +16,10 @@
 // the demo block, and each edit is saved to that Space page's draft (use-canvas-document.ts). The demo block and
 // Vera's demo coach stay for a canvas with no document.
 //
+// The page's shape (PROG-E6B): on a real document the layer list is the page's tree (rows, columns, blocks) and a
+// move in it is saved; the selected block carries spacing handles in the frame; and a block can be added under it,
+// presets first. All three go through the same draft write as a field edit.
+//
 // Presence (BLD-401): on a shared Space the link also carries who is here (faces above the canvas) and which node
 // each person is in (an outline on that node inside the frame). It rides the channel, never the doc.
 
@@ -29,10 +33,12 @@ import { nodeDeviceValues, resolveNodeContent, withDeviceValues } from '@/lib/bu
 import type { BlockNode } from '@/lib/entity-blocks/node-tree'
 import { ResponsiveInspector } from '@/components/builder/inspector/responsive-inspector'
 import { VeraBlockCoach } from '@/components/builder/inspector/vera-block-coach'
+import { BlockInserter } from './block-inserter'
 import { CanvasDocumentStatus } from './canvas-document-status'
 import { CanvasViewportShell } from './canvas-viewport-shell'
 import { CollabTextEditor } from './collab-text-editor'
 import { LayerList, type Layer } from './layer-list'
+import { SpacingHandles } from './spacing-handles'
 import { useCanvasDocument } from './use-canvas-document'
 import { EditorPresenceFaces } from '@/components/builder/presence/presence-ui'
 import type { PresenceState } from '@/lib/editor-crdt/awareness'
@@ -94,6 +100,14 @@ export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: strin
   const words = (panel?.fields ?? []).filter((f) => f.kind === 'text' || f.kind === 'textarea')
   const headline = words.find((f) => f.key === 'title')?.key ?? words[0]?.key
   const [layers, setLayers] = useState<Layer[]>(() => document?.layers ?? DEMO_LAYERS)
+  const preview = panel && (
+    <>
+      {words.length === 0 && <p style={{ margin: '4px 0', fontWeight: 700 }}>{panel.title}</p>}
+      {words.map((f) => f.key === headline
+        ? <p key={f.key} style={{ margin: '4px 0', fontSize: device === 'phone' ? 24 : 32, fontWeight: 700 }}>{plainWords(resolved[f.key]) || panel.title}</p>
+        : plainWords(resolved[f.key]) ? <p key={f.key} style={{ margin: 0 }}>{plainWords(resolved[f.key])}</p> : null)}
+    </>
+  )
   const [link, setLink] = useState<Link>(spaceId ? 'connecting' : 'local')
   const [peers, setPeers] = useState<PresenceState[]>([])
   const select = useRef<(nid: string | null) => void>(() => {})
@@ -157,10 +171,7 @@ export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: strin
         </div>
         {panel && (
           <div data-inspector-preview={node.nid} style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid currentColor' }}>
-            {words.length === 0 && <p style={{ margin: '4px 0', fontWeight: 700 }}>{panel.title}</p>}
-            {words.map((f) => f.key === headline
-              ? <p key={f.key} style={{ margin: '4px 0', fontSize: device === 'phone' ? 24 : 32, fontWeight: 700 }}>{plainWords(resolved[f.key]) || panel.title}</p>
-              : plainWords(resolved[f.key]) ? <p key={f.key} style={{ margin: 0 }}>{plainWords(resolved[f.key])}</p> : null)}
+            {document && real.selected ? <SpacingHandles style={real.selected.node.style} onChange={real.space} readOnly={!document.canSave}>{preview}</SpacingHandles> : preview}
           </div>
         )}
       </div>
@@ -186,9 +197,23 @@ export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: strin
     )}
     </div>
     <div className="mt-4">
-      <LayerList layers={layers} onChange={setLayers} selectedId={document ? real.selectedId : undefined} onSelect={document ? real.select : undefined} />
-      {document && <p className="mt-2 text-meta text-muted">Edit picks the block the inspector shows. Moving a layer here is not saved yet.</p>}
+      <LayerList layers={layers} onChange={setLayers} selectedId={document ? real.selectedId : undefined} onSelect={document ? real.select : undefined} tree={document ? real.tree : undefined} onMove={document ? real.move : undefined} />
+      {document && (
+        <p className="mt-2 text-meta text-muted">
+          Edit picks the block the inspector shows. {!real.tree ? 'Moving a layer here is not saved yet.' : document.canSave ? 'A move is saved to the draft.' : 'A move here is not saved: this page is read only.'}
+        </p>
+      )}
     </div>
+    {document && real.inserter && (
+      <div className="mt-4">
+        <BlockInserter
+          inserter={real.inserter}
+          under={real.selected?.title ?? null}
+          off={!document.canSave ? 'This page is read only here, so nothing can be added.' : real.save === 'conflict' ? 'Reload to add a block: this page was changed somewhere else.' : null}
+          onInsert={real.insert}
+        />
+      </div>
+    )}
     </>
   )
 }
