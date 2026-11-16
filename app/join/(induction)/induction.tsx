@@ -6,7 +6,7 @@
 // Scripted Vera (hot register). The `preview` prop mocks the auth writes; the
 // city search + reel run for real in preview too.
 
-import { GoogleMark } from '@/components/ui/google-mark'
+import { GoogleMark } from '@/components/google-mark'
 import { useState, useEffect, useId, useRef } from 'react'
 import Link from 'next/link'
 import { getInitials } from '@/lib/utils'

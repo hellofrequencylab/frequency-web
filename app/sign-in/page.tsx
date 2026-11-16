@@ -1,4 +1,4 @@
-import { GoogleMark } from '@/components/ui/google-mark'
+import { GoogleMark } from '@/components/google-mark'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'

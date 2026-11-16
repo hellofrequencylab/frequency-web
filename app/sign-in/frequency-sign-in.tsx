@@ -1,4 +1,4 @@
-import { GoogleMark } from '@/components/ui/google-mark'
+import { GoogleMark } from '@/components/google-mark'
 import Link from 'next/link'
 import { AuthFrame } from '@/components/frequency/auth/auth-frame'
 import { Field, Input } from '@/components/ui/field'

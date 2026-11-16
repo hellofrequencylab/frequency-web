@@ -5,7 +5,7 @@
 // address from step 3, through the actions in app/(marketing)/create-a-space/actions.ts. Signed in there is no
 // account to make: one button takes the answers to the launch page. Nothing is promised that has not happened: the
 // Space is made on the launch page, when the Spotlight is published. Styles: create-space.css (cs-sum, cs-google...).
-import { GoogleMark } from '@/components/ui/google-mark'
+import { GoogleMark } from '@/components/google-mark'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState, useSyncExternalStore, useTransition } from 'react'
