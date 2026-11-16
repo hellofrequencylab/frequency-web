@@ -32,7 +32,13 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 
 const binding = { id: 'b1', hunt_id: 'h1', version_id: 'v1', event_id: 'e1', ticket_type_id: 't1', seller_space_id: 's1', benefit_codes: ['pass'], revision: 1, status: 'active' }
-const ticket = { id: 'tk1', event_id: 'e1', ticket_type_id: 't1', buyer_profile_id: 'p1', qty: 2, amount_cents: 9000, platform_fee_cents: 450, currency: 'usd', status: 'succeeded', refunded_at: null, created_at: '2026-11-10T00:00:00Z' }
+// The purchase snapshot the checkout stored on the ticket (FH-036S, lib/hunts/pass-checkout.ts).
+const huntPass = {
+  v: 1,
+  snapshot: { bindingId: 'b1', bindingRevision: 1, huntId: 'h1', versionId: 'v1', sellerSpaceId: 's1', benefitCodes: ['pass'] },
+  eventId: 'e1', ticketTypeId: 't1', qty: 2, unitCents: 4500, totalCents: 9000, chargedCents: 9000, currency: 'USD',
+}
+const ticket = { id: 'tk1', event_id: 'e1', ticket_type_id: 't1', buyer_profile_id: 'p1', qty: 2, amount_cents: 9000, platform_fee_cents: 450, currency: 'usd', status: 'succeeded', refunded_at: null, created_at: '2026-11-10T00:00:00Z', hunt_pass: huntPass }
 
 beforeEach(() => {
   rpcCalls.length = 0
@@ -70,8 +76,39 @@ describe('commerce store', () => {
 
   it('does nothing for a ticket on an unbound tier', async () => {
     tables.hunt_pass_bindings = []
+    tables.event_tickets = [{ ...ticket, hunt_pass: null }] // an unbound tier never stores a snapshot
     const { projectTicketBenefits } = await import('./commerce-store')
     expect(await projectTicketBenefits('tk1')).toBeNull()
+    expect(rpcCalls).toEqual([])
+  })
+
+  it('does nothing for a ticket that carries no purchase snapshot, even on a bound tier', async () => {
+    tables.event_tickets = [{ ...ticket, hunt_pass: null }]
+    const { projectTicketBenefits, repairMissingBenefits } = await import('./commerce-store')
+    expect(await projectTicketBenefits('tk1')).toBeNull()
+    expect(await repairMissingBenefits()).toEqual({ checked: 1, repaired: 0 })
+    expect(rpcCalls).toEqual([])
+  })
+
+  it('projects under the binding the ticket was bought under, even after that pass is retired', async () => {
+    tables.hunt_pass_bindings = [{ ...binding, status: 'retired' }]
+    const { projectTicketBenefits } = await import('./commerce-store')
+    expect((await projectTicketBenefits('tk1'))?.disposition).toBe('projected')
+    expect(rpcCalls).toHaveLength(2)
+  })
+
+  it('refuses a settled ticket that no longer matches its snapshot, and the repair scan carries on', async () => {
+    const { projectTicketBenefits, repairMissingBenefits } = await import('./commerce-store')
+    for (const forged of [{ amount_cents: 100 }, { qty: 1 }, { ticket_type_id: 't2' }, { event_id: 'e2' }]) {
+      tables.event_tickets = [{ ...ticket, ...forged }]
+      await expect(projectTicketBenefits('tk1')).rejects.toThrow(/purchase snapshot refused/)
+    }
+    tables.event_tickets = [{ ...ticket, hunt_pass: { ...huntPass, snapshot: { ...huntPass.snapshot, benefitCodes: ['pass', 'vip'] } } }]
+    await expect(projectTicketBenefits('tk1')).rejects.toThrow('purchase snapshot refused: binding_changed')
+    tables.event_tickets = [{ ...ticket, amount_cents: 100 }]
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await repairMissingBenefits()).toEqual({ checked: 1, repaired: 0 })
+    quiet.mockRestore()
     expect(rpcCalls).toEqual([])
   })
 

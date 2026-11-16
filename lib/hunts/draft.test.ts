@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { canonicalContent, draftToGraph, parseTrailDraft, previewTrail, publishChecklist, publishRows, saveDraft, stopKey } from './draft'
+import { benefitCodeFrom, benefitsReady, canonicalContent, draftToGraph, parseTrailDraft, previewTrail, publishChecklist, publishRows, publishedPolicy, saveDraft, stopKey } from './draft'
+import { versionBenefits } from './benefit-codes'
 import { validateGraph } from './graph'
 
 type Draft = Parameters<typeof publishChecklist>[0]
@@ -120,5 +121,52 @@ describe('publishRows and canonicalContent', () => {
     const a = canonicalContent(draft())
     expect(canonicalContent(draft({ routeTestedAtRevision: 9 }))).toBe(a)
     expect(canonicalContent(draft({ stops: [stop(1), stop(2), { ...stop(3), clue: 'Other' }] }))).not.toBe(a)
+  })
+})
+
+// FH-036S: what a paid pass includes is authored on the trail and published with its version.
+describe('pass benefits on a draft', () => {
+  const benefits = [{ label: 'Tasting flight', code: 'tasting-flight' }, { label: 'Dessert course', code: 'dessert' }]
+
+  it('a trail with no benefits is stored and hashed exactly as before', () => {
+    expect('benefits' in parseTrailDraft(draft())).toBe(false)
+    expect('benefits' in parseTrailDraft({ ...draft(), benefits: [] })).toBe(false)
+    expect(canonicalContent(draft({ benefits: [] }))).toBe(canonicalContent(draft()))
+    expect(publishChecklist(draft(), 4).items.some((i) => i.code === 'benefits')).toBe(false)
+  })
+
+  it('keeps a half-typed benefit while drafting, caps the list at ten and lowercases a code', () => {
+    const parsed = parseTrailDraft({ ...draft(), benefits: [{ label: 'Tasting', code: 'TASTING' }, { label: 'Half typed' }, 'junk', ...Array.from({ length: 12 }, () => ({ label: 'x', code: 'x' }))] })
+    expect(parsed.benefits).toHaveLength(10)
+    expect(parsed.benefits?.slice(0, 3)).toEqual([{ label: 'Tasting', code: 'tasting' }, { label: 'Half typed', code: '' }, { label: '', code: '' }])
+  })
+
+  it('blocks publishing until every benefit has a name and its own valid code', () => {
+    expect(publishChecklist(draft({ benefits }), 4).ok).toBe(true)
+    for (const bad of [[{ label: 'Tasting', code: '' }], [{ label: '', code: 'tasting' }], [{ label: 'A', code: 'Not A Code' }], [benefits[0], { label: 'Again', code: 'tasting-flight' }]]) {
+      const list = publishChecklist(draft({ benefits: bad }), 4)
+      expect(list.ok).toBe(false)
+      expect(list.items.find((i) => i.code === 'benefits')?.ok).toBe(false)
+    }
+    expect(benefitsReady(benefits)).toBe(true)
+  })
+
+  it('a changed benefit is a material change to the published content', () => {
+    const a = canonicalContent(draft({ benefits }))
+    expect(a).not.toBe(canonicalContent(draft()))
+    expect(canonicalContent(draft({ benefits: [benefits[0]] }))).not.toBe(a)
+  })
+
+  it('publishes them where a pass binding reads them, and publishes none for a trail without any', () => {
+    const policy = publishedPolicy({ trail: {}, other: 1 }, draft({ benefits }))
+    expect(versionBenefits(policy)).toEqual([{ code: 'tasting-flight', label: 'Tasting flight' }, { code: 'dessert', label: 'Dessert course' }])
+    expect(policy.other).toBe(1)
+    expect('benefits' in publishedPolicy({ benefits: [{ code: 'old', label: 'Old' }] }, draft())).toBe(false)
+  })
+
+  it('offers a short code from the name', () => {
+    expect(benefitCodeFrom('Tasting flight')).toBe('tasting-flight')
+    expect(benefitCodeFrom('  2 for 1 Dessert!  ')).toBe('for-1-dessert')
+    expect(benefitCodeFrom('!!!')).toBe('')
   })
 })

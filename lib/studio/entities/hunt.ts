@@ -59,5 +59,19 @@ export const HUNT_MANIFEST: EntityManifest = {
         { path: 'placementReady', label: 'A code is printed or placed here', kind: 'toggle' },
       ],
     },
+    // FH-036S: what a paid pass for this trail includes. Published with the version as `policy.benefits`
+    // (lib/hunts/benefit-codes.ts), which is the only list a pass binding or a store offer may pick from.
+    // The editor offers it only while HUNTS_COMMERCE_ENABLED is on; a trail that sells nothing has none.
+    {
+      arrayPath: 'benefits',
+      label: 'Pass benefits',
+      over: 'array',
+      section: 'publishing',
+      itemLabel: (item, index) => (typeof item.label === 'string' && item.label) || `Benefit ${index + 1}`,
+      fields: [
+        { path: 'label', label: 'What the pass includes', kind: 'text', required: true },
+        { path: 'code', label: 'Short code', kind: 'text', required: true },
+      ],
+    },
   ],
 }

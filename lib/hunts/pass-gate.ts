@@ -10,7 +10,7 @@
  */
 import { activeBindingForTier, db } from './commerce-store'
 import { huntSwitchOn } from './flags'
-import { resolvePurchase, type CanonicalTier, type PassBinding, type PurchaseRefusal } from './pass-binding'
+import { resolvePurchase, type CanonicalTier, type PassBinding, type PurchaseRefusal, type ResolvedPurchase } from './pass-binding'
 
 const MESSAGE: Record<PurchaseRefusal, string> = {
   commerce_paused: 'This pass is not on sale right now.',
@@ -60,22 +60,26 @@ export async function commerceSalesOpen(): Promise<boolean> {
 }
 
 /**
- * The checkout gate. Returns an error string only when the tier is a bound pass and the Hunt rules refuse
- * it. A failure to READ is not a refusal: an unbound or unreadable tier sells as the ticket path always did,
- * because the Hunt layer must never become a reason a normal ticket cannot be bought.
+ * Resolve a checkout through the pass rules. `purchase` is null when the tier is not a bound pass (or the
+ * switch is off), and the canonical resolved purchase when it is. `refusal` is set only when the tier is a
+ * bound pass and the Hunt rules refuse it. A failure to READ is not a refusal: an unbound or unreadable tier
+ * sells as the ticket path always did, because the Hunt layer must never become a reason a normal ticket
+ * cannot be bought.
  */
-export async function passCheckoutGate(input: Readonly<{ eventId: string; ticketTypeId: string | null; qty: number }>): Promise<string | null> {
-  if (!huntSwitchOn('commerce') || !input.ticketTypeId) return null
+export async function resolvePassCheckout(
+  input: Readonly<{ eventId: string; ticketTypeId: string | null; qty: number }>,
+): Promise<{ refusal: string } | { purchase: ResolvedPurchase | null }> {
+  if (!huntSwitchOn('commerce') || !input.ticketTypeId) return { purchase: null }
   try {
     const binding = await activeBindingForTier(input.ticketTypeId)
-    if (!binding) return null
+    if (!binding) return { purchase: null }
     const { data: t } = await db()
       .from('event_ticket_types')
       .select('id, event_id, pricing_mode, price_cents, quantity, sold')
       .eq('id', input.ticketTypeId)
       .maybeSingle()
     const tier = t as TierRow | null
-    if (!tier) return null
+    if (!tier) return { purchase: null }
     const { data: ev } = await db().from('events').select('space_id, host_space_id').eq('id', tier.event_id).maybeSingle()
     const evRow = ev as { space_id: string | null; host_space_id: string | null } | null
     const sellerSpaceId = evRow?.host_space_id || evRow?.space_id || ''
@@ -91,12 +95,18 @@ export async function passCheckoutGate(input: Readonly<{ eventId: string; ticket
       // The ticket path owns the sales window and the active flag and refuses first; the pass adds the rest.
       salesOpen: true,
     }
-    const out = decidePassCheckout(binding, canonical, { eventId: input.eventId, ticketTypeId: input.ticketTypeId, qty: input.qty }, await commerceSalesOpen())
-    return out.ok ? null : out.error
+    const out = resolvePurchase(binding, canonical, { eventId: input.eventId, ticketTypeId: input.ticketTypeId, qty: input.qty }, await commerceSalesOpen())
+    return out.ok ? { purchase: out } : { refusal: passRefusalMessage(out.reason) }
   } catch (err) {
     console.error('[hunts-commerce] pass gate could not read; selling as a normal ticket', err)
-    return null
+    return { purchase: null }
   }
+}
+
+/** The checkout gate as one answer: the buyer line when a bound pass is refused, otherwise null. */
+export async function passCheckoutGate(input: Readonly<{ eventId: string; ticketTypeId: string | null; qty: number }>): Promise<string | null> {
+  const out = await resolvePassCheckout(input)
+  return 'refusal' in out ? out.refusal : null
 }
 
 /** Close or reopen new Hunt sales. Closing needs a reason (the SQL refuses without one) and is audited. */
