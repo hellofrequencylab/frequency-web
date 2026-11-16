@@ -28,6 +28,7 @@ import { isError } from '@/lib/action-result'
 import { createSequence, updateSequenceConfig, setSequenceStatus } from './sequence-actions'
 import { rollbackAssetVersion } from './recraft-actions'
 import { buttonClasses } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 
 // The Loom Studio editor for a managed onboarding flow (Loom kind='sequence'; docs/LOOM-PLATFORM.md
 // §3). It edits ONLY the SequenceDef config — Layer-2 data: order, copy, targeting, gating. This is
@@ -420,9 +421,7 @@ export function SequenceEditor({
                       setSaved(false)
                     }}
                     aria-pressed={on}
-                    className={`rounded-pill px-3 py-1.5 text-body-sm font-medium ${
-                      on ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated'
-                    }`}
+                    className={chipClasses(on)}
                   >
                     {p.label}
                   </button>

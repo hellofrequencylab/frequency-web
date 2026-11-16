@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Loader2, Check, X, Pencil, Send, CheckCircle2, Copy, ImagePlus, Star, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { Input, Textarea } from '@/components/ui/field'
@@ -446,10 +447,7 @@ function FieldEditor({
               type="button"
               onClick={() => toggle(a.value)}
               aria-pressed={on}
-              className={cn(
-                'rounded-pill border px-2.5 py-1 text-2xs font-medium transition-colors',
-                on ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:border-border-strong',
-              )}
+              className={chipClasses(on)}
             >
               {a.label}
             </button>

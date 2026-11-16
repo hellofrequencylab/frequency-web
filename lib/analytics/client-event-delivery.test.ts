@@ -172,6 +172,30 @@ describe('one client action, one Google event and one first-party row', () => {
   })
 })
 
+describe('first-party-only events never reach a pixel (PROG-E8B)', () => {
+  const props = { blockType: 'Banner', field: 'title', questionId: 'audience', source: 'vera', position: 0, shown: 3 }
+  it.each(['editor.vera_question_accepted', 'editor.vera_question_dismissed'])('records %s first-party with no browser or server Google hit', async event => {
+    trackClient(event, props)
+    expect(state.browserGoogle).not.toHaveBeenCalled()
+    expect(beacon).toHaveBeenCalledOnce()
+    expect((await deliverBeacon()).status).toBe(204)
+    expect(recordNames()).toEqual([event])
+    expect([...state.inserted.values()][0]).toMatchObject({ actor_profile_id: 'fixture-member-profile', context: props })
+    expect(state.fetch).not.toHaveBeenCalled()
+  })
+  it('does not mirror one even when a trusted server caller leaves the default mirror on', async () => {
+    expect(await track('editor.vera_question_accepted', props, 'fixture-member-profile')).toBe(true)
+    await flush()
+    expect(recordNames()).toEqual(['editor.vera_question_accepted'])
+    expect(state.fetch).not.toHaveBeenCalled()
+  })
+  it('the same default mirror does send an ordinary event, so the test above is not vacuous', async () => {
+    expect(await track('feature.used', { feature: 'directory' }, 'fixture-member-profile')).toBe(true)
+    await flush()
+    expect(emittedNames()).toEqual(['feature_used'])
+  })
+})
+
 describe('authoritative server callers retain their existing default mirror', () => {
   it('mirrors signup exactly once with its browser identity across durable-key retries', async () => {
     const options = { idempotencyKey: 'account.created:fixture-member-profile', gaIdentity: { clientId: '123.456', sessionId: '1695123456' } }
