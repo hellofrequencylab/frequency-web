@@ -27,7 +27,9 @@ import { createHash, randomBytes } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { decide, type HuntAction, type PartnerRow, type RoleGrant } from '@/lib/hunts/authz'
-import { publishVenueBlocks } from '@/lib/hunts/partners'
+import { partnerLive, publishVenueBlocks } from '@/lib/hunts/partners'
+import { canHostFinale, parseFinale, type FinaleChoiceEvent } from '@/lib/hunts/rally-finale'
+import { hostingSpaceId } from '@/lib/events/belonging'
 import { slugify } from '@/lib/utils'
 import {
   canonicalContent,
@@ -68,6 +70,9 @@ const VERSION_COLS = 'id, version_no, status, policy, content_hash, published_at
 
 export type PublishVisibility = 'unlisted' | 'public'
 
+/** An Event the author may end the Trail at (FH-031S). */
+type FinaleChoice = { id: string; title: string; startsAt: string | null }
+
 /** What the editor screens render. The draft is the latest version's content, published or not. */
 export type TrailEditorState = {
   huntId: string
@@ -81,6 +86,8 @@ export type TrailEditorState = {
   publishedAt: string | null
   canPublish: boolean
   draft: TrailDraft
+  /** FH-031S: the finale Event the latest version names, and the Events the author may pick. */
+  finale: { eventId: string | null; choices: FinaleChoice[] }
 }
 
 export type Actor = { profileId: string }
@@ -197,6 +204,9 @@ export async function loadTrail(huntId: string, actor: Actor): Promise<TrailEdit
   if (!hunt) return null
   const version = await latestVersion(client, huntId)
   const canPublish = (await authorizeHunt(client, huntId, actor, 'publish')) !== null
+  const current = parseFinale(version?.policy)
+  // A picker that cannot read its Events offers none; the publish re-checks the pick anyway.
+  const choices = await loadFinaleChoices(client, hunt, new Date().toISOString()).catch(() => [] as FinaleChoiceEvent[])
   return {
     huntId: hunt.id,
     slug: hunt.slug,
@@ -208,6 +218,10 @@ export async function loadTrail(huntId: string, actor: Actor): Promise<TrailEdit
     publishedAt: version?.published_at ?? null,
     canPublish,
     draft: trailOf(version),
+    finale: {
+      eventId: current?.eventId ?? null,
+      choices: choices.map((e) => ({ id: e.id, title: e.title, startsAt: e.startsAt })),
+    },
   }
 }
 
@@ -271,11 +285,13 @@ async function writeTrail(client: SupabaseClient, huntId: string, actorId: strin
     if (error) throw new Error(error.message)
     return
   }
+  // The next version starts from the same finale Event (FH-031S), so editing a stop does not drop it.
+  const finale = parseFinale(version?.policy)
   const { error } = await client.from('hunt_versions').insert({
     hunt_id: huntId,
     version_no: (version?.version_no ?? 0) + 1,
     status: 'draft',
-    policy: { trail: draft },
+    policy: finale ? { trail: draft, finale: { event_id: finale.eventId } } : { trail: draft },
     created_by: actorId,
   })
   if (error) throw new Error(error.message)
@@ -319,6 +335,71 @@ export async function markRouteTested(huntId: string, actor: Actor, revision: nu
   return { ok: true }
 }
 
+// ── Finale (FH-031S) ─────────────────────────────────────────────────────────────────────────
+
+type FinaleEventRow = {
+  id: string
+  title: string
+  slug: string
+  starts_at: string | null
+  ends_at: string | null
+  capacity: number | null
+  is_cancelled: boolean | null
+  status: string | null
+  removed_at: string | null
+  host_space_id: string | null
+  space_id: string | null
+  host_id: string | null
+}
+const FINALE_EVENT_COLS = 'id, title, slug, starts_at, ends_at, capacity, is_cancelled, status, removed_at, host_space_id, space_id, host_id'
+
+const toChoiceEvent = (e: FinaleEventRow): FinaleChoiceEvent => ({
+  id: e.id,
+  title: e.title,
+  slug: e.slug,
+  startsAt: e.starts_at,
+  endsAt: e.ends_at,
+  capacity: typeof e.capacity === 'number' ? e.capacity : null,
+  cancelled: e.is_cancelled === true,
+  published: e.status === 'published' && !e.removed_at,
+  hostSpaceId: hostingSpaceId({ spaceId: e.space_id, hostSpaceId: e.host_space_id }, null),
+  hostProfileId: e.host_id,
+})
+
+/**
+ * The Events this Hunt may end at, read now: a Space's Hunt offers its own Space's Events and its live
+ * partners', a member's Hunt offers the Events that member hosts. Every row still goes through
+ * `canHostFinale`, so the query only narrows. A read that fails throws.
+ */
+async function loadFinaleChoices(client: SupabaseClient, hunt: HuntRow, now: string): Promise<FinaleChoiceEvent[]> {
+  const since = new Date(Date.parse(now) - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const base = () =>
+    client.from('events').select(FINALE_EVENT_COLS).eq('status', 'published').is('removed_at', null).gte('starts_at', since).order('starts_at', { ascending: true }).limit(100)
+  let livePartnerSpaceIds: string[] = []
+  let rows: FinaleEventRow[] = []
+  if (hunt.owner_space_id) {
+    const partners = await client.from('hunt_partners').select('space_id, status, effective_at, revoked_at').eq('hunt_id', hunt.id)
+    if (partners.error) throw new Error(partners.error.message)
+    livePartnerSpaceIds = ((partners.data ?? []) as { space_id: string; status: PartnerRow['status']; effective_at: string | null; revoked_at: string | null }[])
+      .filter((p) => partnerLive({ status: p.status, effectiveAt: p.effective_at, revokedAt: p.revoked_at }, now))
+      .map((p) => p.space_id)
+    const spaceIds = [hunt.owner_space_id, ...livePartnerSpaceIds]
+    // The host is host_space_id, else space_id (lib/events/belonging.ts), so both columns are asked.
+    const [hosted, placed] = await Promise.all([base().in('host_space_id', spaceIds), base().is('host_space_id', null).in('space_id', spaceIds)])
+    if (hosted.error || placed.error) throw new Error((hosted.error ?? placed.error)?.message)
+    rows = [...((hosted.data ?? []) as FinaleEventRow[]), ...((placed.data ?? []) as FinaleEventRow[])]
+  } else if (hunt.owner_profile_id) {
+    const own = await base().eq('host_id', hunt.owner_profile_id)
+    if (own.error) throw new Error(own.error.message)
+    rows = (own.data ?? []) as FinaleEventRow[]
+  }
+  const owner = { ownerSpaceId: hunt.owner_space_id, ownerProfileId: hunt.owner_profile_id, livePartnerSpaceIds }
+  return rows
+    .map(toChoiceEvent)
+    .filter((e) => canHostFinale(e, owner, now))
+    .sort((a, b) => (a.startsAt ?? '').localeCompare(b.startsAt ?? ''))
+}
+
 // ── Publish ──────────────────────────────────────────────────────────────────────────────────
 
 const contentHash = (draft: TrailDraft): string => createHash('sha256').update(canonicalContent(draft)).digest('hex')
@@ -330,6 +411,8 @@ export type PublishResult =
   | { ok: false; reason: 'forbidden' }
   /** FH-029: a stop is placed at a venue Space with no live partner row. */
   | { ok: false; reason: 'partners'; spaceIds: string[] }
+  /** FH-031S: the picked finale Event is not one this Hunt may end at (any more). */
+  | { ok: false; reason: 'finale' }
 
 /**
  * FH-029: the venue Spaces that stop this publish. Reads the version's mission placements and the Hunt's
@@ -368,6 +451,8 @@ export async function publishTrail(
   visibility: PublishVisibility,
   /** The permission confirm is part of the publish tap, not a draft edit, so it cannot clear the route test. */
   permissionConfirmed: boolean,
+  /** FH-031S: the host Event the published version names, or null for no finale. Checked again here. */
+  finaleEventId: string | null = null,
 ): Promise<PublishResult> {
   const client = db()
   const hunt = await authorizeHunt(client, huntId, actor, 'publish')
@@ -380,6 +465,11 @@ export async function publishTrail(
   if (!checklist.ok) return { ok: false, reason: 'checklist', items: checklist.items }
   const blockedVenues = await venuesBlockingPublish(client, hunt, version.id)
   if (blockedVenues.length > 0) return { ok: false, reason: 'partners', spaceIds: blockedVenues }
+  const finale = finaleEventId === null ? null : parseFinale({ finale: { event_id: finaleEventId } })
+  if (finaleEventId !== null) {
+    const choices = await loadFinaleChoices(client, hunt, new Date().toISOString())
+    if (!finale || !choices.some((e) => e.id === finale.eventId)) return { ok: false, reason: 'finale' }
+  }
 
   const bumped = await bumpRevision(client, huntId, baseRevision)
   if (!bumped.applied) return { ok: false, reason: 'conflict', currentRevision: bumped.currentRevision }
@@ -407,9 +497,13 @@ export async function publishTrail(
 
   const hash = contentHash(draft)
   const publishedAt = new Date().toISOString()
+  // The finale is frozen with the version: policy.finale.event_id, or no finale key at all.
+  const policy: Record<string, unknown> = { ...(version.policy ?? {}) }
+  delete policy.finale
+  const frozenPolicy = finale ? { ...policy, trail: draft, finale: { event_id: finale.eventId } } : { ...policy, trail: draft }
   const { error: flipError } = await client
     .from('hunt_versions')
-    .update({ status: 'published', content_hash: hash, published_at: publishedAt, policy: { ...(version.policy ?? {}), trail: draft } })
+    .update({ status: 'published', content_hash: hash, published_at: publishedAt, policy: frozenPolicy })
     .eq('id', version.id)
     .eq('hunt_id', huntId)
     .eq('status', 'draft')

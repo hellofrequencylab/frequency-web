@@ -4,12 +4,14 @@ import { notFound, redirect } from 'next/navigation'
 import { Check, Lock, MapPin } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { ClaimStopForm } from '@/components/hunts/claim-stop-form'
+import { FinalePanel } from '@/components/hunts/finale-panel'
 import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
 import { VisitedStops } from '@/components/hunts/visited-stops'
 import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { projectForPlayer } from '@/lib/hunts/player'
+import { loadRallyFinale } from '@/lib/hunts/rally-finale-store'
 import { loadPlayerRun, loadPublishedTrail, loadRunCredits, startOrResumeRun } from '@/lib/hunts/run-store'
 
 export const dynamic = 'force-dynamic'
@@ -35,6 +37,9 @@ export default async function PlayPage({ params, searchParams }: {
   const { hint } = await searchParams
   const run = hint === undefined ? await startOrResumeRun(trail, profileId) : await loadPlayerRun(trail, profileId)
   const credits = run ? await loadRunCredits(run.runId, profileId) : []
+  // FH-031S: the Event finale, read from the Events tables for this player only. A read that throws
+  // shows no panel rather than breaking the Trail; reading never admits anyone.
+  const finale = run ? await loadRallyFinale(run.runId, profileId, new Date().toISOString()).catch(() => null) : null
   const view = projectForPlayer({
     graph: trail.graph,
     content: trail.content,
@@ -90,6 +95,7 @@ export default async function PlayPage({ params, searchParams }: {
           ))}
         </ol>
         <VisitedStops stops={view.stops} />
+        <FinalePanel finale={finale} />
         {huntSwitchOn('claims') && view.canClaim && run?.state === 'active' && <ClaimStopForm slug={slug} />}
       </div>
     </FocusTemplate>

@@ -1,0 +1,19 @@
+{
+  "id": "FH-031T",
+  "title": "Hunts FH-031T: Gate the completion reward and the Event stop on the finale seat",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "owner": "agent",
+  "source": {
+    "file": "lib/hunts/rally-finale.ts",
+    "ref": "Split from FH-031S (2026-11-16)."
+  },
+  "detail": "FH-031S put the finale on the screens (the Trail editor's finale pick frozen at publish as hunt_versions.policy.finale.event_id, and the player's finale panel from loadRallyFinale). Still owed: (1) the first route that grants a completion reward calls grantFinaleReward with the run's projection, and hunt_reward_grant gets the same seat check in SQL (a succeeded unrefunded ticket or an admitted going RSVP at the version's finale Event) so the rule does not rest on one caller. That SQL change is a new migration, which the FH-031S pass was not allowed to write; it goes through the serialized migration gate (docs/DATABASE.md). (2) An Event stop credits through hunt_claim_apply with finaleDoorEvidence at assurance event_door. (3) Owner check on a preview deployment: a finished player with no seat at a full host Event sees the full message and holds no RSVP, ticket or reward afterwards. Requires FH-021 and FH-030. Hunts switches stay OFF.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const walk=(d)=>fs.readdirSync(d,{withFileTypes:true}).flatMap((e)=>e.isDirectory()?walk(p.join(d,e.name)):[p.join(d,e.name)]);const caller=walk(\"app\").some((f)=>/\\.tsx?$/.test(f)&&!/\\.test\\./.test(f)&&fs.readFileSync(f,\"utf8\").includes(\"grantFinaleReward(\"));const sql=walk(\"supabase/migrations\").some((f)=>{const s=fs.readFileSync(f,\"utf8\");return s.includes(\"hunt_reward_grant\")&&s.includes(\"finale\")});process.exit(caller&&sql?0:1)'"
+  },
+  "wave": "W7"
+}

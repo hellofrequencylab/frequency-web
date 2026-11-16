@@ -35,6 +35,7 @@ import {
 } from '@/lib/hunts/draft'
 import type { TrailEditorState } from '@/lib/hunts/store'
 import { publishTrailAction, routeTestedAction, saveTrailAction } from '@/app/(main)/hunts/actions'
+import { formatEventDate } from '@/lib/utils'
 import { EDITOR_STEPS, TRAIL_STEPS, stepNumber, type EditorStep } from './trail-steps'
 
 // The stop fields, from the manifest's repeat. The kernel keeps a repeat field's `section` on the
@@ -42,6 +43,7 @@ import { EDITOR_STEPS, TRAIL_STEPS, stepNumber, type EditorStep } from './trail-
 const STOPS_REPEAT = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'stops')
 const STOP_FIELDS: FieldDef[] = (STOPS_REPEAT?.fields ?? []).map((f) => ({ ...f, section: STOPS_REPEAT?.section ?? 'stops' }))
 const VISIBILITY_FIELD = HUNT_MANIFEST.fields.find((f) => f.path === 'visibility')
+const FINALE_FIELD = HUNT_MANIFEST.fields.find((f) => f.path === 'finaleEventId')
 
 const STOP_PLACEHOLDER: Record<string, string> = {
   place: 'e.g. The bench under the big fig tree',
@@ -74,6 +76,15 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
   const [permission, setPermission] = useState(initial.draft.permissionConfirmed)
   const [publishing, setPublishing] = useState(false)
   const [justPublished, setJustPublished] = useState<'unlisted' | 'public' | null>(null)
+  // FH-031S: the finale Event rides on the publish tap like the permission confirm. A pick that is no
+  // longer offered (the Event ended, or the partner withdrew) starts unset rather than as a bare id.
+  const finaleChoices = useMemo(
+    () => initial.finale.choices.map((e) => ({ value: e.id, label: e.startsAt ? `${e.title}, ${formatEventDate(e.startsAt)}` : e.title })),
+    [initial.finale.choices],
+  )
+  const [finaleEventId, setFinaleEventId] = useState<string>(
+    initial.finale.choices.some((e) => e.id === initial.finale.eventId) ? (initial.finale.eventId ?? '') : '',
+  )
 
   // ── Autosave, revision-checked ───────────────────────────────────────────────────────────
   // The latest draft and revision live in refs the effects keep current, so a save that fires from
@@ -206,7 +217,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
   const publish = async () => {
     setPublishing(true)
     setError(null)
-    const res = await publishTrailAction({ huntId: initial.huntId, baseRevision: revision, visibility, permissionConfirmed: permission })
+    const res = await publishTrailAction({ huntId: initial.huntId, baseRevision: revision, visibility, permissionConfirmed: permission, finaleEventId: finaleEventId || null })
     setPublishing(false)
     if ('error' in res) {
       setError(res.error)
@@ -490,6 +501,17 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
               <FieldControl def={{ ...VISIBILITY_FIELD, required: true }} value={visibility} onChange={(v) => setVisibility(scalar(v))} disabled={published || conflict !== null} />
             </StudioField>
           )}
+          {FINALE_FIELD && finaleChoices.length > 0 && (
+            <StudioField label={FINALE_FIELD.label}>
+              <FieldControl def={FINALE_FIELD} loaded={{ finaleEvents: finaleChoices }} value={finaleEventId} onChange={(v) => setFinaleEventId(scalar(v))} disabled={published || conflict !== null} />
+            </StudioField>
+          )}
+          <StudioNote>
+            <strong>Ending at an event.</strong>{' '}
+            {finaleChoices.length > 0
+              ? 'Players who finish see the event and how many places are left. Finishing never holds a place: they still need their own ticket or RSVP.'
+              : 'A trail can end at an upcoming event you host, or one your Space or a partner Space hosts. There is none to pick yet.'}
+          </StudioNote>
         </div>
       )}
     </SparkShell>
