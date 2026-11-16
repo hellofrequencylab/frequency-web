@@ -108,7 +108,7 @@ describe('a deploy built with NEXT_PUBLIC_SITE_DESIGN=frequency', () => {
       expect(design).not.toHaveProperty('LEGACY_THEME_AXES')
       expect(skins.SELECTABLE_SKINS.map((s) => s.id)).toEqual(['default', 'midnight'])
       // The picker names the default skin after the design it is, never "Dawn" under Frequency.
-      expect(skins.SELECTABLE_SKINS.map((s) => s.label)).toEqual(['Default', 'Midnight'])
+      expect(skins.SELECTABLE_SKINS.map((s) => s.label)).toEqual(['Default', 'Nocturne'])
       expect(skins.resolveSkin('midnight')).toBe('midnight')
     } finally {
       vi.unstubAllEnvs()

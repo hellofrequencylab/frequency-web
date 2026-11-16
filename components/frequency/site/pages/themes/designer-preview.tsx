@@ -30,7 +30,7 @@ export function DesignerPhone({ src, alt, sizes, priority = false }: { src: stri
     <span className="df-ios">
       <span className="df-ios-body">
         <span className="df-ios-scr">
-          <Image src={src} alt={alt} width={740} height={1648} sizes={sizes} priority={priority} />
+          <Image src={src} alt={alt} width={740} height={1648} sizes={sizes} preload={priority} />
           <span className="df-sb" aria-hidden="true">
             <span>9:41</span>
             <span className="df-isl" />
@@ -58,7 +58,7 @@ export function DesignerBrowser({ src, alt, url, width, height, sizes, priority 
         <u>{url}</u>
       </div>
       <div className="df-scr">
-        <Image src={src} alt={alt} width={width} height={height} sizes={sizes} priority={priority} />
+        <Image src={src} alt={alt} width={width} height={height} sizes={sizes} preload={priority} />
       </div>
     </div>
   )

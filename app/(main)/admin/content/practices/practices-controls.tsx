@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Bookmark, ChevronDown, Search, Trash2, X } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
+import { chipClasses } from '@/components/ui/chip'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
 
@@ -142,11 +143,7 @@ function ToggleChip({
       type="button"
       aria-pressed={active}
       onClick={() => patch({ [paramKey]: active ? null : value })}
-      className={`inline-flex min-h-[2rem] items-center rounded-control border px-2.5 py-1 text-meta font-semibold transition-colors motion-reduce:transition-none ${
-        active
-          ? 'border-primary bg-primary/10 text-primary'
-          : 'border-border text-muted hover:border-border-strong hover:text-text'
-      }`}
+      className={chipClasses(active)}
     >
       {label}
     </button>
