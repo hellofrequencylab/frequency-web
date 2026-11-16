@@ -11,6 +11,7 @@ import { SPACE_THEMES, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/sp
 import { updateSpaceBranding } from '@/app/(main)/admin/spaces/actions'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // The per-Space branding form (docs/SPACES.md, ADR-249/250). A FOCUS surface: pick the
 // Space's theme (a select of built-in code skins + active skin themes), set the brand name,
@@ -116,11 +117,7 @@ export function SpaceBrandEditor({
                   // font vars + treatment rules to this card (they live on <html>, so this works
                   // outside AccentScope), and `font-display` renders the label in that theme's face.
                   data-space-theme={t.id}
-                  className={`rounded-xl border p-3 text-left transition-colors ${
-                    selected
-                      ? 'border-primary bg-primary-bg/50 ring-1 ring-primary'
-                      : 'border-border bg-surface hover:border-border-strong'
-                  }`}
+                  className={choiceTileClasses(selected, `rounded-xl p-3 text-left${selected ? ' ring-1 ring-primary' : ''}`)}
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="font-display text-body-sm font-semibold text-text">{t.label}</span>
