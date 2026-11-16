@@ -20,8 +20,8 @@ import type { InspectorFieldView } from './inspector-fields'
 import type { InspectorDeviceValues } from './inspector-model'
 import type { CanvasInserterView } from './canvas-presets'
 import { withSpacing, type LayerSlot, type LayerTree, type SpacingEdge, type SpacingStep } from './canvas-tree'
-import { upgradeLayout, type BlockNode, type NodeLayout } from '@/lib/entity-blocks/node-tree'
-import { addNode, findNode, getNode, placeNode, sanitizeNodeLayout, setNodeContent, setNodeResponsive, setNodeStyle } from '@/lib/entity-blocks/node-ops'
+import { MAX_BENCH, upgradeLayout, type BlockNode, type NodeLayout } from '@/lib/entity-blocks/node-tree'
+import { addNode, benchNode, canPlaceType, findNode, getNode, hideNode, placeNode, removeNode, sanitizeNodeLayout, setNodeContent, setNodeResponsive, setNodeStyle, unhideNode } from '@/lib/entity-blocks/node-ops'
 
 /** The preferences keys this document lives under. The draft and published keys are the Space page builder's. */
 export const CANVAS_DRAFT_KEY = 'profileLayoutDraft'
@@ -74,11 +74,16 @@ export interface CanvasDocumentView {
 }
 
 /** A change to the page that is not a field edit (PROG-E6B): a block moved to a slot, one spacing step on a
- *  block, or a new block under it. An insert already holds its block: the server resolved the id the tab sent. */
+ *  block, or a new block under it. An insert already holds its block: the server resolved the id the tab sent.
+ *  PROG-E6C: a copy under it, hiding or showing it, removing it (to the bench, or for good) and putting it back. */
 export type CanvasDocChange =
   | { kind: 'move'; to: LayerSlot }
   | { kind: 'spacing'; edge: SpacingEdge; step: SpacingStep }
   | { kind: 'insert'; type: string; content?: Record<string, unknown> }
+  | { kind: 'duplicate' }
+  | { kind: 'hide'; hidden: boolean }
+  | { kind: 'remove'; keep: boolean }
+  | { kind: 'restore'; to: LayerSlot }
 
 /** One device bag as it crosses from the client: field key to a string or a boolean, nothing else. */
 type CanvasFieldBag = Readonly<Partial<Record<string, string | boolean>>>
@@ -166,22 +171,46 @@ export function applyCanvasNodeEdit(layout: NodeLayout, nid: string, values: Can
 }
 
 /** One structural change laid onto the document, with the id of the block it left selected (the new block for an
- *  insert). `no-node` when the block is not placed on the page. `refused` when the page cannot take the change:
- *  a slot that is not there, a column that is full, a block at its per-page limit. Nothing is ever dropped to
- *  make room. Not yet sanitized: the write does that. */
+ *  insert or a copy, a neighbour after a removal). `no-node` when the block is not where the change needs it: on the
+ *  page, or on the bench for a put-back. `refused` when the page cannot take the change: a slot that is not there, a
+ *  column that is full, a block at its per-page limit, a full bench, or the last block on the page. Nothing is ever
+ *  dropped to make room. Not yet sanitized: the write does that. */
 export function applyCanvasChange(layout: NodeLayout, nid: string, change: CanvasDocChange): { layout: NodeLayout; nid: string } | 'no-node' | 'refused' {
   const at = findNode(layout, nid)
   const node = getNode(layout, nid)
-  if (!node || at?.where !== 'placed') return 'no-node'
   const count = canvasNodes(layout).length
+  if (change.kind === 'restore') {
+    // A removed block goes back where it was. It counts against its per-page limit again, so a page that has since
+    // filled that limit says no.
+    if (!node || at?.where !== 'bench') return 'no-node'
+    if (!canPlaceType(layout, node.type)) return 'refused'
+    const placed = placeNode(layout, nid, change.to.rowId, change.to.col, change.to.index)
+    return canvasNodes(placed).length === count + 1 && findNode(placed, nid)?.where === 'placed' ? { layout: placed, nid } : 'refused'
+  }
+  if (!node || at?.where !== 'placed') return 'no-node'
   if (change.kind === 'spacing') return { layout: setNodeStyle(layout, nid, withSpacing(node.style, change.edge, change.step)), nid }
+  if (change.kind === 'hide') return { layout: change.hidden ? hideNode(layout, nid) : unhideNode(layout, nid), nid }
   if (change.kind === 'move') {
     const moved = placeNode(layout, nid, change.to.rowId, change.to.col, change.to.index)
     return moved !== layout && canvasNodes(moved).length === count && findNode(moved, nid)?.where === 'placed' ? { layout: moved, nid } : 'refused'
   }
-  const added = addNode(layout, change.type, at.rowId, at.col, at.index + 1)
+  if (change.kind === 'remove') {
+    // A page keeps one block: the canvas reads a page with none as no page at all. A kept block needs bench room,
+    // because the write would otherwise trim the bench and lose its words.
+    if (count <= 1 || (change.keep && layout.bench.length >= MAX_BENCH)) return 'refused'
+    const order = canvasNodes(layout).map((placed) => placed.nid)
+    const here = order.indexOf(nid)
+    const next = order[here + 1] ?? order[here - 1]!
+    return { layout: change.keep ? benchNode(layout, nid) : removeNode(layout, nid), nid: next }
+  }
+  const type = change.kind === 'duplicate' ? node.type : change.type
+  const added = addNode(layout, type, at.rowId, at.col, at.index + 1)
   if (!added.nid || canvasNodes(added.layout).length !== count + 1) return 'refused'
-  return { layout: change.content ? setNodeContent(added.layout, added.nid, change.content) : added.layout, nid: added.nid }
+  if (change.kind === 'insert') return { layout: change.content ? setNodeContent(added.layout, added.nid, change.content) : added.layout, nid: added.nid }
+  // A copy carries every bag the block holds: its words, its tablet and phone changes, its style, and hidden.
+  let copy = setNodeStyle(setNodeResponsive(setNodeContent(added.layout, added.nid, node.content && structuredClone(node.content)), added.nid, node.responsive && structuredClone(node.responsive)), added.nid, node.style && structuredClone(node.style))
+  if (node.hidden) copy = hideNode(copy, added.nid)
+  return { layout: copy, nid: added.nid }
 }
 
 type CanvasDraftPlan =

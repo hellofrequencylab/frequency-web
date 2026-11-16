@@ -123,7 +123,8 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
             </div>
             <div className="jr">
               {job.features.map((f, n) => (
-                <details className={n === 0 ? 'ft lead' : 'ft'} id={f.id} key={f.id}>
+                // suppressHydrationWarning: the pre-paint script below may set `open` before React hydrates.
+                <details className={n === 0 ? 'ft lead' : 'ft'} id={f.id} key={f.id} suppressHydrationWarning>
                   <summary>
                     <span className="ic">
                       <FqIcon name={f.icon} />
@@ -199,6 +200,19 @@ export function FrequencyFeatures() {
 
       <HalfSection half={PEOPLE} label="02 For people" />
       <HalfSection half={SPACES} label="03 For spaces" />
+      {
+        // OPEN THE LINKED FEATURE BEFORE THE FIRST PAINT (SCAN-1265). A `#f-…` link (the /the-quest redirect
+        // lands on #f-zaps) used to open its panel only after hydration, so on a slow phone the open panel
+        // pushed the cards below it 400 px down while the visitor read them: CLS 0.301. This runs as the
+        // parser reaches it, while every feature is already in the DOM. FeaturesMotion still handles a
+        // hash change after load and the scroll offset.
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var h=location.hash;if(h.indexOf('#f-')!==0)return;var d=document.getElementById(h.slice(1));if(d&&d.tagName==='DETAILS')d.open=true}catch(e){}})()",
+          }}
+        />
+      }
 
       <section className="sec">
         <div className="wrap">
