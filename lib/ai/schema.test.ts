@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseModelJson, validateModelValue, stripFence, extractJsonSpan, noteList, shortText, textOrEmpty, lenientList, jsonObject, z } from './schema'
+import { parseModelJson, validateModelValue, stripFence, extractJsonSpan, noteList, shortText, textOrEmpty, lenientList, jsonObject, aliasedText, looseEnum, looseNumber, rowsOrNone, unitBox, citedField, z } from './schema'
 
 // The one boundary between model output and typed data (ADR-1287). These drive the helper with
 // the shapes a model actually returns: fenced, prose-wrapped, truncated, wrong-typed, and right.
@@ -98,5 +98,54 @@ describe('validateModelValue + the shared blocks', () => {
     const list = lenientList(z.object({ id: z.string() }))
     expect(list.parse([{ id: 'a' }, null, 7, 'x', [], { id: 3 }, { id: 'b', extra: true }])).toEqual([{ id: 'a' }, { id: 'b' }])
     expect(list.safeParse('not a list').success).toBe(false)
+  })
+})
+
+describe('the extractor blocks (PROG-E8C)', () => {
+  it('aliasedText keeps absent as absent so the other key can answer, and reads a wrong type as empty', () => {
+    const row = z.object({ startsAt: aliasedText(5), starts_at: aliasedText(5) })
+    const read = (v: unknown) => {
+      const r = row.parse(v)
+      return r.startsAt ?? r.starts_at ?? ''
+    }
+    expect(read({ startsAt: ' abcdefg ' })).toBe('abcde')
+    expect(read({ starts_at: 'old' })).toBe('old')
+    expect(read({ startsAt: null, starts_at: 'old' })).toBe('old')
+    expect(read({ startsAt: 7, starts_at: 'old' })).toBe('')
+    expect(read({})).toBe('')
+  })
+
+  it('looseEnum ignores case and space, and fails on anything outside the set', () => {
+    const kind = looseEnum(['logo', 'photo'] as const)
+    expect(kind.parse(' Logo ')).toBe('logo')
+    expect(kind.safeParse('art').success).toBe(false)
+    expect(kind.safeParse(3).success).toBe(false)
+    expect(kind.catch('photo').parse(null)).toBe('photo')
+  })
+
+  it('looseNumber takes a number or a numeric string, and nothing that is not finite', () => {
+    expect(looseNumber.parse(0.25)).toBe(0.25)
+    expect(looseNumber.parse('0.25')).toBe(0.25)
+    for (const junk of ['a quarter', null, undefined, true, Number.NaN, Number.POSITIVE_INFINITY, {}]) expect(looseNumber.safeParse(junk).success).toBe(false)
+  })
+
+  it('rowsOrNone is empty for anything that is not a list, and each call gets its own list', () => {
+    const rows = rowsOrNone(z.object({ id: z.string() }))
+    expect(rows.parse([{ id: 'a' }, null, { id: 2 }])).toEqual([{ id: 'a' }])
+    const a = rows.parse('nope')
+    expect(a).toEqual([])
+    a.push({ id: 'leak' })
+    expect(rows.parse(undefined)).toEqual([])
+  })
+
+  it('unitBox clamps into the unit square and is null for a box that is degenerate or not a box', () => {
+    expect(unitBox.parse({ x: -1, y: '0.5', w: 3, h: 0.9 })).toEqual({ x: 0, y: 0.5, w: 1, h: 0.5 })
+    for (const junk of [{ x: 0, y: 0, w: 0.001, h: 1 }, { x: 0, y: 0, w: 1 }, { x: 'left', y: 0, w: 1, h: 1 }, 'box', null, undefined, []]) expect(unitBox.parse(junk)).toBeNull()
+  })
+
+  it('citedField reads each wrong-typed part as absent, and a field that is not an object as no field', () => {
+    expect(citedField.parse({ value: 'v', snippet: 's', sourceUrl: 'u', kind: 'fact', confidence: 0.9, extra: 1 })).toEqual({ value: 'v', snippet: 's', sourceUrl: 'u', kind: 'fact', confidence: 0.9 })
+    expect(citedField.parse({ value: 7, snippet: 9, sourceUrl: [], kind: 4, confidence: 'x' })).toEqual({})
+    for (const junk of ['Acme', 3, null, undefined, []]) expect(citedField.parse(junk)).toBeUndefined()
   })
 })
