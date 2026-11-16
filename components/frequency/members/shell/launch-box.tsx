@@ -19,7 +19,18 @@ import { launchHomeHref } from '@/lib/launch/destination'
 
 const RESUME_HREF = launchHomeHref({ signedIn: true })
 
-export function LaunchPill({ view, open, onToggle }: { view: LaunchBoxView; open: boolean; onToggle: () => void }) {
+export function LaunchPill({
+  view,
+  open,
+  onToggle,
+  controls = 'fqm-launch',
+}: {
+  view: LaunchBoxView
+  open: boolean
+  onToggle: () => void
+  /** The id of the sheet this pill opens: the members header's, or the console top bar's (LIVE-2320). */
+  controls?: string
+}) {
   // After Publish the same pill reads "Finish setup" and counts the Get Started list (lib/launch/setup-box.ts).
   const setup = view.setup
   if (setup) {
@@ -28,7 +39,7 @@ export function LaunchPill({ view, open, onToggle }: { view: LaunchBoxView; open
         type="button"
         className={view.minimized ? 'ap-launch min' : 'ap-launch'}
         aria-expanded={open}
-        aria-controls="fqm-launch"
+        aria-controls={controls}
         aria-haspopup="dialog"
         aria-label={`Finish setup, ${setup.done} of ${setup.total} done`}
         title="Finish setup"
@@ -44,7 +55,7 @@ export function LaunchPill({ view, open, onToggle }: { view: LaunchBoxView; open
       type="button"
       className={view.minimized ? 'ap-launch min' : 'ap-launch'}
       aria-expanded={open}
-      aria-controls="fqm-launch"
+      aria-controls={controls}
       aria-haspopup="dialog"
       aria-label={`Your launch, ${view.done} of ${view.total} made`}
       title="Your launch"
