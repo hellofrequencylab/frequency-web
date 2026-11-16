@@ -245,14 +245,14 @@ export async function FqOverviewBody({
         kicker={`${spaceName} · this week`}
         title={
           firstName ? (
-            <>
+            <span data-visual-mask="space-console-greeting">
               {greeting(now)}, <span className="serif">{firstName}.</span>
-            </>
+            </span>
           ) : (
-            `${greeting(now)}.`
+            <span data-visual-mask="space-console-greeting">{`${greeting(now)}.`}</span>
           )
         }
-        meta={meta}
+        meta={<span data-visual-mask="space-console-head-meta">{meta}</span>}
         actions={
           <>
             <Link className="btn" href={`/spaces/${slug}?edit=page`}>
@@ -271,7 +271,9 @@ export async function FqOverviewBody({
         }
       />
 
-      <div className="g4">
+      {/* Every band below is a database reading, so each declares itself to the visual capture
+          (HYG-121; the rows and their reasons are VISUAL_MASK_SITES in test/e2e/surfaces.ts). */}
+      <div data-visual-mask="space-console-stats" className="g4">
         <Kpi label="Check-ins, 30 days" value={checkins30 === null ? EMPTY : n(checkins30)} trend={checkinsTrend} note={checkins === null ? 'History unavailable or incomplete' : undefined} />
         <Kpi
           label="Came back within 2 weeks"
@@ -287,7 +289,7 @@ export async function FqOverviewBody({
         />
       </div>
 
-      <div className="g4 adp-kpi-row">
+      <div data-visual-mask="space-console-reach-stats" className="g4 adp-kpi-row">
         <Kpi
           label="Followers"
           value={followers ? n(followers.total) : EMPTY}
@@ -310,7 +312,7 @@ export async function FqOverviewBody({
 
       <div className="ap-cols adp-split sec adp-gap">
         <div className="stack adp-wide">
-          <div className="panel">
+          <div data-visual-mask="space-console-checkins-chart" className="panel">
             <div className="sec-h">
               <span className="h3">Check-ins by week</span>
               <span className="t2">Last 12 weeks</span>
@@ -339,7 +341,7 @@ export async function FqOverviewBody({
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody data-visual-mask="space-console-upcoming">
                   {events.length === 0 ? (
                     <tr>
                       <td className="t1" colSpan={5}>
@@ -399,7 +401,7 @@ export async function FqOverviewBody({
         <aside className="side">
           <div className="panel stack">
             <span className="k">Needs you</span>
-            <div className="list">
+            <div data-visual-mask="space-console-needs" className="list">
               {needs.length === 0 ? (
                 <div>
                   <span className="ic">
@@ -431,7 +433,7 @@ export async function FqOverviewBody({
           </div>
           <div className="panel stack adp-glance">
             <span className="k">At a glance</span>
-            <dl className="list">
+            <dl data-visual-mask="space-console-glance" className="list">
               {glance.map((row) => (
                 <div key={row.label}>
                   <dt className="grow">
@@ -452,7 +454,7 @@ export async function FqOverviewBody({
             </dl>
           </div>
           {health.atRisk > 0 && (
-            <div className="soft stack">
+            <div data-visual-mask="space-console-at-risk" className="soft stack">
               <span className="k">Bring them back</span>
               <span className="h3">
                 {n(health.atRisk)} {health.atRisk === 1 ? 'person is' : 'people are'} slipping.

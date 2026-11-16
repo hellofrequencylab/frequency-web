@@ -35,6 +35,7 @@ import {
 import { SITE_CRAWLER_FILES, parseAppHosts, routeSiteHost, subdomainAttributionHop, subdomainSiteRedirect } from '@/lib/sites/host'
 import { lookupLiveSiteDomain } from '@/lib/sites/live-domain-lookup'
 import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
+import { nonceCspFor, type NonceCsp } from '@/lib/security/csp-nonce'
 
 // Extra app hosts beyond Frequency's own domains (PROG-E10 phase 2, lib/sites/host.ts), parsed once.
 const APP_HOSTS = parseAppHosts(process.env.APP_HOSTS)
@@ -142,16 +143,37 @@ export async function proxy(request: NextRequest) {
   // deep server component (e.g. a layout-engine block) can read the page's facets —
   // searchParams are a PAGE prop and never reach a nested module otherwise. Recomputed
   // per response so it always reflects the latest (cookie-mutated) request headers.
-  const withPath = (req: NextRequest) => {
+  //
+  // THE NONCE (SCAN-1243, lib/security/csp-nonce.ts). When this response carries the nonce-based
+  // script policy, the same two headers ride the REQUEST: Next reads the nonce out of
+  // `Content-Security-Policy` and stamps it on its own scripts, and the (main) layout reads `x-nonce`
+  // for the one inline script it writes. `csp` is null unless a rollout switch is on AND the path the
+  // app renders is a member-app page, so with both switches blank nothing here runs.
+  const withPath = (req: NextRequest, csp: NonceCsp | null = null) => {
     const headers = new Headers(req.headers)
     headers.set('x-pathname', pathname)
     headers.set('x-search', req.nextUrl.search)
+    if (csp) {
+      headers.set('x-nonce', csp.nonce)
+      headers.set('Content-Security-Policy', csp.policy)
+    } else {
+      // Only the proxy names a nonce. A caller's own `x-nonce` never reaches the layout.
+      headers.delete('x-nonce')
+    }
     return headers
   }
+  // The policy goes on the RESPONSE at each return, never where a response is created: the Supabase
+  // cookie handler below replaces `supabaseResponse`, and a header set on the first one would be lost.
+  const withCsp = (res: NextResponse, csp: NonceCsp | null) => {
+    if (csp) res.headers.set(csp.header, csp.policy)
+    return res
+  }
+  // For the page this request names. A rewrite below renders a DIFFERENT path and asks again for it.
+  const pageCsp = await nonceCspFor(request, pathname)
 
   // Start with a plain pass-through response. We may replace it below once
   // the Supabase cookie handler needs to write updated session cookies.
-  let supabaseResponse = NextResponse.next({ request: { headers: withPath(request) } })
+  let supabaseResponse = NextResponse.next({ request: { headers: withPath(request, pageCsp) } })
 
   const supabase = createServerClient(
     supabaseUrl(),
@@ -169,7 +191,7 @@ export async function proxy(request: NextRequest) {
           )
           // Re-create the response with the mutated request so Next.js forwards
           // the updated cookies to the browser (and re-stamp x-pathname).
-          supabaseResponse = NextResponse.next({ request: { headers: withPath(request) } })
+          supabaseResponse = NextResponse.next({ request: { headers: withPath(request, pageCsp) } })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -501,11 +523,13 @@ export async function proxy(request: NextRequest) {
   if (eventMemberPath) {
     const memberUrl = request.nextUrl.clone()
     memberUrl.pathname = eventMemberPath
+    // The member page is a per-request render under app/(main), so it can carry the nonce (SCAN-1243).
+    const memberCsp = await nonceCspFor(request, eventMemberPath)
     const rewriteResponse = NextResponse.rewrite(memberUrl, {
-      request: { headers: withPath(request) },
+      request: { headers: withPath(request, memberCsp) },
     })
     supabaseResponse.cookies.getAll().forEach((cookie) => rewriteResponse.cookies.set(cookie))
-    return rewriteResponse
+    return withCsp(rewriteResponse, memberCsp)
   }
 
   // SCAN-644. A signed-in member on the public Space URL keeps follow, owner
@@ -517,14 +541,15 @@ export async function proxy(request: NextRequest) {
   if (spaceMemberPath) {
     const memberUrl = request.nextUrl.clone()
     memberUrl.pathname = spaceMemberPath
+    const memberCsp = await nonceCspFor(request, spaceMemberPath)
     const rewriteResponse = NextResponse.rewrite(memberUrl, {
-      request: { headers: withPath(request) },
+      request: { headers: withPath(request, memberCsp) },
     })
     supabaseResponse.cookies.getAll().forEach((cookie) => rewriteResponse.cookies.set(cookie))
-    return rewriteResponse
+    return withCsp(rewriteResponse, memberCsp)
   }
 
-  return supabaseResponse
+  return withCsp(supabaseResponse, pageCsp)
 }
 
 export const config = {
