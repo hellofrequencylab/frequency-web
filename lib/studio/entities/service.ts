@@ -28,6 +28,7 @@
 // verify:'none', by design).
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { formatCentsWithCode } from '@/lib/commerce/types'
 import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
 // TYPE-ONLY import, so nothing is pulled in at runtime and the manifest stays pure. It exists to
 // BIND the option values below to the real unions: add a ServicePriceModel and this file stops
@@ -87,13 +88,6 @@ function svc(d: Record<string, unknown>): Record<string, unknown> {
   if (!meta || typeof meta !== 'object') return {}
   const s = (meta as Record<string, unknown>).service
   return s && typeof s === 'object' ? (s as Record<string, unknown>) : {}
-}
-
-/** Minor units + an ISO code as one readable amount ("120.00 USD"). Empty when unpriced. PURE. */
-function money(cents: unknown, currency: unknown): string {
-  if (typeof cents !== 'number' || !Number.isFinite(cents)) return ''
-  const code = typeof currency === 'string' && currency.trim() ? currency.trim().toUpperCase() : 'USD'
-  return `${(cents / 100).toFixed(2)} ${code}`
 }
 
 /** How many photos are attached, as a sentence fragment. Empty when there are none, which keeps
@@ -168,7 +162,7 @@ export const SERVICE_MANIFEST: EntityManifest = {
       section: 'pricing',
       placement: 'spark',
       veraDrafts: false,
-      read: (d) => money(d.priceCents, d.currency),
+      read: (d) => formatCentsWithCode(d.priceCents, d.currency),
     },
     { path: 'currency', label: 'Currency', kind: 'select', section: 'pricing', veraDrafts: false, options: CURRENCY_OPTIONS, read: (d) => str(d.currency) || 'USD' },
     // Taken upfront to hold the slot. Stored in minor units, like the price.
@@ -179,7 +173,7 @@ export const SERVICE_MANIFEST: EntityManifest = {
       section: 'pricing',
       veraDrafts: false,
       omitWhenEmpty: true,
-      read: (d) => money(svc(d).depositCents, d.currency),
+      read: (d) => formatCentsWithCode(svc(d).depositCents, d.currency),
     },
     { path: 'metadata.service.slidingScale', label: 'Offer a sliding scale', kind: 'toggle', section: 'pricing', veraDrafts: false },
 

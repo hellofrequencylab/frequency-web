@@ -35,7 +35,7 @@ describe('coachNewBlock', () => {
 
   it('forces the minted tool, through the voice primer, and shows catalog wording', async () => {
     const out = await coachNewBlock(input)
-    expect(out).toEqual({ source: 'vera', questions: [{ field: 'title', label: 'Headline', question: COACHING_QUESTION_CATALOG.welcome }] })
+    expect(out).toEqual({ source: 'vera', blockType: input.blockType, questions: [{ field: 'title', label: 'Headline', questionId: 'welcome', question: COACHING_QUESTION_CATALOG.welcome }] })
     const req = mocks.complete.mock.calls[0]![0]
     expect(req.toolChoice).toEqual({ type: 'tool', name: 'coach_block' })
     expect(req.tools[0].name).toBe('coach_block')

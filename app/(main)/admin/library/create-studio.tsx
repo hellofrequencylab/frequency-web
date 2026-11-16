@@ -12,6 +12,7 @@ import type { BrandStyle } from '@/lib/library/styles'
 import { Input, Textarea } from '@/components/ui/field'
 import { buttonClasses } from '@/components/ui/button'
 import { chipClasses } from '@/components/ui/chip'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 // One smart "Create" surface for the whole Loom. You pick WHAT you're making; the studio picks the
 // engine: Vera draws quick house-style line marks (icons / spot art) as inline SVG, and the Image
@@ -281,36 +282,32 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
         <div className="flex flex-wrap items-center gap-2">
           {/* Engine toggle — only when the type can be either Vera or the Studio. */}
           {supportsVera && supportsStudio && (
-            <div className="inline-flex rounded-card border border-border p-0.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setEngineOverride('vera')
-                  reset()
-                }}
-                aria-pressed={engine === 'vera'}
-                title="Vera draws a clean house-style line mark, instant, no cost"
-                className={`inline-flex items-center gap-1 rounded-control px-3 py-1.5 text-body-sm font-semibold ${
-                  engine === 'vera' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
-                }`}
-              >
-                <Zap className="h-3.5 w-3.5" /> Quick
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEngineOverride('studio')
-                  reset()
-                }}
-                aria-pressed={engine === 'studio'}
-                title="The Image Studio generates a richer result (uses the paid engine)"
-                className={`inline-flex items-center gap-1 rounded-control px-3 py-1.5 text-body-sm font-semibold ${
-                  engine === 'studio' ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
-                }`}
-              >
-                <Sparkles className="h-3.5 w-3.5" /> Rich
-              </button>
-            </div>
+            <SegmentedControl
+              label="Engine"
+              value={engine}
+              onChange={(next) => {
+                setEngineOverride(next)
+                reset()
+              }}
+              segments={[
+                {
+                  value: 'vera',
+                  label: (
+                    <span className="inline-flex items-center gap-1" title="Vera draws a clean house-style line mark, instant, no cost">
+                      <Zap className="h-3.5 w-3.5" aria-hidden /> Quick
+                    </span>
+                  ),
+                },
+                {
+                  value: 'studio',
+                  label: (
+                    <span className="inline-flex items-center gap-1" title="The Image Studio generates a richer result (uses the paid engine)">
+                      <Sparkles className="h-3.5 w-3.5" aria-hidden /> Rich
+                    </span>
+                  ),
+                },
+              ]}
+            />
           )}
 
           {/* Studio-only controls: count + trained brand style. */}

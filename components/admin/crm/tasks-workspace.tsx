@@ -10,6 +10,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Clock, Plus, RotateCcw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { chipClasses } from '@/components/ui/chip'
 import { Input, Textarea } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isError } from '@/lib/action-result'
@@ -90,9 +91,7 @@ export function TasksWorkspace({ tasks, viewerId }: { tasks: CrmTask[]; viewerId
             type="button"
             onClick={() => setTab(t.key)}
             aria-pressed={tab === t.key}
-            className={`rounded-pill px-3 py-1 text-body-sm ${
-              tab === t.key ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:text-text'
-            }`}
+            className={chipClasses(tab === t.key)}
           >
             {t.label}
           </button>

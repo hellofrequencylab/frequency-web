@@ -7,7 +7,7 @@ import {
   getPublicCounts,
   getPublicCityClusters,
 } from '@/lib/discover'
-import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
+import { FOUNDING_PLACE, OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import {
   breadcrumbSchema,
@@ -44,21 +44,21 @@ const DISCOVER_FAQS = [
 ]
 
 export const metadata: Metadata = {
-  title: 'Discover the community',
+  title: `Discover the community in ${FOUNDING_PLACE}`,
   description:
     'Browse local circles, real-world events, and channels across the Frequency community. Find your people and show up in person.',
   alternates: { canonical: '/discover' },
   openGraph: {
     ...OG_SITE,
     images: ROOT_OG_IMAGES,
-    title: `Discover the community · ${SITE_NAME}`,
+    title: `Discover the community in ${FOUNDING_PLACE} · ${SITE_NAME}`,
     description:
       'Browse local circles, real-world events, and channels across the Frequency community.',
     url: '/discover',
   },
   twitter: {
     card: 'summary_large_image',
-    title: `Discover the community · ${SITE_NAME}`,
+    title: `Discover the community in ${FOUNDING_PLACE} · ${SITE_NAME}`,
     description:
       'Browse local circles, real-world events, and channels across the Frequency community.',
   },
