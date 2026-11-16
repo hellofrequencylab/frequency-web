@@ -118,6 +118,10 @@ export async function createSpaceDonationCheckout(opts: {
   /** `'elements'` asks for an ON-PAGE card form and returns `clientSecret` instead of `url`
    *  (LIVE-359). Hosted stays the default, so no existing caller changes behaviour. */
   ui?: CheckoutUi
+  /** FH-046S: the approved Hunt ask this gift answers. Only lib/billing/donation-actions.ts sets it,
+   *  after lib/hunts/donation-sync.ts has checked every gate. It tags the session so the webhook can
+   *  mirror the gift, and changes nothing about the charge, the fee or the receipt. */
+  huntAskId?: string | null
 }): Promise<DonationCheckoutResult> {
   if (!stripe) return { error: 'Giving is not turned on yet.' }
   if (!(await payoutsLive())) return { error: 'Giving is not turned on yet.' }
@@ -183,6 +187,7 @@ export async function createSpaceDonationCheckout(opts: {
       space_id: space.id,
       ask_id: ask.id,
       ...(opts.donorProfileId ? { donor_profile_id: opts.donorProfileId } : {}),
+      ...(opts.huntAskId ? { hunt_ask_id: opts.huntAskId } : {}),
       ...(await checkoutGaMetadata()),
     }
 
@@ -254,7 +259,9 @@ export async function createSpaceDonationCheckout(opts: {
     // The shared degrade (./checkout-ui) returns its own generic refusal when there is nothing to
     // hand back; this path has a fund-specific one, so map it rather than leak the generic string.
     const handed = resolveCheckoutSession(session, ui, 'space-donation')
-    return handed.error ? { error: DONATION_START_FAILED } : handed
+    if (handed.error) return { error: DONATION_START_FAILED }
+    // A Hunt gift always carries its session id back (hosted too), so the caller can mirror it as started.
+    return opts.huntAskId ? { ...handed, sessionId: session.id } : handed
   } catch (err) {
     console.error('[space-donation] checkout failed', err instanceof Error ? err.message : String(err))
     return { error: DONATION_START_FAILED }

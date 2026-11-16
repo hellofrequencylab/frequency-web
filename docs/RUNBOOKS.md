@@ -430,7 +430,8 @@ right now. A merge to `main` is a deploy.
   (`app/api/status/route.ts`).
 - **Sentry**, when armed, opens a new issue tagged with the release, which is the commit SHA.
 - **A `postbuild` gate failed the build:** `check:build-budget`, `check:og-trace`,
-  `check:cache-budget`, `check:shell-weight`, `check:build-fanout`, `check:notfound-routes`. The gate
+  `check:cache-budget`, `check:shell-weight`, `check:build-fanout`, `check:notfound-routes`,
+  `check:editor-bundle-bytes`. The gate
   prints the fan-out that tripped it. That build did not ship, which is the gate working.
 
 **What to open first.**
@@ -464,7 +465,7 @@ right now. A merge to `main` is a deploy.
 6. **If it was a size gate:** fix the fan-out the gate printed, never the budget (rule 2). **agent**
 
 **How you know it is over.** The production deployment is `READY`, `/api/status` `build.commit` is
-the SHA you expect, the Sentry group has stopped, the next real deploy prints all six gates green,
+the SHA you expect, the Sentry group has stopped, the next real deploy prints all seven gates green,
 and the cause is an ADR in [`DECISIONS.md`](DECISIONS.md) if it taught a rule, or a row if it did
 not.
 
@@ -944,7 +945,7 @@ Keep FH-041 open until the pilot gate has named sign-offs and the parent probe p
 
 `COMMERCE_CART_ENABLED` (blank by default, `lib/commerce/cart-flag.ts`) turns on the saved cart: an Add to cart control beside Buy now on `/market/<id>` and the cart server actions in `app/(main)/marketplace/cart-actions.ts`. Off, every action answers `off`, nothing renders and no row is written. The cart stores lines only (product, variant, quantity); price and seller are read fresh at checkout.
 
-Gate to turn it on: migration 20270346039000 (`commerce_carts`) is applied in Frequency Community, a signed-in member can add a product, reload and see it saved, and a signed-out visitor is told to sign in rather than shown an error, and `/cart` lists the saved lines with today's price, lets the buyer change a quantity or remove a line, and says what is no longer for sale. Off, `/cart` answers 404. Turning this on only saves and shows lines.
+Gate to turn it on: migration 20270346039000 (`commerce_carts`) is applied in Frequency Community, a signed-in member can add a product, reload and see it saved, and a signed-out visitor is told to sign in rather than shown an error, and `/cart` lists the saved lines with today's price, lets the buyer change a quantity or remove a line, and says what is no longer for sale. Off, `/cart` answers 404. Turning this on only saves and shows lines. `/cart` lays the lines out by seller with a subtotal each and says what checkout will do before the buyer pays (`lib/commerce/cart-plan.ts`, which asks the same seams the checkout door asks): several sellers are paid in one go, an address is asked for on the secure payment page when something ships, and a cart the door would refuse (two currencies, Frequency Store items with another seller's, a contact-only seller) says why and shows no Check out control. A product with options offers Add to cart for the chosen option.
 
 `COMMERCE_CART_CHECKOUT_ENABLED` (blank by default, `lib/commerce/cart-checkout-flag.ts`) adds the Check out control to `/cart` and opens `startCartCheckoutAction`. It needs `COMMERCE_CART_ENABLED` too. The lines are priced and pruned from the live rows and paid through `createCommerceCheckout` unchanged, so single and multi-seller carts take the funds flow they already have; what was paid for leaves the cart when the order is confirmed paid (the `pending` to `paid` flip in `recordCommerceOrderFromSession`, so the webhook, the hosted return and the on-page settle all do it, once), and a line that is no longer for sale or was lowered to stock is saved that way the first time the buyer is told (`lib/commerce/cart-load.ts`); checkout refuses and asks the buyer to look again when that happens at pay time. Gate to turn it on: the cart switch has run for a day with no errors, a Stripe test-mode cart of two products from two sellers pays and appears in Orders as one split order, and a one-seller cart pays as a normal order. Off, no control renders and the action refuses without reading the cart. Turn it off by unsetting it: no data moves. Turn it off by unsetting it: no data moves.
 
@@ -964,7 +965,13 @@ Gate to turn it on: migration 20270346039000 (`commerce_carts`) is applied in Fr
 
 Gate to turn it on: two browsers signed in as owners of one Space both open the page builder; an edit in one appears in the other within a couple of seconds and neither page doubles its rows. A signed-out or non-owner session must be refused the channel (it fails closed). Turn it off by unsetting it: no data moves, the draft is still saved by the normal autosave.
 
-Editor bytes in the bundle: `check:editor-bundle-bytes` runs last in `postbuild` and prints one line per build saying whether any route outside `/pages/canvas` names a chunk that carries the CRDT runtime, with the byte counts. It is advisory and cannot fail a build. It has not read a real artifact yet, so treat its first lines as a reading to confirm, not a verdict. To make it blocking: confirm on one production build log that the editor route shows bytes and no other route is named, then change the pin at the bottom of `scripts/check-editor-bundle-bytes.test.ts` in the same change (PROG-E0).
+Editor bytes in the bundle: `check:editor-bundle-bytes` runs last in `postbuild` and fails the build when a route outside `/pages/canvas` names a chunk that carries the collaboration runtime. It was advisory until 2026-11-16 and was armed after the production build of `main` printed it green (PROG-E0C; the rule is DEPLOY-SAFETY.md rule 13). A failed build did not ship: the previous deployment keeps serving. Read the gate line in the build log, then:
+
+- **`❌ ... the CRDT runtime is in a chunk named by N route(s) outside the editor` (exit 1).** A real finding. The log lists each route and chunk. Find the import that pulled `yjs`, `y-prosemirror` or `lib/editor-crdt` into that route (`pnpm check:editor-crdt-importers` lists who may import them; the usual cause is a static import of an editor component from a shared layout, a barrel file or a member page). Move it behind the editor route or behind a dynamic `import()`, as `components/entity-blocks/editor-collab.tsx` does. If production is waiting, revert the PR first and fix after (section 6). **agent**
+- **`❌ ... COULD NOT LOOK` or `CRASHED` (exit 79).** The gate could not read the artifact. It is not a finding about the artifact and it is not a pass. The line names which: no route manifests, the runtime in no chunk, no manifest matching `EDITOR_ROUTES` (the canvas route moved: update `EDITOR_ROUTES` to the new path in the same change as the move), or chunk names that resolve to nothing on disk (a compiler upgrade changed the manifest shape: fix the reader in `scripts/check-editor-bundle-bytes.mjs` and add the new shape to its test). Revert the change that caused it, then repair the gate with a fixture of the new shape. **agent**
+- **A `⚠️` line under a green `✅`.** The build shipped. One manifest would not load, or the editor route names no carrier. Open a backlog row; do not ignore it twice.
+
+Never make it pass by adding a route to `EDITOR_ROUTES` that is not an editor, by re-adding `|| true` or `--warn-only` in `postbuild` (a test fails both), or by deleting a fingerprint. A member page that is not an editor does not pay for multiplayer.
 
 Known edges: a remote edit enters the editing tab's undo history; every open tab saves the same draft (idempotent); two tabs opening in the same instant may briefly seed twice and repair on the next edit.
 
@@ -1022,7 +1029,7 @@ The off path selects only the pre-snapshot log columns. The on path adds `suppor
 
 Activation order:
 
-1. Complete the reviewed LIVE-2291 migration readiness process. Daniel applies `20270346048000_quest_support_policy.sql` to **Frequency Community** only after its own exact-head checks are green, and records that exact version in the ledger. Do not apply SQL from this runbook or reapply an earlier migration. LIVE-2289 must already be on main before the LIVE-2294 application slice is published.
+1. Complete the reviewed LIVE-2291 migration readiness process. Daniel applies `20270346070000_quest_support_policy.sql` to **Frequency Community** only after its own exact-head checks are green, and records that exact version in the ledger. Do not apply SQL from this runbook or reapply an earlier migration. LIVE-2289 must already be on main before the LIVE-2294 application slice is published.
 2. Verify the actual target schema exposes both snapshot columns and the reviewed version-1 insert trigger/immutability guards. In the disposable local Supabase instance, perform an authenticated practice log through the existing logging flow, then a local Auth/PostgREST owner-scoped read selecting `id,logged_for,support_pillar_ids,support_evidence_version`. Confirm a four-focus practice stores all four canonical support IDs with version 1, and editing/removing current practice categories does not rewrite that recorded array. A legacy log must retain its original evidence, not acquire invented supports. Attempt a user replacement and verify the persisted snapshot remains unchanged; totals and idempotent rewards must also remain unchanged. This local HTTP acceptance must run against the exact reviewed app/database heads, not only a mocked client or a pure parser test.
 3. In an isolated preview backed by the verified schema, set the flag on and use an authorized owner session. Check that the graph displays the four recorded supports in the same dated practice-day window. A visitor, signed-out session or another member must not trigger the personal log read or see the graph. Confirm a read failure shows unavailable/partial evidence rather than inactivity. Do not enable the flag on a preview or production database lacking the two columns.
 4. Confirm production migration/ledger parity and the serving application identity. Set the server flag only on that verified deployment, then perform the same owner and non-owner acceptance on the live host. Record release evidence without credentials, private reflections, raw member logs or support categories in advertising analytics.

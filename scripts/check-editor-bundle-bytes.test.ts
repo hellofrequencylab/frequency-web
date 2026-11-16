@@ -9,10 +9,12 @@ import { EDITOR_ROUTES, FINGERPRINTS, chunkRefs, packagesIn, readArtifact, repor
 // THE BUNDLE-BYTE INSTRUMENT (PROG-E0B), proven on fixtures because this box cannot build.
 //
 // What these cases prove: the verdict in both directions, the manifest shapes it reads, that each
-// fingerprint is a real literal in the installed package, and that the script as `postbuild` runs it
-// cannot exit non-zero on a leak, a missing artifact, or its own crash.
-// What they cannot prove: that a real Vercel artifact has the shape the fixtures have. That takes
-// one production build log, and it is why the last test pins the instrument as advisory.
+// fingerprint is a real literal in the installed package, and every way the script `postbuild` runs
+// can exit: 0 only on a clean artifact, 1 only on a leak, 79 when it could not look (and never 0
+// there), with `--warn-only` unable to fail on any arm.
+// What they cannot prove: that a real Vercel artifact has the shape the fixtures have. One
+// production build log did (PROG-E0C: 633 routes read, the canvas route at 116.6 KB, nothing else
+// named), and that reading is why the last test now pins the gate as BLOCKING.
 
 const SCRIPT = join(import.meta.dirname, 'check-editor-bundle-bytes.mjs')
 const YJS = FINGERPRINTS[0].needles[0]
@@ -117,6 +119,52 @@ describe('the verdict', () => {
     expect(moved.reason).toContain('EDITOR_ROUTES')
   })
 
+  it('will not call a build clean when the chunk names in the manifests resolve to nothing on disk', () => {
+    // A compiler upgrade that renames chunk references would otherwise read as "all lazy, no leak".
+    const dir = clean()
+    const read = readArtifact(join(dir, '.next'))
+    expect(read.chunksOnDisk.sort()).toEqual(['canvas.js', 'collab-lazy.js', 'shell.js'])
+    const renamed = { ...read, routes: read.routes.map((r) => ({ ...r, chunks: r.chunks.map((c) => `v2-${c}`) })) }
+    const v = verdict(renamed)
+    expect(v.state).toBe('indeterminate')
+    expect(v.reason).toContain('manifest shape changed')
+    // One resolvable name anywhere is enough: the arm detects a blind read, it does not audit every route.
+    expect(verdict(read).state).toBe('clean')
+  })
+
+  it('warns, without failing, about a manifest that would not load; fails once most of them will not', () => {
+    const dir = clean()
+    writeFileSync(join(dir, '.next/server/app/broken_client-reference-manifest.js'), 'throw new Error("nope")')
+    const read = readArtifact(join(dir, '.next'))
+    expect(read.skipped).toEqual(['server/app/broken_client-reference-manifest.js'])
+    const one = verdict(read)
+    expect(one.state).toBe('clean')
+    expect(one.warnings.join('\n')).toContain('1 route manifest(s) would not load')
+    expect(report(one).join('\n')).toContain('⚠️ 1 route manifest(s) would not load')
+    const most = verdict({ ...read, skipped: ['a', 'b', 'c', 'd'] })
+    expect(most.state).toBe('indeterminate')
+    expect(most.reason).toContain('manifest format changed')
+    // The floor is "more unreadable than read": as many as were read is still a warning.
+    expect(verdict({ ...read, skipped: ['a', 'b', 'c'] }).state).toBe('clean')
+  })
+
+  it('warns, without failing, when the editor route names no carrier (the canvas went lazy)', () => {
+    const dir = artifact(CHUNKS, { [CANVAS]: { entry: ['shell.js'] }, '(main)/feed/page': { entry: ['shell.js'] } })
+    const v = verdict(readArtifact(join(dir, '.next')))
+    expect(v.state).toBe('clean')
+    expect(v.editorBytes).toBe(0)
+    expect(v.warnings.join('\n')).toContain('the editor route names no chunk that carries the runtime')
+    expect(verdict(readArtifact(join(clean(), '.next'))).warnings).toEqual([])
+  })
+
+  it('does not take a directory named like a chunk for a chunk', () => {
+    const dir = clean()
+    mkdirSync(join(dir, '.next/static/chunks/trap.js'))
+    const read = readArtifact(join(dir, '.next'))
+    expect(read.chunksOnDisk).not.toContain('trap.js')
+    expect(verdict(read).state).toBe('clean')
+  })
+
   it('a leak outranks cannot-look, so a small fixture still proves the arm', () => {
     const v = verdict({ routes: [{ route: '/(marketing)/page', chunks: ['a.js'] }], carriers: [{ chunk: 'a.js', bytes: 9, packages: ['yjs'] }] })
     expect(v.state).toBe('leak')
@@ -160,54 +208,122 @@ describe('the fingerprints', () => {
   })
 })
 
-describe('advisory: the script postbuild runs cannot fail a build', () => {
-  it('prints the gate line and exits 0 on a clean build', () => {
+/** A manifest that loads and then makes the reader throw while it walks it: a real crash, not a mock. */
+const CRASHER = 'globalThis.__RSC_MANIFEST=new Proxy({},{ownKeys(){throw new Error("trap")}})'
+const crashing = () => {
+  const dir = clean()
+  writeFileSync(join(dir, '.next/server/app/zz_client-reference-manifest.js'), CRASHER)
+  return dir
+}
+const bare = () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'editor-bundle-bytes-')))
+  temps.push(dir)
+  return dir
+}
+
+describe('blocking: every way the script postbuild runs can exit', () => {
+  it('exits 0 on a clean build and prints the gate line with the editor bytes', () => {
     const r = run(clean())
     expect(r.status).toBe(0)
     expect(r.stdout).toMatch(/^✅ check:editor-bundle-bytes - /)
     expect(r.stdout).toContain(`/${CANVAS}  4.0 KB`)
   })
 
-  it('exits 0 on a leak and still names it; --strict exits 1 on the same artifact', () => {
-    const dir = leaky()
-    const advisory = run(dir)
-    expect(advisory.status).toBe(0)
-    expect(advisory.stdout).toMatch(/^⚠️ check:editor-bundle-bytes - /)
-    expect(advisory.stdout).toContain('/(marketing)/page  ->  canvas.js')
-    const strict = run(dir, '--strict')
-    expect(strict.status).toBe(1)
-    expect(strict.stdout).toMatch(/^❌ check:editor-bundle-bytes - /)
+  it('exits 1 on a leak, and names the route and the chunk', () => {
+    const r = run(leaky())
+    expect(r.status).toBe(1)
+    expect(r.stdout).toMatch(/^❌ check:editor-bundle-bytes - /)
+    expect(r.stdout).toContain('/(marketing)/page  ->  canvas.js')
+    expect(r.stdout).toContain('Do not widen EDITOR_ROUTES')
   })
 
-  it('exits 0 with no .next and with an empty one; --strict says it could not look', () => {
-    const bare = realpathSync(mkdtempSync(join(tmpdir(), 'editor-bundle-bytes-')))
-    temps.push(bare)
-    expect(run(bare).status).toBe(0)
-    expect(run(bare, '--strict').status).toBe(79)
-    mkdirSync(join(bare, '.next/server/app'), { recursive: true })
-    const empty = run(bare)
-    expect(empty.status).toBe(0)
-    expect(empty.stdout).toContain('read no route manifests')
-    expect(run(bare, '--strict').status).toBe(79)
+  it('exits 79, never 0 and never the leak code, with no .next', () => {
+    const r = run(bare())
+    expect(r.status).toBe(79)
+    expect(r.stdout).toMatch(/^❌ check:editor-bundle-bytes - no \.next\//)
   })
 
-  it('exits 0 on its own crash and says it crashed; --strict does not', () => {
-    // A directory named like a chunk makes the chunk read throw (EISDIR): a real crash, not a mock.
-    const dir = clean()
-    mkdirSync(join(dir, '.next/static/chunks/trap.js'))
+  it('exits 79 on an artifact with no route manifests', () => {
+    const dir = bare()
+    mkdirSync(join(dir, '.next/server/app'), { recursive: true })
     const r = run(dir)
-    expect(r.status).toBe(0)
-    expect(r.stdout).toContain('CRASHED')
-    expect(r.stdout).toMatch(/^⚠️ check:editor-bundle-bytes - /)
-    expect(run(dir, '--strict').status).toBe(79)
+    expect(r.status).toBe(79)
+    expect(r.stdout).toMatch(/^❌ check:editor-bundle-bytes - COULD NOT LOOK: read no route manifests/)
   })
 
-  it('skips a manifest it cannot load instead of dying on it', () => {
+  it('exits 79 when the runtime is in no client chunk at all', () => {
+    const r = run(artifact({ 'shell.js': CHUNKS['shell.js'] }, { [CANVAS]: { entry: ['shell.js'] } }))
+    expect(r.status).toBe(79)
+    expect(r.stdout).toContain('COULD NOT LOOK: found the CRDT runtime in no client chunk')
+  })
+
+  it('exits 79 when no manifest is the editor route', () => {
+    const r = run(artifact(CHUNKS, { '(main)/feed/page': { entry: ['shell.js'] } }))
+    expect(r.status).toBe(79)
+    expect(r.stdout).toContain('EDITOR_ROUTES')
+  })
+
+  it('exits 79 when the manifests name chunks that are not on disk', () => {
+    const r = run(artifact(CHUNKS, { [CANVAS]: { entry: ['gone-a.js'], client: ['gone-b.js'] }, '(main)/feed/page': { entry: ['gone-a.js'] } }))
+    expect(r.status).toBe(79)
+    expect(r.stdout).toContain('manifest shape changed')
+  })
+
+  it('exits 79 when more manifests fail to load than load', () => {
+    const dir = artifact(CHUNKS, { [CANVAS]: { client: ['canvas.js'] } })
+    for (const n of ['a', 'b']) writeFileSync(join(dir, `.next/server/app/${n}_client-reference-manifest.js`), 'throw new Error("nope")')
+    const r = run(dir)
+    expect(r.status).toBe(79)
+    expect(r.stdout).toContain('manifest format changed')
+  })
+
+  it('exits 79 on its own crash and says it crashed', () => {
+    const r = run(crashing())
+    expect(r.status).toBe(79)
+    expect(r.stdout).toMatch(/^❌ check:editor-bundle-bytes - CRASHED/)
+  })
+
+  it('a leak still exits 1 when a cannot-look condition is also true', () => {
+    // No editor route in this artifact (79 on its own), and a public route names a carrier: the finding wins.
+    const r = run(artifact(CHUNKS, { '(marketing)/page': { entry: ['canvas.js'] } }))
+    expect(r.status).toBe(1)
+  })
+
+  it('exits 0 with a loud warning line when one manifest will not load', () => {
     const dir = clean()
     writeFileSync(join(dir, '.next/server/app/broken_client-reference-manifest.js'), 'throw new Error("nope")')
     const r = run(dir)
     expect(r.status).toBe(0)
     expect(r.stdout).toContain('routes read: 3')
+    expect(r.stdout).toContain('⚠️ 1 route manifest(s) would not load and were NOT checked')
+  })
+
+  it('exits 0 with a loud warning line when the editor route names no carrier', () => {
+    const r = run(artifact(CHUNKS, { [CANVAS]: { entry: ['shell.js'] }, '(main)/feed/page': { entry: ['shell.js'] } }))
+    expect(r.status).toBe(0)
+    expect(r.stdout).toMatch(/^✅ check:editor-bundle-bytes - /)
+    expect(r.stdout).toContain('⚠️ the editor route names no chunk that carries the runtime')
+  })
+})
+
+describe('--warn-only cannot fail a build on any arm', () => {
+  it('exits 0 on a leak and still names it', () => {
+    const r = run(leaky(), '--warn-only')
+    expect(r.status).toBe(0)
+    expect(r.stdout).toMatch(/^⚠️ check:editor-bundle-bytes - /)
+    expect(r.stdout).toContain('/(marketing)/page  ->  canvas.js')
+  })
+
+  it('exits 0 with no .next, with an empty one, and on its own crash', () => {
+    const dir = bare()
+    expect(run(dir, '--warn-only').status).toBe(0)
+    mkdirSync(join(dir, '.next/server/app'), { recursive: true })
+    const empty = run(dir, '--warn-only')
+    expect(empty.status).toBe(0)
+    expect(empty.stdout).toContain('read no route manifests')
+    const crash = run(crashing(), '--warn-only')
+    expect(crash.status).toBe(0)
+    expect(crash.stdout).toMatch(/^⚠️ check:editor-bundle-bytes - CRASHED/)
   })
 })
 
@@ -218,14 +334,17 @@ describe('postbuild wiring', () => {
     expect(scripts['check:editor-bundle-bytes']).toBe('node scripts/check-editor-bundle-bytes.mjs')
   })
 
-  it('runs in postbuild as advisory only, last, and never --strict', () => {
-    // ⚠️ WHEN ARMING IT: this test fails on purpose. A build-blocking gate that has never seen a real
-    // artifact is the 2026-08-11 incident with the roles reversed (docs/DEPLOY-SAFETY.md). Change
-    // this pin in the SAME change as the production build log that shows the instrument's reading is
-    // right, and say so on the PROG-E0 row.
+  it('runs in postbuild BLOCKING: bare, once, chained with &&, and not swallowed', () => {
+    // This pin said "advisory only" until 2026-11-16 and inverted in the change that armed the gate
+    // (PROG-E0C), after the production build of main printed it green on a real artifact. A
+    // re-added `--warn-only`, `|| true`, or a `;` in front of it is now a silent demotion of a
+    // promoted gate. When it fires, fix the import fan-out (docs/RUNBOOKS.md); do not edit this.
     const postbuild = scripts.postbuild ?? ''
-    expect(postbuild.endsWith('&& (node scripts/check-editor-bundle-bytes.mjs || true)')).toBe(true)
-    expect(postbuild).not.toContain('--strict')
     expect(postbuild.split('check-editor-bundle-bytes.mjs')).toHaveLength(2)
+    expect(postbuild).toContain(' && node scripts/check-editor-bundle-bytes.mjs')
+    const args = /check-editor-bundle-bytes\.mjs(.*?)(?:&&|$)/.exec(postbuild)?.[1] ?? 'x'
+    expect(args.trim(), 'check-editor-bundle-bytes.mjs must run bare in postbuild').toBe('')
+    // Nothing in the whole chain may swallow an exit code: one `||` or `;` after any gate demotes it.
+    expect(postbuild).not.toMatch(/\|\||;|--warn-only/)
   })
 })

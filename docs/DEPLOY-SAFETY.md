@@ -270,11 +270,13 @@ keyword apart in review and 1.6 MB apart in the artifact.
 > outage was gates that passed while the artifact was broken; this would be a gate that fails while
 > the artifact is fine, and it kills deploys just as dead. So each went to `--warn-only` first, printed
 > green on real production artifacts, and was promoted in the same change as the build that proved it
-> (LIVE-029 / LIVE-035 / LIVE-048; ADR-1064, ADR-1066, ADR-1086). ⚠️ **`postbuild` today runs SIX**
+> (LIVE-029 / LIVE-035 / LIVE-048; ADR-1064, ADR-1066, ADR-1086). ⚠️ **`postbuild` today runs SEVEN**
 > — `package.json`'s `postbuild` script is the authority, quote it rather than restating it:
 > `check-build-budget && check-og-trace && check-cache-budget && check-shell-weight &&
-> check-build-fanout && check-notfound-routes`. This sentence said "all four" until 2026-09-05 and
-> "FIVE" until 2026-09-08, the third and fourth restatements of this list to drift;
+> check-build-fanout && check-notfound-routes && check-editor-bundle-bytes` (after
+> `check-build-memory`, which reads the build's peak memory, not the artifact). This sentence said
+> "all four" until 2026-09-05, "FIVE" until 2026-09-08 and "SIX" until 2026-11-16, when
+> `check:editor-bundle-bytes` was promoted from advisory (rule 13, PROG-E0C);
 > `check:build-fanout` joined on 2026-09-05 (ADR-1211) and `check:notfound-routes` on 2026-09-08
 > ([ADR-1267](DECISIONS.md), LIVE-208 — the only one of the six that reads the ROUTE TABLE rather
 > than the output size, and the only one whose defect was a page the compiler moved). And
@@ -325,8 +327,8 @@ The same step also skips a **preview** (never production) that has been overtake
 1. `pnpm build` locally, then read the `postbuild` output. **Every** gate must be ✅ —
    `check:build-budget` (rule 1), `check:og-trace` (rule 6), `check:shell-weight` (rule 11),
    `check:cache-budget` (rule 10), `check:build-fanout` (ADR-1211), `check:notfound-routes`
-   (ADR-1267). That is **six**; if you count fewer, your copy of this list is stale — check
-   `package.json`'s `postbuild`. A ⚠️ trim line from
+   (ADR-1267), `check:editor-bundle-bytes` (rule 13). That is **seven**; if you count fewer, your
+   copy of this list is stale — check `package.json`'s `postbuild`. A ⚠️ trim line from
    `check:cache-budget` is not a failure, but it is telling you the cache is at its ceiling; a
    ⚠️ `HELD` line is the same gate keeping the restored compiler cache instead (ADR-1656).
 2. `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test` (which now carries six of the contract
@@ -374,3 +376,23 @@ open (#2699 is the current example: `test` failed, auto-merge correctly blocked)
 **Honest limits.** Required GitHub checks still gate merge. Auto-merge on green is WORKFLOW.md default; a red PR must not merge. Vercel `postbuild` is the artifact gate and is invisible to GitHub `test`. Stay off `cursor/cloud-agent-workspace-8978`. This environment has no Resend key. LIVE-234 is an owner walk with a real card.
 
 **Fan-out that is safe today** (re-run `pnpm packets`; these ids move): **money** LIVE-410 closed (memberships on the free floor, ADR-1415) · **events** LIVE-376 closed (sole-Space default, ADR-1413) · **scan** SCAN-636 (ISR event canonical; then SCAN-637…641 and LIVE-412, `meta.slate.metaScanCleanup`) · **hygiene** HYG-101 closed (parseInput ratchet, ADR-1420). Do not start a fifth agent on Journey sales or on `app-shell.tsx` while the scan lane still owns LIVE-412.
+
+---
+
+## 13. The editor's multiplayer runtime stays on the editor's routes. 🔒 `check:editor-bundle-bytes`
+
+The collaboration runtime (`yjs`, `y-prosemirror`) is for the page editor. A visitor, and a member on any page that is not an editor, must never download it. `scripts/check-editor-crdt-importers.mjs` holds the source half at PR time (who may import it). It cannot see what the compiler did with those imports, so `scripts/check-editor-bundle-bytes.mjs` reads the artifact in `postbuild`: every client chunk under `.next/static` that carries the runtime, and every route whose client-reference manifest names one of those chunks. A route outside `EDITOR_ROUTES` that names one fails the build, by route and chunk.
+
+It took the same road as rules 10 and 11. It shipped advisory (PROG-E0B, `|| true`, exit 0 on every arm) because it had never read a real artifact. The production build of `main` then printed it green (633 routes read, `/(main)/pages/canvas/page` at 116.6 KB, nothing else named), and it was promoted in PROG-E0C on 2026-11-16. The pin at the bottom of `scripts/check-editor-bundle-bytes.test.ts` inverted in that change: a re-added `|| true` or `--warn-only` now fails a test as a silent demotion.
+
+| Exit | Meaning | What it is |
+|---|---|---|
+| 0 | Clean | No route outside the editor names a chunk that carries the runtime. |
+| 1 | Leak | A finding about the artifact. Fix the import fan-out (rule 2). |
+| 79 | Could not look | The gate could not read the artifact. Not a finding, and not a pass. |
+
+- **Could-not-look fails the build, like its siblings.** `check:build-budget`, `check:og-trace`, `check:build-fanout` and `check:notfound-routes` all exit non-zero on a missing `.next`, and `check:shell-weight` fails on an empty measured set. This gate does the same for: no `.next`, no route manifests, the runtime in no chunk at all, no manifest matching `EDITOR_ROUTES`, chunk names that resolve to no file under `.next/static` (the manifest shape changed), more manifests unreadable than read, and its own crash. Rule 6 applied to the gate: a reader that goes blind must not print green.
+- **Two conditions warn and do not fail,** because a healthy build can produce them: one manifest that will not load (counted and printed; the siblings skip one unreadable trace the same way), and an editor route that names no carrier (the canvas moved behind a client-side `import()`, which is allowed). Each prints a `⚠️` line under a green gate line. Read them.
+- **The PR-time half** is `scripts/check-editor-bundle-bytes.test.ts`: every exit above on a fixture tree, each fingerprint proven to be a literal in the installed package (so an upgrade that drops one fails a test instead of blinding the gate), and the editor route proven to be a real file (so a rename fails a test before it fails a build). A Vercel preview also runs `postbuild`, so a leak shows red on the PR before it can reach `main`.
+- **When it fires with exit 1,** move the import behind the editor or behind a dynamic import. Never widen `EDITOR_ROUTES` to hide a route, never re-add `|| true`. Steps: [`RUNBOOKS.md`](RUNBOOKS.md), "Editor bytes in the bundle".
+- **What it does not cover:** a lazy chunk reached by `import()` from a public client module is named by no manifest, so it is counted as lazy and not as a leak. The source guard covers that entry point.

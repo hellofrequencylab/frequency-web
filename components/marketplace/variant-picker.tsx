@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { effectiveVariantPriceCents, effectiveVariantStock } from '@/lib/commerce/types'
 import type { CommerceVariant } from '@/lib/commerce/types'
 import { BuyButton } from '@/app/(main)/marketplace/buy-button'
+import { AddToCartButton } from '@/app/(main)/marketplace/add-to-cart-button'
 import { Select } from '@/components/ui/select'
 
 // Buyer-facing variant picker (Etsy-Grade Phase 2). When a product has active variants, the buyer
@@ -20,11 +21,15 @@ export function VariantPicker({
   priceCents,
   currency,
   variants,
+  cart = false,
 }: {
   productId: string
   priceCents: number
   currency: string
   variants: CommerceVariant[]
+  /** Offer Add to cart for the chosen option (DEF-ETSY P5). The server page passes the COMMERCE_CART_ENABLED
+   *  verdict; off (the default) nothing renders. */
+  cart?: boolean
 }) {
   // Default to the first in-stock variant so the buyer lands on something purchasable.
   const firstAvailable = useMemo(() => {
@@ -70,7 +75,11 @@ export function VariantPicker({
       {selectedSoldOut ? (
         <p className="text-body-sm font-medium text-subtle">This option is sold out.</p>
       ) : (
-        <BuyButton productId={productId} variantId={selectedId} disabled={!selectedId} />
+        <>
+          <BuyButton productId={productId} variantId={selectedId} disabled={!selectedId} />
+          {/* Keyed by option, so "In your cart" is never shown for an option that was not added. */}
+          {cart && selectedId ? <AddToCartButton key={selectedId} productId={productId} variantId={selectedId} /> : null}
+        </>
       )}
     </div>
   )

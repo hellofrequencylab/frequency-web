@@ -123,3 +123,52 @@ export const lenientList = <T>(item: z.ZodType<T>) =>
 
 /** A plain JSON object with unknown keys (a draft, a tool argument), refusing arrays and scalars. */
 export const jsonObject = z.record(z.string(), z.unknown())
+
+// ── Blocks for the extractors' tool_use inputs (PROG-E8C) ────────────────────────────────────
+// The scan and import readers all asked the same handful of questions of a raw value. Each is stated here once, as a
+// schema, so a reader is a contract plus a mapper and carries no `typeof` walk of its own.
+
+/** A text field that has an older or alternate key beside it (`startsAt` / `starts_at`). Absent stays absent so the
+ *  other key can answer; a wrong type reads as empty and does NOT fall through, which is what `a ?? b` always did. */
+export const aliasedText = (max: number) => shortText(max).nullish().catch('')
+
+/** One of a closed set, read without regard to case or surrounding space. Anything else fails, so the caller picks
+ *  the reading: `.catch('other')`, `.nullable().catch(null)`, `.optional().catch(undefined)`. */
+export const looseEnum = <const T extends readonly [string, ...string[]]>(allowed: T) =>
+  z
+    .string()
+    .transform((s) => s.trim().toLowerCase())
+    .pipe(z.enum(allowed))
+
+/** A finite number the model may send as a number or as a numeric string ("0.25"). */
+export const looseNumber = z.union([z.number(), z.string().transform(Number)]).pipe(z.number())
+
+/** A list read row by row that is simply empty when it is absent or not a list. */
+export const rowsOrNone = <T>(item: z.ZodType<T>) => lenientList(item).catch(() => [])
+
+/** A box in the unit square ({x, y, w, h}, each 0..1), clamped to stay inside it. A box too small to be a region
+ *  (under 1% on a side) or with a coordinate that is not a number is null. */
+export const unitBox = z
+  .object({ x: looseNumber, y: looseNumber, w: looseNumber, h: looseNumber })
+  .transform((b) => {
+    const x = Math.min(Math.max(b.x, 0), 1)
+    const y = Math.min(Math.max(b.y, 0), 1)
+    const w = Math.min(Math.max(b.w, 0), 1 - x)
+    const h = Math.min(Math.max(b.h, 0), 1 - y)
+    return w <= 0.01 || h <= 0.01 ? null : { x, y, w, h }
+  })
+  .catch(null)
+
+/** A cited field as an extractor emits it: a value plus the snippet, source and kind the model claims for it. Every
+ *  part is optional and a wrong-typed part reads as absent; the grounding gate, not this schema, decides if the
+ *  citation is real. A field that is not an object at all is absent. */
+export const citedField = z
+  .object({
+    value: z.string().optional().catch(undefined),
+    sourceUrl: z.string().optional().catch(undefined),
+    snippet: z.string().optional().catch(undefined),
+    kind: z.string().optional().catch(undefined),
+    confidence: z.number().optional().catch(undefined),
+  })
+  .optional()
+  .catch(undefined)
