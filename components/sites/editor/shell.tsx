@@ -113,6 +113,11 @@ const HISTORY_DEPTH = FQ_EDITOR ? 60 : 30
 const SEO_TITLE_ADVISED = 60
 const SEO_DESCRIPTION_ADVISED = 160
 /** The live website's address for a page (SCAN-970): the editor's back control returns here. */
+/** The live site's home page, opened by "View live site" after a publish (LIVE-2321). */
+export function liveSiteHref(host: string): string {
+  return `https://${host}/`
+}
+
 export function websitePageUrl(host: string, slug: string): string {
   return `https://${host}/${slug === 'home' ? '' : slug}`
 }
@@ -266,6 +271,10 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const [zoom, setZoom] = useState(100)
   const [dropId, setDropId] = useState<string | null>(null)
   const [toast, setToast] = useState('')
+  // LIVE-2321: after a publish the toolbar keeps a "View live site" link beside Publish, so the person can
+  // open what they just put live (the toast alone named the host with nothing to click).
+  const [publishedLive, setPublishedLive] = useState(false)
+  const liveSiteUrl = liveSiteHref(host)
   const toastTimer = useRef<number | undefined>(undefined)
   const toastMounted = useRef(true)
   useEffect(() => {
@@ -424,7 +433,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       setPersisted(result.state)
       setStatus(JSON.stringify(latest.current) === saved.current ? 'saved' : 'unsaved')
       setSavedAt(Date.now()); setNow(Date.now())
-      if (publish || schedule) { setModal(null); setChanges([]); say(schedule ? `Scheduled for ${new Date(schedule).toLocaleString()}` : `Published to ${host}`) }
+      if (publish || schedule) { setModal(null); setChanges([]); say(schedule ? `Scheduled for ${new Date(schedule).toLocaleString()}` : `Published to ${host}`); if (!schedule) setPublishedLive(true) }
     } catch { setStatus('error'); setError('Could not reach your website. Your changes are still here. Try saving again.') }
     finally { busy.current = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- say() and host only phrase the toast
@@ -930,6 +939,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           <Icon label={preview ? 'Back to editor' : 'Preview'} hint={preview ? 'Back to editor · Esc' : 'Preview ⌘P'} aria-keyshortcuts="Meta+P Control+P" aria-pressed={preview} onClick={() => togglePreview()}><FqIcon name="eye" /></Icon>
           <span className="faces" role="img" aria-label={[`${author} · editing`, ...people.map((person) => `${person.name} · editing`)].join(', ')} title={[`${author} · editing`, ...people.map((person) => `${person.name} · editing`)].join(', ')}>{[{ key: 'me', name: author }, ...people.map((person) => ({ key: person.profileId, name: person.name }))].map((person) => <span key={person.key} aria-hidden>{person.name.split(' ').slice(0, 2).map((n) => n[0]).join('')}</span>)}</span>
           <button type="button" className="btn sm pe-wide" onClick={() => void share()}>Share</button>
+          {publishedLive && <a className="btn sm" data-live-link href={liveSiteUrl} target="_blank" rel="noopener noreferrer" aria-label="View live site (opens in a new tab)">View live site</a>}
           <button type="button" className="btn pa" aria-label={pendingCount ? `Publish, ${pendingCount} ${pendingCount === 1 ? 'change' : 'changes'}` : 'Publish'} onClick={() => setModal('publish')}>Publish{pendingCount > 0 && <span className="pub-badge" aria-hidden>{pendingCount}</span>}</button>
         </header>
         <aside className="rail" aria-label="Website navigation">
@@ -1022,6 +1032,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
       <details className="we-mobile-history"><summary aria-label="Editor tools">Tools</summary><div>{DEVICES.map(({ id, label }) => <button key={id} type="button" className="we-row" aria-pressed={device === id} onClick={() => setDevice(id)}>{label} width</button>)}<button type="button" className="we-row" disabled={!historyCounts.past} onClick={() => travel(false)}>Undo</button><button type="button" className="we-row" disabled={!historyCounts.future} onClick={() => travel(true)}>Redo</button><button type="button" className="we-row" onClick={() => void save()}>Save draft</button></div></details>
       <Icon label="Preview" aria-pressed={preview} onClick={() => setPreview(!preview)}><Eye size={18} aria-hidden /></Icon>
       <div className="we-presence" title={`${author} · editing`}><span className="we-avatar">{author.split(' ').slice(0, 2).map((n) => n[0]).join('')}</span>{people.map((person) => <span key={person.profileId} className="we-avatar" title={`${person.name} · editing`}>{person.name.split(' ').slice(0, 2).map((n) => n[0]).join('')}</span>)}</div>
+      {publishedLive && <a className="we-action secondary" data-live-link href={liveSiteUrl} target="_blank" rel="noopener noreferrer" aria-label="View live site (opens in a new tab)"><span>View live site</span></a>}
       <button type="button" className="we-action pa" onClick={() => setModal('publish')}><span>Publish</span>{pendingCount > 0 && <small>{pendingCount}</small>}</button>
     </header>
     <aside className={`we-rail we-left ${left ? '' : 'we-folded'}`} aria-label="Website navigation" style={preview ? { visibility: 'hidden' } : undefined}>
