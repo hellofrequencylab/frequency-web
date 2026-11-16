@@ -1,3 +1,4 @@
+import { formatDateWeekday } from '@/lib/format-date'
 import Link from 'next/link'
 import { InlineText } from '@/components/sites/inline-text'
 import {
@@ -649,7 +650,7 @@ export function SpaceEventsBlock({
           const d = new Date(e.startsAt)
           const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
           const day = d.getDate()
-          const when = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+          const when = formatDateWeekday(d)
           return (
             <li key={e.id}>
               <Link
