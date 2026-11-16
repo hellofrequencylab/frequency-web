@@ -10,6 +10,7 @@ import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { SpaceCanvasBlock, isCanvasTextField, isCanvasImageField } from './space-canvas-block'
 import { Input } from '@/components/ui/field'
 import { capsLabel } from '@/components/ui/caps-label'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 // THE ON-CANVAS WYSIWYG SPACE PAGE EDITOR — the space mirror of the Email Studio canvas editor. A two-pane
 // surface over the SHARED entity-layout store (same provider, seed, debounced save + sanitize as the
@@ -505,29 +506,25 @@ const SPLIT_OPTIONS: { split: RowSplit; label: string; bars: string[] }[] = [
 ]
 function SplitPicker({ active, onChoose }: { active: RowSplit; onChoose: (s: RowSplit) => void }) {
   return (
-    <div className="flex overflow-hidden rounded-md border border-border" role="group" aria-label="Section layout">
-      {SPLIT_OPTIONS.map(({ split, label: l, bars }) => {
-        const on = active === split
-        return (
-          <button
-            key={split}
-            type="button"
-            aria-pressed={on}
-            aria-label={l}
-            title={l}
-            onClick={() => onChoose(split)}
-            className={`flex min-h-[24px] w-7 items-center justify-center px-1 py-1 ${
-              on ? 'bg-primary' : 'bg-surface hover:bg-surface-elevated'
-            }`}
-          >
-            <span className="flex w-full gap-0.5" aria-hidden>
-              {bars.map((b, i) => (
-                <span key={i} className={`h-2.5 rounded-[1px] ${b} ${on ? 'bg-on-primary' : 'bg-border-strong'}`} />
-              ))}
-            </span>
-          </button>
-        )
-      })}
-    </div>
+    <SegmentedControl
+      size="xs"
+      label="Section layout"
+      value={active}
+      onChange={onChoose}
+      segments={SPLIT_OPTIONS.map(({ split, label: l, bars }) => ({
+        value: split,
+        ariaLabel: l,
+        title: l,
+        className: 'w-8',
+        // The sketch takes the segment's own text colour when chosen, so it reads on whatever fill the kit paints.
+        label: (
+          <span className="flex w-full gap-0.5" aria-hidden>
+            {bars.map((b, i) => (
+              <span key={i} className={`h-2.5 rounded-[1px] ${b} ${active === split ? 'bg-current' : 'bg-border-strong'}`} />
+            ))}
+          </span>
+        ),
+      }))}
+    />
   )
 }

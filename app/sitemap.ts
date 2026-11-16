@@ -80,43 +80,44 @@ async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
   }
 }
 
-// ── The row caps below are DELIBERATE, and these are the numbers that reopen them (SCAN-203) ──
+// ── The commerce verticals are PAGED, and this is what still says when one is cut short ──
 //
-// The commerce verticals are the only sections here that take a bare row
-// limit with no follow-up page, so at scale they drop entries SILENTLY: the sitemap still
-// validates, still gets submitted, and simply stops advertising whatever sorted past the cap
-// (every one of these readers orders created_at DESC, so it is the OLDEST listings that vanish).
+// Store, market, housing and classifieds used to be read with a bare row limit and no page behind
+// it (SCAN-203): past 100 active listings in a vertical, the oldest dropped out of this file with
+// only a log line. The three clamping readers still honour at most 100 rows a call, so the walk
+// lives here and in the readers together (SCAN-1262):
 //
-// PAGING WAS CONSIDERED AND IS NOT A CHANGE THIS FILE CAN MAKE. The podcast section a few hundred
-// lines down pages exactly the way this would want to (`listPublicShowsBySpace` walks `.range()`
-// until it gets a short page), but it could do that because the reader itself was rewritten to
-// page. These four cannot be paged from here:
+//   · listShopProducts / listMarketListings (lib/commerce/products.ts), listHousingListings
+//     (lib/listings/housing.ts) and listListings (lib/marketplace.ts) each take an `offset` now.
+//     Naming one turns the read into a page: `.range()` over the same gates, ordered by `id` after
+//     `created_at` so a row cannot sit on two pages. No migration; these are plain table reads.
+//   · `walkCommercePages` below asks for COMMERCE_SITEMAP_CAP rows at a time until a page comes
+//     back short, up to COMMERCE_SITEMAP_MAX_PAGES pages (COMMERCE_WALK_CAP rows a vertical).
 //
-//   · listShopProducts / listMarketListings / listHousingListings each CLAMP the caller's limit
-//     server-side — `Math.min(Math.max(opts.limit ?? …, 1), 100)` — and expose no offset, range or
-//     cursor, so passing a bigger number is silently ignored and there is no second page to ask for.
-//   · listListings (classifieds) does not clamp, but likewise takes no offset.
-//
-// CIRCLES ARE PAGED NOW (SCAN-1226). `public_circles` still ends
+// CIRCLES ARE PAGED THE SAME WAY (SCAN-1226). `public_circles` still ends
 // `LIMIT GREATEST(1, LEAST(_limit, 200))`, so the walk lives in the reader: the first page is the
 // same `getPublicCircles` read as before and `walkPublicCirclesPast` (lib/discover.ts), only when
 // that page comes back full, asks `public_circles_page` (migration 20270346066000) for the rows
-// after it. Its own ceiling is
-// PUBLIC_CIRCLES_WALK_CAP, and `atCap` below is still what says so if a network ever reaches it.
+// after it. Its own ceiling is PUBLIC_CIRCLES_WALK_CAP.
 //
-// So paging the other four is a reader change (lib/commerce/products.ts, lib/listings/housing.ts,
-// lib/marketplace.ts), deliberately not smuggled into the
-// sitemap. Until then the cap is stated rather than implied, and `atCap` below makes it LOUD
-// instead of silent — a fail-safe nobody can see fire is an invisible regression.
-//
-// 🔴 THE THRESHOLD THAT REOPENS THIS: the moment any one of these sections comes back holding its
-// full cap, that vertical is already dropping URLs. `atCap` logs exactly that, once per section per
-// render, with the reader to page. Do not raise a number here to make the warning stop; the number
-// is the cap the READER enforces, and a bigger one changes nothing.
+// Two things can still cut a section short, and both are LOUD, because a fail-safe nobody can see
+// fire is an invisible regression:
+//   · the walk reaches its ceiling: `atCap` below logs it, once per section per render;
+//   · a reader hands back a full page that holds nothing new (it ignored the offset): the walk
+//     stops rather than read the same rows fifty times, and logs the section and the reader.
+// Do not raise a number here to make either warning stop. COMMERCE_SITEMAP_CAP is the most rows
+// the READERS return per call, and a bigger one changes nothing.
 
-/** Row cap on each commerce vertical (store / market / housing / classifieds). Matches the hard
- *  clamp inside those readers — the largest limit they will honour. */
+/** Rows per page on each commerce vertical (store / market / housing / classifieds). Matches the
+ *  hard clamp inside those readers, the largest limit they will honour, so it is the page size
+ *  of the walk and no longer the section's cap (SCAN-1262). */
 const COMMERCE_SITEMAP_CAP = 100;
+
+/** The most pages `walkCommercePages` reads for one vertical before it stops and `atCap` says so. */
+const COMMERCE_SITEMAP_MAX_PAGES = 50;
+
+/** The most rows one commerce vertical can put in the sitemap. A section holding this many has been cut short. */
+const COMMERCE_WALK_CAP = COMMERCE_SITEMAP_CAP * COMMERCE_SITEMAP_MAX_PAGES;
 
 /** The FIRST page of the public circles read: one call's ceiling in the `public_circles` RPC's own
  *  SQL (the same 200 as PUBLIC_CIRCLES_PAGE in lib/discover.ts). No longer the section's cap
@@ -133,6 +134,45 @@ function atCap<T>(rows: T[], cap: number, section: string, reader: string): T[] 
     );
   }
   return rows;
+}
+
+/**
+ * Every row of one commerce vertical, a page at a time (SCAN-1262). `read` is the vertical's own
+ * reader, so each page carries the reader's gates and its failure contract: a transport failure on
+ * any page throws and `sectionRead` abandons the regeneration, and a database answer resolves `[]`
+ * inside the reader, with the reader's own log line, which ends the walk with the rows in hand.
+ *
+ * Keyed by id, because a listing published between two calls shifts every row after it down one
+ * and the same row then opens the next page.
+ */
+async function walkCommercePages<T extends { id: string }>(
+  section: string,
+  reader: string,
+  read: (page: { limit: number; offset: number }) => Promise<T[]>,
+): Promise<T[]> {
+  const all: T[] = [];
+  const seen = new Set<string>();
+  for (let page = 0; page < COMMERCE_SITEMAP_MAX_PAGES; page++) {
+    const rows = await read({ limit: COMMERCE_SITEMAP_CAP, offset: page * COMMERCE_SITEMAP_CAP });
+    const before = all.length;
+    for (const row of rows) {
+      if (seen.has(row.id)) continue;
+      seen.add(row.id);
+      all.push(row);
+    }
+    if (rows.length < COMMERCE_SITEMAP_CAP) break;
+    if (page > 0 && all.length === before) {
+      // A full page with nothing new in it: the reader is not honouring the offset, so this
+      // section is held at what one call returns and everything past it is missing.
+      console.warn(
+        `sitemap: ${section} returned ${all.length} row(s) at its cap of ${COMMERCE_SITEMAP_CAP} a page and ` +
+          `the next page repeated them, so the walk stopped and URLs past it are being dropped. ` +
+          `Page ${reader} (see the cap note in app/sitemap.ts).`,
+      );
+      break;
+    }
+  }
+  return all;
 }
 
 // ── A failed section read TELLS, and a transport failure KEEPS the last good copy (LIVE-329) ──
@@ -409,11 +449,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     }));
 
-    const categoryRoutes: MetadataRoute.Sitemap = categories.map((c) => ({
-      url: `${SITE_URL}/help/${c.slug}`,
-      changeFrequency: "weekly",
-      priority: 0.4,
-    }));
+    // A category page is a list of its articles, so it last changed when its newest article did
+    // (SCAN-1262). Every article counts, a canonical twin included: the category page lists it.
+    // `updated` is a YYYY-MM-DD string, so the newest is the greatest; one that does not parse, or
+    // sits ahead of the clock, is skipped, and a category with no dated article emits no lastmod
+    // rather than an invented one (LIVE-197).
+    const newestInCategory = new Map<string, string>();
+    for (const a of articles) {
+      if (!pastInstant(a.updated)) continue;
+      const held = newestInCategory.get(a.category);
+      if (!held || a.updated > held) newestInCategory.set(a.category, a.updated);
+    }
+
+    const categoryRoutes: MetadataRoute.Sitemap = categories.map((c) => {
+      const newest = newestInCategory.get(c.slug);
+      return {
+        url: `${SITE_URL}/help/${c.slug}`,
+        ...(newest ? { lastModified: new Date(newest) } : {}),
+        changeFrequency: "weekly",
+        priority: 0.4,
+      };
+    });
 
     helpRoutes = [...categoryRoutes, ...articleRoutes];
   } catch (err) {
@@ -478,20 +534,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Browse-by-place city hubs — only cities with ≥1 public circle or upcoming event
       // (empty places never get a URL, so low-value facets stay out of crawl).
       sectionRead("discover places", listDiscoverCities()),
-      // The four commerce verticals are CAPPED, not paged (see the cap note above this function).
-      // Each fails safe to [] on a deterministic error, so a hiccup in one costs that vertical and
-      // nothing else.
+      // The four commerce verticals are PAGED (SCAN-1262, see the note above this function): every
+      // active row, COMMERCE_SITEMAP_CAP at a time. Each fails safe to [] on a deterministic error,
+      // so a hiccup in one costs that vertical and nothing else.
       //
       // Frequency Store products — platform-owned, ACTIVE only (the same gate /store/[id] renders on),
       // so a draft/archived item never enters the crawl.
-      sectionRead("store products", listShopProducts({ limit: COMMERCE_SITEMAP_CAP })),
+      sectionRead("store products", walkCommercePages("store products", "listShopProducts", listShopProducts)),
       // Global Market listings (/market/[id]) — active + market-published maker/Space products only
       // (listMarketListings gates on both), so an unpublished item stays out.
-      sectionRead("market listings", listMarketListings({ limit: COMMERCE_SITEMAP_CAP })),
+      sectionRead("market listings", walkCommercePages("market listings", "listMarketListings", listMarketListings)),
       // Housing listings (/housing/[id]) — active only.
-      sectionRead("housing listings", listHousingListings({ limit: COMMERCE_SITEMAP_CAP })),
+      sectionRead("housing listings", walkCommercePages("housing listings", "listHousingListings", listHousingListings)),
       // Classifieds (/classifieds/[id]) — active market_listings only.
-      sectionRead("classifieds", listClassifieds({ limit: COMMERCE_SITEMAP_CAP })),
+      sectionRead("classifieds", walkCommercePages("classifieds", "listListings", listClassifieds)),
     ]);
 
     // ⚠️ Four reads above are CAPPED but were not wrapped in atCap(), so they dropped URLs
@@ -644,9 +700,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // carries its first photo for the image sitemap when set.
     const storeRoutes: MetadataRoute.Sitemap = atCap(
       shopProducts,
-      COMMERCE_SITEMAP_CAP,
+      COMMERCE_WALK_CAP,
       "store products",
-      "listShopProducts",
+      "walkCommercePages further (COMMERCE_SITEMAP_MAX_PAGES in app/sitemap.ts)",
     )
       // DEMO rows never enter the crawl (LIVE-187). Measured on production 2026-09-06: all four
       // platform-owned `is_demo` store products are `status='active'` and carry picsum placeholder
@@ -669,9 +725,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // sold/closed/draft listing is isolated OUT of the sitemap by construction.
     const marketRoutes: MetadataRoute.Sitemap = atCap(
       marketListings,
-      COMMERCE_SITEMAP_CAP,
+      COMMERCE_WALK_CAP,
       "market listings",
-      "listMarketListings",
+      "walkCommercePages further (COMMERCE_SITEMAP_MAX_PAGES in app/sitemap.ts)",
     ).filter((p) => p.productKind !== 'journey').map((p) => ({
       url: `${SITE_URL}/market/${p.id}`,
       ...((p.updatedAt) ? { lastModified: new Date(p.updatedAt) } : {}),
@@ -681,9 +737,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const housingRoutes: MetadataRoute.Sitemap = atCap(
       housingListings,
-      COMMERCE_SITEMAP_CAP,
+      COMMERCE_WALK_CAP,
       "housing listings",
-      "listHousingListings",
+      "walkCommercePages further (COMMERCE_SITEMAP_MAX_PAGES in app/sitemap.ts)",
     ).map((l) => ({
       url: `${SITE_URL}/housing/${l.id}`,
       ...((l.updatedAt) ? { lastModified: new Date(l.updatedAt) } : {}),
@@ -693,9 +749,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const classifiedRoutes: MetadataRoute.Sitemap = atCap(
       classifieds,
-      COMMERCE_SITEMAP_CAP,
+      COMMERCE_WALK_CAP,
       "classifieds",
-      "listListings",
+      "walkCommercePages further (COMMERCE_SITEMAP_MAX_PAGES in app/sitemap.ts)",
     ).map((l) => ({
       url: `${SITE_URL}/classifieds/${l.id}`,
       ...((l.updated_at) ? { lastModified: new Date(l.updated_at) } : {}),

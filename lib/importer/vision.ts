@@ -16,6 +16,7 @@ import { completeRaw } from '@/lib/ai/complete'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import { stripEmDashes } from '@/lib/ai/space-copilot'
+import { lenientList, validateModelValue, z } from '@/lib/ai/schema'
 
 const FEATURE = 'seed-image-plan'
 const MAX_IMAGES = 12
@@ -128,9 +129,20 @@ const TOOL: Anthropic.Tool = {
   },
 }
 
-function toCategory(v: unknown): ImageCategory {
-  return typeof v === 'string' && (IMAGE_CATEGORIES as readonly string[]).includes(v) ? (v as ImageCategory) : 'other'
-}
+/** The image_plan reply (PROG-E8C, the ADR-1287 pattern, lib/ai/schema.ts). A row that is not an object is dropped
+ *  and the rest are kept. Inside a row each part has its own reading: an unknown category is 'other', the alt is
+ *  whatever was sent as text with em dashes removed and capped, the hero score is clamped to 0..1 (0 when it is not a
+ *  number), and the index is read as a number so "1" still finds image 1. */
+const PLAN_REPLY = z.object({
+  items: lenientList(
+    z.object({
+      index: z.unknown().optional().transform((v) => Number(v)),
+      category: z.enum(IMAGE_CATEGORIES).catch('other'),
+      alt: z.unknown().optional().transform((v) => stripEmDashes(String(v ?? '')).trim().slice(0, 240)),
+      heroScore: z.unknown().optional().transform((v) => Math.min(1, Math.max(0, Number(v) || 0))),
+    }),
+  ),
+})
 
 /**
  * Run the designer over `images` (public URLs) and return the plan, or null when AI is off / over
@@ -165,20 +177,14 @@ export async function planSeedImages(
     })
 
     const call = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'image_plan')
-    const raw = (call?.input as { items?: unknown })?.items
-    if (!Array.isArray(raw)) return null
+    const plan = validateModelValue(call?.input, PLAN_REPLY)
+    if (!plan.ok) return null
 
     // Map each returned entry back onto its URL by index; anything the model skipped defaults to 'other'.
     const byIndex = new Map<number, { category: ImageCategory; alt: string; heroScore: number }>()
-    for (const entry of raw) {
-      const e = entry as Record<string, unknown>
-      const idx = typeof e.index === 'number' ? e.index : Number(e.index)
-      if (!Number.isInteger(idx) || idx < 0 || idx >= urls.length) continue
-      byIndex.set(idx, {
-        category: toCategory(e.category),
-        alt: stripEmDashes(String(e.alt ?? '')).trim().slice(0, 240),
-        heroScore: Math.min(1, Math.max(0, Number(e.heroScore) || 0)),
-      })
+    for (const { index, category, alt, heroScore } of plan.data.items) {
+      if (!Number.isInteger(index) || index < 0 || index >= urls.length) continue
+      byIndex.set(index, { category, alt, heroScore })
     }
 
     const items: SeedImagePlanItem[] = urls.map((url, i) => {

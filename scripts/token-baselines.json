@@ -8,9 +8,9 @@
     "The class definitions and what each one exempts are in the header of the THEME GATE section of check-tokens.mjs."
   ],
   "frozen": {
-    "at": "2026-10-22",
+    "at": "2026-11-16",
     "direction": "lowered",
-    "reason": "Meta scan at 4410c0944: retain four already-removed CSS colour literals in the per-file ratchet"
+    "reason": "LIVE-2308: the website editor sheet reads the shared Frequency tokens through aliases instead of its own copy of the Commons values (SCAN-862 absorbed); eight editor-only literals remain"
   },
   "counts": {
     "tsx-style-colour": {},
@@ -23,11 +23,9 @@
     "tsx-colour-function": {},
     "css-colour": {
       "app/themes/frequency.css": 3,
-      "components/sites/editor/editor.css": 110
+      "components/sites/editor/editor.css": 8
     },
-    "css-font-family": {
-      "components/sites/editor/editor.css": 5
-    },
+    "css-font-family": {},
     "css-font-size-floor": {
       "app/themes/frequency/members-a.css": 1,
       "app/themes/frequency/members-shell.css": 2,
@@ -103,6 +101,20 @@
         "tsx-colour-function": 0,
         "css-colour": 113,
         "css-font-family": 5,
+        "css-font-size-floor": 7
+      }
+    },
+    {
+      "at": "2026-11-16",
+      "direction": "lowered",
+      "reason": "LIVE-2308: the website editor sheet reads the shared Frequency tokens through aliases instead of its own copy of the Commons values (SCAN-862 absorbed); eight editor-only literals remain",
+      "totals": {
+        "tsx-style-colour": 0,
+        "tsx-style-font-size": 21,
+        "tsx-style-font-family": 0,
+        "tsx-colour-function": 0,
+        "css-colour": 11,
+        "css-font-family": 0,
         "css-font-size-floor": 7
       }
     }
