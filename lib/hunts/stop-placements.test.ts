@@ -195,3 +195,53 @@ describe('publishing binds a placement to every stop (FH-020X)', () => {
     expect(bindings().find((b) => b.placement_id === p2)?.mission_key).toBe('stop-1')
   })
 })
+
+describe('publishing a Passport with partner places and regions (FH-030S)', () => {
+  const CAFE = 'cccccccc-0000-4000-8000-000000000001'
+  const PARK = 'cccccccc-0000-4000-8000-000000000002'
+  const partner = (space_id: string, over: Row = {}) => ({ hunt_id: 'hunt-1', space_id, status: 'accepted', effective_at: '2026-01-01T00:00:00Z', revoked_at: null, permitted_roles: ['operator'], ...over })
+  const trail = () => (tables.hunt_versions[0].policy as { trail: Record<string, unknown> }).trail
+  const passport = (extra: Record<string, unknown>) => {
+    seed({ ownerSpaceId: 'space-9', stops: [1, 2, 3, 4, 5].map((n) => stop(n)) })
+    Object.assign(trail(), { shape: 'passport', finishCount: 3, ...extra })
+  }
+
+  it('writes the count group with min_count, each stop\'s venue, the substitute code and the regions', async () => {
+    passport({
+      venues: [{ stop: 'stop-2', venue: CAFE, substitute: PARK }],
+      regions: [{ name: 'Harbor', enabled: true, stops: ['stop-1', 'stop-2', 'stop-3'] }, { name: 'Pier', enabled: false, stops: ['stop-4'] }],
+    })
+    tables.hunt_partners = [partner(CAFE), partner(PARK)]
+    const res = await publishTrail('hunt-1', ACTOR, 4, 'unlisted', true)
+    expect(res.ok).toBe(true)
+    expect(tables.hunt_rule_groups).toEqual([expect.objectContaining({ group_key: 'finish', target_finish: true, logic: 'count', min_count: 3 })])
+    const stop2 = bindings().filter((b) => b.mission_key === 'stop-2')
+    expect(stop2.map((b) => b.venue_space_id).sort()).toEqual([CAFE, PARK].sort())
+    expect(new Set(stop2.map((b) => b.placement_id)).size).toBe(2)
+    expect(bindings().find((b) => b.mission_key === 'stop-1')?.venue_space_id).toBe('space-9')
+    expect((tables.hunt_versions[0].policy as { chapters: unknown }).chapters).toEqual([
+      { chapter_key: 'region-1', enabled: true, members: ['stop-1', 'stop-2', 'stop-3'] },
+      { chapter_key: 'region-2', enabled: false, members: ['stop-4'] },
+    ])
+  })
+
+  it('refuses a stop at a partner that withdrew, and a planned closure that breaks a region, writing nothing', async () => {
+    passport({ venues: [{ stop: 'stop-2', venue: CAFE }] })
+    tables.hunt_partners = [partner(CAFE, { status: 'withdrawn', revoked_at: '2026-11-01T00:00:00Z' })]
+    expect(await publishTrail('hunt-1', ACTOR, 4, 'unlisted', true)).toMatchObject({ ok: false, reason: 'checklist' })
+    expect(bindings()).toHaveLength(0)
+
+    passport({
+      finishCount: 2,
+      venues: [{ stop: 'stop-1', venue: CAFE }],
+      regions: [{ name: 'Harbor', enabled: true, stops: ['stop-1', 'stop-2'] }, { name: 'Old town', enabled: true, stops: ['stop-3', 'stop-4', 'stop-5'] }],
+    })
+    // Live today, with an end date: the Harbor region could not be finished once it leaves.
+    tables.hunt_partners = [partner(CAFE, { revoked_at: '2099-01-01T00:00:00Z' })]
+    const res = await publishTrail('hunt-1', ACTOR, 4, 'unlisted', true)
+    expect(res).toMatchObject({ ok: false, reason: 'checklist' })
+    if (res.ok || res.reason !== 'checklist') return
+    expect(res.items.find((i) => i.code === 'venue_closure')).toMatchObject({ ok: false })
+    expect(bindings()).toHaveLength(0)
+  })
+})

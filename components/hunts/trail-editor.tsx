@@ -15,22 +15,27 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowDown, ArrowUp, Check, Lock, Map, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, Lock, Map, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
 import { FieldControl, SparkShell, StudioField, StudioNote } from '@/components/studio/spark'
-import { HUNT_MANIFEST } from '@/lib/studio/entities/hunt'
+import { HUNT_MANIFEST, HUNT_OPTIONS } from '@/lib/studio/entities/hunt'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import {
+  MAX_REGIONS,
   MAX_STOPS,
   MIN_STOPS,
   emptyStop,
+  passportCount,
   previewTrail,
   publishChecklist,
+  reorderStops,
   stopKey,
+  type DraftRegion,
   type Stop,
+  type StopVenue,
   type TrailDraft,
 } from '@/lib/hunts/draft'
 import type { TrailEditorState } from '@/lib/hunts/store'
@@ -42,6 +47,15 @@ import { EDITOR_STEPS, TRAIL_STEPS, stepNumber, type EditorStep } from './trail-
 const STOPS_REPEAT = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'stops')
 const STOP_FIELDS: FieldDef[] = (STOPS_REPEAT?.fields ?? []).map((f) => ({ ...f, section: STOPS_REPEAT?.section ?? 'stops' }))
 const VISIBILITY_FIELD = HUNT_MANIFEST.fields.find((f) => f.path === 'visibility')
+// FH-030S: the shape, the Passport's threshold, the partner places and the regions, all from the manifest.
+const SHAPE_FIELD = HUNT_MANIFEST.fields.find((f) => f.path === 'shape')
+const COUNT_FIELD = HUNT_MANIFEST.fields.find((f) => f.path === 'finishCount')
+const repeatFields = (arrayPath: string): FieldDef[] => {
+  const r = HUNT_MANIFEST.repeats?.find((x) => x.arrayPath === arrayPath)
+  return (r?.fields ?? []).map((f) => ({ ...f, section: r?.section ?? 'shape' }))
+}
+const VENUE_FIELDS = repeatFields('venues')
+const REGION_FIELDS = repeatFields('regions')
 
 const STOP_PLACEHOLDER: Record<string, string> = {
   place: 'e.g. The bench under the big fig tree',
@@ -173,15 +187,52 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
     })
     setPasted('')
   }
-  const removeStop = (i: number) => edit((d) => ({ ...d, stops: d.stops.filter((_, j) => j !== i) }))
+  // Stop keys follow position, so a move or a removal goes through reorderStops: the partner places and
+  // regions that name a stop follow it (FH-030S).
+  const removeStop = (i: number) => edit((d) => reorderStops(d, d.stops.map((_, j) => j).filter((j) => j !== i)))
   const moveStop = (i: number, dir: -1 | 1) =>
     edit((d) => {
       const j = i + dir
       if (j < 0 || j >= d.stops.length) return d
-      const stops = [...d.stops]
-      ;[stops[i], stops[j]] = [stops[j], stops[i]]
-      return { ...d, stops }
+      const order = d.stops.map((_, k) => k)
+      ;[order[i], order[j]] = [order[j], order[i]]
+      return reorderStops(d, order)
     })
+
+  // ── Shape, partner places and regions (FH-030S) ──────────────────────────────────────────
+  const passport = draft.shape === 'passport'
+  const loaded = useMemo(
+    () => ({
+      [HUNT_OPTIONS.stops]: draft.stops.map((s, i) => ({ value: stopKey(i), label: `Stop ${i + 1}${s.place.trim() ? `: ${s.place.trim()}` : ''}` })),
+      [HUNT_OPTIONS.venues]: initial.venueOptions,
+    }),
+    [draft.stops, initial.venueOptions],
+  )
+  const setShape = (value: string) => edit((d) => ({ ...d, shape: value === 'passport' ? 'passport' : undefined }))
+  const setCount = (value: string) =>
+    edit((d) => {
+      const n = Number.parseInt(value, 10)
+      return { ...d, finishCount: Number.isInteger(n) && n >= 1 ? Math.min(n, MAX_STOPS) : undefined }
+    })
+  const setVenue = (i: number, path: string, value: string) =>
+    edit((d) => ({ ...d, venues: (d.venues ?? []).map((v, j) => (j === i ? ({ ...v, [path]: value || undefined } as StopVenue) : v)) }))
+  const addVenue = () =>
+    edit((d) => {
+      const free = d.stops.map((_, i) => stopKey(i)).find((k) => !(d.venues ?? []).some((v) => v.stop === k))
+      const first = initial.venueOptions[0]?.value
+      return free && first ? { ...d, venues: [...(d.venues ?? []), { stop: free, venue: first }] } : d
+    })
+  const removeVenue = (i: number) => edit((d) => ({ ...d, venues: (d.venues ?? []).filter((_, j) => j !== i) }))
+  const setRegion = (i: number, path: string, value: string | string[]) =>
+    edit((d) => ({
+      ...d,
+      regions: (d.regions ?? []).map((r, j) =>
+        j === i ? ({ ...r, [path]: path === 'enabled' ? value === 'true' : path === 'stops' ? (Array.isArray(value) ? value : [value]) : scalar(value) } as DraftRegion) : r,
+      ),
+    }))
+  const addRegion = () =>
+    edit((d) => ((d.regions ?? []).length >= MAX_REGIONS ? d : { ...d, regions: [...(d.regions ?? []), { name: '', enabled: true, stops: [] }] }))
+  const removeRegion = (i: number) => edit((d) => ({ ...d, regions: (d.regions ?? []).filter((_, j) => j !== i) }))
 
   // ── Preview (in memory, writes nothing) ──────────────────────────────────────────────────
   const [credited, setCredited] = useState<string[]>([])
@@ -206,9 +257,16 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
   }, [step, evaluation.finished, testedHere, settled, revision, initial.huntId])
 
   // ── Publish ──────────────────────────────────────────────────────────────────────────────
+  // The same facts the server checks (FH-030S): the places a stop may name, and the ones set to leave.
   const checklist = useMemo(
-    () => publishChecklist({ ...draft, permissionConfirmed: permission }, revision, { venue: initial.hasVenue }),
-    [draft, permission, revision, initial.hasVenue],
+    () =>
+      publishChecklist({ ...draft, permissionConfirmed: permission }, revision, {
+        venue: initial.hasVenue,
+        allowedVenues: new Set(initial.venueOptions.map((o) => o.value)),
+        ownerSpaceId: initial.ownerSpaceId,
+        closedVenues: new Set(initial.closingVenues),
+      }),
+    [draft, permission, revision, initial.hasVenue, initial.venueOptions, initial.ownerSpaceId, initial.closingVenues],
   )
 
   const publish = async () => {
@@ -380,29 +438,98 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
       )}
 
       {step === 'shape' && (
-        <div className="space-y-3">
-          <div className="rounded-card border border-primary bg-surface p-4" aria-current="true">
-            <p className="flex items-center gap-2 text-body font-semibold text-text">
-              <Check className="h-4 w-4 text-primary" aria-hidden />
-              Trail
-            </p>
-            <p className="mt-1 text-body-sm text-muted">Stops in order, finish at the last. Each stop opens when the one before it is found.</p>
-          </div>
-          <div className="rounded-card border border-border bg-surface-elevated/60 p-4 opacity-70">
-            <p className="flex items-center gap-2 text-body font-semibold text-text">
-              <Lock className="h-4 w-4" aria-hidden />
-              Passport and Rally
-            </p>
-            <p className="mt-1 text-body-sm text-muted">Any order, or a race. Coming later.</p>
-          </div>
+        <div className="space-y-4">
+          {SHAPE_FIELD && (
+            <StudioField label={SHAPE_FIELD.label}>
+              <FieldControl def={{ ...SHAPE_FIELD, required: true }} value={passport ? 'passport' : 'trail'} onChange={(v) => setShape(scalar(v))} disabled={conflict !== null} />
+            </StudioField>
+          )}
+          {passport && COUNT_FIELD && (
+            <StudioField label={COUNT_FIELD.label}>
+              <FieldControl
+                def={COUNT_FIELD}
+                value={String(passportCount(draft))}
+                onChange={(v) => setCount(scalar(v))}
+                hint={`Any ${passportCount(draft)} of the ${draft.stops.length} stops finish it. Two stops at one venue count once.`}
+                disabled={conflict !== null}
+              />
+            </StudioField>
+          )}
           <ol className="space-y-1 text-body-sm text-muted">
             {draft.stops.map((s, i) => (
               <li key={i}>
                 {i + 1}. {s.place.trim() || `Stop ${i + 1}`}
-                {i < draft.stops.length - 1 ? ' opens the next' : ' finishes the trail'}
+                {passport ? '' : i < draft.stops.length - 1 ? ' opens the next' : ' finishes the trail'}
               </li>
             ))}
           </ol>
+
+          {passport && (
+            <section className="space-y-3" aria-label="Regions">
+              <p className="text-body font-semibold text-text">Regions</p>
+              <p className="text-body-sm text-muted">Optional. Someone who stays in one region, plus the stops in no region, must be able to finish. Switch a region off and it takes no new visits; visits already counted there still count.</p>
+              {(draft.regions ?? []).map((r, i) => (
+                <div key={i} className="space-y-3 rounded-card border border-border bg-surface p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-body font-semibold text-text">{r.name.trim() || `Region ${i + 1}`}</p>
+                    <Button variant="ghost" size="xs" onClick={() => removeRegion(i)} aria-label={`Remove region ${i + 1}`}>
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                    </Button>
+                  </div>
+                  {REGION_FIELDS.map((def) =>
+                    def.kind === 'toggle' ? (
+                      <FieldControl key={def.path} def={def} value={String(r.enabled)} onChange={(v) => setRegion(i, def.path, scalar(v))} disabled={conflict !== null} />
+                    ) : (
+                      <StudioField key={def.path} label={def.label}>
+                        <FieldControl def={def} value={def.path === 'stops' ? r.stops : r.name} onChange={(v) => setRegion(i, def.path, v)} loaded={loaded} disabled={conflict !== null} />
+                      </StudioField>
+                    ),
+                  )}
+                </div>
+              ))}
+              <Button variant="secondary" size="sm" onClick={addRegion} disabled={(draft.regions ?? []).length >= MAX_REGIONS || conflict !== null}>
+                <Plus className="h-4 w-4" aria-hidden />
+                Add a region
+              </Button>
+            </section>
+          )}
+
+          {initial.venueOptions.length > 0 && (
+            <section className="space-y-3" aria-label="Partner places">
+              <p className="text-body font-semibold text-text">Partner places</p>
+              <p className="text-body-sm text-muted">Choose the venue a stop&apos;s code sits at: this Hunt&apos;s Space or a partner that has accepted. A substitute place counts the same, and keeps the stop open if the venue closes.</p>
+              {(draft.venues ?? []).map((v, i) => (
+                <div key={i} className="space-y-3 rounded-card border border-border bg-surface p-4">
+                  <div className="flex items-center justify-end">
+                    <Button variant="ghost" size="xs" onClick={() => removeVenue(i)} aria-label={`Remove partner place ${i + 1}`}>
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                    </Button>
+                  </div>
+                  {VENUE_FIELDS.map((def) => (
+                    <StudioField key={def.path} label={def.label}>
+                      <FieldControl
+                        def={def}
+                        value={(v as Record<string, string | undefined>)[def.path] ?? ''}
+                        onChange={(next) => setVenue(i, def.path, scalar(next))}
+                        loaded={loaded}
+                        disabled={conflict !== null}
+                      />
+                    </StudioField>
+                  ))}
+                  {initial.closingVenues.includes(v.venue) && <StudioNote>This venue is leaving the Hunt. Add a substitute place so the stop stays open.</StudioNote>}
+                </div>
+              ))}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={addVenue}
+                disabled={(draft.venues ?? []).length >= draft.stops.length || conflict !== null}
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                Set a stop&apos;s place
+              </Button>
+            </section>
+          )}
         </div>
       )}
 
@@ -431,6 +558,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
                   </>
                 )}
                 {state === 'locked' && <p className="mt-1 text-body-sm text-muted">Opens after stop {i}.</p>}
+                {state === 'closed' && <p className="mt-1 text-body-sm text-muted">Closed for now. This stop is not taking visits.</p>}
               </div>
             )
           })}
@@ -475,6 +603,14 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
                       {' '}
                       <button type="button" className="underline underline-offset-4" onClick={() => setStep('preview')}>
                         Open preview
+                      </button>
+                    </>
+                  )}
+                  {!item.ok && (item.code === 'graph' || item.code === 'venue_closure' || item.code === 'stop_venue') && (
+                    <>
+                      {' '}
+                      <button type="button" className="underline underline-offset-4" onClick={() => setStep('shape')}>
+                        Fix the shape
                       </button>
                     </>
                   )}

@@ -15,7 +15,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { approximatePoint } from '@/lib/maps/approximate'
 import { resolvePrecision } from '@/lib/spaces/location'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { PartnerRow } from './authz'
 import type { Chapter, Credit, HuntGraph } from './graph'
+import { partnerLive } from './partners'
 
 // eslint-disable-next-line no-restricted-syntax -- the FH-005 hunt tables are not in the generated types yet (ADR-246 exception)
 const db = () => createAdminClient() as unknown as SupabaseClient
@@ -28,8 +30,38 @@ type MissionRow = {
 type GroupRow = { id: string; target_mission_key: string | null; target_finish: boolean; logic: 'all' | 'any' | 'count'; min_count: number | null; group_key: string | null }
 type MemberRow = { group_id: string; member_mission_key: string }
 type PlacementRow = { mission_key: string; placement_id: string; venue_space_id: string | null }
-/** FH-030 count rules a version may carry: its mission-to-placement bindings and `policy.chapters`. */
-type CountRuleRows = { placements?: readonly PlacementRow[]; chapters?: readonly Chapter[] }
+/**
+ * FH-030 count rules a version may carry: its mission-to-placement bindings and `policy.chapters`.
+ * FH-030S adds the live state: `closed` holds the placements that cannot take a visit now, and a
+ * binding at `ownerSpaceId` (the Space that runs the Hunt) has no venue for counting, as at publish
+ * (lib/hunts/draft.ts `draftToGraph`), so a Space-run Passport counts each stop.
+ */
+type CountRuleRows = { placements?: readonly PlacementRow[]; chapters?: readonly Chapter[]; closed?: ReadonlySet<string>; ownerSpaceId?: string | null }
+
+/**
+ * FH-030S: the bound placements that are closed right now. A placement is closed when it was revoked,
+ * or when its venue is a partner Space that is not live at `now` (withdrawn, suspended, ended, or never
+ * accepted). The Hunt's own Space and a binding with no venue close only by revocation. `partners` null
+ * means the rows could not be read: then no venue is closed for it, rather than every venue. Pure.
+ */
+export function closedPlacements(input: {
+  placements: readonly PlacementRow[]
+  revoked: ReadonlyMap<string, string | null>
+  partners: readonly Pick<PartnerRow, 'spaceId' | 'status' | 'effectiveAt' | 'revokedAt'>[] | null
+  ownerSpaceId: string | null
+  now: string
+}): Set<string> {
+  const at = Date.parse(input.now)
+  const closed = new Set<string>()
+  for (const p of input.placements) {
+    const revokedAt = input.revoked.get(p.placement_id)
+    if (typeof revokedAt === 'string' && Date.parse(revokedAt) <= at) closed.add(p.placement_id)
+    const venue = p.venue_space_id
+    if (!venue || venue === input.ownerSpaceId || input.partners === null) continue
+    if (!input.partners.some((row) => row.spaceId === venue && partnerLive(row, input.now))) closed.add(p.placement_id)
+  }
+  return closed
+}
 
 /** Players see a Hunt that is running or paused (paused shows its banner). Everything else is not found. */
 export function playerHuntState(status: string): 'published' | 'paused' | 'closed' | null {
@@ -44,8 +76,10 @@ export function playerHuntState(status: string): 'published' | 'paused' | 'close
  * as written by publishRows, and the numeric part is compared as a number so stop-10 follows stop-9).
  *
  * `rules` adds what the count rules read (FH-030): each mission's equivalent placements with their
- * venue, so two missions in one shop share a bucket, and the version's regional chapters. A revoked
- * placement is not marked closed here: `hunt_claim_apply` refuses it under the run lock.
+ * venue, so two missions in one shop share a bucket, and the version's regional chapters. FH-030S marks
+ * each placement in `rules.closed` as `closed: true`, so a stop whose every code is closed reads closed
+ * to the player and takes no new visit. `hunt_claim_apply` still refuses a revoked placement under the
+ * run lock; this is the same fact, shown before the scan.
  */
 export function assembleTrail(missions: readonly MissionRow[], groups: readonly GroupRow[], members: readonly MemberRow[], rules: CountRuleRows = {}) {
   const num = (k: string) => Number(k.match(/(\d+)$/)?.[1] ?? 0)
@@ -60,7 +94,11 @@ export function assembleTrail(missions: readonly MissionRow[], groups: readonly 
   const placementsOf = (missionKey: string) =>
     (rules.placements ?? [])
       .filter((p) => p.mission_key === missionKey)
-      .map((p) => ({ placement_key: p.placement_id, venue: p.venue_space_id }))
+      .map((p) => ({
+        placement_key: p.placement_id,
+        venue: rules.ownerSpaceId && p.venue_space_id === rules.ownerSpaceId ? null : p.venue_space_id,
+        ...(rules.closed?.has(p.placement_id) ? { closed: true } : {}),
+      }))
       .sort((a, b) => (a.placement_key < b.placement_key ? -1 : 1))
   const graph: HuntGraph = {
     missions: ordered.map((m) => {
@@ -191,7 +229,9 @@ export async function loadPublishedTrail(slug: string): Promise<PublishedTrail |
     || placements.some((p) => !missionKeys.has(p.mission_key) || typeof p.placement_id !== 'string' || !p.placement_id
       || (p.venue_space_id !== null && p.venue_space_id !== undefined && typeof p.venue_space_id !== 'string'))) return null
 
-  const { graph, content } = assembleTrail(missions, groups, members, { placements, chapters: rawChapters as Chapter[] })
+  // FH-030S: the live closures, read now: revoked placements and partner venues that are not live.
+  const live = await loadClosures(client, version.huntId, placements)
+  const { graph, content } = assembleTrail(missions, groups, members, { placements, chapters: rawChapters as Chapter[], ...live })
   return {
     huntId: version.huntId,
     slug: version.slug,
@@ -202,6 +242,34 @@ export async function loadPublishedTrail(slug: string): Promise<PublishedTrail |
     graph,
     content,
   }
+}
+
+/**
+ * FH-030S: what closes a stop right now. Reads only when the version binds a placement. These reads show
+ * the player what is closed before a scan; the credit itself is still decided under the run lock by
+ * `hunt_claim_apply`, which refuses a revoked placement and a venue whose partner row is not in force (migration
+ * 20270346081000). So a read that fails closes nothing for that reason instead of hiding the whole Trail:
+ * a stop that is really closed is still refused at the claim.
+ */
+async function loadClosures(client: SupabaseClient, huntId: string, placements: readonly PlacementRow[]): Promise<{ closed: Set<string>; ownerSpaceId: string | null }> {
+  if (placements.length === 0) return { closed: new Set(), ownerSpaceId: null }
+  const ids = [...new Set(placements.map((p) => p.placement_id))]
+  const [hunt, codes, partners] = await Promise.all([
+    client.from('hunts').select('owner_space_id').eq('id', huntId).maybeSingle(),
+    client.from('hunt_placements').select('id, revoked_at', { count: 'exact' }).eq('hunt_id', huntId).in('id', ids),
+    client.from('hunt_partners').select('space_id, status, effective_at, revoked_at', { count: 'exact' }).eq('hunt_id', huntId),
+  ])
+  const owner = hunt.error ? null : (hunt.data as { owner_space_id?: unknown } | null)?.owner_space_id
+  const ownerSpaceId = typeof owner === 'string' ? owner : null
+  const revoked = new Map<string, string | null>()
+  if (completeRows(codes)) for (const row of codes.data as { id: unknown; revoked_at: unknown }[]) {
+    if (typeof row.id === 'string') revoked.set(row.id, typeof row.revoked_at === 'string' ? row.revoked_at : null)
+  }
+  const rows = completeRows(partners)
+    ? (partners.data as { space_id: string; status: PartnerRow['status']; effective_at: string | null; revoked_at: string | null }[])
+        .map((row) => ({ spaceId: row.space_id, status: row.status, effectiveAt: row.effective_at, revokedAt: row.revoked_at }))
+    : null
+  return { closed: closedPlacements({ placements, revoked, partners: rows, ownerSpaceId, now: new Date().toISOString() }), ownerSpaceId }
 }
 
 type PlayerRun = { runId: string; state: string }

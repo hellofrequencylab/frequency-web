@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { draftToGraph, publishRows } from './draft'
 import { projectForPlayer } from './player'
 import { evaluate, validateGraph } from './graph'
-import { assembleTrail, loadPublicTrailSummary, loadPublishedTrail, loadVisitedStopPoints, playerHuntState } from './run-store'
+import { assembleTrail, closedPlacements, loadPublicTrailSummary, loadPublishedTrail, loadVisitedStopPoints, playerHuntState } from './run-store'
 
 const from = vi.fn()
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from }) }))
@@ -236,5 +236,73 @@ describe('loadPublishedTrail with count rules', () => {
   ])('fails closed on %s', async (_label, extra) => {
     mockTrailQueries(extra)
     expect(await loadPublishedTrail('passport')).toBeNull()
+  })
+})
+
+// FH-030S: live venue closures reach the player graph.
+describe('live closures in the player graph (FH-030S)', () => {
+  const placements = [
+    { mission_key: 'shop-1', placement_id: 'pl-1', venue_space_id: 'space-a' },
+    { mission_key: 'shop-2', placement_id: 'pl-2', venue_space_id: 'space-a' },
+    { mission_key: 'shop-3', placement_id: 'pl-3', venue_space_id: 'space-c' },
+    { mission_key: 'shop-3', placement_id: 'pl-3b', venue_space_id: 'space-d' },
+    { mission_key: 'shop-4', placement_id: 'pl-4', venue_space_id: 'owner' },
+  ]
+  const live = { status: 'accepted' as const, effectiveAt: '2026-11-01T00:00:00Z', revokedAt: null }
+  const now = '2026-11-16T00:00:00Z'
+
+  it('closes a revoked code and every code at a partner that is not live, and nothing for an unreadable partner list', () => {
+    const partners = [
+      { spaceId: 'space-a', status: 'withdrawn' as const, effectiveAt: '2026-11-01T00:00:00Z', revokedAt: '2026-11-10T00:00:00Z' },
+      { spaceId: 'space-c', ...live },
+      { spaceId: 'space-d', ...live, revokedAt: '2026-12-01T00:00:00Z' },
+    ]
+    const revoked = new Map([['pl-3', '2026-11-12T00:00:00Z'], ['pl-3b', null]])
+    expect([...closedPlacements({ placements, revoked, partners, ownerSpaceId: 'owner', now })].sort()).toEqual(['pl-1', 'pl-2', 'pl-3'])
+    expect([...closedPlacements({ placements, revoked: new Map(), partners: null, ownerSpaceId: 'owner', now })]).toEqual([])
+  })
+
+  it('shows a stop whose every code is closed as closed, keeps one with an open substitute playable, and counts the owner Space per stop', () => {
+    const missions = ['shop-1', 'shop-2', 'shop-3', 'shop-4'].map((mission_key) => ({ mission_key, title: mission_key, visible_body: `clue ${mission_key}`, locked_teaser: null, opens_at: null, closes_at: null }))
+    const groups = [{ id: 'finish', target_mission_key: null, target_finish: true, logic: 'count' as const, min_count: 2, group_key: 'finish' }]
+    const members = missions.map((m) => ({ group_id: 'finish', member_mission_key: m.mission_key }))
+    const closed = new Set(['pl-1', 'pl-2', 'pl-3'])
+    const { graph, content } = assembleTrail(missions, groups, members, { placements, closed, ownerSpaceId: 'owner' })
+    expect(graph.missions.find((m) => m.mission_key === 'shop-1')?.placements).toEqual([{ placement_key: 'pl-1', venue: 'space-a', closed: true }])
+    expect(graph.missions.find((m) => m.mission_key === 'shop-4')?.placements).toEqual([{ placement_key: 'pl-4', venue: null }])
+    const view = projectForPlayer({ graph, content, credits: [], now, huntState: 'published', revision: 1 })
+    expect(view.stops.map((s) => [s.key, s.state])).toEqual([['shop-1', 'closed'], ['shop-2', 'closed'], ['shop-3', 'eligible'], ['shop-4', 'eligible']])
+    expect(view.stops[0].clue).toBeUndefined()
+    // A credit already earned at a venue that later closed still counts.
+    expect(evaluate(graph, [{ mission_key: 'shop-1' }, { mission_key: 'shop-4' }], now).finished).toBe(true)
+  })
+
+  it('reads the partner rows and revoked codes when it loads a published Trail', async () => {
+    const tables: Record<string, Record<string, unknown>[]> = {
+      hunts: [{ id: 'h1', slug: 'passport', visibility: 'public', status: 'live', current_version_id: 'v1', revision: 4, owner_space_id: null }],
+      hunt_versions: [{ id: 'v1', hunt_id: 'h1', status: 'published', trail_title: 'Passport', trail_hook: null, chapters: [] }],
+      hunt_missions: [{ version_id: 'v1', mission_key: 'shop-1', title: 'A', visible_body: 'a', locked_teaser: null, opens_at: null, closes_at: null }],
+      hunt_rule_groups: [{ version_id: 'v1', id: 'g', target_mission_key: null, target_finish: true, logic: 'all', min_count: null, group_key: 'finish' }],
+      hunt_rule_group_members: [{ version_id: 'v1', group_id: 'g', member_mission_key: 'shop-1' }],
+      hunt_mission_placements: [{ version_id: 'v1', mission_key: 'shop-1', placement_id: 'pl-1', venue_space_id: 'space-a' }],
+      hunt_placements: [{ id: 'pl-1', hunt_id: 'h1', revoked_at: null }],
+      hunt_partners: [{ hunt_id: 'h1', space_id: 'space-a', status: 'suspended', effective_at: '2026-11-01T00:00:00Z', revoked_at: '2026-11-02T00:00:00Z' }],
+    }
+    from.mockImplementation((table: string) => {
+      let matches = tables[table] ?? []
+      const query = {
+        select: () => query,
+        eq: (column: string, value: unknown) => { matches = matches.filter((row) => row[column] === value); return query },
+        in: (column: string, values: unknown[]) => { matches = matches.filter((row) => values.includes(row[column])); return query },
+        maybeSingle: async () => ({ data: matches[0] ?? null, error: null }),
+        then: (resolve: (response: { data: typeof matches; count: number; error: null }) => unknown) => resolve({ data: matches, count: matches.length, error: null }),
+      }
+      return query
+    })
+    const trail = await loadPublishedTrail('passport')
+    expect(trail?.graph.missions[0].placements).toEqual([{ placement_key: 'pl-1', venue: 'space-a', closed: true }])
+    expect(from).toHaveBeenCalledWith('hunt_partners')
+    tables.hunt_partners[0] = { ...tables.hunt_partners[0], status: 'accepted', revoked_at: null }
+    expect((await loadPublishedTrail('passport'))?.graph.missions[0].placements).toEqual([{ placement_key: 'pl-1', venue: 'space-a' }])
   })
 })

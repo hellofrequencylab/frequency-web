@@ -79,7 +79,8 @@ export default async function PlayPage({ params, searchParams }: {
                   {s.place ? `: ${s.place}` : ''}
                 </p>
                 {s.clue ? <p className="text-body-sm text-muted">{s.clue}</p> : null}
-                {!s.clue ? <p className="text-body-sm text-subtle">Locked for now.</p> : null}
+                {/* FH-030S: a stop whose every code is closed (a venue left, a code was pulled) says so, not "locked". */}
+                {!s.clue ? <p className="text-body-sm text-subtle">{s.state === 'closed' ? 'Closed for now. This stop is not taking visits.' : 'Locked for now.'}</p> : null}
                 {s.hint ? <p className="mt-2 break-words text-body-sm text-muted">Hint: {s.hint}</p> : null}
                 {s.canRevealHint && (
                   <Link
