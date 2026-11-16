@@ -26,8 +26,9 @@
 import { createHash, randomBytes } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { decide, type HuntAction, type RoleGrant } from '@/lib/hunts/authz'
+import { decide, type HuntAction, type PartnerRow, type RoleGrant } from '@/lib/hunts/authz'
 import { huntSwitchOn } from '@/lib/hunts/flags'
+import { publishVenueBlocks } from '@/lib/hunts/partners'
 import { slugify } from '@/lib/utils'
 import {
   canonicalContent,
@@ -333,6 +334,31 @@ export type PublishResult =
   | { ok: false; reason: 'conflict'; currentRevision: number }
   | { ok: false; reason: 'checklist'; items: ChecklistItem[] }
   | { ok: false; reason: 'forbidden' }
+  /** FH-029: a stop is placed at a venue Space with no live partner row. */
+  | { ok: false; reason: 'partners'; spaceIds: string[] }
+
+/**
+ * FH-029: the venue Spaces that stop this publish. Reads the version's mission placements and the Hunt's
+ * partner rows now, so a venue that withdrew a minute ago blocks. A read that fails throws: a publish
+ * that cannot check its partners does not go out.
+ */
+async function venuesBlockingPublish(client: SupabaseClient, hunt: HuntRow, versionId: string): Promise<string[]> {
+  const bound = await client.from('hunt_mission_placements').select('venue_space_id').eq('hunt_id', hunt.id).eq('version_id', versionId)
+  if (bound.error) throw new Error(bound.error.message)
+  const venueSpaceIds = ((bound.data ?? []) as { venue_space_id: string | null }[]).map((r) => r.venue_space_id)
+  if (!venueSpaceIds.some(Boolean)) return []
+  const rows = await client.from('hunt_partners').select('hunt_id, space_id, status, effective_at, revoked_at, permitted_roles').eq('hunt_id', hunt.id)
+  if (rows.error) throw new Error(rows.error.message)
+  const partners: PartnerRow[] = ((rows.data ?? []) as { hunt_id: string; space_id: string; status: PartnerRow['status']; effective_at: string | null; revoked_at: string | null; permitted_roles: string[] | null }[]).map((p) => ({
+    huntId: p.hunt_id,
+    spaceId: p.space_id,
+    status: p.status,
+    effectiveAt: p.effective_at,
+    revokedAt: p.revoked_at,
+    permittedRoles: p.permitted_roles ?? [],
+  }))
+  return publishVenueBlocks({ huntId: hunt.id, ownerSpaceId: hunt.owner_space_id, venueSpaceIds, partners, now: new Date().toISOString() })
+}
 
 /**
  * Freeze the open draft version as the published one. Order: the revision bump first (so a stale
@@ -358,6 +384,8 @@ export async function publishTrail(
   const checklist = publishChecklist(draft, hunt.revision)
   if (hunt.revision !== baseRevision) return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
   if (!checklist.ok) return { ok: false, reason: 'checklist', items: checklist.items }
+  const blockedVenues = await venuesBlockingPublish(client, hunt, version.id)
+  if (blockedVenues.length > 0) return { ok: false, reason: 'partners', spaceIds: blockedVenues }
 
   const bumped = await bumpRevision(client, huntId, baseRevision)
   if (!bumped.applied) return { ok: false, reason: 'conflict', currentRevision: bumped.currentRevision }
