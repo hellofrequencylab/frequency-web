@@ -177,7 +177,8 @@ function DawnCaptureForm({
       {/* Honeypot: off-screen, never announced, never tab-reachable. A filled value = a bot. */}
       <div aria-hidden className="absolute left-[-9999px] top-[-9999px] h-0 w-0 overflow-hidden">
         <label htmlFor="cap-company">Company</label>
-        <input
+        <Input
+          variant="seamless"
           id="cap-company"
           type="text"
           tabIndex={-1}
