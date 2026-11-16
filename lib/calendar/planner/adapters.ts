@@ -201,7 +201,7 @@ export function adaptCalendar(input: AdapterInput): AdaptedCalendar {
     targetLabel: planTargetDef(p.targetKind).label,
     owner: p.ownerProfileId,
     team: p.ownerProfileId ? [p.ownerProfileId] : [],
-    hold: holdByPlan.get(p.id) ?? null,
+    hold: holdByPlan.get(p.id) ?? p.holdUntil ?? null,
     spaces: [{ id: ownSpaceId, role: 'Host', status: 'accepted' }, ...(invitedOn.get(p.id) ?? [])],
     notes: p.notes,
   }))

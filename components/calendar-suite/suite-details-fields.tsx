@@ -142,6 +142,39 @@ export function DateField({
   )
 }
 
+/** A time-of-day field, in minutes since midnight. Saves on a whole time; an empty field clears it. */
+export function TimeField({
+  value,
+  label,
+  onCommit,
+  disabled = false,
+}: {
+  /** Minutes since midnight, or null for no time. */
+  value: number | null
+  label: string
+  onCommit: (next: number | null) => void
+  disabled?: boolean
+}) {
+  const text = value == null ? '' : `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`
+  return (
+    <Input
+      key={text}
+      type="time"
+      aria-label={label}
+      defaultValue={text}
+      disabled={disabled}
+      onChange={(e) => {
+        const next = e.target.value
+        const m = /^(\d{2}):(\d{2})$/.exec(next)
+        if (m) {
+          const minute = Number(m[1]) * 60 + Number(m[2])
+          if (minute !== value) onCommit(minute)
+        } else if (next === '' && value != null) onCommit(null)
+      }}
+    />
+  )
+}
+
 /** A select over a list of choices. */
 export function ChoiceField(props: ChoiceFieldProps) {
   return <ChoiceFieldInner key={props.value} {...props} />
