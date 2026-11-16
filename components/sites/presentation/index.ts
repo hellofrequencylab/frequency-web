@@ -24,6 +24,8 @@ export type PresentationDefaults = Partial<Record<RoleId, string>>
 const BY_THEME: Record<WebsiteTheme, PresentationDefaults> = {
   DAWN: dawn, Menswork: menswork, Midnight: midnight, Wildheart: wildheart, Network: network, NetworkKit: networkKit,
   Temple: temple, TempleKit: templeKit, Designer: designer, FreeHuman: freeHuman, Services: services, NewWorld: newWorld, CyberWitch: cyberwitch,
+  // Mindless draws each role's own default layout until its blocks carry their own looks.
+  Mindless: {},
 }
 
 /** The layout this theme draws a role in when the owner has not picked one, or undefined for the role's own default. */
