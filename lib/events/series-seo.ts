@@ -197,8 +197,7 @@ const NOINDEX_FOLLOW = { index: false, follow: true } as const
  * on unlisted: a self-canonical would still name the URL as the document for this content. The
  * past-event pairing (noindex + self-canonical) stays for public dates that have ended.
  *
- * Fail-open when visibility could not be read: a missed noindex on one unlisted page is quieter
- * than noindexing every public event because the admin read failed.
+ * The share RPC also serves unlisted links. Require confirmed public visibility before indexing.
  */
 export function publicEventIndexPlan(opts: {
   visibility: string | null
@@ -209,7 +208,7 @@ export function publicEventIndexPlan(opts: {
   robots: { index: false; follow: true } | undefined
   canonical: boolean
 } {
-  if (opts.visibility === 'unlisted') {
+  if (opts.visibility !== 'public') {
     return { robots: NOINDEX_FOLLOW, canonical: false }
   }
   const pastRobots = opts.ended && !suppressPastNoindex(opts.facts) ? NOINDEX_FOLLOW : undefined
@@ -273,6 +272,7 @@ export async function seriesSeoFacts(row: SeriesSeoRow): Promise<SeriesSeoFacts>
 type ShareEventSeo = {
   facts: SeriesSeoFacts
   timeZone: string | null
+  series?: { eventId: string; parentEventId: string | null; recurrenceType: string | null }
   /** `events.visibility`, or null when the row could not be read. */
   visibility: string | null
 }
@@ -282,7 +282,7 @@ type ShareEventSeo = {
  * `generateMetadata` already paid for the series columns, and SCAN-1014 needs `visibility` which
  * `public_event_by_slug` does not return. Widening that SECURITY DEFINER RPC (granted to anon)
  * is a DROP + CREATE; this read is the same service-role path `seriesSeoFactsBySlug` already used,
- * plus one column. Fail-open to a one-off with unknown visibility.
+ * plus one column. A failed read returns unknown visibility so the page can withhold indexing.
  */
 export async function shareEventSeo(slug: string): Promise<ShareEventSeo> {
   try {
@@ -294,7 +294,11 @@ export async function shareEventSeo(slug: string): Promise<ShareEventSeo> {
       .maybeSingle()
     if (!data) return { facts: ONE_OFF_FACTS, visibility: null, timeZone: null }
     const row = data as SeriesSeoRow & { visibility: string | null; time_zone: string | null }
-    return { facts: await seriesSeoFacts(row), visibility: row.visibility, timeZone: row.time_zone }
+    const facts = await seriesSeoFacts(row)
+    const series = facts.inSeries
+      ? { eventId: row.id, parentEventId: row.parent_event_id ?? null, recurrenceType: row.recurrence_type ?? null }
+      : undefined
+    return { facts, visibility: row.visibility, timeZone: row.time_zone, series }
   } catch {
     return { facts: ONE_OFF_FACTS, visibility: null, timeZone: null }
   }

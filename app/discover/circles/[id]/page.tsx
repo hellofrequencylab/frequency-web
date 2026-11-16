@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { notFound, permanentRedirect } from 'next/navigation'
+import { cache } from 'react'
+import { createPublicClient } from '@/lib/supabase/public'
 import { getPublicCircle, getPublicCircles } from '@/lib/discover'
+import { localSearchTitle, searchDescription } from '@/lib/discover-search-copy'
 import { retiredSpaceCircleHome } from '@/lib/circles/retired-space-circle'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
@@ -9,6 +12,13 @@ import { breadcrumbSchema, circleSchema } from '@/lib/jsonld'
 import { FrequencyCircle } from '@/components/frequency/site/pages/discover/circles'
 
 export const revalidate = 3600
+
+const readCircle = cache(async (key: string) => {
+  const circle = await getPublicCircle(key)
+  if (!circle) return null
+  const { data } = await createPublicClient().from('circles').select('unlisted').eq('id', circle.id).maybeSingle()
+  return { circle, listed: data?.unlisted === false }
+})
 
 // Pre-render the public circles the discover layer already lists (the same
 // redaction-safe RPC the index and the sitemap read, capped at 200 server-side and
@@ -30,29 +40,30 @@ export async function generateMetadata({
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
   const { id } = await params
-  const circle = await getPublicCircle(id)
-  if (!circle) return { title: 'Circle not found' }
+  const result = await readCircle(id)
+  if (!result) return { title: 'Circle not found' }
+  const { circle, listed } = result
 
-  const where = circle.city ? ` in ${circle.city}` : ''
-  const full =
-    circle.about ??
-    `${circle.name} is a Frequency circle${where}. Join to meet your neighbors and show up in person.`
-  // Search snippets truncate around 155 chars — keep the meta description tight (matches the
-  // other discover detail pages: journeys, events, partners, practices).
-  const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
+  const title = localSearchTitle(circle.name, circle.type === 'online' ? null : circle.city)
+  const description = searchDescription(
+    circle.about,
+    `Explore ${title}, a Frequency Circle. See what the group is about and how to join.`,
+  )
   return {
-    title: circle.name,
+    title,
     description,
-    alternates: { canonical: `/discover/circles/${circle.slug ?? circle.id}` },
+    ...(listed
+      ? { alternates: { canonical: `/discover/circles/${circle.slug ?? circle.id}` } }
+      : { robots: { index: false, follow: true } }),
     openGraph: {
       ...OG_SITE,
-      title: `${circle.name} · ${SITE_NAME}`,
+      title: `${title} · ${SITE_NAME}`,
       description,
       url: `/discover/circles/${circle.slug ?? circle.id}`,
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${circle.name} · ${SITE_NAME}`,
+      title: `${title} · ${SITE_NAME}`,
       description,
     },
   }
@@ -64,13 +75,15 @@ export default async function CirclePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const circle = await getPublicCircle(id)
-  if (!circle) {
+  const result = await readCircle(id)
+  if (!result) {
     // A retired Space Circle (archived by the cutover, ADR-1938) forwards to its Space's wall.
     const home = await retiredSpaceCircleHome(id)
     if (home) permanentRedirect(home)
     notFound()
   }
+
+  const { circle, listed } = result
 
   // 🔴 THE UUID FORM 308s TO THE SLUG (LIVE-182). Both resolve — a printed QR code, a pasted link
   // and an existing citation must all keep working — but exactly one of them is the URL, and a
@@ -96,7 +109,7 @@ export default async function CirclePage({
   ]
   return (
     <>
-      <JsonLd data={schema} />
+      {listed && <JsonLd data={schema} />}
       <FrequencyCircle circle={circle} image={hero.coverImage} />
     </>
   )

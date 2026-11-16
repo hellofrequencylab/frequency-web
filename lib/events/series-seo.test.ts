@@ -167,10 +167,10 @@ describe('publicEventIndexPlan (SCAN-1014)', () => {
     })
   })
 
-  it('fails open when visibility could not be read: a public page stays indexable', () => {
-    expect(publicEventIndexPlan({ visibility: null, ended: false, facts: oneOff, indexedOccurrences: 2 })).toEqual({
-      robots: undefined,
-      canonical: true,
+  it.each([null, 'private', 'circle_only'])('withholds indexing for visibility %s', (visibility) => {
+    expect(publicEventIndexPlan({ visibility, ended: false, facts: oneOff, indexedOccurrences: 2 })).toEqual({
+      robots: { index: false, follow: true },
+      canonical: false,
     })
   })
 })
@@ -398,7 +398,7 @@ describe('event page robots wiring', () => {
 
   it('noindexes an unlisted public event page and omits its canonical (SCAN-1014)', () => {
     const share = sourceWithoutComments(join(process.cwd(), 'app/(public)/events/[slug]/page.tsx'), { imports: true })
-    expect(share).toContain("seo.visibility === 'unlisted' ? 'unlisted' : seo.visibility")
+    expect(share).toContain('visibility: seo.visibility')
     expect(share).toContain('publicEventIndexPlan({')
     expect(share).toContain('plan.canonical ? { alternates: { canonical: `/events/${event.slug}` } }')
   })

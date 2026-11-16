@@ -40,6 +40,7 @@ export async function loadSeriesDates(opts: {
   parentEventId: string | null
   recurrenceType: string | null
   limit?: number
+  publicOnly?: boolean
 }): Promise<SeriesRailDate[]> {
   const { eventId, parentEventId, recurrenceType } = opts
   const limit = opts.limit ?? DEFAULT_RAIL_DATES
@@ -53,22 +54,22 @@ export async function loadSeriesDates(opts: {
   try {
     const admin = createAdminClient()
     // The anchor row itself OR any child of it. Both halves carry the full listing gate.
-    const { data, error } = await admin
+    // The community's wall-clock day matches event browse.
+    const upcomingFrom = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
+    const query = admin
       .from('events')
       .select('id, slug, starts_at, is_cancelled')
       .or(`id.eq.${anchorId},parent_event_id.eq.${anchorId}`)
       .eq('status', 'published')
-      .in('visibility', ['public', 'unlisted'])
+      .in('visibility', opts.publicOnly ? ['public'] : ['public', 'unlisted'])
       .eq('is_cancelled', false)
       .is('removed_at', null)
-      .order('starts_at', { ascending: true })
+    if (opts.publicOnly) query.gte('starts_at', upcomingFrom)
+    const { data, error } = await query.order('starts_at', { ascending: true })
       // Over-fetch modestly: cancelled/undateable rows are filtered by the pure pass below.
       .limit(Math.max(limit * 4, 24))
     if (error || !Array.isArray(data)) return []
 
-    // The floor is the community's wall-clock day, the same rule browse uses — never `new Date()`,
-    // which after 5pm Pacific is already tomorrow in UTC and would drop tonight's date from the rail.
-    const upcomingFrom = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
     const rows = data as Array<{
       id: string
       slug: string | null
