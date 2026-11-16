@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { bubbleEvent, CANVAS_DEVICES, canvasViewportWidth, type CanvasPointerEvent } from '@/lib/builder/canvas-viewport'
@@ -19,8 +19,16 @@ export function CanvasViewportShell({
   children: ReactNode
   height?: number
 }) {
-  const frame = useRef<HTMLIFrameElement>(null)
+  const frame = useRef<HTMLIFrameElement | null>(null)
   const [mount, setMount] = useState<HTMLElement | null>(null)
+  // The frame is in the server's markup, so its document can finish loading before React is listening for `load`
+  // and the event is then never seen: the frame stayed empty in a real browser (found taking PROG-E6B's pictures).
+  // When React takes hold of the element, a frame document that is already there is used at once.
+  const hold = useCallback((el: HTMLIFrameElement | null) => {
+    frame.current = el
+    const loaded = el?.contentDocument
+    if (loaded?.readyState === 'complete' && loaded.URL === 'about:srcdoc' && loaded.body) setMount(loaded.body)
+  }, [])
   const width = canvasViewportWidth(surface, device)
 
   const relay = (type: CanvasPointerEvent['type'], event: MouseEvent) => {
@@ -54,7 +62,7 @@ export function CanvasViewportShell({
       </div>
       <div className="overflow-x-auto">
         <iframe
-          ref={frame}
+          ref={hold}
           title="Page preview"
           sandbox="allow-same-origin"
           srcDoc={FRAME_DOCUMENT}

@@ -136,10 +136,12 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
     {(display.padding !== undefined || display.gap !== undefined) && <button type="button" className={k('we-row')} onClick={() => onDisplay({ ...display, padding: undefined, gap: undefined })}>Use theme spacing</button>}
     {device !== 'desktop' && <button type="button" className={k('we-row')} onClick={() => onDisplay(null)}>Reset {device} overrides</button>}
   </>
+  // The lit row below wears the editor's own ink (--x-violet-deep, editor.css). On the editor root --th-accent
+  // is the SITE's accent, and the chrome does not wear the Site (LIVE-2308).
   if (fq && part === 'content' && !sub) {
     // The design's content tab: the live note in its words, then the fields with their character counts.
     return <div ref={root} className="we-inspector" data-lit={lit ?? undefined} onFocusCapture={(e) => reportFocus(e.target)}>
-      {lit && <style>{`.we-inspector [data-field="${CSS.escape(lit)}"]{box-shadow:inset 3px 0 0 var(--th-accent);background:color-mix(in srgb,var(--th-accent) 9%,transparent)}`}</style>}
+      {lit && <style>{`.we-inspector [data-field="${CSS.escape(lit)}"]{box-shadow:inset 3px 0 0 var(--x-violet-deep);background:color-mix(in srgb,var(--x-violet-deep) 9%,transparent)}`}</style>}
       {litLabel && <div className="we-editing" role="status">Editing <strong>{litLabel}</strong></div>}
       {block.type === 'FeatureGrid' && <label className="fld"><span className="l">Content source</span><Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={liveFeatures ? String(block.props.source) : 'custom'} onChange={(e) => onChange({ ...block.props, source: e.target.value })}><option value="custom">Authored cards</option><option value="offerings">Space offerings</option><option value="events">Space events</option><option value="memberships">Space memberships</option><option value="tickets">Space tickets</option></Select></label>}
       {liveFeatures && sourceError && <p className="note err" role="alert">{sourceError}</p>}
@@ -168,7 +170,7 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
     </>
   }
   return <div ref={root} className="we-inspector" data-lit={lit ?? undefined} onFocusCapture={(e) => reportFocus(e.target)}>
-    {lit && <style>{`.we-inspector [data-field="${CSS.escape(lit)}"]{box-shadow:inset 3px 0 0 var(--th-accent);background:color-mix(in srgb,var(--th-accent) 9%,transparent)}`}</style>}
+    {lit && <style>{`.we-inspector [data-field="${CSS.escape(lit)}"]{box-shadow:inset 3px 0 0 var(--x-violet-deep);background:color-mix(in srgb,var(--x-violet-deep) 9%,transparent)}`}</style>}
     {litLabel && <div className="we-editing" role="status">Editing <strong>{litLabel}</strong>{sub && <span>in {sub.title}</span>}</div>}
     {shows('content') && <>
     {block.type === 'FeatureGrid' && <label className={k('we-field')}>Content source<Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={liveFeatures ? String(block.props.source) : 'custom'} onChange={(e) => onChange({ ...block.props, source: e.target.value })}><option value="custom">Authored cards</option><option value="offerings">Space offerings</option><option value="events">Space events</option><option value="memberships">Space memberships</option><option value="tickets">Space tickets</option></Select></label>}

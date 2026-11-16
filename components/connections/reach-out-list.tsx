@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateShort } from '@/lib/format-date'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
@@ -21,7 +22,7 @@ function dueLabel(iso: string): string {
   if (days === 0) return 'Due today'
   if (days === 1) return 'Due tomorrow'
   if (days < 7) return `Due in ${days} days`
-  return `Due ${new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+  return `Due ${formatDateShort(iso)}`
 }
 
 function isOverdue(iso: string): boolean {

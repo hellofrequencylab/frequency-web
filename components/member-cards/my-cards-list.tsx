@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateMedium } from '@/lib/format-date'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Nfc } from 'lucide-react'
@@ -18,7 +19,7 @@ import type { OwnedCard } from '@/lib/member-cards/store'
 const EDITION = { founders: 'Founders edition', crew: 'Crew edition' } as const
 
 function day(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDateMedium(iso)
 }
 
 export function MyCardsList({ cards, spaceId }: { cards: OwnedCard[]; spaceId?: string }) {

@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateWeekday, formatTimeShort } from '@/lib/format-date'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -50,10 +51,10 @@ function FeatureStar({ featured, act }: { featured: boolean; act: (next: boolean
 // tucked behind a disclosure.
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  return formatDateWeekday(iso)
 }
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return formatTimeShort(iso)
 }
 
 export function EventsAdminList({ upcoming, past }: { upcoming: AdminEvent[]; past: AdminEvent[] }) {

@@ -9,8 +9,10 @@
 //
 // THIS FILE IS THE SHARED CONTRACT (lane F's review screen imports the types) and the deterministic path: quoteDraft
 // builds a complete draft from quotes only, with no AI call. The optional AI polish (lib/launch/buildout-io.ts) can
-// only replace a field with a cited rewrite, and goes through the same enforceCites. PURE, no imports from the app.
+// only replace a field with a cited rewrite, and goes through the same enforceCites. PURE: its only imports are pure
+// too (the facts check, and lib/ai/schema.ts for reading the polish reply), by relative path so node can load it.
 
+import { lenientList, validateModelValue, z } from '../ai/schema.ts'
 import { checkFact, type ShelfFact } from './facts.ts'
 import type { SpotlightAnswers } from './spotlight-step.ts'
 
@@ -228,16 +230,26 @@ const POLISH_FIELDS: readonly FieldRef[] = FIELDS.filter((f) => f.slot !== 'spot
 
 const EM_DASH = /\s*[–—]\s*/g
 
-/** Take a model's answer (untrusted) as proposed rewrites of polishable fields, each with its own cite. A rewrite
- *  replaces the quoted field only if it is well formed and within the field's length; the result still goes through
- *  enforceCites, so a rewrite whose snippet is not the person's words is dropped and the quote stays. */
+/** The polish_draft reply (PROG-E8C, the ADR-1287 pattern, lib/ai/schema.ts). Only the first rewrites are looked at,
+ *  one per polishable field at most; a rewrite missing any of its five strings is dropped and the others are kept. */
+const POLISH_REPLY = z.object({
+  fields: z
+    .array(z.unknown())
+    .transform((rows) => rows.slice(0, POLISH_FIELDS.length))
+    .pipe(lenientList(z.object({ slot: z.string(), field: z.string(), value: z.string(), snippet: z.string(), origin: z.string() }))),
+})
+
+/** Take a model's answer (untrusted) as proposed rewrites of polishable fields, each with its own cite, read through
+ *  the schema. A rewrite replaces the quoted field only if it is well formed and within the field's length; the
+ *  result still goes through enforceCites, so a rewrite whose snippet is not the person's words is dropped and the
+ *  quote stays. A reply that is not the declared shape changes nothing. */
 export function applyPolish(base: BuildoutDraft, raw: unknown, passages: readonly BuildoutPassage[]): BuildoutDraft {
-  const list = raw && typeof raw === 'object' && Array.isArray((raw as { fields?: unknown }).fields) ? ((raw as { fields: unknown[] }).fields) : []
+  const res = validateModelValue(raw, POLISH_REPLY)
+  if (!res.ok) return base
   let out = base
-  for (const item of list.slice(0, POLISH_FIELDS.length)) {
-    const r = item as Record<string, unknown>
-    const ref = POLISH_FIELDS.find((f) => f.slot === r?.slot && f.field === r?.field)
-    if (!ref || typeof r.value !== 'string' || typeof r.snippet !== 'string' || typeof r.origin !== 'string') continue
+  for (const r of res.data.fields) {
+    const ref = POLISH_FIELDS.find((f) => f.slot === r.slot && f.field === r.field)
+    if (!ref) continue
     const value = r.value.replace(EM_DASH, ', ').trim()
     const max = LIMITS[ref.field as keyof typeof LIMITS]
     if (!value || value.length > max) continue

@@ -3100,6 +3100,8 @@ export async function logPractice(input: {
     // never let a Spark break the log
   }
 
+  const checkedJourneyIds = new Set<string>()
+
   // The Quest (ADR-Quest completion model): completion counts "any practice in the
   // Journey's PILLARS" (the member builds their own daily practice and swaps freely
   // within a tag). So this log may have advanced any RANKED-ELIGIBLE Journey that covers
@@ -3124,11 +3126,31 @@ export async function logPractice(input: {
       type Row = { plan_id: string }
       const planIds = [...new Set(((items ?? []) as Row[]).map((r) => r.plan_id))]
       for (const planId of planIds) {
+        checkedJourneyIds.add(planId)
         await tryCompleteJourney(profileId, planId)
       }
     }
   } catch {
     // a Quest completion check must never break the log
+  }
+
+  // A mixed-support log may qualify an enrolled V2 Journey outside its current primary.
+  // Keep the legacy lookup independent: neither read failure may prevent the other check.
+  try {
+    const { readRecordedCompletionPlanIds } = await import('@/lib/quest/support-completion-candidates')
+    const recorded = await readRecordedCompletionPlanIds(db(), profileId, day)
+    if (!recorded.available) {
+      log.warn('practice.recorded_support_completion_unavailable', { reason: recorded.reason })
+    } else {
+      const { tryCompleteJourney } = await import('@/lib/quest/complete')
+      for (const planId of recorded.planIds) {
+        if (checkedJourneyIds.has(planId)) continue
+        checkedJourneyIds.add(planId)
+        await tryCompleteJourney(profileId, planId)
+      }
+    }
+  } catch {
+    log.warn('practice.recorded_support_completion_unavailable', { reason: 'unexpected_failure' })
   }
 
   return { logged: true, zapsAwarded, journey, welcomeBack, partial: !isFullSit }

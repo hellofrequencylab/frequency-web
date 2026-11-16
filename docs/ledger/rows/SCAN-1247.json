@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1247",
+  "title": "The fallback checks go red on a status that did land, because they read it back once and at once",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": ".github/workflows/db-tests-fallback.yml",
+    "ref": "Red db-tests / pr-compare fallback jobs on pull requests #5042, #5053 and #5058, 2026-11-16."
+  },
+  "detail": "EVIDENCE: db-tests-fallback.yml, pr-compare-fallback.yml and migration-readiness-fallback.yml each POST a commit status, get 201, then read GET /commits/{sha}/status exactly once and fail with 'the context is absent when read back' when the body does not carry the context yet. The curl --retry on that read covers transport and 5xx only, never an absent context. On the three pull requests the status showed as success on the PR while the job that posted it was red.\n\nWHY IT MATTERS: a red job on a PR whose required context is green sends people hunting a failure that is not there, and a re-run is the only cure.\n\nFIX: the read-back now polls: six reads with waits of 2, 3, 5, 8 and 13 seconds between them (31 seconds in all), passing at the first read that shows the context. The guarantee is unchanged: the step still fails with the same error when the context never shows, fails at once when the read itself fails after curl's own retries, and cannot say 'verified' without having seen the context. The read also asks for per_page=100. The combined-status endpoint pages its statuses at 30 by default (100 at most), so a head SHA with more than 30 contexts could hide this one for good; this repo is not known to carry that many, so that is a guard, not the cause seen today. apply-migration.yml has no read-back and is untouched.\n\nVERIFIED: the probe and scripts/status-readback.test.ts lift the read-back shell out of each workflow file and run it under bash against a stub curl and a no-op sleep (context on the third read passes; never fails loudly inside the budget; a failed read fails without polling on). The same harness run against main's steps fails at the first read. NOT VERIFIED: a live run on GitHub, which only a pull request after merge can show; the lag itself is inferred from the green status beside the red job, not measured.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/SCAN-1247.mjs",
+    "note": "Fails on main: one immediate read decides, so a context that shows on the third read fails the step. Passes once each fallback's read-back polls, still fails loudly when the context never shows or the read fails, and asks for per_page=100."
+  },
+  "closed": "2026-11-16"
+}

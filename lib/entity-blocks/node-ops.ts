@@ -43,7 +43,7 @@ import {
   type NodeLayout,
 } from './node-tree'
 import { entityBlockById, blockSupportsKind, type EntityKind } from './registry'
-import { sanitizeBlockContent, sanitizeBlockStyle, type BlockStyle, type MarginStep } from './block-content'
+import { fieldsForBlock, primitiveValues, sanitizeBlockContent, sanitizeBlockStyle, type BlockStyle, type MarginStep } from './block-content'
 import {
   maxColumnsForKind,
   normalizeRowMargin,
@@ -403,16 +403,40 @@ function sanitizeNode(node: BlockNode, kind: EntityKind): BlockNode | null {
 }
 
 /** Each device bag goes through the block's own field sanitizer, so an override can never hold what the
- *  desktop content could not. */
+ *  desktop content could not. Then the explicit resets are put back (see `explicitResets`). */
 function sanitizeResponsive(type: string, raw: BlockNode['responsive']): BlockNode['responsive'] {
   const read = readResponsive(raw)
   if (!read) return undefined
   const out: NonNullable<BlockNode['responsive']> = {}
   for (const device of ['tablet', 'phone'] as const) {
-    const bag = sanitizeBlockContent(type, read[device])
-    if (bag && Object.keys(bag).length) out[device] = bag
+    const bag = Object.fromEntries([...explicitResets(type, read[device]), ...Object.entries(sanitizeBlockContent(type, read[device]) ?? {})])
+    if (Object.keys(bag).length) out[device] = bag
   }
   return Object.keys(out).length ? out : undefined
+}
+
+/** The overrides the content sanitizer drops because desktop content is stored sparse: a blank word field, a
+ *  toggle at its default, a choice at its default. On desktop, dropping them is right (absent means the default).
+ *  On a device it is a real choice ("no subtitle on a phone", "medium height on a tablet although desktop is
+ *  tall"), and dropping it made the field inherit desktop again (PROG-E5). Only known fields, and only the
+ *  field's own empty or default value, so an override still cannot hold what desktop could not. Image fields
+ *  are left out: a blank image is not an override this slice draws. */
+function explicitResets(type: string, bag: Record<string, unknown> | undefined): [string, unknown][] {
+  if (!bag) return []
+  const out: [string, unknown][] = []
+  for (const field of fieldsForBlock(type)) {
+    if (!Object.hasOwn(bag, field.key)) continue
+    const value = bag[field.key]
+    if (field.type === 'text' || field.type === 'textarea' || (field.type === 'url' && !field.upload)) {
+      if (typeof value === 'string' && value.trim() === '') out.push([field.key, ''])
+    } else if (field.type === 'toggle') {
+      if (typeof value === 'boolean' && value === (field.default ?? false)) out.push([field.key, value])
+    } else {
+      const allowed = primitiveValues(field)
+      if (allowed && typeof value === 'string' && value === (field.defaultValue ?? allowed[0])) out.push([field.key, value])
+    }
+  }
+  return out
 }
 
 /** Clamp a row to the kind's max columns by FOLDING the overflow stacks onto the last kept column, so a

@@ -18,9 +18,21 @@
 // row was measured with: it never under-counts a spike between polls, and it over-counts when the
 // processes peak at different moments, which is the safe direction for a gate.
 //
+// WHAT IT JUDGES (HYG-241). Two numbers. The `next` sum above still has its budget, but since the
+// compile moved into a process `isNextProcess` does not count, that sum reads about 100 MB while the
+// machine is nearly full, so it cannot fire on the number that kills the build. The gate therefore
+// also judges the CONTAINER peak (the cgroup's own high-water mark, which is what the kernel kills
+// on). The sampler records it every tick and postbuild reads the cgroup once more. Every build
+// prints that peak against CONTAINER_TARGET_MB as a trend. Above CONTAINER_HARD_STOP_MB, the last
+// reading that was killed, it FAILS the build. It was advisory while the worst green build sat 78 MB
+// under that stop; it became blocking on 2026-11-16 (owner ruling) once three production builds in a
+// row read under the target (7064, 7022 and 7064 MB, about 870 MB under the stop).
+//
 // FAIL SAFE. Off Linux there is no /proc, and locally the gate only reports. On Vercel a missing
 // reading FAILS the build: a sampler that silently stopped would read as a pass forever
-// (AGENTS.md, "every fail-safe needs a gate that notices it fired").
+// (AGENTS.md, "every fail-safe needs a gate that notices it fired"). An unreadable cgroup is a
+// missing measurement, not a reading, so it prints a WARNING line (grep the build log for
+// `check-build-memory WARNING`) instead of failing.
 // ─────────────────────────────────────────────────────────────────────────────
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -30,6 +42,19 @@ import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 /** 7 GB: a 1 GB reserve under the 8 GB Standard machine for the OS, pnpm and the build runner. */
 export const BUDGET_MB = 7168
+
+/** The build machine: Vercel Standard, 8 GB. */
+export const CONTAINER_LIMIT_MB = 8192
+/** Where the container peak has to get back to (HYG-241's close condition: three production builds
+ *  in a row under it, met 2026-11-16 at 7064, 7022 and 7064 MB). Printed as a trend on every build.
+ *  It does not fail the build; the stop line below does. */
+export const CONTAINER_TARGET_MB = BUDGET_MB
+/** The stop line: a build that peaks above it FAILS (HYG-241, owner ruling 2026-11-16). A READING, not a guess: 7937 MB is the container peak of the preview build that was
+ *  OOM-killed on 2026-11-15 (HYG-240 baseline). The three green production builds read on 2026-11-16
+ *  peaked at 7768, 7784 and 7859 MB, all under it, and after HYG-241 step 2 (no server source maps)
+ *  production reads about 7064 MB, so it fires only when the compile grows by about 870 MB. Lower
+ *  this as the compile shrinks; never raise it. */
+export const CONTAINER_HARD_STOP_MB = 7937
 
 // Inside the repo, not the shared temp directory (CodeQL: insecure temporary file). Not under .next/,
 // which `next build` empties after prebuild has started the sampler. start() removes any stale copy.
@@ -59,6 +84,39 @@ export function judge(reading, { onVercel }) {
     }
   }
   return { ok: true, message: line }
+}
+
+/** HYG-241: judge the container peak, the number the kernel kills on. `container` is `{ peakMb }`,
+ *  or null when no cgroup file could be read. On Vercel a peak above the stop line FAILS the build;
+ *  an unreadable cgroup only warns, because a missing measurement is not a reading of the machine.
+ *  Off Vercel it never warns or fails: a laptop or a shared CI box has its own cgroup, which says
+ *  nothing about the build machine. */
+export function judgeContainer(container, { onVercel }) {
+  if (!container || !Number.isFinite(container.peakMb)) {
+    return onVercel
+      ? { ok: true, warn: true, message: 'no container reading: the cgroup memory files could not be read, so the number that kills the build was not measured' }
+      : { ok: true, warn: false, message: 'no container reading (no cgroup memory files here); skipped locally' }
+  }
+  const { peakMb } = container
+  const overTarget = peakMb - CONTAINER_TARGET_MB
+  const trend = overTarget > 0 ? `${overTarget} MB over the ${CONTAINER_TARGET_MB} MB target` : `${-overTarget} MB under the ${CONTAINER_TARGET_MB} MB target`
+  const line = `container peak ${peakMb} MB of ${CONTAINER_LIMIT_MB} MB (${CONTAINER_LIMIT_MB - peakMb} MB of margin), ${trend}; fails above ${CONTAINER_HARD_STOP_MB} MB`
+  if (onVercel && peakMb > CONTAINER_HARD_STOP_MB) {
+    return {
+      ok: false,
+      warn: false,
+      message: `${line}. This build peaked above the last reading that was killed for memory. Find what grew in the compile (DEPLOY-SAFETY fan-out rule); do not raise the stop line.`,
+    }
+  }
+  return { ok: true, warn: false, message: line }
+}
+
+/** The container peak for the judge: the largest of what the sampler recorded and a fresh read of the
+ *  cgroup in postbuild (the kernel's high-water mark only grows, so the fresh read covers a spike
+ *  between the sampler's last tick and the end of the build). Null when neither exists. */
+export function containerPeak(reading, fresh) {
+  const peaks = [reading?.containerPeakMb, fresh?.peakMb].filter((n) => Number.isFinite(n))
+  return peaks.length ? { peakMb: Math.max(...peaks) } : null
 }
 
 /** Publish the first observed peak, then one running reading per interval. */
@@ -120,6 +178,7 @@ function sample() {
   const reportPeak = runningPeakReporter()
   let nextContainerAt = 0
   let concurrentKb = 0
+  let containerPeakMb = null
   const tick = () => {
     let nowKb = 0
     const all = new Map()
@@ -151,12 +210,16 @@ function sample() {
       concurrentMb: Math.round(concurrentKb / 1024),
       processes: hwm.size,
     }
+    // HYG-241: the container peak goes into the state file every tick so postbuild can judge it.
+    const container = readContainerMemory()
+    if (container) containerPeakMb = Math.max(containerPeakMb ?? 0, container.peakMb)
+    if (containerPeakMb !== null) reading.containerPeakMb = containerPeakMb
     writeFileSync(STATE_FILE, JSON.stringify(reading))
     const elapsedMs = Date.now() - started
     reportPeak(reading, elapsedMs)
     if (elapsedMs >= nextContainerAt) {
       nextContainerAt = elapsedMs + CONTAINER_REPORT_MS
-      console.log(containerLine(readContainerMemory(), [...all.values()], elapsedMs))
+      console.log(containerLine(container, [...all.values()], elapsedMs))
     }
     if (elapsedMs < MAX_SAMPLE_MS) setTimeout(tick, TICK_MS)
   }
@@ -176,7 +239,7 @@ function start() {
     stdio: ['ignore', 'inherit', 'ignore'],
   })
   child.unref()
-  console.log(`check-build-memory: sampling the next build's memory (budget ${BUDGET_MB} MB).`)
+  console.log(`check-build-memory: sampling the next build's memory (next processes budget ${BUDGET_MB} MB; container fails above ${CONTAINER_HARD_STOP_MB} MB).`)
 }
 
 function finish() {
@@ -193,12 +256,18 @@ function finish() {
       /* already gone */
     }
   }
-  const { ok, message } = judge(reading, { onVercel: Boolean(process.env.VERCEL) })
-  if (!ok) {
-    console.error(`❌ check-build-memory (HYG-171): ${message}`)
-    process.exit(1)
-  }
-  console.log(`✅ check-build-memory: ${message}`)
+  const onVercel = Boolean(process.env.VERCEL)
+  const next = judge(reading, { onVercel })
+  // No sampler reading means no build was measured here; the line below already says so (and fails
+  // on Vercel), so the container is only read for a build the sampler actually watched. The
+  // container line fails the build above the stop line (HYG-241) and only warns when unread.
+  const container = reading ? judgeContainer(containerPeak(reading, readContainerMemory()), { onVercel }) : null
+  if (next.ok) console.log(`✅ check-build-memory: ${next.message}`)
+  else console.error(`❌ check-build-memory (HYG-171): ${next.message}`)
+  if (container && !container.ok) console.error(`❌ check-build-memory (HYG-241): ${container.message}`)
+  else if (container?.warn) console.warn(`⚠️ check-build-memory WARNING (HYG-241): ${container.message}`)
+  else if (container) console.log(`✅ check-build-memory: ${container.message}`)
+  if (!next.ok || (container && !container.ok)) process.exit(1)
 }
 
 if (invokedDirectly(import.meta.url)) {
