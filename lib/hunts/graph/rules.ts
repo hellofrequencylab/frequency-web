@@ -1,4 +1,4 @@
-import type { HuntGraph, Mission, RuleGroup } from './types'
+import type { Blocker, BlockerCode, HuntGraph, RuleGroup } from './types'
 
 /** Strict UTC instant: ISO 8601 with a trailing Z. */
 const UTC_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z$/
@@ -9,9 +9,11 @@ export function parseInstant(value: string): number {
   return Date.parse(value)
 }
 
-export function defaultBucket(m: Mission): string {
-  return m.bucket ? m.bucket : m.mission_key
-}
+export const blocker = (code: BlockerCode, message: string, mission_keys: string[] = []): Blocker => ({
+  code,
+  message,
+  mission_keys: [...new Set(mission_keys)].sort(),
+})
 
 export function distinctMembers(g: RuleGroup): string[] {
   return [...new Set(g.members)]
