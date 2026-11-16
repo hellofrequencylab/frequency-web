@@ -116,8 +116,8 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
               <h3>{job.title}</h3>
               <p>{job.line}</p>
               <div className="jph fq-iri-rim" data-px=".08">
-                {/* eslint-disable-next-line @next/next/no-img-element -- sized by .jph img */}
                 {/* suppressHydrationWarning: the pre-paint script below may switch this photo to eager first. */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- sized by .jph img */}
                 <img loading="lazy" decoding="async" {...photoImg(photo(job.photo), '(max-width: 900px) 100vw, 33vw')} alt={job.photoAlt} suppressHydrationWarning />
                 <span className="fq-grain" />
               </div>
