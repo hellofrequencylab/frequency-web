@@ -12,6 +12,7 @@ import {
   posterBandAspect,
 } from '@/lib/layout/cover-height'
 import { measureCoverAspect } from '@/lib/events/cover-aspect'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // The event HEADER controls — one tidy section that pairs the cover FOCAL POINT (where the cover
 // image sits inside its cropped hero window) with the hero HEIGHT (Short / Standard / Tall). Both
@@ -159,11 +160,10 @@ export function EventHeaderControls({
                   onClick={() => pickHeight(o.value)}
                   disabled={heightPending}
                   aria-pressed={active}
-                  className={`rounded-control border px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-60 ${
-                    active
-                      ? 'border-primary-strong bg-primary-bg text-primary-strong'
-                      : 'border-border bg-surface text-text hover:border-border-strong'
-                  }`}
+                  className={choiceTileClasses(
+                    active,
+                    `rounded-control px-3 py-1.5 text-meta font-semibold ${active ? 'text-primary-strong' : 'text-text'}`,
+                  )}
                 >
                   {o.label}
                 </button>

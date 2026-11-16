@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Switch } from '@/components/ui/switch'
 import { buttonClasses } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 
 const TASK_TYPES = [
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',
@@ -264,21 +265,12 @@ export function CrewTasksClient({ tasks, pendingVerifications = [] }: { tasks: C
               </span>
 
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => setEditingId(task.id)}
-                  className="p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors"
-                  aria-label="Edit"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(task.id)}
-                  disabled={isPending}
-                  className="p-1.5 rounded-control text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
-                  aria-label="Delete"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <IconButton label="Edit" onClick={() => setEditingId(task.id)}>
+                  <Pencil className="w-3.5 h-3.5" aria-hidden />
+                </IconButton>
+                <IconButton label="Delete" tone="danger" onClick={() => handleDelete(task.id)} disabled={isPending}>
+                  <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                </IconButton>
               </div>
             </div>
           )}

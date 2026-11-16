@@ -15,7 +15,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { addToStoredCart, loadCart, mergeGuestIntoStored, removeFromStoredCart, setStoredQty } from './cart-store'
+import { addToStoredCart, loadCart, mergeGuestIntoStored, removeFromStoredCart, savePrunedCart, setStoredQty, takePaidOutOfStoredCart } from './cart-store'
 
 beforeEach(() => {
   row = null
@@ -46,5 +46,45 @@ describe('cart store', () => {
     row = { lines: [{ productId: 'a', variantId: null, qty: 1 }] }
     const merged = await mergeGuestIntoStored('p1', [{ productId: 'b', variantId: null, qty: 1 }, { productId: 'a', variantId: null, qty: 2 }, 7])
     expect(merged).toEqual([{ productId: 'a', variantId: null, qty: 3 }, { productId: 'b', variantId: null, qty: 1 }])
+  })
+})
+
+const L = (productId: string, qty = 1, variantId: string | null = null) => ({ productId, variantId, qty })
+
+describe('saving a pruned cart', () => {
+  it('drops the lines that were left out and lowers the ones that were lowered', async () => {
+    const read = [L('gone'), L('a', 9), L('b', 2)]
+    row = { lines: read }
+    await savePrunedCart('p1', read, [L('a', 4), L('b', 2)])
+    expect(await loadCart('p1')).toEqual([L('a', 4), L('b', 2)])
+    expect(upserts).toHaveLength(1)
+  })
+  it('keeps a line added after the cart was read and never raises or restores one', async () => {
+    const read = [L('gone'), L('a', 9), L('b', 2)]
+    // Since the read: `b` was removed, `a` was lowered to 1 by the buyer, `new` was added.
+    row = { lines: [L('gone'), L('a', 1), L('new', 3)] }
+    await savePrunedCart('p1', read, [L('a', 4), L('b', 2)])
+    expect(await loadCart('p1')).toEqual([L('a', 1), L('new', 3)])
+  })
+  it('writes nothing when the stored cart already matches', async () => {
+    row = { lines: [L('a', 2)] }
+    await savePrunedCart('p1', [L('a', 2)], [L('a', 2)])
+    expect(upserts).toHaveLength(0)
+  })
+})
+
+describe('taking a paid order out of the stored cart', () => {
+  it('removes what was paid for and keeps the rest', async () => {
+    row = { lines: [L('a', 2), L('b', 3, 'v'), L('c', 1)] }
+    await takePaidOutOfStoredCart('p1', [L('a', 2), L('b', 1, 'v')])
+    expect(await loadCart('p1')).toEqual([L('b', 2, 'v'), L('c', 1)])
+  })
+  it('writes nothing when the cart held none of the order', async () => {
+    row = { lines: [L('c', 1)] }
+    await takePaidOutOfStoredCart('p1', [L('a', 2)])
+    expect(upserts).toHaveLength(0)
+    row = null
+    await takePaidOutOfStoredCart('p1', [L('a', 2)])
+    expect(upserts).toHaveLength(0)
   })
 })
