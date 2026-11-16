@@ -12,6 +12,7 @@ import { DESIGNER_CSS } from './designer-css'
 import { FREE_HUMAN_CSS } from './free-human-css'
 import { NEW_WORLD_CSS } from './new-world-css'
 import { CYBERWITCH_CSS } from './cyberwitch-css'
+import { MINDLESS_CSS } from './mindless-css'
 import { NEW_WORLD_DIALS_CSS } from './new-world-dials-css'
 import { SERVICES_SITE_CSS } from './services-css'
 import { SITE_LOOK_CSS } from './site-look-css'
@@ -29,6 +30,7 @@ const SKINS = {
   'free-human': FREQUENCY_PAGE_CSS + FREE_HUMAN_CSS,
   'new-world': FREQUENCY_PAGE_CSS + NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS,
   cyberwitch: FREQUENCY_PAGE_CSS + CYBERWITCH_CSS,
+  mindless: FREQUENCY_PAGE_CSS + MINDLESS_CSS,
   services: FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS,
 }
 
