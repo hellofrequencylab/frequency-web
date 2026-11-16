@@ -9,6 +9,7 @@ import { isError } from '@/lib/action-result'
 import { getPageStatusForEditor, savePageStatus } from '@/lib/page-settings/actions'
 import { VISIBILITY_ROLES } from '@/lib/page-settings/status'
 import { buttonClasses } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // The live Status & visibility editor for the on-page "Page" settings panel (ADR-269).
 // Draft hides the page from everyone but staff (who can still preview it); visibility sets
@@ -72,9 +73,10 @@ export function StatusEditor({ spaceId }: { spaceId?: string }) {
             onClick={() => setStatus(s)}
             aria-pressed={status === s}
             disabled={pending}
-            className={`rounded-control px-3 py-1.5 text-meta font-semibold transition-colors ${
-              status === s ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:text-text'
-            }`}
+            className={choiceTileClasses(
+              status === s,
+              `rounded-control px-3 py-1.5 text-meta font-semibold ${status === s ? 'text-primary-strong' : 'text-muted hover:text-text'}`,
+            )}
           >
             {s === 'published' ? 'Published' : 'Draft'}
           </button>

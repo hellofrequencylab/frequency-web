@@ -1,0 +1,19 @@
+{
+  "id": "HYG-241",
+  "title": "The production compile peaks within 333 to 424 MB of the 8 GB build machine, and the build gate reads a process that sits at 100 MB",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "scripts/check-build-memory.mjs",
+    "ref": "HYG-221 close-out, 2026-11-16. Build logs of production deploys f47efefc, 11595588 and 0f0623a7."
+  },
+  "detail": "MEASURED 2026-11-16 from three READY production build logs (4 cores, 8 GB Standard machine, no Turbopack cache restored): container peak 7784, 7859 and 7768 MB of 8192, so 333 to 424 MB of margin. The worst is 78 MB under the 7937 MB reading that was killed on 2026-11-15. The grower is next-build (the Turbopack compile), 5886 to 6494 MB in the last sample before the peak. WHY IT MATTERS: one more heavy route or dependency and deploys start dying at random again; production keeps serving the last READY build, so the cost is stuck deploys, not downtime. Second defect: check-build-memory judges BUDGET_MB 7168 against the sum of processes named next, which read about 100 MB during compile, so the gate cannot fire on the number that kills the build. FIX DIRECTION, cheapest first: (1) make the postbuild gate judge the container peak it already logs, with a budget set from a reading (it must not fail today's green builds; start as a printed trend with a hard stop only above the last killed reading); (2) find what the compile holds: compare peak with the Turbopack cache restored versus cold, and bisect the largest client and server graphs (check:build-fanout, check:shell-weight) for modules to split or lazy-load; (3) no paid machine upgrade (owner money rule). Already measured and rejected under HYG-240: scope hoisting off, a 2 GB Node heap cap, worker-thread plugin runtime, RAYON_NUM_THREADS=2. Do not raise a budget and do not cut routes without a reading.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-16",
+    "evidence": "Fails today: the last three production builds print a container peak of 7768 to 7859 MB. Passes when three production builds in a row print a container peak under 7168 MB and the postbuild gate reads the container peak, not the processes named next."
+  },
+  "wave": "W7"
+}

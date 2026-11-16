@@ -607,7 +607,7 @@ probes pass, not when this file says so.
 (retired v3 mechanics); `docs/FEATURE-INDEX.md` §3 to §4 (Vault and Crew, Mindless missing);
 `docs/ONBOARDING.md` (`tips.ts` does not exist); `docs/MARKETING-STYLE-GUIDE.md` §1 ("Felt, not stated"
 defers to CONTENT-VOICE §3b); design briefs before any DAWN mock work: `design_handoff/BRIEF-01:150`,
-`BRIEF-03` §1 and §5, `BRIEF-04:40-46,62`, `BRIEF-05:33`, `MARKETING-BRIEF.md:27,341`,
+`BRIEF-03` §1 and §5, `BRIEF-04:40-46,62`, `BRIEF-05:33`, `docs/marketing/MARKETING-BRIEF.md:27,341`,
 `docs/OVERVIEW.md:39,76`.
 
 ---

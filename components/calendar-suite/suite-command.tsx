@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { Input } from '@/components/ui/field'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { VIEW_KEY, commandRows, type CommandRow } from '@/lib/calendar/planner/command-results'
 import { parseCommand } from '@/lib/calendar/planner/command-parse'
 import type { SuiteView } from '@/lib/calendar/planner/suite-model'
@@ -46,10 +47,11 @@ export function SuiteCommand({
   const [error, setError] = useState('')
   const input = useRef<HTMLInputElement>(null)
   const list = useRef<HTMLUListElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
+  // The kit trap first (it remembers the opener and keeps Tab inside), then the field takes focus.
+  useDialogFocusTrap(true, panel)
   useEffect(() => {
-    const before = document.activeElement as HTMLElement | null
     input.current?.focus()
-    return () => before?.focus?.()
   }, [])
 
   // The co-host list is empty until Spaces can co-host (the co-host pass), so "with Ocean House" stays in the title.
@@ -96,7 +98,7 @@ export function SuiteCommand({
   return (
     <div className="cal-sheet-wrap cal-cmd-wrap" data-cal-sheet data-cal-command>
       <div className="cal-sheet-scrim" onClick={onClose} aria-hidden />
-      <div className="cal-cmd fq-panel" role="dialog" aria-modal="true" aria-label="Command bar" onKeyDown={onKey}>
+      <div className="cal-cmd fq-panel" role="dialog" aria-modal="true" aria-label="Command bar" ref={panel} onKeyDown={onKey}>
         <div className="cal-cmd-field">
           <FqIcon name="vera" size={18} />
           <Input

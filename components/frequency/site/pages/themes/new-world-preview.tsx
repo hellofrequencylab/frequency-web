@@ -30,7 +30,7 @@ export function NewWorldPhone({ src, alt, sizes, priority = false, tone = 'light
     <span className="nwf-ios">
       <span className="nwf-ios-body">
         <span className="nwf-ios-scr">
-          <Image src={src} alt={alt} width={780} height={1688} sizes={sizes} priority={priority} />
+          <Image src={src} alt={alt} width={780} height={1688} sizes={sizes} preload={priority} />
           <span className={`nwf-sb${tone === 'dark' ? ' dk' : ''}`} aria-hidden="true">
             <span>9:41</span>
             <span className="nwf-isl" />
@@ -58,7 +58,7 @@ export function NewWorldBrowser({ src, alt, url, width, height, sizes, priority 
         <u>{url}</u>
       </div>
       <div className="nwf-scr">
-        <Image src={src} alt={alt} width={width} height={height} sizes={sizes} priority={priority} />
+        <Image src={src} alt={alt} width={width} height={height} sizes={sizes} preload={priority} />
       </div>
     </div>
   )

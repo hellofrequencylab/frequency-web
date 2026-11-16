@@ -190,14 +190,9 @@ describe('4. the remaining private copies are a frozen list (fails on a new one 
   const KNOWN_COPIES = [
     'app/(main)/admin/content/actions.ts',
     'app/(main)/admin/library/actions.ts',
-    'app/(main)/admin/library/collections-actions.ts',
-    'app/(main)/admin/library/recraft-actions.ts',
     'app/(main)/admin/library/vera-actions.ts',
     'app/(main)/admin/qr/campaign-actions.ts',
-    'app/(main)/admin/walkthroughs/actions.ts',
-    'app/(main)/pages/sequences/builder-actions.ts',
     'app/join/(induction)/induction.tsx',
-    'components/admin/theme-studio/theme-editor.tsx',
     'components/studio/spark/draft/draft-store.ts',
     'components/studio/spark/spark-doors.tsx',
     'lib/ai/autodoc.ts',
@@ -209,7 +204,6 @@ describe('4. the remaining private copies are a frozen list (fails on a new one 
     'lib/importer/excerpt.ts',
     'lib/importer/materialize.ts',
     'lib/journey-plans.ts',
-    'lib/loom/cover-actions.ts',
     'lib/page-editor/loom-field-actions.ts',
     'lib/utils.ts',
   ].sort()
