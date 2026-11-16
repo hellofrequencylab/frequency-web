@@ -18,7 +18,8 @@ import { aiEnabled } from '@/lib/ai/client'
 import { featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import type { HarvestedSource, IntakeInputs } from '../intake'
-import { coerceExtraction, type ExtractionResult, type RawExtraction } from './coerce'
+import { coerceExtraction, type ExtractionResult } from './coerce'
+import { readRawExtraction } from './reply'
 
 export const EXTRACT_FEATURE = 'business-import-extract'
 const TOOL_NAME = 'save_business_profile'
@@ -58,7 +59,8 @@ const SOURCE_CITATION_PROPERTIES = {
 }
 
 // The forced structured-output tool. Every commercial field is a CITED_FIELD so the model must
-// declare its source. Nothing is trusted raw: coerceExtraction re-validates + grounds every field.
+// declare its source. Nothing is trusted raw: readRawExtraction reads the input through a schema and
+// coerceExtraction grounds every field.
 const EXTRACTION_TOOL: Anthropic.Tool = {
   name: TOOL_NAME,
   description: 'Save the structured business profile extracted from the harvested sources.',
@@ -211,8 +213,11 @@ export async function extractProfile(input: {
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
     )
     if (!block) return null
+    // The tool input is untrusted: it is read through the schema, never cast.
+    const raw = readRawExtraction(block.input)
+    if (!raw) return null
     const nameFallback = input.hints?.name ?? ''
-    const result = coerceExtraction(block.input as RawExtraction, input.sources, nameFallback)
+    const result = coerceExtraction(raw, input.sources, nameFallback)
     return { ...result, costUsd: res.costUsd }
   } catch {
     return null

@@ -57,7 +57,12 @@ const COACH_QUESTIONS = [
 ]
 
 const scalar = (v: string | string[]): string => (Array.isArray(v) ? (v[0] ?? '') : v)
-const stopValue = (s: Stop, path: string): string => (path === 'placementReady' ? String(s.placementReady) : ((s as Record<string, unknown>)[path] as string | undefined) ?? '')
+// A manifest toggle is a boolean on the stop; every other stop field is text.
+const STOP_TOGGLES = new Set(STOP_FIELDS.filter((f) => f.kind === 'toggle').map((f) => f.path))
+const stopValue = (s: Stop, path: string): string => {
+  const value = (s as Record<string, unknown>)[path]
+  return STOP_TOGGLES.has(path) ? String(value === true) : (value as string | undefined) ?? ''
+}
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -149,7 +154,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
   const setStop = (i: number, path: string, value: string) =>
     edit((d) => ({
       ...d,
-      stops: d.stops.map((s, j) => (j === i ? { ...s, [path]: path === 'placementReady' ? value === 'true' : value } : s)),
+      stops: d.stops.map((s, j) => (j === i ? { ...s, [path]: STOP_TOGGLES.has(path) ? value === 'true' : value } : s)),
     }))
   const addStop = () => edit((d) => (d.stops.length >= MAX_STOPS ? d : { ...d, stops: [...d.stops, emptyStop()] }))
   const [pasted, setPasted] = useState('')

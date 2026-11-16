@@ -142,6 +142,10 @@ describe('Public Trail landing', () => {
     expect(await render(undefined, 'credited')).toContain('Stop confirmed.')
     expect(await render(undefined, 'already_credited')).toContain('You already confirmed this stop.')
     expect(await render(undefined, 'unavailable')).toContain('This stop could not be confirmed.')
+    // FH-020V: a kept visit thanks the player and says what happens next, with no blame and no credit claim.
+    const held = await render(undefined, 'held')
+    expect(held).toContain('We saved your visit, and someone on the Trail team will check it.')
+    expect(held).not.toMatch(/Stop confirmed\.|could not|denied|failed|wrong|—/)
     expect(await render(undefined, 'unknown')).not.toContain('role="status"')
     expect(await render(undefined, ['credited', 'unavailable'])).not.toContain('role="status"')
 

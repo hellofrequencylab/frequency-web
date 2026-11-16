@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { draftToGraph, publishRows } from './draft'
 import { projectForPlayer } from './player'
-import { assembleTrail, loadPublicTrailSummary, playerHuntState } from './run-store'
+import { evaluate, validateGraph } from './graph'
+import { assembleTrail, loadPublicTrailSummary, loadPublishedTrail, loadVisitedStopPoints, playerHuntState } from './run-store'
 
 const from = vi.fn()
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from }) }))
@@ -91,5 +92,149 @@ describe('loadPublicTrailSummary', () => {
     mockSummaryQueries(visibility, status, versionStatus)
     expect(await loadPublicTrailSummary('north-county')).toBeNull()
     expect(from).not.toHaveBeenCalledWith('hunt_missions')
+  })
+})
+
+describe('loadVisitedStopPoints (FH-016T)', () => {
+  const scope = { huntId: 'h1', versionId: 'v1' }
+  function mockLocations(overrides: { bindingCount?: number } = {}) {
+    const tables: Record<string, Record<string, unknown>[]> = {
+      hunt_mission_placements: [
+        { hunt_id: 'h1', version_id: 'v1', mission_key: 'stop-1', venue_space_id: 's1' },
+        { hunt_id: 'h1', version_id: 'v1', mission_key: 'stop-2', venue_space_id: 's2' },
+        { hunt_id: 'h1', version_id: 'v1', mission_key: 'stop-3', venue_space_id: null },
+        { hunt_id: 'h1', version_id: 'v0', mission_key: 'stop-1', venue_space_id: 's9' },
+      ],
+      spaces: [
+        { id: 's1', latitude: '33.0450', longitude: '-117.2920', location_precision: 'exact' },
+        { id: 's2', latitude: '33.1234', longitude: '-117.3456', location_precision: 'approximate' },
+        { id: 's9', latitude: '10', longitude: '10', location_precision: 'exact' },
+      ],
+    }
+    const asked = vi.fn()
+    from.mockImplementation((table: string) => {
+      let matches = tables[table] ?? []
+      const query = {
+        select: () => query,
+        eq: (column: string, value: unknown) => { asked(table, 'eq', column, value); matches = matches.filter((row) => row[column] === value); return query },
+        in: (column: string, values: unknown[]) => { asked(table, 'in', column, values); matches = matches.filter((row) => values.includes(row[column])); return query },
+        then: (resolve: (response: { data: unknown[]; count: number; error: null }) => unknown) =>
+          resolve({ data: matches, count: table === 'hunt_mission_placements' ? overrides.bindingCount ?? matches.length : matches.length, error: null }),
+      }
+      return query
+    })
+    return asked
+  }
+
+  it('asks only for the credited stops of the run version, and returns only their points', async () => {
+    const asked = mockLocations()
+    const points = await loadVisitedStopPoints(scope, [{ mission_key: 'stop-1' }])
+    expect(points).toEqual([{ missionKey: 'stop-1', lat: 33.045, lng: -117.292, approximate: false }])
+    expect(asked).toHaveBeenCalledWith('hunt_mission_placements', 'in', 'mission_key', ['stop-1'])
+    expect(asked).toHaveBeenCalledWith('hunt_mission_placements', 'eq', 'version_id', 'v1')
+    expect(asked).toHaveBeenCalledWith('spaces', 'in', 'id', ['s1'])
+  })
+
+  it('coarsens a Space that chose an approximate location and skips a stop with no venue', async () => {
+    mockLocations()
+    const points = await loadVisitedStopPoints(scope, [{ mission_key: 'stop-2' }, { mission_key: 'stop-3' }])
+    expect(points).toHaveLength(1)
+    expect(points[0]).toMatchObject({ missionKey: 'stop-2', approximate: true })
+    expect(points[0].lat).not.toBe(33.1234)
+    expect(points[0].lng).not.toBe(-117.3456)
+    expect(Math.abs(points[0].lat - 33.1234)).toBeLessThan(0.05)
+  })
+
+  it('reads nothing with no credits, and gives no pins on a truncated read', async () => {
+    mockLocations()
+    expect(await loadVisitedStopPoints(scope, [])).toEqual([])
+    expect(from).not.toHaveBeenCalled()
+    mockLocations({ bindingCount: 5 })
+    expect(await loadVisitedStopPoints(scope, [{ mission_key: 'stop-1' }])).toEqual([])
+  })
+})
+
+// FH-030: a published version that carries count rules (N-of-M groups, venue bindings, chapters).
+function passportRows() {
+  const shops = ['shop-1', 'shop-2', 'shop-3', 'shop-4']
+  const missions = shops.map((mission_key) => ({ mission_key, title: mission_key, visible_body: null, locked_teaser: null, opens_at: null, closes_at: null }))
+  const groups = [{ id: 'finish', target_mission_key: null, target_finish: true, logic: 'count' as const, min_count: 2, group_key: 'finish' }]
+  const members = shops.map((member_mission_key) => ({ group_id: 'finish', member_mission_key }))
+  // shop-1 and shop-2 are two counters in one venue; shop-3 also has a second code at its own venue.
+  const placements = [
+    { mission_key: 'shop-1', placement_id: 'pl-1', venue_space_id: 'space-a' },
+    { mission_key: 'shop-2', placement_id: 'pl-2', venue_space_id: 'space-a' },
+    { mission_key: 'shop-3', placement_id: 'pl-3', venue_space_id: 'space-c' },
+    { mission_key: 'shop-3', placement_id: 'pl-3b', venue_space_id: 'space-c' },
+    { mission_key: 'shop-4', placement_id: 'pl-4', venue_space_id: null },
+  ]
+  const chapters = [{ chapter_key: 'north', enabled: true, members: ['shop-1', 'shop-2', 'shop-3'] }, { chapter_key: 'south', enabled: false, members: ['shop-4'] }]
+  return { missions, groups, members, placements, chapters }
+}
+
+describe('assembleTrail with count rules', () => {
+  it('gives two missions in one venue one bucket, so the same shop never counts twice', () => {
+    const { missions, groups, members, placements, chapters } = passportRows()
+    const { graph } = assembleTrail(missions, groups, members, { placements, chapters })
+    expect(validateGraph(graph)).toEqual({ ok: true, blockers: [] })
+    expect(graph.missions.find((m) => m.mission_key === 'shop-3')?.placements).toEqual([
+      { placement_key: 'pl-3', venue: 'space-c' },
+      { placement_key: 'pl-3b', venue: 'space-c' },
+    ])
+    const now = '2026-11-16T00:00:00Z'
+    expect(evaluate(graph, [{ mission_key: 'shop-1' }, { mission_key: 'shop-2' }], now).finished).toBe(false)
+    expect(evaluate(graph, [{ mission_key: 'shop-1' }, { mission_key: 'shop-3' }], now).finished).toBe(true)
+    // The disabled chapter takes no new credit.
+    expect(evaluate(graph, [], now).status['shop-4']).toBe('closed')
+  })
+  it('leaves a version without bindings or chapters exactly as before', () => {
+    const { missions, groups, members } = rows()
+    expect(assembleTrail(missions, groups, members, { placements: [], chapters: [] })).toEqual(assembleTrail(missions, groups, members))
+    expect(assembleTrail(missions, groups, members).graph).not.toHaveProperty('chapters')
+  })
+})
+
+function mockTrailQueries(extra: { placements?: Record<string, unknown>[]; chapters?: unknown } = {}) {
+  const p = passportRows()
+  const tables: Record<string, Record<string, unknown>[]> = {
+    hunts: [{ id: 'h1', slug: 'passport', visibility: 'public', status: 'live', current_version_id: 'v1', revision: 4 }],
+    hunt_versions: [{ id: 'v1', hunt_id: 'h1', status: 'published', trail_title: 'Passport', trail_hook: null, chapters: 'chapters' in extra ? extra.chapters : p.chapters }],
+    hunt_missions: p.missions.map((m) => ({ ...m, version_id: 'v1' })),
+    hunt_rule_groups: p.groups.map((g) => ({ ...g, version_id: 'v1' })),
+    hunt_rule_group_members: p.members.map((m) => ({ ...m, version_id: 'v1' })),
+    hunt_mission_placements: (extra.placements ?? p.placements).map((b) => ({ ...b, version_id: 'v1' })),
+  }
+  from.mockImplementation((table: string) => {
+    let matches = tables[table] ?? []
+    const query = {
+      select: () => query,
+      eq: (column: string, value: unknown) => { matches = matches.filter((row) => row[column] === value); return query },
+      in: (column: string, values: unknown[]) => { matches = matches.filter((row) => values.includes(row[column])); return query },
+      maybeSingle: async () => ({ data: matches[0] ?? null, error: null }),
+      then: (resolve: (response: { data: typeof matches; count: number; error: null }) => unknown) => resolve({ data: matches, count: matches.length, error: null }),
+    }
+    return query
+  })
+}
+
+describe('loadPublishedTrail with count rules', () => {
+  it('reads the version bindings and chapters into the graph the claim path evaluates', async () => {
+    mockTrailQueries()
+    const trail = await loadPublishedTrail('passport')
+    expect(trail?.graph.chapters).toEqual(passportRows().chapters)
+    expect(trail?.graph.missions.map((m) => m.placements?.[0]?.venue ?? null)).toEqual(['space-a', 'space-a', 'space-c', null])
+    expect(from).toHaveBeenCalledWith('hunt_mission_placements')
+  })
+  it('reads a version with no chapters key as no chapters', async () => {
+    mockTrailQueries({ chapters: undefined })
+    expect((await loadPublishedTrail('passport'))?.graph).not.toHaveProperty('chapters')
+  })
+  it.each([
+    ['a binding to a mission the version does not hold', { placements: [{ mission_key: 'ghost', placement_id: 'pl-9', venue_space_id: null }] }],
+    ['a binding without a placement', { placements: [{ mission_key: 'shop-1', venue_space_id: 'space-a' }] }],
+    ['chapters that are not a list', { chapters: { north: true } }],
+  ])('fails closed on %s', async (_label, extra) => {
+    mockTrailQueries(extra)
+    expect(await loadPublishedTrail('passport')).toBeNull()
   })
 })

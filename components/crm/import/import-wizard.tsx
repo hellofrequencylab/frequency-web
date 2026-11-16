@@ -29,6 +29,7 @@ import { isError } from '@/lib/action-result'
 import { TARGET_FIELDS, type ColumnMapping, type MappingChoice, type MergeStrategy, type ParsedSource, type ValidationResult, type PreviewRow, type CommitResult, type ImportTargetKind } from '@/lib/crm/import/types'
 import type { ManagedSpace } from '@/lib/spaces/managed'
 import { Button } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 const input =
   'w-full rounded-control border border-border-strong bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
@@ -698,7 +699,7 @@ export function ImportWizard({
                   key={k}
                   type="button"
                   onClick={() => setMergeStrategy(k)}
-                  className={`rounded-control border p-3 text-left text-meta transition-colors ${mergeStrategy === k ? 'border-primary bg-primary-bg' : 'border-border hover:bg-surface-elevated'}`}
+                  className={choiceTileClasses(mergeStrategy === k, 'rounded-control p-3 text-left text-meta')}
                 >
                   <span className="block font-semibold text-text">{MERGE_LABEL[k].label}</span>
                   <span className="mt-0.5 block text-subtle">{MERGE_LABEL[k].help}</span>

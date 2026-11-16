@@ -25,6 +25,7 @@ import { Toggle } from '@/components/admin/toggle'
 import { JourneyEventLink } from './journey-event-link'
 import { Input, Textarea } from '@/components/ui/field'
 import { chipClasses } from '@/components/ui/chip'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 const DIFFICULTIES = ['gentle', 'standard', 'deep'] as const
@@ -349,22 +350,25 @@ export function JourneySettings(props: JourneySettingsProps) {
       <div className="space-y-2.5">
         <p className={capsLabel('text-2xs font-semibold text-muted')}>Who can see it</p>
         <div className="flex flex-wrap items-center gap-2 text-meta">
-        {([
-          ['private', Lock, 'Just me'],
-          ['unlisted', Link2, 'Anyone with the link'],
-          ['public', Globe, 'Community library'],
-        ] as const).map(([v, Icon, label]) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => changeVisibility(v)}
-            className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 transition-colors ${
-              visibility === v ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated'
-            }`}
-          >
-            <Icon className="h-3 w-3" /> {label}
-          </button>
-        ))}
+        <SegmentedControl
+          size="xs"
+          label="Who can see it"
+          value={visibility}
+          onChange={changeVisibility}
+          segments={([
+            ['private', Lock, 'Just me'],
+            ['unlisted', Link2, 'Anyone with the link'],
+            ['public', Globe, 'Community library'],
+          ] as const).map(([v, Icon, label]) => ({
+            value: v,
+            className: 'px-2',
+            label: (
+              <>
+                <Icon className="h-3 w-3" aria-hidden /> {label}
+              </>
+            ),
+          }))}
+        />
         {visibility === 'public' && status === 'pending' && (
           <span className="inline-flex items-center gap-1 rounded-pill bg-warning-bg px-2.5 py-1 text-warning">In review</span>
         )}

@@ -37,6 +37,12 @@ A placement is one printed sign or one NFC tag at one stop. It carries a short c
 
 Every placement shows the short code as large, high-contrast text and a one-line instruction: "Type this code at the Hunt page." A member who cannot scan or tap enters the code by hand and lands on the same page. The placement sign states the stop name in text, never in the code art alone. Never place a code where it cannot be reached by someone seated.
 
+## Staff review opt-in
+
+A resident can switch on "If staff cannot confirm a visit on the spot, keep it for them to check later" for a stop in the Trail editor. The switch is saved on the stop and frozen into the published version. Whoever binds a placement to that stop copies it onto the binding with `stopEvidencePolicy` (`lib/hunts/draft.ts`), which is the only place that writes `evidence_policy.hold_for_review`; publishing does this for placements already bound to the version. Never type the JSON by hand.
+
+It only matters at a stop that staff confirm. There, a scan with nobody at the door is kept for staff to check instead of refused, and the player reads that their visit was saved. Nothing is credited until staff approve it.
+
 ## Replace or revoke a placement
 
 - **Damaged or stolen sign:** revoke the placement, create a new one for the same stop, print and test it. The old code refuses from the moment it is revoked, so a photo of the old sign stops granting.

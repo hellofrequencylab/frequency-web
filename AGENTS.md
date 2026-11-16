@@ -32,7 +32,7 @@ Orientation for a human: [`docs/START-HERE.md`](docs/START-HERE.md).
 
 `main` is protected. **Merging deploys to production.** The 2026-08-11 outage: a green source tree shipped an artifact the container could not hold. Full incident and rules: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAFETY.md).
 
-- **The artifact is gated in `postbuild`, not CI.** CI never builds. Vercel runs `pnpm build` (`vercel.json` pins it). Six gates fail that build: `check:build-budget`, `check:og-trace`, `check:cache-budget`, `check:shell-weight`, `check:build-fanout`, `check:notfound-routes`. Watch the trend those gates print. Do not paste a reading into this file.
+- **The artifact is gated in `postbuild`, not CI.** CI never builds. Vercel runs `pnpm build` (`vercel.json` pins it). Seven gates fail that build: `check:build-budget`, `check:og-trace`, `check:cache-budget`, `check:shell-weight`, `check:build-fanout`, `check:notfound-routes`, `check:editor-bundle-bytes`. Watch the trend those gates print. Do not paste a reading into this file.
 - **When a budget gate fires, fix the fan-out, do not raise the budget.** Anything reachable from a root layout, a ROOT metadata file, or a shared server module is multiplied by every route beneath it. Client twin: anything statically reachable from `components/layout/app-shell.tsx` is parsed on every phone on every `app/(main)` route.
 - **Run the control before theorising.** Redeploy the last known-good tree before inventing a platform story. Let builds finish; cancelling destroys the evidence.
 - **Every fail-safe needs a gate that notices it fired.** A swallowed error is an invisible regression.

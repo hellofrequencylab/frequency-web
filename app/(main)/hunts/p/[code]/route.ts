@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { getCallerProfile } from '@/lib/auth'
+import { deferHuntEvent, reasonClass } from '@/lib/hunts/analytics'
 import { claimAsPlayer, loadScanPlacement } from '@/lib/hunts/claim-store'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { isCrawler, resolvePlacement } from '@/lib/hunts/placement'
@@ -61,7 +62,13 @@ export async function GET(request: Request, { params }: Context) {
   }
 
   const landing = new URL(`/play/${encodeURIComponent(placement.huntSlug)}`, origin)
-  if (resolution.canClaim && await getCallerProfile()) landing.searchParams.set('p', code)
+  const caller = resolution.canClaim ? await getCallerProfile() : null
+  if (caller) landing.searchParams.set('p', code)
+  // FH-025: a person's scan is counted (never a crawler's), with no code and no placement on the event.
+  // A signed-out scan stays first-party unless guest forwarding is switched on.
+  if (resolution.canClaim) {
+    deferHuntEvent({ event: 'hunt.placement_scan', actorProfileId: caller?.id ?? null, props: { hunt_id: placement.huntId, reason_class: 'opened' } })
+  }
   return redirect(landing, 302)
 }
 
@@ -100,8 +107,14 @@ export async function POST(request: Request, { params }: Context) {
     idempotencyKey: createHash('sha256').update(token).digest('hex'),
     nowEpoch: Math.floor(Date.now() / 1000),
   })
+  deferHuntEvent({
+    event: 'hunt.stop_claim',
+    actorProfileId: caller.id,
+    props: { hunt_id: placement.huntId, assurance: 'signed_node', reason_class: reasonClass(outcome.ok ? outcome.result : outcome.reason), replayed: outcome.ok && outcome.replayed },
+  })
   const landing = new URL(`/play/${encodeURIComponent(placement.huntSlug)}`, origin)
   const result = outcome.ok ? outcome.result : null
-  landing.searchParams.set('claim', result === 'credited' || result === 'already_credited' ? result : 'unavailable')
+  // FH-020V: a visit kept for staff review is its own answer on the landing, never a credit and never a refusal.
+  landing.searchParams.set('claim', result === 'credited' || result === 'already_credited' || result === 'held' ? result : 'unavailable')
   return redirect(landing, 303)
 }
