@@ -10,6 +10,7 @@ import { MODULE_ROLES, ROW_HEADER_MAX, type ModuleRole } from '@/lib/page-settin
 import { TEMPLATES, templateMeta, slotIds, defaultSlotId, type TemplateId } from '@/lib/widgets/templates'
 import { Input } from '@/components/ui/field'
 import { buttonClasses } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // The live Layout editor for the on-page "Page" settings panel (ADR-270/271/272). Staff pick the
 // interior TEMPLATE, assign each module to one of its AREAS (slots), set order + visibility + a
@@ -263,9 +264,10 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
             onClick={() => chooseScope(s.choice)}
             disabled={pending}
             aria-pressed={s.choice === choice}
-            className={`rounded-control px-3 py-1.5 text-meta font-semibold transition-colors disabled:opacity-40 ${
-              s.choice === choice ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:text-text'
-            }`}
+            className={choiceTileClasses(
+              s.choice === choice,
+              `rounded-control px-3 py-1.5 text-meta font-semibold ${s.choice === choice ? 'text-primary-strong' : 'text-muted hover:text-text'}`,
+            )}
           >
             {s.label}
           </button>
@@ -312,11 +314,10 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                     disabled={pending}
                     aria-pressed={isActive}
                     title={t.description}
-                    className={`flex flex-col items-center gap-1.5 rounded-control border p-2 transition-colors disabled:opacity-40 ${
-                      isActive
-                        ? 'border-primary bg-primary-bg/40 ring-1 ring-primary'
-                        : 'border-border bg-surface-elevated/40 hover:border-border-strong'
-                    }`}
+                    className={choiceTileClasses(
+                      isActive,
+                      `flex flex-col items-center gap-1.5 rounded-control p-2${isActive ? ' ring-1 ring-primary' : ''}`,
+                    )}
                   >
                     <span className="flex h-9 w-14 items-center justify-center">
                       <TemplateThumbnail id={t.id} active={isActive} />
