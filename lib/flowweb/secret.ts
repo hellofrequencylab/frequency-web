@@ -9,7 +9,7 @@
 
 import { envStringOrNull } from '@/lib/env/string'
 
-export type FlowwebHook = 'facts' | 'link' | 'crm'
+type FlowwebHook = 'facts' | 'link' | 'crm'
 
 const OWN: Record<FlowwebHook, string> = {
   facts: 'FLOWWEB_FACTS_SECRET',

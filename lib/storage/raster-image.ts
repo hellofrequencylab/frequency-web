@@ -5,8 +5,7 @@
 // is excluded on purpose. The type is read from the file's own first bytes, and the stored extension
 // comes from that verified type, never from the name.
 
-export const RASTER_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'] as const
-export type RasterImageType = (typeof RASTER_IMAGE_TYPES)[number]
+type RasterImageType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' | 'image/avif'
 
 const EXT: Record<RasterImageType, string> = {
   'image/jpeg': 'jpg',
@@ -21,7 +20,7 @@ export const RASTER_IMAGE_MESSAGE = 'Use a JPEG, PNG, WebP, GIF, or AVIF image.'
 const ascii = (b: Uint8Array, at: number, s: string) => s.split('').every((c, i) => b[at + i] === c.charCodeAt(0))
 
 /** The raster type the bytes really are, or null (SVG, HTML, anything else). */
-export function sniffRasterType(bytes: Uint8Array): RasterImageType | null {
+function sniffRasterType(bytes: Uint8Array): RasterImageType | null {
   if (bytes.length < 12) return null
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg'
   if (bytes[0] === 0x89 && ascii(bytes, 1, 'PNG')) return 'image/png'
