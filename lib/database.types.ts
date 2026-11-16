@@ -20759,6 +20759,16 @@ export type Database = {
           venue_name: string
         }[]
       }
+      node_capture_claim: {
+        Args: {
+          p_actor: string
+          p_context: Json
+          p_idempotency_key: string
+          p_node_id: string
+          p_source: string
+        }
+        Returns: Json
+      }
       node_capture_counts: {
         Args: never
         Returns: {

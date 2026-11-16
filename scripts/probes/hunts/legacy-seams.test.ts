@@ -28,11 +28,16 @@ const runSeams = (...flags: string[]) => execFileSync(
 it('runs all five seams from the single entry and pins the last-unit race on both sides', () => {
   const lines = runSeams().trim().split('\n')
   expect(lines.filter((line) => line.startsWith('FH-002: '))).toHaveLength(6)
-  expect(lines.find((line) => line.includes('(legacy, last unit of 1)'))).toContain('2 capture rows, 2 Zap awards. OVERSOLD by 1')
+  expect(lines.find((line) => line.includes('(legacy, last unit of 1)'))).toContain('1 accepted, 1 capture rows, 1 Zap awards. cap held')
   expect(lines.find((line) => line.includes('(Hunt adapter, last unit of 1)'))).toContain('1 granted, 1 sold_out with terms, 1 grant record')
   expect(lines.at(-1)).toBe('FH-002: all five seams match their pinned records')
 })
 
-it('exits non-zero when the legacy cap is required to hold (the open FH-002S finding)', () => {
-  expect(() => runSeams('--require-cap-held')).toThrow(/the cap of 1 admitted 2 members/)
+it('still oversells on the fallback path until the claim function is applied', () => {
+  const line = runSeams().split('\n').find((l) => l.includes('claim function not applied yet'))
+  expect(line).toContain('2 accepted, 2 capture rows, 2 Zap awards')
+})
+
+it('exits zero when the legacy cap is required to hold (FH-002S)', () => {
+  expect(runSeams('--require-cap-held').trim().split('\n').at(-1)).toBe('FH-002: all five seams hold and the legacy cap held')
 })

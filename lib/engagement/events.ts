@@ -95,17 +95,27 @@ export async function recordEngagementEvent(
   // Run the existing rules engine only on the first insert, when supplied.
   if (recorded && gamificationEvent) await processGamificationEvent(gamificationEvent)
 
-  // Automations subscribe to the event backbone (ADR-025). Guarded so a rule
-  // failure never breaks event recording.
-  if (recorded) {
-    try {
-      // Pass the event's context so a rule's conditions can match on it (and the
-      // source, so a rule can gate on where the event came from).
-      await runAutomationsForEvent(eventType, actorProfileId, { source, ...(context ?? {}) })
-    } catch (err) {
-      console.error('[automations] evaluation failed:', err)
-    }
-  }
+  if (recorded) await runEngagementAutomations(eventType, actorProfileId, source, context)
 
   return { recorded, id }
+}
+
+/**
+ * Automations subscribe to the event backbone (ADR-025). Run once, for a ledger row that was just
+ * written. Guarded so a rule failure never breaks event recording. Exported for the one writer that
+ * inserts its ledger row in the database (the capped check-in claim, lib/engagement/capture.ts).
+ */
+export async function runEngagementAutomations(
+  eventType: string,
+  actorProfileId: string | null,
+  source: EngagementSource,
+  context?: Record<string, unknown>,
+): Promise<void> {
+  try {
+    // Pass the event's context so a rule's conditions can match on it (and the
+    // source, so a rule can gate on where the event came from).
+    await runAutomationsForEvent(eventType, actorProfileId, { source, ...(context ?? {}) })
+  } catch (err) {
+    console.error('[automations] evaluation failed:', err)
+  }
 }

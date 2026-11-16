@@ -4,14 +4,19 @@
 // It exits non-zero when any seam leaves different records than the ones pinned here.
 //
 // Seams 1, 2, 4 and 5, and the exhausted-capacity half of seam 3, live in legacy-seam-evidence.mjs.
-// This file adds the half that was still open: two members competing for the LAST unit of a capped
-// code. Everything runs the shipped orchestrators against the in-memory fixture. No database, no
-// network. It is not a Postgres race: what it shows is the order of reads and writes the shipped
-// code issues, which is what decides the outcome on any database without a lock or a constraint.
+// This file adds the other half: two members competing for the LAST unit of a capped code. Everything
+// runs the shipped orchestrators against the in-memory fixture. No database, no network. It is not a
+// Postgres race: it shows what the shipped caller does with the answers the database gives.
 //
-// `--require-cap-held` flips the scarcity expectation to the one a fix must meet (one winner, one
-// refusal, one capture, one award). That is FH-002S's probe: it fails until the legacy cap is atomic
-// or retired. When that lands, make the held expectation the default here.
+// Since FH-002S a capped node claims its unit through public.node_capture_claim, which holds the node
+// row, counts and writes in one transaction. The fixture answers the way that function answers when
+// the count and the write cannot be separated, so the pinned record is one winner, one refusal, one
+// capture, one award. The SQL lock itself is proven in supabase/tests/node_capture_claim.test.sql and
+// by a two-session race (see docs/hunts/EVIDENCE.md), not here.
+//
+// `--require-cap-held` is FH-002S's probe. It asserts the same held record and nothing weaker. The
+// run also pins the state BEFORE the migration is applied (the function is missing, the caller falls
+// back to count-then-insert and the last unit still oversells), so that fallback cannot change unseen.
 import assert from 'node:assert/strict'
 import { fixtureProof, nodeId, resetLegacyFixture } from './legacy-seams-fixture.mjs'
 
@@ -37,38 +42,54 @@ const { captureNode } = await import(source('lib/engagement/capture.ts'))
 const { grantReward } = await import(source('lib/hunts/rewards.ts'))
 
 // Seam 3, last unit, legacy path. One unit left, two different members scan at the same moment.
-const state = resetLegacyFixture()
-state.nodes[0].max_claims = 1
-const outcomes = await Promise.all(
-  ['fixture-a', 'fixture-b'].map((actorProfileId) => captureNode({ nodeId, actorProfileId, presentedSecret: fixtureProof })),
-)
-assert.deepEqual(state.faults, [], 'the race used an unmodeled dependency')
-const accepted = outcomes.filter((o) => o.ok).length
-const captures = state.captures.map((row) => row.actor_profile_id)
-const awards = state.zapEntries.filter((entry) => entry.action === 'node_capture').map((entry) => entry.profileId)
-const ledger = state.engagement_events.filter((row) => row.event_type === 'node_capture').length
+async function lastUnitRace(capClaimInstalled) {
+  const state = resetLegacyFixture()
+  state.nodes[0].max_claims = 1
+  state.capClaimInstalled = capClaimInstalled
+  const outcomes = await Promise.all(
+    ['fixture-a', 'fixture-b'].map((actorProfileId) => captureNode({ nodeId, actorProfileId, presentedSecret: fixtureProof })),
+  )
+  assert.deepEqual(state.faults, [], 'the race used an unmodeled dependency')
+  const accepted = outcomes.filter((o) => o.ok).length
+  const captures = state.captures.map((row) => row.actor_profile_id)
+  const awards = state.zapEntries.filter((entry) => entry.action === 'node_capture').map((entry) => entry.profileId)
+  const ledger = state.engagement_events.filter((row) => row.event_type === 'node_capture').length
 
-// True on either side of a fix: every accepted scan has exactly one capture, one ledger row and one award.
-assert.equal(captures.length, accepted, 'an accepted scan must leave exactly one capture row')
-assert.equal(ledger, accepted, 'an accepted scan must leave exactly one ledger row')
-assert.deepEqual(awards, captures, 'each captured member is paid once and nobody else is paid')
-
-if (requireCapHeld) {
-  assert.equal(accepted, 1, `the cap of 1 admitted ${accepted} members`)
-  assert.deepEqual(outcomes.filter((o) => !o.ok).map((o) => o.reason), ['capacity_reached'])
-} else {
-  // Pinned observation: verifyCapture counts, captureNode inserts later, nothing holds the node between
-  // them and the two members have different ledger keys. Both pass the count and both are written.
-  assert.deepEqual(captures, ['fixture-a', 'fixture-b'], 'the legacy last-unit race no longer oversells: update this pin')
-  // A third member arriving after the race is refused, so the cap only fails inside the window.
-  const late = await captureNode({ nodeId, actorProfileId: 'fixture-c', presentedSecret: fixtureProof })
-  assert.deepEqual(late, { ok: false, reason: 'capacity_reached' })
-  assert.equal(state.captures.length, 2)
+  // True on either side of the fix: every accepted scan has exactly one capture, one ledger row and one award.
+  assert.equal(captures.length, accepted, 'an accepted scan must leave exactly one capture row')
+  assert.equal(ledger, accepted, 'an accepted scan must leave exactly one ledger row')
+  assert.deepEqual(awards, captures, 'each captured member is paid once and nobody else is paid')
+  return { state, outcomes, accepted, captures, awards }
 }
+
+// With the claim function installed: the cap holds. This is the pinned record, with or without the flag.
+const held = await lastUnitRace(true)
+assert.equal(held.accepted, 1, `the cap of 1 admitted ${held.accepted} members`)
+assert.deepEqual(held.outcomes.filter((o) => !o.ok).map((o) => o.reason), ['capacity_reached'])
+assert.deepEqual(held.captures, ['fixture-a'], 'one capture row for one unit')
+// The winner tapping again does not spend a unit or get paid again; a later member is refused.
+const replay = await captureNode({ nodeId, actorProfileId: 'fixture-a', presentedSecret: fixtureProof })
+assert.equal(replay.ok, false)
+assert.deepEqual(await captureNode({ nodeId, actorProfileId: 'fixture-c', presentedSecret: fixtureProof }), { ok: false, reason: 'capacity_reached' })
+assert.equal(held.state.captures.length, 1)
+assert.equal(held.state.zapEntries.length, 1)
 console.log(
-  `FH-002 scarcity race (legacy, last unit of 1): ${accepted} accepted, ${captures.length} capture rows, ` +
-  `${awards.length} Zap awards. ${accepted > 1 ? 'OVERSOLD by ' + (accepted - 1) : 'cap held'}. ` +
-  'Boundary: lib/engagement/verify.ts counts, lib/engagement/capture.ts inserts, no lock between them.',
+  `FH-002 scarcity race (legacy, last unit of 1): ${held.accepted} accepted, ${held.captures.length} capture rows, ` +
+  `${held.awards.length} Zap awards. ${held.accepted > 1 ? 'OVERSOLD by ' + (held.accepted - 1) : 'cap held'}. ` +
+  'Boundary: public.node_capture_claim (node row lock, count and both writes in one transaction).',
+)
+
+// Before the migration is applied the function is missing and the caller falls back to the old path:
+// verifyCapture counts, captureNode inserts later, nothing holds the node between them. Pinned so the
+// fallback stays the exact pre-fix behaviour, and so nobody reads "cap held" as true before the apply.
+const before = await lastUnitRace(false)
+assert.deepEqual(before.captures, ['fixture-a', 'fixture-b'], 'the pre-apply fallback changed: update this pin')
+assert.deepEqual(await captureNode({ nodeId, actorProfileId: 'fixture-c', presentedSecret: fixtureProof }), { ok: false, reason: 'capacity_reached' })
+assert.equal(before.state.captures.length, 2)
+console.log(
+  `FH-002 scarcity race (legacy, claim function not applied yet): ${before.accepted} accepted, ` +
+  `${before.captures.length} capture rows, ${before.awards.length} Zap awards. Falls back to count-then-insert until ` +
+  'supabase/migrations/20270346084000_node_capture_claim.sql is applied.',
 )
 
 // Seam 3, adapter side. The Hunt path does not count then insert: hunt_reward_grant takes the reward

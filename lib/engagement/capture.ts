@@ -11,7 +11,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardZaps } from '@/lib/zaps'
 import { verifyCapture, type CaptureAttempt, type CaptureMedium, type VerifyReason } from './verify'
-import { recordEngagementEvent } from './events'
+import { recordEngagementEvent, runEngagementAutomations } from './events'
 import { currencyForSource } from './currency'
 import { trustSource } from '@/lib/trust'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
@@ -72,6 +72,44 @@ export function captureWindowKey(
   return captureRule === 'repeatable' && day ? `${base}:${day}` : base
 }
 
+type CappedClaim =
+  | { result: 'claimed'; eventId: string | null }
+  | { result: 'already_captured' | 'capacity_reached' | 'unknown_node' }
+
+/** PostgREST / Postgres "no such function": the claim migration has not been applied yet. */
+const FUNCTION_MISSING = new Set(['PGRST202', '42883'])
+
+/**
+ * Claim one unit of a capped node through `node_capture_claim` (FH-002S). Returns null only when the
+ * function does not exist yet, so the caller can fall back to the path that shipped before it. Any
+ * other failure throws, as a failed ledger write always has: a capped code never pays on a guess.
+ */
+async function claimCappedCapture(
+  db: ReturnType<typeof createAdminClient>,
+  attempt: CaptureAttempt,
+  idempotencyKey: string,
+  source: EngagementSource,
+  context: { nodeId: string; medium: CaptureMedium; spaceId: string | null },
+): Promise<CappedClaim | null> {
+  const { data, error } = await db.rpc('node_capture_claim', {
+    p_node_id: attempt.nodeId,
+    p_actor: attempt.actorProfileId,
+    p_idempotency_key: idempotencyKey,
+    p_source: source,
+    p_context: context,
+  })
+  if (error) {
+    if (FUNCTION_MISSING.has(error.code ?? '')) return null
+    throw error
+  }
+  const answer = (data ?? {}) as { result?: string; event_id?: string | null }
+  if (answer.result === 'claimed') return { result: 'claimed', eventId: answer.event_id ?? null }
+  if (answer.result === 'already_captured' || answer.result === 'capacity_reached' || answer.result === 'unknown_node') {
+    return { result: answer.result }
+  }
+  throw new Error(`node_capture_claim answered ${String(answer.result)}`)
+}
+
 /**
  * Verify and (if valid + first time in the node's window) record a capture, then
  * award the node's zaps. Idempotent per (node, actor) for once-per-user /
@@ -86,7 +124,7 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
 
   const { data: node } = await db
     .from('nodes')
-    .select('type, zaps_value, partner_id, kind, space_id, capture_rule')
+    .select('type, zaps_value, partner_id, kind, space_id, capture_rule, max_claims')
     .eq('id', attempt.nodeId)
     .maybeSingle()
   if (!node) return { ok: false, reason: 'unknown_node' }
@@ -99,26 +137,48 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
   const source = captureSource(node.type as string, attempt.medium)
   const medium: CaptureMedium = attempt.medium ?? (source === 'nfc' ? 'nfc' : 'qr')
 
-  // 2) Ledger, exactly-once. (Verifier already enforced once-per-user via the
-  //    captures table; this is the second guard against retries. A repeatable
-  //    node's key carries the member day, so it guards retries within a day only.)
-  const { recorded, id: engagementEventId } = await recordEngagementEvent({
-    idempotencyKey: `node:${windowKey}`,
-    source,
-    eventType: 'node_capture',
-    actorProfileId: attempt.actorProfileId,
-    // `medium` + `spaceId` feed the check-in split on Scan stats (QR scan, NFC tap, counter scanner).
-    context: { nodeId: attempt.nodeId, medium, spaceId: (node.space_id as string | null) ?? null },
-    verifiedAt: new Date(),
-  })
-  if (!recorded) return { ok: false, reason: 'already_captured' }
+  // 2a) A CAPPED node ("first N win", max_claims) claims its unit in the database (FH-002S): one
+  //     function holds the node, counts, and writes the ledger row and the audit row together, so two
+  //     members at the last unit cannot both pass. `null` means the function is not installed yet;
+  //     the count-then-insert path below then runs exactly as before.
+  let engagementEventId: string | null = null
+  let claimed = false
+  if (Number(node.max_claims ?? 0) > 0) {
+    // The same ledger context the path below writes.
+    const context = { nodeId: attempt.nodeId, medium, spaceId: (node.space_id as string | null) ?? null }
+    const claim = await claimCappedCapture(db, attempt, `node:${windowKey}`, source, context)
+    if (claim) {
+      if (claim.result !== 'claimed') return { ok: false, reason: claim.result }
+      claimed = true
+      engagementEventId = claim.eventId
+      // The ledger row was written in the database, so run what recordEngagementEvent runs after it.
+      await runEngagementAutomations('node_capture', attempt.actorProfileId, source, context)
+    }
+  }
 
-  // 3) Audit row.
-  await db.from('captures').insert({
-    node_id: attempt.nodeId,
-    actor_profile_id: attempt.actorProfileId,
-    verified: true,
-  })
+  if (!claimed) {
+    // 2) Ledger, exactly-once. (Verifier already enforced once-per-user via the
+    //    captures table; this is the second guard against retries. A repeatable
+    //    node's key carries the member day, so it guards retries within a day only.)
+    const { recorded, id } = await recordEngagementEvent({
+      idempotencyKey: `node:${windowKey}`,
+      source,
+      eventType: 'node_capture',
+      actorProfileId: attempt.actorProfileId,
+      // `medium` + `spaceId` feed the check-in split on Scan stats (QR scan, NFC tap, counter scanner).
+      context: { nodeId: attempt.nodeId, medium, spaceId: (node.space_id as string | null) ?? null },
+      verifiedAt: new Date(),
+    })
+    if (!recorded) return { ok: false, reason: 'already_captured' }
+    engagementEventId = id
+
+    // 3) Audit row.
+    await db.from('captures').insert({
+      node_id: attempt.nodeId,
+      actor_profile_id: attempt.actorProfileId,
+      verified: true,
+    })
+  }
 
   // 3b) A SPACE CHECK-IN also lands on the member's Space Resonance timeline (event attendance, ADR-796).
   // Only for a check-in node (never an ordinary QR/NFC/ghost capture), best-effort, and keyed on

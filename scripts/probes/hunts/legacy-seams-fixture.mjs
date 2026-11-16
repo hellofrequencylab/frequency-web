@@ -24,6 +24,7 @@ export function resetLegacyFixture() {
     advanceCalls: [],
     faults: [],
     interruptAward: false,
+    capClaimInstalled: true,
   }
   return state
 }
@@ -120,6 +121,26 @@ async function fakeRpc(name, args) {
     const stamped = !state.stamps.has(key)
     state.stamps.add(key)
     return success({ stamped, stamps: 1, required: 5, visit_days: [args._day] })
+  }
+  if (name === 'node_capture_claim') {
+    // Stand-in for public.node_capture_claim (FH-002S): the replay check, the count and both writes
+    // are one synchronous step here, as they are one transaction under the node row lock there. With
+    // capClaimInstalled false it answers the way PostgREST does before the migration is applied.
+    if (!state.capClaimInstalled) return { data: null, error: { code: 'PGRST202', message: 'function not found' } }
+    const node = state.nodes.find((row) => row.id === args.p_node_id)
+    if (!node) return success({ result: 'unknown_node' })
+    if (state.engagement_events.some((row) => row.idempotency_key === args.p_idempotency_key)) {
+      return success({ result: 'already_captured' })
+    }
+    const taken = state.captures.filter((row) => row.node_id === node.id && row.verified === true).length
+    if (node.max_claims > 0 && taken >= node.max_claims) return success({ result: 'capacity_reached' })
+    const event = {
+      id: `fixture-event-${state.engagement_events.length + 1}`, idempotency_key: args.p_idempotency_key,
+      source: args.p_source, event_type: 'node_capture', actor_profile_id: args.p_actor, context: args.p_context,
+    }
+    state.engagement_events.push(event)
+    state.captures.push({ node_id: node.id, actor_profile_id: args.p_actor, verified: true })
+    return success({ result: 'claimed', event_id: event.id })
   }
   return unexpected(`RPC ${name}`)
 }

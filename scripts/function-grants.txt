@@ -377,3 +377,5 @@ analytics_experiment_withdraw_consent internal
 analytics_experiment_count_exclusion internal
 analytics_experiment_purge internal
 analytics_growth_snapshot internal
+# Capped check-in claim (FH-002S): service role only.
+node_capture_claim internal

@@ -9,6 +9,8 @@ const h = vi.hoisted(() => {
     offers: [] as Array<{ id: string; title: string; valid_until: string | null; active: boolean }>,
     inserts: [] as Array<[string, unknown]>,
     node: null as Record<string, unknown> | null,
+    rpcCalls: [] as Array<[string, Record<string, unknown>]>,
+    rpcAnswer: null as { data: unknown; error: { code?: string; message?: string } | null } | null,
   }
   const builder = (table: string): unknown => {
     const c: Record<string, unknown> = {}
@@ -28,12 +30,20 @@ const h = vi.hoisted(() => {
       resolve({ data: table === 'partner_offers' ? state.offers : null, error: null })
     return c
   }
-  return { state, admin: { from: (table: string) => builder(table) } }
+  const rpc = async (name: string, args: Record<string, unknown>) => {
+    state.rpcCalls.push([name, args])
+    if (!state.rpcAnswer) throw new Error(`unexpected rpc ${name}`)
+    return state.rpcAnswer
+  }
+  return { state, admin: { from: (table: string) => builder(table), rpc } }
 })
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => h.admin }))
 vi.mock('./verify', () => ({ verifyCapture: vi.fn(async () => ({ ok: true })) }))
-vi.mock('./events', () => ({ recordEngagementEvent: vi.fn(async () => ({ recorded: true, id: 'ev-1' })) }))
+vi.mock('./events', () => ({
+  recordEngagementEvent: vi.fn(async () => ({ recorded: true, id: 'ev-1' })),
+  runEngagementAutomations: vi.fn(async () => {}),
+}))
 vi.mock('@/lib/zaps', () => ({ awardZaps: vi.fn() }))
 vi.mock('@/lib/trust', () => ({ trustSource: () => ({ signal: async () => {} }) }))
 vi.mock('@/lib/crm/interactions', () => ({ recordSpaceMemberActivity: vi.fn() }))
@@ -132,5 +142,94 @@ describe('captureNode practice event', () => {
     h.state.node = { type: 'qr', zaps_value: 0, partner_id: null, kind: 'ghost', space_id: null }
     await captureNode(attempt)
     expect(practice()).toBeDefined()
+  })
+})
+
+// FH-002S: a capped node ("first N win") claims its unit through node_capture_claim, which counts and
+// writes under the node row lock. An uncapped node never calls it. Until the migration is applied the
+// function is missing, and the capture falls back to the path that shipped before it.
+import { runEngagementAutomations } from './events'
+import { awardZaps } from '@/lib/zaps'
+
+describe('captureNode capped claim', () => {
+  const capped = { type: 'qr', zaps_value: 5, partner_id: null, kind: 'standard', space_id: null, capture_rule: 'once_per_user', max_claims: 1 }
+  beforeEach(() => {
+    h.state.offers = []
+    h.state.inserts = []
+    h.state.rpcCalls = []
+    h.state.rpcAnswer = null
+    h.state.node = capped
+    vi.mocked(recordEngagementEvent).mockClear()
+    vi.mocked(runEngagementAutomations).mockClear()
+    vi.mocked(awardZaps).mockClear()
+  })
+  afterEach(() => {
+    h.state.node = null
+    h.state.rpcAnswer = null
+  })
+  const ledgerWrites = () => vi.mocked(recordEngagementEvent).mock.calls.filter((c) => c[0].eventType === 'node_capture')
+  const captureInserts = () => h.state.inserts.filter((i) => i[0] === 'captures')
+
+  it('claims the unit in the database and writes neither row itself', async () => {
+    h.state.rpcAnswer = { data: { result: 'claimed', event_id: 'ev-claim' }, error: null }
+    const r = await captureNode({ ...attempt, medium: 'nfc' })
+    expect(r).toMatchObject({ ok: true, zapsAwarded: 5 })
+    expect(h.state.rpcCalls).toEqual([
+      ['node_capture_claim', {
+        p_node_id: 'node-1',
+        p_actor: 'me',
+        p_idempotency_key: 'node:node-1:me',
+        p_source: 'nfc',
+        p_context: { nodeId: 'node-1', medium: 'nfc', spaceId: null },
+      }],
+    ])
+    expect(ledgerWrites()).toHaveLength(0)
+    expect(captureInserts()).toHaveLength(0)
+    expect(runEngagementAutomations).toHaveBeenCalledWith('node_capture', 'me', 'nfc', { nodeId: 'node-1', medium: 'nfc', spaceId: null })
+    expect(awardZaps).toHaveBeenCalledTimes(1)
+  })
+
+  it('refuses the member who lost the last unit with the cap-reached outcome and pays nothing', async () => {
+    h.state.rpcAnswer = { data: { result: 'capacity_reached' }, error: null }
+    expect(await captureNode(attempt)).toEqual({ ok: false, reason: 'capacity_reached' })
+    expect(ledgerWrites()).toHaveLength(0)
+    expect(captureInserts()).toHaveLength(0)
+    expect(runEngagementAutomations).not.toHaveBeenCalled()
+    expect(awardZaps).not.toHaveBeenCalled()
+  })
+
+  it('answers a replay by the same member as already captured and pays nothing', async () => {
+    h.state.rpcAnswer = { data: { result: 'already_captured' }, error: null }
+    expect(await captureNode(attempt)).toEqual({ ok: false, reason: 'already_captured' })
+    expect(captureInserts()).toHaveLength(0)
+    expect(awardZaps).not.toHaveBeenCalled()
+  })
+
+  it.each(['PGRST202', '42883'])('falls back to the earlier path when the function is not applied yet (%s)', async (code) => {
+    h.state.rpcAnswer = { data: null, error: { code, message: 'function not found' } }
+    const r = await captureNode(attempt)
+    expect(r).toMatchObject({ ok: true, zapsAwarded: 5 })
+    expect(ledgerWrites()).toHaveLength(1)
+    expect(ledgerWrites()[0][0]).toMatchObject({ idempotencyKey: 'node:node-1:me', source: 'qr' })
+    expect(captureInserts()).toEqual([['captures', { node_id: 'node-1', actor_profile_id: 'me', verified: true }]])
+    expect(runEngagementAutomations).not.toHaveBeenCalled()
+    expect(awardZaps).toHaveBeenCalledTimes(1)
+  })
+
+  it('throws on any other claim failure instead of paying on a guess', async () => {
+    h.state.rpcAnswer = { data: null, error: { code: '57014', message: 'canceling statement due to statement timeout' } }
+    await expect(captureNode(attempt)).rejects.toMatchObject({ code: '57014' })
+    expect(ledgerWrites()).toHaveLength(0)
+    expect(captureInserts()).toHaveLength(0)
+    expect(awardZaps).not.toHaveBeenCalled()
+  })
+
+  it.each([null, 0, undefined])('never calls the claim for an uncapped node (max_claims %s)', async (maxClaims) => {
+    h.state.node = { ...capped, max_claims: maxClaims }
+    const r = await captureNode(attempt)
+    expect(r).toMatchObject({ ok: true })
+    expect(h.state.rpcCalls).toHaveLength(0)
+    expect(ledgerWrites()).toHaveLength(1)
+    expect(captureInserts()).toHaveLength(1)
   })
 })
