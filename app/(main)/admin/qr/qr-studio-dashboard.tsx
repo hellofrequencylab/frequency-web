@@ -32,7 +32,7 @@ export function QrStudioDashboard({
     events: PickOption[]
     partners: PartnerOption[]
   }
-  campaignProps: { campaigns: CampaignCard[]; codes: CampaignCodeOption[] }
+  campaignProps: { campaigns: CampaignCard[]; codes: CampaignCodeOption[]; trailImport?: boolean }
   memberCodes: MemberProfileCode[]
   marketingCodes: MarketingCodeAdmin[]
   analytics: AnalyticsData
@@ -74,7 +74,7 @@ export function QrStudioDashboard({
       </Category>
 
       <Category Icon={Trophy} title="Campaigns" count={campaignProps.campaigns.length}>
-        <Campaigns campaigns={campaignProps.campaigns} codes={campaignProps.codes} />
+        <Campaigns campaigns={campaignProps.campaigns} codes={campaignProps.codes} trailImport={campaignProps.trailImport} />
       </Category>
 
       <Category Icon={BarChart3} title="Analytics">

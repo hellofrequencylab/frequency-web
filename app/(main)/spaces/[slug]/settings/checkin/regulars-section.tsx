@@ -6,6 +6,7 @@ import { LoyaltyProgramForm } from '@/components/spaces/loyalty/program-form'
 import { HandoutRoster } from '@/components/spaces/loyalty/handout-roster'
 import { HuntsPanel } from '@/components/spaces/loyalty/hunts-panel'
 import { listHuntsForSpace } from '@/lib/loyalty/hunt-store'
+import { huntSwitchOn } from '@/lib/hunts/flags'
 import { formatRewardValue } from '@/lib/loyalty/program'
 import {
   getLoyaltyProgram,
@@ -94,7 +95,7 @@ export async function RegularsSection({ space, staffViewing }: { space: Space; s
           <Flag className="h-4 w-4" aria-hidden /> A scavenger hunt across neighboring Spaces: members check in at every stop inside the window to earn the host&apos;s reward.
         </p>
         <fieldset disabled={staffViewing} className="contents">
-          <HuntsPanel spaceId={space.id} hunts={hunts} canHost={program.status === 'on' && blocker === null} />
+          <HuntsPanel spaceId={space.id} hunts={hunts} canHost={program.status === 'on' && blocker === null} trailImport={huntSwitchOn('authoring')} />
         </fieldset>
       </section>
     </>

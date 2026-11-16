@@ -165,7 +165,45 @@ export async function loadPublishedTrail(slug: string): Promise<PublishedTrail |
   const client = db()
   const version = await readPublishedVersion(client, slug, false)
   if (!version) return null
+  return assembleVersion(client, version)
+}
 
+/**
+ * FH-044S: one edition of a Trail, current or replaced, for a run still finishing on it. Same rows and
+ * same checks as loadPublishedTrail, read by the given version id; a draft is never returned. Whether
+ * the run may still take credit is decided by the caller (lib/hunts/claim-store.ts) and, under the run
+ * lock, by hunt_claim_apply.
+ */
+export async function loadTrailEdition(slug: string, versionId: string): Promise<PublishedTrail | null> {
+  const client = db()
+  const { data: hunt, error: huntError } = await client
+    .from('hunts')
+    .select('id, slug, status, revision')
+    .eq('slug', slug)
+    .in('visibility', ['public', 'unlisted'])
+    .maybeSingle()
+  const h = hunt as { id: string; slug: string; status: string; revision: number } | null
+  const state = h ? playerHuntState(h.status) : null
+  if (huntError || !h || !state) return null
+  const { data, error } = await client
+    .from('hunt_versions')
+    .select('id, trail_title:policy->trail->>title')
+    .eq('id', versionId)
+    .eq('hunt_id', h.id)
+    .in('status', ['published', 'superseded'])
+    .maybeSingle()
+  const v = error ? null : data as { id: string; trail_title: string | null } | null
+  if (!v) return null
+  return assembleVersion(client, {
+    huntId: h.id, slug: h.slug, versionId: v.id, revision: h.revision, huntState: state,
+    title: (typeof v.trail_title === 'string' && v.trail_title.trim()) || h.slug,
+  })
+}
+
+async function assembleVersion(
+  client: SupabaseClient,
+  version: Pick<PublishedTrail, 'huntId' | 'slug' | 'versionId' | 'revision' | 'title' | 'huntState'>,
+): Promise<PublishedTrail | null> {
   const [m, g, mem, bound, policy] = await Promise.all([
     client.from('hunt_missions').select('mission_key, title, visible_body, locked_teaser, opens_at, closes_at, kind, choice_group, fallback_group', { count: 'exact' }).eq('version_id', version.versionId),
     client.from('hunt_rule_groups').select('id, target_mission_key, target_finish, logic, min_count, group_key', { count: 'exact' }).eq('version_id', version.versionId),

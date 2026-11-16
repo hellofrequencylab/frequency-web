@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
+import { huntSwitchOn } from '@/lib/hunts/flags'
 import { shortLinkUrl } from '@/lib/qr/links'
 import { signedNodeUrl } from '@/lib/qr/node-code'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
@@ -360,7 +361,7 @@ export default async function QrStudioPage() {
         qrConfig={qrConfig}
         nodeProps={{ initialNodes, partners: partners ?? [] }}
         linkProps={{ initialLinks, nodes: nodeOptions, circles: circleOptions, events: eventOptions, partners: partners ?? [] }}
-        campaignProps={{ campaigns, codes: campaignCodes }}
+        campaignProps={{ campaigns, codes: campaignCodes, trailImport: huntSwitchOn('authoring') }}
         memberCodes={memberCodes}
         marketingCodes={marketingCodes}
         analytics={analytics}

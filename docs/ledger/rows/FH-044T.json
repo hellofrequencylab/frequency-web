@@ -1,0 +1,18 @@
+{
+  "id": "FH-044T",
+  "title": "Hunts FH-044T: Apply the edition migrations and walk one pilot Trail through a release with real printed codes",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-044S (2026-11-16): the release screen, import doors, earlier-edition reads and the 7-day grace rule shipped dark; what an agent cannot do moved here."
+  },
+  "detail": "Requires FH-044S. Owner role: people (the Database owner, then an Operator), not an agent: (1) apply supabase/migrations/20270346082000_hunt_teams_editions.sql and then 20270346085000_hunt_edition_grace.sql through the serialized gate, and confirm supabase/tests/hunt_editions.test.sql and supabase/tests/hunt_edition_grace.test.sql pass in db-tests; (2) with HUNTS_AUTHORING_ENABLED and HUNTS_CLAIMS_ENABLED on in a preview, release a second edition of one pilot Trail from the editor and confirm each old printed code opens the right stop, a dropped place's code credits nothing, a run started on the first edition still checks in on it inside the 7 days, and is refused after them; (3) write the record of that walk to docs/hunts/EDITION-RELEASE-WALK.md. Production switches stay OFF until this passes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const f=\"docs/hunts/EDITION-RELEASE-WALK.md\";process.exit(fs.existsSync(f)&&/printed code/i.test(fs.readFileSync(f,\"utf8\"))&&/7 days/i.test(fs.readFileSync(f,\"utf8\"))?0:1)'"
+  }
+}

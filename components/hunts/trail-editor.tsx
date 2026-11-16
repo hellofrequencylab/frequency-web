@@ -13,7 +13,7 @@
 // rides on the publish tap, so confirming it cannot clear the route test.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowDown, ArrowUp, Check, Lock, Map, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -35,6 +35,7 @@ import {
 } from '@/lib/hunts/draft'
 import type { TrailEditorState } from '@/lib/hunts/store'
 import { publishTrailAction, routeTestedAction, saveTrailAction } from '@/app/(main)/hunts/actions'
+import { TrailPublishContext, type TrailPublishContextValue } from './trail-publish-context'
 import { EDITOR_STEPS, TRAIL_STEPS, stepNumber, type EditorStep } from './trail-steps'
 
 // The stop fields, from the manifest's repeat. The kernel keeps a repeat field's `section` on the
@@ -66,7 +67,12 @@ const stopValue = (s: Stop, path: string): string => {
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
-export function TrailEditor({ initial }: { initial: TrailEditorState }) {
+/**
+ * `release` is the publish control for a Trail that already has a published edition (FH-044S): the page
+ * passes the release panel, which reads this editor's state through TrailPublishContext and replaces
+ * the first-publish button.
+ */
+export function TrailEditor({ initial, release }: { initial: TrailEditorState; release?: ReactNode }) {
   const router = useRouter()
   const [draft, setDraft] = useState<TrailDraft>(initial.draft)
   const [revision, setRevision] = useState(initial.revision)
@@ -232,6 +238,25 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
     setDraft((d) => ({ ...d, permissionConfirmed: permission }))
   }
 
+  const publishContext: TrailPublishContextValue = {
+    huntId: initial.huntId,
+    revision,
+    visibility,
+    permissionConfirmed: permission,
+    ready: checklist.ok && settled && conflict === null && !published,
+    published,
+    onConflict: (currentRevision) => {
+      frozen.current = true
+      setConflict(currentRevision)
+    },
+    onBlocked: setError,
+    onPublished: () => {
+      setPublished(true)
+      setRevision((r) => r + 1)
+      setDraft((d) => ({ ...d, permissionConfirmed: permission }))
+    },
+  }
+
   // ── Navigation ───────────────────────────────────────────────────────────────────────────
   const index = EDITOR_STEPS.indexOf(step)
   const back = index > 0 ? () => setStep(EDITOR_STEPS[index - 1]) : undefined
@@ -271,9 +296,11 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
         <Button variant="secondary" size="lg" className="flex-1" onClick={back} disabled={publishing}>
           Back
         </Button>
-        <Button size="lg" className="flex-1" onClick={publish} disabled={!checklist.ok || published || conflict !== null || !settled} loading={publishing}>
-          {published ? 'Published' : 'Publish'}
-        </Button>
+        {!release && (
+          <Button size="lg" className="flex-1" onClick={publish} disabled={!checklist.ok || published || conflict !== null || !settled} loading={publishing}>
+            {published ? 'Published' : 'Publish'}
+          </Button>
+        )}
       </div>
     ) : undefined
 
@@ -495,6 +522,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
               <FieldControl def={{ ...VISIBILITY_FIELD, required: true }} value={visibility} onChange={(v) => setVisibility(scalar(v))} disabled={published || conflict !== null} />
             </StudioField>
           )}
+          {release && <TrailPublishContext.Provider value={publishContext}>{release}</TrailPublishContext.Provider>}
         </div>
       )}
     </SparkShell>

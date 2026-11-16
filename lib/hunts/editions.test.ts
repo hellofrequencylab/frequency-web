@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { MAX_STOPS, parseTrailDraft, publishChecklist } from './draft'
 import {
-  buildCrosswalk, carryBindings, importQrCampaign, importRegularsHunt, parseEditionNote, parseImportNote, runStanding, sortOldGrants,
+  buildCrosswalk, carryBindings, EDITION_GRACE_DAYS, editionGrace, graceOpen, importQrCampaign, importRegularsHunt, parseEditionNote, parseImportNote, runStanding, sortOldGrants,
   type Binding, type OldGrant,
 } from './editions'
 
@@ -163,5 +163,43 @@ describe('old grants', () => {
     ]
     expect(sortOldGrants(grants).map((g) => g.title)).toEqual(['Spring pin', 'Mural Dash', 'Free tote'])
     expect(grants[0].title).toBe('Free tote')
+  })
+})
+
+// FH-044S: the owner's rule for runs in flight at a release (2026-11-16): 7 days to finish.
+describe('runs in flight at a release', () => {
+  const v = (version_no: number, status: string, published_at: string | null) => ({ version_no, status, published_at })
+  const versions = [v(1, 'superseded', '2026-09-01T00:00:00Z'), v(2, 'superseded', '2026-11-01T00:00:00Z'), v(3, 'published', '2026-11-10T00:00:00Z'), v(4, 'draft', null)]
+
+  it('the window opens at the release of the next edition out and lasts EDITION_GRACE_DAYS', () => {
+    expect(EDITION_GRACE_DAYS).toBe(7)
+    expect(editionGrace(2, versions)).toEqual({ releasedAt: '2026-11-10T00:00:00.000Z', endsAt: '2026-11-17T00:00:00.000Z' })
+    expect(editionGrace(1, versions)).toEqual({ releasedAt: '2026-11-01T00:00:00.000Z', endsAt: '2026-11-08T00:00:00.000Z' })
+    expect(editionGrace(3, versions)).toBeNull()
+  })
+
+  it('the end is exclusive, like the claim command', () => {
+    const w = editionGrace(2, versions)
+    expect(graceOpen(w, Date.parse('2026-11-16T23:59:59Z'))).toBe(true)
+    expect(graceOpen(w, Date.parse('2026-11-17T00:00:00Z'))).toBe(false)
+    expect(graceOpen(null, 0)).toBe(false)
+  })
+
+  it('an active run on a replaced edition is finishing inside the window and a record after it', () => {
+    const window = editionGrace(2, versions)
+    const run = { versionId: 'v2', state: 'active' }
+    expect(runStanding(run, { currentVersionId: 'v3' }, { window, nowMs: Date.parse('2026-11-12T00:00:00Z') })).toBe('finishing')
+    expect(runStanding(run, { currentVersionId: 'v3' }, { window, nowMs: Date.parse('2026-11-18T00:00:00Z') })).toBe('record')
+    expect(runStanding({ ...run, state: 'completed' }, { currentVersionId: 'v3' }, { window, nowMs: Date.parse('2026-11-12T00:00:00Z') })).toBe('record')
+    expect(runStanding({ versionId: 'v3', state: 'active' }, { currentVersionId: 'v3' }, { window, nowMs: 0 })).toBe('playing')
+  })
+
+  it('the claim command enforces the same window on the run\'s own edition', () => {
+    const sql = readFileSync(join('supabase', 'migrations', '20270346085000_hunt_edition_grace.sql'), 'utf8').toLowerCase()
+    expect(sql).toContain('create or replace function public.hunt_claim_apply(')
+    expect(sql).toContain(`now() >= released_at + interval '${EDITION_GRACE_DAYS} days'`)
+    expect(sql).toContain("nv.version_no > v.version_no")
+    expect(sql).toContain("(finishing and v.status = 'superseded')")
+    expect(sql).toContain('grant execute on function public.hunt_claim_apply(uuid, uuid, text, uuid, text, text, text, text, integer) to service_role')
   })
 })

@@ -11,7 +11,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import type { ChecklistItem } from '@/lib/hunts/draft'
-import { createImportedDraft, loadQrCampaignImport, loadRegularsImport, releaseEdition } from '@/lib/hunts/edition-store'
+import { createImportedDraft, loadQrCampaignImport, loadRegularsImport, previewRelease, releaseEdition, type ReleasePreview } from '@/lib/hunts/edition-store'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 
 const OFF = 'Trails are not open yet.'
@@ -28,6 +28,22 @@ export type ReleaseEditionResult =
   | { released: true; versionNo: number; carried: number; retired: number; pinnedRuns: number }
   | { conflict: true; currentRevision: number }
   | { blocked: true; items: ChecklistItem[] }
+
+/**
+ * What releasing the open draft would do, read before the tap (FH-044S): where each stop's printed code
+ * goes, how many codes retire, and how many runs stay on the outgoing edition. Null data means this is
+ * a first publish, not a release.
+ */
+export async function previewReleaseAction(input: { huntId: string }): Promise<ActionResult<ReleasePreview | null>> {
+  const gate = await authorizeAuthoring()
+  if ('error' in gate) return fail(gate.error)
+  if (typeof input.huntId !== 'string' || !UUID.test(input.huntId)) return fail('That trail could not be found.')
+  try {
+    return ok(await previewRelease(input.huntId, { profileId: gate.profileId }))
+  } catch {
+    return fail('The printed codes could not be read. Try again.')
+  }
+}
 
 /** Release the open draft as the next edition. Runs already playing keep the edition they started on. */
 export async function releaseEditionAction(input: { huntId: string; baseRevision: number; label: string; visibility: string; permissionConfirmed: boolean }): Promise<ActionResult<ReleaseEditionResult>> {

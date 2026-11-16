@@ -7,6 +7,7 @@ import { Check, Flag, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, Textarea } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ImportTrailDoor } from '@/components/hunts/import-trail-door'
 import { isError } from '@/lib/action-result'
 import { answerHuntInvite, createHunt, inviteHuntStop, setHuntStatus } from '@/lib/loyalty/hunt-actions'
 import { HUNT_COMPLETE_ZAPS, HUNT_LIMITS, huntLiveBlocker, huntWindow, type LoyaltyHunt } from '@/lib/loyalty/hunts'
@@ -26,7 +27,8 @@ function todayIso(offsetDays: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-export function HuntsPanel({ spaceId, hunts, canHost }: { spaceId: string; hunts: LoyaltyHunt[]; canHost: boolean }) {
+/** `trailImport`: the server says Trails authoring is on (FH-044S), so a host may start a Trail draft from a hunt. */
+export function HuntsPanel({ spaceId, hunts, canHost, trailImport = false }: { spaceId: string; hunts: LoyaltyHunt[]; canHost: boolean; trailImport?: boolean }) {
   const [creating, setCreating] = useState(false)
   return (
     <div className="space-y-4">
@@ -40,7 +42,7 @@ export function HuntsPanel({ spaceId, hunts, canHost }: { spaceId: string; hunts
       ) : (
         <ul className="space-y-3">
           {hunts.map((h) => (
-            <HuntRow key={h.id} spaceId={spaceId} hunt={h} />
+            <HuntRow key={h.id} spaceId={spaceId} hunt={h} trailImport={trailImport} />
           ))}
         </ul>
       )}
@@ -54,7 +56,7 @@ export function HuntsPanel({ spaceId, hunts, canHost }: { spaceId: string; hunts
   )
 }
 
-function HuntRow({ spaceId, hunt }: { spaceId: string; hunt: LoyaltyHunt }) {
+function HuntRow({ spaceId, hunt, trailImport }: { spaceId: string; hunt: LoyaltyHunt; trailImport: boolean }) {
   const router = useRouter()
   const [note, setNote] = useState<Note>(null)
   const [stopSlug, setStopSlug] = useState('')
@@ -119,6 +121,12 @@ function HuntRow({ spaceId, hunt }: { spaceId: string; hunt: LoyaltyHunt }) {
           </li>
         ))}
       </ul>
+
+      {host && trailImport && (
+        <div className="mt-3">
+          <ImportTrailDoor source={{ kind: 'regulars', spaceId, legacyHuntId: hunt.id }} />
+        </div>
+      )}
 
       {host && hunt.status !== 'ended' && (
         <div className="mt-3 space-y-3 border-t border-border pt-3">

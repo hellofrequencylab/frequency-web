@@ -3,7 +3,10 @@
  *
  *   releaseEdition      publish the open draft as the next edition, move each printed code with its
  *                       place, and retire the outgoing edition. Existing runs are not touched.
+ *   previewRelease      what a release would do, before the tap: where each stop's printed code goes,
+ *                       how many codes retire, how many runs stay on the outgoing edition
  *   loadRunRecord       a run read against the edition it started on, whatever is current now
+ *   loadEarlierRun      the member's latest run on an earlier edition of one Hunt, if any
  *   loadRegularsImport / loadQrCampaignImport / createImportedDraft
  *                       a legacy hunt's shape as a new unpublished draft. Reads the legacy rows only.
  *   readOldGrants       a member's own rewards from earlier editions and from the imported legacy
@@ -21,9 +24,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listHuntsForSpace } from '@/lib/loyalty/hunt-store'
-import { parseTrailDraft } from './draft'
+import { parseTrailDraft, stopKey } from './draft'
 import {
-  buildCrosswalk, carryBindings, importQrCampaign, importRegularsHunt, parseEditionNote, parseImportNote, runStanding, sortOldGrants,
+  buildCrosswalk, carryBindings, EDITION_GRACE_DAYS, editionGrace, graceOpen, importQrCampaign, importRegularsHunt, parseEditionNote, parseImportNote, runStanding, sortOldGrants,
   type Binding, type EditionNote, type OldGrant,
 } from './editions'
 import { huntSwitchOn } from './flags'
@@ -52,17 +55,25 @@ type ReleaseResult =
   | Exclude<PublishResult, { ok: true }>
   | { ok: false; reason: 'nothing_to_release' }
 
-/** Move each sign with its place, then retire the outgoing edition. Every step is safe to repeat. */
-async function finishRelease(client: SupabaseClient, huntId: string, outgoing: VersionRow, incoming: VersionRow, note: EditionNote) {
+/** The outgoing edition's printed codes. A failed or truncated read throws: it must not silently retire a sign. */
+async function readBindings(client: SupabaseClient, huntId: string, versionId: string): Promise<Binding[]> {
   const bound = await client
     .from('hunt_mission_placements')
     .select('mission_key, placement_id, venue_space_id, evidence_policy', { count: 'exact' })
-    .eq('version_id', outgoing.id)
+    .eq('version_id', versionId)
     .eq('hunt_id', huntId)
   const rows = bound.data as { mission_key: string; placement_id: string; venue_space_id: string | null; evidence_policy: Record<string, unknown> | null }[] | null
   // A failed or truncated read must not silently retire a sign.
   if (bound.error || !rows || bound.count !== rows.length) throw new Error('The printed codes could not be read.')
-  const bindings: Binding[] = rows.map((r) => ({ missionKey: r.mission_key, placementId: r.placement_id, venueSpaceId: r.venue_space_id, evidencePolicy: r.evidence_policy ?? {} }))
+  return rows.map((r) => ({ missionKey: r.mission_key, placementId: r.placement_id, venueSpaceId: r.venue_space_id, evidencePolicy: r.evidence_policy ?? {} }))
+}
+
+const countActiveRuns = async (client: SupabaseClient, huntId: string, versionId: string): Promise<number> =>
+  (await client.from('hunt_runs').select('id', { count: 'exact', head: true }).eq('version_id', versionId).eq('hunt_id', huntId).eq('state', 'active')).count ?? 0
+
+/** Move each sign with its place, then retire the outgoing edition. Every step is safe to repeat. */
+async function finishRelease(client: SupabaseClient, huntId: string, outgoing: VersionRow, incoming: VersionRow, note: EditionNote) {
+  const bindings = await readBindings(client, huntId, outgoing.id)
   const { carried, retired } = carryBindings(bindings, note.crosswalk)
   if (carried.length > 0) {
     const { error } = await client.from('hunt_mission_placements').upsert(
@@ -72,12 +83,56 @@ async function finishRelease(client: SupabaseClient, huntId: string, outgoing: V
     if (error) throw new Error(error.message)
   }
 
-  const runs = await client.from('hunt_runs').select('id', { count: 'exact', head: true }).eq('version_id', outgoing.id).eq('hunt_id', huntId).eq('state', 'active')
+  const pinnedRuns = await countActiveRuns(client, huntId, outgoing.id)
 
   // Forward only: the database refuses to bring a superseded edition back or to rewrite its trail.
   const { error } = await client.from('hunt_versions').update({ status: 'superseded' }).eq('id', outgoing.id).eq('hunt_id', huntId).eq('status', 'published')
   if (error) throw new Error(error.message)
-  return { carried: carried.length, retired, pinnedRuns: runs.count ?? 0 }
+  return { carried: carried.length, retired, pinnedRuns }
+}
+
+/** What a release would do, shown to the author before the tap. Positions count from 1. */
+export type ReleasePreview = {
+  outgoingNo: number
+  incomingNo: number
+  /** Each outgoing stop, by place: the stop its printed code moves to, or null when the place was dropped. */
+  moves: { place: string; from: number; to: number | null }[]
+  /** Printed codes that will credit nothing in the new edition. */
+  retiredCodes: number
+  /** Active runs on the outgoing edition. They keep checking in on it for `graceDays`, then become records. */
+  pinnedRuns: number
+  graceDays: number
+}
+
+/**
+ * The release, read only: the same crosswalk and the same sign carry releaseEdition would write, and
+ * the runs it would leave on the outgoing edition. Null when there is no published edition with an
+ * open draft after it (a first publish), or for a caller who may not publish this Trail.
+ */
+export async function previewRelease(huntId: string, actor: Actor): Promise<ReleasePreview | null> {
+  if (!huntSwitchOn('authoring')) return null
+  const hunt = await authorizeHuntAction(huntId, actor, 'publish')
+  if (!hunt) return null
+  const client = db()
+  const { data, error } = await client.from('hunt_versions').select('id, version_no, status, policy').eq('hunt_id', huntId).order('version_no', { ascending: false }).limit(100)
+  if (error) throw new Error(error.message)
+  const versions = (data ?? []) as VersionRow[]
+  const latest = versions[0]
+  const outgoing = versions.find((v) => v.id === hunt.currentVersionId && v.status === 'published')
+  if (!latest || latest.status !== 'draft' || !outgoing) return null
+
+  const before = parseTrailDraft(outgoing.policy?.trail).stops
+  const crosswalk = buildCrosswalk(before, parseTrailDraft(latest.policy?.trail).stops)
+  const position = (key: string | null | undefined) => (typeof key === 'string' ? Number(key.slice('stop-'.length)) : null)
+  const [bindings, pinnedRuns] = await Promise.all([readBindings(client, huntId, outgoing.id), countActiveRuns(client, huntId, outgoing.id)])
+  return {
+    outgoingNo: outgoing.version_no,
+    incomingNo: latest.version_no,
+    moves: before.map((stop, i) => ({ place: stop.place.trim(), from: i + 1, to: position(crosswalk[stopKey(i)]) })),
+    retiredCodes: carryBindings(bindings, crosswalk).retired.length,
+    pinnedRuns,
+    graceDays: EDITION_GRACE_DAYS,
+  }
 }
 
 /**
@@ -127,7 +182,10 @@ export async function releaseEdition(
 // ── A run against its own edition ────────────────────────────────────────────────────────────────
 
 type RunRecord = {
-  standing: 'playing' | 'record'
+  runId: string
+  standing: 'playing' | 'finishing' | 'record'
+  /** While finishing: when the run stops taking credit on its edition. */
+  finishUntil: string | null
   editionNo: number
   editionLabel: string | null
   title: string
@@ -140,25 +198,28 @@ type RunRecord = {
  * The caller's own run with the rules of the edition it started on. It reads missions and rule groups
  * by the run's version id, never the Hunt's current one, so a newer edition changes nothing it returns.
  */
-export async function loadRunRecord(profileId: string, runId: string): Promise<RunRecord | null> {
+export async function loadRunRecord(profileId: string, runId: string, nowMs: number = Date.now()): Promise<RunRecord | null> {
   if (!huntSwitchOn('enabled')) return null
   const client = db()
   const { data: runRow, error } = await client.from('hunt_runs').select('id, hunt_id, version_id, state').eq('id', runId).eq('subject_profile_id', profileId).maybeSingle()
   const run = error ? null : (runRow as { id: string; hunt_id: string; version_id: string; state: string } | null)
   if (!run) return null
 
-  const [hunt, version, m, g, mem, progress] = await Promise.all([
+  const [hunt, version, m, g, mem, progress, editions] = await Promise.all([
     client.from('hunts').select('slug, current_version_id').eq('id', run.hunt_id).maybeSingle(),
     client.from('hunt_versions').select('id, version_no, status, policy').eq('id', run.version_id).eq('hunt_id', run.hunt_id).in('status', ['published', 'superseded']).maybeSingle(),
     client.from('hunt_missions').select('mission_key, title, visible_body, locked_teaser, opens_at, closes_at', { count: 'exact' }).eq('version_id', run.version_id),
     client.from('hunt_rule_groups').select('id, target_mission_key, target_finish, logic, min_count, group_key', { count: 'exact' }).eq('version_id', run.version_id),
     client.from('hunt_rule_group_members').select('group_id, member_mission_key', { count: 'exact' }).eq('version_id', run.version_id),
     client.from('hunt_progress').select('mission_key, disposition', { count: 'exact' }).eq('run_id', run.id),
+    client.from('hunt_versions').select('version_no, status, published_at').eq('hunt_id', run.hunt_id).in('status', ['published', 'superseded']).limit(100),
   ])
   const h = hunt.data as { slug: string; current_version_id: string | null } | null
   const v = version.data as VersionRow | null
   const whole = (r: { data: unknown; count: number | null; error: unknown }) => !r.error && Array.isArray(r.data) && r.count === r.data.length
-  if (hunt.error || version.error || !h || !v || !whole(m) || !whole(g) || !whole(mem) || !whole(progress)) return null
+  if (hunt.error || version.error || editions.error || !h || !v || !whole(m) || !whole(g) || !whole(mem) || !whole(progress)) return null
+  const window = editionGrace(v.version_no, (editions.data ?? []) as { version_no: number; status: string; published_at: string | null }[])
+  const standing = runStanding({ versionId: run.version_id, state: run.state }, { currentVersionId: h.current_version_id }, { window, nowMs })
 
   const { graph, content } = assembleTrail(
     m.data as Parameters<typeof assembleTrail>[0],
@@ -167,7 +228,9 @@ export async function loadRunRecord(profileId: string, runId: string): Promise<R
   )
   const title = parseTrailDraft(v.policy?.trail).title.trim() || h.slug
   return {
-    standing: runStanding({ versionId: run.version_id, state: run.state }, { currentVersionId: h.current_version_id }),
+    runId: run.id,
+    standing,
+    finishUntil: standing === 'finishing' && graceOpen(window, nowMs) ? window?.endsAt ?? null : null,
     editionNo: v.version_no,
     editionLabel: parseEditionNote(v.policy?.edition)?.label ?? null,
     title,
@@ -175,6 +238,23 @@ export async function loadRunRecord(profileId: string, runId: string): Promise<R
     content,
     credits: (progress.data as { mission_key: string; disposition: string }[]).filter((p) => p.disposition === 'credited').map((p) => ({ mission_key: p.mission_key })),
   }
+}
+
+/**
+ * The member's latest run on an earlier edition of this Hunt, read against that edition. Null when
+ * every run they have is on the current edition, or they have none.
+ */
+export async function loadEarlierRun(profileId: string, huntId: string): Promise<RunRecord | null> {
+  if (!huntSwitchOn('enabled')) return null
+  const client = db()
+  const [hunt, runs] = await Promise.all([
+    client.from('hunts').select('current_version_id').eq('id', huntId).maybeSingle(),
+    client.from('hunt_runs').select('id, version_id').eq('hunt_id', huntId).eq('subject_profile_id', profileId).order('started_at', { ascending: false }).limit(10),
+  ])
+  if (hunt.error || runs.error || !hunt.data || !Array.isArray(runs.data)) return null
+  const current = (hunt.data as { current_version_id: string | null }).current_version_id
+  const earlier = (runs.data as { id: string; version_id: string }[]).find((r) => r.version_id !== current)
+  return earlier ? loadRunRecord(profileId, earlier.id) : null
 }
 
 // ── Imports ──────────────────────────────────────────────────────────────────────────────────────

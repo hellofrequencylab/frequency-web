@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
+import { ImportTrailDoor } from '@/components/hunts/import-trail-door'
 
 export interface CampaignCard {
   id: string
@@ -43,9 +44,12 @@ export interface CampaignCodeOption {
 export function Campaigns({
   campaigns,
   codes,
+  trailImport = false,
 }: {
   campaigns: CampaignCard[]
   codes: CampaignCodeOption[]
+  /** The server says Trails authoring is on (FH-044S): staff may start a Trail draft from a campaign. */
+  trailImport?: boolean
 }) {
   const [creating, setCreating] = useState(false)
 
@@ -88,14 +92,14 @@ export function Campaigns({
           <p className="text-body-sm text-muted py-6 text-center">No campaigns yet.</p>
         )}
         {campaigns.map((c) => (
-          <CampaignRow key={c.id} campaign={c} codes={codes} />
+          <CampaignRow key={c.id} campaign={c} codes={codes} trailImport={trailImport} />
         ))}
       </div>
     </div>
   )
 }
 
-function CampaignRow({ campaign, codes }: { campaign: CampaignCard; codes: CampaignCodeOption[] }) {
+function CampaignRow({ campaign, codes, trailImport }: { campaign: CampaignCard; codes: CampaignCodeOption[]; trailImport: boolean }) {
   const [pending, start] = useTransition()
   const [editing, setEditing] = useState(false)
   const router = useRouter()
@@ -154,6 +158,12 @@ function CampaignRow({ campaign, codes }: { campaign: CampaignCard; codes: Campa
           <span>· ends {new Date(campaign.validUntil).toLocaleDateString()}</span>
         )}
       </div>
+
+      {trailImport && (
+        <div className="mt-3">
+          <ImportTrailDoor source={{ kind: 'qr_campaign', challengeId: campaign.id }} />
+        </div>
+      )}
 
       {editing && (
         <div className="mt-3 border-t border-border pt-3">

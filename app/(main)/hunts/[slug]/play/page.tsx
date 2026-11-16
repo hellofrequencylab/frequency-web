@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Check, Lock, MapPin } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { ClaimStopForm } from '@/components/hunts/claim-stop-form'
+import { EarlierEdition } from '@/components/hunts/earlier-edition'
 import { HuntFundraising } from '@/components/hunts/hunt-fundraising'
 import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
 import { VisitedStops } from '@/components/hunts/visited-stops'
@@ -21,6 +23,7 @@ export const dynamic = 'force-dynamic'
 // a locked stop shows its position, an open stop shows its clue without the place, and a visited
 // stop shows both. The current stop's optional hint requires an explicit request. The map (FH-016T)
 // gets pins for visited stops only: the loader asks for credited stops and `visitedPins` drops the rest.
+// FH-044S: below the run, the member's run on an earlier edition and their older rewards, streamed in.
 
 export const metadata: Metadata = { title: 'Play a Trail', robots: { index: false } }
 
@@ -105,6 +108,9 @@ export default async function PlayPage({ params, searchParams }: {
             <ClaimStopForm slug={slug} />
           </div>
         )}
+        <Suspense fallback={null}>
+          <EarlierEdition huntId={trail.huntId} profileId={profileId} />
+        </Suspense>
         <HuntFundraising huntId={trail.huntId} />
       </div>
     </FocusTemplate>

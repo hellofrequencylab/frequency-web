@@ -20,11 +20,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { signingSecret } from '@/lib/signing-secret'
 import { applyClaim } from './apply-claim'
 import { authorizeClaim, checkScope, type ClaimRefusal, type ScopeFacts } from './claim-guard'
+import { editionGrace, graceOpen } from './editions'
 import { huntSwitchOn } from './flags'
 import { evaluate, validateGraph } from './graph'
 import { judgeAnswer, MAX_ANSWER_ATTEMPTS } from './mystery'
 import { issueClaimToken } from './placement'
-import { isPublishedTrailVersion, loadPublishedTrail, loadRunProgressSnapshot } from './run-store'
+import { isPublishedTrailVersion, loadPublishedTrail, loadRunProgressSnapshot, loadTrailEdition } from './run-store'
 import { huntRpc, loadUniquePlacementMission } from './staff-store'
 
 // eslint-disable-next-line no-restricted-syntax -- the FH-005 hunt tables are not in the generated types yet (ADR-246 exception)
@@ -65,6 +66,42 @@ type ScanScope = {
   missionKey: string
   runId: string
   placementId: string
+  /** FH-044S: the run is on a replaced edition and still inside its grace window. */
+  finishing: boolean
+}
+
+type RunRow = { id: string; hunt_id: string; version_id?: unknown; subject_profile_id: string; state: string }
+
+/**
+ * FH-044S (owner decision 2026-11-16, 7 days to finish). An active run on a replaced edition keeps
+ * checking in on that edition for EDITION_GRACE_DAYS after the release that replaced it. This finds
+ * such a run for this code: the actor's own, still active, its window open, the code bound to a stop
+ * on that edition, and that stop not yet credited. A code that is new, or a stop already credited,
+ * falls through to the run on the current edition. Any failed or truncated read finds nothing. One
+ * read of the Hunt's editions comes first, and the runs are only read when one was replaced recently.
+ * hunt_claim_apply checks the same window again under the run lock; this choice is not the authority.
+ */
+async function loadFinishingRun(huntId: string, currentVersionId: string, actorId: string, placementId: string, nowMs: number): Promise<{ run: RunRow; versionId: string; missionKey: string } | null> {
+  const client = db()
+  const editions = await client.from('hunt_versions').select('id, version_no, status, published_at').eq('hunt_id', huntId).in('status', ['published', 'superseded']).limit(100)
+  if (editions.error || !Array.isArray(editions.data)) return null
+  const versions = editions.data as { id: string; version_no: number; status: string; published_at: string | null }[]
+  const open = new Set(versions.filter((v) => v.id !== currentVersionId && graceOpen(editionGrace(v.version_no, versions), nowMs)).map((v) => v.id))
+  if (open.size === 0) return null
+
+  const runs = await client.from('hunt_runs').select('id, hunt_id, version_id, subject_profile_id, state')
+    .eq('hunt_id', huntId).eq('subject_profile_id', actorId).eq('state', 'active')
+    .order('started_at', { ascending: false }).limit(10)
+  if (runs.error || !Array.isArray(runs.data)) return null
+  for (const r of runs.data as RunRow[]) {
+    if (typeof r.version_id !== 'string' || !open.has(r.version_id) || r.subject_profile_id !== actorId) continue
+    const missionKey = await loadUniquePlacementMission(huntId, r.version_id, placementId)
+    if (!missionKey) continue
+    const owed = await client.from('hunt_progress').select('mission_key').eq('run_id', r.id).eq('mission_key', missionKey).limit(1)
+    if (owed.error || !Array.isArray(owed.data) || owed.data.length > 0) continue
+    return { run: r, versionId: r.version_id, missionKey }
+  }
+  return null
 }
 
 /**
@@ -74,7 +111,7 @@ type ScanScope = {
  * longer the Hunt's current one is refused here, before a token is issued or a mission is resolved, so
  * a placement rebound in a newer version can never pick a mission for an older run.
  */
-async function loadScope(actorId: string, placementId: string): Promise<ScanScope | ScopeRefusal> {
+async function loadScope(actorId: string, placementId: string, nowMs: number): Promise<ScanScope | ScopeRefusal> {
   const client = db()
   const { data: placement, error: placementError } = await client
     .from('hunt_placements')
@@ -96,10 +133,22 @@ async function loadScope(actorId: string, placementId: string): Promise<ScanScop
   const h = hunt as { slug: string; current_version_id: string | null } | null
   if (huntError || !h?.current_version_id) return { ok: false, reason: 'placement_not_found' }
 
+  const finishing = await loadFinishingRun(p.hunt_id, h.current_version_id, actorId, p.id, nowMs)
+  if (finishing) {
+    const f = finishing.run
+    const facts: ScopeFacts = {
+      placement: { id: p.id, huntId: p.hunt_id, revokedAt: p.revoked_at },
+      run: { id: f.id, huntId: f.hunt_id, subjectProfileId: f.subject_profile_id, state: f.state },
+    }
+    const scope = checkScope(actorId, facts)
+    if (!scope.ok) return scope
+    return { ...scope, facts, huntId: p.hunt_id, huntSlug: h.slug, versionId: finishing.versionId, missionKey: finishing.missionKey, finishing: true }
+  }
+
   const run = await client.from('hunt_runs').select('id, hunt_id, version_id, subject_profile_id, state')
     .eq('hunt_id', p.hunt_id).eq('version_id', h.current_version_id).eq('subject_profile_id', actorId)
     .order('attempt_no', { ascending: false }).limit(1).maybeSingle()
-  const r = run.error ? null : run.data as { id: string; hunt_id: string; version_id?: unknown; subject_profile_id: string; state: string } | null
+  const r = run.error ? null : run.data as RunRow | null
   const facts: ScopeFacts = {
     placement: { id: p.id, huntId: p.hunt_id, revokedAt: p.revoked_at },
     run: r ? { id: r.id, huntId: r.hunt_id, subjectProfileId: r.subject_profile_id, state: r.state } : null,
@@ -117,13 +166,13 @@ async function loadScope(actorId: string, placementId: string): Promise<ScanScop
   if (!published) return { ok: false, reason: 'placement_not_found' }
   if (!missionKey) return { ok: false, reason: 'mission_binding_unavailable' }
 
-  return { ...scope, facts, huntId: p.hunt_id, huntSlug: h.slug, versionId, missionKey }
+  return { ...scope, facts, huntId: p.hunt_id, huntSlug: h.slug, versionId, missionKey, finishing: false }
 }
 
 /** The signed-in landing: finds the actor's run and hands back a short-lived claim token bound to it. */
 export async function openClaim(actorId: string, placementId: string, nowEpoch: number): Promise<{ ok: true; runId: string; token: string } | ScopeRefusal | { ok: false; reason: 'disabled' }> {
   if (!huntSwitchOn('claims')) return { ok: false, reason: 'disabled' }
-  const scope = await loadScope(actorId, placementId)
+  const scope = await loadScope(actorId, placementId, nowEpoch * 1000)
   if (!scope.ok) return scope
   return { ok: true, runId: scope.runId, token: issueClaimToken({ secret: secret(), scope: { runId: scope.runId, placementId: scope.placementId }, now: nowEpoch }) }
 }
@@ -177,14 +226,15 @@ export async function claimAsPlayer(
   input: { placementId: string; missionKey?: string; token: string; idempotencyKey: string; nowEpoch: number; /** A Mystery guess. Ignored for any other mission. */ answer?: string },
 ): Promise<{ ok: true } & Awaited<ReturnType<typeof applyClaim>> | ScopeRefusal | AnswerRefusal | { ok: false; reason: 'disabled' | 'eligibility_unavailable' | 'mission_not_eligible' }> {
   if (!huntSwitchOn('claims')) return { ok: false, reason: 'disabled' }
-  const scope = await loadScope(actorId, input.placementId)
+  const scope = await loadScope(actorId, input.placementId, input.nowEpoch * 1000)
   if (!scope.ok) return scope
   // Only the binding can select the mission, including for callers that still pass a mission key.
   const decision = authorizeClaim({ actorId, facts: scope.facts, token: input.token, secret: secret(), nowEpoch: input.nowEpoch, missionKey: scope.missionKey, idempotencyKey: input.idempotencyKey })
   if (!decision.ok) return decision
 
   const [trail, first] = await Promise.all([
-    loadPublishedTrail(scope.huntSlug),
+    // A run finishing on a replaced edition is judged against that edition's own rules.
+    scope.finishing ? loadTrailEdition(scope.huntSlug, scope.versionId) : loadPublishedTrail(scope.huntSlug),
     loadRunProgressSnapshot(scope.runId, actorId),
   ])
   if (!trail || trail.huntId !== scope.huntId || trail.versionId !== scope.versionId || trail.huntState !== 'published'

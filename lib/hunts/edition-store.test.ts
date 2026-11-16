@@ -14,7 +14,7 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: mocks
 vi.mock('./store', () => ({ authorizeHuntAction: mocks.authorizeHuntAction, publishTrail: mocks.publishTrail, createTrailDraft: mocks.createTrailDraft }))
 vi.mock('@/lib/loyalty/hunt-store', () => ({ listHuntsForSpace: mocks.listHuntsForSpace }))
 
-import { createImportedDraft, loadQrCampaignImport, loadRegularsImport, loadRunRecord, readOldGrants, releaseEdition } from './edition-store'
+import { createImportedDraft, loadEarlierRun, loadQrCampaignImport, loadRegularsImport, loadRunRecord, previewRelease, readOldGrants, releaseEdition } from './edition-store'
 
 type Row = Record<string, unknown>
 let tables: Record<string, Row[]>
@@ -304,5 +304,62 @@ describe('readOldGrants', () => {
     expect(writes).toEqual([])
     vi.stubEnv('HUNTS_ENABLED', '')
     expect(await readOldGrants('player', 'hunt-1')).toEqual([])
+  })
+})
+
+// FH-044S: the release read before the tap, and a run's standing in the owner's 7 days to finish.
+describe('previewRelease', () => {
+  it('shows where each code goes, how many retire and how many runs stay behind, and writes nothing', async () => {
+    expect(await previewRelease('hunt-1', actor)).toEqual({
+      outgoingNo: 1,
+      incomingNo: 2,
+      moves: [{ place: 'Pier', from: 1, to: 2 }, { place: 'Bakery', from: 2, to: null }, { place: 'Library', from: 3, to: 1 }],
+      retiredCodes: 1,
+      pinnedRuns: 1,
+      graceDays: 7,
+    })
+    expect(writes).toEqual([])
+  })
+
+  it('says the same as the release it previews', async () => {
+    const preview = await previewRelease('hunt-1', actor)
+    const out = await releaseEdition('hunt-1', actor, release)
+    expect(out.ok && [out.retired.length, out.pinnedRuns]).toEqual([preview?.retiredCodes, preview?.pinnedRuns])
+  })
+
+  it('is null for a first publish, for a caller who may not publish, and while authoring is off', async () => {
+    mocks.authorizeHuntAction.mockResolvedValueOnce({ id: 'hunt-1', ownerSpaceId: null, currentVersionId: null })
+    expect(await previewRelease('hunt-1', actor)).toBeNull()
+    mocks.authorizeHuntAction.mockResolvedValueOnce(null)
+    expect(await previewRelease('hunt-1', actor)).toBeNull()
+    vi.stubEnv('HUNTS_AUTHORING_ENABLED', '')
+    expect(await previewRelease('hunt-1', actor)).toBeNull()
+  })
+})
+
+describe('a run in flight at a release', () => {
+  const released = (daysAgo: number) => {
+    tables.hunt_versions[0] = { ...tables.hunt_versions[0], status: 'superseded', published_at: '2026-10-01T00:00:00Z' }
+    tables.hunt_versions[1] = { ...tables.hunt_versions[1], status: 'published', published_at: new Date(Date.parse('2026-11-16T12:00:00Z') - daysAgo * 86_400_000).toISOString() }
+    tables.hunts[0].current_version_id = 'v2'
+  }
+  const NOW = Date.parse('2026-11-16T12:00:00Z')
+
+  it('is finishing for 7 days after the release, with the day it closes', async () => {
+    released(3)
+    const record = await loadRunRecord('player', 'run-old', NOW)
+    expect(record).toMatchObject({ runId: 'run-old', standing: 'finishing', finishUntil: '2026-11-20T12:00:00.000Z', editionNo: 1 })
+  })
+
+  it('is a record once the 7 days have passed', async () => {
+    released(8)
+    expect(await loadRunRecord('player', 'run-old', NOW)).toMatchObject({ standing: 'record', finishUntil: null })
+  })
+
+  it('loadEarlierRun finds the member\'s run on an earlier edition, and nothing when every run is current', async () => {
+    released(3)
+    expect(await loadEarlierRun('player', 'hunt-1')).toMatchObject({ runId: 'run-old', editionNo: 1 })
+    tables.hunts[0].current_version_id = 'v1'
+    expect(await loadEarlierRun('player', 'hunt-1')).toBeNull()
   })
 })

@@ -7,7 +7,8 @@
  *
  * - Existing runs keep their rules. A run is pinned to the edition it started on (a database trigger
  *   refuses to move it), a published edition is frozen, and `runStanding` says what a pinned run may
- *   still do. A run is never carried onto new rules.
+ *   still do: finish on its own edition for EDITION_GRACE_DAYS after a release, then stand as a record.
+ *   A run is never carried onto new rules.
  * - Printed codes resolve as intended. A sign names a place, not a stop number, and stop keys follow
  *   position (stop-1, stop-2, ...), so a reordered Trail would silently repoint every sign.
  *   `buildCrosswalk` maps each outgoing stop to the stop at the same place in the new edition, or to
@@ -84,13 +85,53 @@ export function carryBindings(bindings: readonly Binding[], crosswalk: Record<st
   return { carried, retired: [...retired].sort() }
 }
 
+// ── Runs in flight at a release (FH-044S, owner decision 2026-11-16) ───────────────────────────
+
 /**
- * What a run may do once editions have moved on. A run on the current edition plays. A run on an
- * earlier edition is a record: it keeps the rules and credits of the edition it started on, takes no
- * new credit (the claim command answers version_superseded) and is never moved to the new rules.
+ * Days a run already in progress on an edition may keep checking in after the next edition is
+ * released. The claim command (`hunt_claim_apply`, migration 20270346085000_hunt_edition_grace.sql)
+ * enforces the same number; lib/hunts/editions.test.ts holds the two together.
  */
-export function runStanding(run: { versionId: string; state: string }, hunt: { currentVersionId: string | null }): 'playing' | 'record' {
-  return run.versionId === hunt.currentVersionId && run.state === 'active' ? 'playing' : 'record'
+export const EDITION_GRACE_DAYS = 7
+const GRACE_MS = EDITION_GRACE_DAYS * 24 * 60 * 60 * 1000
+
+type EditionRow = { version_no: number; status: string; published_at: string | null }
+
+/**
+ * When the edition numbered `versionNo` was replaced, and until when a run on it may still finish.
+ * The release time is the published_at of the first later edition that went out (published or since
+ * superseded), which a published edition can never change. Null while nothing has replaced it.
+ */
+export function editionGrace(versionNo: number, versions: readonly EditionRow[]): { releasedAt: string; endsAt: string } | null {
+  let first: number | null = null
+  for (const v of versions) {
+    if (v.version_no <= versionNo || (v.status !== 'published' && v.status !== 'superseded') || !v.published_at) continue
+    const at = Date.parse(v.published_at)
+    if (Number.isFinite(at) && (first === null || at < first)) first = at
+  }
+  return first === null ? null : { releasedAt: new Date(first).toISOString(), endsAt: new Date(first + GRACE_MS).toISOString() }
+}
+
+/** True while a replaced edition's run may still take credit. The end is exclusive, like the claim command's. */
+export function graceOpen(grace: { endsAt: string } | null, nowMs: number): boolean {
+  return grace !== null && nowMs < Date.parse(grace.endsAt)
+}
+
+/**
+ * What a run may do once editions have moved on. A run on the current edition plays. An active run on
+ * an earlier edition is finishing for EDITION_GRACE_DAYS after the edition that replaced it was
+ * released: it keeps checking in on its own rules. After that it is a record: it keeps the rules and
+ * credits of the edition it started on, takes no new credit (the claim command answers
+ * version_superseded) and is never moved to the new rules. Without `grace` an earlier edition is a record.
+ */
+export function runStanding(
+  run: { versionId: string; state: string },
+  hunt: { currentVersionId: string | null },
+  grace?: { window: { endsAt: string } | null; nowMs: number },
+): 'playing' | 'finishing' | 'record' {
+  if (run.state !== 'active') return 'record'
+  if (run.versionId === hunt.currentVersionId) return 'playing'
+  return grace && graceOpen(grace.window, grace.nowMs) ? 'finishing' : 'record'
 }
 
 // ── Imports from the two legacy formats ──────────────────────────────────────────────────────────
