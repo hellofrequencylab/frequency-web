@@ -9,6 +9,7 @@
 import { NextResponse } from 'next/server'
 import { envStringOrNull } from '@/lib/env/string'
 import { verifySignature } from '@/lib/flowweb/claim'
+import { clientIp, rateLimitOk, tooMany } from '@/lib/rate-limit'
 import { computeOutcomes, parseOutcomesRequest } from '@/lib/flowweb/outcomes'
 import { loadRegionMetrics } from '@/lib/onboarding/region-metrics-load'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -21,6 +22,9 @@ export const runtime = 'nodejs'
 const ROW_CAP = 20_000
 
 export async function POST(req: Request) {
+  // Throttled per address before any work (SCAN-1239): the sender is one Mac, so this only ever refuses a
+  // stranger. 'allow' when KV is unset: the signature below is the gate, this only bounds the noise.
+  if (!(await rateLimitOk('flowweb-outcomes', clientIp(req), 120, '1 m', { whenUnconfigured: 'allow' }))) return tooMany()
   const secret = envStringOrNull('FLOWWEB_OUTCOMES_SECRET') ?? ''
   const body = await req.text()
   const ts = req.headers.get('x-flowweb-timestamp') ?? ''
