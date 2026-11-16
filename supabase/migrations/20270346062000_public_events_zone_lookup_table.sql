@@ -4,17 +4,18 @@
 -- lookups. The function body is otherwise unchanged; only the zones CTE and its join are swapped.
 --
 -- Additive and idempotent. ROLLBACK: re-create public.public_events from 20270346028100_event_rpcs_stop_scanning_timezone_names.sql;
--- drop table if exists private.tz_zone_lookup.
+-- drop table if exists public.tz_zone_lookup.
 begin;
 set local lock_timeout = '3s';
 set local statement_timeout = '30s';
 
-create schema if not exists private;
+-- tz_names() lives in schema private (20270346028100); the lookup is a plain public table, service role only, like every other internal table.
 
-create table if not exists private.tz_zone_lookup (key text primary key, name text not null);
-revoke all on table private.tz_zone_lookup from public, anon, authenticated;
+create table if not exists public.tz_zone_lookup (key text primary key, name text not null);
+alter table public.tz_zone_lookup enable row level security;
+revoke all on table public.tz_zone_lookup from public, anon, authenticated;
 
-insert into private.tz_zone_lookup (key, name)
+insert into public.tz_zone_lookup (key, name)
 select distinct on (lower(name)) lower(name), name
 from private.tz_names()
 where name <> 'Factory'
@@ -38,7 +39,7 @@ as $function$
   -- LEFT, always. A standalone event has no circle (ADR-254) and must still list.
   left join public.circles c
          on e.scope_type = 'circle' and e.scope_id = c.id
-  left join private.tz_zone_lookup tz on tz.key = lower(e.time_zone)
+  left join public.tz_zone_lookup tz on tz.key = lower(e.time_zone)
   where  e.is_cancelled = false
     and  ((e.starts_at at time zone 'UTC') at time zone coalesce(tz.name, 'America/Los_Angeles')) >= now()
     and  coalesce(e.status, 'published') = 'published'
