@@ -46,6 +46,7 @@ import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { RASTER_IMAGE_MESSAGE, verifyRasterUpload } from '@/lib/storage/raster-image'
 import type { Database } from '@/lib/database.types'
 
 // Server actions for the Journeys builder (ADR-096). FormData-based so the builder works without
@@ -163,16 +164,16 @@ export async function uploadJourneyCover(
   if (!(await assertOwner(planId))) return { error: 'Not allowed.' }
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) return { error: 'Choose an image file.' }
-  if (!file.type.startsWith('image/')) return { error: 'Choose an image file.' }
   if (file.size > 10 * 1024 * 1024) return { error: 'Image must be under 10 MB.' }
 
   const admin = createAdminClient()
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
-  const path = `journeys/${planId}/covers/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
+  // Raster only, type read from the bytes, extension from that type (SCAN-1217).
+  const verified = await verifyRasterUpload(file)
+  if (!verified) return { error: RASTER_IMAGE_MESSAGE }
+  const path = `journeys/${planId}/covers/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${verified.ext}`
   const { error } = await admin.storage
     .from('event-media')
-    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: true })
+    .upload(path, verified.bytes, { contentType: verified.type, upsert: true })
   if (error) {
     // The Storage detail (bucket policy, object name, size limit) stays server-side; the author
     // gets a sentence they can act on.
