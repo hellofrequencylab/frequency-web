@@ -74,7 +74,9 @@ export function stockLeft(spec: Pick<RewardSpec, 'stock'>, grantedCount: number)
 
 // ── The call ─────────────────────────────────────────────────────────────────────────────────────
 
-const RESULTS = ['granted', 'already_granted', 'sold_out', 'not_eligible', 'run_not_found', 'hunt_not_live', 'reward_not_found', 'key_conflict'] as const
+// `not_admitted` (FH-031T, migration 20270346086000_hunt_finale_reward_gate.sql): the version names a finale
+// Event and the player holds no seat there; the answer carries `reason` (`no_seat` or `event_unavailable`).
+const RESULTS = ['granted', 'already_granted', 'sold_out', 'not_eligible', 'run_not_found', 'hunt_not_live', 'reward_not_found', 'key_conflict', 'not_admitted'] as const
 type GrantResult = (typeof RESULTS)[number]
 
 type Rpc = (fn: 'hunt_reward_grant', args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>
@@ -87,7 +89,7 @@ export function grantRequestHash(input: { actorId: string; runId: string; reward
 export async function grantReward(
   rpc: Rpc,
   input: { actorId: string; runId: string; rewardKey: string; idempotencyKey: string },
-): Promise<{ result: GrantResult; grantId?: string; terms?: string; replayed: boolean }> {
+): Promise<{ result: GrantResult; grantId?: string; terms?: string; reason?: string; replayed: boolean }> {
   const { data, error } = await rpc('hunt_reward_grant', {
     p_actor: input.actorId,
     p_run_id: input.runId,
@@ -96,10 +98,10 @@ export async function grantReward(
     p_request_hash: grantRequestHash(input),
   })
   if (error) throw new Error(`hunt_reward_grant failed: ${error.message}`)
-  const a = data as { result?: string; grant_id?: string; terms?: string; replayed?: boolean } | null
+  const a = data as { result?: string; grant_id?: string; terms?: string; reason?: string; replayed?: boolean } | null
   const result = RESULTS.find((r) => r === a?.result)
   if (!result) throw new Error('hunt_reward_grant returned an answer this build does not know')
-  return { result, grantId: a?.grant_id, terms: a?.terms, replayed: a?.replayed === true }
+  return { result, grantId: a?.grant_id, terms: a?.terms, reason: a?.reason, replayed: a?.replayed === true }
 }
 
 /** What a player reads for each answer. A sold-out answer carries the published terms, never made-up ones. */
@@ -117,6 +119,8 @@ export function grantMessage(out: { result: GrantResult; terms?: string }): stri
       return 'This trail is not running right now.'
     case 'key_conflict':
       return 'That tap was already used. Try again.'
+    case 'not_admitted':
+      return 'This one comes with a place at the finale. Get your ticket or RSVP on the event page.'
     default:
       return 'We could not find that reward.'
   }

@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { Check, Lock, MapPin } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { ClaimStopForm } from '@/components/hunts/claim-stop-form'
+import { FinaleClaims } from '@/components/hunts/finale-claims'
 import { FinalePanel } from '@/components/hunts/finale-panel'
 import { HuntFundraising } from '@/components/hunts/hunt-fundraising'
 import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
@@ -12,7 +13,9 @@ import { VisitedStopsMap } from '@/components/hunts/visited-stops-map'
 import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { huntSwitchOn } from '@/lib/hunts/flags'
+import { loadFinaleRewards, loadFinaleStop } from '@/lib/hunts/finale-store'
 import { projectForPlayer, visitedPins } from '@/lib/hunts/player'
+import { finaleDoorEvidence } from '@/lib/hunts/rally-finale'
 import { loadRallyFinale } from '@/lib/hunts/rally-finale-store'
 import { loadPlayerRun, loadPublishedTrail, loadRunCredits, loadVisitedStopPoints, startOrResumeRun } from '@/lib/hunts/run-store'
 
@@ -57,6 +60,12 @@ export default async function PlayPage({ params, searchParams }: {
   })
   const pins = visitedPins(view.stops, run ? await loadVisitedStopPoints(trail, credits) : [])
   const canConfirm = huntSwitchOn('claims') && view.canClaim && run?.state === 'active'
+  // FH-031T: a finished player may collect the version's rewards (the grant checks the finale seat), and a
+  // player the host marked in at the finale may check in at the Event stop. Each read only runs with its switch on.
+  const rewards = huntSwitchOn('rewards') && run?.state === 'completed' ? await loadFinaleRewards(trail).catch(() => []) : []
+  const finaleStop = huntSwitchOn('claims') && run?.state === 'active' && finale && finaleDoorEvidence(finale)
+    ? await loadFinaleStop(trail).catch(() => null)
+    : null
 
   return (
     <FocusTemplate
@@ -111,6 +120,7 @@ export default async function PlayPage({ params, searchParams }: {
           </div>
         )}
         <FinalePanel finale={finale} />
+        <FinaleClaims slug={slug} rewards={rewards} canCheckIn={finaleStop !== null} />
         <HuntFundraising huntId={trail.huntId} />
       </div>
     </FocusTemplate>

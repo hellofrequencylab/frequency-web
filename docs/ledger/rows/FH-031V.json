@@ -1,0 +1,19 @@
+{
+  "id": "FH-031V",
+  "title": "Hunts FH-031V: Let an author place a stop at the finale Event",
+  "lane": "program",
+  "priority": "P3",
+  "size": "M",
+  "status": "open",
+  "owner": "agent",
+  "source": {
+    "file": "lib/hunts/finale-store.ts",
+    "ref": "Split from FH-031T (2026-11-16)."
+  },
+  "detail": "FH-031T credits an Event stop through hunt_claim_apply with finaleDoorEvidence (checkInAtFinaleAction, loadFinaleStop finds the one mission bound to a live hunt_placements row of medium event). Nothing writes a placement of medium event yet: bindStopPlacements in lib/hunts/store.ts binds qr placements only, so the check-in tap never shows. Owed: the Trail editor lets an author mark one stop as the finale stop when a finale Event is picked, and publish binds that stop to a placement of medium event. Note: hunt_claim_apply trusts the service-role caller for event_door evidence (it does not re-read attended_at); whether to verify the door mark in SQL is a decision to take with the FH-044S hunt_claim_apply redefinition, not a second redefinition. Hunts switches stay OFF.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/hunts/store.ts\",\"utf8\");process.exit(/medium:\\s*.event./.test(s)?0:1)'"
+  },
+  "wave": "W7"
+}

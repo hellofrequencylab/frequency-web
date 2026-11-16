@@ -1,0 +1,19 @@
+{
+  "id": "FH-031U",
+  "title": "Hunts FH-031U: Check the finale gate on a preview deployment",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "owner": "people",
+  "source": {
+    "file": "supabase/migrations/20270346086000_hunt_finale_reward_gate.sql",
+    "ref": "Split from FH-031T (2026-11-16)."
+  },
+  "detail": "FH-031T gated the completion reward and the Event stop on the finale seat (app/(main)/hunts/[slug]/play/finale-actions.ts, migration 20270346086000_hunt_finale_reward_gate.sql). Owed, by a person: apply the migration through the serialized migration gate (docs/DATABASE.md), then on a preview deployment with HUNTS_ENABLED, HUNTS_CLAIMS_ENABLED and HUNTS_REWARDS_ENABLED on for that preview only, finish a Trail whose finale Event is full while holding no seat. Pass when the player sees the full message, the Collect tap answers that the reward comes with a place at the finale, and afterwards the player holds no RSVP, ticket or reward grant. Record the result in docs/ledger/evidence/FH-031U.md. Production switches stay OFF.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const f=\"docs/ledger/evidence/FH-031U.md\";process.exit(fs.existsSync(f)&&/preview/i.test(fs.readFileSync(f,\"utf8\"))&&/no (reward|grant)/i.test(fs.readFileSync(f,\"utf8\"))?0:1)'"
+  },
+  "wave": "W7"
+}
