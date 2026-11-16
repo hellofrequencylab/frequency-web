@@ -20,20 +20,29 @@ import { parseInput, z } from '@/lib/validation'
 import { getNode } from '@/lib/entity-blocks/node-ops'
 import { NODE_ID_RE } from '@/lib/entity-blocks/node-tree'
 import { writeSpacePreferencesAtRevision } from '@/lib/spaces/store'
-import { CANVAS_REVISION_KEY, planCanvasDraftWrite, readCanvasDocument, type CanvasDraftBase, type CanvasNodeView } from '@/lib/builder/canvas-document'
-import { resolveCanvasAccess } from '@/lib/builder/canvas-document-load'
+import { CANVAS_REVISION_KEY, canvasStoredNode, planCanvasDraftWrite, readCanvasDocument, type CanvasDocChange, type CanvasDocumentView, type CanvasDraftBase, type CanvasNodeView } from '@/lib/builder/canvas-document'
+import { canvasDocumentParts, resolveCanvasAccess } from '@/lib/builder/canvas-document-load'
 import { canvasInspectorFor } from '@/lib/builder/canvas-inspector'
+import { resolveCanvasInsert } from '@/lib/builder/canvas-presets'
 
 const bag = z.record(z.string().max(60), z.union([z.string().max(20_000), z.boolean()])).refine((o) => Object.keys(o).length <= 60, 'Too many fields')
+// A change to the page's structure (PROG-E6B). Every part is a fixed word or a bounded number: a spacing step is
+// one of the document's own named steps, never a length, and an insert is an id this server resolves.
+const change = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('move'), to: z.object({ rowId: z.string().regex(/^r[0-9a-z]{1,40}$/i), col: z.number().int().min(0).max(3), index: z.number().int().min(0).max(48) }) }),
+  z.object({ kind: z.literal('spacing'), edge: z.enum(['mt', 'pad', 'mb']), step: z.enum(['none', 'default', 'sm', 'md', 'lg', 'xl']) }),
+  z.object({ kind: z.literal('insert'), source: z.enum(['preset', 'blank']), id: z.string().regex(/^[a-z][a-z0-9-]{0,40}$/i) }),
+])
 const saveInput = z.object({
   spaceId: z.string().regex(/^[0-9a-f-]{8,64}$/i),
   nid: z.string().regex(NODE_ID_RE),
   base: z.object({ revision: z.number().int().min(0), fingerprint: z.string().min(1).max(64) }),
   values: z.object({ desktop: bag.optional(), tablet: bag.optional(), phone: bag.optional() }),
+  change: change.optional(),
 })
 
 export type CanvasSaveResult =
-  | { ok: true; base: CanvasDraftBase; node: CanvasNodeView['node'] }
+  | { ok: true; base: CanvasDraftBase; node: CanvasNodeView['node']; view?: Pick<CanvasDocumentView, 'layers' | 'tree' | 'nodes' | 'inserter'> }
   | { ok: false; conflict: boolean; error: string }
 
 const refuse = (error: string, conflict = false): CanvasSaveResult => ({ ok: false, conflict, error })
@@ -58,10 +67,18 @@ export async function saveCanvasNodeDraft(raw: unknown): Promise<CanvasSaveResul
   const target = stored.layout ? getNode(stored.layout, input.nid) : null
   if (!target) return refuse(stored.layout ? 'That block is no longer on the page. Reload to see the page as it is now.' : 'This Space has no page to edit yet.', !!stored.layout)
   const fieldKeys = canvasInspectorFor(target.type).fields.map((field) => field.key)
-  if (!fieldKeys.length) return refuse('This block has no fields the inspector can save.')
+  if (!input.change && !fieldKeys.length) return refuse('This block has no fields the inspector can save.')
+  // A move, a spacing step or an insert rides the same plan and the same guarded write as a field edit.
+  let structure: CanvasDocChange | undefined
+  if (input.change?.kind === 'insert') {
+    const block = resolveCanvasInsert(input.change.source, input.change.id)
+    if (!block) return refuse('That block is not one this page can add.')
+    structure = { kind: 'insert', ...block }
+  } else structure = input.change
 
-  const plan = planCanvasDraftWrite({ preferences: space.preferences, nid: input.nid, values: input.values, fieldKeys, base: input.base })
+  const plan = planCanvasDraftWrite({ preferences: space.preferences, nid: input.nid, values: input.values, fieldKeys, base: input.base, change: structure })
   if (plan.status === 'conflict') return refuse(CHANGED, true)
+  if (plan.status === 'refused') return refuse(structure?.kind === 'insert' ? 'This page cannot take one more of that block here.' : 'That block cannot go there. The draft was left as it was.')
   if (plan.status !== 'ready') return refuse('That change could not be saved. The draft was left as it was.')
 
   const written = await writeSpacePreferencesAtRevision(space.id, plan.preferences, { revisionKey: CANVAS_REVISION_KEY, expected: input.base.revision })
@@ -73,6 +90,8 @@ export async function saveCanvasNodeDraft(raw: unknown): Promise<CanvasSaveResul
   revalidatePath(`/spaces/${space.slug}/settings/profile`)
   revalidatePath(`/spaces/${space.slug}`)
   revalidatePath(`/spaces/${space.slug}/profile-preview`)
-  const { nid, type, content, responsive } = plan.node
-  return { ok: true, base: plan.base, node: { nid, type, ...(content ? { content } : {}), ...(responsive ? { responsive } : {}) } }
+  // A field edit or a spacing step changes one block. A move or an insert changes the page's shape, so the tab
+  // gets the layer tree, each block's controls and the inserter again, built from what was just stored.
+  const reshaped = structure && structure.kind !== 'spacing'
+  return { ok: true, base: plan.base, node: canvasStoredNode(plan.node), ...(reshaped ? { view: canvasDocumentParts(plan.layout) } : {}) }
 }
