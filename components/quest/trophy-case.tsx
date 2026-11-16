@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import { capsLabel } from '@/components/ui/caps-label'
 import Link from 'next/link'
 import { Trophy, Zap, Gem, Target } from 'lucide-react'
@@ -25,11 +26,7 @@ import type { SeasonBlock, JourneyTrophy } from '@/lib/quest/trophies'
 // never shows "% complete" or any pressure metric.
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  return formatDateMedium(iso)
 }
 
 /** One Trophy tile — a finished Journey, with the rank it earned. */

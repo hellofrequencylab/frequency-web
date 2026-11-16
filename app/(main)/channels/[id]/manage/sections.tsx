@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import Link from 'next/link'
 import {
   Users,
@@ -42,7 +43,7 @@ import { RemoveCircleButton } from './remove-circle-button'
 // an action that re-checks the same capability.
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDateMedium(iso)
 }
 
 // ── Home: the at-a-glance strip ───────────────────────────────────────────────

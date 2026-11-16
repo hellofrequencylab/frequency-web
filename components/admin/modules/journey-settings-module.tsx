@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateWeekday } from '@/lib/format-date'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { labelClasses } from '@/components/ui/field'
@@ -379,5 +380,5 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
 function formatEventDate(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+  return formatDateWeekday(d, 'UTC')
 }
