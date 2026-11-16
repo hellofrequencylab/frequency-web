@@ -20,10 +20,13 @@
 // move in it is saved; the selected block carries spacing handles in the frame; and a block can be added under it,
 // presets first. All three go through the same draft write as a field edit.
 //
+// Duplicate, hide, remove and undo (PROG-E6C): the selected block carries those four above its inspector, through
+// the same write. On a phone the frame, the inspector and Layers stack in one column with nothing wider than it.
+//
 // Presence (BLD-401): on a shared Space the link also carries who is here (faces above the canvas) and which node
 // each person is in (an outline on that node inside the frame). It rides the channel, never the doc.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import * as Y from 'yjs'
 import type { BuilderDevice } from '@/lib/builder/state'
 import type { InspectorFieldView } from '@/lib/builder/inspector-fields'
@@ -33,6 +36,7 @@ import { nodeDeviceValues, resolveNodeContent, withDeviceValues } from '@/lib/bu
 import type { BlockNode } from '@/lib/entity-blocks/node-tree'
 import { ResponsiveInspector } from '@/components/builder/inspector/responsive-inspector'
 import { VeraBlockCoach } from '@/components/builder/inspector/vera-block-coach'
+import { BlockActions } from './block-actions'
 import { BlockInserter } from './block-inserter'
 import { CanvasDocumentStatus } from './canvas-document-status'
 import { CanvasViewportShell } from './canvas-viewport-shell'
@@ -81,9 +85,23 @@ function plainWords(value: unknown): string {
   return words.trim()
 }
 
+/** A phone-width screen, read live so a turned phone follows. */
+const NARROW = '(max-width: 639px)'
+const isNarrow = () => typeof window !== 'undefined' && !!window.matchMedia?.(NARROW).matches
+function watchNarrow(change: () => void) {
+  const query = typeof window !== 'undefined' ? window.matchMedia?.(NARROW) : undefined
+  query?.addEventListener('change', change)
+  return () => query?.removeEventListener('change', change)
+}
+
 export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: string; inspector?: CanvasInspector; document?: CanvasDocumentView }) {
   const [doc] = useState(() => new Y.Doc())
-  const [device, setDevice] = useState<BuilderDevice>('desktop')
+  // On a phone the canvas opens on the Phone frame, so the page is drawn near its real size and the handles in it
+  // keep their size; the other devices still fit, drawn smaller (PROG-E6C). The server draws Desktop; a device the
+  // person picks always wins.
+  const [picked, setDevice] = useState<BuilderDevice | null>(null)
+  const narrow = useSyncExternalStore(watchNarrow, isNarrow, () => false)
+  const device: BuilderDevice = picked ?? (narrow ? 'phone' : 'desktop')
   // The demo block is a real BlockNode: desktop is its `content`, tablet and phone its sparse `responsive` bags
   // (the stored form), so what the inspector edits is what a document would hold.
   const [demoNode, setDemoNode] = useState<BlockNode>(() => ({ nid: CANVAS_BLOCK_NID, type: 'photoHero', content: { ...(inspector?.initial ?? {}) } }))
@@ -179,6 +197,18 @@ export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: strin
     {panel && (
       <div className="min-w-0">
       {document && <CanvasDocumentStatus document={document} save={real.save} problem={real.problem} />}
+      {document && (
+        <BlockActions
+          title={real.layers.find((layer) => layer.id === real.selectedId)?.label ?? real.selected?.title ?? null}
+          hidden={real.selectedHidden}
+          off={!document.canSave ? 'This page is read only here, so its blocks cannot change.' : real.save === 'conflict' ? 'Reload to change blocks: this page was changed somewhere else.' : null}
+          undoLabel={real.undoLabel}
+          onDuplicate={real.duplicate}
+          onToggleHidden={real.toggleHidden}
+          onRemove={real.remove}
+          onUndo={real.undo}
+        />
+      )}
       {panel.fields.length === 0 ? (
         <p className="text-body-sm text-muted">{panel.title} has no fields this inspector can edit yet. Pick another layer below.</p>
       ) : (

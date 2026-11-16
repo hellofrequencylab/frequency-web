@@ -28,8 +28,15 @@ import { resolveCanvasInsert } from '@/lib/builder/canvas-presets'
 const bag = z.record(z.string().max(60), z.union([z.string().max(20_000), z.boolean()])).refine((o) => Object.keys(o).length <= 60, 'Too many fields')
 // A change to the page's structure (PROG-E6B). Every part is a fixed word or a bounded number: a spacing step is
 // one of the document's own named steps, never a length, and an insert is an id this server resolves.
+const slot = z.object({ rowId: z.string().regex(/^r[0-9a-z]{1,40}$/i), col: z.number().int().min(0).max(3), index: z.number().int().min(0).max(48) })
+// PROG-E6C: a copy, hide or show, a removal (kept on the bench, or for good when it undoes an add) and a put-back.
+// None of them carries a block's content: a copy is made from what is stored.
 const change = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('move'), to: z.object({ rowId: z.string().regex(/^r[0-9a-z]{1,40}$/i), col: z.number().int().min(0).max(3), index: z.number().int().min(0).max(48) }) }),
+  z.object({ kind: z.literal('move'), to: slot }),
+  z.object({ kind: z.literal('duplicate') }),
+  z.object({ kind: z.literal('hide'), hidden: z.boolean() }),
+  z.object({ kind: z.literal('remove'), keep: z.boolean() }),
+  z.object({ kind: z.literal('restore'), to: slot }),
   z.object({ kind: z.literal('spacing'), edge: z.enum(['mt', 'pad', 'mb']), step: z.enum(['none', 'default', 'sm', 'md', 'lg', 'xl']) }),
   z.object({ kind: z.literal('insert'), source: z.enum(['preset', 'blank']), id: z.string().regex(/^[a-z][a-z0-9-]{0,40}$/i) }),
 ])
@@ -46,6 +53,14 @@ export type CanvasSaveResult =
   | { ok: false; conflict: boolean; error: string }
 
 const refuse = (error: string, conflict = false): CanvasSaveResult => ({ ok: false, conflict, error })
+// Why a change the page cannot take was refused, by kind. The draft is never changed to make room.
+const REFUSED: Partial<Record<CanvasDocChange['kind'], string>> = {
+  move: 'That block cannot go there. The draft was left as it was.',
+  insert: 'This page cannot take one more of that block here.',
+  duplicate: 'This page cannot take another copy of that block here.',
+  remove: 'A page keeps at least one block, and removed blocks need room in the tray. The draft was left as it was.',
+  restore: 'That block cannot go back: its place is gone or the page already has as many as it can hold.',
+}
 const CHANGED = 'This page was changed somewhere else. Reload to see the newer draft; nothing here was saved over it.'
 
 export async function saveCanvasNodeDraft(raw: unknown): Promise<CanvasSaveResult> {
@@ -78,7 +93,7 @@ export async function saveCanvasNodeDraft(raw: unknown): Promise<CanvasSaveResul
 
   const plan = planCanvasDraftWrite({ preferences: space.preferences, nid: input.nid, values: input.values, fieldKeys, base: input.base, change: structure })
   if (plan.status === 'conflict') return refuse(CHANGED, true)
-  if (plan.status === 'refused') return refuse(structure?.kind === 'insert' ? 'This page cannot take one more of that block here.' : 'That block cannot go there. The draft was left as it was.')
+  if (plan.status === 'refused') return refuse(REFUSED[structure?.kind ?? 'move'] ?? REFUSED.move!)
   if (plan.status !== 'ready') return refuse('That change could not be saved. The draft was left as it was.')
 
   const written = await writeSpacePreferencesAtRevision(space.id, plan.preferences, { revisionKey: CANVAS_REVISION_KEY, expected: input.base.revision })
@@ -90,8 +105,9 @@ export async function saveCanvasNodeDraft(raw: unknown): Promise<CanvasSaveResul
   revalidatePath(`/spaces/${space.slug}/settings/profile`)
   revalidatePath(`/spaces/${space.slug}`)
   revalidatePath(`/spaces/${space.slug}/profile-preview`)
-  // A field edit or a spacing step changes one block. A move or an insert changes the page's shape, so the tab
-  // gets the layer tree, each block's controls and the inserter again, built from what was just stored.
+  // A field edit or a spacing step changes one block. Every other change alters the page's shape (or, for hide,
+  // how its tree reads), so the tab gets the layer tree, each block's controls and the inserter again, built from
+  // what was just stored. `node` is then the block the change left selected.
   const reshaped = structure && structure.kind !== 'spacing'
   return { ok: true, base: plan.base, node: canvasStoredNode(plan.node), ...(reshaped ? { view: canvasDocumentParts(plan.layout) } : {}) }
 }

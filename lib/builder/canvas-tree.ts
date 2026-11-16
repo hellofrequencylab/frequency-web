@@ -5,14 +5,17 @@
 //     nesting with names, and a move is "this block, to that row, column and place";
 //   • SPACING: a block's space above, space below and inner padding. Each is a named step the document already
 //     stores (`style.mt`, `style.mb`, `style.pad`), never a pixel value. A handle walks the steps;
-//   • the CHANGE a tab sends to the one draft write (app/(main)/pages/canvas/document-actions.ts).
+//   • the CHANGE a tab sends to the one draft write (app/(main)/pages/canvas/document-actions.ts);
+//   • UNDO (PROG-E6C): every change to the page's shape has an opposite change, worked out here before it is sent,
+//     so undoing is one more change through the same write, never a stored copy of the page.
 //
 // The server applies the same change to the stored document (applyCanvasChange, canvas-document.ts). What is here
 // lets the tab show the result at once and lets the server and the tab agree on what a step or a slot means.
 
 import type { BlockNode, NodeLayout } from '@/lib/entity-blocks/node-tree'
 
-type TreeLayer = { id: string; label: string }
+/** A block in the tree. `hidden` is set when the page skips it (PROG-E6C). */
+type TreeLayer = { id: string; label: string; hidden?: true }
 
 /** One row of the page: its columns, each a stack of blocks in order. */
 interface LayerTreeRow {
@@ -33,11 +36,17 @@ export type SpacingEdge = 'mt' | 'pad' | 'mb'
 export type SpacingStep = 'none' | 'default' | 'sm' | 'md' | 'lg' | 'xl'
 
 /** What a tab may ask of the draft besides a field edit. An insert names a preset or a blank block by id; the
- *  server decides what that id holds. */
+ *  server decides what that id holds. PROG-E6C adds four: a copy of the block under it, hiding or showing it,
+ *  removing it, and putting a removed block back. A removal `keep`s the block on the page's bench (the Space page
+ *  builder's tray, words and all) unless it is the undo of an add, which takes the new block away for good. */
 export type CanvasChange =
   | { kind: 'move'; to: LayerSlot }
   | { kind: 'spacing'; edge: SpacingEdge; step: SpacingStep }
   | { kind: 'insert'; source: 'preset' | 'blank'; id: string }
+  | { kind: 'duplicate' }
+  | { kind: 'hide'; hidden: boolean }
+  | { kind: 'remove'; keep: boolean }
+  | { kind: 'restore'; to: LayerSlot }
 
 /** The steps a handle walks, smallest first. `default` is "not set": the page's own rhythm for a margin, no
  *  padding for the inside. A margin can also be `none`, which pulls the block flush against its neighbour. */
@@ -92,7 +101,7 @@ export function canvasTree(layout: NodeLayout, layers: readonly TreeLayer[]): La
   return layout.rows.map((row, i) => ({
     id: row.id,
     label: row.title?.trim() || `Row ${i + 1}`,
-    columns: row.cells.map((stack) => stack.map((node) => ({ id: node.nid, label: names.get(node.nid) ?? 'Block' }))),
+    columns: row.cells.map((stack) => stack.map((node) => ({ id: node.nid, label: names.get(node.nid) ?? 'Block', ...(node.hidden ? { hidden: true as const } : {}) }))),
   }))
 }
 
@@ -101,7 +110,8 @@ export function treeLayers(tree: LayerTree): TreeLayer[] {
   return tree.flatMap((row) => row.columns.flat())
 }
 
-function slotOf(tree: LayerTree, id: string): LayerSlot | null {
+/** Where a block sits now, or null when it is not on the page. */
+export function slotOf(tree: LayerTree, id: string): LayerSlot | null {
   for (const row of tree) {
     for (let col = 0; col < row.columns.length; col++) {
       const index = row.columns[col]!.findIndex((layer) => layer.id === id)
@@ -142,4 +152,34 @@ export function stepSlot(tree: LayerTree, id: string, by: -1 | 1): LayerSlot | n
   if (to >= 0 && to < columns[here]!.size) return { rowId: from.rowId, col: from.col, index: to }
   const next = columns[here + by]
   return next ? { rowId: next.rowId, col: next.col, index: by < 0 ? next.size : 0 } : null
+}
+
+/** The change that puts back what `change` does to block `nid`, worked out from the page BEFORE it is sent (PROG-E6C).
+ *  `style` is the block's stored style and `hidden` whether it is hidden now. Null for an add (a copy or an insert):
+ *  its undo names the new block, which only the server's answer holds, and for a final removal, which cannot be
+ *  put back. */
+export function undoChange(tree: LayerTree, nid: string, change: CanvasChange, now: { style?: BlockNode['style']; hidden?: boolean }): CanvasChange | null {
+  if (change.kind === 'spacing') return { kind: 'spacing', edge: change.edge, step: spacingStepOf(now.style, change.edge) }
+  if (change.kind === 'hide') return { kind: 'hide', hidden: !!now.hidden }
+  if (change.kind === 'restore') return { kind: 'remove', keep: true }
+  if (change.kind === 'move' || (change.kind === 'remove' && change.keep)) {
+    const at = slotOf(tree, nid)
+    return at ? (change.kind === 'move' ? { kind: 'move', to: at } : { kind: 'restore', to: at }) : null
+  }
+  return null
+}
+
+/** The undo of an add, once the server has named the new block: take it away again. */
+export const UNDO_ADD: CanvasChange = { kind: 'remove', keep: false }
+
+/** What an undo button says it will do, in a few words. */
+export function undoWords(change: CanvasChange): string {
+  switch (change.kind) {
+    case 'move': return 'Undo move'
+    case 'spacing': return 'Undo spacing'
+    case 'hide': return change.hidden ? 'Undo show' : 'Undo hide'
+    case 'restore': return 'Undo remove'
+    case 'remove': return change.keep ? 'Undo put back' : 'Undo add'
+    default: return 'Undo'
+  }
 }
