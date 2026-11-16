@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "id": "mindless",
   "legacyIds": {
     "editor": "Mindless",
@@ -19,7 +19,63 @@
         "themes",
         "Mindless"
       ]
-    }
+    },
+    "dials": {
+      "register": {
+        "supported": true,
+        "default": "night"
+      },
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "type": {
+        "supported": true,
+        "default": "caps"
+      },
+      "motion": "fixed",
+      "image": "fixed",
+      "hero": "fixed",
+      "accent": "fixed"
+    },
+    "looks": [
+      {
+        "id": "paint",
+        "label": "Paint",
+        "dials": {
+          "register": "night",
+          "type": "caps",
+          "header": "bar",
+          "corners": "soft",
+          "spacing": "airy",
+          "footer": "full"
+        }
+      },
+      {
+        "id": "paper",
+        "label": "Paper",
+        "dials": {
+          "register": "day",
+          "type": "quiet",
+          "header": "bar",
+          "corners": "soft",
+          "spacing": "balanced",
+          "footer": "full"
+        }
+      },
+      {
+        "id": "stamp",
+        "label": "Stamp",
+        "dials": {
+          "register": "night",
+          "type": "editorial",
+          "header": "pill",
+          "corners": "subtle",
+          "spacing": "balanced",
+          "footer": "minimal"
+        }
+      }
+    ]
   },
   "core": {
     "names": {

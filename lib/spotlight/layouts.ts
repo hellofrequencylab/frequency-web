@@ -1,6 +1,6 @@
 // SPOTLIGHT LAYOUTS: the registry that says which whole-page layouts a Spotlight theme can wear. PURE.
 // A theme with no entry here has no layouts and renders exactly as before (the block body, nothing swapped).
-// The Network (`network-kit`), Designer (`designer-kit`), Temple (`temple-kit`), Free Human (`free-human`), New World, Services and CyberWitch Theme Kits each register the six layouts of
+// The Network (`network-kit`), Designer (`designer-kit`), Temple (`temple-kit`), Free Human (`free-human`), New World, Services, CyberWitch and Mindless Theme Kits each register the six layouts of
 // their design's Spotlight Layouts page. The components live in components/spotlight/network-kit-layouts.tsx and
 // designer-kit-layouts.tsx and temple-kit-layouts.tsx; this file is ids and labels only, so the theme validator and the editor can read it
 // without pulling React in.
@@ -15,7 +15,8 @@ export type FreeHumanLayoutId = `free-human:${LayoutName}`
 export type NewWorldKitLayoutId = `new-world-kit:${LayoutName}`
 export type ServicesKitLayoutId = `services-kit:${LayoutName}`
 export type CyberWitchKitLayoutId = `cyberwitch-kit:${LayoutName}`
-export type SpotlightLayoutId = NetworkKitLayoutId | DesignerKitLayoutId | TempleKitLayoutId | FreeHumanLayoutId | NewWorldKitLayoutId | ServicesKitLayoutId | CyberWitchKitLayoutId
+export type MindlessKitLayoutId = `mindless-kit:${LayoutName}`
+export type SpotlightLayoutId = NetworkKitLayoutId | DesignerKitLayoutId | TempleKitLayoutId | FreeHumanLayoutId | NewWorldKitLayoutId | ServicesKitLayoutId | CyberWitchKitLayoutId | MindlessKitLayoutId
 
 interface SpotlightLayoutInfo {
   id: SpotlightLayoutId
@@ -48,6 +49,7 @@ const SPOTLIGHT_LAYOUTS_BY_THEME: Record<string, readonly SpotlightLayoutInfo[]>
   'new-world': LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `new-world-kit:${n}` as NewWorldKitLayoutId, label, blurb })),
   services: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `services-kit:${n}` as ServicesKitLayoutId, label, blurb })),
   cyberwitch: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `cyberwitch-kit:${n}` as CyberWitchKitLayoutId, label, blurb })),
+  mindless: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `mindless-kit:${n}` as MindlessKitLayoutId, label, blurb })),
 }
 
 const ALL_IDS: ReadonlySet<string> = new Set(Object.values(SPOTLIGHT_LAYOUTS_BY_THEME).flatMap((l) => l.map((i) => i.id)))
@@ -92,6 +94,11 @@ export function isCyberWitchKitLayout(id: SpotlightLayoutId): id is CyberWitchKi
   return id.startsWith('cyberwitch-kit:')
 }
 
+/** True for a layout the Mindless theme draws (components/spotlight/mindless-kit-layouts.tsx). */
+export function isMindlessKitLayout(id: SpotlightLayoutId): id is MindlessKitLayoutId {
+  return id.startsWith('mindless-kit:')
+}
+
 /** The whole-page looks, in the design's order. A Space's Spotlight stores one of these (`preferences.spotlight.look`). */
 const SPOTLIGHT_LOOKS = ['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile'] as const
 export type SpotlightLook = (typeof SPOTLIGHT_LOOKS)[number]
@@ -104,7 +111,7 @@ export function asSpotlightLook(v: unknown): SpotlightLook | null {
 /** A Space's website theme id to the registry key that holds its Spotlight layouts. A theme missing here (Nocturne, Bold,
  *  Wildheart, the older Network and Temple) has no whole-page layouts, so its Spotlight stays the block page. */
 const SPACE_THEME_LAYOUT_KEY: Record<string, string> = {
-  'new-world': 'new-world', services: 'services', cyberwitch: 'cyberwitch', designer: 'designer-kit',
+  'new-world': 'new-world', services: 'services', cyberwitch: 'cyberwitch', mindless: 'mindless', designer: 'designer-kit',
   'temple-kit': 'temple-kit', 'free-human': 'free-human', 'network-kit': 'network-kit',
 }
 
