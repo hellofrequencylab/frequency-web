@@ -12,6 +12,7 @@
 //     clawback + poster notification fire in the lib.
 // All mutations re-verify janitor on the server; `canManage` only hides chrome.
 
+import { formatDateMedium } from '@/lib/format-date'
 import { buttonClasses, Button } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
@@ -32,7 +33,7 @@ import {
 
 function formatDate(iso: string | null): string {
   if (!iso) return '–'
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDateMedium(iso)
 }
 
 const thCls = 'px-3 py-2 text-left text-meta font-semibold uppercase tracking-wide text-subtle'
