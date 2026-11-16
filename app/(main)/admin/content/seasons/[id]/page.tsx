@@ -1,3 +1,4 @@
+import { formatDateShort } from '@/lib/format-date'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -126,7 +127,7 @@ async function SeasonJourneys({ id }: { id: string }) {
 
   // Existing Journeys the operator can assign straight to this season's Quest.
   const assignable = await loadAssignableJourneys(detail.questId)
-  const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null)
+  const fmt = (d: string | null) => (d ? formatDateShort(d) : null)
 
   if (detail.journeys.length === 0) {
     return (
