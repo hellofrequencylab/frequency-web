@@ -88,7 +88,8 @@ const SPECS: Record<MindlessKitId, Spec> = {
 export const MINDLESS_KIT_SPECS = SPECS
 
 /** The design's picture for a kit's accent: the paint hero is treated once per accent. */
-const photo = (s: Spec, kind: 'hero' | 'circle') => `/sites/mindless/photos/${kind}-${s.accent}.jpg`
+/** The design's colourful blob pattern, the main graphic behind every Mindless hero (owner, 2026-11-16). Decorative, so no alt. */
+export const MINDLESS_BLOB = '/sites/mindless/blob.jpg'
 const slot = (key: string, sample: string) => `{{${key}|${sample}}}`
 const star = (c: { title: string; em: string }) => (c.em ? `${c.title} *${c.em}*` : c.title)
 const copy = (_s: Spec, k: Section): SectionCopy => COPY[k]
@@ -102,7 +103,7 @@ function pages(s: Spec): KitPage[] {
     type: 'ServicesHero',
     props: {
       look: 'photo', eyebrow: s.hero.eyebrow, title: `${s.hero.title} *${s.hero.em}*`, lead: s.hero.body,
-      primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: s.cta2, secondaryHref: '~/services', proof: '', image: photo(s, 'hero'), alt: s.hero.title + ' ' + s.hero.em,
+      primaryLabel: s.cta, primaryHref: '~/booking', secondaryLabel: s.cta2, secondaryHref: '~/services', proof: '', image: MINDLESS_BLOB, alt: '',
       // The design's own hero: the paint photo full bleed under an ink fade, the words on the left, nothing over the circle on the right,
       // so no booking panel.
       panelTitle: 'Book online', panelNote: 'Pick a time', offers: [], areas: [],
