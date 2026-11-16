@@ -94,6 +94,20 @@ const CREATE_SPACE_WIZARD = '/create-a-space'
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // An encoded backslash in a path (/join%5C, /discover/spaces%5C) is a mistyped link or a bot probe, and
+  // reaching the router makes it look for a page file that does not exist and answer a 500 that Sentry
+  // counts (SCAN-1237). A trailing one is a typo for the page before it, so send the visitor there; one
+  // anywhere else is no page of ours.
+  if (/%5c/i.test(pathname)) {
+    const cleaned = pathname.replace(/(?:%5c)+$/i, '')
+    if (cleaned && cleaned !== pathname && !/%5c/i.test(cleaned)) {
+      const to = request.nextUrl.clone()
+      to.pathname = cleaned
+      return NextResponse.redirect(to, 308)
+    }
+    return new NextResponse('Not found', { status: 404 })
+  }
+
   // A SPACE WEBSITE ON ITS OWN DOMAIN (customDomain, PROG-E10 phase 2). Any host that is not one of
   // Frequency's own never reaches the app below: no session read, no attribution cookie, no tenancy.
   // Its pages rewrite to the /hosted site route; a deeper Space path lands on the site's own page and
