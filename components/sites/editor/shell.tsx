@@ -4,7 +4,8 @@
 
 import { slugify } from '@/lib/utils'
 import { Input, Textarea } from '@/components/ui/field'
-import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type KeyboardEvent } from 'react'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { ArrowRight, ChevronDown, ChevronLeft, Copy, Eye, FileText, Globe, Layers, Lock, MessageSquare, Minus, Monitor, PanelLeft, PanelRight, Palette, Plus, Radio, Redo2, Search, Settings2, Trash2, Smartphone, Tablet, Undo2, X } from 'lucide-react'
 import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 import { addBlock, buildOutline, derivePickerGroups, findBlockDeep, moveBlockTo, nudgeBlock, removeBlockDeep, updateBlockPropsDeep, type OutlineNode } from '@/components/page-editor/mobile/data-ops'
@@ -150,20 +151,9 @@ const DEVICES: { id: Device; icon: typeof Monitor; label: string }[] = [{ id: 'd
 
 function Dialog({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null
-    const node = root.current
-    node?.querySelector<HTMLElement>('button,input,select,textarea,[tabindex="0"]')?.focus()
-    return () => previous?.focus()
-  }, [])
-  function trap(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key !== 'Tab') return
-    const items = Array.from(root.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]') ?? [])
-    const first = items[0], last = items[items.length - 1]
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
-  }
-  return <div ref={root} className={className ? `${k('we-modal')} ${className}` : k('we-modal')} role="dialog" aria-modal="true" aria-label={label} onKeyDown={trap} onClick={(event) => event.stopPropagation()}>{children}</div>
+  // The kit trap moves focus to the first control, keeps Tab inside and hands focus back on close.
+  useDialogFocusTrap(true, root)
+  return <div ref={root} className={className ? `${k('we-modal')} ${className}` : k('we-modal')} role="dialog" aria-modal="true" aria-label={label} onClick={(event) => event.stopPropagation()}>{children}</div>
 }
 
 function Icon({ label, hint, children, className = '', ...props }: { label: string; hint?: string; children: ReactNode; className?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {

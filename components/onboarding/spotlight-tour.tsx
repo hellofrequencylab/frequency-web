@@ -6,6 +6,7 @@ import type { SpotlightStop } from '@/lib/onboarding/spotlight'
 import { setSpotlightTourState } from '@/app/onboarding/tour-actions'
 import { Button } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 // The guided spotlight tour (the "site tour" Vera walks new members through). It
 // dims the whole page and cuts a lit window around one real surface at a time
@@ -98,6 +99,10 @@ export function SpotlightTour({
     setCardPos({ top, left })
   }, [rect, i])
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // The kit trap first: it remembers what had focus before the tour, keeps Tab on the card's own
+  // controls (the page behind the scrim is not reachable) and hands focus back when the tour ends.
+  useDialogFocusTrap(true, cardRef)
 
   // Focus the card, lock scroll, ESC = pause.
   useEffect(() => {
