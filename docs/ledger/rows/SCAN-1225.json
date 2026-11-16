@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1225",
+  "title": "About 28 dialogs/sheets hand-roll role=\"dialog\" (and often focus handling) instead of using components/ui/dialog.",
+  "lane": "live",
+  "priority": "P2",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: PLAUSIBLE. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: 73 files import components/ui/dialog, but 28 files carry role=\"dialog\"/aria-modal without ui/dialog, ui/toast or use-dialog-focus-trap: components/builder/add/add-sheet.tsx, builder/command/command-bar.tsx, builder/readiness/publish-sheet.tsx, builder/theme/theme-lens.tsx, calendar-suite/suite-command.tsx, suite-sheet.tsx, suite-quick.tsx, entity-blocks/block-picker.tsx, events/calendar-chrome.tsx, layout/marketing-mobile-menu.tsx, messages/dock-thread-details.tsx, onboarding/spotlight-tour.tsx, page-editor/mobile/bottom-sheet.tsx, practice/adopt-practice-button.tsx, sites/editor/shell.tsx, vera/vera-launcher.tsx. Only 11 files use use-dialog-focus-trap.\n\nWHY IT MATTERS: Inconsistent focus trap, Escape and scroll-lock behaviour; accessibility regressions and one-off fixes in 28 places. Note: some are nav drawers where the pattern may be intentional.\n\nFIX DIRECTION: Convert the interactive modals to ui/dialog (or its focus-trap hook), starting with the public-facing ones (marketing-mobile-menu, adopt-practice-button, spotlight-tour). Add a ratchet in check-adoption.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1225",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

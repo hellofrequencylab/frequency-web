@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1218",
+  "title": "Measure real Core Web Vitals on a clean profile for the public pages: JS looks like 2 to 3.5 MB encoded per page",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: PLAUSIBLE. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: Daniel signed-in Chrome, same-origin iframe at 390 px, 2026-11-16, warm cache: TTFB 120 to 190 ms (good); CLS 0.000 on /pricing, /the-community, /for/studios, /discover, /themes; script bytes 2,150 / 2,097 / 2,703 / 2,097 / 3,478 KB, images 105 to 324 KB except /themes at 1,024 KB; 82 to 129 requests per page. LCP not captured. A signed-in shell and a warm cache can distort script bytes. Layout at 390, 1280, 1440, 1920, 2000 across 8 pages: no horizontal scroll anywhere; one h1 each.\n\nWHY IT MATTERS: If the script weight holds on a clean first visit, phones on cell data in North County pay for it on every landing page, and it would show in search ranking and signup. We have no recorded baseline.\n\nFIX DIRECTION: Run Lighthouse mobile and desktop plus field data (Vercel Speed Insights) on the ten top landing pages from a clean profile; write docs/perf/public-cwv-baseline.md; then cut by evidence.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1218",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

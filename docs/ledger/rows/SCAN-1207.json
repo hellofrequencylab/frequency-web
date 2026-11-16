@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1207",
+  "title": "Fix stale dates and titles in the campaign and parked rows before the next email: kickoff says November 11, beta says ends Dec 31, five parked rows rest on retired premises",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: LIVE-BETA-CAMPAIGN-KICKOFF title \"start on November 11\" while today is 2026-11-16 and its Nov 17 emails are unscheduled; LIVE-BETA-LAUNCH-CAMPAIGN detail says beta ends 2026-12-31 and opening copy is December 1 while lib/core/launch-dates.ts has BETA_ENDS_ON 2027-01-31 and LAUNCH_ON 2027-01-01 (Dec 31 is Hosts Beta only); LIVE-1134 and OWN-101 say YouTube is missing though lib/site.ts has it (LinkedIn and Facebook are the gap); parked LIVE-106, LIVE-229, LIVE-255, LIVE-797, LIVE-911 rest on retired premises; PROG-E6, PROG-E5 and DEF-ETSY evidence lines contradict the code; FH-002 probe names scripts/probes/hunts/legacy-seams.mjs which does not exist while legacy-seam-evidence.mjs passes (ChatGPT lane).\n\nWHY IT MATTERS: A person or agent following these rows would schedule against the wrong dates. Nothing is sent without Daniel, but the list is the source of truth.\n\nFIX DIRECTION: Patch the rows by fragment: retitle, correct dates, close the five parked rows, correct evidence. Daniel approves the campaign schedule separately.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1207",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1234",
+  "title": "The only phone speed check is warn-only with loose limits (LCP 4s, TBT 600ms), and the desktop gate covers just four anonymous pages.",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: lighthouserc.mobile.json: LCP, CLS, TBT and script size are all \"warn\" (4000/0.1/600/600000). lighthouserc.json uses preset desktop on 4 URLs. Field budgets live separately in lib/analytics/vitals-budgets.ts.\n\nWHY IT MATTERS: Most visitors are on phones; a mobile LCP or JS regression on /, /pricing or /create-a-space cannot fail a PR. The build-time shell-weight gate (1100KB, blocking in package.json postbuild) is the only hard phone-JS guard.\n\nFIX DIRECTION: Once 3-4 baseline runs exist, flip mobile LCP/CLS to error at about 2x the measured median and add /create-a-space and /themes/nocturne.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1234",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

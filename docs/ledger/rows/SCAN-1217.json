@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1217",
+  "title": "Three image upload paths accept any image/* type including SVG and take the file extension from the visitor filename, then store to the public event-media bucket.",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: PLAUSIBLE. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: lib/spaces/space-image-store.ts:15 and app/(main)/journeys/actions.ts:165 only check file.type.startsWith('image/'); app/(main)/events/[slug]/social-actions.ts:244-249 does the same, uploads with contentType: file.type and a path built from the raw file name (any guest of an event can do this). Contrast app/(main)/circles/admin-actions.ts:463-467 and events/admin-actions.ts:1048 which use an explicit raster allowlist and note SVG as stored XSS. Uploads use createAdminClient (service role).\n\nWHY IT MATTERS: An image/svg+xml file with script is served from the storage CDN URL with an executable content type. Supabase storage adds a sandbox CSP on objects, which probably blunts it, so this is hardening, not a known exploit; the fix is cheap and the two safe call sites already show the pattern.\n\nFIX DIRECTION: Reuse the circles allowlist (jpeg/png/webp/gif/avif) or the Loom ingest pipeline in all three places and derive the extension from the validated type, not the filename.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1217",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

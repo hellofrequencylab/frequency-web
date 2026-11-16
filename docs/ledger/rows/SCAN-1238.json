@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1238",
+  "title": "Clear the small database advisor leftovers: private.tz_names search_path, six zz_backup_ tables, three unindexed Hunts foreign keys",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: Supabase advisors 2026-11-16: function_search_path_mutable private.tz_names; no_primary_key on zz_backup_free_human_heroes_20261103, zz_backup_free_human_page_20261030, zz_backup_danieltyack_newworld_20261103, zz_backup_danieltyack_nwblocks_20261103, zz_backup_free_human_blocks_20261030, zz_backup_free_human_pages_20261030; unindexed FKs on hunt_missions, hunt_rule_group_members, hunts. Also noted and left alone: 190 RLS-on-no-policy tables (service-role only), 659 unused indexes (idx_scan=0 is not proof), SEC-POSTGIS-PUBLIC (extensions in public, spatial_ref_sys).\n\nWHY IT MATTERS: Leftover backup tables in public are junk in the database; the search_path is a hygiene warning. Dropping the backups needs Daniel to confirm the Free Human and Daniel Space pages no longer need them.\n\nFIX DIRECTION: One additive migration: set search_path on private.tz_names, add the three FK indexes; drop the six zz_backup_ tables only after Daniel says yes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1238",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}

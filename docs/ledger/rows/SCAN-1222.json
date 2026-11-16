@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1222",
+  "title": "340 MB of Playwright screenshot baselines are committed to git, 29 of them byte-identical copies, and are most of the 628 MB .git.",
+  "lane": "hygiene",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: test/e2e/__screenshots__/visual.spec.ts/ holds 154 tracked PNGs, ~347 MB (git ls-files | du). 29 files share an md5 with another (e.g. about--dawn-light-desktop.png == about--midnight-light-desktop.png, both 798d6638...). .gitattributes has no LFS rule; .git is 628M.\n\nWHY IT MATTERS: Every clone, CI checkout and cloud agent session pulls ~0.6 GB. Slower clones and CI; baselines churn adds to history forever.\n\nFIX DIRECTION: Move baselines to Git LFS or an artifact store, and de-duplicate identical dawn/midnight captures (or skip the redundant variant).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1222",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7"
+}
