@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
@@ -511,21 +512,16 @@ function BulkBar({
                     placeholder="Style name (e.g. Warm icon set)"
                     className="mb-2 px-2.5 py-1.5"
                   />
-                  <div className="mb-2 inline-flex rounded-card border border-border p-0.5">
-                    {(['vector', 'raster'] as const).map((l) => (
-                      <button
-                        key={l}
-                        type="button"
-                        onClick={() => setStyleLane(l)}
-                        aria-pressed={styleLane === l}
-                        className={`rounded-control px-2.5 py-1 text-meta font-semibold ${
-                          styleLane === l ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
-                        }`}
-                      >
-                        {l === 'vector' ? 'Vector' : 'Raster'}
-                      </button>
-                    ))}
-                  </div>
+                  <SegmentedControl
+                    label="Style kind"
+                    value={styleLane}
+                    onChange={setStyleLane}
+                    segments={[
+                      { value: 'vector', label: 'Vector' },
+                      { value: 'raster', label: 'Raster' },
+                    ]}
+                    className="mb-2"
+                  />
                   <button
                     type="button"
                     onClick={trainStyle}

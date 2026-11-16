@@ -758,14 +758,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 124,
+      "baseline": 94,
       "frozen": {
-        "at": "2026-11-13",
-        "value": 124,
+        "at": "2026-11-16",
+        "value": 94,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Sweep retired 5 raw button backgrounds (Hunts commerce admin, #4916); floor re-frozen to the measured 124",
-        "from": 129
+        "reason": "SCAN-1133 slice 7: 30 admin raw button backgrounds moved to the kit (IconButton row actions, SegmentedControl pairs, chipClasses pills, choiceTileClasses tiles); floor re-frozen to the measured 94",
+        "from": 124
       },
       "history": [
         {
@@ -1047,6 +1047,13 @@
           "to": 124,
           "direction": "lowered",
           "reason": "Sweep retired 5 raw button backgrounds (Hunts commerce admin, #4916); floor re-frozen to the measured 124"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 124,
+          "to": 94,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 7: 30 admin raw button backgrounds moved to the kit (IconButton row actions, SegmentedControl pairs, chipClasses pills, choiceTileClasses tiles); floor re-frozen to the measured 94"
         }
       ]
     },
