@@ -14,5 +14,6 @@
     "kind": "manual",
     "checked": "2026-11-16",
     "evidence": "Open: the redirect target of /spaces/<slug>/manage/leadership/open is not yet identified. Close when the link no longer produces a connect-src report in the production csp.violation log."
-  }
+  },
+  "wave": "W7"
 }

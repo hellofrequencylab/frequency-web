@@ -14,5 +14,6 @@
     "kind": "manual",
     "checked": "2026-11-16",
     "evidence": "Open: a second capture_signup_lead call for the same address still rotates claim_token_hash. Close when a repeat call cannot take the row from the first holder."
-  }
+  },
+  "wave": "W7"
 }

@@ -14,5 +14,6 @@
     "kind": "manual",
     "checked": "2026-11-16",
     "evidence": "Open: anon still holds EXECUTE on capture_guest_rsvp. Close when has_function_privilege('anon', 'public.capture_guest_rsvp(uuid,text,text,uuid)', 'EXECUTE') is false and the guest RSVP action still works, or a DB-side cap is in place."
-  }
+  },
+  "wave": "W7"
 }
