@@ -61,10 +61,10 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 595,
+      "baseline": 596,
       "frozen": {
         "at": "2026-11-16",
-        "value": 595,
+        "value": 596,
         "direction": "lowered",
         "basis": "db695768f455",
         "reason": "SCAN-1133 slice 9: the hand-rolled segmented bars, pills and tiles that moved onto the kit SegmentedControl, chipClasses and choiceTileClasses carried literal rounded-md, rounded-pill and rounded-lg classes that left with them",
@@ -396,7 +396,7 @@
         {
           "at": "2026-11-16",
           "from": 603,
-          "to": 595,
+          "to": 596,
           "direction": "lowered",
           "reason": "SCAN-1133 slice 9: the hand-rolled segmented bars, pills and tiles that moved onto the kit SegmentedControl, chipClasses and choiceTileClasses carried literal rounded-md, rounded-pill and rounded-lg classes that left with them"
         }
@@ -765,13 +765,13 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 56,
+      "baseline": 57,
       "frozen": {
         "at": "2026-11-16",
-        "value": 56,
+        "value": 57,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice 9: the kit SegmentedControl gains a compact xs size and 17 editor and builder raw buttons move onto the kit (inspector Segmented bar and wrap mode, the two row layout pickers, the elements gallery sort, Journey visibility, the sequence editor destination pair and beat bar, the member viewer sort to SegmentedControl; Circle builder, price quick-picks, room visibility, task effort, import merge rule and card tap mode to choiceTileClasses or chipClasses)",
+        "reason": "SCAN-1133 slice 9: the kit SegmentedControl gains a compact xs size and 16 editor and builder raw buttons move onto the kit (inspector Segmented bar and wrap mode, the two row layout pickers, Journey visibility, the sequence editor destination pair and beat bar, the member viewer sort to SegmentedControl; Circle builder, price quick-picks, room visibility, task effort, import merge rule and card tap mode to choiceTileClasses or chipClasses)",
         "from": 73
       },
       "history": [
@@ -1072,9 +1072,9 @@
         {
           "at": "2026-11-16",
           "from": 73,
-          "to": 56,
+          "to": 57,
           "direction": "lowered",
-          "reason": "SCAN-1133 slice 9: the kit SegmentedControl gains a compact xs size and 17 editor and builder raw buttons move onto the kit (inspector Segmented bar and wrap mode, the two row layout pickers, the elements gallery sort, Journey visibility, the sequence editor destination pair and beat bar, the member viewer sort to SegmentedControl; Circle builder, price quick-picks, room visibility, task effort, import merge rule and card tap mode to choiceTileClasses or chipClasses)"
+          "reason": "SCAN-1133 slice 9: the kit SegmentedControl gains a compact xs size and 16 editor and builder raw buttons move onto the kit (inspector Segmented bar and wrap mode, the two row layout pickers, Journey visibility, the sequence editor destination pair and beat bar, the member viewer sort to SegmentedControl; Circle builder, price quick-picks, room visibility, task effort, import merge rule and card tap mode to choiceTileClasses or chipClasses)"
         }
       ]
     },

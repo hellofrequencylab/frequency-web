@@ -17,7 +17,6 @@ import { StyleEditor } from '@/app/(main)/admin/qr/style-editor'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import type { ElementKey } from '@/lib/elements/registry'
 import { capsLabel } from '@/components/ui/caps-label'
-import { SegmentedControl } from '@/components/ui/segmented-control'
 
 // The header element's SECTION PRESETS: each real surface header shares the one PageHero base but has
 // its own unique feature set. The console shows them as a see-and-sort gallery (owner ask) so an
@@ -77,19 +76,20 @@ function HeaderPreview() {
   )
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" role="group" aria-label="Sort header previews">
         <ArrowDownUp className="h-3.5 w-3.5 text-subtle" aria-hidden />
         <span className={capsLabel('text-2xs text-muted')}>Sort</span>
-        <SegmentedControl
-          size="xs"
-          label="Sort header previews"
-          value={sort}
-          onChange={setSort}
-          segments={[
-            { value: 'name', label: 'name', className: 'capitalize' },
-            { value: 'type', label: 'type', className: 'capitalize' },
-          ]}
-        />
+        {(['name', 'type'] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setSort(s)}
+            aria-pressed={sort === s}
+            className={`rounded-md px-2 py-0.5 text-meta font-medium capitalize transition-colors ${sort === s ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'}`}
+          >
+            {s}
+          </button>
+        ))}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {presets.map((p) => (
