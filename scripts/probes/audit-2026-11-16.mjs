@@ -131,6 +131,62 @@ const REWRITTEN = {
     console.log(`SCAN-1213 tree: public/tracks is ${tracksKb} KB (must be under ${TRACKS_KB_MAX}): ${treeOk ? 'ok' : 'RED'}`)
     return cacheOk && treeOk
   },
+
+  // SCAN-1226. Three clauses. The first and third are the old check's, unchanged in meaning: the
+  // /pricing entry carries lastModified, and llms.txt names the founding towns. The middle one was
+  // `! grep 'CIRCLE_SITEMAP_CAP = 200'`, which asked for a constant to change. That constant must
+  // stay 200: it is one call's ceiling in the public_circles RPC's own SQL, and older checks
+  // (SCAN-203, SCAN-1052, app/sitemap-legacy-readers.test.ts) pin it. The finding is that the
+  // sitemap stops naming circles after the first 200. So the middle clause now follows the read:
+  //   a. app/sitemap.ts calls a reader it imports from @/lib/discover,
+  //   b. whose body in lib/discover.ts loops over an RPC named public_circles*, passing an offset,
+  //   c. and a migration defines that RPC with an offset parameter.
+  // It is red until a paged read is on the branch. The constant is not read at all.
+  'SCAN-1226': () => {
+    const SITEMAP = 'app/sitemap.ts'
+    const READER = 'lib/discover.ts'
+    const sitemap = code(SITEMAP)
+
+    const lastmodOk = /\/pricing[^}]*lastModified/.test(readFileSync(SITEMAP, 'utf8'))
+    const townsOk = /\bFOUNDING_CITIES\b/.test(code('app/llms.txt/route.ts'))
+
+    const imported = [...sitemap.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']@\/lib\/discover["']/g)]
+      .flatMap((m) => m[1].split(','))
+      .map((n) => n.trim().split(/\s+as\s+/).pop())
+      .filter(Boolean)
+    const called = imported.filter((n) => new RegExp('\\b' + n + '\\s*\\(').test(sitemap.replace(/import\s*\{[^}]*\}\s*from\s*["'][^"']*["']/g, '')))
+    const reader = code(READER)
+    const migrations = tracked('supabase/migrations').filter((p) => p.endsWith('.sql'))
+    let paged = null
+    for (const name of called) {
+      const at = reader.search(new RegExp('export\\s+(?:async\\s+)?function\\s+' + name + '\\b'))
+      if (at === -1) continue
+      const next = reader.indexOf('\nexport ', at + 1)
+      const body = reader.slice(at, next === -1 ? undefined : next)
+      const rpc = /\.rpc\(\s*['"](public_circles\w*)['"]\s*,\s*\{[^}]*\b_?offset\b/.exec(body)?.[1]
+      if (!rpc || !/\b(?:for|while)\s*\(/.test(body)) continue
+      const defined = migrations.some((p) => {
+        const sql = readFileSync(p, 'utf8')
+        const m = new RegExp('create\\s+(?:or\\s+replace\\s+)?function\\s+(?:public\\.)?' + rpc + '\\s*\\(([^)]*)\\)', 'i').exec(sql)
+        return !!m && /\b_?offset\b/i.test(m[1])
+      })
+      if (defined) {
+        paged = { name, rpc }
+        break
+      }
+    }
+
+    console.log(`SCAN-1226 lastmod on /pricing: ${lastmodOk ? 'ok' : 'RED'}`)
+    console.log(
+      `SCAN-1226 circles read past the first page: ${
+        paged
+          ? `ok (${SITEMAP} calls ${paged.name}, which loops over the ${paged.rpc} RPC by offset)`
+          : `RED (no reader that ${SITEMAP} calls from ${READER} loops over a public_circles RPC by offset, with a migration that defines it)`
+      }`,
+    )
+    console.log(`SCAN-1226 founding towns in llms.txt: ${townsOk ? 'ok' : 'RED'}`)
+    return lastmodOk && !!paged && townsOk
+  },
 }
 
 const CHECKS = {
@@ -151,7 +207,6 @@ const CHECKS = {
   "SCAN-1222": "node -e \"const o=require('child_process').execSync('git ls-files -z test/e2e/__screenshots__ | xargs -0 du -ck | tail -1').toString();process.exit(parseInt(o)>50000?1:0)\"",
   "SCAN-1223": "git grep -qiE 'north county' -- lib/marketing/quick-answers.ts app/llms-full.txt/route.ts",
   "SCAN-1224": "test -f docs/security/definer-rpc-review.md",
-  "SCAN-1226": "node -e \"const s=require('fs').readFileSync('app/sitemap.ts','utf8');process.exit(/\\/pricing[^}]*lastModified/.test(s)?0:1)\" && ! git grep -q 'CIRCLE_SITEMAP_CAP = 200' -- app/sitemap.ts && git grep -q FOUNDING_CITIES -- app/llms.txt/route.ts",
   "SCAN-1227": "test ! -e MARKETING-BRIEF.md && test ! -e funnels-brief.md && test ! -e claude-design-briefs.md && ! git grep -q COMPLETE -- SEO-AEO-PLAN.md",
   "SCAN-1228": "grep -q 'metadata' 'app/(main)/admin/qr/page.tsx'",
   "SCAN-1229": "git grep -qE 'setTaskPlanning|removeEntryComment|setPlanHold' -- components app ':!*actions.ts' ':!*.test.*'",
