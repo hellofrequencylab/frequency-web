@@ -42,6 +42,7 @@ import { midnightPracticeComponents, MIDNIGHT_PRACTICE_CATEGORY_COMPONENTS } fro
 import { designerComponents, DESIGNER_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/designer'
 import { freeHumanBlocks } from '@/components/page-editor/blocks/free-human'
 import { servicesBlocks } from '@/components/page-editor/blocks/services'
+import { mindlessBlocks } from '@/components/page-editor/blocks/mindless'
 import { newWorldBlocks } from '@/components/page-editor/blocks/new-world'
 import { freeHumanCalendarBlocks } from '@/components/page-editor/blocks/free-human-calendar'
 import { freeHumanWheelBlocks } from '@/components/page-editor/blocks/free-human-wheel'
@@ -103,6 +104,7 @@ export const config: Config = {
     ...designerComponents,
     ...freeHumanBlocks,
     ...servicesBlocks,
+    ...mindlessBlocks,
     ...newWorldBlocks,
     ...freeHumanCalendarBlocks,
     ...freeHumanWheelBlocks,
@@ -242,6 +244,11 @@ export const config: Config = {
     services: {
       title: 'Services sections',
       components: Object.keys(servicesBlocks),
+    },
+    // The Mindless theme's own section family (the Mindless design system's website kit, LIVE-2311): website pages only.
+    mindless: {
+      title: 'Mindless sections',
+      components: Object.keys(mindlessBlocks),
     },
     // The New World theme's own section family (the New World design system, LIVE-2055): website pages only.
     newWorld: {
