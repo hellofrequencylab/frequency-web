@@ -17,6 +17,7 @@ export type ClaimStopState = { status: 'idle' | 'credited' | 'already_credited' 
 
 const CODE = /^[a-z0-9-]{6,80}$/
 const SLUG = /^[a-z0-9-]{1,120}$/
+const UPDATED = 'This Trail changed since you started. Open the Trail again to carry on.'
 const error = (message: string): ClaimStopState => ({ status: 'error', message })
 
 export async function claimStopAction(_previous: ClaimStopState, formData: FormData): Promise<ClaimStopState> {
@@ -35,12 +36,13 @@ export async function claimStopAction(_previous: ClaimStopState, formData: FormD
 
   const nowEpoch = Math.floor(Date.now() / 1000)
   const opened = await openClaim(caller.id, placement.id, nowEpoch)
-  if (!opened.ok) return error('This stop could not be confirmed.')
+  // FH-016T: a run pinned to an earlier version of the Trail is refused before any token exists.
+  if (!opened.ok) return error(opened.reason === 'version_superseded' ? UPDATED : 'This stop could not be confirmed.')
 
   // One key per player, run and placement: a retry or a second device replays instead of double crediting.
   const idempotencyKey = createHash('sha256').update(`play:${caller.id}:${opened.runId}:${placement.id}`).digest('hex')
   const outcome = await claimAsPlayer(caller.id, { placementId: placement.id, token: opened.token, idempotencyKey, nowEpoch })
-  if (!outcome.ok) return error('This stop could not be confirmed.')
+  if (!outcome.ok) return error(outcome.reason === 'version_superseded' ? UPDATED : 'This stop could not be confirmed.')
 
   if (outcome.result === 'credited' || outcome.result === 'already_credited') {
     revalidatePath(`/hunts/${slug}/play`)

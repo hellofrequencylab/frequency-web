@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { draftToGraph, publishRows, stopKey } from './draft'
-import { projectForPlayer } from './player'
+import { projectForPlayer, visitedPins } from './player'
 
 const stops = [1, 2, 3].map((n) => ({ place: `Place ${n}`, clue: `Clue ${n}`, placementReady: true, ...(n === 2 ? { hint: 'Near the water' } : {}) }))
 const draft = { title: 'T', hook: 'H', area: 'A', audience: 'Everyone', stops, routeTestedAtRevision: 1, permissionConfirmed: true }
@@ -46,5 +46,23 @@ describe('projectForPlayer', () => {
     expect(paused.progress.done).toBe(1)
     expect(paused.stops[0]).toMatchObject({ state: 'credited', place: 'Place 1' })
     expect(projectForPlayer({ ...base, huntState: 'closed', credits: [] }).banner).toBe('closed')
+  })
+})
+
+describe('visitedPins (FH-016T)', () => {
+  // A hostile source: it hands back a point for every stop, visited or not.
+  const everyPoint = [1, 2, 3].map((n) => ({ missionKey: `stop-${n}`, lat: 33 + n / 100, lng: -117 - n / 100, approximate: n === 1 }))
+  it('releases a pin only for a stop the projection already shows as visited', () => {
+    const view = projectForPlayer({ ...base, credits: [{ mission_key: 'stop-1' }] })
+    const pins = visitedPins(view.stops, everyPoint)
+    expect(pins).toEqual([{ id: 'stop-1', lat: 33.01, lng: -117.01, title: 'Stop 1: Place 1', badge: 'Approximate area.', approximate: true }])
+    const sent = JSON.stringify(pins)
+    expect(sent).not.toMatch(/stop-[23]|Place [23]|Clue|33\.0[23]|117\.0[23]/)
+  })
+  it('gives no pins before the first visit, and none for a visited stop with no point', () => {
+    expect(visitedPins(projectForPlayer({ ...base, credits: [] }).stops, everyPoint)).toEqual([])
+    const view = projectForPlayer({ ...base, credits: [{ mission_key: 'stop-1' }, { mission_key: 'stop-2' }] })
+    expect(visitedPins(view.stops, [everyPoint[2]])).toEqual([])
+    expect(visitedPins(view.stops, [everyPoint[1], everyPoint[1]]).map((pin) => pin.id)).toEqual(['stop-2'])
   })
 })

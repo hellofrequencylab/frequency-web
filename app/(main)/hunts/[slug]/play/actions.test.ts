@@ -79,6 +79,16 @@ describe('claimStopAction', () => {
     expect(mocks.revalidatePath).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['at the open step', () => mocks.openClaim.mockResolvedValue({ ok: false, reason: 'version_superseded' })],
+    ['at the claim step', () => mocks.claimAsPlayer.mockResolvedValue({ ok: false, reason: 'version_superseded' })],
+  ])('tells a player on an earlier version to open the Trail again: %s', async (_name, arrange) => {
+    arrange()
+    const out = await claimStopAction(idle, form(good))
+    expect(out).toEqual({ status: 'error', message: 'This Trail changed since you started. Open the Trail again to carry on.' })
+    expect(mocks.revalidatePath).not.toHaveBeenCalled()
+  })
+
   it('rejects malformed input before any lookup', async () => {
     for (const fields of [{ slug: 'coast-trail', code: '!!' }, { slug: '../x', code: 'stop-code-1' }, { code: 'stop-code-1' }] as Record<string, string>[]) {
       expect((await claimStopAction(idle, form(fields))).status).toBe('error')

@@ -8,6 +8,7 @@
  *
  * This reads no database. The route loads the published version and the run's credits, then calls this.
  */
+import { APPROX_SPACE_NOTE } from '@/lib/maps/approximate'
 import { evaluate, type Instant } from './graph'
 import type { Credit, HuntGraph, MissionState } from './graph'
 import { playerView } from './moderation'
@@ -74,4 +75,31 @@ export function projectForPlayer(input: {
     banner: view.banner,
     canClaim: view.canClaim && nextKey !== null,
   }
+}
+
+type VisitedPin = { id: string; lat: number; lng: number; title: string; badge?: string; approximate?: true }
+
+/**
+ * The pins of the visited-stops map (FH-016T). The second gate after the loader's query filter: a point
+ * becomes a pin only when the projection above already released that stop's place, so whatever the
+ * source returned, a stop the player has not visited cannot reach the page. One pin per stop.
+ */
+export function visitedPins(
+  stops: readonly Pick<PlayerStop, 'key' | 'position' | 'state' | 'place'>[],
+  points: readonly { missionKey: string; lat: number; lng: number; approximate: boolean }[],
+): VisitedPin[] {
+  const pins: VisitedPin[] = []
+  for (const stop of stops) {
+    if (stop.state !== 'credited' || !stop.place) continue
+    const point = points.find((candidate) => candidate.missionKey === stop.key)
+    if (!point) continue
+    pins.push({
+      id: stop.key,
+      lat: point.lat,
+      lng: point.lng,
+      title: `Stop ${stop.position}: ${stop.place}`,
+      ...(point.approximate ? { badge: APPROX_SPACE_NOTE, approximate: true as const } : {}),
+    })
+  }
+  return pins
 }
