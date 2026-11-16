@@ -12,7 +12,7 @@ const PAGE = 1000
 const MAX_ROWS = 20000
 
 /** Read a whole table slice in pages, so a busy Trail is not cut at the API's default limit. */
-async function all<T>(table: string, columns: string, huntId: string, key: readonly string[] = ['id']): Promise<T[]> {
+export async function huntRows<T>(table: string, columns: string, huntId: string, key: readonly string[] = ['id']): Promise<T[]> {
   const out: T[] = []
   for (let from = 0; from < MAX_ROWS; from += PAGE) {
     let query = db().from(table).select(columns).eq('hunt_id', huntId)
@@ -32,13 +32,13 @@ type GrantRow = { id: string; reward_id: string; state: string; redeemed_venue_s
 
 const text = (v: unknown): string | null => (typeof v === 'string' && v ? v : null)
 
-async function loadReportFacts(huntId: string): Promise<ReportFacts> {
+export async function loadReportFacts(huntId: string): Promise<ReportFacts> {
   const [claims, bindings, runs, rewards, grants] = await Promise.all([
-    all<ClaimRow>('hunt_claims', 'id, run_id, version_id, mission_key, state, assurance, policy_result', huntId),
-    all<BindingRow>('hunt_mission_placements', 'placement_id, version_id, mission_key, venue_space_id', huntId, ['version_id', 'mission_key', 'placement_id']),
-    all<{ id: string; state: string }>('hunt_runs', 'id, state', huntId),
-    all<{ id: string; title: string; kind: string }>('hunt_rewards', 'id, title, kind', huntId),
-    all<GrantRow>('hunt_reward_grants', 'id, reward_id, state, redeemed_venue_space_id', huntId),
+    huntRows<ClaimRow>('hunt_claims', 'id, run_id, version_id, mission_key, state, assurance, policy_result', huntId),
+    huntRows<BindingRow>('hunt_mission_placements', 'placement_id, version_id, mission_key, venue_space_id', huntId, ['version_id', 'mission_key', 'placement_id']),
+    huntRows<{ id: string; state: string }>('hunt_runs', 'id, state', huntId),
+    huntRows<{ id: string; title: string; kind: string }>('hunt_rewards', 'id, title, kind', huntId),
+    huntRows<GrantRow>('hunt_reward_grants', 'id, reward_id, state, redeemed_venue_space_id', huntId),
   ])
   return {
     claims: claims.map((c) => ({

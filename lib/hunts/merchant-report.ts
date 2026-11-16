@@ -95,7 +95,7 @@ type MerchantReport = {
 const bindingKey = (versionId: string, missionKey: string, placementId: string) => `${versionId}\n${missionKey}\n${placementId}`
 
 /** The venue a claim was made at, through the binding its version published. Null when it has none. */
-function claimVenues(facts: Pick<ReportFacts, 'bindings'>): (claim: { versionId: string; missionKey: string; placementId: string | null }) => string | null {
+export function claimVenues(facts: Pick<ReportFacts, 'bindings'>): (claim: { versionId: string; missionKey: string; placementId: string | null }) => string | null {
   const venueOf = new Map(facts.bindings.map((b) => [bindingKey(b.versionId, b.missionKey, b.placementId), b.venueSpaceId]))
   return (claim) => (claim.placementId ? venueOf.get(bindingKey(claim.versionId, claim.missionKey, claim.placementId)) ?? null : null)
 }

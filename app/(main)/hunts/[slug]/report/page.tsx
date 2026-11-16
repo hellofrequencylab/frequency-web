@@ -8,6 +8,8 @@ import { huntSwitchOn } from '@/lib/hunts/flags'
 import { readMerchantReport, shown, SMALL_CELL } from '@/lib/hunts/merchant-report'
 import { huntBySlug, merchantReportDeps } from '@/lib/hunts/merchant-report-store'
 import { loadStationFacts } from '@/lib/hunts/redemption-store'
+import { partnerRouteView } from '@/lib/hunts/route-health'
+import { loadRouteFacts } from '@/lib/hunts/route-health-store'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +41,9 @@ export default async function HuntVenueReportPage({ params, searchParams }: {
   const out = await readMerchantReport(merchantReportDeps, { profileId, huntId: hunt.id, venueSpaceId })
   if (!out.ok) notFound()
   const r = out.report
+  // FH-032: the venue's narrow view of the route. Its own placements and stops, and coarse Trail-wide totals.
+  const routeFacts = await loadRouteFacts(hunt.id).catch(() => null)
+  const route = routeFacts ? partnerRouteView(routeFacts, venueSpaceId, new Date().toISOString()) : null
   const exportHref = (kind: 'report' | 'contacts') => `/hunts/${encodeURIComponent(hunt.slug)}/report/export?kind=${kind}&space=${encodeURIComponent(venueSpaceId)}`
 
   return (
@@ -123,6 +128,38 @@ export default async function HuntVenueReportPage({ params, searchParams }: {
             </p>
           )}
         </section>
+
+        {route && (
+          <section aria-labelledby="venue-report-route" className="space-y-3">
+            <h2 id="venue-report-route" className="text-body font-semibold text-text">The Trail</h2>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <StatCard label="Your open placements" value={route.placements.open} detail={`${route.placements.closed} closed`} />
+              <StatCard label="Players on the Trail" value={shown(route.runs.started, 'partner')} detail="Across every venue" />
+              <StatCard label="Finished" value={shown(route.runs.finished, 'partner')} detail="Across every venue" />
+            </div>
+            {route.stops.length > 0 && (
+              <table className="w-full text-left text-body-sm">
+                <caption className="sr-only">Stops at your venue</caption>
+                <thead className="border-b border-border text-muted">
+                  <tr>
+                    <th scope="col" className="px-3 py-2">Stop</th>
+                    <th scope="col" className="px-3 py-2">Confirmed here</th>
+                    <th scope="col" className="px-3 py-2">Yet to move on</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {route.stops.map((s, index) => (
+                    <tr key={index} className="border-b border-border">
+                      <th scope="row" className="px-3 py-2 font-medium">{s.title}</th>
+                      <td className="px-3 py-2">{s.confirmedHere}</td>
+                      <td className="px-3 py-2">{shown(s.waiting, 'partner')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        )}
 
         <section aria-labelledby="venue-report-contacts" className="space-y-3">
           <h2 id="venue-report-contacts" className="text-body font-semibold text-text">Contacts</h2>
