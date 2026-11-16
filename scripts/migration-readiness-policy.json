@@ -3551,7 +3551,7 @@
       "expiresAt": "2026-11-22T23:59:59Z",
       "migrations": [
         {
-          "file": "supabase/migrations/20270346067000_drop_six_zz_backup_tables.sql",
+          "file": "supabase/migrations/20270346071000_drop_six_zz_backup_tables.sql",
           "sha256": "6cd4dcc9f3e2582fdb7029889046585cace0b2b114b165aac7996dab2eebf6ae"
         }
       ],
@@ -3559,34 +3559,34 @@
         {
           "file": "docs/ledger/rows/SCAN-1238.json",
           "status": "modified",
-          "sha256": "102097d39da5f0eec96d004fa2ca43413bb2349180d854a9bd0c2c1e56a795fd",
+          "sha256": "56687f56be12fabd97da622559ef481f69528f5cd3c32450ac9c0e1cceca679f",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/render/free-human-heroes-sql.render.tsx",
           "status": "modified",
-          "sha256": "8f9ad16f9a329d88ee65f1b0844f1a7433e1c36cb9b95d882bbca6b353f4b60e",
+          "sha256": "1866e9689d6ce9f0fc8da93b0affe1177cd756abaccbaea91754b4996c80761f",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/render/free-human-pages-sql.render.tsx",
           "status": "modified",
-          "sha256": "004dc16c9ec4902fad8684186266110e22be5e044243225eb599328844fa3fed",
+          "sha256": "a6a3de489a48045a90809b9099da5138af25acb1e901e29e1e9882ce759ad47b",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "scripts/render/free-human-space-page-sql.render.tsx",
           "status": "modified",
-          "sha256": "8b73de938aae3026393fdf1a544a6a9f735d324b6d59291f721f2e78f5d85668",
+          "sha256": "fbaad81058115baeb49021d18e66ed6ac4d9ca20eca7c2e3e49c460180f4141d",
           "baseMode": "100644",
           "headMode": "100644"
         }
       ],
       "workflowPath": ".github/workflows/db-tests.yml",
-      "workflowSha256": "506e7faa637aed0e801df7bb5d83c24a8dbb681156f7c01768431856d77bffc2",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
       "apiAcceptanceStep": "Real local service, anon and authenticated growth API acceptance",
       "requiredSteps": [
         "Start local Supabase (applies all migrations)",
@@ -3597,6 +3597,7 @@
         "Real local service, anon and authenticated calendar suite API acceptance",
         "Real local service, anon and authenticated analytics experiment API acceptance",
         "Real local service, anon and authenticated growth API acceptance",
+        "Real local service, anon and authenticated Quest support API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
     }
