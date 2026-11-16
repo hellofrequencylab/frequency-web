@@ -56,6 +56,19 @@ describe('claimStopAction', () => {
     expect((await claimStopAction(idle, form(good))).status).toBe('already_credited')
   })
 
+  it('answers a visit kept for staff review in plain words and credits nothing (FH-020V)', async () => {
+    mocks.claimAsPlayer.mockResolvedValue({ ok: true, result: 'held', claimId: 'c-9', replayed: false })
+    const out = await claimStopAction(idle, form(good))
+    expect(out.status).toBe('held')
+    expect(out.message).toContain('We saved your visit, and someone on the Trail team will check it.')
+    expect(out.message).not.toMatch(/could not|denied|failed|wrong|review queue|needs_review|—/)
+    // Nothing was credited, so the page has nothing new to show.
+    expect(mocks.revalidatePath).not.toHaveBeenCalled()
+    // A repeat is the same key and the same answer.
+    expect((await claimStopAction(idle, form(good))).status).toBe('held')
+    expect(mocks.claimAsPlayer.mock.calls[1][1].idempotencyKey).toBe(mocks.claimAsPlayer.mock.calls[0][1].idempotencyKey)
+  })
+
   it('does nothing while the claims switch is off', async () => {
     vi.stubEnv('HUNTS_CLAIMS_ENABLED', '')
     expect((await claimStopAction(idle, form(good))).status).toBe('error')

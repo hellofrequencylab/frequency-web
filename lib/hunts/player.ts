@@ -13,6 +13,9 @@ import { evaluate, type Instant } from './graph'
 import type { Credit, HuntGraph, MissionState } from './graph'
 import { playerView } from './moderation'
 
+/** What a player reads when a visit is kept for staff to check (FH-020V). Plain and warm, no blame. */
+export const HELD_VISIT_MESSAGE = 'Thanks for stopping by. We saved your visit, and someone on the Trail team will check it. This stop shows as confirmed once they do.'
+
 type StopContent = { mission_key: string; title: string; visible_body: string; locked_teaser: string | null }
 
 type PlayerStop = {
