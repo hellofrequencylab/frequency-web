@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import Link from 'next/link'
@@ -82,7 +83,7 @@ function OrderCard({
   dispute: CommerceDispute | null
   names: Map<string, string>
 }) {
-  const when = new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  const when = formatDateMedium(order.createdAt)
   // A dispute makes sense on a completed purchase, not a failed / cancelled checkout.
   const disputable = order.status === 'paid' || order.status === 'fulfilled'
   // Shipping state only for a settled order with something to send: a booking or a Journey is never

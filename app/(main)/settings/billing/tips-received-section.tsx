@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import { HandCoins } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { listTipsReceived } from '@/lib/billing/tips-notify'
@@ -13,7 +14,7 @@ function whenLabel(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDateMedium(d)
 }
 
 export async function TipsReceivedSection() {
