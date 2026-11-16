@@ -197,7 +197,7 @@ export function mindlessAccentId(hex: string | null | undefined): MindlessAccent
   return (Object.keys(MINDLESS_ACCENTS) as MindlessAccentId[]).find((id) => MINDLESS_ACCENTS[id].accent.toUpperCase() === want) ?? null;
 }
 
-const MINDLESS_ACCENT_PHOTO = /\/sites\/mindless\/photos\/(hero|circle|guide|firepit|beach)-(yellow|pink|blue)\.jpg/g;
+const MINDLESS_ACCENT_PHOTO = /\/sites\/mindless\/photos\/(hero|guide)-(yellow|pink|blue)\.jpg/g;
 
 /** The paint photos are treated once per accent (a duotone in the paint). Every one of those pictures in `value` (a site snapshot, any
  *  JSON) re-pointed to `accent`'s treatment, so a Space started in Pink opens on the pink hero, not the kit's default. PURE. */

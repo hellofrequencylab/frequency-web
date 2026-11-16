@@ -13,10 +13,12 @@ import { NetworkKitSpotlightLayout } from './network-kit-layouts'
 import { networkKitSpotlightContent } from '@/lib/spotlight/network-kit-content'
 import { DesignerKitSpotlightLayout } from './designer-kit-layouts'
 import { designerKitSpotlightContent, designerProfileForAccent } from '@/lib/spotlight/designer-kit-content'
-import { isCyberWitchKitLayout, isDesignerKitLayout, isFreeHumanLayout, isNewWorldKitLayout, isServicesKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { isCyberWitchKitLayout, isMindlessKitLayout, isDesignerKitLayout, isFreeHumanLayout, isNewWorldKitLayout, isServicesKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
 import { ServicesKitSpotlightLayout } from './services-kit-layouts'
 import { CyberWitchKitSpotlightLayout } from './cyberwitch-kit-layouts'
 import { cyberwitchKitSpotlightContent } from '@/lib/spotlight/cyberwitch-kit-content'
+import { MindlessKitSpotlightLayout } from './mindless-kit-layouts'
+import { mindlessKitSpotlightContent } from '@/lib/spotlight/mindless-kit-content'
 import { presetForAccent } from '@/lib/spotlight/space-accent'
 import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { SERVICES_ACCENTS } from '@/lib/theme/services'
@@ -104,6 +106,17 @@ export function SpotlightShell({
         <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
           <main className="relative mx-auto max-w-xl">
             <CyberWitchKitSpotlightLayout layout={theme.layout} content={content} />
+          </main>
+        </div>
+      )
+    }
+    if (isMindlessKitLayout(theme.layout)) {
+      // The Mindless theme draws its own page inside the same wrapper and footer.
+      const content = mindlessKitSpotlightContent(theme.kit ?? 'general', { name, sample: sampleContent, accent: theme.accent ?? undefined, photo: profile.header_image_url ?? undefined, portrait: profile.avatar_url ? avatarSrc(profile.avatar_url) : undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <main className="relative mx-auto max-w-xl">
+            <MindlessKitSpotlightLayout layout={theme.layout} content={content} />
           </main>
         </div>
       )
