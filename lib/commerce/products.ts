@@ -111,6 +111,22 @@ export async function getProduct(id: string): Promise<CommerceProduct | null> {
   return data ? rowToProduct(data as Record<string, unknown>) : null
 }
 
+/** The products behind a set of ids, for a caller that will WRITE on what it finds (the saved cart drops a
+ *  line whose product is gone). A failed read throws here: `getProduct` answers null for a missing row and
+ *  for a failed read alike, and a blip must never read as "no longer for sale". */
+export async function getProductsStrict(ids: string[]): Promise<Map<string, CommerceProduct>> {
+  const unique = [...new Set(ids.filter(Boolean))]
+  const map = new Map<string, CommerceProduct>()
+  if (!unique.length) return map
+  const { data, error } = await db().from('commerce_products').select(PRODUCT_COLS).in('id', unique)
+  if (error) throw new Error(`[commerce] product read failed: ${error.message}`)
+  for (const r of (data ?? []) as Record<string, unknown>[]) {
+    const p = rowToProduct(r)
+    map.set(p.id, p)
+  }
+  return map
+}
+
 /** The Journey slug a commerce product sells, or null. Used by LIVE-220 so a `/journeys/<slug>`
  *  stamp can classify that product's checkout without the edge hitting the database. */
 export async function journeySlugForProduct(productId: string): Promise<string | null> {

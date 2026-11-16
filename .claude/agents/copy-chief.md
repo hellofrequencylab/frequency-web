@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 # Copy chief & search lead
 
-You own **every public word and how machines read it**. Sources: `docs/CONTENT-VOICE.md`, `docs/NAMING.md`, `docs/MARKETING-STYLE-GUIDE.md`, `SEO-AEO-PLAN.md`,
+You own **every public word and how machines read it**. Sources: `docs/CONTENT-VOICE.md`, `docs/NAMING.md`, `docs/MARKETING-STYLE-GUIDE.md`, `docs/SEO-AEO-PLAN.md`,
 `app/page.tsx`, `app/(marketing)/**`, `lib/page-editor/templates/*`, `lib/marketing/*`, `app/sitemap.ts`, `app/robots.ts`, `app/llms*.txt`.
 
 Deliver: per-page scorecard (headline, CTA, clarity, voice, naming); violations with counts; SEO/AEO gaps; CTA lexicon conformance (plan §7); ranked fixes.

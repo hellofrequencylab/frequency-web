@@ -12,7 +12,8 @@ import { settleCommerceOrderAction } from '@/app/(main)/marketplace/commerce-act
 
 // Pay for the saved cart (DEF-ETSY P5, /cart). Same shape as the single-item Buy control: take the card right here,
 // or hand off to hosted checkout when the form cannot be offered. The cart is emptied only after the payment
-// settles, so closing the form leaves it as it was.
+// settles, so closing the form leaves it as it was. A buyer who pays on the hosted page gets the same: the paid
+// lines leave the cart when the order is confirmed paid, on the server.
 export function CartCheckout({ priceLabel }: { priceLabel?: string }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -29,7 +30,11 @@ export function CartCheckout({ priceLabel }: { priceLabel?: string }) {
       setSessionId(res.sessionId ?? null)
       setClientSecret(res.clientSecret)
     } else if (res.url) window.location.href = res.url
-    else setError(res.error ?? 'Could not start checkout.')
+    else {
+      setError(res.error ?? 'Could not start checkout.')
+      // A refusal can mean the saved cart was just brought up to date; show the lines as they are now.
+      router.refresh()
+    }
   }
 
   function fallBackToHosted() {

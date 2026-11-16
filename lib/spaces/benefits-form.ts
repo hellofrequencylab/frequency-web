@@ -22,6 +22,7 @@
 //
 // Voice: plain, sentence case, contractions, no em dashes (CONTENT-VOICE §5e, §10).
 
+import { formatPriceCents } from '@/lib/commerce/types'
 import {
   benefitDiscountCents,
   type BenefitKind,
@@ -217,20 +218,6 @@ export function joinNames(names: readonly string[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
 }
 
-/** Cents to a plain price label, e.g. 2200 to "$22" and 1870 to "$18.70". Whole dollars drop the
- *  cents, the way the membership join card writes a price. USD only. */
-export function formatPrice(cents: number): string {
-  const safe = Number.isFinite(cents) && cents > 0 ? cents : 0
-  const dollars = safe / 100
-  const whole = Number.isInteger(dollars)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(dollars)
-}
-
 /**
  * What a buyer sees, in a sentence, for one row as it currently stands.
  *
@@ -247,14 +234,14 @@ export function draftEffectLine(
 
   const value = parseBenefitValue(draft.kind, draft.value)
   const noun = SCOPE_NOUN[draft.scope] ?? 'item'
-  const sample = formatPrice(sampleCents)
+  const sample = formatPriceCents(sampleCents)
 
   if (value == null) return `Add a number and we'll show what a member pays for a ${sample} ${noun}.`
 
   const discount = benefitDiscountCents({ kind: draft.kind, value }, sampleCents)
   if (discount <= 0) return `Nothing comes off a ${sample} ${noun} yet.`
 
-  const paid = formatPrice(sampleCents - discount)
+  const paid = formatPriceCents(sampleCents - discount)
   return `Example: on a ${sample} ${noun}, ${joinNames(tierNames)} pay ${paid}.`
 }
 

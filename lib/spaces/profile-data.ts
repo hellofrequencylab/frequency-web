@@ -17,6 +17,7 @@
 // PURE + total: no server/Next imports, tolerant of malformed blobs.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { formatPriceAmount } from '@/lib/commerce/types'
 import { normalizeSpaceKind, spaceKindLabel, isSpaceKind, type SpaceKind } from './categories'
 import { findSubject, type SubjectChoice } from '@/lib/taxonomy/subjects'
 
@@ -342,23 +343,6 @@ export function mergeField(blockProp: string | undefined, central: string | unde
 
 // ── Service pricing display (PURE) ───────────────────────────────────────────────────────────────────
 
-/** Format a major-unit amount as a price label (e.g. 120 -> "$120", 79.5 -> "$79.50"). Whole amounts
- *  drop the cents. Falls back to a plain "$" if the currency code is unknown. PURE. */
-function money(amount: number, currency?: string): string {
-  const code = currencyCode(currency) ?? 'USD'
-  const whole = Number.isInteger(amount)
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: code,
-      minimumFractionDigits: whole ? 0 : 2,
-      maximumFractionDigits: 2,
-    }).format(amount)
-  } catch {
-    return `$${whole ? amount : amount.toFixed(2)}`
-  }
-}
-
 /** The recurring-cadence suffix on a price ("/wk", "/mo", or "" for a one-off). */
 function recurringSuffix(recurring: ServiceRecurring | undefined): string {
   if (recurring === 'weekly') return '/wk'
@@ -376,17 +360,17 @@ export function formatServicePrice(service: SpaceOffering): string | null {
   if (service.priceModel === 'contact') return 'Contact for pricing'
   // A sliding-scale range wins the headline (pay what you can within the band).
   if (service.slidingScaleMin !== undefined && service.slidingScaleMax !== undefined) {
-    return `${money(service.slidingScaleMin, service.currency)}-${money(service.slidingScaleMax, service.currency)} sliding scale`
+    return `${formatPriceAmount(service.slidingScaleMin, currencyCode(service.currency))}-${formatPriceAmount(service.slidingScaleMax, currencyCode(service.currency))} sliding scale`
   }
   if (service.price === undefined) return null
   const prefix = service.priceModel === 'from' ? 'from ' : ''
-  return `${prefix}${money(service.price, service.currency)}${recurringSuffix(service.recurring)}`
+  return `${prefix}${formatPriceAmount(service.price, currencyCode(service.currency))}${recurringSuffix(service.recurring)}`
 }
 
 /** A deposit label ("$40 deposit to book"), or null when there is no deposit. PURE. */
 export function formatServiceDeposit(service: SpaceOffering): string | null {
   if (service.deposit === undefined || service.deposit <= 0) return null
-  return `${money(service.deposit, service.currency)} deposit to book`
+  return `${formatPriceAmount(service.deposit, currencyCode(service.currency))} deposit to book`
 }
 
 /** A plain duration label ("45 min", "1 hr", "1 hr 30 min"), or null when unset / non-positive. PURE. */

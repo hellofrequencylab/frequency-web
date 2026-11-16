@@ -7,6 +7,7 @@ import { updateCircle, archiveCircle, setCircleFeaturedAction } from '../actions
 import { isError, type ActionResult } from '@/lib/action-result'
 import { InviteLinkButton } from './invite-link-button'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
@@ -332,12 +333,12 @@ export function CirclesClient({
               act={(next) => setCircleFeaturedAction(c.id, next)}
             />
             <InviteLinkButton circleId={c.id} />
-            <button onClick={() => { setError(null); setEditingId(c.id) }} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
+            <IconButton label="Edit" onClick={() => { setError(null); setEditingId(c.id) }}>
               <Pencil className="h-3.5 w-3.5" aria-hidden />
-            </button>
-            <button onClick={() => setConfirmArchive(c)} disabled={isPending} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-warning-bg hover:text-warning disabled:opacity-50 motion-reduce:transition-none" aria-label="Archive">
+            </IconButton>
+            <IconButton label="Archive" tone="warning" onClick={() => setConfirmArchive(c)} disabled={isPending}>
               <Archive className="h-3.5 w-3.5" aria-hidden />
-            </button>
+            </IconButton>
           </div>
         )}
         empty={

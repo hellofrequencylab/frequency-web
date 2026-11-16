@@ -758,14 +758,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 124,
+      "baseline": 94,
       "frozen": {
-        "at": "2026-11-13",
-        "value": 124,
+        "at": "2026-11-16",
+        "value": 94,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Sweep retired 5 raw button backgrounds (Hunts commerce admin, #4916); floor re-frozen to the measured 124",
-        "from": 129
+        "reason": "SCAN-1133 slice 7: 30 admin raw button backgrounds moved to the kit (IconButton row actions, SegmentedControl pairs, chipClasses pills, choiceTileClasses tiles); floor re-frozen to the measured 94",
+        "from": 124
       },
       "history": [
         {
@@ -1047,6 +1047,13 @@
           "to": 124,
           "direction": "lowered",
           "reason": "Sweep retired 5 raw button backgrounds (Hunts commerce admin, #4916); floor re-frozen to the measured 124"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 124,
+          "to": 94,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 7: 30 admin raw button backgrounds moved to the kit (IconButton row actions, SegmentedControl pairs, chipClasses pills, choiceTileClasses tiles); floor re-frozen to the measured 94"
         }
       ]
     },
@@ -1868,7 +1875,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 75,
+      "baseline": 66,
       "history": [
         {
           "at": "2026-08-05",
@@ -1967,15 +1974,22 @@
           "to": 75,
           "direction": "raised",
           "reason": "Create a Space v3 hero builder (create-space-steps) and onboarding step registry added raw inputs; re-frozen to the measured count"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 75,
+          "to": 66,
+          "direction": "lowered",
+          "reason": "Create a Space hero builder (create-space-steps, create-space-photos) and the lead capture honeypot moved onto the kit Input (seamless); floor back to the pre-raise 66 (SCAN-1242)"
         }
       ],
       "frozen": {
-        "at": "2026-11-03",
-        "value": 75,
-        "direction": "raised",
+        "at": "2026-11-16",
+        "value": 66,
+        "direction": "lowered",
         "basis": "a76a8556a0ed",
-        "reason": "Create a Space v3 hero builder (create-space-steps) and onboarding step registry added raw inputs; re-frozen to the measured count",
-        "from": 66
+        "reason": "Create a Space hero builder (create-space-steps, create-space-photos) and the lead capture honeypot moved onto the kit Input (seamless); floor back to the pre-raise 66 (SCAN-1242)",
+        "from": 75
       }
     },
     {
@@ -1992,7 +2006,7 @@
         "**/*.{test,spec}.tsx",
         "components/ui/field.tsx"
       ],
-      "baseline": 3,
+      "baseline": 2,
       "history": [
         {
           "at": "2026-08-05",
@@ -2042,15 +2056,22 @@
           "to": 3,
           "direction": "raised",
           "reason": "Create a Space v3 hero builder (create-space-steps) added one raw textarea; re-frozen to the measured count"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 3,
+          "to": 2,
+          "direction": "lowered",
+          "reason": "Create a Space offer field moved onto the kit Textarea (seamless); floor back to the pre-raise 2 (SCAN-1242)"
         }
       ],
       "frozen": {
-        "at": "2026-11-03",
-        "value": 3,
-        "direction": "raised",
+        "at": "2026-11-16",
+        "value": 2,
+        "direction": "lowered",
         "basis": "14f50a1abe56",
-        "reason": "Create a Space v3 hero builder (create-space-steps) added one raw textarea; re-frozen to the measured count",
-        "from": 2
+        "reason": "Create a Space offer field moved onto the kit Textarea (seamless); floor back to the pre-raise 2 (SCAN-1242)",
+        "from": 3
       }
     },
     {

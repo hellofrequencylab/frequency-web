@@ -212,6 +212,7 @@ public_calendar_feed                 internal
 public_circle_by_id                  public
 public_circle_by_slug                public
 public_circles                       public
+public_circles_page                  public
 public_event_by_slug                 public
 public_events                        public
 public_featured_posts                public

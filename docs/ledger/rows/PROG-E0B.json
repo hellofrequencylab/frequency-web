@@ -1,0 +1,20 @@
+{
+  "id": "PROG-E0B",
+  "title": "Editor E0 slice: the bundle-byte instrument reads the built artifact for CRDT bytes (advisory)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "program",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "§8 task 18"
+  },
+  "detail": "Split from PROG-E0 on 2026-11-16. E0's CRDT gate is 'zero editor bytes public'. check:editor-crdt-importers pins who may import yjs in source; nothing read the built output. scripts/check-editor-bundle-bytes.mjs does: it searches every client chunk under .next/static for the CRDT runtime (yjs and y-prosemirror literals that survive minification), reads every route's client-reference manifest for the chunks that route names, and reports a route outside the editor (/pages/canvas) that names a carrier chunk as a leak, by route and chunk. It prints the bytes on the editor route, the bytes in lazy chunks no manifest names, and the total.\n\nADVISORY. It runs last in postbuild as `(node scripts/check-editor-bundle-bytes.mjs || true)` and exits 0 on every arm (leak, no .next, unreadable manifest, its own crash), so it cannot fail a deploy. `pnpm check:editor-bundle-bytes --strict` is the on-demand spelling (leak 1, cannot look 79). It prints one gate line that scripts/read-build-log.mjs collects.\n\nVERIFIED: 21 fixture tests (clean and leak verdicts, a leak through a client module, the Vercel static/immutable root, server copies ignored, three cannot-look arms, each fingerprint present in the installed package, exit 0 on leak, missing artifact and crash by running the real script, the postbuild pin). NOT VERIFIED: any real artifact. This box cannot build, so the manifest shape for clientModules chunks under Turbopack, the route names, and whether the literals survive the production minifier are all unconfirmed. The first production build log after merge is the first reading.\n\nKNOWN LIMITS: a lazy chunk reached by import() from a public client module is counted as lazy, not as a leak (the source guard covers that entry); lib/editor-crdt modules that import no runtime (channel.ts, awareness.ts) carry no literal a minifier keeps, so yjs is the marker.\n\nTO ARM IT (stays on PROG-E0): read one production build log, confirm the editor route shows non-zero bytes and no public route is named, then drop `|| true`, add --strict and invert the last test in scripts/check-editor-bundle-bytes.test.ts in the same change as that build.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/PROG-E0B.mjs",
+    "note": "Fails on main: no instrument. Passes once the instrument's own reader and verdict call a fixture artifact with yjs in a public route's chunk a leak (by route and chunk), pass the same artifact without that reference while counting the editor route's bytes, every fingerprint is a literal in the installed package, and postbuild runs it advisory only."
+  },
+  "closed": "2026-11-16"
+}
