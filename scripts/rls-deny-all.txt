@@ -236,3 +236,7 @@ lifecycle_send_log
 loom_functions
 analytics_experiments
 analytics_experiment_assignments
+# FH-043 Frequency Hunts Expedition teams: service role only; written by the hunt_team_* functions.
+hunt_teams
+hunt_team_members
+hunt_team_awards
