@@ -4,16 +4,17 @@
   "lane": "hygiene",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: SITE_THEME_STYLESHEET_PILOT is read at components/sites/site-theme-stylesheet.ts:12 and listed in .env.example but absent from docs/RUNBOOKS.md; CRON_HEARTBEAT_SKIP read at lib/observability/cron-heartbeat.ts:64 and documented in RUNBOOKS but not in .env.example. All other envFlag switches (33) are in both.\n\nWHY IT MATTERS: A switch with no gate is flipped on guesswork; an env var absent from .env.example is invisible to whoever provisions a new environment.\n\nFIX DIRECTION: Add the RUNBOOKS gate line and the .env.example entry.",
+  "detail": "EVIDENCE: SITE_THEME_STYLESHEET_PILOT is read at components/sites/site-theme-stylesheet.ts:12 and listed in .env.example but absent from docs/RUNBOOKS.md; CRON_HEARTBEAT_SKIP read at lib/observability/cron-heartbeat.ts:64 and documented in RUNBOOKS but not in .env.example. All other envFlag switches (33) are in both.\n\nWHY IT MATTERS: A switch with no gate is flipped on guesswork; an env var absent from .env.example is invisible to whoever provisions a new environment.\n\nFIX DIRECTION: Add the RUNBOOKS gate line and the .env.example entry.\n\nFIXED 2026-11-16: CRON_HEARTBEAT_SKIP is in .env.example with its gate pointer, and docs/RUNBOOKS.md has a Site theme stylesheet pilot section for SITE_THEME_STYLESHEET_PILOT.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1230",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }
