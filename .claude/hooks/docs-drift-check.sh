@@ -13,7 +13,7 @@ root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 cd "$root" || exit 0
 
 CODE_RE='^(app|lib|components|supabase/migrations)/'
-DOCS_RE='^(docs/|ROADMAP\.md|README\.md|SEO-AEO-PLAN\.md|AGENTS\.md)'
+DOCS_RE='^(docs/|ROADMAP\.md|README\.md|AGENTS\.md)'
 # User-facing routes whose changes may warrant a public help-center update.
 USERFACING_RE='^app/\((main|marketing)\)/'
 HELP_RE='^content/help/'
