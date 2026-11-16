@@ -312,16 +312,36 @@ jobs:
             attempt=$((attempt + 1))
           done
 
-          # The read-back. Without this the step asserts "the API accepted my write", when what
-          # the merge actually depends on is "the context exists on this SHA".
-          if ! { curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/status.json \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "${api}/commits/${HEAD_SHA}/status" \
-            && python3 -c 'import json,sys; sys.exit(0 if any(s["context"] == "pr-compare" for s in json.load(sys.stdin)["statuses"]) else 1)' < /tmp/status.json; }
-          then
+          # read-back:start
+          # The read-back. Without this the step asserts "the API accepted my write", when what the
+          # merge actually depends on is "the context exists on this SHA". It polls because GitHub's
+          # read path can trail the 201 by a moment: a single immediate read painted this job red on
+          # pull requests whose status had landed (SCAN-1247). curl's --retry covers transport and
+          # 5xx only, never "context absent", so the loop does. A read that fails outright, or a
+          # context that never shows, still fails the step. per_page=100 because the default page
+          # holds 30 statuses and this context must not fall off it.
+          seen=0
+          for wait in 0 2 3 5 8 13; do
+            [ "$wait" -gt 0 ] && sleep "$wait"
+            if ! curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/status.json \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/commits/${HEAD_SHA}/status?per_page=100"
+            then
+              echo "::error::Reading the statuses back on ${HEAD_SHA} failed. Not polling past a failed read."
+              cat /tmp/status.json 2>/dev/null || true
+              break
+            fi
+            if python3 -c 'import json,sys; sys.exit(0 if any(s["context"] == "pr-compare" for s in json.load(sys.stdin)["statuses"]) else 1)' < /tmp/status.json; then
+              seen=1
+              break
+            fi
+            echo "::warning::pr-compare is not readable on ${HEAD_SHA} yet (waited ${wait}s before this read). Polling."
+          done
+          if [ "$seen" -ne 1 ]; then
             echo "::error::Posted pr-compare and got 201, but the context is absent when read back on ${HEAD_SHA}. Do not trust the write; investigate before merging."
             exit 1
           fi
+          # read-back:end
 
           echo "::notice::Posted pr-compare=success and verified it on ${HEAD_SHA}. This asserts only that no rendering input changed."

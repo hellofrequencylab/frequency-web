@@ -1,0 +1,19 @@
+{
+  "id": "HYG-242",
+  "title": "The backlog check runs at its CPU limit on CI, so a busy runner fails a pull request whose tests all pass",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "scripts/backlog-contract.test.ts",
+    "ref": "#5044 on 2026-11-16: the full sweep burned 440.0 s of CPU against a 437.8 s budget with every probe passing."
+  },
+  "detail": "MEASURED 2026-11-16 on the 4-core cloud box, full sweep (--probes=all), main at 771c0ef80: 2,424 costed probes, 291 to 313 s of guard CPU across five runs, so run-to-run noise alone is about 7% while CI had 0.5% of headroom. WHERE THE TIME GOES: an empty node start costs 25 ms and 1,801 probes cost under 40 ms each (47 s together). 240 probes cost over 300 ms each and burn 201 s of 291 s (69%): 47 are over 1 s (89 s) and 193 are 300 ms to 1 s (112 s). They are the probes that start a test runner or a heavy script (SCAN-502 10.5 s, LIVE-2273 4.5 s, BLD-203 3.9 s, BLD-202 3.5 s, BLD-205 3.4 s; BLD-203 runs npx vitest on one file). This is cost spread across many probes, which the per-probe ceiling (6.5 s) is not built to see; the count-scaled total is the only assertion that does. Unexplained: this box reads about 300 s where CI read 440 s for the same sweep, so the CI figure needs its own per-probe dump before anything is retimed. RULED OUT: lane count. 2, 4 and 8 probes in flight cost 316, 303 and 297 to 313 s, so oversubscription is not what inflates the reading. SHIPPED WITH THIS ROW: one V8 compile cache shared by every probe in a sweep (NODE_COMPILE_CACHE, a temp directory removed on exit), which measured 276 to 292 s over six runs (mean 281 against 302 without), about 7% less. That is headroom, not the fix. WHAT CLOSES IT, either or both: (1) convert the 47 probes over 1 s to measure their consequence in-process instead of spawning a suite (the LIVE-034 pattern), which needs the owner's phrase per probe because it rewrites probes; (2) make the budget immune to runner speed by timing a fixed reference workload in the same run and asserting the ratio, which rewrites a test pin and also needs the owner's phrase. Do not raise BASE_CPU_MS or PER_PROBE_ALLOWANCE_MS without a paired CI and local reading (ADR-1107).",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-16",
+    "evidence": "Fails today: #5044's checks run printed guardCpuMs 440.0 s against a 437.8 s budget. Passes when ten checks runs in a row on main print a guard-cost line at or under 85% of the budget the contract test computes for that probe count."
+  },
+  "wave": "W7"
+}
