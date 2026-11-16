@@ -17,6 +17,16 @@ export type Stop = {
   placementReady: boolean
   /** FH-020V: keep a visit that staff could not confirm on the spot for review, instead of refusing it. */
   holdForReview?: boolean
+  /**
+   * FH-020X: staff at this place confirm each visit, so the stop's mission publishes at `staff`
+   * assurance. A scan alone is then refused, or kept for review when `holdForReview` is on too.
+   */
+  staffConfirmed?: boolean
+  /**
+   * FH-020X: the live placement printed for this stop. Written by the publish (lib/hunts/store.ts
+   * `bindStopPlacements`), never typed: a value that is not this Hunt's live placement is ignored there.
+   */
+  placementId?: string
 }
 
 export type TrailDraft = {
@@ -44,6 +54,7 @@ export function emptyStop(): Stop {
 }
 
 const text = (v: unknown, max: number): string => (typeof v === 'string' ? v.slice(0, max) : '')
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * Read a draft off untrusted input (an action argument, a stored jsonb). Total: anything that is
@@ -62,6 +73,8 @@ export function parseTrailDraft(input: unknown): TrailDraft {
       placementReady: r.placementReady === true,
       // A strict true only, like placementReady; absent otherwise so older drafts read back unchanged.
       ...(r.holdForReview === true ? { holdForReview: true } : {}),
+      ...(r.staffConfirmed === true ? { staffConfirmed: true } : {}),
+      ...(typeof r.placementId === 'string' && UUID.test(r.placementId) ? { placementId: r.placementId.toLowerCase() } : {}),
     }
   })
   const tested = o.routeTestedAtRevision
@@ -91,8 +104,12 @@ export function draftToGraph(draft: Pick<TrailDraft, 'stops'>): HuntGraph {
 
 export type ChecklistItem = { code: string; ok: boolean; message: string; stop?: number }
 
-/** The publish checklist. Publishing stays off until every item is ok. */
-export function publishChecklist(draft: TrailDraft, revision: number): { ok: boolean; items: ChecklistItem[] } {
+/**
+ * The publish checklist. Publishing stays off until every item is ok. `venue` says whether the Trail
+ * has a venue Space whose staff can confirm a visit (FH-020X); unknown counts as none, so a stop that
+ * staff must confirm never goes live where nobody can confirm it.
+ */
+export function publishChecklist(draft: TrailDraft, revision: number, opts: { venue?: boolean } = {}): { ok: boolean; items: ChecklistItem[] } {
   const items: ChecklistItem[] = []
   const graph = validateGraph(draftToGraph(draft))
   const blockers: Blocker[] = draft.stops.length >= MIN_STOPS ? graph.blockers : []
@@ -109,6 +126,9 @@ export function publishChecklist(draft: TrailDraft, revision: number): { ok: boo
   draft.stops.forEach((s, i) => {
     items.push({ code: 'stop_text', ok: s.place.trim() !== '' && s.clue.trim() !== '', stop: i, message: 'This stop needs a place name and a clue.' })
     items.push({ code: 'stop_placement', ok: s.placementReady, stop: i, message: 'Print or place a code at this stop so people can prove they were here.' })
+    if (s.staffConfirmed === true) {
+      items.push({ code: 'stop_staff_venue', ok: opts.venue === true, stop: i, message: 'Staff can confirm visits only on a trail a Space runs. Turn off staff confirming for this stop.' })
+    }
   })
   items.push({ code: 'title', ok: draft.title.trim() !== '', message: 'Give the trail a title.' })
   items.push({ code: 'route_test', ok: draft.routeTestedAtRevision === revision, message: 'Walk it once in preview before you publish.' })
@@ -149,7 +169,7 @@ export async function saveDraft(store: DraftStore, input: { huntId: string; base
 
 /** The rows an immutable published version holds (FH-005 tables), derived from the draft. Pure. */
 type PublishRows = {
-  missions: { mission_key: string; title: string; visible_body: string; locked_teaser: string | null; kind: 'visit'; required_assurance: 'signed_node' }[]
+  missions: { mission_key: string; title: string; visible_body: string; locked_teaser: string | null; kind: 'visit'; required_assurance: 'signed_node' | 'staff' }[]
   /** One prerequisite group per stop after the first, plus the finish group. */
   groups: { key: string; target_mission_key: string | null; target_finish: boolean; logic: 'all'; members: string[] }[]
 }
@@ -162,7 +182,8 @@ export function publishRows(draft: TrailDraft): PublishRows {
     visible_body: s.clue.trim(),
     locked_teaser: s.hint?.trim() ? s.hint.trim() : null,
     kind: 'visit' as const,
-    required_assurance: 'signed_node' as const,
+    // FH-020X: a staff-confirmed stop needs staff assurance; every other stop keeps the signed scan.
+    required_assurance: s.staffConfirmed === true ? ('staff' as const) : ('signed_node' as const),
   }))
   const groups: PublishRows['groups'] = []
   for (const m of graph.missions) {
@@ -207,6 +228,27 @@ export function evidencePolicyUpdates(draft: Pick<TrailDraft, 'stops'>, bindings
     updates.push({ mission_key: binding.mission_key, placement_id: binding.placement_id, evidence_policy: { ...rest, ...wanted } })
   }
   return updates
+}
+
+/**
+ * Which placement each stop is bound through when the version publishes (FH-020X). Pure: the store
+ * reads this Hunt's live placements and the version's bindings, and creates a placement for each null.
+ * A stop keeps the placement it names when that placement is live here, else reuses a live placement
+ * already bound to its mission on this version. No placement serves two stops, so a scan always names
+ * exactly one mission (lib/hunts/staff-store.ts `loadUniquePlacementMission`).
+ */
+export function planStopPlacements(
+  draft: Pick<TrailDraft, 'stops'>,
+  facts: { live: ReadonlySet<string>; bound: readonly { mission_key: string; placement_id: string }[] },
+): (string | null)[] {
+  const taken = new Set<string>()
+  const pick = (id: string | undefined): string | null => {
+    if (!id || !facts.live.has(id) || taken.has(id)) return null
+    taken.add(id)
+    return id
+  }
+  const named = draft.stops.map((s) => pick(s.placementId))
+  return named.map((id, i) => id ?? facts.bound.filter((b) => b.mission_key === stopKey(i)).map((b) => pick(b.placement_id)).find((x) => x !== null) ?? null)
 }
 
 /**

@@ -206,7 +206,10 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
   }, [step, evaluation.finished, testedHere, settled, revision, initial.huntId])
 
   // ── Publish ──────────────────────────────────────────────────────────────────────────────
-  const checklist = useMemo(() => publishChecklist({ ...draft, permissionConfirmed: permission }, revision), [draft, permission, revision])
+  const checklist = useMemo(
+    () => publishChecklist({ ...draft, permissionConfirmed: permission }, revision, { venue: initial.hasVenue }),
+    [draft, permission, revision, initial.hasVenue],
+  )
 
   const publish = async () => {
     setPublishing(true)
@@ -229,7 +232,10 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
     setPublished(true)
     setJustPublished(res.data.visibility)
     setRevision((r) => r + 1)
-    setDraft((d) => ({ ...d, permissionConfirmed: permission }))
+    // FH-020X: the publish bound a placement to each stop. Keep the ids so the next save carries them
+    // and a printed code keeps working in the next version. Not an edit: nothing is marked dirty.
+    const placementIds = res.data.placementIds
+    setDraft((d) => ({ ...d, permissionConfirmed: permission, stops: d.stops.map((s, i) => (placementIds[i] ? { ...s, placementId: placementIds[i] } : s)) }))
   }
 
   // ── Navigation ───────────────────────────────────────────────────────────────────────────
@@ -472,7 +478,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
                       </button>
                     </>
                   )}
-                  {!item.ok && (item.code === 'stop_text' || item.code === 'stop_placement' || item.code === 'stops_count') && (
+                  {!item.ok && (item.code === 'stop_text' || item.code === 'stop_placement' || item.code === 'stop_staff_venue' || item.code === 'stops_count') && (
                     <>
                       {' '}
                       <button type="button" className="underline underline-offset-4" onClick={() => setStep('stops')}>
