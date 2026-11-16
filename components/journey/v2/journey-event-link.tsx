@@ -9,6 +9,7 @@
 // geocoding, and paid/steward gating (see app/(main)/events/new). So "create" opens /events/new in a
 // new tab; once the event exists, the author links it here. Linking is the in-panel path.
 
+import { formatDateWeekday } from '@/lib/format-date'
 import { useEffect, useState, useTransition } from 'react'
 import { CalendarPlus, Link2, Plus, X, ExternalLink, RefreshCw } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
@@ -25,7 +26,7 @@ function formatEventDate(iso: string | null): string {
   // a viewer west of UTC saw an evening event land on the previous day. `undefined` locale also let
   // the chip disagree with every other event surface on the same page. This matches the convention
   // the other 22 event-display sites use, including the canonical /events/<slug> page.
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+  return formatDateWeekday(d, 'UTC')
 }
 
 export function JourneyEventLink({

@@ -23,6 +23,7 @@
 // variant, not an alarm. The only client JS is ConfirmSubmitButton on the arming and
 // killing actions (a stray click must not arm a send). Voice canon: no em dashes.
 
+import { formatDateMedium } from '@/lib/format-date'
 import { Suspense } from 'react'
 import { Badge, type BadgeTone } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -45,7 +46,7 @@ function formatWhen(iso: string | null): string | null {
   if (!iso) return null
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDateMedium(d)
 }
 
 /** ready first (a decision is waiting), then the phase-filed strays; newest first within each. */

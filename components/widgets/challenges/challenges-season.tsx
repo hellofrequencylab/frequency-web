@@ -1,3 +1,4 @@
+import { formatDateShort } from '@/lib/format-date'
 import { CheckCircle2, Circle, Zap, Target, Trophy, Flame } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -191,7 +192,7 @@ export async function ChallengesSeason() {
                         {isComplete ? (
                           challenge.completedAt && (
                             <p className="mt-2 text-meta font-medium text-success">
-                              Completed {new Date(challenge.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              Completed {formatDateShort(challenge.completedAt)}
                             </p>
                           )
                         ) : isExpression ? (
