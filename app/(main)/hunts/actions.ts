@@ -86,6 +86,9 @@ export async function publishTrailAction(input: { huntId: string; baseRevision: 
     if (res.ok) return ok({ published: true, visibility: res.visibility })
     if (res.reason === 'conflict') return ok({ conflict: true, currentRevision: res.currentRevision })
     if (res.reason === 'checklist') return ok({ blocked: true, items: res.items })
+    if (res.reason === 'partners') {
+      return ok({ blocked: true, items: [{ code: 'partner_venue', ok: false, message: 'A stop is at a venue that has not accepted the partner terms, or has withdrawn. Invite the venue again or move the stop.' }] })
+    }
     return fail('Only the trail owner or an admin can publish it.')
   } catch {
     return fail('The trail could not be published. Try again.')
