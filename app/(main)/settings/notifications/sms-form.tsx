@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { sendSmsCode, verifySmsCode, saveSmsPreferences, type SmsPreferences } from './sms-actions'
+import { Switch } from '@/components/ui/switch'
 
 // The SMS section of the notifications settings (ADR-256). Two stages:
 //   1. Opt in — capture a phone, get a code, verify it (records express consent).
@@ -193,21 +194,7 @@ export function SmsForm({
                     <p className="text-body-sm font-medium text-text">{label}</p>
                     <p className="text-meta text-muted mt-0.5">{description}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleCategory(key)}
-                    aria-label={`Text ${label}`}
-                    aria-pressed={prefs[key]}
-                    className={`relative inline-flex h-6 w-10 items-center justify-center rounded-pill transition-colors ${
-                      prefs[key] ? 'bg-primary' : 'bg-border hover:bg-border-strong'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 rounded-pill bg-surface shadow transition-transform ${
-                        prefs[key] ? 'translate-x-2' : '-translate-x-2'
-                      }`}
-                    />
-                  </button>
+                  <Switch checked={prefs[key]} onCheckedChange={() => toggleCategory(key)} aria-label={`Text ${label}`} />
                 </div>
               ))}
             </div>
