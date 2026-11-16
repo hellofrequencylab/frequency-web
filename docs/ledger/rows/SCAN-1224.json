@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1224",
+  "title": "Review the 23 SECURITY DEFINER functions the public (anon) role can call, starting with the guest-RSVP, signup-lead and guest-seat ones",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
+  },
+  "detail": "EVIDENCE: Supabase security advisor, Frequency Community, 2026-11-16: anon_security_definer_function_executable 23, authenticated 56. Most are intended public readers (public_events, public_circles, public_posts, public_member_count). The write-capable ones are capture_guest_rsvp, capture_signup_lead, update_signup_lead, read_guest_seat, update_guest_seat, release_guest_seat, handle_is_available.\n\nWHY IT MATTERS: A definer function callable by anyone runs with owner rights. The write ones must prove their own authorization (token, rate, ownership) inside the function; nothing in the repo records that review.\n\nFIX DIRECTION: Write docs/security/definer-rpc-review.md: for each anon-callable function, what it can read or write and what checks it makes; revoke execute from anon where the app does not need it.\n\n2026-11-16 fixed (security thread): review written in docs/security/definer-rpc-review.md from read-only SQL on production (no migration applied). Authorization checks hold on all 7 write-capable functions; no revoke applied because the app calls each through the anon cookie client. Real findings filed as SCAN-1245 (capture_guest_rsvp has no DB-side limit, P2) and SCAN-1246 (capture_signup_lead rotates claim tokens, P3).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1224",
+    "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
+  },
+  "wave": "W7",
+  "closed": "2026-11-16"
+}
