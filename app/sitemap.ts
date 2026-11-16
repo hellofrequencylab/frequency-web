@@ -4,7 +4,9 @@ import { SITE_URL } from "@/lib/site";
 import { SITE_DESIGN } from "@/lib/theme/design";
 import {
   getTopicalChannels,
-  getAllPublicCircles,
+  getPublicCircles,
+  walkPublicCirclesPast,
+  PUBLIC_CIRCLES_PAGE,
   PUBLIC_CIRCLES_WALK_CAP,
   isTransientDiscoverError,
   isTransientDiscoverStatus,
@@ -97,9 +99,10 @@ async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
 //   · listListings (classifieds) does not clamp, but likewise takes no offset.
 //
 // CIRCLES ARE PAGED NOW (SCAN-1226). `public_circles` still ends
-// `LIMIT GREATEST(1, LEAST(_limit, 200))`, so the walk lives in the reader: `getAllPublicCircles`
-// (lib/discover.ts) reads that first page and, only when it comes back full, asks
-// `public_circles_page` (migration 20270346066000) for the rows after it. Its own ceiling is
+// `LIMIT GREATEST(1, LEAST(_limit, 200))`, so the walk lives in the reader: the first page is the
+// same `getPublicCircles` read as before and `walkPublicCirclesPast` (lib/discover.ts), only when
+// that page comes back full, asks `public_circles_page` (migration 20270346066000) for the rows
+// after it. Its own ceiling is
 // PUBLIC_CIRCLES_WALK_CAP, and `atCap` below is still what says so if a network ever reaches it.
 //
 // So paging the other four is a reader change (lib/commerce/products.ts, lib/listings/housing.ts,
@@ -115,6 +118,10 @@ async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
 /** Row cap on each commerce vertical (store / market / housing / classifieds). Matches the hard
  *  clamp inside those readers — the largest limit they will honour. */
 const COMMERCE_SITEMAP_CAP = 100;
+
+/** The FIRST page of the public circles read: one call's ceiling in the `public_circles` RPC's own
+ *  SQL. No longer the section's cap (SCAN-1226): `walkPublicCirclesPast` reads on from here. */
+const CIRCLE_SITEMAP_CAP = PUBLIC_CIRCLES_PAGE;
 
 /** Pass a section's rows through on the way to the map, and say so in the log when it came back
  *  full. Never throws and never alters the rows: the sitemap's job is to emit what it read. */
@@ -434,7 +441,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const [channels, circles, events, journeys, organizers, spotlights, hubs, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
       sectionRead("channels", getTopicalChannels({ failClosed: true })),
       // Paged (SCAN-1226): every public circle, 200 at a time. See the cap note above this function.
-      sectionRead("circles", getAllPublicCircles({ failClosed: true })),
+      sectionRead(
+        "circles",
+        getPublicCircles(CIRCLE_SITEMAP_CAP, { failClosed: true }).then((first) =>
+          walkPublicCirclesPast(first, { failClosed: true }),
+        ),
+      ),
       // Event URLs, FOLDED per series (ADR-897). Before this, one weekly cowork series advertised
       // ~9 URLs and ~9 image entries and a daily one ~61, all with the same title and description,
       // out of a GLOBAL 200-row cap — so a single daily series could crowd real one-offs out of the
@@ -589,7 +601,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       circles,
       PUBLIC_CIRCLES_WALK_CAP,
       "circles",
-      "getAllPublicCircles further (PUBLIC_CIRCLES_MAX_PAGES in lib/discover.ts)",
+      "walkPublicCirclesPast further (PUBLIC_CIRCLES_MAX_PAGES in lib/discover.ts)",
     ).map((c) => ({
       // The slug, not the uuid (LIVE-182). circles.slug is NOT NULL and public_circles has always
       // returned it; advertising the uuid froze a keyword-free URL into every citation and QR code.

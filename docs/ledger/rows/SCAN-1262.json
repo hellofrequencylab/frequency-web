@@ -9,10 +9,10 @@
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Remainder of SCAN-1226 (whole-site audit 2026-11-16, project thread, requested by Daniel), split out when the circles half shipped."
   },
-  "detail": "EVIDENCE: app/sitemap.ts COMMERCE_SITEMAP_CAP = 100. listShopProducts, listMarketListings (lib/commerce/products.ts) and listHousingListings (lib/listings/housing.ts) clamp the caller's limit to 100 and take no offset; listListings (lib/marketplace.ts) takes no offset either. The help category entries in app/sitemap.ts carry no lastModified.\n\nWHY IT MATTERS: Past 100 store, market, housing or classified listings the oldest drop out of the sitemap with only a log line (atCap). Volumes are near zero today, so this is not a launch problem. Help categories lose the recrawl hint the pricing and door pages now have.\n\nFIX DIRECTION: Give the four readers an offset or range and walk them the way getAllPublicCircles walks circles (SCAN-1226), then drop COMMERCE_SITEMAP_CAP. Stamp help category pages from the newest article date in the category.",
+  "detail": "EVIDENCE: app/sitemap.ts COMMERCE_SITEMAP_CAP = 100. listShopProducts, listMarketListings (lib/commerce/products.ts) and listHousingListings (lib/listings/housing.ts) clamp the caller's limit to 100 and take no offset; listListings (lib/marketplace.ts) takes no offset either. The help category entries in app/sitemap.ts carry no lastModified.\n\nWHY IT MATTERS: Past 100 store, market, housing or classified listings the oldest drop out of the sitemap with only a log line (atCap). Volumes are near zero today, so this is not a launch problem. Help categories lose the recrawl hint the pricing and door pages now have.\n\nFIX DIRECTION: Give the four readers an offset or range and walk them the way walkPublicCirclesPast walks circles (SCAN-1226), then drop COMMERCE_SITEMAP_CAP. Stamp help category pages from the newest article date in the category.",
   "verify": {
     "kind": "cmd",
-    "cmd": "! git grep -q 'COMMERCE_SITEMAP_CAP = 100' -- app/sitemap.ts",
+    "cmd": "node -e 'process.exit(require(\"fs\").readFileSync(\"app/sitemap.ts\",\"utf8\").includes(\"COMMERCE_SITEMAP_CAP = 100\")?1:0)'",
     "note": "Fails on 2026-11-16: the commerce sections are still capped. Passes when the cap constant is gone because the readers page."
   },
   "wave": "W7"

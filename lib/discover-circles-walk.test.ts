@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // SCAN-1226: the sitemap's circles read used to stop at the 200 rows `public_circles` clamps to.
-// `getAllPublicCircles` walks past it through `public_circles_page` (migration 20270346066000).
+// `walkPublicCirclesPast` walks past it through `public_circles_page` (migration 20270346066000).
 // What is pinned here is the wiring: page one is the unchanged read, the page RPC is asked only
 // when page one is full, the offsets are right, a row seen twice is named once, and a database
 // that does not have the page RPC yet still answers with page one.
@@ -10,7 +10,11 @@ type Reply = { data: unknown; error: { code?: string; message: string } | null; 
 const rpc = vi.fn(async (_fn: string, _args: Record<string, unknown>): Promise<Reply> => ({ data: [], error: null }))
 vi.mock('@/lib/supabase/public', () => ({ createPublicClient: () => ({ rpc }) }))
 
-import { getAllPublicCircles, PUBLIC_CIRCLES_WALK_CAP } from './discover'
+import { getPublicCircles, walkPublicCirclesPast, PUBLIC_CIRCLES_PAGE, PUBLIC_CIRCLES_WALK_CAP } from './discover'
+
+/** The two calls the sitemap makes, in the order it makes them. */
+const getAllPublicCircles = async (opts: { failClosed?: boolean } = {}) =>
+  walkPublicCirclesPast(await getPublicCircles(PUBLIC_CIRCLES_PAGE, opts), opts)
 
 const rows = (from: number, count: number) => Array.from({ length: count }, (_, i) => ({ id: `c${from + i}`, slug: `s${from + i}` }))
 
@@ -19,7 +23,7 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
-describe('getAllPublicCircles', () => {
+describe('walkPublicCirclesPast, after the first page', () => {
   it('makes the one unchanged read when page one is not full', async () => {
     rpc.mockResolvedValueOnce({ data: rows(0, 35), error: null })
     expect(await getAllPublicCircles({ failClosed: true })).toHaveLength(35)

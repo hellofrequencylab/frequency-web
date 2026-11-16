@@ -15,7 +15,7 @@
 -- member count and a creation instant. SECURITY DEFINER with a pinned search_path, as its sibling is.
 --
 -- The app reads page one through public_circles and only calls this when that page comes back full
--- (lib/discover.ts getAllPublicCircles), so the app is correct both before and after this file is applied.
+-- (lib/discover.ts walkPublicCirclesPast), so the app is correct both before and after this file is applied.
 --
 -- Additive and idempotent. ROLLBACK: drop function public.public_circles_page(integer, integer);
 

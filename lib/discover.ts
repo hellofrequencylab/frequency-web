@@ -391,25 +391,28 @@ export async function getPublicCircles(limit = 50, opts: { failClosed?: boolean 
 }
 
 /** The most rows one call to `public_circles` or `public_circles_page` returns: both clamp to it in SQL. */
-const PUBLIC_CIRCLES_PAGE = 200
+export const PUBLIC_CIRCLES_PAGE = 200
 
-/** The most pages `getAllPublicCircles` walks before it stops and says so. */
+/** The most pages `walkPublicCirclesPast` reads, page one included, before it stops and says so. */
 const PUBLIC_CIRCLES_MAX_PAGES = 25
 
-/** The most circles `getAllPublicCircles` can return. A caller holding this many has been cut short. */
+/** The most circles `walkPublicCirclesPast` can return. A caller holding this many has been cut short. */
 export const PUBLIC_CIRCLES_WALK_CAP = PUBLIC_CIRCLES_PAGE * PUBLIC_CIRCLES_MAX_PAGES
 
 /**
- * Every public circle, walked a page at a time (SCAN-1226). For the sitemap, which must name them all.
+ * The public circles AFTER a first page, a page at a time (SCAN-1226). For the sitemap, which must name
+ * them all. Hand it what `getPublicCircles(PUBLIC_CIRCLES_PAGE)` returned and it returns every circle.
  *
- * Page one is the same `public_circles` read every other caller makes. Only when it comes back FULL does
- * this ask `public_circles_page` (migration 20270346066000) for the rows after it, so a database that has
- * fewer than 200 circles, or has not had that migration applied yet, is read exactly as before. A later
- * page that fails is logged by the read and ends the walk with the rows already in hand; with
- * `failClosed` a transport failure throws, as it does on page one.
+ * Page one stays the same `public_circles` read every other caller makes. Only when it came back FULL
+ * does this ask `public_circles_page` (migration 20270346066000) for the rows after it, so a database
+ * that has fewer than 200 circles, or has not had that migration applied yet, is read exactly as
+ * before. A later page that fails is logged by the read and ends the walk with the rows already in
+ * hand; with `failClosed` a transport failure throws, as it does on page one.
  */
-export async function getAllPublicCircles(opts: { failClosed?: boolean } = {}): Promise<PublicCircle[]> {
-  const first = await getPublicCircles(PUBLIC_CIRCLES_PAGE, opts)
+export async function walkPublicCirclesPast(
+  first: PublicCircle[],
+  opts: { failClosed?: boolean } = {},
+): Promise<PublicCircle[]> {
   if (first.length < PUBLIC_CIRCLES_PAGE) return first
   const supabase = createPublicClient()
   const all = [...first]
