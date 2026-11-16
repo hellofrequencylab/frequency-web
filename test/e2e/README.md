@@ -15,6 +15,7 @@ always pass.
 | `@a11y` | `a11y.spec.ts` | axe-core WCAG 2.x A/AA: **0 serious+ violations** | ✅ |
 | `@overflow` | `overflow.spec.ts` | Nothing runs off the side of a phone, at **320 / 360 / 390** | ✅ |
 | `@visual` | `visual.spec.ts` | Pixel baselines across four render states × two full-matrix viewports, plus a narrow (320) column over the shell + header band | ⚠️ opt-in |
+| `@field` | `field-measure.spec.ts` | A reading, not a gate: Core Web Vitals, bytes over the wire and console errors (React #418 included) for ten public pages on a clean signed-out profile, phone and desktop | Only on a `workflow_dispatch` (`e2e (manual)`), or with `PW_FIELD_MEASURE=1`; skipped on PRs |
 
 `@overflow` exists because neither of the other two could see ADR-1035, where a re-cropped wordmark
 pushed the marketing menu button to x=404 on a 360px screen — off the viewport, on every phone.
