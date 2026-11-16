@@ -39,10 +39,11 @@ const SURFACES: Surface[] = [
   { path: 'app/discover/events/_data.ts', sizing: 'SERIES_WIDE_READ', oldLimit: 'limit = 500' },
   { path: 'app/(main)/search/search-data.ts', sizing: 'seriesFetchLimit(' },
   { path: 'app/api/search/route.ts', sizing: 'seriesFetchLimit(' },
-  // LIVE-206: the three list-shaped gaps LIVE-198 enumerated. The two Space surfaces read through
+  // LIVE-206: the three list-shaped gaps LIVE-198 enumerated. The Space surface reads through
   // lib/events/store.ts listEventsForSpace, whose own COLS carries SERIES_COLUMNS; the public
   // reader folds the anon RPC, which returns the two columns since migration 20270345002100.
-  { path: 'components/spaces/dashboard/space-dashboard.tsx', sizing: 'seriesFetchLimit(', oldLimit: 'limit: 5 }', viaReader: true },
+  // The second Space surface, components/spaces/dashboard/space-dashboard.tsx, left this list on
+  // 2026-11-16 because the FILE was deleted (SCAN-1240, owner's call): no page mounted it.
   { path: 'components/widgets/entity/entity-cta.tsx', sizing: 'seriesFetchLimit(', oldLimit: 'limit: 8 }', viaReader: true },
   // No oldLimit on the two RPC readers: the same `_limit` literal legitimately sizes the circles
   // and posts RPCs in the same files.

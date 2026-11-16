@@ -17,6 +17,7 @@ import { completeRaw } from '@/lib/ai/complete'
 import { type ModelTier } from '@/lib/ai/models'
 
 import { withVoice } from '@/lib/ai/voice'
+import { lenientList, textOrEmpty, validateModelValue, z } from '@/lib/ai/schema'
 import { TARGET_FIELDS, type MappingChoice } from './types'
 
 /** One AI suggestion: a source header, the target it proposes, and its confidence. */
@@ -79,26 +80,35 @@ You are given the column headers and a few sample rows. For EACH header, choose 
 - Set confidence honestly (1 = certain, 0.5 = a guess).
 - note: only when a column needs splitting or cleaning (for example a single "Full Name" that a human might want split). Keep it short and plain. No em dashes.`
 
-/** Coerce the model's tool output into safe suggestions, dropping anything off-enum. */
+/** A confidence the model may send as a number or a numeric string: clamped to 0..1, a guess (0.5) when unreadable. */
+function confidenceOf(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(n) ? Math.min(Math.max(n, 0), 1) : 0.5
+}
+
+/** The propose_import_mapping reply (PROG-E8B, the ADR-1287 pattern). A row needs a header and a target from the
+ *  closed enum; a row that has neither is dropped and the others are kept. */
+const MAPPING_REPLY = z.object({
+  columns: lenientList(
+    z.object({
+      header: z.string().transform((v) => v.trim()).pipe(z.string().min(1)),
+      target: z.string().transform((v) => v.trim()).pipe(z.enum(TARGET_ENUM)),
+      confidence: z.unknown().optional().transform(confidenceOf),
+      note: textOrEmpty(160),
+    }),
+  ),
+})
+
+/** Read the model's tool output into safe suggestions through the schema, dropping anything off-enum. A reply that
+ *  is not the declared shape yields no suggestions. */
 function coerceSuggestions(raw: unknown): AiSuggestion[] {
-  const cols = (raw as { columns?: unknown })?.columns
-  if (!Array.isArray(cols)) return []
-  const allowed = new Set<string>(TARGET_ENUM as unknown as string[])
-  const out: AiSuggestion[] = []
-  for (const c of cols) {
-    if (!c || typeof c !== 'object') continue
-    const o = c as Record<string, unknown>
-    const header = typeof o.header === 'string' ? o.header.trim() : ''
-    const target = typeof o.target === 'string' ? o.target.trim() : ''
-    if (!header || !allowed.has(target)) continue
-    const rawConf = typeof o.confidence === 'number' ? o.confidence : Number(o.confidence)
-    const confidence = Number.isFinite(rawConf) ? Math.min(Math.max(rawConf, 0), 1) : 0.5
+  const res = validateModelValue(raw, MAPPING_REPLY)
+  if (!res.ok) return []
+  return res.data.columns.map(({ header, target, confidence, note }) => {
     const suggestion: AiSuggestion = { header, target: target as MappingChoice, confidence }
-    const note = typeof o.note === 'string' ? o.note.trim().slice(0, 160) : ''
     if (note) suggestion.note = note
-    out.push(suggestion)
-  }
-  return out
+    return suggestion
+  })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -160,27 +170,34 @@ Read the text and call ${EXTRACT_TOOL_NAME} with one entry per distinct person. 
 - Keep notes short and plain. No em dashes, no emojis.
 - If the text has no people (it is a receipt, a login, random noise), return an empty contacts list.`
 
-/** Coerce the model's extraction into safe contacts. Drops empty rows; trims + caps fields.
+/** The extract_contacts reply (PROG-E8B, the ADR-1287 pattern). Every field is optional and a wrong-typed one reads
+ *  as empty; a row that is not an object is dropped. */
+const EXTRACT_REPLY = z.object({
+  contacts: lenientList(
+    z.object({
+      name: textOrEmpty(200),
+      email: textOrEmpty(200),
+      phone: textOrEmpty(60),
+      company: textOrEmpty(200),
+      notes: textOrEmpty(500),
+    }),
+  ),
+})
+
+/** Read the model's extraction into safe contacts through the schema. Drops empty rows; trims + caps fields. A reply
+ *  that is not the declared shape yields no contacts.
  *  Exported for the unit tests (the AI kernel itself is never called in a test). */
 export function coerceExtracted(raw: unknown): ExtractedContact[] {
-  const list = (raw as { contacts?: unknown })?.contacts
-  if (!Array.isArray(list)) return []
+  const res = validateModelValue(raw, EXTRACT_REPLY)
+  if (!res.ok) return []
   const out: ExtractedContact[] = []
-  const str = (v: unknown, max: number): string => (typeof v === 'string' ? v.trim().slice(0, max) : '')
-  for (const c of list) {
-    if (!c || typeof c !== 'object') continue
-    const o = c as Record<string, unknown>
+  for (const row of res.data.contacts) {
     const contact: ExtractedContact = {}
-    const name = str(o.name, 200)
-    const email = str(o.email, 200).toLowerCase()
-    const phone = str(o.phone, 60)
-    const company = str(o.company, 200)
-    const notes = str(o.notes, 500)
-    if (name) contact.name = name
-    if (email) contact.email = email
-    if (phone) contact.phone = phone
-    if (company) contact.company = company
-    if (notes) contact.notes = notes
+    if (row.name) contact.name = row.name
+    if (row.email) contact.email = row.email.toLowerCase()
+    if (row.phone) contact.phone = row.phone
+    if (row.company) contact.company = row.company
+    if (row.notes) contact.notes = row.notes
     // Keep only a row with some identity (a name, an email, or a phone).
     if (contact.name || contact.email || contact.phone) out.push(contact)
   }

@@ -142,7 +142,9 @@ async function loadSpaceCompletionAnalytics(spaceId: string): Promise<{ stats: S
   }
 }
 
-/** Legacy dashboard compatibility; new surfaces must distinguish unavailable data from measured zero. */
+/** Legacy dashboard compatibility; new surfaces must distinguish unavailable data from measured zero.
+ *  NO PAGE CALLS THIS since 2026-11-16: the old Space dashboard was deleted (SCAN-1240). It stays
+ *  because its tests are what pin the space and plan binding of the shared loader above. */
 export async function getSpaceCompletionAnalytics(spaceId: string): Promise<SpaceCompletionStats> {
   return (await loadSpaceCompletionAnalytics(spaceId)).stats
 }

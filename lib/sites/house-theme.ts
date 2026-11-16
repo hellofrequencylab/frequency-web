@@ -10,6 +10,7 @@
 // Contact -> the closing ink band. Any other block still renders, through the
 // Space page's own block render, in a plain band, so nothing an owner placed ever disappears.
 
+import { formatPriceAmount } from '@/lib/commerce/types'
 import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
 import { readTypeKeyedGrid } from '@/lib/entity-blocks/node-projection'
 import { siteTheme } from '@/lib/theme/site-style'
@@ -241,31 +242,19 @@ export function formatDuration(minutes: number | undefined): string | null {
   return m === 0 ? `${h} hr` : `${h} hr ${m} min`
 }
 
-function money(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
-    }).format(amount)
-  } catch {
-    return `$${amount}`
-  }
-}
-
 /** An offering's headline price, in major units: "$120", "From $80", "Free", or null (price on request). */
 export function formatOfferingPrice(o: { price?: number; currency?: string; priceModel?: string }): string | null {
   if (o.priceModel === 'free') return 'Free'
   if (o.priceModel === 'contact' || o.price === undefined || !Number.isFinite(o.price)) return null
   if (o.price === 0) return 'Free'
-  const p = money(o.price, o.currency || 'USD')
+  const p = formatPriceAmount(o.price, o.currency || 'USD')
   return o.priceModel === 'from' ? `From ${p}` : p
 }
 
 /** A membership tier's price: "$10 per month", "$90 per year", "$20 once", or "Free". */
 export function formatTierPrice(priceCents: number, interval: string): string {
   if (!priceCents || priceCents <= 0) return 'Free'
-  const p = money(priceCents / 100, 'USD')
+  const p = formatPriceAmount(priceCents / 100, 'USD')
   return interval === 'year' ? `${p} per year` : interval === 'once' ? `${p} once` : `${p} per month`
 }
 
