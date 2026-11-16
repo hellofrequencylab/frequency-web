@@ -31,11 +31,13 @@ export type Stop = {
 
 /**
  * FH-030S: where one stop's code sits, beyond the default (the Space that runs the Hunt, or none).
- * `venue` and `substitute` are Space ids, limited at publish to the Hunt's own Space or a live partner
- * (lib/hunts/partners.ts). The substitute is a second, equivalent code for the same stop at another
- * place: a visit at either counts once, and it keeps the stop open when the first place closes.
+ * `venueSpaceId` and `substitute` are Space ids, limited at publish to the Hunt's own Space or a live
+ * partner (lib/hunts/partners.ts). The substitute is a second, equivalent code for the same stop at
+ * another place: a visit at either counts once, and it keeps the stop open when the first place closes.
+ * FH-020Y: `venueSpaceId` is written as the binding's `venue_space_id`, so on a Trail no Space runs (a
+ * resident's) it is the only way a staff-confirmed stop gets staff who can confirm it.
  */
-export type StopVenue = { stop: string; venue: string; substitute?: string }
+export type StopVenue = { stop: string; venueSpaceId: string; substitute?: string }
 
 /**
  * FH-030S: a region of a Passport (a `Chapter` in lib/hunts/graph). A player who stays inside one
@@ -139,10 +141,10 @@ export function parseTrailDraft(input: unknown): TrailDraft {
   for (const raw of Array.isArray(o.venues) ? o.venues.slice(0, MAX_STOPS) : []) {
     const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
     const stop = typeof r.stop === 'string' && keys.has(r.stop) ? r.stop : undefined
-    const venue = space(r.venue)
+    const venue = space(r.venueSpaceId)
     if (!stop || !venue || venues.some((v) => v.stop === stop)) continue
     const substitute = space(r.substitute)
-    venues.push({ stop, venue, ...(substitute && substitute !== venue ? { substitute } : {}) })
+    venues.push({ stop, venueSpaceId: venue, ...(substitute && substitute !== venue ? { substitute } : {}) })
   }
   const regions: DraftRegion[] = (Array.isArray(o.regions) ? o.regions.slice(0, MAX_REGIONS) : []).map((raw) => {
     const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
@@ -290,7 +292,7 @@ export function draftToGraph(draft: Pick<TrailDraft, 'stops' | 'shape' | 'finish
     const key = stopKey(i)
     const at = draft.venues?.find((v) => v.stop === key)
     const placements = at
-      ? [at.venue, ...(at.substitute ? [at.substitute] : [])].map((venue, n) => ({
+      ? [at.venueSpaceId, ...(at.substitute ? [at.substitute] : [])].map((venue, n) => ({
           placement_key: `${key}:${n === 0 ? 'main' : 'substitute'}`,
           venue: countVenue(venue),
           ...(facts.closedVenues?.has(venue) ? { closed: true } : {}),
@@ -366,7 +368,9 @@ export type ChecklistItem = { code: string; ok: boolean; message: string; stop?:
 /**
  * The publish checklist. Publishing stays off until every item is ok. `venue` says whether the Trail
  * has a venue Space whose staff can confirm a visit (FH-020X); unknown counts as none, so a stop that
- * staff must confirm never goes live where nobody can confirm it.
+ * staff must confirm never goes live where nobody can confirm it. FH-020Y: a staff-confirmed stop that
+ * names its own venue (and substitute) needs each one to be a place whose staff may confirm there:
+ * the Hunt's own Space when one runs it, or a partner in `staffVenues`.
  */
 export function publishChecklist(
   draft: TrailDraft,
@@ -378,6 +382,12 @@ export function publishChecklist(
      * Unknown counts as none, so a stop never goes live at a place that has not agreed.
      */
     allowedVenues?: ReadonlySet<string>
+    /**
+     * FH-020Y: the partner Spaces whose staff may confirm a visit right now: live (lib/hunts/partners.ts
+     * `partnerLive`) and holding the operator role lib/hunts/authz.ts `partnerAllows` asks for. Unknown
+     * counts as none.
+     */
+    staffVenues?: ReadonlySet<string>
   } & VenueFacts = {},
 ): { ok: boolean; items: ChecklistItem[] } {
   const items: ChecklistItem[] = []
@@ -409,7 +419,7 @@ export function publishChecklist(
   for (const v of draft.venues ?? []) {
     const index = draft.stops.findIndex((_, i) => stopKey(i) === v.stop)
     if (index < 0) continue
-    const places = [v.venue, ...(v.substitute ? [v.substitute] : [])]
+    const places = [v.venueSpaceId, ...(v.substitute ? [v.substitute] : [])]
     items.push({
       code: 'stop_venue',
       ok: places.every((p) => opts.allowedVenues?.has(p) === true),
@@ -427,13 +437,25 @@ export function publishChecklist(
     items.push({ code: 'stop_text', ok: s.place.trim() !== '' && s.clue.trim() !== '', stop: i, message: 'This stop needs a place name and a clue.' })
     items.push({ code: 'stop_placement', ok: s.placementReady, stop: i, message: 'Print or place a code at this stop so people can prove they were here.' })
     if (s.staffConfirmed === true) {
-      items.push({ code: 'stop_staff_venue', ok: opts.venue === true, stop: i, message: 'Staff can confirm visits only on a trail a Space runs. Turn off staff confirming for this stop.' })
+      items.push({ code: 'stop_staff_venue', ok: staffCanConfirm(draft, i, opts), stop: i, message: 'Staff can confirm visits only at this Hunt\'s Space or at a partner place that has accepted. Invite the venue as a partner and choose it for this stop, or turn off staff confirming.' })
     }
   })
   items.push({ code: 'title', ok: draft.title.trim() !== '', message: 'Give the trail a title.' })
   items.push({ code: 'route_test', ok: draft.routeTestedAtRevision === revision, message: 'Walk it once in preview before you publish.' })
   items.push({ code: 'permission', ok: draft.permissionConfirmed, message: 'Confirm you may place a code at each place.' })
   return { ok: items.every((i) => i.ok), items }
+}
+
+/**
+ * FH-020Y: may staff confirm a visit at every place this stop's codes sit? With no chosen venue the code
+ * sits at the Space that runs the Trail (FH-020X), so only a Space-run Trail passes. A chosen venue and
+ * its substitute each need staff: the running Space's own, or a partner's that may confirm right now.
+ */
+function staffCanConfirm(draft: TrailDraft, index: number, opts: { venue?: boolean; staffVenues?: ReadonlySet<string>; ownerSpaceId?: string | null }): boolean {
+  const { venueSpaceId, substitute } = stopVenue(draft, index)
+  if (!venueSpaceId) return opts.venue === true
+  return [venueSpaceId, ...(substitute ? [substitute] : [])].every((p) =>
+    (opts.ownerSpaceId && p === opts.ownerSpaceId ? opts.venue === true : opts.staffVenues?.has(p) === true))
 }
 
 /**
@@ -527,14 +549,14 @@ export function publishPolicy(draft: Pick<TrailDraft, 'stops' | 'regions'>): { c
 }
 
 /** FH-030S: the venue of each stop's main code and its substitute, if any. Null means the default. */
-export function stopVenue(draft: Pick<TrailDraft, 'venues'>, index: number): { venue: string | null; substitute: string | null } {
+export function stopVenue(draft: Pick<TrailDraft, 'venues'>, index: number): { venueSpaceId: string | null; substitute: string | null } {
   const at = draft.venues?.find((v) => v.stop === stopKey(index))
-  return { venue: at?.venue ?? null, substitute: at?.substitute ?? null }
+  return { venueSpaceId: at?.venueSpaceId ?? null, substitute: at?.substitute ?? null }
 }
 
 /** FH-030S: every Space a stop names as a venue or a substitute, for the partner check at publish. */
 export function draftVenueIds(draft: Pick<TrailDraft, 'venues'>): string[] {
-  return [...new Set((draft.venues ?? []).flatMap((v) => [v.venue, ...(v.substitute ? [v.substitute] : [])]))].sort()
+  return [...new Set((draft.venues ?? []).flatMap((v) => [v.venueSpaceId, ...(v.substitute ? [v.substitute] : [])]))].sort()
 }
 
 type BindingPolicy = { mission_key: string; placement_id: string; evidence_policy: unknown }

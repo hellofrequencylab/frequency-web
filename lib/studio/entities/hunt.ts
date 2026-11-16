@@ -36,7 +36,8 @@ const HUNT_SHAPES: readonly FieldOption[] = [
 /**
  * FH-030S: the collections the editor loads for the count rules. `hunt-stops` is the draft's own stops
  * (stop-1, stop-2, ...). `hunt-venues` is the Hunt's own Space plus each partner Space live right now
- * (lib/hunts/store.ts `loadTrail`), so a stop can only name a place that has agreed.
+ * (lib/hunts/store.ts `loadTrail`), so a stop can only name a place that has agreed. A resident's Trail
+ * has no own Space, so its options are the live partners alone (FH-020Y).
  */
 export const HUNT_OPTIONS = { stops: 'hunt-stops', venues: 'hunt-venues' } as const
 
@@ -100,7 +101,9 @@ export const HUNT_MANIFEST: EntityManifest = {
       itemLabel: (item, index) => (typeof item.stop === 'string' && item.stop ? item.stop.replace('stop-', 'Stop ') : `Place ${index + 1}`),
       fields: [
         { path: 'stop', label: 'Stop', kind: 'select', optionsFrom: HUNT_OPTIONS.stops, required: true },
-        { path: 'venue', label: 'Venue', kind: 'reference', optionsFrom: HUNT_OPTIONS.venues, required: true },
+        // FH-020Y: written as the stop binding's venue_space_id (lib/hunts/store.ts). On a resident's Trail
+        // the options are only partners live now, so a staff-confirmed stop there names whose staff confirm it.
+        { path: 'venueSpaceId', label: 'Venue', kind: 'reference', optionsFrom: HUNT_OPTIONS.venues, required: true },
         { path: 'substitute', label: 'Substitute place (counts the same if the venue closes)', kind: 'reference', optionsFrom: HUNT_OPTIONS.venues },
       ],
     },

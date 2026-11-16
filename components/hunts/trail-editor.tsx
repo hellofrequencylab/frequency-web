@@ -227,7 +227,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
     edit((d) => {
       const free = d.stops.map((_, i) => stopKey(i)).find((k) => !(d.venues ?? []).some((v) => v.stop === k))
       const first = initial.venueOptions[0]?.value
-      return free && first ? { ...d, venues: [...(d.venues ?? []), { stop: free, venue: first }] } : d
+      return free && first ? { ...d, venues: [...(d.venues ?? []), { stop: free, venueSpaceId: first }] } : d
     })
   const removeVenue = (i: number) => edit((d) => ({ ...d, venues: (d.venues ?? []).filter((_, j) => j !== i) }))
   const setRegion = (i: number, path: string, value: string | string[]) =>
@@ -292,8 +292,9 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
         allowedVenues: new Set(initial.venueOptions.map((o) => o.value)),
         ownerSpaceId: initial.ownerSpaceId,
         closedVenues: new Set(initial.closingVenues),
+        staffVenues: new Set(initial.staffVenues),
       }),
-    [draft, permission, revision, initial.hasVenue, initial.venueOptions, initial.ownerSpaceId, initial.closingVenues],
+    [draft, permission, revision, initial.hasVenue, initial.venueOptions, initial.ownerSpaceId, initial.closingVenues, initial.staffVenues],
   )
 
   const publish = async () => {
@@ -579,7 +580,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
           {initial.venueOptions.length > 0 && (
             <section className="space-y-3" aria-label="Partner places">
               <p className="text-body font-semibold text-text">Partner places</p>
-              <p className="text-body-sm text-muted">Choose the venue a stop&apos;s code sits at: this Hunt&apos;s Space or a partner that has accepted. A substitute place counts the same, and keeps the stop open if the venue closes.</p>
+              <p className="text-body-sm text-muted">Choose the venue a stop&apos;s code sits at: this Hunt&apos;s Space or a partner that has accepted. Staff there confirm the visits at a stop they check. A substitute place counts the same, and keeps the stop open if the venue closes.</p>
               {(draft.venues ?? []).map((v, i) => (
                 <div key={i} className="space-y-3 rounded-card border border-border bg-surface p-4">
                   <div className="flex items-center justify-end">
@@ -598,7 +599,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
                       />
                     </StudioField>
                   ))}
-                  {initial.closingVenues.includes(v.venue) && <StudioNote>This venue is leaving the Hunt. Add a substitute place so the stop stays open.</StudioNote>}
+                  {initial.closingVenues.includes(v.venueSpaceId) && <StudioNote>This venue is leaving the Hunt. Add a substitute place so the stop stays open.</StudioNote>}
                 </div>
               ))}
               <Button

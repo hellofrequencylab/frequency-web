@@ -198,9 +198,9 @@ describe('a Passport with a threshold, partner places and regions (FH-030S)', ()
   })
 
   it('counts every stop of a Space-run Passport, but two stops at one partner venue only once', () => {
-    const atOwner = passport({ finishCount: 5, venues: five().map((_, i) => ({ stop: stopKey(i), venue: OWNER })) })
+    const atOwner = passport({ finishCount: 5, venues: five().map((_, i) => ({ stop: stopKey(i), venueSpaceId: OWNER })) })
     expect(publishChecklist(atOwner, 4, { allowedVenues: new Set([OWNER]), ownerSpaceId: OWNER }).ok).toBe(true)
-    const shared = passport({ finishCount: 5, venues: [{ stop: 'stop-1', venue: CAFE }, { stop: 'stop-2', venue: CAFE }] })
+    const shared = passport({ finishCount: 5, venues: [{ stop: 'stop-1', venueSpaceId: CAFE }, { stop: 'stop-2', venueSpaceId: CAFE }] })
     const graph = publishChecklist(shared, 4, { allowedVenues: new Set([CAFE]) }).items.find((i) => i.code === 'graph')
     expect(graph?.ok).toBe(false)
     expect(graph?.message).toMatch(/^The Passport asks for more places than a player can visit\./)
@@ -208,7 +208,7 @@ describe('a Passport with a threshold, partner places and regions (FH-030S)', ()
   })
 
   it('refuses a stop placed at a Space that is not this Hunt\'s or a live partner', () => {
-    const d = passport({ venues: [{ stop: 'stop-2', venue: CAFE, substitute: PARK }] })
+    const d = passport({ venues: [{ stop: 'stop-2', venueSpaceId: CAFE, substitute: PARK }] })
     const item = (allowed: string[]) => publishChecklist(d, 4, { allowedVenues: new Set(allowed) }).items.find((i) => i.code === 'stop_venue')
     expect(item([CAFE])).toMatchObject({ ok: false, stop: 1 })
     expect(item([CAFE, PARK])?.ok).toBe(true)
@@ -218,14 +218,14 @@ describe('a Passport with a threshold, partner places and regions (FH-030S)', ()
 
   it('refuses a planned closure that breaks a region, and passes once a substitute keeps the stop open', () => {
     const regions = [{ name: 'Harbor', enabled: true, stops: ['stop-1', 'stop-2'] }, { name: 'Old town', enabled: true, stops: ['stop-3', 'stop-4', 'stop-5'] }]
-    const d = passport({ finishCount: 2, regions, venues: [{ stop: 'stop-1', venue: CAFE }] })
+    const d = passport({ finishCount: 2, regions, venues: [{ stop: 'stop-1', venueSpaceId: CAFE }] })
     const allowedVenues = new Set([CAFE, PARK])
     expect(publishChecklist(d, 4, { allowedVenues }).ok).toBe(true)
     const leaving = publishChecklist(d, 4, { allowedVenues, closedVenues: new Set([CAFE]) })
     const closure = leaving.items.find((i) => i.code === 'venue_closure')
     expect(leaving.ok).toBe(false)
     expect(closure?.message).toContain('The region "Harbor" cannot be finished on its own.')
-    const covered = { ...d, venues: [{ stop: 'stop-1', venue: CAFE, substitute: PARK }] }
+    const covered = { ...d, venues: [{ stop: 'stop-1', venueSpaceId: CAFE, substitute: PARK }] }
     expect(publishChecklist(covered, 4, { allowedVenues, closedVenues: new Set([CAFE]) }).ok).toBe(true)
   })
 
@@ -247,33 +247,58 @@ describe('a Passport with a threshold, partner places and regions (FH-030S)', ()
       stops: five(),
       shape: 'passport',
       finishCount: 3,
-      venues: [{ stop: 'stop-2', venue: CAFE.toUpperCase(), substitute: CAFE }, { stop: 'stop-9', venue: PARK }, { stop: 'stop-3', venue: 'not-a-space' }, { stop: 'stop-2', venue: PARK }],
+      venues: [{ stop: 'stop-2', venueSpaceId: CAFE.toUpperCase(), substitute: CAFE }, { stop: 'stop-9', venueSpaceId: PARK }, { stop: 'stop-3', venueSpaceId: 'not-a-space' }, { stop: 'stop-2', venueSpaceId: PARK }],
       regions: [{ name: 'Harbor', enabled: 'true', stops: ['stop-1', 'stop-1', 'stop-42'] }],
     })
     expect(parsed.shape).toBe('passport')
     expect(parsed.finishCount).toBe(3)
-    expect(parsed.venues).toEqual([{ stop: 'stop-2', venue: CAFE }])
+    expect(parsed.venues).toEqual([{ stop: 'stop-2', venueSpaceId: CAFE }])
     expect(parsed.regions).toEqual([{ name: 'Harbor', enabled: false, stops: ['stop-1'] }])
     const older = parseTrailDraft({ ...draft(), finishCount: 0, shape: 'maze' })
     expect(Object.keys(older).sort()).toEqual(['area', 'audience', 'hook', 'permissionConfirmed', 'routeTestedAtRevision', 'stops', 'title'])
   })
 
   it('moves a stop\'s place and region with it, and drops them with a removed stop', () => {
-    const d = passport({ venues: [{ stop: 'stop-1', venue: CAFE }, { stop: 'stop-3', venue: PARK }], regions: [{ name: 'Harbor', enabled: true, stops: ['stop-1', 'stop-2'] }] })
+    const d = passport({ venues: [{ stop: 'stop-1', venueSpaceId: CAFE }, { stop: 'stop-3', venueSpaceId: PARK }], regions: [{ name: 'Harbor', enabled: true, stops: ['stop-1', 'stop-2'] }] })
     const moved = reorderStops(d, [1, 0, 2, 3, 4])
     expect(moved.stops[1].place).toBe('Place 1')
-    expect(moved.venues).toEqual([{ stop: 'stop-2', venue: CAFE }, { stop: 'stop-3', venue: PARK }])
+    expect(moved.venues).toEqual([{ stop: 'stop-2', venueSpaceId: CAFE }, { stop: 'stop-3', venueSpaceId: PARK }])
     expect(moved.regions?.[0].stops).toEqual(['stop-2', 'stop-1'])
     const removed = reorderStops(d, [1, 2, 3, 4])
-    expect(removed.venues).toEqual([{ stop: 'stop-2', venue: PARK }])
+    expect(removed.venues).toEqual([{ stop: 'stop-2', venueSpaceId: PARK }])
     expect(removed.regions?.[0].stops).toEqual(['stop-1'])
   })
 
   it('offers the places and regions through the Hunt manifest, limited to the venues the editor loads', () => {
     const venueFields = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'venues')?.fields ?? []
-    expect(venueFields.map((f) => [f.path, f.optionsFrom])).toEqual([['stop', 'hunt-stops'], ['venue', 'hunt-venues'], ['substitute', 'hunt-venues']])
+    expect(venueFields.map((f) => [f.path, f.optionsFrom])).toEqual([['stop', 'hunt-stops'], ['venueSpaceId', 'hunt-venues'], ['substitute', 'hunt-venues']])
     const regionFields = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'regions')?.fields ?? []
     expect(regionFields.map((f) => f.kind)).toEqual(['text', 'toggle', 'multiselect'])
     expect(HUNT_MANIFEST.fields.find((f) => f.path === 'finishCount')?.kind).toBe('number')
+  })
+})
+
+describe('the staff-confirmed stop checklist item (FH-020Y)', () => {
+  const CAFE = 'cccccccc-0000-4000-8000-000000000021'
+  const OWN = 'cccccccc-0000-4000-8000-000000000022'
+  const staffed = (venues?: Draft['venues']): Draft => ({
+    ...draft(),
+    stops: [stop(1), { ...stop(2), staffConfirmed: true }, stop(3)],
+    ...(venues ? { venues } : {}),
+  })
+  const item = (d: Draft, opts: Parameters<typeof publishChecklist>[2]) => publishChecklist(d, 4, opts).items.find((i) => i.code === 'stop_staff_venue')
+
+  it('passes on a resident Trail when the stop names a partner whose staff may confirm, and refuses otherwise', () => {
+    const atCafe = staffed([{ stop: 'stop-2', venueSpaceId: CAFE }])
+    expect(item(atCafe, { allowedVenues: new Set([CAFE]), staffVenues: new Set([CAFE]) })).toMatchObject({ ok: true, stop: 1 })
+    expect(publishChecklist(atCafe, 4, { allowedVenues: new Set([CAFE]), staffVenues: new Set([CAFE]) }).ok).toBe(true)
+    expect(item(atCafe, { allowedVenues: new Set([CAFE]) })?.ok).toBe(false)
+    expect(item(staffed(), { staffVenues: new Set([CAFE]) })?.ok).toBe(false)
+  })
+
+  it('keeps a Space-run Trail passing on its own Space, chosen or by default', () => {
+    expect(item(staffed(), { venue: true, ownerSpaceId: OWN })?.ok).toBe(true)
+    expect(item(staffed([{ stop: 'stop-2', venueSpaceId: OWN }]), { venue: true, ownerSpaceId: OWN, allowedVenues: new Set([OWN]) })?.ok).toBe(true)
+    expect(item(staffed([{ stop: 'stop-2', venueSpaceId: CAFE }]), { venue: true, ownerSpaceId: OWN, allowedVenues: new Set([OWN, CAFE]) })?.ok).toBe(false)
   })
 })

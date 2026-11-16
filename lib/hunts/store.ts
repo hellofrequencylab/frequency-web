@@ -27,7 +27,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { decide, type HuntAction, type PartnerRow, type RoleGrant } from '@/lib/hunts/authz'
-import { partnerLive, publishVenueBlocks } from '@/lib/hunts/partners'
+import { partnerConfirms, partnerLive, publishVenueBlocks } from '@/lib/hunts/partners'
 import { slugify } from '@/lib/utils'
 import { generateSlug } from '@/lib/qr/codes'
 import {
@@ -96,6 +96,11 @@ export type TrailEditorState = {
    */
   venueOptions: { value: string; label: string }[]
   closingVenues: string[]
+  /**
+   * FH-020Y: the partner Spaces among `venueOptions` whose staff may confirm a visit now, so a
+   * staff-confirmed stop can name one as its venueSpaceId on a Trail no Space runs.
+   */
+  staffVenues: string[]
   ownerSpaceId: string | null
   draft: TrailDraft
 }
@@ -237,6 +242,7 @@ export async function loadTrail(huntId: string, actor: Actor): Promise<TrailEdit
     hasVenue: hunt.owner_space_id !== null,
     venueOptions,
     closingVenues: [...facts.closing].sort(),
+    staffVenues: [...facts.staff].sort(),
     ownerSpaceId: hunt.owner_space_id,
     draft: trailOf(version),
   }
@@ -249,7 +255,7 @@ export async function loadTrail(huntId: string, actor: Actor): Promise<TrailEdit
  * publish guard checks the Hunt still finishes without it. A failed read throws: a publish that cannot
  * check its venues does not go out.
  */
-async function loadVenueFacts(client: SupabaseClient, hunt: HuntRow): Promise<{ partners: PartnerRow[]; allowed: Set<string>; closing: Set<string> }> {
+async function loadVenueFacts(client: SupabaseClient, hunt: HuntRow): Promise<{ partners: PartnerRow[]; allowed: Set<string>; closing: Set<string>; staff: Set<string> }> {
   const rows = await client.from('hunt_partners').select('hunt_id, space_id, status, effective_at, revoked_at, permitted_roles').eq('hunt_id', hunt.id)
   if (rows.error) throw new Error(rows.error.message)
   const partners: PartnerRow[] = ((rows.data ?? []) as { hunt_id: string; space_id: string; status: PartnerRow['status']; effective_at: string | null; revoked_at: string | null; permitted_roles: string[] | null }[]).map((p) => ({
@@ -263,13 +269,15 @@ async function loadVenueFacts(client: SupabaseClient, hunt: HuntRow): Promise<{ 
   const now = new Date().toISOString()
   const allowed = new Set<string>(hunt.owner_space_id ? [hunt.owner_space_id] : [])
   const closing = new Set<string>()
+  const staff = new Set<string>()
   // One row per Hunt and Space (the table's key), so each Space is decided by its one row.
   for (const p of partners) {
     if (p.huntId !== hunt.id || p.spaceId === hunt.owner_space_id) continue
     if (partnerLive(p, now)) allowed.add(p.spaceId)
+    if (partnerConfirms(p, now)) staff.add(p.spaceId)
     if (!partnerLive(p, now) || p.revokedAt !== null) closing.add(p.spaceId)
   }
-  return { partners, allowed, closing }
+  return { partners, allowed, closing, staff }
 }
 
 type TrailSummary = { huntId: string; title: string; status: string; visibility: HuntRow['visibility']; stops: number; updatedAt: string | null }
@@ -425,12 +433,14 @@ async function bindStopPlacements(client: SupabaseClient, hunt: HuntRow, version
   }
 
   // FH-030S: a stop's main code sits at the venue the draft names for it, else at the Space that runs the Trail.
+  // FH-020Y: on a resident's Trail (no Space runs it) the venueSpaceId is a live partner, and its staff
+  // are the ones lib/hunts/staff-queue-store.ts shows a held visit to; with none chosen the venue is null.
   const rows = ids.map((placement_id, i) => ({
     version_id: versionId,
     hunt_id: hunt.id,
     mission_key: stopKey(i),
     placement_id,
-    venue_space_id: stopVenue(draft, i).venue ?? hunt.owner_space_id,
+    venue_space_id: stopVenue(draft, i).venueSpaceId ?? hunt.owner_space_id,
     evidence_policy: stopEvidencePolicy(draft.stops[i]),
   }))
   rows.push(...(await bindSubstitutes(client, hunt, versionId, draft, { ids, boundRows, liveIds })))
@@ -568,12 +578,13 @@ export async function publishTrail(
   // withdrew a minute ago is refused and one set to leave is checked as closed (`venue_closure`).
   const facts = draftVenueIds(draft).length > 0
     ? await loadVenueFacts(client, hunt)
-    : { allowed: new Set<string>(hunt.owner_space_id ? [hunt.owner_space_id] : []), closing: new Set<string>() }
+    : { allowed: new Set<string>(hunt.owner_space_id ? [hunt.owner_space_id] : []), closing: new Set<string>(), staff: new Set<string>() }
   const checklist = publishChecklist(draft, hunt.revision, {
     venue: hunt.owner_space_id !== null,
     allowedVenues: facts.allowed,
     ownerSpaceId: hunt.owner_space_id,
     closedVenues: facts.closing,
+    staffVenues: facts.staff,
   })
   if (hunt.revision !== baseRevision) return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
   if (!checklist.ok) return { ok: false, reason: 'checklist', items: checklist.items }

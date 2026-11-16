@@ -75,6 +75,7 @@ function query(table: string) {
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (t: string) => query(t) }) }))
 
+import { decide } from './authz'
 import { parseTrailDraft, type TrailDraft } from './draft'
 import { publishTrail } from './store'
 
@@ -208,7 +209,7 @@ describe('publishing a Passport with partner places and regions (FH-030S)', () =
 
   it('writes the count group with min_count, each stop\'s venue, the substitute code and the regions', async () => {
     passport({
-      venues: [{ stop: 'stop-2', venue: CAFE, substitute: PARK }],
+      venues: [{ stop: 'stop-2', venueSpaceId: CAFE, substitute: PARK }],
       regions: [{ name: 'Harbor', enabled: true, stops: ['stop-1', 'stop-2', 'stop-3'] }, { name: 'Pier', enabled: false, stops: ['stop-4'] }],
     })
     tables.hunt_partners = [partner(CAFE), partner(PARK)]
@@ -226,14 +227,14 @@ describe('publishing a Passport with partner places and regions (FH-030S)', () =
   })
 
   it('refuses a stop at a partner that withdrew, and a planned closure that breaks a region, writing nothing', async () => {
-    passport({ venues: [{ stop: 'stop-2', venue: CAFE }] })
+    passport({ venues: [{ stop: 'stop-2', venueSpaceId: CAFE }] })
     tables.hunt_partners = [partner(CAFE, { status: 'withdrawn', revoked_at: '2026-11-01T00:00:00Z' })]
     expect(await publishTrail('hunt-1', ACTOR, 4, 'unlisted', true)).toMatchObject({ ok: false, reason: 'checklist' })
     expect(bindings()).toHaveLength(0)
 
     passport({
       finishCount: 2,
-      venues: [{ stop: 'stop-1', venue: CAFE }],
+      venues: [{ stop: 'stop-1', venueSpaceId: CAFE }],
       regions: [{ name: 'Harbor', enabled: true, stops: ['stop-1', 'stop-2'] }, { name: 'Old town', enabled: true, stops: ['stop-3', 'stop-4', 'stop-5'] }],
     })
     // Live today, with an end date: the Harbor region could not be finished once it leaves.
@@ -243,5 +244,60 @@ describe('publishing a Passport with partner places and regions (FH-030S)', () =
     if (res.ok || res.reason !== 'checklist') return
     expect(res.items.find((i) => i.code === 'venue_closure')).toMatchObject({ ok: false })
     expect(bindings()).toHaveLength(0)
+  })
+})
+
+describe('a resident Trail names a partner venue for a staff-confirmed stop (FH-020Y)', () => {
+  const CAFE = 'cccccccc-0000-4000-8000-000000000011'
+  const PARK = 'cccccccc-0000-4000-8000-000000000012'
+  const partner = (space_id: string, over: Row = {}) => ({ hunt_id: 'hunt-1', space_id, status: 'accepted', effective_at: '2026-01-01T00:00:00Z', revoked_at: null, permitted_roles: ['operator'], ...over })
+  const resident = (venues: unknown[]) => {
+    seed({ stops: [stop(1), stop(2, { staffConfirmed: true, holdForReview: true }), stop(3)] })
+    Object.assign((tables.hunt_versions[0].policy as { trail: Record<string, unknown> }).trail, { venues })
+  }
+  const staffItem = (res: Awaited<ReturnType<typeof publishTrail>>) =>
+    !res.ok && res.reason === 'checklist' ? res.items.find((i) => i.code === 'stop_staff_venue') : undefined
+
+  it('publishes with the partner as the binding venue, so that venue\'s staff may review a held visit there', async () => {
+    resident([{ stop: 'stop-2', venueSpaceId: CAFE }])
+    tables.hunt_partners = [partner(CAFE)]
+    const res = await publishTrail('hunt-1', ACTOR, 4, 'unlisted', true)
+    expect(res.ok).toBe(true)
+    const held = bindings().find((b) => b.mission_key === 'stop-2')
+    expect(held).toMatchObject({ venue_space_id: CAFE, evidence_policy: { hold_for_review: true } })
+    expect(bindings().find((b) => b.mission_key === 'stop-1')?.venue_space_id).toBeNull()
+    expect((tables.hunt_missions as Row[]).find((m) => m.mission_key === 'stop-2')?.required_assurance).toBe('staff')
+
+    // The staff queue (lib/hunts/staff-queue-store.ts) attributes a held claim to this venue_space_id and asks the gate.
+    const facts = (staffSpaceIds: string[], now = '2026-11-16T12:00:00Z') => ({
+      hunt: { id: 'hunt-1', visibility: 'unlisted' as const, ownerProfileId: ACTOR.profileId, ownerSpaceId: null },
+      grants: [],
+      partners: [{ huntId: 'hunt-1', spaceId: CAFE, status: 'accepted' as const, effectiveAt: '2026-01-01T00:00:00Z', revokedAt: null, permittedRoles: ['operator'] }],
+      actor: { profileId: 'barista-1', staffSpaceIds },
+      ctx: { venueSpaceId: held?.venue_space_id, targetHuntId: 'hunt-1' },
+      now,
+    })
+    expect(decide('review_claim', facts([CAFE])).allow).toBe(true)
+    expect(decide('review_claim', facts([PARK])).allow).toBe(false)
+  })
+
+  it('still refuses when no venue is named, the partner is not live, or it may not confirm visits, writing nothing', async () => {
+    resident([])
+    expect(staffItem(await publishTrail('hunt-1', ACTOR, 4, 'unlisted', true))).toMatchObject({ ok: false, stop: 1 })
+
+    resident([{ stop: 'stop-2', venueSpaceId: CAFE }])
+    tables.hunt_partners = [partner(CAFE, { status: 'withdrawn', revoked_at: '2026-11-01T00:00:00Z' })]
+    expect(staffItem(await publishTrail('hunt-1', ACTOR, 4, 'unlisted', true))).toMatchObject({ ok: false, stop: 1 })
+
+    resident([{ stop: 'stop-2', venueSpaceId: CAFE }])
+    tables.hunt_partners = [partner(CAFE, { permitted_roles: [] })]
+    expect(staffItem(await publishTrail('hunt-1', ACTOR, 4, 'unlisted', true))).toMatchObject({ ok: false, stop: 1 })
+
+    // A substitute place needs staff too: a held visit there goes to its staff.
+    resident([{ stop: 'stop-2', venueSpaceId: CAFE, substitute: PARK }])
+    tables.hunt_partners = [partner(CAFE), partner(PARK, { permitted_roles: [] })]
+    expect(staffItem(await publishTrail('hunt-1', ACTOR, 4, 'unlisted', true))).toMatchObject({ ok: false, stop: 1 })
+    expect(bindings()).toHaveLength(0)
+    expect(tables.hunt_placements ?? []).toHaveLength(0)
   })
 })

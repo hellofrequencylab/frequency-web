@@ -52,6 +52,15 @@ export function partnerLive(row: Pick<PartnerRow, 'status' | 'effectiveAt' | 're
   )
 }
 
+/**
+ * FH-020Y: may this partner's staff confirm a visit at `now`? Live, and holding the operator role that
+ * lib/hunts/authz.ts `partnerAllows` asks for to verify or review a claim. A staff-confirmed stop may
+ * name only such a venue: anywhere else the staff queue could never show its held visits to anyone.
+ */
+export function partnerConfirms(row: Pick<PartnerRow, 'status' | 'effectiveAt' | 'revokedAt' | 'permittedRoles'>, now: string): boolean {
+  return partnerLive(row, now) && row.permittedRoles.includes('operator')
+}
+
 type InviteRefusal = 'own_space' | 'not_a_steward' | 'already_partner'
 
 /** May the organiser send this invite? The named person must be a steward of the Space right now. */
