@@ -18,4 +18,10 @@ describe('layer list', () => {
     expect(html).not.toMatch(/disabled=""[^>]*aria-label="Move Story up"/)
     expect(html).toContain('min-h-11')
   })
+  it('offers no Edit button until something can be selected, then one per row at 44px with the pick pressed', () => {
+    expect(html).not.toContain('aria-label="Edit ')
+    const picking = renderToStaticMarkup(<LayerList layers={LAYERS} onChange={vi.fn()} selectedId="b" onSelect={vi.fn()} />)
+    expect(picking).toMatch(/min-h-11 min-w-11[^>]*aria-pressed="true"[^>]*aria-label="Edit Story"/)
+    expect(picking).toMatch(/aria-pressed="false"[^>]*aria-label="Edit Banner"/)
+  })
 })
