@@ -18,6 +18,7 @@ import FunnelInduction from '@/app/join/(induction)/induction'
 import { saveDefaultFunnelCopy, resetDefaultFunnelCopy } from './actions'
 import { saveFunnelVersion, renameFunnelSlug } from '@/app/(main)/pages/sequences/builder-actions'
 import { buttonClasses } from '@/components/ui/button'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 // Live-preview copy editor for a Funnel. Left: one section per beat with an
 // input for every voiced string. Right: the
@@ -511,32 +512,15 @@ export function SplashCopyEditor({
                   {'Keep the General funnel on the Beta waitlist; send niche funnels straight into the app.'}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2" role="group" aria-label="Completion destination">
-                <button
-                  type="button"
-                  aria-pressed={destMode === 'waitlist'}
-                  onClick={() => { setDestMode('waitlist'); setSaved(false) }}
-                  className={`rounded-control px-3 py-2 text-meta font-semibold transition-colors ${
-                    destMode === 'waitlist'
-                      ? 'bg-primary text-on-primary'
-                      : 'border border-border bg-surface text-subtle hover:bg-surface-elevated'
-                  }`}
-                >
-                  Beta waitlist
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={destMode === 'direct'}
-                  onClick={() => { setDestMode('direct'); setSaved(false) }}
-                  className={`rounded-control px-3 py-2 text-meta font-semibold transition-colors ${
-                    destMode === 'direct'
-                      ? 'bg-primary text-on-primary'
-                      : 'border border-border bg-surface text-subtle hover:bg-surface-elevated'
-                  }`}
-                >
-                  Admit directly
-                </button>
-              </div>
+              <SegmentedControl
+                label="Completion destination"
+                value={destMode}
+                onChange={(mode) => { setDestMode(mode); setSaved(false) }}
+                segments={[
+                  { value: 'waitlist', label: 'Beta waitlist' },
+                  { value: 'direct', label: 'Admit directly' },
+                ]}
+              />
               {destMode === 'direct' && (
                 <div>
                   <label className={LABEL} htmlFor="dest-url">
@@ -598,23 +582,13 @@ export function SplashCopyEditor({
             <Eye className="h-3.5 w-3.5" /> Live preview
             {dirty && <span className="font-normal text-warning">· unpublished edits</span>}
           </p>
-          <div className="flex flex-wrap gap-1.5" aria-label="Preview beat">
-            {BEATS.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                aria-pressed={previewBeat === b.beatIndex}
-                onClick={() => setPreviewBeat(b.beatIndex)}
-                className={`rounded-pill px-2.5 py-1 text-2xs font-semibold transition-colors ${
-                  previewBeat === b.beatIndex
-                    ? 'bg-primary text-on-primary'
-                    : 'border border-border bg-surface text-subtle hover:bg-surface-elevated'
-                }`}
-              >
-                {b.title}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            size="xs"
+            label="Preview beat"
+            value={String(previewBeat)}
+            onChange={(beat) => setPreviewBeat(Number(beat))}
+            segments={BEATS.map((b) => ({ value: String(b.beatIndex), label: b.title, className: 'px-2' }))}
+          />
         </div>
 
         {/* The REAL induction component (preview mode: nothing is saved), scaled to

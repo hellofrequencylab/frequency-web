@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 603,
+      "baseline": 596,
       "frozen": {
-        "at": "2026-10-28",
-        "value": 603,
+        "at": "2026-11-16",
+        "value": 596,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Sweep landed on main: 707 to 603 literal radii retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
-        "from": 707
+        "reason": "SCAN-1133 slice 9: the hand-rolled segmented bars, pills and tiles that moved onto the kit SegmentedControl, chipClasses and choiceTileClasses carried literal rounded-md, rounded-pill and rounded-lg classes that left with them",
+        "from": 603
       },
       "history": [
         {
@@ -392,6 +392,13 @@
           "to": 603,
           "direction": "lowered",
           "reason": "Sweep landed on main: 707 to 603 literal radii retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
+        },
+        {
+          "at": "2026-11-16",
+          "from": 603,
+          "to": 596,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 9: the hand-rolled segmented bars, pills and tiles that moved onto the kit SegmentedControl, chipClasses and choiceTileClasses carried literal rounded-md, rounded-pill and rounded-lg classes that left with them"
         }
       ]
     },
@@ -758,14 +765,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 73,
+      "baseline": 57,
       "frozen": {
         "at": "2026-11-16",
-        "value": 73,
+        "value": 57,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice 8: 21 raw button backgrounds in events, spaces, settings, studio and three admin leftovers moved to the kit (chipClasses pills, choiceTileClasses tiles, SegmentedControl switches, the kit Switch); floor re-frozen to the measured 73",
-        "from": 94
+        "reason": "SCAN-1133 slice 9: the kit SegmentedControl gains a compact xs size and 16 editor and builder raw buttons move onto the kit (inspector Segmented bar and wrap mode, the two row layout pickers, Journey visibility, the sequence editor destination pair and beat bar, the member viewer sort to SegmentedControl; Circle builder, price quick-picks, room visibility, task effort, import merge rule and card tap mode to choiceTileClasses or chipClasses)",
+        "from": 73
       },
       "history": [
         {
@@ -1061,6 +1068,13 @@
           "to": 73,
           "direction": "lowered",
           "reason": "SCAN-1133 slice 8: 21 raw button backgrounds in events, spaces, settings, studio and three admin leftovers moved to the kit (chipClasses pills, choiceTileClasses tiles, SegmentedControl switches, the kit Switch); floor re-frozen to the measured 73"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 73,
+          "to": 57,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 9: the kit SegmentedControl gains a compact xs size and 16 editor and builder raw buttons move onto the kit (inspector Segmented bar and wrap mode, the two row layout pickers, Journey visibility, the sequence editor destination pair and beat bar, the member viewer sort to SegmentedControl; Circle builder, price quick-picks, room visibility, task effort, import merge rule and card tap mode to choiceTileClasses or chipClasses)"
         }
       ]
     },
@@ -1438,14 +1452,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 54,
+      "baseline": 50,
       "frozen": {
-        "at": "2026-10-28",
-        "value": 54,
+        "at": "2026-11-16",
+        "value": 50,
         "direction": "lowered",
         "basis": "8afdfcd88c01",
-        "reason": "Sweep landed on main: 59 to 54 arbitrary px values retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
-        "from": 59
+        "reason": "SCAN-1133 slice 9: the inspector Segmented bar and wrap mode and the two row layout pickers dropped their min-h-[26px], min-h-[28px] and min-h-[24px] heights when they moved onto the kit SegmentedControl xs size, which uses min-h-6",
+        "from": 54
       },
       "history": [
         {
@@ -1545,6 +1559,13 @@
           "to": 54,
           "direction": "lowered",
           "reason": "Sweep landed on main: 59 to 54 arbitrary px values retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
+        },
+        {
+          "at": "2026-11-16",
+          "from": 54,
+          "to": 50,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 9: the inspector Segmented bar and wrap mode and the two row layout pickers dropped their min-h-[26px], min-h-[28px] and min-h-[24px] heights when they moved onto the kit SegmentedControl xs size, which uses min-h-6"
         }
       ]
     },
