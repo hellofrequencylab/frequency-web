@@ -597,6 +597,13 @@ count.
 | `raw-css-paths` | **0** ✅ | **must stay 0** — any authored-CSS field, `dangerouslySetInnerHTML` on tenant content, or `<style>` fed from a document is the [ADR-976](DECISIONS.md) D-1 decision leaking back in |
 | `editor-bytes-on-public-render` | current | → falls. The CRDT, awareness and Realtime client must never reach a visitor bundle (§4.1) |
 
+**What `block-systems` counts (re-seeded 2026-11-16, ADR-1953).** One entry file per system in the
+section 2.1 table: `lib/entity-blocks/registry.ts`, `lib/page-editor/config.tsx`,
+`lib/widgets/modules.ts`, `lib/spaces/profile-blocks.ts`, `lib/spotlight/blocks/schema.ts`. The first
+seed listed `lib/email-studio/product-block.ts`, `lib/library/element-catalog.ts` and the
+`components/spotlight` directory, none of which is a block system, and missed Layout modules and the
+Space profile catalog. A system leaves the count when its entry file is deleted, not renamed.
+
 ### 7.4 Equivalence harnesses
 
 The model already exists: `lib/page-editor/block-render.test.tsx` — **10 inline snapshots** across 18 `it()` cases, of

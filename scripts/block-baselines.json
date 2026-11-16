@@ -3,24 +3,33 @@
   "entries": [
     {
       "key": "block-systems",
-      "description": "Independent block systems still in the tree (target 1). Counted as how many of the five system entry points exist.",
+      "description": "Independent block systems still in the tree (target 1). Counted as how many of the five system entry points from the EDITOR-ARCHITECTURE section 2.1 table exist: entity blocks, Puck-shaped, layout modules, Space profile, Spotlight.",
       "mode": "manifest",
       "patterns": [
         "lib/entity-blocks/registry.ts",
         "lib/page-editor/config.tsx",
-        "lib/email-studio/product-block.ts",
-        "lib/library/element-catalog.ts",
-        "components/spotlight"
+        "lib/widgets/modules.ts",
+        "lib/spaces/profile-blocks.ts",
+        "lib/spotlight/blocks/schema.ts"
       ],
       "baseline": 5,
       "frozen": {
-        "at": "2026-11-10",
+        "at": "2026-11-16",
         "value": 5,
-        "direction": "seed",
-        "basis": "12bb4fc3a4bd",
-        "reason": "Seeded from the E2 census: five block systems measured on 2026-10-20 (EDITOR-ARCHITECTURE section 7.3, corrected from the first draft of 3)."
+        "direction": "rebased",
+        "basis": "b5fa30f34c4a",
+        "reason": "Manifest re-seeded to the five systems in the EDITOR-ARCHITECTURE section 2.1 table (owner approval, Daniel, 2026-11-16, ADR-1953). Out: lib/email-studio/product-block.ts (send-time data binding for a block already in the registry), lib/library/element-catalog.ts (the Loom art catalog), components/spotlight (a directory that cannot disappear). In: lib/widgets/modules.ts, lib/spaces/profile-blocks.ts, lib/spotlight/blocks/schema.ts. The count reads 5 before and after; nothing was consolidated.",
+        "from": 5
       },
-      "history": []
+      "history": [
+        {
+          "at": "2026-11-16",
+          "from": 5,
+          "to": 5,
+          "direction": "rebased",
+          "reason": "Manifest re-seeded to the five systems in the EDITOR-ARCHITECTURE section 2.1 table (owner approval, Daniel, 2026-11-16, ADR-1953). Out: lib/email-studio/product-block.ts (send-time data binding for a block already in the registry), lib/library/element-catalog.ts (the Loom art catalog), components/spotlight (a directory that cannot disappear). In: lib/widgets/modules.ts, lib/spaces/profile-blocks.ts, lib/spotlight/blocks/schema.ts. The count reads 5 before and after; nothing was consolidated."
+        }
+      ]
     }
   ]
 }
