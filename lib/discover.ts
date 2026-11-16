@@ -28,6 +28,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { eventHasEnded } from '@/lib/events/end-time'
 import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+import { readThroughPublicEventsSnapshot } from '@/lib/public-events-snapshot'
 import { cityCentroid } from '@/lib/maps/city-centroids'
 
 // ── Row shapes (mirror the RPC RETURNS TABLE columns) ─────────────────────────
@@ -364,8 +365,10 @@ export function emptyUnlessTransient(source: string): (err: unknown) => never[] 
  *  and the RPC caps its own read at 200. */
 export async function getPublicEvents(limit = 50): Promise<PublicEvent[]> {
   const supabase = createPublicClient()
-  const { rows } = await listRead<PublicEvent>('public_events', () =>
-    supabase.rpc('public_events', { _limit: seriesFetchLimit(limit) }),
+  const fetchLimit = seriesFetchLimit(limit)
+  // SCAN-1210: never a soft [] for a failed read; see lib/public-events-snapshot.ts.
+  const rows = await readThroughPublicEventsSnapshot<PublicEvent>(`public_events:${fetchLimit}`, () =>
+    listRead<PublicEvent>('public_events', () => supabase.rpc('public_events', { _limit: fetchLimit })),
   )
   const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
   return collapseSeriesRows(rows, { upcomingFrom: floor, perSeries: TEASER_CARDS_PER_SERIES }).slice(0, limit)
