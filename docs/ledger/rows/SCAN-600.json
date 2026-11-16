@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-600",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const t=fs.readFileSync('components/spaces/donations/donate-cta-tracker.tsx','utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const d=fs.readFileSync('components/spaces/dashboard/space-coaching-card.tsx','utf8');const b=fs.readFileSync('app/(main)/spaces/[slug]/manage/manage-board.tsx','utf8');process.exit(!/useEffect/.test(t)&&/getSpaceProfileEvidence\\\\(/.test(d)&&/<SpaceCoachingCard/.test(b)?0:1)\"",
+      "note": "Fails if the tracker fires on mount again or the dashboard stops reading the stats. Repointed 2026-11-16 (SCAN-1240, owner approved): the old Space dashboard was deleted; the reader is now the coaching card on the console Home, through getSpaceProfileEvidence, and the probe also asks that the Home still mounts that card."
+    }
+  },
+  "append": {
+    "detail": "\n\nPROBE REPOINTED 2026-11-16 (SCAN-1240): the reader arm named components/spaces/dashboard/space-dashboard.tsx, which no page mounted and the owner had deleted. It now reads the live reader, space-coaching-card.tsx calling getSpaceProfileEvidence, and that manage-board.tsx mounts the card."
+  }
+}

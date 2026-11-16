@@ -107,5 +107,19 @@ export const noteList = (maxItems: number, maxChars: number) =>
         .slice(0, maxItems),
     )
 
+/** A short string where a wrong type reads as empty instead of failing the row. For an OPTIONAL field of a tool_use
+ *  input: one stray number in `notes` is not a reason to lose the contact it sits on. */
+export const textOrEmpty = (max: number) => shortText(max).catch('')
+
+/** A list read row by row: a row its schema refuses is dropped and the rest are kept. The shape every extractor's
+ *  hand-written loop had (`if (!row || typeof row !== 'object') continue`), stated once. */
+export const lenientList = <T>(item: z.ZodType<T>) =>
+  z.array(z.unknown()).transform((rows) =>
+    rows.flatMap((row) => {
+      const parsed = item.safeParse(row)
+      return parsed.success ? [parsed.data] : []
+    }),
+  )
+
 /** A plain JSON object with unknown keys (a draft, a tool argument), refusing arrays and scalars. */
 export const jsonObject = z.record(z.string(), z.unknown())

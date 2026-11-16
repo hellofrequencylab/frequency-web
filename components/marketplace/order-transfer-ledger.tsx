@@ -1,3 +1,4 @@
+import { formatCentsFixed } from '@/lib/commerce/types'
 import { Badge, type BadgeTone } from '@/components/ui/badge'
 import { ConfirmSubmitButton } from '@/components/ui/confirm-submit-button'
 import { sellerNameKey } from '@/lib/commerce/orders'
@@ -9,10 +10,6 @@ import { MAX_TRANSFER_ATTEMPTS, type OrderTransfer, type TransferStatus } from '
 // retry that goes through the same idempotent path the reconciler uses. Rendered by the platform
 // operator's /admin/marketplace/orders only, under `[data-order-transfers]`. Server component: the
 // retry posts to a server action the page bound after its own operator check.
-
-function money(cents: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
-}
 
 const STATUS: Record<TransferStatus | 'stuck', { label: string; tone: BadgeTone }> = {
   planned: { label: 'Planned', tone: 'neutral' },
@@ -63,12 +60,12 @@ export function OrderTransferLedger({
                   </p>
                   <div className="flex items-center gap-2">
                     <Badge tone={state.tone}>{state.label}</Badge>
-                    <span className="text-body-sm font-semibold text-text">{money(t.amountCents, t.currency)}</span>
+                    <span className="text-body-sm font-semibold text-text">{formatCentsFixed(t.amountCents, t.currency)}</span>
                   </div>
                 </div>
                 <p className="mt-1 text-meta text-muted">
-                  Fee kept {money(t.platformFeeCents, t.currency)} · {t.attempts} {t.attempts === 1 ? 'attempt' : 'attempts'}
-                  {t.reversedCents > 0 && <> · {money(t.reversedCents, t.currency)} reversed</>}
+                  Fee kept {formatCentsFixed(t.platformFeeCents, t.currency)} · {t.attempts} {t.attempts === 1 ? 'attempt' : 'attempts'}
+                  {t.reversedCents > 0 && <> · {formatCentsFixed(t.reversedCents, t.currency)} reversed</>}
                   {t.stripeTransferId && <> · <span className="font-mono">{t.stripeTransferId}</span></>}
                 </p>
                 {t.lastError && open && <p className="mt-1 break-words text-meta text-warning">{t.lastError}</p>}

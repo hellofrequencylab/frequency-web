@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import Link from 'next/link'
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { RankBadge } from '@/components/ui/rank-badge'
@@ -11,7 +12,7 @@ import type { SeasonBlock, JourneyTrophy } from '@/lib/quest/trophies'
 // rank is a RankBadge, which Frequency draws in one iridescent pill (owner ruling, SCAN-860).
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return formatDateMedium(iso)
 }
 
 function TrophyTile({ trophy }: { trophy: JourneyTrophy }) {

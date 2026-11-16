@@ -14,7 +14,7 @@
 
 import type { Metadata } from 'next'
 import { breadcrumbSchema, webPageSchema } from '@/lib/jsonld'
-import { OG_SITE, ROOT_OG_IMAGES, SITE_DESCRIPTION } from '@/lib/site'
+import { CATEGORY_LINE, FOUNDING_PLACE, OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 export interface FrequencyPageSeo {
   /** Canonical path. */
@@ -37,17 +37,20 @@ export interface FrequencyPageSeo {
 
 export const FREQUENCY_PAGE_SEO = {
   // components/frequency/site/pages/home/frequency-home.tsx. The hero is sided (Browse / Host); the
-  // first-paint side is Browse, so the page node reads that side's h1 and lede. The home <title> and
-  // meta description stay app/page.tsx's (operator-editable, and SITE_DESCRIPTION is the owner-ruled
-  // category line, LIVE-912), so only the JSON-LD reads this entry; title and description here are
-  // what the WebPage node and the share card would say and match that route's defaults.
+  // first-paint side is Browse, so the page node reads that side's h1 and lede. app/page.tsx reads the
+  // title and description here as the coded fallback under the operator's page-content row for `/`.
   home: {
     path: '/',
     // Owner ruling 2026-10-19 (SCAN-1017): the title tag carries the search words; "Community Collective"
     // stays the words under the mark (SITE_TAGLINE) and the logo lockup, not the <title>.
-    title: 'Frequency · Local groups and events near you',
-    description: SITE_DESCRIPTION,
-    shareTitle: 'Frequency · Local groups and events near you',
+    // Owner ruling 2026-11-16 (SCAN-1206): the title names the founding place (FOUNDING_PLACE in
+    // lib/site.ts; the test holds the two together), because "near you" is a place no query contains.
+    title: 'Frequency · Local groups and events in North County San Diego',
+    // The home page's own description (SCAN-1206). SITE_DESCRIPTION stays the site-wide sentence (root
+    // layout, Organization and WebSite JSON-LD, llms-full.txt); this one opens on the same category line
+    // and names the place. Under 160 characters (the test measures it).
+    description: `${CATEGORY_LINE} Find Circles and community events in ${FOUNDING_PLACE}. Try a walk, a class or a regular gathering. Free to join.`,
+    shareTitle: 'Frequency · Local groups and events in North County San Diego',
     headline: 'Build circles, not walls.',
     lede: 'Find local groups and community events near you. Try a walk, a class or a regular Circle. Pick something you like doing and a time you’re free. Free to join.',
     crumbs: [],
@@ -55,7 +58,7 @@ export const FREQUENCY_PAGE_SEO = {
   // components/frequency/site/pages/people/frequency-people.tsx ("Home / For people").
   community: {
     path: '/the-community',
-    title: 'Find community groups and Circles near you',
+    title: `Find community groups and Circles in ${FOUNDING_PLACE}`,
     description:
       'Find community groups, local Circles and events around something you like doing. Try a walk, a class or a regular gathering. Free to join.',
     shareTitle: 'For people · Frequency',

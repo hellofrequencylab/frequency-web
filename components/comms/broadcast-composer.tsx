@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateShort } from '@/lib/format-date'
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Mail, MessageSquare, Radio, Smartphone, Megaphone, CheckCircle2, AlertCircle, CalendarPlus } from 'lucide-react'
@@ -61,7 +62,7 @@ function targetDateLabel(startsAt: string | null): string {
   if (!startsAt) return ''
   const t = Date.parse(startsAt)
   if (!Number.isFinite(t)) return ''
-  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  return formatDateShort(t, 'UTC')
 }
 
 function chipClasses(on: boolean): string {
