@@ -15,6 +15,7 @@ always pass.
 | `@a11y` | `a11y.spec.ts` | axe-core WCAG 2.x A/AA: **0 serious+ violations** | ✅ |
 | `@overflow` | `overflow.spec.ts` | Nothing runs off the side of a phone, at **320 / 360 / 390** | ✅ |
 | `@visual` | `visual.spec.ts` | Pixel baselines across four render states × two full-matrix viewports, plus a narrow (320) column over the shell + header band | ⚠️ opt-in |
+| `@field` | `field-measure.spec.ts` | A reading, not a gate: Core Web Vitals, bytes over the wire and console errors (React #418 included) for ten public pages on a clean signed-out profile, phone and desktop | Only on a `workflow_dispatch` (`e2e (manual)`), or with `PW_FIELD_MEASURE=1`; skipped on PRs |
 
 `@overflow` exists because neither of the other two could see ADR-1035, where a re-cropped wordmark
 pushed the marketing menu button to x=404 on a 360px screen — off the viewport, on every phone.
@@ -270,6 +271,13 @@ Baselines live in `test/e2e/__screenshots__/visual.spec.ts/` and are named
 Member-shell files are the `app-*` ones (`app-feed`, `app-room`, `app-settings`,
 `app-space-console`) and are captured only with `capture_shell` ticked.
 
+A `midnight-light` baseline that is byte-identical to the `dawn-light` one for the same
+surface and project is not committed twice (SCAN-1222). It is listed in
+`test/e2e/__screenshots__/shared-baselines.json`, and the midnight-light test compares
+against the dawn-light file (`test/e2e/shared-baselines.ts`). The capture job runs
+`node scripts/dedupe-visual-baselines.mjs` before it commits: it folds the pairs that came
+back identical and unlists a pair that no longer is. Do not edit the list by hand.
+
 ### What a full-page mobile baseline photographs (ADR-1545)
 
 A full-page capture on a project with `hasTouch` (`mobile`, `narrow`) drops Chromium's
@@ -377,7 +385,7 @@ ceiling carrying that reason.
 | `PW_ROOM_PATH` | no (**no default** — unset means no room surface) | The room surface to capture |
 | `PW_SPACE_SLUG` | no | Adds `/spaces/<slug>/manage` to the matrix |
 | `PW_SPOTLIGHT_HANDLE` | no | Adds the editor's Spotlight (`editor-spotlight`, first screen) |
-| `PW_SITE_URL` | no | A published Site's own https origin; adds its Home (`editor-site`, first screen, LIVE-2232). A Site renders only on its own host, never under `PW_BASE_URL` |
+| `PW_SITE_URL` | no | A published Site's own https origin; adds its Home (`editor-site`, first screen, LIVE-2232). A Site renders only on its own host, never under `PW_BASE_URL`. The `site_url` dispatch input of e2e-manual overrides it for one run |
 | `PW_VISUAL_EXTRA_MASK` | no | Extra mask selectors, comma-separated |
 | `PW_CAPTURE_ALLOW_5XX` | no | URL substrings whose 5xx does not refuse the capture, comma-separated (one-run reprieve) |
 | `PW_MEMBER_EMAIL` | to mint a session | The e2e member account (see below) |

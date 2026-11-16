@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
+import { chipClasses } from '@/components/ui/chip'
 
 // URL-as-state filter bar for Index/Queue surfaces (ADR-233 §4/§5, GitHub qualifier
 // filters + Retool toolbar). Filter + search state lives in the query string so the
@@ -103,7 +104,7 @@ export function FilterBar({
                 key={f.key}
                 type="button"
                 onClick={() => setParam(f.key, null)}
-                className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2.5 py-0.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg/70"
+                className={chipClasses(true)}
               >
                 {f.label}: {opt?.label ?? value}
                 <X className="h-3 w-3" aria-hidden />
