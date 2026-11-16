@@ -63,22 +63,23 @@ describe('container peak gate (HYG-241)', () => {
   it('passes the three green production builds read on 2026-11-16 and prints the trend', () => {
     for (const peakMb of [7768, 7784, 7859]) expect(judgeContainer({ peakMb }, vercel)).toMatchObject({ ok: true, warn: false })
     expect(judgeContainer({ peakMb: 7859 }, vercel).message).toBe(
-      'container peak 7859 MB of 8192 MB (333 MB of margin), 691 MB over the 7168 MB target; warns above 7937 MB',
+      'container peak 7859 MB of 8192 MB (333 MB of margin), 691 MB over the 7168 MB target; fails above 7937 MB',
     )
     expect(judgeContainer({ peakMb: 6500 }, vercel).message).toContain('668 MB under the 7168 MB target')
   })
 
-  it('warns only above the last killed reading, and never fails the build', () => {
+  it('fails the build only above the last killed reading (HYG-241, owner ruling 2026-11-16)', () => {
     expect(judgeContainer({ peakMb: CONTAINER_HARD_STOP_MB }, vercel)).toMatchObject({ ok: true, warn: false })
+    for (const peakMb of [7064, 7022]) expect(judgeContainer({ peakMb }, vercel)).toMatchObject({ ok: true, warn: false })
     const over = judgeContainer({ peakMb: CONTAINER_HARD_STOP_MB + 1 }, vercel)
-    expect(over).toMatchObject({ ok: true, warn: true })
+    expect(over).toMatchObject({ ok: false })
     expect(over.message).toContain('container peak 7938 MB')
   })
 
-  it('warns while the next processes read about 100 MB, the case the old gate could not see', () => {
+  it('fails while the next processes read about 100 MB, the case the old gate could not see', () => {
     const reading = { pid: 1, peakMb: 100, concurrentMb: 100, processes: 4, containerPeakMb: 8000 }
     expect(judge(reading, vercel).ok).toBe(true)
-    expect(judgeContainer(containerPeak(reading, null), vercel)).toMatchObject({ ok: true, warn: true })
+    expect(judgeContainer(containerPeak(reading, null), vercel)).toMatchObject({ ok: false })
   })
 
   it('warns on Vercel when the container was not measured, and stays quiet locally', () => {
