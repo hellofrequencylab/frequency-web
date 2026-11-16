@@ -9,6 +9,7 @@ import { categoryTriggers } from '@/lib/menus/project'
 import { canSeeMenuEl, canSeeMenuItem, flattenCategoryTree } from '@/components/layout/menu-role'
 import type { MenuViewer } from '@/components/layout/menu-role'
 import type { ResolvedItem, ResolvedMenu } from '@/lib/menus/types'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 // Mobile nav for the public marketing header. The desktop PrimaryNav is
 // `hidden md:flex`, so phones had no way to reach How-it-works / The Lab /
@@ -106,6 +107,7 @@ export function MarketingMobileMenu({
   const groupId = useId()
   const openButtonRef = useRef<HTMLButtonElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
 
   // The sheet hides exactly what the bar beside it hides, because both gate on the SAME
   // viewer token. MarketingHeader passes none and gets 'visitor' — the marketing chrome is
@@ -115,6 +117,11 @@ export function MarketingMobileMenu({
     () => sheetGroups(headerMenu ?? defaultMenu('header'), viewer ?? { viewerRole: 'visitor' }),
     [headerMenu, viewer],
   )
+
+  // Tab stays inside the sheet while it is open (the kit trap, SCAN-1225 follow-up). Called before
+  // the effect below on purpose: cleanups run in the same order, so that effect's return of focus to
+  // the Open menu button runs last and still wins where a tap never focused the button (Safari).
+  useDialogFocusTrap(open, sheetRef)
 
   useEffect(() => {
     if (!open) return
@@ -179,6 +186,7 @@ export function MarketingMobileMenu({
               base) or the "Menu" label + Close button get clipped. Cap height + scroll so a
               long nav never runs off the bottom past the home indicator. */}
           <div
+            ref={sheetRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
