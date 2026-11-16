@@ -1531,6 +1531,71 @@ export const VISUAL_MASK_SITES: readonly {
     kind: 'live',
     why: 'The "Live · last updated" stamp: a plain-text toLocaleString() clock with no <time> element, which the global `time, [datetime]` selector misses. The span only; the min-h status line around it carries three other messages that are fixed copy. It renders in a fixed-height line, so the box holds.',
   },
+  // The Space console Home bands (SCAN-1240, 2026-11-16). The masks HYG-121 added lived in
+  // components/spaces/dashboard/space-dashboard.tsx, which no page mounted; the console's Home is
+  // FqOverviewBody, and it carried none. These rows stamp the bands the capture really photographs.
+  // NOT masked: the header buttons, the section and panel labels, the table's column headers, the
+  // coaching card (afterStats) and the Dispatch band, which own their markup elsewhere.
+  {
+    value: 'space-console-greeting',
+    file: 'components/frequency/admin/pages/overview/overview-body.tsx',
+    kind: 'live',
+    why: 'The Space console Home heading: "Good morning / afternoon / evening" by the clock in the home time zone, plus the manager’s first name. The inner span only, so the h1 box and the kicker stay photographed. A greeting that changes length can change the line’s width, not its height.',
+  },
+  {
+    value: 'space-console-head-meta',
+    file: 'components/frequency/admin/pages/overview/overview-body.tsx',
+    kind: 'live',
+    why: 'The line under the Home heading: today’s date, the count of events this week and how many need a host. Plain text with no <time> element, so the global `time, [datetime]` selector misses it. The inner span only; it sits on one line, so the box holds.',
+  },
+  {
+    value: 'space-console-stats',
+    file: 'components/frequency/admin/pages/overview/overview-body.tsx',
+    kind: 'live',
+    why: 'The console’s top row, successor to the band of the same name in the deleted space-dashboard.tsx (SCAN-1240): check-ins over 30 days, return rate, active members and revenue over 30 days, four DB readings in Kpi cards. The grid only. A trend or note line that appears or disappears is a height the mask cannot hold, and is accepted.',
+  },
+  {
+    value: 'space-console-reach-stats',
+    file: 'components/frequency/admin/pages/overview/overview-body.tsx',
+    kind: 'live',
+    why: 'The second Kpi row: followers, memberships, RSVPs over the next 7 days and events over the next 30, four DB tallies. The grid only. A note line that appears or disappears is a height the mask cannot hold, and is accepted.',
+  },
+  {
+    value: 'space-console-checkins-chart',
+    file: 'components/frequency/admin/pages/overview/overview-body.tsx',
+    kind: 'live',
+    why: 'Check-ins by week: twelve bars whose heights are check-in counts. The panel is the site, because WeekBars takes no attribute and the panel holds nothing else but its two-word header. Bars scale inside a fixed-height chart, so the box holds.',
+  },
+  {
+    value: 'space-console-upcoming',
+    file: 'components/frequency/admin/pages/overview/overview-body.tsx',
+    kind: 'live',
+    why: 'This week: one table row per event in the next seven days with its time, host and RSVP count, successor to the Coming up list in the deleted space-dashboard.tsx (SCAN-1240). The <tbody> only, so the column headers stay photographed. A row-count change is a height the mask cannot hold, and is accepted.',
+  },
+  {
+    value: 'space-console-needs',
+    file: 'components/frequency/admin/pages/overview/overview-body.tsx',
+    kind: 'live',
+    why: 'Needs you: up to four rows built from unanswered conversations, past-due memberships, first timers and the Resonance worklist, each a live count. The list only, not the panel label. A row-count change is a height the mask cannot hold, and is accepted.',
+  },
+  {
+    value: 'space-console-glance',
+    file: 'components/frequency/admin/pages/overview/overview-body.tsx',
+    kind: 'live',
+    why: 'At a glance: six label and value pairs (average check-ins, top event, repeat share, RSVP to check-in, paying memberships, Circles). The <dl> only, not the panel label. A sub line that appears or disappears is a height the mask cannot hold, and is accepted.',
+  },
+  {
+    value: 'space-console-at-risk',
+    file: 'components/frequency/admin/pages/overview/overview-body.tsx',
+    kind: 'live',
+    why: 'Bring them back: the count of people in the red Resonance tier. Every line in the card depends on that count and it mounts only when the count is above zero, so the card is the site and its first appearance is a height and an accepted recapture.',
+  },
+  {
+    value: 'space-console-journey-stats',
+    file: 'components/frequency/admin/pages/overview/journey-completion-band.tsx',
+    kind: 'live',
+    why: 'Enrolled, finished, still going and finish rate across the Space’s Journeys, four completion tallies, successor to the band of the same name in the deleted space-dashboard.tsx (SCAN-1240). The grid only, so the section header and its one-line note stay photographed.',
+  },
 ]
 
 /** Escape hatch for the flaky-surface policy: quiet a surface the same week it flakes,
