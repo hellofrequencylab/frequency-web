@@ -7,7 +7,7 @@ import {
   listGridBlockIds,
   moduleSectionRenders,
 } from './module-section-nav'
-import { PROFILE_BLOCKS } from './profile-blocks'
+import { PROFILE_BLOCKS } from '@/lib/entity-blocks/space-profile'
 import { MAX_SECTION_ANCHORS, NO_PRESENCE, type SectionPresence } from './section-anchors'
 import { hasContent } from '@/components/entity-blocks/content-block-view'
 import type { RowDef } from '@/lib/entity-blocks/layout'

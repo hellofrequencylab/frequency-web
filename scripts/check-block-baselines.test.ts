@@ -18,13 +18,15 @@ describe('check:block-baselines', () => {
     expect(measure(e, (p) => String(p) === e.patterns[0])).toBe(1)
   })
   it('fails when a block system is added (a rise)', () => {
+    // One below the live count, whatever it is: the tree then measures one system more than the frozen number.
     const c = clone()
-    c.entries[0].baseline = 4
-    c.entries[0].frozen.value = 4
+    const below = live.entries[0].baseline - 1
+    c.entries[0].baseline = below
+    c.entries[0].frozen.value = below
     c.entries[0].frozen.basis = basisFingerprint(c.entries[0])
     const r = problems(c)
     expect(r.code).toBe(1)
-    expect(r.out.join('\n')).toMatch(/above the frozen 4/)
+    expect(r.out.join('\n')).toContain(`above the frozen ${below}`)
   })
   it('fails when the number is hand-edited without a record', () => {
     const c = clone()

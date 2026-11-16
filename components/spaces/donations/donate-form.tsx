@@ -36,10 +36,13 @@ export function DonateForm({
   spaceId,
   suggestedAmountsCents,
   idPrefix,
+  huntId,
 }: {
   spaceId: string
   suggestedAmountsCents: number[]
   idPrefix: string
+  /** FH-046S: set only by the Trail donation ask, so the gift is reported against that Trail. */
+  huntId?: string
 }) {
   const chips = suggestedAmountsCents.filter((c) => Number.isFinite(c) && c >= MIN_CENTS)
   const [selected, setSelected] = useState<number | null>(chips[0] ?? null)
@@ -63,7 +66,7 @@ export function DonateForm({
     setSessionId(null)
     setError('Opening secure checkout…')
     start(async () => {
-      const result = await startSpaceDonationCheckout(spaceId, cents ?? 0, null, { forceHosted: true })
+      const result = await startSpaceDonationCheckout(spaceId, cents ?? 0, null, { forceHosted: true, huntId })
       if (!isError(result) && result.data.url) window.location.href = result.data.url
       else setError('Could not start your gift. Please try again.')
     })
@@ -77,7 +80,7 @@ export function DonateForm({
       return
     }
     start(async () => {
-      const result = await startSpaceDonationCheckout(spaceId, cents)
+      const result = await startSpaceDonationCheckout(spaceId, cents, null, huntId ? { huntId } : undefined)
       if (isError(result)) {
         setError(result.error)
         return

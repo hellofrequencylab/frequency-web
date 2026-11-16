@@ -1,0 +1,20 @@
+{
+  "id": "PROG-E2A",
+  "title": "The block-system counter counts the five real systems and PROG-E2's probe can read it",
+  "status": "done",
+  "priority": "P2",
+  "lane": "program",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E2"
+  },
+  "detail": "Split from PROG-E2 on 2026-11-16 (owner approval, Daniel, decision \"Fix both, then fold Space profile\"; ADR-1953). Housekeeping, no product change. The block-systems ratchet in scripts/block-baselines.json listed five paths, two of which are not block systems (lib/email-studio/product-block.ts, lib/library/element-catalog.ts) and one of which was a directory that cannot disappear (components/spotlight); it missed Layout modules and the Space profile catalog, the two largest real systems in the EDITOR-ARCHITECTURE section 2.1 table. The manifest is re-seeded to that table's five through `node scripts/check-block-baselines.mjs --update --reason`, which records a changed manifest as direction `rebased` with the old and new value (5 and 5) in frozen and history. PROG-E2's probe moved to scripts/probes/builder/PROG-E2.mjs and reads entries[].baseline; it still needs the block_type_usage migration and the value 1.\n\nVERIFIED: check:block-baselines passes at 5; the gate's unit tests pass; this probe fails against origin/main's block-baselines.json and passes here; the PROG-E2 probe exits 1 and names the 5 it read. NOT VERIFIED: nothing here runs in the product, so there is nothing to click.\n\nStill on PROG-E2: four folds (Space profile, Spotlight, Layout modules, Puck).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/PROG-E2A.mjs",
+    "note": "Fails on main: the manifest names product-block.ts, element-catalog.ts and the components/spotlight directory, and misses lib/widgets/modules.ts, lib/spaces/profile-blocks.ts and lib/spotlight/blocks/schema.ts. Passes once the manifest names every canon system still in the tree and no non-system, the baseline equals the number of manifest paths that exist, check:block-baselines holds, and the PROG-E2 probe (run as a child process) fails naming the number it read while that number is above 1."
+  },
+  "closed": "2026-11-16"
+}

@@ -4,15 +4,16 @@
   "lane": "program",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/hunts/README.md",
     "ref": "Split from FH-020U (2026-11-15)."
   },
-  "detail": "Requires FH-020U. Register migration 20270346053000 through the serial HYG-217 process (policy-only PR first), record pgTAP and exact-head workflow_dispatch db-tests, real API acceptance, the approved apply sequence and Frequency Community ledger parity. Add the authoring control for evidence_policy.hold_for_review on a mission placement (lib/studio entity, no raw JSON field). Word a held answer for the player (Trail) in the play and scan screens, and route the claim.held result. Review and appeal UI follow the separate staff authorization ruling. Hunts switches stay OFF until the gate passes.",
+  "detail": "Requires FH-020U. Register migration 20270346053000 through the serial HYG-217 process (policy-only PR first), record pgTAP and exact-head workflow_dispatch db-tests, real API acceptance, the approved apply sequence and Frequency Community ledger parity. Add the authoring control for evidence_policy.hold_for_review on a mission placement (lib/studio entity, no raw JSON field). Word a held answer for the player (Trail) in the play and scan screens, and route the claim.held result. Review and appeal UI follow the separate staff authorization ruling. Hunts switches stay OFF until the gate passes.\n\nClosed 2026-11-16 for what was built. Player: claimStopAction answers a held claim with its own status and words (lib/hunts/player.ts HELD_VISIT_MESSAGE), credits nothing and does not revalidate; the scan confirmation route lands on claim=held and the Trail landing shows the same words. Authoring: the Hunt Studio entity gains a switch on each stop (holdForReview), saved on the draft, frozen into the published version and its content hash, and turned into evidence_policy.hold_for_review only by lib/hunts/draft.ts stopEvidencePolicy; publishTrail writes it onto the placements bound to the version. No screen edits JSON. Migration state, read 2026-11-16: 20270346053000 was registered in scripts/migration-readiness-policy.json by #5005, merged by #5004, and the Frequency Community migration ledger lists version 20270346053000 hunt_claim_hold. Not done here and split: the release evidence (exact-head db-tests dispatch, real API acceptance, the recorded apply sequence, removal of the consumed policy entry) is FH-020W; binding a placement to a stop in the app and marking a stop as staff-confirmed, without which the switch cannot take effect on a real Trail, is FH-020X.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"node:fs\");const s=fs.readFileSync(\"app/(main)/hunts/[slug]/play/actions.ts\",\"utf8\");process.exit(/\\bheld\\b/.test(s)&&fs.readdirSync(\"lib/studio/entities\").some(f=>fs.readFileSync(\"lib/studio/entities/\"+f,\"utf8\").includes(\"hold_for_review\"))?0:1)'"
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }

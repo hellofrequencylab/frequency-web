@@ -11,6 +11,7 @@ const store = vi.hoisted(() => ({
   loadPlayerRun: vi.fn(),
   loadPublishedTrail: vi.fn(),
   loadRunCredits: vi.fn(),
+  loadVisitedStopPoints: vi.fn(),
   startOrResumeRun: vi.fn(),
   loadRallyFinale: vi.fn(),
 }))
@@ -46,6 +47,7 @@ const render = async () => renderToStaticMarkup(await PlayPage({ params: Promise
 beforeEach(() => {
   vi.stubEnv('HUNTS_ENABLED', 'on')
   store.getMyProfileId.mockResolvedValue('player-1')
+  store.loadVisitedStopPoints.mockResolvedValue([])
   store.loadPublishedTrail.mockResolvedValue(trail)
   store.loadRunCredits.mockResolvedValue([])
   store.startOrResumeRun.mockResolvedValue({ runId: 'run-1', state: 'completed' })

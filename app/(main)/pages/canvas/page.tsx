@@ -8,6 +8,9 @@ import { EDITABLE_PAGES, getPage, isEditableSlug, resolveSpaceId } from '@/lib/p
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { listPageVersions } from '@/lib/page-editor/versions'
 import { inspectorFieldViews } from '@/lib/builder/inspector-fields'
+import { loadCanvasDocument } from '@/lib/builder/canvas-document-load'
+import { getSpaceBySlug } from '@/lib/spaces/store'
+import { CanvasSpacePicker } from './space-picker'
 import { photoHeroBlock } from '@/lib/entity-blocks/contract/photoHero'
 import type { Data } from '@/lib/page-editor/types'
 import { AdminPage } from '@/components/admin/admin-page'
@@ -34,11 +37,14 @@ const BANNER_INSPECTOR = {
 // THE E4 CANVAS ROUTE (PROG-E4B), dark. Off (and a 404) unless EDITOR_CANVAS is on, and then staff only. It mounts
 // the viewport shell with a shared-doc text editor; the live channel for a real entity is a later slice. With
 // ?page=<slug> it also mounts that page's version history (BLD-403): preview, restore into the draft, publish.
+// With ?space=<id or address> the canvas opens that Space page's real node document (PROG-E5B): the read and the
+// draft save are authorised in lib/builder/canvas-document-load.ts. With no document the demo Banner stays.
 export default async function CanvasPage({ searchParams }: { searchParams: Promise<{ space?: string | string[]; page?: string | string[] }> }) {
   if (!envFlag('EDITOR_CANVAS')) notFound()
   if (!(await getJanitor())) notFound()
   const { space, page } = await searchParams
-  const spaceId = typeof space === 'string' && /^[0-9a-f-]{8,64}$/i.test(space) ? space.toLowerCase() : undefined
+  const spaceId = typeof space === 'string' ? await resolveCanvasSpaceId(space) : undefined
+  const document = spaceId ? await loadCanvasDocument(spaceId) : null
   const slug = typeof page === 'string' && isEditableSlug(page) ? page : null
   const history = slug ? await loadHistory(slug, spaceId) : null
   const query = (s: string) => `/pages/canvas?page=${s}${spaceId ? `&space=${spaceId}` : ''}`
@@ -63,9 +69,18 @@ export default async function CanvasPage({ searchParams }: { searchParams: Promi
           <HistoryPanel key={history.slug} slug={history.slug} title={history.title} spaceId={spaceId} initialVersions={history.versions} initialDraft={history.draft} />
         ) : null}
       </section>
-      <CollabCanvas spaceId={spaceId} inspector={BANNER_INSPECTOR} />
+      <CanvasSpacePicker space={typeof space === 'string' ? space : undefined} page={slug} opened={!!document} />
+      <CollabCanvas key={document?.spaceId ?? 'demo'} spaceId={spaceId} inspector={BANNER_INSPECTOR} document={document ?? undefined} />
     </AdminPage>
   )
+}
+
+/** `?space=` is a Space id, or a Space address looked up here. Anything else is no Space. */
+async function resolveCanvasSpaceId(raw: string): Promise<string | undefined> {
+  const value = raw.trim().toLowerCase()
+  if (/^[0-9a-f-]{8,64}$/.test(value)) return value
+  if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(value)) return undefined
+  return (await getSpaceBySlug(value))?.id
 }
 
 async function loadHistory(slug: string, spaceId?: string) {

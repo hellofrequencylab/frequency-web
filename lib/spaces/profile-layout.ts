@@ -1,6 +1,6 @@
 // The SAVED-LAYOUT merge for the block-picker space profile (Epic 1.7, S3 editor). PURE +
 // framework-independent (no React / Next / Supabase imports) so it is trivially unit-testable, like
-// its S1/S2 siblings profile-blocks.ts + profile-modules.ts. It answers: "given the fresh-default
+// its siblings lib/entity-blocks/space-profile.ts + profile-modules.ts. It answers: "given the fresh-default
 // ordered layout for a space AND the operator's saved edits, what ordered block list does the profile
 // actually render?" — by applying the saved order, dropping hidden blocks, appending default blocks the
 // operator has not touched, and dropping saved ids that are no longer in the default (a feature turned
@@ -8,7 +8,7 @@
 // reads as null and the fresh default stands unchanged, so a bad preferences row never breaks a profile.
 
 import type { SpaceType } from './types'
-import { profileBlockById, type ProfileBlockId } from './profile-blocks'
+import { profileBlockById, type ProfileBlockId } from '@/lib/entity-blocks/space-profile'
 import { resolveProfileLayout } from './profile-modules'
 
 /** The operator's saved block-picker edits, persisted at spaces.preferences.profileLayout. Both keys

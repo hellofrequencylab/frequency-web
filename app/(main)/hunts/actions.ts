@@ -71,7 +71,7 @@ export async function routeTestedAction(input: { huntId: string; revision: numbe
 }
 
 export type PublishTrailResult =
-  | { published: true; visibility: PublishVisibility }
+  | { published: true; visibility: PublishVisibility; placementIds: string[] }
   | { conflict: true; currentRevision: number }
   | { blocked: true; items: ChecklistItem[] }
 
@@ -85,7 +85,7 @@ export async function publishTrailAction(input: { huntId: string; baseRevision: 
   const finaleEventId = typeof input.finaleEventId === 'string' && input.finaleEventId ? input.finaleEventId : null
   try {
     const res = await publishTrail(input.huntId, { profileId: gate.profileId }, input.baseRevision, visibility, input.permissionConfirmed === true, finaleEventId)
-    if (res.ok) return ok({ published: true, visibility: res.visibility })
+    if (res.ok) return ok({ published: true, visibility: res.visibility, placementIds: res.placementIds })
     if (res.reason === 'conflict') return ok({ conflict: true, currentRevision: res.currentRevision })
     if (res.reason === 'checklist') return ok({ blocked: true, items: res.items })
     if (res.reason === 'partners') {

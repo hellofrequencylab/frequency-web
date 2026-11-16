@@ -5,21 +5,24 @@ import { Check, Lock, MapPin } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { ClaimStopForm } from '@/components/hunts/claim-stop-form'
 import { FinalePanel } from '@/components/hunts/finale-panel'
+import { HuntFundraising } from '@/components/hunts/hunt-fundraising'
 import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
 import { VisitedStops } from '@/components/hunts/visited-stops'
+import { VisitedStopsMap } from '@/components/hunts/visited-stops-map'
 import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { huntSwitchOn } from '@/lib/hunts/flags'
-import { projectForPlayer } from '@/lib/hunts/player'
+import { projectForPlayer, visitedPins } from '@/lib/hunts/player'
 import { loadRallyFinale } from '@/lib/hunts/rally-finale-store'
-import { loadPlayerRun, loadPublishedTrail, loadRunCredits, startOrResumeRun } from '@/lib/hunts/run-store'
+import { loadPlayerRun, loadPublishedTrail, loadRunCredits, loadVisitedStopPoints, startOrResumeRun } from '@/lib/hunts/run-store'
 
 export const dynamic = 'force-dynamic'
 
 // THE PLAYER PAGE (FH-016): one signed-in member's run on one published Trail. Reading never credits:
 // credit goes through the claim path only. The server decides which words leave it (projectForPlayer):
 // a locked stop shows its position, an open stop shows its clue without the place, and a visited
-// stop shows both. The current stop's optional hint requires an explicit request.
+// stop shows both. The current stop's optional hint requires an explicit request. The map (FH-016T)
+// gets pins for visited stops only: the loader asks for credited stops and `visitedPins` drops the rest.
 
 export const metadata: Metadata = { title: 'Play a Trail', robots: { index: false } }
 
@@ -52,6 +55,8 @@ export default async function PlayPage({ params, searchParams }: {
       requestedKey: typeof hint === 'string' ? hint : undefined,
     },
   })
+  const pins = visitedPins(view.stops, run ? await loadVisitedStopPoints(trail, credits) : [])
+  const canConfirm = huntSwitchOn('claims') && view.canClaim && run?.state === 'active'
 
   return (
     <FocusTemplate
@@ -95,8 +100,18 @@ export default async function PlayPage({ params, searchParams }: {
           ))}
         </ol>
         <VisitedStops stops={view.stops} />
+        <VisitedStopsMap pins={pins} />
+        {canConfirm && (
+          <div className="space-y-3">
+            {/* The scanner (components/scan/scanner.tsx) only navigates: a Trail code lands on the confirm step. */}
+            <Link href={{ pathname: '/scan', query: { hint: 'trail' } }} prefetch={false} className={buttonClasses('primary', 'md')}>
+              Scan the code at this stop
+            </Link>
+            <ClaimStopForm slug={slug} />
+          </div>
+        )}
         <FinalePanel finale={finale} />
-        {huntSwitchOn('claims') && view.canClaim && run?.state === 'active' && <ClaimStopForm slug={slug} />}
+        <HuntFundraising huntId={trail.huntId} />
       </div>
     </FocusTemplate>
   )

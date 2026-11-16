@@ -1,0 +1,14 @@
+{
+  "id": "FH-025",
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-16",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'process.exit(require(\"fs\").existsSync(\"lib/hunts/analytics.ts\")?0:1)'"
+    }
+  },
+  "append": {
+    "detail": "\n\nBuilt 2026-11-16: lib/hunts/analytics.ts is the Hunt event registry (placement scan, stop claim, staff verify, reward redeem, reward void), each also registered server-only in lib/analytics/events.ts. Four closed dimensions (reason class, medium, cohort, assurance) plus the Hunt id and replayed are the whole allowlist: a property is kept only when its name is listed and its value passes a closed set, a uuid or a boolean check, so a location, code, venue, stop key, token or contact cannot pass by any spelling. Forwarding to Google: a guest only when HUNTS_GUEST_ANALYTICS_ENABLED is on (new switch, blank by default, gate in docs/RUNBOOKS.md), a member only with their recorded analytics consent (consent_records, lib/consent/consent.ts), staff never and with no actor written. Hooked after the response at the scan landing and claim POST (app/(main)/hunts/p/[code]/route.ts), the typed-code claim (play/actions.ts), the staff door and the redemption station. A failed write logs only the allowlisted fields. Proof: lib/hunts/analytics.test.ts (hostile payloads, default-off guest forwarding, consent, log line). Not done by an agent: FH-023 (privacy sign-off) still gates turning guest forwarding on."
+  }
+}

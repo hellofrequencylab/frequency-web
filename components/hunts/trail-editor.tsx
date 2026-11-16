@@ -59,7 +59,12 @@ const COACH_QUESTIONS = [
 ]
 
 const scalar = (v: string | string[]): string => (Array.isArray(v) ? (v[0] ?? '') : v)
-const stopValue = (s: Stop, path: string): string => (path === 'placementReady' ? String(s.placementReady) : ((s as Record<string, unknown>)[path] as string | undefined) ?? '')
+// A manifest toggle is a boolean on the stop; every other stop field is text.
+const STOP_TOGGLES = new Set(STOP_FIELDS.filter((f) => f.kind === 'toggle').map((f) => f.path))
+const stopValue = (s: Stop, path: string): string => {
+  const value = (s as Record<string, unknown>)[path]
+  return STOP_TOGGLES.has(path) ? String(value === true) : (value as string | undefined) ?? ''
+}
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -160,7 +165,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
   const setStop = (i: number, path: string, value: string) =>
     edit((d) => ({
       ...d,
-      stops: d.stops.map((s, j) => (j === i ? { ...s, [path]: path === 'placementReady' ? value === 'true' : value } : s)),
+      stops: d.stops.map((s, j) => (j === i ? { ...s, [path]: STOP_TOGGLES.has(path) ? value === 'true' : value } : s)),
     }))
   const addStop = () => edit((d) => (d.stops.length >= MAX_STOPS ? d : { ...d, stops: [...d.stops, emptyStop()] }))
   const [pasted, setPasted] = useState('')
@@ -212,7 +217,10 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
   }, [step, evaluation.finished, testedHere, settled, revision, initial.huntId])
 
   // ── Publish ──────────────────────────────────────────────────────────────────────────────
-  const checklist = useMemo(() => publishChecklist({ ...draft, permissionConfirmed: permission }, revision), [draft, permission, revision])
+  const checklist = useMemo(
+    () => publishChecklist({ ...draft, permissionConfirmed: permission }, revision, { venue: initial.hasVenue }),
+    [draft, permission, revision, initial.hasVenue],
+  )
 
   const publish = async () => {
     setPublishing(true)
@@ -235,7 +243,10 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
     setPublished(true)
     setJustPublished(res.data.visibility)
     setRevision((r) => r + 1)
-    setDraft((d) => ({ ...d, permissionConfirmed: permission }))
+    // FH-020X: the publish bound a placement to each stop. Keep the ids so the next save carries them
+    // and a printed code keeps working in the next version. Not an edit: nothing is marked dirty.
+    const placementIds = res.data.placementIds
+    setDraft((d) => ({ ...d, permissionConfirmed: permission, stops: d.stops.map((s, i) => (placementIds[i] ? { ...s, placementId: placementIds[i] } : s)) }))
   }
 
   // ── Navigation ───────────────────────────────────────────────────────────────────────────
@@ -478,7 +489,7 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
                       </button>
                     </>
                   )}
-                  {!item.ok && (item.code === 'stop_text' || item.code === 'stop_placement' || item.code === 'stops_count') && (
+                  {!item.ok && (item.code === 'stop_text' || item.code === 'stop_placement' || item.code === 'stop_staff_venue' || item.code === 'stops_count') && (
                     <>
                       {' '}
                       <button type="button" className="underline underline-offset-4" onClick={() => setStep('stops')}>

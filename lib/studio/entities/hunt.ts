@@ -60,6 +60,13 @@ export const HUNT_MANIFEST: EntityManifest = {
         { path: 'clue', label: 'Clue', kind: 'longtext', required: true, prose: true },
         { path: 'hint', label: 'Hint (optional)', kind: 'text' },
         { path: 'placementReady', label: 'A code is printed or placed here', kind: 'toggle' },
+        // FH-020X: staff at the place confirm each visit, so the stop's mission publishes at staff
+        // assurance (lib/hunts/draft.ts `publishRows`). A scan alone no longer counts there.
+        { path: 'staffConfirmed', label: 'Staff at this place confirm each visit', kind: 'toggle' },
+        // FH-020V: the resident's switch for `evidence_policy.hold_for_review` on the stop's placement.
+        // It is a plain switch, never a JSON field: lib/hunts/draft.ts `stopEvidencePolicy` is the one
+        // place that turns it into the stored key, and it only matters at a stop that staff confirm.
+        { path: 'holdForReview', label: 'If staff cannot confirm a visit on the spot, keep it for them to check later', kind: 'toggle' },
       ],
     },
   ],

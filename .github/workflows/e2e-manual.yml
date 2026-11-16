@@ -55,6 +55,8 @@
 # Repo variables it reads: PW_ROOM_PATH (default /channels), PW_SPACE_SLUG (adds the console),
 # PW_SPOTLIGHT_HANDLE (adds the editor's Spotlight surface, PROG-E3), PW_SITE_URL (a published
 # Site's own https origin; adds the editor's Site surface, LIVE-2232).
+# The `site_url` input overrides PW_SITE_URL for one dispatch, so the Site picture can be taken
+# without anyone editing a repo variable first (LIVE-2232).
 # Full procedure: test/e2e/README.md § The member shell.
 #
 # ── capture_shell ALSO CARRIES THE OPERATOR CONSOLE (ADR-1128) ────────────────────────────
@@ -183,6 +185,11 @@ on:
         type: boolean
       copy_fit_routes:
         description: 'Optional comma-separated public paths for this copy batch (e.g. /,/pricing). Empty checks every public route; full coverage is required after all batches.'
+        required: false
+        default: ''
+        type: string
+      site_url:
+        description: 'Optional: a published Site own https origin (e.g. https://name.frequencylocal.com). Adds the editor Site surface for this run; empty falls back to the PW_SITE_URL repo variable.'
         required: false
         default: ''
         type: string
@@ -516,7 +523,7 @@ jobs:
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
           PW_SPOTLIGHT_HANDLE: ${{ vars.PW_SPOTLIGHT_HANDLE }}
-          PW_SITE_URL: ${{ vars.PW_SITE_URL }}
+          PW_SITE_URL: ${{ inputs.site_url || vars.PW_SITE_URL }}
           # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
           # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
           # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
@@ -812,7 +819,7 @@ jobs:
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
           PW_SPOTLIGHT_HANDLE: ${{ vars.PW_SPOTLIGHT_HANDLE }}
-          PW_SITE_URL: ${{ vars.PW_SITE_URL }}
+          PW_SITE_URL: ${{ inputs.site_url || vars.PW_SITE_URL }}
           # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
           # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
           # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
@@ -906,6 +913,10 @@ jobs:
           # first navigation and there is nothing here to commit: see the message it printed. A
           # deliberate move of the whole set to another environment is a commit that deletes the
           # stamp, which is one visible line in a diff.
+          # A capture writes one PNG per render state. Where midnight-light came back byte-identical
+          # to dawn-light, the second copy is deleted and listed in shared-baselines.json instead
+          # (SCAN-1222); test/e2e/shared-baselines.test.ts fails a commit that skips this.
+          node scripts/dedupe-visual-baselines.mjs
           git add test/e2e/__screenshots__/ test/e2e/template-fingerprints.json
           if git diff --cached --quiet; then
             echo "No baseline changes to commit."
@@ -1217,7 +1228,7 @@ jobs:
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
           PW_SPOTLIGHT_HANDLE: ${{ vars.PW_SPOTLIGHT_HANDLE }}
-          PW_SITE_URL: ${{ vars.PW_SITE_URL }}
+          PW_SITE_URL: ${{ inputs.site_url || vars.PW_SITE_URL }}
           # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
           # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
           # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
@@ -1482,7 +1493,7 @@ jobs:
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
           PW_SPOTLIGHT_HANDLE: ${{ vars.PW_SPOTLIGHT_HANDLE }}
-          PW_SITE_URL: ${{ vars.PW_SITE_URL }}
+          PW_SITE_URL: ${{ inputs.site_url || vars.PW_SITE_URL }}
           # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
           # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
           # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
