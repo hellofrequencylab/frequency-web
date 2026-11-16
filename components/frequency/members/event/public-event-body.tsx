@@ -40,6 +40,7 @@ export function FqPublicEventBody({
   whereNote,
   venuePoint,
   host,
+  upcomingDates,
 }: {
   structuredData: ReactNode
   heroUrl: string | null
@@ -67,6 +68,7 @@ export function FqPublicEventBody({
   /** The venue's point, only when the host left the address visible. */
   venuePoint: { lat: number; lng: number } | null
   host: { name: string; href: string } | null
+  upcomingDates: { href: string; label: string }[]
 }) {
   const cover = heroUrl
     ? { backgroundImage: `url('${heroUrl}')`, ...(heroFocus ? { backgroundPosition: heroFocus } : {}) }
@@ -143,6 +145,16 @@ export function FqPublicEventBody({
               {whereNote && <span className="t2">{whereNote}</span>}
               <FqEventMap mapPin={null} venuePoint={venuePoint} />
             </section>
+            {upcomingDates.length > 0 && (
+              <section className="panel stack">
+                <h2 className="h2">Upcoming dates</h2>
+                <ul>
+                  {upcomingDates.map((date) => (
+                    <li key={date.href}><Link href={date.href}>{date.label}</Link></li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <PublicEventChat title={title} joinHref={joinHref} going={going} />
           </div>
 

@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { cache } from 'react'
+import { localSearchTitle, searchDescription } from '@/lib/discover-search-copy'
+import { loadSeriesDates } from '@/lib/events/series-dates'
 import { getPublicEventBySlug, getPublicEvents, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment, EVENT_CATEGORIES } from '@/app/discover/events/_data'
 import { getPublicEventVenue } from '@/lib/events/public-venue'
@@ -23,6 +26,9 @@ import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 // is not voided by that layout's cookies()/headers() (SCAN-643).
 export const revalidate = 3600
 
+const readShareSeo = cache(shareEventSeo)
+const readPublicVenue = cache(getPublicEventVenue)
+
 export async function generateStaticParams() {
   const events = await getPublicEvents(200).catch(() => [])
   return events.map((e) => ({ slug: e.slug }))
@@ -37,23 +43,26 @@ export async function generateMetadata({
   const event = await getPublicEventBySlug(slug)
   if (!event) return { title: 'Event not found' }
 
-  const where = event.city ? ` in ${event.city}` : ''
-  // One line: a host's description keeps its line breaks, which a snippet shows as run-on text.
-  const full = (event.description ?? `${event.title}: a Frequency community event${where}. RSVP here, no account needed.`)
-    .replace(/\s+/g, ' ')
-    .trim()
-  const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
-  const [seo, { indexedOccurrences }] = await Promise.all([shareEventSeo(event.slug), getSeriesDisplayConfig()])
+  const [seo, { indexedOccurrences }, venue] = await Promise.all([
+    readShareSeo(event.slug),
+    getSeriesDisplayConfig(),
+    readPublicVenue(event.slug),
+  ])
+  const localizedTitle = localSearchTitle(event.title, venue.area?.city ?? event.city)
+  const description = searchDescription(
+    event.description,
+    `Find the date, location and RSVP details for ${localizedTitle} on Frequency.`,
+  )
   const ended = hasEventEnded({ ...event, time_zone: seo.timeZone })
   // A recurring event's occurrences share one name, so each indexed date carries its day in the title
   // (24 pages read "Circle Night · Frequency" on the live sitemap). The series anchor keeps the bare
   // name: its stored start is the first meeting, not the next one.
-  const title = seo.facts.isAnchor ? event.title : `${event.title} · ${formatEventDate(event.starts_at)}`
+  const title = seo.facts.isAnchor ? localizedTitle : `${localizedTitle} · ${formatEventDate(event.starts_at)}`
   const ogTitle = `${title} · ${SITE_NAME}`
   // SCAN-1014 / ADR-1751: an unlisted event is a link, not a listing. The plan noindexes it and
   // omits the canonical; a public date still uses the past and series rules, with a self-canonical.
   const plan = publicEventIndexPlan({
-    visibility: seo.visibility === 'unlisted' ? 'unlisted' : seo.visibility,
+    visibility: seo.visibility,
     ended,
     facts: seo.facts,
     indexedOccurrences,
@@ -88,18 +97,29 @@ export default async function PublicEventPage({
   // The join door (lib/events/public-join-door.ts): guest RSVP or guest ticket, decided with the
   // member page's own signed-out rules from cookie-free reads. Null when it could not be read, which
   // keeps the plain sign-up card below.
-  const [enrichment, venue, joined] = await Promise.all([
+  const [enrichment, venue, joined, seo] = await Promise.all([
     getEventEnrichment(slug),
-    getPublicEventVenue(slug),
+    readPublicVenue(event.slug),
     loadPublicJoinDoor(event.id),
+    readShareSeo(event.slug),
   ])
-  const hasEnded = hasEventEnded({ ...event, time_zone: enrichment?.time_zone })
+  const seriesDates = seo.visibility === 'public' && seo.series
+    ? await loadSeriesDates({ ...seo.series, publicOnly: true })
+    : []
+  // Reuse the public route's resolver to enforce active Space and demo exclusions before linking.
+  const upcomingDates = await Promise.all(seriesDates.map(async (date) => {
+    if (date.isCurrent || !date.slug) return null
+    const sibling = await getPublicEventBySlug(date.slug)
+    if (!sibling || hasEventEnded(sibling)) return null
+    return { href: `/events/${sibling.slug}`, label: formatEventDateTime(sibling.starts_at) }
+  }))
+  const hasEnded = hasEventEnded({ ...event, time_zone: enrichment?.time_zone ?? seo.timeZone })
   // The where-line (ADR-1744, owner-ruled 2026-10-14): the venue and street plus the city when the
   // host left the address visible, the city alone otherwise. Same server-side read as the JSON-LD,
   // so the visible page and the structured data agree, and a hidden venue never reaches the HTML.
   // SCAN-867: an event with no city of its own takes its host Space's city, and a visible address
   // kept only in the free-text line is shown (and published) as the venue.
-  const city = event.city?.trim() || venue.area?.city || null
+  const city = venue.area?.city || event.city?.trim() || null
   const region = venue.area?.region ?? null
   const where = publicPageWhere({
     hide_address: venue.hide_address,
@@ -111,14 +131,14 @@ export default async function PublicEventPage({
   const structuredData = (
     <JsonLd
       data={[
-        eventSchema({
+        ...(seo.visibility === 'public' && !(hasEnded && seo.facts.isAnchor) ? [eventSchema({
           ...event,
           ...(enrichment ?? {}),
           city,
           region: enrichment?.region ?? region,
           hide_address: venue.hide_address,
           venue: venue.venue,
-        }),
+        })] : []),
         breadcrumbSchema([
           { name: 'Events', path: '/events' },
           { name: event.title, path: `/events/${event.slug}` },
@@ -192,6 +212,7 @@ export default async function PublicEventPage({
       }
       whereNote={where.exact ? null : 'The exact venue is shared with guests who RSVP.'}
       host={host}
+      upcomingDates={upcomingDates.filter((date) => date !== null)}
     />
   )
   return page

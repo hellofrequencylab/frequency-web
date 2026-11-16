@@ -360,6 +360,9 @@ export async function updateCircleSettings(id: string, slug: string, fd: FormDat
 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
+  revalidatePath(`/discover/circles/${slug}`)
+  revalidatePath('/discover/circles')
+  revalidatePath('/sitemap.xml')
 }
 
 /** Turn a database refusal into something a host can act on. `trg_circles_access_shape` raises
