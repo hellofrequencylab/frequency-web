@@ -67,6 +67,27 @@ export type FinaleFacts = Readonly<{
   livePartnerSpaceIds: readonly string[]
 }>
 
+/** An Event the author may pick as the finale: a HostEvent plus who hosts it and when it ends. */
+export type FinaleChoiceEvent = HostEvent & Readonly<{ hostProfileId: string | null; endsAt: string | null }>
+
+/**
+ * May the author pick this Event as the Hunt's finale (FH-031S)? The same Space rule the projection
+ * applies (the Hunt's own Space or a live partner), narrowed for the picker: a member's own Hunt may
+ * end only at an Event that member hosts, and an Event that is over is not offered.
+ */
+export function canHostFinale(
+  event: FinaleChoiceEvent,
+  hunt: { ownerSpaceId: string | null; ownerProfileId: string | null; livePartnerSpaceIds: readonly string[] },
+  now: string,
+): boolean {
+  if (event.cancelled || !event.published || !event.startsAt) return false
+  if (Date.parse(event.endsAt ?? event.startsAt) < Date.parse(now)) return false
+  if (hunt.ownerSpaceId) {
+    return event.hostSpaceId === hunt.ownerSpaceId || (!!event.hostSpaceId && hunt.livePartnerSpaceIds.includes(event.hostSpaceId))
+  }
+  return !!hunt.ownerProfileId && event.hostProfileId === hunt.ownerProfileId
+}
+
 type Admission = 'ticket' | 'rsvp' | 'waitlist' | 'pending' | 'refunded' | 'none'
 type Attendance = 'host_marked' | 'self_checked_in' | 'none'
 type FinaleRefusal = 'hunt_not_complete' | 'event_unavailable' | 'event_full' | 'waitlisted' | 'awaiting_host' | 'ticket_refunded' | 'no_seat'

@@ -76,18 +76,23 @@ export type PublishTrailResult =
   | { blocked: true; items: ChecklistItem[] }
 
 /** Step 5: the immutable publish. Refused by the store while any checklist item is open. */
-export async function publishTrailAction(input: { huntId: string; baseRevision: number; visibility: string; permissionConfirmed: boolean }): Promise<ActionResult<PublishTrailResult>> {
+export async function publishTrailAction(input: { huntId: string; baseRevision: number; visibility: string; permissionConfirmed: boolean; finaleEventId?: string | null }): Promise<ActionResult<PublishTrailResult>> {
   const gate = await authorizeAuthoring()
   if ('error' in gate) return fail(gate.error)
   if (typeof input.huntId !== 'string' || !Number.isInteger(input.baseRevision)) return fail('That trail could not be published.')
   const visibility: PublishVisibility = input.visibility === 'public' ? 'public' : 'unlisted'
+  // FH-031S: the finale Event rides on the publish tap; the store checks it against the Events this Hunt may end at.
+  const finaleEventId = typeof input.finaleEventId === 'string' && input.finaleEventId ? input.finaleEventId : null
   try {
-    const res = await publishTrail(input.huntId, { profileId: gate.profileId }, input.baseRevision, visibility, input.permissionConfirmed === true)
+    const res = await publishTrail(input.huntId, { profileId: gate.profileId }, input.baseRevision, visibility, input.permissionConfirmed === true, finaleEventId)
     if (res.ok) return ok({ published: true, visibility: res.visibility })
     if (res.reason === 'conflict') return ok({ conflict: true, currentRevision: res.currentRevision })
     if (res.reason === 'checklist') return ok({ blocked: true, items: res.items })
     if (res.reason === 'partners') {
       return ok({ blocked: true, items: [{ code: 'partner_venue', ok: false, message: 'A stop is at a venue that has not accepted the partner terms, or has withdrawn. Invite the venue again or move the stop.' }] })
+    }
+    if (res.reason === 'finale') {
+      return ok({ blocked: true, items: [{ code: 'finale', ok: false, message: 'That event cannot host the finale now. Pick another event, or publish with no finale.' }] })
     }
     return fail('Only the trail owner or an admin can publish it.')
   } catch {

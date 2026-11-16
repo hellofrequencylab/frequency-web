@@ -44,6 +44,9 @@ export const HUNT_MANIFEST: EntityManifest = {
     { path: 'area', label: 'Area', kind: 'text', section: 'identity', placement: 'spark', editPlane: 'rail' },
     { path: 'audience', label: 'Who it is for', kind: 'text', section: 'identity', placement: 'spark', editPlane: 'rail' },
     { path: 'visibility', label: 'Who can find it', kind: 'select', section: 'publishing', options: HUNT_PUBLISH_VISIBILITY, placement: 'rail' },
+    // FH-031S: the Event the trail ends at. The choices are the Events this Hunt may end at, which the
+    // store reads when the editor loads (lib/hunts/store.ts), so the surface loads them.
+    { path: 'finaleEventId', label: 'Finale event (optional)', kind: 'reference', section: 'publishing', optionsFrom: 'finaleEvents', placement: 'rail' },
   ],
   repeats: [
     {
