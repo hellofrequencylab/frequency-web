@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { webPageSchema } from '@/lib/jsonld'
-import { SITE_URL } from '@/lib/site'
+import { FOUNDING_PLACE, SITE_URL } from '@/lib/site'
 import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata, type FrequencyPageSeo } from './frequency-pages'
 
 // Google's view of the Frequency design's coded pages. Three things are pinned here:
@@ -124,7 +124,13 @@ describe('frequencyPageMetadata', () => {
   })
 
   it('opts the home title out of the site template', () => {
-    expect(frequencyPageMetadata(FREQUENCY_PAGE_SEO.home).title).toEqual({ absolute: 'Frequency · Local groups and events near you' })
+    expect(frequencyPageMetadata(FREQUENCY_PAGE_SEO.home).title).toEqual({ absolute: 'Frequency · Local groups and events in North County San Diego' })
+  })
+
+  it('names the founding place in the home title and description and the For people title (SCAN-1206)', () => {
+    const { home, community } = FREQUENCY_PAGE_SEO
+    for (const s of [home.title, home.shareTitle, home.description, community.title]) expect(s).toContain(FOUNDING_PLACE)
+    expect(home.description.length).toBeLessThan(160)
   })
 })
 

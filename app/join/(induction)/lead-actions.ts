@@ -162,10 +162,33 @@ export async function captureLead(
       // How they first reached us (ADR-095), from the same cookies the member record reads.
       p_attribution: await resolveAcquisition(),
     })
-    const claim = error ? null : parseLeadClaim(data)
-    if (!claim) return { ok: false }
+    const captured = error ? null : parseLeadClaim(data)
+    if (!captured) return { ok: false }
 
-    ;(await cookies()).set(LEAD_COOKIE, `${claim.id}.${claim.claimToken}`, {
+    // 2026-11-16 (SCAN-1246, migration 20270346064000): a repeat capture of a known address no longer
+    // rotates the row's token, so the token it returns opens nothing. When THIS browser already holds
+    // a claim on the same row (it re-ran the email beat), that older token is the live one: prove it
+    // with one update, which also lands this beat's answers as the holder's, and keep it. Any other
+    // answer (a database from before that migration rotated the token, or the cookie was someone
+    // else's) keeps the token just returned, exactly as before.
+    const jar = await cookies()
+    const held = readLeadClaim(jar.get(LEAD_COOKIE)?.value)
+    let claim = captured
+    if (held && held.id === captured.id && held.claimToken !== captured.claimToken) {
+      const kept = await (supabase as unknown as UntypedRpc).rpc('update_signup_lead', {
+        p_lead_id: held.id,
+        p_claim_token: held.claimToken,
+        p_step: input.step ?? null,
+        p_first_name: input.firstName ?? names.firstName ?? null,
+        p_last_name: input.lastName ?? names.lastName ?? null,
+        p_display_name: input.displayName ?? null,
+        p_handle: input.handle ?? null,
+        p_payload: input.payload ?? {},
+      })
+      if (!kept.error && kept.data === true) claim = held
+    }
+
+    jar.set(LEAD_COOKIE, `${claim.id}.${claim.claimToken}`, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',

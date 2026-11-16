@@ -16,6 +16,7 @@ import { completeRaw } from '@/lib/ai/complete'
 import { aiEnabled } from '@/lib/ai/client'
 
 import { featureOverBudget } from '@/lib/ai/usage'
+import { validateModelValue, z } from '@/lib/ai/schema'
 import type { HarvestedSource } from '../intake'
 import type { FieldVerdict, RefuterVerdict } from './gate'
 
@@ -56,18 +57,23 @@ Be hostile to the claim. A claim is:
 
 Never use outside knowledge. If it is not in the snippets, it is unsupported. Call verify_field once.`
 
-/** Coerce the model's raw verify_field output into a RefuterVerdict, defaulting to the SAFE
+/** The verify_field reply (PROG-E8B, the ADR-1287 pattern). Each field falls to its SAFE reading on its own: an
+ *  unknown verdict is 'unsupported', a snippet that is not a string is no snippet, a confidence that is not a finite
+ *  number is no confidence. */
+const VERDICT_REPLY = z.object({
+  verdict: z.enum(['supported', 'contradicted', 'unsupported']).catch('unsupported'),
+  snippet: z.string().transform((v) => v.trim()).catch(''),
+  confidence: z.number().transform((n) => Math.min(1, Math.max(0, n))).optional().catch(undefined),
+})
+
+/** Read the model's raw verify_field output into a RefuterVerdict through the schema, defaulting to the SAFE
  *  'unsupported' for any garbage. PURE + total. */
 export function coerceVerdict(raw: unknown): { verdict: RefuterVerdict; snippet?: string; confidence?: number } {
-  const o = (raw ?? {}) as { verdict?: unknown; snippet?: unknown; confidence?: unknown }
-  const v = o.verdict
-  const verdict: RefuterVerdict =
-    v === 'supported' || v === 'contradicted' ? v : 'unsupported'
-  const snippet = typeof o.snippet === 'string' && o.snippet.trim() ? o.snippet.trim() : undefined
-  const confidence =
-    typeof o.confidence === 'number' && Number.isFinite(o.confidence)
-      ? Math.min(1, Math.max(0, o.confidence))
-      : undefined
+  const res = validateModelValue(raw, VERDICT_REPLY)
+  if (!res.ok) return { verdict: 'unsupported' }
+  const verdict: RefuterVerdict = res.data.verdict
+  const snippet = res.data.snippet || undefined
+  const confidence = res.data.confidence
   // A supported/contradicted verdict with NO snippet is downgraded to unsupported: the refuter
   // must quote its evidence, mirroring the extractor's grounding gate.
   if ((verdict === 'supported' || verdict === 'contradicted') && !snippet) {

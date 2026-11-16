@@ -1,6 +1,6 @@
 {
   "id": "SEC-POSTGIS-PUBLIC",
   "append": {
-    "detail": "\n\n2026-11-10: the Supabase support request (text in docs/RUNBOOKS.md, PostGIS reference table) was sent. Waiting on Supabase; nothing is owed by Daniel. Row closes when the check query returns false, false, true."
+    "detail": "\n\n2026-11-10: the Supabase support request (text in docs/RUNBOOKS.md, PostGIS reference table) was sent. Waiting on Supabase; nothing is owed by Daniel. Row closes when the check query returns false, false, true.\\n\\n2026-11-16 re-check (read-only, Frequency Community): the check query returns true, true, true, so Supabase has not yet run the revoke requested on 2026-11-10. Writes are still refused by the sec007 triggers. Nothing can be done from the postgres role; the row stays open on Supabase support. If the ticket has had no answer by 2026-11-23, re-send the request text in docs/RUNBOOKS.md (PostGIS reference table)."
   }
 }

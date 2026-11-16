@@ -54,6 +54,8 @@ export async function mergeGuestCartAction(guestLines: unknown): Promise<CartRes
   return guarded(async (p) => ({ ok: true, cart: await mergeGuestIntoStored(p, guestLines) }))
 }
 
+const CART_CHANGED = 'Something in your cart changed since you last looked. Check it over, then check out again.'
+
 export type CartCheckoutResult =
   | { clientSecret: string; sessionId?: string; url?: undefined; error?: undefined }
   | { url: string; clientSecret?: undefined; sessionId?: undefined; error?: undefined }
@@ -63,7 +65,9 @@ export type CartCheckoutResult =
 // switch. The lines come from the stored cart and are priced and pruned from the live rows (loadCartView), so
 // what is charged is what /cart showed; the buyer is the session profile, never an argument; the one place
 // that validates stock, options, sellers, currency and funds flow is createCommerceCheckout, unchanged. The
-// cart is not emptied here: a buyer who closes the card form keeps it, and it is cleared after payment.
+// cart is not emptied here: a buyer who closes the card form keeps it. What was paid for leaves the cart when
+// the order is confirmed paid (recordCommerceOrderFromSession), on the page or back from hosted checkout alike.
+// If reading the cart just left a line out or lowered one, nothing is charged: the buyer is told and looks again.
 // authz-ok: signed-in own-cart only. The profile comes from the session (never an argument), the dark switch and signed-out callers are refused, and createCommerceCheckout re-validates every line.
 export async function startCartCheckoutAction(opts?: { forceHosted?: boolean }): Promise<CartCheckoutResult> {
   if (!cartCheckoutEnabled()) return { error: 'Checkout from your cart is not open yet.' }
@@ -76,6 +80,7 @@ export async function startCartCheckoutAction(opts?: { forceHosted?: boolean }):
   } catch {
     return { error: 'Could not read your cart. Try again.' }
   }
+  if (view.removed.length > 0 || view.reduced.length > 0) return { error: CART_CHANGED }
   if (view.lines.length === 0) return { error: 'Your cart is empty.' }
   const r = await createCommerceCheckout({
     buyerProfileId: profileId,
@@ -88,7 +93,8 @@ export async function startCartCheckoutAction(opts?: { forceHosted?: boolean }):
   return { error: 'Could not start checkout. Please try again.' }
 }
 
-// Empty the cart once its contents are paid for. Called by the card form's success handler.
+// Empty the cart once its contents are paid for. Called by the card form's success handler, after the settle
+// has already taken the paid lines out; this is the belt for a settle that could not run on the page.
 // authz-ok: signed-in own-cart only. guarded() reads the profile from the session (never an argument), refuses signed-out callers and the dark switch, and only that profile's cart is emptied.
 export async function clearCartAction(): Promise<CartResult> {
   return guarded(async (p) => {

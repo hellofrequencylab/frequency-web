@@ -30,10 +30,20 @@ export async function POST(req: NextRequest) {
     })()
     // Two shapes: classic { "csp-report": {...} } and Reporting API [{ body: {...} }].
     const r = body?.['csp-report'] ?? (Array.isArray(body) ? body[0]?.body : body) ?? {}
+    // `policy` tells the two policies' reports apart: the nonce-based one posts to
+    // /api/csp-report?policy=nonce (lib/security/csp-nonce.ts, SCAN-1243); today's posts with no tag.
+    // `disposition` is the browser's own word for it ("report" for a report-only policy, "enforce"
+    // for an enforced one). `sample` is the first 40 characters of a blocked inline script, sent only
+    // by a policy that asks with 'report-sample', and it is how a blocked inline script is named.
+    const policy = req.nextUrl.searchParams.get('policy')
     log.info('csp.violation', {
       directive: r['violated-directive'] ?? r.effectiveDirective ?? null,
       blocked: String(r['blocked-uri'] ?? r.blockedURL ?? '').slice(0, 200),
       document: String(r['document-uri'] ?? r.documentURL ?? '').slice(0, 200),
+      policy: policy === 'nonce' ? 'nonce' : 'enforced',
+      disposition: String(r.disposition ?? '').slice(0, 20) || null,
+      source: String(r['source-file'] ?? r.sourceFile ?? '').slice(0, 200) || null,
+      sample: String(r['script-sample'] ?? r.sample ?? '').slice(0, 80) || null,
     })
   } catch {
     /* best-effort — a malformed report must never error */

@@ -1,5 +1,6 @@
 'use server'
 
+import { slugify } from '@/lib/utils'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -39,13 +40,11 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-function slugify(s: string): string {
-  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48)
-}
+const walkthroughSlug = (s: string): string => slugify(s).slice(0, 48)
 
 /** Build a slug that doesn't collide with an existing walkthrough. */
 async function uniqueSlug(base: string): Promise<string> {
-  const root = slugify(base) || 'walkthrough'
+  const root = walkthroughSlug(base) || 'walkthrough'
   const { data } = await db().from('walkthrough').select('slug')
   const taken = new Set(((data ?? []) as { slug: string }[]).map((r) => r.slug))
   if (!taken.has(root)) return root
