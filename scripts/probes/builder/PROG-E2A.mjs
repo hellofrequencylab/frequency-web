@@ -12,7 +12,7 @@ const entry = (led.entries ?? []).find((e) => e.key === 'block-systems')
 if (!entry) bad.push('block-baselines.json has no block-systems entry')
 const manifest = entry?.patterns ?? []
 
-for (const p of ['lib/entity-blocks/registry.ts', 'lib/page-editor/config.tsx', 'lib/widgets/modules.ts', 'lib/spotlight/blocks/schema.ts']) {
+for (const p of ['lib/entity-blocks/registry.ts', 'lib/page-editor/config.tsx', 'lib/spotlight/blocks/schema.ts']) {
   // A system leaves the manifest only by being folded: its entry file is gone from the tree.
   if (!manifest.includes(p) && fs.existsSync(p)) bad.push(`the manifest does not name ${p}, which is still in the tree`)
 }

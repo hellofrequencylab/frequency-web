@@ -622,6 +622,11 @@ the validator's limits. Goldens (`lib/entity-blocks/spotlight.golden.test.tsx`),
 first, freeze the limits, the validated layout and the markup of all nine types, and hold every type to a
 registry row a member may hold. The renderer and validator still switch on the nine types themselves.
 
+**Closed at 2, 2026-11-16 (ADR-1955).** Layout modules (`lib/widgets/modules.ts`) is the page Apps catalog,
+a registered menu catalog, not a block system: it leaves the manifest and no file moves. The E2 target is
+**2**: the entity-block registry and the website builder's Puck blocks (314 blocks, about 33 matching a
+registry row). The full Puck merge is not scheduled. PROG-E2 is closed.
+
 ### 7.4 Equivalence harnesses
 
 The model already exists: `lib/page-editor/block-render.test.tsx` — **10 inline snapshots** across 18 `it()` cases, of
