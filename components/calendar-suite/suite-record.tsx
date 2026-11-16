@@ -22,6 +22,9 @@ interface RecordRow {
   text: string
   at: string
   note: boolean
+  /** The comment's id and whether the viewer wrote it, so an author can take their own note back. */
+  commentId?: string
+  mine?: boolean
 }
 
 function rowsOf(load: RecordLoad): RecordRow[] {
@@ -31,7 +34,7 @@ function rowsOf(load: RecordLoad): RecordRow[] {
     .map((a) => ({ id: `a-${a.id}`, who: a.actorName ?? a.spaceName ?? 'Someone', text: a.summary, at: a.createdAt, note: false }))
   const notes: RecordRow[] = load.comments
     .filter((c) => !c.removed)
-    .map((c) => ({ id: `c-${c.id}`, who: c.authorName ?? c.spaceName ?? 'Someone', text: `“${c.body}”`, at: c.createdAt, note: true }))
+    .map((c) => ({ id: `c-${c.id}`, who: c.authorName ?? c.spaceName ?? 'Someone', text: `“${c.body}”`, at: c.createdAt, note: true, commentId: c.id, mine: c.mine }))
   return [...edits, ...notes].sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id))
 }
 
@@ -85,6 +88,21 @@ export function SuiteRecord({
   const rows = record.rows ?? []
   const shown = all ? rows : rows.slice(0, SHOWN)
 
+  const takeBack = async (commentId: string) => {
+    if (busy || !actions.removeEntryComment) return
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await actions.removeEntryComment(subject.id, commentId)
+      if ('error' in res) setError(res.error)
+      else await record.reload()
+    } catch {
+      setError('Something went wrong. Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const post = async () => {
     const body = draft.trim()
     if (!body || busy) return
@@ -122,6 +140,11 @@ export function SuiteRecord({
               <span className="cal-as">
                 {r.who} {'·'} {agoLabel(r.at, nowMs)}
               </span>
+              {r.note && r.mine && r.commentId && subject.kind === 'entry' && actions.removeEntryComment ? (
+                <button type="button" className="cal-link" disabled={busy} onClick={() => void takeBack(r.commentId as string)}>
+                  Take back
+                </button>
+              ) : null}
             </li>
           ))}
         </ul>

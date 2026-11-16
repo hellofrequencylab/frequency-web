@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: lib/launch/review-io.ts:5-9 'it does not flip preferences.websitePublished ... kept as a draft under preferences.launchDraft and shown as such'; no reader of preferences.launchDraft outside review-io (rg launchDraft app components lib).\n\nWHY IT MATTERS: A user reviews a site headline and an email, presses Publish, and neither goes anywhere; the 'Website' step stays required-and-undone, so the launch can't complete.\n\nFIX DIRECTION: Write the headline/intro to the site layout seam and hand the email to the Space email drafts, then flip websitePublished.",
+  "detail": "EVIDENCE: lib/launch/review-io.ts:5-9 'it does not flip preferences.websitePublished ... kept as a draft under preferences.launchDraft and shown as such'; no reader of preferences.launchDraft outside review-io (rg launchDraft app components lib).\n\nWHY IT MATTERS: A user reviews a site headline and an email, presses Publish, and neither goes anywhere; the 'Website' step stays required-and-undone, so the launch can't complete.\n\nFIX DIRECTION: Write the headline/intro to the site layout seam and hand the email to the Space email drafts, then flip websitePublished.\n\nCLOSED 2026-11-16: Publish now writes the website headline and intro to the site hero seam (preferences.siteHero) and switches the website on through setWebsitePublished (lib/launch/handoff-io.ts), only when the person wrote website words. The first email is handed to the Space email drafts as a draft and is never sent; the owner sends it from Marketing. lib/spaces/launch-draft.ts is the one reader of preferences.launchDraft and remembers the draft id so a second Publish makes no second draft. The website step is marked when it goes live.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1219",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }

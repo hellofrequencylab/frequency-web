@@ -14,6 +14,7 @@ import { useState, useTransition } from 'react'
 import { Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
+import { SpaceSendToPeople } from './space-send-to-people'
 import { AudiencePicker } from '@/components/spaces/email/audience-picker'
 import { sendSpaceEmailDraft } from '@/lib/spaces/email-drafts'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
@@ -105,6 +106,20 @@ export function SpaceSendPanel({
         </Banner>
       )}
       {note && <Banner tone="info" title={note} />}
+
+      {/* SCAN-1221: the same draft to a short list picked by name, as one email each or as 1:1 conversations. */}
+      {!readOnly && (
+        <SpaceSendToPeople
+          spaceId={spaceId}
+          slug={slug}
+          campaignId={campaignId}
+          disabled={pending}
+          onSent={() => {
+            setSent(true)
+            onSent?.()
+          }}
+        />
+      )}
     </div>
   )
 }

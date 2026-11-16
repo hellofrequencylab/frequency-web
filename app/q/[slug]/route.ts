@@ -31,6 +31,7 @@ import {
   linkMemberToSpaceLead,
   type PendingLeadGrab,
 } from '@/lib/crm/lead-capture'
+import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
 
 export const dynamic = 'force-dynamic'
 
@@ -179,6 +180,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     if (creditOwner && code.owner_profile_id) {
       res.cookies.set('fq_ref', code.owner_profile_id, {
         httpOnly: true,
+        secure: SECURE_COOKIE,
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
@@ -189,6 +191,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     if (!profileId && abVariantKey) {
       res.cookies.set('fq_var', `${code.id}:${abVariantKey}`, {
         httpOnly: true,
+        secure: SECURE_COOKIE,
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 30,
@@ -198,6 +201,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     if (!profileId && pendingLeadGrab) {
       res.cookies.set(LEAD_GRAB_COOKIE, pendingLeadGrab, {
         httpOnly: true,
+        secure: SECURE_COOKIE,
         sameSite: 'lax',
         path: '/',
         maxAge: LEAD_GRAB_MAX_AGE,

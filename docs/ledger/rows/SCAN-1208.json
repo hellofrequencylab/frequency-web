@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "docs/BUILD-BACKLOG.json",
     "ref": "Whole-site audit 2026-11-16 (project thread, requested by Daniel). Confidence: CONFIRMED. Audit file: audit/FINAL-BUILD-AND-REPAIR-LIST-2026-11-16.md"
   },
-  "detail": "EVIDENCE: REVIEW_HREF (lib/launch/review.ts:10) is only used for error redirects in lib/launch/actions.ts:197; rg 'step/review' finds no href/redirect into it. app/(main)/launch/step/review/page.tsx:29 calls loadReviewDraft, whose header lib/launch/review-io.ts:9 says 'TEMPORARY loader: lane E's buildout supplies the real BuildoutDraft'. buildDraftAction (lib/launch/actions.ts:191) has no caller, so buildLaunchDraft (buildout-io.ts:78) never runs.\n\nWHY IT MATTERS: The one-screen 'everything built from what you told us' promise cannot be reached, and when reached it shows only what the person already saved: no AI-built tagline, about, site headline or first email. The Vera-built launch is the headline Jan 1 experience. (LAUNCH_SYSTEM_ENABLED=1 in Vercel production, verified 2026-11-16.)\n\nFIX DIRECTION: Link Spotlight step success to REVIEW_HREF, call buildLaunchDraft from the review page (or a Build button using buildDraftAction), and replace loadReviewDraft with the stored buildout.",
+  "detail": "EVIDENCE: REVIEW_HREF (lib/launch/review.ts:10) is only used for error redirects in lib/launch/actions.ts:197; rg 'step/review' finds no href/redirect into it. app/(main)/launch/step/review/page.tsx:29 calls loadReviewDraft, whose header lib/launch/review-io.ts:9 says 'TEMPORARY loader: lane E's buildout supplies the real BuildoutDraft'. buildDraftAction (lib/launch/actions.ts:191) has no caller, so buildLaunchDraft (buildout-io.ts:78) never runs.\n\nWHY IT MATTERS: The one-screen 'everything built from what you told us' promise cannot be reached, and when reached it shows only what the person already saved: no AI-built tagline, about, site headline or first email. The Vera-built launch is the headline Jan 1 experience. (LAUNCH_SYSTEM_ENABLED=1 in Vercel production, verified 2026-11-16.)\n\nFIX DIRECTION: Link Spotlight step success to REVIEW_HREF, call buildLaunchDraft from the review page (or a Build button using buildDraftAction), and replace loadReviewDraft with the stored buildout.\n\nCLOSED 2026-11-16: The Spotlight success screen now links to REVIEW_HREF ('Review everything we built'); the Space step screen opens it too. The review page loads the stored Vera buildout and builds it on first open (loadReviewDraft in lib/launch/review-io.ts, via getBuildout/buildLaunchDraft); the temporary loader is gone.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/audit-2026-11-16.mjs SCAN-1208",
     "note": "Fails on 2026-11-16 (audit run). Passes when the fix lands. Audit-written probes are direction checks; retime only with Daniel's phrase."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-16"
 }

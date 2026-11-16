@@ -16,6 +16,7 @@
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { stashPendingInduction } from './actions'
+import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
 
 // Stored cookie name kept through the Funnels rename (ADR-1090) — see actions.ts.
 const FUNNEL_SEQ_COOKIE = 'fq_beta_seq'
@@ -75,6 +76,7 @@ export async function beginFeatureFunnelSignup(input: {
       path: '/',
       maxAge: 60 * 30,
       sameSite: 'lax',
+      secure: SECURE_COOKIE,
     })
   }
 

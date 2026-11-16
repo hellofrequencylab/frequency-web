@@ -13,6 +13,7 @@ import {
   type OperatorContext,
 } from '@/lib/context/operator-context'
 import { resolveOperatorContext } from '@/lib/context/resolve-context'
+import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
 
 // "Switch which hat I'm wearing" — the set-context server action, mirroring the set-cookie-then-
 // reload shape of setViewAsRole (app/(main)/view-as-actions.ts).
@@ -30,6 +31,7 @@ import { resolveOperatorContext } from '@/lib/context/resolve-context'
 
 const CONTEXT_COOKIE_OPTS = {
   httpOnly: true,
+  secure: SECURE_COOKIE,
   sameSite: 'lax' as const,
   path: '/',
   // Auto-expires (8h) like the view-as preview, so a stale framing never lingers indefinitely.

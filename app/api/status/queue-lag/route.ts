@@ -9,6 +9,7 @@
 // Never cached: a stale answer is the one failure this exists to catch.
 
 import { NextResponse } from 'next/server'
+import { clientIp, rateLimitOk, tooMany } from '@/lib/rate-limit'
 import { queueHealth } from '@/lib/queue/outbox'
 
 export const dynamic = 'force-dynamic'
@@ -16,7 +17,10 @@ export const dynamic = 'force-dynamic'
 /** Past this many minutes the watcher fails. `process-queue` runs every 2 minutes and the SLO target is 10. */
 export const QUEUE_LAG_ALERT_MIN = 15
 
-export async function GET() {
+export async function GET(req?: Request) {
+  // Unauthenticated and it reads the database, so it is throttled per address (SCAN-1239). A watcher polls a few
+  // times an hour. 'allow' when KV is unset: the watcher must never be locked out of the one signal it exists for.
+  if (!(await rateLimitOk('status-queue-lag', req ? clientIp(req) : 'unknown', 30, '1 m', { whenUnconfigured: 'allow' }))) return tooMany()
   const h = await queueHealth()
   const ok = h.measured && h.lagMin <= QUEUE_LAG_ALERT_MIN
   return NextResponse.json(

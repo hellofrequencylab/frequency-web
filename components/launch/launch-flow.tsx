@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { PublishedScreen } from '@/components/launch/published-screen'
+import { REVIEW_HREF } from '@/lib/launch/review'
 import { chooseSpaceFormAction, keepSpaceFormAction, publishSpotlightFormAction } from '@/lib/launch/actions'
 import type { FlowView } from '@/lib/launch/flow'
 import type { SpaceChoice } from '@/lib/launch/space-choice'
@@ -127,7 +128,7 @@ export function LaunchFlow({ view, answers, errorCode, signedIn, choices }: { vi
         </form>
         <div style={{ display: 'grid', justifyItems: 'center', gap: 16 }}>
           <Phone src={previewSrc} live={live} />
-          {live && view.spotlightHref ? <PublishedScreen view={{ kind: 'done', label: 'Spotlight', liveHref: view.spotlightHref, next: null }} /> : null}
+          {live && view.spotlightHref ? <PublishedScreen view={{ kind: 'done', label: 'Spotlight', liveHref: view.spotlightHref, next: null }} reviewHref={REVIEW_HREF} /> : null}
         </div>
       </section>
       )}

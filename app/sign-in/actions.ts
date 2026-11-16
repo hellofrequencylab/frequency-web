@@ -11,6 +11,7 @@ import { SIGN_IN_ERRORS, type SignInErrorCode } from './errors'
 // the pure helper instead.
 import { NEW_ACCOUNT_EMAIL_COOKIE } from '@/lib/auth/sign-in-hint'
 import { safeNextPath } from '@/lib/auth/safe-next'
+import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
 
 // Shared passwordless sign-in actions, used by /sign-in and by the beta induction's
 // cinematic welcome (app/join/(induction)/induction.tsx sign-in beat).
@@ -91,6 +92,7 @@ async function stashNext(next: string) {
   if (!next) return
   ;(await cookies()).set(POST_LOGIN_COOKIE, next, {
     httpOnly: true,
+    secure: SECURE_COOKIE,
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60, // an hour to click the magic link
@@ -146,6 +148,7 @@ export async function signInWithMagicLink(formData: FormData) {
   if (error && askFirst && isNoAccountError(error)) {
     ;(await cookies()).set(NEW_ACCOUNT_EMAIL_COOKIE, (email ?? '').trim().slice(0, 254), {
       httpOnly: true,
+      secure: SECURE_COOKIE,
       sameSite: 'lax',
       path: '/sign-in',
       maxAge: 60 * 15,

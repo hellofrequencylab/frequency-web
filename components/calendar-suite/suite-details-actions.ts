@@ -5,13 +5,14 @@ import {
   saveCalendarEntryOccurrence,
   skipPencilDate,
 } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-actions'
-import { listEntryActivity, listEntryComments, postEntryComment } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-record-actions'
+import { listEntryActivity, listEntryComments, postEntryComment, removeEntryComment } from '@/app/(main)/spaces/[slug]/settings/calendar/entry-record-actions'
 import {
   addPlanTodo,
   editPlanText,
   listPlanActivity,
   listPlanComments,
   postPlanComment,
+  setPlanHold,
   transitionPlanStage,
 } from '@/app/(main)/spaces/[slug]/settings/calendar/plan-actions'
 import {
@@ -20,6 +21,7 @@ import {
   moveSpaceTodo,
   renameSpaceTodo,
   setSpaceTaskDone,
+  setTaskPlanning,
 } from '@/app/(main)/spaces/[slug]/settings/calendar/task-actions'
 import type { ActionResult } from '@/lib/action-result'
 import type { EntryInput } from '@/lib/calendar/entries'
@@ -64,6 +66,14 @@ export interface DetailsActions {
   deleteTodo: (taskId: string) => Promise<Done>
   loadRecord: (subject: RecordSubject) => Promise<RecordLoad | { error: string }>
   postComment: (subject: RecordSubject, body: string) => Promise<Done>
+  /** Hold a Plan's dates until a day (yyyy-mm-dd), or release the hold with null. Plan editors only; the
+   *  hold cron warns the team and lets a lapsed hold go. Optional so a picture or test can leave it out. */
+  setPlanHold?: (planId: string, holdUntil: string | null) => Promise<Done>
+  /** Set a to-do's Before / Day of / After phase or its start minute of the day. A key left out is left
+   *  alone and null clears it. */
+  setTaskPlanning?: (taskId: string, patch: { phase?: 'before' | 'day_of' | 'after' | null; startMinute?: number | null }) => Promise<Done>
+  /** The author takes back their own note under a date that is on no Plan. */
+  removeEntryComment?: (entryId: string, commentId: string) => Promise<Done>
 }
 
 async function load<T>(res: Promise<ActionResult<T>>): Promise<{ data: T } | { error: string }> {
@@ -101,5 +111,8 @@ export function bindDetailsActions(slug: string): DetailsActions {
     },
     postComment: (subject, body) =>
       subject.kind === 'plan' ? postPlanComment(slug, subject.id, null, body) : postEntryComment(slug, subject.id, body),
+    setPlanHold: (planId, holdUntil) => setPlanHold(slug, planId, holdUntil),
+    setTaskPlanning: (taskId, patch) => setTaskPlanning(slug, taskId, patch),
+    removeEntryComment: (entryId, commentId) => removeEntryComment(slug, entryId, commentId),
   }
 }

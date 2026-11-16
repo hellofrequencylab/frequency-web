@@ -1,5 +1,5 @@
 // FlowWeb leads in the CRM (LIVE-2256). FlowWeb's daemon POSTs one draft's whole state here after the
-// founder marks it (sent, they replied, they said no) and once a day, signed with FLOWWEB_OUTCOMES_SECRET
+// founder marks it (sent, they replied, they said no) and once a day, signed with its own secret (FLOWWEB_CRM_SECRET, else the shared one, lib/flowweb/secret.ts)
 // as hex HMAC-SHA256 of `${x-flowweb-timestamp}.${body}` in x-flowweb-signature (the flowweb-claim
 // scheme). Frequency keeps the lead as a root-Space contact with one CRM conversation that holds every
 // draft, send, reply and outcome, and answers where the lead is. Frequency never sends any of it.
@@ -9,6 +9,8 @@
 import { NextResponse } from 'next/server'
 import { envFlag, envStringOrNull } from '@/lib/env/string'
 import { verifySignature } from '@/lib/flowweb/claim'
+import { clientIp, rateLimitOk, tooMany } from '@/lib/rate-limit'
+import { flowwebSecret } from '@/lib/flowweb/secret'
 import { parseCrmItem } from '@/lib/flowweb/crm'
 import { ownerIsProfile, syncFlowwebLead } from '@/lib/flowweb/crm-io'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -18,7 +20,10 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
-  const secret = envStringOrNull('FLOWWEB_OUTCOMES_SECRET') ?? ''
+  // Throttled per address before any work (SCAN-1239): the sender is one Mac, so this only ever refuses a
+  // stranger. 'allow' when KV is unset: the signature below is the gate, this only bounds the noise.
+  if (!(await rateLimitOk('flowweb-crm', clientIp(req), 120, '1 m', { whenUnconfigured: 'allow' }))) return tooMany()
+  const secret = flowwebSecret('crm')
   const body = await req.text()
   const ts = req.headers.get('x-flowweb-timestamp') ?? ''
   const sig = req.headers.get('x-flowweb-signature') ?? ''
