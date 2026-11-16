@@ -119,6 +119,15 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
                 {/* suppressHydrationWarning: the pre-paint script below may switch this photo to eager first. */}
                 {/* eslint-disable-next-line @next/next/no-img-element -- sized by .jph img */}
                 <img loading="lazy" decoding="async" {...photoImg(photo(job.photo), '(max-width: 900px) 100vw, 33vw')} alt={job.photoAlt} suppressHydrationWarning />
+                {/* FETCH THE LINKED JOB'S PHOTO AS THE PARSER REACHES IT (SCAN-1265). A `#f-…` link (the /the-quest
+                    redirect lands on #f-zaps) scrolls straight to this job, so its photo is the slow-phone LCP, and
+                    `loading="lazy"` held the request until layout. This runs the moment the photo is parsed, well
+                    before the end of this long page, and only when the hash names one of this job's features. */}
+                <script
+                  dangerouslySetInnerHTML={{
+                    __html: `(function(){try{if(${JSON.stringify(job.features.map((f) => f.id))}.indexOf(location.hash.slice(1))<0)return;var i=document.currentScript.previousElementSibling;i.loading='eager';i.fetchPriority='high'}catch(e){}})()`,
+                  }}
+                />
                 <span className="fq-grain" />
               </div>
             </div>
@@ -207,13 +216,12 @@ export function FrequencyFeatures() {
         // pushed the cards below it 400 px down while the visitor read them: CLS 0.301. This runs as the
         // parser reaches it, while every feature is already in the DOM. FeaturesMotion still handles a
         // hash change after load and the scroll offset.
-        // FETCH ITS PHOTO NOW, TOO. The landing scrolls straight to that job, so the job's photo is the LCP
-        // element, and `loading="lazy"` held its request until layout found it in view: 5.2 s on a slow phone.
-        // Switching that one photo to eager and high priority starts the request here, during the parse.
+        // The linked job's photo is switched to eager by a script beside that photo (see HalfSection), not here:
+        // this script sits after both halves, too late on a slow link to start the request in time.
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{var h=location.hash;if(h.indexOf('#f-')!==0)return;var d=document.getElementById(h.slice(1));if(!d||d.tagName!=='DETAILS')return;d.open=true;var j=d.closest('.job'),i=j&&j.querySelector('.jph img');if(i){i.loading='eager';i.fetchPriority='high'}}catch(e){}})()",
+              "(function(){try{var h=location.hash;if(h.indexOf('#f-')!==0)return;var d=document.getElementById(h.slice(1));if(d&&d.tagName==='DETAILS')d.open=true}catch(e){}})()",
           }}
         />
       }
