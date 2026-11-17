@@ -1,6 +1,7 @@
 {
   "buildCommand": "pnpm build",
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
+  "regions": ["pdx1"],
   "crons": [
     {
       "path": "/api/cron/referral-release",
