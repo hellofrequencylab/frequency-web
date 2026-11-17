@@ -154,6 +154,14 @@ export function shouldAskForConsent(state: ConsentState): boolean {
  * appended only once the page has loaded. On a throttled phone that script was about 1.25 s of
  * main-thread work landing in the middle of hydration on every public page. The queued page_view
  * still goes out when it arrives; a visitor who leaves before `load` is no longer counted.
+ *
+ * AUTOMATED BROWSERS SEND NOTHING (2026-11-17). Our own Playwright runs against production (the
+ * e2e-manual field-measure pass opens public pages hundreds of times from fresh contexts) showed up
+ * in GA4 as about 1,940 one-page Direct visitors from cloud data centers on 2026-11-16. Any browser
+ * that reports `navigator.webdriver` (Playwright, Puppeteer, Selenium, Lighthouse under automation)
+ * now gets GA's own kill switch before the first config call, the same way the staff opt-out does.
+ * The tag still loads, so speed readings keep its cost; it just sends no hits. browserAllowsAnalytics
+ * reads the same switch, so first-party events stay quiet too.
  */
 export function gaBootstrapScript(gaId: string, requireRequestPolicy = false, loadGoogle = true): string {
   const id = JSON.stringify(gaId)
@@ -212,6 +220,7 @@ window.dataLayer=window.dataLayer||[];
 function gtag(){window.dataLayer.push(arguments);}
 window.gtag=gtag;
 try{if(localStorage.getItem('freq-ga-optout')==='1')window['ga-disable-'+ID]=true;}catch(e){}
+try{if(navigator.webdriver===true)window['ga-disable-'+ID]=true;}catch(e){}
 gtag('js',new Date());
 var pageTitle=title(location.pathname),pageReferrer=referrer();
 gtag('set',{page_title:pageTitle,page_referrer:pageReferrer});

@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1266",
+  "title": "Our own automated browser runs against production counted as about 1,940 GA4 visitors on 2026-11-16, burying the real traffic.",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "GA4 traffic check 2026-11-17 (project thread, requested by Daniel)"
+  },
+  "detail": "EVIDENCE: GA4 property 539919559, 2026-11-16 (Pacific): 1,953 users, 1,940 Direct, 0.26% engagement, 0s engagement time, one page per user, every user new. About 1,940 came from Phoenix, Boardman, San Jose, Moses Lake and Des Moines (cloud data centers), in blocks of about 360 at 06, 08, 11, 13, 15 and 16 PT that match e2e-manual field-measure runs against production. Real traffic was about 13 sessions; Google Ads brought 6.\n\nFIX: the GA head bootstrap (lib/consent/cookie-consent.ts gaBootstrapScript start()) sets GA's kill switch ga-disable-<ID> when navigator.webdriver is true, before the first config call, the same way the staff opt-out works. Playwright, Puppeteer, Selenium and automated Lighthouse send no GA hits; the tag still loads so speed readings keep its cost. browserAllowsAnalytics reads the same switch, so first-party events stay quiet for automation too.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/consent/cookie-consent.ts','utf8');process.exit(/navigator\\.webdriver===true\\)window\\['ga-disable-'\\+ID\\]=true/.test(s)?0:1)\"",
+    "note": "Fails without the navigator.webdriver kill switch in the GA bootstrap (checked 2026-11-17); the behaviour is covered by the two webdriver tests in lib/consent/cookie-consent.test.ts."
+  },
+  "closed": "2026-11-17",
+  "wave": "W7"
+}
