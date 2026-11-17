@@ -19,8 +19,9 @@
 import type { InspectorFieldView } from './inspector-fields'
 import type { InspectorDeviceValues } from './inspector-model'
 import type { CanvasInserterView } from './canvas-presets'
-import { withSpacing, type LayerSlot, type LayerTree, type SpacingEdge, type SpacingStep } from './canvas-tree'
+import { splitColumns, withSpacing, type LayerSlot, type LayerTree, type RowChange, type RowSplit, type SpacingEdge, type SpacingStep } from './canvas-tree'
 import { MAX_BENCH, upgradeLayout, type BlockNode, type NodeLayout } from '@/lib/entity-blocks/node-tree'
+import { addNodeRow, moveNodeRow, removeNodeRow, setNodeRowSplit } from '@/lib/entity-blocks/node-row-ops'
 import { addNode, benchNode, canPlaceType, findNode, getNode, hideNode, placeNode, removeNode, sanitizeNodeLayout, setNodeContent, setNodeResponsive, setNodeStyle, unhideNode } from '@/lib/entity-blocks/node-ops'
 
 /** The preferences keys this document lives under. The draft and published keys are the Space page builder's. */
@@ -84,6 +85,38 @@ export type CanvasDocChange =
   | { kind: 'hide'; hidden: boolean }
   | { kind: 'remove'; keep: boolean }
   | { kind: 'restore'; to: LayerSlot }
+  | { kind: 'row-add'; at: number }
+  | { kind: 'row-remove'; rowId: string }
+  | { kind: 'row-move'; rowId: string; by: -1 | 1 }
+  | { kind: 'row-split'; rowId: string; split: RowSplit }
+
+/** The most rows a page holds (node-row-ops' cap). */
+export const MAX_CANVAS_ROWS = 24
+
+/** A row change (PROG-E6D), laid onto the document. The selected block stays selected: no row change moves,
+ *  folds or benches a block. A new row is empty; only an empty row comes off, and never the last; a split only
+ *  drops columns that are already empty. Anything else is `refused`, never a quiet no-op. */
+function applyRowChange(layout: NodeLayout, change: RowChange): NodeLayout | 'refused' {
+  if (change.kind === 'row-add') {
+    if (layout.rows.length >= MAX_CANVAS_ROWS || change.at < 0 || change.at > layout.rows.length) return 'refused'
+    return addNodeRow(layout, change.at)
+  }
+  const index = layout.rows.findIndex((row) => row.id === change.rowId)
+  if (index === -1) return 'refused'
+  const row = layout.rows[index]!
+  if (change.kind === 'row-remove') {
+    if (layout.rows.length <= 1 || row.cells.some((stack) => stack.length > 0)) return 'refused'
+    return removeNodeRow(layout, change.rowId)
+  }
+  if (change.kind === 'row-move') {
+    const to = index + change.by
+    if (to < 0 || to >= layout.rows.length) return 'refused'
+    return moveNodeRow(layout, index, to)
+  }
+  const keep = splitColumns(change.split)
+  if (row.cells.slice(keep).some((stack) => stack.length > 0)) return 'refused'
+  return setNodeRowSplit(layout, change.rowId, change.split)
+}
 
 /** One device bag as it crosses from the client: field key to a string or a boolean, nothing else. */
 type CanvasFieldBag = Readonly<Partial<Record<string, string | boolean>>>
@@ -188,6 +221,10 @@ export function applyCanvasChange(layout: NodeLayout, nid: string, change: Canva
     return canvasNodes(placed).length === count + 1 && findNode(placed, nid)?.where === 'placed' ? { layout: placed, nid } : 'refused'
   }
   if (!node || at?.where !== 'placed') return 'no-node'
+  if (change.kind === 'row-add' || change.kind === 'row-remove' || change.kind === 'row-move' || change.kind === 'row-split') {
+    const next = applyRowChange(layout, change)
+    return next === 'refused' || findNode(next, nid)?.where !== 'placed' ? 'refused' : { layout: next, nid }
+  }
   if (change.kind === 'spacing') return { layout: setNodeStyle(layout, nid, withSpacing(node.style, change.edge, change.step)), nid }
   if (change.kind === 'hide') return { layout: change.hidden ? hideNode(layout, nid) : unhideNode(layout, nid), nid }
   if (change.kind === 'move') {

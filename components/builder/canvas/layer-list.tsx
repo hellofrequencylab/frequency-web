@@ -4,6 +4,10 @@
 // row or a tap-and-drag on the grip; a keyboard moves a row with Alt+Arrow; the Up and Down buttons do the same with no
 // gesture at all. Every target is 44px and nothing waits on hover. The math is lib/builder/gesture.ts; this is the wiring.
 //
+// ROWS (PROG-E6D): with `onRow`, each row of the tree carries its own tools: Up and Down, a column picker, Add a row
+// below, and Remove row. A picker choice that would drop a column holding blocks is shown but cannot be picked, and only
+// an empty row offers Remove, so a row change never moves a block out of sight.
+//
 // THE LAYER TREE (PROG-E6B): given `tree`, the same rows are drawn nested as the page holds them, a row, its columns,
 // and each column's blocks. A drag reorders a block inside its own column. Up, Down and Alt+Arrow do that too, and at
 // a column's end they carry the block into the next column or row (lib/builder/canvas-tree.ts stepSlot), so every
@@ -11,7 +15,8 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { Button } from '@/components/ui/button'
-import { stepSlot, type LayerSlot, type LayerTree } from '@/lib/builder/canvas-tree'
+import { Select } from '@/components/ui/select'
+import { canSplit, ROW_SPLIT_WORDS, ROW_SPLITS, stepSlot, type LayerSlot, type LayerTree, type RowChange, type RowSplit } from '@/lib/builder/canvas-tree'
 import { dropIndex, keyboardMove, LONG_PRESS_MS, longPressStep, reorder } from '@/lib/builder/gesture'
 
 export type Layer = { id: string; label: string; hidden?: true }
@@ -112,11 +117,44 @@ function LayerRows({
   )
 }
 
+/** The most rows a page holds (lib/builder/canvas-document.ts MAX_CANVAS_ROWS, kept client-side so this file stays
+ *  free of the server document model). */
+const MAX_ROWS = 24
+
+/** One row's own tools (PROG-E6D). Every target is 44px and the bar wraps on a phone. */
+function RowTools({ tree, index, onRow, announce }: { tree: LayerTree; index: number; onRow: (change: RowChange) => void; announce: (words: string) => void }) {
+  const row = tree[index]!
+  const empty = row.columns.every((stack) => stack.length === 0)
+  const split = row.split ?? 'full'
+  return (
+    <div className="flex flex-wrap items-center gap-2" data-row-tools="">
+      <Button type="button" size="sm" variant="secondary" className="min-h-11 min-w-11" aria-label={`Move ${row.label} up`} disabled={index === 0} onClick={() => { onRow({ kind: 'row-move', rowId: row.id, by: -1 }); announce(`${row.label} moved up`) }}>Up</Button>
+      <Button type="button" size="sm" variant="secondary" className="min-h-11 min-w-11" aria-label={`Move ${row.label} down`} disabled={index === tree.length - 1} onClick={() => { onRow({ kind: 'row-move', rowId: row.id, by: 1 }); announce(`${row.label} moved down`) }}>Down</Button>
+      <div className="w-44 max-w-full">
+        <Select
+          aria-label={`Columns in ${row.label}`}
+          className="min-h-11"
+          value={split}
+          options={ROW_SPLITS.map((choice) => ({ value: choice, label: ROW_SPLIT_WORDS[choice], disabled: choice !== split && !canSplit(row, choice) }))}
+          onChange={(e) => {
+            const next = e.target.value as RowSplit
+            if (next !== split && canSplit(row, next)) { onRow({ kind: 'row-split', rowId: row.id, split: next }); announce(`${row.label}: ${ROW_SPLIT_WORDS[next]}`) }
+          }}
+        />
+      </div>
+      <Button type="button" size="sm" variant="secondary" className="min-h-11" disabled={tree.length >= MAX_ROWS} onClick={() => { onRow({ kind: 'row-add', at: index + 1 }); announce(`A new row was added below ${row.label}`) }}>Add a row below</Button>
+      {empty && tree.length > 1 && (
+        <Button type="button" size="sm" variant="ghost" className="min-h-11" aria-label={`Remove ${row.label}`} onClick={() => { onRow({ kind: 'row-remove', rowId: row.id }); announce(`${row.label} removed`) }}>Remove row</Button>
+      )}
+    </div>
+  )
+}
+
 /** With `onSelect`, each row also carries an Edit button that picks that layer for the inspector (PROG-E5B).
  *  With `tree` and `onMove`, the rows are nested by row and column and a move is a slot in that tree (PROG-E6B);
- *  `layers` and `onChange` are then not used. */
+ *  `layers` and `onChange` are then not used. With `onRow` as well, each row has its own tools (PROG-E6D). */
 export function LayerList({
-  layers, onChange, selectedId, onSelect, tree, onMove,
+  layers, onChange, selectedId, onSelect, tree, onMove, onRow,
 }: {
   layers: readonly Layer[]
   onChange: (next: Layer[]) => void
@@ -124,6 +162,7 @@ export function LayerList({
   onSelect?: (id: string) => void
   tree?: LayerTree
   onMove?: (id: string, to: LayerSlot) => void
+  onRow?: (change: RowChange) => void
 }) {
   const [say, setSay] = useState('')
   const root = useRef<HTMLElement>(null)
@@ -153,9 +192,10 @@ export function LayerList({
         <>
           <p className="text-meta text-muted">Press and hold a block, then drag it within its column. Up and Down, or Alt and the arrow keys, also carry it into the next column or row.</p>
           <ol className="space-y-3" data-layer-tree="">
-            {nested.map((row) => (
+            {nested.map((row, rowIndex) => (
               <li key={row.id} data-layer-row={row.id} className="space-y-1">
                 <h3 className="text-meta font-semibold text-muted">{row.label}</h3>
+                {onRow && <RowTools tree={nested} index={rowIndex} onRow={onRow} announce={setSay} />}
                 <ol className={row.columns.length > 1 ? 'grid gap-2 border-l border-border pl-3 md:grid-cols-2' : 'border-l border-border pl-3'}>
                   {row.columns.map((stack, col) => {
                     const at = columns.indexOf(`${row.id}:${col}`)

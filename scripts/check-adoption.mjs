@@ -69,8 +69,18 @@ const today = () => new Date().toISOString().slice(0, 10)
 // dependency-free so the gate stays a plain node script like every other check in scripts/).
 // ---------------------------------------------------------------------------------------------
 
+// Compiled once per glob: inScope runs for every file x every entry, and recompiling the same
+// few dozen globs ~100k times was a fifth of this gate's CPU (LIVE-2273 probe, 2026-11-16).
+const GLOB_CACHE = new Map()
+
 /** Compile a glob to an anchored RegExp over POSIX-style repo-relative paths. */
 export function globToRegExp(glob) {
+  let re = GLOB_CACHE.get(glob)
+  if (!re) { re = compileGlob(glob); GLOB_CACHE.set(glob, re) }
+  return re
+}
+
+function compileGlob(glob) {
   let out = ''
   for (let i = 0; i < glob.length; i++) {
     const c = glob[i]
@@ -456,8 +466,12 @@ function walk(dir, exts, out = []) {
  *  An unterminated quote in JSX prose (`don't`) stops at the newline, so its worst case is
  *  UNDER-blanking a comment: a false rise, which fails loudly, rather than a false fall. */
 export function stripComments(text) {
-  const out = text.split('')
-  const blank = (from, to) => { for (let k = from; k < to; k++) if (out[k] !== '\n') out[k] = ' ' }
+  // Comment spans are recorded, then the text is rebuilt once from slices. The old per-character
+  // array (split('') then join('')) for every file cost about a second of this gate's CPU
+  // (LIVE-2273 probe, 2026-11-16). Same output: a span keeps its newlines, every other
+  // character becomes a space.
+  const spans = []
+  const blank = (from, to) => { spans.push(from, to) }
   let i = 0
   let atLineStart = true
   while (i < text.length) {
@@ -493,7 +507,22 @@ export function stripComments(text) {
     else if (c !== ' ' && c !== '\t') atLineStart = false
     i += 1
   }
-  return out.join('')
+  if (spans.length === 0) return text
+  const parts = []
+  let at = 0
+  for (let k = 0; k < spans.length; k += 2) {
+    const from = spans[k]
+    const to = spans[k + 1]
+    parts.push(text.slice(at, from))
+    let run = 0
+    for (let j = from; j < to; j++) {
+      if (text.charCodeAt(j) === 10) { parts.push(' '.repeat(run), '\n'); run = 0 } else run += 1
+    }
+    if (run) parts.push(' '.repeat(run))
+    at = to
+  }
+  parts.push(text.slice(at))
+  return parts.join('')
 }
 
 /** A ratchet compares today's count against a frozen one, so it reads an ABSENT corpus as a
