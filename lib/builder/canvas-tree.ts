@@ -17,6 +17,9 @@ import type { BlockNode, NodeLayout } from '@/lib/entity-blocks/node-tree'
 /** A block in the tree. `hidden` is set when the page skips it (PROG-E6C). */
 type TreeLayer = { id: string; label: string; hidden?: true }
 
+/** Where an added block comes from: a preset, a blank block, or a section that shows the Space's live data (PROG-E6F). */
+export type InsertSource = 'preset' | 'blank' | 'live'
+
 /** How a row splits its width (PROG-E6D): one column, or two (even, wide left or wide right). A Space page holds at
  *  most two columns (lib/entity-blocks/layout.ts MAX_COLUMNS_BY_KIND), so the canvas offers no wider split. */
 export type RowSplit = 'full' | 'even' | 'lead' | 'sidebar'
@@ -51,7 +54,7 @@ export type SpacingStep = 'none' | 'default' | 'sm' | 'md' | 'lg' | 'xl'
 export type CanvasChange =
   | { kind: 'move'; to: LayerSlot }
   | { kind: 'spacing'; edge: SpacingEdge; step: SpacingStep }
-  | { kind: 'insert'; source: 'preset' | 'blank'; id: string }
+  | { kind: 'insert'; source: InsertSource; id: string }
   | { kind: 'duplicate' }
   | { kind: 'hide'; hidden: boolean }
   | { kind: 'remove'; keep: boolean }

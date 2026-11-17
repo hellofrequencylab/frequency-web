@@ -779,14 +779,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 45,
+      "baseline": 39,
       "frozen": {
-        "at": "2026-11-16",
-        "value": 45,
+        "at": "2026-11-17",
+        "value": 39,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice 12: the feed comment send moves to IconButton soft, the practice love rating to chipClasses and the report dialog type tiles to choiceTileClasses",
-        "from": 48
+        "reason": "SCAN-1133 slice 13: dispute reasons, event boops and the Dispatch toggle move to chipClasses; the practice term and swap choices and the Space events rows move to choiceTileClasses",
+        "from": 45
       },
       "history": [
         {
@@ -1110,6 +1110,13 @@
           "to": 45,
           "direction": "lowered",
           "reason": "SCAN-1133 slice 12: the feed comment send moves to IconButton soft, the practice love rating to chipClasses and the report dialog type tiles to choiceTileClasses"
+        },
+        {
+          "at": "2026-11-17",
+          "from": 45,
+          "to": 39,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 13: dispute reasons, event boops and the Dispatch toggle move to chipClasses; the practice term and swap choices and the Space events rows move to choiceTileClasses"
         }
       ]
     },

@@ -1,0 +1,20 @@
+{
+  "id": "PROG-E6E",
+  "title": "Editor E6 slice: the canvas frame draws the whole page, and a block can be picked by tapping it there",
+  "status": "done",
+  "priority": "P2",
+  "lane": "program",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E6"
+  },
+  "detail": "Split from PROG-E6 on 2026-11-16, after PROG-E6D. Known limit carried by PROG-E6C and E6D: the frame drew only the selected block, not the page. Dark; the EDITOR_CANVAS default is unchanged.\n\nPremise re-tested (ADR-1082): the canvas already held every block of the page in the client (the layer tree plus each node's controls and stored bags from the canvas read), so drawing the page needs no new read, no new action and no SQL.\n\nWhat now works. On a real document the frame draws every block, row by row: a two-column row side by side at its split (even, wide left, wide right) and every row in one column on the Phone frame, as a phone shows it. Each block draws the words the selected device resolves to (its phone words on Phone), with markup stripped and escaped. A hidden block keeps its place, faded and marked Hidden on the page, and can still be picked. Tapping a block in the frame selects it for the inspector (44px targets); the selected block is outlined and carries its spacing handles as before. The demo canvas with no document is unchanged. The word drawing moved from collab-canvas.tsx into components/builder/canvas/canvas-page-preview.tsx so the single block and the whole page draw the same way.\n\nVERIFIED: unit tests (every block drawn in its row and column, device words, the split grid and the Phone stack, the selected block drawn through its tools, a hidden block marked and pickable, a tap selects); the probe loads a Space page through the shipped canvas read and renders the shipped drawing to markup. Driven in Chromium through the shipped canvas bundled with the real action and model, only auth, flags and the database stubbed (a throwaway harness): tapping a block and then a hidden block in the frame moved the inspector to each. Pictures at 390, 1280, 1440, 1920 and 2000 px, light and dark, plus the phone frame scrolled to its end, in /mnt/project-files/editor/e6e/. NOT VERIFIED: the live route with a signed-in staff account and a database; no finger on a real phone.\n\nKnown limits, stated plainly: the frame draws each block's words, not the block's real rendering (images, buttons, colors and the Space's theme are not drawn yet); a row's title and margins are not drawn; there is no redo.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/PROG-E6E.mjs",
+    "note": "Loads a Space page through the shipped canvas read with only framework, auth and database replaced, and renders the shipped frame drawing. Fails on main: there is no whole-page drawing. Passes when every placed block is drawn in its row and column with its words and no markup, a wide-left row is drawn at its split and every row is one column on Phone, the phone words show on Phone, a hidden block is marked and pickable, the selected block is drawn through its tools, the canvas mounts the drawing for a real document, and the route is still dark."
+  },
+  "closed": "2026-11-16",
+  "wave": "W7"
+}

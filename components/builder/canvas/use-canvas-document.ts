@@ -17,10 +17,10 @@
 // its own removal once the server has named the new block. An undo is one more change through the same write.
 // Typing is not on this stack: a field keeps the browser's own text undo.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { saveCanvasNodeDraft } from '@/app/(main)/pages/canvas/document-actions'
 import type { CanvasDocumentView, CanvasNodeValues, CanvasNodeView } from '@/lib/builder/canvas-document'
-import { moveInTree, spacingStepOf, treeLayers, undoChange, undoWords, UNDO_ADD, withSpacing, type CanvasChange, type LayerSlot, type LayerTree, type RowChange, type SpacingEdge, type SpacingStep } from '@/lib/builder/canvas-tree'
+import { moveInTree, spacingStepOf, treeLayers, undoChange, undoWords, UNDO_ADD, withSpacing, type CanvasChange, type LayerSlot, type InsertSource, type LayerTree, type RowChange, type SpacingEdge, type SpacingStep } from '@/lib/builder/canvas-tree'
 import { nodeDeviceValues, withDeviceValues } from '@/lib/builder/node-responsive'
 
 export type CanvasSaveState = 'saved' | 'unsaved' | 'saving' | 'error' | 'conflict' | 'read-only'
@@ -214,8 +214,8 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
   }, [put, send])
   const space = useCallback((edge: SpacingEdge, step: SpacingStep) => spaceOn(selectedId, edge, step), [selectedId, spaceOn])
 
-  /** Add a preset or a blank block under the selected block. It appears once the server has stored it. */
-  const insert = useCallback((source: 'preset' | 'blank', id: string) => {
+  /** Add a preset, a blank block or one of the Space's live sections under the selected block. It appears once the server has stored it. */
+  const insert = useCallback((source: InsertSource, id: string) => {
     if (selectedId) send({ nid: selectedId, change: { kind: 'insert', source, id } })
   }, [selectedId, send])
 
@@ -257,12 +257,16 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
   }, [document, move, send, spaceOn])
 
   const view = shape.views.find((n) => n.nid === selectedId)
+  // Every block on the page with its newest bags, for the frame's whole-page drawing (PROG-E6E).
+  const blocks = useMemo(() => new Map(shape.views.map((v) => [v.nid, { title: v.title, fields: v.fields, node: nodes.get(v.nid) ?? v.node }])), [nodes, shape.views])
   const node = selectedId ? nodes.get(selectedId) : undefined
   return {
     /** The selected node with its controls, or null (no document, or nothing selected). */
     selected: view && node ? { ...view, node } : null,
     selectedId,
     select: setSelectedId,
+    /** Every block on the page, by id, as the frame draws it. */
+    blocks,
     edit,
     layers: shape.layers,
     tree: shape.tree,
