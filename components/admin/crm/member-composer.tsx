@@ -25,7 +25,7 @@ import {
   loadEmailCampaign,
   type LoadedEmailCampaign,
 } from '@/app/(main)/admin/email-studio/actions'
-import { isError } from '@/lib/action-result'
+import { isError, type ActionResult } from '@/lib/action-result'
 import {
   previewMemberAudienceAction,
   searchMemberRecipientsAction,
@@ -63,6 +63,15 @@ export interface MemberComposerProps {
   /** Fired after a successful send, so the parent can drop the remembered draft id and reopening starts a
    *  fresh message instead of resuming the already-sent campaign. */
   onSent?: () => void
+  /** Start the draft some other way than a blank 'message' draft (the personal welcome pre-fills one,
+   *  LIVE-2340). Called only when there is no `initialCampaignId` to resume. */
+  startDraft?: () => Promise<ActionResult<{ id: string }>>
+  /** Send through a different action than the plain member send (the welcome records itself after it sends). */
+  sendAction?: (campaignId: string, audienceKeys: string[]) => Promise<ActionResult<{ recipientCount: number }>>
+  /** Pin the audience to this member: no remove, no search, no group chips (the personal welcome is 1:1). */
+  lockAudience?: boolean
+  /** The composer's title. Default "Send a message". */
+  title?: string
 }
 
 
@@ -74,6 +83,10 @@ export function MemberComposer({
   initialCampaignId,
   onDraftReady,
   onSent,
+  startDraft,
+  sendAction,
+  lockAudience = false,
+  title = 'Send a message',
 }: MemberComposerProps) {
   // The Studio draft this composer edits. Created once on open, then edited in place by EmailEditorPane.
   const [campaign, setCampaign] = useState<LoadedEmailCampaign | null>(null)
@@ -129,7 +142,7 @@ export function MemberComposer({
         // AUTOSAVES to this campaign row, so closing the popup never loses the draft.
         let campaignId = initialCampaignId ?? null
         if (!campaignId) {
-          const created = await createEmailDraft('message')
+          const created = startDraft ? await startDraft() : await createEmailDraft('message')
           if (isError(created)) {
             setInitError(created.error)
             return
@@ -147,6 +160,9 @@ export function MemberComposer({
         setInitError('The message editor could not load. Check your connection and try again.')
       }
     })()
+    // startDraft is read once per init run (a host passes a stable callback); re-running on its identity would
+    // mint a second draft mid-edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initNonce, initialCampaignId, onDraftReady])
 
   // Debounced member search. All state updates happen inside the async timer (never synchronously in the
@@ -212,7 +228,7 @@ export function MemberComposer({
       const people = pre.data.count === 1 ? '1 person' : `${pre.data.count.toLocaleString()} people`
       if (!window.confirm(`Send this message now to ${people}? This cannot be undone.`)) return
 
-      const res = await sendMemberMessageAction(campaign.id, keys)
+      const res = await (sendAction ?? sendMemberMessageAction)(campaign.id, keys)
       if (isError(res)) {
         setError(res.error)
         return
@@ -256,7 +272,7 @@ export function MemberComposer({
     <section className="space-y-4 rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex items-center gap-2">
         <Mail className="h-4 w-4 text-primary" aria-hidden />
-        <h3 className="text-body-sm font-bold text-text">Send a message</h3>
+        <h3 className="text-body-sm font-bold text-text">{title}</h3>
       </div>
 
       {/* AUDIENCE — chips + search + one-tap group chips. */}
@@ -273,6 +289,7 @@ export function MemberComposer({
             >
               {chip.kind === 'group' && <Users className="h-3 w-3 text-subtle" aria-hidden />}
               {chip.label}
+              {!lockAudience && (
               <button
                 type="button"
                 aria-label={`Remove ${chip.label}`}
@@ -281,12 +298,13 @@ export function MemberComposer({
               >
                 <X className="h-3 w-3" aria-hidden />
               </button>
+              )}
             </span>
           ))}
         </div>
 
         {/* One-tap group chips (only when this member manages something, and it is not already added). */}
-        {(managedCircles.length > 0 || managedEvents.length > 0) && (
+        {!lockAudience && (managedCircles.length > 0 || managedEvents.length > 0) && (
           <div className="flex flex-wrap gap-1.5 pt-1">
             {managedCircles
               .filter((c) => !chipKeys.has(`circle:${c.id}`))
@@ -315,7 +333,8 @@ export function MemberComposer({
           </div>
         )}
 
-        {/* SEARCH to add more members. */}
+        {/* SEARCH to add more members (not on a pinned 1:1 like the personal welcome). */}
+        {!lockAudience && (
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" aria-hidden />
           <Input
@@ -365,6 +384,7 @@ export function MemberComposer({
             </ul>
           )}
         </div>
+        )}
       </div>
 
       {/* BODY — the SAME on-canvas WYSIWYG editor the Beta Campaign tab uses (arrangement="canvas"),

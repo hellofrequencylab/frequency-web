@@ -19,6 +19,7 @@ import {
 } from '@/lib/people/member-viewer'
 import { MemberDetailCard } from './member-detail-card'
 import { CrmMemberDetailPane } from './crm-member-detail'
+import { WelcomeBanner, WelcomeDialog, WelcomeGlowMark } from './welcome-glow'
 import type { CrmMemberDetail, ListView, MemberViewerProps, SortOption } from './types'
 import { Input } from '@/components/ui/field'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
@@ -87,6 +88,16 @@ export function MemberViewer({
   const [facetSel, setFacetSel] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
   const [overlayOpen, setOverlayOpen] = useState(false) // mobile detail overlay
+  // The personal welcome (LIVE-2340): the member whose welcome pop-up is open, and the ones welcomed in this
+  // session (their glow clears at once; the server record clears it on the next load).
+  const [welcomeFor, setWelcomeFor] = useState<MemberSummary | null>(null)
+  const [welcomedNow, setWelcomedNow] = useState<ReadonlySet<string>>(() => new Set())
+  const markWelcomedNow = useCallback(
+    (id: string) => setWelcomedNow((prev) => (prev.has(id) ? prev : new Set(prev).add(id))),
+    [],
+  )
+  const closeWelcome = useCallback(() => setWelcomeFor(null), [])
+  const glows = (m: MemberSummary) => !!m.welcomePending && !welcomedNow.has(m.id)
   // The selected hero sort option (the visible control). Seeded from `sort` (if it matches an
   // option) or the first option. The block's effective sort is this option's spec, else the bare
   // `sort` prop (a host with no visible control still sorts).
@@ -286,7 +297,7 @@ export function MemberViewer({
     )
 
   // ── The detail pane (shared by desktop pane + mobile overlay) ────────────────
-  const detailPane = (() => {
+  const detailInner = (() => {
     if (!selectedMember) {
       return (
         <div className="flex h-full items-center justify-center p-8 text-center text-body-sm text-subtle">
@@ -322,6 +333,17 @@ export function MemberViewer({
       avatarUrl: selectedMember.avatarUrl,
     })
   })()
+  // The personal welcome (LIVE-2340): a member who still glows gets a real Send a welcome button atop their pane,
+  // the keyboard and screen reader path to the same pop-up the row's glow opens.
+  const detailPane =
+    selectedMember && glows(selectedMember) ? (
+      <div className="flex flex-col gap-4">
+        <WelcomeBanner member={selectedMember} onOpen={setWelcomeFor} />
+        {detailInner}
+      </div>
+    ) : (
+      detailInner
+    )
 
   return (
     <div className="flex flex-col gap-4">
@@ -427,11 +449,13 @@ export function MemberViewer({
                         // Card view repurposes the click for SELECTION (open the detail pane), so
                         // intercept PersonCard's internal navigation; Open Profile lives in the pane.
                         onClickCapture={(e) => {
+                          // The welcome pill is its own control: let its click through untouched.
+                          if ((e.target as Element).closest('[data-welcome-glow]')) return
                           e.preventDefault()
                           chooseRow(m.id)
                         }}
                         className={cn(
-                          'cursor-pointer rounded-card transition-shadow',
+                          'relative cursor-pointer rounded-card transition-shadow',
                           m.id === effectiveSelectedId && 'ring-2 ring-primary/50',
                         )}
                       >
@@ -442,6 +466,9 @@ export function MemberViewer({
                           online={m.online}
                           context={m.headline ? m.headline : `@${m.handle}`}
                         />
+                        {glows(m) && (
+                          <WelcomeGlowMark member={m} onOpen={setWelcomeFor} className="absolute right-3 top-3" />
+                        )}
                       </div>
                     ))}
                   </div>
@@ -454,6 +481,7 @@ export function MemberViewer({
                         selected={m.id === effectiveSelectedId}
                         onSelect={() => chooseRow(m.id)}
                         rich={detailVariant === 'crm'}
+                        onWelcome={glows(m) ? setWelcomeFor : undefined}
                       />
                     ))}
                   </ul>
@@ -507,6 +535,7 @@ export function MemberViewer({
           <div className="flex-1 overflow-y-auto p-5">{detailPane}</div>
         </div>
       )}
+      {welcomeFor && <WelcomeDialog member={welcomeFor} onClose={closeWelcome} onWelcomed={markWelcomedNow} />}
     </div>
   )
 }
@@ -630,12 +659,15 @@ function ListRow({
   selected,
   onSelect,
   rich = false,
+  onWelcome,
 }: {
   member: MemberSummary
   selected: boolean
   onSelect: () => void
   /** The CRM members-only roster: render the taller row with role tags + a signals meta line. */
   rich?: boolean
+  /** The personal welcome (LIVE-2340): set when this member still glows; opens the welcome pop-up. */
+  onWelcome?: (member: MemberSummary) => void
 }) {
   return (
     <li role="presentation">
@@ -689,6 +721,7 @@ function ListRow({
           <p className="truncate text-meta text-subtle">{member.headline ?? `@${member.handle}`}</p>
           {rich && <MemberMeta member={member} />}
         </div>
+        {onWelcome && <WelcomeGlowMark member={member} onOpen={onWelcome} className="self-center" />}
       </button>
     </li>
   )
