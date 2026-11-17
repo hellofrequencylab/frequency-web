@@ -1,7 +1,7 @@
 // WHO READ THE PRIVATE PAGES, and what they clicked (owner 2026-11-17: "track every reader and click on
 // the private pages"). Reads the first-party how.* rows the beacon writes (app/api/how/beacon, one row
 // per event in engagement_events, actor null) and folds them into one row per reader for the admin
-// page at /admin/growth/private-pages. A reader is the ?r= code when the link carried one, else the
+// Private pages section of /admin/growth. A reader is the ?r= code when the link carried one, else the
 // visit's random session id, so an untagged visit still shows up as its own line.
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'

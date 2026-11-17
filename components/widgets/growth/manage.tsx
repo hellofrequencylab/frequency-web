@@ -134,7 +134,6 @@ export async function GrowthManage() {
   const acquisition = cardsFor(
     [
       { leaf: 'growth-links', stat: '', statLabel: 'Open' },
-      { leaf: 'private-pages', stat: '', statLabel: 'Open' },
       { leaf: 'qr', stat: `${c.qr}`, statLabel: 'codes' },
       { leaf: 'referrals', stat: '', statLabel: 'Manage' },
       { leaf: 'walkthroughs', stat: '', statLabel: 'Manage' },

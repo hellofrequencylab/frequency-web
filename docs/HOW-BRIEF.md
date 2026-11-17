@@ -52,8 +52,9 @@ overwritten.
 `lib/how/brief-events.ts`). Every event carries `page`. The `?r=` code carries across the private pages
 in one tab, so `frequencylocal.com/facilities?r=jane` followed by a click to `/lab` stays Jane. Clicks
 are page-wide (every link, button and expander, header and footer included) and a form submit records
-only the option picked, never what was typed. **See it at `/admin/growth/private-pages`** (Growth,
-Acquisition, Private pages): one row per reader and the full click log.
+only the option picked, never what was typed. **See it at `/admin/growth#private-pages`** (the Private pages
+section at the bottom of the Growth dashboard; not its own route, because the deploy sits at the 8 GB
+build budget): one row per reader and the full click log.
 
 Every event goes to `engagement_events` with `source = 'web'`, no profile (`actor_profile_id` is
 null), and its details in `context`. Each event carries `sid` (one visit), `ref` (the `?r=` code)
