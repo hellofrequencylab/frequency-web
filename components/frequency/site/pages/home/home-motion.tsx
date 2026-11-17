@@ -53,11 +53,12 @@ export function HomeMotion() {
       // Read in the first frame, not here: a read inside the effect forced a whole-page style and
       // layout pass on top of the frame's own (home load freeze). 0 means "measure on the next tick".
       let vh = 0
+      const measure = () => stage?.offsetHeight || window.innerHeight
       let lastP = -1
       let lastK = -1
       const tick = () => {
         // Reads.
-        if (!vh) vh = stage?.offsetHeight || window.innerHeight
+        if (!vh) vh = measure()
         const fr = fold?.getBoundingClientRect()
         const p = fr ? clamp(-fr.top / (fr.height - vh)) : -1
         const y = hero ? Math.max(0, -hero.getBoundingClientRect().top) : 0
