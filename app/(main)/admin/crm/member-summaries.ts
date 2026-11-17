@@ -84,6 +84,8 @@ export const ACTIVE_FACET: Facet = {
  *  pure applyQuery sort over a row's sortValues / stats. */
 export const MEMBER_SORT_OPTIONS: SortOption[] = [
   { key: 'recent', label: 'Recent', spec: { key: 'joined', direction: 'desc' } },
+  // Oldest: first signups first, for reading the roster chronologically from the start (SCAN-1267).
+  { key: 'oldest', label: 'Oldest', spec: { key: 'joined', direction: 'asc' } },
   // Most complete: the richest rows first (a real name, phone, company, notes … or a real member) over the
   // bare email-only imports a CSV drops in. Reads each row's pre-computed `completeness` signal; ties fall
   // back to newest-first (the roster's input order). The space Resonance roster defaults to this sort.
