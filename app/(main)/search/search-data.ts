@@ -20,6 +20,8 @@ import { LISTABLE_CIRCLE_STATUS, isListedCircle } from '@/lib/circles/visibility
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { applySearchTerms, searchRows } from '@/lib/search/query'
+import { resolveProductImage } from '@/lib/commerce/products'
+import { withJourneySalesHref } from '@/lib/journeys/listing-href'
 
 // /search's reads, one function per result kind, shared by the DAWN page and the Frequency body
 // (components/frequency/members/search) so both answer a query from the same gated windows.
@@ -198,5 +200,54 @@ export async function searchSpaces(query: string, limit = 20): Promise<Window<Sp
     .eq('visibility', 'network').eq('network_connected', true).eq('status', 'active').neq('type', 'root')
     .order('name').limit(limit + 1)
   const rows = searchRows(result, 'spaces')
+  return { rows: rows.slice(0, limit), truncated: rows.length > limit }
+}
+
+export type JourneyRow = { id: string; slug: string; title: string; summary: string | null; emoji: string | null; daily_minutes: number | null }
+export type SpotlightRow = { id: string; handle: string; display_name: string; avatar_url: string | null }
+export type MarketRow = { id: string; title: string; href: string; image: string | null; priceCents: number; currency: string; productKind: string; category: string | null }
+
+/** Library Journeys: public and not rejected, the same gate as /discover/journeys (listPublicJourneys).
+ *  Owner ruling 2026-11-17: public Journeys answer member search while /journeys is hidden from the menu. */
+export async function searchJourneys(query: string, limit = 20): Promise<Window<JourneyRow>> {
+  const result = await applySearchTerms(createAdminClient().from('journey_plans')
+    .select('id, slug, title, summary, emoji, daily_minutes'), ['title', 'summary'], query)
+    .eq('visibility', 'public').neq('status', 'rejected')
+    .order('adopt_count', { ascending: false }).limit(limit + 1)
+  const rows = searchRows(result, 'journeys') as JourneyRow[]
+  return { rows: rows.slice(0, limit), truncated: rows.length > limit }
+}
+
+/** Published member Spotlights (/spotlight/<handle>), the same publish gate as getPublishedSpotlight and the
+ *  sitemap: active, not system, meta.spotlight.published. A published Spotlight is public on the open web by
+ *  the owner's choice, so it answers here even when the member is out of the Members directory. Only the
+ *  handle, name and avatar cross out; meta never leaves this read. */
+export async function searchSpotlights(query: string, limit = 12): Promise<Window<SpotlightRow>> {
+  const result = await applySearchTerms(createAdminClient().from('profiles')
+    .select('id, handle, display_name, avatar_url'), ['display_name', 'handle'], query)
+    .eq('is_active', true).eq('is_system', false)
+    .filter('meta->spotlight->>published', 'eq', 'true')
+    .order('display_name').limit(limit + 1)
+  const rows = (searchRows(result, 'spotlights') as SpotlightRow[]).filter((r) => !!r.handle)
+  return { rows: rows.slice(0, limit), truncated: rows.length > limit }
+}
+
+/** Market products (/market): active, market-published, owned by a person or a Space, the gates
+ *  listMarketListings applies. Callers show this only while the makers area is browsable. */
+export async function searchMarket(query: string, limit = 20): Promise<Window<MarketRow>> {
+  const result = await applySearchTerms(createAdminClient().from('commerce_products')
+    .select('id, title, images, price_cents, currency, product_kind, category, journey_plan_id'), ['title', 'description', 'category'], query)
+    .eq('status', 'active').eq('market_published', true).in('owner_kind', ['profile', 'space'])
+    .order('created_at', { ascending: false }).limit(limit + 1)
+  const raw = searchRows(result, 'market') as {
+    id: string; title: string; images: string[] | null; price_cents: number; currency: string
+    product_kind: string; category: string | null; journey_plan_id: string | null
+  }[]
+  const linked = await withJourneySalesHref(raw.map((r) => ({
+    id: r.id, title: r.title, image: r.images?.[0] ? resolveProductImage(r.images[0]) : null,
+    priceCents: r.price_cents, currency: r.currency, productKind: r.product_kind, category: r.category,
+    journeyPlanId: r.journey_plan_id, href: undefined as string | undefined,
+  })))
+  const rows: MarketRow[] = linked.map(({ journeyPlanId: _plan, href, ...r }) => ({ ...r, href: href ?? `/market/${r.id}` }))
   return { rows: rows.slice(0, limit), truncated: rows.length > limit }
 }
