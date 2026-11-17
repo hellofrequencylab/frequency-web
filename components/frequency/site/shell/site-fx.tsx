@@ -98,6 +98,13 @@ function run(root: HTMLElement): () => void {
     return e
   }
 
+  // The shared noise tile. (fx.js also painted <html> with the canvas; site-shell.css does that in CSS.)
+  const tile = noiseTile()
+  if (tile) {
+    root.style.setProperty('--fq-fx-noise', tile)
+    root.setAttribute('data-fx', '')
+  }
+
   let seed = 7
   const rnd = () => ((seed = (seed * 9301 + 49297) % 233280), seed / 233280)
 
@@ -108,7 +115,7 @@ function run(root: HTMLElement): () => void {
     if (!w) {
       f.classList.add('under')
       addClass(host, 'tx-host')
-      if ((look.get(host) ?? getComputedStyle(host).position).startsWith('static')) {
+      if (getComputedStyle(host).position === 'static') {
         host.style.position = 'relative'
         offs.push(() => (host.style.position = ''))
       }
@@ -146,21 +153,10 @@ function run(root: HTMLElement): () => void {
   const q = (sel: string) =>
     Array.from(root.querySelectorAll<HTMLElement>(sel)).filter((e) => !e.closest('[data-kit]:not([data-kit="site"])'))
 
-  // READ FIRST, THEN WRITE. field() and the seam check read a computed style after the page had been
-  // decorated, so every read was a full style recalc on the spot: one per section, inside a start-up
-  // pass that took about 1 s of a 4x-throttled phone's load on /pricing in production (2026-11-17).
-  // All of them are read here, in one recalc, before the first write (the noise tile below).
-  const look = new Map(q(HOSTS).map((e): [HTMLElement, string] => {
-    const c = getComputedStyle(e)
-    return [e, c.position + ' ' + c.borderTopStyle]
-  }))
-
-  // The shared noise tile. (fx.js also painted <html> with the canvas; site-shell.css does that in CSS.)
-  const tile = noiseTile()
-  if (tile) {
-    root.style.setProperty('--fq-fx-noise', tile)
-    root.setAttribute('data-fx', '')
-  }
+  // READ FIRST, THEN WRITE. The seam check below read a computed style after each section had been
+  // decorated, so every read was a full style recalc on the spot: eight on Home, about 0.4 s on a
+  // 4x-throttled phone and the largest part of its load freeze. All of them are read here, in one recalc.
+  const seamless = new Set(q('.sec').filter((s) => !s.classList.contains('kg') && getComputedStyle(s).borderTopStyle === 'none'))
 
   // Heroes: one signature sphere.
   q('.hero,.phero,.hp-hero').forEach((h) => {
@@ -212,7 +208,7 @@ function run(root: HTMLElement): () => void {
       halo(f, c1, 'clamp(380px,52vw,780px)', L ? '88%' : '12%', '34%', quiet ? 0.22 : null, -i * 1.7)
       if (!quiet) halo(f, c2, 'clamp(260px,34vw,520px)', L ? '8%' : '92%', '86%', 0.22, -i * 2.3)
       jewels(f, quiet ? 1 : jn, isLv ? [c1, c2, H.v] : [c1, c2, P[2]])
-      if (s.classList.contains('sec') && !s.classList.contains('kg') && look.get(s)?.endsWith(' none')) mk('span', 'tx-seam', s)
+      if (seamless.has(s)) mk('span', 'tx-seam', s)
       i++
     })
   }
