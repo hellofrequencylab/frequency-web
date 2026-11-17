@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Pencil, Archive, Check, X, Star } from 'lucide-react'
+import { Pencil, Archive, Check, X, Star, Search } from 'lucide-react'
 import { updateCircle, archiveCircle, setCircleFeaturedAction } from '../actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { InviteLinkButton } from './invite-link-button'
@@ -256,6 +256,7 @@ export function CirclesClient({
   )
   const [confirmArchive, setConfirmArchive] = useState<CircleRow | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
   const [isPending,  startTransition] = useTransition()
   const router = useRouter()
 
@@ -285,8 +286,15 @@ export function CirclesClient({
     })
   }
 
-  const active = circles.filter(c => c.status !== 'archived')
-  const archived = circles.filter(c => c.status === 'archived')
+  // SRCH-003: every word must appear in the Circle's name, place, hub, host or type.
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean)
+  const matches = (c: CircleRow) => {
+    if (words.length === 0) return true
+    const hay = [c.name, c.city, c.neighborhood, c.hub?.name, c.host?.display_name, c.type, c.status].filter(Boolean).join(' ').toLowerCase()
+    return words.every((w) => hay.includes(w))
+  }
+  const active = circles.filter(c => c.status !== 'archived' && matches(c))
+  const archived = circles.filter(c => c.status === 'archived' && matches(c))
   const editingCircle = editingId ? circles.find((c) => c.id === editingId) ?? null : null
 
   const columns: ColumnDef<CircleRow>[] = [
@@ -321,6 +329,17 @@ export function CirclesClient({
           {error}
         </p>
       )}
+      <div className="relative mb-3 max-w-md">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
+        <Input
+          type="search"
+          aria-label="Search Circles"
+          placeholder="Search Circles by name, place, hub or host"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="!py-1.5 pl-8 pr-3"
+        />
+      </div>
       <DataTable
         caption="Circles"
         rows={active}
@@ -341,13 +360,15 @@ export function CirclesClient({
             </IconButton>
           </div>
         )}
-        empty={
+        empty={words.length > 0 ? (
+          <EmptyState title="No Circles match" description={`Nothing matches “${query.trim()}”. Try a shorter name, the city, or the hub.`} />
+        ) : (
           <EmptyState
             variant="first-use"
             title="No circles yet"
             description="Create a circle to give your people a place to gather. Each circle needs a hub to appear in the hierarchy."
           />
-        }
+        )}
       />
 
       {archived.length > 0 && (
