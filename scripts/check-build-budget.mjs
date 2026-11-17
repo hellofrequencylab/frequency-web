@@ -170,9 +170,17 @@ if (traces.length < MIN_TRACES || total < MIN_TOTAL_GB * GB) {
 console.log(
   `✅ check:build-budget — ${gb(total)} GB across ${traces.length} functions, under the ${BUDGET_GB} GB budget.`,
 )
+console.log(`   Headroom: ${((budgetBytes - total) / MB).toFixed(0)} MB.`)
 if (worst.length > 0) {
   const [f, count, size, cost] = worst[0]
   console.log(
     `   Largest single cost: ${(cost / MB).toFixed(0)} MB (${(size / MB).toFixed(1)} MB x ${count} fns) — ${f}`,
   )
+  // The whole ranked list on a PASSING run too (HYG-245). At 99 percent of the budget the next cut
+  // was only findable by failing a build on purpose; the list is what names it.
+  for (const [rf, rcount, rsize, rcost] of worst.slice(1)) {
+    console.log(
+      `     ${(rcost / MB).toFixed(0).padStart(6)} MB  = ${(rsize / MB).toFixed(1).padStart(6)} MB x ${String(rcount).padStart(4)} fns  ${rf}`,
+    )
+  }
 }
