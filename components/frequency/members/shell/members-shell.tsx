@@ -217,6 +217,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
   const allWorkGroups = groupRows([...spaceRows, ...FQ_WORK_MENU], menuViewer, profileHref, { drafts: myFrequency?.drafts })
   // Your Space and Create ride the rail's top (owner, 2026-11-17); Leadership and Admin stay below.
   const { door: spaceDoor, create: createGroup, rest: workGroups } = liftTopGroups(allWorkGroups)
+  const createFirst = createGroup?.rows[0]
   const skins = SELECTABLE_SKINS.map((s) => ({ id: s.id, label: s.label }))
 
   // ── Left rail ────────────────────────────────────────────────────────────────────────────────────
@@ -313,8 +314,8 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
     <>
       {/* The folded face drops the avatar at its top too (SCAN-882): the You tab below carries it. */}
       <nav aria-label="Shortcuts">
-        {createGroup?.rows[0]?.href && (
-          <Link href={createGroup.rows[0].href} className="fqm-mi" aria-label="Create" data-tip="Create" data-tip-sub={createGroup.rows[0].label}>
+        {createFirst?.href && (
+          <Link href={createFirst.href} className="fqm-mi" aria-label="Create" data-tip="Create" data-tip-sub={createFirst.label}>
             <FqIcon name="plus" />
           </Link>
         )}
