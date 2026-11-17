@@ -1,8 +1,8 @@
 'use client'
 
 import { formatDateMedium } from '@/lib/format-date'
-import { useState, useTransition } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useRef, useState, useTransition } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -73,6 +73,25 @@ export function MemberAdmin({
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [showInactive, setShowInactive] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(sp.get('member'))
+  // SRCH-004: the page loads the newest 200 members, so a typed search also goes to the server (?q=),
+  // which answers with every match. The list still filters instantly while the request is in flight.
+  const router = useRouter()
+  const pathname = usePathname()
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (debounce.current) clearTimeout(debounce.current) }, [])
+  function search(next: string) {
+    setQuery(next)
+    if (debounce.current) clearTimeout(debounce.current)
+    debounce.current = setTimeout(() => {
+      const params = new URLSearchParams(sp.toString())
+      const trimmed = next.trim()
+      if (trimmed.length >= 2) params.set('q', trimmed)
+      else params.delete('q')
+      params.delete('member')
+      if ((sp.get('q') ?? '') === (params.get('q') ?? '')) return
+      router.replace(params.toString() ? `${pathname}?${params.toString()}` : pathname, { scroll: false })
+    }, 400)
+  }
 
   const filtered = members.filter(m => {
     if (!showInactive && !m.is_active) return false
@@ -97,7 +116,7 @@ export function MemberAdmin({
             type="text"
             aria-label="Search members"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => search(e.target.value)}
             placeholder="Search by name, handle, or email..."
             className="pl-9"
           />
