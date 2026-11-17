@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2344",
+  "title": "Partner pages: /facilities (the third-spaces vision) and /lab, link-only and noindex like /how",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Requested by Daniel, 2026-11-17 (project thread: hidden facilities and executive pages): 'I want to have a few admin pages like this to show to possible partners... Make sure these pages are published and non indexed.'"
+  },
+  "detail": "WHAT: frequencylocal.com/facilities restores the /vision body #4564 (LIVE-2103) deleted when /vision merged into /about: the density story, six facility concept renders (all labelled Vision · 2028), the Lab's dated plan and short answers, and the mailto partner form. The renders return to public/brand/frequency/facilities (removed by #5083 as unreferenced). frequencylocal.com/lab renders the block template the old /the-lab page used (lib/page-editor/templates/the-lab.ts). Both are link-only: robots noindex/nofollow from one shared block (lib/seo/link-only.ts), not in app/sitemap.ts or the site nav, listed in check-seo INTENTIONALLY_EXCLUDED. New paths because /vision and /the-lab keep their permanent redirects to /about. Future tense holds (ADR-1735): nothing is bookable. No per-reader ?r= tracking yet (the /how beacon is per-page).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=f=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const bad=[];for(const p of ['facilities','lab']){const f='app/(marketing)/'+p+'/page.tsx';if(!r(f).includes('robots: LINK_ONLY_ROBOTS'))bad.push(p+' not link-only');if(new RegExp('[\\'\\\"]/'+p+'[\\'\\\"]').test(r('app/sitemap.ts')+r('lib/frequency/site-nav.ts')))bad.push(p+' listed')}if(!/index: false,\\s*follow: false/.test(r('lib/seo/link-only.ts')))bad.push('robots');for(const j of ['hall-stage-night','thermal-circuit','storefront-yoga'])if(!fs.existsSync('public/brand/frequency/facilities/'+j+'.jpg'))bad.push(j);if(bad.length){console.error('LIVE-2344: '+bad.join(', '));process.exit(1)}\"",
+    "note": "Fails if either page loses its noindex, enters the sitemap or nav, or the concept renders are removed again."
+  },
+  "wave": "W7",
+  "closed": "2026-11-17"
+}

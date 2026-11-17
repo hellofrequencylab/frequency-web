@@ -98,6 +98,9 @@ const INTENTIONALLY_EXCLUDED = new Map([
   ['/themes/mindless', 'robots noindex while the Mindless theme is not offered in the pickers (LIVE-2311)'],
   ['/start/host', 'robots noindex (LIVE-2233): the host invite landing FlowWeb links to one to one, like /start/<flow>'],
   ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
+  // LINK-ONLY partner pages (owner 2026-11-17, like /how): shared by link, never in search (lib/seo/link-only.ts).
+  ['/facilities', 'robots noindex: link-only third-spaces vision for partners (lib/seo/link-only.ts)'],
+  ['/lab', 'robots noindex: link-only Lab plan for partners (lib/seo/link-only.ts)'],
   ['/subscribe', 'robots noindex (SCAN-1017): the newsletter form is reached from the footer, not from search; the index keeps the 24 pages that earn a visit'],
   // PARKED, not live: next.config.ts answers /stories with a temporary 302 to /the-community before the
   // filesystem router runs (owner ruling 2026-10-14, ADR-1747), so no visitor or crawler reaches this
