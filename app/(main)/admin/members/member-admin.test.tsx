@@ -10,6 +10,8 @@ import { sourceWithoutComments } from '@/test/source-shape'
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams('member=m1'),
+  useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => '/admin/members',
 }))
 vi.mock('../actions', () => ({
   assignRole: vi.fn(), assignWebRole: vi.fn(), deactivateMember: vi.fn(), reactivateMember: vi.fn(),
