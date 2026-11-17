@@ -32,6 +32,9 @@ const THEME_PALETTE_VIOLET = {
 // Owner 2026-11-04: "allow the kit palettes in violet-family". The Theme Kits page (LIVE-2188) draws each kit in its
 // own palette, mirrored from the design (Services, Wildheart, Cyber Witch and the rest). Scoped to that one folder.
 const KIT_PALETTE_DIR = 'components/frequency/site/pages/themes/kit-showcase/'
+// Owner 2026-11-16: "Allow it for /how". The link-only /how brief (LIVE-2323) is generated from the
+// Frequency Overview design canvas and wears that design's own lilac and plum. Scoped to the (brief) group.
+const BRIEF_DIR = 'app/(brief)/'
 const files = execSync('git ls-files app components lib').toString().split('\n').filter(Boolean)
 const bad = []
 
@@ -47,6 +50,7 @@ function hsl(hex) {
 
 for (const f of files) {
   if (f.startsWith(KIT_PALETTE_DIR)) continue
+  if (f.startsWith(BRIEF_DIR)) continue
   if (SKIP.has(f) || /\.test\.(ts|tsx)$/.test(f) || !/\.(css|ts|tsx|json|mjs)$/.test(f)) continue
   readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
     if (/--fq-pa:|--fq-pa-soft:|--pa:|--fq-pa-orb:|--pa-orb:/.test(line)) return

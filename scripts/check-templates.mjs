@@ -69,6 +69,9 @@ const ROOT = 'app'
  *    · print       — print sheets: paper layout, no page chrome at all.
  *    · dev         — local-only developer harnesses, never served in production.
  *    · for         — the persona landing pages, part of the marketing system above.
+ *    · (brief)     — link-only, noindex briefs generated from a design canvas (/how, LIVE-2323,
+ *      docs/HOW-BRIEF.md). Each is ONE generated document with its own nav, rail and close and no
+ *      site or app chrome by design; the canvas is its source, the way paper is print's.
  *
  *  WIDENED 2026-10-13 (the design-switch program, ADR-1737): 'discover', '(capture)', 'hosted' and
  *  'spotlight' used to be skipped too. They are governed now, because a page this gate does not see
@@ -79,14 +82,14 @@ const ROOT = 'app'
  *
  *  ⚠️ This is NOT the same set as check-headers.mjs's SKIP_DIRS. Two real differences, both
  *  deliberate:
- *    · CONTENTS — check-headers skips '(marketing)', 'sites', 'print', 'discover'; this skips five
+ *    · CONTENTS — check-headers skips '(marketing)', 'sites', 'print', 'discover'; this skips six
  *      different names (above), and governs discover.
  *    · DEPTH — check-headers matches a skipped name at ANY path segment (check-headers.mjs:104
  *      in the walk, :142 in isRouteModule); this matches only at the top level (`dir === ROOT`),
  *      so a nested directory that happens to share a name is still governed.
  *  Widening either set is a scope change to that gate's baseline, so do not "unify" them without
  *  re-freezing both numbers. */
-export const SKIP_DIRS = new Set(['(marketing)', 'sites', 'print', 'dev', 'for'])
+export const SKIP_DIRS = new Set(['(marketing)', 'sites', 'print', 'dev', 'for', '(brief)'])
 
 /** The real shells. A page composing any of these has a layout; anything else does not. */
 export const SHELLS = [

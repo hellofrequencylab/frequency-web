@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2323",
+  "title": "Ship /how: the link-only Frequency overview brief, with anonymous engagement tracking and a share card",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/HOW-BRIEF.md",
+    "ref": "Requested by Daniel, 2026-11-16 (Frequency Overview design canvas thread)."
+  },
+  "detail": "WHAT: frequencylocal.com/how, a long-scroll brief for coaches and advisors explaining how Frequency works and where the money comes from. Link-only: page-level robots noindex (not robots.txt, so the noindex is read), outside (marketing) in app/(brief), not in the sitemap or site nav. The markup and CSS are generated from the Frequency Overview design canvas; calculators, side index rail and the scroll-aware 'Groups fade' loop run client-side. Tracking: 11 how.* events (view, section view and dwell, scroll depth, engaged-time heartbeat, calculator input, appendix, link clicks, copy, complete, exit) batched to app/api/how/beacon, which honours Sec-GPC and analytics consent, rate-limits per visit, and writes through track() with no profile. A ?r=<code> on the link tags every event so each reader is attributable. Spec and SQL: docs/HOW-BRIEF.md.\n\nOWNER ACTION: add public/how-assets/programs/hof-mark-light.png (the Hearts on Fire mark); until then that slot shows a flame placeholder.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=f=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const bad=[];if(!/index: false, follow: false/.test(r('app/(brief)/how/page.tsx')))bad.push('noindex');if(!fs.existsSync('app/api/how/beacon/route.ts'))bad.push('beacon');if(!fs.existsSync('app/(brief)/how/opengraph-image.jpg'))bad.push('share card');if(/['\\\\\\\"]\\\\/how['\\\\\\\"?]/.test(r('app/sitemap.ts')+r('lib/frequency/site-nav.ts')))bad.push('listed');if(!r('lib/analytics/events.ts').includes(\\\"name: 'how.exit'\\\"))bad.push('events');if(bad.length){console.error('LIVE-2323: '+bad.join(', '));process.exit(1)}\"",
+    "note": "Fails if /how becomes indexable, enters the sitemap or nav, loses its beacon or share card, or its events leave the analytics registry."
+  },
+  "wave": "W7",
+  "closed": "2026-11-16"
+}

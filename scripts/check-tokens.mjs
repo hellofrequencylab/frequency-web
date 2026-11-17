@@ -152,6 +152,11 @@ const ALLOWLIST = [
   //     carry styling — one builds a model prompt, the other validates a settings form.
   (p) => p === 'lib/ai/connections-ai.ts',
   (p) => p === 'lib/spaces/profile-settings.ts',
+  // (6) A DESIGN-CANVAS EXPORT. app/(brief)/how/brief-html.ts is the /how brief's markup, generated
+  //     from the "Frequency Overview" design canvas (docs/HOW-BRIEF.md, LIVE-2323): its inline SVG
+  //     fills, stops and drop-shadows ARE the design, and the file says not to hand-edit it. Its
+  //     stylesheet (brief.css) is held by the per-file theme ratchet in token-baselines.json instead.
+  (p) => p === 'app/(brief)/how/brief-html.ts',
 ]
 
 /**
