@@ -72,6 +72,7 @@ export const SITE_MAP: SiteMapColumn[] = [
       { label: 'Start a Circle', href: '/circles/new' },
       { label: 'Starter Circles', href: '/circles/templates', gate: MEMBER },
       { label: 'Events', href: '/events' },
+      { label: 'My events', href: '/events/mine', gate: MEMBER },
       { label: "What's happening", href: '/events/calendar' },
       { label: 'New event', href: '/events/new' },
       { label: 'Channels', href: '/channels' },

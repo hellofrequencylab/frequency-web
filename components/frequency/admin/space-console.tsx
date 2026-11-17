@@ -137,7 +137,9 @@ export async function FrequencySpaceConsole({ slug, children }: { slug: string; 
         { key: 'public', label: 'View public page', href: `/spaces/${space.slug}` },
         ...(space.domain ? [{ key: 'website', label: 'Your website', href: `https://${space.domain}`, external: true }] : []),
         { key: 'feed', label: 'Feed', href: '/feed' },
-        { key: 'events', label: 'Events', href: '/events' },
+        // LIVE-2337: the Space team's own events (what they host, what they are going to, and this
+        // Space's upcoming events beside every other Space they run), not the community-wide list.
+        { key: 'events', label: 'My events', href: '/events/mine' },
         { key: 'help', label: 'Help', href: '/help' },
         { key: 'support', label: 'Contact support', href: '/support' },
       ]}

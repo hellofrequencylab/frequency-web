@@ -195,11 +195,20 @@ export function FqEventsBody({
             {content.body ||
               'Paid and free events near you, from community circles and hosts. Search, browse by category, then RSVP or grab a ticket.'}
           </p>
-          {content.ctaLabel && content.ctaHref && (
+          {(myProfileId || (content.ctaLabel && content.ctaHref)) && (
             <div className="ev-actions">
-              <a className="btn sm" href={content.ctaHref}>
-                {content.ctaLabel}
-              </a>
+              {/* LIVE-2337: a signed-in member's own events are one tap from the top of Events. */}
+              {myProfileId && (
+                <Link className="btn sm" href="/events/mine">
+                  <FqIcon name="event" />
+                  My events
+                </Link>
+              )}
+              {content.ctaLabel && content.ctaHref && (
+                <a className="btn sm" href={content.ctaHref}>
+                  {content.ctaLabel}
+                </a>
+              )}
             </div>
           )}
         </div>
