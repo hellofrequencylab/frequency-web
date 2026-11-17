@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/billing/connect.ts",
     "ref": "Space function scan 2026-11-17 (project thread: Trace every Space feature end to end)"
   },
-  "detail": "account.updated fires on the CONNECTED account, so only a Connect-scoped Stripe destination delivers it (app/api/webhooks/stripe/route.ts). Production has no STRIPE_CONNECT_WEBHOOK_SECRET (Vercel env read 2026-11-17), so no account.updated has ever been verified. Status is mirrored only when the owner returns from Stripe onboarding to /settings/billing?payouts=return (syncConnectedAccount). A later change (Stripe disabling charges for missing verification, or finishing verification after the return) never reaches profiles.stripe_charges_enabled, so ticket and membership checkout can be offered for an account that cannot take the charge, or refused for one that can. Production today: 4 connected accounts, all charges_enabled, so nothing is wrong yet. Either fix closes the risk: a daily cron that re-syncs connected accounts (the probe), or the owner adding the Connect-scoped destination in Stripe and its secret in Vercel (docs/RUNBOOKS.md Stripe webhook section).",
+  "detail": "account.updated fires on the CONNECTED account, so only a Connect-scoped Stripe destination delivers it (app/api/webhooks/stripe/route.ts). Production has no STRIPE_CONNECT_WEBHOOK_SECRET (Vercel env read 2026-11-17), so no account.updated has ever been verified. Status is mirrored only when the owner returns from Stripe onboarding to /settings/billing?payouts=return (syncConnectedAccount). A later change (Stripe disabling charges for missing verification, or finishing verification after the return) never reaches profiles.stripe_charges_enabled, so ticket and membership checkout can be offered for an account that cannot take the charge, or refused for one that can. Production today: 4 connected accounts, all charges_enabled, so nothing is wrong yet. Either fix closes the risk: a daily cron that re-syncs connected accounts (the probe), or the owner adding the Connect-scoped destination in Stripe and its secret in Vercel (docs/RUNBOOKS.md Stripe webhook section). Closed 2026-11-17: app/api/cron/connect-resync runs daily at 04:25 UTC, re-reads up to 200 connected accounts from Stripe and mirrors them through persistAccount, logging a skip or a failed account (lib/billing/connect.ts resyncConnectedAccounts). The owner chose both fixes and is adding STRIPE_CONNECT_WEBHOOK_SECRET with the Connect-scoped destination himself, so account.updated will land in real time and the cron stays as the backstop.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/space-scan-2026-11-17.mjs LIVE-2328",
     "note": "Fails today; passes once the consequence in the title holds."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-17"
 }

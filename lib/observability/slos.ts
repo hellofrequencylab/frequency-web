@@ -427,6 +427,7 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'summarize-vera-memory', reason: 'AI derivation; a missed summary is caught up by the next run, nothing is lost' },
   { job: 'refresh-traits', reason: 'AI derivation; traits go stale by a day and the next run recomputes them' },
   { job: 'vera-owner-brief', reason: 'mails one person, the owner, who notices its absence tomorrow; self-monitoring' },
+  { job: 'connect-resync', reason: 'the daily re-read of Stripe connected accounts (LIVE-2328); a missed day leaves payout flags a day older and the next run re-reads every account, a skip or a failed account logs, and no Healthchecks check is free on the 20-check plan' },
   { job: 'reconcile-transfers', reason: 'retries split-order seller transfers (LIVE-622); the settle pays first, every stuck row logs at error, and a monitor is a Healthchecks check the owner adds (the account holds 20)' },
   { job: 'event-followups', reason: 'the guest follow-up after a gathering (LIVE-802); a missed hour is re-read by the next one inside its 24-hour window, and the dedupe key keeps it to one send' },
   { job: 'onboarding-throughput', reason: 'a read-only daily reading (LIVE-311); a miss delays a log line and the next run reads the same state' },

@@ -277,6 +277,15 @@ shows a later successful attempt, and the member-facing row reads what Stripe sa
 missed events, one query over `stripe_webhook_events` for the affected window against Stripe's
 event list, and the difference is empty.
 
+**Connected account flags without the Connect destination** (LIVE-2328). `account.updated` reaches
+the route only through the Connect-scoped destination (`STRIPE_CONNECT_WEBHOOK_SECRET`). As a
+backstop, `/api/cron/connect-resync` runs daily at 04:25 UTC, re-reads up to 200 connected accounts
+from Stripe and mirrors their charges, payouts and details flags onto `profiles` through
+`persistAccount`. Its run line is `cron.connect_resync` (with `changed` and `failed` counts); one
+account that fails logs `cron.connect_resync.account_failed` and the run carries on; no Stripe key
+logs `cron.connect_resync.skipped` at warn. A flag that looks stale: run the cron by hand with the
+`CRON_SECRET` bearer, then check `stripe_charges_enabled` on that profile. **agent**
+
 ---
 
 ## 4. Database degradation

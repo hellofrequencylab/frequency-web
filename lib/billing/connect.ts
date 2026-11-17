@@ -22,6 +22,7 @@ import { stripe, appUrl, billingEnabled } from './stripe'
 import { hostPayoutsEnabledFlag } from '@/lib/platform-flags'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { type CommunityRole } from '@/lib/core/roles'
+import { log, briefError } from '@/lib/log'
 
 /** The single live-gate for every Connect payout channel: a configured Stripe key
  *  AND the operator-controlled `host_payouts_enabled` flag (default OFF). Tips,
@@ -298,4 +299,116 @@ export async function createDashboardLink(profileId: string): Promise<string | n
   if (!accountId) return null
   const link = await stripe.accounts.createLoginLink(accountId)
   return link.url
+}
+
+// ── Daily re-read of every connected account (LIVE-2328) ─────────────────────────────────────
+// `account.updated` fires on the CONNECTED account, so only a Connect-scoped Stripe destination
+// delivers it. Without that destination the flags above are written once, when the owner returns
+// from onboarding, and never again; Stripe can disable charges later (missing verification) or
+// finish verification after the return, and checkout reads these flags. The daily cron
+// (app/api/cron/connect-resync) re-reads each account and mirrors it through `persistAccount`, so
+// the flags are at most a day old even with no webhook. Dependencies default to the module's own
+// and are injectable so the batch is testable without a network.
+
+interface ConnectedRow {
+  id: string
+  stripe_account_id: string
+  stripe_charges_enabled: boolean | null
+  stripe_payouts_enabled: boolean | null
+  stripe_details_submitted: boolean | null
+}
+
+interface ResyncDeps {
+  stripe: Pick<Stripe, 'accounts'> | null
+  db: () => SupabaseClient
+}
+
+interface ResyncOptions {
+  /** Mirrors one re-read Account onto its profile (the route passes `persistAccount`). */
+  persist: (account: Stripe.Account) => Promise<ConnectStatus>
+  /** The most accounts one run re-reads. */
+  limit: number
+  /** Stop early when the cron's clock is spent. */
+  exhausted?: () => boolean
+  /** Rotates the window when there are more accounts than `limit`, so every account is reached
+   *  within ceil(total / limit) days. Defaults to the UTC day number. */
+  dayIndex?: number
+}
+
+interface ResyncResult {
+  /** Set when the run did no work, with the reason. */
+  skipped: string | null
+  total: number
+  checked: number
+  changed: number
+  failed: number
+  remaining: number
+}
+
+export async function resyncConnectedAccounts(
+  opts: ResyncOptions,
+  deps: ResyncDeps = { stripe, db },
+): Promise<ResyncResult> {
+  const empty = { total: 0, checked: 0, changed: 0, failed: 0, remaining: 0 }
+  if (!deps.stripe) return { skipped: 'stripe_not_configured', ...empty }
+  const client = deps.db()
+
+  const { count, error: countError } = await client
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .not('stripe_account_id', 'is', null)
+  if (countError) throw new Error(`Could not count connected accounts (${countError.message}).`)
+  const total = count ?? 0
+  if (total === 0) return { skipped: null, ...empty }
+
+  const day = opts.dayIndex ?? Math.floor(Date.now() / 86_400_000)
+  const offset = total > opts.limit ? (day * opts.limit) % total : 0
+  const { data, error } = await client
+    .from('profiles')
+    .select('id, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted')
+    .not('stripe_account_id', 'is', null)
+    .order('id', { ascending: true })
+    .range(offset, offset + opts.limit - 1)
+  if (error) throw new Error(`Could not read connected accounts (${error.message}).`)
+
+  const rows = (data ?? []) as ConnectedRow[]
+  let checked = 0
+  let changed = 0
+  let failed = 0
+  for (const row of rows) {
+    if (opts.exhausted?.()) break
+    try {
+      const account = await deps.stripe.accounts.retrieve(row.stripe_account_id)
+      const status = await opts.persist(account)
+      checked++
+      const was = {
+        charges: !!row.stripe_charges_enabled,
+        payouts: !!row.stripe_payouts_enabled,
+        details: !!row.stripe_details_submitted,
+      }
+      if (
+        was.charges !== status.chargesEnabled ||
+        was.payouts !== status.payoutsEnabled ||
+        was.details !== status.detailsSubmitted
+      ) {
+        changed++
+        log.info('cron.connect_resync.changed', {
+          profile_id: row.id,
+          account_id: row.stripe_account_id,
+          charges_enabled: status.chargesEnabled,
+          payouts_enabled: status.payoutsEnabled,
+          details_submitted: status.detailsSubmitted,
+        })
+      }
+    } catch (err) {
+      failed++
+      log.error('cron.connect_resync.account_failed', {
+        profile_id: row.id,
+        account_id: row.stripe_account_id,
+        error: briefError(err),
+      })
+    }
+  }
+
+  return { skipped: null, total, checked, changed, failed, remaining: Math.max(0, total - checked - failed) }
 }
