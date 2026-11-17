@@ -22,7 +22,7 @@ export async function EventSearchSection({ q }: { q: string }) {
         <ul className="divide-y divide-border rounded-card border border-border">
           {found.rows.map((e) => (
             <li key={e.id} className="flex flex-wrap items-center gap-2 px-4 py-3">
-              <Link href={`/admin/events/${e.id}`} className="min-w-0 flex-1 truncate text-body-sm font-medium text-text hover:underline">
+              <Link href={`/admin/events/${e.id}`} className="block min-w-0 flex-1 truncate text-body-sm font-medium text-text hover:underline">
                 {e.title}
               </Link>
               <span className="text-meta text-subtle">{formatEventDate(e.starts_at)}</span>
