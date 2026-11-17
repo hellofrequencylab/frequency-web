@@ -1,0 +1,20 @@
+{
+  "id": "JRN-002",
+  "title": "A paid Journey never turns free when its product is hidden, sold out or mid re-price",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "lib/journeys/free-enrol-gate.ts",
+    "ref": "Journey audit 2026-11-17 (project thread: Dial in the Journey Wizard and Journeys)"
+  },
+  "detail": "checkFreeEnrol decided whether a Journey costs money from getJourneyOffer, which matches only an ACTIVE commerce_products row and reads a failed lookup as free. A Journey product is listed in the Space Shop catalog with a Hide button (status draft) and /market/manage can mark it sold out, so an owner pausing sales of a $444 Journey opened the free door: adoptPlanAction and startJourneyRunAction enrolled anyone for nothing. A re-price that failed after archiving the old product left the Journey free too. Fixed 2026-11-17: lib/journeys/paid.ts getJourneySaleState reads every non-archived product ('on_sale' when active, 'paused' otherwise, 'paused' on a read error), and checkFreeEnrol refuses non-owners on either, with 'This Journey is not taking new people right now. Check back soon.' for paused sales. setJourneyPriceAction remembers the live product before archiving it and puts it back when the new product cannot be created. getJourneyOffer is unchanged for the sales surfaces (it answers what a buyer can pay now). Guarded by lib/journeys/sale-state.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-002.mjs",
+    "note": "Fails if the free door reads getJourneyOffer, getJourneySaleState stops counting non-archived products or failing closed, or a failed re-price no longer restores the old offer."
+  },
+  "wave": "W7"
+}

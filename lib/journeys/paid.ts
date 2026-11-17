@@ -93,6 +93,35 @@ export async function getJourneyOffer(planId: string): Promise<JourneyOffer | nu
   }
 }
 
+/** Whether a Journey is sold at all, for the FREE DOOR (JRN-002). `getJourneyOffer` answers "what can a
+ *  buyer pay right now" and reads only an ACTIVE product, so a product the owner hid in the Shop
+ *  (draft), marked sold out, or left as a draft after a failed re-price read as "free" and the free
+ *  door enrolled anyone. Here any product that is not archived means the Journey is sold:
+ *  'on_sale' when it is active, 'paused' otherwise. FAIL-CLOSED: a failed read is 'paused', because
+ *  a broken price lookup must never hand away a paid program (free-enrol-gate.ts). */
+export type JourneySaleState = 'free' | 'on_sale' | 'paused'
+
+export async function getJourneySaleState(planId: string): Promise<JourneySaleState> {
+  try {
+    const { data, error } = await createAdminClient()
+      .from('commerce_products')
+      .select('status')
+      .eq('journey_plan_id', planId)
+      .neq('status', 'archived')
+      .limit(5)
+    if (error) {
+      console.error('[journeys] sale state lookup failed', { planId, error: error.message })
+      return 'paused'
+    }
+    const rows = (data ?? []) as { status: string }[]
+    if (rows.length === 0) return 'free'
+    return rows.some((r) => r.status === 'active') ? 'on_sale' : 'paused'
+  } catch (error) {
+    console.error('[journeys] sale state lookup failed', { planId, error })
+    return 'paused'
+  }
+}
+
 /** Slugs for Journey plan ids, one round trip. Used so Market and Shop cards can point at the
  *  sales page without each listing file taking its own admin-client import. */
 export async function journeySlugsByPlanId(planIds: string[]): Promise<Map<string, string>> {
