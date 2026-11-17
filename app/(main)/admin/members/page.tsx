@@ -11,6 +11,7 @@ import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { SubscribersTable } from './lists-tables'
 import { listSubscribers } from '@/lib/studio/contacts'
 import { readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
+import { applySearchTerms } from '@/lib/search/query'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,14 +20,15 @@ type TabKey = 'members' | 'subscribers'
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>
+  searchParams: Promise<{ view?: string; q?: string }>
 }) {
   // ADR-223: janitor (web_role) OR a staff role with the `members` domain (write) —
   // Operations/Support do member assist (docs/ROLES.md §System 3). Matches the nav
   // link gate in sections.ts so the roster never shows-then-redirects.
   await requireAdmin('janitor', { staff: 'members' })
 
-  const { view } = await searchParams
+  const { view, q: rawQ } = await searchParams
+  const q = (rawQ ?? '').trim().slice(0, 80)
   const tab: TabKey = view === 'subscribers' ? view : 'members'
 
   // Query-state (?view=) tabs on ONE route — drive the active tab explicitly by href
@@ -53,7 +55,7 @@ export default async function AdminMembersPage({
           ]}
         />
         <div className="mt-6">
-          {tab === 'members' && <MembersTab />}
+          {tab === 'members' && <MembersTab q={q} />}
           {tab === 'subscribers' && <SubscribersTab />}
         </div>
       </AdminSection>
@@ -62,7 +64,7 @@ export default async function AdminMembersPage({
 }
 
 // ── Members ──────────────────────────────────────────────────────────────────
-async function MembersTab() {
+async function MembersTab({ q }: { q: string }) {
   const admin = createAdminClient()
   // `meta` is read server-side ONLY to derive the Spotlight boolean below; it holds
   // PII (acquisition/UTM, streak, persona) and is never passed to the client.
@@ -74,28 +76,23 @@ async function MembersTab() {
   // The system voice (Vera, ADR-231) is fetched separately and PINNED to the top:
   // she's the oldest row, so the newest-200 window would silently drop her, and
   // janitors must always be able to reach her settings from here.
-  const [{ data: members }, { data: systemProfiles }] = await Promise.all([
-    admin
-      .from('profiles')
-      .select(select)
-      .eq('is_system', false)
-      .order('created_at', { ascending: false })
-      .limit(200),
+  //
+  // SRCH-004: with ?q= the window is the MATCHES, not the newest 200, so the search box reaches every
+  // member. Name and handle match in SQL; email matches through the auth listing paged below.
+  const [{ data: newest }, { data: systemProfiles }] = await Promise.all([
+    q
+      ? applySearchTerms(admin.from('profiles').select(select), ['display_name', 'handle'], q)
+          .eq('is_system', false)
+          .order('created_at', { ascending: false })
+          .limit(200)
+      : admin
+          .from('profiles')
+          .select(select)
+          .eq('is_system', false)
+          .order('created_at', { ascending: false })
+          .limit(200),
     admin.from('profiles').select(select).eq('is_system', true),
   ])
-
-  // Strip `meta` here: derive only the Spotlight boolean and drop the raw blob so no
-  // PII crosses the server→client boundary (the member list is a client component).
-  const allMembers = [...(systemProfiles ?? []), ...(members ?? [])].map((row) => {
-    const { meta, ...m } = row as typeof row & { meta?: unknown }
-    return {
-      ...m,
-      community_role: m.community_role ?? 'member',
-      web_role: m.web_role ?? 'none',
-      regionName: m.nexus_regions?.name ?? null,
-      spotlightEnabled: readSpotlightEnabled(meta),
-    }
-  })
 
   // Resolve emails by paging through the auth users (a few listUsers calls)
   // instead of one getUserById per member, which was up to 200 sequential
@@ -107,6 +104,33 @@ async function MembersTab() {
     for (const u of users) if (u.email) emailByAuthId[u.id] = u.email
     if (error || users.length < 1000) break
   }
+  // Members whose sign-in email matches the search, read by auth id (the profile columns never hold it).
+  let byEmail: typeof newest = []
+  if (q) {
+    const needle = q.toLowerCase()
+    const authIds = Object.entries(emailByAuthId).filter(([, email]) => email.toLowerCase().includes(needle)).map(([id]) => id).slice(0, 200)
+    const known = new Set((newest ?? []).map((m) => m.auth_user_id))
+    const missing = authIds.filter((id) => !known.has(id))
+    if (missing.length) {
+      const { data } = await admin.from('profiles').select(select).eq('is_system', false).in('auth_user_id', missing)
+      byEmail = data ?? []
+    }
+  }
+  const members = [...(newest ?? []), ...(byEmail ?? [])]
+
+  // Strip `meta` here: derive only the Spotlight boolean and drop the raw blob so no
+  // PII crosses the server→client boundary (the member list is a client component).
+  const allMembers = [...(systemProfiles ?? []), ...members].map((row) => {
+    const { meta, ...m } = row as typeof row & { meta?: unknown }
+    return {
+      ...m,
+      community_role: m.community_role ?? 'member',
+      web_role: m.web_role ?? 'none',
+      regionName: m.nexus_regions?.name ?? null,
+      spotlightEnabled: readSpotlightEnabled(meta),
+    }
+  })
+
   const emailMap: Record<string, string> = {}
   for (const m of allMembers) {
     if (m.auth_user_id && emailByAuthId[m.auth_user_id]) emailMap[m.id] = emailByAuthId[m.auth_user_id]
@@ -124,7 +148,7 @@ async function MembersTab() {
 
   return (
     <>
-      <p className="mb-4 text-body-sm text-muted">{allMembers.filter((m) => !m.is_system).length} total members</p>
+      <p className="mb-4 text-body-sm text-muted">{q ? `${members.length} ${members.length === 1 ? 'member matches' : 'members match'} “${q}”` : `${allMembers.filter((m) => !m.is_system).length} total members`}</p>
       <MemberAdmin
         members={allMembers}
         emailMap={emailMap}
