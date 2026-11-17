@@ -303,12 +303,14 @@ describe('the hubs carry the long tail (REACHABILITY: a menu row, or one click p
     expect(drawn).toEqual([])
   })
 
-  it('the framework stays short (nav.ts header): 2 × 3 a section, 6 shortcuts, 8 account rows, 5 work entries', () => {
+  it('the framework stays short (nav.ts header): 2 × 3 a section, 7 shortcuts, 8 account rows, 5 work entries', () => {
     for (const s of fqNav.FQ_NAV) {
       expect(s.cols.length, s.key).toBeLessThanOrEqual(2)
       for (const c of s.cols) expect(c.items.length, `${s.key}/${c.h}`).toBeLessThanOrEqual(3)
     }
-    expect(fqNav.FQ_SHORTCUTS.length).toBeLessThanOrEqual(6)
+    // Seven, not six (owner, 2026-11-17: "I want to see this on the left: Around You, Events, Circles,
+    // Spaces, Messages, Marketplace, Members").
+    expect(fqNav.FQ_SHORTCUTS.length).toBeLessThanOrEqual(7)
     expect(fqNav.FQ_ACCOUNT_MENU.length + 1).toBeLessThanOrEqual(8) // + Sign out
     expect(new Set(fqNav.FQ_WORK_MENU.map((r) => r.group)).size).toBeLessThanOrEqual(5)
   })
