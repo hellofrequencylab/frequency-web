@@ -21,6 +21,20 @@ import { cn } from '@/lib/utils'
 // `pageSlug` names which page is being edited (default Home). The editor runtime ships only
 // on this gated route; the public page renders <Render> with no editor code.
 
+// Shown when the call itself throws (network drop, server error), so there is no
+// returned message to show. A returned { error } is shown as the server wrote it.
+const PUBLISH_THREW = "We couldn't reach the server, so your page didn't publish. Check your connection and try again."
+const RESET_THREW = "We couldn't reach the server, so your page wasn't reset. Check your connection and try again."
+
+// The failure line beside the header buttons. role=alert so a screen reader hears it.
+function EditorError({ message }: { message: string }) {
+  return (
+    <span role="alert" className="max-w-xs truncate text-body-sm text-danger" title={message}>
+      {message}
+    </span>
+  )
+}
+
 // Publish button: full-colour "Publish now" when there are unpublished edits, dim
 // "Published" (with a check) when the live page matches the editor. Reads Puck's
 // live document via usePuck and compares it to the last-published baseline.
@@ -32,19 +46,30 @@ function PublishButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
   // editor loads the doc as-is, so the initial render never registers as a fake edit).
   const [baseline, setBaseline] = useState(current)
   const [status, setStatus] = useState<'idle' | 'publishing' | 'error'>('idle')
+  const [error, setError] = useState<string | null>(null)
 
   const dirty = current !== baseline
 
   async function handlePublish() {
     if (!dirty || status === 'publishing') return
     setStatus('publishing')
-    const result = await publishSpaceLanding(slug, doc, pageSlug)
-    if (isError(result)) {
-      setStatus('error')
-      return
+    setError(null)
+    // A thrown call (network drop, server error) must land on Retry, never leave the
+    // button stuck on Publishing, so every path ends in idle or error.
+    let next: 'idle' | 'error' = 'error'
+    try {
+      const result = await publishSpaceLanding(slug, doc, pageSlug)
+      if (isError(result)) {
+        setError(result.error)
+        return
+      }
+      setBaseline(JSON.stringify(doc))
+      next = 'idle'
+    } catch {
+      setError(PUBLISH_THREW)
+    } finally {
+      setStatus(next)
     }
-    setBaseline(JSON.stringify(doc))
-    setStatus('idle')
   }
 
   const label =
@@ -59,16 +84,19 @@ function PublishButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
   const active = dirty || status === 'error'
 
   return (
-    <button
-      type="button"
-      onClick={handlePublish}
-      disabled={!active || status === 'publishing'}
-      title={dirty ? 'Publish your changes. They go live immediately' : 'No changes to publish'}
-      className={buttonClasses(active ? 'primary' : 'secondary', 'sm', cn(!active && 'cursor-default opacity-60', status === 'publishing' && 'opacity-70'))}
-    >
-      {!dirty && status === 'idle' && <Check className="h-4 w-4" />}
-      {label}
-    </button>
+    <>
+      {status === 'error' && error && <EditorError message={error} />}
+      <button
+        type="button"
+        onClick={handlePublish}
+        disabled={!active || status === 'publishing'}
+        title={dirty ? 'Publish your changes. They go live immediately' : 'No changes to publish'}
+        className={buttonClasses(active ? 'primary' : 'secondary', 'sm', cn(!active && 'cursor-default opacity-60', status === 'publishing' && 'opacity-70'))}
+      >
+        {!dirty && status === 'idle' && <Check className="h-4 w-4" />}
+        {label}
+      </button>
+    </>
   )
 }
 
@@ -77,6 +105,7 @@ function PublishButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
 function ResetButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
   const router = useRouter()
   const [status, setStatus] = useState<'idle' | 'working' | 'error'>('idle')
+  const [error, setError] = useState<string | null>(null)
 
   async function handleReset() {
     if (status === 'working') return
@@ -87,25 +116,36 @@ function ResetButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
     )
       return
     setStatus('working')
-    const result = await resetSpaceLanding(slug, pageSlug)
-    if (isError(result)) {
-      setStatus('error')
-      return
+    setError(null)
+    let next: 'idle' | 'error' = 'error'
+    try {
+      const result = await resetSpaceLanding(slug, pageSlug)
+      if (isError(result)) {
+        setError(result.error)
+        return
+      }
+      router.refresh()
+      next = 'idle'
+    } catch {
+      setError(RESET_THREW)
+    } finally {
+      setStatus(next)
     }
-    router.refresh()
-    setStatus('idle')
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleReset}
-      disabled={status === 'working'}
-      title="Clear your saved version. The page reverts to its starting template"
-      className="inline-flex items-center px-3 py-1.5 text-body-sm font-medium text-danger hover:text-danger"
-    >
-      {status === 'working' ? 'Resetting…' : status === 'error' ? 'Retry reset' : 'Reset to template'}
-    </button>
+    <>
+      {status === 'error' && error && <EditorError message={error} />}
+      <button
+        type="button"
+        onClick={handleReset}
+        disabled={status === 'working'}
+        title="Clear your saved version. The page reverts to its starting template"
+        className="inline-flex items-center px-3 py-1.5 text-body-sm font-medium text-danger hover:text-danger"
+      >
+        {status === 'working' ? 'Resetting…' : status === 'error' ? 'Retry reset' : 'Reset to template'}
+      </button>
+    </>
   )
 }
 
