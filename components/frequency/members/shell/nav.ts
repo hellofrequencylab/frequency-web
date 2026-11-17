@@ -338,6 +338,7 @@ export const HUB_LINKS: Readonly<Record<string, readonly FqHubLink[]>> = {
     { label: 'Channels', href: '/channels', navKey: 'channels' },
   ],
   '/events': [
+    { label: 'My events', href: '/events/mine', navKey: 'events', gate: 'member' },
     { label: 'New event', href: '/events/new', navKey: 'events', gate: 'member' },
     { label: 'Drafts', href: '/drafts', gate: 'member' },
     { label: "What's happening", href: '/events/calendar', navKey: 'events' },
