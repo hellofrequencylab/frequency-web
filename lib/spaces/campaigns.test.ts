@@ -50,17 +50,27 @@ vi.mock('./entitlements', () => ({
 // passes the RESOLVER's topic to the seam and never re-derives one from the campaign row.
 let audience: { contactId: string; email: string }[] = [{ contactId: 'c1', email: 'a@x.com' }]
 let plannedTopic = 'marketing'
+// Runs while the audience resolves, after the status read and before the claim: the window a second
+// tab or the scheduled-send cron lands in (LIVE-2329).
+let duringResolve: (() => void) | null = null
 vi.mock('./audiences', () => ({
-  resolveAudiencePlan: async () => ({ recipients: audience, topic: plannedTopic }),
+  resolveAudiencePlan: async () => {
+    duringResolve?.()
+    return { recipients: audience, topic: plannedTopic }
+  },
 }))
 
 // The send seam (@/lib/spaces/email) is its own unit (email.test.ts); mock it so this surface test is
 // isolated and never runs a real send. A success returns {sent} that the surface maps to recipientCount.
 const seamSends: { topic?: string }[] = []
+let seamResult: { data: { sent: number; suppressed: number; failed: number } } | { error: string } = {
+  data: { sent: 3, suppressed: 0, failed: 0 },
+}
 vi.mock('@/lib/spaces/email', () => ({
   sendSpaceCampaign: async (_spaceId: string, input: { topic?: string }) => {
     seamSends.push({ topic: input.topic })
-    return { data: { sent: 3, suppressed: 0, failed: 0 } }
+    await new Promise((r) => setTimeout(r, 5))
+    return seamResult
   },
   SPACE_UNSUBSCRIBE_PLACEHOLDER: '%%SPACE_UNSUBSCRIBE_URL%%',
   isSpaceEmailEnabled: async () => true,
@@ -90,7 +100,7 @@ const db = {
 }
 
 function campaignsBuilder() {
-  const filters: { id?: string; space_id?: string } = {}
+  const filters: { id?: string; space_id?: string; status?: string[] } = {}
   let pendingInsert: Record<string, unknown> | null = null
   let pendingUpdate: Record<string, unknown> | null = null
   const api = {
@@ -100,6 +110,11 @@ function campaignsBuilder() {
     eq(col: string, val: string) {
       if (col === 'id') filters.id = val
       if (col === 'space_id') filters.space_id = val
+      if (col === 'status') filters.status = [val]
+      return api
+    },
+    in(col: string, vals: string[]) {
+      if (col === 'status') filters.status = vals
       return api
     },
     order() {
@@ -136,7 +151,10 @@ function campaignsBuilder() {
       }
       if (pendingUpdate) {
         const row = db.campaigns.find(
-          (c) => c.id === filters.id && (!filters.space_id || c.space_id === filters.space_id),
+          (c) =>
+            c.id === filters.id &&
+            (!filters.space_id || c.space_id === filters.space_id) &&
+            (!filters.status || filters.status.includes(c.status)),
         )
         if (row) {
           Object.assign(row, pendingUpdate)
@@ -152,6 +170,17 @@ function campaignsBuilder() {
       return { data: row, error: null }
     },
     then(resolve: (r: { data: CampaignRow[] | null; error: null }) => unknown) {
+      if (pendingUpdate) {
+        // An awaited update with no maybeSingle (the sent stamp, the claim release).
+        for (const c of db.campaigns) {
+          if (c.id !== filters.id) continue
+          if (filters.space_id && c.space_id !== filters.space_id) continue
+          if (filters.status && !filters.status.includes(c.status)) continue
+          Object.assign(c, pendingUpdate)
+          db.updates.push(pendingUpdate)
+        }
+        return Promise.resolve(resolve({ data: null, error: null }))
+      }
       const data = db.campaigns.filter((c) => c.space_id === filters.space_id)
       return Promise.resolve(resolve({ data, error: null }))
     },
@@ -188,6 +217,9 @@ beforeEach(() => {
   resolvedSpace = { id: 'space-A', slug: 'river-studio', ownerProfileId: 'owner-0000-4000-a000-0000000ownr' }
   canEdit = true
   audience = [{ contactId: 'c1', email: 'a@x.com' }]
+  duringResolve = null
+  seamResult = { data: { sent: 3, suppressed: 0, failed: 0 } }
+  seamSends.length = 0
   db.campaigns = []
   db.inserts = []
   db.updates = []
@@ -413,5 +445,44 @@ describe('sendSpaceCampaign — placeholder + guards', () => {
     const r = await sendSpaceCampaign('space-A', c.id)
     expect('error' in r).toBe(false)
     expect(seamSends).toEqual([{ topic: 'marketing' }])
+  })
+})
+
+describe('sendSpaceCampaign claims the row before it sends (LIVE-2329)', () => {
+  it('two presses at once send once; the second is refused', async () => {
+    const c = seedCampaign({ subject: 'Hi', body: 'Real body.', space_id: 'space-A' })
+    const [a, b] = await Promise.all([sendSpaceCampaign('space-A', c.id), sendSpaceCampaign('space-A', c.id)])
+    expect(seamSends).toHaveLength(1)
+    expect([a, b].filter((r) => 'error' in r)).toHaveLength(1)
+    expect(c.status).toBe('sent')
+    expect(c.recipient_count).toBe(3)
+  })
+
+  it('a claim that lands after the status read (the cron, another tab) stops this send', async () => {
+    const c = seedCampaign({ subject: 'Hi', body: 'Real body.', space_id: 'space-A', status: 'scheduled' })
+    duringResolve = () => {
+      c.status = 'sending'
+    }
+    const r = await sendSpaceCampaign('space-A', c.id)
+    expect(r).toEqual({ error: 'This campaign is going out right now.' })
+    expect(seamSends).toHaveLength(0)
+  })
+
+  it('a failed send hands the row back to its old status so the owner can retry', async () => {
+    const c = seedCampaign({ subject: 'Hi', body: 'Real body.', space_id: 'space-A', status: 'scheduled' })
+    seamResult = { error: 'Email is turned off for this space.' }
+    expect(await sendSpaceCampaign('space-A', c.id)).toEqual({ error: 'Email is turned off for this space.' })
+    expect(c.status).toBe('scheduled')
+    seamResult = { data: { sent: 2, suppressed: 0, failed: 0 } }
+    expect(await sendSpaceCampaign('space-A', c.id)).toEqual({ data: { recipientCount: 2 } })
+    expect(c.status).toBe('sent')
+  })
+
+  it('a send that reached nobody is not stamped sent and stays sendable', async () => {
+    const c = seedCampaign({ subject: 'Hi', body: 'Real body.', space_id: 'space-A' })
+    seamResult = { data: { sent: 0, suppressed: 1, failed: 0 } }
+    const r = await sendSpaceCampaign('space-A', c.id)
+    expect('error' in r).toBe(true)
+    expect(c.status).toBe('draft')
   })
 })
