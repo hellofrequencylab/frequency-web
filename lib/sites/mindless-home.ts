@@ -121,7 +121,7 @@ export const MINDLESS_PEOPLE = {
   title: 'Same faces. *Every week.*',
   lead: 'Nurses, cooks, parents, people between jobs. Nobody here has it figured out. That’s why it works.',
   photos: [
-    { image: PHOTO('rooftop-mono'), alt: 'A circle seen from above', pos: '50% 55%' },
+    { image: PHOTO('circle-pink'), alt: 'A circle on the cliffs at dawn', pos: '50% 60%' },
     { image: PHOTO('circle-mono'), alt: 'A circle with arms raised', pos: '50% 45%' },
     { image: PHOTO('beach-mono'), alt: 'People sitting on the beach at dawn', pos: '50% 50%' },
     { image: PHOTO('sunset-mono'), alt: 'A circle at dusk', pos: '50% 55%' },
@@ -196,6 +196,7 @@ export const MINDLESS_CTA = {
   primaryHref: '~/booking',
   secondaryLabel: 'Start one',
   secondaryHref: '~/booking',
-  image: PHOTO('rooftop-mono'),
-  alt: 'A circle seen from above',
+  image: PHOTO('dusk-mono'),
+  alt: 'A circle at dusk',
+  pos: '50% 55%',
 }
