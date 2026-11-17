@@ -22,6 +22,10 @@ globalThis.__progE6E = state
 // Everything that reaches outside the process. The rest of the import graph is the repo's own code.
 const stubs = new Map([
   ['server-only', ''],
+  // The live-section lock readers (PROG-E6F). This probe is not about live sections, so they answer at once
+  // with the same outcome as before PROG-E6F (no live section offered) instead of walking every Space store.
+  ['@/lib/entity-blocks/block-data-sources', 'export const FUNCTION_BACKED_BLOCK_TYPES=[];export const existingFunctionBackedBlocks=async()=>{throw new Error("live sections are not under test here")}'],
+  ['@/lib/spaces/profile-modules', 'export const enabledFunctionKeys=()=>new Set()'],
   ['next/cache', 'export const revalidatePath=()=>{}'],
   ['@/lib/env/string', 'export const envFlag=(name)=>name==="EDITOR_CANVAS"&&globalThis.__progE6E.flag'],
   ['@/lib/page-editor/guard', 'export const getJanitor=async()=>globalThis.__progE6E.staff?{profileId:"staff"}:null'],
