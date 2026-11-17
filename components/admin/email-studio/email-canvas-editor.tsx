@@ -214,8 +214,13 @@ function EmailCanvasView({ model, colors, library }: { model: EmailCanvasModel |
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(220px,25%)_minmax(0,1fr)]">
-      {/* LEFT — block list (each tile expands to its own settings) + the add-block palette. */}
-      <aside className="min-w-0 space-y-3" aria-label="Blocks and settings">
+      {/* LEFT — block list (each tile expands to its own settings) + the add-block palette.
+          [overflow-anchor:none] stops the "blink" (LIVE-2336): clicking a field on the canvas selects its
+          block, which collapses one settings tile here and expands another. With browser scroll anchoring
+          on, the scroll container picked an anchor inside this list and shifted scrollTop by the tile's
+          height change, so the whole email canvas snapped up or down on every field click. Excluding this
+          list from anchor selection lets the anchor land on the canvas itself, which never moves. */}
+      <aside className="min-w-0 space-y-3 [overflow-anchor:none]" aria-label="Blocks and settings">
         <div className="flex items-center justify-between">
           <h3 className="text-body-sm font-bold text-text">Blocks</h3>
           <span className="flex items-center gap-2">

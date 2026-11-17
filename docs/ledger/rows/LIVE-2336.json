@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2336",
+  "title": "Clicking a field in the email pop-up no longer makes the email jump",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/admin/email-studio/email-canvas-editor.tsx",
+    "ref": "Owner report 2026-11-17: every time I click a new field on the email pop-up the screen blinks (Admin CRM Marketing, New email)"
+  },
+  "detail": "Clicking a text slot on the email canvas selects its block, which closes one settings tile in the left block list and opens another. The pop-up's center pane scrolls, and browser scroll anchoring picked its anchor inside that list, so scrollTop moved by the tile height change and the whole canvas snapped up or down on a field click. Reproduced in Chromium against the canvas arrangement on a node document (render_path_email is on in prod): the clicked field moved 75px at 1280 and 1440 wide. Fix: the block list opts out of anchor selection ([overflow-anchor:none]), so the anchor lands on the canvas, which does not move. Measured after: 0px at 1440, 1280 and 900 (the stacked layout keeps its compensation because the canvas is still the anchor). Covers every pop-up that mounts this editor: CRM Marketing New email, Space Marketing New email, Message Member.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2336.mjs",
+    "note": "Fails on main: the Blocks and settings list takes part in scroll anchoring. Passes once it carries [overflow-anchor:none]."
+  },
+  "wave": "W7",
+  "closed": "2026-11-17"
+}
