@@ -164,6 +164,24 @@ describe('🔴 the GA4 tag does not reach the wire before a choice is recorded',
   })
 })
 
+describe('the gtag.js tag waits for the page to load (2026-11-17)', () => {
+  it('queues the config at once but appends the script only on load, once', () => {
+    const ready = Object.getOwnPropertyDescriptor(document, 'readyState')
+    Object.defineProperty(document, 'readyState', { configurable: true, get: () => 'loading' })
+    try {
+      const { tagLoaded } = runBootstrap({})
+      expect(tagLoaded, 'the tag waits while the page is still loading').toBe(false)
+      expect(Array.isArray((window as { dataLayer?: unknown[] }).dataLayer), 'the gtag queue is filled at once').toBe(true)
+      window.dispatchEvent(new Event('load'))
+      window.dispatchEvent(new Event('load'))
+      expect(document.head.querySelectorAll(TAG_SELECTOR)).toHaveLength(1)
+    } finally {
+      if (ready) Object.defineProperty(document, 'readyState', ready)
+      else delete (document as { readyState?: unknown }).readyState
+    }
+  })
+})
+
 describe('the loader is one function, defined once, callable twice', () => {
   it('is exposed even when the answer was no, so accepting later starts GA without a reload', () => {
     const { tagLoaded, loader } = runBootstrap({ priorConsentRegion: true })
