@@ -114,7 +114,7 @@ function run(root: HTMLElement): () => void {
     if (!w) {
       f.classList.add('under')
       addClass(host, 'tx-host')
-      if (getComputedStyle(host).position === 'static') {
+      if (isStatic.has(host) ? isStatic.get(host) : getComputedStyle(host).position === 'static') {
         host.style.position = 'relative'
         offs.push(() => (host.style.position = ''))
       }
@@ -151,6 +151,18 @@ function run(root: HTMLElement): () => void {
   // that kit's class names too, and touching them before hydration is a hydration mismatch.
   const q = (sel: string) =>
     Array.from(root.querySelectorAll<HTMLElement>(sel)).filter((e) => !e.closest('[data-kit]:not([data-kit="site"])'))
+
+  // READ EVERYTHING FIRST, THEN WRITE. Each decorated host gets new children, so a style read after
+  // one was a full style recalc on the spot: Home paid eight of them (the seam check below), about
+  // 0.4 s on a 4x-throttled phone and the largest part of its load freeze. Every style this pass
+  // needs is read here, in one recalc, before the first host is touched.
+  const isStatic = new Map<Element, boolean>()
+  const seamless = new Set<Element>()
+  for (const h of q('.hero,.phero,.hp-hero,.jx-panel,.half,.chap,.sec,.lv,.closer')) {
+    const cs = getComputedStyle(h)
+    if (!h.querySelector(':scope>.wrap')) isStatic.set(h, cs.position === 'static')
+    if (h.classList.contains('sec') && !h.classList.contains('kg') && cs.borderTopStyle === 'none') seamless.add(h)
+  }
 
   // Heroes: one signature sphere.
   q('.hero,.phero,.hp-hero').forEach((h) => {
@@ -202,7 +214,7 @@ function run(root: HTMLElement): () => void {
       halo(f, c1, 'clamp(380px,52vw,780px)', L ? '88%' : '12%', '34%', quiet ? 0.22 : null, -i * 1.7)
       if (!quiet) halo(f, c2, 'clamp(260px,34vw,520px)', L ? '8%' : '92%', '86%', 0.22, -i * 2.3)
       jewels(f, quiet ? 1 : jn, isLv ? [c1, c2, H.v] : [c1, c2, P[2]])
-      if (s.classList.contains('sec') && !s.classList.contains('kg') && getComputedStyle(s).borderTopStyle === 'none') mk('span', 'tx-seam', s)
+      if (seamless.has(s)) mk('span', 'tx-seam', s)
       i++
     })
   }

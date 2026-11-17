@@ -50,11 +50,14 @@ export function HomeMotion() {
       // composited layer makes Chrome re-rasterize it at the new scale every frame: six photos and the hero
       // text, on every scroll event. Phones get translate and opacity only; desktop keeps the scale.
       const phone = window.matchMedia('(max-width:760px)').matches
-      let vh = stage?.offsetHeight || window.innerHeight
+      // Read in the first frame, not here: a read inside the effect forced a whole-page style and
+      // layout pass on top of the frame's own (home load freeze). 0 means "measure on the next tick".
+      let vh = 0
       let lastP = -1
       let lastK = -1
       const tick = () => {
         // Reads.
+        if (!vh) vh = stage?.offsetHeight || window.innerHeight
         const fr = fold?.getBoundingClientRect()
         const p = fr ? clamp(-fr.top / (fr.height - vh)) : -1
         const y = hero ? Math.max(0, -hero.getBoundingClientRect().top) : 0
@@ -106,13 +109,13 @@ export function HomeMotion() {
       }
       window.addEventListener('scroll', req, { passive: true })
       const onResize = () => {
-        vh = stage?.offsetHeight || window.innerHeight
+        vh = 0
         lastP = -1
         lastK = -1
         req()
       }
       window.addEventListener('resize', onResize, { passive: true })
-      tick()
+      req()
       cleanups.push(() => {
         window.removeEventListener('scroll', req)
         window.removeEventListener('resize', onResize)
