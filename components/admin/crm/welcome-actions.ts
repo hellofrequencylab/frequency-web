@@ -101,7 +101,7 @@ export async function sendWelcomeAction(
   // Recorded only when the email actually went to them. A member who opted out stays un-welcomed (and the pop-up
   // says nobody was reached), so the glow keeps telling the truth.
   if (res.data.recipientCount > 0) {
-    await recordWelcome({ profileId, sentBy: gate.profileId, campaignId })
+    await recordWelcome({ profileId, sent: true })
     revalidateRosters()
   }
   return res
@@ -112,7 +112,7 @@ export async function markWelcomedAction(profileId: string): Promise<ActionResul
   const gate = await approverGate()
   if (!gate.ok) return fail(gate.error)
   if (!UUID.test(profileId)) return fail('That member could not be found.')
-  const saved = await recordWelcome({ profileId, sentBy: gate.profileId })
+  const saved = await recordWelcome({ profileId, sent: false })
   if (!saved) return fail('Could not save that. Try again.')
   revalidateRosters()
   return ok()

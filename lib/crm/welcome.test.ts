@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { firstNameOf, isWelcomePending, welcomeDraftLayout, welcomeSubject } from './welcome'
+import { firstNameOf, isWelcomePending, WELCOME_KIND, welcomeDedupeKey, welcomeDraftLayout, welcomeSubject } from './welcome'
 
 describe('isWelcomePending', () => {
   it('glows for every member with no welcome on record, and clears once welcomed', () => {
     expect(isWelcomePending(false)).toBe(true)
     expect(isWelcomePending(true)).toBe(false)
+  })
+  it('logs one welcome per member under a kind and key the sent-email ledger accepts', () => {
+    expect(WELCOME_KIND).toMatch(/^[a-z][a-z0-9_]{0,39}$/)
+    const key = welcomeDedupeKey('3f1c2a9e-0000-4000-8000-000000000001')
+    expect(key).toBe('personal_welcome:3f1c2a9e-0000-4000-8000-000000000001')
+    expect(key.length).toBeLessThanOrEqual(200)
   })
 })
 

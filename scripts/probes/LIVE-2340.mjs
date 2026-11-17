@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // LIVE-2340: staff can welcome each new member by hand from the Resonance CRM roster. A new member with no welcome on
 // record carries a glowing "Say hi" pill; it opens the member composer on a pre-filled welcome pinned to that member;
-// the send rides the ordinary gated 1:1 send and records the welcome (member_welcomes) so the glow clears. On main
+// the send rides the ordinary gated 1:1 send and logs the welcome in the sent-email ledger (lifecycle_send_log) so the glow clears. On main
 // none of this existed: the roster had no welcome signal and nothing recorded a personal welcome.
 import { existsSync, readFileSync } from 'node:fs'
 
@@ -9,9 +9,9 @@ const root = new URL('../../', import.meta.url)
 const read = (p) => (existsSync(new URL(p, root)) ? readFileSync(new URL(p, root), 'utf8') : '')
 const fails = []
 
-const migration = read('supabase/migrations/20270346090000_member_welcomes.sql')
-if (!/create table if not exists public\.member_welcomes/.test(migration)) fails.push('no member_welcomes table migration')
-if (!/enable row level security/.test(migration)) fails.push('member_welcomes has no row level security')
+const io = read('lib/crm/welcome-io.ts')
+if (!/from\('lifecycle_send_log'\)[\s\S]*\.insert\(/.test(io)) fails.push('a welcome is not recorded in the sent-email ledger')
+if (!/welcomeDedupeKey\(/.test(io)) fails.push('a welcome is not keyed one per member')
 
 const summaries = read('app/(main)/admin/crm/member-summaries.ts')
 if (!/welcomePending: welcomePending\.has\(r\.profileId\)/.test(summaries)) fails.push('the CRM roster does not flag members who need a welcome')

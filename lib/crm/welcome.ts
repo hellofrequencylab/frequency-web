@@ -8,6 +8,14 @@
 
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
+/** The sent-email ledger kind a personal welcome is logged under (lifecycle_send_log.kind). */
+export const WELCOME_KIND = 'personal_welcome'
+
+/** One welcome per member: the ledger's unique dedupe key. */
+export function welcomeDedupeKey(profileId: string): string {
+  return `${WELCOME_KIND}:${profileId}`
+}
+
 /** Does this member still need their personal welcome? Every member with nothing on record glows, however long
  *  ago they joined (owner ruling 2026-11-17: "Everyone not yet welcomed"). */
 export function isWelcomePending(welcomed: boolean): boolean {
