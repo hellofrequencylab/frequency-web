@@ -1,0 +1,18 @@
+{
+  "id": "FH-044S",
+  "title": "Hunts FH-044S: Edition and import screens, and the rule for runs in flight at a release",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-044 (2026-11-16): the edition pins, crosswalk, imports and old grant reads shipped dark; the screens and one owner decision move here."
+  },
+  "detail": "Owed after FH-044 (ADR-1972). (1) Owner decision: when a new edition is released, a run in flight on the old one becomes a record and takes no new credit (hunt_claim_apply answers version_superseded, lib/hunts/claim-store.ts reads the current version). Decide whether such a run may finish on its old edition for a grace window. If yes, Game systems changes the claim command and claim-store to accept a superseded edition inside its window; that edit was held back because parallel rows were changing the same function. (2) Web: the editor's publish step for a Trail that already has a published edition still calls publishTrailAction, which carries no printed code and leaves the old edition marked published; point it at releaseEditionAction and show the crosswalk, the retired codes and the count of runs left behind before the tap. (3) Web: the import doors (a Regulars hunt from its host Space's hunts screen, a QR campaign from /admin/qr) calling the actions in app/(main)/hunts/edition-actions.ts and showing the notices. (4) Web: show a player their run record on an earlier edition (loadRunRecord) and their old rewards (readOldGrants) on the Trail page. (5) Database owner: apply migration 20270346082000_hunt_teams_editions.sql through the serialized gate and confirm supabase/tests/hunt_editions.test.sql passes in db-tests. (6) Operator: walk one pilot Trail through a release with real printed codes and confirm each old code opens the right stop. Done when: a second edition released from the editor carries its printed codes, and the owner's rule for runs in flight is the one the claim command enforces. Requires: FH-044, FH-013. Owner role: Web, with Game systems.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(\"fs\");const p=\"app/(main)/hunts/edit/[id]\";const s=f.readdirSync(p,{recursive:true}).filter(x=>/\\.tsx?$/.test(String(x))).map(x=>f.readFileSync(p+\"/\"+x,\"utf8\")).join(\"\");process.exit(s.includes(\"releaseEditionAction\")?0:1)'"
+  }
+}

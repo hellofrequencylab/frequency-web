@@ -209,6 +209,22 @@ describe('the loader is one function, defined once, callable twice', () => {
       delete (window as unknown as Record<string, unknown>)[`ga-disable-${GA_ID}`]
     }
   })
+
+  it('switches GA off for an automated browser (navigator.webdriver) before the first config call', () => {
+    Object.defineProperty(navigator, 'webdriver', { value: true, configurable: true })
+    try {
+      runBootstrap({ choice: 'granted' })
+      expect((window as unknown as Record<string, unknown>)[`ga-disable-${GA_ID}`]).toBe(true)
+    } finally {
+      delete (navigator as unknown as { webdriver?: unknown }).webdriver
+      delete (window as unknown as Record<string, unknown>)[`ga-disable-${GA_ID}`]
+    }
+  })
+
+  it('leaves GA on for a person (no webdriver flag)', () => {
+    runBootstrap({ choice: 'granted' })
+    expect((window as unknown as Record<string, unknown>)[`ga-disable-${GA_ID}`]).not.toBe(true)
+  })
 })
 
 describe('withdrawal clears the storage the permission paid for', () => {
