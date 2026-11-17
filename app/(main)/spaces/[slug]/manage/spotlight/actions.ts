@@ -17,7 +17,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { legacySpotlightWriteError, nextSpotlightPreferences } from '@/lib/spaces/spotlight'
 import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
@@ -64,10 +64,6 @@ async function writeSpotlight(slug: string, change0: SpotlightChange): Promise<{
   if ('error' in managed) return managed
   const { space } = managed
 
-  const current =
-    space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
-      ? (space.preferences as Record<string, unknown>)
-      : {}
   // THE SPOTLIGHT'S BRANCH POINT OF render_path_spotlight (ADR-1853). Switched on, a NATIVE node document is
   // stored as nodes; everything else keeps the legacy-write refusal, so a stale type-keyed save can never
   // overwrite stored nodes. Switched off, or on any read error, nothing changes.
@@ -81,19 +77,27 @@ async function writeSpotlight(slug: string, change0: SpotlightChange): Promise<{
     if (refused) return { error: refused }
   }
   const change: SpotlightChange = { ...requested, native }
-  const preferences = nextSpotlightPreferences(current, change)
 
-  // Untyped scoped update of the preferences jsonb (ADR-246: the column is not in the generated types).
+  // KEY-SCOPED WRITE (LIVE-2334). Only the `spotlight` key goes through set_space_preferences, so a save
+  // here never writes back a stale copy of any other key (websitePublished, siteStyle, the page builder's
+  // nodes). The RPC merges top-level keys only, so the whole `spotlight` node is rebuilt from a fresh read
+  // taken just before the write, which keeps the window for two Spotlight saves racing each other short.
   const db = createAdminClient() as unknown as {
     from: (t: string) => {
+      select: (c: string) => { eq: (c: string, val: string) => { maybeSingle: () => Promise<{ data: { preferences?: unknown } | null; error: unknown }> } }
       update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
     }
   }
-  const { error } = await db
-    .from('spaces')
-    .update(about?.body != null && about.body !== (space.about ?? '').trim() ? { preferences, about: about.body } : { preferences })
-    .eq('id', space.id)
-  if (error) return { error: 'Could not save your Spotlight. Try again.' }
+  const fresh = await db.from('spaces').select('preferences').eq('id', space.id).maybeSingle()
+  const stored = fresh.error || !fresh.data ? space.preferences : fresh.data.preferences
+  const current = stored && typeof stored === 'object' && !Array.isArray(stored) ? (stored as Record<string, unknown>) : {}
+  const { spotlight } = nextSpotlightPreferences(current, change)
+  if (!(await patchSpacePreferences(space.id, { spotlight }))) return { error: 'Could not save your Spotlight. Try again.' }
+  // The About body lives in its own column, written on its own (ADR-246: untyped scoped update).
+  if (about?.body != null && about.body !== (space.about ?? '').trim()) {
+    const { error } = await db.from('spaces').update({ about: about.body }).eq('id', space.id)
+    if (error) return { error: 'Could not save your Spotlight. Try again.' }
+  }
 
   revalidatePath(`/spaces/${space.slug}/spotlight`)
   revalidatePath(`/spaces/${space.slug}/manage/spotlight`)
