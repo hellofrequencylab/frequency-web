@@ -76,6 +76,7 @@ import {
   AREA_PREFIX,
 } from '@/lib/marketplace/visibility'
 import { isAnonPublicDetail } from '@/lib/nav/public-detail-routes'
+import { isAnonLaunchPage } from '@/lib/launch/destination'
 import { getMyFrequency } from '@/lib/nav/my-frequency'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
@@ -201,7 +202,11 @@ export default async function MainLayout({
   // home / Show URLs left this group (SCAN-643, SCAN-644).
   const currentPath = (await headers()).get('x-pathname')
   const isPublicView =
-    isAnonSpaceProfile(currentPath) || isAnonPublicEvent(currentPath) || isAnonPublicDetail(currentPath)
+    isAnonSpaceProfile(currentPath) ||
+    isAnonPublicEvent(currentPath) ||
+    isAnonPublicDetail(currentPath) ||
+    // The Spotlight builder needs no account (LIVE-2324): a signed-out Free Spotlight press lands here.
+    isAnonLaunchPage(currentPath)
 
   const user = await getCachedUser()
 

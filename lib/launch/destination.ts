@@ -31,3 +31,15 @@ export function inFlowHref(href: string): string {
 export function spotlightArrivalGoesHome(p: { hasLaunch: boolean; go?: string; e?: string; new?: string }): boolean {
   return p.hasLaunch && p.go !== '1' && !p.e && p.new !== '1'
 }
+
+/** The launch pages a visitor with NO account may open (owner 2026-11-13: a Free Spotlight click opens the Spotlight
+ *  builder signed out, and the account is asked for at Publish). The member layout renders these in the public
+ *  chrome instead of sending the visitor to the home page, which is what it did to every "Get a Free Spotlight"
+ *  press and every "Keep building" link before LIVE-2324. Every other launch page stays the account's own. */
+const ANON_LAUNCH_PAGES = new Set(['/launch/step/spotlight'])
+
+/** Is this path a launch page a signed-out visitor may open? PURE. A trailing slash is the same page. */
+export function isAnonLaunchPage(pathname: string | null): boolean {
+  if (!pathname) return false
+  return ANON_LAUNCH_PAGES.has(pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname)
+}
