@@ -7,6 +7,7 @@ import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight, ScanLine
 import { getInitials, formatEventDate, eventDateBadge } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { paletteDestinations, type NavViewer } from '@/lib/nav/registry'
+import { FALLBACK_HIDDEN, isHiddenRoute } from '@/lib/search/hidden-routes-shared'
 import { railIconFor } from '@/components/layout/nav-icons'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { Input } from '@/components/ui/field'
@@ -36,7 +37,7 @@ type Practice = { id: string; title: string; slug: string | null; summary: strin
 type JourneyHit = { id: string; slug: string; title: string; summary: string | null; emoji: string | null; daily_minutes: number | null }
 type SpotlightHit = { id: string; handle: string; display_name: string; avatar_url: string | null }
 type MarketHit = { id: string; title: string; href: string; image: string | null; category: string | null }
-type Results = { people: Person[]; posts: Post[]; events: EventHit[]; leads: Lead[]; circles: Entity[]; spaces: Entity[]; practices: Practice[]; journeys: JourneyHit[]; spotlights: SpotlightHit[]; market: MarketHit[]; unavailable?: string[] }
+type Results = { people: Person[]; posts: Post[]; events: EventHit[]; leads: Lead[]; circles: Entity[]; spaces: Entity[]; practices: Practice[]; journeys: JourneyHit[]; spotlights: SpotlightHit[]; market: MarketHit[]; unavailable?: string[]; hiddenRoutes?: string[] }
 const CATEGORIES = ['all', 'events', 'people', 'spaces', 'circles', 'practices', 'journeys', 'spotlights', 'market', 'posts'] as const
 type Category = (typeof CATEGORIES)[number]
 
@@ -48,6 +49,9 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [category, setCategory] = useState<Category>('all')
+  // SRCH-002: routes the left menu hides. Starts from the fail-closed list and takes the live one from
+  // the first /api/search response, so "Go to" never offers /nearby, /network or the like.
+  const [hiddenRoutes, setHiddenRoutes] = useState<readonly string[]>(FALLBACK_HIDDEN)
   const requestRef = useRef<AbortController | null>(null)
   const versionRef = useRef(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -105,6 +109,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
         if (version !== versionRef.current) return
         if (!res.ok) throw new Error(res.status === 401 ? 'Your session has ended. Sign in again to search.' : res.status === 429 ? 'Please wait a moment, then try again.' : 'Search is temporarily unavailable. Please try again.')
         setResults({ ...EMPTY, ...json })
+        if (Array.isArray(json.hiddenRoutes)) setHiddenRoutes(json.hiddenRoutes)
       } catch (reason) {
         if (version !== versionRef.current || controller.signal.aborted) return
         setError(reason instanceof Error ? reason.message : 'Search is temporarily unavailable. Please try again.')
@@ -130,8 +135,8 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
   // list never drifts from a hand-maintained catalog. Computed client-side (the registry
   // + gate are framework-free); no round-trip. Capped so the palette stays scannable.
   const pages = useMemo(
-    () => (hasQuery ? paletteDestinations(viewer, trimmed).slice(0, 6) : []),
-    [viewer, trimmed, hasQuery],
+    () => (hasQuery ? paletteDestinations(viewer, trimmed).filter((d) => !isHiddenRoute(d.href, hiddenRoutes)).slice(0, 6) : []),
+    [viewer, trimmed, hasQuery, hiddenRoutes],
   )
 
   const visible = (kind: Category) => category === 'all' || category === kind

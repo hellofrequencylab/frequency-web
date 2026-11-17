@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo } from '@/lib/core/access-matrix'
 import { matchDestinations } from '@/lib/search/destinations'
+import { hiddenRoutes, isHiddenRoute } from '@/lib/search/hidden-routes'
 import { relativeTime } from '@/lib/utils'
 import { formatWhen } from '@/app/(main)/events/index-data'
 import {
@@ -84,9 +85,10 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
   const all = kind === 'all'
   const none = <T,>(): Promise<Window<T>> => Promise.resolve({ rows: [], truncated: false })
 
-  const areas = await browsableAreas()
-  const listingsOn = areas.includes('market')
-  const marketOn = areas.includes('makers')
+  // SRCH-002: a kind whose pages the left menu hides never answers, and "Go to" never offers one.
+  const [areas, hidden] = await Promise.all([browsableAreas(), hiddenRoutes()])
+  const listingsOn = areas.includes('market') && !isHiddenRoute('/classifieds', hidden)
+  const marketOn = areas.includes('makers') && !isHiddenRoute('/market', hidden)
   const spaceCap = all ? 4 : 24
   const listingCap = all ? 4 : 24
   const unavailable: string[] = []
@@ -149,6 +151,7 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
   const pages = hats
     ? matchDestinations(query)
         .filter((d) => !d.surface || accessTo(d.surface, hats) !== 'none')
+        .filter((d) => !isHiddenRoute(d.href, hidden))
         .slice(0, 5)
     : []
 
