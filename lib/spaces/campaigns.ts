@@ -36,6 +36,7 @@ import { spaceEmailBrand } from '@/lib/spaces/email-colors'
 import { renderCampaignHtml as renderBrandedCampaignHtml } from '@/lib/spaces/campaign-html'
 import { checkCampaignMonthMeter } from '@/lib/spaces/counted-meters'
 import { log, briefError } from '@/lib/log'
+import { scheduleSpaceEvent } from '@/lib/spaces/space-events'
 
 // The plain-text body's render lives in lib/spaces/campaign-html.ts (EMAIL-024): the Studio shell wearing the
 // Space's brand, the per-Space unsubscribe placeholder the send seam swaps per recipient, the CAN-SPAM postal
@@ -490,6 +491,7 @@ export async function sendSpaceCampaign(
     log.error('spaces.campaign_send.stamp_failed', { id, spaceId, error: briefError(err) })
   }
 
+  scheduleSpaceEvent('space.campaign_sent', { spaceId, recipientCount: res.data.sent }) // LIVE-2335
   return ok({ recipientCount: res.data.sent })
 }
 

@@ -81,6 +81,7 @@ import { spaceEmailBrand } from '@/lib/spaces/email-colors'
 import type { Space } from '@/lib/spaces/types'
 import { campaignCarriesFrequencyFooter } from '@/lib/spaces/campaign-footer'
 import { checkCampaignMonthMeter } from '@/lib/spaces/counted-meters'
+import { scheduleSpaceEvent } from '@/lib/spaces/space-events'
 import type {
   EmailCampaignCard,
   LoadedEmailCampaign,
@@ -623,7 +624,9 @@ export async function sendSpaceEmailDraft(
   if (isError(res)) return res
   // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
   if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
-  return stampSent(id, spaceId, res.data.sent)
+  const stamped = await stampSent(id, spaceId, res.data.sent)
+  scheduleSpaceEvent('space.campaign_sent', { spaceId, recipientCount: res.data.sent }) // LIVE-2335
+  return stamped
 }
 
 /**

@@ -28,6 +28,7 @@ import { generateOfferPage } from '@/lib/page-editor/templates/space-offer'
 import { OFFER_PAGE_LABEL, OFFER_PAGE_SLUG, firstOfferSeed } from '@/lib/launch/offer-page'
 import { parseSiteDomain } from '@/lib/sites/domain'
 import { refreshSite } from '@/lib/sites/site-cache'
+import { scheduleSpaceEvent } from '@/lib/spaces/space-events'
 import { siteSubdomainHost } from '@/lib/sites/host'
 import { briefError, log } from '@/lib/log'
 import {
@@ -472,6 +473,8 @@ export async function setWebsitePublished(slug: string, published: boolean): Pro
 
   const saved = await writePreferences(auth.spaceId, { ...auth.preferences, websitePublished: published === true })
   if (!saved) return fail('Could not update your website. Try again.')
+  // LIVE-2335: counted when the website goes from off to on, never on a repeat or an unpublish.
+  if (published === true && auth.preferences.websitePublished !== true) scheduleSpaceEvent('space.website_published', { spaceId: auth.spaceId })
 
   // Expire the cached site (LIVE-784): its `site:<slug>` tag covers /sites/<slug> and the Space's own
   // domain, so the publish gate is re-decided on the next request either way.

@@ -85,6 +85,11 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   { name: 'createspace.photos', category: 'lifecycle', description: 'A visitor finished the photos step (props.uploaded, props.kept_theme).', clientEmittable: false },
   { name: 'createspace.resume', category: 'lifecycle', description: 'A visitor picked a draft back up (props.source: local or email).', clientEmittable: false },
   { name: 'createspace.dock_click', category: 'lifecycle', description: 'A visitor used the sticky dock to get back to the builder.', clientEmittable: false },
+  // ── Space activation past launch (LIVE-2335, lib/spaces/space-events.ts). Server-only and first-party only (all
+  // three sit in FIRST_PARTY_ONLY_EVENTS, ./sanitize.ts). Ids and a count only: never a subject, a body or an audience.
+  { name: 'space.spotlight_published', category: 'lifecycle', description: 'A Space published its Spotlight from the console (props.spaceId).', clientEmittable: false },
+  { name: 'space.website_published', category: 'lifecycle', description: 'A Space switched its website on (props.spaceId).', clientEmittable: false },
+  { name: 'space.campaign_sent', category: 'engagement', description: 'A Space campaign or email went out (props.spaceId, props.recipientCount).', clientEmittable: false },
   // ── Frequency Hunts (FH-025). Server-only, and the only props are the closed dimensions lib/hunts/analytics.ts
   // allows (reason_class, medium, cohort, assurance, hunt_id, replayed): never a location, a code or a contact.
   { name: 'hunt.placement_scan', category: 'engagement', description: 'A printed or tapped Hunt placement was opened (props.medium).', clientEmittable: false },
