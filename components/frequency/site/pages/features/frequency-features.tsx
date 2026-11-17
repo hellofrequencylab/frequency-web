@@ -30,6 +30,11 @@ import { FeaturesMotion } from './features-motion'
 // still waits behind the hero and the first jobs on a 1.6 Mbps link, so this script runs before the hero and
 // preloads the photo with the SAME srcset and sizes the <img> will carry; the browser then reuses that response
 // instead of fetching twice. Only the hashes that name a feature do anything; every other visit pays about 1 KB of inline script.
+// JSON for an inline <script>: escapes the characters that could close the tag or break the line,
+// so a value can never become code even if one of these strings later comes from an editor.
+const scriptJson = (v: unknown) =>
+  JSON.stringify(v).replace(/[<>&\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`)
+
 const JOB_PHOTO_SIZES = '(max-width: 900px) 100vw, 33vw'
 function linkedPhotoPreloadScript(): string {
   // One srcset template plus each photo's encoded path, so the script stays near 1 KB instead of nine full
@@ -47,7 +52,7 @@ function linkedPhotoPreloadScript(): string {
     if (i < 0) i = paths.push(entry) - 1
     for (const f of job.features) byFeature[f.id] = i
   }
-  return `(function(){try{var T=${JSON.stringify(template)},P=${JSON.stringify(paths)},F=${JSON.stringify(byFeature)},i=F[location.hash.slice(1)];if(i===undefined)return;var e=P[i],s=e.indexOf(' ')<0?T.split('@').join(e):e,l=document.createElement('link');l.rel='preload';l.as='image';l.setAttribute('imagesrcset',s);l.setAttribute('imagesizes',${JSON.stringify(JOB_PHOTO_SIZES)});l.setAttribute('fetchpriority','high');document.head.appendChild(l)}catch(e){}})()`
+  return `(function(){try{var T=${scriptJson(template)},P=${scriptJson(paths)},F=${scriptJson(byFeature)},i=F[location.hash.slice(1)];if(i===undefined)return;var e=P[i],s=e.indexOf(' ')<0?T.split('@').join(e):e,l=document.createElement('link');l.rel='preload';l.as='image';l.setAttribute('imagesrcset',s);l.setAttribute('imagesizes',${scriptJson(JOB_PHOTO_SIZES)});l.setAttribute('fetchpriority','high');document.head.appendChild(l)}catch(e){}})()`
 }
 
 /**
@@ -150,7 +155,7 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
                     before the end of this long page, and only when the hash names one of this job's features. */}
                 <script
                   dangerouslySetInnerHTML={{
-                    __html: `(function(){try{if(${JSON.stringify(job.features.map((f) => f.id))}.indexOf(location.hash.slice(1))<0)return;var i=document.currentScript.previousElementSibling;i.loading='eager';i.fetchPriority='high'}catch(e){}})()`,
+                    __html: `(function(){try{if(${scriptJson(job.features.map((f) => f.id))}.indexOf(location.hash.slice(1))<0)return;var i=document.currentScript.previousElementSibling;i.loading='eager';i.fetchPriority='high'}catch(e){}})()`,
                   }}
                 />
                 <span className="fq-grain" />
