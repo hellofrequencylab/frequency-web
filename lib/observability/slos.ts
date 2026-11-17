@@ -216,6 +216,7 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
       'onboarding-throughput',
       'indexnow',
       'storage-backup',
+      'connect-resync',
     ],
     why: 'renewals, retention, lifecycle, embeddings, the daily readings, the nightly storage copy',
   },
