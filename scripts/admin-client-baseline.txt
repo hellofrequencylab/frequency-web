@@ -17,6 +17,8 @@
 # LIVE-902: the Space brand a conversation email wears is read at the batch flush (a cron with no session) and at compose after the caller authorized the Space; it reads five public branding columns of one spaces row and writes nothing.
 # LIVE-2235: app/(main)/admin/growth/flowweb-metrics/route.ts is a requireAdmin (marketing read) CSV of four per-region counts for FlowWeb; it reads published events and last-seen profiles across every region (profiles RLS is in-region only), writes nothing, and returns totals only.
 # LIVE-766: private Collective owner report revalidates parent plan and same-owner attachment before bounded member/event/finance reads.
+# FH-043: lib/hunts/team-store.ts reads the caller's own team membership (hunt_teams, hunt_team_members and the team run's hunt_progress are service role only, no policy) after the action derived the profile, returns a member count and never a roster, and writes only through the hunt_team_* commands, which check the roster again under their own locks.
+# FH-044: lib/hunts/edition-store.ts releases an edition after authorizeHuntAction (owner or admin), reads a run only for its own subject and old grants only for the profile the action derived, and reads the legacy Regulars and QR campaign rows (select only) to start an unpublished draft: it writes hunts, hunt_versions and hunt_mission_placements and never a legacy table, a run, a claim or a grant.
 # check:admin-client baseline — every file allowed to import the RLS-bypassing service-role
 # client (lib/supabase/admin.ts). Frozen by the tenancy-walls ratchet (ADR-923): a new
 # importer fails CI unless added here in the same PR; converge files onto the session
@@ -1057,10 +1059,12 @@ lib/hunts/claim-store.ts
 lib/hunts/moderation-store.ts
 lib/hunts/redemption-store.ts
 lib/hunts/commerce-store.ts
+lib/hunts/edition-store.ts
 lib/hunts/run-store.ts
 lib/hunts/staff-queue-store.ts
 lib/hunts/staff-store.ts
 lib/hunts/store.ts
+lib/hunts/team-store.ts
 lib/importer/harvest/media.ts
 lib/importer/harvest/staging-lifecycle.ts
 lib/importer/materialize.ts
