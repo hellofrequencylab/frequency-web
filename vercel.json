@@ -170,6 +170,10 @@
     {
       "path": "/api/cron/calendar-holds",
       "schedule": "10 * * * *"
+    },
+    {
+      "path": "/api/cron/connect-resync",
+      "schedule": "25 4 * * *"
     }
   ]
 }

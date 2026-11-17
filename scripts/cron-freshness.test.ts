@@ -344,7 +344,8 @@ describe('the floor', () => {
     // 39 since 2026-10-29: launch-reminders (VLS-26).
     // 41 since 2026-11-02: create-space-draft-reminders (LIVE-1968).
     // 42 since 2026-11-12: quiet-reengage (LIVE-2265).
-    expect(jobs.length).toBe(42)
+    // 43 since 2026-11-17: connect-resync (LIVE-2328).
+    expect(jobs.length).toBe(43)
     expect(jobs.length).toBeGreaterThan(MIN_JOBS)
   })
 })
