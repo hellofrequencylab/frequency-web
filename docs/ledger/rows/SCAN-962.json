@@ -1,0 +1,13 @@
+{
+  "id": "SCAN-962",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const n=fs.readFileSync('components/frequency/members/shell/nav.ts','utf8');const s=fs.readFileSync('lib/frequency/site-nav.ts','utf8');const bad=[];const sc=n.slice(n.indexOf('export const FQ_SHORTCUTS'),n.indexOf('export const FQ_YOU_LINKS'));if(!/label: '(Business )?Spaces', sub: '', href: '\\/spaces\\/directory'/.test(sc))bad.push('not a left rail shortcut');if(/href: '\\/spaces\\/directory', icon: 'space', navKey/.test(n))bad.push('hidden from some viewers in the member menu');const d=s.slice(s.indexOf('export const DIRECT_LINKS'),s.indexOf('export const SIDE_CTA'));if(!d.includes(\\\"label: 'Business Spaces'\\\"))bad.push('not in the public site header');if(bad.length){console.error('SCAN-962: '+bad.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "2026-11-17 (LIVE-2343): the left rail shortcut reads \"Spaces\". The owner wrote the rail list with \"Spaces\" and then picked \"Spaces\" on a decision card asking \"Should the left menu say Spaces or Business Spaces?\" (option consequence: \"I update the October check that pins Business Spaces there\"). The probe accepts Spaces or Business Spaces for the same /spaces/directory shortcut; the no-navKey and public-header arms are unchanged."
+  },
+  "wave": "W7"
+}

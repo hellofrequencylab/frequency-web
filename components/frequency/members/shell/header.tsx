@@ -87,8 +87,11 @@ interface FqHeaderProps {
   circles: FqDrawerCircle[]
   /** The avatar menu (personal and account), resolved and gated on the server (nav.ts). */
   accountGroups: FqMenuGroup[]
-  /** The work menu (Spaces, Create, Lead and admin), the rail foot's; the phone drawer repeats it. */
+  /** The work menu (Lead and admin), the rail foot's; the phone drawer repeats it. */
   workGroups: FqMenuGroup[]
+  /** Your Space (owners only) and the Create group, lifted to the top (nav.ts liftTopGroups). */
+  spaceDoor?: { label: string; href: string }
+  createGroup?: FqMenuGroup
   /** The selectable skins and the member's current one, for the avatar menu's look control. */
   skins: { id: string; label: string }[]
   skin: string
@@ -110,6 +113,8 @@ export function FqHeader({
   circles,
   accountGroups,
   workGroups,
+  spaceDoor,
+  createGroup,
   skins,
   skin,
   standing,
@@ -425,6 +430,8 @@ export function FqHeader({
           messagesUnread={messagesUnread}
           circles={circles}
           workGroups={workGroups}
+          spaceDoor={spaceDoor}
+          createGroup={createGroup}
           accountGroups={accountGroups}
           standing={standing}
           onCapture={() => { setOpen(null); openCapture() }}
@@ -464,6 +471,8 @@ function Drawer({
   messagesUnread,
   circles,
   workGroups,
+  spaceDoor,
+  createGroup,
   accountGroups,
   standing,
   onCapture,
@@ -476,6 +485,8 @@ function Drawer({
   messagesUnread: number
   circles: FqDrawerCircle[]
   workGroups: FqMenuGroup[]
+  spaceDoor?: { label: string; href: string }
+  createGroup?: FqMenuGroup
   accountGroups: FqMenuGroup[]
   standing?: React.ReactNode
   onCapture: () => void
@@ -490,6 +501,8 @@ function Drawer({
     ...tiles.map((t) => t.href),
     ...shortcuts.map((s) => s.href),
     ...circles.map((c) => c.href),
+    ...(spaceDoor ? [spaceDoor.href] : []),
+    ...(createGroup?.rows.flatMap((r) => (r.href ? [r.href] : [])) ?? []),
   ])
   const row = (href: string, label: string, icon: FqIconName, count = 0) => {
     const on = href === pathname
@@ -542,6 +555,14 @@ function Drawer({
           </Link>
         ))}
       </div>
+      {/* Your Space and Create, at the top (owner, 2026-11-17), the same rows the desktop rail lifts. */}
+      {(spaceDoor || createGroup) && (
+        <div className="rl-g">
+          {spaceDoor && row(spaceDoor.href, spaceDoor.label, 'space')}
+          {createGroup && <span className="rl-h">Create</span>}
+          {createGroup?.rows.map((r) => (r.href ? row(r.href, r.label, r.icon) : null))}
+        </div>
+      )}
       <div className="rl-g">
         {first.label === 'Home' && row(first.href, first.label, first.icon)}
         <button type="button" className="rl-row" onClick={onCapture}>

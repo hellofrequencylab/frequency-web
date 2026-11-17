@@ -6,6 +6,7 @@ import {
   FQ_NAV,
   FQ_SHORTCUTS,
   FQ_WORK_MENU,
+  liftTopGroups,
   FQ_YOU_LINKS,
   HUB_LINKS,
   MEMBER_HOME_HREF,
@@ -105,5 +106,24 @@ describe('the member gate (SCAN-912)', () => {
   it('drops every create row from the work menu for a signed-out viewer', () => {
     const rows = groupRows(FQ_WORK_MENU, { ...visitor, signedIn: false }, '/join').flatMap((g) => g.rows)
     expect(rows.some((r) => r.href === '/events/new' || r.href === '/circles/new' || r.href === '/market/sell')).toBe(false)
+  })
+})
+
+describe('the rail top (owner, 2026-11-17: "Your Space and Create at the top")', () => {
+  const owner = { navAccess: {}, operatesSpaces: true, host: false }
+  const one = [{ group: 'Your Spaces', label: 'Studio', href: '/spaces/studio/manage', icon: 'space' as const }]
+  it('one Space opens its console; several open the picker; Leadership and Admin stay below', () => {
+    const single = liftTopGroups(groupRows([...one, ...FQ_WORK_MENU], owner, '/people/me'))
+    expect(single.door).toEqual({ label: 'Your Space', href: '/spaces/studio/manage' })
+    expect(single.create?.rows.map((r) => r.href)).toEqual(['/events/new', '/circles/new', '/market/sell'])
+    expect(single.rest.map((g) => g.label)).not.toContain('Your Spaces')
+    expect(single.rest.map((g) => g.label)).not.toContain('Create')
+    const two = [...one, { group: 'Your Spaces', label: 'Cafe', href: '/spaces/cafe/manage', icon: 'space' as const }]
+    expect(liftTopGroups(groupRows([...two, ...FQ_WORK_MENU], owner, '/people/me')).door).toEqual({ label: 'Your Spaces', href: '/spaces/operating' })
+  })
+  it('a member who runs no Space gets Create and no door', () => {
+    const top = liftTopGroups(groupRows(FQ_WORK_MENU, { ...owner, operatesSpaces: false }, '/people/me'))
+    expect(top.door).toBeUndefined()
+    expect(top.create?.rows.length).toBe(3)
   })
 })
