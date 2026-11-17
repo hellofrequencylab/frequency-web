@@ -152,6 +152,7 @@ export async function runLaunchComebacks(opts: ComebackRunOptions): Promise<Come
         made: view.kind === 'step' ? view.made : [],
         nextLabel: view.kind === 'step' ? launchStep(view.step).label : null,
         baseUrl,
+        launchId: snap.id,
         unsubscribeUrl,
       })
       await enqueueEmail({ ...payload, headers: listUnsubscribeHeaders(unsubscribeUrl) }, { dedupeKey: `launch_comeback:${snap.id}:${kind}` })

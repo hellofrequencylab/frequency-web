@@ -83,7 +83,7 @@ beforeEach(() => {
 const run = () => runLaunchComebacks({ limit: 200, now: NOW, baseUrl: 'https://frequencylocal.com' })
 
 describe('runLaunchComebacks', () => {
-  it('sends the one-hour email once, with the time left and the /launch link, claimed first', async () => {
+  it('sends the one-hour email once, with the time left and the /launch/resume link, claimed first', async () => {
     const r = await run()
     expect(r).toMatchObject({ scanned: 1, sent: 1, skipped: 0, failed: 0 })
     expect(state.inserts).toEqual([{ launch_id: 'l1', trigger_kind: 'comeback_1h', message_ref: null }])
@@ -91,7 +91,7 @@ describe('runLaunchComebacks', () => {
     const { payload, opts } = state.enqueued[0]
     expect(payload.to).toBe('sam@example.com')
     expect(String(payload.html)).toContain('7:42')
-    expect(String(payload.html)).toContain('https://frequencylocal.com/launch')
+    expect(String(payload.html)).toContain('https://frequencylocal.com/launch/resume')
     expect(String(payload.html)).toContain('Hi Sam,')
     expect(payload.headers).toEqual({ 'List-Unsubscribe': '<x>' })
     expect(opts).toEqual({ dedupeKey: 'launch_comeback:l1:comeback_1h' })

@@ -4,6 +4,7 @@
 import type { Metadata } from 'next'
 import { FrequencyFacilities } from '@/components/frequency/site/pages/facilities/frequency-facilities'
 import { LINK_ONLY_ROBOTS } from '@/lib/seo/link-only'
+import { PrivatePageTracker } from '@/components/frequency/site/shell/private-page-tracker'
 
 export const revalidate = 3600
 
@@ -19,5 +20,10 @@ export const metadata: Metadata = {
 }
 
 export default function FacilitiesPage() {
-  return <FrequencyFacilities />
+  return (
+    <>
+      <FrequencyFacilities />
+      <PrivatePageTracker page="/facilities" />
+    </>
+  )
 }

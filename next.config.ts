@@ -383,6 +383,34 @@ const nextConfig: NextConfig = {
   // is the thing that notices: it fails when any traced file matches /heic2any/i.
   outputFileTracingExcludes: {
     '/**': ['./public/tracks/**', './.next/server/chunks/**/*heic2any*'],
+    // ── sharp, on every PAGE function (ADR-1975, HYG-245) ─────────────────────────────────────
+    //
+    // A page that shares a segment with a per-entity `opengraph-image.tsx` (a Space, an event, a
+    // help article, the discover detail pages) inherits the card module into its metadata module,
+    // so the tracer followed `import('sharp')` and put libvips-cpp.so (17.8 MB) into 23 page
+    // functions that only ever read the card's `alt`/`size`/`contentType`: about 410 MB.
+    //
+    // Safe by construction: lib/og/deliver.ts is the ONLY module that imports sharp, it does so
+    // lazily inside `deliverCard`, and only the card ROUTE handlers call `deliverCard`. A page
+    // never rasterises, so a page that cannot see sharp never tries to load it.
+    //
+    // ⚠️ THIS BUILD USES TURBOPACK, AND TURBOPACK DOES NOT USE THE PICOMATCH RULES DESCRIBED ABOVE.
+    // collect-build-traces.js is skipped for Turbopack builds; next-api/src/nft.rs applies these
+    // keys instead, with Turbopack's own glob (contains mode, no `!` negation, no extglob) against
+    // the route `/app` + the entry's ORIGINAL name: groups kept, `/page` or `/route` kept, e.g.
+    // `/app/(public)/spaces/[slug]/page` and `/app/(public)/spaces/[slug]/opengraph-image-tt3pwa/route`.
+    // So `/app/**/page` reaches every page and no card route (cards are all `/route`). The exclude
+    // then prunes the module graph at sharp, so @img and libvips below it go too.
+    //
+    // ⚠️ A PAGE THAT NEEDS sharp gets it stripped here, and fails soft. Rasterise from a route
+    // handler through `deliverCard`. `check:og-trace` fails the build if a card route ever loses
+    // sharp (DEPLOY-SAFETY rule 6), and reports how many pages still carry it.
+    '/app/**/page': [
+      './node_modules/sharp/**',
+      './node_modules/@img/**',
+      './node_modules/**/node_modules/sharp/**',
+      './node_modules/**/node_modules/@img/**',
+    ],
   },
   async headers() {
     return [

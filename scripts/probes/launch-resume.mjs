@@ -16,7 +16,8 @@ const box = readFileSync('components/frequency/members/shell/launch-box.tsx', 'u
 if (!/launchSystemEnabled\(\)\) notFound\(\)/.test(route) || !/launchSystemEnabled\(\)\) notFound\(\)/.test(page)) bad.push('the resume route or page opens while the launch is off')
 if (!/getLaunchForOwner\(profileId, lid\)/.test(route) || !/if \(!launch\) notFound\(\)/.test(route)) bad.push('a launch that is not the caller\'s does not 404 on the resume route')
 if (!/if \(!launch && lid\) notFound\(\)/.test(page)) bad.push('a launch that is not the caller\'s does not 404 on the page')
-if (!/if \(!profileId\) redirect\('\/sign-in'\)/.test(route)) bad.push('the resume route answers someone signed out')
+// LIVE-2330 (owner-approved 2026-11-17): signed out goes to sign-in carrying next, so they come back to this launch.
+if (!/if \(!profileId\) redirect\(launchResumeSignInHref\(lid\)\)/.test(route)) bad.push('the resume route answers someone signed out')
 if (!/launchHomeHref\(\{ signedIn: true \}\)/.test(box)) bad.push('the launch box does not link to the launch home')
 
 const t0 = new Date('2026-10-28T12:00:00Z')
