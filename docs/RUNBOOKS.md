@@ -879,6 +879,18 @@ Then set `CALENDAR_HOLDS_ENABLED` to `1`, `true` or `on` and redeploy.
 
 **Turn it off.** Unset the flag. The cron returns `skipped` and posts nothing.
 
+## Launch-day search checklist
+
+Run this once, in order, on launch day (LIVE-2306). Steps 1, 2 and 4 need Daniel's own Google and Microsoft accounts; a build thread can only check the results.
+
+1. **Verify the domain in both consoles.** Google Search Console: add `https://frequencylocal.com` and use the HTML tag method. Put the content value in `GOOGLE_SITE_VERIFICATION` on Vercel Production. Bing Webmaster Tools: do the same with `BING_SITE_VERIFICATION` (the `msvalidate.01` value). Both are read by `metadata.verification` in `app/layout.tsx`, so redeploy, then press Verify in each console. A DNS TXT record at GoDaddy also works and survives a redeploy.
+2. **Submit the sitemap to both.** In each console, submit `https://frequencylocal.com/sitemap.xml`. It comes from `app/sitemap.ts`. Expect it to read as Success, with the discovered URL count close to the number of `<url>` entries.
+3. **Confirm IndexNow is pinging.** Follow [IndexNow ping](#indexnow-ping): first check that `https://frequencylocal.com/<key>.txt` returns the key, then set `INDEXNOW_ENABLED=1`, then run `/api/cron/indexnow?dry=1`. The next 14:00 UTC run should log `cron.indexnow` with status 200 or 202.
+4. **Claim and fill the Google Business Profile.** Claim Frequency at business.google.com. Set the service area to North County San Diego, use the same name, URL and category as the site, and set the website link to `https://frequencylocal.com`. Add the profile URL to `SOCIAL_PROFILES` in `lib/site.ts` only if it is a public profile link.
+5. **Spot-check the public pages.** Each of these should render on production, return 200 and appear in `/sitemap.xml`: `/north-county-san-diego`, the town index `/discover/cities` and one live town under it, `/llms.txt` and `/robots.txt`. In Search Console, use URL Inspection on `/north-county-san-diego` and request indexing.
+
+**Reading it.** A week later, Search Console Pages should show the core pages as indexed, and Bing should list the sitemap as processed. A page shown as "Discovered, not indexed" is not a bug. A page shown as "Excluded by noindex" or as a 4xx is a bug.
+
 ## Local public-site draft projection
 
 For an explicitly reviewed local Group preview, `LOCAL_SITE_CONTENT_PROJECTION` may point to an absolute local JSON manifest. The read seam activates only when `VERCEL_ENV=development` and `NEXT_PUBLIC_SITE_URL` names `localhost`, `127.0.0.1`, or `[::1]`. The Group's exact Space ID and slug, current public-document hash, reviewed-operations hash, authored names, replacement values and permitted public document paths must all match. A refusal stops that local render instead of silently applying drifted edits.
