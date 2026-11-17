@@ -25,6 +25,31 @@ import { aura, photo, photoBg, photoImg } from '../shared/parts'
 import { featureCount, PEOPLE, SPACES, type Half } from './features-data'
 import { FeaturesMotion } from './features-motion'
 
+// HOLD THE LINKED JOB'S PHOTO FROM THE TOP OF THE PAGE (SCAN-1265). The /the-quest redirect lands on #f-zaps and
+// scrolls straight to that job, so its photo is the slow-phone LCP. A request started where the photo is parsed
+// still waits behind the hero and the first jobs on a 1.6 Mbps link, so this script runs before the hero and
+// preloads the photo with the SAME srcset and sizes the <img> will carry; the browser then reuses that response
+// instead of fetching twice. Only the hashes that name a feature do anything; every other visit pays about 1 KB of inline script.
+const JOB_PHOTO_SIZES = '(max-width: 900px) 100vw, 33vw'
+function linkedPhotoPreloadScript(): string {
+  // One srcset template plus each photo's encoded path, so the script stays near 1 KB instead of nine full
+  // srcsets (~1 KB each). The template is checked against every real srcset on the server; if the image
+  // loader ever stops being a plain url= substitution, the photo's whole srcset ships instead.
+  const paths: string[] = []
+  const byFeature: Record<string, number> = {}
+  let template = ''
+  for (const job of [...PEOPLE.jobs, ...SPACES.jobs]) {
+    const set = photoImg(photo(job.photo), JOB_PHOTO_SIZES).srcSet ?? ''
+    const enc = /url=([^&]+)&/.exec(set)?.[1] ?? ''
+    if (!template && enc) template = set.split(enc).join('@')
+    const entry = enc && template.split('@').join(enc) === set ? enc : set
+    let i = paths.indexOf(entry)
+    if (i < 0) i = paths.push(entry) - 1
+    for (const f of job.features) byFeature[f.id] = i
+  }
+  return `(function(){try{var T=${JSON.stringify(template)},P=${JSON.stringify(paths)},F=${JSON.stringify(byFeature)},i=F[location.hash.slice(1)];if(i===undefined)return;var e=P[i],s=e.indexOf(' ')<0?T.split('@').join(e):e,l=document.createElement('link');l.rel='preload';l.as='image';l.setAttribute('imagesrcset',s);l.setAttribute('imagesizes',${JSON.stringify(JOB_PHOTO_SIZES)});l.setAttribute('fetchpriority','high');document.head.appendChild(l)}catch(e){}})()`
+}
+
 /**
  * THE HYBRID: each feature's onward page beyond this one (its help article, the live calendar, the
  * Circle guide), from the nav's FEATURE_FALLBACK table. The design stops at "What you can do"; the site
@@ -118,7 +143,7 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
               <div className="jph fq-iri-rim" data-px=".08">
                 {/* suppressHydrationWarning: the pre-paint script below may switch this photo to eager first. */}
                 {/* eslint-disable-next-line @next/next/no-img-element -- sized by .jph img */}
-                <img loading="lazy" decoding="async" {...photoImg(photo(job.photo), '(max-width: 900px) 100vw, 33vw')} alt={job.photoAlt} suppressHydrationWarning />
+                <img loading="lazy" decoding="async" {...photoImg(photo(job.photo), JOB_PHOTO_SIZES)} alt={job.photoAlt} suppressHydrationWarning />
                 {/* FETCH THE LINKED JOB'S PHOTO AS THE PARSER REACHES IT (SCAN-1265). A `#f-…` link (the /the-quest
                     redirect lands on #f-zaps) scrolls straight to this job, so its photo is the slow-phone LCP, and
                     `loading="lazy"` held the request until layout. This runs the moment the photo is parsed, well
@@ -175,6 +200,7 @@ export function FrequencyFeatures() {
   return (
     <div className="pa-page pa-features pa-tour" data-motion-scope style={{ display: 'contents' }}>
       <FeaturesMotion />
+      <script dangerouslySetInnerHTML={{ __html: linkedPhotoPreloadScript() }} />
 
       <section className="phero" data-energy="charge" data-screen-label="01 Hero">
         <div className="bg" style={photoBg(photo('gathering-10.jpg'))} />
