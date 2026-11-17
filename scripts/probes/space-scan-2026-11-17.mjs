@@ -93,6 +93,25 @@ const PROBES = {
       .filter((n) => !src.includes(`name: '${n}'`))
       .map((n) => `${n} is not a registered analytics event`)
   },
+  // Email: "Send to picked people as conversations" claims the draft before it sends, so a double press or a
+  // second tab cannot open every conversation twice, and a claim that died part way can be taken again.
+  'LIVE-2346': () => {
+    const f = []
+    const src = read('lib/spaces/email-drafts.ts')
+    const body = fn(src, 'sendSpaceEmailDraftAsConversations')
+    if (!body) return ['sendSpaceEmailDraftAsConversations is gone from lib/spaces/email-drafts.ts (re-check this probe)']
+    const cut = body.indexOf('startConversationMessage(')
+    const before = body.slice(0, cut < 0 ? body.length : cut)
+    const claim = before.match(/\.update\(\{ status: 'sending'[\s\S]*?\.maybeSingle\(\)/)?.[0] ?? ''
+    if (!claim) f.push("it opens conversations without first claiming the draft as 'sending'")
+    else {
+      if (!/\.(in|or|eq)\(/.test(claim.replace(/\.eq\('(id|space_id)'/g, ''))) f.push('the claim is not conditional on the row still being sendable')
+      if (!/sendableOrStaleFilter\(\)/.test(claim) || !/sending_started_at\.lt\./.test(src)) f.push("a claim left in 'sending' by a dead send can never be taken again")
+    }
+    if (!/claim !== 'claimed'\)\s*return fail/.test(before)) f.push('a lost claim does not stop the send')
+    if (!/releaseClaim\(id, spaceId/.test(body.slice(cut))) f.push('a send that reached nobody keeps the draft stuck in sending')
+    return f
+  },
 }
 
 const id = process.argv[2]
