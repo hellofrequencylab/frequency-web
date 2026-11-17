@@ -1,0 +1,20 @@
+{
+  "id": "PERF-006",
+  "title": "Events arrives lighter: the map rows, the invite QR and the long event list load when used",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/members/events/events-body.tsx",
+    "ref": "Signed-in check 2026-11-17 after PERF-005: /events headers in 0.7 to 0.9 s but about 2.1 s to the end of a 590 KB HTML"
+  },
+  "detail": "Signed-in /events shipped about 590 KB of HTML. Its React payload carried every map row for the closed map lightbox (about 69 KB), the right rail's Invite a friend QR as a 35 KB SVG (on every signed-in page), and a JSON-LD ItemList of every upcoming event (about 37 KB, sent twice: once as the script, once in the payload). Fix (ADR-1974): the /events lightbox reads its rows with the page's filters when it opens (loadEventsMapItems, the rail map's own read); the Around you tile gets slim pins; the invite popup reads its QR from /api/qr when it opens; the ItemList lists the soonest 60. Before and after timings are on the PR.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-006.mjs",
+    "note": "Fails on main: the page body passes every map row to the lightbox, the rail renders the invite QR inline and the ItemList lists every event. Passes once all four load when used."
+  },
+  "wave": "W7",
+  "closed": "2026-11-17"
+}

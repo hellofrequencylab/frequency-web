@@ -17,7 +17,7 @@ import { buildCalendarMonth, resolveMonth } from './calendar-month'
 import { FqPeopleToMeet } from './events-lanes'
 import { FqAroundYou } from './around-you'
 import { FqAroundYouFrame } from './events-loading'
-import { ayMapItems } from './around-you-items'
+import { ayMapItems, toAyMapPin } from './around-you-items'
 import { EventsAddBox, EventsAddBoxSlot } from './events-add-box'
 import { FqEventsMapLightbox, FqMapButton } from './events-map-lightbox'
 import { HubLinks } from '@/components/frequency/members/shared/hub-links'
@@ -66,6 +66,17 @@ function libLimit(raw: string | undefined): number {
   return Math.min(ROW_CAP, Math.ceil(n / LIB_STEP) * LIB_STEP)
 }
 
+/** The page filters the map lightbox re-reads with (PERF-006): the list's own lens, not the view or paging. */
+const LIGHTBOX_KEYS = ['q', 'category', 'format', 'date', 'price', 'energy', 'spots', 'near', 'sort'] as const
+function lightboxParams(params: Params): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const k of LIGHTBOX_KEYS) {
+    const v = (params as Record<string, unknown>)[k]
+    if (typeof v === 'string' && v) out[k] = v
+  }
+  return out
+}
+
 export function FqEventsBody({
   data,
   params,
@@ -110,7 +121,8 @@ export function FqEventsBody({
 
   const limit = libLimit(params.show)
   const shown = sortedEvents.slice(0, limit)
-  const mapItems = ayMapItems(sortedEvents, mapPins, data)
+  // PERF-006: the tile draws dots only, so it gets slim pins; the lightbox reads its full rows when it opens.
+  const tilePins = ayMapItems(sortedEvents, mapPins, data).map(toAyMapPin)
   // The feature leads only when the member is browsing: a search or a filter puts the results first.
   const featured = view === 'list' && !filtering && sortedEvents.length > 0
 
@@ -216,7 +228,7 @@ export function FqEventsBody({
 
       {featured && (
         <Suspense fallback={<FqAroundYouFrame />}>
-          <FqAroundYou data={data} mapItems={mapItems} />
+          <FqAroundYou data={data} mapItems={tilePins} />
         </Suspense>
       )}
       {featured && myProfileId && (
@@ -545,7 +557,7 @@ export function FqEventsBody({
       </Suspense>
 
       <Suspense fallback={null}>
-        <FqEventsMapLightbox items={mapItems} signedIn={!!myProfileId} homeLabel={homeLabel} />
+        <FqEventsMapLightbox params={lightboxParams(params)} signedIn={!!myProfileId} homeLabel={homeLabel} />
       </Suspense>
     </>
   )

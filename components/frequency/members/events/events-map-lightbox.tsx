@@ -9,7 +9,8 @@ import { FqIcon } from '@/components/frequency/icon'
 import { Input } from '@/components/ui/field'
 import type { MapPin } from '@/components/maps/types'
 import { moreDatesLine } from '@/lib/maps/pin-copy'
-import type { AyMapItem } from './around-you-items'
+import type { AyMapItem, AyMapPin } from './around-you-items'
+import { loadEventsMapItems } from '@/components/frequency/members/shell/rail-events-map-actions'
 
 // THE EVENTS MAP, AS A LIGHTBOX (SCAN-975, owner 2026-10-16: "make it part of the feature section. When
 // someone clicks it, it's a pop up lightbox experience ... with sorting, search and controls").
@@ -30,6 +31,8 @@ import type { AyMapItem } from './around-you-items'
 // PRIVACY (ADR-186): a Circle event sits on its Circle's city point and a public event on its own spot;
 // the map never learns an exact address, and the note under the map says so.
 
+const NO_ITEMS: AyMapItem[] = []
+
 const MapCanvas = dynamic(() => import('@/components/maps/map-canvas').then((m) => m.MapCanvas), {
   ssr: false,
   loading: () => <div className="evm-ph" aria-hidden="true" />,
@@ -38,7 +41,7 @@ const MapCanvas = dynamic(() => import('@/components/maps/map-canvas').then((m) 
 /** The tile's backdrop: a real, still basemap under the pins, through the seam so it is Google Maps when the
  *  browsable key is set (owner 2026-10-20) and MapLibre otherwise. The SVG below it stays as the paint while
  *  tiles arrive. */
-function TileBasemap({ items }: { items: AyMapItem[] }) {
+function TileBasemap({ items }: { items: AyMapPin[] }) {
   const pins: MapPin[] = useMemo(
     () => items.map((i) => ({ id: i.id, lat: i.lat, lng: i.lng, kind: 'event' as const, label: i.title })),
     [items],
@@ -109,7 +112,7 @@ function matchesWhen(i: AyMapItem, when: When): boolean {
 }
 
 /** The tile: a still preview of the pins, and the door into the lightbox. `rail` is the rail's narrow face. */
-export function FqMapTile({ items, homeLabel, rail = false }: { items: AyMapItem[]; homeLabel: string | null; rail?: boolean }) {
+export function FqMapTile({ items, homeLabel, rail = false }: { items: AyMapPin[]; homeLabel: string | null; rail?: boolean }) {
   const dots = useMemo(() => {
     if (items.length === 0) return []
     const lats = items.map((i) => i.lat)
@@ -165,16 +168,39 @@ export function FqMapTile({ items, homeLabel, rail = false }: { items: AyMapItem
 
 /** The lightbox itself. Rendered once by the page body, or by the rail off /events; opens on `?map=1`. */
 export function FqEventsMapLightbox({
-  items,
+  items: given,
+  params,
   signedIn,
   homeLabel,
 }: {
-  items: AyMapItem[]
+  /** The rows, when the caller already has them (the rail reads them itself). */
+  items?: AyMapItem[]
+  /** Otherwise (PERF-006, /events): the page's filters, and the rows load when the lightbox first opens. */
+  params?: Record<string, string | undefined>
   signedIn: boolean
   homeLabel: string | null
 }) {
   const sp = useSearchParams()
   const open = isOpenParam(new URLSearchParams(sp.toString()))
+  const paramsKey = JSON.stringify(params ?? {})
+  // Rows are kept against the filters they were read for, so new page filters read again.
+  const [fetched, setFetched] = useState<{ key: string; rows: AyMapItem[] } | null>(null)
+  const loadedRows = fetched && fetched.key === paramsKey ? fetched.rows : null
+  const items = given ?? loadedRows ?? NO_ITEMS
+  const loading = !given && loadedRows === null
+  const needRows = open && !given && loadedRows === null
+
+  useEffect(() => {
+    if (!needRows) return
+    let live = true
+    const key = paramsKey
+    loadEventsMapItems(JSON.parse(key) as Record<string, string>)
+      .then((r) => live && setFetched({ key, rows: r }))
+      .catch(() => live && setFetched({ key, rows: [] }))
+    return () => {
+      live = false
+    }
+  }, [needRows, paramsKey])
   const dlg = useRef<HTMLDialogElement>(null)
   const listRef = useRef<HTMLOListElement>(null)
 
@@ -294,8 +320,9 @@ export function FqEventsMapLightbox({
                 Events on the map
               </h2>
               <span className="t2" aria-live="polite">
-                {shown.length} of {items.length} {items.length === 1 ? 'event' : 'events'}
-                {homeLabel ? ` around ${homeLabel}` : ''}
+                {loading
+                  ? 'Finding events on the map'
+                  : `${shown.length} of ${items.length} ${items.length === 1 ? 'event' : 'events'}${homeLabel ? ` around ${homeLabel}` : ''}`}
               </span>
             </div>
             <button type="button" className="evf-x" aria-label="Close map" onClick={() => dlg.current?.close()}>
@@ -369,7 +396,11 @@ export function FqEventsMapLightbox({
 
           <div className="evm-body">
             <ol className="evm-list" ref={listRef} aria-label="Events on the map">
-              {shown.length === 0 ? (
+              {loading ? (
+                <li className="evm-empty" role="status" aria-busy="true">
+                  <span className="t2">Finding events on the map</span>
+                </li>
+              ) : shown.length === 0 ? (
                 <li className="evm-empty">
                   <span className="h3">Nothing here</span>
                   <span className="t2">Try another day or category, or reset to see every pin.</span>

@@ -50,6 +50,13 @@ export type AyItem = {
 /** A map row: the item plus its privacy-safe pin (a Circle's city point, or a public event's own spot). */
 export type AyMapItem = AyItem & { lat: number; lng: number; moreDates: number }
 
+/** What the map TILE draws (PERF-006): a dot per pin and the Going count. The full rows load with the lightbox. */
+export type AyMapPin = Pick<AyMapItem, 'id' | 'title' | 'lat' | 'lng' | 'going'>
+
+export function toAyMapPin(i: AyMapItem): AyMapPin {
+  return { id: i.id, title: i.title, lat: i.lat, lng: i.lng, going: i.going }
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000
 const CATEGORY_LABEL = new Map(CATEGORY_OPTIONS.map((o) => [o.value, o.label]))
 

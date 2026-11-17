@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Gift, Check, Copy, Download, Share2, X, Loader2 } from 'lucide-react'
 import { downloadStyledQrPng } from '@/lib/qr/client-download'
 import { Dialog } from '@/components/ui/dialog'
@@ -12,12 +12,9 @@ import { Button } from '@/components/ui/button'
 // card shows, just framed as an invite. The button is a neutral rail row with a tinted glyph; the popup carries the branded QR, the
 // link with copy, a native share, and a PNG download. Semantic tokens only; voice canon (no em dashes).
 export function InviteFriendButton({
-  svg,
   link,
   codeId,
 }: {
-  /** The member's branded connect-code QR, pre-rendered server-side (avatar inlined). */
-  svg: string
   /** The short invite URL (shortLinkUrl of the connect code). */
   link: string
   /** The qr_codes row id, for the /api/qr PNG download that matches the shown style. */
@@ -27,6 +24,21 @@ export function InviteFriendButton({
   const [copied, setCopied] = useState(false)
   const [pngBusy, setPngBusy] = useState(false)
   const api = `/api/qr?code=${encodeURIComponent(codeId)}`
+  // PERF-006: the branded QR (about 35 KB of SVG) used to ride in every signed-in page's HTML for a popup
+  // most visits never open. It is now read from /api/qr, the same render, the first time the popup opens.
+  const [svg, setSvg] = useState<string | null>(null)
+  const [svgFailed, setSvgFailed] = useState(false)
+  useEffect(() => {
+    if (!open || svg !== null || svgFailed) return
+    let live = true
+    fetch(`${api}&format=svg&size=320`, { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
+      .then((text) => live && setSvg(text))
+      .catch(() => live && setSvgFailed(true))
+    return () => {
+      live = false
+    }
+  }, [open, svg, svgFailed, api])
 
   function copy() {
     navigator.clipboard?.writeText(link).then(() => {
@@ -112,12 +124,22 @@ export function InviteFriendButton({
                 Share your link or code. Your friend gets Zaps for joining, and you earn Zaps once they join a Circle or pick up a Practice.
               </p>
 
-              {/* The branded QR (avatar in the middle), pre-rendered server-side. */}
-              <div
-                // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
-                className="mt-4 h-44 w-44 overflow-hidden rounded-card border border-border bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
-                dangerouslySetInnerHTML={{ __html: svg }}
-              />
+              {/* The branded QR (avatar in the middle), rendered by /api/qr when the popup opens. */}
+              {svg ? (
+                <div
+                  // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
+                  className="mt-4 h-44 w-44 overflow-hidden rounded-card border border-border bg-white p-2 [&>svg]:h-full [&>svg]:w-full"
+                  dangerouslySetInnerHTML={{ __html: svg }}
+                />
+              ) : (
+                <div
+                  className="mt-4 flex h-44 w-44 items-center justify-center rounded-card border border-border bg-surface-elevated text-meta text-muted"
+                  role="status"
+                  aria-busy={!svgFailed}
+                >
+                  {svgFailed ? 'Your code will show here. Copy the link below for now.' : <Loader2 className="h-5 w-5 animate-spin" aria-label="Loading your code" />}
+                </div>
+              )}
 
               {/* The link + copy. */}
               <div className="mt-4 flex w-full items-center gap-2">
