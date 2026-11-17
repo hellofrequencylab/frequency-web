@@ -19,7 +19,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
-import { legacySpotlightWriteError, nextSpotlightPreferences } from '@/lib/spaces/spotlight'
+import { legacySpotlightWriteError, nextSpotlightPreferences, readSpaceSpotlight } from '@/lib/spaces/spotlight'
+import { scheduleSpaceEvent } from '@/lib/spaces/space-events'
 import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
 import { renderPathEnabled } from '@/lib/platform-flags'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
@@ -130,7 +131,14 @@ export async function saveSpaceSpotlightLayout(slug: string, layout: BuilderLayo
 
 /** The publish switch: puts the Spotlight on the network, or takes it off. The layout is kept either way. */
 export async function setSpaceSpotlightPublished(slug: string, published: boolean): Promise<{ error?: string }> {
-  return writeSpotlight(slug, { published: published === true })
+  // LIVE-2335: counted on the transition to published only. The Space read is request-cached, so this is the
+  // same row writeSpotlight reads, as it was before the write.
+  const before = published === true ? await managedSpace(slug) : null
+  const res = await writeSpotlight(slug, { published: published === true })
+  if (!res.error && before && 'space' in before && !readSpaceSpotlight(before.space.preferences).published) {
+    scheduleSpaceEvent('space.spotlight_published', { spaceId: before.space.id })
+  }
+  return res
 }
 
 /** The look picker: which of the Space theme's whole-page looks the Spotlight wears. `null` puts it back to the theme's

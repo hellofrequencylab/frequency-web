@@ -132,11 +132,15 @@ const PIXEL_SENSITIVE_KEYS: ReadonlySet<string> = new Set([
  * a page with Vera, which is ours to learn from and nobody else's, so both mirrors (the browser gtag
  * in components/analytics/track-provider.tsx and the server Measurement Protocol in ./track.ts) ask
  * `pixelAllowsEvent` first. The first-party ledger still records it. lib/analytics/events.test.ts
- * pins that every registered `editor.*` event is in this set.
+ * pins that every registered `editor.*` event and the three `space.*` activation events are in this set.
  */
 const FIRST_PARTY_ONLY_EVENTS: ReadonlySet<string> = new Set([
   'editor.vera_question_accepted',
   'editor.vera_question_dismissed',
+  // Space activation (LIVE-2335): what a creator does in their own console is ours to learn from.
+  'space.spotlight_published',
+  'space.website_published',
+  'space.campaign_sent',
 ])
 
 /** May this event be mirrored to a third-party pixel? False for the first-party-only set. */

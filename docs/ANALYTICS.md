@@ -254,6 +254,9 @@ Every key action in the member journey emits a named event. Initial set:
 | `commerce.checkout_started` | a buyer pressed Buy or Get ticket | kind |
 | `commerce.purchase` | a Checkout Session settled paid (webhook) | kind, value, currency, transaction_id |
 | `shop.order_completed` | a commerce_order session settled paid (writer for the shop vertical) | kind, value, currency, transaction_id |
+| `space.spotlight_published` | a Space publishes its Spotlight from the console (first-party only) | spaceId |
+| `space.website_published` | a Space switches its website on (first-party only) | spaceId |
+| `space.campaign_sent` | a Space campaign or block email went out (first-party only) | spaceId, recipientCount |
 
 (Extends as features land; the taxonomy lives in one module so it's reviewable. The table above is
 the prose copy; `lib/analytics/events.ts` is the module, and it is the source of truth when the two
