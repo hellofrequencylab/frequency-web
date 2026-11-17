@@ -33,7 +33,7 @@ it('renders the Mindless Home', async () => {
     h(SiteChrome as never, {
       brandName: 'Mindless', homeHref: '/', links, cta: { href: '/join', label: 'Join', external: false }, themeFonts: false,
       skin: { theme: 'mindless' }, tagline: 'Unwind your mind.',
-      footer: { columns: [], blurb: 'Meditation for loud lives.', line: null, note: null, copyright: null, suffix: null, subscribe: null, utility: null },
+      footer: { columns: [{ title: 'Practice', links: [{ label: 'The program', href: '/services' }, { label: 'Live sits', href: '/booking' }] }, { title: 'Circles', links: [{ label: 'Find a circle', href: '/booking' }, { label: 'Mindless Encinitas', href: '/circles/mindless' }, { label: 'Start a circle', href: '/booking' }] }, { title: 'Mindless', links: [{ label: 'About', href: '/about' }, { label: 'Join', href: '/join' }] }], blurb: 'Meditation for loud lives. Circles held by volunteers on Frequency.', line: 'Education, not therapy. If it gets heavy, talk to someone.', note: null, copyright: '© 2026 Mindless. Unwind your mind.', suffix: null, subscribe: null, utility: null },
       credit: 'badge', spaceSlug: null, previewMega: null,
     } as never,
     h('div', { className: 'mw-page' }, ...blocks.map(([type, props], i) => { const c = mindlessBlocks[type]; return h('div', { key: i, className: `site-doc-section site-layout-${i}` }, h('div', null, h('div', { className: 'space-y-12 py-8' }, (c.render as (p: Record<string, unknown>) => never)({ ...c.defaultProps, ...props, puck: { metadata: meta } })))) }))),

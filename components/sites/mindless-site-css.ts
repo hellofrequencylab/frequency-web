@@ -7,7 +7,9 @@
 const M = '[data-house-theme="mindless"]'
 const DAY = '[data-house-theme="mindless"][data-th="day"]'
 const LABEL = 'font-family:var(--ml-font-body);font-weight:800;letter-spacing:.1em;text-transform:uppercase'
-const TORN = 'polygon(0 0,100% 0,97% 25%,100% 50%,97% 75%,100% 100%,0 100%,3% 75%,0 50%,3% 25%)'
+/** The content column's side padding (the 1140px column with wide gutters), for chrome that runs full width but lines up with it. */
+const COL_PAD = 'max(clamp(24px,7vw,120px),calc((100% - 1140px) / 2))'
+const TORN ='polygon(0 0,100% 0,97% 25%,100% 50%,97% 75%,100% 100%,0 100%,3% 75%,0 50%,3% 25%)'
 
 /** Every declaration here wins over the borrowed Services sheet, whose selectors carry more classes than these do. The skin's own hover
  *  and Day rules that must still win are written below with the same weight. */
@@ -96,12 +98,25 @@ ${M} .sv-trust-item b{display:block;font-family:var(--ml-font-display);font-weig
 ${M} .sv-trust-item small{display:block;margin-top:6px;${LABEL};font-size:12px;color:var(--ml-muted)}
 @media (max-width:760px){${M} .sv-trust{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
-/* FOOTER: full width on the pit. */
-${M} .hs-footer{background:var(--ml-band-pit);margin:0;max-width:none;border-radius:0}
-${M} .hs-footer-top{max-width:none;border-radius:0;margin:0}
-${M} .hs-footer a:not(.hs-partner){color:var(--ml-head);font-weight:600;text-decoration:none}
+/* FOOTER (design: app.css .site-foot). Full width on the pit; inside, the content column. The drip lockup with the tagline, the
+ * descriptor under it, then three link columns: a small label over stacked links. A rule over the bottom line, the column's width. */
+${M} .hs-footer-top{max-width:none;width:100%;margin:0;border:0;border-radius:0;background:var(--ml-pit);padding:64px ${COL_PAD} 48px;display:grid;grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,1fr));gap:40px}
+${M} .hs-footer-brand{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
+${M} .hs-footer-brand .hs-brand{display:block;width:240px;max-width:100%;aspect-ratio:450/160;background:url("/sites/mindless/logo-drip-tagline.png") left center/contain no-repeat;color:transparent;font-size:0;text-shadow:none;overflow:hidden}
+${M} .hs-footer-brand p{margin:0;max-width:34ch;font-size:15px;line-height:23px;color:var(--ml-secondary)}
+${M} .hs-footer-col{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+${M} .hs-footer-col-title{margin:0 0 4px;${LABEL};font-size:12px;color:var(--ml-muted)}
+${M} .hs-footer-col a{font-family:var(--ml-font-body);font-weight:600;font-size:16px;line-height:1.5;color:var(--ml-head);text-decoration:none}
+${M} .hs-footer-col a:hover{color:var(--ml-accent-text)}
+${M} .hs-footer{max-width:none;width:100%;margin:0;border:0;border-radius:0;background:linear-gradient(var(--ml-line-strong),var(--ml-line-strong)) top center/calc(100% - 2 * ${COL_PAD}) 1px no-repeat,var(--ml-pit);padding:22px ${COL_PAD} 32px;margin-top:0;display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;font-family:var(--ml-font-body);font-size:13px;line-height:1.5;color:var(--ml-muted)}
+${M} .hs-footer a:not(.hs-partner){color:var(--ml-secondary);font-weight:600;text-decoration:none}
 ${M} .hs-footer a:not(.hs-partner):hover{color:var(--ml-accent-text)}
-${M} .hs-footer .hs-brand,${M} .hs-footer .hs-brand-name{font-family:var(--ml-font-display);font-weight:400;color:var(--ml-accent);text-shadow:var(--ml-depth-ink);text-transform:uppercase}
+${M} .hs-footer-line{margin-left:auto}
+${M} .hs-footer a.hs-partner{margin-left:0;background:var(--ml-ground);border-color:var(--ml-line-strong);color:var(--ml-secondary)}
+${M} .hs-footer a.hs-partner svg{color:var(--ml-accent)}
+${M} .hs-footer a.hs-partner b{color:var(--ml-head)}
+@media (max-width:960px){${M} .hs-footer-top{grid-template-columns:repeat(3,minmax(0,1fr))}${M} .hs-footer-brand{grid-column:1 / -1}}
+@media (max-width:600px){${M} .hs-footer-top{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px 24px;padding-top:48px;padding-bottom:40px}${M} .hs-footer-line{margin-left:0}}
 /* The page column ends where the last section does: no gap above the footer. */
 ${M} .mw-page{padding-bottom:0}
 /* Contested by the Services sheet: its glow layers, its gradient text and its shadows. */
