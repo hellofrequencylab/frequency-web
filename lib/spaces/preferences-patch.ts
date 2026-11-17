@@ -9,7 +9,9 @@
 // websiteEditor and programOverview are never in the patch: save_website_editor and space_private_state
 // own them (SCAN-827), the function refuses them, and none of these writers changes them.
 
-const RESERVED = new Set(['websiteEditor', 'programOverview'])
+import { PROGRAM_OVERVIEW_KEY } from '@/lib/spaces/leadership'
+
+const RESERVED = new Set(['websiteEditor', PROGRAM_OVERVIEW_KEY])
 
 /** Structural equality for JSON-shaped values (object key order ignored). */
 function sameJson(a: unknown, b: unknown): boolean {
