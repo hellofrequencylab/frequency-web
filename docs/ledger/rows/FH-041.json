@@ -1,6 +1,10 @@
 {
   "id": "FH-041",
   "append": {
-    "detail": "Packet E adds the Stripe and progressive-dinner pilot gate to docs/RUNBOOKS.md. Test evidence and named pilot sign-offs remain open."
+    "detail": "Packet E adds the Stripe and progressive-dinner pilot gate to docs/RUNBOOKS.md. Test evidence and named pilot sign-offs remain open.\n\nBuilt 2026-11-16 (closed for the engineering): the signed test event matrix is real tests in lib/hunts/pilot-commerce-matrix.test.ts. Each case posts a Stripe event, signed with a test secret by Stripe's own library, to the real webhook handler: paid, replay, full and partial refund, dispute lost and won, and out-of-order delivery, for a two-seat Experience Pass and a quantity-two store line. docs/hunts/PILOT-COMMERCE.md is the gate record: what the matrix proves and does not, the five independent reconciliation checks (provider, canonical ticket, benefit, refund, settlement), wave capacity and service recovery for a progressive dinner, and an unsigned sign-off table. Known limits it records: an opened dispute suspends nothing (only a closed one acts), and a refund handled before the ticket first settles is not seen by the canonical ticket path. Not done and not claimed: no real card was charged, no payout was checked, nobody signed. The owner has declined real-card test runs for now; the real sale and refund, payout proof and the operator's approval of participant terms moved to FH-041S."
+  },
+  "patch": {
+    "status": "done",
+    "closed": "2026-11-16"
   }
 }

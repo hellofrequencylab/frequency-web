@@ -5,6 +5,7 @@ import { huntSwitchOn } from '@/lib/hunts/flags'
 import { reconciliationReader } from '@/lib/hunts/finance-store'
 import { HuntReconciliationPage } from '@/components/hunts/reconciliation-page'
 import { HuntSalesSwitch } from '@/components/hunts/sales-switch'
+import { HuntUnitRefundForm } from '@/components/hunts/unit-refund-form'
 import { commerceSalesOpen } from '@/lib/hunts/pass-gate'
 
 // HUNT FINANCE (FH-040): the reconciling view. Dark until HUNTS_COMMERCE_ENABLED is on (404 like a page
@@ -22,6 +23,7 @@ export default async function HuntFinancePage() {
     <>
       <HuntReconciliationPage scope={{ role: 'platform-admin' }} reader={reconciliationReader} />
       <HuntSalesSwitch open={open} />
+      <HuntUnitRefundForm />
     </>
   )
 }

@@ -19,7 +19,7 @@ import {
   type Rpc,
   type TicketSource,
 } from './entitlements'
-import type { PassBinding } from './pass-binding'
+import { parseStoredPurchase, verifySettledPurchase, type PassBinding } from './pass-binding'
 
 // eslint-disable-next-line no-restricted-syntax -- the FH-036..047 hunt tables are not in the generated types yet (ADR-246 exception)
 export const db = () => createAdminClient() as unknown as SupabaseClient
@@ -115,15 +115,29 @@ export async function loadTicketSource(ticketId: string): Promise<TicketSource |
   }
 }
 
+type PurchaseRow = { event_id: string; ticket_type_id: string | null; qty: number; amount_cents: number; currency: string; hunt_pass: unknown }
+
 /**
  * Project the benefits for one ticket, safely repeatable from a webhook, a checkout return or the repair
- * scan. Returns null when the ticket is not on a bound tier (nothing to do).
+ * scan. Returns null when the ticket was not bought as a pass (nothing to do): only a ticket that carries
+ * the purchase snapshot the checkout stored (lib/hunts/pass-checkout.ts) projects, and always under the
+ * binding it was bought under, even if that pass has since been retired. A ticket whose settled row no
+ * longer matches its snapshot throws, so the caller leaves a record a person will see.
  */
 export async function projectTicketBenefits(ticketId: string): Promise<{ summary: ProjectionSummary; disposition: string } | null> {
+  const { data: row } = await db().from('event_tickets').select('event_id, ticket_type_id, qty, amount_cents, currency, hunt_pass').eq('id', ticketId).maybeSingle()
+  const ticket = row as PurchaseRow | null
+  const stored = parseStoredPurchase(ticket?.hunt_pass)
+  if (!ticket || !stored) return null
+  const binding = await bindingById(stored.snapshot.bindingId)
+  const verdict = verifySettledPurchase(
+    stored,
+    { eventId: ticket.event_id, ticketTypeId: ticket.ticket_type_id, qty: ticket.qty, amountCents: ticket.amount_cents, currency: ticket.currency },
+    binding,
+  )
+  if (!verdict.ok || !binding) throw new Error(`purchase snapshot refused: ${verdict.ok ? 'binding_changed' : verdict.reason}`)
   const source = await loadTicketSource(ticketId)
-  if (!source?.ticketTypeId) return null
-  const binding = await activeBindingForTier(source.ticketTypeId)
-  if (!binding) return null
+  if (!source) return null
   const { plan, summary } = await projectPlan(huntRpc, planTicketProjection(source, binding))
   return { summary, disposition: plan.ok ? 'projected' : plan.disposition }
 }
@@ -146,8 +160,13 @@ export async function repairMissingBenefits(limit = 50): Promise<{ checked: numb
   const missing = findMissingIntents(rows.map((r) => ({ sourceId: r.id, ticketTypeId: r.ticket_type_id })), byTier, projected)
   let repaired = 0
   for (const m of missing) {
-    const out = await projectTicketBenefits(m.sourceId)
-    if (out && out.disposition === 'projected') repaired += 1
+    try {
+      const out = await projectTicketBenefits(m.sourceId)
+      if (out && out.disposition === 'projected') repaired += 1
+    } catch (err) {
+      // One refused ticket never stops the scan. The stable prefix is what the log drain alerts on.
+      console.error(`[hunts-commerce] repair skipped ticket ${m.sourceId}`, err)
+    }
   }
   return { checked: rows.length, repaired }
 }

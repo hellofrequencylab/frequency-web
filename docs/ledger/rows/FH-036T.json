@@ -1,0 +1,18 @@
+{
+  "id": "FH-036T",
+  "title": "Hunts FH-036T: Owner drill of closing and reopening Hunt pass sales",
+  "lane": "program",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-036S (2026-11-16): the engineering shipped dark; the drill is a human action."
+  },
+  "detail": "Requires FH-036S, migration 20270346041000 and 20270346083000 applied, and HUNTS_COMMERCE_ENABLED on in the environment the drill runs in. Owed by the owner (Daniel) or the finance operator he names, not by an agent: on /hunts/finance, pause new pass sales with a reason, confirm a bound tier refuses a new checkout with the buyer line while an ordinary ticket still sells and an existing paid pass keeps its benefits, reopen sales, confirm the bound tier sells again, and read both changes back from hunt_commerce_audit. Record it in docs/hunts/SALES-SWITCH-DRILL.md with who ran it, the environment, a line starting 'Closed at:' and a line starting 'Reopened at:' each carrying the audit timestamp. Done when: that record exists. No agent may write the record without the drill having been run.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\"),f=\"docs/hunts/SALES-SWITCH-DRILL.md\";if(!fs.existsSync(f))process.exit(1);const s=fs.readFileSync(f,\"utf8\");process.exit(/^Closed at: \\d{4}-\\d{2}-\\d{2}T/m.test(s)&&/^Reopened at: \\d{4}-\\d{2}-\\d{2}T/m.test(s)?0:1)'"
+  },
+  "wave": "W7"
+}

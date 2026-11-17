@@ -24,8 +24,10 @@ import { FieldControl, SparkShell, StudioField, StudioNote } from '@/components/
 import { HUNT_MANIFEST } from '@/lib/studio/entities/hunt'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import {
+  MAX_BENEFITS,
   MAX_STOPS,
   MIN_STOPS,
+  benefitCodeFrom,
   emptyStop,
   previewTrail,
   publishChecklist,
@@ -42,6 +44,10 @@ import { EDITOR_STEPS, TRAIL_STEPS, stepNumber, type EditorStep } from './trail-
 const STOPS_REPEAT = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'stops')
 const STOP_FIELDS: FieldDef[] = (STOPS_REPEAT?.fields ?? []).map((f) => ({ ...f, section: STOPS_REPEAT?.section ?? 'stops' }))
 const VISIBILITY_FIELD = HUNT_MANIFEST.fields.find((f) => f.path === 'visibility')
+// The pass benefit fields (FH-036S), from the manifest's repeat like the stops.
+const BENEFITS_REPEAT = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'benefits')
+const BENEFIT_FIELDS: FieldDef[] = (BENEFITS_REPEAT?.fields ?? []).map((f) => ({ ...f, section: BENEFITS_REPEAT?.section ?? 'publishing' }))
+const BENEFIT_PLACEHOLDER: Record<string, string> = { label: 'e.g. Tasting flight at the last stop', code: 'e.g. tasting-flight' }
 
 const STOP_PLACEHOLDER: Record<string, string> = {
   place: 'e.g. The bench under the big fig tree',
@@ -182,6 +188,21 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
       ;[stops[i], stops[j]] = [stops[j], stops[i]]
       return { ...d, stops }
     })
+
+  // ── Pass benefits (FH-036S) ──────────────────────────────────────────────────────────────
+  // The short code follows the name until the resident types their own, so nobody has to invent one.
+  const benefits = draft.benefits ?? []
+  const setBenefit = (i: number, path: string, value: string) =>
+    edit((d) => ({
+      ...d,
+      benefits: (d.benefits ?? []).map((b, j) => {
+        if (j !== i) return b
+        if (path === 'code') return { ...b, code: value.toLowerCase() }
+        return { label: value, code: b.code === benefitCodeFrom(b.label) ? benefitCodeFrom(value) : b.code }
+      }),
+    }))
+  const addBenefit = () => edit((d) => ((d.benefits ?? []).length >= MAX_BENEFITS ? d : { ...d, benefits: [...(d.benefits ?? []), { label: '', code: '' }] }))
+  const removeBenefit = (i: number) => edit((d) => ({ ...d, benefits: (d.benefits ?? []).filter((_, j) => j !== i) }))
 
   // ── Preview (in memory, writes nothing) ──────────────────────────────────────────────────
   const [credited, setCredited] = useState<string[]>([])
@@ -496,6 +517,34 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
             onChange={(e) => setPermission(e.target.checked)}
             disabled={published || conflict !== null}
           />
+          {initial.passBenefits && BENEFITS_REPEAT && (
+            <section className="space-y-3 rounded-card border border-border bg-surface p-4" aria-label={BENEFITS_REPEAT.label}>
+              <p className="text-body font-semibold text-text">{BENEFITS_REPEAT.label}</p>
+              <p className="text-body-sm text-muted">Selling a pass for this trail? List what it includes. A ticket or a store item can only carry what is listed here. Skip this if the trail is free.</p>
+              {benefits.map((b, i) => (
+                <div key={i} className="space-y-2 border-t border-border pt-3">
+                  {BENEFIT_FIELDS.map((def) => (
+                    <StudioField key={def.path} label={def.label}>
+                      <FieldControl
+                        def={def}
+                        value={def.path === 'code' ? b.code : b.label}
+                        onChange={(v) => setBenefit(i, def.path, scalar(v))}
+                        placeholder={BENEFIT_PLACEHOLDER[def.path]}
+                        disabled={conflict !== null}
+                      />
+                    </StudioField>
+                  ))}
+                  <Button variant="ghost" size="xs" onClick={() => removeBenefit(i)} disabled={conflict !== null}>
+                    Remove {b.label.trim() || `benefit ${i + 1}`}
+                  </Button>
+                </div>
+              ))}
+              <Button variant="secondary" size="sm" onClick={addBenefit} disabled={benefits.length >= MAX_BENEFITS || conflict !== null}>
+                Add a benefit
+              </Button>
+              <p className="text-body-sm text-subtle">Changing this list is an edit, so the trail asks for one more preview walk and a fresh publish.</p>
+            </section>
+          )}
           {VISIBILITY_FIELD && (
             <StudioField label={VISIBILITY_FIELD.label}>
               <FieldControl def={{ ...VISIBILITY_FIELD, required: true }} value={visibility} onChange={(v) => setVisibility(scalar(v))} disabled={published || conflict !== null} />
