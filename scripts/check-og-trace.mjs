@@ -77,8 +77,8 @@ const SERVER_DIR = path.join(ROOT, '.next', 'server')
 // Lower this number when a segment's card is retired. Raising it again is a real decision: it means
 // a new share card was added high in the tree, and it costs ~18MB x every page beneath it. Raise it
 // with a measurement and a paragraph, the way this one was, or not at all.
-// 2026-11-17 (ADR-1975, HYG-245): next.config.ts now excludes sharp from every route that is not a
-// card, so incidental inheritance should read about 0 on a real build. The ceiling stays at 100
+// 2026-11-17 (ADR-1975, HYG-245): next.config.ts now excludes sharp from every page function (key
+// '/app/**/page'), so incidental inheritance should read about 0 on a real build. The ceiling stays at 100
 // until a production postbuild confirms that reading; lower it then, with the number.
 const MAX_INCIDENTAL = 100
 
