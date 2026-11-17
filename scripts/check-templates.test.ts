@@ -113,7 +113,7 @@ describe('the ratchet and its floor', () => {
     expect(list.some((p) => p.includes('(marketing)'))).toBe(false)
     expect(list.some((p) => p.startsWith('app/sites/'))).toBe(false)
     expect(list.some((p) => p.startsWith('app/(main)'))).toBe(true)
-    expect([...SKIP_DIRS].sort()).toEqual(['(marketing)', 'dev', 'for', 'print', 'sites'])
+    expect([...SKIP_DIRS].sort()).toEqual(['(brief)', '(marketing)', 'dev', 'for', 'print', 'sites'])
   })
 
   it('the public trees the design switch must reach are governed (widened 2026-10-13)', () => {
