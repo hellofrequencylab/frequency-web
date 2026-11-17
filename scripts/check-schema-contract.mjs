@@ -72,6 +72,7 @@ export const MIN_RPC_CALLS = 60
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
+  { file: 'lib/crm/welcome-io.ts', table: 'lifecycle_send_log', added: '2026-11-17', owner: 'LIVE-2340', reason: 'The personal welcome logs one personal_welcome row per member in the same service-role send ledger (migration 20270346045000_lifecycle_send_log.sql, applied). Retire with the cap-io entry on public schema regeneration.' },
   { file: 'lib/lifecycle/cap-io.ts', table: 'lifecycle_send_log', added: '2026-11-13', owner: 'EMAIL-047', reason: 'Migration 20270346045000_lifecycle_send_log.sql creates this service-role-only send ledger for the cross-email cap. Retire on public schema regeneration after the migration is applied.' },
   { file: 'lib/commerce/cart-store.ts', table: 'commerce_carts', added: '2026-11-10', owner: 'DEF-ETSY', reason: 'Migration 20270346039000_commerce_carts.sql creates this service-role-only table (one row of cart lines per buyer). Retire on public schema regeneration after the migration is applied.' },
   { file: 'lib/events/revenue-splits-store.ts', table: 'event_revenue_splits', added: '2026-10-12', owner: 'LIVE-767', reason: 'Migration 20270346008100_event_revenue_splits.sql creates this service-only table (a Collaborator Space share of a co-hosted Event). Retire on public schema regeneration after the migration is applied.' },
