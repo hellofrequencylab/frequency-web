@@ -9,7 +9,7 @@
     "file": "components/frequency/members/shell/nav.ts",
     "ref": "Owner request 2026-11-17: \"I want to see this on the left: Around You, Events, Circles, Spaces, Messages, Marketplace, Members\""
   },
-  "detail": "The member rail's first layer had no Circles door (only the Your Circles list of circles you are already in) and read Around You, Business Spaces, Events, Messages, Marketplace, Members. The rail is code, not the DB menus 'left' rows (those rows mark Around You, Messages and Members hidden, yet all three render): FQ_SHORTCUTS feeds the desktop rail and the phone drawer. Fix: FQ_SHORTCUTS is the owner's seven in the owner's order, the directory reads Spaces, and the framework cap moves from six to seven shortcuts in nav-coverage.test.ts on the owner's phrase.",
+  "detail": "The member rail's first layer had no Circles door (only the Your Circles list of circles you are already in) and read Around You, Business Spaces, Events, Messages, Marketplace, Members. The rail is code, not the DB menus 'left' rows (those rows mark Around You, Messages and Members hidden, yet all three render): FQ_SHORTCUTS feeds the desktop rail and the phone drawer. Fix: FQ_SHORTCUTS is the owner's seven in the owner's order, the directory keeps its Business Spaces label (SCAN-962), and the framework cap moves from six to seven shortcuts in nav-coverage.test.ts on the owner's phrase.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/LIVE-2342.mjs",

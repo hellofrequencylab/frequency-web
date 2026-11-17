@@ -12,7 +12,7 @@ const want = [
   'Around You /nearby',
   'Events /events',
   'Circles /circles',
-  'Spaces /spaces/directory',
+  'Business Spaces /spaces/directory',
   'Messages /messages',
   'Marketplace /marketplace',
   'Members /network',
@@ -21,4 +21,4 @@ if (JSON.stringify(rows) !== JSON.stringify(want)) {
   console.error(`LIVE-2342 FAIL: the left rail reads\n  ${rows.join('\n  ')}\nwant\n  ${want.join('\n  ')}`)
   process.exit(1)
 }
-console.log('LIVE-2342 ok: the left rail is Around You, Events, Circles, Spaces, Messages, Marketplace, Members')
+console.log('LIVE-2342 ok: the left rail is Around You, Events, Circles, Business Spaces, Messages, Marketplace, Members')

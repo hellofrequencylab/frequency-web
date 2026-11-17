@@ -199,14 +199,14 @@ export const FQ_SITE_LINKS: readonly { label: string; href: string }[] = [
 
 /** The left rail's shortcuts (Members.dc.html `shortcuts`), at most seven. `badge` names the live count
  *  that rides on it. The order is the owner's (2026-11-17: "I want to see this on the left: Around You,
- *  Events, Circles, Spaces, Messages, Marketplace, Members"). Circles joins the first layer; the Space
- *  directory reads "Spaces" here (the Community menu keeps its longer "Business Spaces" row). */
+ *  Events, Circles, Spaces, Messages, Marketplace, Members"). Circles joins the first layer. The
+ *  directory keeps its "Business Spaces" label (SCAN-962 pins it) until the owner rules on the short one. */
 export const FQ_SHORTCUTS: readonly (FqNavItem & { badge?: 'messages' | 'notifications' })[] = [
   { label: 'Around You', sub: '', href: '/nearby', icon: 'pin', navKey: 'nearby' },
   { label: 'Events', sub: '', href: '/events', icon: 'event', navKey: 'events' },
   { label: 'Circles', sub: '', href: '/circles', icon: 'circle', navKey: 'circles' },
   // The Space directory is a core shortcut for every viewer (owner, 2026-10-16), no navKey on purpose.
-  { label: 'Spaces', sub: '', href: '/spaces/directory', icon: 'space' },
+  { label: 'Business Spaces', sub: '', href: '/spaces/directory', icon: 'space' },
   { label: 'Messages', sub: '', href: '/messages', icon: 'message', navKey: 'messageBoards', badge: 'messages' },
   { label: 'Marketplace', sub: '', href: '/marketplace', icon: 'ticket' },
   { label: 'Members', sub: '', href: '/network', icon: 'contacts', navKey: 'people' },
