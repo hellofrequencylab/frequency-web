@@ -4,7 +4,7 @@ Status of the work this measures lives in [`docs/BUILD-BACKLOG.json`](../BUILD-B
 
 ## How it was taken
 
-- **When:** first taken 2026-11-16, 19:23 to 19:41 UTC, against production `https://frequencylocal.com`; re-measured after #5102 (see Readings).
+- **When:** first taken 2026-11-16, 19:23 to 19:41 UTC, against production `https://frequencylocal.com`; re-measured several times since (see Readings).
 - **Run:** GitHub Actions `e2e-manual`, run 43938516828, job 133549442468 (`test/e2e/field-measure.spec.ts`, signed out, no stored state).
 - **Profile:** a fresh browser context per load, so there is no warm cache, no cookie, and no stored side. Each figure is the median of 3 cold loads.
 - **Throttled phone:** 390 px with 1.6 Mbps down, 750 kbps up, 150 ms latency and a 4x CPU slowdown (the same shape as Lighthouse's phone run). The unthrottled rows show the same pages on the runner's own link.
@@ -14,53 +14,94 @@ Status of the work this measures lives in [`docs/BUILD-BACKLOG.json`](../BUILD-B
 
 The current reading. The SCAN-1265 probe reads the `/the-quest` row of the throttled-phone table below, so a re-measure replaces these tables.
 
-- **When:** 2026-11-16, 23:21 to 23:42 UTC, production deploy `bc1e6aa0`, after #5123, #5134 and #5136.
-- **Run:** `e2e-manual` run 43978441871 on production. The method is the same as the first reading. 222 passed, 0 failed.
+- **When:** 2026-11-17, 04:25 to 04:45 UTC, production deploy `5c91495a` (#5153) or later, after #5146, #5149, #5150, #5151, #5152 and #5153.
+- **Run:** `e2e-manual` run 44017021840 on production. The method is the same as the first reading. 222 passed, 0 failed.
 
 ### phone 390, throttled
 
 | Page | TTFB ms | FCP ms | LCP ms | LCP element | CLS | Blocking ms | Script KB (decoded) | Image KB | Total KB | Requests | Console errors |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| / | 207 | 2484 | 2484 | img image | 0.001 | 4372 | 592 (1757) | 406 | 1256 | 55 | 0 |
-| /pricing | 207 | 2432 | 3752 | div image | 0 | 3877 | 598 (1762) | 454 | 1322 | 63 | 0 |
-| /the-community | 207 | 2828 | 3500 | img image | 0.001 | 2730 | 587 (1733) | 621 | 1482 | 69 | 0 |
-| /discover | 212 | 2188 | 2856 | div image | 0 | 688 | 663 (2006) | 245 | 1211 | 61 | 0 |
-| /for/studios | 199 | 1800 | 1808 | h1 | 0.002 | 756 | 592 (1748) | 213 | 1058 | 60 | 0 |
-| /themes | 198 | 1496 | 1980 | h1 | 0 | 561 | 756 (2490) | 1041 | 2111 | 75 | 0 |
-| /about | 201 | 1660 | 2044 | img image | 0 | 369 | 663 (2002) | 241 | 1146 | 58 | 0 |
-| /spaces | 197 | 1832 | 2296 | div image | 0.001 | 534 | 663 (2006) | 335 | 1254 | 67 | 0 |
-| /the-quest | 355 | 1692 | 5016 | img image | 0 | 414 | 560 (1697) | 326 | 1149 | 58 | 0 |
-| /create-a-space | 200 | 2068 | 2436 | h1 | 0 | 590 | 747 (2424) | 351 | 1408 | 68 | 0 |
+| / | 198 | 2332 | 2332 | img image | 0.001 | 3309 | 586 (1737) | 667 | 1510 | 66 | 0 |
+| /pricing | 188 | 2216 | 2784 | div image | 0 | 1344 | 674 (2035) | 454 | 1400 | 70 | 0 |
+| /the-community | 192 | 2384 | 2776 | img image | 0.001 | 998 | 665 (2007) | 619 | 1543 | 71 | 0 |
+| /discover | 185 | 1820 | 1992 | div image | 0 | 357 | 665 (2007) | 244 | 1153 | 60 | 0 |
+| /for/studios | 186 | 1700 | 1700 | h1 | 0.002 | 452 | 591 (1748) | 213 | 1056 | 60 | 0 |
+| /themes | 185 | 1468 | 1916 | h1 | 0 | 409 | 755 (2490) | 1041 | 2111 | 75 | 0 |
+| /about | 185 | 1624 | 2028 | img image | 0 | 275 | 661 (2002) | 241 | 1146 | 58 | 0 |
+| /spaces | 191 | 1828 | 2244 | div image | 0.001 | 363 | 664 (2007) | 335 | 1255 | 67 | 0 |
+| /the-quest | 340 | 1648 | 4664 | img image | 0.001 | 314 | 559 (1697) | 325 | 1149 | 58 | 0 |
+| /create-a-space | 188 | 1844 | 2264 | h1 | 0 | 409 | 747 (2424) | 350 | 1408 | 68 | 0 |
 
 ### phone 390
 
 | Page | TTFB ms | FCP ms | LCP ms | LCP element | CLS | Blocking ms | Script KB (decoded) | Image KB | Total KB | Requests | Console errors |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| / | 69 | 444 | 444 | img image | 0 | 75 | 595 (1761) | 667 | 1561 | 69 | 0 |
-| /pricing | 71 | 372 | 376 | div image | 0 | 41 | 673 (2035) | 453 | 1461 | 71 | 0 |
-| /the-community | 68 | 296 | 296 | img image | 0 | 0 | 664 (2006) | 764 | 1824 | 76 | 0 |
-| /discover | 68 | 312 | 312 | div image | 0 | 0 | 664 (2006) | 244 | 1211 | 61 | 0 |
-| /for/studios | 69 | 304 | 304 | h1 | 0 | 18 | 592 (1748) | 213 | 1058 | 60 | 0 |
-| /themes | 71 | 268 | 700 | h1 | 0 | 3 | 755 (2490) | 1041 | 2110 | 74 | 0 |
-| /about | 66 | 296 | 296 | img image | 0 | 0 | 661 (2002) | 417 | 1320 | 61 | 0 |
-| /spaces | 67 | 312 | 312 | div image | 0 | 0 | 664 (2006) | 409 | 1351 | 69 | 0 |
-| /the-quest | 102 | 404 | 404 | h1 | 0 | 0 | 561 (1697) | 521 | 1346 | 62 | 0 |
-| /create-a-space | 68 | 544 | 544 | h1 | 0 | 0 | 748 (2424) | 407 | 1468 | 69 | 0 |
+| / | 47 | 380 | 396 | img image | 0 | 5 | 584 (1737) | 667 | 1550 | 66 | 0 |
+| /pricing | 47 | 324 | 324 | div image | 0 | 12 | 675 (2035) | 454 | 1462 | 71 | 0 |
+| /the-community | 53 | 292 | 292 | img image | 0 | 0 | 665 (2007) | 762 | 1823 | 76 | 0 |
+| /discover | 48 | 272 | 272 | div image | 0 | 0 | 664 (2007) | 245 | 1211 | 61 | 0 |
+| /for/studios | 48 | 276 | 276 | h1 | 0 | 0 | 591 (1748) | 214 | 1128 | 61 | 0 |
+| /themes | 48 | 212 | 596 | h1 | 0 | 0 | 753 (2490) | 1043 | 2111 | 74 | 0 |
+| /about | 49 | 256 | 256 | img image | 0 | 0 | 661 (2002) | 417 | 1321 | 61 | 0 |
+| /spaces | 49 | 296 | 296 | div image | 0 | 0 | 665 (2007) | 409 | 1351 | 69 | 0 |
+| /the-quest | 72 | 292 | 292 | h1 | 0 | 0 | 560 (1697) | 521 | 1346 | 63 | 0 |
+| /create-a-space | 48 | 340 | 340 | h1 | 0 | 2 | 747 (2424) | 408 | 1467 | 69 | 0 |
 
 ### desktop 1280
 
 | Page | TTFB ms | FCP ms | LCP ms | LCP element | CLS | Blocking ms | Script KB (decoded) | Image KB | Total KB | Requests | Console errors |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| / | 68 | 400 | 564 | div image | 0.002 | 144 | 592 (1761) | 690 | 1651 | 73 | 0 |
-| /pricing | 77 | 560 | 560 | div image | 0 | 124 | 674 (2035) | 355 | 1422 | 78 | 0 |
-| /the-community | 69 | 452 | 452 | h1 | 0 | 31 | 662 (2006) | 297 | 1249 | 85 | 0 |
-| /discover | 70 | 376 | 376 | div image | 0 | 0 | 663 (2006) | 187 | 1098 | 67 | 0 |
-| /for/studios | 69 | 436 | 436 | img image | 0.031 | 76 | 591 (1748) | 200 | 1115 | 66 | 0 |
-| /themes | 75 | 260 | 828 | h1 | 0 | 11 | 755 (2490) | 1212 | 2446 | 87 | 0 |
-| /about | 69 | 336 | 336 | img image | 0 | 0 | 660 (2002) | 320 | 1278 | 67 | 0 |
-| /spaces | 71 | 388 | 444 | div image | 0 | 28 | 661 (2006) | 343 | 1313 | 75 | 0 |
-| /the-quest | 98 | 416 | 428 | img image | 0.002 | 16 | 560 (1697) | 365 | 1192 | 68 | 0 |
-| /create-a-space | 71 | 716 | 716 | h1 | 0.012 | 9 | 745 (2424) | 216 | 1279 | 73 | 0 |
+| / | 52 | 368 | 476 | div image | 0.002 | 49 | 584 (1737) | 690 | 1642 | 70 | 0 |
+| /pricing | 50 | 384 | 400 | div image | 0 | 20 | 674 (2035) | 357 | 1421 | 76 | 0 |
+| /the-community | 46 | 372 | 372 | h1 | 0 | 0 | 664 (2007) | 297 | 1249 | 83 | 0 |
+| /discover | 48 | 324 | 328 | div image | 0 | 0 | 660 (2007) | 187 | 1098 | 67 | 0 |
+| /for/studios | 47 | 404 | 404 | img image | 0.031 | 5 | 591 (1748) | 198 | 1117 | 66 | 0 |
+| /themes | 49 | 244 | 712 | h1 | 0 | 4 | 754 (2490) | 1213 | 2445 | 87 | 0 |
+| /about | 48 | 284 | 284 | img image | 0 | 0 | 660 (2002) | 318 | 1278 | 67 | 0 |
+| /spaces | 52 | 352 | 352 | div image | 0 | 0 | 663 (2007) | 342 | 1311 | 75 | 0 |
+| /the-quest | 71 | 384 | 576 | img image | 0.002 | 1 | 561 (1697) | 365 | 1193 | 68 | 0 |
+| /create-a-space | 48 | 364 | 364 | h1 | 0.016 | 7 | 746 (2424) | 217 | 1292 | 75 | 0 |
+
+## Change since the 23:21 reading
+
+The previous reading was run 43978441871 (2026-11-16, 23:21 UTC). Between the two:
+- **#5146** starts the Quest landing photo from the top of the page.
+- **#5149** stops the site effects layer re-reading styles once per section while it decorates. Run 44008066202 named that pass as about 1 s on /pricing and 0.5 s on /the-community.
+- **#5150** loads Google Analytics after the page's load event.
+- **#5151** rests the main-thread CSS animations on phones.
+- **#5152** stops the pricing galaxy loop while it is off screen.
+- **#5153** (platform thread) takes the unused DAWN branch off the front door.
+
+Medians of 3 cold loads move by a few hundred milliseconds from run to run, so only the large moves below are results.
+
+What this says:
+- **Blocking, throttled phone:**
+  - /pricing: 3.9 s to 1.3 s.
+  - /the-community: 2.7 s to 1.0 s.
+  - /: 4.4 s to 3.3 s.
+  - /discover: 0.7 s to 0.4 s.
+  - Every page is lower.
+- **LCP:**
+  - /pricing: 3.8 s to 2.8 s.
+  - /the-community: 3.5 s to 2.8 s.
+  - /discover: 2.9 s to 2.0 s.
+  - /the-quest: 5.0 s to 4.7 s, still over the 4 s line, so the SCAN-1265 probe still fails, correctly.
+- **What is left:** the Quest photo is limited by bandwidth (photo bytes against about 560 KB of script at 1.6 Mbps), not by when it is discovered. The home page still blocks for 3.3 s, mostly React startup and the remaining style work.
+
+#### Slow phone (390, throttled)
+
+| Page | LCP ms before → after | CLS before → after | Blocking ms before → after |
+|---|---|---|---|
+| / | 2484 → 2332 | 0.001 → 0.001 | 4372 → 3309 |
+| /pricing | 3752 → 2784 | 0 → 0 | 3877 → 1344 |
+| /the-community | 3500 → 2776 | 0.001 → 0.001 | 2730 → 998 |
+| /discover | 2856 → 1992 | 0 → 0 | 688 → 357 |
+| /for/studios | 1808 → 1700 | 0.002 → 0.002 | 756 → 452 |
+| /themes | 1980 → 1916 | 0 → 0 | 561 → 409 |
+| /about | 2044 → 2028 | 0 → 0 | 369 → 275 |
+| /spaces | 2296 → 2244 | 0.001 → 0.001 | 534 → 363 |
+| /the-quest | 5016 → 4664 | 0 → 0.001 | 414 → 314 |
+| /create-a-space | 2436 → 2264 | 0 → 0 | 590 → 409 |
 
 ## Change since the #5102 reading
 
