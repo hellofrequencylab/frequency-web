@@ -11,8 +11,8 @@ import { formatEventWhen } from '@/lib/time/zone'
 
 // MY EVENTS (LIVE-2337): every event that is yours, on one page. Going (your RSVPs), Hosting (events you
 // host or posted, drafts included) and, for a Space owner or admin, each Space's upcoming events with a
-// door into that Space's calendar. Linked from the Events page, the member Events hub row, the left menu
-// (a DB row, menus/menu_items) and the Space console. A list of your own things wears no photo band
+// door into that Space's calendar. Linked from the Events page, the member Events hub row, the site map
+// and the Space console. A list of your own things wears no photo band
 // (owner, 2026-10-14), same as My orders.
 
 export const dynamic = 'force-dynamic'
