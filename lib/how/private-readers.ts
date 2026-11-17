@@ -6,7 +6,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export interface PrivateEventRow { event_type: string; created_at: string; context: Record<string, unknown> | null }
+interface PrivateEventRow { event_type: string; created_at: string; context: Record<string, unknown> | null }
 
 export interface ReaderSummary {
   /** The ?r= code, or 'visit:<sid>' for a link without one. */

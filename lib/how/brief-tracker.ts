@@ -30,7 +30,7 @@ function store(kind: 'session' | 'local') {
   try { return kind === 'session' ? window.sessionStorage : window.localStorage } catch { return null }
 }
 
-export interface BriefTracker {
+interface BriefTracker {
   calc: (calc: string, key: string, value: number, result: string) => void
   stop: () => void
 }
