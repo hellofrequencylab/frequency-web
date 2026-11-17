@@ -66,7 +66,8 @@ export default async function MyEventsPage() {
   return (
     <IndexTemplate
       title="My events"
-      description="What you're going to, what you're hosting, and what's on at your Spaces."
+      description="What you're going to, what you're hosting, and what's coming up at your Spaces."
+      heroOverlay
       back={{ href: '/events', label: 'All events' }}
       action={
         <Link href="/events/new" className={buttonClasses('primary', 'md')}>

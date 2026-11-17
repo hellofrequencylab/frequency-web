@@ -29,14 +29,14 @@ export interface MyEventRow {
   isCancelled: boolean
 }
 
-export interface MySpaceEvents {
+interface MySpaceEvents {
   spaceId: string
   name: string
   slug: string
   events: MyEventRow[]
 }
 
-export interface MyEvents {
+interface MyEvents {
   going: MyEventRow[]
   hosting: MyEventRow[]
   spaces: MySpaceEvents[]
