@@ -7,7 +7,7 @@ export const BRIEF_DEFAULTS = {
   pop: 1000000, leads: 600, fitRate: 30, joinRate: 25, activeRate: 60,
 } as const
 
-export type BriefKey = keyof typeof BRIEF_DEFAULTS
+type BriefKey = keyof typeof BRIEF_DEFAULTS
 export type BriefState = Record<BriefKey, number>
 
 export interface BriefResult {

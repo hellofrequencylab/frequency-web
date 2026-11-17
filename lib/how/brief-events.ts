@@ -21,12 +21,12 @@ export const BRIEF_EVENT_NAMES = [
 export type BriefEventName = (typeof BRIEF_EVENT_NAMES)[number]
 const NAMES = new Set<string>(BRIEF_EVENT_NAMES)
 
-export const BRIEF_MAX_BATCH = 40
+const BRIEF_MAX_BATCH = 40
 const SID = /^[a-z0-9]{8,32}$/
 const REF = /^[a-z0-9-]{1,40}$/
 
-export interface BriefEvent { name: BriefEventName; props: Record<string, string | number | boolean>; t: number }
-export interface BriefBatch { sid: string; ref: string | null; events: BriefEvent[] }
+interface BriefEvent { name: BriefEventName; props: Record<string, string | number | boolean>; t: number }
+interface BriefBatch { sid: string; ref: string | null; events: BriefEvent[] }
 
 function cleanProps(raw: unknown): Record<string, string | number | boolean> {
   const out: Record<string, string | number | boolean> = {}
