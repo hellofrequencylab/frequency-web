@@ -12,6 +12,7 @@ import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { clientSiteEntitlements } from './client-sites'
 import { mintSpaceClaimToken } from '@/lib/spaces/claim'
 import { BADGE_REMOVAL_ENTITLEMENT } from '@/lib/sites/site-badge'
+import { refreshSite } from '@/lib/sites/site-cache'
 import { canManageClientSites, syncClientSiteBilling, setClientSiteBadgeRemoval } from './client-site-billing'
 
 // CREATE A CLIENT WEBSITE (ADR-1816). The Network's owner stands up a Business-level Space for one of their
@@ -71,7 +72,14 @@ export async function createClientSite(networkId: string, input: { name: string;
 export async function toggleClientSiteBadge(networkId: string, siteId: string, on: boolean): Promise<ActionResult> {
   const result = await setClientSiteBadgeRemoval(networkId, siteId, on)
   if (isError(result)) return result
-  const parent = await createAdminClient().from('spaces').select('slug').eq('id', networkId).maybeSingle()
+  const db = createAdminClient()
+  const client = await db.from('spaces').select('slug').eq('id', siteId).maybeSingle()
+  // The client's live website shows the badge, so expire it now, not after the ten-minute ceiling.
+  // Best-effort: a cache hiccup never fails a change that already saved and billed.
+  try {
+    if (client.data?.slug) refreshSite(client.data.slug)
+  } catch { /* outside a request (tests) or a cache hiccup */ }
+  const parent = await db.from('spaces').select('slug').eq('id', networkId).maybeSingle()
   if (parent.data?.slug) revalidatePath(`/spaces/${parent.data.slug}/settings/websites`)
   return ok()
 }
@@ -118,6 +126,11 @@ export async function removeClientSite(networkId: string, siteId: string): Promi
     await db.from('spaces').update({ reseller_network_id: networkId, plan: site.plan, entitlements: site.entitlements } as never).eq('id', siteId)
     return billed
   }
+  // Now a free Space: its badge returns and its custom domain stops serving on the next request, not after
+  // the cache's ten-minute ceiling. Best-effort: a cache hiccup never fails a removal that already billed.
+  try {
+    if (site.slug) refreshSite(site.slug)
+  } catch { /* outside a request (tests) or a cache hiccup */ }
   const parent = await db.from('spaces').select('slug').eq('id', networkId).maybeSingle()
   if (parent.data?.slug) revalidatePath(`/spaces/${parent.data.slug}/settings/websites`)
   return ok()
