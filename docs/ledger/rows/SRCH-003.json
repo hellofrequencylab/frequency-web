@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "app/(main)/admin/spaces/page.tsx",
     "ref": "Search coverage scan 2026-11-17 (project thread: Make search cover every public item)"
   },
-  "detail": "Admin search depth (owner ask 2026-11-17). Members, CRM contacts, campaigns and Practices have search boxes; /admin/spaces (42 active Spaces, every row in one long health list), /admin/circles (78 Circles in one table) and /admin/events (493 published events; its only search box finds a member to assign as host) have none. Fix: the kit FilterBar `q` (ADR-233) on Spaces and Events, read server-side, and a search field on the Circles table, matching name, brand, slug, place and host.",
+  "detail": "Admin search depth (owner ask 2026-11-17). Members, CRM contacts, campaigns and Practices have search boxes; /admin/spaces (42 active Spaces, every row in one long health list), /admin/circles (78 Circles in one table) and /admin/events (493 published events; its only search box finds a member to assign as host) have none. Fix: the kit FilterBar `q` (ADR-233) on Spaces and Events, read server-side, and a search field on the Circles table, matching name, brand, slug, place and host.\n\nDONE 2026-11-17: /admin/spaces takes the FilterBar ?q= (name, brand, slug, city, tagline, type), /admin/circles has a search field over name, place, hub and host, and /admin/events has a janitor Find an event section across every status and visibility.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/search-coverage-2026-11-17.mjs SRCH-003",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "note": "Passes while the consequence in the title holds."
   },
+  "closed": "2026-11-17",
   "wave": "W7"
 }
