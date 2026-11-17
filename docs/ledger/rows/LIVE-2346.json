@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2346",
+  "title": "Send to picked people as conversations is claimed before it sends, so a double press cannot mail anyone twice",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "lib/spaces/email-drafts.ts",
+    "ref": "Follow-up to LIVE-2329 (PR #5168), Space function scan 2026-11-17: the conversations send had no claim"
+  },
+  "detail": "sendSpaceEmailDraftAsConversations (lib/spaces/email-drafts.ts, called from components/spaces/marketing/space-send-to-people.tsx and the Space member composer) read the draft's status, opened one ticketed conversation per picked person, and only then stamped it sent, inside a try that ignored a failed write. LIVE-2329 claimed the other three draft and campaign sends but not this one, so a double press or a second tab both passed the status read and every picked person got the email twice. Fixed 2026-11-17 with the LIVE-2329 claim, no migration (campaigns.status is free text with no check constraint, read from supabase/migrations/20261020000000_space_automation.sql; 'sending', 'failed' and sending_started_at are already in use): after the gates and before the first conversation, one conditional update flips the row to 'sending' with the lease stamp; only the caller that gets the row back sends, the other is refused ('This email is already going out, or has gone out.'). A run that reaches nobody (all skipped, or the loop throws before the first send) hands the row back to its old status; anything delivered is stamped sent with its count, and a failed stamp is logged (stampSent) instead of ignored. A throw part way stamps what went out. STALE CLAIM: for this path only, the claim also takes a 'sending' row whose sending_started_at is older than SENDING_LEASE_MS (15 minutes, lib/messaging/status.ts), so a send that died part way no longer leaves the draft stuck; two callers that both see the stale lease cannot both win (the winner re-stamps it), a NULL lease is never stale, and a reclaimed row that again reaches nobody goes back as 'failed', not as a lease-less 'sending'. Trade-off: a reclaimed send opens a conversation again for people the dead run already reached (this path keeps no per-recipient ledger to resume from); a delivered send whose final stamp failed is also reclaimable after the lease. NOT DONE: the LIVE-2329 paths (sendSpaceCampaign in lib/spaces/campaigns.ts, sendSpaceEmailDraft and sendSpaceEmailDraftToRecipients) still claim only from draft, scheduled or failed, so a dead manual send there stays 'sending' until an operator resets it; making them reclaim is not a one-line change, because a bulk campaign re-send would mail the whole audience again unless it resumes from outreach_sends as the scheduled-send cron does. Also noted: a 'scheduled' row whose manual send died is re-claimed by the scheduled-send cron after the lease (lib/spaces/campaigns-send-due.ts), which sends to the stored audience, not to the picked people. Guarded in lib/spaces/email-drafts-conversations-claim.test.ts (two presses send once, a held row is refused, a stale claim is taken again, a NULL lease is not, a throw before anyone is reached hands the row back).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-scan-2026-11-17.mjs LIVE-2346",
+    "note": "Fails if sendSpaceEmailDraftAsConversations opens a conversation before a conditional 'sending' claim, keeps sending after losing the claim, cannot take a claim whose lease went stale, or leaves a send that reached nobody stuck in sending. In-process source probe, not a vitest spawn (LIVE-034 forbids a probe that runs a test runner); the behaviour is pinned by lib/spaces/email-drafts-conversations-claim.test.ts in the suite."
+  },
+  "wave": "W7"
+}

@@ -62,7 +62,7 @@ import { brandSignature } from '@/lib/comms/signature'
 import { startConversationMessage, resolveSpaceConversationSender, brandSenderUnavailable } from '@/lib/comms/conversation-compose'
 import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
-import { campaignStatusToMessaging } from '@/lib/messaging/status'
+import { campaignStatusToMessaging, SENDING_LEASE_MS } from '@/lib/messaging/status'
 import type { MessagingCampaignItem } from '@/lib/messaging/console'
 import {
   parseEntityLayout,
@@ -164,6 +164,15 @@ async function readDraft(id: string, spaceId: string): Promise<DraftRow | null> 
  *  row another send holds, or one that has gone out, matches nothing. */
 const SENDABLE_STATUSES = ['draft', 'scheduled', 'failed']
 
+/** LIVE-2346: the claim filter for the conversations send. A sendable row, OR a 'sending' row whose lease
+ *  (sending_started_at) is older than SENDING_LEASE_MS: a send that died part way, which would otherwise
+ *  stay 'sending' for good. Two callers that both see the stale lease cannot both win: the first update
+ *  re-stamps the lease, so the second no longer matches `lt`. A NULL lease is never stale. */
+function sendableOrStaleFilter(nowMs: number = Date.now()): string {
+  const staleBefore = new Date(nowMs - SENDING_LEASE_MS).toISOString()
+  return `status.in.(${SENDABLE_STATUSES.join(',')}),and(status.eq.sending,sending_started_at.lt.${staleBefore})`
+}
+
 /** Settle a conditional 'sending' claim: 'claimed' when this caller got the row back, 'taken' when another
  *  send holds it or it has gone out, 'error' when the write failed (nothing is sent then). */
 async function settleClaim(
@@ -194,8 +203,10 @@ function claimRefusal(claim: 'taken' | 'error'): string {
  *  retry. Only a row still 'sending' is touched. A failed write is logged. */
 async function releaseClaim(id: string, spaceId: string, status: string): Promise<void> {
   try {
+    // LIVE-2346: a reclaimed stale 'sending' row goes back as 'failed' (still sendable), never as a
+    // lease-less 'sending' that nothing could claim again.
     const { error } = await campaignsTable()
-      .update({ status, sending_started_at: null })
+      .update({ status: status === 'sending' ? 'failed' : status, sending_started_at: null })
       .eq('id', id)
       .eq('space_id', spaceId)
       .eq('status', 'sending')
@@ -705,7 +716,9 @@ export async function sendSpaceEmailDraftToRecipients(
  * blocks only on unsubscribe/suppression, the per-space marketing topic mute applies, and a member's
  * platform preference gates as lifecycle. A recipient with no contact row in THIS space is skipped
  * (a conversation needs a counterparty; the composer only offers this space's own contacts).
- * Editor-gated + space-scoped; stamps the draft sent when anything went out. Fail-closed.
+ * Editor-gated + space-scoped; stamps the draft sent when anything went out. Fail-closed. The row is
+ * claimed as 'sending' first (LIVE-2346, the LIVE-2329 claim), so a double press or a second tab is
+ * refused; a claim older than the sending lease is a dead send and can be claimed again.
  */
 export async function sendSpaceEmailDraftAsConversations(
   spaceId: string,
@@ -779,71 +792,88 @@ export async function sendSpaceEmailDraftAsConversations(
   }
   const signature = brandSignature(brandName)
 
+  // LIVE-2346: CLAIM the row before a single conversation opens. The status read above is not a lock: a
+  // double press or a second tab both pass it and would mail every picked person twice. Only the caller
+  // this conditional update hands the row back to sends; the other is refused.
+  const claim = await settleClaim(
+    id,
+    campaignsTable()
+      .update({ status: 'sending', sending_started_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('space_id', spaceId)
+      .or(sendableOrStaleFilter())
+      .select('id')
+      .maybeSingle(),
+  )
+  if (claim !== 'claimed') return fail(claimRefusal(claim))
+  const priorStatus = row.status ?? 'draft'
+
   let sent = 0
   let skipped = 0
-  for (const rec of recipients) {
-    const email = (rec.email ?? '').trim().toLowerCase()
-    const counterpart = email ? byEmail.get(email) : undefined
-    if (!counterpart) {
-      skipped++ // no contact in this space's lane: a conversation needs a counterparty
-      continue
-    }
-    // The 1:1 consent stack (ADR-821): contact lane transactional, per-space topic mute, member lifecycle.
-    const emailable = (await canEmailContact(email, 'transactional', spaceId)).allowed
-    const muted = emailable ? await isContactTopicMuted({ email, spaceId, topic: 'marketing' }) : false
-    let memberBlocked = false
-    if (emailable && !muted && counterpart.profileId) {
-      // The Space is the subject, so a member who muted THIS Space in /settings is skipped too:
-      // the gate only consults that mute when the send names its subject (meta-scan B9 D2).
-      memberBlocked = !(await resolveSendGate(counterpart.profileId, 'email', 'lifecycle', {
+  let threw = false
+  try {
+    for (const rec of recipients) {
+      const email = (rec.email ?? '').trim().toLowerCase()
+      const counterpart = email ? byEmail.get(email) : undefined
+      if (!counterpart) {
+        skipped++ // no contact in this space's lane: a conversation needs a counterparty
+        continue
+      }
+      // The 1:1 consent stack (ADR-821): contact lane transactional, per-space topic mute, member lifecycle.
+      const emailable = (await canEmailContact(email, 'transactional', spaceId)).allowed
+      const muted = emailable ? await isContactTopicMuted({ email, spaceId, topic: 'marketing' }) : false
+      let memberBlocked = false
+      if (emailable && !muted && counterpart.profileId) {
+        // The Space is the subject, so a member who muted THIS Space in /settings is skipped too:
+        // the gate only consults that mute when the send names its subject (meta-scan B9 D2).
+        memberBlocked = !(await resolveSendGate(counterpart.profileId, 'email', 'lifecycle', {
+          email,
+          subject: { subjectType: 'space', subjectId: spaceId },
+        })).allowed
+      }
+      if (!emailable || muted || memberBlocked) {
+        skipped++
+        continue
+      }
+
+      // Per-recipient unsubscribe link substituted into the compiled footer (the same placeholder the
+      // campaign seam substitutes), so the designed email keeps an honest opt-down even as a 1:1.
+      const unsubscribeUrl = buildSpaceUnsubscribeUrl({ baseUrl: SITE_URL, spaceId, email })
+      const html = baseHtml.split(SPACE_UNSUBSCRIBE_PLACEHOLDER).join(unsubscribeUrl)
+
+      const started = await startConversationMessage({
+        ownerProfileId: space.ownerProfileId ?? actorProfileId,
+        actorProfileId,
+        actorAuthorKind: 'staff',
+        from: sender.from,
+        identityId: sender.identityId,
+        signature,
         email,
-        subject: { subjectType: 'space', subjectId: spaceId },
-      })).allowed
+        contactId: counterpart.contactId,
+        profileId: counterpart.profileId,
+        spaceId,
+        subject,
+        body: baseText || subject,
+        bodyHtml: html,
+        metadata: { source: 'space_member_composer', campaign_id: id },
+      })
+      if (started) sent++
+      else skipped++
     }
-    if (!emailable || muted || memberBlocked) {
-      skipped++
-      continue
-    }
-
-    // Per-recipient unsubscribe link substituted into the compiled footer (the same placeholder the
-    // campaign seam substitutes), so the designed email keeps an honest opt-down even as a 1:1.
-    const unsubscribeUrl = buildSpaceUnsubscribeUrl({ baseUrl: SITE_URL, spaceId, email })
-    const html = baseHtml.split(SPACE_UNSUBSCRIBE_PLACEHOLDER).join(unsubscribeUrl)
-
-    const started = await startConversationMessage({
-      ownerProfileId: space.ownerProfileId ?? actorProfileId,
-      actorProfileId,
-      actorAuthorKind: 'staff',
-      from: sender.from,
-      identityId: sender.identityId,
-      signature,
-      email,
-      contactId: counterpart.contactId,
-      profileId: counterpart.profileId,
-      spaceId,
-      subject,
-      body: baseText || subject,
-      bodyHtml: html,
-      metadata: { source: 'space_member_composer', campaign_id: id },
-    })
-    if (started) sent++
-    else skipped++
+  } catch (err) {
+    threw = true
+    log.error('spaces.email_send.conversations_threw', { id, sent, error: briefError(err) })
   }
 
-  if (sent > 0) {
-    // Stamp the draft as sent with how many it reached (best-effort: the messages already went out).
-    try {
-      await campaignsTable()
-        .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: sent })
-        .eq('id', id)
-        .eq('space_id', spaceId)
-        .maybeSingle()
-    } catch {
-      // ignore: the send succeeded; the status stamp is non-critical.
-    }
+  // Nothing went out: hand the claim back so the owner can retry. Something did: stamp it sent with how
+  // many it reached (a failed stamp is logged, stampSent).
+  if (sent === 0) {
+    await releaseClaim(id, spaceId, priorStatus)
+    if (threw) return fail('The send did not go out. Try again in a moment.')
+    return ok({ recipientCount: 0, skippedCount: skipped })
   }
-
-  return ok({ recipientCount: sent, skippedCount: skipped })
+  await stampSent(id, spaceId, sent)
+  return ok({ recipientCount: sent, skippedCount: threw ? recipients.length - sent : skipped })
 }
 
 /**
