@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2330",
+  "title": "The launch come-back email brings a signed-out member back to their own launch",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/launch/comeback-email.ts",
+    "ref": "Space function scan 2026-11-17 (project thread: Trace every Space feature end to end)"
+  },
+  "detail": "The come-back email's one button links the bare /launch (lib/launch/comeback-email.ts). A member whose session has expired is hopped by proxy.ts (CREATE_SPACE_DOORS) to the anonymous Create a Space wizard and sees an empty builder instead of their launch. /launch/resume, which its own comment says the emails carry, is linked from nowhere, and on a signed-out request it redirects to /sign-in with no next, so even if linked it would drop them on the feed after signing in. Fix: link a route that sends a signed-out visitor to /sign-in?next=/launch (keeping lid), and have /launch/resume carry next.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-scan-2026-11-17.mjs LIVE-2330",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

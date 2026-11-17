@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1267",
+  "title": "Admin member rosters can list members oldest signup first",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/admin/crm/member-summaries.ts",
+    "ref": "Owner ask 2026-11-17 (project thread): view admin users chronologically; owner chose adding an Oldest sort to the CRM sorts"
+  },
+  "detail": "The Resonance CRM member roster (/admin/crm/members) and the Member Roster (/admin/members) both list newest signups first, and there was no way to read the list from the first signup forward. MEMBER_SORT_OPTIONS gains an Oldest option beside Recent, reading the same joined value (profiles.created_at) ascending. Every roster that shares the list (CRM members, the cockpit viewer, Contacts, Space and leader rosters) gets the button. sortMembers' ascending path is already pinned in lib/people/member-viewer.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1267.mjs",
+    "note": "Fails on main: MEMBER_SORT_OPTIONS has no Oldest option. Passes once an Oldest sort reads joined ascending beside Recent."
+  },
+  "wave": "W7",
+  "closed": "2026-11-17"
+}

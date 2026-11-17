@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2332",
+  "title": "A Network client site's badge or removal refreshes the client's live website",
+  "lane": "live",
+  "priority": "P3",
+  "size": "XS",
+  "status": "open",
+  "source": {
+    "file": "lib/collective/client-sites-actions.ts",
+    "ref": "Space function scan 2026-11-17 (project thread: Trace every Space feature end to end)"
+  },
+  "detail": "toggleClientSiteBadge and removeClientSite (which drops the client Space to free, so its custom domain stops being eligible) change the client Space and revalidate only the Network's settings page. They never call refreshSite(client slug), so the hosted site keeps the old badge and domain state until its cache expires (about 10 minutes).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-scan-2026-11-17.mjs LIVE-2332",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
