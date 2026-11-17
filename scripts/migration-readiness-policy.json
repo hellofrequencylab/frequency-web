@@ -3711,6 +3711,102 @@
         "Real local service, anon and authenticated growth API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5189,
+      "expiresAt": "2026-11-24T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346084000_analytics_experiment_runs.sql",
+          "sha256": "46c24d88e8da67321c515a2f0e89fab5e71355fa257583d86efe386edda2a5e6"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/admin/insights/experiment-actions.test.ts",
+          "status": "modified",
+          "sha256": "1c8cda62a7341929e33e57fd03dbc27bbdd64ce6e5b10eb11568c8e6789a2ae3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/admin/insights/experiment-actions.ts",
+          "status": "modified",
+          "sha256": "c819079223cf87731cbe6bf37ad13e9d6d8969309f418cf58d3258ac99fea181",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/experiment-controls.tsx",
+          "status": "modified",
+          "sha256": "629b88c57243c91767a1b00a98d9f1388d88089b746a1a98c43ef87fe32bb930",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/admin/insights/experiment-panel.tsx",
+          "status": "modified",
+          "sha256": "478a33ff80eb339dc9398725f7ef7295dafa5a149f7b32f518fc49fdb8114dd1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2307.json",
+          "status": "modified",
+          "sha256": "a311a787816ba51d2681d2a7dba5315c9c9b049acf0b0c01189bd36b54de20da",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/experiments.test.ts",
+          "status": "modified",
+          "sha256": "c78c0b32e8d488770bd9d67259fc78281a3f401d860a9f91da99f2d015a0bb87",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/analytics/experiments.ts",
+          "status": "modified",
+          "sha256": "69a571b002a984a424d3d6c9a94c7a872c18cd90694c5131d32601778cb1203e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "271d123dfa146ecacf153d3f77cef564eaabb5a1e21b18a903a9e95c2b027345",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346084000_analytics_experiment_runs.sql",
+          "status": "added",
+          "sha256": "46c24d88e8da67321c515a2f0e89fab5e71355fa257583d86efe386edda2a5e6",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/analytics_experiment_runs.test.sql",
+          "status": "added",
+          "sha256": "914b8279e3ae5c935ee572ec89a69c92b0e973ea0bab85bac214dea347fba216",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated analytics experiment API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated room API acceptance",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Real local service, anon and authenticated calendar suite API acceptance",
+        "Real local service, anon and authenticated analytics experiment API acceptance",
+        "Real local service, anon and authenticated growth API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
