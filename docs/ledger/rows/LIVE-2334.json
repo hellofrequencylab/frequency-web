@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2334",
+  "title": "A Spotlight console save writes only its own preference keys",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/manage/spotlight/actions.ts",
+    "ref": "Space function scan 2026-11-17 (project thread: Trace every Space feature end to end)"
+  },
+  "detail": "Every Spotlight console action (publish switch, layout autosave, Look, theme) builds the whole spaces.preferences object from a snapshot read at the start of the request and writes it back. A layout autosave landing beside a publish toggle, or beside any other console that writes preferences (website editor, page builder), can undo the other's change, for example turning a just-published Spotlight back off. The website editor already avoids this with set_space_preferences (SCAN-833) and the launch path with patchSpacePreferences. The same whole-blob pattern is in manage/layout/actions.ts and edit-page/actions.ts (writePreferences); this row covers the Spotlight console first.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-scan-2026-11-17.mjs LIVE-2334",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

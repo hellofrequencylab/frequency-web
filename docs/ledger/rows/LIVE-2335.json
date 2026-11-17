@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2335",
+  "title": "Spotlight publish, website publish and Space campaign send are counted in analytics",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/analytics/events.ts",
+    "ref": "Space function scan 2026-11-17 (project thread: Trace every Space feature end to end)"
+  },
+  "detail": "The launch flow records its own events (lib/launch/events.ts) and Create a Space has nine funnel signals, but the moments a creator reaches in the console after launch emit nothing: publishing a Spotlight from the console, publishing the website (lib/sites/editor/actions.ts, setWebsitePublished), and sending a Space campaign. So activation past the launch flow cannot be measured. Register space.spotlight_published, space.website_published and space.campaign_sent (server-only, ids and counts only, first-party) and emit them at those three points.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-scan-2026-11-17.mjs LIVE-2335",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
