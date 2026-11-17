@@ -16,6 +16,7 @@ import { safeImageSrc, safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
+import { chipClasses } from '@/components/ui/chip'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -408,11 +409,7 @@ export function EventActivity({
                   }}
                   disabled={pending}
                   aria-pressed={asDispatch}
-                  className={`inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
-                    asDispatch
-                      ? 'bg-primary-bg text-primary-strong'
-                      : 'text-muted hover:bg-surface-elevated hover:text-muted'
-                  }`}
+                  className={chipClasses(asDispatch, 'disabled:opacity-50')}
                 >
                   <Radio className="h-3.5 w-3.5" />
                   Send as a Dispatch
@@ -584,11 +581,7 @@ function BoopBar({
             aria-pressed={isMine}
             aria-label={isMine ? `Remove your ${kind} boop` : `Boop with ${kind}`}
             title={disabled ? 'Sign in to boop' : undefined}
-            className={`inline-flex items-center gap-1 rounded-pill border px-2 py-0.5 text-2xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-              isMine
-                ? 'border-primary bg-primary-bg text-primary-strong hover:bg-primary-bg/70'
-                : 'border-border text-muted hover:border-border-strong hover:text-text'
-            }`}
+            className={chipClasses(isMine, 'disabled:cursor-not-allowed disabled:opacity-50')}
           >
             <span className="text-body-sm leading-none">{kind}</span>
             {counts[kind]}
