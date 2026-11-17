@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     googleBot: { index: false, follow: false, noarchive: true, nosnippet: true, noimageindex: true, 'max-snippet': 0, 'max-image-preview': 'none', 'max-video-preview': 0 },
   },
   // A clean preview when the link is pasted into a message; previews do not make a page indexable.
-  // The card itself is opengraph-image.jpg / twitter-image.jpg beside this file (Next file convention).
+  // The card is opengraph-image.jpg beside this file (Next file convention); X falls back to og:image.
   openGraph: {
     title: 'How Frequency works, and where the money comes from',
     description: 'Get people together. Do things on purpose. How members, hosts and local businesses meet in one network, and how it pays for itself.',
