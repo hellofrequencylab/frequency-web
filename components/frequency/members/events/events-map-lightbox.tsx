@@ -94,10 +94,19 @@ function openEventsMap() {
   window.history.pushState(null, '', urlWith(true))
 }
 
+// PERF-007: the lightbox reads its rows on open (PERF-006), which made the first open wait on a server read.
+// A pointer over, a focus on or a touch of a map door now starts that read, so the rows are usually in by
+// the time the tap lands. One window event, because the doors and the lightbox are separate components.
+const WARM_EVENT = 'fq:events-map-warm'
+function warmEventsMap() {
+  window.dispatchEvent(new Event(WARM_EVENT))
+}
+const warmProps = { onPointerEnter: warmEventsMap, onFocus: warmEventsMap, onTouchStart: warmEventsMap }
+
 /** The toolbar's Map button, beside List and Calendar: it opens the lightbox over whichever view is on. */
 export function FqMapButton() {
   return (
-    <button type="button" onClick={openEventsMap} aria-haspopup="dialog">
+    <button type="button" onClick={openEventsMap} aria-haspopup="dialog" {...warmProps}>
       <FqIcon name="map" />
       <span className="evx-seg-t">Map</span>
     </button>
@@ -135,7 +144,7 @@ export function FqMapTile({ items, homeLabel, rail = false }: { items: AyMapPin[
   const going = items.filter((i) => i.going).length
 
   return (
-    <button type="button" className={rail ? 'evm-tile rail' : 'evm-tile'} onClick={openEventsMap} aria-haspopup="dialog">
+    <button type="button" className={rail ? 'evm-tile rail' : 'evm-tile'} onClick={openEventsMap} aria-haspopup="dialog" {...warmProps}>
       <svg className="evm-tile-map" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         {dots.map((d) => (
           <g key={`${d.x}-${d.y}`}>
@@ -188,7 +197,14 @@ export function FqEventsMapLightbox({
   const loadedRows = fetched && fetched.key === paramsKey ? fetched.rows : null
   const items = given ?? loadedRows ?? NO_ITEMS
   const loading = !given && loadedRows === null
-  const needRows = open && !given && loadedRows === null
+  const [warm, setWarm] = useState(false)
+  useEffect(() => {
+    if (given) return
+    const onWarm = () => setWarm(true)
+    window.addEventListener(WARM_EVENT, onWarm)
+    return () => window.removeEventListener(WARM_EVENT, onWarm)
+  }, [given])
+  const needRows = (open || warm) && !given && loadedRows === null
 
   useEffect(() => {
     if (!needRows) return
