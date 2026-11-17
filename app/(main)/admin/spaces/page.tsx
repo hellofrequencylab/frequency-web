@@ -19,6 +19,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { Button } from '@/components/ui/button'
+import { FilterBar } from '@/components/admin/filter-bar'
 import { ViewAsSpaceButton } from '@/components/spaces/view-as-space-button'
 import { AdoptMasterProfileButton } from './adopt-master-profile-button'
 import { listSpaces } from '@/lib/spaces/store'
@@ -239,9 +240,17 @@ function SpacesHealthSkeleton() {
   )
 }
 
-export default async function SpacesHealthPage() {
+/** SRCH-003: every word of `q` must appear in the Space's name, brand, slug, city, tagline or type. */
+function matchesSpace(space: Space, q: string): boolean {
+  const hay = [space.name, space.brandName, space.slug, space.city, space.tagline, space.type].filter(Boolean).join(' ').toLowerCase()
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every((word) => hay.includes(word))
+}
+
+export default async function SpacesHealthPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await requireAdmin('janitor')
-  const spaces = await listSpaces()
+  const q = ((await searchParams).q ?? '').trim().slice(0, 80)
+  const all = await listSpaces()
+  const spaces = q ? all.filter((space) => matchesSpace(space, q)) : all
 
   return (
     <AdminTemplate
@@ -285,7 +294,15 @@ export default async function SpacesHealthPage() {
         </div>
       </AdminSection>
 
-      {spaces.length === 0 ? (
+      {all.length > 0 && (
+        <AdminSection>
+          <FilterBar search="q" searchPlaceholder="Search Spaces by name, brand, slug or city" />
+        </AdminSection>
+      )}
+
+      {q && spaces.length === 0 && all.length > 0 ? (
+        <EmptyState icon={Building2} title="No Spaces match" description={`Nothing matches “${q}”. Try a shorter name, the slug, or the city.`} />
+      ) : spaces.length === 0 ? (
         <EmptyState
           icon={Building2}
           title="No Spaces yet"

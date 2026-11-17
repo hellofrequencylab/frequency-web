@@ -12,6 +12,8 @@ import { PosterQualitySection } from './poster-quality-section'
 import { SeriesDisplaySection } from './series-display-section'
 import { ListingHorizonSection } from './listing-horizon-section'
 import { ChatRoutesToggle } from './chat-routes-toggle'
+import { EventSearchSection } from './event-search-section'
+import { FilterBar } from '@/components/admin/filter-bar'
 
 // /admin/events (Operations > Community): circle events on top, then the Posted
 // events oversight area (the Poster Events engine: claim links, host handover,
@@ -37,10 +39,11 @@ function SectionFallback() {
   return <div className="h-32 animate-pulse rounded-card bg-surface-elevated/60" aria-hidden />
 }
 
-export default async function AdminEventsPage() {
+export default async function AdminEventsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { profileId, webRole } = await requireAdmin('host', { staff: 'community' })
   const { upcoming, past } = await getEventsAdminData(profileId)
   const canManage = isJanitor(webRole)
+  const q = ((await searchParams).q ?? '').trim().slice(0, 80)
   // One request-cached settings row, read only for the operator who can actually change it, so a
   // community host viewing this page pays nothing for a section they never see.
   const seriesDisplay = canManage ? await getSeriesDisplayConfig() : null
@@ -59,6 +62,17 @@ export default async function AdminEventsPage() {
       actions={<EventCompose />}
       width="default"
     >
+      {canManage && (
+        <AdminSection title="Find an event" description="Search every event on Frequency, any status. Open one to edit, cancel or reinstate it.">
+          <div className="space-y-3">
+            <FilterBar search="q" searchPlaceholder="Search every event by title, slug or place" />
+            <Suspense key={q} fallback={<SectionFallback />}>
+              <EventSearchSection q={q} />
+            </Suspense>
+          </div>
+        </AdminSection>
+      )}
+
       <AdminSection title="Circle events" description="Gatherings across your circles. Cancel or reinstate from here.">
         <EventsAdminList upcoming={upcoming} past={past} />
       </AdminSection>

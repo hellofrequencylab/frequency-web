@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SERIES_COLUMNS } from '@/lib/events/series'
+import { applySearchTerms, searchRows } from '@/lib/search/query'
 
 export type AdminEvent = {
   id: string
@@ -72,4 +73,29 @@ export async function getEventsAdminData(profileId: string) {
   const past = events.filter((e) => new Date(e.starts_at) < now)
 
   return { upcoming, past, myCircles }
+}
+
+export type AdminEventHit = {
+  id: string
+  title: string
+  slug: string
+  starts_at: string
+  status: string
+  visibility: string
+  is_cancelled: boolean
+  removed_at: string | null
+  host: { display_name: string; handle: string } | null
+}
+
+/** SRCH-003: platform-wide event search for operators, every status and visibility (drafts, private,
+ *  cancelled, removed), newest first. The page renders it only for a janitor viewer. */
+export async function searchAdminEvents(query: string, limit = 25): Promise<{ rows: AdminEventHit[]; truncated: boolean }> {
+  const result = await applySearchTerms(createAdminClient()
+    .from('events')
+    .select('id, title, slug, starts_at, status, visibility, is_cancelled, removed_at, host:profiles!host_id ( display_name, handle )')
+    , ['title', 'slug', 'location', 'city'], query)
+    .order('starts_at', { ascending: false })
+    .limit(limit + 1)
+  const rows = searchRows(result, 'admin events') as unknown as AdminEventHit[]
+  return { rows: rows.slice(0, limit), truncated: rows.length > limit }
 }
