@@ -49,8 +49,11 @@ import {
   SPACE_UNSUBSCRIBE_PLACEHOLDER,
   SPACE_NOT_ACTIVE_EMAIL_ERROR,
   spaceEmailHold,
+  isSpaceEmailEnabled,
+  DAILY_SEND_CAP,
   type SpaceRecipient,
 } from '@/lib/spaces/email'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { canEmailContact } from '@/lib/crm/contact-consent'
 import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
 import { resolveSendGate } from '@/lib/comms/send-gate'
@@ -624,10 +627,24 @@ export async function sendSpaceEmailDraftAsConversations(
   if (!Array.isArray(recipients) || recipients.length === 0)
     return fail('Add at least one recipient before sending.')
 
+  // LIVE-2325: the same Space gates the campaign seam runs (lib/spaces/email.ts sendSpaceCampaign), so this
+  // 1:1 path cannot mail a designed email from a Space whose plan, role or email switch says no, nor fan one
+  // send out past the Space's daily cap or its campaigns-a-month meter. Consent stays the 1:1 stack (ADR-821).
+  const caps = await getSpaceCapabilities(space, actorProfileId)
+  if (!spaceFunctionAccess(space, 'email', caps.role))
+    return fail('Email is not available on this space plan, or your role cannot use it.')
+  if (!(await isSpaceEmailEnabled(spaceId)))
+    return fail('Email is turned off for this space. Turn it on in settings before sending.')
+  if (recipients.length > DAILY_SEND_CAP)
+    return fail(`One send can reach at most ${DAILY_SEND_CAP} people. Pick fewer and try again.`)
+
   const row = await readDraft(id, spaceId)
   if (!row) return fail('That email no longer exists.')
   if ((row.status ?? 'draft') === 'sent') return fail('This email has already gone out.')
   if (!(row.subject ?? '').trim()) return fail('Give your email a subject before sending.')
+
+  const meter = await checkCampaignMonthMeter(spaceId)
+  if (!meter.ok) return fail(meter.error)
 
   const brand = spaceBrand(space)
   const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2325",
+  "title": "The Space Message Member send runs the plan, email switch, cap and meter gates the campaign send runs",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/spaces/email-drafts.ts",
+    "ref": "Space function scan 2026-11-17 (project thread): sendSpaceEmailDraftAsConversations checked only editor rights and Space status"
+  },
+  "detail": "The Message Member composer and the marketing send-to-people panel mail a designed block email through the ticketed conversation system (ADR-822), not the campaign seam. That path checked editor rights and the Space status (LIVE-727) and nothing else: a Space whose plan has no email, a role without email, or a Space with email switched off could send it, with no ceiling on the recipient list and no campaigns-a-month meter. Fix: the same gates the seam runs (spaceFunctionAccess 'email', isSpaceEmailEnabled, the campaign month meter) plus a per-send ceiling of DAILY_SEND_CAP recipients, all before the first conversation opens. Consent stays the 1:1 stack (ADR-821), as ruled. Unit tests cover each refusal.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2325.mjs",
+    "note": "Fails on main: none of the four gates runs before startConversationMessage. Passes once all four do."
+  },
+  "wave": "W7",
+  "closed": "2026-11-17"
+}

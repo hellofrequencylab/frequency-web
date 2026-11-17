@@ -28,6 +28,17 @@ vi.mock('@/lib/spaces/entitlements', async (orig) => ({
   ...(await orig<typeof import('@/lib/spaces/entitlements')>()),
   getSpaceCapabilities: async () => ({ canEditProfile: true, role: 'admin' }),
 }))
+// LIVE-2325: the plan/role gate and the Space's email switch, controllable per test.
+let emailAccess = true
+let emailEnabled = true
+vi.mock('@/lib/spaces/functions', async (orig) => ({
+  ...(await orig<typeof import('@/lib/spaces/functions')>()),
+  spaceFunctionAccess: () => emailAccess,
+}))
+vi.mock('./email', async (orig) => ({
+  ...(await orig<typeof import('./email')>()),
+  isSpaceEmailEnabled: async () => emailEnabled,
+}))
 const conversations: unknown[] = []
 vi.mock('@/lib/comms/conversation-compose', () => ({
   startConversationMessage: async (input: unknown) => {
@@ -57,7 +68,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 
 import { sendSpaceEmailDraftAsConversations, saveSpaceEmailDraft } from './email-drafts'
-import { SPACE_NOT_ACTIVE_EMAIL_ERROR } from './email'
+import { SPACE_NOT_ACTIVE_EMAIL_ERROR, DAILY_SEND_CAP } from './email'
 
 beforeEach(() => {
   draft = null
@@ -65,6 +76,8 @@ beforeEach(() => {
   spaceStatus = 'active'
   conversations.length = 0
   tablesRead.length = 0
+  emailAccess = true
+  emailEnabled = true
 })
 
 describe('sendSpaceEmailDraftAsConversations: Space status gate (LIVE-727)', () => {
@@ -82,6 +95,31 @@ describe('sendSpaceEmailDraftAsConversations: Space status gate (LIVE-727)', () 
     const r = await sendSpaceEmailDraftAsConversations('space-A', 'draft-1', [{ email: 'a@b.com' }])
     expect(r).toEqual({ error: 'That email no longer exists.' })
     expect(tablesRead.length).toBeGreaterThan(0)
+  })
+})
+
+describe('sendSpaceEmailDraftAsConversations: the campaign seam gates (LIVE-2325)', () => {
+  it('a Space whose plan or role has no email sends nothing and never reads the draft', async () => {
+    emailAccess = false
+    const r = await sendSpaceEmailDraftAsConversations('space-A', 'draft-1', [{ email: 'a@b.com' }])
+    expect(r).toEqual({ error: 'Email is not available on this space plan, or your role cannot use it.' })
+    expect(conversations).toHaveLength(0)
+    expect(tablesRead).toHaveLength(0)
+  })
+
+  it('a Space with email switched off sends nothing', async () => {
+    emailEnabled = false
+    const r = await sendSpaceEmailDraftAsConversations('space-A', 'draft-1', [{ email: 'a@b.com' }])
+    expect(r).toEqual({ error: 'Email is turned off for this space. Turn it on in settings before sending.' })
+    expect(conversations).toHaveLength(0)
+    expect(tablesRead).toHaveLength(0)
+  })
+
+  it('one send cannot reach more people than the daily cap', async () => {
+    const many = Array.from({ length: DAILY_SEND_CAP + 1 }, (_, i) => ({ email: `p${i}@b.com` }))
+    const r = await sendSpaceEmailDraftAsConversations('space-A', 'draft-1', many)
+    expect(r).toEqual({ error: `One send can reach at most ${DAILY_SEND_CAP} people. Pick fewer and try again.` })
+    expect(conversations).toHaveLength(0)
   })
 })
 
