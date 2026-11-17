@@ -24,6 +24,8 @@ import { ContentBlockView, BlockStyleFrame, hasContent } from '@/components/enti
 import { DesignBlockView, isDesignBlock } from '@/components/entity-blocks/design-block-view'
 import { ContactFormBlock } from '@/components/spaces/contact-form-block'
 import { withoutAccentMarks } from '@/lib/sites/house-theme'
+import { inSpotlightRender, spotlightSiteLinks } from '@/lib/spaces/spotlight-site'
+import { SPOTLIGHT_CLICK_PATH } from '@/lib/sites/host'
 
 import { AboutBlock } from './about'
 import { StoryBlock } from './story'
@@ -225,7 +227,13 @@ function renderSpaceNode(
       // in the block's own <Suspense> below, so a slow read never blocks the rest of the page.
       inner = <FeaturesSourceView spaceId={space.id} source={featureSource(contentProps)} props={contentProps ?? {}} />
     } else if (hasContent(id, contentProps)) {
-      inner = <ContentBlockView id={id} props={contentProps ?? {}} />
+      // A Links block on a published Spotlight counts each press (LIVE-2327), on the same endpoint as the Link
+      // cards (LIVE-856); on a website host the beacon stays on the site's origin.
+      const counted =
+        id === 'links' && inSpotlightRender()
+          ? { url: spotlightSiteLinks() ? SPOTLIGHT_CLICK_PATH : '/api/spotlight/click', space: space.id }
+          : null
+      inner = <ContentBlockView id={id} props={contentProps ?? {}} counted={counted} />
     } else {
       const ContentBlock = (SPACE_CONTENT_BLOCKS as Record<string, SpaceContentBlockComponent | undefined>)[id]
       inner = ContentBlock ? <ContentBlock content={authored} /> : null

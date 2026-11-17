@@ -35,6 +35,7 @@ import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { DEFAULT_WWW_CNAME } from '@/lib/sites/vercel-domains'
 import { markSpotlightPreview } from '@/lib/spaces/spotlight-site'
 import { readSpotlightClicks } from '@/lib/spaces/spotlight-clicks'
+import { spotlightLinkLabels } from '@/lib/spaces/spotlight-link-target'
 import { blockDataList } from '@/lib/entity-blocks/block-data-sources'
 import { consoleBack } from '@/lib/spaces/console-back'
 
@@ -96,8 +97,13 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
     canManage ? blockDataList('linkCards', space.id) : Promise.resolve([]),
   ])
 
-  // Link card presses over the last 30 days (LIVE-856), by the card's current label, most pressed first.
-  const labels = new Map(cards.map((c) => [c.id, c.label]))
+  // Link card presses over the last 30 days (LIVE-856), by the card's current label, most pressed first. The
+  // owner's own links (LIVE-2327) count too, by the label each has in the saved Links block(s); a link since
+  // removed drops out, as a removed card does.
+  const linkBags = nodes
+    ? resolveNodeRows(nodes, 'space').flatMap((row) => row.cells.flat()).filter((n) => n.type === 'links').map((n) => n.content)
+    : [grid.content?.links]
+  const labels = new Map<string, string>([...cards.map((c): [string, string] => [c.id, c.label]), ...spotlightLinkLabels(linkBags)])
   const clicks = [...counts]
     .filter(([target]) => labels.has(target))
     .sort((a, b) => b[1] - a[1])

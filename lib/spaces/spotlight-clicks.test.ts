@@ -4,13 +4,18 @@ vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({}) }))
 
 import { isSpotlightClickTarget } from './spotlight-clicks'
+import { spotlightLinkTarget } from './spotlight-link-target'
 
 describe('isSpotlightClickTarget (LIVE-856)', () => {
   it('takes the Link cards target ids', () => {
     for (const t of ['book', 'contact', 'product:abc-1', 'journey:x_y', 'event:9', 'membership:m1']) expect(isSpotlightClickTarget(t), t).toBe(true)
   })
 
+  it('takes a Links block link target (LIVE-2327)', () => {
+    expect(isSpotlightClickTarget(spotlightLinkTarget('https://example.com/a'))).toBe(true)
+  })
+
   it('refuses anything else', () => {
-    for (const t of ['', 'links', 'product:', 'product:a b', 'other:1', 'book ', 42, null]) expect(isSpotlightClickTarget(t), String(t)).toBe(false)
+    for (const t of ['', 'links', 'link:', 'link:ABC', 'link:abcdefgh', 'product:', 'product:a b', 'other:1', 'book ', 42, null]) expect(isSpotlightClickTarget(t), String(t)).toBe(false)
   })
 })

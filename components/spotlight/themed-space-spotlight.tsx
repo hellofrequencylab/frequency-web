@@ -34,6 +34,10 @@ import { SERVICES_ACCENTS } from '@/lib/theme/services'
 import { NETWORK_KIT_SCHEMES } from '@/lib/theme/network-kit'
 import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
 import { FREE_HUMAN_PROFILES } from '@/lib/theme/free-human'
+import { inSpotlightRender, spotlightSiteLinks } from '@/lib/spaces/spotlight-site'
+import { SPOTLIGHT_CLICK_PATH } from '@/lib/sites/host'
+import { spotlightLinkTarget } from '@/lib/spaces/spotlight-link-target'
+import { CountedLinkScope } from '@/components/spotlight/counted-link-scope'
 
 // THE THEMED SPACE SPOTLIGHT. One component draws a Space's Spotlight on any theme that has whole-page layouts (New World,
 // Services, Network, Designer, Temple, Free Human, CyberWitch, Mindless), in the look the owner picked in the console (default: the
@@ -131,6 +135,13 @@ export function ThemedSpaceSpotlight({ space, tagline, saved, appOrigin }: { spa
     body = wrap(undefined, <NetworkKitSpotlightLayout layout={layout as `network-kit:${SpotlightLook}`} content={c} />)
   } else {
     return null
+  }
+
+  // On a published Spotlight the owner's links count their presses (LIVE-2327), whichever layout draws them.
+  if (inSpotlightRender() && facts.links.length) {
+    const targets = Object.fromEntries(facts.links.map((l) => [l.url, spotlightLinkTarget(l.url)]))
+    const url = spotlightSiteLinks() ? SPOTLIGHT_CLICK_PATH : '/api/spotlight/click'
+    body = <CountedLinkScope beacon={{ url, space: space.id }} targets={targets}>{body}</CountedLinkScope>
   }
 
   const rest = restOf(appOrigin ? spotlightSiteGrid(saved) : saved, drop)

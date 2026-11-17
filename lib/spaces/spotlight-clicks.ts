@@ -13,9 +13,10 @@ import { recordMemberLinkClick } from '@/lib/spotlight/link-clicks'
 // Server-only, service-role client: the table is internal.
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const TARGET = /^(book|contact|(product|journey|event|membership):[A-Za-z0-9_-]{1,64})$/
+// A Links block link (LIVE-2327) names `link:<hash>` (lib/spaces/spotlight-link-target.ts).
+const TARGET = /^(book|contact|link:[0-9a-z]{1,7}|(product|journey|event|membership):[A-Za-z0-9_-]{1,64})$/
 
-/** Is this a Link cards target id a click may name? PURE. */
+/** Is this a Link cards or Links block target id a click may name? PURE. */
 export function isSpotlightClickTarget(target: unknown): target is string {
   return typeof target === 'string' && TARGET.test(target)
 }
@@ -36,7 +37,7 @@ export async function recordSpotlightClick(spaceId: unknown, target: unknown): P
   }
 }
 
-/** Presses per Link card target over the last `days` days. Empty on any failure (logged). */
+/** Presses per Link card or link target over the last `days` days. Empty on any failure (logged). */
 export async function readSpotlightClicks(spaceId: string, days = 30): Promise<Map<string, number>> {
   const counts = new Map<string, number>()
   try {
