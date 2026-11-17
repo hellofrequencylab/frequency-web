@@ -9,7 +9,7 @@
 //                 Notifications, Zap and the avatar. No more sections.
 //   MEGA MENUS    FQ_NAV: at most 2 columns × 3 rows a section, the photo cards, the footer call to
 //                 action and the Frequency website row (FQ_SITE_LINKS).
-//   LEFT RAIL     FQ_SHORTCUTS (at most 6) and Your Circles.
+//   LEFT RAIL     FQ_SHORTCUTS (at most 7) and Your Circles.
 //   AVATAR        FQ_ACCOUNT_MENU (at most 8, Sign out included): personal and account. The about and
 //                 policy pages ride under it as a small text row (FQ_ABOUT_LINKS), not as items.
 //   RAIL FOOT     FQ_WORK_MENU (at most 5): Your Spaces (each Space into its console), Create,
@@ -197,14 +197,16 @@ export const FQ_SITE_LINKS: readonly { label: string; href: string }[] = [
   { label: 'Guidelines', href: '/guidelines' },
 ]
 
-/** The left rail's shortcuts (Members.dc.html `shortcuts`), at most six. `badge` names the live count
- *  that rides on it. */
+/** The left rail's shortcuts (Members.dc.html `shortcuts`), at most seven. `badge` names the live count
+ *  that rides on it. The order is the owner's (2026-11-17: "I want to see this on the left: Around You,
+ *  Events, Circles, Spaces, Messages, Marketplace, Members"). Circles joins the first layer; the Space
+ *  directory reads "Spaces" here (the Community menu keeps its longer "Business Spaces" row). */
 export const FQ_SHORTCUTS: readonly (FqNavItem & { badge?: 'messages' | 'notifications' })[] = [
   { label: 'Around You', sub: '', href: '/nearby', icon: 'pin', navKey: 'nearby' },
-  // Business Spaces is a core shortcut for every viewer (owner, 2026-10-16). Journal gave up its slot:
-  // it stays in the You menu and on the profile hub.
-  { label: 'Business Spaces', sub: '', href: '/spaces/directory', icon: 'space' },
   { label: 'Events', sub: '', href: '/events', icon: 'event', navKey: 'events' },
+  { label: 'Circles', sub: '', href: '/circles', icon: 'circle', navKey: 'circles' },
+  // The Space directory is a core shortcut for every viewer (owner, 2026-10-16), no navKey on purpose.
+  { label: 'Spaces', sub: '', href: '/spaces/directory', icon: 'space' },
   { label: 'Messages', sub: '', href: '/messages', icon: 'message', navKey: 'messageBoards', badge: 'messages' },
   { label: 'Marketplace', sub: '', href: '/marketplace', icon: 'ticket' },
   { label: 'Members', sub: '', href: '/network', icon: 'contacts', navKey: 'people' },
