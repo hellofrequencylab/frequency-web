@@ -3,7 +3,7 @@ import { evaluateExperiment, outcomeInterval, type ExperimentResult } from './ex
 
 const now = Date.parse('2026-11-30T00:00:00Z')
 const base: ExperimentResult = {
-  id: 'test', key: 'upcoming-next-step', status: 'completed',
+  id: 'test', key: 'upcoming-next-step', run: 1, status: 'completed',
   startedAt: '2026-11-01T00:00:00Z', finishedAt: '2026-11-08T00:00:00Z', guardrailsReviewedAt: '2026-11-08T00:00:00Z',
   targetPerArm: 100, minimumDays: 7, conversionDays: 7,
   control: { excluded: 0, exposed: 100, eligible: 100, converted: 10, pending: 0 },
