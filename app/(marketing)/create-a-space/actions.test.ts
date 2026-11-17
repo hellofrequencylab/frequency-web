@@ -145,9 +145,15 @@ describe('Google', () => {
   })
 
   it('sends a bad draft back to the builder without going to Google', async () => {
-    await expect(claimWithGoogle(form({ draft: 'junk' }))).rejects.toMatchObject({ to: '/create-a-space#get-started' })
+    await expect(claimWithGoogle(form({ draft: 'junk' }))).rejects.toMatchObject({ to: '/create-a-space?claim_error=draft#get-started' })
     expect(googled).toEqual([])
     expect(held).toEqual([])
+  })
+
+  it('says the handle was taken when it went while the visitor was saving (LIVE-2331)', async () => {
+    taken = true
+    await expect(claimWithGoogle(form({ draft: draft() }))).rejects.toMatchObject({ to: '/create-a-space?claim_error=handle#get-started' })
+    expect(googled).toEqual([])
   })
 })
 
