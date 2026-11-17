@@ -23,6 +23,10 @@ describe('experiment command boundary', () => {
     expect(mock.rpc).toHaveBeenCalledWith('analytics_experiment_manage', { _key: 'upcoming-next-step', _command: 'pause', _actor: 'operator' })
     expect(mock.revalidate).toHaveBeenCalledWith('/admin/insights')
   })
+  it('passes the separate guardrail review command through to the RPC', async () => {
+    expect(await manageGrowthExperiment('upcoming-next-step', 'review_guardrails')).toEqual({})
+    expect(mock.rpc).toHaveBeenCalledWith('analytics_experiment_manage', { _key: 'upcoming-next-step', _command: 'review_guardrails', _actor: 'operator' })
+  })
   it('refuses an unauthorized caller without touching storage', async () => {
     mock.guard.mockRejectedValue(new Error('denied'))
     await expect(manageGrowthExperiment('upcoming-next-step', 'start')).rejects.toThrow('denied')

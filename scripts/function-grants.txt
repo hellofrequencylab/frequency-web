@@ -386,6 +386,8 @@ analytics_experiment_results internal
 analytics_experiment_withdraw_consent internal
 analytics_experiment_count_exclusion internal
 analytics_experiment_purge internal
+# LIVE-2307: per-arm totals for live reads and the frozen result snapshot.
+analytics_experiment_arm_totals internal
 analytics_growth_snapshot internal
 # LIVE-2291: immutable support snapshots and enrollment contracts are trigger-only.
 freeze_journey_completion_policy internal

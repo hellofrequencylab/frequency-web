@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { manageGrowthExperiment } from '@/app/(main)/admin/insights/experiment-actions'
 import type { ExperimentKey, ExperimentResult, ExperimentCommand } from '@/lib/analytics/experiments'
 
-export function ExperimentControls({ experimentKey, status }: { experimentKey: ExperimentKey; status: ExperimentResult['status'] | 'missing' }) {
+export function ExperimentControls({ experimentKey, status, reviewed: guardrailsReviewed }: { experimentKey: ExperimentKey; status: ExperimentResult['status'] | 'missing'; reviewed: boolean }) {
   const [pending, start] = useTransition()
   const [message, setMessage] = useState('')
   const [reviewed, setReviewed] = useState(false)
@@ -23,10 +23,12 @@ export function ExperimentControls({ experimentKey, status }: { experimentKey: E
       {status === 'missing' && <Button size="sm" variant="secondary" loading={pending} onClick={() => run('draft')}>Save reviewed pilot draft</Button>}
       {(status === 'draft' || status === 'paused') && <Button size="sm" variant="secondary" loading={pending} onClick={() => run('start')}>{status === 'paused' ? 'Resume enrollment' : 'Start the fixed-horizon pilot'}</Button>}
       {status === 'running' && <Button size="sm" variant="secondary" loading={pending} onClick={() => run('pause')}>Pause new exposures</Button>}
+      {(status === 'running' || status === 'paused') && <Button size="sm" variant="ghost" loading={pending} onClick={() => run('finish')}>Close enrollment</Button>}
+      {status === 'completed' && guardrailsReviewed && <Button size="sm" variant="secondary" loading={pending} onClick={() => run('draft')}>Draft a new run</Button>}
     </div>
-    {(status === 'running' || status === 'paused') && <div className="space-y-2">
-      <Checkbox checked={reviewed} onChange={(e) => setReviewed(e.target.checked)} label="I reviewed accessibility, performance, RSVP failures, cancellations, consent withdrawals and follow-up coverage. Record this guardrail review and close enrollment." />
-      <Button size="sm" variant="ghost" loading={pending} disabled={!reviewed} onClick={() => run('finish')}>Record review and finish enrollment</Button>
+    {status === 'completed' && !guardrailsReviewed && <div className="space-y-2">
+      <Checkbox checked={reviewed} onChange={(e) => setReviewed(e.target.checked)} label="The follow-up after enrollment is over, and I reviewed accessibility, performance, RSVP failures, cancellations, consent withdrawals and follow-up coverage. Record this guardrail review." />
+      <Button size="sm" variant="ghost" loading={pending} disabled={!reviewed} onClick={() => run('review_guardrails')}>Record guardrail review</Button>
     </div>}
     <p role="status" className="text-meta text-muted">{message}</p>
   </div>

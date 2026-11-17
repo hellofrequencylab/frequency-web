@@ -15,12 +15,12 @@ export async function manageGrowthExperiment(key: string, command: ExperimentCom
   const caller = await requireAdmin('janitor', { staff: 'insights', staffLevel: 'write' })
   let input: { key: 'upcoming-next-step'; command: ExperimentCommand }
   try {
-    input = parseInput(z.object({ key: z.literal('upcoming-next-step'), command: z.enum(['draft', 'start', 'pause', 'finish']) }), { key, command })
+    input = parseInput(z.object({ key: z.literal('upcoming-next-step'), command: z.enum(['draft', 'start', 'pause', 'finish', 'review_guardrails']) }), { key, command })
   } catch { return { error: 'Unknown experiment or command.' } }
   const db = createAdminClient()
   const invoke = (db.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ error: unknown }>).bind(db)
   const { error } = await invoke('analytics_experiment_manage', { _key: input.key, _command: input.command, _actor: caller.profileId })
-  if (error) return { error: 'The transition could not be completed. Check migration access, current state and the minimum enrollment period.' }
+  if (error) return { error: 'The transition could not be completed. Check migration access, current state, the enrollment period and the follow-up period.' }
   revalidatePath('/admin/insights')
   return {}
 }
@@ -37,7 +37,7 @@ export async function readGrowthExperiments() {
     const count = z.number().int().nonnegative()
     const arm = z.object({ excluded: count, exposed: count, eligible: count, converted: count, pending: count }).refine((a) => a.converted <= a.eligible && a.eligible + a.pending === a.exposed)
     const row = z.object({
-      id: z.string().uuid(), key: z.literal('upcoming-next-step'), status: z.enum(['draft','running','paused','completed']),
+      id: z.string().uuid(), key: z.literal('upcoming-next-step'), run: count.min(1), status: z.enum(['draft','running','paused','completed']),
       startedAt: z.string().datetime({ offset: true }).nullable(), finishedAt: z.string().datetime({ offset: true }).nullable(), guardrailsReviewedAt: z.string().datetime({ offset: true }).nullable(),
       targetPerArm: count.min(30), minimumDays: count.min(7).max(90), conversionDays: count.min(1).max(28), control: arm, treatment: arm,
     })

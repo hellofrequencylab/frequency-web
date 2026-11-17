@@ -9,12 +9,12 @@ export const EXPERIMENT_CATALOG = {
     targetPerArm: 100,
     minimumDays: 7,
     conversionDays: 7,
-    guardrails: 'Review accessibility, page performance, RSVP failures, cancellations, consent withdrawals and follow-up coverage before finishing. This heading test changes neither permissions nor booking behavior.',
+    guardrails: 'Review accessibility, page performance, RSVP failures, cancellations, consent withdrawals and follow-up coverage once the follow-up after enrollment is over. This heading test changes neither permissions nor booking behavior.',
   },
 } as const
 export type ExperimentKey = keyof typeof EXPERIMENT_CATALOG
 export type ExperimentVariant = 'control' | 'treatment'
-export type ExperimentCommand = 'draft' | 'start' | 'pause' | 'finish'
+export type ExperimentCommand = 'draft' | 'start' | 'pause' | 'finish' | 'review_guardrails'
 export function isExperimentKey(key: string): key is ExperimentKey {
   return Object.hasOwn(EXPERIMENT_CATALOG, key)
 }
@@ -29,6 +29,8 @@ interface ExperimentArm {
 export interface ExperimentResult {
   id: string
   key: ExperimentKey
+  /** Each re-drafted pilot is a new run with its own assignments; earlier runs stay as history. */
+  run: number
   status: 'draft' | 'running' | 'paused' | 'completed'
   startedAt: string | null
   finishedAt: string | null
