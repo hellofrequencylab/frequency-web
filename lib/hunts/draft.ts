@@ -9,6 +9,7 @@
 import { evaluate, validateGraph } from '@/lib/hunts/graph'
 import type { Blocker, HuntGraph } from '@/lib/hunts/graph'
 import { BENEFIT_CODE } from '@/lib/hunts/pass-binding'
+import { slugify } from '@/lib/utils'
 
 export type Stop = {
   place: string
@@ -106,7 +107,7 @@ export function parseTrailDraft(input: unknown): TrailDraft {
 
 /** A short code from a label, e.g. "Tasting flight" gives `tasting-flight`. Empty when nothing usable is left. */
 export function benefitCodeFrom(label: string): string {
-  const code = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^[^a-z]+/, '').slice(0, 41).replace(/-+$/, '')
+  const code = slugify(label).replace(/^[^a-z]+/, '').slice(0, 41).replace(/-+$/, '')
   return BENEFIT_CODE.test(code) ? code : ''
 }
 
