@@ -10,6 +10,7 @@ import { BlockRender } from '@/lib/page-editor/block-render'
 import { config } from '@/lib/page-editor/config'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { LINK_ONLY_ROBOTS } from '@/lib/seo/link-only'
+import { PrivatePageTracker } from '@/components/frequency/site/shell/private-page-tracker'
 
 export const revalidate = 3600
 
@@ -29,5 +30,10 @@ const EMPTY: Data = { content: [], root: {} }
 export default function LabPage() {
   const template = getTemplate('the-lab')
   const data: Data = isWellFormed(template) ? template : EMPTY
-  return <BlockRender config={config} data={data} metadata={{}} />
+  return (
+    <>
+      <BlockRender config={config} data={data} metadata={{}} />
+      <PrivatePageTracker page="/lab" />
+    </>
+  )
 }

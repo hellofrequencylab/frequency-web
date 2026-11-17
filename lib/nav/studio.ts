@@ -257,6 +257,10 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   // its authorized users can never find" shape the automations/nurture rows above record.
   // min/staffDomain mirror the page's own gate: requireAdmin('host', { staff: 'qr' }).
   { id: 'growth-links', href: '/admin/growth/links', label: 'Link Generator', desc: 'Compose a trackable link with campaign tags, then generate a short link and QR to share.', icon: 'QrCode', min: 'host', staffDomain: 'qr' },
+  // Readers of the link-only partner pages (/how, /facilities, /lab): who opened which, how far they read,
+  // and every click (owner 2026-11-17). Gate mirrors the page: requireAdmin('admin', { staff: 'marketing', staffLevel: 'read' }).
+  { id: 'private-pages', href: '/admin/growth/private-pages', label: 'Private pages', desc: 'Who opened the private partner pages, how far they read, and what they clicked.', icon: 'Telescope', min: 'admin', staffDomain: 'marketing', staffLevel: 'read',
+    adminNav: { section: 'growth', heading: 'Acquisition' } },
   { id: 'referrals', href: '/admin/referrals', label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', icon: 'Share2', min: 'host', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'Referrals', worldOrder: 2,
     adminNav: { section: 'growth', heading: 'Acquisition' } },

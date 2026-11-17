@@ -4,7 +4,7 @@ import { currentViewerAllowsAnalytics } from '@/lib/analytics/audience'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { cleanBriefBatch } from '@/lib/how/brief-events'
 
-// Engagement sink for the /how advisor brief (docs/HOW-BRIEF.md). The page's readers are mostly
+// Engagement sink for the link-only partner pages, /how, /facilities and /lab (docs/HOW-BRIEF.md). The page's readers are mostly
 // signed out, which the member-tied /api/track and /api/observe drop by design. This route accepts
 // ONLY the closed how.* list (lib/how/brief-events.ts), writes anonymous rows to engagement_events
 // through track() (actor null, no GA mirror), and applies the same request analytics policy as the
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 204 })
   }
   await Promise.all(batch.events.map((e) =>
-    track(e.name, { ...e.props, sid: batch.sid, ref: batch.ref ?? '', page: '/how', client_t: e.t }, null, { mirrorGa: false }),
+    track(e.name, { ...e.props, sid: batch.sid, ref: batch.ref ?? '', page: batch.page, client_t: e.t }, null, { mirrorGa: false }),
   ))
   return new NextResponse(null, { status: 204 })
 }

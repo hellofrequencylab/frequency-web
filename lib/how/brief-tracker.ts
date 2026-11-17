@@ -1,13 +1,17 @@
 'use client'
 
 import { browserAllowsAnalytics, browserGoogleAllowed } from '@/lib/analytics/browser-policy'
-import { cleanRef, type BriefEventName } from '@/lib/how/brief-events'
+import { cleanRef, type BriefEventName, type PrivatePage } from '@/lib/how/brief-events'
 
 // Engagement tracking for the /how brief. Readers are mostly signed out, so this posts to
 // /api/how/beacon (anonymous, consent-gated server-side too) rather than the member-tied sinks.
 // No cookies: the session id is a random per-tab value in sessionStorage. Every event carries
 // the recipient code from ?r= so each shared link reads as its own reader. A few milestones are
 // mirrored to GA4 (pixel-safe: never the recipient code) when Google is allowed.
+//
+// Every private partner page runs this (PRIVATE_PAGES: /how, /facilities, /lab). Each batch names its
+// page. Clicks are counted page-wide (header and footer too): every link, every button, and every form
+// submit, by label and target. Never a typed value: a form submit records only the choice in its select.
 
 const ENDPOINT = '/api/how/beacon'
 const FLUSH_MS = 8000
@@ -31,7 +35,7 @@ export interface BriefTracker {
   stop: () => void
 }
 
-export function startBriefTracker(root: HTMLElement): BriefTracker {
+export function startBriefTracker(root: HTMLElement, page: PrivatePage = '/how'): BriefTracker {
   const t0 = performance.now()
   const ss = store('session')
   const ls = store('local')
@@ -51,7 +55,7 @@ export function startBriefTracker(root: HTMLElement): BriefTracker {
   }
   const flush = () => {
     if (!queue.length) return
-    const payload = JSON.stringify({ sid, ref, events: queue })
+    const payload = JSON.stringify({ sid, ref, page, events: queue })
     queue = []
     try {
       const ok = navigator.sendBeacon?.(ENDPOINT, new Blob([payload], { type: 'application/json' }))
@@ -139,20 +143,35 @@ export function startBriefTracker(root: HTMLElement): BriefTracker {
     const pct = Math.min(100, Math.round(((window.scrollY + window.innerHeight) / Math.max(1, doc.scrollHeight)) * 100))
     if (pct > maxPct) maxPct = pct
     for (const d of DEPTHS) if (pct >= d && !hit.has(d)) { hit.add(d); emit('how.scroll_depth', { pct: d, at_s: engagedS() }); ga('how_scroll', { percent: d }) }
+    // A page without the brief's closing section completes when the reader reaches the bottom.
+    if (pct >= 100 && !root.querySelector('.rp-close')) complete()
   }
   window.addEventListener('scroll', onScroll, { passive: true })
 
-  // ── clicks: rail, nav, next links, summary links; appendix opens ───────────
+  // ── clicks: every link and button on the page, header and footer included ─
+  const label = (el: Element) => (el.getAttribute('aria-label') ?? el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 60)
   const onClick = (e: MouseEvent) => {
-    const a = (e.target as HTMLElement).closest('a')
-    if (!a) return
-    const kind = a.closest('.rp-rail') ? 'rail' : a.closest('.rp-nav') ? 'nav' : a.closest('.rp-next') ? 'next' : a.closest('.rp-point') ? 'summary' : a.closest('.rp-pill') ? 'decision' : 'link'
-    emit('how.link_click', { kind, target: (a.getAttribute('href') ?? '').slice(0, 80) })
+    const el = (e.target as HTMLElement | null)?.closest('a, button, summary, [role="button"]')
+    if (!el) return
+    if (el.tagName === 'BUTTON' && (el as HTMLButtonElement).type === 'submit') return // counted as the form submit
+    const kind = el.closest('.rp-rail') ? 'rail' : el.closest('.rp-nav') ? 'nav' : el.closest('.rp-next') ? 'next' : el.closest('.rp-point') ? 'summary' : el.closest('.rp-pill') ? 'decision'
+      : el.closest('header') ? 'header' : el.closest('footer') ? 'footer' : el.tagName === 'A' ? 'link' : el.tagName === 'SUMMARY' ? 'expand' : 'button'
+    const href = el.getAttribute('href') ?? ''
+    emit('how.link_click', { kind, target: href.slice(0, 80), label: label(el), section: el.closest('section[id]')?.id ?? '' })
   }
-  root.addEventListener('click', onClick)
+  // A form submit: which form and the choice in its select, never anything typed.
+  const onSubmit = (e: Event) => {
+    const form = e.target as HTMLFormElement
+    if (form?.tagName !== 'FORM') return
+    const choice = form.querySelector('select')?.value ?? ''
+    emit('how.link_click', { kind: 'form', target: form.id || form.closest('section[id]')?.id || 'form', label: choice.slice(0, 60), section: form.closest('section[id]')?.id ?? '' })
+    flush()
+  }
+  document.addEventListener('click', onClick, true)
+  document.addEventListener('submit', onSubmit, true)
   const onToggle = (e: Event) => {
     const d = e.target as HTMLDetailsElement
-    if (d.tagName === 'DETAILS' && d.open) emit('how.appendix_open', { item: (d.querySelector('summary i')?.textContent ?? '').trim() })
+    if (d.tagName === 'DETAILS' && d.open) emit('how.appendix_open', { item: ((d.querySelector('summary i') ?? d.querySelector('summary'))?.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 80) })
   }
   root.addEventListener('toggle', onToggle, true)
 
@@ -195,7 +214,7 @@ export function startBriefTracker(root: HTMLElement): BriefTracker {
       window.clearInterval(clock); window.clearInterval(flusher)
       activity.forEach((e) => window.removeEventListener(e, active))
       window.removeEventListener('scroll', onScroll)
-      root.removeEventListener('click', onClick); root.removeEventListener('toggle', onToggle, true)
+      document.removeEventListener('click', onClick, true); document.removeEventListener('submit', onSubmit, true); root.removeEventListener('toggle', onToggle, true)
       document.removeEventListener('copy', onCopy)
       document.removeEventListener('visibilitychange', onHide); window.removeEventListener('pagehide', onHide)
       io.disconnect(); timers.forEach((id) => window.clearTimeout(id))

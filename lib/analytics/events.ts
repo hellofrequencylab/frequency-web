@@ -39,7 +39,7 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   { name: 'how.heartbeat', category: 'engagement', description: 'Engaged time on /how, every 15s (props.engaged_s).', clientEmittable: false },
   { name: 'how.calc_input', category: 'engagement', description: 'A /how calculator slider settled (props.calc, key, value).', clientEmittable: false },
   { name: 'how.appendix_open', category: 'engagement', description: 'A /how appendix item opened (props.item).', clientEmittable: false },
-  { name: 'how.link_click', category: 'engagement', description: 'An in-page link on /how was used (props.kind, target).', clientEmittable: false },
+  { name: 'how.link_click', category: 'engagement', description: 'A link, button or form on a private partner page was used (props.page, kind, target, label).', clientEmittable: false },
   { name: 'how.copy', category: 'engagement', description: 'Text was copied from /how (props.section, chars).', clientEmittable: false },
   { name: 'how.complete', category: 'engagement', description: 'The /how reader reached the closing section.', clientEmittable: false },
   { name: 'how.exit', category: 'engagement', description: 'The /how page was hidden or left (props.engaged_s, max_pct).', clientEmittable: false },

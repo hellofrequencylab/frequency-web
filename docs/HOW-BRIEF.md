@@ -35,7 +35,8 @@ too.
 | `app/(brief)/how/brief-html.ts` | **Generated** page markup. Do not hand-edit |
 | `app/(brief)/how/brief.css` | **Generated** styles (design-system tokens plus the brief's own) |
 | `app/(brief)/how/brief-motion.ts` | Side index rail, and the "Groups fade" loop that winds down when the reader stops scrolling |
-| `app/(brief)/how/brief-tracker.ts` | Client tracker: batches events to the beacon |
+| `lib/how/brief-tracker.ts` | Client tracker for every private page: batches events to the beacon |
+| `lib/how/private-readers.ts` | Folds the events into readers and clicks for the admin view |
 | `app/api/how/beacon/route.ts` | Anonymous event intake: consent and GPC checks, rate limit, writes via `track()` |
 | `lib/how/brief-calc.ts` | Calculator maths, shared by the page and its tests |
 | `lib/how/brief-events.ts` | Event names and batch validation |
@@ -46,6 +47,13 @@ change copy or layout, edit the design and regenerate. Hand edits to the generat
 overwritten.
 
 ## Tracking
+
+**All private pages.** The same tracker runs on `/how`, `/facilities` and `/lab` (`PRIVATE_PAGES` in
+`lib/how/brief-events.ts`). Every event carries `page`. The `?r=` code carries across the private pages
+in one tab, so `frequencylocal.com/facilities?r=jane` followed by a click to `/lab` stays Jane. Clicks
+are page-wide (every link, button and expander, header and footer included) and a form submit records
+only the option picked, never what was typed. **See it at `/admin/growth/private-pages`** (Growth,
+Acquisition, Private pages): one row per reader and the full click log.
 
 Every event goes to `engagement_events` with `source = 'web'`, no profile (`actor_profile_id` is
 null), and its details in `context`. Each event carries `sid` (one visit), `ref` (the `?r=` code)
