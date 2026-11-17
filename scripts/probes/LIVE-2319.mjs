@@ -45,7 +45,7 @@ if (!/withReturnPath\(`\/events\/new\?\$\{q\.toString\(\)\}`, `\/spaces\/\$\{spa
 const suite = read('components/calendar-suite/calendar-suite.tsx')
 if (!/returnTo: `\/spaces\/\$\{slug\}\/settings\/calendar`/.test(suite)) fails.push('the calendar suite does not hand its Go live doors a return path')
 const staff = read('app/(main)/spaces/[slug]/settings/calendar/staff-calendar.tsx')
-if (!/productionDoorHref\(spaceId, id, draft\.input\.planId, calendarPath\)/.test(staff)) {
+if (!/withReturnPath\(productionDoorHref\(spaceId, id, draft\.input\.planId\), calendarPath\)/.test(staff)) {
   fails.push('the Space Calendar tab publish door carries no return path')
 }
 
