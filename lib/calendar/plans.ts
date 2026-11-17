@@ -3,6 +3,7 @@
 
 import { isAssetRef, type AssetRef } from '@/lib/library/asset-ref'
 import { calendarPresentation, entryStage, type CalendarPresentation, type EntryStage } from './registry'
+import { withReturnPath } from '@/lib/events/return-path'
 
 export const PLAN_STAGES = ['pencil', 'plan', 'production'] as const
 export type PlanStage = (typeof PLAN_STAGES)[number]
@@ -320,10 +321,11 @@ export const PLAN_TARGET_DEFS: readonly PlanTargetDef[] = [
     label: 'Event',
     // `?space=` here is an ID on purpose: /events/new matches it against the ids of the scopes the
     // caller runs. This door always worked.
-    createHref: ({ spaceId, planId, entryId }) => {
+    createHref: ({ spaceId, spaceSlug, planId, entryId }) => {
       const q = new URLSearchParams({ space: spaceId, plan: planId })
       if (entryId) q.set('pencil', entryId)
-      return `/events/new?${q.toString()}`
+      // Publishing comes back to the Space calendar this door lives on (LIVE-2319).
+      return withReturnPath(`/events/new?${q.toString()}`, `/spaces/${spaceSlug}/settings/calendar`)
     },
   },
   {

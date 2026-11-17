@@ -48,7 +48,7 @@ const iconControlBase =
   // <button>, where :disabled matches) and IconLink (a <Link> → <a>, where it NEVER can). Until
   // 2026-08-10 the anchor path carried the disabled utilities as dead CSS: a caller asking for a
   // disabled icon-link got no dimming, no pointer block, and a fully clickable control.
-  'tap-target inline-flex h-8 w-8 items-center justify-center rounded-pill press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50'
+  'inline-flex items-center justify-center rounded-pill press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50'
 
 // THREE VARIANTS. `filled` is the third, added 2026-08-05, and it was added because the code
 // asked for it in prose: `events/event-calendar.tsx`, `marketplace/column-selector.tsx` and
@@ -78,7 +78,16 @@ const iconControlBase =
 // density. Both existing sites already draw exactly this pair (`bg-primary-bg text-primary-strong`),
 // one with a ring and one with a border; the ring is the one that survives a dense grid.
 export type IconButtonTone = 'default' | 'danger' | 'warning' | 'success'
-export type IconButtonVariant = 'plain' | 'bordered' | 'filled' | 'tinted'
+export type IconButtonVariant = 'plain' | 'bordered' | 'filled' | 'tinted' | 'soft'
+
+// TWO SIZES (SCAN-1133 slice 10, 2026-11-16). `md` is the 32px row-action control above, raised to
+// the 44px tap floor (`tap-target`). `xs` is a 28px control for DENSE INLINE TOOLBARS ONLY: a
+// composer's formatting row (bold, italic, list, link, emoji, attach), where seven controls sit in
+// one line inside a 640px card and the 44px floor would push the row onto two. It does not take the
+// tap floor, which is exactly what the hand-rolled `p-1.5` buttons it replaces did. Anything that
+// is not a toolbar row stays `md`.
+export type IconButtonSize = 'md' | 'xs'
+const SIZE: Record<IconButtonSize, string> = { md: 'tap-target h-8 w-8', xs: 'h-7 w-7' }
 
 // Quiet at rest, one step louder on hover -- so a cluster of these never shouts. `plain`
 // rests one step quieter than `bordered` because it has no border to carry the affordance.
@@ -110,6 +119,16 @@ const FILLED_TONE: Record<IconButtonTone, string> = {
 // ring is the selection mark; the hover step deepens the fill so a selected cell still answers the
 // pointer (INTERACTION-STATES §2 requires hover on an action control, and a selected control that
 // goes inert on hover reads as disabled).
+// SOFT (slice 10) is the ON state of a toolbar toggle: an attach that holds a file, a picker that is
+// open. The tint of `tinted` without its ring, because a ring in a toolbar row reads as focus, not
+// "on". Loud at rest like `tinted`, so tone is the tint and hover deepens it.
+const SOFT_TONE: Record<IconButtonTone, string> = {
+  default: 'bg-primary-bg text-primary-strong hover:bg-primary-bg/70',
+  danger: 'bg-danger-bg text-danger hover:bg-danger-bg/70',
+  warning: 'bg-warning-bg text-warning hover:bg-warning-bg/70',
+  success: 'bg-success-bg text-success hover:bg-success-bg/70',
+}
+
 const TINTED_TONE: Record<IconButtonTone, string> = {
   default: 'bg-primary-bg text-primary-strong ring-2 ring-primary hover:bg-primary-bg/70',
   danger: 'bg-danger-bg text-danger ring-2 ring-danger hover:bg-danger-bg/70',
@@ -117,11 +136,13 @@ const TINTED_TONE: Record<IconButtonTone, string> = {
   success: 'bg-success-bg text-success ring-2 ring-success hover:bg-success-bg/70',
 }
 
-function iconControl(variant: IconButtonVariant = 'plain', tone: IconButtonTone = 'default') {
-  if (variant === 'bordered') return cn(iconControlBase, 'border border-border text-muted', BORDERED_TONE[tone])
-  if (variant === 'filled') return cn(iconControlBase, FILLED_TONE[tone])
-  if (variant === 'tinted') return cn(iconControlBase, TINTED_TONE[tone])
-  return cn(iconControlBase, 'text-subtle hover:bg-surface-elevated', PLAIN_TONE[tone])
+function iconControl(variant: IconButtonVariant = 'plain', tone: IconButtonTone = 'default', size: IconButtonSize = 'md') {
+  const base = cn(iconControlBase, SIZE[size])
+  if (variant === 'bordered') return cn(base, 'border border-border text-muted', BORDERED_TONE[tone])
+  if (variant === 'filled') return cn(base, FILLED_TONE[tone])
+  if (variant === 'tinted') return cn(base, TINTED_TONE[tone])
+  if (variant === 'soft') return cn(base, SOFT_TONE[tone])
+  return cn(base, 'text-subtle hover:bg-surface-elevated', PLAIN_TONE[tone])
 }
 
 // `ref` is a plain prop, not a forwardRef wrapper: React 19 passes it through like any other,
@@ -133,6 +154,7 @@ export function IconButton({
   label,
   variant,
   tone,
+  size,
   className,
   children,
   loading = false,
@@ -143,6 +165,8 @@ export function IconButton({
   label: string
   variant?: IconButtonVariant
   tone?: IconButtonTone
+  /** `xs` only for a dense inline toolbar row; see IconButtonSize. */
+  size?: IconButtonSize
   children: ReactNode
   /** A result is coming. Marks the control `aria-busy` and disables it, so a second tap cannot
    *  fire the same action twice (INTERACTION-STATES §1 "loading", §4 rule 4). The same contract
@@ -165,7 +189,7 @@ export function IconButton({
       title={label}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={cn(iconControl(variant, tone), className)}
+      className={cn(iconControl(variant, tone, size), className)}
       {...props}
     >
       {children}

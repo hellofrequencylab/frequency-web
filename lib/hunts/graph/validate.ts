@@ -1,12 +1,8 @@
-import { allGroupsSatisfied, defaultBucket, distinctMembers, edgeCount, parseInstant } from './rules'
+import { branchBlockers, choicePaths, withFallbackAliases } from './branches'
+import { chapterScopes, countRuleBlockers, missionBucket, playableKeys } from './count-rules'
+import { allGroupsSatisfied, blocker, distinctMembers, edgeCount, parseInstant } from './rules'
 import { MAX_EDGES, MAX_MISSIONS } from './types'
-import type { Blocker, BlockerCode, HuntGraph, Mission, RuleGroup, ValidationResult } from './types'
-
-const blocker = (code: BlockerCode, message: string, mission_keys: string[] = []): Blocker => ({
-  code,
-  message,
-  mission_keys: [...new Set(mission_keys)].sort(),
-})
+import type { Blocker, HuntGraph, Mission, RuleGroup, ValidationResult } from './types'
 
 function finalize(blockers: Blocker[]): ValidationResult {
   blockers.sort((a, b) => {
@@ -42,6 +38,20 @@ function shapeProblem(graph: unknown): string | null {
     if (!m.rule_groups.every(wellFormedGroup)) {
       return `Mission "${m.mission_key}" has a rule group that is not all, any or count with a members list.`
     }
+    if (m.placements !== undefined && m.placements !== null) {
+      const ok = Array.isArray(m.placements) && m.placements.every((p) => p && typeof p === 'object' && typeof p.placement_key === 'string' && p.placement_key !== '')
+      if (!ok) return `Mission "${m.mission_key}" has a placement without a placement_key.`
+    }
+  }
+  if (g.chapters !== undefined && g.chapters !== null) {
+    const ok =
+      Array.isArray(g.chapters) &&
+      g.chapters.every(
+        (c) =>
+          c && typeof c === 'object' && typeof c.chapter_key === 'string' && c.chapter_key !== '' &&
+          typeof c.enabled === 'boolean' && Array.isArray(c.members) && c.members.every((k) => typeof k === 'string'),
+      )
+    if (!ok) return 'Every chapter needs a chapter_key, an enabled flag and a members list.'
   }
   if (!g.finish.rule_groups.every(wellFormedGroup)) {
     return 'The finish rule has a group that is not all, any or count with a members list.'
@@ -95,13 +105,14 @@ function findCycles(missions: Mission[]): string[][] {
 
 /**
  * Fixed point of "which missions can ever be credited", assuming every creditable
- * mission is credited under its default bucket. With `timed`, a prerequisite whose
+ * mission is credited under its bucket. With `timed`, a prerequisite whose
  * window opens at or after the dependent mission closes cannot help that mission.
- * With `freeOnly`, missions behind a paid entitlement are skipped.
+ * With `freeOnly`, missions behind a paid entitlement are skipped. Only missions in
+ * `scope` can be credited (count-rules.ts: an open placement, an enabled chapter).
  */
 function reach(
   missions: Mission[],
-  opts: { timed: boolean; freeOnly: boolean },
+  opts: { timed: boolean; freeOnly: boolean; scope: ReadonlySet<string> },
   validWindow: Set<string>,
 ): Map<string, string> {
   const byKey = new Map(missions.map((m) => [m.mission_key, m]))
@@ -113,15 +124,16 @@ function reach(
     changed = false
     for (const m of missions) {
       if (creditable.has(m.mission_key)) continue
-      if (!validWindow.has(m.mission_key)) continue
+      if (!validWindow.has(m.mission_key) || !opts.scope.has(m.mission_key)) continue
       if (opts.freeOnly && m.requires_entitlement) continue
-      const view = new Map<string, string>()
+      const seen = new Map<string, string>()
       for (const [k, b] of creditable) {
         if (opts.timed && openOf(byKey.get(k)!) >= closeOf(m)) continue
-        view.set(k, b)
+        seen.set(k, b)
       }
-      if (allGroupsSatisfied(m.rule_groups, view)) {
-        creditable.set(m.mission_key, defaultBucket(m))
+      // One credit in a fallback group stands for every member (branches.ts).
+      if (allGroupsSatisfied(m.rule_groups, withFallbackAliases(missions, seen))) {
+        creditable.set(m.mission_key, missionBucket(m))
         changed = true
       }
     }
@@ -136,8 +148,16 @@ function reach(
  * Window overlap is read as feasibility: a mission whose prerequisites only open
  * at or after it closes can never be reached (WINDOW_UNREACHABLE).
  *
- * TODO(FH-042): bounded enumeration of exclusive-branch (choice_group) paths and
- * fallback_group substitutes.
+ * Count rules (FH-030): thresholds count distinct buckets among missions that can
+ * still be played, so a closed venue or a disabled chapter can make a threshold
+ * impossible; and every enabled chapter must hold a route to the finish, and one
+ * that needs no purchase (CHAPTER_INFEASIBLE, CHAPTER_NO_FREE_FINISH).
+ *
+ * Exclusive branches (FH-042): reachability is worked out once per choice path
+ * (branches.ts `choicePaths`, bounded). Whatever a player has committed to, some
+ * path must still finish (BRANCH_DEAD_END), and the finish must hold with every
+ * answer mission out of play, because a Mystery can run out of attempts
+ * (MYSTERY_NO_FALLBACK).
  */
 export function validateGraph(graph: HuntGraph): ValidationResult {
   try {
@@ -180,6 +200,7 @@ function validateInner(graph: HuntGraph): ValidationResult {
   }
   const keys = new Set(counts.keys())
   const byKey = new Map(missions.map((m) => [m.mission_key, m]))
+  const playable = playableKeys(graph)
 
   const checkGroup = (g: RuleGroup, where: string, owner: string[]): void => {
     const members = distinctMembers(g)
@@ -204,12 +225,12 @@ function validateInner(graph: HuntGraph): ValidationResult {
       return
     }
     const real = members.filter((k) => keys.has(k))
-    const distinct = new Set(real.map((k) => defaultBucket(byKey.get(k)!)))
+    const distinct = new Set(real.filter((k) => playable.has(k)).map((k) => missionBucket(byKey.get(k)!)))
     if (min > distinct.size) {
       blockers.push(
         blocker(
           'COUNT_IMPOSSIBLE',
-          `${where} needs ${min} distinct ones but only ${distinct.size} can ever count (missions that share a bucket count once). Lower the number or add more distinct missions.`,
+          `${where} needs ${min} distinct ones but only ${distinct.size} can ever count (missions that share a bucket count once, and a closed venue or a disabled chapter counts for nothing). Lower the number or add more distinct missions.`,
           [...owner, ...real],
         ),
       )
@@ -220,6 +241,9 @@ function validateInner(graph: HuntGraph): ValidationResult {
   if (graph.finish.rule_groups.length === 0) {
     blockers.push(blocker('FINISH_EMPTY', 'The finish rule is empty, so nobody could ever complete this Hunt. Say which mission or credits finish it.'))
   }
+
+  blockers.push(...countRuleBlockers(graph))
+  blockers.push(...branchBlockers(missions))
 
   // Windows.
   const validWindow = new Set<string>()
@@ -251,12 +275,33 @@ function validateInner(graph: HuntGraph): ValidationResult {
   // Reachability. Skipped when the structure is already broken: those blockers
   // say what to fix and reachability would only add noise.
   const structurallyBroken = blockers.some((b) =>
-    ['GROUP_EMPTY', 'COUNT_INVALID', 'MISSING_REF', 'DUPLICATE_MISSION', 'FINISH_EMPTY'].includes(b.code),
+    ['GROUP_EMPTY', 'COUNT_INVALID', 'MISSING_REF', 'DUPLICATE_MISSION', 'FINISH_EMPTY', 'CHAPTER_INVALID', 'BRANCH_INVALID', 'CHOICE_LIMIT'].includes(b.code),
   )
-  if (!structurallyBroken) {
-    const untimed = reach(missions, { timed: false, freeOnly: false }, validWindow)
-    const timed = reach(missions, { timed: true, freeOnly: false }, validWindow)
-    const free = reach(missions, { timed: true, freeOnly: true }, validWindow)
+  const paths = structurallyBroken ? null : choicePaths(missions)
+  if (paths) {
+    const finishes = (credited: ReadonlyMap<string, string>) => allGroupsSatisfied(graph.finish.rule_groups, withFallbackAliases(missions, credited))
+    /** Reachability of one scope, once per choice path. */
+    const analyse = (scope: ReadonlySet<string>) => {
+      const runs = paths.map((path) => {
+        const inPath = new Set([...scope].filter((k) => !path.excluded.has(k)))
+        const timed = reach(missions, { timed: true, freeOnly: false, scope: inPath }, validWindow)
+        const free = reach(missions, { timed: true, freeOnly: true, scope: inPath }, validWindow)
+        return { path, inPath, timed, finishes: finishes(timed), free: finishes(free) }
+      })
+      // A player holds the picks of a path that they could actually reach. From there some path that
+      // keeps those picks must finish; if none does, those picks are a dead end.
+      const deadEnds = new Map<string, string[]>()
+      for (const run of runs) {
+        const held = [...run.path.picks].filter(([, pick]) => run.timed.has(pick))
+        const ok = runs.some((other) => other.finishes && held.every(([group, pick]) => other.path.picks.get(group) === pick))
+        if (!ok) deadEnds.set(held.map(([, pick]) => pick).sort().join(','), held.map(([, pick]) => pick).sort())
+      }
+      return { runs, canFinish: runs.some((r) => r.finishes), canFinishFree: runs.some((r) => r.free), deadEnds: [...deadEnds.values()] }
+    }
+
+    const whole = analyse(playable)
+    const timed = new Set(whole.runs.flatMap((r) => [...r.timed.keys()]))
+    const untimed = new Set(whole.runs.flatMap((r) => [...reach(missions, { timed: false, freeOnly: false, scope: r.inPath }, validWindow).keys()]))
 
     for (const m of missions) {
       if (untimed.has(m.mission_key) && !timed.has(m.mission_key)) {
@@ -269,7 +314,7 @@ function validateInner(graph: HuntGraph): ValidationResult {
         )
       }
     }
-    if (!allGroupsSatisfied(graph.finish.rule_groups, timed)) {
+    if (!whole.canFinish) {
       const stuck = missions.map((m) => m.mission_key).filter((k) => !timed.has(k) && !cyclic.has(k))
       blockers.push(
         blocker(
@@ -278,11 +323,59 @@ function validateInner(graph: HuntGraph): ValidationResult {
           stuck,
         ),
       )
-    } else if (!allGroupsSatisfied(graph.finish.rule_groups, free)) {
-      const paid = missions.filter((m) => m.requires_entitlement).map((m) => m.mission_key)
-      blockers.push(
-        blocker('NO_FREE_PATH', 'The finish can only be reached through a paid mission. A free route to the finish has to exist.', paid),
-      )
+    } else {
+      for (const picks of whole.deadEnds) {
+        blockers.push(
+          blocker(
+            'BRANCH_DEAD_END',
+            `A player who chooses ${picks.map((k) => `"${k}"`).join(' and ')} can never finish. Every choice has to lead to the finish: add a route from it or remove the choice.`,
+            picks,
+          ),
+        )
+      }
+      if (!whole.canFinishFree) {
+        const paid = missions.filter((m) => m.requires_entitlement).map((m) => m.mission_key)
+        blockers.push(
+          blocker('NO_FREE_PATH', 'The finish can only be reached through a paid mission. A free route to the finish has to exist.', paid),
+        )
+      }
+      // A Mystery answer has a bounded number of attempts, so it can be lost for good. With every
+      // answer mission out of play, each choice must still finish (through its fallback).
+      const answers = missions.filter((m) => m.kind === 'answer').map((m) => m.mission_key)
+      if (answers.length > 0 && whole.deadEnds.length === 0) {
+        const without = analyse(new Set([...playable].filter((k) => !answers.includes(k))))
+        if (!without.canFinish || without.deadEnds.length > 0) {
+          blockers.push(
+            blocker(
+              'MYSTERY_NO_FALLBACK',
+              'A player who runs out of attempts on a Mystery answer would be stuck. Give each answer mission a fallback mission in the same fallback group, or keep it off the route to the finish.',
+              answers,
+            ),
+          )
+        }
+      }
+    }
+
+    // Every enabled chapter: a player who stays inside it can finish, and can finish free.
+    for (const scope of chapterScopes(graph)) {
+      const inChapter = analyse(scope.keys)
+      if (!inChapter.canFinish) {
+        blockers.push(
+          blocker(
+            'CHAPTER_INFEASIBLE',
+            `Chapter "${scope.chapter_key}" has no route to the finish on its own. Add missions or venues to it, lower the threshold, or switch the chapter off.`,
+            scope.members,
+          ),
+        )
+      } else if (!inChapter.canFinishFree) {
+        blockers.push(
+          blocker(
+            'CHAPTER_NO_FREE_FINISH',
+            `Chapter "${scope.chapter_key}" can only be finished through a paid mission. Each chapter needs a finish that costs nothing.`,
+            scope.members,
+          ),
+        )
+      }
     }
   }
 

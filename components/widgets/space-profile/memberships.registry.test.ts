@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PROFILE_BLOCKS } from '@/lib/spaces/profile-blocks'
+import { PROFILE_BLOCKS } from '@/lib/entity-blocks/space-profile'
 import { profilePaletteForKind, CORE_PROFILE_BLOCK_IDS } from '@/lib/entity-blocks/registry'
 import { isFunctionBackedBlock, blockDataSource } from '@/lib/entity-blocks/block-data-sources'
 import { SPACE_PROFILE_BLOCKS } from './space-profile-modules'

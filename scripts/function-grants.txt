@@ -356,6 +356,16 @@ publish_page_version                 internal
 revert_page_to_version               internal
 # Hunt reward grant (FH-021): service role only.
 hunt_reward_grant internal
+# Hunt Expedition teams (FH-043) and edition pins (FH-044): service role only; the three *_fn are trigger functions.
+hunt_team_create internal
+hunt_team_join internal
+hunt_team_lock internal
+hunt_team_claim_apply internal
+hunt_team_leave internal
+hunt_team_award_allocate internal
+hunt_team_claim_wall_fn internal
+hunt_run_pin_fn internal
+hunt_version_freeze_fn internal
 # Hunt reward redemption (FH-022): service role only.
 hunt_reward_redeem internal
 hunt_reward_void internal
@@ -377,3 +387,6 @@ analytics_experiment_withdraw_consent internal
 analytics_experiment_count_exclusion internal
 analytics_experiment_purge internal
 analytics_growth_snapshot internal
+# LIVE-2291: immutable support snapshots and enrollment contracts are trigger-only.
+freeze_journey_completion_policy internal
+freeze_practice_support_evidence internal

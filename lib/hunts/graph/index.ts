@@ -5,6 +5,7 @@ export { MAX_EDGES, MAX_MISSIONS } from './types'
 export type {
   Blocker,
   BlockerCode,
+  Chapter,
   Credit,
   Evaluation,
   FinishRule,

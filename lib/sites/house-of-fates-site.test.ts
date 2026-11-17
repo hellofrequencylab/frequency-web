@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { publishedWebsiteSnapshot, readWebsiteEditor, validWebsiteSnapshot, RESERVED_WEBSITE_SLUGS } from '@/lib/sites/editor/state'
-import { HOF_FOOTER, HOF_MENU, houseOfFatesEditorState } from './house-of-fates-site'
+import { HOF_BOOKING_LIVE, HOF_FOOTER, HOF_MENU, houseOfFatesEditorState } from './house-of-fates-site'
 import { readSiteFooter } from './site-footer'
 import { readSiteMenu } from '@/lib/spaces/site-menu'
 import { config } from '@/lib/page-editor/config'
@@ -36,7 +36,15 @@ describe('the House of Fates site', () => {
   it('draws only registered blocks and every page link resolves', () => {
     const slugs = new Set(state.draft.pages.map((p) => p.slug))
     for (const p of state.draft.pages) for (const b of p.doc.content) expect(Object.keys(config.components), `${p.slug} ${b.type}`).toContain(b.type)
-    for (const [, slug] of JSON.stringify(state.draft).matchAll(/"~\/([a-z-]+)"/g)) expect(slugs.has(slug), `~/${slug}`).toBe(true)
+    // `~/book` is the Space's own booking page (a reserved route the Space serves once it takes bookings), not a site page.
+    for (const [, slug] of JSON.stringify(state.draft).matchAll(/"~\/([a-z-]+)"/g)) expect(slugs.has(slug) || slug === 'book', `~/${slug}`).toBe(true)
+  })
+  it('sends every Book button to the booking page now that the Space takes bookings (LIVE-2322)', () => {
+    expect(HOF_BOOKING_LIVE).toBe(true)
+    expect(RESERVED_WEBSITE_SLUGS.has('book')).toBe(true)
+    expect(JSON.stringify(state.draft)).toContain('"~/book"')
+    expect(state.draft.chrome?.cta?.href).toBe('/book')
+    expect(readSiteMenu({ siteMenu: HOF_MENU })?.items.find((i) => i.label === 'Book')?.target).toEqual({ kind: 'auto', key: 'feature:book' })
   })
   it('keeps brand copy free of em dashes', () => {
     expect(JSON.stringify(state.draft)).not.toMatch(/—/)

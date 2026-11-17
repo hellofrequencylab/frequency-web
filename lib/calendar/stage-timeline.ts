@@ -1,4 +1,5 @@
 import { ENTRY_STAGES, entryStage, type EntryStage } from './registry'
+import { withReturnPath } from '@/lib/events/return-path'
 
 // THE STAGE TIMELINE (ADR-1504). The entry drawer walks an event on its way through four steps,
 // left to right: Pencil, Planning, Production, Publish. The first three are the stages ADR-1388
@@ -81,8 +82,14 @@ export function stageTimeline(opts: {
 
 /** The Production door: the event Spark, prefilled from this entry (`lib/calendar/production-prefill.ts`
  *  reads `pencil`, and `plan` when the date belongs to one). */
-export function productionDoorHref(spaceId: string, entryId: string, planId?: string | null): string {
+export function productionDoorHref(
+  spaceId: string,
+  entryId: string,
+  planId?: string | null,
+  /** The Space page to come back to once the event is published (LIVE-2319). */
+  returnTo?: string | null,
+): string {
   const q = new URLSearchParams({ space: spaceId, pencil: entryId })
   if (planId) q.set('plan', planId)
-  return `/events/new?${q.toString()}`
+  return withReturnPath(`/events/new?${q.toString()}`, returnTo)
 }

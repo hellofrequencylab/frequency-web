@@ -9,6 +9,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { loadScanPlacement, openClaim } from '@/lib/hunts/claim-store'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { isCrawler } from '@/lib/hunts/placement'
+import { HELD_VISIT_MESSAGE } from '@/lib/hunts/player'
 import { loadPublicTrailSummary } from '@/lib/hunts/run-store'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
@@ -53,6 +54,7 @@ function claimFeedback(result: string | string[] | undefined): string | undefine
   switch (result) {
     case 'credited': return 'Stop confirmed.'
     case 'already_credited': return 'You already confirmed this stop.'
+    case 'held': return HELD_VISIT_MESSAGE
     case 'unavailable': return 'This stop could not be confirmed.'
   }
 }

@@ -1,0 +1,19 @@
+{
+  "id": "PERF-004",
+  "title": "The front door ships the unused DAWN branch's client code, so / sits at its 450 KB first-load cap and unrelated PRs fail the build",
+  "lane": "hygiene",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/page.tsx",
+    "ref": "Production e173a1f (2026-11-17) read the front door / at 450 KB of its 450 KB check:shell-weight budget; Dependabot #5138 (resend 6.38.1, Playwright 1.65.1, no browser code) failed that gate on its Vercel preview."
+  },
+  "detail": "MEASURED 2026-11-17 from production rkw7zm69n (commit e173a1f). The 12 chunks check:shell-weight counts for [project]/app/page add up to 460,767 bytes against 460,800, so 33 bytes were left. A local build of main reads 458,109; Vercel inlines about 2.7 KB more (analytics config, Sentry DSN and SHA, the Maps key, and about 2 KB not yet traced). CAUSE: SITE_DESIGN always resolves to frequency, so / renders SiteShell + FrequencyHome, but app/page.tsx still statically imported the DAWN branch's modules: lib/page-editor/config (every site-kit block, about 184 KB in one chunk), the Puck field pickers, MarketingHeader with its mega menu and the lib/nav/studio admin catalog, and MarketingFooter. A static import puts every 'use client' module those reach into the page's eager JS whether or not the branch renders. FIX: an import() inside the branch was tried first and did not help: Turbopack still collects client references through async imports (preview e3f5dab78 kept the 179 KB block-kit chunk eager). So the branch reads its modules from lib/theme/design-home/active, which scripts/write-design-assets.mjs points at the build's design, the same pattern as design-fonts/active (ADR-1737). The Frequency build points it at stand-ins that throw if ever called. The branch's JSX is unchanged, so check:render-path (home renders BlockRender), SCAN-802's schema probe and the MarketingHeader viewer test still read it. The Vercel preview's check:shell-weight line is the measurement. Further trims if ever needed: split lib/nav/studio's admin catalog out of lib/nav/registry, and keep editor-only field pickers out of block configs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/page.tsx','utf8');const a=fs.readFileSync('lib/theme/design-home/active.ts','utf8');const bad=[];for(const m of ['@/lib/page-editor/config','@/lib/page-editor/templates','@/components/layout/marketing-header','@/components/layout/marketing-footer'])if(s.includes(\\\"from '\\\"+m+\\\"'\\\")||s.includes(\\\"import('\\\"+m+\\\"')\\\"))bad.push('app/page.tsx imports '+m);if(!s.includes(\\\"from '@/lib/theme/design-home/active'\\\"))bad.push('app/page.tsx no longer reads the DAWN modules from lib/theme/design-home/active');if(!/^export \\\\* from '.\\\\/frequency'$/m.test(a))bad.push('committed lib/theme/design-home/active.ts does not point at ./frequency');if(/page-editor\\\\/config|marketing-header/.test(fs.readFileSync('lib/theme/design-home/frequency.ts','utf8').replace(/^import type .*$/gm,'')))bad.push('the Frequency stand-ins reach a real DAWN module');if(bad.length){console.error('PERF-004: '+bad.join('; '));process.exit(1)}console.log('PERF-004 ok')\"",
+    "note": "The consequence is the Vercel build's check:shell-weight front-door line, which fails the deploy on its own. This probe keeps the cause from coming back: app/page.tsx reaches the DAWN-only client modules only through lib/theme/design-home/active, which a Frequency build points at stand-ins."
+  },
+  "wave": "W7"
+}

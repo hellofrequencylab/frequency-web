@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowUpRight, Calendar, CalendarDays, MapPin, Ticket, Users } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { buttonClasses } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
 import { loadEventJoinState, type EventJoinState } from '@/app/(main)/events/join-state-actions'
@@ -85,7 +86,7 @@ export function SpaceEventsList({ items }: { items: SpaceEventsViewItem[] }) {
               type="button"
               onClick={() => open(e.id)}
               data-space-event-row={cancelled ? 'cancelled' : 'live'}
-              className="flex w-full items-center gap-4 rounded-control border border-border/60 bg-surface/60 px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary-bg/20"
+              className={choiceTileClasses(false, 'flex w-full items-center gap-4 rounded-control px-4 py-3 text-left')}
             >
               <span
                 className={cn(

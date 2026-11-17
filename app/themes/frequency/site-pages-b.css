@@ -584,6 +584,9 @@
 [data-design="frequency"] [data-kit="site"] .pm-trav{display:none}
 [data-design="frequency"] [data-kit="site"] .pm-hit, [data-design="frequency"] [data-kit="site"] .pm-node, [data-design="frequency"] [data-kit="site"] .pm-tip{transition:none}
 }
+/* Phones: the travelling dots animate offset-distance, which cannot run on the compositor, so they cost
+   a main-thread frame for as long as the page is open. They go, as they do under reduced motion. */
+@media (max-width:760px),(hover:none){[data-design="frequency"] [data-kit="site"] .pm-trav{display:none}}
 
 /* ── THE PRICING CALCULATOR (design handoff "Pricing calculator", 2026-10-21) ───────────────────────────
    A dark stage that holds still while the page scrolls through seven tiers. The palette below is the

@@ -94,3 +94,4 @@ docs/naming/PLAN.md
 docs/SPACE-EMAIL-BUILD-PLAN.md
 docs/scans/2026-10-14-site-scan.md
 docs/hunts/PILOT-TRAIL-CHECKLIST.md
+docs/perf/public-cwv-baseline.md

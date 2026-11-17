@@ -1,13 +1,13 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type DragEvent } from 'react'
 import Image from 'next/image'
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { capsLabel } from '@/components/ui/caps-label'
 import { Input } from '@/components/ui/field'
 import { LoomPicker } from '@/components/loom/loom-picker'
-import { looksLikeImage } from '@/lib/library/upload-kinds'
+import { droppedFileProblem, looksLikeImage } from '@/lib/library/upload-kinds'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { valueFromServerUpload, type ServerUploadResult } from '@/lib/library/upload-result'
 import type { ColumnImage } from '@/lib/library/column-image'
@@ -95,6 +95,8 @@ export function ImageUpload({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  // True while a file is dragged over the drop zone, so the zone lights up (LIVE-2318).
+  const [dragOver, setDragOver] = useState(false)
   // The Loom picker returns a public URL, so it only applies to URL-mode controls.
   const useLoom = loom && mode === 'url'
   const openSource = () => (useLoom ? setPickerOpen(true) : inputRef.current?.click())
@@ -102,6 +104,41 @@ export function ImageUpload({
   // What the <img> preview shows. In path mode the stored value is a path, so resolve it.
   const previewSrc =
     value && mode === 'path' ? createClient().storage.from(bucket).getPublicUrl(value).data.publicUrl : value
+
+  // Drag-and-drop (LIVE-2318). Without these handlers the browser treats a drop as "open this file",
+  // which navigates away (Safari) and loses whatever the person had typed into the form. Every drag
+  // event is cancelled here; a dropped image uploads straight through `pick` (the same gates as the
+  // file input), and a non-image gets a plain message instead.
+  const canDrop = !disabled && !busy
+  function onDragOver(e: DragEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!canDrop) {
+      e.dataTransfer.dropEffect = 'none'
+      return
+    }
+    e.dataTransfer.dropEffect = 'copy'
+    if (!dragOver) setDragOver(true)
+  }
+  function onDragLeave(e: DragEvent) {
+    // Ignore leaves into a child of the zone; only clear when the pointer really left it.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+    setDragOver(false)
+  }
+  function onDrop(e: DragEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(false)
+    if (!canDrop) return
+    const file = e.dataTransfer.files?.[0]
+    if (!file) return
+    const problem = droppedFileProblem(file.type, file.name)
+    if (problem) {
+      setError(problem)
+      return
+    }
+    void pick(file)
+  }
 
   async function pick(raw: File) {
     setError(null)
@@ -210,6 +247,16 @@ export function ImageUpload({
         <ImageIcon className="h-3.5 w-3.5" /> {label}
       </span>
 
+      <div
+        data-image-drop-zone
+        onDragEnter={onDragOver}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className={
+          dragOver ? 'rounded-card ring-2 ring-primary ring-offset-2 ring-offset-canvas' : undefined
+        }
+      >
       {previewSrc ? (
         <div className="relative overflow-hidden rounded-card border border-border">
           {/* Unoptimized: covers come from user-controlled hosts + Supabase Storage, not the
@@ -250,9 +297,16 @@ export function ImageUpload({
           className="flex h-32 w-full flex-col items-center justify-center gap-1.5 rounded-control border border-dashed border-border text-body-sm text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
-          {busy ? 'Uploading…' : useLoom ? 'Choose or upload a photo' : 'Upload a photo'}
+          {busy
+            ? 'Uploading…'
+            : dragOver
+              ? 'Drop your photo here'
+              : useLoom
+                ? 'Choose or upload a photo'
+                : 'Upload a photo'}
         </button>
       )}
+      </div>
 
       {useLoom && (
         <LoomPicker

@@ -9,6 +9,7 @@ import { StudioWindow } from '@/components/studio/studio-window'
 import { StudioFooter } from '@/components/studio/kit/studio-footer'
 import { Field, Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 type Visibility = 'public' | 'private'
 
@@ -131,9 +132,12 @@ export function NewRoomCompose({
                     onClick={() => setVisibility(v)}
                     disabled={isPending}
                     aria-pressed={visibility === v}
-                    className={`flex items-start gap-2.5 rounded-control border px-3 py-2.5 text-left transition-colors ${
-                      visibility === v ? 'border-primary bg-primary-bg ring-2 ring-primary/30' : 'border-border hover:bg-surface-elevated'
-                    }`}
+                    className={choiceTileClasses(
+                      visibility === v,
+                      visibility === v
+                        ? 'flex items-start gap-2.5 rounded-control px-3 py-2.5 text-left ring-2 ring-primary/30'
+                        : 'flex items-start gap-2.5 rounded-control px-3 py-2.5 text-left',
+                    )}
                   >
                     <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${visibility === v ? 'text-primary-strong' : 'text-subtle'}`} />
                     <span className="min-w-0">

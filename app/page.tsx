@@ -1,13 +1,19 @@
 import type { Metadata } from 'next'
 import type { Data } from '@/lib/page-editor/types'
-import { BlockRender } from '@/lib/page-editor/block-render'
-import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
-import { config } from '@/lib/page-editor/config'
-import { getPublishedData } from '@/lib/page-editor/data'
-import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
-import { MarketingHeader } from '@/components/layout/marketing-header'
-import { MarketingFooter } from '@/components/layout/marketing-footer'
-import { getMenu, getMenuSettings } from '@/lib/menus/read'
+// The DAWN branch's modules come from the build's design (PERF-004). A static import of the real
+// modules here put the whole block library on `/` under Frequency. See lib/theme/design-home.
+import {
+  BlockRender,
+  BlockDocJsonLd,
+  config,
+  getPublishedData,
+  getTemplate,
+  isWellFormed,
+  MarketingHeader,
+  MarketingFooter,
+  getMenu,
+  getMenuSettings,
+} from '@/lib/theme/design-home/active'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 import { resolvePageContent } from '@/lib/page-content'
