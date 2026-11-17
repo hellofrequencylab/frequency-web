@@ -9,7 +9,9 @@ let plan: string | null = 'free'
 let meterOk = true
 let sentCount = 1
 const seamCalls: { html: string }[] = []
-const writes: unknown[] = []
+const writes: Record<string, unknown>[] = []
+// The one draft row, stateful so the LIVE-2329 claim can be raced.
+let rowStatus = 'draft'
 
 vi.mock('@/lib/spaces/store', () => ({
   getSpaceById: async (id: string) => ({
@@ -36,17 +38,34 @@ vi.mock('@/lib/spaces/email', async (orig) => ({
   ...(await orig<typeof import('@/lib/spaces/email')>()),
   sendSpaceCampaign: async (_spaceId: string, input: { html: string }) => {
     seamCalls.push(input)
+    await new Promise((r) => setTimeout(r, 5))
     return { data: { sent: sentCount, suppressed: sentCount ? 0 : 1, failed: 0 } }
   },
 }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from() {
+      let patch: Record<string, unknown> | null = null
+      let statusIn: string[] | null = null
+      const apply = () => {
+        if (!patch) return false
+        if (statusIn && !statusIn.includes(rowStatus)) return false
+        writes.push(patch)
+        if (typeof patch.status === 'string') rowStatus = patch.status
+        return true
+      }
       const api: Record<string, unknown> = {
         select: () => api,
-        update: (value: unknown) => { writes.push(value); return api },
-        eq: () => api,
-        maybeSingle: () => Promise.resolve({ data: { id: 'draft-1', subject: 'Spring', preheader: '', block_json: null, status: 'draft', space_id: 'space-A' }, error: null }),
+        update: (value: Record<string, unknown>) => { patch = value; return api },
+        eq: (col: string, val: string) => { if (col === 'status') statusIn = [val]; return api },
+        in: (col: string, vals: string[]) => { if (col === 'status') statusIn = vals; return api },
+        maybeSingle: () =>
+          Promise.resolve(
+            patch
+              ? { data: apply() ? { id: 'draft-1' } : null, error: null }
+              : { data: { id: 'draft-1', subject: 'Spring', preheader: '', block_json: null, status: rowStatus, space_id: 'space-A' }, error: null },
+          ),
+        then: (resolve: (r: unknown) => unknown) => { apply(); return Promise.resolve(resolve({ data: null, error: null })) },
       }
       return api
     },
@@ -61,6 +80,7 @@ beforeEach(() => {
   sentCount = 1
   seamCalls.length = 0
   writes.length = 0
+  rowStatus = 'draft'
 })
 
 const sends = [
@@ -79,6 +99,7 @@ describe.each(sends)('%s runs the plain send gates (SCAN-866)', (_name, send) =>
     await send()
     expect(seamCalls[0].html).toContain('Sent with <a')
     plan = 'business'
+    rowStatus = 'draft' // the first send stamped it sent; start the paid run from a fresh draft
     await send()
     expect(seamCalls[1].html).not.toContain('Sent with <a')
   })
@@ -86,6 +107,21 @@ describe.each(sends)('%s runs the plain send gates (SCAN-866)', (_name, send) =>
   it('a send that reached nobody fails and is not stamped sent', async () => {
     sentCount = 0
     expect(await send()).toEqual({ error: 'Nobody on this list has opted in to email yet, so nothing was sent.' })
-    expect(writes).toHaveLength(0)
+    expect(writes.some((w) => w.status === 'sent')).toBe(false)
+    // LIVE-2329: the claim is handed back, so the owner can fix the list and send again.
+    expect(rowStatus).toBe('draft')
+  })
+
+  it('two presses at once send once; the second is refused (LIVE-2329)', async () => {
+    const [a, b] = await Promise.all([send(), send()])
+    expect(seamCalls).toHaveLength(1)
+    expect([a, b].filter((r) => 'error' in r)).toEqual([{ error: 'This email is already going out, or has gone out.' }])
+    expect(rowStatus).toBe('sent')
+  })
+
+  it('a row another send already holds is never sent again (LIVE-2329)', async () => {
+    rowStatus = 'sending'
+    expect(await send()).toEqual({ error: 'This email is already going out, or has gone out.' })
+    expect(seamCalls).toHaveLength(0)
   })
 })

@@ -33,6 +33,7 @@ import { parseEmailRenderLayout } from '@/lib/email-studio/render-layout'
 // campaigns.ts uses; only the jsonb block_json payload keeps a narrow Json cast.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { log, briefError } from '@/lib/log'
 import type { Json, TablesUpdate } from '@/lib/database.types'
 import { getMyProfileId, getCallerProfile, getCachedUser } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -154,6 +155,90 @@ async function readDraft(id: string, spaceId: string): Promise<DraftRow | null> 
   } catch {
     return null
   }
+}
+
+// ── The send claim (LIVE-2329) ───────────────────────────────────────────────────────────────────────────
+
+/** The statuses a draft may be sent from by hand. 'sending' and 'sent' are absent, so a second claim on a
+ *  row another send holds, or one that has gone out, matches nothing. */
+const SENDABLE_STATUSES = ['draft', 'scheduled', 'failed']
+
+/** Settle a conditional 'sending' claim: 'claimed' when this caller got the row back, 'taken' when another
+ *  send holds it or it has gone out, 'error' when the write failed (nothing is sent then). */
+async function settleClaim(
+  id: string,
+  claim: PromiseLike<{ data: unknown; error: unknown }>,
+): Promise<'claimed' | 'taken' | 'error'> {
+  try {
+    const { data, error } = await claim
+    if (error) {
+      log.error('spaces.email_send.claim_failed', { id, error: briefError(error) })
+      return 'error'
+    }
+    return data ? 'claimed' : 'taken'
+  } catch (err) {
+    log.error('spaces.email_send.claim_failed', { id, error: briefError(err) })
+    return 'error'
+  }
+}
+
+/** The refusal for a lost or failed claim. */
+function claimRefusal(claim: 'taken' | 'error'): string {
+  return claim === 'taken'
+    ? 'This email is already going out, or has gone out.'
+    : 'We could not start this send. Try again in a moment.'
+}
+
+/** Put a claimed draft back to the status it had, after a send that delivered nothing, so the owner can
+ *  retry. Only a row still 'sending' is touched. A failed write is logged. */
+async function releaseClaim(id: string, spaceId: string, status: string): Promise<void> {
+  try {
+    const { error } = await campaignsTable()
+      .update({ status, sending_started_at: null })
+      .eq('id', id)
+      .eq('space_id', spaceId)
+      .eq('status', 'sending')
+    if (error) log.error('spaces.email_send.release_failed', { id, error: briefError(error) })
+  } catch (err) {
+    log.error('spaces.email_send.release_failed', { id, error: briefError(err) })
+  }
+}
+
+/** Run the send seam under a held claim. A throw, an error result, or a send that reached nobody hands the
+ *  row back (releaseClaim) so the owner can retry; the caller then refuses a send that reached nobody and
+ *  stamps a delivered one with stampSent. */
+async function sendUnderClaim(
+  id: string,
+  spaceId: string,
+  priorStatus: string,
+  send: () => ReturnType<typeof sendViaSeam>,
+): Promise<Awaited<ReturnType<typeof sendViaSeam>>> {
+  let res: Awaited<ReturnType<typeof sendViaSeam>>
+  try {
+    res = await send()
+  } catch (err) {
+    log.error('spaces.email_send.seam_threw', { id, error: briefError(err) })
+    await releaseClaim(id, spaceId, priorStatus)
+    return fail('The send did not go out. Try again in a moment.')
+  }
+  if (isError(res) || !res.data.sent) await releaseClaim(id, spaceId, priorStatus)
+  return res
+}
+
+/** Stamp a delivered send 'sent' with its count. A failed stamp is logged (the row then stays 'sending',
+ *  never sendable again, and the log is how it is found). recipient_count feeds the campaign list and the
+ *  Marketing Sent column (SCAN-705). */
+async function stampSent(id: string, spaceId: string, sent: number): Promise<ActionResult<{ recipientCount: number }>> {
+  try {
+    const { error } = await campaignsTable()
+      .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: sent })
+      .eq('id', id)
+      .eq('space_id', spaceId)
+    if (error) log.error('spaces.email_send.stamp_failed', { id, error: briefError(error) })
+  } catch (err) {
+    log.error('spaces.email_send.stamp_failed', { id, error: briefError(err) })
+  }
+  return ok({ recipientCount: sent })
 }
 
 // ── PUBLIC SERVER ACTIONS ────────────────────────────────────────────────────────────────────────────────
@@ -475,8 +560,9 @@ async function withRecipientNames(spaceId: string, recipients: SpaceRecipient[])
  * SEND a block-email draft NOW to a resolved audience. Gated on canEditProfile + the row belonging to the
  * Space. Compiles the block layout to branded HTML with the Space's OWN palette (spaceEmailColors) and a
  * per-recipient unsubscribe placeholder, resolves the recipients over the Space's own contacts, and hands
- * them to the shared send seam (which owns the kill-switch, cap, suppression, unsubscribe, and ledger). On
- * success stamps the row status='sent' + sent_at (best-effort). Fail-closed on any gate / validation miss.
+ * them to the shared send seam (which owns the kill-switch, cap, suppression, unsubscribe, and ledger). The
+ * row is claimed as 'sending' first (LIVE-2329), so a second send is refused; on success it is stamped
+ * status='sent' + sent_at (a failed stamp is logged). Fail-closed on any gate / validation miss.
  */
 export async function sendSpaceEmailDraft(
   spaceId: string,
@@ -516,25 +602,28 @@ export async function sendSpaceEmailDraft(
   if (recipients.length === 0)
     return fail('No one matched that audience yet. Add contacts or pick a different filter.')
 
-  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients, mergeTags: true })
+  // LIVE-2329: CLAIM the row before a single email goes out. The status read above is not a lock: two
+  // tabs, a double press, or Send now racing the scheduled-send cron all pass it. Only the caller this
+  // conditional update hands the row back to sends; the other is refused.
+  const claim = await settleClaim(
+    id,
+    campaignsTable()
+      .update({ status: 'sending', sending_started_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('space_id', spaceId)
+      .in('status', SENDABLE_STATUSES)
+      .select('id')
+      .maybeSingle(),
+  )
+  if (claim !== 'claimed') return fail(claimRefusal(claim))
+
+  const res = await sendUnderClaim(id, spaceId, row.status ?? 'draft', () =>
+    sendViaSeam(spaceId, { campaignId: id, subject, html, recipients, mergeTags: true }),
+  )
   if (isError(res)) return res
   // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
   if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
-
-  // Stamp the draft as sent with how many it reached (best-effort: the emails already went out, so a
-  // failed status write must not surface as a send failure). recipient_count feeds the campaign list
-  // and the Marketing Sent column (SCAN-705).
-  try {
-    await campaignsTable()
-      .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: res.data.sent })
-      .eq('id', id)
-      .eq('space_id', spaceId)
-      .maybeSingle()
-  } catch {
-    // ignore: the send succeeded; the status stamp is non-critical.
-  }
-
-  return ok({ recipientCount: res.data.sent })
+  return stampSent(id, spaceId, res.data.sent)
 }
 
 /**
@@ -579,23 +668,28 @@ export async function sendSpaceEmailDraftToRecipients(
   const subject = compiled.subject || 'Your email'
   const html = compiled.html
 
-  const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients: await withRecipientNames(spaceId, recipients), mergeTags: true })
+  const named = await withRecipientNames(spaceId, recipients)
+
+  // LIVE-2329: the same claim as sendSpaceEmailDraft, so a double press sends once.
+  const claim = await settleClaim(
+    id,
+    campaignsTable()
+      .update({ status: 'sending', sending_started_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('space_id', spaceId)
+      .in('status', SENDABLE_STATUSES)
+      .select('id')
+      .maybeSingle(),
+  )
+  if (claim !== 'claimed') return fail(claimRefusal(claim))
+
+  const res = await sendUnderClaim(id, spaceId, row.status ?? 'draft', () =>
+    sendViaSeam(spaceId, { campaignId: id, subject, html, recipients: named, mergeTags: true }),
+  )
   if (isError(res)) return res
   // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
   if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
-
-  // Stamp the draft as sent with how many it reached (best-effort: the emails already went out).
-  try {
-    await campaignsTable()
-      .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: res.data.sent })
-      .eq('id', id)
-      .eq('space_id', spaceId)
-      .maybeSingle()
-  } catch {
-    // ignore: the send succeeded; the status stamp is non-critical.
-  }
-
-  return ok({ recipientCount: res.data.sent })
+  return stampSent(id, spaceId, res.data.sent)
 }
 
 /**

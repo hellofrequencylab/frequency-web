@@ -35,6 +35,7 @@ import { campaignCarriesFrequencyFooter } from '@/lib/spaces/campaign-footer'
 import { spaceEmailBrand } from '@/lib/spaces/email-colors'
 import { renderCampaignHtml as renderBrandedCampaignHtml } from '@/lib/spaces/campaign-html'
 import { checkCampaignMonthMeter } from '@/lib/spaces/counted-meters'
+import { log, briefError } from '@/lib/log'
 
 // The plain-text body's render lives in lib/spaces/campaign-html.ts (EMAIL-024): the Studio shell wearing the
 // Space's brand, the per-Space unsubscribe placeholder the send seam swaps per recipient, the CAN-SPAM postal
@@ -393,8 +394,9 @@ export async function scheduleSpaceCampaign(
  * to the send seam (sendSpaceCampaign from @/lib/spaces/email).
  *
  * The send seam owns suppression, per-recipient unsubscribe, the kill-switch (isSpaceEmailEnabled),
- * and the per-Space daily cap; on a successful send this action stamps the campaign status='sent' +
- * sent_at (best-effort, since the emails already went out). Fail-closed on any gate / validation miss.
+ * and the per-Space daily cap. Before the seam runs, the row is claimed as 'sending' (LIVE-2329) so a
+ * second send of the same campaign is refused; on a successful send this action stamps status='sent' +
+ * sent_at (a failed stamp is logged). Fail-closed on any gate / validation miss.
  */
 export async function sendSpaceCampaign(
   spaceId: string,
@@ -433,35 +435,102 @@ export async function sendSpaceCampaign(
   // The body wears the Space's brand (its palette, wordmark and logo) and, on a free plan, the quiet
   // "Sent with Frequency" line (EMAIL-024).
   const sender = await getSpaceById(spaceId)
-  const res = await sendViaSeam(spaceId, {
-    campaignId: id,
-    subject: existing.subject,
-    html: renderBrandedCampaignHtml(existing.body ?? '', {
-      brand: sender ? spaceEmailBrand(sender) : undefined,
-      sentWithFrequency: campaignCarriesFrequencyFooter(sender?.plan),
-    }),
-    topic,
-    recipients,
-  })
-  if (isError(res)) return res
+
+  // LIVE-2329: CLAIM the row before a single email goes out. The status read above is not a lock: two
+  // tabs, a double press, or Send now racing the scheduled-send cron all pass it. This conditional
+  // update flips the row to 'sending' only while it is still sendable, so exactly one caller gets the
+  // row back and sends; the other is refused. It stamps the same lease the cron takes, so a send that
+  // dies part way reads as stalled, not live.
+  const priorStatus = existing.status
+  const claim = await claimCampaignForSend(id, spaceId)
+  if (claim === 'error') return fail('We could not start this send. Try again in a moment.')
+  if (claim === 'taken') return fail(lockedMessage('sending'))
+
+  let res: Awaited<ReturnType<typeof sendViaSeam>>
+  try {
+    res = await sendViaSeam(spaceId, {
+      campaignId: id,
+      subject: existing.subject,
+      html: renderBrandedCampaignHtml(existing.body ?? '', {
+        brand: sender ? spaceEmailBrand(sender) : undefined,
+        sentWithFrequency: campaignCarriesFrequencyFooter(sender?.plan),
+      }),
+      topic,
+      recipients,
+    })
+  } catch (err) {
+    log.error('spaces.campaign_send.seam_threw', { id, spaceId, error: briefError(err) })
+    await releaseCampaignClaim(id, spaceId, priorStatus)
+    return fail('The send did not go out. Try again in a moment.')
+  }
+  // Nothing went out: hand the row back to its old status so the owner can fix it and retry.
+  if (isError(res)) {
+    await releaseCampaignClaim(id, spaceId, priorStatus)
+    return res
+  }
 
   // SCAN-704: a campaign whose every recipient was suppressed (no opt-in yet) delivered nothing. It
   // is not sent; say so instead of stamping it and telling the owner it is on its way.
   if (!res.data.sent) {
+    await releaseCampaignClaim(id, spaceId, priorStatus)
     return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
   }
 
-  // Stamp the campaign as sent with how many it reached (best-effort: the emails already went out, so a
-  // failed status write must not surface as a send failure). recipient_count is what the campaign list
-  // and the Marketing Sent column print; without it every sent campaign reads 0 (SCAN-705).
+  // Stamp the campaign as sent with how many it reached. The emails already went out, so a failed write
+  // does not surface as a send failure, but it is logged: the row stays 'sending' (never sendable
+  // again) and the log is how an operator finds it. recipient_count is what the campaign list and the
+  // Marketing Sent column print; without it every sent campaign reads 0 (SCAN-705).
   try {
-    await campaignsTable()
+    const { error } = await campaignsTable()
       .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: res.data.sent })
       .eq('id', id)
       .eq('space_id', spaceId)
-  } catch {
-    // ignore: the send succeeded; the status stamp is non-critical.
+    if (error) log.error('spaces.campaign_send.stamp_failed', { id, spaceId, error: briefError(error) })
+  } catch (err) {
+    log.error('spaces.campaign_send.stamp_failed', { id, spaceId, error: briefError(err) })
   }
 
   return ok({ recipientCount: res.data.sent })
+}
+
+/** The statuses a campaign may be sent from by hand (LIVE-2329). 'sending' and 'sent' are absent, so a
+ *  second claim on a row someone else holds or already sent matches nothing. */
+const SENDABLE_STATUSES = ['draft', 'scheduled', 'failed']
+
+/** Atomically take a campaign for sending: flip it to 'sending' where it is still sendable and return
+ *  whether this caller won. 'taken' means another send holds it or it has gone out; 'error' means the
+ *  write itself failed, so nothing is sent. */
+async function claimCampaignForSend(id: string, spaceId: string): Promise<'claimed' | 'taken' | 'error'> {
+  try {
+    const { data, error } = await campaignsTable()
+      .update({ status: 'sending', sending_started_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('space_id', spaceId)
+      .in('status', SENDABLE_STATUSES)
+      .select('id')
+      .maybeSingle()
+    if (error) {
+      log.error('spaces.campaign_send.claim_failed', { id, spaceId, error: briefError(error) })
+      return 'error'
+    }
+    return data ? 'claimed' : 'taken'
+  } catch (err) {
+    log.error('spaces.campaign_send.claim_failed', { id, spaceId, error: briefError(err) })
+    return 'error'
+  }
+}
+
+/** Put a claimed campaign back to the status it had before the claim, after a send that delivered
+ *  nothing, so the owner can retry. Only a row still 'sending' is touched. A failed write is logged. */
+async function releaseCampaignClaim(id: string, spaceId: string, status: string): Promise<void> {
+  try {
+    const { error } = await campaignsTable()
+      .update({ status, sending_started_at: null })
+      .eq('id', id)
+      .eq('space_id', spaceId)
+      .eq('status', 'sending')
+    if (error) log.error('spaces.campaign_send.release_failed', { id, spaceId, error: briefError(error) })
+  } catch (err) {
+    log.error('spaces.campaign_send.release_failed', { id, spaceId, error: briefError(err) })
+  }
 }

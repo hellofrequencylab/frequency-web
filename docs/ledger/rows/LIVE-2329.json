@@ -4,12 +4,13 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
+  "closed": "2026-11-17",
   "source": {
     "file": "lib/spaces/email-drafts.ts",
     "ref": "Space function scan 2026-11-17 (project thread: Trace every Space feature end to end)"
   },
-  "detail": "sendSpaceEmailDraft (lib/spaces/email-drafts.ts) and the plain campaign send (lib/spaces/campaigns.ts) read the row's status, send through the seam, and only then stamp status='sent', inside a try that ignores a failed write. Two tabs, a double press, or Send now racing the scheduled-send cron each pass the status read and mail the whole audience. When the stamp fails the campaign stays sendable and the owner is not told. Fix: a conditional update to 'sending' where status is still draft or scheduled, sending only when that update returned the row, and a failed final stamp logged. The status column has no check constraint in production (read 2026-11-17), so 'sending' needs no migration.",
+  "detail": "sendSpaceEmailDraft (lib/spaces/email-drafts.ts) and the plain campaign send (lib/spaces/campaigns.ts) read the row's status, send through the seam, and only then stamp status='sent', inside a try that ignores a failed write. Two tabs, a double press, or Send now racing the scheduled-send cron each pass the status read and mail the whole audience. When the stamp fails the campaign stays sendable and the owner is not told. Fix: a conditional update to 'sending' where status is still draft or scheduled, sending only when that update returned the row, and a failed final stamp logged. The status column has no check constraint in production (read 2026-11-17), so 'sending' needs no migration. Fixed 2026-11-17: sendSpaceCampaign, sendSpaceEmailDraft and sendSpaceEmailDraftToRecipients now flip the row to sending (with the cron lease stamp) in one conditional update where status is still draft, scheduled or failed, and only the caller that got the row back sends; the other is refused. A send that errors, throws or reaches nobody hands the row back to its old status so the owner can retry, and a failed final sent stamp is logged instead of ignored (the scheduled-send cron already claimed the same way).",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/space-scan-2026-11-17.mjs LIVE-2329",
