@@ -6,10 +6,11 @@ import { rateLimitOk, clientIp, tooMany } from '@/lib/rate-limit'
 import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo } from '@/lib/core/access-matrix'
 import { matchDestinations } from '@/lib/search/destinations'
-import { searchPeople, searchPosts, searchEvents, searchCircles, searchSpaces, searchPractices } from '@/app/(main)/search/search-data'
+import { searchPeople, searchPosts, searchEvents, searchCircles, searchSpaces, searchPractices, searchJourneys, searchSpotlights, searchMarket } from '@/app/(main)/search/search-data'
+import { browsableAreas } from '@/lib/marketplace/visibility'
 
 // Live search for the in-app search overlay (components/search/search-overlay.tsx).
-// Returns bounded people/posts/events/circles/spaces/practices/leads groups as JSON, so
+// Returns bounded people/posts/events/circles/spaces/practices/journeys/spotlights/market/leads groups as JSON, so
 // the overlay can show results as you type. The full /search page is the "see all"
 // destination. Mirrors the queries on that page; auth-gated (in-app search).
 //
@@ -18,7 +19,7 @@ import { searchPeople, searchPosts, searchEvents, searchCircles, searchSpaces, s
 // locality — gated by lib/crm/visibility. Only stewards/staff have or can see these,
 // so we resolve the viewer through connectionsOwnerId() and skip the query otherwise.
 
-const EMPTY = { people: [], posts: [], events: [], circles: [], spaces: [], practices: [], leads: [], pages: [] }
+const EMPTY = { people: [], posts: [], events: [], circles: [], spaces: [], practices: [], journeys: [], spotlights: [], market: [], leads: [], pages: [] }
 
 export async function GET(request: Request) {
   if (!(await rateLimitOk('search', clientIp(request), 60, '60 s'))) return tooMany()
@@ -45,10 +46,13 @@ export async function GET(request: Request) {
     .map((d) => ({ href: d.href, label: d.label, group: d.group }))
 
   try {
-    const kinds = ['people', 'posts', 'events', 'circles', 'spaces', 'practices'] as const
+    // Market products answer only while the makers area is browsable, the same gate /search uses.
+    const marketOn = (await browsableAreas()).includes('makers')
+    const kinds = ['people', 'posts', 'events', 'circles', 'spaces', 'practices', 'journeys', 'spotlights', 'market'] as const
     const outcomes = await Promise.allSettled([
       searchPeople(q, 6), searchPosts(q, 4), searchEvents(q, 6),
       searchCircles(q, 6), searchSpaces(q, 6), searchPractices(q, 6),
+      searchJourneys(q, 4), searchSpotlights(q, 4), marketOn ? searchMarket(q, 4) : Promise.resolve({ rows: [], truncated: false }),
     ])
     const groups = Object.fromEntries(outcomes.map((outcome, i) => [kinds[i], outcome.status === 'fulfilled' ? outcome.value.rows : []]))
     const unavailable = outcomes.flatMap((outcome, i) => outcome.status === 'rejected' ? [kinds[i]] : [])
