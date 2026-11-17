@@ -1,0 +1,19 @@
+{
+  "id": "SRCH-004",
+  "title": "Admin member search finds every member, not only the newest 200",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "app/(main)/admin/members/page.tsx",
+    "ref": "Search coverage scan 2026-11-17 (project thread: Make search cover every public item)"
+  },
+  "detail": "/admin/members reads the newest 200 non-system profiles and the search box filters that array in the browser, so once the roster passes 200 an older member cannot be found by name, handle or email (78 profiles today, so latent; the VIP list alone is 576). Fix: when ?q= is set, the page reads matching profiles server-side by display_name or handle (applySearchTerms) and by email from the auth listing it already pages, then hands those rows to the same table.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/search-coverage-2026-11-17.mjs SRCH-004",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
