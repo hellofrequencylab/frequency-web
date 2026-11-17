@@ -204,15 +204,15 @@ async function releaseClaim(id: string, spaceId: string, status: string): Promis
   }
 }
 
-/** Run the send seam under a held claim: a throw, an error result or a send that reached nobody hands the
- *  row back (releaseClaim); a delivered send is stamped 'sent' with its count, and a failed stamp is
- *  logged (the row then stays 'sending', never sendable again, and the log is how it is found). */
+/** Run the send seam under a held claim. A throw, an error result, or a send that reached nobody hands the
+ *  row back (releaseClaim) so the owner can retry; the caller then refuses a send that reached nobody and
+ *  stamps a delivered one with stampSent. */
 async function sendUnderClaim(
   id: string,
   spaceId: string,
   priorStatus: string,
   send: () => ReturnType<typeof sendViaSeam>,
-): Promise<ActionResult<{ recipientCount: number }>> {
+): Promise<Awaited<ReturnType<typeof sendViaSeam>>> {
   let res: Awaited<ReturnType<typeof sendViaSeam>>
   try {
     res = await send()
@@ -221,26 +221,24 @@ async function sendUnderClaim(
     await releaseClaim(id, spaceId, priorStatus)
     return fail('The send did not go out. Try again in a moment.')
   }
-  if (isError(res)) {
-    await releaseClaim(id, spaceId, priorStatus)
-    return res
-  }
-  // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
-  if (!res.data.sent) {
-    await releaseClaim(id, spaceId, priorStatus)
-    return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
-  }
-  // recipient_count feeds the campaign list and the Marketing Sent column (SCAN-705).
+  if (isError(res) || !res.data.sent) await releaseClaim(id, spaceId, priorStatus)
+  return res
+}
+
+/** Stamp a delivered send 'sent' with its count. A failed stamp is logged (the row then stays 'sending',
+ *  never sendable again, and the log is how it is found). recipient_count feeds the campaign list and the
+ *  Marketing Sent column (SCAN-705). */
+async function stampSent(id: string, spaceId: string, sent: number): Promise<ActionResult<{ recipientCount: number }>> {
   try {
     const { error } = await campaignsTable()
-      .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: res.data.sent })
+      .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: sent })
       .eq('id', id)
       .eq('space_id', spaceId)
     if (error) log.error('spaces.email_send.stamp_failed', { id, error: briefError(error) })
   } catch (err) {
     log.error('spaces.email_send.stamp_failed', { id, error: briefError(err) })
   }
-  return ok({ recipientCount: res.data.sent })
+  return ok({ recipientCount: sent })
 }
 
 // ── PUBLIC SERVER ACTIONS ────────────────────────────────────────────────────────────────────────────────
@@ -619,9 +617,13 @@ export async function sendSpaceEmailDraft(
   )
   if (claim !== 'claimed') return fail(claimRefusal(claim))
 
-  return sendUnderClaim(id, spaceId, row.status ?? 'draft', () =>
+  const res = await sendUnderClaim(id, spaceId, row.status ?? 'draft', () =>
     sendViaSeam(spaceId, { campaignId: id, subject, html, recipients, mergeTags: true }),
   )
+  if (isError(res)) return res
+  // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
+  if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
+  return stampSent(id, spaceId, res.data.sent)
 }
 
 /**
@@ -681,9 +683,13 @@ export async function sendSpaceEmailDraftToRecipients(
   )
   if (claim !== 'claimed') return fail(claimRefusal(claim))
 
-  return sendUnderClaim(id, spaceId, row.status ?? 'draft', () =>
+  const res = await sendUnderClaim(id, spaceId, row.status ?? 'draft', () =>
     sendViaSeam(spaceId, { campaignId: id, subject, html, recipients: named, mergeTags: true }),
   )
+  if (isError(res)) return res
+  // SCAN-704's rule, as the plain send has it: every recipient suppressed means nothing went out.
+  if (!res.data.sent) return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
+  return stampSent(id, spaceId, res.data.sent)
 }
 
 /**
