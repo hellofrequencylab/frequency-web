@@ -29,6 +29,21 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   { name: 'onboarding.funnel_entered', category: 'lifecycle', description: 'A visitor loaded a Funnel splash (props.seq, props.style).', clientEmittable: true },
   { name: 'onboarding.funnel_captured', category: 'lifecycle', description: 'A feature funnel captured a lead email mid-flow (props.seq, props.style).', clientEmittable: true },
 
+  // The /how advisor brief (lib/how/brief-events.ts). Anonymous by design: recorded ONLY by
+  // /api/how/beacon (consent-gated, rate-limited, cookie-free sid), never by /api/track, so
+  // clientEmittable stays false and a member POST can't spoof them.
+  { name: 'how.view', category: 'engagement', description: 'The /how brief was opened (props.ref, utm_*, device).', clientEmittable: false },
+  { name: 'how.section_view', category: 'engagement', description: 'A /how section came into view (props.section).', clientEmittable: false },
+  { name: 'how.section_dwell', category: 'engagement', description: 'Time a /how section was on screen (props.section, props.ms).', clientEmittable: false },
+  { name: 'how.scroll_depth', category: 'engagement', description: 'A /how scroll-depth milestone (props.pct).', clientEmittable: false },
+  { name: 'how.heartbeat', category: 'engagement', description: 'Engaged time on /how, every 15s (props.engaged_s).', clientEmittable: false },
+  { name: 'how.calc_input', category: 'engagement', description: 'A /how calculator slider settled (props.calc, key, value).', clientEmittable: false },
+  { name: 'how.appendix_open', category: 'engagement', description: 'A /how appendix item opened (props.item).', clientEmittable: false },
+  { name: 'how.link_click', category: 'engagement', description: 'An in-page link on /how was used (props.kind, target).', clientEmittable: false },
+  { name: 'how.copy', category: 'engagement', description: 'Text was copied from /how (props.section, chars).', clientEmittable: false },
+  { name: 'how.complete', category: 'engagement', description: 'The /how reader reached the closing section.', clientEmittable: false },
+  { name: 'how.exit', category: 'engagement', description: 'The /how page was hidden or left (props.engaged_s, max_pct).', clientEmittable: false },
+
   // ── Server-authoritative lifecycle + engagement (recorded server-side only) ──
   { name: 'account.created', category: 'lifecycle', description: 'New auth user / profile row (props.source).', clientEmittable: false },
   { name: 'lead.captured', category: 'lifecycle', description: 'A server-confirmed durable lead was saved (props.source).', clientEmittable: false },

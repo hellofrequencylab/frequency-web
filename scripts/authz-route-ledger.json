@@ -375,6 +375,12 @@
       "reason": "HYG-245: the help center's search index (titles, summaries and keywords from content/help), built once at deploy time with dynamic = 'force-static' and served from the edge. Anonymous by design: it is the same public help center a signed-out visitor reads at /help. The handler takes no session, reads no headers, cookies or DB, holds no admin client, and returns the same body to every caller.",
       "checked": "2026-11-16",
       "digest": "a26da5a2f8fe8a76"
+    },
+    "app/api/how/beacon/route.ts": {
+      "verdict": "public",
+      "reason": "Anonymous engagement sink for the link-only /how brief. Takes no session and resolves no profile: every event is written through track() with actorProfileId null, so nothing account-tied crosses the boundary and the response is the same 204 for every caller. It reads three request facts only to REFUSE or THROTTLE, never to authorize: Sec-GPC (opt-out, returns early), the consent cookie via currentViewerAllowsAnalytics (declined analytics records nothing), and the client IP as part of the rate-limit key (300 per 10 minutes per visit). The batch is validated by cleanBriefBatch (allow-listed how.* names, bounded props, capped batch size) before anything is written.",
+      "checked": "2026-11-16",
+      "digest": "a920af068f44a2bd"
     }
   }
 }
