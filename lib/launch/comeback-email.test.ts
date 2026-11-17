@@ -31,15 +31,15 @@ describe('comebackClock', () => {
 
 describe('buildComebackEmail', () => {
   for (const kind of COMEBACK_KINDS) {
-    it(`${kind}: warm plain copy, the time left, one button to /launch, an unsubscribe`, () => {
+    it(`${kind}: warm plain copy, the time left, one button to /launch/resume, an unsubscribe`, () => {
       const e = buildComebackEmail({ kind, ...base })
       expect(e.to).toBe('sam@example.com')
       expect(`${e.subject} ${e.html} ${e.text}`).not.toMatch(/[—–]/)
       expect(e.subject).not.toMatch(/[!]/)
       expect(e.html).toContain('7:42')
       expect(e.text).toContain('7:42')
-      expect(e.html).toContain('href="https://frequencylocal.com/launch"')
-      expect(e.text).toContain('https://frequencylocal.com/launch')
+      expect(e.html).toContain('href="https://frequencylocal.com/launch/resume"')
+      expect(e.text).toContain('https://frequencylocal.com/launch/resume')
       expect(e.html).toContain('Spotlight, Your Space')
       expect(e.html).toContain('Next up is Website.')
       expect(e.html).toMatch(/unsubscribe/i)
@@ -47,6 +47,16 @@ describe('buildComebackEmail', () => {
       expect(e.html).toContain('Hi Sam,')
     })
   }
+
+  it('carries the launch id to /launch/resume, never the bare /launch a signed-out visitor is hopped away from (LIVE-2330)', () => {
+    const lid = '3F2B8C1E-9A4D-4E6F-8B7A-1C2D3E4F5A6B'
+    const e = buildComebackEmail({ kind: 'comeback_1d', ...base, baseUrl: 'https://frequencylocal.com/', launchId: lid })
+    const href = `https://frequencylocal.com/launch/resume?lid=${lid.toLowerCase()}`
+    expect(e.html).toContain(`href="${href}"`)
+    expect(e.text).toContain(href)
+    expect(e.html).not.toContain('href="https://frequencylocal.com/launch"')
+    expect(buildComebackEmail({ kind: 'comeback_1d', ...base, launchId: 'x"><b>' }).html).toContain('href="https://frequencylocal.com/launch/resume"')
+  })
 
   it('says Publish nowhere it should not, and never mentions photos', () => {
     for (const kind of COMEBACK_KINDS) {

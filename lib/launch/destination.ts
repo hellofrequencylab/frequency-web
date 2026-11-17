@@ -21,6 +21,21 @@ export function launchHomeHref(opts: { signedIn?: boolean; lid?: string | null }
   return opts.lid && LAUNCH_ID.test(opts.lid) ? `${LAUNCH_HOME}?lid=${opts.lid.toLowerCase()}` : LAUNCH_HOME
 }
 
+const LAUNCH_RESUME = '/launch/resume'
+
+/** The come-back link (LIVE-2330): /launch/resume, carrying the launch id when it is one. Unlike the bare /launch,
+ *  which proxy.ts hops to the Create a Space wizard for a visitor with no session, this route sends a signed-out
+ *  owner through sign-in and back to their own launch. Anything that is not a launch id is dropped. */
+export function launchResumeHref(lid?: string | null): string {
+  return lid && LAUNCH_ID.test(lid) ? `${LAUNCH_RESUME}?lid=${lid.toLowerCase()}` : LAUNCH_RESUME
+}
+
+/** Where /launch/resume sends a signed-out request: sign-in, with `next` (the param app/sign-in/page.tsx reads through
+ *  lib/auth/safe-next.ts) pointing back at the same resume link, so the owner lands on their launch afterwards. */
+export function launchResumeSignInHref(lid?: string | null): string {
+  return `/sign-in?next=${encodeURIComponent(launchResumeHref(lid))}`
+}
+
 /** A step address as the launch page links it: marked as in-flow so the step opens instead of bouncing back. */
 export function inFlowHref(href: string): string {
   return `${href}${href.includes('?') ? '&' : '?'}${IN_FLOW_PARAM}=1`
