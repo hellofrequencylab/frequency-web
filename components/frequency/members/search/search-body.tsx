@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo } from '@/lib/core/access-matrix'
 import { matchDestinations } from '@/lib/search/destinations'
+import { hiddenRoutes, isHiddenRoute } from '@/lib/search/hidden-routes'
 import { relativeTime } from '@/lib/utils'
 import { formatWhen } from '@/app/(main)/events/index-data'
 import {
@@ -18,6 +19,12 @@ import {
   searchPosts,
   searchPractices,
   searchSpaces,
+  searchJourneys,
+  searchSpotlights,
+  searchMarket,
+  type JourneyRow,
+  type SpotlightRow,
+  type MarketRow,
   type SpaceRow,
   type PracticeRow,
   type CircleRow,
@@ -55,7 +62,10 @@ const KINDS = [
   ['events', 'Events'],
   ['workshops', 'Workshops & learning'],
   ['practices', 'Practices'],
+  ['journeys', 'Journeys'],
   ['spaces', 'Spaces'],
+  ['spotlights', 'Spotlights'],
+  ['market', 'Market'],
   ['listings', 'Listings'],
   ['posts', 'Posts'],
 ] as const
@@ -75,15 +85,17 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
   const all = kind === 'all'
   const none = <T,>(): Promise<Window<T>> => Promise.resolve({ rows: [], truncated: false })
 
-  const areas = await browsableAreas()
-  const listingsOn = areas.includes('market')
+  // SRCH-002: a kind whose pages the left menu hides never answers, and "Go to" never offers one.
+  const [areas, hidden] = await Promise.all([browsableAreas(), hiddenRoutes()])
+  const listingsOn = areas.includes('market') && !isHiddenRoute('/classifieds', hidden)
+  const marketOn = areas.includes('makers') && !isHiddenRoute('/market', hidden)
   const spaceCap = all ? 4 : 24
   const listingCap = all ? 4 : 24
   const unavailable: string[] = []
   const read = async <T,>(kind: string, promise: Promise<Window<T>>): Promise<Window<T>> => {
     try { return await promise } catch { unavailable.push(kind); return { rows: [], truncated: false } }
   }
-  const [people, circles, events, posts, viewer, hats, spaces, listings, practices] = await Promise.all([
+  const [people, circles, events, posts, viewer, hats, spaces, listings, practices, journeys, spotlights, market] = await Promise.all([
     want('people') ? read('people', searchPeople(query, all ? 6 : undefined)) : none<PersonRow>(),
     want('circles') ? read('circles', searchCircles(query, all ? 4 : undefined)) : none<CircleRow>(),
     (want('events') || want('workshops')) ? read('events', searchEvents(query, all ? 5 : undefined, kind === 'workshops' ? 'learning' : undefined)) : none<EventRow>(),
@@ -97,6 +109,9 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
           .catch((): Window<MarketListingWithAuthor> => { unavailable.push('listings'); return { rows: [], truncated: false } })
       : none<MarketListingWithAuthor>(),
     want('practices') ? read('practices', searchPractices(query, all ? 6 : 24)) : none<PracticeRow>(),
+    want('journeys') ? read('journeys', searchJourneys(query, all ? 4 : 24)) : none<JourneyRow>(),
+    want('spotlights') ? read('spotlights', searchSpotlights(query, all ? 4 : 24)) : none<SpotlightRow>(),
+    want('market') && marketOn ? read('market', searchMarket(query, all ? 4 : 24)) : none<MarketRow>(),
   ])
 
   const me = viewer?.id ?? null
@@ -136,11 +151,12 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
   const pages = hats
     ? matchDestinations(query)
         .filter((d) => !d.surface || accessTo(d.surface, hats) !== 'none')
+        .filter((d) => !isHiddenRoute(d.href, hidden))
         .slice(0, 5)
     : []
 
-  const total = people.rows.length + circles.rows.length + events.rows.length + posts.rows.length + spaces.rows.length + listings.rows.length + practices.rows.length
-  const anyTruncated = people.truncated || circles.truncated || events.truncated || posts.truncated || spaces.truncated || listings.truncated || practices.truncated
+  const total = people.rows.length + circles.rows.length + events.rows.length + posts.rows.length + spaces.rows.length + listings.rows.length + practices.rows.length + journeys.rows.length + spotlights.rows.length + market.rows.length
+  const anyTruncated = people.truncated || circles.truncated || events.truncated || posts.truncated || spaces.truncated || listings.truncated || practices.truncated || journeys.truncated || spotlights.truncated || market.truncated
   const countLine = !ready ? '' : unavailable.length > 0 ? `${total} available results` : total === 0 ? 'No results' : `${anyTruncated ? 'More than ' : ''}${total} ${total === 1 ? 'result' : 'results'}`
   const href = (k: Kind) => `/search?q=${encodeURIComponent(query)}${k === 'all' ? '' : `&tab=${k}`}`
   const now = new Date()
@@ -157,7 +173,7 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
           {countLine && <span className="meta">{countLine}</span>}
         </form>
         <nav className="chips" aria-label="What to search">
-          {KINDS.filter(([k]) => k !== 'listings' || listingsOn).map(([k, label]) => (
+          {KINDS.filter(([k]) => (k !== 'listings' || listingsOn) && (k !== 'market' || marketOn)).map(([k, label]) => (
             <Link key={k} href={href(k)} className={kind === k ? 'chip on' : 'chip'} aria-current={kind === k ? 'page' : undefined}>
               {label}
             </Link>
@@ -278,6 +294,30 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
             </section>
           )}
 
+          {journeys.rows.length > 0 && (
+            <section className="sec">
+              <div className="sec-h"><h2 className="h2">Journeys</h2>{all && journeys.truncated && <Link href={href('journeys')} className="meta">See all</Link>}</div>
+              <div className="list">{journeys.rows.map((j) => <Link key={j.id} href={`/journeys/${j.slug}`}><span className="ic"><FqIcon name="compass" /></span><span className="grow"><span className="t1 fqm-block">{j.emoji ? `${j.emoji} ` : ''}{j.title}</span><span className="t2">{[j.daily_minutes ? `${j.daily_minutes} min a day` : null, j.summary].filter(Boolean).join(' · ')}</span></span><FqIcon name="arrow" /></Link>)}</div>
+              {!all && journeys.truncated && <More n={journeys.rows.length} noun="Journeys" />}
+            </section>
+          )}
+
+          {spotlights.rows.length > 0 && (
+            <section className="sec">
+              <div className="sec-h"><h2 className="h2">Spotlights</h2>{all && spotlights.truncated && <Link href={href('spotlights')} className="meta">See all</Link>}</div>
+              <div className="list">{spotlights.rows.map((sp) => <Link key={sp.id} href={`/spotlight/${sp.handle}`}><FqAvatar url={sp.avatar_url} name={sp.display_name} /><span className="grow"><span className="t1 fqm-block">{sp.display_name}</span><span className="t2">Spotlight · @{sp.handle}</span></span><FqIcon name="arrow" /></Link>)}</div>
+              {!all && spotlights.truncated && <More n={spotlights.rows.length} noun="Spotlights" />}
+            </section>
+          )}
+
+          {market.rows.length > 0 && (
+            <section className="sec">
+              <div className="sec-h"><h2 className="h2">Market</h2>{all && market.truncated && <Link href={href('market')} className="meta">See all</Link>}</div>
+              <div className="list">{market.rows.map((m) => <Link key={m.id} href={m.href}><span className="ph fa-thumb72" style={phStyle(m.image)} aria-hidden /><span className="grow"><span className="t1 fqm-block">{m.title}</span><span className="t2">{[marketPrice(m), m.category].filter(Boolean).join(' · ')}</span></span></Link>)}</div>
+              {!all && market.truncated && <More n={market.rows.length} noun="Market items" />}
+            </section>
+          )}
+
           {listings.rows.length > 0 && (
             <section className={events.rows.length + circles.rows.length + people.rows.length + spaces.rows.length > 0 ? 'sec' : undefined}>
               <div className="sec-h">
@@ -361,6 +401,11 @@ export async function FrequencySearch({ query, rawTab }: { query: string; safe: 
 
 function More({ n, noun }: { n: number; noun: string }) {
   return <p className="meta fqm-more">Showing the first {n} {noun}. Add another word to narrow the search.</p>
+}
+
+function marketPrice(m: MarketRow): string {
+  if (m.priceCents <= 0) return 'Free'
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: (m.currency || 'usd').toUpperCase() }).format(m.priceCents / 100)
 }
 
 function excerpt(body: string): string {

@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight, ScanLine, Compass, Building2, CircleDot, Flower2 } from 'lucide-react'
+import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight, ScanLine, Compass, Building2, CircleDot, Flower2, Map as MapIcon, Sparkles, ShoppingBag } from 'lucide-react'
 import { getInitials, formatEventDate, eventDateBadge } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { paletteDestinations, type NavViewer } from '@/lib/nav/registry'
+import { FALLBACK_HIDDEN, isHiddenRoute } from '@/lib/search/hidden-routes-shared'
 import { railIconFor } from '@/components/layout/nav-icons'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { Input } from '@/components/ui/field'
@@ -33,11 +34,14 @@ type Lead = { id: string; displayName: string; email: string | null; city: strin
 // is NOT fetched — the palette projects it from the registry client-side (see below).
 type Entity = { id: string; name: string; slug: string; image_url?: string | null; brand_name?: string | null; brand_logo_url?: string | null; tagline?: string | null }
 type Practice = { id: string; title: string; slug: string | null; summary: string | null; duration_min: number | null }
-type Results = { people: Person[]; posts: Post[]; events: EventHit[]; leads: Lead[]; circles: Entity[]; spaces: Entity[]; practices: Practice[]; unavailable?: string[] }
-const CATEGORIES = ['all', 'events', 'people', 'spaces', 'circles', 'practices', 'posts'] as const
+type JourneyHit = { id: string; slug: string; title: string; summary: string | null; emoji: string | null; daily_minutes: number | null }
+type SpotlightHit = { id: string; handle: string; display_name: string; avatar_url: string | null }
+type MarketHit = { id: string; title: string; href: string; image: string | null; category: string | null }
+type Results = { people: Person[]; posts: Post[]; events: EventHit[]; leads: Lead[]; circles: Entity[]; spaces: Entity[]; practices: Practice[]; journeys: JourneyHit[]; spotlights: SpotlightHit[]; market: MarketHit[]; unavailable?: string[]; hiddenRoutes?: string[] }
+const CATEGORIES = ['all', 'events', 'people', 'spaces', 'circles', 'practices', 'journeys', 'spotlights', 'market', 'posts'] as const
 type Category = (typeof CATEGORIES)[number]
 
-const EMPTY: Results = { people: [], posts: [], events: [], leads: [], circles: [], spaces: [], practices: [] }
+const EMPTY: Results = { people: [], posts: [], events: [], leads: [], circles: [], spaces: [], practices: [], journeys: [], spotlights: [], market: [] }
 
 export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer: NavViewer }) {
   const [q, setQ] = useState('')
@@ -45,6 +49,9 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [category, setCategory] = useState<Category>('all')
+  // SRCH-002: routes the left menu hides. Starts from the fail-closed list and takes the live one from
+  // the first /api/search response, so "Go to" never offers /nearby, /network or the like.
+  const [hiddenRoutes, setHiddenRoutes] = useState<readonly string[]>(FALLBACK_HIDDEN)
   const requestRef = useRef<AbortController | null>(null)
   const versionRef = useRef(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -102,6 +109,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
         if (version !== versionRef.current) return
         if (!res.ok) throw new Error(res.status === 401 ? 'Your session has ended. Sign in again to search.' : res.status === 429 ? 'Please wait a moment, then try again.' : 'Search is temporarily unavailable. Please try again.')
         setResults({ ...EMPTY, ...json })
+        if (Array.isArray(json.hiddenRoutes)) setHiddenRoutes(json.hiddenRoutes)
       } catch (reason) {
         if (version !== versionRef.current || controller.signal.aborted) return
         setError(reason instanceof Error ? reason.message : 'Search is temporarily unavailable. Please try again.')
@@ -127,8 +135,8 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
   // list never drifts from a hand-maintained catalog. Computed client-side (the registry
   // + gate are framework-free); no round-trip. Capped so the palette stays scannable.
   const pages = useMemo(
-    () => (hasQuery ? paletteDestinations(viewer, trimmed).slice(0, 6) : []),
-    [viewer, trimmed, hasQuery],
+    () => (hasQuery ? paletteDestinations(viewer, trimmed).filter((d) => !isHiddenRoute(d.href, hiddenRoutes)).slice(0, 6) : []),
+    [viewer, trimmed, hasQuery, hiddenRoutes],
   )
 
   const visible = (kind: Category) => category === 'all' || category === kind
@@ -265,6 +273,16 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
               </ResultGroup>
               <ResultGroup hidden={!visible('practices')} label="Practices" icon={Flower2} count={results.practices.length}>
                 {results.practices.map((practice) => <ResultRow key={practice.id} href={`/practices/${practice.slug ?? practice.id}`} onNavigate={onClose} title={practice.title} subtitle={[practice.duration_min ? `${practice.duration_min} min` : null, practice.summary].filter(Boolean).join(' · ')} fallback={practice.title} />)}
+              </ResultGroup>
+
+              <ResultGroup hidden={!visible('journeys')} label="Journeys" icon={MapIcon} count={results.journeys.length}>
+                {results.journeys.map((j) => <ResultRow key={j.id} href={`/journeys/${j.slug}`} onNavigate={onClose} title={j.emoji ? `${j.emoji} ${j.title}` : j.title} subtitle={[j.daily_minutes ? `${j.daily_minutes} min a day` : null, j.summary].filter(Boolean).join(' · ') || 'Journey'} fallback={j.title} />)}
+              </ResultGroup>
+              <ResultGroup hidden={!visible('spotlights')} label="Spotlights" icon={Sparkles} count={results.spotlights.length}>
+                {results.spotlights.map((sp) => <ResultRow key={sp.id} href={`/spotlight/${sp.handle}`} onNavigate={onClose} avatar={sp.avatar_url} fallback={sp.display_name} title={sp.display_name} subtitle={`Spotlight · @${sp.handle}`} />)}
+              </ResultGroup>
+              <ResultGroup hidden={!visible('market')} label="Market" icon={ShoppingBag} count={results.market.length}>
+                {results.market.map((m) => <ResultRow key={m.id} href={m.href} onNavigate={onClose} avatar={m.image} fallback={m.title} title={m.title} subtitle={m.category ?? 'Market'} />)}
               </ResultGroup>
 
               <ResultGroup hidden={!visible('posts')} label="Posts" icon={FileText} count={results.posts.length}>

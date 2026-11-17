@@ -39,7 +39,7 @@ const COMMERCE_MEDIA_BUCKET = 'event-media'
 /** Resolve a stored image reference to a public URL. A value already looking like a URL (a legacy row,
  *  or a ticket projection's event-media URL) passes through untouched; a storage path is resolved via
  *  getPublicUrl. Keeps the maker/Shop uploader on PATHS while cards + the detail page get URLs. */
-function resolveImage(ref: string): string {
+export function resolveProductImage(ref: string): string {
   if (/^https?:\/\//i.test(ref)) return ref
   return db().storage.from(COMMERCE_MEDIA_BUCKET).getPublicUrl(ref).data.publicUrl
 }
@@ -59,7 +59,7 @@ function rowToProduct(r: Record<string, unknown>): CommerceProduct {
     title: r.title as string,
     description: (r.description as string) ?? null,
     // Stored as storage paths (or legacy URLs); resolved to public URLs for display.
-    images: ((r.images as string[]) ?? []).map(resolveImage),
+    images: ((r.images as string[]) ?? []).map(resolveProductImage),
     priceCents: r.price_cents as number,
     currency: r.currency as string,
     stock: (r.stock as number) ?? null,
