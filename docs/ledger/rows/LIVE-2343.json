@@ -9,7 +9,7 @@
     "file": "components/frequency/members/shell/members-shell.tsx",
     "ref": "Owner decision 2026-11-17 (card): \"Your Space and Create at the top\""
   },
-  "detail": "A Space owner's console (Spotlight, page editor, Email, CRM, calendar, money) opened only from the Your Spaces group drawn below Your Circles, usually under the fold, and New event, New Circle and List a product sat in a Create group below that. Fix: liftTopGroups (nav.ts) lifts both out of the resolved work menu. The desktop rail opens with a Create pill that unfolds its rows in place, then a Your Space row for owners (one Space opens its console, several open /spaces/operating), then the seven shortcuts; the folded rail and the phone drawer carry the same rows at their top. Leadership and the Admin console stay below Your Circles. Members who run no Space see Create only.",
+  "detail": "A Space owner's console (Spotlight, page editor, Email, CRM, calendar, money) opened only from the Your Spaces group drawn below Your Circles, usually under the fold, and New event, New Circle and List a product sat in a Create group below that. Fix: liftTopGroups (nav.ts) lifts both out of the resolved work menu. The desktop rail opens with a Create pill that unfolds its rows in place, then a Your Space row for owners (one Space opens its console, several open /spaces/operating), then the seven shortcuts; the folded rail and the phone drawer carry the same rows at their top. Leadership and the Admin console stay below Your Circles. Members who run no Space see Create only. The directory shortcut reads Spaces (owner card, 2026-11-17), with SCAN-962's probe widened to match.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/LIVE-2343.mjs",
