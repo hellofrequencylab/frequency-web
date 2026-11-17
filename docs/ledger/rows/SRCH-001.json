@@ -1,0 +1,19 @@
+{
+  "id": "SRCH-001",
+  "title": "Member search finds public Journeys, published Spotlights and Market products",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "app/(main)/search/search-data.ts",
+    "ref": "Search coverage scan 2026-11-17 (project thread: Make search cover every public item)"
+  },
+  "detail": "Owner ask 2026-11-17: member search should touch every forward-facing item. The /search page and the live search (app/api/search/route.ts, components/search/search-overlay.tsx) read people, posts, events, circles, Spaces and practices only. Production 2026-11-17 holds 6 public library Journeys, 4 published member Spotlights and 35 active Market products (commerce_products market_published) that no search can reach: typing a Journey's or a product's exact title returns nothing. Daniel ruled on 2026-11-17 (decision card in the thread) that public Journeys DO appear in member search while /journeys stays hidden from the menu. Fix: three gated readers in search-data.ts (journey_plans public and not rejected; profiles active, not system, meta.spotlight.published, linking /spotlight/<handle>; listMarketListings' gates while the makers area is browsable), wired into both surfaces as tabs and categories.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/search-coverage-2026-11-17.mjs SRCH-001",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
