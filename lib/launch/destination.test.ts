@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { inFlowHref, launchHomeHref, spotlightArrivalGoesHome, isAnonLaunchPage } from './destination'
+import { inFlowHref, launchHomeHref, launchResumeHref, launchResumeSignInHref, spotlightArrivalGoesHome, isAnonLaunchPage } from './destination'
+import { safeNextPath } from '@/lib/auth/safe-next'
 
 const LID = '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b'
 
@@ -48,5 +49,22 @@ describe('isAnonLaunchPage (LIVE-2324)', () => {
     for (const p of ['/launch', '/launch/claim', '/launch/resume', '/launch/step/space', '/launch/step/spotlight/x', '/', null]) {
       expect(isAnonLaunchPage(p)).toBe(false)
     }
+  })
+})
+
+describe('launchResumeHref (LIVE-2330)', () => {
+  it('is /launch/resume, with the launch id when it is one', () => {
+    expect(launchResumeHref()).toBe('/launch/resume')
+    expect(launchResumeHref(LID.toUpperCase())).toBe(`/launch/resume?lid=${LID}`)
+    expect(launchResumeHref('not-a-launch&x=1')).toBe('/launch/resume')
+  })
+  it('signed out, goes to sign-in with a next the sign-in page accepts and that leads back to the same launch', () => {
+    const href = launchResumeSignInHref(LID)
+    const u = new URL(href, 'https://frequencylocal.com')
+    expect(u.pathname).toBe('/sign-in')
+    const next = u.searchParams.get('next')
+    expect(next).toBe(`/launch/resume?lid=${LID}`)
+    expect(safeNextPath(next)).toBe(next)
+    expect(new URL(launchResumeSignInHref(null), 'https://x.test').searchParams.get('next')).toBe('/launch/resume')
   })
 })

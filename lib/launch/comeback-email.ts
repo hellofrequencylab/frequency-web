@@ -6,12 +6,15 @@
 // VOICE (docs/CONTENT-VOICE.md, lib/ai/voice.ts): the pain first, then the way back. Warm, plain, no hard claims,
 // no guilt, no em dashes. Nothing here is invented: the only specifics are what the launch row already holds (the
 // steps they finished, the next one, the time left on their own clock). A person who skipped a photo is not nagged
-// about it; photos are never named. Each email carries one button, to /launch, the one destination.
+// about it; photos are never named. Each email carries one button, to /launch/resume (LIVE-2330), which opens /launch
+// for the owner and, when their session has expired, sends them through sign-in and back instead of to the empty
+// Create a Space wizard that a bare /launch opens for a signed-out visitor.
 
 import { emailButton, emailShell, escapeHtml, EMAIL_H1, EMAIL_MUTED, EMAIL_P, type EmailPayload } from '@/lib/email'
 import { palette } from '@/lib/theme/palette'
 import { emailType } from '@/lib/theme/email-type'
 import type { ComebackKind } from './comeback.ts'
+import { launchResumeHref } from './destination'
 
 /** What the clock says. `label` is m:ss left; `bonus` is true once the twelve minutes are used (the label is then the
  *  bonus time already banked, which the email never shows). Null when the launch row holds no clock yet. */
@@ -100,11 +103,13 @@ export function buildComebackEmail(parts: {
   /** The step they would pick up, as its label, or null. */
   nextLabel: string | null
   baseUrl: string
+  /** The launch this note is about (space_launch.id), carried on the button so the owner returns to it. */
+  launchId?: string | null
   /** Signed unsubscribe link (lifecycle category) for the plain-text footer; the HTML footer's own control is the shell's. */
   unsubscribeUrl: string
 }): EmailPayload {
   const c = COPY[parts.kind]
-  const href = `${parts.baseUrl.replace(/\/+$/, '')}/launch`
+  const href = `${parts.baseUrl.replace(/\/+$/, '')}${launchResumeHref(parts.launchId)}`
   const greeting = parts.firstName ? `Hi ${parts.firstName},` : 'Hi,'
   const madeLine = parts.made.length > 0 ? `So far you've made: ${parts.made.join(', ')}.` : null
   const nextLine = parts.nextLabel ? `Next up is ${parts.nextLabel}.` : null

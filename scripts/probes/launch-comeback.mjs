@@ -49,7 +49,9 @@ if (!/launch_email_log/.test(io) || !/23505/.test(io)) bad.push('the runner does
 if (!/enqueueEmail/.test(io) || /sendRawEmail|new Resend/.test(io + email)) bad.push('the emails do not go through the outbox send seam')
 if (!/listUnsubscribeHeaders/.test(io) || !/unsubscribe: true/.test(email)) bad.push('the emails carry no unsubscribe')
 if (/[—–]/.test(email)) bad.push('the email copy has a dash')
-if (!/\/launch`/.test(email)) bad.push('the button does not go to /launch')
+// LIVE-2330 (owner-approved 2026-11-17): the button goes to /launch/resume, which signs a lapsed owner back in
+// and lands them on their own launch, not the bare /launch a signed-out visitor sees as an empty wizard.
+if (!/launchResumeHref\(/.test(email)) bad.push('the button does not go to /launch/resume')
 if (!/"path": "\/api\/cron\/launch-reminders"/.test(vercel)) bad.push('the cron is not scheduled')
 if (!/'launch-reminders'/.test(slos)) bad.push('the cron is not declared in the monitoring contract')
 if (/process\.env\.LAUNCH_[A-Z_]* === /.test(route + io)) bad.push('a switch is read by hand')
