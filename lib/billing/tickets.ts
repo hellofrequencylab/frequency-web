@@ -54,7 +54,7 @@
 // was no ticket-sold notification of any kind anywhere in the product.
 
 import { recordVerifiedLeadCapture } from '@/lib/analytics/leads'
-import { passCheckoutGate } from '@/lib/hunts/pass-gate'
+import { beginPassCheckout, storePassPurchase } from '@/lib/hunts/pass-checkout'
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
@@ -493,8 +493,9 @@ export async function createTicketCheckout(opts: {
   const qty = Math.min(Math.max(Math.floor(opts.qty ?? 1), 1), TICKET_MAX_QTY)
   // FH-036S: a tier bound to a Hunt pass also obeys the pass rules and the sales kill switch. Dark until
   // HUNTS_COMMERCE_ENABLED; an unbound or unreadable tier is untouched and sells exactly as before.
-  const passRefusal = await passCheckoutGate({ eventId: opts.eventId, ticketTypeId: opts.ticketTypeId ?? null, qty })
-  if (passRefusal) return { error: passRefusal }
+  // The resolved purchase is kept and written onto the reserved ticket below (lib/hunts/pass-checkout.ts).
+  const pass = await beginPassCheckout({ eventId: opts.eventId, ticketTypeId: opts.ticketTypeId ?? null, qty })
+  if ('refusal' in pass) return { error: pass.refusal }
 
   // ── TWO BUYER-ONLY READS, STARTED NOW INSTEAD OF LAST (LIVE-363) ─────────────────────────
   // Both depend on nothing but `buyerProfileId`, which is already known here, and both used to
@@ -1159,6 +1160,20 @@ export async function createTicketCheckout(opts: {
         ? 'This ticket just sold out.'
         : 'Could not start checkout. Please try again.',
     }
+  }
+
+  // FH-036S: a pass keeps its purchase snapshot on the ticket it just reserved (the frozen binding, the
+  // canonical price and what was charged), so settlement can check the ticket against it before any Hunt
+  // benefit is projected. A pass whose snapshot cannot be stored is not sold: the session is expired and
+  // the pending seat lapses with it. Null for every ordinary ticket, which skips this entirely.
+  if (pass.purchase && !(await storePassPurchase(session.id, pass.purchase, gross))) {
+    try {
+      await stripe.checkout.sessions.expire(session.id)
+    } catch {
+      // best-effort, the same as the reservation refusal above
+    }
+    if (splitOrderId) await markSplitOrder(splitOrderId, { status: 'failed' })
+    return { error: 'Could not start checkout. Please try again.' }
   }
 
   // The split order learns its session id, the key the abandon flips on. A miss here is logged,

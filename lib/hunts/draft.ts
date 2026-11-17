@@ -8,6 +8,8 @@
  */
 import { evaluate, validateGraph } from '@/lib/hunts/graph'
 import type { Blocker, HuntGraph } from '@/lib/hunts/graph'
+import { BENEFIT_CODE } from '@/lib/hunts/pass-binding'
+import { slugify } from '@/lib/utils'
 
 export type Stop = {
   place: string
@@ -29,6 +31,11 @@ export type Stop = {
   placementId?: string
 }
 
+/** One thing a paid pass can include (FH-036S). `code` is the short name a pass or a store item binds to. */
+type DraftBenefit = { label: string; code: string }
+
+export const MAX_BENEFITS = 10
+
 export type TrailDraft = {
   title: string
   hook: string
@@ -39,6 +46,8 @@ export type TrailDraft = {
   /** Set by the route test on this revision; any edit clears it (see saveDraft). */
   routeTestedAtRevision: number | null
   permissionConfirmed: boolean
+  /** What a paid pass for this trail includes. Absent on a trail that sells nothing, which is most of them. */
+  benefits?: DraftBenefit[]
 }
 
 export const MIN_STOPS = 3
@@ -78,6 +87,11 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     }
   })
   const tested = o.routeTestedAtRevision
+  // A draft may hold a half-typed benefit, so nothing is validated here: the publish checklist does that.
+  const benefits: DraftBenefit[] = (Array.isArray(o.benefits) ? o.benefits.slice(0, MAX_BENEFITS) : []).map((b) => {
+    const r = (b && typeof b === 'object' ? b : {}) as Record<string, unknown>
+    return { label: text(r.label, 80), code: text(r.code, 41).toLowerCase() }
+  })
   return {
     title: text(o.title, TRAIL_LIMITS.title),
     hook: text(o.hook, TRAIL_LIMITS.line),
@@ -86,7 +100,21 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     stops,
     routeTestedAtRevision: typeof tested === 'number' && Number.isInteger(tested) && tested >= 1 ? tested : null,
     permissionConfirmed: o.permissionConfirmed === true,
+    // Present only when there is one, so a trail with no benefits is stored exactly as it always was.
+    ...(benefits.length > 0 ? { benefits } : {}),
   }
+}
+
+/** A short code from a label, e.g. "Tasting flight" gives `tasting-flight`. Empty when nothing usable is left. */
+export function benefitCodeFrom(label: string): string {
+  const code = slugify(label).replace(/^[^a-z]+/, '').slice(0, 41).replace(/-+$/, '')
+  return BENEFIT_CODE.test(code) ? code : ''
+}
+
+/** Is every pass benefit complete: a label, a valid code, and no code used twice? */
+export function benefitsReady(benefits: readonly DraftBenefit[]): boolean {
+  const codes = benefits.map((b) => b.code)
+  return benefits.every((b) => b.label.trim() !== '' && BENEFIT_CODE.test(b.code)) && new Set(codes).size === codes.length
 }
 
 /** The Trail graph for a draft: each stop needs the one before it, the finish needs the last. */
@@ -131,6 +159,9 @@ export function publishChecklist(draft: TrailDraft, revision: number, opts: { ve
     }
   })
   items.push({ code: 'title', ok: draft.title.trim() !== '', message: 'Give the trail a title.' })
+  if (draft.benefits?.length) {
+    items.push({ code: 'benefits', ok: benefitsReady(draft.benefits), message: 'Each pass benefit needs a name and its own short code.' })
+  }
   items.push({ code: 'route_test', ok: draft.routeTestedAtRevision === revision, message: 'Walk it once in preview before you publish.' })
   items.push({ code: 'permission', ok: draft.permissionConfirmed, message: 'Confirm you may place a code at each place.' })
   return { ok: items.every((i) => i.ok), items }
@@ -258,6 +289,7 @@ export function planStopPlacements(
  */
 export function canonicalContent(draft: TrailDraft): string {
   const rows = publishRows(draft)
+  const benefits = (draft.benefits ?? []).map((b) => ({ code: b.code, label: b.label.trim() }))
   return JSON.stringify({
     schema: 1,
     title: draft.title.trim(),
@@ -266,9 +298,23 @@ export function canonicalContent(draft: TrailDraft): string {
     audience: draft.audience.trim(),
     missions: rows.missions,
     groups: rows.groups,
+    // Only when the trail has any, so a trail with none hashes exactly as it did before benefits existed.
+    ...(benefits.length > 0 ? { benefits } : {}),
     // Only when a stop opts in, so every Trail published before FH-020V keeps its hash.
     ...(draft.stops.some((stop) => stop.holdForReview === true)
       ? { review_holds: draft.stops.flatMap((stop, i) => (stop.holdForReview === true ? [stopKey(i)] : [])) }
       : {}),
   })
+}
+
+/**
+ * The policy a published version freezes. The pass benefits the resident authored are published as
+ * `policy.benefits`, which is where a pass binding and a store offer read them (lib/hunts/benefit-codes.ts).
+ * A trail with none publishes no `benefits` key, exactly as before.
+ */
+export function publishedPolicy(prior: Record<string, unknown> | null, draft: TrailDraft): Record<string, unknown> {
+  const policy: Record<string, unknown> = { ...(prior ?? {}), trail: draft }
+  if (draft.benefits?.length) policy.benefits = draft.benefits.map((b) => ({ code: b.code, label: b.label.trim() }))
+  else delete policy.benefits
+  return policy
 }
