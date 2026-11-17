@@ -23,7 +23,8 @@ ${M} .sv-orb,${M} .sv-pinstripe,${M} .sv-dotgrid{display:none}
 ${M} .hs-header{position:sticky;top:0;z-index:40;padding:0;background:transparent}
 ${M} .hs-pill{margin:0;max-width:none;width:100%;box-sizing:border-box;border-radius:0;min-height:76px;padding:14px max(24px,4vw);background:var(--ml-ground) var(--ml-tex-grain);background-size:180px;border:0;border-bottom:1px solid var(--ml-line);box-shadow:0 4px 0 0 var(--ml-pit);-webkit-backdrop-filter:none;backdrop-filter:none}
 ${M} .hs-logo{display:none}
-${M} .hs-brand-name{display:inline;font-family:var(--ml-font-display);font-weight:400;font-size:34px;line-height:1;color:var(--ml-accent);text-shadow:var(--ml-depth-ink);text-transform:uppercase}
+${M} .hs-brand-name{display:inline-block;width:136px;height:46px;background:url("/sites/mindless/logo-drip.png") left center/contain no-repeat;color:transparent;text-shadow:none;font-size:0;overflow:hidden}
+${M} .hs-footer .hs-brand-name{width:170px;height:58px;background-image:url("/sites/mindless/logo-drip-tagline.png")}
 ${M} .hs-nav a{${LABEL};font-size:13px;letter-spacing:.08em;color:var(--ml-head);box-shadow:none;padding-block:6px}
 ${M} .hs-nav a:hover,${M} .hs-nav a[aria-current="page"]{color:var(--ml-accent-text)}
 ${M} .hs-nav a[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--ml-accent)}

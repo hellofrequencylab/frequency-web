@@ -17,6 +17,13 @@ updates:
           - patch
     labels:
       - dependencies
+    # HYG-245: Sentry 11.11+ adds about 450 MB to the deploy (@sentry/conventions and the vendored
+    # meriyah in @sentry/server-runtime-injection, each copied into ~519 functions). With it, the
+    # 2026-11-16 group failed check:build-budget at 8.41 GB against 8 GB and blocked every other
+    # update in the group. Hold Sentry at 11.10 until HYG-245 frees the room, then delete this.
+    ignore:
+      - dependency-name: "@sentry/*"
+        versions: [">=11.11.0"]
 
   - package-ecosystem: github-actions
     directory: "/"

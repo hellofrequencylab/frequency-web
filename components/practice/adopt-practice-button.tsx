@@ -6,6 +6,8 @@ import { adoptPracticeAction, swapPracticeAction, dropPracticeAction } from '@/a
 import { isError } from '@/lib/action-result'
 import { Button, buttonGeometry } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
+import { cn } from '@/lib/utils'
 import { TERM_PRESETS, ACTIVE_PRACTICE_CAP } from '@/lib/practices/adoption'
 
 // Toggle a practice in/out of your personal practices — with the COMMITMENT picker (ADR-920).
@@ -175,7 +177,7 @@ export function AdoptPracticeButton({
                 type="button"
                 disabled={pending}
                 onClick={() => swapWith(h.id)}
-                className="block w-full truncate rounded-control border border-border px-2 py-1.5 text-left text-meta font-medium text-text transition-colors hover:border-primary hover:bg-primary-bg/20 disabled:opacity-60"
+                className={choiceTileClasses(false, 'block w-full truncate rounded-control px-2 py-1.5 text-left text-meta font-medium text-text')}
               >
                 {h.title}
               </button>
@@ -213,11 +215,7 @@ export function AdoptPracticeButton({
                 type="button"
                 title={p.hint}
                 onClick={() => adoptWith(p.weeks)}
-                className={`rounded-control border px-2 py-1.5 text-meta font-semibold transition-colors ${
-                  p.default
-                    ? 'border-primary bg-primary-bg/40 text-text hover:bg-primary-bg/60'
-                    : 'border-border text-muted hover:border-primary hover:text-text'
-                }`}
+                className={choiceTileClasses(!!p.default, cn('rounded-control px-2 py-1.5 text-meta font-semibold', p.default ? 'text-text' : 'text-muted hover:text-text'))}
               >
                 {p.label}
                 {p.recommended && <span className="block text-2xs font-normal text-muted">makes it stick</span>}

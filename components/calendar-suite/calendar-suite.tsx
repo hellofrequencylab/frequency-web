@@ -210,8 +210,10 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       planById: new Map(data.plans.map((p) => [p.id, p])),
       itemById: new Map(data.items.map((i) => [i.id, i])),
       taskById: new Map(data.tasks.map((t) => [t.id, t])),
+      // A Go live from here comes back here once the event is published (LIVE-2319).
+      returnTo: `/spaces/${slug}/settings/calendar`,
     }),
-    [spaceId, brandName, todayKey, canEdit, data, team],
+    [spaceId, brandName, todayKey, canEdit, data, team, slug],
   )
   // What Details shows goes when the record does: a Plan this Space just declined is no longer its to open.
   const sel: SuiteSelection = useMemo(() => {

@@ -17,10 +17,10 @@
 // its own removal once the server has named the new block. An undo is one more change through the same write.
 // Typing is not on this stack: a field keeps the browser's own text undo.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { saveCanvasNodeDraft } from '@/app/(main)/pages/canvas/document-actions'
 import type { CanvasDocumentView, CanvasNodeValues, CanvasNodeView } from '@/lib/builder/canvas-document'
-import { moveInTree, spacingStepOf, treeLayers, undoChange, undoWords, UNDO_ADD, withSpacing, type CanvasChange, type LayerSlot, type LayerTree, type SpacingEdge, type SpacingStep } from '@/lib/builder/canvas-tree'
+import { moveInTree, spacingStepOf, treeLayers, undoChange, undoWords, UNDO_ADD, withSpacing, type CanvasChange, type LayerSlot, type InsertSource, type LayerTree, type RowChange, type SpacingEdge, type SpacingStep } from '@/lib/builder/canvas-tree'
 import { nodeDeviceValues, withDeviceValues } from '@/lib/builder/node-responsive'
 
 export type CanvasSaveState = 'saved' | 'unsaved' | 'saving' | 'error' | 'conflict' | 'read-only'
@@ -143,6 +143,9 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
           if (job && job.change.kind !== 'move' && job.change.kind !== 'hide') setSelectedId(result.node.nid)
           // An add is undone by taking the new block away, and only now is its id known.
           if (job && !job.undoing && (job.change.kind === 'insert' || job.change.kind === 'duplicate')) remember({ nid: result.node.nid, change: UNDO_ADD, job })
+          // A new row is undone by taking it off again, and its id too is only known now.
+          const added = job && !job.undoing && job.change.kind === 'row-add' ? result.view.tree?.[job.change.at]?.id : undefined
+          if (job && added) remember({ nid: job.nid, change: { kind: 'row-remove', rowId: added }, job })
         } else {
           confirmed.current = new Map(confirmed.current).set(nid, result.node)
           // Take the stored form (sanitized) only if nothing was typed while the save was in flight.
@@ -211,8 +214,8 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
   }, [put, send])
   const space = useCallback((edge: SpacingEdge, step: SpacingStep) => spaceOn(selectedId, edge, step), [selectedId, spaceOn])
 
-  /** Add a preset or a blank block under the selected block. It appears once the server has stored it. */
-  const insert = useCallback((source: 'preset' | 'blank', id: string) => {
+  /** Add a preset, a blank block or one of the Space's live sections under the selected block. It appears once the server has stored it. */
+  const insert = useCallback((source: InsertSource, id: string) => {
     if (selectedId) send({ nid: selectedId, change: { kind: 'insert', source, id } })
   }, [selectedId, send])
 
@@ -231,6 +234,14 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
     if (selectedId) send({ nid: selectedId, change: { kind: 'remove', keep: true } })
   }, [selectedId, send])
 
+  /** Change a row (PROG-E6D): add an empty one, take an empty one off, move one up or down, or re-split it. The
+   *  selected block (or the first on the page) rides along as the change's anchor and stays selected. Shown once
+   *  the server has stored it. */
+  const row = useCallback((change: RowChange) => {
+    const anchor = selectedId ?? (shown.current.tree ? treeLayers(shown.current.tree)[0]?.id : undefined)
+    if (anchor) send({ nid: anchor, change })
+  }, [selectedId, send])
+
   /** Take back the last change to the page's shape. */
   const undo = useCallback(() => {
     const step = undos.current.at(-1)
@@ -246,12 +257,16 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
   }, [document, move, send, spaceOn])
 
   const view = shape.views.find((n) => n.nid === selectedId)
+  // Every block on the page with its newest bags, for the frame's whole-page drawing (PROG-E6E).
+  const blocks = useMemo(() => new Map(shape.views.map((v) => [v.nid, { title: v.title, fields: v.fields, node: nodes.get(v.nid) ?? v.node }])), [nodes, shape.views])
   const node = selectedId ? nodes.get(selectedId) : undefined
   return {
     /** The selected node with its controls, or null (no document, or nothing selected). */
     selected: view && node ? { ...view, node } : null,
     selectedId,
     select: setSelectedId,
+    /** Every block on the page, by id, as the frame draws it. */
+    blocks,
     edit,
     layers: shape.layers,
     tree: shape.tree,
@@ -262,6 +277,7 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
     duplicate,
     toggleHidden,
     remove,
+    row,
     undo,
     /** What Undo would take back, in words, or null when there is nothing to undo. */
     undoLabel,

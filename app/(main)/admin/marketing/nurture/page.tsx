@@ -6,6 +6,7 @@ import { AdminTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { Mail, Users, Send } from 'lucide-react'
 import { listPersonas } from '@/lib/onboarding/personas'
+import { SUBSCRIBE_NURTURE_CARD, SUBSCRIBE_NURTURE_KEY } from '@/lib/nurture/subscribe'
 import { listSequencesWithStats } from '@/lib/nurture/store'
 import { starterRows } from '@/lib/entity-blocks/layout'
 import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
@@ -20,7 +21,11 @@ export default async function NurturePage() {
   const emailNodes = await renderPathEnabled('email')
   const byPersona = new Map(stats.map((s) => [s.sequence.persona, s]))
 
-  const rows: PersonaRow[] = listPersonas().map((p) => {
+  // The /subscribe series is keyed outside the persona list, so it gets its own card after the personas.
+  const cards = [...listPersonas().map((p) => ({ id: p.id as string, label: p.label, emoji: p.emoji, pitch: p.pitch }))]
+  if (byPersona.has(SUBSCRIBE_NURTURE_KEY)) cards.push({ id: SUBSCRIBE_NURTURE_KEY, ...SUBSCRIBE_NURTURE_CARD })
+
+  const rows: PersonaRow[] = cards.map((p) => {
     const s = byPersona.get(p.id)
     return {
       persona: p.id,

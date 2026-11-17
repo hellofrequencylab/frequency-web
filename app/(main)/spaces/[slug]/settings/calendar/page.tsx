@@ -1,3 +1,4 @@
+import { withReturnPath } from '@/lib/events/return-path'
 import { HOME_TZ } from '@/lib/time/home-zone'
 import { notFound } from 'next/navigation'
 import { openingMonth } from '@/lib/calendar/open-month'
@@ -137,7 +138,8 @@ export default async function SpaceCalendarConsolePage({
 
   const httpsUrl = `${SITE_URL}/spaces/${slug}/calendar.ics`
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://')
-  const newEventHref = `/events/new?space=${space.id}`
+  // A create started from this calendar comes back to it once the event is published (LIVE-2319).
+  const newEventHref = withReturnPath(`/events/new?space=${space.id}`, `/spaces/${slug}/settings/calendar`)
 
   // THE CALENDAR (components/calendar-suite/). Its today is the Space's own day (America/Los_Angeles when
   // the Space has none), so the server and the browser shade the same days.

@@ -93,7 +93,7 @@ function visitorHeaders(): Record<string, string> {
 
 /** Installed before any page script. Buffered observers, so nothing before the read is missed. */
 const VITALS = `(() => {
-  const s = { lcp: 0, lcpEl: '', cls: 0, blocking: 0, longest: 0, tasks: 0 }
+  const s = { lcp: 0, lcpEl: '', cls: 0, blocking: 0, longest: 0, tasks: 0, frameScriptMs: 0, frameRenderMs: 0, scripts: {} }
   let value = 0, first = 0, last = 0
   const watch = (type, each) => {
     try { new PerformanceObserver((list) => list.getEntries().forEach(each)).observe({ type, buffered: true }) } catch {}
@@ -115,6 +115,19 @@ const VITALS = `(() => {
     s.blocking += Math.max(0, e.duration - 50)
     if (e.duration > s.longest) s.longest = e.duration
   })
+  // WHO BLOCKED (long-animation-frame, Chromium): each long frame splits into script time and the
+  // style/layout/paint after it, and each script names its invoker, file and function. Summed by key
+  // so a page's blocking can be traced to the code that did it, not only measured.
+  watch('long-animation-frame', (e) => {
+    const end = e.startTime + e.duration
+    if (e.renderStart) s.frameRenderMs += end - e.renderStart
+    for (const x of e.scripts || []) {
+      s.frameScriptMs += x.duration
+      const file = (x.sourceURL || '').split('?')[0].split('/').slice(-1)[0] || '(inline)'
+      const key = (x.invokerType || '?') + ' ' + (x.invoker || '').slice(0, 60) + ' @ ' + file + ' ' + (x.sourceFunctionName || '')
+      s.scripts[key] = (s.scripts[key] || 0) + x.duration
+    }
+  })
   window.__fieldRead = () => {
     const nav = performance.getEntriesByType('navigation')[0]
     const fcp = performance.getEntriesByName('first-contentful-paint')[0]
@@ -122,7 +135,7 @@ const VITALS = `(() => {
   }
 })()`
 
-type Vitals = { lcp: number; lcpEl: string; cls: number; blocking: number; longest: number; tasks: number; ttfb: number; fcp: number; load: number }
+type Vitals = { lcp: number; lcpEl: string; cls: number; blocking: number; longest: number; tasks: number; ttfb: number; fcp: number; load: number; frameScriptMs: number; frameRenderMs: number; scripts: Record<string, number> }
 type Bytes = { script: number; scriptDecoded: number; scriptRequests: number; image: number; style: number; font: number; total: number; requests: number }
 type Visit = { status: number; cache: string; prefetches: number; vitals: Vitals; settled: Bytes; scrolled: Bytes; clsScrolled: number; errors: string[] }
 
@@ -282,6 +295,13 @@ test.describe('field measurement, clean profile', { tag: '@field' }, () => {
           requestsAfterScroll: mid((v) => v.scrolled.requests),
           prefetchesRefused: mid((v) => v.prefetches),
           consoleErrors: errors.length,
+          frameScriptMs: Math.round(mid((v) => v.vitals.frameScriptMs ?? 0)),
+          frameRenderMs: Math.round(mid((v) => v.vitals.frameRenderMs ?? 0)),
+          // The middle run by blocking time, so the attribution belongs to the run the median describes.
+          topScripts: Object.entries([...visits].sort((a, b) => a.vitals.blocking - b.vitals.blocking)[Math.floor(visits.length / 2)].vitals.scripts ?? {})
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8)
+            .map(([key, ms]) => `${Math.round(ms)} ms ${key}`),
         }
         console.log(`[field-measure] ${JSON.stringify(row)}`)
         for (const error of errors) console.log(`[field-measure-error] ${path} (${profile.name}): ${error.slice(0, 500)}`)
