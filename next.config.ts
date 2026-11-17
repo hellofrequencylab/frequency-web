@@ -347,8 +347,9 @@ const nextConfig: NextConfig = {
   // opens them, so a function that cannot see them behaves identically.
   //
   // ⚠️ EXCLUDES BEAT INCLUDES, and Next matches these route keys with picomatch in `contains` mode
-  // (next/dist/build/collect-build-traces.js), so `'/**'` is every route and a negation would match
-  // everything too. Only ever list something here that NO route may read from disk.
+  // (next/dist/build/collect-build-traces.js), so `'/**'` is every route. A BARE negation
+  // (`'!opengraph-image'`) matches everything too, but a path-shaped one does not: see the sharp
+  // key below (ADR-1975). Under '/**', only ever list something that NO route may read from disk.
   //
   // The rest of that 1.6GB needs the tracer to stop globbing at source — turning the three variable
   // reads into literal-pathed ones — which is a code change, not a config line. Tracked in ADR-1003.
@@ -383,6 +384,32 @@ const nextConfig: NextConfig = {
   // is the thing that notices: it fails when any traced file matches /heic2any/i.
   outputFileTracingExcludes: {
     '/**': ['./public/tracks/**', './.next/server/chunks/**/*heic2any*'],
+    // ── sharp, on every function that is not a share card (ADR-1975, HYG-245) ─────────────────
+    //
+    // A page that shares a segment with a per-entity `opengraph-image.tsx` (a Space, an event, a
+    // help article, the discover detail pages) inherits the card module into its metadata module,
+    // so nft traced sharp, and libvips-cpp.so (17.8 MB) behind it, into 23 page functions that
+    // only ever read the card's `alt`/`size`/`contentType`. That was about 410 MB of the deploy.
+    //
+    // Safe by construction: lib/og/deliver.ts is the ONLY module that imports sharp, it does so
+    // lazily inside `deliverCard`, and only the card routes call `deliverCard`. A page that cannot
+    // see sharp never tries to load it.
+    //
+    // The key is a path-shaped negation. In picomatch's `contains` mode `!**/@(...)*` compiles to
+    // `^(?!…/(opengraph-image|twitter-image)[^/]*).*$`: it matches every route whose LAST segment
+    // is not a card, and the cards (`/app/spaces/[slug]/opengraph-image-tt3pwa`,
+    // `/app/opengraph-image-12g5h9`, `/app/hosted/[host]/opengraph-image`) keep sharp. The names
+    // are the same two `check:og-trace` treats as rasterisers, so the two stay in step.
+    //
+    // ⚠️ A NEW NON-CARD ROUTE THAT NEEDS sharp gets it stripped here, and fails soft. Name the
+    // route in the negation, or render through `deliverCard` from an opengraph-image route.
+    // `check:og-trace` fails the build if a card route ever loses sharp (DEPLOY-SAFETY rule 6).
+    '!**/@(opengraph-image|twitter-image)*': [
+      './node_modules/sharp/**',
+      './node_modules/@img/**',
+      './node_modules/**/node_modules/sharp/**',
+      './node_modules/**/node_modules/@img/**',
+    ],
   },
   async headers() {
     return [
