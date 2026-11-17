@@ -15,6 +15,9 @@ import { FqEventsBody } from '@/components/frequency/members/events/events-body'
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2). Kept on /events so the
 // URL keeps its SEO — the surface swap does not touch the page's metadata.
+/** The ItemList's length: the soonest events, the most the grid itself draws (ROW_CAP). */
+const LISTING_LD_CAP = 60
+
 export function generateMetadata() {
   return pageContentMetadata('/events', CONTENT_FALLBACK)
 }
@@ -50,13 +53,14 @@ export default async function EventsPage({
   // Events) plus an ItemList of the upcoming events, each a nested Event node pointing at its canonical
   // /events/<slug> page. PRIVACY (ADR-186): no venue location is emitted — name + startDate + url +
   // status only. The public events query in getEventsIndexData runs unconditionally, so a signed-out
-  // crawler still receives the full public event list here.
+  // crawler still receives the public event list here, capped at the soonest LISTING_LD_CAP (PERF-006: the
+  // whole list cost about 37 KB, twice over, in every /events response; the sitemap carries every event).
   const jsonLd = [
     breadcrumbSchema([
       { name: 'Home', path: '/' },
       { name: 'Events', path: '/events' },
     ]),
-    eventsListingSchema(data.sortedEvents, 'Upcoming events near you'),
+    eventsListingSchema(data.sortedEvents.slice(0, LISTING_LD_CAP), 'Upcoming events near you'),
   ]
 
   // THE MARKETPLACE COOKIE IS STAMPED HERE, NOT IN A LAYOUT (LIVE-243), and only on the
