@@ -331,7 +331,7 @@ function Carry({ p, metadata, pad, vis }: Common) {
           {str(p.lead) && <p className="lede">{str(p.lead)}</p>}
           <div className="carry-offers">{arr(p.offers).slice(0, 2).map((o, i) => <Offer key={i} o={{ ...o, tone: o.tone || (i ? 'blue' : 'pink') }} i={i} metadata={metadata} />)}</div>
         </div>
-        {src && <Photo src={src} alt={str(p.alt)} pos={str(p.pos)} className="ph-tall ph-sticker" />}
+        {src && <Photo src={src} alt={str(p.alt)} pos={str(p.pos)} className="ph-tall ph-sticker ph--guide" />}
       </div>
       {guides.length > 0 && (
         <div className="guides">
@@ -379,7 +379,7 @@ function Faq({ p, pad, vis }: Common) {
         <div className="ml-accordion">
           {arr(p.rows).map((r, i) => (
             <details key={i} className="ml-accordion__item" open={i === 0}>
-              <summary className="ml-accordion__q"><span>{str(r.question)}</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="ml-icon ml-accordion__icon"><path d="m6 9 6 6 6-6" /></svg></summary>
+              <summary className="ml-accordion__q"><span>{str(r.question)}</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="ml-icon ml-accordion__icon"><path d="M5 12h14" /><path d="M12 5v14" /></svg></summary>
               <div className="ml-accordion__a">{str(r.answer)}</div>
             </details>
           ))}
@@ -404,7 +404,7 @@ function Cta({ p, metadata, pad, vis }: Common) {
             <Btn label={str(p.secondaryLabel)} href={str(p.secondaryHref)} kind="ghost" metadata={metadata} />
           </div>
         </div>
-        {src ? <div className="cta2-photo" role="img" aria-label={str(p.alt) || undefined} style={{ backgroundImage: `url("${src}")` }} /> : <div className="cta2-photo" aria-hidden="true" />}
+        {src ? <div className="cta2-photo" role="img" aria-label={str(p.alt) || undefined} style={{ background: `url("${src}") ${str(p.pos) || '50% 55%'} / cover no-repeat, var(--neutral-ground)` }} /> : <div className="cta2-photo" aria-hidden="true" />}
       </div>
     </Sec>
   )
@@ -458,6 +458,6 @@ export const mindlessBlocks: Record<string, ComponentConfig> = {
     ground: groundField, ...head, rows: row({ question: text('Question'), answer: area('Answer') }, 'question'),
   }, MINDLESS_FAQ, Faq),
   MindlessCta: block('Mindless closing call', {
-    ground: groundField, title: text('Heading'), em: text('Second line, in the accent'), lead: text('Line'), ...btn('primary', 'Main button'), ...btn('secondary', 'Second button'), image, alt,
+    ground: groundField, title: text('Heading'), em: text('Second line, in the accent'), lead: text('Line'), ...btn('primary', 'Main button'), ...btn('secondary', 'Second button'), image, alt, pos,
   }, MINDLESS_CTA, Cta),
 }
