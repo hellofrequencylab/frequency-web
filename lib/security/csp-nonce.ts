@@ -72,9 +72,9 @@ const MEMBER_SEGMENTS = new Set([
 // First segments shared with a static or ISR page outside app/(main) (the share pages under
 // app/(public), the /spaces marketing index, the claim links). Each rule names the member half only.
 const SHARED_SEGMENT_RULES: Record<string, RegExp> = {
-  // The index, create, drafts, the scanner and the member calendar; then an event's member pages.
+  // The index, create, drafts, the scanner, the member calendar and My events; then an event's member pages.
   // /events/<slug> itself is the ISR share page; the proxy rewrites a member to /events/<slug>/full.
-  events: /^\/events(?:\/(?:new|scan|calendar)|\/drafts(?:\/[^/]+)?|\/(?!claim\/|calendar\/)[^/]+\/(?:full|manage|seat\/[^/]+))?$/,
+  events: /^\/events(?:\/(?:new|scan|calendar|mine)|\/drafts(?:\/[^/]+)?|\/(?!claim\/|calendar\/)[^/]+\/(?:full|manage|seat\/[^/]+))?$/,
   // /spaces is the marketing index and /spaces/<slug> the ISR profile (a member is rewritten to
   // /spaces/<slug>/full). Under a Space, everything is the member tree except the public Show page,
   // the calendar feed and the Spotlight page.
