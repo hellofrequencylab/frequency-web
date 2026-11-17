@@ -9,6 +9,7 @@ import { formatDateShort } from '@/lib/format-date'
 import type { HostSpaceEmbed } from '@/lib/events/platform-credit'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { getCachedViewerProfile } from '@/lib/auth'
 import { nearbyEvents } from '@/lib/events/geocode'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
@@ -338,72 +339,12 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   const admin = createAdminClient()
   const supabase = await createClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  let myProfileId: string | null = null
-  let myCircleIds: string[] = []
-  let myCircles: { id: string; name: string }[] = []
-
-  let myGeocell: { lat: number; lng: number } | null = null
-  let homeLabel: string | null = null
-
-  if (user) {
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('id, community_role, membership_tier, home_geocell_lat, home_geocell_lng, home_label, city')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-
-    if (profile) {
-      myProfileId = profile.id
-      // The member's own words for their home base (Settings > Location), else their city. Shown on
-      // the Frequency body's location pill; never an address (the geocell is the fuzzed ~1km cell).
-      homeLabel = (profile.home_label || profile.city || '').trim() || null
-      if (profile.home_geocell_lat != null && profile.home_geocell_lng != null) {
-        myGeocell = { lat: Number(profile.home_geocell_lat), lng: Number(profile.home_geocell_lng) }
-      }
-      // `isCrew`/`isHost` were computed here and returned on EventsIndexData until 2026-08-10.
-      // ADR-913 moved the paid wall off event CREATION and onto the price field
-      // (lib/events/ticket-eligibility.ts), which left isCrew feeding one @deprecated prop that
-      // renamed it to `_isCrew` and never read it. `isHost` was never even destructured by a caller.
-
-      const { data: memberships } = await admin
-        .from('memberships')
-        .select('circle_id')
-        .eq('profile_id', profile.id)
-        .eq('status', 'active')
-
-      myCircleIds = (memberships ?? []).map((m) => m.circle_id as string)
-
-      if (myCircleIds.length > 0) {
-        const { data: circles } = await admin
-          .from('circles')
-          .select('id, name')
-          .in('id', myCircleIds)
-        myCircles = (circles ?? []) as { id: string; name: string }[]
-      }
-    }
-  }
-
-  const nowDate = new Date()
-
-  // ── Settings + flags, fetched in ONE wave ──────────────────────────────────
-  // Four reads that between them cost four serial round trips in front of the event queries,
-  // and NOT ONE of them depends on another (or on anything above): the operator-editable header
-  // content, the listing horizon, the demo-mode pair, and the series display config. They are
-  // keyed on constants and on the viewer's cookie, so they resolve concurrently.
-  //
-  // `hideDemo` was `!(await demoModeEnabled()) || (await viewerHidesDemo())`, whose `||`
-  // short-circuited the second read away when demo mode was OFF. Evaluating both is free:
-  // viewerHidesDemo is a cookie read with no I/O and no side effects, and the boolean it feeds
-  // is identical either way.
-  const [
-    { title: pageTitle, description: pageDescription, body: pageBody, heroImage, ctaLabel, ctaHref },
-    horizonDays,
-    demoOn,
-    viewerHidesDemoContent,
-    { cardsPerSeries },
-  ] = await Promise.all([
+  // The SETTINGS WAVE starts first, before anything about the viewer is known: none of its five
+  // reads depends on who is looking, so it overlaps the viewer chain below instead of queueing
+  // behind it (EVT-SPEED, 2026-11-17: every serial round trip from the function to the database
+  // was measured at 80 to 130 ms on production, so a wave that waits is a wave the page pays for).
+  // Awaited further down, where its values are first used.
+  const settingsP = Promise.all([
     // Operator-editable page header (ADR-180) — falls back to the coded defaults.
     resolvePageContent('/events', CONTENT_FALLBACK),
     eventsListingHorizonDays(),
@@ -416,6 +357,77 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     // per row.
     getSeriesDisplayConfig(),
   ])
+
+  // The request-cached identity the member layout already resolved (lib/auth.ts): the auth user and
+  // the viewer's profile row are both memoized per request, so this costs no round trip on a member
+  // page. Before EVT-SPEED this loader made its own `auth.getUser()` (a network call to Supabase
+  // Auth), then a profiles read by auth id, then memberships, then circles: four round trips in
+  // series in front of every event query. Now the two viewer-specific reads below run together.
+  void settingsP.catch(() => undefined) // awaited below; this only keeps an early rejection handled
+  const viewer = await getCachedViewerProfile()
+
+  let myProfileId: string | null = null
+  let myCircleIds: string[] = []
+  let myCircles: { id: string; name: string }[] = []
+
+  let myGeocell: { lat: number; lng: number } | null = null
+  let homeLabel: string | null = null
+
+  if (viewer) {
+    myProfileId = viewer.id
+    const [{ data: profile }, { data: memberships }] = await Promise.all([
+      // The fuzzed home cell and the member's own words for it are not on the shared viewer row.
+      admin
+        .from('profiles')
+        .select('home_geocell_lat, home_geocell_lng, home_label, city')
+        .eq('id', viewer.id)
+        .maybeSingle(),
+      // The member's active circles AND their names in ONE read, through the memberships ->
+      // circles foreign key, instead of two round trips in series.
+      admin
+        .from('memberships')
+        .select('circle_id, circle:circles!memberships_circle_id_fkey ( id, name )')
+        .eq('profile_id', viewer.id)
+        .eq('status', 'active'),
+    ])
+
+    if (profile) {
+      // The member's own words for their home base (Settings > Location), else their city. Shown on
+      // the Frequency body's location pill; never an address (the geocell is the fuzzed ~1km cell).
+      homeLabel = (profile.home_label || profile.city || '').trim() || null
+      if (profile.home_geocell_lat != null && profile.home_geocell_lng != null) {
+        myGeocell = { lat: Number(profile.home_geocell_lat), lng: Number(profile.home_geocell_lng) }
+      }
+    }
+    // `isCrew`/`isHost` were computed here and returned on EventsIndexData until 2026-08-10.
+    // ADR-913 moved the paid wall off event CREATION and onto the price field
+    // (lib/events/ticket-eligibility.ts), which left isCrew feeding one @deprecated prop that
+    // renamed it to `_isCrew` and never read it. `isHost` was never even destructured by a caller.
+    const rows = (memberships ?? []) as unknown as { circle_id: string; circle: { id: string; name: string } | null }[]
+    myCircleIds = rows.map((m) => m.circle_id)
+    myCircles = rows.flatMap((m) => (m.circle ? [{ id: m.circle.id, name: m.circle.name }] : []))
+  }
+
+  const nowDate = new Date()
+
+  // ── Settings + flags: the wave started at the top of the loader ───────────────
+  // Four reads that between them cost four serial round trips in front of the event queries,
+  // and NOT ONE of them depends on another (or on anything above): the operator-editable header
+  // content, the listing horizon, the demo-mode pair, and the series display config. They are
+  // keyed on constants and on the viewer's cookie, so they resolve concurrently, and since
+  // EVT-SPEED they also overlap the viewer chain.
+  //
+  // `hideDemo` was `!(await demoModeEnabled()) || (await viewerHidesDemo())`, whose `||`
+  // short-circuited the second read away when demo mode was OFF. Evaluating both is free:
+  // viewerHidesDemo is a cookie read with no I/O and no side effects, and the boolean it feeds
+  // is identical either way.
+  const [
+    { title: pageTitle, description: pageDescription, body: pageBody, heroImage, ctaLabel, ctaHref },
+    horizonDays,
+    demoOn,
+    viewerHidesDemoContent,
+    { cardsPerSeries },
+  ] = await settingsP
 
   // THE LISTING HORIZON — operator-set, and UNCAPPED by default (owner ruling 2026-08-20).
   //
