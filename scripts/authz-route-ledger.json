@@ -378,9 +378,9 @@
     },
     "app/api/how/beacon/route.ts": {
       "verdict": "public",
-      "reason": "Anonymous engagement sink for the link-only /how brief. Takes no session and resolves no profile: every event is written through track() with actorProfileId null, so nothing account-tied crosses the boundary and the response is the same 204 for every caller. It reads three request facts only to REFUSE or THROTTLE, never to authorize: Sec-GPC (opt-out, returns early), the consent cookie via currentViewerAllowsAnalytics (declined analytics records nothing), and the client IP as part of the rate-limit key (300 per 10 minutes per visit). The batch is validated by cleanBriefBatch (allow-listed how.* names, bounded props, capped batch size) before anything is written.",
-      "checked": "2026-11-16",
-      "digest": "a920af068f44a2bd"
+      "reason": "Anonymous engagement sink for the link-only partner pages (/how, /facilities, /lab; re-read 2026-11-17 for LIVE-2345: the only change is the batch's page, allow-listed by cleanBriefBatch against PRIVATE_PAGES and written into the event context). Takes no session and resolves no profile: every event is written through track() with actorProfileId null, so nothing account-tied crosses the boundary and the response is the same 204 for every caller. It reads three request facts only to REFUSE or THROTTLE, never to authorize: Sec-GPC (opt-out, returns early), the consent cookie via currentViewerAllowsAnalytics (declined analytics records nothing), and the client IP as part of the rate-limit key (300 per 10 minutes per visit). The batch is validated by cleanBriefBatch (allow-listed how.* names, bounded props, capped batch size) before anything is written.",
+      "checked": "2026-11-17",
+      "digest": "45942a45b05aa5bc"
     }
   }
 }

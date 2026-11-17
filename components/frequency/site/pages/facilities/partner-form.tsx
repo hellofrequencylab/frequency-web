@@ -15,6 +15,7 @@ export function PartnerForm({ email }: { email: string }) {
   const [note, setNote] = useState('')
   return (
     <form
+      id="partner-form"
       className="hp-c"
       onSubmit={(e) => {
         e.preventDefault()

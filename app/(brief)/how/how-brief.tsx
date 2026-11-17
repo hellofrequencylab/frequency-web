@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { BRIEF_HTML } from './brief-html'
 import { computeBrief, briefValue, isBriefKey, BRIEF_DEFAULTS, type BriefState } from '@/lib/how/brief-calc'
-import { startBriefTracker } from './brief-tracker'
+import { startBriefTracker } from '@/lib/how/brief-tracker'
 import { startBriefMotion } from './brief-motion'
 import './brief.css'
 
