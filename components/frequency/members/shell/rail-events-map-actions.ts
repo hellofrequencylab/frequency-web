@@ -1,6 +1,6 @@
 'use server'
 
-import { getEventsIndexData } from '@/app/(main)/events/index-data'
+import { getEventsIndexData, type EventsIndexParams } from '@/app/(main)/events/index-data'
 import { ayMapItems } from '@/components/frequency/members/events/around-you-items'
 import type { AyMapItem } from '@/components/frequency/members/events/around-you-items'
 
@@ -31,5 +31,27 @@ export async function loadRailEventsMap(): Promise<RailEventsMap | null> {
     const detail = typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : String(e)
     console.error('[frequency-rail] events map read failed; that panel degraded to empty:', detail)
     return null
+  }
+}
+
+// THE /events LIGHTBOX'S READ (PERF-006). The Events page used to serialize every map row (about 70 KB on a
+// busy week) into its HTML for a lightbox that is closed on arrival. It now asks for them here when the
+// lightbox opens, with the page's own filters so the map stays a lens on what the page listed. Only the
+// filter keys getEventsIndexData reads are passed through; anything else a caller sends is dropped.
+const FILTER_KEYS = ['q', 'category', 'format', 'date', 'price', 'energy', 'spots', 'near', 'sort'] as const
+
+export async function loadEventsMapItems(params: Record<string, unknown> = {}): Promise<AyMapItem[]> {
+  const clean: EventsIndexParams = {}
+  for (const k of FILTER_KEYS) {
+    const v = params?.[k]
+    if (typeof v === 'string' && v.length <= 200) clean[k] = v
+  }
+  try {
+    const data = await getEventsIndexData(clean)
+    return ayMapItems(data.sortedEvents, data.mapPins, data)
+  } catch (e) {
+    const detail = typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : String(e)
+    console.error('[frequency-events] map lightbox read failed; the lightbox shows no pins:', detail)
+    return []
   }
 }

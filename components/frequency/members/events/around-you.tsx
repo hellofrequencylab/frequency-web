@@ -6,7 +6,7 @@ import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { SHORT_MONTH_LABELS } from '@/lib/events/calendar-grid'
 import { FqIcon } from '@/components/frequency/icon'
 import { GoButton } from '@/components/frequency/members/go-button'
-import { planAroundYou, toAyItem, type AyItem, type AyMapItem, type AyReason, type AyTag } from './around-you-items'
+import { planAroundYou, toAyItem, type AyItem, type AyMapPin, type AyReason, type AyTag } from './around-you-items'
 import { AyCountdown, AyPulse, AyTicker } from './around-you-live'
 import { FqMapTile } from './events-map-lightbox'
 
@@ -53,7 +53,7 @@ function summaryLine(plan: ReturnType<typeof planAroundYou>, signedIn: boolean, 
   return `${parts.join(', and ')}.`
 }
 
-export async function FqAroundYou({ data, mapItems }: { data: EventsIndexData; mapItems: AyMapItem[] }) {
+export async function FqAroundYou({ data, mapItems }: { data: EventsIndexData; mapItems: AyMapPin[] }) {
   const { myProfileId, sortedEvents, nowDate, homeLabel, hasHome } = data
   const rows = sortedEvents.filter((e) => !e.is_cancelled)
   const byRow = new Map(rows.map((e) => [e.id, e]))
