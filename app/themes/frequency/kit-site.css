@@ -15,6 +15,13 @@
 [data-design="frequency"] [data-kit="site"] .btn:hover{transform:translateY(-1px)}
 [data-design="frequency"] [data-kit="site"] .btn:active{transform:scale(.97)}
 [data-design="frequency"] [data-kit="site"] .btn-ghost{background:transparent;color:var(--fq-text-strong);box-shadow:inset 0 0 0 1.5px var(--fq-border-strong)}
+/* The quiet text action (Button variant="ghost", `.btn.txt`): Back links, "Decide later", a link-weight
+   action under a primary. The site kit's `.btn` is the glowing primary pill, so without this a ghost Button
+   on the website painted as a second primary. Text weight, no fill, no ring; the 44px floor keeps the tap
+   target, and the -12px inline margin keeps the label flush with the column it sits in. The Commons bridge (members-ui.css part 2) still owns `.fq-commons-body .btn.txt`. */
+[data-design="frequency"] [data-kit="site"] .btn.txt{height:auto;min-height:44px;padding:0 12px;margin-inline:-12px;background:transparent;box-shadow:none;color:var(--fq-text-muted);font:500 15px/1.3 var(--fq-font-sans);white-space:normal;text-align:center}
+[data-design="frequency"] [data-kit="site"] .btn.txt:hover{transform:none;color:var(--fq-text-strong);text-decoration:underline;text-underline-offset:4px}
+[data-design="frequency"] [data-kit="site"] .btn.txt[aria-pressed="true"]{color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="site"] .chip{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 13px;border-radius:999px;font:500 11px/1 var(--fq-font-display);letter-spacing:.1em;text-transform:uppercase}
 [data-design="frequency"] [data-kit="site"] .live{width:8px;height:8px;border-radius:50%;background:var(--fq-accent);box-shadow:0 0 12px var(--fq-accent)}
 [data-design="frequency"] [data-kit="site"] section{position:relative;overflow:hidden}
@@ -719,3 +726,10 @@
 [data-design="frequency"] [data-kit="site"] .ft2-pause{font:inherit;color:#8E82A8;background:none;border:0;padding:0;cursor:pointer}
 [data-design="frequency"] [data-kit="site"] .ft2-pause:hover{color:#F2F5FA}
 [data-design="frequency"] [data-kit="site"] .ft2-pause:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:3px;border-radius:var(--fq-radius-s,4px)}
+/* PHONES REST THE MAIN-THREAD LOOPS (speed item 2, 2026-11-17). The iridescent sweeps animate
+   background-position, the weave's threads stroke-dashoffset and the sphere's orbit offset-distance;
+   none of those can run on the compositor, so each one restyles and repaints on the main thread every
+   frame, forever. On a 4x-throttled phone at rest, Home kept the main thread about 80% busy, and these
+   were about 1.5 s of every 5 s. On a phone they hold still (the gradients keep their colour); transform
+   and opacity motion, which the compositor runs, keeps moving. Desktop keeps everything. */
+@media (max-width:760px),(hover:none){[data-design="frequency"] [data-kit="site"] :is(.fq-iri-text,.fq-iri-btn,.fq-mf-logo,.pc-launch,.meter i,.ft2-roundel,.lv-stat b,.h-sig-run .fill,.h-sig-run .fq-logo-icon,.wv-svg path.flow),[data-design="frequency"] [data-kit="site"] :is(.fq-iri-rim,.mm-panel,.next2,.fqm,.lg-sheen,.tx-sphere>b)::before,[data-design="frequency"] [data-kit="site"] :is(.fq-iri-sheen,.tx-sphere>i,.photo.fq-iri-rim:hover)::after,[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(section.bg-slat:has(> .amber-glow) h2.font-display > span,.art-line-frame .art-line-text > span,.art-q-panel .art-num){animation:none!important}}

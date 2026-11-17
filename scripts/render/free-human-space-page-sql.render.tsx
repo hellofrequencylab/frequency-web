@@ -74,6 +74,7 @@ end $$;
 select jsonb_array_length(preferences #> '{profileData,offerings}') as offerings, jsonb_array_length(preferences #> '{profileLayout,rows}') as rows from spaces where slug = '${FREE_HUMAN_SLUG}';
 commit;
 -- UNDO: update spaces s set preferences = b.preferences from zz_backup_free_human_page_20261030 b where s.id = b.space_id;
+-- NOTE: the copy this script made when it first ran (zz_backup_free_human_page_20261030) was dropped on 2026-11-16 by migration 20270346071000_drop_six_zz_backup_tables.sql (SCAN-1238). The UNDO above only works for a fresh run, which makes the copy again.
 `
   writeFileSync(`${out}/free-human-space-page.sql`, sql)
 })

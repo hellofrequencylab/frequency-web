@@ -83,6 +83,7 @@ export const SERIAL_SURFACES = [
   'scripts/check-cache-budget.mjs',
   'scripts/check-build-fanout.mjs',
   'scripts/check-notfound-routes.mjs',
+  'scripts/check-editor-bundle-bytes.mjs',
 ]
 
 const PATH_IN_TEXT =
@@ -109,7 +110,7 @@ LOOP.
 1. Branch from current main. One backlog row per PR. Keep under the 40-file hard gate (15 is guidance).
 2. Implement until the row's probe would pass. Run that probe and the tests the change touches.
 3. Commit, push, ManagePullRequest (ready, not draft). Immediately arm squash auto-merge with \`gh pr merge --auto --squash <n>\`. That is the one \`gh\` write this loop uses. Subscribe to the PR/CI. Required checks: checks, analyze, lint, test, Vercel, db-tests. pr-compare is advisory.
-4. Do not merge red; \`--auto\` will not. After GitHub merges, read the production build log: postbuild is the artifact truth (six gates). CI never builds.
+4. Do not merge red; \`--auto\` will not. After GitHub merges, read the production build log: postbuild is the artifact truth (seven gates). CI never builds.
 5. If the PR added supabase/migrations/*.sql, apply with execute_sql then ledger insert; run pnpm check:migrations --require-ledger when credentials exist.
 6. Validate the row's probe on main. Close the row in the SAME PR that makes the probe pass, as a fragment: docs/ledger/rows/<ID>.json holding {"id","patch":{"status":"done","closed":...,"verify":...},"append":{"detail":...}}, and the ADR as docs/ledger/adr/ADR-<n>.md. Never edit docs/BUILD-BACKLOG.json or docs/DECISIONS.md in a feature PR; a closed row leaves its wave by itself (ADR-1635).
 

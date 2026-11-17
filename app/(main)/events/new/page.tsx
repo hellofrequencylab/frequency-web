@@ -17,6 +17,7 @@ import { defaultEventHostSpaceId } from '@/lib/events/default-host-space'
 import { getSpacePlan } from '@/lib/calendar/plans-store'
 import { getCalendarEntryRow } from '@/lib/calendar/entries-store'
 import { productionPrefill } from '@/lib/calendar/production-prefill'
+import { safeReturnPath } from '@/lib/events/return-path'
 
 // Build a prefill from a SOURCE event for the Duplicate flow: clone every field the
 // create form sets EXCEPT the date (the new copy defaults to the active day, PART 2) and
@@ -109,7 +110,7 @@ async function buildDuplicateInitial(sourceId: string): Promise<DuplicatePrefill
 export default async function NewEventPage({
   searchParams,
 }: {
-  searchParams: Promise<{ circle?: string; space?: string; duplicate?: string; journey?: string; plan?: string; pencil?: string }>
+  searchParams: Promise<{ circle?: string; space?: string; duplicate?: string; journey?: string; plan?: string; pencil?: string; return?: string }>
 }) {
   const {
     circle: circleParam,
@@ -118,7 +119,11 @@ export default async function NewEventPage({
     journey: journeyParam,
     plan: planParam,
     pencil: pencilParam,
+    return: returnParam,
   } = await searchParams
+  // Where a create started from a Space calendar goes back to once published (LIVE-2319). Validated:
+  // only a same-origin /spaces/ path survives, anything else falls back to the new event's page.
+  const returnTo = safeReturnPath(returnParam) ?? undefined
   const supabase = await createClient()
   const {
     data: { user },
@@ -512,6 +517,7 @@ export default async function NewEventPage({
         payoutSelfByScope={payoutSelfByScope}
         paymentsRefusedByScope={paymentsRefusedByScope}
         upgradeOffer={upgradeOffer}
+        returnTo={returnTo}
       />
     </>
   )

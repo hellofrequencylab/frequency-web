@@ -203,6 +203,8 @@ export async function confirmOptin(email: string): Promise<{
   firstConfirmation: boolean
   profileId: string | null
   displayName: string | null
+  /** The confirmed contact row, so the caller can enroll it in the /subscribe nurture. Null on any non-confirm. */
+  contactId?: string | null
 }> {
   const clean = email.trim().toLowerCase()
   if (!clean || !clean.includes('@')) return { status: 'invalid', firstConfirmation: false, profileId: null, displayName: null }
@@ -226,6 +228,7 @@ export async function confirmOptin(email: string): Promise<{
     optin_confirmed_at: nowIso,
   } as unknown as Json
 
+  let insertedId: string | null = null
   try {
     if (existing?.id) {
       const { error } = await admin
@@ -236,14 +239,19 @@ export async function confirmOptin(email: string): Promise<{
     } else {
       // Edge case: valid token but no row (record purged) — create it confirmed, in the root space.
       const rootId = await getRootSpaceId()
-      const { error } = await admin.from('contacts').insert({
-        email: clean,
-        consent_state: 'subscribed',
-        source: 'subscribe_optin',
-        ...(rootId ? { space_id: rootId } : {}),
-        meta,
-        last_seen_at: nowIso,
-      })
+      const { data: inserted, error } = await admin
+        .from('contacts')
+        .insert({
+          email: clean,
+          consent_state: 'subscribed',
+          source: 'subscribe_optin',
+          ...(rootId ? { space_id: rootId } : {}),
+          meta,
+          last_seen_at: nowIso,
+        })
+        .select('id')
+        .maybeSingle()
+      insertedId = inserted?.id ?? null
       if (error) return { status: 'invalid', firstConfirmation: false, profileId: null, displayName: null }
     }
   } catch (err) {
@@ -276,5 +284,11 @@ export async function confirmOptin(email: string): Promise<{
     })
   }
 
-  return { status: 'confirmed', firstConfirmation, profileId, displayName: existing?.display_name ?? null }
+  return {
+    status: 'confirmed',
+    firstConfirmation,
+    profileId,
+    displayName: existing?.display_name ?? null,
+    contactId: existing?.id ?? insertedId,
+  }
 }

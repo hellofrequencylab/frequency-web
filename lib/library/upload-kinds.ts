@@ -144,6 +144,23 @@ export function looksLikeImage(type: string | null | undefined, filename: string
   return m.startsWith('image/')
 }
 
+/** The message for a PDF dropped onto a photo field (LIVE-2318). */
+export const DROPPED_PDF_MESSAGE = 'That is a PDF. Cover images need to be a photo (JPG or PNG).'
+/** The message for any other non-image dropped onto a photo field. */
+const DROPPED_NOT_IMAGE_MESSAGE = 'That file is not a photo. Cover images need to be a photo (JPG or PNG).'
+
+/**
+ * What is wrong with a file dropped onto a photo field, or null when it looks like an image and can
+ * go on to upload. A PDF (a flyer, a poster export) gets its own line because it is the common
+ * mistake. PURE.
+ */
+export function droppedFileProblem(type: string | null | undefined, filename: string | null | undefined): string | null {
+  if (looksLikeImage(type, filename)) return null
+  const t = (type ?? '').toLowerCase().trim()
+  if (t === 'application/pdf' || extOf(filename).toLowerCase() === 'pdf') return DROPPED_PDF_MESSAGE
+  return DROPPED_NOT_IMAGE_MESSAGE
+}
+
 /** A default file extension for a Loom kind, when the original filename has none. PURE. */
 export function fallbackExtFor(kind: LoomUploadKind): string {
   switch (kind) {

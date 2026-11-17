@@ -1,3 +1,4 @@
+import { formatDateWeekday } from '@/lib/format-date'
 import { notFound } from 'next/navigation'
 import { buttonClasses } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
@@ -73,7 +74,7 @@ const HERO_EYEBROW = 'Community'
 type CircleRow = { id: string; name: string; slug: string; city: string | null; member_count: number; created_at: string }
 
 function eventDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  return formatDateWeekday(iso)
 }
 
 /** The date chip's two lines. Split out so the Coming up card reads as markup rather than as two

@@ -70,6 +70,18 @@ if (!existsSync(`lib/theme/design-fonts/${SITE_DESIGN}.ts`)) throw new Error(`no
 const active = readFileSync(ACTIVE, 'utf8').replace(/from '\.\/[a-z0-9-]+'/, `from './${SITE_DESIGN}'`)
 const wroteFonts = writeIfChanged(ACTIVE, active)
 
+// 2b. The active front-door module (PERF-004). app/page.tsx's DAWN branch imports ./active, so a
+// Frequency build's graph never reaches the block library through `/`.
+// A tree without the module (a generator fixture) has nothing to point; PERF-004's probe holds the
+// committed copy on ./frequency, and check:shell-weight fails a build that reaches the block library.
+const HOME = 'lib/theme/design-home/active.ts'
+let wroteHome = false
+if (existsSync(HOME)) {
+  if (!existsSync(`lib/theme/design-home/${SITE_DESIGN}.ts`)) throw new Error(`no lib/theme/design-home/${SITE_DESIGN}.ts`)
+  const home = readFileSync(HOME, 'utf8').replace(/from '\.\/[a-z0-9-]+'/, `from './${SITE_DESIGN}'`)
+  wroteHome = writeIfChanged(HOME, home)
+}
+
 // 3. The stylesheet stubs. A stub this generator wrote whose sheet is gone is removed, so a stale import
 // can never reach a build.
 mkdirSync(STUB_DIR, { recursive: true })
@@ -87,3 +99,4 @@ for (const f of readdirSync(STUB_DIR)) {
 console.log(
   `design assets: ${SITE_DESIGN} (manifest ${wroteManifest ? 'written' : 'unchanged'}, fonts ${wroteFonts ? 'written' : 'unchanged'}, styles ${wroteStyles ? `${wroteStyles} written` : 'unchanged'})`,
 )
+if (wroteHome) console.log(`design assets: front-door modules pointed at ${SITE_DESIGN} (lib/theme/design-home/active.ts)`)

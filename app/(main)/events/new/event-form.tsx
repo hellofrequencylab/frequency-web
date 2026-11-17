@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition, type DragEvent } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -10,6 +10,7 @@ import { isError } from '@/lib/action-result'
 import { Field, Input, Textarea, Label, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { safeReturnPath } from '@/lib/events/return-path'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import type { PlaceResult } from '@/lib/geocode'
@@ -168,6 +169,11 @@ function FormSection({
   )
 }
 
+/** Cancel a drag/drop the form itself receives, so a stray drop never navigates away (LIVE-2318). */
+function preventStrayDrop(e: DragEvent<HTMLFormElement>) {
+  e.preventDefault()
+}
+
 export function EventForm({
   groups,
   journeys,
@@ -182,6 +188,7 @@ export function EventForm({
   payoutSelfByScope,
   paymentsRefusedByScope,
   upgradeOffer,
+  returnTo,
 }: {
   groups: Group[]
   /** Journeys the caller may link this event to (create AND edit). Empty/absent hides the field. */
@@ -222,6 +229,9 @@ export function EventForm({
   paymentsRefusedByScope?: Record<string, UpgradeTarget>
   /** The Business offer the upgrade moment shows (trial, catalog price). Absent hides the panel. */
   upgradeOffer?: UpgradeOffer
+  /** Where a CREATE lands once published, when it started from a Space calendar (LIVE-2319). The page
+   *  validates it (lib/events/return-path.ts). Absent keeps the old road: the new event's page. */
+  returnTo?: string
 }) {
   const isEdit = !!eventId
   // Sentinel scope for a standalone PUBLIC event (any nearby member — no circle/space needed).
@@ -471,12 +481,22 @@ export function EventForm({
         setSubmitError(res.error)
         return
       }
-      router.push(`/events/${res.data.slug}`)
+      // A create started from a Space calendar goes back there (LIVE-2319); everything else opens the
+      // event. Re-checked here so the form never trusts a prop it did not validate itself.
+      const back = !isEdit ? safeReturnPath(returnTo) : null
+      router.push(back ?? `/events/${res.data.slug}`)
     })
   }
 
   return (
-    <form onSubmit={submit} className="space-y-8">
+    <form
+      onSubmit={submit}
+      // A file dropped anywhere on the form outside a photo field must not make the browser open it
+      // (Safari navigates to the file and the form is lost). Photo fields handle their own drops.
+      onDragOver={preventStrayDrop}
+      onDrop={preventStrayDrop}
+      className="space-y-8"
+    >
       {/* Instructional header — set the tone: fill in what you have, refine the rest later. */}
       <div className="rounded-card border border-border bg-surface-elevated/40 p-4">
         <h1 className="text-body font-semibold text-text">

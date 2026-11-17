@@ -22,6 +22,7 @@ import { CrmMemberDetailPane } from './crm-member-detail'
 import type { CrmMemberDetail, ListView, MemberViewerProps, SortOption } from './types'
 import { Input } from '@/components/ui/field'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 // THE MEMBER-VIEWER BLOCK: a reusable master-detail member browser (list left, viewer right).
 // One presentation-neutral client island (ADR-017/018) reused/reconfigured by many surfaces, not a
@@ -353,31 +354,13 @@ export function MemberViewer({
           )}
 
           {options.length > 0 && (
-            <div
-              role="group"
-              aria-label="Sort members"
-              className="inline-flex min-w-0 flex-wrap items-center gap-0.5 rounded-card border border-border bg-surface p-0.5"
-            >
-              {options.map((o) => {
-                const active = o.key === sortKey
-                return (
-                  <button
-                    key={o.key}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => chooseSort(o.key)}
-                    className={cn(
-                      'rounded-control px-3 py-1.5 text-body-sm font-semibold transition-colors',
-                      active
-                        ? 'bg-primary text-on-primary'
-                        : 'text-muted hover:bg-surface-elevated hover:text-text',
-                    )}
-                  >
-                    {o.label}
-                  </button>
-                )
-              })}
-            </div>
+            <SegmentedControl
+              label="Sort members"
+              value={sortKey}
+              onChange={chooseSort}
+              className="min-w-0"
+              segments={options.map((o) => ({ value: o.key, label: o.label }))}
+            />
           )}
         </div>
 

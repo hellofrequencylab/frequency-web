@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Smile } from 'lucide-react'
 import { capsLabel } from '@/components/ui/caps-label'
+import { IconButton } from '@/components/ui/icon-button'
 
 // A small, dependency-free emoji popover. Curated common sets grouped by feel —
 // enough to react quickly without shipping a multi-megabyte emoji database. Opens
@@ -53,23 +54,20 @@ export function EmojiPicker({ onSelect, disabled }: { onSelect: (emoji: string) 
 
   return (
     <div ref={rootRef} className="relative">
-      <button
-        type="button"
+      <IconButton
+        size="xs"
+        variant={open ? 'soft' : 'plain'}
+        label="Add emoji"
         // Keep the caret in the field that opened the picker (the textarea / subject input): a plain mousedown
         // would blur it, so the emoji insert would lose its selection. preventDefault holds focus; the click
         // still fires and toggles the popover.
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => setOpen((o) => !o)}
         disabled={disabled}
-        aria-label="Add emoji"
         aria-expanded={open}
-        className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
-          open ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-        }`}
-        title="Add emoji"
       >
         <Smile className="h-4 w-4" />
-      </button>
+      </IconButton>
 
       {open && (
         <div

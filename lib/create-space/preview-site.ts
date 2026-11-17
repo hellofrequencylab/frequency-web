@@ -14,6 +14,7 @@ import { FREE_HUMAN_PROFILES } from '@/lib/theme/free-human'
 import { SERVICES_ACCENTS } from '@/lib/theme/services'
 import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { CYBERWITCH_ACCENTS } from '@/lib/theme/cyberwitch'
+import { MINDLESS_ACCENTS } from '@/lib/theme/mindless'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 
@@ -67,6 +68,7 @@ const TEMPLE_KIT_PHOTO = (n: string) => `/sites/temple-kit/photos/photo-${n}.jpg
 const NOCTURNE_PHOTO = (name: string) => `/sites/midnight/photos/${name}.jpg`
 const NEW_WORLD_PHOTO = (name: string) => `/sites/new-world/photos/${name}.webp`
 const CYBERWITCH_PHOTO = (name: string) => `/sites/cyberwitch/photos/${name}.jpg`
+const MINDLESS_PHOTO = (name: string) => `/sites/mindless/photos/${name}.jpg`
 const FREE_HUMAN_PHOTO = (name: string) => `/sites/free-human/photos/${name}.webp`
 const WILDHEART_PHOTO = (name: string) => `/brand/wildheart/photos/${name}.jpg`
 
@@ -108,6 +110,14 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
     strip: [CYBERWITCH_PHOTO('story'), CYBERWITCH_PHOTO('hero-ice'), CYBERWITCH_PHOTO('hero-absinthe')], nav1: 'Work with me', cta2: 'See the work',
     covers: [CYBERWITCH_PHOTO('hero-hex'), CYBERWITCH_PHOTO('story'), CYBERWITCH_PHOTO('hero-ice'), CYBERWITCH_PHOTO('hero-blood')],
     portraits: [CYBERWITCH_PHOTO('founder-hex'), CYBERWITCH_PHOTO('founder-ice')],
+  },
+  // Mindless's own pictures (the design system's Imagery): the yellow arms-up circle is its hero, a guide on the cushion its portrait.
+  // The paint photos follow the accent; the rest are ink mono.
+  mindless: {
+    hero: '/sites/mindless/blob.jpg', heroPos: '50% 50%', portrait: MINDLESS_PHOTO('guide-mono'), portraitPos: '50% 22%',
+    strip: [MINDLESS_PHOTO('circle-mono'), MINDLESS_PHOTO('firepit-mono'), MINDLESS_PHOTO('rooftop-mono')], nav1: 'Circles', cta2: 'Start the program',
+    covers: [MINDLESS_PHOTO('hero-yellow'), MINDLESS_PHOTO('circle-mono'), MINDLESS_PHOTO('sunset-mono'), MINDLESS_PHOTO('beach-mono')],
+    portraits: [MINDLESS_PHOTO('guide-mono'), MINDLESS_PHOTO('small-mono')],
   },
   designer: {
     hero: DESIGNER_PHOTO('dz-designer-kitchen-hero'), heroPos: '38% center',
@@ -163,6 +173,13 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
 /** Every kit's pictures: a kit with its own library never borrows another's. */
 export function kitImagery(kit: MegaThemeId, accentAt?: number): KitImagery {
   const base = KIT_IMAGERY[kit]
+  if (kit === 'mindless' && accentAt !== undefined) {
+    // Mindless's paint photos are treated in each accent: the picked accent's hero leads.
+    const id = (Object.keys(MINDLESS_ACCENTS) as (keyof typeof MINDLESS_ACCENTS)[])[accentAt]
+    if (!id) return base
+    const hero = MINDLESS_PHOTO(`hero-${id}`)
+    return { ...base, hero, covers: [hero, ...base.covers.slice(1)] }
+  }
   if (kit !== 'cyberwitch' || accentAt === undefined) return base
   // CyberWitch's hero and founder are shot in each neon: the picked accent's pair leads, the rest of the library follows.
   const id = (Object.keys(CYBERWITCH_ACCENTS) as (keyof typeof CYBERWITCH_ACCENTS)[])[accentAt]
@@ -247,6 +264,8 @@ const KIT_ACCENTS: Record<MegaThemeId, readonly PreviewAccent[]> = {
   'new-world': (Object.keys(NEW_WORLD_ACCENTS) as (keyof typeof NEW_WORLD_ACCENTS)[]).map((id) => ({ name: NEW_WORLD_ACCENTS[id].label, fill: NEW_WORLD_ACCENTS[id].accent, text: null })),
   // CyberWitch's five presets (lib/theme/cyberwitch.ts), Hex first. Dark only: the fill reads as text, so no text step.
   cyberwitch: (Object.keys(CYBERWITCH_ACCENTS) as (keyof typeof CYBERWITCH_ACCENTS)[]).map((id) => ({ name: CYBERWITCH_ACCENTS[id].label, fill: CYBERWITCH_ACCENTS[id].accent, text: null })),
+  // Mindless's three presets (lib/theme/mindless.ts), Yellow first. Night first: the fill reads as text on ink.
+  mindless: (Object.keys(MINDLESS_ACCENTS) as (keyof typeof MINDLESS_ACCENTS)[]).map((id) => ({ name: MINDLESS_ACCENTS[id].label, fill: MINDLESS_ACCENTS[id].accent, text: null })),
   bold: [
     { name: 'Volt', fill: '#D4FF3D', text: null }, { name: 'Flare', fill: '#FF5A36', text: null },
     { name: 'Ice', fill: '#3DD9FF', text: null }, { name: 'Gold', fill: '#FFD23D', text: null },

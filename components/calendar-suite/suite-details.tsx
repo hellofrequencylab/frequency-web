@@ -187,7 +187,7 @@ function ItemBody({ item, data, ctx, actions, onSelect, onClose, say }: PanelPro
       onClose()
     }
   }
-  const goLive = item.kind === 'production' && item.entryId && canEdit ? productionDoorHref(ctx.ownSpaceId, item.entryId, item.plan) : null
+  const goLive = item.kind === 'production' && item.entryId && canEdit ? productionDoorHref(ctx.ownSpaceId, item.entryId, item.plan, ctx.returnTo) : null
   const stage = settable(item.kind)
 
   return (
@@ -553,7 +553,7 @@ function PlanBody({ plan, data, ctx, actions, onSelect, say }: PanelProps & { pl
   const stage = settable(plan.stage)
   const dates = stats.items.map((i) => ctx.itemById.get(i.id)).filter((i): i is SuiteItem => !!i)
   const productionDate = plan.stage === 'production' ? dates.find((i) => i.entryId) : null
-  const goLive = productionDate?.entryId && canEdit ? productionDoorHref(ctx.ownSpaceId, productionDate.entryId, plan.id) : null
+  const goLive = productionDate?.entryId && canEdit ? productionDoorHref(ctx.ownSpaceId, productionDate.entryId, plan.id, ctx.returnTo) : null
   const eventHref = plan.stage === 'event' ? (dates.find((i) => i.eventHref)?.eventHref ?? null) : null
   return (
     <>

@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 603,
+      "baseline": 595,
       "frozen": {
-        "at": "2026-10-28",
-        "value": 603,
+        "at": "2026-11-16",
+        "value": 595,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Sweep landed on main: 707 to 603 literal radii retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
-        "from": 707
+        "reason": "SCAN-1242: the join name-hint (i) moved off a hand-rolled rounded-pill glyph onto IconButton (596 to 595)",
+        "from": 596
       },
       "history": [
         {
@@ -392,6 +392,20 @@
           "to": 603,
           "direction": "lowered",
           "reason": "Sweep landed on main: 707 to 603 literal radii retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
+        },
+        {
+          "at": "2026-11-16",
+          "from": 603,
+          "to": 596,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 9: the hand-rolled segmented bars, pills and tiles that moved onto the kit SegmentedControl, chipClasses and choiceTileClasses carried literal rounded-md, rounded-pill and rounded-lg classes that left with them"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 596,
+          "to": 595,
+          "direction": "lowered",
+          "reason": "SCAN-1242: the join name-hint (i) moved off a hand-rolled rounded-pill glyph onto IconButton (596 to 595)"
         }
       ]
     },
@@ -470,14 +484,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 47,
+      "baseline": 46,
       "frozen": {
-        "at": "2026-11-03",
-        "value": 47,
-        "direction": "raised",
+        "at": "2026-11-16",
+        "value": 46,
+        "direction": "lowered",
         "basis": "fa00e74e05ee",
-        "reason": "Create a Space v3 hero builder and Services kit CSS added literal shadows; counter re-frozen to the measured count",
-        "from": 38
+        "reason": "SCAN-1133 slice 11: the hand-rolled email preference switch knobs (with their literal shadow) are replaced by the kit Switch",
+        "from": 47
       },
       "history": [
         {
@@ -577,6 +591,13 @@
           "to": 47,
           "direction": "raised",
           "reason": "Create a Space v3 hero builder and Services kit CSS added literal shadows; counter re-frozen to the measured count"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 47,
+          "to": 46,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 11: the hand-rolled email preference switch knobs (with their literal shadow) are replaced by the kit Switch"
         }
       ]
     },
@@ -758,14 +779,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 94,
+      "baseline": 39,
       "frozen": {
-        "at": "2026-11-16",
-        "value": 94,
+        "at": "2026-11-17",
+        "value": 39,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice 7: 30 admin raw button backgrounds moved to the kit (IconButton row actions, SegmentedControl pairs, chipClasses pills, choiceTileClasses tiles); floor re-frozen to the measured 94",
-        "from": 124
+        "reason": "SCAN-1133 slice 13: dispute reasons, event boops and the Dispatch toggle move to chipClasses; the practice term and swap choices and the Space events rows move to choiceTileClasses",
+        "from": 45
       },
       "history": [
         {
@@ -1054,6 +1075,48 @@
           "to": 94,
           "direction": "lowered",
           "reason": "SCAN-1133 slice 7: 30 admin raw button backgrounds moved to the kit (IconButton row actions, SegmentedControl pairs, chipClasses pills, choiceTileClasses tiles); floor re-frozen to the measured 94"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 94,
+          "to": 73,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 8: 21 raw button backgrounds in events, spaces, settings, studio and three admin leftovers moved to the kit (chipClasses pills, choiceTileClasses tiles, SegmentedControl switches, the kit Switch); floor re-frozen to the measured 73"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 73,
+          "to": 57,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 9: the kit SegmentedControl gains a compact xs size and 16 editor and builder raw buttons move onto the kit (inspector Segmented bar and wrap mode, the two row layout pickers, Journey visibility, the sequence editor destination pair and beat bar, the member viewer sort to SegmentedControl; Circle builder, price quick-picks, room visibility, task effort, import merge rule and card tap mode to choiceTileClasses or chipClasses)"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 57,
+          "to": 51,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 10: IconButton gains size xs and variant soft, Switch gains size xs; composer tools, emoji trigger, event attach and GIF, listing Q&A attach move to IconButton xs, field-controls Toggle moves to Switch xs"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 51,
+          "to": 48,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 11: the two email preference toggles (unsubscribe and manage-emails) move to Switch and the Space reviews sort moves to SegmentedControl"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 48,
+          "to": 45,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 12: the feed comment send moves to IconButton soft, the practice love rating to chipClasses and the report dialog type tiles to choiceTileClasses"
+        },
+        {
+          "at": "2026-11-17",
+          "from": 45,
+          "to": 39,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 13: dispute reasons, event boops and the Dispatch toggle move to chipClasses; the practice term and swap choices and the Space events rows move to choiceTileClasses"
         }
       ]
     },
@@ -1431,14 +1494,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 54,
+      "baseline": 50,
       "frozen": {
-        "at": "2026-10-28",
-        "value": 54,
+        "at": "2026-11-16",
+        "value": 50,
         "direction": "lowered",
         "basis": "8afdfcd88c01",
-        "reason": "Sweep landed on main: 59 to 54 arbitrary px values retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28).",
-        "from": 59
+        "reason": "SCAN-1133 slice 9: the inspector Segmented bar and wrap mode and the two row layout pickers dropped their min-h-[26px], min-h-[28px] and min-h-[24px] heights when they moved onto the kit SegmentedControl xs size, which uses min-h-6",
+        "from": 54
       },
       "history": [
         {
@@ -1538,6 +1601,13 @@
           "to": 54,
           "direction": "lowered",
           "reason": "Sweep landed on main: 59 to 54 arbitrary px values retired by earlier PRs; re-freezing the floor (owner phrase given 2026-10-28)."
+        },
+        {
+          "at": "2026-11-16",
+          "from": 54,
+          "to": 50,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 9: the inspector Segmented bar and wrap mode and the two row layout pickers dropped their min-h-[26px], min-h-[28px] and min-h-[24px] heights when they moved onto the kit SegmentedControl xs size, which uses min-h-6"
         }
       ]
     },
@@ -1875,7 +1945,7 @@
         "components/ui/field.tsx",
         "components/ui/checkbox.tsx"
       ],
-      "baseline": 66,
+      "baseline": 58,
       "history": [
         {
           "at": "2026-08-05",
@@ -1981,15 +2051,29 @@
           "to": 66,
           "direction": "lowered",
           "reason": "Create a Space hero builder (create-space-steps, create-space-photos) and the lead capture honeypot moved onto the kit Input (seamless); floor back to the pre-raise 66 (SCAN-1242)"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 66,
+          "to": 64,
+          "direction": "lowered",
+          "reason": "SCAN-1242: onboarding display name and handle render through the kit Input (66 to 64)"
+        },
+        {
+          "at": "2026-11-16",
+          "from": 64,
+          "to": 58,
+          "direction": "lowered",
+          "reason": "SCAN-1242 launch slice: the six text fields in the join induction (both email captures, first and last name, handle, city) render through the kit Input. Inside the site kit on the stage surface the members .input rule is inert, so the live dress is unchanged; 64 to 58"
         }
       ],
       "frozen": {
         "at": "2026-11-16",
-        "value": 66,
+        "value": 58,
         "direction": "lowered",
         "basis": "a76a8556a0ed",
-        "reason": "Create a Space hero builder (create-space-steps, create-space-photos) and the lead capture honeypot moved onto the kit Input (seamless); floor back to the pre-raise 66 (SCAN-1242)",
-        "from": 75
+        "reason": "SCAN-1242 launch slice: the six text fields in the join induction (both email captures, first and last name, handle, city) render through the kit Input. Inside the site kit on the stage surface the members .input rule is inert, so the live dress is unchanged; 64 to 58",
+        "from": 64
       }
     },
     {

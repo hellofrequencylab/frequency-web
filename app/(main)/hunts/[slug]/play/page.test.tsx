@@ -9,12 +9,21 @@ const store = vi.hoisted(() => ({
   loadPlayerRun: vi.fn(),
   loadPublishedTrail: vi.fn(),
   loadRunCredits: vi.fn(),
+  loadVisitedStopPoints: vi.fn(),
   startOrResumeRun: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({ getMyProfileId: store.getMyProfileId }))
 vi.mock('@/lib/hunts/run-store', () => store)
 vi.mock('@/components/templates', () => ({ FocusTemplate: ({ children }: { children: ReactNode }) => <main>{children}</main> }))
+// The map is a client leaf: what the server passes it is what reaches the browser, so capture it whole.
+const mapProps = vi.hoisted(() => ({ sent: [] as string[] }))
+vi.mock('@/components/hunts/visited-stops-map', () => ({
+  VisitedStopsMap: (props: unknown) => {
+    mapProps.sent.push(JSON.stringify(props))
+    return <div data-map={JSON.stringify(props)} />
+  },
+}))
 vi.mock('next/navigation', () => ({
   notFound: () => { throw new Error('NOT_FOUND') },
   redirect: (to: string) => { throw new Error(to) },
@@ -42,6 +51,8 @@ beforeEach(() => {
   store.getMyProfileId.mockResolvedValue('player-1')
   store.loadPublishedTrail.mockResolvedValue(trail)
   store.loadRunCredits.mockResolvedValue([])
+  store.loadVisitedStopPoints.mockResolvedValue([])
+  mapProps.sent.length = 0
   store.startOrResumeRun.mockResolvedValue(run)
   store.loadPlayerRun.mockResolvedValue(run)
 })
@@ -108,6 +119,39 @@ describe('Trail player hint reveal', () => {
     expect(after).toContain('Place 1')
     expect(after).toContain('Clue 2')
     expect(after).not.toMatch(/Private hint|Clue 3|Place [23]/)
+  })
+
+  it('sends the map only visited stops, even when the location source returns every stop (FH-016T)', async () => {
+    // A hostile source: a point for all three stops. Stop 1 is visited; 2 is open; 3 is locked.
+    store.loadVisitedStopPoints.mockResolvedValue([1, 2, 3].map((n) => ({ missionKey: `stop-${n}`, lat: 33 + n / 100, lng: -117 - n / 100, approximate: false })))
+    store.loadRunCredits.mockResolvedValue([{ mission_key: 'stop-1' }])
+    const html = await render()
+    expect(store.loadVisitedStopPoints).toHaveBeenCalledWith(trail, [{ mission_key: 'stop-1' }])
+    expect(mapProps.sent).toEqual([JSON.stringify({ pins: [{ id: 'stop-1', lat: 33.01, lng: -117.01, title: 'Stop 1: Place 1' }] })])
+    // Neither the serialised props nor the page source carry an unvisited stop's key, place, point, clue or hint.
+    for (const source of [mapProps.sent[0], html]) {
+      expect(source).not.toMatch(/Place [23]|33\.0[23]|117\.0[23]|Clue 3|Private hint/)
+    }
+    expect(mapProps.sent[0]).not.toMatch(/stop-[23]|Clue/)
+  })
+
+  it('sends the map nothing before the first visit and asks for no locations without a run', async () => {
+    await render()
+    expect(mapProps.sent).toEqual([JSON.stringify({ pins: [] })])
+    expect(store.loadVisitedStopPoints).toHaveBeenCalledWith(trail, [])
+    store.loadVisitedStopPoints.mockClear()
+    store.loadPlayerRun.mockResolvedValue(null)
+    await render('stop-1')
+    expect(store.loadVisitedStopPoints).not.toHaveBeenCalled()
+  })
+
+  it('offers the scanner next to the typed code only while a stop can be confirmed (FH-016T)', async () => {
+    expect(await render()).toContain('href="/scan?hint=trail"')
+    vi.stubEnv('HUNTS_CLAIMS_ENABLED', '')
+    expect(await render()).not.toContain('/scan')
+    vi.stubEnv('HUNTS_CLAIMS_ENABLED', 'on')
+    store.loadPublishedTrail.mockResolvedValue({ ...trail, huntState: 'paused' })
+    expect(await render()).not.toContain('/scan')
   })
 
   it('shows no claim form when claims are off, the Hunt is paused, or the Trail is finished', async () => {

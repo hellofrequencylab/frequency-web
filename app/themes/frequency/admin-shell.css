@@ -7,6 +7,12 @@
    literal (a 12px chip, 15px UI text, a 14px or 20px radius) is the design's own value, which the
    export has no token for (token-ok). */
 @layer components {
+/* The launch box in the console top bar (LIVE-2320, components/frequency/admin/console-launch.tsx): the
+   members header's pill and sheet (members-shell.css .ap-launch, kit .ap-sheet), anchored under the pill. */
+[data-design="frequency"] [data-kit="admin"] .ad-launch{position:relative;display:inline-flex;align-items:center}
+[data-design="frequency"] [data-kit="admin"] .ad-launch .ap-launch{margin-right:0}
+[data-design="frequency"] [data-kit="admin"] .ad-launch-sheets{position:absolute;top:100%;right:0;z-index:44;pointer-events:none}
+[data-design="frequency"] [data-kit="admin"] .ad-launch-sheets .ap-sheet{width:min(340px,calc(100vw - 24px))}
 [data-design="frequency"] [data-kit="admin"] .ad-nav-group{display:flex;flex-direction:column;gap:2px}
 [data-design="frequency"] [data-kit="admin"] .ad-sub{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px}
 [data-design="frequency"] [data-kit="admin"] .ad-sub a{height:34px;padding:0 12px 0 42px;font-size:var(--fq-text-meta);border-radius:12px}

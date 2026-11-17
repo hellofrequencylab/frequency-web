@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2317",
+  "title": "The capture box's button says \"Capture\" in every mode instead of what it does",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/feed/capture-box.tsx",
+    "ref": "Toni House of Fates QA audit 2026-11-16 (project thread)"
+  },
+  "detail": "EVIDENCE: components/feed/capture-box.tsx passed submitLabel 'Capture' to the composer for every mode except a Space Dispatch, so writing a post, a poll, a question or a private note all ended on the same vague button. The composer's own default (components/feed/composer.tsx) already says Post or Save note; the box overrode it.\n\nCLOSED 2026-11-16: the label now follows the mode: Post, Poll, Ask, Share and Photo say \"Post\", Note says \"Save note\", Dispatch says \"Send Dispatch\" (on a Space mount and on the member feed alike). No test or probe pinned the old label; the \"Capture\" in components/feed/capture-launcher.test.tsx is the nav trigger, not this button. Probe scripts/probes/capture-submit-label.mjs fails on the prior tree and passes here.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/capture-submit-label.mjs"
+  },
+  "wave": "W7",
+  "closed": "2026-11-16"
+}

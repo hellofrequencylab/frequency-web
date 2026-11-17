@@ -1,0 +1,18 @@
+{
+  "id": "FH-047T",
+  "title": "Hunts FH-047T: Sign-off, sponsor billing and live acceptance run for the sponsor milestone",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-047S (2026-11-16): the freeze, the once-only settlement and the payment sync shipped dark; what an agent cannot do moved here."
+  },
+  "detail": "Requires FH-045 (the D8 beneficiary and sponsor model, a human legal and finance sign-off that is not given) and FH-047S. Owed by Legal and finance, then Finance and game systems: (1) D8 must say who bills the sponsor and which payee receives the money; FH-047S records what is owed and what the provider says was paid, and creates no provider invoice. (2) After that, a staff screen that writes and approves hunt_sponsor_agreements (today a row can only be written by hand) and issues the provider invoice carrying metadata hunt_sponsor_settlement_id, the key the payment sync matches. (3) Run completion: FH-047S counts a run in state completed, and no shipped code path sets that state yet, so the reader returns no qualification until it does; when it lands, call settleSponsorMilestone from it as well as from the cron, because a milestone reached and not frozen before the Trail ends is owed nothing. (4) One acceptance run against the payment provider in test mode with HUNTS_COMMERCE_ENABLED on in a preview: threshold reached, a replayed event, a reversal after the freeze, an invoice paid, each checked against hunt_sponsor_snapshots, hunt_sponsor_settlements and the lines on the play page, recorded in docs/hunts/SPONSOR-ACCEPTANCE.md. FH-047S proved these only against a fake client. Production switches stay OFF until this passes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const f=\"docs/hunts/SPONSOR-ACCEPTANCE.md\";process.exit(fs.existsSync(\"docs/hunts/FUNDRAISING-MODEL.md\")&&fs.existsSync(f)&&/hunt_sponsor_settlement_id/.test(fs.readFileSync(f,\"utf8\"))?0:1)'"
+  }
+}

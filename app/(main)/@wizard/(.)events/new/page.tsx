@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export default function EventSparkModal({
   searchParams,
 }: {
-  searchParams: Promise<{ circle?: string; space?: string; duplicate?: string; journey?: string }>
+  searchParams: Promise<{ circle?: string; space?: string; duplicate?: string; journey?: string; return?: string }>
 }) {
   return (
     <WizardModal eyebrow="Studio · Event" ariaLabel="Create an event">

@@ -14,6 +14,7 @@ import type { SpaceReviewsData, SpaceReviewItem, SpaceReviewResponse } from '@/l
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 // THE REVIEWS TAB body (redesign). A best-in-class review experience: a rating summary with a per-star
 // distribution, a sortable review wall where each member card carries a Member badge + relative date,
@@ -185,23 +186,7 @@ export function SpaceReviews({
             title="What members say"
             count={reviews.count}
             action={
-              <div className="flex items-center gap-1" role="group" aria-label="Sort reviews">
-                {SORTS.map((s) => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    onClick={() => setSort(s.key)}
-                    aria-pressed={sort === s.key}
-                    className={`rounded-control px-2 py-1 text-2xs font-semibold transition-colors ${
-                      sort === s.key
-                        ? 'bg-primary-bg text-primary-strong'
-                        : 'text-muted hover:text-text'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl label="Sort reviews" value={sort} onChange={setSort} segments={SORTS.map((s) => ({ value: s.key, label: s.label }))} />
             }
           />
           <ul className="space-y-3">

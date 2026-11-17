@@ -6,6 +6,8 @@ import { getRootSpaceId } from '@/lib/crm/import/store'
 import { sendOptinWelcomeEmail } from '@/lib/email'
 import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
+import { enrollInNurture } from '@/lib/nurture/enroll'
+import { SUBSCRIBE_NURTURE_KEY } from '@/lib/nurture/subscribe'
 
 export type ConfirmResult = { ok: true } | { ok: false }
 
@@ -38,6 +40,11 @@ export async function confirmSubscribe(input: { e: string; x: string; t: string 
       await sendOptinWelcomeEmail({ to: email, firstName: result.displayName, unsubscribeUrl })
     } catch (err) {
       console.error('[subscribe] welcome email failed to queue:', err)
+    }
+    // Start the casual-browser series (day 0, 3, 10). enrollInNurture never throws, is a no-op while the
+    // sequence is paused or empty, and the unique (sequence, contact) key stops a double enrollment.
+    if (result.contactId) {
+      await enrollInNurture({ contactId: result.contactId, email, persona: SUBSCRIBE_NURTURE_KEY })
     }
   }
 

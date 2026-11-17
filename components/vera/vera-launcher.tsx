@@ -234,7 +234,7 @@ function useDockAnchor(slot: HTMLElement | null): { right: number; bottom: numbe
   return anchor
 }
 
-export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; veraTease?: TeaseGate }) {
+export function VeraLauncher({ veraTease }: { veraTease?: TeaseGate }) {
   // Admin pages drop the dock tab (the page-admin dock owns that corner); the panel
   // still opens there via the command bar's open-vera event.
   const pathname = usePathname()
@@ -293,7 +293,19 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
   // Which segment owns the open panel right now — the STANDING fact, not the open EVENT. The tab
   // needs it to stay quiet while the Vault is up (owner, 2026-08-05); see ChatTrigger's `yielding`.
   const panelOwner = useSyncExternalStore(subscribeDockPanel, getDockPanelOwner, getServerDockPanelOwner)
-  const results = useMemo(() => searchHelp(index, q, 6), [q, index])
+  // The help search index is a static file built with the deploy (HYG-245), fetched the first time
+  // Help opens instead of riding in every page's payload. Null until it arrives.
+  const [index, setIndex] = useState<HelpSearchEntry[] | null>(null)
+  useEffect(() => {
+    if (!helpOpen || index) return
+    let live = true
+    fetch('/api/help/search-index')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`help index ${r.status}`))))
+      .then((rows: HelpSearchEntry[]) => { if (live) setIndex(rows) })
+      .catch((err) => { console.warn('[vera-launcher] help search index unavailable', err); if (live) setIndex([]) })
+    return () => { live = false }
+  }, [helpOpen, index])
+  const results = useMemo(() => (index ? searchHelp(index, q, 6) : []), [q, index])
 
   // Remember the last mode across sessions.
   useEffect(() => {
@@ -801,7 +813,9 @@ export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; v
 
                   {showInstant && (
                     <ul className="mt-2 divide-y divide-border overflow-hidden rounded-card border border-border">
-                      {results.length === 0 ? (
+                      {!index ? (
+                        <li className="px-3 py-2 text-body-sm text-muted">Searching…</li>
+                      ) : results.length === 0 ? (
                         <li className="px-3 py-2 text-body-sm text-muted">No matches. Ask Vera.</li>
                       ) : (
                         results.map((r) => (

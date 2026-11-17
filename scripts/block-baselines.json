@@ -3,24 +3,53 @@
   "entries": [
     {
       "key": "block-systems",
-      "description": "Independent block systems still in the tree (target 1). Counted as how many of the five system entry points exist.",
+      "description": "Independent block systems still in the tree (target 2 since ADR-1955: the entity-block registry and the website builder's Puck blocks). Counted as how many of the system entry points from the EDITOR-ARCHITECTURE section 2.1 table exist: entity blocks, Puck-shaped, Space profile, Spotlight. Layout modules (lib/widgets/modules.ts) is the page Apps catalog, not a block system (ADR-1955).",
       "mode": "manifest",
       "patterns": [
         "lib/entity-blocks/registry.ts",
         "lib/page-editor/config.tsx",
-        "lib/email-studio/product-block.ts",
-        "lib/library/element-catalog.ts",
-        "components/spotlight"
+        "lib/spaces/profile-blocks.ts",
+        "lib/spotlight/blocks/schema.ts"
       ],
-      "baseline": 5,
+      "baseline": 2,
       "frozen": {
-        "at": "2026-11-10",
-        "value": 5,
-        "direction": "seed",
-        "basis": "12bb4fc3a4bd",
-        "reason": "Seeded from the E2 census: five block systems measured on 2026-10-20 (EDITOR-ARCHITECTURE section 7.3, corrected from the first draft of 3)."
+        "at": "2026-11-16",
+        "value": 2,
+        "direction": "rebased",
+        "basis": "1b3901035ea9",
+        "reason": "Layout modules reclassified by owner ruling (ADR-1955, Daniel 2026-11-16 17:26Z): lib/widgets/modules.ts is the page Apps catalog, a registered menu catalog, not a block system, so it leaves the manifest. No file moved. Two systems remain: the entity-block registry and the website builder's Puck blocks, which is the E2 target (ADR-1955).",
+        "from": 3
       },
-      "history": []
+      "history": [
+        {
+          "at": "2026-11-16",
+          "from": 5,
+          "to": 5,
+          "direction": "rebased",
+          "reason": "Manifest re-seeded to the five systems in the EDITOR-ARCHITECTURE section 2.1 table (owner approval, Daniel, 2026-11-16, ADR-1953). Out: lib/email-studio/product-block.ts (send-time data binding for a block already in the registry), lib/library/element-catalog.ts (the Loom art catalog), components/spotlight (a directory that cannot disappear). In: lib/widgets/modules.ts, lib/spaces/profile-blocks.ts, lib/spotlight/blocks/schema.ts. The count reads 5 before and after; nothing was consolidated."
+        },
+        {
+          "at": "2026-11-16",
+          "from": 5,
+          "to": 4,
+          "direction": "lowered",
+          "reason": "Space profile sections folded into the entity-block registry (PROG-E2B): lib/spaces/profile-blocks.ts is deleted and its fourteen sections are now derived from ENTITY_BLOCKS in lib/entity-blocks/space-profile.ts. Rendered output and stored layouts unchanged (goldens). Four systems remain: entity blocks, Puck, layout modules, Spotlight."
+        },
+        {
+          "at": "2026-11-16",
+          "from": 4,
+          "to": 3,
+          "direction": "lowered",
+          "reason": "Spotlight block kit folded beside the entity-block registry (PROG-E2C): lib/spotlight/blocks/schema.ts is now lib/entity-blocks/spotlight.ts, and each of its nine types is held to a registry row a member may hold (goldens). Stored layouts, validation and rendered output unchanged. Three systems remain: entity blocks, Puck, layout modules."
+        },
+        {
+          "at": "2026-11-16",
+          "from": 3,
+          "to": 2,
+          "direction": "rebased",
+          "reason": "Layout modules reclassified by owner ruling (ADR-1955, Daniel 2026-11-16 17:26Z): lib/widgets/modules.ts is the page Apps catalog, a registered menu catalog, not a block system, so it leaves the manifest. No file moved. Two systems remain: the entity-block registry and the website builder's Puck blocks, which is the E2 target (ADR-1955)."
+        }
+      ]
     }
   ]
 }

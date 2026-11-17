@@ -206,6 +206,7 @@ export function EventSpark({
   payoutSelfByScope,
   paymentsRefusedByScope,
   upgradeOffer,
+  returnTo,
 }: {
   groups: Group[]
   journeys?: JourneyOption[]
@@ -225,6 +226,8 @@ export function EventSpark({
   paymentsRefusedByScope?: Record<string, UpgradeTarget>
   /** Pass-through to EventForm's upgrade moment (LIVE-758). */
   upgradeOffer?: UpgradeOffer
+  /** Pass-through to EventForm: the Space page to land on after a create (LIVE-2319), already validated. */
+  returnTo?: string
 }) {
   const router = useRouter()
   const [mode, setMode] = useState<'wizard' | 'manual'>(startInManual ? 'manual' : 'wizard')
@@ -287,6 +290,7 @@ export function EventSpark({
         payoutSelfByScope={payoutSelfByScope}
         paymentsRefusedByScope={paymentsRefusedByScope}
         upgradeOffer={upgradeOffer}
+        returnTo={returnTo}
       />
     )
 
