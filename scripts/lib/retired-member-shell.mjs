@@ -2,6 +2,8 @@ import path from 'node:path'
 import ts from 'typescript'
 
 export const RETIRED_MEMBER_SHELL = 'components/layout/app-shell.tsx'
+// An escape whose decoded character could be part of a module basename ([A-Za-z0-9-]).
+const SPELLING_ESCAPE = /\\(?:[0-9ac-eg-mo-qsuw-zA-Z-]|[\r\n\u2028\u2029])/
 /** Inspect real import/re-export/dynamic-import edges, never comments or historical prose.
  * @param {string} file
  * @param {string} source
@@ -20,7 +22,11 @@ export function retiredModuleEdges(file, source, retired = [RETIRED_MEMBER_SHELL
   for (const quote of source.matchAll(/['"`]/g)) {
     const end = source.indexOf(quote[0], quote.index + 1)
     const raw = source.slice(quote.index, end < 0 ? undefined : end + 1)
-    if (!raw.includes('\\') && !basenames.some(name => raw.includes(name))) continue
+    // Only an escape that can decode to a letter, digit or hyphen (\u, \x, octal, an identity
+    // escape such as \m, or a line continuation) can spell a basename that is not there verbatim.
+    // \n \t \r \b \f \v \" \' \\ \/ cannot, so a large generated string full of them is skipped
+    // instead of being rescanned from every embedded quote (HYG-209: 10.9s of CPU on one file).
+    if (!SPELLING_ESCAPE.test(raw) && !basenames.some(name => raw.includes(name))) continue
     scanner.setTextPos(quote.index)
     const token = scanner.scan()
     if (token !== ts.SyntaxKind.StringLiteral && token !== ts.SyntaxKind.NoSubstitutionTemplateLiteral) continue
