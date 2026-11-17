@@ -63,5 +63,28 @@ export async function setEmailCategoryPreference(params: {
     return fail('Could not save your preference. Please try again.')
   }
 
+  // LIVE-2326: turning "lifecycle" OFF here is the same opt-out as the footer's one-click unsubscribe, which
+  // carries the same token (app/unsubscribe/actions.ts, SCAN-728). Broadcasts to subscribed members are gated
+  // on the email_marketing CONSENT scope (lib/comms/send-gate.ts), never on this preference, so without these
+  // two writes a member who switched newsletters off here kept getting them. Opt-out only: turning it back on
+  // restores the preference and grants no marketing consent. Either write failing is a failed save.
+  if (cat === 'lifecycle' && !subscribed) {
+    const { error: consentError } = await admin
+      .from('consent_records')
+      .insert({ profile_id: profileId, scope: 'email_marketing', granted: false, source: 'unsubscribe' })
+    if (consentError) {
+      console.error('[manage-emails] revoke email_marketing consent:', consentError.message)
+      return fail('Could not save your preference. Please try again.')
+    }
+    const { error: contactError } = await admin
+      .from('contacts')
+      .update({ consent_state: 'unsubscribed' })
+      .eq('profile_id', profileId)
+    if (contactError) {
+      console.error('[manage-emails] contacts consent_state:', contactError.message)
+      return fail('Could not save your preference. Please try again.')
+    }
+  }
+
   return ok({ category: cat, subscribed })
 }

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2326",
+  "title": "Turning newsletters off on Manage emails stops marketing broadcasts, like the one-click unsubscribe",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/manage-emails/actions.ts",
+    "ref": "Space function scan 2026-11-17 (project thread): the Manage emails lifecycle toggle flipped only the preference, which the marketing gate never reads"
+  },
+  "detail": "The footer of every broadcast carries a one-click unsubscribe and a Manage emails link, both on the same (profile, 'lifecycle') token. SCAN-728 made the one-click unsubscribe revoke email_marketing consent and mark the member's contacts unsubscribed, because the marketing send gate reads only that consent scope. The Manage emails toggle for the same category flipped only notification_preferences.email_lifecycle, so a member who switched newsletters off there kept receiving subscribed-member broadcasts, including Space campaigns to contacts. Fix: the off switch makes the same two writes, and a failed write is a failed save. Turning it back on restores the preference and grants no marketing consent (opt-out only). Pinned by app/manage-emails/actions.test.ts (3 of 4 fail on main).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2326.mjs",
+    "note": "Fails on main: setEmailCategoryPreference has no newsletters-off branch. Passes once it revokes email_marketing consent and unsubscribes the linked contacts."
+  },
+  "wave": "W7",
+  "closed": "2026-11-17"
+}
