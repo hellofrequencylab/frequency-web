@@ -60,19 +60,16 @@ function Tool({
   children: React.ReactNode
 }) {
   return (
-    <button
-      type="button"
+    <IconButton
+      size="xs"
+      variant={active ? 'soft' : 'plain'}
+      label={label}
       onMouseDown={(e) => e.preventDefault()} // keep the caret in the textarea
       onClick={onClick}
       disabled={disabled}
-      aria-label={label}
-      title={label}
-      className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
-        active ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-      }`}
     >
       {children}
-    </button>
+    </IconButton>
   )
 }
 

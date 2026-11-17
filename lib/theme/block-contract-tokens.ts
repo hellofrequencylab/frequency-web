@@ -42,7 +42,7 @@ export const CORE_TOKEN_NAMES = [
 export type CoreTokenName = (typeof CORE_TOKEN_NAMES)[number]
 
 /** The ten site themes (lib/theme/site-style.ts SiteThemeId). */
-export const CONTRACT_THEME_IDS = ['frequency', 'bold', 'wildheart', 'network', 'network-kit', 'temple', 'temple-kit', 'midnight', 'designer', 'free-human', 'services', 'new-world', 'cyberwitch'] as const
+export const CONTRACT_THEME_IDS = ['frequency', 'bold', 'wildheart', 'network', 'network-kit', 'temple', 'temple-kit', 'midnight', 'designer', 'free-human', 'services', 'new-world', 'cyberwitch', 'mindless'] as const
 
 export type ContractThemeId = (typeof CONTRACT_THEME_IDS)[number]
 
@@ -74,6 +74,7 @@ const SCOPE: Readonly<Record<ContractThemeId, string>> = {
   services: '[data-house-theme="services"]',
   'new-world': '[data-house-theme="new-world"]',
   cyberwitch: '[data-house-theme="cyberwitch"]',
+  mindless: '[data-house-theme="mindless"]',
 }
 
 type Generated = { themes: Record<string, { names: Record<string, string> }> }
@@ -131,4 +132,18 @@ export const TH_TO_CONTRACT: Readonly<Record<string, CoreTokenName | null>> = {
   '--th-r-lg': null,
   '--th-r-sm': null,
   '--th-scrawl': null,
+  // Mindless (lib/theme/mindless.ts): its corner trio, the heading bone, the offset paints and the 60/30/10 surface bands.
+  '--th-corner': '--r-card',
+  '--th-corner-sm': null,
+  '--th-corner-lg': null,
+  '--th-head': '--c-text',
+  '--th-pit': null,
+  '--th-raised-2': null,
+  '--th-band-pit': null,
+  '--th-band-violet': null,
+  '--th-band-violet-raised': null,
+  '--th-noise-1': null,
+  '--th-noise-1-text': null,
+  '--th-noise-2': null,
+  '--th-noise-2-text': null,
 }

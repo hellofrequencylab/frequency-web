@@ -24,7 +24,7 @@ import {
   CITE_MAX,
   LABEL_MAX,
   ALT_MAX,
-} from './schema'
+} from '@/lib/entity-blocks/spotlight'
 import { validateEmbedRef } from '../embeds'
 
 function clampStr(v: unknown, max: number): string {

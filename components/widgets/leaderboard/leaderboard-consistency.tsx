@@ -1,3 +1,4 @@
+import { formatDateMedium, formatDateShort } from '@/lib/format-date'
 import { CalendarCheck, PenTool, Mic, Flame, Shield } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -221,9 +222,7 @@ export async function LeaderboardConsistency() {
   // When the member is resting, name the day the rest ends (server-formatted so the client
   // component stays presentational).
   const restEndsLabel = practice.rest
-    ? new Date(`${practice.rest.through}T00:00:00Z`).toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', timeZone: 'UTC',
-      })
+    ? formatDateShort(`${practice.rest.through}T00:00:00Z`, 'UTC')
     : null
 
   // Weekly streaks (the show-up rhythms) sit below.
@@ -354,9 +353,7 @@ export async function LeaderboardConsistency() {
 
                 {streak?.last_activity_at && (
                   <p className="mt-3 text-meta text-subtle">
-                    Last recorded: {new Date(streak.last_activity_at).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric',
-                    })}
+                    Last recorded: {formatDateMedium(streak.last_activity_at)}
                   </p>
                 )}
               </div>

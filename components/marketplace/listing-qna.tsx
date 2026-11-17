@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateShort } from '@/lib/format-date'
 import { useState, useTransition, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -14,6 +15,7 @@ import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -26,7 +28,7 @@ function timeAgo(iso: string): string {
   if (hrs < 24) return `${hrs}h ago`
   const days = Math.floor(hrs / 24)
   if (days < 7) return `${days}d ago`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return formatDateShort(iso)
 }
 
 // The listing Q&A feed: a composer (question + optional photo) above a newest-first thread. Any
@@ -200,17 +202,15 @@ export function ListingQna({
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => void pickImage(e)} />
 
           <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2">
-            <button
-              type="button"
+            <IconButton
+              size="xs"
+              variant={imageFile ? 'soft' : 'plain'}
+              label="Attach image"
               onClick={() => fileInputRef.current?.click()}
               disabled={pending}
-              aria-label="Attach image"
-              className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
-                imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-              }`}
             >
               <ImagePlus className="h-4 w-4" />
-            </button>
+            </IconButton>
             <Button
               type="button"
               onClick={submit}

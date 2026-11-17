@@ -91,4 +91,25 @@ describe('buildCartView', () => {
       { currency: 'eur', cents: 1400 },
     ])
   })
+
+  it('carries what checkout will do with the lines that are left, not the ones left out', () => {
+    const v = buildCartView(
+      [
+        { productId: 'a', variantId: null, qty: 2 },
+        { productId: 'gone', variantId: null, qty: 1 },
+        { productId: 'b', variantId: null, qty: 1 },
+      ],
+      new Map([
+        ['a', product({ id: 'a', priceCents: 500, ownerKind: 'space', ownerSpaceId: 's1', ownerProfileId: null, productKind: 'digital' })],
+        ['b', product({ id: 'b', priceCents: 700, ownerKind: 'space', ownerSpaceId: 's2', ownerProfileId: null, productKind: 'physical' })],
+      ]),
+      new Map(),
+    )
+    expect(v.checkout.blocked).toBeNull()
+    expect(v.checkout.needsShipping).toBe(true)
+    expect(v.checkout.sellers.map((s) => [s.spaceId, s.lineKeys, s.totals])).toEqual([
+      ['s1', ['a:'], [{ currency: 'usd', cents: 1000 }]],
+      ['s2', ['b:'], [{ currency: 'usd', cents: 700 }]],
+    ])
+  })
 })

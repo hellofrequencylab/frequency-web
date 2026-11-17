@@ -1,3 +1,4 @@
+import { formatDateMedium } from '@/lib/format-date'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { ContactRow } from '@/lib/studio/contacts'
@@ -10,7 +11,7 @@ import type { ContactRow } from '@/lib/studio/contacts'
 function fmt(d: string | null): string {
   if (!d) return '—'
   const date = new Date(d)
-  return isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return isNaN(date.getTime()) ? '—' : formatDateMedium(date)
 }
 
 const subscriberCols: ColumnDef<ContactRow>[] = [

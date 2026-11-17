@@ -30,6 +30,8 @@ export interface SuiteContext {
   planById: ReadonlyMap<string, SuitePlan>
   itemById: ReadonlyMap<string, SuiteItem>
   taskById: ReadonlyMap<string, SuiteTask>
+  /** Where the event form returns after a Go live publish (LIVE-2319). Absent keeps the old road. */
+  returnTo?: string
 }
 
 /** Where a click on empty calendar asked for a quick add: the day, the half hour (null on a day grid

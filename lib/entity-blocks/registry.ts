@@ -3,8 +3,8 @@ import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 // The UNIFIED entity-block registry (ADR-508, U1). ONE catalog of the blocks a member (Spotlight) or a
 // space (Spaces) profile can show, so the same block is a Loom App applicable to any entity and the
 // shared grid block-picker (U2) reads one source. It unifies the two prior systems:
-//   • Space profile sections  (lib/spaces/profile-blocks.ts, S1) — DATA blocks bound to live space data.
-//   • Spotlight blocks         (lib/spotlight/blocks/schema.ts)  — CONTENT blocks the member authors
+//   • Space profile sections  (once lib/spaces/profile-blocks.ts; since PROG-E2B a view of this file, ./space-profile.ts).
+//   • Spotlight blocks         (lib/entity-blocks/spotlight.ts) — CONTENT blocks the member authors
 //                                                                  + a couple of member DATA blocks.
 // PURE (types + data only), so it is trivially testable and safe to import anywhere. ADDITIVE: this is
 // the new source of truth the U2 editor + U3 cutover build on; the live Spotlight (Puck) and Space
@@ -211,7 +211,7 @@ export function blocksForKind(kind: EntityKind): EntityBlockDef[] {
  *  row's premise before you work it). Both are wired, and were wired by work that never came back here:
  *  `circles` reads `listCircles` and `faq` reads `listFaqs` (lib/entity-blocks/block-data-sources.ts), both
  *  render live rows (components/widgets/space-profile/{circles,faq}.tsx), and BOTH are already emitted by
- *  the fresh default layout (lib/spaces/profile-blocks.ts), so the offer contradicted the default: a Space
+ *  the fresh default layout (lib/entity-blocks/space-profile.ts), so the offer contradicted the default: a Space
  *  got the block on day one and could never put it back if it removed it. `faq` is the sharper case — it is
  *  placed on 11 of the 18 Spaces in the layout corpus. Neither can render empty here, because both are
  *  function-backed (FUNCTION_BACKED_BLOCK_TYPES) and `partitionSpaceBlocks` data-locks them out of the

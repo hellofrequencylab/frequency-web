@@ -30,6 +30,37 @@ import type { ContactDetails, ContactOtherDetail } from '@/lib/connections/types
 
 const empty = (v: string | null | undefined) => !((v ?? '').trim())
 
+// ── Owner-confirmed consent (LIVE-2312) ─────────────────────────────────────────
+//
+// An imported contact lands as consent 'unknown' (ADR-099), and marketing email only goes to
+// 'subscribed' contacts, so before this an imported list could never be emailed at all. Owner ruling
+// 2026-11-16 (option A): a Space owner may CONFIRM at import that everyone on the file asked for their
+// emails (a newsletter list brought over from another tool). The confirmation is a record, not a
+// checkbox that vanishes: who confirmed, when, from which import and file is stamped on every contact
+// it touched (meta.consent_attestation), and the import's result counts them.
+//
+// It never overrides a hard no: a contact already 'unsubscribed' stays unsubscribed, and only a Space
+// import can carry it (never the platform hub or a personal book).
+
+/** Who confirmed an imported list's consent, and where it came from. Stored on each contact's meta. */
+interface ConsentAttestation {
+  by: string
+  at: string
+  import: string
+  file: string | null
+}
+
+/** The consent change a confirmed import makes to one contact, given its current state. PURE.
+ *  Null = leave the contact's consent alone (no confirmation, or the contact said no or is already in). */
+export function attestedConsent(
+  current: string | null | undefined,
+  attestation: ConsentAttestation | null,
+): { consent_state: 'subscribed'; consent_attestation: ConsentAttestation } | null {
+  if (!attestation) return null
+  if (current === 'unsubscribed' || current === 'subscribed') return null
+  return { consent_state: 'subscribed', consent_attestation: attestation }
+}
+
 /** The custom fields the mapping introduced, with their inferred value type + any operator-declared
  *  options (for a 'select' field). The label is the operator's chosen name (customLabel) when set,
  *  else the source header. */
@@ -213,13 +244,14 @@ function spaceMeta(c: ProjectedContact): Record<string, unknown> {
 async function commitToSpace(
   row: ContactImportRow,
   spaceId: string,
-  opts: { dedupePhone?: boolean } = {},
+  opts: { dedupePhone?: boolean; attestation?: ConsentAttestation | null } = {},
 ): Promise<CommitResult> {
   // Stamp the created rows with this import's id so an "undo this import" deletes exactly the rows
   // this commit created (never a merge, never a row from another import).
   const batchId = row.id
   const db = createAdminClient()
   const dedupePhone = opts.dedupePhone ?? false
+  const attestation = opts.attestation ?? null
 
   // Existing keys WITHIN this contacts scope. We key by email and (for the platform hub)
   // by the last-10 phone stashed in meta.phone, so a merge can resolve on either.
@@ -227,6 +259,7 @@ async function commitToSpace(
   const phones = new Set<string>()
   const idByKey = new Map<string, string>()
   const metaByKey = new Map<string, Record<string, unknown>>()
+  const consentByKey = new Map<string, string | null>()
   // PAGED. A select without `.range()` is capped by PostgREST at `max_rows` (1000) server-side,
   // so a Space with more than 1000 contacts built this dedupe index from only the first page:
   // contact 1001+ looked absent, `planCommit` planned `create`, and re-importing a list into an
@@ -234,11 +267,11 @@ async function commitToSpace(
   // the cap. Same idiom as lib/connections/store.ts and lib/finance/dashboard.ts.
   const CONTACT_PAGE = 1000
   try {
-    const rows: { id: string; email: string | null; meta: Record<string, unknown> | null }[] = []
+    const rows: { id: string; email: string | null; meta: Record<string, unknown> | null; consent_state?: string | null }[] = []
     for (let page = 0; ; page += 1) {
       const { data } = await db
         .from('contacts')
-        .select('id, email, meta')
+        .select('id, email, meta, consent_state')
         .eq('space_id', spaceId)
         .order('id', { ascending: true })
         .range(page * CONTACT_PAGE, page * CONTACT_PAGE + CONTACT_PAGE - 1)
@@ -253,6 +286,7 @@ async function commitToSpace(
         emails.add(ek)
         idByKey.set(ek, r.id)
         metaByKey.set(ek, meta)
+        consentByKey.set(ek, r.consent_state ?? null)
       }
       if (dedupePhone) {
         const pk = phoneKey(typeof meta.phone === 'string' ? meta.phone : null)
@@ -260,6 +294,7 @@ async function commitToSpace(
           phones.add(pk)
           if (!idByKey.has(pk)) idByKey.set(pk, r.id)
           if (!metaByKey.has(pk)) metaByKey.set(pk, meta)
+          if (!consentByKey.has(pk)) consentByKey.set(pk, r.consent_state ?? null)
         }
       }
     }
@@ -278,6 +313,7 @@ async function commitToSpace(
   let skipped = 0
   let failed = 0
   let overAllowance = 0
+  let subscribed = 0
 
   // METERED WRITE (ADR-917), the BULK form. A CSV is the biggest growth path in the product, so the
   // headroom is read ONCE up front and decremented locally rather than re-counted per row (a count
@@ -313,17 +349,24 @@ async function commitToSpace(
         continue
       }
       try {
+        // A lead, never auto-subscribed (ADR-099), unless the owner confirmed this list (LIVE-2312).
+        const confirmed = attestedConsent(null, attestation)
         const { error } = await db.from('contacts').insert({
           space_id: spaceId,
           email: ek,
           display_name: c.displayName || null,
-          consent_state: 'unknown', // a lead, never auto-subscribed (ADR-099)
+          consent_state: confirmed ? confirmed.consent_state : 'unknown',
           source: 'import',
-          meta: { ...spaceMeta(c), import_batch: batchId },
+          meta: {
+            ...spaceMeta(c),
+            import_batch: batchId,
+            ...(confirmed ? { consent_attestation: confirmed.consent_attestation } : {}),
+          },
         } as unknown as Database['public']['Tables']['contacts']['Insert'])
         if (error) failed++
         else {
           created++
+          if (confirmed) subscribed++
           emails.add(ek)
           if (headroom !== null) headroom--
         }
@@ -344,6 +387,13 @@ async function commitToSpace(
         }
         const nextMeta = mergeMeta(metaByKey.get(key) ?? {}, spaceMeta(c), row.mergeStrategy)
         const patch: Record<string, unknown> = { last_seen_at: now, updated_at: now, meta: nextMeta }
+        // A confirmed list also confirms a contact already here whose consent was never asked
+        // ('unknown'). Someone who unsubscribed stays unsubscribed.
+        const confirmed = attestedConsent(consentByKey.get(key), attestation)
+        if (confirmed) {
+          patch.consent_state = confirmed.consent_state
+          patch.meta = { ...nextMeta, consent_attestation: confirmed.consent_attestation }
+        }
         // Only fill the display name when overwriting, or when it is currently blank.
         if (c.displayName && row.mergeStrategy === 'overwrite') patch.display_name = c.displayName
         const { error } = await db
@@ -352,7 +402,10 @@ async function commitToSpace(
           .eq('id', id)
           .eq('space_id', spaceId)
         if (error) failed++
-        else merged++
+        else {
+          merged++
+          if (confirmed) subscribed++
+        }
       } catch {
         failed++
       }
@@ -366,6 +419,7 @@ async function commitToSpace(
     failed,
     total: row.source.rows.length,
     ...(overAllowance > 0 ? { overAllowance } : {}),
+    ...(subscribed > 0 ? { subscribed } : {}),
   }
 }
 
@@ -397,7 +451,11 @@ function mergeMeta(existing: Record<string, unknown>, incoming: Record<string, u
  * result without re-writing. Resolves + gates the target, executes the plan, remembers
  * the custom fields, and stamps the result on the row. FAIL-SAFE per row.
  */
-export async function commitImport(id: string, createdBy: string): Promise<ActionResult<CommitResult>> {
+export async function commitImport(
+  id: string,
+  createdBy: string,
+  opts: { attestConsent?: boolean } = {},
+): Promise<ActionResult<CommitResult>> {
   const row = await getImport(id, createdBy)
   if (!row) return fail('We could not find that import.')
   if (row.status === 'committed' && 'total' in row.result) {
@@ -429,7 +487,11 @@ export async function commitImport(id: string, createdBy: string): Promise<Actio
     if (!spaceFunctionAccess(space, 'crm', caps.role)) {
       return fail('Only this Space’s team can bring contacts in.')
     }
-    result = await commitToSpace(row, spaceId)
+    // The owner's confirmation that this list asked for their emails (LIVE-2312). Space imports only.
+    const attestation: ConsentAttestation | null = opts.attestConsent
+      ? { by: createdBy, at: new Date().toISOString(), import: row.id, file: row.filename ?? null }
+      : null
+    result = await commitToSpace(row, spaceId, { attestation })
   } else {
     const member = await commitToMember(createdBy, row)
     result = member.result
@@ -471,7 +533,9 @@ export interface RollbackResult {
  * Undo a committed import: delete exactly the contact rows the commit CREATED (never a merged row,
  * never a row from a different import). A member import deletes by the captured created ids; a Space
  * / platform import deletes the sealed `contacts` rows tagged with this import's batch id, guarded to
- * source='import' + consent_state='unknown' so a row a human later edited/subscribed is left alone.
+ * source='import' + consent_state='unknown' so a row a human later edited/subscribed is left alone. A
+ * confirmed import (LIVE-2312) also deletes the rows it created as 'subscribed', and puts any existing
+ * contact it confirmed back to 'unknown'.
  * Idempotent + fail-safe: an already-rolled-back import returns { deleted: 0 }. Owner-gated (member)
  * / team-gated (space) exactly like the commit.
  */
@@ -510,6 +574,12 @@ export async function rollbackImport(id: string, createdBy: string): Promise<Act
   return ok({ deleted })
 }
 
+/** A delete filtered by any number of `.eq()`s, then `.select('id')`. */
+interface DeleteChain {
+  eq: (c: string, v: string) => DeleteChain
+  select: (c: string) => Promise<{ data: { id: string }[] | null; error: unknown }>
+}
+
 /** Delete the sealed `contacts` rows a Space / platform import created (tagged by batch id), guarded
  *  to import leads that are still unknown/unedited. Returns the count deleted. Fail-safe to 0. */
 async function deleteImportedContacts(spaceId: string, batchId: string): Promise<number> {
@@ -517,13 +587,7 @@ async function deleteImportedContacts(spaceId: string, batchId: string): Promise
     const db = createAdminClient() as unknown as {
       from: (t: string) => {
         delete: () => {
-          eq: (c: string, v: string) => {
-            eq: (c: string, v: string) => {
-              eq: (c: string, v: string) => {
-                eq: (c: string, v: string) => { select: (c: string) => Promise<{ data: { id: string }[] | null; error: unknown }> }
-              }
-            }
-          }
+          eq: (c: string, v: string) => DeleteChain
         }
       }
     }
@@ -535,9 +599,45 @@ async function deleteImportedContacts(spaceId: string, batchId: string): Promise
       .eq('source', 'import')
       .eq('consent_state', 'unknown')
       .select('id')
-    if (error || !data) return 0
-    return data.length
+    let deleted = error || !data ? 0 : data.length
+    // A confirmed import (LIVE-2312) created its rows as 'subscribed'. Those are still this import's
+    // own rows when the subscription is the one THIS import confirmed, so they go too. A contact that
+    // subscribed some other way carries no attestation for this import and is left alone.
+    const confirmed = await db
+      .from('contacts')
+      .delete()
+      .eq('space_id', spaceId)
+      .eq('meta->>import_batch', batchId)
+      .eq('source', 'import')
+      .eq('consent_state', 'subscribed')
+      .eq('meta->consent_attestation->>import', batchId)
+      .select('id')
+    if (!confirmed.error && confirmed.data) deleted += confirmed.data.length
+    // A contact that was already here and that this import confirmed goes back to 'unknown'.
+    await revertConfirmedConsent(spaceId, batchId)
+    return deleted
   } catch {
     return 0
+  }
+}
+
+/** Put back to 'unknown' the existing contacts a confirmed import subscribed (LIVE-2312). Best-effort. */
+async function revertConfirmedConsent(spaceId: string, batchId: string): Promise<void> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        update: (p: Record<string, unknown>) => {
+          eq: (c: string, v: string) => { eq: (c: string, v: string) => { eq: (c: string, v: string) => Promise<{ error: unknown }> } }
+        }
+      }
+    }
+    await db
+      .from('contacts')
+      .update({ consent_state: 'unknown' })
+      .eq('space_id', spaceId)
+      .eq('consent_state', 'subscribed')
+      .eq('meta->consent_attestation->>import', batchId)
+  } catch {
+    /* best-effort: the deleted rows above are the undo's promise */
   }
 }

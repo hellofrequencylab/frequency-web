@@ -4,6 +4,8 @@ import { FqIcon } from '@/components/frequency/icon'
 import { ConsoleSlide } from './console-slide'
 import { AdminCrumb, AdminNav, AdminNavList, AdminPhoneBar, AdminPhoneStrip, AdminTopMenu } from './admin-nav'
 import type { AdminNavItem } from './nav-model'
+import type { LaunchBoxView } from '@/lib/launch/box-state'
+import { ConsoleLaunch } from './console-launch'
 import '@/app/themes/active/kit-members'
 import '@/app/themes/active/kit-admin'
 import '@/app/themes/active/admin-shell'
@@ -58,6 +60,9 @@ export interface AdminShellProps {
    *  the sidebar to one row per section. Off, the pages sit under the active sidebar row (the Space console). */
   topMenu?: boolean
   me: { name: string; avatarUrl: string | null; href: string }
+  /** The "Finish setup" / "Your launch" pill (LIVE-2320): the members header's launch box, which steps aside on a
+   *  console route, drawn in this top bar instead. The builder passes the loader's promise; absent draws nothing. */
+  launch?: Promise<LaunchBoxView | null>
   /** The member rail already owns main#main. Standalone shells keep their own landmark. */
   withinMain?: boolean
   children: ReactNode
@@ -138,7 +143,7 @@ function TopLinks({ links }: { links: AdminShellLink[] }) {
   )
 }
 
-export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search, alerts, links = [], topMenu = false, me, withinMain = false, children }: AdminShellProps) {
+export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search, alerts, links = [], topMenu = false, me, launch, withinMain = false, children }: AdminShellProps) {
   const Content = withinMain ? 'div' : 'main'
   return (
     <div data-kit="members" data-energy="still">
@@ -183,6 +188,11 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
                 <FqIcon name="nudge" />
                 {alerts.unread > 0 && <i aria-hidden />}
               </Link>
+              {launch && (
+                <Suspense fallback={null}>
+                  <ConsoleLaunch launch={launch} />
+                </Suspense>
+              )}
               <Link className="ap-me" href={me.href} title={me.name} aria-label={me.name} style={bg(me.avatarUrl)} />
             </header>
             <Suspense fallback={null}>

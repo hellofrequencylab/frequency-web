@@ -1,0 +1,19 @@
+{
+  "id": "FH-020X",
+  "title": "Hunts FH-020X: Bind placements to stops in the app and let a resident mark a stop as staff-confirmed",
+  "lane": "program",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/hunts/PLACEMENT-KIT.md",
+    "ref": "Found while building FH-020V (2026-11-16)."
+  },
+  "detail": "No application code writes hunt_placements or hunt_mission_placements: a published Trail has no bound placement until someone inserts rows by hand, and publishRows always writes required_assurance signed_node. So the FH-020V switch is saved and published but cannot change a real claim yet: hunt_claim_apply holds a visit only for a signed scan against a staff-level mission whose binding carries evidence_policy.hold_for_review. Build the store command that creates a placement for a stop and binds it to the published version (venue Space included, evidence policy from stopEvidencePolicy), behind HUNTS_AUTHORING_ENABLED, and a Studio entity field that marks a stop as staff-confirmed so its mission publishes at staff assurance. Done when: publishing a Trail with a staff-confirmed stop that has the review switch on yields a binding with hold_for_review true, proved by a test, and a scan at that stop answers held. Requires: FH-020V, FH-015. Owner role: Web.\n\nClosed 2026-11-16. lib/hunts/store.ts bindStopPlacements runs inside publishTrail (behind the publish gate and HUNTS_AUTHORING_ENABLED): each stop keeps the live placement it names (lib/hunts/draft.ts planStopPlacements; a revoked, foreign or repeated id is ignored), else gets a new hunt_nodes row and a QR hunt_placements row, and is upserted into hunt_mission_placements with venue_space_id from the Space that runs the Trail and evidence_policy from stopEvidencePolicy. The placement ids are frozen into the published trail and returned to the editor, so the next version reuses printed codes. The Hunt Studio entity gains the stop switch staffConfirmed; publishRows writes required_assurance staff for it. The publish checklist refuses a staff-confirmed stop on a Trail no Space runs (stop_staff_venue), because no staff could confirm or review it. lib/hunts/stop-placements.test.ts proves a staff-confirmed stop with the review switch publishes a binding with hold_for_review true and that a signed scan there meets the hold rule of 20270346053000 (held). The FH-020V stop-kinds test pin gained one toggle, approved by the owner 2026-11-16. Split: a resident-owned Trail choosing a partner venue Space per staff-confirmed stop is FH-020Y.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const d=\"lib/hunts\";process.exit(fs.readdirSync(d).filter(f=>f.endsWith(\".ts\")&&!f.endsWith(\".test.ts\")).some(f=>/from\\(.hunt_mission_placements.\\)[\\s\\S]{0,240}\\.(insert|upsert)\\(/.test(fs.readFileSync(d+\"/\"+f,\"utf8\")))?0:1)'"
+  },
+  "wave": "W7",
+  "closed": "2026-11-16"
+}

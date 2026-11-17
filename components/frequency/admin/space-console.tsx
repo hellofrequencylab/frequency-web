@@ -9,6 +9,8 @@ import { SPACE_HUB_SECTIONS, sectionForModule, type SpaceHubSection } from '@/li
 import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
 import { resolveOperatorContext } from '@/lib/context/resolve-context'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
+import { loadLaunchBox } from '@/lib/launch/box'
+import { launchSystemEnabled } from '@/lib/launch/enabled'
 import type { FqIconName } from '@/components/frequency/icon'
 import { AdminShell } from './admin-shell'
 import type { AdminNavItem } from './nav-model'
@@ -142,6 +144,9 @@ export async function FrequencySpaceConsole({ slug, children }: { slug: string; 
       search={{ href: `/spaces/${space.slug}/manage?section=resonance`, label: 'Search people, events' }}
       alerts={{ href: '/notifications', unread }}
       me={{ name: me?.display_name ?? 'You', avatarUrl: me?.avatar_url ?? null, href: '/profile' }}
+      // The same Finish setup pill the members header shows, from the same loader (LIVE-2320). It reads the
+      // signed-in member's own launch, so a staff preview of someone else's Space sees their own or none.
+      launch={launchSystemEnabled() ? loadLaunchBox() : undefined}
     >
       {children}
     </AdminShell>

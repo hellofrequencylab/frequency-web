@@ -1,3 +1,4 @@
+import { formatDateShort, formatDateWeekday } from '@/lib/format-date'
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { FileText } from 'lucide-react'
@@ -60,7 +61,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Drafts' }
 
 const dayLabel = (iso: string): string =>
-  new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  formatDateWeekday(iso)
 
 /** A dimension-matched stand-in for the list, so streaming in the real rows shifts nothing. */
 function DraftsSkeleton() {
@@ -88,7 +89,7 @@ async function DraftsList({ profileId }: { profileId: string }) {
     route: d.route,
     answerCount: Object.keys(d.values).length,
     savedLabel: savedAgoLabel(d.savedAt),
-    keptUntilLabel: `Kept until ${new Date(d.savedAt + DRAFT_TTL_MS).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+    keptUntilLabel: `Kept until ${formatDateShort(d.savedAt + DRAFT_TTL_MS)}`,
   }))
 
   // One batched signing call for every cover thumb (the cover crop, else the poster), and only

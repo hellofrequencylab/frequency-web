@@ -19,6 +19,7 @@ import { eventDateBadge } from '@/lib/utils'
 import { FOUNDING_PLACE, SOCIAL_PROOF_FLOOR } from '@/lib/site'
 import { eventWhen } from '../shared/data'
 import { photoBg, photoImg } from '../shared/parts'
+import { PhotoBgPreload } from '../shared/photo-bg-preload'
 import { groupByMonth, groupByWhen, splitAt, type EventGroup } from './group'
 
 export const PHOTOS = '/brand/frequency/photos'
@@ -52,6 +53,7 @@ export function DxHero({
 }) {
   return (
     <section className="phero" data-energy={energy} data-screen-label="01 Hero">
+      <PhotoBgPreload src={photo} />
       <div className="bg" style={photoBg(photo)} />
       <div className="fq-aura" style={aura(0.3)} />
       <div className="shade" />

@@ -25,6 +25,36 @@ import { aura, photo, photoBg, photoImg } from '../shared/parts'
 import { featureCount, PEOPLE, SPACES, type Half } from './features-data'
 import { FeaturesMotion } from './features-motion'
 
+// HOLD THE LINKED JOB'S PHOTO FROM THE TOP OF THE PAGE (SCAN-1265). The /the-quest redirect lands on #f-zaps and
+// scrolls straight to that job, so its photo is the slow-phone LCP. A request started where the photo is parsed
+// still waits behind the hero and the first jobs on a 1.6 Mbps link, so this script runs before the hero and
+// preloads the photo with the SAME srcset and sizes the <img> will carry; the browser then reuses that response
+// instead of fetching twice. Only the hashes that name a feature do anything; every other visit pays about 1 KB of inline script.
+// JSON for an inline <script>: escapes the characters that could close the tag or break the line,
+// so a value can never become code even if one of these strings later comes from an editor.
+const scriptJson = (v: unknown) =>
+  JSON.stringify(v).replace(/[<>&\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`)
+
+const JOB_PHOTO_SIZES = '(max-width: 900px) 100vw, 33vw'
+function linkedPhotoPreloadScript(): string {
+  // One srcset template plus each photo's encoded path, so the script stays near 1 KB instead of nine full
+  // srcsets (~1 KB each). The template is checked against every real srcset on the server; if the image
+  // loader ever stops being a plain url= substitution, the photo's whole srcset ships instead.
+  const paths: string[] = []
+  const byFeature: Record<string, number> = {}
+  let template = ''
+  for (const job of [...PEOPLE.jobs, ...SPACES.jobs]) {
+    const set = photoImg(photo(job.photo), JOB_PHOTO_SIZES).srcSet ?? ''
+    const enc = /url=([^&]+)&/.exec(set)?.[1] ?? ''
+    if (!template && enc) template = set.split(enc).join('@')
+    const entry = enc && template.split('@').join(enc) === set ? enc : set
+    let i = paths.indexOf(entry)
+    if (i < 0) i = paths.push(entry) - 1
+    for (const f of job.features) byFeature[f.id] = i
+  }
+  return `(function(){try{var T=${scriptJson(template)},P=${scriptJson(paths)},F=${scriptJson(byFeature)},i=F[location.hash.slice(1)];if(i===undefined)return;var e=P[i],s=e.indexOf(' ')<0?T.split('@').join(e):e,l=document.createElement('link');l.rel='preload';l.as='image';l.setAttribute('imagesrcset',s);l.setAttribute('imagesizes',${scriptJson(JOB_PHOTO_SIZES)});l.setAttribute('fetchpriority','high');document.head.appendChild(l)}catch(e){}})()`
+}
+
 /**
  * THE HYBRID: each feature's onward page beyond this one (its help article, the live calendar, the
  * Circle guide), from the nav's FEATURE_FALLBACK table. The design stops at "What you can do"; the site
@@ -116,14 +146,25 @@ function HalfSection({ half, label }: { half: Half; label: string }) {
               <h3>{job.title}</h3>
               <p>{job.line}</p>
               <div className="jph fq-iri-rim" data-px=".08">
+                {/* suppressHydrationWarning: the pre-paint script below may switch this photo to eager first. */}
                 {/* eslint-disable-next-line @next/next/no-img-element -- sized by .jph img */}
-                <img loading="lazy" decoding="async" {...photoImg(photo(job.photo), '(max-width: 900px) 100vw, 33vw')} alt={job.photoAlt} />
+                <img loading="lazy" decoding="async" {...photoImg(photo(job.photo), JOB_PHOTO_SIZES)} alt={job.photoAlt} suppressHydrationWarning />
+                {/* FETCH THE LINKED JOB'S PHOTO AS THE PARSER REACHES IT (SCAN-1265). A `#f-…` link (the /the-quest
+                    redirect lands on #f-zaps) scrolls straight to this job, so its photo is the slow-phone LCP, and
+                    `loading="lazy"` held the request until layout. This runs the moment the photo is parsed, well
+                    before the end of this long page, and only when the hash names one of this job's features. */}
+                <script
+                  dangerouslySetInnerHTML={{
+                    __html: `(function(){try{if(${scriptJson(job.features.map((f) => f.id))}.indexOf(location.hash.slice(1))<0)return;var i=document.currentScript.previousElementSibling;i.loading='eager';i.fetchPriority='high'}catch(e){}})()`,
+                  }}
+                />
                 <span className="fq-grain" />
               </div>
             </div>
             <div className="jr">
               {job.features.map((f, n) => (
-                <details className={n === 0 ? 'ft lead' : 'ft'} id={f.id} key={f.id}>
+                // suppressHydrationWarning: the pre-paint script below may set `open` before React hydrates.
+                <details className={n === 0 ? 'ft lead' : 'ft'} id={f.id} key={f.id} suppressHydrationWarning>
                   <summary>
                     <span className="ic">
                       <FqIcon name={f.icon} />
@@ -164,6 +205,7 @@ export function FrequencyFeatures() {
   return (
     <div className="pa-page pa-features pa-tour" data-motion-scope style={{ display: 'contents' }}>
       <FeaturesMotion />
+      <script dangerouslySetInnerHTML={{ __html: linkedPhotoPreloadScript() }} />
 
       <section className="phero" data-energy="charge" data-screen-label="01 Hero">
         <div className="bg" style={photoBg(photo('gathering-10.jpg'))} />
@@ -199,6 +241,21 @@ export function FrequencyFeatures() {
 
       <HalfSection half={PEOPLE} label="02 For people" />
       <HalfSection half={SPACES} label="03 For spaces" />
+      {
+        // OPEN THE LINKED FEATURE BEFORE THE FIRST PAINT (SCAN-1265). A `#f-…` link (the /the-quest redirect
+        // lands on #f-zaps) used to open its panel only after hydration, so on a slow phone the open panel
+        // pushed the cards below it 400 px down while the visitor read them: CLS 0.301. This runs as the
+        // parser reaches it, while every feature is already in the DOM. FeaturesMotion still handles a
+        // hash change after load and the scroll offset.
+        // The linked job's photo is switched to eager by a script beside that photo (see HalfSection), not here:
+        // this script sits after both halves, too late on a slow link to start the request in time.
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var h=location.hash;if(h.indexOf('#f-')!==0)return;var d=document.getElementById(h.slice(1));if(d&&d.tagName==='DETAILS')d.open=true}catch(e){}})()",
+          }}
+        />
+      }
 
       <section className="sec">
         <div className="wrap">

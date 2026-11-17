@@ -5,7 +5,7 @@ import {
   effectiveProfileLayout,
   type SavedProfileLayout,
 } from './profile-layout'
-import type { ProfileBlockId } from './profile-blocks'
+import type { ProfileBlockId } from '@/lib/entity-blocks/space-profile'
 
 // A representative default layout (a subset of the registry, in order) the merge operates over.
 const DEFAULT: ProfileBlockId[] = ['about', 'highlights', 'offerings', 'events', 'team']

@@ -38,6 +38,7 @@ const SIG: Record<Energy, { a: number; s: number; f: number }> = {
   charge: { a: 1, s: 3.2, f: 3.4 },
 }
 const NS = 'http://www.w3.org/2000/svg'
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
 let noise: string | null = null
 function noiseTile(): string | null {
@@ -97,13 +98,6 @@ function run(root: HTMLElement): () => void {
     return e
   }
 
-  // The shared noise tile. (fx.js also painted <html> with the canvas; site-shell.css does that in CSS.)
-  const tile = noiseTile()
-  if (tile) {
-    root.style.setProperty('--fq-fx-noise', tile)
-    root.setAttribute('data-fx', '')
-  }
-
   let seed = 7
   const rnd = () => ((seed = (seed * 9301 + 49297) % 233280), seed / 233280)
 
@@ -114,7 +108,7 @@ function run(root: HTMLElement): () => void {
     if (!w) {
       f.classList.add('under')
       addClass(host, 'tx-host')
-      if (getComputedStyle(host).position === 'static') {
+      if ((look.get(host) ?? getComputedStyle(host).position).startsWith('static')) {
         host.style.position = 'relative'
         offs.push(() => (host.style.position = ''))
       }
@@ -151,6 +145,22 @@ function run(root: HTMLElement): () => void {
   // that kit's class names too, and touching them before hydration is a hydration mismatch.
   const q = (sel: string) =>
     Array.from(root.querySelectorAll<HTMLElement>(sel)).filter((e) => !e.closest('[data-kit]:not([data-kit="site"])'))
+
+  // READ FIRST, THEN WRITE. field() and the seam check read a computed style after the page had been
+  // decorated, so every read was a full style recalc on the spot: one per section, inside a start-up
+  // pass that took about 1 s of a 4x-throttled phone's load on /pricing in production (2026-11-17).
+  // All of them are read here, in one recalc, before the first write (the noise tile below).
+  const look = new Map(q(HOSTS).map((e): [HTMLElement, string] => {
+    const c = getComputedStyle(e)
+    return [e, c.position + ' ' + c.borderTopStyle]
+  }))
+
+  // The shared noise tile. (fx.js also painted <html> with the canvas; site-shell.css does that in CSS.)
+  const tile = noiseTile()
+  if (tile) {
+    root.style.setProperty('--fq-fx-noise', tile)
+    root.setAttribute('data-fx', '')
+  }
 
   // Heroes: one signature sphere.
   q('.hero,.phero,.hp-hero').forEach((h) => {
@@ -202,7 +212,7 @@ function run(root: HTMLElement): () => void {
       halo(f, c1, 'clamp(380px,52vw,780px)', L ? '88%' : '12%', '34%', quiet ? 0.22 : null, -i * 1.7)
       if (!quiet) halo(f, c2, 'clamp(260px,34vw,520px)', L ? '8%' : '92%', '86%', 0.22, -i * 2.3)
       jewels(f, quiet ? 1 : jn, isLv ? [c1, c2, H.v] : [c1, c2, P[2]])
-      if (s.classList.contains('sec') && !s.classList.contains('kg') && getComputedStyle(s).borderTopStyle === 'none') mk('span', 'tx-seam', s)
+      if (s.classList.contains('sec') && !s.classList.contains('kg') && look.get(s)?.endsWith(' none')) mk('span', 'tx-seam', s)
       i++
     })
   }
@@ -323,7 +333,7 @@ function run(root: HTMLElement): () => void {
     const w: (() => void)[] = []
     if (!RM) {
       if (hero && hs) {
-        const k = Math.max(0, Math.min(1, y / (hero.offsetHeight * 0.75)))
+        const k = clamp01(y / (hero.offsetHeight * 0.75))
         const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2
         const dx = `${((90 - 5 * Math.sin(k * Math.PI * 2.4) + 2 * k - 86) / 100 * hero.offsetWidth).toFixed(1)}px`
         const dy = `${((38 + 52 * e - 88) / 100 * hero.offsetHeight).toFixed(1)}px`
@@ -332,8 +342,8 @@ function run(root: HTMLElement): () => void {
       if (fj.length && fold) {
         const r = fold.getBoundingClientRect()
         if (r.bottom > 0 && r.top < vh) {
-          const p = Math.max(0, Math.min(1, -r.top / (r.height - vh)))
-          const op = String(1 - Math.max(0, Math.min(1, (p - 0.55) / 0.2)) * 0.6)
+          const p = clamp01(-r.top / (r.height - vh))
+          const op = String(1 - clamp01((p - 0.55) / 0.2) * 0.6)
           w.push(() => fj.forEach((e) => ((e.style.translate = `0 ${((0.1 - p) * Number(e.dataset.fd) * vh * 0.5).toFixed(1)}px`), (e.style.opacity = op))))
         }
       }

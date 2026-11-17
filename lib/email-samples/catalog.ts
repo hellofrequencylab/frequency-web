@@ -70,6 +70,8 @@ import { SERVICES_SURFACE } from '@/lib/theme/services'
 import { SERVICES_EMAIL_TYPES, servicesKitEmail, type ServicesKitEmailBrand } from '@/lib/theme/services-kit-email'
 import { CYBERWITCH_SURFACE } from '@/lib/theme/cyberwitch'
 import { CYBERWITCH_EMAIL_TYPES, cyberwitchKitEmail, type CyberWitchKitEmailBrand } from '@/lib/theme/cyberwitch-kit-email'
+import { MINDLESS_SURFACE } from '@/lib/theme/mindless'
+import { MINDLESS_EMAIL_TYPES, mindlessKitEmail, type MindlessKitEmailBrand } from '@/lib/theme/mindless-kit-email'
 import { NEW_WORLD_EMAIL_TIDE, NEW_WORLD_EMAIL_TYPES, newWorldKitEmail, newWorldKitEmailFrom } from '@/lib/theme/new-world-kit-email'
 import { newWorldKitSpotlightContent } from '@/lib/spotlight/new-world-kit-content'
 import { freeHumanDatesEmail, freeHumanNoteEmail, freeHumanReceiptEmail, freeHumanWelcomeEmail, type FreeHumanEmailBrand } from '@/lib/theme/free-human-email'
@@ -281,6 +283,11 @@ const CYBERWITCH_BRAND: CyberWitchKitEmailBrand = {
   accent: { fill: CYBERWITCH_SURFACE.accent.accent, text: CYBERWITCH_SURFACE.accent.text }, postalLine: PLATFORM_POSTAL_LINE,
   siteUrl: 'https://ashandember.example', siteLabel: 'ashandember.example', unsubscribeUrl: `${SITE}/unsubscribe/s`,
 }
+const MINDLESS_BRAND: MindlessKitEmailBrand = {
+  name: 'Mindless', descriptor: 'Meditation for loud lives', owner: 'Daniel Tyack', role: 'Founder', city: 'San Diego',
+  accent: { fill: MINDLESS_SURFACE.accent.accent, text: MINDLESS_SURFACE.accent.text }, postalLine: PLATFORM_POSTAL_LINE,
+  siteUrl: 'https://mindless.one', siteLabel: 'mindless.one', unsubscribeUrl: `${SITE}/unsubscribe/s`,
+}
 const FREE_HUMAN_COVER = `${SITE}/sites/free-human/email/place-sea-sunset.jpg`
 const FREE_HUMAN_DATES = [
   { lead: '20', title: 'New moon circle', sub: '7:00 PM · The long room' },
@@ -394,5 +401,6 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'free-human-receipt', group: 'Spaces and campaigns', run: () => { const out = freeHumanReceiptEmail(FREE_HUMAN_BRAND, { what: 'New moon circle', when: 'Thursday, November 20 · 7:00 PM', where: 'The long room', who: 'One place', whoNote: 'Reserved under your name', paid: '$25', paidNote: 'Card ending 4242 · Receipt no. 1047', calendarUrl: 'https://freehumanmovement.example/calendar.ics', manageUrl: 'https://freehumanmovement.example/bookings' }); return { to: TO, ...out } } },
   ...NEW_WORLD_EMAIL_TYPES.map((type) => ({ id: `new-world-${type}`, group: 'Spaces and campaigns' as const, run: () => { const k = newWorldKitEmailFrom(newWorldKitSpotlightContent('general')); return { to: TO, ...newWorldKitEmail(type, { ...SERVICES_BRAND, ...k.brand, accent: NEW_WORLD_EMAIL_TIDE }, k.facts) } } })),
   ...CYBERWITCH_EMAIL_TYPES.map((type) => ({ id: `cyberwitch-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...cyberwitchKitEmail(type, CYBERWITCH_BRAND) }) })),
+  ...MINDLESS_EMAIL_TYPES.map((type) => ({ id: `mindless-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...mindlessKitEmail(type, MINDLESS_BRAND) }) })),
   ...SERVICES_EMAIL_TYPES.map((type) => ({ id: `services-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...servicesKitEmail(type, SERVICES_BRAND) }) })),
 ]

@@ -13,6 +13,7 @@ import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { compactPrice, ticketCtaLabel } from '@/lib/billing/price-label'
 import { useJoinIntent } from '@/components/events/join-intent'
 import { trackClient } from '@/components/analytics/track-provider'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 export type TicketTierView = {
   id: string
@@ -575,11 +576,7 @@ export function TicketButton({
               onClick={() => selectTier(t)}
               disabled={t.soldOut || offSale(t)}
               aria-pressed={active}
-              className={`flex w-full items-start justify-between gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-55 ${
-                active
-                  ? 'border-primary bg-primary-bg'
-                  : 'border-border bg-surface hover:border-border-strong'
-              }`}
+              className={choiceTileClasses(active, 'flex w-full items-start justify-between gap-3 rounded-xl px-3.5 py-2.5 text-left disabled:cursor-not-allowed')}
             >
               <div className="min-w-0">
                 {/* Title stays ONE line (truncate); tags sit on their own row below so a long

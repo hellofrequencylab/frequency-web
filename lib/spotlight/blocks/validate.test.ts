@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateSpotlightLayout, validateSpotlightBackground } from './validate'
-import { MAX_BLOCKS, MAX_GALLERY_IMAGES } from './schema'
+import { MAX_BLOCKS, MAX_GALLERY_IMAGES } from '@/lib/entity-blocks/spotlight'
 
 const OWNER = '8b0d1087-ed37-4bc4-8439-8a109de1a48d'
 

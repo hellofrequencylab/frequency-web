@@ -13,6 +13,7 @@
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import boldManifest from './manifests/bold.manifest.json' with { type: 'json' }
 import cyberwitchManifest from './manifests/cyberwitch.manifest.json' with { type: 'json' }
+import mindlessManifest from './manifests/mindless.manifest.json' with { type: 'json' }
 import designerManifest from './manifests/designer.manifest.json' with { type: 'json' }
 import freeHumanManifest from './manifests/free-human.manifest.json' with { type: 'json' }
 import frequencyManifest from './manifests/frequency.manifest.json' with { type: 'json' }
@@ -203,6 +204,7 @@ const THEME_MANIFESTS: Readonly<Record<string, ThemeManifestFacts>> = {
   'free-human': freeHumanManifest,
   frequency: frequencyManifest,
   midnight: midnightManifest,
+  mindless: mindlessManifest,
   'network-kit': networkKitManifest,
   network: networkManifest,
   'new-world': newWorldManifest,

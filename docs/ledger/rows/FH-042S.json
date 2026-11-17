@@ -1,0 +1,18 @@
+{
+  "id": "FH-042S",
+  "title": "Hunts FH-042S: Player answer form and authoring for choices and Mystery",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-042 (2026-11-16): the branch engine, the server-only answer check and the claim path shipped dark; the screens and authoring move here."
+  },
+  "detail": "Requires FH-042, FH-030S. The engine and the claim door accept choices and Mystery answers, but no screen reaches them. Build: (1) the player answer form on the play and scan screens, passing the answer to claimAsPlayer and wording answer_required, answer_wrong (attempts left, the hint), answer_locked (point at the fallback stop) and a closed branch, per docs/NAMING.md and docs/CONTENT-VOICE.md; (2) the projection for a locked-out Mystery, so projectForPlayer stops naming it as the next stop once its attempts are used; (3) authoring through a lib/studio entity: choice_group, fallback_group, mission kind answer, and the answer itself written only through hashAnswer (lib/hunts/mystery.ts) so the plain answer is never stored, with validateGraph blockers shown before publish; (4) a decision, recorded as an ADR if taken, on whether hunt_claim_apply should itself refuse a second member of a choice group, which would close the staff-approval gap named in FH-042 and needs a migration through the serial database gate; (5) a pgTAP or live two-session run of two branches claimed at once against real Postgres, which the FH-042 tests only model. Done when: a player can answer a Mystery on a phone, a wrong and a locked answer read clearly, a creator can publish a fork and a Mystery without touching JSON, and the two-session race is recorded against the real database. Owner role: Game systems. Hunts switches stay OFF.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"node:fs\");const a=fs.readFileSync(\"app/(main)/hunts/[slug]/play/actions.ts\",\"utf8\");process.exit(/\\banswer\\b/.test(a)&&fs.readdirSync(\"lib/studio/entities\").some(f=>fs.statSync(\"lib/studio/entities/\"+f).isFile()&&fs.readFileSync(\"lib/studio/entities/\"+f,\"utf8\").includes(\"choice_group\"))?0:1)'"
+  }
+}

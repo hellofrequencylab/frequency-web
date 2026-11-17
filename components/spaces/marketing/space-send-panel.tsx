@@ -95,9 +95,23 @@ export function SpaceSendPanel({
       />
 
       {!readOnly && (
-        <Button className="w-full" disabled={pending || count === 0} onClick={sendNow}>
-          <Send className="h-4 w-4" aria-hidden /> Send now
-        </Button>
+        <div className="space-y-1.5">
+          <Button
+            className="w-full"
+            disabled={pending || count === 0}
+            onClick={sendNow}
+            aria-describedby={count === 0 ? 'space-send-now-reason' : undefined}
+          >
+            <Send className="h-4 w-4" aria-hidden /> Send now
+          </Button>
+          {/* LIVE-2316: a disabled Send now says why, next to the button. */}
+          {count === 0 && !pending && (
+            <p id="space-send-now-reason" className="text-meta text-muted">
+              No one in this audience can get marketing email yet. Imported contacts need to be confirmed
+              as subscribers.
+            </p>
+          )}
+        </div>
       )}
 
       {error && (

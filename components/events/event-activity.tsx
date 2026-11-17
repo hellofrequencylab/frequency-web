@@ -1,5 +1,6 @@
 'use client'
 
+import { formatDateShort } from '@/lib/format-date'
 import { useState, useTransition, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -14,6 +15,8 @@ import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { safeImageSrc, safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
+import { chipClasses } from '@/components/ui/chip'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB (post-prep; HEIC is converted and big photos shrink first)
 
@@ -57,7 +60,7 @@ function timeAgo(iso: string): string {
   if (hrs < 24) return `${hrs}h ago`
   const days = Math.floor(hrs / 24)
   if (days < 7) return `${days}d ago`
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return formatDateShort(iso)
 }
 
 export function EventActivity({
@@ -370,30 +373,24 @@ export function EventActivity({
               {/* Image + GIF — for a comment only; a Dispatch is a text announcement. */}
               {!asDispatch && (
                 <>
-                  <button
-                    type="button"
+                  <IconButton
+                    size="xs"
+                    variant={imageFile ? 'soft' : 'plain'}
+                    label="Attach image"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={pending}
-                    aria-label="Attach image"
-                    className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
-                      imageFile ? 'bg-primary-bg text-primary-strong' : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                    }`}
                   >
                     <ImagePlus className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
+                  </IconButton>
+                  <IconButton
+                    size="xs"
+                    variant={gifUrl || showGifInput ? 'soft' : 'plain'}
+                    label="Add a GIF"
                     onClick={() => setShowGifInput((v) => !v)}
                     disabled={pending}
-                    aria-label="Add a GIF"
-                    className={`inline-flex items-center rounded-control p-1.5 transition-colors disabled:opacity-40 ${
-                      gifUrl || showGifInput
-                        ? 'bg-primary-bg text-primary-strong'
-                        : 'text-subtle hover:bg-surface-elevated hover:text-muted'
-                    }`}
                   >
                     <Film className="h-4 w-4" />
-                  </button>
+                  </IconButton>
                 </>
               )}
               {/* Host/cohost: turn this post into an event announcement (Dispatch). Turning it on
@@ -412,11 +409,7 @@ export function EventActivity({
                   }}
                   disabled={pending}
                   aria-pressed={asDispatch}
-                  className={`inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
-                    asDispatch
-                      ? 'bg-primary-bg text-primary-strong'
-                      : 'text-muted hover:bg-surface-elevated hover:text-muted'
-                  }`}
+                  className={chipClasses(asDispatch, 'disabled:opacity-50')}
                 >
                   <Radio className="h-3.5 w-3.5" />
                   Send as a Dispatch
@@ -588,11 +581,7 @@ function BoopBar({
             aria-pressed={isMine}
             aria-label={isMine ? `Remove your ${kind} boop` : `Boop with ${kind}`}
             title={disabled ? 'Sign in to boop' : undefined}
-            className={`inline-flex items-center gap-1 rounded-pill border px-2 py-0.5 text-2xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-              isMine
-                ? 'border-primary bg-primary-bg text-primary-strong hover:bg-primary-bg/70'
-                : 'border-border text-muted hover:border-border-strong hover:text-text'
-            }`}
+            className={chipClasses(isMine, 'disabled:cursor-not-allowed disabled:opacity-50')}
           >
             <span className="text-body-sm leading-none">{kind}</span>
             {counts[kind]}

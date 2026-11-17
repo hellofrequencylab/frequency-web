@@ -15,9 +15,10 @@ import {
 const HOF_SLUG = 'house-of-fates'
 const i = (name: string) => `${HOF_IMG}/${name}`
 
-/** Flip to true once Toni's weekly hours are saved on the Space: the Space then serves /book, and every "Book" button
- *  goes there. Until then they open the contact page, which always exists. */
-export const HOF_BOOKING_LIVE = false
+/** True once Toni's weekly hours are saved on the Space: the Space then serves /book, and every "Book" button goes
+ *  there. Flipped 2026-11-16 (LIVE-2322): the Space has saved weekly hours (5 availability rows, 1 schedule). False
+ *  sends them to the contact page, which always exists. */
+export const HOF_BOOKING_LIVE = true
 const BOOK = HOF_BOOKING_LIVE ? '~/book' : '~/contact-us'
 
 export const HOUSE_OF_FATES = {

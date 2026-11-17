@@ -31,6 +31,7 @@ import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
 import { themePagePath } from '@/lib/themes/library'
 import { Acts, type Act, aura, LocPill, photo, photoBg, photoImg, WhatsOnList } from '../shared/parts'
+import { PhotoBgPreload } from '../shared/photo-bg-preload'
 
 /** Each kind links to its door (SCAN-1017): under the Frequency design nothing else on the site reached
  *  the /for pages. Venues have no door of their own, so their card opens the Spaces directory. */
@@ -141,11 +142,14 @@ function ThemePreview() {
 }
 
 export async function FrequencySpaces() {
+  // One name for the hero still: the preload and the background must ask for the same file (SCAN-1265).
+  const heroPhoto = photo('night-string-lights-web.jpg')
   const ranked = await getRankedSpaces(6)
   return (
     <div className="pa-page pa-spaces pa-show" data-pa-side="e" data-motion-scope style={{ display: 'contents' }}>
       <section className="phero big" data-energy="charge" data-screen-label="01 Hero">
-        <div className="bg" style={photoBg(photo('night-string-lights-web.jpg'))} />
+        <PhotoBgPreload src={heroPhoto} />
+        <div className="bg" style={photoBg(heroPhoto)} />
         <div className="fq-aura" style={aura(0.3)} />
         <div className="shade" />
         <div className="fq-grain" />

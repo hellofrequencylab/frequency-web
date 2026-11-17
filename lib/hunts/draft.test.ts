@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { benefitCodeFrom, benefitsReady, canonicalContent, draftToGraph, parseTrailDraft, previewTrail, publishChecklist, publishRows, publishedPolicy, saveDraft, stopKey } from './draft'
+import { HUNT_MANIFEST } from '@/lib/studio/entities/hunt'
+import { benefitCodeFrom, benefitsReady, canonicalContent, draftToGraph, evidencePolicyUpdates, parseTrailDraft, previewTrail, publishChecklist, publishRows, publishedPolicy, saveDraft, stopEvidencePolicy, stopKey } from './draft'
 import { versionBenefits } from './benefit-codes'
 import { validateGraph } from './graph'
 
@@ -168,5 +169,60 @@ describe('pass benefits on a draft', () => {
     expect(benefitCodeFrom('Tasting flight')).toBe('tasting-flight')
     expect(benefitCodeFrom('  2 for 1 Dessert!  ')).toBe('for-1-dessert')
     expect(benefitCodeFrom('!!!')).toBe('')
+  })
+})
+
+describe('the staff review opt-in on a stop (FH-020V)', () => {
+  const held = () => draft({ stops: [stop(1), { ...stop(2), holdForReview: true }, stop(3)] })
+
+  it('reads the switch as a strict boolean and leaves older drafts unchanged', () => {
+    const parsed = parseTrailDraft({ stops: [{ place: 'A', clue: 'c', holdForReview: true }, { place: 'B', clue: 'c', holdForReview: 'true' }, { place: 'C', clue: 'c' }] })
+    expect(parsed.stops.map((s) => s.holdForReview)).toEqual([true, undefined, undefined])
+    expect(parsed.stops[2]).toEqual({ place: 'C', clue: 'c', hint: '', placementReady: false })
+  })
+
+  it('turns the switch into the one key the claim command reads', () => {
+    expect(stopEvidencePolicy({ holdForReview: true })).toEqual({ hold_for_review: true })
+    expect(stopEvidencePolicy({})).toEqual({})
+    expect(stopEvidencePolicy(undefined)).toEqual({})
+  })
+
+  it('rewrites only the bindings whose policy differs, and keeps their other keys', () => {
+    const bindings = [
+      { mission_key: 'stop-1', placement_id: 'p1', evidence_policy: {} },
+      { mission_key: 'stop-2', placement_id: 'p2', evidence_policy: { photo: 'optional' } },
+      { mission_key: 'stop-2', placement_id: 'p2b', evidence_policy: { hold_for_review: true } },
+      { mission_key: 'stop-3', placement_id: 'p3', evidence_policy: { hold_for_review: true, photo: 'optional' } },
+      { mission_key: 'stop-3', placement_id: 'p3b', evidence_policy: { hold_for_review: 'true' } },
+      { mission_key: 'stop-9', placement_id: 'p9', evidence_policy: { hold_for_review: true } },
+      { mission_key: 'stop-1', placement_id: 'p1b', evidence_policy: null },
+    ]
+    expect(evidencePolicyUpdates(held(), bindings)).toEqual([
+      { mission_key: 'stop-2', placement_id: 'p2', evidence_policy: { photo: 'optional', hold_for_review: true } },
+      { mission_key: 'stop-3', placement_id: 'p3', evidence_policy: { photo: 'optional' } },
+      { mission_key: 'stop-3', placement_id: 'p3b', evidence_policy: {} },
+    ])
+    expect(evidencePolicyUpdates(draft(), [bindings[0], bindings[1], bindings[6]])).toEqual([])
+  })
+
+  it('changes the content hash only when a stop opts in', () => {
+    const plain = canonicalContent(draft())
+    expect(plain).not.toContain('review_holds')
+    expect(canonicalContent(draft({ stops: [stop(1), { ...stop(2), holdForReview: false }, stop(3)] }))).toBe(plain)
+    expect(canonicalContent(held())).not.toBe(plain)
+    expect(JSON.parse(canonicalContent(held())).review_holds).toEqual(['stop-2'])
+  })
+})
+
+describe('the Hunt manifest and the draft agree on a stop (FH-020V)', () => {
+  const fields = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'stops')?.fields ?? []
+  it('offers the review opt-in as a switch, with no raw JSON or policy field', () => {
+    expect(fields.find((f) => f.path === 'holdForReview')?.kind).toBe('toggle')
+    expect(fields.map((f) => f.kind).sort()).toEqual(['longtext', 'text', 'text', 'toggle', 'toggle', 'toggle'])
+    expect(fields.some((f) => /policy|json/i.test(f.path))).toBe(false)
+  })
+  it('keeps every manifest stop field through a save', () => {
+    const filled = Object.fromEntries(fields.map((f) => [f.path, f.kind === 'toggle' ? true : 'x']))
+    expect(Object.keys(parseTrailDraft({ stops: [filled] }).stops[0]).sort()).toEqual(fields.map((f) => f.path).sort())
   })
 })
