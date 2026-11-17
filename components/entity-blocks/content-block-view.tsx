@@ -26,6 +26,8 @@ import HeadingBlock from './blocks/heading.web'
 import DividerBlock from './blocks/divider.web'
 import { RecordingBlockEmbed } from '@/components/airwaves/recording-block-embed'
 import { ContactFormBlock } from '@/components/spaces/contact-form-block'
+import { CountedCardLink } from '@/components/spotlight/counted-card-link'
+import { spotlightLinkTarget } from '@/lib/spaces/spotlight-link-target'
 
 // PRESENTATIONAL renderers for the operator's inline-authored CONTENT blocks (ADR-528) + the per-block
 // STYLE frame. Server-safe (no hooks / no 'use client'), so the Server Component profile renderers drop
@@ -326,9 +328,27 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
   )
 }
 
+/** Where a Links block on a published Spotlight sends its presses (LIVE-2327): the beacon endpoint and the Space. */
+export interface LinkPressBeacon {
+  url: string
+  space: string
+}
+
+const LINK_ROW_CLASS =
+  'flex items-center justify-between rounded-control border border-border bg-surface px-4 py-3 text-body-sm font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong'
+
 /** Render ONE authored content block by id from its sanitized props. Returns null when it has no content,
- *  so an empty block leaves no gap. */
-export function ContentBlockView({ id, props }: { id: string; props: Record<string, unknown> }): ReactNode {
+ *  so an empty block leaves no gap. `counted` is set only by a published Spotlight render, so a Links block
+ *  there counts each press; everywhere else (the Space page, the editor, the palette) its links are plain. */
+export function ContentBlockView({
+  id,
+  props,
+  counted = null,
+}: {
+  id: string
+  props: Record<string, unknown>
+  counted?: LinkPressBeacon | null
+}): ReactNode {
   switch (id) {
     case 'callout': {
       // A highlighted card: optional image, a title, a message, and one call-to-action button (ADR-542).
@@ -425,12 +445,20 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
         <ul className="flex flex-col gap-2">
           {links.map((it, i) => (
             <li key={`${it.url}-${i}`}>
-              <a
-                href={it.url}
-                className="flex items-center justify-between rounded-control border border-border bg-surface px-4 py-3 text-body-sm font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
-              >
-                {it.label || it.url}
-              </a>
+              {counted ? (
+                // A published Spotlight counts each press by a hash of the address (LIVE-2327), like a Link card.
+                <CountedCardLink
+                  href={it.url}
+                  beacon={{ url: counted.url, space: counted.space, target: spotlightLinkTarget(it.url) }}
+                  className={LINK_ROW_CLASS}
+                >
+                  {it.label || it.url}
+                </CountedCardLink>
+              ) : (
+                <a href={it.url} className={LINK_ROW_CLASS}>
+                  {it.label || it.url}
+                </a>
+              )}
             </li>
           ))}
         </ul>

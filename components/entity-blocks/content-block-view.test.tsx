@@ -1,5 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { ReactNode } from 'react'
+import { spotlightLinkTarget } from '@/lib/spaces/spotlight-link-target'
+
+// The counted anchor (LIVE-856) is a client island; here it shows which target it would send.
+vi.mock('@/components/spotlight/counted-card-link', () => ({
+  CountedCardLink: ({ href, beacon, children }: { href: string; beacon: { target: string } | null; children: ReactNode }) => (
+    <a href={href} data-counted={beacon?.target ?? ''}>
+      {children}
+    </a>
+  ),
+}))
 import { sanitizeContentMap } from '@/lib/entity-blocks/block-content'
 import { ContentBlockView } from './content-block-view'
 
@@ -200,5 +211,26 @@ describe('a picked reference survives the save path and renders (ADR-1253)', () 
   it('a ref whose cached url is unsafe is dropped on save, so nothing unsafe can reach the page', () => {
     const saved = sanitizeContentMap({ image: { src: { assetId: ref.assetId, url: 'javascript:1' }, alt: 'A' } })
     expect(saved?.image.src).toBeUndefined()
+  })
+})
+
+// LIVE-2327: a Links block on a published Spotlight counts each press through the Link cards' counted anchor,
+// with a per-address target; anywhere else its links stay plain anchors.
+describe('ContentBlockView links press counting (LIVE-2327)', () => {
+  const props = { items: [{ label: 'Shop', url: 'https://x.com/shop' }] }
+
+  it('renders plain links when not counted (the editor, the Space page)', () => {
+    const html = renderToStaticMarkup(<ContentBlockView id="links" props={props} />)
+    expect(html).toContain('href="https://x.com/shop"')
+    expect(html).not.toContain('data-counted')
+  })
+
+  it('renders each link through the counted anchor with its link target on a published Spotlight', () => {
+    const html = renderToStaticMarkup(
+      <ContentBlockView id="links" props={props} counted={{ url: '/api/spotlight/click', space: 's1' }} />,
+    )
+    expect(html).toContain('href="https://x.com/shop"')
+    expect(html).toContain(`data-counted="${spotlightLinkTarget('https://x.com/shop')}"`)
+    expect(html).toContain('Shop')
   })
 })
