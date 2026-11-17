@@ -13,7 +13,8 @@
 //   AVATAR        FQ_ACCOUNT_MENU (at most 8, Sign out included): personal and account. The about and
 //                 policy pages ride under it as a small text row (FQ_ABOUT_LINKS), not as items.
 //   RAIL FOOT     FQ_WORK_MENU (at most 5): Your Spaces (each Space into its console), Create,
-//                 Leadership (host tools), Admin console (staff). One link per console: each console
+//                 Leadership (host tools), Admin console (staff). Your Spaces and Create are lifted to
+//                 the rail's top by liftTopGroups (owner, 2026-11-17). One link per console: each console
 //                 owns its own sub-navigation.
 //   HUBS          HUB_LINKS: hub route → the long-tail children that hub page renders (hubLinks()).
 //                 nav-coverage.test.ts checks every DAWN destination is reachable through the above.
@@ -408,6 +409,29 @@ export function groupRows(rows: readonly FqMenuRow[], v: FqMenuViewer, profileHr
     g.rows.push({ key: href ?? `action:${r.action}`, label: r.label, icon: r.icon, href, action: r.action, ...(href === '/drafts' ? { count: counts.drafts } : {}) })
   }
   return out
+}
+
+/** The rail's top (owner, 2026-11-17, picked on a card: "Your Space and Create at the top"). Out of the
+ *  resolved work groups it lifts:
+ *  · `door`   the Your Space link, owners only: one Space opens straight into its console, several open
+ *             the picker (/spaces/operating).
+ *  · `create` the Create group (New event, New Circle, List a product), for anyone signed in.
+ *  The rest (Leadership, Admin console) stay where they were, below Your Circles. Pure, so the desktop
+ *  rail and the phone drawer lift the same rows. */
+export function liftTopGroups(groups: readonly FqMenuGroup[]): {
+  door?: { label: string; href: string }
+  create?: FqMenuGroup
+  rest: FqMenuGroup[]
+} {
+  const spaces = groups.find((g) => g.label === 'Your Spaces')
+  const create = groups.find((g) => g.label === 'Create' && g.rows.length > 0)
+  const consoles = (spaces?.rows ?? []).filter((r) => r.href && r.href !== '/spaces/operating')
+  const door = !spaces
+    ? undefined
+    : consoles.length === 1
+      ? { label: 'Your Space', href: consoles[0]!.href! }
+      : { label: 'Your Spaces', href: '/spaces/operating' }
+  return { door, create, rest: groups.filter((g) => g !== spaces && g !== create) }
 }
 
 /** Swap the `{profile}` placeholder for the viewer's own profile href. */

@@ -46,6 +46,7 @@ import {
   FQ_SHORTCUTS,
   FQ_WORK_GROUP_ICON,
   FQ_WORK_MENU,
+  liftTopGroups,
   canShow,
   groupRows,
   type FqMenuRow,
@@ -213,7 +214,9 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
   const spaceRows: FqMenuRow[] = props.availableContexts.flatMap((c) =>
     c.kind === 'operator' ? [{ group: 'Your Spaces', label: c.label, href: c.href, icon: 'space' as const }] : [],
   )
-  const workGroups = groupRows([...spaceRows, ...FQ_WORK_MENU], menuViewer, profileHref, { drafts: myFrequency?.drafts })
+  const allWorkGroups = groupRows([...spaceRows, ...FQ_WORK_MENU], menuViewer, profileHref, { drafts: myFrequency?.drafts })
+  // Your Space and Create ride the rail's top (owner, 2026-11-17); Leadership and Admin stay below.
+  const { door: spaceDoor, create: createGroup, rest: workGroups } = liftTopGroups(allWorkGroups)
   const skins = SELECTABLE_SKINS.map((s) => ({ id: s.id, label: s.label }))
 
   // ── Left rail ────────────────────────────────────────────────────────────────────────────────────
@@ -221,7 +224,29 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
     <div className="fqm-l-full">
       {/* No avatar + name block up here (owner, 2026-10-14, SCAN-882): the member is already in the
           header's avatar and in the You card at the foot of this rail. The shortcuts open the rail. */}
+      {createGroup && (
+        <details className="fqm-create">
+          <summary>
+            <FqIcon name="plus" />
+            <span>Create</span>
+          </summary>
+          <div className="fqm-create-menu">
+            {createGroup.rows.map((r) => (
+              <Link key={r.key} href={r.href ?? '#'} className="rl-row">
+                <FqIcon name={r.icon} />
+                <span>{r.label}</span>
+              </Link>
+            ))}
+          </div>
+        </details>
+      )}
       <nav className="fqm-sc" aria-label="Shortcuts">
+        {spaceDoor && (
+          <Link href={spaceDoor.href} className="fqm-door">
+            <FqIcon name="space" />
+            <span>{spaceDoor.label}</span>
+          </Link>
+        )}
         {shortcuts.map((s) => {
           const count = badgeFor(s.badge)
           return (
@@ -288,6 +313,16 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
     <>
       {/* The folded face drops the avatar at its top too (SCAN-882): the You tab below carries it. */}
       <nav aria-label="Shortcuts">
+        {createGroup?.rows[0]?.href && (
+          <Link href={createGroup.rows[0].href} className="fqm-mi" aria-label="Create" data-tip="Create" data-tip-sub={createGroup.rows[0].label}>
+            <FqIcon name="plus" />
+          </Link>
+        )}
+        {spaceDoor && (
+          <Link href={spaceDoor.href} className="fqm-mi" aria-label={spaceDoor.label} data-tip={spaceDoor.label}>
+            <FqIcon name="space" />
+          </Link>
+        )}
         {shortcuts.map((s) => {
           const count = badgeFor(s.badge)
           return (
@@ -503,6 +538,8 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
             circles={circles.slice(0, 5).map((c) => ({ key: c.key, label: c.label, href: c.href, notices: c.notices, image: c.image }))}
             accountGroups={accountGroups}
             workGroups={workGroups}
+            spaceDoor={spaceDoor}
+            createGroup={createGroup}
             skins={skins}
             skin={props.skin}
             standing={
