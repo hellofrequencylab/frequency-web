@@ -51,6 +51,9 @@ export interface MemberSummary {
   activeThisWeek?: boolean
   /** How many active Spaces they own. */
   spacesOwned?: number
+  /** The personal welcome (LIVE-2340): a new member a staff member has not welcomed yet. Only the platform
+   *  Resonance CRM roster sets it; the row then shows the glowing "Say hi" pill. */
+  welcomePending?: boolean
   /** Optional embedded detail (skips the lazy load for this row). */
   detail?: MemberDetail
 }

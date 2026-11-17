@@ -59,12 +59,11 @@ const RETIRED = ['scanlines', 'vignette', 'edge-light'] as const
  *  deleting a class nobody asked about is how a visual regression arrives with no trail. They are
  *  now visible and counted, which is the precondition for deciding about them.
  *
- *  `animate-glow` / `animate-warmup` are the interesting pair: globals.css says their keyframes
+ *  `animate-warmup` is the interesting one (its twin `animate-glow` was banked by LIVE-2340, the CRM welcome glow): globals.css says their keyframes
  *  were ported before the classes were, so "the animation existed and nothing could reach it".
  *  The class landed; the call site still never did. */
 const RECORDED_ORPHANS = [
   'amber-underline',
-  'animate-glow',
   'animate-warmup',
   'grain',
   'slat-fade',

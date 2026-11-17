@@ -6,6 +6,7 @@ import { completenessScore } from '@/lib/crm/completeness'
 import { relationshipLabel } from '@/lib/crm/relationships'
 import { ROLE_LABEL } from '@/lib/community-roles'
 import { tierLabel } from '@/lib/dashboard/verdict'
+import { welcomePendingFor } from '@/lib/crm/welcome-io'
 import type { Facet, MemberSummary, SortOption } from '@/components/people/member-viewer'
 
 // The ONE mapper that turns the shared scored roster (listMembersByFilter) into the member-viewer's
@@ -126,7 +127,8 @@ export async function loadMemberSummaries(
   opts: { spaceId?: string | null } = {},
 ): Promise<MemberSummary[]> {
   const rows = await listMembersByFilter(filter, { spaceId: opts.spaceId })
-  return summariesFromRows(rows)
+  // The personal welcome glow (LIVE-2340) is platform staff work: never on a Space-scoped roster.
+  return summariesFromRows(rows, { welcome: !opts.spaceId })
 }
 
 /**
@@ -135,7 +137,10 @@ export async function loadMemberSummaries(
  * lists ALL active members (scored or not) instead of the scored matview — reuses the IDENTICAL batched
  * mapping (profile summary + joined-at + classifier badges), so every roster reads the same.
  */
-export async function summariesFromRows(rows: MemberListRow[]): Promise<MemberSummary[]> {
+export async function summariesFromRows(
+  rows: MemberListRow[],
+  opts: { welcome?: boolean } = {},
+): Promise<MemberSummary[]> {
   if (rows.length === 0) return []
 
   const profileIds = rows.map((r) => r.profileId)
@@ -148,6 +153,9 @@ export async function summariesFromRows(rows: MemberListRow[]): Promise<MemberSu
     joinedAtFor(profileIds),
     classifyMembers(profileIds),
   ])
+  // The personal welcome (LIVE-2340): one batched read of who has not been welcomed yet. Off by default, so a
+  // Space roster built through this mapper never glows. Fail-quiet to nobody pending.
+  const welcomePending = opts.welcome ? await welcomePendingFor(profileIds) : new Set<string>()
 
   return rows.map((r, i) => {
     const s = summaries.get(r.profileId)
@@ -200,6 +208,7 @@ export async function summariesFromRows(rows: MemberListRow[]): Promise<MemberSu
       isBusiness,
       activeThisWeek,
       spacesOwned: cls?.spacesOwned ?? 0,
+      welcomePending: welcomePending.has(r.profileId),
     }
   })
 }
