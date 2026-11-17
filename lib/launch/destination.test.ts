@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { inFlowHref, launchHomeHref, spotlightArrivalGoesHome } from './destination'
+import { inFlowHref, launchHomeHref, spotlightArrivalGoesHome, isAnonLaunchPage } from './destination'
 
 const LID = '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b'
 
@@ -36,5 +36,17 @@ describe('spotlightArrivalGoesHome', () => {
   })
   it('leaves a visitor with no launch on the form', () => {
     expect(spotlightArrivalGoesHome({ hasLaunch: false })).toBe(false)
+  })
+})
+
+describe('isAnonLaunchPage (LIVE-2324)', () => {
+  it('opens the Spotlight builder to a visitor with no account', () => {
+    expect(isAnonLaunchPage('/launch/step/spotlight')).toBe(true)
+    expect(isAnonLaunchPage('/launch/step/spotlight/')).toBe(true)
+  })
+  it('keeps every other launch page the account\'s own', () => {
+    for (const p of ['/launch', '/launch/claim', '/launch/resume', '/launch/step/space', '/launch/step/spotlight/x', '/', null]) {
+      expect(isAnonLaunchPage(p)).toBe(false)
+    }
   })
 })
