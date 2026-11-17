@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { saveCanvasNodeDraft } from '@/app/(main)/pages/canvas/document-actions'
 import type { CanvasDocumentView, CanvasNodeValues, CanvasNodeView } from '@/lib/builder/canvas-document'
-import { moveInTree, spacingStepOf, treeLayers, undoChange, undoWords, UNDO_ADD, withSpacing, type CanvasChange, type LayerSlot, type LayerTree, type RowChange, type SpacingEdge, type SpacingStep } from '@/lib/builder/canvas-tree'
+import { moveInTree, spacingStepOf, treeLayers, undoChange, undoWords, UNDO_ADD, withSpacing, type CanvasChange, type LayerSlot, type InsertSource, type LayerTree, type RowChange, type SpacingEdge, type SpacingStep } from '@/lib/builder/canvas-tree'
 import { nodeDeviceValues, withDeviceValues } from '@/lib/builder/node-responsive'
 
 export type CanvasSaveState = 'saved' | 'unsaved' | 'saving' | 'error' | 'conflict' | 'read-only'
@@ -214,8 +214,8 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
   }, [put, send])
   const space = useCallback((edge: SpacingEdge, step: SpacingStep) => spaceOn(selectedId, edge, step), [selectedId, spaceOn])
 
-  /** Add a preset or a blank block under the selected block. It appears once the server has stored it. */
-  const insert = useCallback((source: 'preset' | 'blank', id: string) => {
+  /** Add a preset, a blank block or one of the Space's live sections under the selected block. It appears once the server has stored it. */
+  const insert = useCallback((source: InsertSource, id: string) => {
     if (selectedId) send({ nid: selectedId, change: { kind: 'insert', source, id } })
   }, [selectedId, send])
 

@@ -2,8 +2,10 @@
 // is a block the page builder already offers, with starting words in it, so a person picks something that reads
 // like a page before they pick an empty box. The blank blocks come second and are drawn from the Space page
 // builder's own palette (profilePaletteForKind), never a second list: the blocks a person writes themselves.
-// The sections that show a Space's live data (About, Offerings, Events and the rest) are not offered here yet,
-// because whether a Space may place one depends on its data, which the Space page builder decides.
+// The sections that show a Space's live data (About, Offerings, Events and the rest) come third (PROG-E6F), and
+// only the ones the Space page builder's own lock rule lets this Space place (partitionSpaceBlocks with its
+// switches and which sections have data, lib/builder/canvas-live-blocks.ts). The caller resolves that list; this
+// module only draws it and checks an insert against it.
 //
 // The tab sends only an id. This module decides what that id holds, and the write sanitizes the content like any
 // other, so a preset can never carry a field its block does not have. A block at its per-page limit stays listed,
@@ -12,6 +14,7 @@
 import { canPlaceType } from '@/lib/entity-blocks/node-ops'
 import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { profilePaletteForKind } from '@/lib/entity-blocks/registry'
+import type { InsertSource } from './canvas-tree'
 
 interface CanvasPreset {
   id: string
@@ -39,10 +42,12 @@ interface InserterOption {
   reason?: string
 }
 
-/** The inserter as the client draws it: presets first, then the blank blocks. */
+/** The inserter as the client draws it: presets first, then the blank blocks, then the Space's live sections. */
 export interface CanvasInserterView {
   presets: InserterOption[]
   blanks: InserterOption[]
+  /** The sections that show this Space's live data and that it may place now (PROG-E6F). */
+  live?: InserterOption[]
 }
 
 const AT_LIMIT = 'This page already has as many of these as it can hold.'
@@ -50,20 +55,28 @@ const limited = (layout: NodeLayout, type: string) => (canPlaceType(layout, type
 /** The blocks a person writes themselves: in the Space palette, not a live data section, behind no switch. */
 const authored = () => profilePaletteForKind('space').filter((block) => block.category === 'content' && !block.requiresFunction)
 const offered = () => new Set(authored().map((block) => block.id))
+/** The live sections in the Space palette, in its order: data blocks, not written by hand. */
+export const liveSections = () => profilePaletteForKind('space').filter((block) => block.category === 'data')
 
-export function canvasInserterView(layout: NodeLayout): CanvasInserterView {
+/** `liveIds` are the live sections this Space may place now, as the caller resolved them; anything else is
+ *  never offered, whatever the list holds. */
+export function canvasInserterView(layout: NodeLayout, liveIds: readonly string[] = []): CanvasInserterView {
   const palette = authored()
   const types = offered()
+  const allowed = new Set(liveIds)
   return {
     presets: CANVAS_PRESETS.filter((preset) => types.has(preset.type)).map(({ id, label, say, type }) => ({ id, label, say, ...limited(layout, type) })),
     blanks: palette.map((block) => ({ id: block.id, label: block.label, ...limited(layout, block.id) })),
+    ...(allowed.size ? { live: liveSections().filter((block) => allowed.has(block.id)).map((block) => ({ id: block.id, label: block.label, say: block.description, ...limited(layout, block.id) })) } : {}),
   }
 }
 
-/** What an insert the tab asked for holds: a preset's block and starting content, or a blank block from the
- *  authored palette. Null for an id that is neither, or a block the canvas does not offer. */
-export function resolveCanvasInsert(source: 'preset' | 'blank', id: string): { type: string; content?: Record<string, unknown> } | null {
+/** What an insert the tab asked for holds: a preset's block and starting content, a blank block from the
+ *  authored palette, or a live section this Space may place (`liveIds`, resolved by the caller on this request).
+ *  Null for an id that is none of those, or a block the canvas does not offer. */
+export function resolveCanvasInsert(source: InsertSource, id: string, liveIds: readonly string[] = []): { type: string; content?: Record<string, unknown> } | null {
   const types = offered()
+  if (source === 'live') return liveIds.includes(id) && liveSections().some((block) => block.id === id) ? { type: id } : null
   if (source === 'blank') return types.has(id) ? { type: id } : null
   const preset = CANVAS_PRESETS.find((candidate) => candidate.id === id)
   return preset && types.has(preset.type) ? { type: preset.type, content: { ...preset.content } } : null
