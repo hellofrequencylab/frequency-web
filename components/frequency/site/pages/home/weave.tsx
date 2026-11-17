@@ -134,9 +134,7 @@ export function Weave({ stages }: { stages: WeaveStage[] }) {
 
   // Draw after layout, on resize (debounced), and once the web fonts settle the boxes.
   useEffect(() => {
-    // The first draw waits for the next frame: measuring inside the effect forced a style and layout
-    // pass of the whole page on top of the one the frame does anyway (home load freeze).
-    const first = requestAnimationFrame(draw)
+    draw()
     let t: number | undefined
     const onResize = () => {
       window.clearTimeout(t)
@@ -145,7 +143,6 @@ export function Weave({ stages }: { stages: WeaveStage[] }) {
     window.addEventListener('resize', onResize)
     void document.fonts?.ready.then(draw)
     return () => {
-      cancelAnimationFrame(first)
       window.removeEventListener('resize', onResize)
       window.clearTimeout(t)
     }

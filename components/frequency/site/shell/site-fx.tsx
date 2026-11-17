@@ -38,6 +38,7 @@ const SIG: Record<Energy, { a: number; s: number; f: number }> = {
   charge: { a: 1, s: 3.2, f: 3.4 },
 }
 const NS = 'http://www.w3.org/2000/svg'
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
 let noise: string | null = null
 function noiseTile(): string | null {
@@ -114,7 +115,7 @@ function run(root: HTMLElement): () => void {
     if (!w) {
       f.classList.add('under')
       addClass(host, 'tx-host')
-      if (isStatic.has(host) ? isStatic.get(host) : getComputedStyle(host).position === 'static') {
+      if (getComputedStyle(host).position === 'static') {
         host.style.position = 'relative'
         offs.push(() => (host.style.position = ''))
       }
@@ -152,17 +153,10 @@ function run(root: HTMLElement): () => void {
   const q = (sel: string) =>
     Array.from(root.querySelectorAll<HTMLElement>(sel)).filter((e) => !e.closest('[data-kit]:not([data-kit="site"])'))
 
-  // READ EVERYTHING FIRST, THEN WRITE. Each decorated host gets new children, so a style read after
-  // one was a full style recalc on the spot: Home paid eight of them (the seam check below), about
-  // 0.4 s on a 4x-throttled phone and the largest part of its load freeze. Every style this pass
-  // needs is read here, in one recalc, before the first host is touched.
-  const isStatic = new Map<Element, boolean>()
-  const seamless = new Set<Element>()
-  for (const h of q('.hero,.phero,.hp-hero,.jx-panel,.half,.chap,.sec,.lv,.closer')) {
-    const cs = getComputedStyle(h)
-    if (!h.querySelector(':scope>.wrap')) isStatic.set(h, cs.position === 'static')
-    if (h.classList.contains('sec') && !h.classList.contains('kg') && cs.borderTopStyle === 'none') seamless.add(h)
-  }
+  // READ FIRST, THEN WRITE. The seam check below read a computed style after each section had been
+  // decorated, so every read was a full style recalc on the spot: eight on Home, about 0.4 s on a
+  // 4x-throttled phone and the largest part of its load freeze. All of them are read here, in one recalc.
+  const seamless = new Set(q('.sec').filter((s) => !s.classList.contains('kg') && getComputedStyle(s).borderTopStyle === 'none'))
 
   // Heroes: one signature sphere.
   q('.hero,.phero,.hp-hero').forEach((h) => {
@@ -335,7 +329,7 @@ function run(root: HTMLElement): () => void {
     const w: (() => void)[] = []
     if (!RM) {
       if (hero && hs) {
-        const k = Math.max(0, Math.min(1, y / (hero.offsetHeight * 0.75)))
+        const k = clamp01(y / (hero.offsetHeight * 0.75))
         const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2
         const dx = `${((90 - 5 * Math.sin(k * Math.PI * 2.4) + 2 * k - 86) / 100 * hero.offsetWidth).toFixed(1)}px`
         const dy = `${((38 + 52 * e - 88) / 100 * hero.offsetHeight).toFixed(1)}px`
@@ -344,8 +338,8 @@ function run(root: HTMLElement): () => void {
       if (fj.length && fold) {
         const r = fold.getBoundingClientRect()
         if (r.bottom > 0 && r.top < vh) {
-          const p = Math.max(0, Math.min(1, -r.top / (r.height - vh)))
-          const op = String(1 - Math.max(0, Math.min(1, (p - 0.55) / 0.2)) * 0.6)
+          const p = clamp01(-r.top / (r.height - vh))
+          const op = String(1 - clamp01((p - 0.55) / 0.2) * 0.6)
           w.push(() => fj.forEach((e) => ((e.style.translate = `0 ${((0.1 - p) * Number(e.dataset.fd) * vh * 0.5).toFixed(1)}px`), (e.style.opacity = op))))
         }
       }
