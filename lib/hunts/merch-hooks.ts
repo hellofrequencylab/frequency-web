@@ -26,8 +26,8 @@ export async function huntsAfterOrderReturn(sessionId: string): Promise<void> {
   try {
     await huntsAfterOrderSession(sessionId)
   } catch (err) {
-    // The id came from the request: a fixed message, and only its safe characters, reach the log.
-    console.error('[hunts-commerce] order return hook failed for session', sessionId.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 80), err)
+    // The session id came from the request, so it never reaches the log: a fixed message and the error name only.
+    console.error('[hunts-commerce] order return hook failed', err instanceof Error ? err.name : 'unknown')
   }
 }
 
