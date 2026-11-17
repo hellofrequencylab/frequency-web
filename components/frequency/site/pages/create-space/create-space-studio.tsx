@@ -38,6 +38,7 @@ import { isHandleShape } from '@/lib/create-space/handle'
 import { chooseDraftNiche, goalsFromNicheOffer, nicheArrival } from '@/lib/create-space/niche-draft'
 import type { NicheChoice } from '@/lib/create-space/niche-choices'
 import { browserZone, leadEmailOf } from '@/lib/create-space/lead'
+import { CLAIM_ERROR_PARAM, claimErrorLine } from '@/lib/create-space/claim-error'
 import { SIGNAL_URL, visitorKeyFrom } from '@/lib/create-space/signal'
 import type { CreateSpaceSignal } from '@/lib/create-space/signal'
 import { PREVIEW_KITS, deriveSite, joinList, kitAccents, kitImagery } from '@/lib/create-space/preview-site'
@@ -87,7 +88,7 @@ type Phase = 'build' | 'saved'
 
 // `shell` is the Suspense fallback streamed before the address is read. It renders the same hero without a heading
 // element or the heading's id, so the server HTML carries one h1 and one #cs-h1, not two (SCAN-1264).
-function Island({ arrival, draftToken, initialResume = null, timedEntry = false, nicheChoices = [], shell = false }: { arrival: DoorArrival & { modeHint?: string }; draftToken: string | null; initialResume?: WizardResume | null; timedEntry?: boolean; nicheChoices?: readonly NicheChoice[]; shell?: boolean }) {
+function Island({ arrival, draftToken, claimError = null, initialResume = null, timedEntry = false, nicheChoices = [], shell = false }: { arrival: DoorArrival & { modeHint?: string }; draftToken: string | null; claimError?: string | null; initialResume?: WizardResume | null; timedEntry?: boolean; nicheChoices?: readonly NicheChoice[]; shell?: boolean }) {
   // A door's hints (lib/create-space/door.ts) prime the start: the name is typed in, the goals light the preview's
   // offer cards before a sentence is written, and the niche rides to the launch. Nothing is marked done for them.
   // The accent picked beside the kit's Use button arrives picked: they chose it there, so it is not asked again.
@@ -111,6 +112,8 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false,
   const [uploadError, setUploadError] = useState<string | null>(null)
   /** The address the server holds the draft under, once it does. */
   const [savedTo, setSavedTo] = useState<string | null>(null)
+  /** Why "Save with Google" came back here instead of going on (?claim_error=, LIVE-2331), as a line. */
+  const [claimNote, setClaimNote] = useState<string | null>(() => claimErrorLine(claimError))
 
   const heroRef = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -168,6 +171,16 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false,
     restored.current = true
     signal('createspace.view', { kit: arrival.kit, chosen: arrival.chosen })
   }, [arrival, signal, initialResume])
+
+  // ── A refused Google claim: the line shows once, and the code leaves the address so a reload does not repeat it.
+  useEffect(() => {
+    if (!claimError) return
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.delete(CLAIM_ERROR_PARAM)
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+    } catch { /* no history API: the line still shows */ }
+  }, [claimError])
 
   // ── A ?draft= link: the server copy comes back as a "Welcome back", never restored by itself (ADR-1933).
   useEffect(() => {
@@ -477,6 +490,7 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false,
     focusStep(n)
   }
   const handOver = () => {
+    setClaimNote(null)
     sealed.current = true
     try { window.localStorage.removeItem(DRAFT_KEY); window.localStorage.removeItem(RESUME_KEY) } catch { /* nothing to clear */ }
   }
@@ -534,6 +548,7 @@ function Island({ arrival, draftToken, initialResume = null, timedEntry = false,
               </div>
             ) : null}
 
+            {building && claimNote ? <p role="alert" className="cs-alert">{claimNote}</p> : null}
             {building && step === 0 ? (
               <NameCard draft={draft} patch={patch} intro={intro} status={status} err={err} onNext={next} resumeName={resume?.name.trim() ?? ''} onResume={onResume} inputRef={nameRef} />
             ) : null}
@@ -633,7 +648,7 @@ function FromUrl({ initialResume, nicheChoices }: { initialResume: WizardResume 
   const kit = asked.chosen ? asked.kit : last ?? asked.kit
   const accentAt = asked.accentAt ?? (cookie ? lastAccentAt(kit, cookie) ?? undefined : undefined)
   const arrival = { ...asked, kit, chosen: asked.chosen || !!last, ...(accentAt !== undefined ? { accentAt } : {}) }
-  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.accentAt ?? ''}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}:${arrival.modeHint ?? ''}`} arrival={arrival} draftToken={params.get('draft')} initialResume={initialResume} nicheChoices={nicheChoices} timedEntry={params.get('timer') === '12' || params.get('entry') === '12-minutes'} />
+  return <Island key={`${arrival.kit}:${arrival.chosen}:${arrival.accentAt ?? ''}:${arrival.name}:${arrival.goals.join()}:${arrival.niche ?? ''}:${arrival.modeHint ?? ''}`} arrival={arrival} draftToken={params.get('draft')} claimError={params.get(CLAIM_ERROR_PARAM)} initialResume={initialResume} nicheChoices={nicheChoices} timedEntry={params.get('timer') === '12' || params.get('entry') === '12-minutes'} />
 }
 
 export function CreateSpaceStudio({ initialResume = null, nicheChoices = [] }: { initialResume?: WizardResume | null; nicheChoices?: readonly NicheChoice[] }) {

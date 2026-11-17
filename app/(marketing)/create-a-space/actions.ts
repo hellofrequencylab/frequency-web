@@ -20,6 +20,7 @@ import { redirect } from 'next/navigation'
 import { signInWithGoogle, sendSignupLink } from '@/app/sign-in/actions'
 import { getMyProfileId } from '@/lib/auth'
 import { claimedHandle, serializeDraft } from '@/lib/create-space/builder'
+import { claimErrorHref, type ClaimErrorCode } from '@/lib/create-space/claim-error'
 import { readDraftByToken, saveDraft } from '@/lib/create-space/draft-io'
 import { destinationFor, holdFor, parseHandoff } from '@/lib/create-space/handoff'
 import { isLeadToken, isZone, leadEmailOf } from '@/lib/create-space/lead'
@@ -132,11 +133,19 @@ export async function claimWithEmail(formData: FormData): Promise<ClaimResult> {
   return sent.ok ? { ok: true, email, keepBuildingHref: handed.keepBuildingHref } : { ok: false, error: sent.error }
 }
 
-/** "Continue with Google". Ends in a redirect to Google, so it is a plain form action. A bad draft goes back to the page. */
+/** The code a refused hand-over carries back to the builder, so the Google path can say why as the email path does. */
+function claimErrorCode(error: string): ClaimErrorCode {
+  if (error === HANDLE_TAKEN) return 'handle'
+  if (error === DRAFT_LOST) return 'draft'
+  return 'generic'
+}
+
+/** "Continue with Google". Ends in a redirect to Google, so it is a plain form action. A refused hand-over goes back to
+ *  the page with ?claim_error=<code>, which the builder turns into a line (LIVE-2331). */
 // authz-ok: public by design, it is a sign-in door. The redirect is signInWithGoogle (per-IP throttle); the only write is the caller's own httpOnly hold cookie.
 export async function claimWithGoogle(formData: FormData): Promise<void> {
   const handed = await handOver(formData.get('draft'), formData.get('tz'))
-  if ('error' in handed) redirect('/create-a-space#get-started')
+  if ('error' in handed) redirect(claimErrorHref(claimErrorCode(handed.error)))
   const send = new FormData()
   send.set('next', handed.next)
   await signInWithGoogle(send)
