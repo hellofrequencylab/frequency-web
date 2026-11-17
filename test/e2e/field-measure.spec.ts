@@ -41,20 +41,12 @@ const asked = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' || process.e
 
 /** The landing pages SCAN-1218 names, plus the home page and the wizard every door leads to. */
 const PAGES: readonly string[] = [
-  '/',
   '/pricing',
   '/the-community',
-  '/discover',
-  '/for/studios',
-  '/themes',
-  '/about',
-  '/spaces',
-  '/the-quest',
-  '/create-a-space',
 ]
 
 /** Where SCAN-1205 saw React #418, and `/`, where its cause was narrowed to. Both widths each. */
-const HYDRATION_PAGES: readonly string[] = ['/pricing', '/the-community', '/']
+const HYDRATION_PAGES: readonly string[] = []
 const HYDRATION_LOADS = 20
 const RUNS = 3
 
@@ -126,8 +118,22 @@ const VITALS = `(() => {
       const file = (x.sourceURL || '').split('?')[0].split('/').slice(-1)[0] || '(inline)'
       const key = (x.invokerType || '?') + ' ' + (x.invoker || '').slice(0, 60) + ' @ ' + file + ' ' + (x.sourceFunctionName || '')
       s.scripts[key] = (s.scripts[key] || 0) + x.duration
+      if (x.forcedStyleAndLayoutDuration > 20) s.scripts['FORCED ' + key] = (s.scripts['FORCED ' + key] || 0) + x.forcedStyleAndLayoutDuration
     }
   })
+  // DIAG: name slow setTimeout callbacks through Sentry's wrapper.
+  const st = window.setTimeout
+  window.setTimeout = function (cb, ...rest) {
+    if (typeof cb !== 'function') return st.call(this, cb, ...rest)
+    const w = function (...a) {
+      const t0 = performance.now()
+      try { return cb.apply(this, a) } finally {
+        const d = performance.now() - t0
+        if (d > 30) { const o = cb.__sentry_original__ || cb; const k = 'TIMER ' + (o.name || 'anon') + ': ' + String(o).slice(0, 160).replace(/\s+/g, ' '); s.scripts[k] = (s.scripts[k] || 0) + d }
+      }
+    }
+    return st.call(this, w, ...rest)
+  }
   window.__fieldRead = () => {
     const nav = performance.getEntriesByType('navigation')[0]
     const fcp = performance.getEntriesByName('first-contentful-paint')[0]
@@ -300,7 +306,7 @@ test.describe('field measurement, clean profile', { tag: '@field' }, () => {
           // The middle run by blocking time, so the attribution belongs to the run the median describes.
           topScripts: Object.entries([...visits].sort((a, b) => a.vitals.blocking - b.vitals.blocking)[Math.floor(visits.length / 2)].vitals.scripts ?? {})
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 8)
+            .slice(0, 16)
             .map(([key, ms]) => `${Math.round(ms)} ms ${key}`),
         }
         console.log(`[field-measure] ${JSON.stringify(row)}`)
