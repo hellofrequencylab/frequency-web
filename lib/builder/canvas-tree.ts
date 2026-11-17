@@ -17,11 +17,20 @@ import type { BlockNode, NodeLayout } from '@/lib/entity-blocks/node-tree'
 /** A block in the tree. `hidden` is set when the page skips it (PROG-E6C). */
 type TreeLayer = { id: string; label: string; hidden?: true }
 
-/** One row of the page: its columns, each a stack of blocks in order. */
+/** How a row splits its width (PROG-E6D): one column, or two (even, wide left or wide right). A Space page holds at
+ *  most two columns (lib/entity-blocks/layout.ts MAX_COLUMNS_BY_KIND), so the canvas offers no wider split. */
+export type RowSplit = 'full' | 'even' | 'lead' | 'sidebar'
+export const ROW_SPLITS: readonly RowSplit[] = ['full', 'even', 'lead', 'sidebar']
+export const ROW_SPLIT_WORDS: Record<RowSplit, string> = { full: 'One column', even: 'Two even', lead: 'Wide left', sidebar: 'Wide right' }
+/** How many columns a split has. */
+export const splitColumns = (split: RowSplit): number => (split === 'full' ? 1 : 2)
+
+/** One row of the page: its columns, each a stack of blocks in order, and how it splits its width. */
 interface LayerTreeRow {
   id: string
   label: string
   columns: TreeLayer[][]
+  split?: RowSplit
 }
 export type LayerTree = LayerTreeRow[]
 
@@ -47,6 +56,14 @@ export type CanvasChange =
   | { kind: 'hide'; hidden: boolean }
   | { kind: 'remove'; keep: boolean }
   | { kind: 'restore'; to: LayerSlot }
+  // PROG-E6D: the rows themselves. A new row is empty and lands at an index; only an empty row can be removed,
+  // and a split can only drop columns that are empty, so no block is ever folded, benched or lost by a row change.
+  | { kind: 'row-add'; at: number }
+  | { kind: 'row-remove'; rowId: string }
+  | { kind: 'row-move'; rowId: string; by: -1 | 1 }
+  | { kind: 'row-split'; rowId: string; split: RowSplit }
+/** One of the row changes alone. */
+export type RowChange = Extract<CanvasChange, { kind: `row-${string}` }>
 
 /** The steps a handle walks, smallest first. `default` is "not set": the page's own rhythm for a margin, no
  *  padding for the inside. A margin can also be `none`, which pulls the block flush against its neighbour. */
@@ -101,8 +118,20 @@ export function canvasTree(layout: NodeLayout, layers: readonly TreeLayer[]): La
   return layout.rows.map((row, i) => ({
     id: row.id,
     label: row.title?.trim() || `Row ${i + 1}`,
+    split: rowSplitOf(row.columns, row.ratio),
     columns: row.cells.map((stack) => stack.map((node) => ({ id: node.nid, label: names.get(node.nid) ?? 'Block', ...(node.hidden ? { hidden: true as const } : {}) }))),
   }))
+}
+
+/** A stored row's split, read from its column count and ratio. */
+export function rowSplitOf(columns: number, ratio?: string): RowSplit {
+  if (columns < 2) return 'full'
+  return ratio === 'lead' ? 'lead' : ratio === 'trail' ? 'sidebar' : 'even'
+}
+
+/** Whether a row can take a split: every column it would drop must already be empty. */
+export function canSplit(row: Pick<LayerTreeRow, 'columns'>, split: RowSplit): boolean {
+  return row.columns.slice(splitColumns(split)).every((stack) => stack.length === 0)
 }
 
 /** Every block in reading order: row, then column, then place in the stack. */
@@ -154,7 +183,9 @@ export function stepSlot(tree: LayerTree, id: string, by: -1 | 1): LayerSlot | n
   return next ? { rowId: next.rowId, col: next.col, index: by < 0 ? next.size : 0 } : null
 }
 
-/** The change that puts back what `change` does to block `nid`, worked out from the page BEFORE it is sent (PROG-E6C).
+/** The change that puts back what `change` does to block `nid`, worked out from the page BEFORE it is sent (PROG-E6C;
+ *  rows, PROG-E6D). A row move goes back the other way, a split goes back to the row's split before, and removing an
+ *  (empty) row is undone by adding an empty row at its index. Adding a row is undone once the server names it.
  *  `style` is the block's stored style and `hidden` whether it is hidden now. Null for an add (a copy or an insert):
  *  its undo names the new block, which only the server's answer holds, and for a final removal, which cannot be
  *  put back. */
@@ -162,6 +193,15 @@ export function undoChange(tree: LayerTree, nid: string, change: CanvasChange, n
   if (change.kind === 'spacing') return { kind: 'spacing', edge: change.edge, step: spacingStepOf(now.style, change.edge) }
   if (change.kind === 'hide') return { kind: 'hide', hidden: !!now.hidden }
   if (change.kind === 'restore') return { kind: 'remove', keep: true }
+  if (change.kind === 'row-move') return { kind: 'row-move', rowId: change.rowId, by: change.by === 1 ? -1 : 1 }
+  if (change.kind === 'row-split') {
+    const row = tree.find((candidate) => candidate.id === change.rowId)
+    return row?.split ? { kind: 'row-split', rowId: change.rowId, split: row.split } : null
+  }
+  if (change.kind === 'row-remove') {
+    const at = tree.findIndex((candidate) => candidate.id === change.rowId)
+    return at === -1 ? null : { kind: 'row-add', at }
+  }
   if (change.kind === 'move' || (change.kind === 'remove' && change.keep)) {
     const at = slotOf(tree, nid)
     return at ? (change.kind === 'move' ? { kind: 'move', to: at } : { kind: 'restore', to: at }) : null
@@ -180,6 +220,10 @@ export function undoWords(change: CanvasChange): string {
     case 'hide': return change.hidden ? 'Undo show' : 'Undo hide'
     case 'restore': return 'Undo remove'
     case 'remove': return change.keep ? 'Undo put back' : 'Undo add'
+    case 'row-add': return 'Undo remove row'
+    case 'row-remove': return 'Undo add row'
+    case 'row-move': return 'Undo row move'
+    case 'row-split': return 'Undo columns'
     default: return 'Undo'
   }
 }

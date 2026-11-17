@@ -306,6 +306,19 @@ it('lists the session change log in the publish modal and clears it on publish',
   expect(node.querySelector('.toast')?.textContent).toBe('Published to hearts.example')
 })
 
+it('puts a View live site link beside Publish once the site is published (LIVE-2321)', async () => {
+  const { node } = mount({ start: clean })
+  expect(node.querySelector('.top a[data-live-link]')).toBeNull()
+  typeInto(titleInput(node), 'Hello there')
+  act(() => node.querySelector<HTMLButtonElement>('.top .btn.pa')!.click())
+  await act(async () => { node.querySelector<HTMLButtonElement>('.modal .acts .btn.pa')!.click(); await Promise.resolve(); await Promise.resolve() })
+  const link = node.querySelector<HTMLAnchorElement>('.top a[data-live-link]')
+  expect(link?.textContent).toBe('View live site')
+  expect(link?.getAttribute('href')).toBe('https://hearts.example/')
+  expect(link?.getAttribute('target')).toBe('_blank')
+  expect(link?.getAttribute('rel')).toContain('noopener')
+})
+
 it('opens Change theme from the Theme tab and switches the draft theme as one undo step', () => {
   const { node, click, button } = mount({ start: clean })
   click('Theme')

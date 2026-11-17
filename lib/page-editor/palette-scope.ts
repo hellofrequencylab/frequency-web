@@ -45,7 +45,7 @@ export type EditorSurface = 'marketing' | 'space' | 'website'
  *  The generic kit (blocks, layout, content, sections, productStory, media, dynamic) renders from
  *  its own props on every surface — verified block by block — so both surfaces keep all of it. */
 export const SURFACE_CATEGORIES: Record<EditorSurface, readonly string[]> = {
-  website: ['blocks', 'layout', 'content', 'sections', 'productStory', 'media', 'dynamic', 'profile', 'spaceContent', 'wildheart', 'network', 'networkKit', 'temple', 'templeKit', 'midnight', 'midnightPractice', 'designer', 'freeHuman', 'services', 'newWorld', 'roles'],
+  website: ['blocks', 'layout', 'content', 'sections', 'productStory', 'media', 'dynamic', 'profile', 'spaceContent', 'wildheart', 'network', 'networkKit', 'temple', 'templeKit', 'midnight', 'midnightPractice', 'designer', 'freeHuman', 'services', 'mindless', 'newWorld', 'roles'],
   marketing: [
     'blocks',
     'layout',
@@ -103,6 +103,7 @@ const FAMILY_OWNER: Record<string, string> = {
   designer: 'Designer',
   freeHuman: 'FreeHuman',
   services: 'Services',
+  mindless: 'Mindless',
   // The site story blocks are drawn in the Frequency public site kit (app/themes/frequency/site-pages-story.css),
   // not in any Space website theme, so their owner is a name no website theme carries: the marketing editor
   // offers them (SURFACE_CATEGORIES above) and a Space website never does.
