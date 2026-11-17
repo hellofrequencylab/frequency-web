@@ -1,0 +1,20 @@
+{
+  "id": "JRN-003",
+  "title": "A rejected or unpublished Journey leaves every list right away and takes no new joins",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "lib/journey-plans.ts",
+    "ref": "Journey audit 2026-11-17 (project thread: Dial in the Journey Wizard and Journeys)"
+  },
+  "detail": "A curator's reject (setJourneyStatusAction) only changes status, and listPublicPlans filtered on visibility alone, so a rejected Journey stayed on the member /journeys index, in the journeys-library widget and in the Run picker, and adoptPlanAction / adoptJourney still enrolled anyone; /discover and member search already excluded it, so the surfaces disagreed. Separately, setJourneyVisibility, deleteJourney and the curator status and delete actions revalidated only /journeys, so a Journey made private, rejected or deleted kept its ISR /discover/journeys page and share card for up to an hour (revalidate = 3600). Fixed 2026-11-17: listPublicPlans adds .neq('status', 'rejected'); planMeta returns status and both adopt doors refuse a non-author on a rejected plan (members already on it keep their access); all four actions also revalidate the /discover/journeys layout.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-003.mjs",
+    "note": "Fails if listPublicPlans lists rejected plans, an adopt door lets a non-author join a rejected plan, or a visibility, status or delete action does not refresh /discover/journeys."
+  },
+  "wave": "W7"
+}

@@ -78,8 +78,8 @@ export async function adoptPlanAction(formData: FormData) {
   const planId = String(formData.get('planId') ?? '')
   const meta = await planMeta(planId)
   if (!meta) return
-  // You can adopt your own journey or any non-private one.
-  if (meta.author_id !== profileId && meta.visibility === 'private') return
+  // You can adopt your own journey or any non-private one that a curator has not rejected (JRN-003).
+  if (meta.author_id !== profileId && (meta.visibility === 'private' || meta.status === 'rejected')) return
   // 🔴 The free door refuses a priced Journey and a full one (ADR-1397). This action is a plain form
   // POST, so it is the check that matters -- hiding the button does nothing for anyone who knows the
   // endpoint is here.
@@ -98,6 +98,7 @@ export async function adoptJourney(planId: string): Promise<ActionResult> {
   const meta = await planMeta(planId)
   if (!meta) return fail('Journey not found.')
   if (meta.author_id !== profileId && meta.visibility === 'private') return fail('Not allowed.')
+  if (meta.author_id !== profileId && meta.status === 'rejected') return fail('This Journey is being revised. Check back soon.')
   // The same gate as the FormData twin: one rule, both doors (ADR-1397). This one can say why.
   const gate = await checkFreeEnrol(planId, profileId, { isOwner: meta.author_id === profileId })
   if (!gate.ok) return fail(gate.error)
@@ -534,12 +535,14 @@ export async function setJourneyVisibility(
     // not block publishing — the Journey is already live above.
     const review = await runVeraGate(planId, caller.id)
     revalidatePath('/journeys', 'layout')
+  revalidatePath('/discover/journeys', 'layout')
     return ok({ status, review, next: await launchPathFor(planId) })
   }
 
   const hidden = await setPlanVisibility(planId, visibility)
   if (!hidden.ok) return fail(hidden.error)
   revalidatePath('/journeys', 'layout')
+  revalidatePath('/discover/journeys', 'layout')
   // Unlisted is still published (shared by link), so it launches too; private is a step back to the
   // draft, where the publisher stays where they were.
   const next = visibility === 'unlisted' ? await launchPathFor(planId) : null
@@ -560,6 +563,7 @@ export async function deleteJourney(planId: string): Promise<ActionResult> {
   const deleted = await deletePlan(planId)
   if (!deleted.ok) return fail(deleted.error)
   revalidatePath('/journeys', 'layout')
+  revalidatePath('/discover/journeys', 'layout')
   return ok()
 }
 

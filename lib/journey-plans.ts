@@ -271,12 +271,14 @@ export async function getMyPlanSummaries(authorId: string): Promise<MyPlanSummar
   return plans.map((p) => ({ ...p, phaseCount: phaseBy.get(p.id) ?? 0, stepCount: stepBy.get(p.id) ?? 0 }))
 }
 
-/** Public, published plans for the open library, most-adopted first. */
+/** Public, published plans for the open library, most-adopted first. Rejected ("needs changes")
+ *  plans stay out, the same gate as listPublicJourneys and member search (JRN-003). */
 export async function listPublicPlans(): Promise<JourneyPlan[]> {
   const { data } = await db()
     .from('journey_plans')
     .select(PLAN_COLS)
     .eq('visibility', 'public')
+    .neq('status', 'rejected')
     .order('adopt_count', { ascending: false })
     .order('published_at', { ascending: false })
   return (data as JourneyPlan[] | null) ?? []
@@ -397,10 +399,10 @@ export async function getPlanAuthor(authorId: string | null): Promise<PlanAuthor
   return { handle: p.handle, displayName: p.display_name ?? p.handle, avatarUrl: p.avatar_url }
 }
 
-/** Visibility + author of a plan (for the adopt/fork access checks). */
-export async function planMeta(planId: string): Promise<{ visibility: PlanVisibility; author_id: string | null } | null> {
-  const { data } = await db().from('journey_plans').select('visibility, author_id').eq('id', planId).maybeSingle()
-  return (data as { visibility: PlanVisibility; author_id: string | null } | null) ?? null
+/** Visibility, moderation status + author of a plan (for the adopt/fork access checks). */
+export async function planMeta(planId: string): Promise<{ visibility: PlanVisibility; status: PlanStatus | null; author_id: string | null } | null> {
+  const { data } = await db().from('journey_plans').select('visibility, status, author_id').eq('id', planId).maybeSingle()
+  return (data as { visibility: PlanVisibility; status: PlanStatus | null; author_id: string | null } | null) ?? null
 }
 
 // --- Mutations (callers enforce: the author owns the plan) -----------------
