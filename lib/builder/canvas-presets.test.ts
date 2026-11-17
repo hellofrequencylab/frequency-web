@@ -169,3 +169,17 @@ describe('the draft plan carries a structural change through the same guard', ()
     expect(odd.status === 'ready' && odd.node.style).toEqual({ align: 'center' })
   })
 })
+
+describe('live sections (PROG-E6F)', () => {
+  it('lists only the live sections the caller allows, in palette order, with what each shows', () => {
+    const view = canvasInserterView(page(), ['events', 'about', 'callout'])
+    expect(view.live?.map((section) => section.id)).toEqual(['about', 'events'])
+    expect(view.live?.every((section) => typeof section.say === 'string' && section.say.length > 0)).toBe(true)
+  })
+  it('resolves a live insert only for an allowed live section', () => {
+    expect(resolveCanvasInsert('live', 'events', ['events'])).toEqual({ type: 'events' })
+    expect(resolveCanvasInsert('live', 'offerings', ['events'])).toBeNull()
+    expect(resolveCanvasInsert('live', 'callout', ['callout'])).toBeNull()
+    expect(resolveCanvasInsert('blank', 'events', ['events'])).toBeNull()
+  })
+})

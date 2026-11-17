@@ -481,7 +481,7 @@ export function StaffCalendar({
   const publish = () => {
     if (!draft?.id) return
     const id = draft.id
-    const href = productionDoorHref(spaceId, id, draft.input.planId, calendarPath)
+    const href = withReturnPath(productionDoorHref(spaceId, id, draft.input.planId), calendarPath)
     const dirty = draft.saved !== JSON.stringify(draft.input)
     setError(null)
     startTransition(async () => {

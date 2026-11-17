@@ -14,53 +14,74 @@ Status of the work this measures lives in [`docs/BUILD-BACKLOG.json`](../BUILD-B
 
 The current reading. The SCAN-1265 probe reads the `/the-quest` row of the throttled-phone table below, so a re-measure replaces these tables.
 
-- **When:** 2026-11-16, 21:11 to 21:31 UTC, production, after #5102 (the Quest link opens its panel before paint, and the /pricing hero is preloaded).
-- **Run:** `e2e-manual` run 43957433438 on production. The method is the same as the first reading.
+- **When:** 2026-11-16, 23:21 to 23:42 UTC, production deploy `bc1e6aa0`, after #5123, #5134 and #5136.
+- **Run:** `e2e-manual` run 43978441871 on production. The method is the same as the first reading. 222 passed, 0 failed.
 
 ### phone 390, throttled
 
 | Page | TTFB ms | FCP ms | LCP ms | LCP element | CLS | Blocking ms | Script KB (decoded) | Image KB | Total KB | Requests | Console errors |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| / | 51 | 2348 | 2348 | img image | 0.001 | 3625 | 594 (1757) | 601 | 1450 | 59 | 0 |
-| /pricing | 57 | 2176 | 3324 | div image | 0 | 2974 | 597 (1762) | 454 | 1320 | 63 | 0 |
-| /the-community | 49 | 2060 | 4448 | img image | 0.001 | 1621 | 666 (2004) | 619 | 1543 | 67 | 0 |
-| /discover | 55 | 1552 | 4264 | div image | 0 | 840 | 664 (2005) | 129 | 1036 | 55 | 0 |
-| /for/studios | 42 | 1760 | 1760 | h1 | 0.002 | 567 | 592 (1748) | 214 | 1056 | 53 | 0 |
-| /themes | 43 | 1460 | 1900 | h1 | 0 | 361 | 750 (2474) | 1041 | 2105 | 71 | 0 |
-| /about | 43 | 1640 | 4592 | img image | 0 | 283 | 662 (2000) | 240 | 1145 | 55 | 0 |
-| /spaces | 46 | 1612 | 3896 | div image | 0.001 | 482 | 663 (2005) | 287 | 1204 | 60 | 0 |
-| /the-quest | 202 | 1848 | 5200 | img image | 0 | 301 | 560 (1695) | 326 | 1147 | 55 | 0 |
-| /create-a-space | 43 | 1816 | 2272 | h1 | 0 | 406 | 742 (2408) | 351 | 1403 | 64 | 0 |
+| / | 207 | 2484 | 2484 | img image | 0.001 | 4372 | 592 (1757) | 406 | 1256 | 55 | 0 |
+| /pricing | 207 | 2432 | 3752 | div image | 0 | 3877 | 598 (1762) | 454 | 1322 | 63 | 0 |
+| /the-community | 207 | 2828 | 3500 | img image | 0.001 | 2730 | 587 (1733) | 621 | 1482 | 69 | 0 |
+| /discover | 212 | 2188 | 2856 | div image | 0 | 688 | 663 (2006) | 245 | 1211 | 61 | 0 |
+| /for/studios | 199 | 1800 | 1808 | h1 | 0.002 | 756 | 592 (1748) | 213 | 1058 | 60 | 0 |
+| /themes | 198 | 1496 | 1980 | h1 | 0 | 561 | 756 (2490) | 1041 | 2111 | 75 | 0 |
+| /about | 201 | 1660 | 2044 | img image | 0 | 369 | 663 (2002) | 241 | 1146 | 58 | 0 |
+| /spaces | 197 | 1832 | 2296 | div image | 0.001 | 534 | 663 (2006) | 335 | 1254 | 67 | 0 |
+| /the-quest | 355 | 1692 | 5016 | img image | 0 | 414 | 560 (1697) | 326 | 1149 | 58 | 0 |
+| /create-a-space | 200 | 2068 | 2436 | h1 | 0 | 590 | 747 (2424) | 351 | 1408 | 68 | 0 |
 
 ### phone 390
 
 | Page | TTFB ms | FCP ms | LCP ms | LCP element | CLS | Blocking ms | Script KB (decoded) | Image KB | Total KB | Requests | Console errors |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| / | 45 | 356 | 364 | img image | 0 | 37 | 594 (1761) | 666 | 1560 | 63 | 0 |
-| /pricing | 44 | 572 | 572 | div image | 0 | 19 | 675 (2033) | 453 | 1461 | 67 | 0 |
-| /the-community | 44 | 356 | 356 | img image | 0 | 0 | 665 (2005) | 764 | 1687 | 70 | 0 |
-| /discover | 44 | 288 | 308 | div image | 0 | 0 | 664 (2005) | 129 | 1036 | 55 | 0 |
-| /for/studios | 42 | 284 | 284 | h1 | 0 | 3 | 591 (1748) | 214 | 1128 | 54 | 0 |
-| /themes | 44 | 220 | 632 | h1 | 0 | 0 | 753 (2488) | 1041 | 2109 | 70 | 0 |
-| /about | 43 | 228 | 236 | img image | 0 | 0 | 661 (2000) | 417 | 1320 | 58 | 0 |
-| /spaces | 48 | 276 | 328 | div image | 0 | 0 | 663 (2005) | 361 | 1278 | 62 | 0 |
-| /the-quest | 65 | 692 | 692 | h1 | 0 | 0 | 560 (1695) | 521 | 1344 | 59 | 0 |
-| /create-a-space | 43 | 592 | 772 | h1 | 0 | 7 | 747 (2422) | 408 | 1466 | 65 | 0 |
+| / | 69 | 444 | 444 | img image | 0 | 75 | 595 (1761) | 667 | 1561 | 69 | 0 |
+| /pricing | 71 | 372 | 376 | div image | 0 | 41 | 673 (2035) | 453 | 1461 | 71 | 0 |
+| /the-community | 68 | 296 | 296 | img image | 0 | 0 | 664 (2006) | 764 | 1824 | 76 | 0 |
+| /discover | 68 | 312 | 312 | div image | 0 | 0 | 664 (2006) | 244 | 1211 | 61 | 0 |
+| /for/studios | 69 | 304 | 304 | h1 | 0 | 18 | 592 (1748) | 213 | 1058 | 60 | 0 |
+| /themes | 71 | 268 | 700 | h1 | 0 | 3 | 755 (2490) | 1041 | 2110 | 74 | 0 |
+| /about | 66 | 296 | 296 | img image | 0 | 0 | 661 (2002) | 417 | 1320 | 61 | 0 |
+| /spaces | 67 | 312 | 312 | div image | 0 | 0 | 664 (2006) | 409 | 1351 | 69 | 0 |
+| /the-quest | 102 | 404 | 404 | h1 | 0 | 0 | 561 (1697) | 521 | 1346 | 62 | 0 |
+| /create-a-space | 68 | 544 | 544 | h1 | 0 | 0 | 748 (2424) | 407 | 1468 | 69 | 0 |
 
 ### desktop 1280
 
 | Page | TTFB ms | FCP ms | LCP ms | LCP element | CLS | Blocking ms | Script KB (decoded) | Image KB | Total KB | Requests | Console errors |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| / | 45 | 504 | 608 | div image | 0.002 | 97 | 595 (1761) | 689 | 1650 | 62 | 0 |
-| /pricing | 43 | 380 | 380 | div image | 0 | 84 | 673 (2034) | 355 | 1419 | 66 | 0 |
-| /the-community | 42 | 348 | 348 | h1 | 0 | 16 | 665 (2005) | 296 | 1231 | 71 | 0 |
-| /discover | 43 | 292 | 364 | div image | 0 | 0 | 663 (2005) | 187 | 1096 | 56 | 0 |
-| /for/studios | 45 | 432 | 432 | img image | 0.031 | 47 | 591 (1748) | 199 | 1116 | 54 | 0 |
-| /themes | 43 | 260 | 720 | h1 | 0 | 0 | 754 (2488) | 1213 | 2443 | 74 | 0 |
-| /about | 43 | 308 | 308 | img image | 0 | 0 | 658 (2001) | 320 | 1278 | 59 | 0 |
-| /spaces | 43 | 348 | 432 | div image | 0 | 14 | 663 (2005) | 342 | 1262 | 62 | 0 |
-| /the-quest | 63 | 328 | 400 | img image | 0.002 | 1 | 558 (1695) | 366 | 1191 | 59 | 0 |
-| /create-a-space | 45 | 428 | 428 | h1 | 0.016 | 4 | 744 (2422) | 217 | 1291 | 64 | 0 |
+| / | 68 | 400 | 564 | div image | 0.002 | 144 | 592 (1761) | 690 | 1651 | 73 | 0 |
+| /pricing | 77 | 560 | 560 | div image | 0 | 124 | 674 (2035) | 355 | 1422 | 78 | 0 |
+| /the-community | 69 | 452 | 452 | h1 | 0 | 31 | 662 (2006) | 297 | 1249 | 85 | 0 |
+| /discover | 70 | 376 | 376 | div image | 0 | 0 | 663 (2006) | 187 | 1098 | 67 | 0 |
+| /for/studios | 69 | 436 | 436 | img image | 0.031 | 76 | 591 (1748) | 200 | 1115 | 66 | 0 |
+| /themes | 75 | 260 | 828 | h1 | 0 | 11 | 755 (2490) | 1212 | 2446 | 87 | 0 |
+| /about | 69 | 336 | 336 | img image | 0 | 0 | 660 (2002) | 320 | 1278 | 67 | 0 |
+| /spaces | 71 | 388 | 444 | div image | 0 | 28 | 661 (2006) | 343 | 1313 | 75 | 0 |
+| /the-quest | 98 | 416 | 428 | img image | 0.002 | 16 | 560 (1697) | 365 | 1192 | 68 | 0 |
+| /create-a-space | 71 | 716 | 716 | h1 | 0.012 | 9 | 745 (2424) | 216 | 1279 | 73 | 0 |
+
+## Change since the #5102 reading
+
+The #5102 reading was run 43957433438 (21:11 UTC). Between the two: #5123 preloads the /spaces and Discover hero stills, #5134 fetches the Quest landing photo during the parse, and #5136 puts the two lead /the-community collage photos at high priority. Other merges landed on main in the same window, and medians of 3 cold loads move by several hundred milliseconds run to run, so a move of a few hundred milliseconds on a page nothing here touched (/pricing, /) is spread, not a result. /about fell from 4.6 s to 2.0 s with no change aimed at it; it stays unexplained until a second run repeats it.
+
+What this says: /spaces (-1.6 s) and /discover (-1.4 s) are the #5123 preloads and are now under 3 s. /the-community fell 0.9 s to 3.5 s. /the-quest barely moved (5.2 to 5.0 s): the photo request now starts at the parse, but the inline script sits after both half sections of a long page, so on a 1.6 Mbps link the parser reaches it late. The Quest is the page the SCAN-1265 probe reads, and it still fails.
+
+#### Slow phone (390, throttled)
+
+| Page | LCP ms before → after | CLS before → after | Blocking ms before → after |
+|---|---|---|---|
+| / | 2348 → 2484 | 0.001 → 0.001 | 3625 → 4372 |
+| /pricing | 3324 → 3752 | 0 → 0 | 2974 → 3877 |
+| /the-community | 4448 → 3500 | 0.001 → 0.001 | 1621 → 2730 |
+| /discover | 4264 → 2856 | 0 → 0 | 840 → 688 |
+| /for/studios | 1760 → 1808 | 0.002 → 0.002 | 567 → 756 |
+| /themes | 1900 → 1980 | 0 → 0 | 361 → 561 |
+| /about | 4592 → 2044 | 0 → 0 | 283 → 369 |
+| /spaces | 3896 → 2296 | 0.001 → 0.001 | 482 → 534 |
+| /the-quest | 5200 → 5016 | 0 → 0 | 301 → 414 |
+| /create-a-space | 2272 → 2436 | 0 → 0 | 406 → 590 |
 
 ## Change since the first reading
 

@@ -640,9 +640,24 @@ export function PricingCalculator({ model }: { model: CalcModel }) {
     wrap?.addEventListener("touchmove", onTouchMove, { passive: false });
     wrap?.addEventListener("touchend", onTouchEnd);
     window.addEventListener("keydown", onKey);
-    frameRaf = requestAnimationFrame(frame);
+    // OFF SCREEN, NO LOOP. The galaxy rewrites every node's left, top and width each frame, which is a
+    // style recalc and a layout per frame for as long as the page is open. It sits below the hero, so
+    // it now runs only while some of the calculator is on screen (2026-11-17, public page speed).
+    let io: IntersectionObserver | null = null;
+    if (wrap && typeof IntersectionObserver === "function") {
+      io = new IntersectionObserver(([e]) => {
+        cancelAnimationFrame(frameRaf);
+        frameRaf = 0;
+        if (e?.isIntersecting) {
+          lastT = 0;
+          frameRaf = requestAnimationFrame(frame);
+        }
+      });
+      io.observe(wrap);
+    } else frameRaf = requestAnimationFrame(frame);
     measure();
     return () => {
+      io?.disconnect();
       ro.disconnect();
       wrap?.removeEventListener("wheel", onWheel);
       wrap?.removeEventListener("touchstart", onTouchStart);

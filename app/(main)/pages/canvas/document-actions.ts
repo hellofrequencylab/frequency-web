@@ -24,6 +24,7 @@ import { CANVAS_REVISION_KEY, canvasStoredNode, planCanvasDraftWrite, readCanvas
 import { canvasDocumentParts, resolveCanvasAccess } from '@/lib/builder/canvas-document-load'
 import { canvasInspectorFor } from '@/lib/builder/canvas-inspector'
 import { resolveCanvasInsert } from '@/lib/builder/canvas-presets'
+import { canvasLiveBlockIds } from '@/lib/builder/canvas-live-blocks'
 
 const bag = z.record(z.string().max(60), z.union([z.string().max(20_000), z.boolean()])).refine((o) => Object.keys(o).length <= 60, 'Too many fields')
 // A change to the page's structure (PROG-E6B). Every part is a fixed word or a bounded number: a spacing step is
@@ -39,7 +40,7 @@ const change = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('remove'), keep: z.boolean() }),
   z.object({ kind: z.literal('restore'), to: slot }),
   z.object({ kind: z.literal('spacing'), edge: z.enum(['mt', 'pad', 'mb']), step: z.enum(['none', 'default', 'sm', 'md', 'lg', 'xl']) }),
-  z.object({ kind: z.literal('insert'), source: z.enum(['preset', 'blank']), id: z.string().regex(/^[a-z][a-z0-9-]{0,40}$/i) }),
+  z.object({ kind: z.literal('insert'), source: z.enum(['preset', 'blank', 'live']), id: z.string().regex(/^[a-z][a-z0-9-]{0,40}$/i) }),
   // PROG-E6D: rows. An index, a row id, one step up or down, and a split by its fixed name.
   z.object({ kind: z.literal('row-add'), at: z.number().int().min(0).max(24) }),
   z.object({ kind: z.literal('row-remove'), rowId }),
@@ -95,8 +96,12 @@ export async function saveCanvasNodeDraft(raw: unknown): Promise<CanvasSaveResul
   if (!input.change && !fieldKeys.length) return refuse('This block has no fields the inspector can save.')
   // A move, a spacing step or an insert rides the same plan and the same guarded write as a field edit.
   let structure: CanvasDocChange | undefined
+  // The live sections this Space may place, read on this request with the Space page builder's rule (PROG-E6F):
+  // checked again for a live insert, and handed back with a reshaped view. Not read for a field edit or a step.
+  const reshapes = !!input.change && input.change.kind !== 'spacing'
+  const liveIds = reshapes ? await canvasLiveBlockIds(space) : []
   if (input.change?.kind === 'insert') {
-    const block = resolveCanvasInsert(input.change.source, input.change.id)
+    const block = resolveCanvasInsert(input.change.source, input.change.id, liveIds)
     if (!block) return refuse('That block is not one this page can add.')
     structure = { kind: 'insert', ...block }
   } else structure = input.change
@@ -119,5 +124,5 @@ export async function saveCanvasNodeDraft(raw: unknown): Promise<CanvasSaveResul
   // how its tree reads), so the tab gets the layer tree, each block's controls and the inserter again, built from
   // what was just stored. `node` is then the block the change left selected.
   const reshaped = structure && structure.kind !== 'spacing'
-  return { ok: true, base: plan.base, node: canvasStoredNode(plan.node), ...(reshaped ? { view: canvasDocumentParts(plan.layout) } : {}) }
+  return { ok: true, base: plan.base, node: canvasStoredNode(plan.node), ...(reshaped ? { view: canvasDocumentParts(plan.layout, liveIds) } : {}) }
 }

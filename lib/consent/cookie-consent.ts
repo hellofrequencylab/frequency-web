@@ -148,6 +148,12 @@ export function shouldAskForConsent(state: ConsentState): boolean {
  * would break. The nonce would have to be carried onto the element created below. Today's policy
  * (next.config.ts) is `'unsafe-inline'` plus an allow-list that already names
  * `https://www.googletagmanager.com`, so nothing here needs it yet.
+ *
+ * THE TAG WAITS FOR LOAD (2026-11-17, owner go-ahead). Everything above is decided at once, and
+ * the gtag queue (`js`, `set`, `config`) is filled at once, but the gtag.js <script> itself is
+ * appended only once the page has loaded. On a throttled phone that script was about 1.25 s of
+ * main-thread work landing in the middle of hydration on every public page. The queued page_view
+ * still goes out when it arrives; a visitor who leaves before `load` is no longer counted.
  */
 export function gaBootstrapScript(gaId: string, requireRequestPolicy = false, loadGoogle = true): string {
   const id = JSON.stringify(gaId)
@@ -210,8 +216,8 @@ gtag('js',new Date());
 var pageTitle=title(location.pathname),pageReferrer=referrer();
 gtag('set',{page_title:pageTitle,page_referrer:pageReferrer});
 gtag('config',ID,{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false,page_location:location.origin+safe(location.pathname)+query(location.search),page_title:pageTitle,page_referrer:pageReferrer});
-var script=document.createElement('script');script.async=true;script.src='https://www.googletagmanager.com/gtag/js?id='+ID;
-document.head.appendChild(script);
+function inject(){var script=document.createElement('script');script.async=true;script.src='https://www.googletagmanager.com/gtag/js?id='+ID;document.head.appendChild(script);}
+if(document.readyState==='complete')inject();else window.addEventListener('load',inject,{once:true});
 }
 ${runtimePolicy}
 }catch(e){}})();`

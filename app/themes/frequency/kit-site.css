@@ -726,3 +726,10 @@
 [data-design="frequency"] [data-kit="site"] .ft2-pause{font:inherit;color:#8E82A8;background:none;border:0;padding:0;cursor:pointer}
 [data-design="frequency"] [data-kit="site"] .ft2-pause:hover{color:#F2F5FA}
 [data-design="frequency"] [data-kit="site"] .ft2-pause:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:3px;border-radius:var(--fq-radius-s,4px)}
+/* PHONES REST THE MAIN-THREAD LOOPS (speed item 2, 2026-11-17). The iridescent sweeps animate
+   background-position, the weave's threads stroke-dashoffset and the sphere's orbit offset-distance;
+   none of those can run on the compositor, so each one restyles and repaints on the main thread every
+   frame, forever. On a 4x-throttled phone at rest, Home kept the main thread about 80% busy, and these
+   were about 1.5 s of every 5 s. On a phone they hold still (the gradients keep their colour); transform
+   and opacity motion, which the compositor runs, keeps moving. Desktop keeps everything. */
+@media (max-width:760px),(hover:none){[data-design="frequency"] [data-kit="site"] :is(.fq-iri-text,.fq-iri-btn,.fq-mf-logo,.pc-launch,.meter i,.ft2-roundel,.lv-stat b,.h-sig-run .fill,.h-sig-run .fq-logo-icon,.wv-svg path.flow),[data-design="frequency"] [data-kit="site"] :is(.fq-iri-rim,.mm-panel,.next2,.fqm,.lg-sheen,.tx-sphere>b)::before,[data-design="frequency"] [data-kit="site"] :is(.fq-iri-sheen,.tx-sphere>i,.photo.fq-iri-rim:hover)::after,[data-design="frequency"] [data-kit="site"] [data-site-blocks] :is(section.bg-slat:has(> .amber-glow) h2.font-display > span,.art-line-frame .art-line-text > span,.art-q-panel .art-num){animation:none!important}}
