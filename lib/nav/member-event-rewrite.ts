@@ -13,7 +13,7 @@
 //
 // PURE. proxy.ts calls this after getUser(); tests drive it directly.
 
-const RESERVED = new Set(['new', 'calendar', 'drafts', 'scan', 'claim'])
+const RESERVED = new Set(['new', 'calendar', 'drafts', 'scan', 'claim', 'mine'])
 
 /**
  * Internal path for the member event page, or null when this request stays put.

@@ -53,15 +53,15 @@ export function EventsAddBox({ state, userHasEvents }: { state: AddBoxState; use
                   New event
                 </Link>
               )}
+              {/* LIVE-2337: "Manage" pointed at /admin/events, which is host-gated, so a member who had
+                  posted an event was turned away. My events lists what they host, each with its Manage. */}
+              <Link className="btn" href="/events/mine">
+                My events
+              </Link>
               {userHasEvents && (
-                <>
-                  <Link className="btn" href="/drafts">
-                    Drafts
-                  </Link>
-                  <Link className="btn" href="/admin/events">
-                    Manage
-                  </Link>
-                </>
+                <Link className="btn" href="/drafts">
+                  Drafts
+                </Link>
               )}
             </>
           ) : (
