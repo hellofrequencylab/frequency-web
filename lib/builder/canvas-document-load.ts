@@ -16,6 +16,7 @@ import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { canvasLayers, canvasNodes, canvasStoredNode, readCanvasDocument, type CanvasDocumentView } from './canvas-document'
 import { canvasBlockTitle, canvasInspectorFor } from './canvas-inspector'
 import { canvasInserterView } from './canvas-presets'
+import { canvasLiveBlockIds } from './canvas-live-blocks'
 import { canvasTree } from './canvas-tree'
 
 export const CANVAS_READ_ONLY = 'You can look at this page here, but only an editor of the Space can save it.'
@@ -47,19 +48,20 @@ export async function loadCanvasDocument(spaceId: string): Promise<CanvasDocumen
     canSave,
     notice,
     base: document.base,
-    ...canvasDocumentParts(document.layout),
+    // Only an editor sees the live sections it may add; a read-only viewer adds nothing, so skip the data check.
+    ...canvasDocumentParts(document.layout, canSave ? await canvasLiveBlockIds(space) : []),
   }
 }
 
 /** Everything about a document that changes when its structure does: the layer list, the same blocks as a tree,
  *  each block with its controls, and what can be added. The route reads it once; a move or an insert hands the
  *  tab a fresh one (PROG-E6B), so the tab never rebuilds a block's controls itself. */
-export function canvasDocumentParts(layout: NodeLayout): Required<Pick<CanvasDocumentView, 'layers' | 'tree' | 'nodes' | 'inserter'>> {
+export function canvasDocumentParts(layout: NodeLayout, liveIds: readonly string[] = []): Required<Pick<CanvasDocumentView, 'layers' | 'tree' | 'nodes' | 'inserter'>> {
   const layers = canvasLayers(layout, canvasBlockTitle)
   return {
     layers,
     tree: canvasTree(layout, layers),
     nodes: canvasNodes(layout).map((node) => ({ nid: node.nid, ...canvasInspectorFor(node.type), node: canvasStoredNode(node) })),
-    inserter: canvasInserterView(layout),
+    inserter: canvasInserterView(layout, liveIds),
   }
 }

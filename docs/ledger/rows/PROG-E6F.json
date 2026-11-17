@@ -1,0 +1,20 @@
+{
+  "id": "PROG-E6F",
+  "title": "Editor E6 slice: the canvas can add the Space's live sections (About, Events and the rest) under the builder's own lock rule",
+  "status": "done",
+  "priority": "P2",
+  "lane": "program",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "E6"
+  },
+  "detail": "Split from PROG-E6 on 2026-11-17: item (5) of the 2026-11-16 note, the live data sections (About, Offerings, Events) in the inserter, which needs the Space page builder's lock rule. Dark; the EDITOR_CANVAS default is unchanged.\n\nPremise re-tested (ADR-1082): the lock rule already exists as a pure function (partitionSpaceBlocks, lib/entity-blocks/space-blocks.ts) fed by the Space's function switches (enabledFunctionKeys) and the function-backed sections that have data now (existingFunctionBackedBlocks). The Space page builder's rail (buildLayoutData) composes exactly those; the canvas now does the same through lib/builder/canvas-live-blocks.ts. No second rule, no migration, no SQL.\n\nWhat now works. Under Add a block, after the presets and the blank blocks, a third group \"Or show something from your Space\" lists the live sections this Space may place now, in palette order, each with what it shows. A section with no data source (About, Story, Contact and hours) is always offered; a function-backed one (Events, Offerings, Team and the rest) only once it has data; a section whose switch is off (Booking with availability off) is held back even with data. A live insert is checked again on the server on the same request against the same rule, so a stale tab cannot place a locked section, and a non-live id cannot ride the live door. It lands under the selected block through the one draft write, like every other change, and is selected. A read-only viewer is offered none. If the lock check cannot load or throws, no live section is offered and the miss is logged (fail-safe, and noticed).\n\nVERIFIED: unit tests for the lock check (data, switches, failure), the inserter view and insert resolution; the action end to end with the data layer mocked (an allowed section added under the block, a held-back one refused with nothing written, no lock check on a spacing step); the inserter's live group rendered and clicked. The probe runs the shipped canvas read and draft action with the real partitionSpaceBlocks and only the two readers stubbed. Driven in Chromium through the shipped canvas: Add Events at 390px stored events under the selected block and selected it, and the frame drew it. Pictures at 390, 1280, 1440, 1920 and 2000 px, light and dark, in /mnt/project-files/editor/e6f/. NOT VERIFIED: against a real Space's data with a signed-in staff account.\n\nKnown limits, stated plainly: the canvas cannot yet pick which items a section features (the picker field: Offerings, Events, Team, Journeys, Circles); a new section shows the default selection until it is set in the Space page builder. The frame draws a live section by its name, not its live content.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/builder/PROG-E6F.mjs",
+    "note": "Runs the shipped canvas read and draft action with framework, auth, database and the two lock-rule readers replaced; partitionSpaceBlocks is real. Fails on main: no live sections in the canvas inserter and no live insert. Passes when sections without a data source are offered, a function-backed one only with data, a switched-off one is held back, an allowed section is added under the selected block through the one write, a held-back or non-live id is refused with nothing written, a read-only viewer is offered none, and the inserter draws the live group."
+  },
+  "closed": "2026-11-17",
+  "wave": "W7"
+}
