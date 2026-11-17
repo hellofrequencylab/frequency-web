@@ -1,5 +1,19 @@
 import type { Metadata } from 'next'
 import type { Data } from '@/lib/page-editor/types'
+// The DAWN branch's modules come from the build's design (PERF-004). A static import of the real
+// modules here put the whole block library on `/` under Frequency. See lib/theme/design-home.
+import {
+  BlockRender,
+  BlockDocJsonLd,
+  config,
+  getPublishedData,
+  getTemplate,
+  isWellFormed,
+  MarketingHeader,
+  MarketingFooter,
+  getMenu,
+  getMenuSettings,
+} from '@/lib/theme/design-home/active'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 import { resolvePageContent } from '@/lib/page-content'
@@ -165,31 +179,6 @@ export default async function RootPage() {
       </SiteShell>
     )
   }
-
-  // The DAWN branch's modules load here, not at the top of the file (PERF-004). A static import puts
-  // every 'use client' module they reach (the whole block library through `config`, the marketing
-  // header's mega menu, the editor-only field pickers) into the front door's eager first-load JS,
-  // even though this branch never renders under Frequency. That was about 300 KB on `/` and held it
-  // at its 450 KB check:shell-weight cap. Keep these imports inside the branch.
-  const [
-    { BlockRender },
-    { BlockDocJsonLd },
-    { config },
-    { getPublishedData },
-    { getTemplate, isWellFormed },
-    { MarketingHeader },
-    { MarketingFooter },
-    { getMenu, getMenuSettings },
-  ] = await Promise.all([
-    import('@/lib/page-editor/block-render'),
-    import('@/lib/page-editor/block-seo'),
-    import('@/lib/page-editor/config'),
-    import('@/lib/page-editor/data'),
-    import('@/lib/page-editor/templates'),
-    import('@/components/layout/marketing-header'),
-    import('@/components/layout/marketing-footer'),
-    import('@/lib/menus/read'),
-  ])
 
   const published = await getPublishedData('home')
   const template = getTemplate('home')
