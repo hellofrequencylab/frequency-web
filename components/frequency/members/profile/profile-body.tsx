@@ -47,7 +47,8 @@ export function ProfileBody({
 }: {
   notice: React.ReactNode
   /** The header photo and the owner's focal point (an object-position value). */
-  cover: { image: string; focus?: string | null }
+  /** `overlay` / `overlayColor`: the member's own Header overlay choice (Settings, profile; LIVE-2364). */
+  cover: { image: string; focus?: string | null; overlay?: 'none' | 'shadow' | 'fade'; overlayColor?: string | null }
   avatar: React.ReactNode
   metaLine: React.ReactNode
   name: string
@@ -69,7 +70,13 @@ export function ProfileBody({
       {notice}
       <div
         className="ph mc-cover"
-        style={{ backgroundImage: `url(${JSON.stringify(cover.image)})`, backgroundPosition: cover.focus ?? undefined }}
+        data-overlay={cover.overlay && cover.overlay !== 'none' ? cover.overlay : undefined}
+        style={{
+          backgroundImage: `url(${JSON.stringify(cover.image)})`,
+          backgroundPosition: cover.focus ?? undefined,
+          // A strict hex only (readProfileOverlayColor guards it); the CSS falls back to the token.
+          ...(cover.overlayColor ? ({ '--mc-overlay': cover.overlayColor } as React.CSSProperties) : {}),
+        }}
         aria-hidden
       />
       <section className="mc-identity" aria-label="Profile">
