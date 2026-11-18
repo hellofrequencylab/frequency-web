@@ -28,12 +28,15 @@ import { evaluateJourneyCompletion } from '@/lib/quest/completion'
 import { grantJourneyBadgeOnCompletion, grantStoreItem } from '@/lib/awards/cosmetics'
 import { QUEST } from '@/lib/gamification'
 import { celebrateInCircleFeed } from '@/lib/circles/social-fuel'
+import { grantJourneyCompletionGems } from '@/lib/journeys/grants'
 
 export interface CompleteJourneyResult {
   completed: boolean
   alreadyDone?: boolean
   rank?: SeasonRank
   zaps?: number
+  /** The Journey's own completion Gems newly paid on this finish (0 when already paid). */
+  gems?: number
   /** The season capstone fired on this completion (3rd Journey → Master). */
   certificate?: boolean
 }
@@ -244,6 +247,11 @@ export async function tryCompleteJourney(
     // amount from zap_config; the grant row records the canonical purse for the Vault log.
     await grantZapsOnce(admin, zapPurseKey, profileId, 'journey_finished', QUEST.JOURNEY_FINISH_ZAPS, 'Journey finished')
 
+    // The Journey's own completion Gems (LIVE-2367): the number its author set and its card
+    // promises, paid once per member per Journey (its own reward_grants claim, so a re-take in a
+    // later season never pays twice). Best-effort, never blocks the completion.
+    const gems = await grantJourneyCompletionGems(profileId, journeyId)
+
     // The Trophy cosmetic: finishing a Journey mints its Pillar (Mind/Body/Spirit) badge
     // (REWARDS-ECONOMY.md §7), and the Full Spectrum banner once all four are held.
     // Idempotent + best-effort — granted directly here so the Trophy lands with the finish.
@@ -278,7 +286,7 @@ export async function tryCompleteJourney(
       }
     })()
 
-    return { completed: true, rank: newRank, zaps: QUEST.JOURNEY_FINISH_ZAPS, certificate }
+    return { completed: true, rank: newRank, zaps: QUEST.JOURNEY_FINISH_ZAPS, gems, certificate }
   } catch (err) {
     console.error('[tryCompleteJourney]', err instanceof Error ? err.message : err)
     return { completed: false }
