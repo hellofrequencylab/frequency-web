@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/field'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { capsLabel } from '@/components/ui/caps-label'
 import { Switch } from '@/components/ui/switch'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // THE REUSABLE INSPECTOR CONTROL PRIMITIVES (ADR-569 C6). A tight, modern, Framer/Webflow/Notion-style set
 // of controls the block editor composes — and that a FEATURE agent attaches to a block by DECLARING a field,
@@ -430,11 +431,10 @@ export function PickerControl({
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggle(it.id)}
-                className={`flex min-w-0 flex-1 items-center gap-2 rounded-control border px-2 py-1.5 text-left text-meta font-medium transition-colors ${
-                  on
-                    ? 'border-primary bg-primary-bg text-text'
-                    : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
-                }`}
+                className={choiceTileClasses(
+                  on,
+                  `flex min-w-0 flex-1 items-center gap-2 rounded-control px-2 py-1.5 text-left text-meta font-medium ${on ? 'text-text' : 'text-muted hover:text-text'}`,
+                )}
               >
                 <span
                   aria-hidden
@@ -575,32 +575,27 @@ export function IconPicker({
             <div className="grid max-h-48 grid-cols-6 gap-1 overflow-y-auto">
               {source === 'icon'
                 ? lucideResults.map((i) => (
-                    <button
+                    <IconButton
                       key={i.name}
-                      type="button"
-                      aria-label={i.name}
-                      title={i.name}
+                      label={i.name}
+                      variant={value === i.name ? 'tinted' : 'plain'}
+                      aria-pressed={value === i.name}
                       onClick={() => pick(i.name)}
-                      className={`flex h-8 w-8 items-center justify-center rounded-md border transition-colors hover:bg-surface-elevated ${
-                        value === i.name ? 'border-primary bg-primary-bg text-primary-strong' : 'border-transparent text-text'
-                      }`}
                     >
                       <BlockIcon name={i.name} size={18} />
-                    </button>
+                    </IconButton>
                   ))
                 : emojiResults.map((e) => (
-                    <button
+                    <IconButton
                       key={e.char}
-                      type="button"
-                      aria-label={e.keywords.split(' ')[0]}
-                      title={e.keywords.split(' ')[0]}
+                      label={e.keywords.split(' ')[0]}
+                      variant={value === e.char ? 'tinted' : 'plain'}
+                      aria-pressed={value === e.char}
                       onClick={() => pick(e.char)}
-                      className={`flex h-8 w-8 items-center justify-center rounded-md border text-body-lg leading-none transition-colors hover:bg-surface-elevated ${
-                        value === e.char ? 'border-primary bg-primary-bg' : 'border-transparent'
-                      }`}
+                      className="text-body-lg leading-none"
                     >
                       {e.char}
-                    </button>
+                    </IconButton>
                   ))}
               {((source === 'icon' && lucideResults.length === 0) || (source === 'emoji' && emojiResults.length === 0)) && (
                 <p className="col-span-6 py-3 text-center text-2xs text-muted">No matches. Try another word.</p>
