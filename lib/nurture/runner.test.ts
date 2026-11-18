@@ -25,12 +25,15 @@ vi.mock('@/lib/suppression', () => ({ isSuppressed: async () => suppressed }))
 vi.mock('@/lib/connections/lead-unsub', () => ({ buildLeadUnsubUrl: (id: string) => `https://x.test/u/${id}` }))
 vi.mock('@/lib/email-studio/data-blocks', () => ({ resolveDataBlockRefs: async (l: unknown) => l }))
 
-vi.mock('@/lib/lifecycle/cap-io', () => ({ reserveLifecycleSend: async () => reservation }))
+vi.mock('@/lib/lifecycle/cap-io', () => ({
+  reserveLifecycleSend: async () => reservation,
+  releaseLifecycleSend: async (_db: unknown, key: string) => { released.push(key) },
+}))
 
 let gateResult: { allowed: boolean; reason?: string } = { allowed: true }
 let enqueueFails = false
 let reservation: 'reserved' | 'capped' | 'duplicate' | 'error' = 'reserved'
-const deleted: [string, [string, unknown][]][] = []
+const released: string[] = []
 let suppressed = false
 let stealClaim = false
 
@@ -38,7 +41,7 @@ type Row = Record<string, unknown>
 const tables: Record<string, Row[]> = {}
 
 function builder(table: string) {
-  let mode: 'select' | 'update' | 'delete' = 'select'
+  let mode: 'select' | 'update' = 'select'
   let patch: Row = {}
   const eqs: [string, unknown][] = []
   let ins: [string, unknown[]] | null = null
@@ -49,7 +52,6 @@ function builder(table: string) {
     (!ins || ins[1].includes(r[ins[0]])) &&
     (!lte || (typeof r[lte[0]] === 'string' && (r[lte[0]] as string) <= lte[1]))
   const run = () => {
-    if (mode === 'delete') { deleted.push([table, [...eqs]]); return { data: [] } }
     const rows = tables[table].filter(match)
     if (mode === 'update') {
       if (stealClaim && 'next_run_at' in patch) return { data: [] }
@@ -61,7 +63,6 @@ function builder(table: string) {
   const api: Record<string, unknown> = {
     select: () => api,
     update: (p: Row) => ((mode = 'update'), (patch = p), api),
-    delete: () => ((mode = 'delete'), api),
     eq: (c: string, v: unknown) => (eqs.push([c, v]), api),
     in: (c: string, v: unknown[]) => ((ins = [c, v]), api),
     lte: (c: string, v: string) => ((lte = [c, v]), api),
@@ -108,7 +109,7 @@ beforeEach(() => {
   stealClaim = false
   enqueueFails = false
   reservation = 'reserved'
-  deleted.length = 0
+  released.length = 0
 })
 afterEach(() => vi.useRealTimers())
 
@@ -189,7 +190,7 @@ describe('runDueNurture with the lifecycle cap (EMAIL-061)', () => {
     enqueueFails = true
     const r = await runDueNurture()
     expect(r.sent).toBe(0)
-    expect(deleted).toEqual([['lifecycle_send_log', [['dedupe_key', 'nurture_step:due:1']]]])
+    expect(released).toEqual(['nurture_step:due:1'])
     expect(enr('due').next_step_order).toBe(1)
   })
 

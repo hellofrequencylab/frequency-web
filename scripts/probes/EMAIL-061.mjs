@@ -12,6 +12,6 @@ if (/reservation === 'duplicate'\)\s*continue/.test(src)) fails.push("a 'duplica
 if (!/reservation === 'duplicate'\) \{ await advance\(e, step\.order\)/.test(src)) fails.push("a 'duplicate' reservation does not advance the enrollment")
 const tryAt = src.indexOf('await enqueueEmail(')
 const catchBody = src.slice(tryAt, src.indexOf('sent++', tryAt))
-if (!/catch \(err\)[\s\S]*from\('lifecycle_send_log'\)\.delete\(\)\.eq\('dedupe_key'/.test(catchBody)) fails.push('a failed enqueue does not release the cap reservation')
+if (!/catch \(err\)[\s\S]*await releaseLifecycleSend\(db, `nurture_step:/.test(catchBody)) fails.push('a failed enqueue does not release the cap reservation')
 if (fails.length) { console.error(`EMAIL-061 FAIL\n - ${fails.join('\n - ')}`); process.exit(1) }
 console.log('EMAIL-061 ok: a failed nurture enqueue releases its cap reservation and a duplicate moves the cursor on')

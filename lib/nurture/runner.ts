@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
-import { reserveLifecycleSend } from '@/lib/lifecycle/cap-io'
+import { reserveLifecycleSend, releaseLifecycleSend } from '@/lib/lifecycle/cap-io'
 import { buildLeadUnsubUrl } from '@/lib/connections/lead-unsub'
 import { nextStepAfter, runAtFrom, type NurtureStep } from '@/lib/nurture/schedule'
 import { parseEmailRenderLayout, type EmailRenderLayout } from '@/lib/email-studio/render-layout'
@@ -237,7 +237,7 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
     } catch (err) {
       // EMAIL-061: release the cap reservation so the next run can send this step, then retry later.
       console.error('[nurture] enqueue failed, releasing the cap reservation', err instanceof Error ? err.message : String(err))
-      await db.from('lifecycle_send_log').delete().eq('dedupe_key', `nurture_step:${e.id}:${step.order}`)
+      await releaseLifecycleSend(db, `nurture_step:${e.id}:${step.order}`)
       await deferTransient({ ...e, next_run_at: lockUntil })
       continue
     }
