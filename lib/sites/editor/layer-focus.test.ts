@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { flattenLayers, layerShortcut, layerTabStop, nextLayerFocus, planLayerKey, type LayerNode } from './layer-focus'
+import { flattenLayers, layerColumnTarget, layerShortcut, layerTabStop, nextLayerFocus, planLayerKey, type LayerNode } from './layer-focus'
 
 const leaf = (id: string): LayerNode => ({ id, slots: [] })
 // hero, then a two column row holding a and b on the left and c on the right, then footer-cta
-const tree: LayerNode[] = [leaf('hero'), { id: 'row', slots: [{ children: [leaf('a'), leaf('b')] }, { children: [leaf('c')] }] }, leaf('cta')]
+const tree: LayerNode[] = [leaf('hero'), { id: 'row', slots: [{ key: 'left', children: [leaf('a'), leaf('b')] }, { key: 'right', children: [leaf('c')] }] }, leaf('cta')]
 const rows = flattenLayers(tree)
 const key = (k: string, extra: Partial<{ metaKey: boolean; ctrlKey: boolean; altKey: boolean; shiftKey: boolean }> = {}) => ({ key: k, metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, ...extra })
 
@@ -83,5 +83,26 @@ describe('planLayerKey', () => {
     expect(planLayerKey(rows, 'row', 0, key('Delete'))).toEqual({ kind: 'act', shortcut: 'delete', refocus: 'cta' })
     expect(planLayerKey(rows, 'cta', 0, key('Backspace'))).toEqual({ kind: 'act', shortcut: 'delete', refocus: 'c' })
     expect(planLayerKey(rows, 'b', 1, key('Delete'))).toEqual({ kind: 'act', shortcut: 'delete', refocus: 'c' })
+  })
+})
+
+describe('layerColumnTarget', () => {
+  it('sends a block to the end of the column beside it', () => {
+    expect(layerColumnTarget(tree, 'a', 1)).toEqual({ parentId: 'row', slotKey: 'right', index: 1 })
+    expect(layerColumnTarget(tree, 'c', -1)).toEqual({ parentId: 'row', slotKey: 'left', index: 2 })
+  })
+  it('goes nowhere past the outer columns or from the top level', () => {
+    expect(layerColumnTarget(tree, 'a', -1)).toBeNull()
+    expect(layerColumnTarget(tree, 'c', 1)).toBeNull()
+    expect(layerColumnTarget(tree, 'hero', 1)).toBeNull()
+    expect(layerColumnTarget(tree, 'gone', 1)).toBeNull()
+  })
+  it('finds a block in a row nested inside a column', () => {
+    const nested: LayerNode[] = [{ id: 'outer', slots: [{ key: 'main', children: [{ id: 'inner', slots: [{ key: 'one', children: [leaf('x')] }, { key: 'two', children: [] }] }] }] }]
+    expect(layerColumnTarget(nested, 'x', 1)).toEqual({ parentId: 'inner', slotKey: 'two', index: 0 })
+  })
+  it('is planned for Alt and Left or Right on any row, so the browser never goes Back', () => {
+    expect(planLayerKey(rows, 'hero', 0, key('ArrowLeft', { altKey: true }))).toEqual({ kind: 'column', direction: -1 })
+    expect(planLayerKey(rows, 'a', 1, key('ArrowRight', { altKey: true }))).toEqual({ kind: 'column', direction: 1 })
   })
 })

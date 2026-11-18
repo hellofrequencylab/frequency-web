@@ -11,7 +11,7 @@ import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 import { addBlock, buildOutline, derivePickerGroups, findBlockDeep, moveBlockTo, nudgeBlock, removeBlockDeep, updateBlockPropsDeep, type OutlineNode } from '@/components/page-editor/mobile/data-ops'
 import { websiteCoachingQuestions, type WebsiteCoachingPromptId } from '@/lib/sites/editor/coaching'
 import { inlineFieldValue } from '@/lib/sites/editor/inline-edit'
-import { flattenLayers, layerTabStop, planLayerKey, LAYER_KEYSHORTCUTS } from '@/lib/sites/editor/layer-focus'
+import { flattenLayers, layerColumnTarget, layerTabStop, planLayerKey, LAYER_KEYSHORTCUTS } from '@/lib/sites/editor/layer-focus'
 import { resetDocumentPlacements, sectionDeviceLayout } from '@/lib/sites/editor/layout'
 import { pendingChangeLabels, publishChecks } from '@/lib/sites/editor/publish-checks'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
@@ -734,15 +734,23 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     if (!plan) return
     event.preventDefault()
     if (plan.kind === 'move') updateDoc(nudgeBlock(page.doc, config, id, plan.direction), { label: 'Reordered sections' })
+    else if (plan.kind === 'column') { const target = layerColumnTarget(outline, id, plan.direction); if (target) { updateDoc(moveBlockTo(page.doc, config, id, target), { label: 'Moved to another column' }); requestAnimationFrame(() => focusLayer(row, id)) } }
     else if (plan.kind === 'focus') focusLayer(row, plan.id)
     else { action(id, plan.shortcut); const next = plan.refocus; if (next) { setLayerFocus(next); requestAnimationFrame(() => focusLayer(row, next)) } }
+  }
+  /** A drop on a column's label lands at the end of that column, so an empty column, or the end of a full
+   *  one, takes a block dragged across from another (PROG-E6). */
+  function dropIntoSlot(event: React.DragEvent, parentId: string, slotKey: string, index: number) {
+    event.preventDefault(); event.stopPropagation(); setDropId(null)
+    const id = event.dataTransfer.getData('text/plain')
+    if (id && id !== parentId && findBlockDeep(page.doc, config, id)) updateDoc(moveBlockTo(page.doc, config, id, { parentId, slotKey, index }), { label: 'Moved to another column' })
   }
   function renderLayers(nodes: OutlineNode[], parentId: string | null = null, slotKey: string | null = null, depth = 0): ReactNode {
     return nodes.map((node, index) => <div key={node.id} draggable onDragStart={(event) => { event.stopPropagation(); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', node.id) }} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); if (dropId !== node.id) setDropId(node.id) }} onDragEnd={() => setDropId(null)} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); setDropId(null); const id = event.dataTransfer.getData('text/plain'); if (id !== node.id && findBlockDeep(page.doc, config, id)) updateDoc(moveBlockTo(page.doc, config, id, { parentId, slotKey, index }), { label: 'Reordered sections' }) }}>
       {FQ_EDITOR
         ? <button type="button" className={`row${on(selectedId === node.id)}${dropId === node.id ? ' drop-before' : ''}${depth === 0 && sectionDeviceLayout(page.doc, node.id, device).hidden ? ' off' : ''}`} style={{ paddingLeft: 8 + depth * 14 }} aria-pressed={selectedId === node.id} aria-keyshortcuts={LAYER_KEYSHORTCUTS} data-layer-id={node.id} data-layer-depth={depth} tabIndex={layerStop === node.id ? 0 : -1} title="Drag, or press Alt and an arrow key, to move. Arrows walk the layers." onFocus={() => setLayerFocus(node.id)} onClick={() => select(node.id)}><span className="grip" aria-hidden>⋮⋮</span><span className="ic"><FqIcon name={editorBlockMeta(config, node.type).icon} /></span><span className="t">{node.label}{node.summary && node.summary !== node.label && <small>{node.summary}</small>}</span>{editorBlockMeta(config, node.type).live ? <span className="meta">Live</span> : depth === 0 && <span className="meta">{index + 1}</span>}</button>
         : (() => { const block = findBlockDeep(page.doc, config, node.id); const hidden = !!block && depth === 0 && !!sectionDeviceLayout(page.doc, node.id, device).hidden; return <button type="button" className="we-row we-layer" data-off={hidden || undefined} style={depth ? { paddingLeft: 8 + depth * 14 } : undefined} aria-pressed={selectedId === node.id} aria-keyshortcuts={LAYER_KEYSHORTCUTS} data-layer-id={node.id} data-layer-depth={depth} tabIndex={layerStop === node.id ? 0 : -1} onFocus={() => setLayerFocus(node.id)} onClick={() => select(node.id)}><i className="we-row-ic"><SectionIcon type={node.type} /></i><b className="we-row-t"><span>{node.label}</span><small>{sectionLine((block?.props ?? {}) as Record<string, unknown>, node.summary)}</small></b><em className="we-row-meta">{/^(Space|Live)/.test(node.type) || /Events|Circles|Tiers/.test(node.type) ? 'Live' : depth === 0 ? index + 1 : ''}</em><span className="we-grip" aria-hidden>⋮⋮</span></button> })()}
-      {node.slots.map((slot) => <div key={slot.key}>{slot.children.length > 0 && <span className={k('we-layer-slot')} style={{ paddingLeft: 24 + depth * 14 }}>{slot.label}</span>}{renderLayers(slot.children, node.id, slot.key, depth + 1)}</div>)}
+      {node.slots.map((slot) => { const dropKey = `${node.id}:${slot.key}`; return <div key={slot.key}><span className={`${k('we-layer-slot')}${dropId === dropKey ? ' we-layer-drop' : ''}`} style={{ paddingLeft: 24 + depth * 14 }} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); if (dropId !== dropKey) setDropId(dropKey) }} onDragLeave={() => setDropId(null)} onDrop={(event) => dropIntoSlot(event, node.id, slot.key, slot.children.length)}>{slot.label}{slot.children.length === 0 && <small className="we-layer-empty"> · Empty. Drag a block here.</small>}</span>{renderLayers(slot.children, node.id, slot.key, depth + 1)}</div> })}
     </div>)
   }
   const palette = FQ_EDITOR ? <>

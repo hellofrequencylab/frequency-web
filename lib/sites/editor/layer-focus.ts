@@ -3,7 +3,7 @@
 // wires keys to these answers and the order rules are tested without a DOM.
 
 /** The part of an outline node this needs: its id and the blocks nested in its slots. */
-export type LayerNode = { id: string; slots: { children: LayerNode[] }[] }
+export type LayerNode = { id: string; slots: { key: string; children: LayerNode[] }[] }
 
 /** One row of the tree as the reader meets it, top to bottom. */
 type LayerRow = { id: string; parent: string | null; depth: number }
@@ -57,6 +57,7 @@ export function layerShortcut(e: KeyLike): LayerShortcut | null {
 
 type LayerKeyPlan =
   | { kind: 'move'; direction: -1 | 1 }
+  | { kind: 'column'; direction: -1 | 1 }
   | { kind: 'focus'; id: string }
   | { kind: 'act'; shortcut: LayerShortcut; refocus: string | null }
 
@@ -65,6 +66,9 @@ type LayerKeyPlan =
  *  sections only (a nested block has no per-device display). Null leaves the key to the browser. */
 export function planLayerKey(rows: readonly LayerRow[], id: string, depth: number, e: KeyLike): LayerKeyPlan | null {
   if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) return { kind: 'move', direction: e.key === 'ArrowUp' ? -1 : 1 }
+  // Alt and Left or Right is always taken on a row, even with no column to go to: left alone, it is the
+  // browser's Back, which would leave the builder.
+  if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return { kind: 'column', direction: e.key === 'ArrowLeft' ? -1 : 1 }
   if (!e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey && (LAYER_FOCUS_KEYS as readonly string[]).includes(e.key)) {
     const next = nextLayerFocus(rows, id, e.key)
     return next ? { kind: 'focus', id: next } : null
@@ -79,5 +83,23 @@ export function planLayerKey(rows: readonly LayerRow[], id: string, depth: numbe
   return { kind: 'act', shortcut, refocus: rows[after]?.id ?? rows[at - 1]?.id ?? null }
 }
 
+/** Where a block goes when it moves one column over (PROG-E6, the keyboard twin of a drag across columns):
+ *  the end of the neighbouring slot of the block that holds it. Null when the block is at the top level or
+ *  there is no slot on that side. */
+export function layerColumnTarget(nodes: readonly LayerNode[], id: string, direction: -1 | 1): { parentId: string; slotKey: string; index: number } | null {
+  for (const node of nodes) {
+    const at = node.slots.findIndex((slot) => slot.children.some((child) => child.id === id))
+    if (at >= 0) {
+      const slot = node.slots[at + direction]
+      return slot ? { parentId: node.id, slotKey: slot.key, index: slot.children.length } : null
+    }
+    for (const slot of node.slots) {
+      const found = layerColumnTarget(slot.children, id, direction)
+      if (found) return found
+    }
+  }
+  return null
+}
+
 /** What the row announces as its keys (aria-keyshortcuts), the move keys first. */
-export const LAYER_KEYSHORTCUTS = 'Alt+ArrowUp Alt+ArrowDown Delete Control+D Meta+D Control+Shift+H Meta+Shift+H Shift+C'
+export const LAYER_KEYSHORTCUTS = 'Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight Delete Control+D Meta+D Control+Shift+H Meta+Shift+H Shift+C'
