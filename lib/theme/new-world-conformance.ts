@@ -95,14 +95,15 @@ function hiddenFunctions(): ConformanceRow {
   return { id: 'hidden-functions', name: '7 · Hidden functions leave no gap', result: gaps.length ? 'fail' : 'pass', detail: gaps.length ? gaps.slice(0, 6).join(', ') : `Across ${NEW_WORLD_KIT_NICHES.length} kits, no Spotlight door exists for a function the website has off.` }
 }
 
-/** Every way in on the website appears on the Spotlight with the same name and price. */
+/** Every way in on the website appears on the Spotlight with the same name, and the same price where the website names one. */
 function surfaceParity(): ConformanceRow {
   const words = (v: unknown) => String(v ?? '').replace(/\{\{[^|}]*\|([^}]*)\}\}/g, '$1')
   const gaps: string[] = []
   for (const n of NEW_WORLD_KIT_NICHES) {
     const rows = (newWorldKit(n).pages.find((p) => p.slug === 'services')!.blocks.find((b) => b.type === 'NewWorldWayRows')?.props?.rows ?? []) as { name?: string; price?: string }[]
     const offers = newWorldKitSpotlightContent(n).offers
-    for (const r of rows) if (!offers.some((o) => o.name === words(r.name) && o.price === words(r.price))) gaps.push(`${n}: ${words(r.name)}`)
+    // A way in the website leaves unpriced (LIVE-2374: the owner sets it) cannot disagree with the Spotlight's price.
+    for (const r of rows) if (!offers.some((o) => o.name === words(r.name) && (!words(r.price) || o.price === words(r.price)))) gaps.push(`${n}: ${words(r.name)}`)
   }
   return { id: 'surface-parity', name: '9 · Surface parity', result: gaps.length ? 'fail' : 'pass', detail: gaps.length ? `On the website, not the Spotlight: ${gaps.slice(0, 6).join(', ')}` : 'Every way in shows on the Spotlight with the same name and price.' }
 }
