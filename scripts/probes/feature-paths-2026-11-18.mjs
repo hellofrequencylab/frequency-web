@@ -84,6 +84,48 @@ const PROBES = {
     const src = read('components/sites/wildheart-first-night.tsx')
     return /<button type="button" className="hs-btn/.test(src) ? ['the first-night CTA renders a button with no handler when no link is set'] : []
   },
+  'LIVE-2363': () => {
+    const page = read('app/(main)/events/[slug]/event-member-page.tsx')
+    const css = read('app/themes/frequency/members-b.css')
+    const f = []
+    if (!/height=\{readEventHeroHeight\(/.test(page)) f.push('the event page never reads the saved hero height')
+    if (!/\.fqm-evh-cover\[data-height="tall"\]/.test(css)) f.push('no style answers a tall event hero')
+    return f
+  },
+  'LIVE-2364': () => {
+    const page = read('app/(main)/people/[handle]/page.tsx')
+    const css = read('app/themes/frequency/members-c.css')
+    const f = []
+    if (!/overlay:\s*readProfileOverlayStyle\(/.test(page)) f.push('the profile page never reads the saved header overlay')
+    if (!/\[data-overlay="shadow"\]/.test(css)) f.push('no style answers a profile header overlay')
+    return f
+  },
+  'LIVE-2365': () => {
+    const page = read('app/(main)/journeys/[slug]/page.tsx')
+    const f = []
+    for (const col of ['cover_focus', 'header_overlay_style', 'header_overlay_color', 'logo_image']) {
+      if (!new RegExp(`plan\\.${col}`).test(page)) f.push(`the Journey page never reads ${col}`)
+    }
+    return f
+  },
+  'LIVE-2366': () => {
+    const reg = read('lib/notifications/registry.ts')
+    const join = read('lib/circles/join.ts')
+    const follow = read('lib/spaces/follows.ts')
+    const f = []
+    if (!/'community\.joined':\s*\{/.test(reg)) f.push('no registry row tells an owner about a new member or follower')
+    if (!/routeNotification\(\s*'community\.joined'/.test(join)) f.push('joining a Circle never tells its host')
+    if (!/routeNotification\(\s*'community\.joined'/.test(follow)) f.push('following a Space never tells its owner')
+    return f
+  },
+  'LIVE-2367': () => {
+    const grants = read('lib/journeys/grants.ts')
+    const complete = read('lib/quest/complete.ts')
+    const f = []
+    if (!/export async function grantJourneyCompletionGems/.test(grants)) f.push('nothing pays a Journey\'s completion Gems')
+    if (!/await grantJourneyCompletionGems\(profileId, journeyId\)/.test(complete)) f.push('finishing a Journey never pays its completion Gems')
+    return f
+  },
 }
 
 const id = process.argv[2]

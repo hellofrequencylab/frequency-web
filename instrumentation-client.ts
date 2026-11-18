@@ -35,14 +35,45 @@ if (typeof window !== 'undefined') installPrefetchFuse(window)
 /** Set once the Sentry chunk has loaded; stays undefined when Sentry is disabled. */
 let routerTransitionHook: RouterTransitionHook | undefined
 
+// PERF-009: the SDK chunk (~155 kB, ~2 MB decoded with tracing and replay) loads only after the page
+// has finished loading and the main thread goes idle. Loaded at boot it ran during hydration: the
+// 2026-11-18 phone field run (4x CPU) put a 1.2 s task from this chunk inside the /pricing load,
+// the single biggest blocker on the page. Errors thrown before init are not lost: a two-listener
+// buffer holds the first few and hands them to Sentry once it is up, then steps aside, because
+// from that point Sentry's own global handlers see everything.
+const EARLY_ERROR_CAP = 20
+
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-  void import('@/lib/observability/sentry-client')
-    .then((sentry) => {
-      routerTransitionHook = sentry.startClientSentry()
-    })
-    // Monitoring must never take down the app it monitors: a chunk that fails to
-    // load leaves the hook below a no-op, exactly as if Sentry were switched off.
-    .catch(() => {})
+  if (typeof window !== 'undefined') {
+    const early: unknown[] = []
+    const onError = (e: ErrorEvent) => {
+      if (early.length < EARLY_ERROR_CAP) early.push(e.error ?? e.message)
+    }
+    const onRejection = (e: PromiseRejectionEvent) => {
+      if (early.length < EARLY_ERROR_CAP) early.push(e.reason)
+    }
+    window.addEventListener('error', onError)
+    window.addEventListener('unhandledrejection', onRejection)
+
+    const start = () => {
+      void import('@/lib/observability/sentry-client')
+        .then((sentry) => {
+          routerTransitionHook = sentry.startClientSentry()
+          window.removeEventListener('error', onError)
+          window.removeEventListener('unhandledrejection', onRejection)
+          for (const err of early.splice(0)) sentry.captureEarlyError(err)
+        })
+        // Monitoring must never take down the app it monitors: a chunk that fails to
+        // load leaves the hook below a no-op, exactly as if Sentry were switched off.
+        .catch(() => {})
+    }
+    const whenIdle = () => {
+      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(start, { timeout: 5000 })
+      else setTimeout(start, 2000)
+    }
+    if (document.readyState === 'complete') whenIdle()
+    else window.addEventListener('load', whenIdle, { once: true })
+  }
 }
 
 // Instrument App Router client-side navigations for tracing.
@@ -52,7 +83,7 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
 // (next/dist/client/components/router-transition.js). It is a stable wrapper rather
 // than a re-export because the real handler now arrives asynchronously: before the
 // chunk resolves — and forever, when no DSN is configured — this is a no-op. The
-// only cost is that a navigation started in the first few ms of a configured
+// only cost is that a navigation started before the page loads and idles in a configured
 // session may not be traced; nothing about the navigation itself changes.
 export const onRouterTransitionStart: RouterTransitionHook = (...args) => {
   routerTransitionHook?.(...args)

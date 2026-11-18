@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
+import { Button } from '@/components/ui/button'
 import type { AutomationActionType, AutomationRule } from '@/lib/automations'
 import { toggleRule, deleteRule } from './actions'
 import { RuleForm, type EditableRule } from './rule-form'
@@ -15,8 +16,10 @@ function ToggleCell({ rule }: { rule: AutomationRule }) {
   const [error, setError] = useState<string | null>(null)
   return (
     <div>
-      <button
+      <Button
         type="button"
+        variant={rule.enabled ? 'successOutline' : 'secondary'}
+        size="xs"
         disabled={pending}
         onClick={() => {
           setError(null)
@@ -25,14 +28,9 @@ function ToggleCell({ rule }: { rule: AutomationRule }) {
             if (!res.ok) setError(res.error ?? 'Could not update the rule.')
           })
         }}
-        className={`rounded-pill px-2.5 py-0.5 text-meta font-semibold transition-colors disabled:opacity-50 ${
-          rule.enabled
-            ? 'bg-success-bg text-success hover:bg-surface-elevated'
-            : 'bg-surface-elevated text-muted hover:bg-primary-bg hover:text-primary-strong'
-        }`}
       >
         {rule.enabled ? 'Enabled' : 'Disabled'}
-      </button>
+      </Button>
       {error && <p role="alert" className="mt-1 text-2xs font-medium text-danger">{error}</p>}
     </div>
   )

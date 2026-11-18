@@ -1,0 +1,20 @@
+{
+  "id": "PERF-009",
+  "title": "Public pages stop paying for error monitoring while they load",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "instrumentation-client.ts",
+    "ref": "Field run 2026-11-18 (e2e-manual run 44365418760, throttled phone 390 against frequencylocal.com): /pricing blocked the main thread for 4.6 s with LCP 4.1 s; the single biggest task was 1,249 ms inside the Sentry SDK chunk (151j0xcswe-ac.js, 155 kB, tracing and replay code). /discover 670 ms and /the-community 426 ms from the same chunk."
+  },
+  "detail": "The DSN-gated import() of the Sentry browser SDK ran at boot, so its 155 kB chunk parsed and initialised during hydration on every public page. It now starts after the window load event, at the next idle moment (requestIdleCallback, 5 s timeout; a 2 s timer where idle callbacks do not exist). Errors thrown before it loads are held by two tiny listeners (error, unhandledrejection; first 20) and passed to Sentry as soon as it initialises, tagged captured=pre-init-buffer, after which Sentry's own handlers take over. The gate, the no-static-import rule and the always-callable onRouterTransitionStart are unchanged (instrumentation-client.test.ts). Not changed: gtag.js already waits for load and its timing is pinned by lib/consent/cookie-consent.test.ts, so moving it to idle needs the owner's say.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-009.mjs",
+    "note": "Fails on main: the SDK import runs at boot with no idle wait and no pre-init buffer. Passes once the import sits in a start() scheduled from load + idle and early errors are handed over."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

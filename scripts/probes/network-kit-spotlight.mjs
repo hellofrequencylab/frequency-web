@@ -22,7 +22,7 @@ const { NETWORK_KIT_LAYOUTS_CSS } = await import('../../components/spotlight/net
 // 1. Preset and registry.
 const IDS = ['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile'].map((i) => `network-kit:${i}`)
 assert.deepEqual(layouts.spotlightLayoutsFor('network-kit').map((l) => l.id), IDS)
-assert.deepEqual(layouts.spotlightLayoutsFor('midnight'), [])
+assert.deepEqual(layouts.spotlightLayoutsFor('frequency'), []) // Nocturne has the house layouts since LIVE-2357
 const preset = theme.THEME_PRESETS.find((p) => p.id === 'network-kit')
 assert.equal(theme.validateSpotlightTheme(preset.theme).layout, 'network-kit:stack')
 assert.equal('layout' in theme.validateSpotlightTheme({ ...preset.theme, layout: 'midnight:stack' }), false, 'an unregistered layout is dropped')

@@ -134,7 +134,7 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   // shadow). Every value reads the one Midnight token set (lib/theme/midnight.ts); the faces are the nearest of the
   // allowlist (Bodoni Moda and Marcellus load on websites only).
   {
-    id: 'midnight', label: 'Midnight',
+    id: 'midnight', label: 'Nocturne',
     theme: { accent: MIDNIGHT_ACCENT.accent.toLowerCase(), surface: MIDNIGHT_SURFACE.raised, text: MIDNIGHT_SURFACE.text, font: { heading: 'serif', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 200, focusY: 50 },
       bg: { kind: 'solid', color: MIDNIGHT_SURFACE.canvas } },
   },

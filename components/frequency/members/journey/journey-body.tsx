@@ -26,7 +26,14 @@ interface JourneyBodyPlan {
   adoptCount: number
   /** The Journey's cover photo (journey_plans.cover_image), drawn as the kit's `.ph` band. */
   coverImage?: string | null
+  /** The author's header choices (LIVE-2365): focal point, overlay style + hex color, and logo. */
+  coverFocus?: string | null
+  overlayStyle?: string | null
+  overlayColor?: string | null
+  logoImage?: string | null
 }
+
+const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
 
 export type { MoreJourney }
 
@@ -115,10 +122,24 @@ export function JourneyBody({
           has none, so a Journey with a cover_image showed nothing at all. Decorative: the title says it. */}
       {plan.coverImage ? (
         <div
-          className="ph"
+          className="ph mc-cover-art"
           aria-hidden
-          style={{ height: 'clamp(180px, 26vw, 300px)', borderRadius: 28, marginBottom: 20, backgroundImage: `url("${encodeURI(plan.coverImage)}")` }}
-        />
+          data-overlay={plan.overlayStyle === 'shadow' || plan.overlayStyle === 'fade' ? plan.overlayStyle : undefined}
+          style={{
+            height: 'clamp(180px, 26vw, 300px)',
+            borderRadius: 28,
+            marginBottom: 20,
+            backgroundImage: `url("${encodeURI(plan.coverImage)}")`,
+            backgroundPosition: plan.coverFocus ?? undefined,
+            // A strict hex only (the save path enforces it too); the CSS falls back to the token.
+            ...(plan.overlayColor && HEX.test(plan.overlayColor) ? ({ '--mc-overlay': plan.overlayColor } as React.CSSProperties) : {}),
+          }}
+        >
+          {plan.logoImage ? (
+            // eslint-disable-next-line @next/next/no-img-element -- an author-supplied logo URL, decorative under aria-hidden
+            <img className="mc-cover-logo" src={plan.logoImage} alt="" />
+          ) : null}
+        </div>
       ) : null}
 
       <section className="panel mc-hero">
