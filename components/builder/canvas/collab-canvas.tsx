@@ -215,6 +215,11 @@ export function CollabCanvas({ spaceId, inspector, document }: { spaceId?: strin
       />
       )}
       {inspector && !document && <VeraBlockCoach title={inspector.title} values={blockValues.desktop ?? {}} fresh={fresh} spaceId={spaceId} />}
+      {document?.canSave && real.selected && panel.fields.length > 0 && (
+        // A real document (PROG-E8): Vera on the selected block. She speaks first only on a block this tab just added
+        // with its words empty; otherwise only on Ask Vera. The server reads the block's type from the stored page.
+        <VeraBlockCoach key={real.selected.nid} title={real.selected.title} values={blockValues.desktop ?? {}} fresh={real.selectedId === real.createdId} spaceId={document.spaceId} nid={real.selected.nid} />
+      )}
       </div>
     )}
     </div>

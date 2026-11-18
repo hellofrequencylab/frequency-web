@@ -7,6 +7,7 @@
 import { ADOPTED_BLOCKS } from '@/lib/entity-blocks/contract'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { inspectorFieldViews, withRichText, type InspectorFieldView } from './inspector-fields'
+import { inspectorFields } from './inspector-model'
 
 const SURFACE = 'space-profile'
 
@@ -30,4 +31,12 @@ export function canvasInspectorFor(type: string): CanvasInspectorSpec {
   // A content block stores its long text as inline markup on every save (sanitizeBlockContent), so the inspector
   // reads those fields as rich text.
   return { title, fields: entityBlockById(type)?.category === 'content' ? withRichText(fields) : fields, elsewhere }
+}
+
+/** What Vera may coach on a placed block (PROG-E8): its name and the fields the inspector edits, from the same
+ *  contract and surface. Null for a type with no adopted contract, so she is never asked about a block whose
+ *  fields the server cannot name. */
+export function canvasCoachFor(type: string): { blockType: string; fields: ReturnType<typeof inspectorFields> } | null {
+  const block = ADOPTED_BLOCKS.find((candidate) => candidate.type === type)
+  return block ? { blockType: canvasBlockTitle(type), fields: inspectorFields(block, SURFACE) } : null
 }
