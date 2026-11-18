@@ -88,6 +88,11 @@ export function notificationHref(n: NotificationItem): string {
     case 'practice':
       return id ? `/practices/${id}` : '/practices'
 
+    // A direct message (EMAIL-055): the 1:1 thread by conversation id. When the DM page is retired
+    // the route itself forwards to the dock.
+    case 'direct_message':
+      return id ? `/messages/${id}` : '/messages'
+
     // An inbound reply on the comms spine: the Conversation workspace opens the thread by id.
     case 'conversation':
       return id ? `/admin/crm/conversations?id=${encodeURIComponent(id)}` : '/admin/crm/conversations'

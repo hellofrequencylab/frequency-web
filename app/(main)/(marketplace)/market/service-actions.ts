@@ -14,6 +14,7 @@ import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversati
 import { isError } from '@/lib/action-result'
 import { isBookableServiceKind } from '@/lib/commerce/types'
 import type { ServiceConfig } from '@/lib/commerce/types'
+import { notifyDirectMessage } from '@/lib/messages/dm-notify'
 
 // Bookable-services checkout (Phase 4, ADR-596). Joins the two existing engines with no new charge
 // machinery: HOLD-FIRST (a 'pending' booking) then the deposit rides the SAME commerce checkout, and the
@@ -128,12 +129,14 @@ export async function sendServiceEnquiry(productId: string): Promise<ServiceEnqu
 
   const admin = createAdminClient()
   const conversationId = await findOrCreateDirectConversation(admin, buyerProfileId, ownerProfileId)
+  const enquiry = `Hi! I am interested in your service "${product.title}". Is it available?`
   const { error } = await admin.from('messages').insert({
     conversation_id: conversationId,
     sender_id: buyerProfileId,
-    body: `Hi! I am interested in your service "${product.title}". Is it available?`,
+    body: enquiry,
   })
   if (error) return { error: 'Could not send your enquiry. Try again.' }
+  await notifyDirectMessage(admin, { conversationId, senderId: buyerProfileId, recipientId: ownerProfileId, body: enquiry })
 
   return { conversationId }
 }

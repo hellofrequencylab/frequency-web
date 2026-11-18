@@ -43,6 +43,7 @@ export type NotificationEvent =
   | 'order.shipped'
   | 'loyalty.nudge'
   | 'community.joined'
+  | 'message.direct'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
  *  and its call sites share one shape and a typo is a compile error, not a runtime one. */
@@ -110,6 +111,10 @@ export interface NotificationContexts {
   /** Someone joined a Circle you host or followed a Space you own (LIVE-2366, owner ruling
    *  2026-11-18). The caller names the place; the bell links to it. */
   'community.joined': { actorId: string; kind: 'circle' | 'space'; name: string; reference: string }
+  /** The first message of a burst in a 1:1 conversation (EMAIL-055). The caller
+   *  (lib/messages/dm-notify.ts) decides it is the first unread one, authors the push copy, and
+   *  renders the email when the recipient has an address. `tag` collapses the burst on the device. */
+  'message.direct': { senderId: string; conversationId: string; title: string; body: string; url: string; tag: string; email?: EmailPayload }
 }
 
 /** One bell row, in the shape of a `notifications` row (the table the bell and /notifications
@@ -394,6 +399,24 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
     channels: ['push'],
     render: (ctx) => ({
       push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+    }),
+  },
+  // A direct message (EMAIL-055). `mentions`: someone wrote to you, by name. In-app and email are on by
+  // default (inapp_mentions, email_mentions), push follows the member's own push_mentions switch.
+  'message.direct': {
+    event: 'message.direct',
+    category: 'mentions',
+    channels: ['inapp', 'push', 'email'],
+    render: (ctx) => ({
+      inapp: {
+        type: 'direct_message',
+        body: 'sent you a message',
+        actorId: ctx.senderId,
+        referenceType: 'direct_message',
+        referenceId: ctx.conversationId,
+      },
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+      ...(ctx.email ? { email: ctx.email } : {}),
     }),
   },
 }
