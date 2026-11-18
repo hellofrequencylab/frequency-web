@@ -4,8 +4,7 @@ import { MembersBody, SerifTail } from '@/components/frequency/members/shared/me
 import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { upNext, playHref, type OngoingCycle } from '@/components/journey/v2/learn/course-home'
 import { unlockLine, type PhaseLockState } from '@/lib/journeys/schedule'
-import { phaseHeading } from '@/lib/journeys/lesson-markdown'
-import type { JourneyTree, Lesson } from '@/lib/journeys/tree'
+import type { JourneyTree, Lesson, Phase } from '@/lib/journeys/tree'
 import { HOME_TZ } from '@/lib/time/zone'
 
 // THE COURSE HOME under Frequency (design_handoff/frequency/templates/members/Journey.html). The
@@ -37,6 +36,16 @@ const TYPE_LABEL: Record<string, string> = {
 }
 
 const unitWord = (u: Unit) => (u === 'month' ? 'Month' : 'Week')
+
+/** "Week 2 · Attention", or "Week 2" when the title only repeats the label. A title that already
+ *  leads with its label ("Week 1 · The Engine") is used as written, never doubled. */
+function phaseHeading(p: Phase, i: number, u: Unit): string {
+  const label = `${unitWord(u)} ${i + 1}`
+  const own = p.title?.trim()
+  if (!own || own.toLowerCase() === label.toLowerCase()) return label
+  if (own.toLowerCase().startsWith(label.toLowerCase()) && /^[\s·:,.-]/.test(own.slice(label.length))) return own
+  return `${label} · ${own}`
+}
 
 function lessonSub(l: Lesson, done: boolean, pillar: string | undefined, anchor: boolean): string {
   return [
@@ -247,7 +256,7 @@ export function JourneyCourseBody({
             return (
               <div key={p.id}>
                 <div className={i === 0 ? 'sec-h' : 'sec-h sec'}>
-                  <span className="h2">{phaseHeading(p.title, i, unit)}</span>
+                  <span className="h2">{phaseHeading(p, i, unit)}</span>
                   <span className="meta">
                     {lock.locked
                       ? unlockLine(lock.unlockAt)

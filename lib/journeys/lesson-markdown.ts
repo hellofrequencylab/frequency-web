@@ -179,7 +179,8 @@ export function focusFacts(body: string): { label: string | null; value: string 
 }
 
 /** "Week 2 · Attention", or "Week 2" when the title only repeats the label. A title that already
- *  leads with its label ("Week 1 · The Engine") is used as written, never doubled. */
+ *  leads with its label ("Week 1 · The Engine") is used as written, never doubled. The course home
+ *  keeps its own copy of this rule (journey-course-body.tsx), which the JRN-016 probe reads there. */
 export function phaseHeading(title: string | null | undefined, index: number, unit: 'week' | 'month'): string {
   const label = `${unit === 'month' ? 'Month' : 'Week'} ${index + 1}`
   const own = title?.trim()
