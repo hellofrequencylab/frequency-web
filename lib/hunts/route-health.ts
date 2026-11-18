@@ -16,16 +16,20 @@
  * and a crossing says only that one of at least five people did something. No before-and-after pair
  * of views singles a player out, which is what stops a partner rebuilding a trail.
  *
- * PARTNER SEAM (FH-029): `activeVenues` is the one place that decides which Spaces count as venues of
- * the Trail right now. Today it reads the hunt_partners rows that exist on main with the same rule as
- * lib/hunts/authz.ts (accepted, effective, not revoked). When FH-029 lands live partner state (pinned
- * terms, the named steward, withdrawal), it plugs in here and nowhere else.
+ * PARTNER SEAM (FH-029, plugged in by FH-032S): `activeVenues` is the one place that decides which Spaces
+ * count as venues of the Trail right now, by the live partner rule in lib/hunts/partners.ts
+ * (`partnerLive`: accepted, effective, not revoked). A venue that withdrew or was suspended drops from
+ * the active list on the next read, and its past counts move to `formerVenues`, so the Trail's totals
+ * still reconcile with what was earned there.
  *
- * BROADCAST SEAM (FH-031): there is no finale broadcast on main. `messages` reports the Hunt outbox
- * (waiting, sending, sent, failed), which is what carries every Hunt notice today.
+ * BROADCAST SEAM (FH-031, plugged in by FH-032S): `messages` reports the whole Hunt outbox (waiting,
+ * sending, sent, failed). Beside it, `finale` reports the current version's host Event (parseFinale,
+ * lib/hunts/rally-finale.ts) and the outbox rows addressed to that finale (`finaleBroadcastAggregate`),
+ * so the organiser sees whether the finale notice went out.
  */
 import type { PartnerRow } from './authz'
 import { buildMerchantReport, claimVenues, coarse, type ReportFacts } from './merchant-report'
+import { partnerLive } from './partners'
 
 /** An active run whose last confirmed stop is older than this is stalled, not just between stops. */
 export const STALL_HOURS = 24
@@ -38,16 +42,20 @@ export type RouteFacts = ReportFacts & {
   versionRuns: readonly { id: string; state: string }[]
   progress: readonly { runId: string; missionKey: string; disposition: string; acceptedAt: string }[]
   placements: readonly { id: string; medium: string; revokedAt: string | null; healthStatus: string }[]
-  outbox: { pending: number; leased: number; done: number; dead: number }
+  outbox: OutboxCounts
   venueNames: Readonly<Record<string, string>>
+  /**
+   * The current version's finale, when it names one (FH-031): the host Event's title (null when the
+   * Event cannot be read), whether it is still on, and the outbox rows addressed to that finale.
+   */
+  finale?: { title: string | null; eventOn: boolean; outbox: OutboxCounts } | null
 }
+
+type OutboxCounts = { pending: number; leased: number; done: number; dead: number }
 
 /** PARTNER SEAM (FH-029). The Spaces that are venues of this Trail at `nowIso`: its own Space, then live partners. */
 export function activeVenues(facts: Pick<RouteFacts, 'hunt' | 'partners'>, nowIso: string): string[] {
-  const now = Date.parse(nowIso)
-  const live = facts.partners.filter(
-    (p) => p.status === 'accepted' && p.effectiveAt !== null && Date.parse(p.effectiveAt) <= now && (p.revokedAt === null || Date.parse(p.revokedAt) > now),
-  )
+  const live = facts.partners.filter((p) => partnerLive(p, nowIso))
   return [...new Set([facts.hunt.ownerSpaceId, ...live.map((p) => p.spaceId)].filter((id): id is string => !!id))]
 }
 
@@ -63,14 +71,22 @@ type Stop = {
   placements: { medium: string; open: boolean; venueSpaceId: string | null; uses: number }[]
 }
 
+type VenueCounts = { spaceId: string; name: string; confirmedStops: number; players: number; awaitingReview: number; handedOver: number }
+
 type RouteHealth = {
   status: string
   runs: { started: number; playing: number; finished: number; stopped: number; notStarted: number }
   stops: Stop[]
   placements: { open: number; closed: number; damaged: number; missing: number; unchecked: number }
-  venues: { spaceId: string; name: string; confirmedStops: number; players: number; awaitingReview: number; handedOver: number }[]
+  venues: VenueCounts[]
+  /** Partner venues no longer live (withdrawn, suspended, ended) that still hold counts on this Trail. */
+  formerVenues: VenueCounts[]
   messages: { waiting: number; sending: number; sent: number; failed: number }
+  /** The finale and its broadcast, or null when the current version names no finale. */
+  finale: { title: string | null; eventOn: boolean; sent: number; waiting: number; sending: number; failed: number } | null
 }
+
+const messageCounts = (o: OutboxCounts) => ({ waiting: o.pending, sending: o.leased, sent: o.done, failed: o.dead })
 
 export function buildRouteHealth(facts: RouteFacts, nowIso: string): RouteHealth {
   const version = facts.hunt.currentVersionId
@@ -129,10 +145,17 @@ export function buildRouteHealth(facts: RouteFacts, nowIso: string): RouteHealth
     if (p.revokedAt === null && (p.healthStatus === 'damaged' || p.healthStatus === 'missing' || p.healthStatus === 'unchecked')) placements[p.healthStatus]++
   }
 
-  const venues = activeVenues(facts, nowIso).map((spaceId) => {
+  const counts = (spaceId: string): VenueCounts => {
     const r = buildMerchantReport(facts, spaceId, 'owner_space', 0)
     return { spaceId, name: facts.venueNames[spaceId] ?? 'A venue', confirmedStops: r.visits.total, players: r.visits.visitors, awaitingReview: r.visits.awaitingReview, handedOver: r.redeemedHere }
-  })
+  }
+  const active = activeVenues(facts, nowIso)
+  const venues = active.map(counts)
+  // A venue that left keeps what was earned there: listed apart, only when it holds a count.
+  const formerVenues = [...new Set(facts.partners.map((p) => p.spaceId))]
+    .filter((spaceId) => !active.includes(spaceId))
+    .map(counts)
+    .filter((v) => v.confirmedStops + v.awaitingReview + v.handedOver > 0)
 
   return {
     status: facts.hunt.status,
@@ -140,7 +163,9 @@ export function buildRouteHealth(facts: RouteFacts, nowIso: string): RouteHealth
     stops,
     placements,
     venues,
-    messages: { waiting: facts.outbox.pending, sending: facts.outbox.leased, sent: facts.outbox.done, failed: facts.outbox.dead },
+    formerVenues,
+    messages: messageCounts(facts.outbox),
+    finale: facts.finale ? { title: facts.finale.title, eventOn: facts.finale.eventOn, ...messageCounts(facts.finale.outbox) } : null,
   }
 }
 
