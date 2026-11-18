@@ -434,31 +434,46 @@ export function primaryPillar(items: JourneyPlanItem[], pillarsById: Map<string,
 }
 
 /** Instructor authority — the author, expanded. Cross-links to their profile. */
+/** Who leads a Journey (owner 2026-11-17): its guides (people), else its host Space, else its author.
+ *  The caller resolves the order; this draws one card per entry under "Your guide" / "Your guides". */
 export function InstructorBlock({
-  author,
+  author = null,
+  leads,
 }: {
-  author: { handle: string; displayName: string; avatarUrl: string | null } | null
+  author?: { handle: string; displayName: string; avatarUrl: string | null } | null
+  leads?: Array<{ href: string; name: string; avatarUrl: string | null; sub: string }>
 }) {
-  if (!author) return null
+  const entries =
+    leads && leads.length > 0
+      ? leads
+      : author
+        ? [{ href: `/people/${author.handle}`, name: author.displayName, avatarUrl: author.avatarUrl, sub: 'Built this Journey. See their profile.' }]
+        : []
+  if (entries.length === 0) return null
   return (
     <section>
-      <SectionHeader title="Your guide" />
-      <Link
-        href={`/people/${author.handle}`}
-        className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
-      >
-        {author.avatarUrl ? (
-          <Image src={avatarSrc(author.avatarUrl)} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(author.avatarUrl)} />
-        ) : (
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-body-sm font-bold text-muted">
-            {author.displayName.slice(0, 1).toUpperCase()}
-          </span>
-        )}
-        <span className="min-w-0">
-          <span className="block truncate text-body-sm font-semibold text-text">{author.displayName}</span>
-          <span className="block text-meta text-muted">Built this Journey. See their profile.</span>
-        </span>
-      </Link>
+      <SectionHeader title={entries.length > 1 ? 'Your guides' : 'Your guide'} />
+      <div className="grid gap-3">
+        {entries.map((g) => (
+          <Link
+            key={g.href}
+            href={g.href}
+            className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
+          >
+            {g.avatarUrl ? (
+              <Image src={avatarSrc(g.avatarUrl)} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-pill object-cover" style={avatarFocusStyle(g.avatarUrl)} />
+            ) : (
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-body-sm font-bold text-muted">
+                {g.name.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-body-sm font-semibold text-text">{g.name}</span>
+              <span className="block text-meta text-muted">{g.sub}</span>
+            </span>
+          </Link>
+        ))}
+      </div>
     </section>
   )
 }
@@ -549,7 +564,8 @@ export function EnrollCta({
   canStart: boolean
   isAuthor: boolean
   enrollAction: (formData: FormData) => void | Promise<void>
-  forkAction: (formData: FormData) => void | Promise<void>
+  /** Absent: the Journey cannot be remixed (a house program, lib/courses/tracks.ts isHouseProgram). */
+  forkAction?: (formData: FormData) => void | Promise<void>
   /** 'block' = full-width stacked (rail / repeat); 'inline' = compact row (header). */
   layout?: 'block' | 'inline'
   /** Set when this Journey is sold (ADR-1397): the price, the product page, and the seat line when
@@ -653,14 +669,14 @@ export function EnrollCta({
     )
   )
 
-  const remix = (
+  const remix = forkAction ? (
     <form action={forkAction} className={full}>
       <input type="hidden" name="planId" value={planId} />
       <button type="submit" className={buttonClasses('secondary', 'md', full)}>
         Remix
       </button>
     </form>
-  )
+  ) : null
 
   // Seats, said only when there are few (lib/journeys/paid.ts seatLine). An early "2 of 12 taken"
   // reads as nobody wants this, so the line stays quiet until it is genuinely useful.

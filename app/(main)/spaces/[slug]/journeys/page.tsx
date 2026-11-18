@@ -15,6 +15,8 @@ import { AuthoringAccessNote } from '@/components/pricing/authoring-access-note'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { listCoHostShares } from '@/lib/journeys/cohost-shares'
 import { CoHostPanel } from '@/components/journeys/cohost-panel'
+import { GuidesPanel } from '@/components/journeys/guides-panel'
+import { listGuidesForPlans } from '@/lib/journeys/guides'
 
 // SPACE-SCOPED Journeys manager (the practitioner's programs): store, edit, publish, and delete every
 // Journey this Space owns, drafts and live. Owner-gated (canEditProfile = owner / admin / editor) and
@@ -69,7 +71,7 @@ export default async function SpaceJourneysManagerPage({ params }: { params: Pro
   const drafts = plans.filter((p) => p.visibility === 'private')
   const published = plans.filter((p) => p.visibility !== 'private')
   const inLibrary = plans.filter((p) => p.visibility === 'public')
-  const { incoming, outgoing } = await listCoHostShares(space.id)
+  const [{ incoming, outgoing }, guides] = await Promise.all([listCoHostShares(space.id), listGuidesForPlans(plans.map((p) => p.id))])
 
   // The shared hero band (LIVE-117, ADR-1261). This tab renders OUTSIDE the (profile) route group,
   // so nothing draws a band above it; the map's '/spaces/_/journeys' row gives it the short utility
@@ -94,6 +96,8 @@ export default async function SpaceJourneysManagerPage({ params }: { params: Pro
           <StatCard bordered size="sm" icon={Globe} label="Published" value={published.length} />
           <StatCard bordered size="sm" icon={Library} label="In library" value={inLibrary.length} />
         </div>
+
+        <GuidesPanel journeys={plans.map((p) => ({ id: p.id, title: p.title }))} guides={guides} />
 
         <CoHostPanel journeys={plans.map((p) => ({ id: p.id, title: p.title }))} incoming={incoming} outgoing={outgoing} />
 

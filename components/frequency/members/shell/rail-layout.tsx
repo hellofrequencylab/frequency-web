@@ -24,6 +24,7 @@ import {
   mergeChrome,
   isFullViewportEditor,
   isFullWidthEditor,
+  isJourneyMode,
   type ChromeOverrides,
 } from '@/lib/layout/page-chrome'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
@@ -132,6 +133,12 @@ export function FqRailLayout({
   const [tip, setTip] = useState<Tip>(null)
   const [settings, setSettings] = useState<AdminBarState>({ open: false, width: 288, resizing: false })
   const [ownerConsole, setOwnerConsole] = useState(false)
+  // Journey mode folds the right rail on arrival (lib/layout/page-chrome.ts isJourneyMode). The
+  // chevron opens it for this page only (keyed by pathname, so it folds again on the next page): the
+  // member's stored rail choice is left alone, so every other page keeps it.
+  const journeyMode = isJourneyMode(pathname)
+  const [journeyRailOpenOn, setJourneyRailOpenOn] = useState<string | null>(null)
+  const rMode = journeyMode ? (journeyRailOpenOn === pathname ? 'full' : 'micro') : mode(rc)
   const bodyRef = useRef<HTMLDivElement>(null)
   const endDrag = useRef<(() => void) | null>(null)
 
@@ -159,6 +166,10 @@ export function FqRailLayout({
   }
 
   const toggle = (side: Side) => {
+    if (side === 'R' && journeyMode) {
+      setJourneyRailOpenOn((on) => (on === pathname ? null : pathname))
+      return
+    }
     const next = !microNow(side)
     save({ ...cur, [side === 'L' ? 'lc' : 'rc']: next })
   }
@@ -280,7 +291,7 @@ export function FqRailLayout({
           className="fqm-body"
           data-has={has}
           data-l={mode(lc)}
-          data-r={mode(rc)}
+          data-r={rMode}
           data-drag={drag ? '' : undefined}
           data-edge={edge ? '' : undefined}
           data-panel={panelOpen ? '' : undefined}
