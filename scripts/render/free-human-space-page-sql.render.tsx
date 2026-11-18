@@ -12,7 +12,7 @@ it('prints the Free Human Space page SQL', async () => {
   const out = process.env.RENDER_OUT
   if (!out) throw new Error('set RENDER_OUT')
   const { FREE_HUMAN_SLUG, FREE_HUMAN_SPACE } = await import('@/lib/sites/free-human-site')
-  const { FREE_HUMAN_BOOKS, FREE_HUMAN_HERO, FREE_HUMAN_LINEAGE, FREE_HUMAN_LYRIC, FREE_HUMAN_SEASONS, FREE_HUMAN_SPEAKING, FREE_HUMAN_WORKSHOPS } = await import('@/lib/sites/free-human-home')
+  const { FREE_HUMAN_BOOKS, FREE_HUMAN_HERO, FREE_HUMAN_LINEAGE, FREE_HUMAN_LYRIC, FREE_HUMAN_SEASONS, FREE_HUMAN_SPEAKING, FREE_HUMAN_WORKSHOPS } = (await import('@/lib/sites/free-human-movement-home')).FREE_HUMAN_MOVEMENT_COPY
   const { sanitizeEntityLayout } = await import('@/lib/entity-blocks/layout')
   const site = `https://${FREE_HUMAN_SLUG}.frequencylocal.com`
   const plain = (s: string) => s.replace(/\*/g, '')

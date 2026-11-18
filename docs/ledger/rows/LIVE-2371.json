@@ -1,20 +1,19 @@
 {
   "id": "LIVE-2371",
-  "title": "The Business of Community week cards fit a phone",
-  "status": "done",
-  "priority": "P1",
+  "title": "Honey's templates are generic and coach what to write; the Free Human Movement Space keeps its own words",
   "lane": "live",
-  "size": "S",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-11-18",
   "source": {
-    "file": "app/themes/frequency/site-pages-showcase.css",
-    "ref": "e2e-manual run 44380142715 (2026-11-18, production): /courses/business-of-community overflowed at 320, 360 and 390 px; each week card ran 19 to 98 px past a 320 px viewport (overflow.spec.ts)."
+    "file": "docs/THEME-COHESION.md",
+    "ref": "Daniel 2026-11-18: \"Make every Frequency theme FULLY generic with copy that coaches them what to write. Be sure anybody using a theme keeps their content but give the templates a full scrub.\""
   },
-  "detail": "The stacked week list and cards used a 1fr column, whose min-content floor let the meeting chip (white-space:nowrap, e.g. 'The full gathering · 90 min, plus 10 the next day') push each card past the phone edge. The week list, a stacked card and the stacked fixes/leave-with grid now use minmax(0,1fr). Under 560 px, the card body padding drops to 26/22 px and the chip in a week's title row may wrap. Checked in Chrome on production with the new rules injected into a 320/360/390 px frame: no week element past the edge (before: 42/28/7 boxes past the edge); the only remaining box is the decorative .fq-aura that every hero carries.",
+  "detail": "The Honey theme (code id free-human) was built from one owner's design, so its template defaults named her (Audrey Uma Wilder), her two books and her program, and every Honey site's header carried an 'Audrey' mega menu and her footer letter line. lib/sites/free-human-home.ts is now the theme's generic template: each section says what to write there (hero, program parts, lyric line, workshops, gatherings, books, speaking, roots), in the design's shape and photos (Frequency's own plus the honey-light shots). The header menus are generic (Program, Gather, Read, About) and the footer letter has no name. The Free Human Movement Space keeps everything it saved; its own words move to lib/sites/free-human-movement-home.ts (its seed only), and its header menus, wordmark line and letter stay its own (isFreeHumanMovement in lib/sites/free-human-chrome.ts). Block render never reads the template, so no saved page changes.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/LIVE-2371.mjs",
-    "note": "Fails on main: the stacked week grids use 1fr and the chip never wraps. Passes once they use minmax(0,1fr) and the chip in the week title row wraps on a phone."
+    "cmd": "node scripts/probes/themes/LIVE-2371.mjs"
   },
-  "closed": "2026-11-18",
   "wave": "W7"
 }

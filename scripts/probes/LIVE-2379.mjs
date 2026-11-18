@@ -1,4 +1,4 @@
-// LIVE-2371: the Business of Community week cards fit a phone. Exit 0 = fixed, 1 = not.
+// LIVE-2379: the Business of Community week cards fit a phone. Exit 0 = fixed, 1 = not.
 // Field run 2026-11-18 (e2e-manual 44380142715): each week card ran 19 to 98 px past a 320 px viewport,
 // because the one-column grids used `1fr` (min-content floor) and the meeting chip never wrapped.
 import { readFileSync, existsSync } from 'node:fs'
