@@ -13,6 +13,7 @@ import type { InspectorFieldView } from '@/lib/builder/inspector-fields'
 import type { LayerTree, RowSplit } from '@/lib/builder/canvas-tree'
 import { resolveNodeContent } from '@/lib/builder/node-responsive'
 import type { BlockNode } from '@/lib/entity-blocks/node-tree'
+import { richWords } from '@/lib/builder/inspector-values'
 
 /** One block the frame can draw: its name, its fields (to know which hold words) and its stored bags. */
 export type PreviewBlock = { title: string; fields: readonly InspectorFieldView[]; node: Pick<BlockNode, 'content' | 'responsive'> }
@@ -36,12 +37,14 @@ export function BlockWords({ block, device }: { block: PreviewBlock; device: Bui
   const resolved = resolveNodeContent(block.node, device)
   const words = block.fields.filter((f) => f.kind === 'text' || f.kind === 'textarea')
   const headline = words.find((f) => f.key === 'title')?.key ?? words[0]?.key
+  // Text a block stores as inline markup reads as its words, entities decoded (PROG-E5 item 4).
+  const text = (f: InspectorFieldView) => (f.kind === 'textarea' && f.rich ? richWords(resolved[f.key]).trim() : plainWords(resolved[f.key]))
   return (
     <>
       {words.length === 0 && <p style={{ margin: '4px 0', fontWeight: 700 }}>{block.title}</p>}
       {words.map((f) => f.key === headline
-        ? <p key={f.key} style={{ margin: '4px 0', fontSize: device === 'phone' ? 24 : 32, fontWeight: 700 }}>{plainWords(resolved[f.key]) || block.title}</p>
-        : plainWords(resolved[f.key]) ? <p key={f.key} style={{ margin: 0 }}>{plainWords(resolved[f.key])}</p> : null)}
+        ? <p key={f.key} style={{ margin: '4px 0', fontSize: device === 'phone' ? 24 : 32, fontWeight: 700 }}>{text(f) || block.title}</p>
+        : text(f) ? <p key={f.key} style={{ margin: 0 }}>{text(f)}</p> : null)}
     </>
   )
 }

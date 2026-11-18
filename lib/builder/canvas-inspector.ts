@@ -6,7 +6,7 @@
 
 import { ADOPTED_BLOCKS } from '@/lib/entity-blocks/contract'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
-import { inspectorFieldViews, type InspectorFieldView } from './inspector-fields'
+import { inspectorFieldViews, withRichText, type InspectorFieldView } from './inspector-fields'
 
 const SURFACE = 'space-profile'
 
@@ -25,5 +25,9 @@ export function canvasBlockTitle(type: string): string {
 export function canvasInspectorFor(type: string): CanvasInspectorSpec {
   const block = ADOPTED_BLOCKS.find((candidate) => candidate.type === type)
   const title = canvasBlockTitle(type)
-  return block ? { title, ...inspectorFieldViews(block, SURFACE) } : { title, fields: [], elsewhere: 0 }
+  if (!block) return { title, fields: [], elsewhere: 0 }
+  const { fields, elsewhere } = inspectorFieldViews(block, SURFACE)
+  // A content block stores its long text as inline markup on every save (sanitizeBlockContent), so the inspector
+  // reads those fields as rich text.
+  return { title, fields: entityBlockById(type)?.category === 'content' ? withRichText(fields) : fields, elsewhere }
 }
