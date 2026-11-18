@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1269",
+  "title": "The Business of Community page fits its hero above the fold and every panel on a photo is readable",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/themes/frequency/site-pages-showcase.css",
+    "ref": "Owner screenshots 2026-11-18 (project thread: Fit the Business of Community hero)"
+  },
+  "detail": "Owner ask 2026-11-18, from two screenshots of /courses/business-of-community: fit the hero content in the hero with plenty of space, make the countdown card readable, then a once-over for transparency readability, awkward photo crops, and the first photo row down to five without the fire photo. Before: the headline ran to 100px on four lines and pushed the lede and buttons below the fold; the collage was a fixed 640px; the Run card, the return-rate gauge, the PULSE beats and the Community Book pages used the pale Dawn glass panel over photos, so their light text could not be read; the gauge and book covered a tall crop that cut people off both sides.\n\nDONE 2026-11-18: the headline tops out at 66px on two lines and the collage is sized off the viewport height, so the headline, lede, buttons and the Run card sit above the fold at 1280, 1440, 1920 and 2000 (rendered and measured; 390 stacks). Every glass panel on the page has a near-solid deep UV backing. The gauge and the Community Book pages sit under their photo, which keeps its landscape shape. Photo chips and week captions have a solid backing or deeper scrim. The first photo row holds five photos in five columns (3 + 2 on a phone), the fire photo is out, the gull crop follows the gull, and tall slots ask for a wide enough image to stay sharp. Expected lift: this is the launch workshop's sales page, and the Save your seat button is now visible without scrolling on a laptop.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1269.mjs",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}
