@@ -1,0 +1,20 @@
+{
+  "id": "JRN-008",
+  "title": "Duplicating or moving a Journey keeps its Space, member gate and sales consistent",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "lib/journey-plans.ts",
+    "ref": "Journey audit 2026-11-17 (project thread: Dial in the Journey Wizard and Journeys)"
+  },
+  "detail": "duplicatePlan omitted space_id (the insert trigger stamped the root Space) but copied space_tier_id, so Duplicate on a Space's Journeys tab made a copy that vanished from that tab and carried another Space's member tier, locking out everyone but the author (checkJourneyTier can never match); it also ignored copyItemTree's result and redirected into a half-empty draft. setPlanSpace (behind reassignJourneyOwner) changed only space_id, so a moved tier-gated Journey locked every member out and a Journey on sale kept paying the old Space (or stayed on sale as a personal Journey, which checkJourneySell refuses). Fixed 2026-11-17: duplicatePlan copies space_id and deletes the copy, returning null, when the tree copy fails (as forkPlan does); setPlanSpace clears space_tier_id; reassignJourneyOwner returns ok on a no-op move and refuses a move while any non-archived product sells the Journey ('Take it off sale first, then move it').",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-008.mjs",
+    "note": "Fails if duplicatePlan drops space_id or ignores a failed tree copy, setPlanSpace keeps space_tier_id, or reassignJourneyOwner moves a Journey that is on sale."
+  },
+  "wave": "W7"
+}
