@@ -99,8 +99,8 @@ const INTENTIONALLY_EXCLUDED = new Map([
   ['/start/host', 'robots noindex (LIVE-2233): the host invite landing FlowWeb links to one to one, like /start/<flow>'],
   ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
   // LINK-ONLY partner pages (owner 2026-11-17, like /how): shared by link, never in search (lib/seo/link-only.ts).
-  ['/facilities', 'robots noindex: link-only third-spaces vision for partners (lib/seo/link-only.ts)'],
-  ['/lab', 'robots noindex: link-only Lab plan for partners (lib/seo/link-only.ts)'],
+  ['/build/facilities', 'robots noindex: link-only third-spaces vision for partners, listed on the /build index (lib/seo/link-only.ts)'],
+  ['/build/lab', 'robots noindex: link-only Lab plan for partners, listed on the /build index (lib/seo/link-only.ts)'],
   ['/subscribe', 'robots noindex (SCAN-1017): the newsletter form is reached from the footer, not from search; the index keeps the 24 pages that earn a visit'],
   // PARKED, not live: next.config.ts answers /stories with a temporary 302 to /the-community before the
   // filesystem router runs (owner ruling 2026-10-14, ADR-1747), so no visitor or crawler reaches this
@@ -262,7 +262,11 @@ const PAGE_GUARD =
 
 /** The `robots: { index: …, follow: … }` a page (or one of its layouts) declares, or null. */
 export function robotsDirective(src) {
-  const m = stripComments(src).match(/robots\s*:\s*\{([^}]*)\}/)
+  const code = stripComments(src)
+  // The shared link-only block (lib/seo/link-only.ts) is index: false, follow: false by construction,
+  // and only counts when it is imported from that module.
+  if (/robots\s*:\s*LINK_ONLY_ROBOTS\b/.test(code) && /from\s*['"]@\/lib\/seo\/link-only['"]/.test(code)) return { index: false, follow: false }
+  const m = code.match(/robots\s*:\s*\{([^}]*)\}/)
   if (!m) return null
   const read = (k) => {
     const v = m[1].match(new RegExp(`${k}\\s*:\\s*(true|false)`))

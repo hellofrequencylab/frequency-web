@@ -1,6 +1,6 @@
 import localFont from 'next/font/local'
 
-// Route group for link-only, noindex briefs (/how). Deliberately OUTSIDE (marketing): no SiteShell
+// Route group for the link-only, noindex partner pages under /build (the /build index, /build/how, /build/vision). Deliberately OUTSIDE (marketing): no SiteShell
 // header, mega menu or footer, and nothing here is in lib/frequency/site-nav.ts or app/sitemap.ts.
 // The brief brings its own chrome. Fonts are the repo's own files (app/fonts), loaded only here.
 const unbounded = localFont({ src: '../fonts/unbounded/unbounded.woff2', variable: '--font-unbounded', weight: '200 900', display: 'swap' })
@@ -16,6 +16,16 @@ const fraunces = localFont({
   display: 'swap',
 })
 
+// Instrument Serif carries the italic voice of the /build/vision canvas (the Frequency design system's serif).
+const instrumentSerif = localFont({
+  src: [
+    { path: '../fonts/instrument-serif/instrument-serif.woff2', weight: '400', style: 'normal' },
+    { path: '../fonts/instrument-serif/instrument-serif-italic.woff2', weight: '400', style: 'italic' },
+  ],
+  variable: '--font-instrument-serif',
+  display: 'swap',
+})
+
 export default function BriefLayout({ children }: { children: React.ReactNode }) {
-  return <div className={`${unbounded.variable} ${hanken.variable} ${fraunces.variable} contents`}>{children}</div>
+  return <div className={`${unbounded.variable} ${hanken.variable} ${fraunces.variable} ${instrumentSerif.variable} contents`}>{children}</div>
 }

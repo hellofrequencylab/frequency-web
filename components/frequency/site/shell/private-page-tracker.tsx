@@ -1,7 +1,7 @@
 'use client'
 
-// Reader tracking for the link-only partner pages that render inside the marketing shell (/facilities,
-// /lab). The same tracker /how runs (lib/how/brief-tracker.ts): a ?r= reader code, sections, scroll,
+// Reader tracking for the link-only partner pages under /build (/build, /build/vision, and /build/facilities
+// and /build/lab inside the marketing shell). The same tracker /how runs (lib/how/brief-tracker.ts): a ?r= reader code, sections, scroll,
 // engaged time, and every click, posted first-party to /api/how/beacon. Renders nothing.
 import { useEffect } from 'react'
 import { startBriefTracker } from '@/lib/how/brief-tracker'

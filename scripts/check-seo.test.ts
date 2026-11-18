@@ -106,6 +106,9 @@ describe('check-seo — reading the sources of truth', () => {
     expect(robotsDirective('return { ...meta, robots: { index: false, follow: true } }')).toEqual({ index: false, follow: true })
     expect(robotsDirective('export const metadata = { robots: { index: true, follow: true } }')).toEqual({ index: true, follow: true })
     expect(robotsDirective('export const metadata = { title: "x" }')).toBeNull()
+    // The shared link-only block counts as a noindex only when it comes from lib/seo/link-only.
+    expect(robotsDirective("import { LINK_ONLY_ROBOTS } from '@/lib/seo/link-only'\nexport const metadata = { robots: LINK_ONLY_ROBOTS }")).toEqual({ index: false, follow: false })
+    expect(robotsDirective("const LINK_ONLY_ROBOTS = {}\nexport const metadata = { robots: LINK_ONLY_ROBOTS }")).toBeNull()
     // A comment ABOUT noindex is not a declaration.
     expect(robotsDirective('// robots: { index: false } would be wrong here\nexport const metadata = {}')).toBeNull()
   })

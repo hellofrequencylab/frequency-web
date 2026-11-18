@@ -6,9 +6,9 @@ import { formatDateShort, formatTimeShort } from '@/lib/format-date'
 import { HOME_TZ } from '@/lib/time/home-zone'
 import { loadPrivateReads, type ClickRow, type ReaderSummary } from '@/lib/how/private-readers'
 
-// PRIVATE PAGES (LIVE-2345): who opened the link-only partner pages (/how, /facilities, /lab) and what they clicked
+// PRIVATE PAGES (LIVE-2345, LIVE-2380): who opened the link-only partner pages under /build and what they clicked
 // (owner 2026-11-17). Every row is first-party (engagement_events via /api/how/beacon); nothing here
-// went to a pixel. Give each person their own link, e.g. frequencylocal.com/facilities?r=jane, and the
+// went to a pixel. Give each person their own link, e.g. frequencylocal.com/build/facilities?r=jane, and the
 // code carries to the other private pages in the same tab. Staff visits are excluded at the beacon.
 // Rendered ONLY by the gated Growth dashboard (app/(main)/admin/growth/page.tsx), so it never re-gates.
 // It lives there rather than on its own route because a new route is a new serverless function, and the
@@ -45,7 +45,7 @@ export async function GrowthPrivatePages() {
     <div id="private-pages" className="scroll-mt-24">
       <AdminSection
         title="Private pages: readers"
-        description={`Who opened /how, /facilities and /lab in the last 90 days and how far they read. Share each person their own link with ?r=their-name on the end.${capped ? ' Showing the newest 20,000 events.' : ''}`}
+        description={`Who opened the partner pages under /build in the last 90 days and how far they read. Share each person their own link with ?r=their-name on the end.${capped ? ' Showing the newest 20,000 events.' : ''}`}
       >
         <DataTable
           columns={READER_COLUMNS}
@@ -53,7 +53,7 @@ export async function GrowthPrivatePages() {
           getRowId={(r) => r.reader}
           caption="Readers of the private pages"
           density="compact"
-          empty={<EmptyState icon={Eye} title="No readers yet" description="Share a link like frequencylocal.com/facilities?r=jane and the visit shows up here." />}
+          empty={<EmptyState icon={Eye} title="No readers yet" description="Share a link like frequencylocal.com/build/vision?r=jane and the visit shows up here." />}
         />
       </AdminSection>
       <AdminSection title="Private pages: clicks" description="Every link, button and form on the private pages, newest first. A form records only the option picked, never what was typed.">

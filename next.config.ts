@@ -544,6 +544,15 @@ const nextConfig: NextConfig = {
       { source: '/for/wellness-and-retreats', destination: '/for/studios', permanent: true },
       { source: '/for/markets-and-festivals', destination: '/for/event-hosts', permanent: true },
       { source: '/for/schools-and-programs', destination: '/for/clubs-and-groups', permanent: true },
+      // LIVE-2381: FlowWeb's reply drafts link to six short niche doors (/for/teacher and five more) that the
+      // registry never served, so each was a 404. Each lands on the closest live door, query tags kept.
+      // Temporary, so the short slugs stay free for real doors later.
+      { source: '/for/teacher', destination: '/for/coaches-and-healers', permanent: false },
+      { source: '/for/studio', destination: '/for/studios', permanent: false },
+      { source: '/for/venue', destination: '/for/venues', permanent: false },
+      { source: '/for/music', destination: '/for/event-hosts', permanent: false },
+      { source: '/for/gathering', destination: '/for/clubs-and-groups', permanent: false },
+      { source: '/for/maker', destination: '/for/local-businesses', permanent: false },
       // /calm-down-fast MERGED into /mindless (LIVE-2093): the guide's promise was five quiet minutes, and the
       // timer is that promise kept. The member help twin is self-canonical now.
       { source: '/calm-down-fast', destination: '/mindless', permanent: true },
@@ -703,8 +712,14 @@ const nextConfig: NextConfig = {
       // All 15 also come out of check-seo.mjs's INTENTIONALLY_EXCLUDED in this same change — that
       // allowlist warns on an entry with no backing page, so leaving them would trade one stale
       // record for another.
-      { source: '/build', destination: '/the-community', permanent: true },
+      // /build is no longer a retired guide: it is the link-only index of partner pages (owner 2026-11-18).
       { source: '/demo', destination: '/the-community', permanent: true },
+
+      // The link-only partner pages moved under /build (owner 2026-11-18). Permanent, and Next carries the
+      // query across, so a shared ?r=<reader> link keeps its reader code.
+      { source: '/how', destination: '/build/how', permanent: true },
+      { source: '/facilities', destination: '/build/facilities', permanent: true },
+      { source: '/lab', destination: '/build/lab', permanent: true },
       { source: '/feel-less-awkward-in-groups', destination: '/how-to-be-more-social', permanent: true },
       { source: '/find-like-minded-people', destination: '/friendship-as-an-adult', permanent: true },
       { source: '/host-a-recurring-gathering', destination: '/how-to-build-community', permanent: true },

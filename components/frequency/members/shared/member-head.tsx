@@ -15,14 +15,32 @@ export function MemberHead({
   title,
   meta,
   actions,
+  actionsBelow = false,
   as: Title = "h1",
 }: {
   kicker: ReactNode;
   title: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
+  /** Put the actions under the title, on the meta line, instead of beside the title. For a long title
+   *  with several buttons (a Journey: Manage, Set a price, Sales page, QR), so they read as one row. */
+  actionsBelow?: boolean;
   as?: "h1" | "h2";
 }) {
+  if (actionsBelow) {
+    return (
+      <div className="head">
+        <div className="head-under">
+          <span className="k">{kicker}</span>
+          <Title className="h1">{title}</Title>
+          <div className="head-meta-row">
+            {meta ? <span className="meta">{meta}</span> : <span />}
+            {actions}
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="head">
       <div>

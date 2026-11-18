@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2373",
+  "title": "Temple Kit's template invents no price, date, capacity, host or testimonial",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-18",
+  "source": {
+    "file": "docs/THEME-COHESION.md",
+    "ref": "Daniel 2026-11-18: \"Make every Frequency theme FULLY generic with copy that coaches them what to write. Be sure anybody using a theme keeps their content but give the templates a full scrub.\" Depth ruled the same day on the card: \"Strip specifics, keep ready copy\"."
+  },
+  "detail": "The Temple Kit starter kits were already softened (temple-kit-profile-variants.ts SOFTEN), but the block defaults and the editor's Temple Kit program template still read the raw design house in lib/sites/temple-kit-home.ts: prices on gatherings, ceremonies, programs and membership ($18 to $2,400), fixed dates (Thu 20 Nov, Dec 21, from Jan 5), seat and room capacities, a named host (Ines Aldana), a named five-star testimonial (Maya and Theo), a town (Ojai), 48-hour holds, free promises and seasonal rhythms. Each is gone or now says what to write there; the gatherings rows keep only their photos (used as covers for events with none), so with no events the block says no dates are open. Saved pages keep their own props (block render never reads these defaults).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/themes/LIVE-2373.mjs"
+  },
+  "wave": "W7"
+}

@@ -331,10 +331,22 @@ jobs:
       # tip fetch above on purpose: the tip's tree is then already on disk for check:id-collisions,
       # so `git show origin/<base>:<file>` never has to lazy-fetch through the promisor remote.
       - name: Fetch base history for check:shipped-ids
+        # RETRIED (HYG-248). On 2026-11-18 this step failed twice on main in two seconds with the
+        # remote's `git pack-objects` dying mid-fetch, which turned main red on a tree that was
+        # sound (the next push passed untouched). The fetch is idempotent, so a transient remote
+        # failure gets three tries with a short wait; a real failure still fails the step.
         run: |
-          git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "+refs/heads/${GITHUB_BASE_REF:-main}:refs/remotes/origin/${GITHUB_BASE_REF:-main}"
+          fetch_history() {
+            for attempt in 1 2 3; do
+              if git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 "$@"; then return 0; fi
+              echo "::warning::history fetch for check:shipped-ids failed (attempt ${attempt} of 3)"
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+          fetch_history origin "+refs/heads/${GITHUB_BASE_REF:-main}:refs/remotes/origin/${GITHUB_BASE_REF:-main}"
           # A manual run judges HEAD; fetching main alone leaves a branch checkout shallow.
-          git fetch --no-tags --filter=tree:0 --shallow-since=2026-08-16 origin "$GITHUB_SHA"
+          fetch_history origin "$GITHUB_SHA"
 
       - name: Contract guards (all run; every failure reported)
         if: ${{ !cancelled() }}

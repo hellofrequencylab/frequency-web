@@ -71,8 +71,12 @@ describe('the Temple Kit block family, the Home', () => {
 
   it('falls back to the written rows when the Space has none, and drops a cancelled event', () => {
     const empty = { space: { events: [], series: [] }, links }
-    expect(draw('TempleKitGatherings', {}, empty)).toContain('New moon sound bath')
-    expect(draw('TempleKitGatherings', {}, empty)).toContain('3 left')
+    // The template no longer invents dates (Daniel 2026-11-18: "Make every Frequency theme FULLY generic ... give the templates a
+    // full scrub"): with no rows of its own it says so; rows an owner wrote are still the fallback.
+    expect(draw('TempleKitGatherings', {}, empty)).toContain('No dates are open right now')
+    const written = ['New moon sound bath', 'Long table supper'].map((title) => ({ month: 'Nov', day: '29', when: 'Sat 29 Nov', time: '6pm', title, place: '', price: '', seats: '3', image: '', href: '' }))
+    expect(draw('TempleKitGatherings', { rows: written }, empty)).toContain('New moon sound bath')
+    expect(draw('TempleKitGatherings', { rows: written }, empty)).toContain('3 left')
     const cancelled = { space: { events: [row('x', 'Cancelled circle', '2099-11-18T09:30:00.000Z', { isCancelled: true })], series: [] }, links }
     expect(draw('TempleKitGatherings', {}, cancelled)).not.toContain('Cancelled circle')
   })

@@ -1,4 +1,4 @@
-// /facilities: the third-spaces vision for partners, investors, civic leaders and press.
+// /build/facilities (was /facilities, which now 308s here): the third-spaces vision for partners, investors, civic leaders and press.
 // LINK-ONLY (owner 2026-11-17): noindex, out of the nav and app/sitemap.ts, like /how. The body is the
 // /vision page #4564 retired, restored here (components/frequency/site/pages/facilities).
 import type { Metadata } from 'next'
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   robots: LINK_ONLY_ROBOTS,
-  openGraph: { title: TITLE, description: DESCRIPTION, url: '/facilities', type: 'website', siteName: 'Frequency', images: ['/brand/frequency/facilities/hall-stage-night.jpg'] },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: '/build/facilities', type: 'website', siteName: 'Frequency', images: ['/brand/frequency/facilities/hall-stage-night.jpg'] },
   twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
 }
 
@@ -23,7 +23,7 @@ export default function FacilitiesPage() {
   return (
     <>
       <FrequencyFacilities />
-      <PrivatePageTracker page="/facilities" />
+      <PrivatePageTracker page="/build/facilities" />
     </>
   )
 }

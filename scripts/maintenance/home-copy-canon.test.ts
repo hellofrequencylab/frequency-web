@@ -287,6 +287,7 @@ const SAMPLES: Record<string, string> = {
   'em-dash in brand copy': 'Community you build — where you live',
   'lowercase "zaps" (proper noun Zaps)': 'You earn zaps for showing up',
   'lowercase "gems" (proper noun Gems)': 'Spend your gems on the good stuff',
+  'misspelled "Feargal"': 'Taught by Daniel and Fergal Walsh',
   '"cohort" (member word is "Run")': 'Join the spring cohort near you',
   '"broadcast" as a NOUN (the member-facing noun is Dispatch)': 'Read the latest broadcasts from your Space',
   'retired "pay-it-forward" money model': 'A pay-it-forward model keeps it going',

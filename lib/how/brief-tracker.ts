@@ -35,7 +35,7 @@ interface BriefTracker {
   stop: () => void
 }
 
-export function startBriefTracker(root: HTMLElement, page: PrivatePage = '/how'): BriefTracker {
+export function startBriefTracker(root: HTMLElement, page: PrivatePage = '/build/how'): BriefTracker {
   const t0 = performance.now()
   const ss = store('session')
   const ls = store('local')
