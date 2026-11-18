@@ -28,15 +28,14 @@ const BUSINESS_HOURS = '/circles/business-hours'
 
 const p = (name: string) => photo(`boc-${name}.jpg`)
 
-type Shot = { src: string; alt: string }
+type Shot = { src: string; alt: string; crop?: string }
 
 const BAND: Shot[] = [
   { src: p('circle-arms-up'), alt: 'A circle on a seaside terrace, arms raised together' },
   { src: p('beach-yoga'), alt: 'A yoga class in tree pose on the beach' },
   { src: p('backyard-craft'), alt: 'Neighbors on rugs in a backyard, making things together' },
-  { src: p('fire-night'), alt: 'Friends around a fire pit at night' },
   { src: p('beach-sound-bath'), alt: 'A sound bath on the beach, people resting on blankets' },
-  { src: p('beach-yoga-gull'), alt: 'A gull on the sand in front of a beach yoga class' },
+  { src: p('beach-yoga-gull'), alt: 'A gull on the sand in front of a beach yoga class', crop: 'boc-crop-gull' },
 ]
 
 const WHO = [
@@ -264,7 +263,7 @@ export function FrequencyBusinessOfCommunity() {
               <span className="fq-grain" />
             </figure>
             <figure className="boc-hero-small">
-              <Img shot={{ src: p('group-hug'), alt: 'A big group hug on a terrace by the ocean' }} sizes="(max-width: 980px) 40vw, 18vw" />
+              <Img shot={{ src: p('group-hug'), alt: 'A big group hug on a terrace by the ocean' }} sizes="(max-width: 980px) 70vw, 28vw" />
             </figure>
             <div className="boc-run fq-panel">
               <div className="boc-run-t">
@@ -293,7 +292,7 @@ export function FrequencyBusinessOfCommunity() {
         <div className="boc-band-in">
           {BAND.map((s) => (
             <figure className="boc-shot" key={s.src}>
-              <Img shot={s} sizes="(max-width: 980px) 34vw, 17vw" />
+              <Img className={s.crop} shot={s} sizes="(max-width: 980px) 80vw, 34vw" />
             </figure>
           ))}
         </div>
