@@ -48,6 +48,7 @@ import { Reveal } from './reveal'
 import { MindlessMasthead } from './mode-toggle'
 import type { TimerMode } from './mindless'
 import { completeSession } from '@/app/(main)/on-air/actions'
+import { claimReward } from '@/components/zap-toast'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { createScreenWakeLock } from '@/lib/on-air/screen-wake-lock'
@@ -992,6 +993,9 @@ export function MovementSession({
       setStage('error')
       return
     }
+    // The reveal counts these up itself: claim them so their Realtime echo raises no toast on top.
+    claimReward('zaps', result.data.zapsAwarded)
+    for (const b of result.data.bonuses) claimReward(b.kind, b.amount)
     setPayload(result.data)
     setStage('reveal')
     // The leg completed (log saved). Signal the provider so a sequenced run (P6) can auto-advance

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { consumeLocalEcho, showRemoteRewardToast } from '@/components/zap-toast'
+import { consumeLocalEcho, rewardLabel, showRemoteRewardToast } from '@/components/zap-toast'
 
 // Cross-device reward feedback (LIVE-671). Every Zap and Gem reward lands in a ledger whose
 // trigger (migration 20270346002200, private.broadcast_member_reward) sends a Realtime Broadcast
@@ -39,7 +39,7 @@ export function RewardLive({ profileId }: { profileId: string }) {
             if (!Number.isFinite(amount) || amount <= 0) return
             const kind = payload?.kind === 'gems' ? 'gems' : 'zaps'
             if (!consumeLocalEcho(kind, amount)) {
-              showRemoteRewardToast({ amount, kind, label: 'Earned on another device' })
+              showRemoteRewardToast({ amount, kind, label: rewardLabel(payload?.action) })
             }
             // Several ledger rows can land together (a capture paying Zaps and Gems): one refresh.
             if (refreshTimer.current) clearTimeout(refreshTimer.current)

@@ -1,25 +1,33 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Gem, Flame } from 'lucide-react'
-import { dailyCheckIn, type DailyCheckInResult } from '@/app/(main)/checkin-actions'
+import { useEffect } from 'react'
+import { dailyCheckIn } from '@/app/(main)/checkin-actions'
+import { showZapToast } from '@/components/zap-toast'
 
 // Fires the once-a-day check-in on first load and (optionally) celebrates it. The reward is
 // granted + guarded server-side (checkin-actions). The ACTION always fires — it pays the daily
 // gems and ticks the visit streak; `celebrate` only controls the toast (the auto-popups flag),
 // so turning popups off can never freeze the reward loop again.
+//
+// The celebration is a reward toast in THE lane (components/toast-lane.tsx, the kit Toast), not a
+// box of its own. It used to be a hand-rolled pill fixed at top-20, centred, which sat on the
+// Feed greeting, carried an emoji, and showed the VISIT streak ("Day 117") a few pixels above the
+// PRACTICE streak the page calls "Day streak" (156): two numbers under one name. The toast no
+// longer names a streak at all; the page already shows the real one. Going through showZapToast
+// also records the reward as this tab's own, so its Realtime echo (components/reward-live.tsx)
+// does not raise a second "+2 Gems" beside it.
 export function DailyCheckIn({ celebrate = true }: { celebrate?: boolean }) {
-  const [res, setRes] = useState<DailyCheckInResult | null>(null)
-
   useEffect(() => {
     let live = true
     dailyCheckIn(Intl.DateTimeFormat().resolvedOptions().timeZone)
       .then((r) => {
         if (live && celebrate && r && r.gems > 0) {
-          setRes(r)
-          setTimeout(() => {
-            if (live) setRes(null)
-          }, 5000)
+          showZapToast({
+            amount: r.gems,
+            kind: 'gems',
+            title: 'Welcome back',
+            label: `+${r.gems} Gems for checking in today`,
+          })
         }
       })
       .catch(() => {})
@@ -28,19 +36,5 @@ export function DailyCheckIn({ celebrate = true }: { celebrate?: boolean }) {
     }
   }, [celebrate])
 
-  if (!res) return null
-
-  return (
-    <div className="fixed left-1/2 top-20 z-[60] -translate-x-1/2 motion-safe:animate-[slideUp_0.25s_ease-out]">
-      <div className="flex items-center gap-2.5 rounded-pill border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text shadow-pop">
-        👋 Welcome back
-        <span className="inline-flex items-center gap-1 text-primary-strong">
-          <Flame className="h-4 w-4" aria-hidden /> Day {res.dayStreak}
-        </span>
-        <span className="inline-flex items-center gap-1 text-signal">
-          <Gem className="h-4 w-4" aria-hidden /> +{res.gems}
-        </span>
-      </div>
-    </div>
-  )
+  return null
 }
