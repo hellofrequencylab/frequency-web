@@ -326,5 +326,25 @@
    "name": "--type-label-s",
    "reason": "A shorthand that names a font role. The kit's faces load through next/font variables (--font-fh-*), so the resolved stack differs from the design's bare family names; size, weight and line height match."
   }
+ ],
+ "copyRulings": [
+  {
+   "owner": "Daniel, 2026-11-18",
+   "phrase": "Use photos from Frequency for Free Human Movement. Change the theme name to honey and keep a few of the honey shots.",
+   "reason": "The theme (shown as Honey) wears Frequency's own photos plus five honey-light shots, so the design's photo alt texts for the retired pictures (Audrey's portraits, the icon paintings, the meadow and fruit shots) no longer describe anything on the page; the new photos carry their own alt text (LIVE-2358).",
+   "ids": [
+    "copy:templates/website/Website.dc.html#33a7b2aa",
+    "copy:templates/website/Website.dc.html#2b6f4fd5",
+    "copy:templates/website/Website.dc.html#736dcf51",
+    "copy:templates/website/Website.dc.html#76a76a41",
+    "copy:templates/website/Website.dc.html#b84e79e3",
+    "copy:templates/website/Website.dc.html#44a588c3",
+    "copy:templates/website/Website.dc.html#64fd687e",
+    "copy:templates/website/Website.dc.html#96abee02",
+    "copy:templates/website/Website.dc.html#ec07b135",
+    "copy:templates/website/Website.dc.html#16f663bf",
+    "copy:templates/website/Website.dc.html#a96b0136"
+   ]
+  }
  ]
 }
