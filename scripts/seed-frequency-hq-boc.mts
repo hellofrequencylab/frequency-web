@@ -54,6 +54,11 @@ export interface SeedJourney {
   sequential: boolean
   cover: string
   modules: Module[]
+  /** A live schedule (scripts/seed-frequency-hosts.mts SeedJourney). */
+  meeting?: { format: 'online' | 'in_person'; schedule: string; eventSlug?: string }
+  certificate?: boolean
+  /** Guides by profile handle, in order. */
+  guides?: string[]
 }
 
 /** Paragraphs joined by a blank line. A paragraph may hold '- ' bullet lines joined by '\n'. */
