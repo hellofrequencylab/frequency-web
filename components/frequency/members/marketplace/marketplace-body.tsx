@@ -17,6 +17,8 @@ import { AMENITIES, PROPERTY_TYPES } from '@/lib/listings/types'
 import { Input } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SaveListingButton } from '@/components/marketplace/save-listing-button'
+import { MarketFacetForm } from '@/components/marketplace/market-facet-form'
+import { hasMarketFacets, marketHref, NO_MARKET_FACETS, type MarketFacets } from '@/lib/commerce/market-facets'
 
 // MARKETPLACE, FREQUENCY BODIES (templates/members/Marketplace.html). Two doors share the one
 // reference layout: the head, the filter chips and the four-up portrait grid.
@@ -187,6 +189,7 @@ export function FqMarketBody({
   ratings,
   verified,
   founding,
+  facets,
 }: {
   items: MarketItem[]
   group: Group | null
@@ -195,7 +198,11 @@ export function FqMarketBody({
   ratings: Map<string, ProductRating>
   verified: Map<string, boolean>
   founding: Map<string, boolean>
+  /** The URL facets (DEF-ETSY P4). Absent while the cart switch is off: no filter form renders. */
+  facets?: MarketFacets
 }) {
+  const f = facets ?? NO_MARKET_FACETS
+  const filtered = hasMarketFacets(f)
   const toItem = (p: MarketItem): FqGridItem => {
     const href = p.href ?? `/market/${p.id}`
     const soldOut = p.status === 'sold_out' || p.stock === 0
@@ -225,7 +232,7 @@ export function FqMarketBody({
     const r = ratings.get(p.id)
     return !p.projected && (founding.get(p.id) || verified.get(p.id) || (r && r.count > 0 && r.average >= 4.5))
   }
-  const featured = group ? [] : items.filter(isFeatured).slice(0, 4)
+  const featured = group || filtered ? [] : items.filter(isFeatured).slice(0, 4)
   const featuredIds = new Set(featured.map((p) => p.id))
   const sections = group
     ? [{ items: items.filter((p) => groupOf(p) === group).map(toItem) }]
@@ -234,7 +241,7 @@ export function FqMarketBody({
         ...(Object.keys(GROUP_LABEL) as Group[])
           .map((g) => ({
             title: GROUP_LABEL[g],
-            seeAll: `/market?group=${g}`,
+            seeAll: marketHref(g, f),
             items: items.filter((p) => groupOf(p) === g && !featuredIds.has(p.id)).map(toItem),
           }))
           .filter((s) => s.items.length > 0),
@@ -269,13 +276,13 @@ export function FqMarketBody({
       <FqHiddenAreaNote area="makers" />
 
       <nav className="chips fqm-chips" aria-label="Group">
-        <Link href="/market" className={group ? 'chip' : 'chip on'} aria-current={group ? undefined : 'page'}>
+        <Link href={marketHref(null, f)} className={group ? 'chip' : 'chip on'} aria-current={group ? undefined : 'page'}>
           All {counts.total}
         </Link>
         {(Object.keys(GROUP_LABEL) as Group[]).map((g) => (
           <Link
             key={g}
-            href={`/market?group=${g}`}
+            href={marketHref(g, f)}
             className={group === g ? 'chip on' : 'chip'}
             aria-current={group === g ? 'page' : undefined}
           >
@@ -284,7 +291,14 @@ export function FqMarketBody({
         ))}
       </nav>
 
-      {empty ? (
+      {facets && <MarketFacetForm group={group} facets={facets} />}
+
+      {empty && filtered ? (
+        <EmptyState
+          title="Nothing matches those filters."
+          description="Try a wider price range, another category, or clear the filters."
+        />
+      ) : empty ? (
         <EmptyState
           title={group ? `No ${GROUP_LABEL[group].toLowerCase()} yet.` : 'Nothing in the Market yet.'}
           description="When people and businesses publish to the Market, they show up here."
