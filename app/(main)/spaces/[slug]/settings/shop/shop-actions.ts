@@ -2,11 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
+import { preferencesPatch } from '@/lib/spaces/preferences-patch'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
-import { createAdminClient } from '@/lib/supabase/admin'
 import {
   createProduct,
   setProductStatus,
@@ -396,13 +396,16 @@ export async function saveStorefrontSettingsAction(slug: string, formData: FormD
   const rawBanner = String(formData.get('bannerUrl') ?? '').trim()
   const bannerUrl = rawBanner === '' ? null : rawBanner
   const bannerFocus = String(formData.get('bannerFocus') ?? '').trim() || current.bannerFocus
+  // KEY-SCOPED write (LIVE-2348): only the top-level keys withStorefrontConfig changed (the storefront
+  // node) go through patchSpacePreferences (set_space_preferences), so a save here never writes back a
+  // stale copy of a key another console saved after this request read the Space.
   const next = withStorefrontConfig(space.preferences, { tabLabel, published, bannerUrl, bannerFocus })
-  const db = createAdminClient() as unknown as {
-    from: (t: string) => {
-      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
-    }
-  }
-  await db.from('spaces').update({ preferences: next }).eq('id', space.id)
+  const before =
+    space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
+      ? (space.preferences as Record<string, unknown>)
+      : {}
+  const patch = preferencesPatch(before, next)
+  if (Object.keys(patch).length > 0) await patchSpacePreferences(space.id, patch)
   revalidatePath(`/spaces/${slug}/settings/shop`)
   revalidatePath(`/spaces/${slug}/shop`)
 }
