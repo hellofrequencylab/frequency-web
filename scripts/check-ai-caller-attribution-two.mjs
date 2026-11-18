@@ -44,18 +44,47 @@ for (const path of paths) {
 }
 assert.equal(paths.length, 18)
 assert.equal(calls, 21)
-// Importer prose replacement was retired; both entrypoints delegate only writing questions.
-for (const path of ['lib/importer/compose.ts', 'lib/importer/reframe/run.ts']) {
+// Importer prose replacement was retired; both entrypoints delegate only writing questions, each exactly once, through
+// a coaching seam. compose.ts ("rewrite this block") may use Vera's coachTool seam instead of writingCoach (owner
+// approval 2026-11-18). Every seam used is then held to the same bar as the inventory above: each completion carries
+// feature/profile/Space accounting and nothing writes paid usage locally.
+const seams = { writingCoach: 'lib/ai/writing-coach.ts', coachBlock: 'lib/ai/vera/block-coach.ts' }
+const delegates = { 'lib/importer/compose.ts': ['writingCoach', 'coachBlock'], 'lib/importer/reframe/run.ts': ['writingCoach'] }
+const usedSeams = new Set()
+for (const [path, allowed] of Object.entries(delegates)) {
  const source = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true)
  let delegated = 0
  function inspect(node) {
   if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
    assert.ok(!['completeRaw','completeText','runToolLoop','recordAiUsage'].includes(node.expression.text), `${path} bypassed the coaching accounting seam`)
-   if(node.expression.text === 'writingCoach') delegated++
+   if (Object.hasOwn(seams, node.expression.text)) {
+    assert.ok(allowed.includes(node.expression.text), `${path} delegates to an unapproved seam ${node.expression.text}`)
+    delegated++; usedSeams.add(node.expression.text)
+   }
   }
   ts.forEachChild(node,inspect)
  }
- inspect(source); assert.equal(delegated,1)
+ inspect(source); assert.equal(delegated,1,`${path} must delegate exactly once`)
+}
+for (const name of usedSeams) {
+ const path = seams[name]
+ const source = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true)
+ let seamCalls = 0
+ function audit(node) {
+  if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+   assert.notEqual(node.expression.text, 'recordAiUsage', `${path} duplicates central paid usage`)
+   if (['completeRaw','completeText','runToolLoop'].includes(node.expression.text)) {
+    seamCalls++
+    const params = node.arguments[0]
+    const accounting = params && ts.isObjectLiteralExpression(params) && params.properties.find(p => ts.isPropertyAssignment(p) && p.name.getText(source) === 'accounting')
+    assert.ok(accounting && ts.isObjectLiteralExpression(accounting.initializer), `${path} lost attribution`)
+    const keys = accounting.initializer.properties.map(p => p.name?.getText(source))
+    for (const key of ['feature','profileId','spaceId']) assert.ok(keys.includes(key), `${path} accounting lacks ${key}`)
+   }
+  }
+  ts.forEachChild(node, audit)
+ }
+ audit(source); assert.equal(seamCalls, 1, `${path} must make exactly one attributed completion`)
 }
 const state = globalThis.__legacyCompletionProbe
 state.enabled = true; state.overBudget = false; state.rateLimited = false

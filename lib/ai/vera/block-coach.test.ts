@@ -11,7 +11,7 @@ import { COACHING_QUESTION_CATALOG } from '@/lib/ai/coaching-question-catalog'
 import { VOICE_PRIMER } from '@/lib/ai/voice'
 import { photoHeroBlock } from '@/lib/entity-blocks/contract/photoHero'
 import { inspectorFields } from '@/lib/builder/inspector-model'
-import { blockCoachContext, coachNewBlock } from './block-coach'
+import { blockCoachContext, coachBlock, coachNewBlock } from './block-coach'
 
 const fields = inspectorFields(photoHeroBlock, 'space-site')
 const input = { blockType: 'Banner', fields, values: {}, profileId: 'p1', spaceId: 's1' }
@@ -24,6 +24,21 @@ beforeEach(() => {
   mocks.budget.mockResolvedValue(false)
   mocks.limited.mockResolvedValue(false)
   mocks.complete.mockResolvedValue(toolUse({ questions: [{ field: 'title', questionId: 'welcome' }] }))
+})
+
+describe('coachBlock (the shared seam, LIVE-890)', () => {
+  it('coaches with EDITOR_CANVAS off, so the live rewrite path does not wait on the canvas switch', async () => {
+    mocks.flag.mockReturnValue(false)
+    expect((await coachBlock(input))?.source).toBe('vera')
+    expect(mocks.complete.mock.calls[0]![0].accounting).toEqual({ feature: 'seed-compose', profileId: 'p1', spaceId: 's1' })
+  })
+
+  it('still falls back with no spend when AI is off', async () => {
+    mocks.flag.mockReturnValue(false)
+    mocks.enabled.mockReturnValue(false)
+    expect((await coachBlock(input))?.source).toBe('fallback')
+    expect(mocks.complete).not.toHaveBeenCalled()
+  })
 })
 
 describe('coachNewBlock', () => {
