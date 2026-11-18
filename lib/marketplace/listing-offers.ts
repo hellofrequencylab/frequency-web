@@ -18,6 +18,7 @@ import { formatPriceCents } from '@/lib/commerce/types'
 import { getMyProfileId } from '@/lib/auth'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 import { notifyDirectMessage } from '@/lib/messages/dm-notify'
+import { isBlockedBetween } from '@/lib/blocking'
 
 export type OfferTargetKind = 'market_listing' | 'listing' | 'product'
 
@@ -87,6 +88,11 @@ export async function submitListingContact(input: {
     const sellerId = await resolveSellerId(admin, input.targetKind, input.targetId)
     if (!sellerId) return { error: 'This listing is no longer available.' }
     if (sellerId === viewerId) return { error: 'This is your own listing.' }
+
+    // Block gate (EMAIL-056, parity with sendMessage, the service enquiry and message the host):
+    // findOrCreateDirectConversation leaves this policy to its caller, and this caller skipped it, so
+    // a member the seller blocked could still reach them through Contact the seller.
+    if (await isBlockedBetween(viewerId, sellerId)) return { error: 'You cannot message this seller.' }
 
     // Open or reuse the buyer↔seller 1:1 thread. The marketplace enquiry does NOT gate on friendship,
     // so it uses findOrCreateDirectConversation (not startConversation).
