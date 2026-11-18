@@ -47,9 +47,9 @@ export function templeKitPhoto(name: TempleKitImageName | `photo-${string}`): st
 const ph = templeKitPhoto
 
 export const TEMPLE_KIT_HERO = {
-  eyebrow: 'Ojai, California',
+  eyebrow: 'Your town · Your region',
   title: 'A house for gathering.',
-  lead: 'Two acres of olive and palm above the valley, with rooms for ceremony, practice and long tables. Small numbers, slow hours, nothing rushed.',
+  lead: 'Rooms for ceremony, practice and long tables. Small numbers, slow hours, nothing rushed.',
   primaryLabel: "See what's open",
   primaryHref: '~/gatherings',
   secondaryLabel: 'Hire the house',
@@ -59,36 +59,36 @@ export const TEMPLE_KIT_HERO = {
   pos: 'center 55%',
   live: true,
   cardLabel: 'Next gathering',
-  cardTitle: 'New moon sound bath',
-  cardWhen: 'Thu 20 Nov',
-  cardNote: '8 seats left',
+  cardTitle: 'Your next gathering',
+  cardWhen: '',
+  cardNote: '',
   cardImage: ph('industrial-panel'),
   cardHref: '~/gatherings',
 }
 
 export const TEMPLE_KIT_LIVE = {
   items: [
-    { source: 'nextEvent', icon: 'calendar', label: 'Next gathering', value: 'Nov 20 · Sound bath', href: '~/gatherings' },
-    { source: 'custom', icon: 'circle', label: 'Walk the grounds', value: 'Free, ask for a time', href: '~/book' },
-    { source: 'custom', icon: 'arc', label: 'Next program', value: 'Breath · from Jan 5', href: '~/programs' },
-    { source: 'custom', icon: 'map-pin', label: 'Find us', value: 'Ojai, California', href: '~/contact' },
+    { source: 'nextEvent', icon: 'calendar', label: 'Next gathering', value: 'Shows your next date', href: '~/gatherings' },
+    { source: 'custom', icon: 'circle', label: 'Walk the grounds', value: 'Ask for a time', href: '~/book' },
+    { source: 'custom', icon: 'arc', label: 'Next program', value: 'Say when the next one starts', href: '~/programs' },
+    { source: 'custom', icon: 'map-pin', label: 'Find us', value: 'Your town', href: '~/contact' },
   ],
 }
 
 export const TEMPLE_KIT_GATHERINGS = {
   eyebrow: "What's open",
   title: 'Gatherings *this season.*',
-  lead: 'Sound, breath, suppers and the turns of the year. Twenty to thirty people, in person.',
+  lead: 'Sound, breath, suppers and the turns of the year. Small groups, in person.',
   actionLabel: 'All gatherings',
   actionHref: '~/gatherings',
   count: 4,
   note: 'Seats are sold singly, so you may sit beside someone new.',
   empty: 'No dates are open right now. The next letter has them first.',
   rows: [
-    { month: 'Nov', day: '20', when: 'Thu 20 Nov', time: '7pm–8:30pm', title: 'New moon sound bath', place: 'The great room', price: '$45', seats: '8', image: ph('industrial-panel'), href: '~/gatherings' },
-    { month: 'Nov', day: '29', when: 'Sat 29 Nov', time: '6pm–9:30pm', title: 'Long table supper', place: 'The long table, under the olives', price: '$120', seats: '3', image: ph('nature-palm'), href: '~/gatherings' },
-    { month: 'Dec', day: '7', when: 'Sun 7 Dec', time: '5pm–7pm', title: 'Breath at the fire circle', place: 'The fire circle', price: '$55', seats: '11', image: ph('industrial-blades'), href: '~/gatherings' },
-    { month: 'Dec', day: '21', when: 'Sun 21 Dec', time: '4pm–9pm', title: 'Winter solstice ceremony', place: 'The whole house', price: '$95', seats: '40', image: ph('council'), href: '~/gatherings' },
+    { month: '', day: '', when: '', time: '', title: '', place: '', price: '', seats: '', image: ph('industrial-panel'), href: '~/gatherings' },
+    { month: '', day: '', when: '', time: '', title: '', place: '', price: '', seats: '', image: ph('nature-palm'), href: '~/gatherings' },
+    { month: '', day: '', when: '', time: '', title: '', place: '', price: '', seats: '', image: ph('industrial-blades'), href: '~/gatherings' },
+    { month: '', day: '', when: '', time: '', title: '', place: '', price: '', seats: '', image: ph('council'), href: '~/gatherings' },
   ],
 }
 
@@ -99,35 +99,35 @@ export const TEMPLE_KIT_ROOMS = {
   actionLabel: 'Hire a room',
   actionHref: '~/ceremonies-hire',
   rooms: [
-    { name: 'The great room', capacity: '80 standing · 40 on mats', image: ph('industrial-panel'), href: '~/ceremonies-hire' },
-    { name: 'The garden lawn', capacity: '150 standing', image: ph('nature-fern'), href: '~/ceremonies-hire' },
-    { name: 'The long table', capacity: '24 seated', image: ph('planning'), href: '~/ceremonies-hire' },
-    { name: 'The fire circle', capacity: '30 around the fire', image: ph('industrial-blades'), href: '~/ceremonies-hire' },
-    { name: 'Healing rooms', capacity: 'Two rooms · one to one', image: ph('industrial-ribs'), href: '~/ceremonies-hire' },
-    { name: 'The pool court', capacity: 'Ceremonies · up to 60', image: ph('pool-temple'), href: '~/ceremonies-hire' },
+    { name: 'The great room', capacity: '', image: ph('industrial-panel'), href: '~/ceremonies-hire' },
+    { name: 'The garden lawn', capacity: '', image: ph('nature-fern'), href: '~/ceremonies-hire' },
+    { name: 'The long table', capacity: '', image: ph('planning'), href: '~/ceremonies-hire' },
+    { name: 'The fire circle', capacity: '', image: ph('industrial-blades'), href: '~/ceremonies-hire' },
+    { name: 'Healing rooms', capacity: '', image: ph('industrial-ribs'), href: '~/ceremonies-hire' },
+    { name: 'The pool court', capacity: '', image: ph('pool-temple'), href: '~/ceremonies-hire' },
   ],
 }
 
 export const TEMPLE_KIT_OFFERINGS = {
   eyebrow: 'Ceremonies & hire',
   title: 'The house, *held for you.*',
-  lead: 'Ceremonies, retreats and room hire. Start with a walk of the grounds; it is free.',
+  lead: 'Ceremonies, retreats and room hire. Start with a walk of the grounds.',
   buttonLabel: 'Hold a date',
   services: [
     {
-      numeral: 'I', title: 'Ceremonies', length: 'Weddings, namings, memorials', price: 'From $2,400 · half day', image: ph('pool-temple'), href: '~/contact',
+      numeral: 'I', title: 'Ceremonies', length: 'Weddings, namings, memorials', price: '', image: ph('pool-temple'), href: '~/contact',
       summary: 'Vows under the olive trees, a naming at the fire, a memorial in the great room. We hold the space, the light and the quiet; you bring the people who matter.',
       includes: 'A planning walk of the grounds with our ceremony host\nThe great room or the garden lawn, set and cleared\nCandles, cushions and a sound system that stays out of sight',
     },
     {
-      numeral: 'II', title: 'Retreats', length: 'Two to five nights', price: 'From $1,450 a guest', image: ph('tent'), href: '~/contact',
-      summary: 'Bring your group for a few nights on the grounds. Six rooms and the bell tents sleep sixteen; the studio, fire circle and long table are yours for the stay.',
-      includes: 'Rooms for sixteen, with linens and morning tea\nFull use of the studio, council room and fire circle\nMeals at the long table, cooked by our kitchen',
+      numeral: 'II', title: 'Retreats', length: 'Two to five nights', price: '', image: ph('tent'), href: '~/contact',
+      summary: 'Bring your group for a few nights on the grounds. The rooms and tents sleep your group; the studio, fire circle and long table are yours for the stay.',
+      includes: 'Rooms for your group, with linens and morning tea\nFull use of the studio, council room and fire circle\nMeals at the long table, cooked by our kitchen',
     },
     {
-      numeral: 'III', title: 'Space hire', length: 'An evening to a full day', price: 'From $180 an hour', image: ph('industrial-panel'), href: '~/contact',
+      numeral: 'III', title: 'Space hire', length: 'An evening to a full day', price: '', image: ph('industrial-panel'), href: '~/contact',
       summary: 'The studio for a class, the council room for a circle, the long table for a supper. Hire one room for an evening or the whole house for a day.',
-      includes: 'A 48-hour hold while you decide\nSetup and reset by our house team\nStep-free access to every room on the ground floor',
+      includes: 'A hold on the date while you decide\nSetup and reset by our house team\nStep-free access to every room on the ground floor',
     },
   ],
 }
@@ -138,14 +138,14 @@ export const TEMPLE_KIT_STEPS = {
   lead: '',
   steps: [
     { title: 'Come to a gathering', body: 'A sound bath, a supper or a breath circle. Book a single seat.', image: ph('industrial-blades') },
-    { title: 'Walk the grounds', body: 'A free tour with our house host, for anyone planning a ceremony or a stay.', image: ph('planning') },
-    { title: 'Hold a date', body: 'Any date can be held for 48 hours while you decide.', image: ph('guest-room') },
+    { title: 'Walk the grounds', body: 'A tour with our house host, for anyone planning a ceremony or a stay.', image: ph('planning') },
+    { title: 'Hold a date', body: 'Any date can be held while you decide.', image: ph('guest-room') },
   ],
 }
 
 export const TEMPLE_KIT_GALLERY = {
   eyebrow: 'Life at the house',
-  title: 'Two acres, kept quietly. Fire in winter, the long table in summer, and the pool court at every hour between.',
+  title: 'The grounds, kept quietly. Fire in winter, the long table in summer, and the pool court at every hour between.',
   body: 'Photographs from the house.',
   photos: [{ image: ph('nature-palm'), alt: '' }, { image: ph('nature-dunes'), alt: '' }, { image: ph('nature-grain'), alt: '' }],
 }
@@ -157,10 +157,10 @@ export const TEMPLE_KIT_JOURNEYS = {
   actionLabel: 'All programs',
   actionHref: '~/programs',
   journeys: [
-    { title: 'Four weeks of breath', outcome: 'Build a twenty-minute breath practice you can keep without a teacher.', weeks: '4', pillar: 'Breath', image: ph('industrial-blades'), host: 'Ines Aldana', price: '$180', href: '~/programs' },
-    { title: 'The seasonal year', outcome: 'Mark each of the eight turns of the year with a short ritual you can do at home.', weeks: '8', pillar: 'Ritual', image: ph('nature-dunes'), host: 'Ines Aldana', price: '$240', href: '~/programs' },
-    { title: 'Holding a ceremony', outcome: 'Lead a simple naming, blessing or memorial for the people you love.', weeks: '3', pillar: 'Ceremony', image: ph('council'), host: 'A visiting celebrant', price: '$320', href: '~/programs' },
-    { title: 'Seven mornings', outcome: 'A free week of ten-minute practices. It leads into the circle.', weeks: '1', pillar: 'Practice', image: ph('nature-palm'), host: 'Ines Aldana', price: 'Free', href: '~/programs' },
+    { title: 'Four weeks of breath', outcome: 'Build a twenty-minute breath practice you can keep without a teacher.', weeks: '4', pillar: 'Breath', image: ph('industrial-blades'), host: '', price: '', href: '~/programs' },
+    { title: 'The seasonal year', outcome: 'Mark the turns of the year with a short ritual you can do at home.', weeks: '8', pillar: 'Ritual', image: ph('nature-dunes'), host: '', price: '', href: '~/programs' },
+    { title: 'Holding a ceremony', outcome: 'Lead a simple naming, blessing or memorial for the people you love.', weeks: '3', pillar: 'Ceremony', image: ph('council'), host: '', price: '', href: '~/programs' },
+    { title: 'Seven mornings', outcome: 'A week of ten-minute practices. It leads into the circle.', weeks: '1', pillar: 'Practice', image: ph('nature-palm'), host: '', price: '', href: '~/programs' },
   ],
 }
 
@@ -168,14 +168,11 @@ export const TEMPLE_KIT_PROOF = {
   image: ph('tent'),
   alt: '',
   eyebrow: 'Kind words',
-  quote: 'We were married under the olive trees with forty people and no microphone. Everyone heard every word.',
-  who: 'Maya and Theo',
-  role: 'Married at the house',
-  stars: '5',
-  more: [
-    { text: 'I burn the candle every morning before I sit. The whole flat smells like the great room.', who: 'Ruth K.', on: 'Olive & Ash Candle' },
-    { text: 'Four weeks in I could sit for twenty minutes without checking the time. I still do it most days.', who: 'Daniel O.', on: 'Four weeks of breath' },
-  ],
+  quote: 'Ask someone who came what changed for them, and paste their words here. A real line beats a polished one.',
+  who: 'Their name',
+  role: 'What they came for',
+  stars: '0',
+  more: [],
 }
 
 export const TEMPLE_KIT_MEMBERSHIP = {
@@ -184,19 +181,19 @@ export const TEMPLE_KIT_MEMBERSHIP = {
   lead: 'Three ways to belong. Each step adds more time in the rooms.',
   tiers: [
     {
-      eyebrow: 'To begin', name: 'Friend of the house', price: '$18', unit: 'a month', badge: '', featured: false, button: 'Join Friend of the house', href: '~/membership',
-      summary: 'Keep a thread to the house. The library, the seasonal letter and early word on every date.',
-      perks: 'The full recordings library\nThe seasonal letter, four times a year\n10% off gatherings',
+      eyebrow: 'To begin', name: 'Friend of the house', price: '', unit: '', badge: '', featured: false, button: 'Join Friend of the house', href: '~/membership',
+      summary: 'Keep a thread to the house. The library, the seasonal letter and early word on dates.',
+      perks: 'The full recordings library\nThe seasonal letter\nMember rates on gatherings',
     },
     {
-      eyebrow: 'Our pick', name: 'Circle', price: '$54', unit: 'a month', badge: 'First month $27', featured: true, button: 'Join Circle', href: '~/membership',
-      summary: 'For people who come often. A place at the morning practice and one program each season.',
-      perks: 'Everything for friends of the house\nA place at the morning practice\nOne seasonal program included\n20% off gatherings and suppers',
+      eyebrow: 'Our pick', name: 'Circle', price: '', unit: '', badge: '', featured: true, button: 'Join Circle', href: '~/membership',
+      summary: 'For people who come often. A place at the morning practice and a program to start.',
+      perks: 'Everything for friends of the house\nA place at the morning practice\nA program to start\nMember rates on gatherings and suppers',
     },
     {
-      eyebrow: 'To hold', name: 'Keeper', price: '$220', unit: 'a month', badge: '', featured: false, button: 'Join Keeper', href: '~/membership',
+      eyebrow: 'To hold', name: 'Keeper', price: '', unit: '', badge: '', featured: false, button: 'Join Keeper', href: '~/membership',
       summary: 'Hold the house with us. Private time in the rooms, and first seats at every ceremony.',
-      perks: 'Everything in Circle\nTwo private healing sessions a month\nFour hours of room hire each season\nFirst seats at the solstice and equinox',
+      perks: 'Everything in Circle\nPrivate healing sessions\nRoom hire in the house\nFirst seats at the solstice and equinox',
     },
   ],
 }
@@ -207,18 +204,18 @@ export const TEMPLE_KIT_FAQ = {
   image: ph('nature-grain'),
   alt: '',
   items: [
-    { q: 'Where is the house, and how do I get there?', a: 'Twelve minutes from the centre of Ojai. Free parking on the lower lawn, and step-free paths to every ground-floor room.' },
-    { q: 'Do I need to book a gathering?', a: 'Yes. Rooms are kept small, so every gathering is booked by the seat. A held seat is yours for 48 hours.' },
-    { q: 'How many people can the house hold?', a: 'Eighty standing in the great room, a hundred and fifty on the garden lawn, twenty-four seated at the long table and thirty mats in the studio.' },
-    { q: 'Can I hold a date while I decide?', a: 'Yes. Any date can be held for 48 hours at no cost. We will write before it lapses.' },
-    { q: 'What happens at a first gathering?', a: 'Arrive ten minutes early, leave your shoes at the door and take any mat. Nobody is asked to share. Tea is in the kitchen after.' },
-    { q: 'Can I pause a membership?', a: 'Members can pause for up to three months a year and keep their rate when they come back.' },
+    { q: 'Where is the house, and how do I get there?', a: 'Say where you are, how people get there and where they park. Mention step-free paths if you have them.' },
+    { q: 'Do I need to book a gathering?', a: 'Yes. Rooms are kept small, so every gathering is booked by the seat. A held seat is yours while we wait to hear from you.' },
+    { q: 'How many people can the house hold?', a: 'Say how many each room holds, standing and seated, so a planner can tell at a glance.' },
+    { q: 'Can I hold a date while I decide?', a: 'Yes. Ask us to hold a date while you decide. We will write before the hold lapses.' },
+    { q: 'What happens at a first gathering?', a: 'Arrive a little early, leave your shoes at the door and take any mat. Nobody is asked to share. Tea is in the kitchen after.' },
+    { q: 'Can I pause a membership?', a: 'Members can pause and keep their rate when they come back.' },
   ],
 }
 
 export const TEMPLE_KIT_LETTER = {
   eyebrow: 'The letter',
-  title: 'A letter each season. *Four a year.*',
+  title: 'A letter from the house. *Now and then.*',
   body: 'New dates, a short essay and first word on the solstice and equinox seats. Nothing else.',
   image: ph('nature-palm'),
   alt: '',

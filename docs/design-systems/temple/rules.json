@@ -316,6 +316,28 @@
     "copy:ui_kits/products/SpacePage.html#db1b2132",
     "copy:ui_kits/products/shared.jsx#247543b2"
    ]
+  },
+  {
+   "phrase": "Make every Frequency theme FULLY generic with copy that coaches them what to write. Be sure anybody using a theme keeps their content but give the templates a full scrub.",
+   "reason": "Daniel 2026-11-18 (LIVE-2373), depth ruled on the card as \"Strip specifics, keep ready copy\": the Temple Kit template no longer carries the prototype house's room capacities, fixed dates, named testimonials, named host, product names or 48-hour holds, so these sample lines are ruled out of the repo.",
+   "ids": [
+    "copy:ui_kits/site/HomePage.jsx#d2f313d9",
+    "copy:ui_kits/site/TempleBlocks.jsx#05453424",
+    "copy:ui_kits/site/TempleBlocks.jsx#55a68ede",
+    "copy:ui_kits/site/TempleBlocks.jsx#9421f526",
+    "copy:ui_kits/site/TempleBlocks.jsx#d533508c",
+    "copy:ui_kits/site/TempleBlocks.jsx#fa6510ea",
+    "copy:ui_kits/site/content.js#6d4437f7",
+    "copy:ui_kits/site/data.js#1fbe0a74",
+    "copy:ui_kits/site/data.js#429a7e74",
+    "copy:ui_kits/site/data.js#53d66173",
+    "copy:ui_kits/site/data.js#546fb663",
+    "copy:ui_kits/site/data.js#602aa0ca",
+    "copy:ui_kits/site/data.js#6d4437f7",
+    "copy:ui_kits/site/data.js#bda5e38e",
+    "copy:ui_kits/site/data.js#d2f313d9",
+    "copy:ui_kits/site/data.js#e958441b"
+   ]
   }
  ]
 }
