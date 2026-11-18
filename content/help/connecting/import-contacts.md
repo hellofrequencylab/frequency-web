@@ -1,60 +1,64 @@
 ---
 title: Import your contacts from a CSV
-description: Bring a spreadsheet of people into My Contacts. Frequency matches your columns, shows a preview, and skips anyone you already have.
+description: Bring a spreadsheet of people into My Contacts. Frequency matches your columns, shows a review, and never makes a duplicate.
 category: connecting
-order: 8
+order: 7
 published: 2026-07-14
-updated: 2026-07-14
+updated: 2026-11-18
 audience: member
 featureKeys: [connections]
+keywords: [upload spreadsheet, excel, vcard, bulk add, google contacts, address book, duplicates, paste a list]
 status: published
 ---
 
-Got a spreadsheet of people you want to keep track of? Upload it and they land in **My Contacts**, private to you. Frequency matches your columns to the right fields, shows you a preview, and skips anyone you already have.
+Got a spreadsheet of people you want to keep track of? Upload it and they land in **My Contacts**, private to you. Frequency lines up your columns, shows you a review, and does not double anyone you already have.
 
-## How do I import a CSV?
+## Import a file
 
-Open **My Contacts**, choose **Import**, and follow the four steps. You can also go straight to **/network/contacts**.
+Where to find it: **Members** in the left menu, then the **My Contacts** tab, then **Import from file**.
 
-1. **Upload** your CSV. A CSV is the "comma separated values" file that Google Contacts, your email app, or a spreadsheet exports.
-2. **Check the columns.** Frequency reads your headers and lines each one up with a field like name, email, or phone. You confirm or fix any it got wrong.
-3. **Preview.** You see exactly what will happen before anything saves: how many people are new, how many match someone you already have, and how many are skipped.
-4. **Import.** Confirm, and your contacts are in.
+1. **Upload.** Drop in your file. A CSV is the usual one, the "comma separated values" file a spreadsheet or contacts app exports. Excel, vCard, JSON, and plain text work too. No file? Choose **Or paste a list of people**.
+2. **Match columns.** Frequency reads your headers and lines each one up with a field like name, email, or phone. Fix any it got wrong.
+3. **Review.** You see what will happen before anything saves: who is new, who matches someone you already have, and which rows were set aside.
+4. **Done.** Confirm, and your contacts are in.
 
-Nothing saves until you confirm at the preview step, so you can back out or fix the mapping at any point.
+Nothing saves until you confirm at the review step, so you can go back and fix the matching at any point.
 
-## Which columns does it understand?
+## Check which columns it understands
 
-Frequency matches the common ones for you: name, email, phone, title, company, city, website, and social handles like Instagram, LinkedIn, and X, plus tags and notes.
+Frequency matches the common ones for you: name, email, phone, title, company, city, website, social handles like LinkedIn and X, plus tags and notes.
 
-- Anything it recognizes is lined up automatically, marked so you can see it was a guess.
-- Anything unusual becomes a **custom field** that keeps its own label, or you can tell it to ignore that column.
-- If it isn't sure about a column, Vera suggests a match and you approve it. Vera only ever suggests from your real columns; it never makes up a field or reads anything you didn't upload.
+- Anything unusual can become a **Custom field** that keeps its own label.
+- Choose **Skip this column** for anything you do not want brought over.
+- If a column is unclear, Vera suggests a match and you approve it. Vera only suggests from the columns in your file.
 
-## What happens if some people are already contacts?
+## Decide what happens to people you already have
 
-Frequency spots anyone you already have, by a matching email or phone, and won't make a duplicate. You choose what to do with a match:
+Frequency spots a match by email or phone and will not make a duplicate. You choose how a match is handled:
 
-- **Skip** them and keep what you have (the default).
-- **Fill in the blanks** from the file without touching what you already wrote.
-- **Overwrite** your details with the ones in the file.
+- **Fill blanks only** keeps what you already wrote and only fills the gaps. This is the starting choice.
+- **Overwrite** replaces your details with the ones in the file.
+- **Skip matches** leaves anyone you already have untouched.
 
-The preview counts the matches before you commit, so there are no surprises.
+## Questions
 
-## What if a few rows have problems?
+### What if a few rows have problems?
 
-One bad row never stops the import. If a line is missing an email or has something that looks off, Frequency flags just that row, imports the rest, and tells you how many it set aside so you can fix them and run it again.
+One bad row does not stop the import. Frequency sets that row aside, brings in the rest, and tells you what it skipped so you can fix it and run the file again.
 
-## Is my import private?
+### Is my import private?
 
-Yes. Imported contacts go into your own address book, the same as a scanned card:
+Yes. Imported contacts go into your own address book. Only you can see them. The people in the file are not notified, and they are not added to any mailing list.
 
-- Only you can see them.
-- The people in the file are **not notified**, and they are **not** added to any mailing list.
-- Run the same file twice and Frequency updates your existing contacts instead of doubling them.
+### Do I need to be signed in?
 
-## Good to know
+Yes. Importing adds contacts to your own account, so you need to be signed in first.
 
-- You need to be signed in to import.
-- Prefer another way? You can also [scan someone's code](/help/connecting/save-by-scanning), import from Google, or add a contact by hand (see [Finding people](/help/connecting/find-people)).
-- Run a business on Frequency? Bringing a list into your [Space's Community Resonance](/help/spaces/community-resonance) works the same way, and that list stays sealed to your Space.
+### Can I import for my business instead?
+
+Bringing a list into your [Space's Community Resonance](/help/spaces/community-resonance) works the same way, and that list stays sealed to your Space.
+
+## Related
+
+- [Finding people & Circles](/help/connecting/find-people)
+- [Save someone by scanning their code](/help/connecting/save-by-scanning)

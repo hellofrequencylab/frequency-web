@@ -1,36 +1,72 @@
 ---
 title: Messages & rooms
-description: Direct messages, group threads, and chat rooms.
+description: Direct messages, group messages, and rooms, and how to start each one.
 category: connecting
 order: 3
 published: 2026-06-03
-updated: 2026-06-10
+updated: 2026-11-18
 audience: member
 featureKeys: [messages]
+keywords: [dm, chat, inbox, group chat, private message, text someone, cant message, channel room]
 status: published
 ---
 
-Frequency has a few ways to talk directly, beyond posting in your feed.
+Sometimes a post in the feed is too public. Messages is where you talk with one person, a small group, or a whole room.
 
-## Direct messages
+## Find it
 
-- **DMs are 1:1.** One person, one thread. You need to be [friends](/help/connecting/friends) with someone before starting a DM, so add them first.
+Tap **Messages** in the left menu, or the message icon in the top bar. Your inbox has four tabs: **All**, **Unread**, **People**, and **Rooms**. Use **Find a conversation** to search your threads, and sort by **Latest**, **Unread**, or **A to Z**.
 
-## Rooms (group chats)
+## Message one person
 
-- A **group chat is a private room**: start one and add the people you want.
-- **Rooms** are ongoing group spaces, distinct from one-off DMs. Crew members (the membership) and community leaders (Hosts and up) can also create open/shared rooms.
-- **Channel rooms.** Every [Channel](/help/groups/channels) has one open room. Anyone can read it; tune into the Channel to post. You'll see the rooms you're tuned into in your Messages, and an **Open room** button on each Channel.
+1. Tap **New message**. It takes you to Members.
+2. Pick the person and use the message button on their profile.
+3. Write your note and send it.
 
-## Who's around
+You need to be [friends](/help/connecting/friends) before you can message someone. If you are not yet, send a friend request first.
 
-A small **green dot** on someone's avatar means they're active right now, so you can see who's around to chat at a glance, in your messages and across the directory.
+## Start a group message
+
+1. Tap **Group message**.
+2. Add the friends you want. Everyone in a group message has to be a friend of yours.
+3. Say hello.
+
+## Start or join a room
+
+A room is an ongoing group space with a name, not a one-off chat.
+
+- Tap **Start a room** to make one. Any member can. You choose whether it is public or private.
+- Open rooms you can join appear under **Rooms to join**.
+- Every [Channel](/help/groups/channels) has its own room. Look for **Open room** on the Channel's page.
+
+## See who is around
+
+A small dot on someone's photo in your inbox means they are online right now.
 
 ## Search a room
 
-Open any room and tap **Search** in the header to find past messages. It searches by *meaning*, not just exact words, so "the hike on Saturday" surfaces the right thread even if it was worded differently.
+Open a room and tap **Search** in its header. It looks for meaning, not only exact words, so "the hike on Saturday" can find the right message even if it was worded differently.
 
-## Tips
+## Ask Vera
 
-- Use DMs for the personal stuff and your feed or Circle for things the whole group should see.
-- Notifications keep you on top of replies; tune them in [Settings](/help/getting-started/notifications).
+**Ask Vera** on the Messages page opens a chat with Vera for help, events, or a nudge in the right direction.
+
+## Questions
+
+### Why can't I message someone?
+
+You have to be friends first. That keeps private messages between people who both said yes. On a Marketplace listing, the contact button lets you reach a seller without being friends.
+
+### Where do I turn message alerts on or off?
+
+In your notification settings. See [Notifications](/help/getting-started/notifications).
+
+### DM, group, or room: which one?
+
+Use a direct message for personal things, a group message for a few friends, and a room or your Circle for anything a wider group should see.
+
+## Related
+
+- [Friends](/help/connecting/friends)
+- [Channels](/help/groups/channels)
+- [Notifications](/help/getting-started/notifications)

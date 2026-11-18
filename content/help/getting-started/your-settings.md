@@ -2,62 +2,89 @@
 title: Your settings
 description: Where to update your profile, preferences, and account.
 category: getting-started
-order: 12
+order: 13
+group: Your account
 published: 2026-06-03
-updated: 2026-09-30
+updated: 2026-11-18
 audience: member
 featureKeys: [settings, notifications]
+keywords: [account, preferences, change name, change photo, dark mode, privacy, billing, ghost mode]
 status: published
 ---
 
-Settings is where you tune your account and how Frequency reaches you. It's all
-one page now: pick a section with the chips at the top, or just scroll.
+Looking for a switch and not sure where it lives? Settings is one page with a list of sections down the side. Pick a section and its controls open beside it.
 
-Two ways in. Open the account menu at the top right and choose **Appearance** to
-land straight on the look-and-feel section, or open Settings and scroll.
+## Find it
 
-## What you'll find there
+- Tap your photo at the top right and choose **Settings**. The same menu has **Appearance** and **Plan & billing**, which open Settings on that section.
+- Or open the **You** tab at the foot of the left rail and choose **Account**.
+- On a phone, tap **Menu** and scroll to **Settings**.
 
-Settings is one page. Each area below is a section you can scroll to, in this order:
+Not sure which section holds something? Type it into **Search settings** at the top. The list narrows to the sections that mention it.
 
-- **Profile**: your display name, handle, photo, **header image** (the banner across the top of your profile), bio, and region. This is what other members see.
-- **Appearance**: pick your look. Light or dark, the **Feel** (how dense or roomy things sit, which now changes text size and spacing across the whole site), and a **Seasonal accent** you can pin on or switch off. If more than one palette is available, you can pick that too. The account menu at the top right also carries a one-tap light and dark switch, and a link straight to this section. Light is what everyone starts on, and dark is yours once you have an account. On a phone, the public **Discover** pages stay light whichever look you pick, so a link you send looks the same to whoever opens it. Your choice is kept and comes straight back everywhere else.
-- **Notifications**: choose what you're told about and how (in-app, email, push, and text where enabled), pick how often, and mute a single Circle or Space. See [Notifications](/help/getting-started/notifications) and "Choosing what reaches you" below.
-- **Install the app**: put Frequency on your home screen so it opens like any other app. On iPhone it lists the Share steps. See [Install the app](/help/getting-started/install-the-app).
-- **Connections and location**: control how you're found by people nearby (see below).
-- **Account and privacy**: sign-in, account-level controls, and your privacy choices. This is also where you can erase your saved drafts, and where deleting your account lives.
-- **Plan and billing**: your Frequency plan, what it costs, and where your payment details live (see [Membership & the Vault](/help/membership/the-vault)). If a Space membership payment did not go through, that Space is named here. You are still a member. Update the card Stripe emailed you about, or leave from the Space.
-- **Memberships**: Spaces you belong to. Open one from here, or leave it. See [Your Space memberships](/help/membership/your-space-memberships).
+## Know the sections
 
-## Connections & Location
+- **Account.** Your name, the email you sign in with, and **About you**. **Change photo** and the link under the form open the full profile editor, where your handle, photo, links, and Spotlight page live. Further down: the members you have blocked, **Download my data**, **Erase your saved drafts**, and **Delete your account**. See [Blocking and deleting your account](/help/getting-started/safety-and-account).
+- **Notifications.** What you hear about and how it reaches you, plus a mute for a single Circle or Space. See [Notifications](/help/getting-started/notifications).
+- **Privacy.** Who can find you and how much they see. Details below.
+- **Location.** Your home base, and whether nearby shows where you are right now.
+- **Feed.** How far your feed reaches, and whether posts carry a short reason for showing up.
+- **Membership.** Your Frequency plan and payment, then the Spaces you belong to, where you can open one or leave it. See [Membership & the Vault](/help/membership/the-vault) and [Your Space memberships](/help/membership/your-space-memberships).
+- **Appearance.** **Light**, **Dark**, or **System**, which follows your device. If more than one palette is on offer, you pick that here too. The menu under your photo has the same switches under **Look**.
+- **Install the app.** Put Frequency on your home screen. See [Install the app](/help/getting-started/install-the-app).
 
-Frequency helps you find people nearby, and you're always in control of how visible you are. **We never share your exact location.** Others only ever see a fuzzed area or your city, never a pin on a map.
+Most sections save as you change them. The Account form has its own **Save** button.
 
-- **Ghost mode**: one tap to vanish from proximity and maps entirely.
-- **Show me in the Members directory**: whether you're listed at all.
-- **Who can find me nearby**: no one, only your connections, or the whole community.
-- **Location precision**: the most anyone can see, whether hidden, your city, or a fuzzed neighborhood area (about a mile across).
-- **Discoverability radius**: how far away someone can be and still find you. Your own slider, from a mile up to your whole region.
-- **Live location** (optional, off by default): share your *current* spot instead of your home city, handy when traveling. It's a one-time snapshot, not a tracker, and your precision setting still applies. Full details in [Your location & being found nearby](/help/connecting/your-location).
+## Decide who can find you
 
-## Choosing what reaches you
+Frequency helps you find people nearby, and you are always in control of how visible you are. Others only ever see a fuzzed area or your city, never a pin on a map. All of these live under **Privacy**:
 
-Under **Settings → Notifications** you decide exactly what Frequency sends and where it reaches you. Nothing here is all-or-nothing.
+- **Show me on leaderboards.** Whether your name appears on your Circle's board and the season's. You still count toward the shared goal.
+- **Ghost mode.** One tap to vanish from proximity and maps.
+- **Show me in the Members directory.** Whether you are listed at all.
+- **Who can find me nearby.** **No one**, **My connections**, or **The community**.
+- **Location precision.** The most anyone can see: **Hidden**, **City**, or **Neighborhood**, a fuzzed area about a mile across.
+- **Discoverability radius.** How far away someone can be and still find you.
+- **Resonance matching.** Off by default. Turn it on to let Frequency suggest a few people you might click with. Nobody is introduced until you both say yes.
 
-- **Topics**: turn each kind on or off on its own, and per channel. Dispatches and events reach you by email and push; **practice reminders** reach you in the app and by push; onboarding nudges after you join a Circle come by email and push. A switch only appears where something actually sends through it, so if a row is missing for a topic, nothing is sent for it yet.
-- **Practice reminders**: one nudge a day at most, at the time you usually practice, and only on days a practice is still waiting. It also carries the note when a commitment completes. On for the app by default; push is opt-in and it never comes by email.
-- **Mute one Circle or Space**: quiet a single [Circle](/help/getting-started/what-is-a-circle) or Space without leaving it. There is one switch per place you belong to, and it silences that place on every channel. You stay a member and see everything when you open the app; you just stop hearing from that one. Confirmations, reminders and cancellation notices for events you RSVP'd to still reach you, because you asked for those by answering. Your topic switches above are not affected.
-- **Marketing and memory**: separate switches control marketing email and whether Vera remembers your details between chats. Both are yours to turn off any time.
+## Set your home base and live location
 
-Everything sends as it happens. There is no digest option today.
+Under **Location**:
 
-Account and security messages, like a password reset or a sign-in alert, always send. They're not marketing, so they aren't part of these choices.
+- **Home base.** The area that powers what is near you. Tap **Change** to update it in the profile editor.
+- **Live location.** Optional and off by default. It shares your current spot instead of your home city, handy when traveling. It updates when the app captures it, not continuously, and your precision setting still applies. Full details in [Your location & being found nearby](/help/connecting/your-location).
 
-Not a member of Frequency but still getting email from a business here? Every email has a link to a small preferences page where you can turn down one topic or stop the emails entirely, without needing an account.
+## Shape your feed
 
-## Good to know
+Under **Feed**:
 
-- Your **handle** is how people @-mention and find you, so pick something you're happy to be known by.
-- Keeping your **region** current helps surface Circles and events near you.
-- Notification preferences are always yours to change, and we honor them everywhere.
-- Your connection and location settings are always yours to change, and we honor them everywhere. Turn on **Ghost mode** any time you want to be invisible.
+- **Feed reach.** How far the **Nearby** lens casts by default. When your area is quiet it widens on its own.
+- **Show why I see things.** A short reason on picks and posts, like From your Circle or Near you.
+
+## Choose what reaches you
+
+Under **Notifications** you decide what Frequency sends and where. Nothing here is all-or-nothing.
+
+- **Topics.** Each row is a topic, and the switches pick **Email**, **In-app**, and **Push**. A dash means nothing sends that way yet.
+- **Practice reminders.** One nudge a day at most, at the time you usually practice, and only on days a practice is still waiting. It never comes by email.
+- **Notifications on this device.** Push needs one tap on **Turn on notifications**, on each device.
+- **Text messages.** Texts have their own card, with a verified number and quiet hours. If it says coming soon, texts are not open yet.
+- **Mute a Circle or Space.** One switch per place you belong to. You stay a member and see everything when you open the app. Confirmations, reminders, and cancellation notices for events you RSVP'd to still reach you.
+- **Privacy & consent.** Separate switches for **Marketing email**, **Vera's memory**, and **Product analytics**. All yours to turn off any time.
+
+Account and security email, like a password reset or a receipt, always sends.
+
+Getting email from a business on Frequency without being a member? The footer of the email has a link to stop those emails, and it works without an account.
+
+## Keep in mind
+
+- Your **handle** is how people mention and find you, so pick something you are happy to be known by.
+- Keeping your **home base** current helps surface Circles and events near you.
+- At the bottom of Settings you will find quick links to **Edit profile**, **Help center**, and **Support tickets**.
+
+## Related
+
+- [Notifications](/help/getting-started/notifications)
+- [Blocking and deleting your account](/help/getting-started/safety-and-account)
+- [Your location & being found nearby](/help/connecting/your-location)
+- [Install the app](/help/getting-started/install-the-app)

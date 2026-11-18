@@ -2,172 +2,111 @@
 title: Practices, choose, do, log
 description: Find a practice that supports you, choose a rhythm, and keep a record of what you do.
 category: getting-started
-order: 3
+order: 11
+group: Day to day
 published: 2026-05-31
-updated: 2026-11-14
+updated: 2026-11-18
 audience: member
 featureKeys: [practices, gamification]
+keywords: [habit, daily habit, log a practice, timer, streak, adopt, remix, create my own]
 status: published
 ---
 
-A practice is something you choose to do: walk, breathe, journal, make something, or
-spend a quiet moment with someone. Start with what would support you today.
+A practice is something you choose to do: walk, breathe, journal, make something, or spend a quiet moment with someone. Start with what would support you today.
 
-A practice can support more than one part of life. **Mind** can mean attention and
-reflection; **Body**, movement and rest; **Spirit**, connection and meaning in your
-own terms. **Expression** can be making, speaking, helping, or sharing. These overlap.
-You do not need to fill four boxes every day, and you do not need to feel balanced
-before you express yourself.
+A practice can support more than one part of life. **Mind** can mean attention and reflection; **Body**, movement and rest; **Spirit**, connection and meaning in your own terms. **Expression** can be making, speaking, helping, or sharing. These overlap. You do not need to fill four boxes every day, and you do not need to feel balanced before you express yourself.
 
-Logging keeps a record of what you did. It cannot capture everything that supports
-you, and the shape of that record is not a verdict about how you are doing.
+Logging keeps a record of what you did. It cannot capture everything that supports you, and the shape of that record is not a verdict about how you are doing.
 
-## Two ways to have a practice
+## Find a practice
 
-- **Your Circle's practice.** A Circle Host sets what the Circle is practicing.
-  Open your Circle and you will see "This week's practice" with a button to log it.
-- **Your own practice.** Not in a Circle yet, or want something extra? Go to
-  **Practices**, browse the library, and adopt one for yourself.
+Where to find it: open **The Quest** in the header and choose **Practices**. On a phone, tap **Menu** and look under **The Quest**.
+
+There are two ways to have a practice:
+
+- **Your Circle's practice.** A Circle Host sets what the Circle is practicing. Open your Circle and you will see it under **This week**, with a button to log it.
+- **Your own practice.** Not in a Circle yet, or want something extra? Open **Practices**, browse the library, and adopt one for yourself.
 
 ## Log it
 
-Each practice you've adopted sits in your **practices** row, one tight line each
-with a **View practice** link to open its page. How you mark it done depends on the
-practice, and the button tells you which at a glance:
+Each practice you have adopted sits under **Your practices**. Tap its title to open its page. How you mark it done depends on the practice, and the button tells you which:
 
-- A **timed** practice shows **Start Practice** with a little **timer** icon. Tap it
-  and **[Mindless](/help/the-quest/on-air)** opens to run it; finishing the timer is
-  what logs the day.
-- A **log-it** practice (an action or a reflection, no timer) shows a **check-off**:
-  tap **Log it** and it's done in one tap.
+- A **timed** practice shows **Start Practice**. Tap it and [Mindless](/help/the-quest/on-air) opens to run it. Finishing the timer is what logs the day. Stopped partway? The button reads **Continue Practice** and picks up where you left off.
+- A **log-it** practice (an action or a reflection, no timer) shows **Log it**. One tap and it is done.
 
-Either way, marking **any** practice done, your own or your Circle's, earns **Zaps**
-(the in-person, real-world currency). It also:
+Marking any practice done, your own or your Circle's, earns **Zaps**. It also keeps your **streak** alive and counts you as active for the week.
 
-- keeps your **streak** alive, and
-- counts you as active for the week.
+Once it is done, the row reads **Logged today**. Tapped it by mistake? Hit **Undo**, same day only. After today the log is locked in.
 
-Once it's done, the row reads **Logged today**. Tapped it by mistake? Hit **Undo** to
-un-log it, same day only. After today the log is locked in.
+You can log a practice once per day. Choose a rhythm you can return to. You can rest, change your plan, or come back after a gap without starting over.
 
-You can log a practice once per day. Choose a rhythm you can return to. You can rest,
-change your plan, or come back after a gap without starting your personal journey over.
-
-One timer, two modes. **[Mindless](/help/the-quest/on-air)** has **Be Still** for
-a sit and **Get Moving** for a walk, run, yoga, strength, stretch or play. A timed
-practice can come **preset by whoever built it**, its mode, its length, its warm-up,
-even a full workout like Tabata, so it opens ready to go and you just start.
+One timer, two modes. [Mindless](/help/the-quest/on-air) has **Be Still** for a sit and **Get Moving** for a walk, run, yoga, strength, stretch, or play. A timed practice can come preset by whoever built it (its mode, its length, its warm-up, even a full workout), so it opens ready to go and you just start.
 
 ## Choose a rhythm
 
-When you adopt a practice, you pick how long you are taking it on: **2 weeks**, **4
-weeks**, **8 weeks** (a longer stretch to explore), or
-**ongoing**. You can also note when you plan to do it ("After my morning coffee"),
-which gives the practice a place in your day. Your card shows where you stand, **Week 2
-of 4 · Day 9 of 28**, from day one.
+When you adopt a practice, you pick how long you are taking it on:
 
-When a commitment completes, you get the note and the choice: go again, keep it going
-as an ongoing practice, or let it rest. Your history stays yours either way.
+- **2 weeks**: a short trial.
+- **4 weeks**: a month to try a rhythm.
+- **8 weeks**: a longer stretch to explore.
+- **Ongoing**: no end date.
 
-Your list holds up to **five** practices you adopted yourself, on purpose: the ones
-you keep are the ones that happen. Taking on a sixth offers a **swap**, pick one to
-set down and the new one takes its place. Practices a **Journey** gives you do not
-count against the five; they come and go with the Journey. If you host a Circle, you
-can change the Circle's practice whenever the focus shifts.
+You can also note when you plan to do it ("After my morning coffee"), which gives the practice a place in your day. Your card shows where you stand, like **Week 2 of 4 · Day 9 of 28**, from day one.
+
+When a commitment completes, you get the note and the choice: go again, keep it going as an ongoing practice, or let it rest. Your history stays yours either way.
+
+Your list holds up to **five** practices you adopted yourself, on purpose: the ones you keep are the ones that happen. Taking on a sixth offers a swap. Pick one to set down and the new one takes its place. Practices a **Journey** gives you do not count against the five. If you host a Circle, you can change the Circle's practice whenever the focus shifts.
 
 ## Make it your own
 
-You can shape practices, not just pick them:
+You can shape practices, not just pick them.
 
-- **Create your own.** On **Practices**, hit **Create a practice**. You write the
-  name, what someone does, and any guidance you want to share. Vera can offer
-  separate coaching questions to help you clarify it; you decide what to write
-  and save. Choose the areas it can support, a cadence, and how it is done.
-  You can also paste your own written practice or start from a template.
-  Any signed-in member can create a practice. A free Member publishes a few,
-  and **Crew** publishes as many as they like. Any member can adopt and log one.
-- **Edit yours.** Open a practice you created and choose **Edit**. Change the name,
-  guide, cadence, supporting Pillars, category, and timer. Coaching can help you
-  think it through; it does not replace your words.
+- **Create your own.** On **Practices**, tap **Create a practice**. You write the name, what someone does, and any guidance you want to share. Vera can offer coaching questions to help you clarify it, and you decide what to write and save. Any signed-in member can create a practice. How many you can publish to the library depends on your plan, and **Crew** publishes more. Any member can adopt and log one.
+- **Edit yours.** Open a practice you created and choose **Edit**. Change the name, guide, cadence, supporting Pillars, category, and timer. Coaching can help you think it through. It does not replace your words.
+- **Set up how it runs.** In the editor, **How it's done** picks the timer: **Mindless** (a quiet Be Still sit), **Get Moving** (a walk, run, yoga, stretch, play, or a strength workout), or **Log it** (a one-tap check-off, no timer). You can add a warm-up message, and lock the length so it runs exactly as you set it.
+- **Remix one from the library.** See a practice that is close but not quite yours? Tap **Remix**, then **Make a copy**, and edit your copy freely. The idea is to put your own spin on it, not to repost the same thing. The original stays as it was for everyone else.
 
-- **Set up how it runs.** In the editor, **How it's done** picks the timer: **Mindless**
-  (a quiet Be Still sit, and you choose the flavour, Meditate, Breathe, Stillness, Ritual,
-  Journal or Just Log), **Get Moving** (a walk, run, yoga, stretch, play, or a full strength
-  workout with the work, rest and rounds set), or **Log it** (a one-tap check-off, no timer).
-  You can add a **warm-up** message and count-in, and **lock the length** so it runs exactly
-  as you set it. Short notes in the editor explain each choice, and it all ships preset so the
-  member just taps and starts.
-- **Remix one from the library.** See a practice that is close but not quite yours? Hit
-  **Remix** to make your own copy and edit it freely. The idea is to put your own spin on
-  it, a new angle or your own niche, not to repost the same thing. The original stays
-  exactly as it was for everyone else.
-
-(Editing covers the content and cadence. What a log is worth in Zaps is set by the team
-so the Quest stays fair: most Quest practices are valued by how often you do them, not how
-hard they are.)
+What a log is worth in Zaps is worked out for you, not set by the author, so the Quest stays fair.
 
 ## Claim a starter template
 
-Many library practices are **templates**: a proven starting point you can claim and
-make your own. Open one and hit **Claim & make it yours**:
+Many library practices are **templates**: a starting point you can claim and make your own. Open one and tap **Claim & make it yours**:
 
-1. Open the template and decide what you want to keep or adapt.
-2. You write the changes. Optional coaching questions can help you clarify the act
-   and choose a rhythm that fits your week.
-3. Review and claim it. You get your own private copy, adopted onto your list.
-   You can earn Zaps for your first claim.
+1. Decide what you want to keep or adapt.
+2. You write the changes. Tap **Ask Vera** if a few coaching questions would help you choose a rhythm that fits your week.
+3. Tap **Claim it**. You get your own private copy, adopted onto your list.
 
-From there it is yours: edit it anytime, log it daily, and, if you want, share it back
-to the community library for others to find. A practice you build starts as a **private
-draft**, only you can see it, and the editor's **Library** section always says where it
-stands: private draft, in review, or live. When it is ready, hit **Submit to the
-library** and it goes to the community leaders for a quick review. Once they approve it,
-it appears in the library for everyone; until then it stays private to you.
+From there it is yours: edit it any time, log it daily, and share it back to the library if you want.
 
-## What each practice shows
+## Share it with the library
 
-Open any practice and you get its own page: a header image, the full "how to do it"
-write-up and steps, a short summary, its Pillar and sub-category, and a stats band:
-the reward per log, the cadence, how many people are practising it, and how many times
-it has been logged.
+A practice you build starts as a **Private draft**. Only you can see it, and the editor's **Library** section says where it stands: private draft, in review, or live.
 
-Each practice also has a category (movement, holistic health, spirituality, creative,
-human relating, business support) and a cadence hint (daily, weekly, as needed). The
-library is browsable by what you are drawn to.
+1. Open your practice and choose **Edit**.
+2. Tap **Submit to the library**.
+3. A curator looks it over. Once it is approved, it appears in the library for everyone. Until then it stays private to you.
 
-If a practice is part of any **Journeys** or is being run by any **Circles**, the page
-shows a **"Used in"** section linking to them, a quick way to find a Journey built
-around it or a Circle already practising it together.
+## Read a practice page
 
-## Find your way around the library
+Open any practice and you get its own page: the full how-to and steps, a short summary, its Pillar and category, and a stats band with the reward per log, the cadence, how many people are practicing it, and how many times it has been logged.
 
-The library is organized so you can find practices that fit you, even as it grows to
-thousands:
+If a practice is part of any **Journeys** or is being run by any **Circles**, the page shows a **Used in** section linking to them.
 
-- **Search.** Use the search box to find a practice by name or description.
-- **Pillars and sub-categories.** Browse **Mind, Body, Spirit, or Expression** as
-  ways to explore. A practice can support more than one Pillar. Its main category
-  helps organize the library; it does not limit what the practice can mean to you.
-  You can narrow to a sub-category, such as Body → Mobility.
-- **Tags.** Practices carry tags like `morning`, `quick`, `outdoor`, or `social` so
-  you can spot what suits the moment. When you create or edit your own practice, add
-  your own tags to help others find it.
-- **Sort.** Sort the full practice library by **Trending** (what people are doing
-  lately), **All-time**, or **New**. Trending is the default, so the practices the
-  community is loving rise to the top. The sort applies to the full library only; the
-  Best of the library list below keeps its own ranking.
-- **Best of the library.** Above the full library sits one ranked list of the
-  community's top practices **and** Journeys, with **All**, **Practices**, and
-  **Journeys** tabs. Tap the heart on a card to rate it. Ratings, adoptions, and real
-  use are what move a card up. (This used to be its own Library page. Old Library links
-  now open Practices.)
+## Browse the library
 
-## Rewards vary by practice
+- **Search.** Use **Search practices** to find one by name or description.
+- **Pillars and sub-categories.** Browse **Mind, Body, Spirit, or Expression**, starting from **All Pillars**. A practice can support more than one Pillar. Its main category helps organize the library. It does not limit what the practice can mean to you.
+- **Tags.** Practices carry tags like `morning`, `quick`, `outdoor`, or `social` so you can spot what suits the moment.
+- **Sort.** Sort the library by **Trending** (the default), **All-time**, **New**, or **A-Z**.
+- **Best of the library.** One ranked list of the community's top practices and Journeys, with **All**, **Practices**, and **Journeys** tabs.
 
-What a log is worth depends on the practice. Most Quest practices are valued by their
-**cadence**, how often you do them: **Daily (10 Zaps)**, **a few times a week (15
-Zaps)**, or **Weekly (25 Zaps)**. The rarer the ask, the more each log gives back, so
-the value comes from showing up to the rhythm, not from how hard the practice is. Some
-other practices instead carry a **weight class** (Light 8, Standard 12, Heavy 15 Zaps).
-Either way, each practice page shows its reward up front, so you know what logging it is
-worth before you commit, and logging any practice always earns Zaps.
+## Know what a log is worth
+
+What a log is worth depends on the practice, and each practice page shows its reward up front, so you know before you commit. Some practices are valued by their cadence, how often you do them. Others carry a weight class based on length: **Light** (8 Zaps), **Standard** (12 Zaps), or **Heavy** (15 Zaps). Logging any practice earns Zaps.
+
+## Related
+
+- [Mindless, the practice timer](/help/the-quest/on-air)
+- [Streaks](/help/the-quest/streaks)
+- [Zaps and Gems](/help/the-quest/zaps-and-gems)
+- [Your Journey](/help/the-quest/your-journey)

@@ -1,25 +1,26 @@
 ---
 title: How to calm down fast when you can't switch off
-description: Wired and tired at the same time? Here is a 60-second way to calm down fast, why it works, and how to make it stick.
+description: Wired and tired at the same time? Here is a 60-second breath to try, why a long exhale helps, and how to make it a habit.
 category: find-your-people
 order: 2
 published: 2026-06-20
-updated: 2026-10-06
+updated: 2026-11-18
 audience: member
 featureKeys: [practices, on-air]
+keywords: [anxious, stressed, wired but tired, breathing exercise, can't sleep, overwhelmed, relax, panic]
 status: published
 ---
 Want to try it right now? [Start the five-minute breathing timer](/mindless), no account needed. Below is how it works and the Frequency features that help.
 
 It is late, you are exhausted, and you still cannot switch off. Your body is
 running like there is a deadline when the only thing in front of you is bed. Wired
-and tired at the same time is one of the most common complaints adults have, and it
-is not in your head. It is in your breath.
+and tired at the same time is one of the most common complaints adults have, and you
+are not imagining it. A good place to start is your breath.
 
 ## How do I calm down fast?
 
-Slow your exhale until it is longer than your breath in. That is the fastest lever
-you have, and it works in about a minute.
+Slow your exhale until it is longer than your breath in. It is the quickest lever
+most people have, and it takes about a minute to try.
 
 Try this now:
 
@@ -36,31 +37,30 @@ and the thing is what counts.
 Because the system that should switch off after a stressful day never gets the
 signal to stand down. Screens, news, and back-to-back demands keep it on low alert
 all day, so by night your body is still braced even though nothing is chasing you.
-Being tired does not turn that off. Only a clear "you are safe now" signal does, and
-slow breathing is the most reliable one you can send on purpose.
+Being tired does not turn that off. A clear "you are safe now" signal helps, and
+slow breathing is one of the simplest ones you can send on purpose.
 
-That is why "just relax" never works. Relaxing is not a decision. It is a thing you
-do with your body, and the breath is the switch.
+That is why "just relax" rarely works. Relaxing is not a decision. It is a thing you
+do with your body, and the breath is a switch you can reach.
 
 ## How do I make it stick?
 
 Do one short calming practice at the same moment every day, before you need it. The
-60-second breath above works in a crisis, but the real win is making it a habit so
-your baseline drops, not just your worst moments.
+60-second breath above is for the rough moments. The bigger win is the habit, so the
+calm is already familiar when you reach for it.
 
-The **Body** practices are the short, physical ones: breath, cold water, a walk, a
-two-minute reset you can do before your coffee. None of them ask for an hour or a mat
-or a mood.
+- Browse the Body practices. They are the short, physical ones: breath, cold water,
+  a walk, a two-minute reset you can do before your coffee. None of them ask for an
+  hour or a mat or a mood. [See the Body practices](/discover/practices/pillar/body)
+- Let a timer hold the space. When you are signed in, [open Mindless](/on-air),
+  pick **Be Still**, set a couple of minutes, and let it count you down.
 
-[See the Body practices](/discover/practices/pillar/body)
+The point is small and repeated, not long and perfect.
 
-When you want the timer to hold the space for you, [open Mindless](/on-air),
-set a couple of minutes, and let it count you down. The point is small and repeated,
-not long and perfect.
-
-No account yet? [The 5-minute timer](/mindless) works signed out: follow the rings
-for five minutes and you are done. It saves nothing. When it ends it asks "Same time
-tomorrow?", and saying yes makes a free account that opens on Mindless.
+No account yet? [The 5-minute timer](/mindless) works signed out. Follow the rings,
+in for five and out for five, and when the clock ends you are done. It saves
+nothing. At the end it asks "Same time tomorrow?", and saying yes takes you to make
+a free account that opens on Mindless.
 
 ## Questions people ask
 
@@ -74,12 +74,24 @@ a bathroom stall before a hard conversation.
 
 Tired and calm are two different states. Exhaustion is low fuel. Wired is high alert.
 You can be both at once, which is the worst combination, because the alert keeps you
-from using the rest you desperately need. A calming signal, not more rest, is what
-breaks the loop.
+from using the rest you need. A calming signal, not just more time in bed, is often
+what loosens the loop.
 
 ### Does breathing really help or is it a placebo?
 
-It genuinely changes how your body runs, not just how you feel about it. Slowing the
-exhale is one of the few things you can consciously do that reaches the parts of your
-body you cannot usually boss around. We keep the science inside the practice pages and
-keep the surface simple: try it, and see if you feel steadier in a minute.
+Slow breathing is one of the more studied simple practices, and a slow exhale is one of
+the few things you can do on purpose that reaches the parts of your body you cannot
+usually boss around. We are not going to promise you a result. Try it for a minute and
+see if you feel steadier.
+
+### What if this is more than a rough night?
+
+A breathing exercise is a small tool, not medical care. If you feel on edge most days,
+or sleep has been hard for weeks, it is worth talking to a doctor or a therapist.
+
+## Related
+
+- [Just the timer, no fluff](/help/find-your-people/just-the-timer)
+- [Mindless, the practice timer](/help/the-quest/on-air)
+- [Practices, choose, do, log](/help/getting-started/practices)
+- [How to stop doomscrolling](/help/find-your-people/how-to-stop-doomscrolling)
