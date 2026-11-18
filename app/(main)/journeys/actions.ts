@@ -260,6 +260,18 @@ export async function reassignJourneyOwner(
   const targetSpaceId = allowed.get(target)
   if (targetSpaceId === undefined) return fail('You cannot move this journey there.')
 
+  // JRN-008: a Journey on sale is sold by its Space (the product's owner_space_id), and a personal
+  // Journey cannot be sold at all, so moving it would leave sales paying the old Space. It must
+  // come off sale first. Moving to the Space it is already in changes nothing.
+  const admin = createAdminClient()
+  const [{ data: current }, { data: liveOffers, error: offerError }] = await Promise.all([
+    admin.from('journey_plans').select('space_id').eq('id', planId).maybeSingle(),
+    admin.from('commerce_products').select('id').eq('journey_plan_id', planId).neq('status', 'archived').limit(1),
+  ])
+  if ((current as { space_id: string | null } | null)?.space_id === targetSpaceId) return ok()
+  if (offerError) return fail('Could not check whether this Journey is on sale. Try again.')
+  if ((liveOffers ?? []).length > 0) return fail('This Journey is on sale. Take it off sale first, then move it.')
+
   const moved = await setPlanSpace(planId, targetSpaceId)
   if (!moved.ok) return fail(moved.error)
   revalidatePath('/journeys/mine')

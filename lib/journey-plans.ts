@@ -368,9 +368,12 @@ export async function planSpaceId(planId: string): Promise<string | null> {
  *  author for a pull-to-personal, an operator of the target Space to hand it over). space_id is
  *  reached untyped (ADR-246). */
 export async function setPlanSpace(planId: string, spaceId: string): Promise<JourneyWriteResult> {
+  // JRN-008: a member-tier gate (space_tier_id) names a tier of the OLD Space, which no member of
+  // the new owner can ever hold, so it would lock everyone but the author out. It is cleared on a
+  // move; the new owner sets their own tier if they want one.
   const { error } = await db()
     .from('journey_plans')
-    .update({ space_id: spaceId, ...touch() } as never)
+    .update({ space_id: spaceId, space_tier_id: null, ...touch() } as never)
     .eq('id', planId)
   return error ? writeFailed('setPlanSpace', planId, error) : WRITE_OK
 }
@@ -1374,6 +1377,9 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
       tags: src.tags,
       daily_minutes: src.daily_minutes,
       enroll_cap: src.enroll_cap,
+      // JRN-008: the copy stays in the source's Space (so it shows on that Space's Journeys tab and
+      // its member-tier gate still names a tier of the Space that owns it).
+      space_id: src.space_id,
       space_tier_id: src.space_tier_id,
       source_overview: src.source_overview,
       meeting: src.meeting,
@@ -1383,7 +1389,13 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
   const dup = dupRow as JourneyPlan | null
   if (!dup) return null
 
-  await copyItemTree(client, planId, dup.id, { includeBodies: true })
+  // JRN-008: a partial tree is a broken Journey, so a failed copy removes the draft (as forkPlan
+  // does) instead of redirecting the author into a half-empty one.
+  const copied = await copyItemTree(client, planId, dup.id, { includeBodies: true })
+  if (!copied) {
+    await client.from('journey_plans').delete().eq('id', dup.id)
+    return null
+  }
 
   return dup
 }
