@@ -76,7 +76,7 @@ values (
     "slide3Core": [
       { "title": "Know what a night costs", "blurb": "Rent, gear, your hours. One number you can trust.", "art": { "kind": "render", "render": "crm" } },
       { "title": "Hold the room", "blurb": "Say the rules out loud before the loudest guest makes them.", "art": { "kind": "render", "render": "circles" } },
-      { "title": "See who came back", "blurb": "Check-in that notices the regulars, so you know who to text.", "art": { "kind": "render", "render": "checkin" } }
+      { "title": "See who came back", "blurb": "Mark who came to each Event, so you know who came back and who to text.", "art": { "kind": "render", "render": "checkin" } }
     ],
     "destination": { "mode": "direct", "url": "/journeys/the-business-of-community-101" }
   }'::jsonb,
