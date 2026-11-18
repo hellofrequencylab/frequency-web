@@ -1,48 +1,70 @@
 ---
 title: Finding people & Circles
-description: Browse the directory and search by location.
+description: Browse the Members directory, find people and Circles near you, and keep your own private contacts.
 category: connecting
 order: 1
 published: 2026-06-03
-updated: 2026-09-30
+updated: 2026-11-18
 audience: member
 featureKeys: [people, memberships]
+keywords: [members, directory, network, nearby, my contacts, address book, invite, who is here]
 status: published
 ---
 
-The directory is how you find members and Circles: by topic, and by place.
+Looking for someone you met, or wondering who is around? **Members** is the directory of everyone on Frequency, and it sits next to your friends and your own private contacts.
 
-## Browsing
+## Find it
 
-- See members and Circles, and open anyone's profile to learn a bit about them.
-- Each profile shows who someone is in the community; from there you can send a [friend request](/help/connecting/friends).
+Tap **Members** in the left menu. Three tabs run across the top:
 
-## People in a Space you belong to
+- **Members**: everyone on Frequency.
+- **Friends**: the people you have connected with. See [Friends](/help/connecting/friends).
+- **My Contacts**: your own address book of people you have met. Only you see it.
 
-If you have joined a Space, open **People** on that Space to see the other members. This is not the staff list the host uses. It is the people who belong there with you.
+## Browse the directory
 
-- Visitors who have not joined see a join door, not the list.
+1. Open **Members**.
+2. Type a name or an @handle in the search box.
+3. Open a profile to learn a bit about someone. From there you can send a [friend request](/help/connecting/friends).
+
+You can also narrow the list by Circle, city, or who is online right now. A filtered view is a normal link, so you can share it.
+
+## Find people and Circles near you
+
+- Members can put people nearby first. Each one carries a soft area label like "Nearby" or "Your area". You never see a distance or a pin.
+- Search a city in the directory and the Circles near that place show up too.
+- You decide how findable you are. The controls live in **Settings**, under **Privacy**. See [Your location & being found nearby](/help/connecting/your-location).
+
+## See the people in a Space you joined
+
+If you have joined a Space, open **People** on that Space to see the other members. This is not the team list the owner uses. It is the people who belong there with you.
+
+- Visitors who have not joined see a way to join, not the list.
 - A waitlist spot is not a membership yet, so it does not show you or them.
-- Ghost mode hides you here the same way it hides you from the Members directory.
+- Ghost mode hides you here, the same way it hides you from the Members directory.
 
-## Finding people near you
+## Keep your own contacts
 
-- The Members directory can put **people nearby first**, each one shown with a soft area label like "Nearby" or "Your area," never a distance or a pin.
-- Start typing a city or town and it autocompletes, then shows Circles near that place. You can also search around your own location.
-- You control all of this under **Settings → Connections & Location**: who can find you, how precise it is, and your own findability radius (see [Your settings](/help/getting-started/your-settings)).
+**My Contacts** is your private address book: people you scanned from a card or a poster, imported, or typed in by hand.
 
-## My Contacts
+- **Add a contact** starts a new one. You can scan a card or a poster, or type the details in.
+- **Import from file** brings in a spreadsheet. See [Import your contacts](/help/connecting/import-contacts).
+- **Import from Google**, when it is offered, brings your Google contacts over. Anyone already in your book is skipped, so it is safe to run more than once.
+- When a contact turns out to be a member too, a prompt appears at the top of My Contacts. **Merge** links the two and keeps your notes exactly as you wrote them. A merged contact gets an **On Frequency** tag. Not the same person? Dismiss the prompt and it stays quiet.
+- Open a contact to see a **Timeline** of what you have logged with them.
+- **Prep brief** asks Vera for a short read before you reach out: who they are, your history, and one way to start. Vera never sends anything for you.
 
-My Contacts is your own private address book: people you have met and logged, scanned from a card or a poster, imported from Google, or added by hand. Only you can see them.
+## Invite someone who is not here yet
 
-- **Import from Google** brings your Google contacts in with one tap. Choose **Import from Google**, pick your Google account, and the people saved there land in My Contacts. Anyone already in your book is skipped, so it is safe to run more than once. Frequency only reads your contacts, never your email, and stores nothing from Google beyond the contacts you bring over.
-- When someone in your contacts turns out to be a member too, Frequency spots it (by a matching email or phone) and shows a **merge** prompt at the top of My Contacts.
-- **Merge** links the two. Their live member profile fills in the card, and the details you logged plus your notes stay exactly as you wrote them. A merged contact gets an **On Frequency** tag.
-- The private details you logged also show up on that member's profile, in a card only you can see. Nobody else knows you kept a contact for them.
-- If it is not the same person, **Dismiss** the prompt and it stays quiet.
-- Open a contact to see a **Timeline** of what you've logged with them, newest first, so your history with someone is in one place.
-- Before you reach out, use **Prep brief** and Vera writes a short read from what you've saved: who they are, your history, and one way to start. Vera never sends anything for you.
+Open the **Friends** tab and use the invite button at the top. More in [Friends](/help/connecting/friends).
 
 ## A note on privacy
 
-**Frequency never shares anyone's exact location.** You only ever see a member as a fuzzed area (about a mile across) or their city, never precise coordinates or a pin on a map, and the same is true of how you appear to others. You decide your own visibility, and **Ghost mode** hides you from proximity entirely whenever you want. So you can find who's nearby without anyone being pinpointed.
+Frequency does not show anyone's exact location to other members. You see a fuzzed area or a city, and that is how you appear to others too. **Ghost mode** takes you out of the directory and out of nearby lists whenever you want.
+
+## Related
+
+- [Friends](/help/connecting/friends)
+- [Your location & being found nearby](/help/connecting/your-location)
+- [What people see about you](/help/connecting/what-people-see-about-you)
+- [Search](/help/connecting/search)

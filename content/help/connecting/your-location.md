@@ -1,85 +1,91 @@
 ---
 title: Your location & being found nearby
-description: Exactly what others can see, every control you have, and how live location works.
+description: What others can see about where you are, every control you have, and how live location works.
 category: connecting
-order: 6
+order: 9
 published: 2026-06-09
-updated: 2026-09-30
+updated: 2026-11-18
 audience: member
 featureKeys: [connections, location, settings, resonance]
+keywords: [privacy, ghost mode, hide me, nearby, gps, live location, radius, who can find me]
 status: published
 ---
 
-Frequency helps people find community **near** them, which only works if you trust
-how your location is handled. So here's the deal, plainly: **we never share your
-exact location with anyone.** Not other members, not on maps. Others only ever see
-a coarse area or your city, and every control below is yours.
+Frequency helps you find community near you, and that only works if you trust how your location is handled. So here it is plainly: other members do not see your exact location. They see a fuzzed area or your city, and every control below is yours.
 
-Everything here lives in **Settings → Connections & Location**, and changes save
-instantly.
+## Find the controls
 
-## Who can find you
+Open your avatar menu and choose **Settings**. Location lives in three panes:
 
-- **Ghost mode.** The master switch. One tap and you vanish from proximity and
-  maps entirely; every other setting below is paused until you turn it off.
-- **Show me in the Members directory.** Whether you're listed in the member
-  directory at all.
-- **Who can find me nearby.** No one, only your connections, or the whole
-  community. This controls who can surface you by location.
-- **Discoverability radius.** Your own slider for how far away someone can be and
-  still discover you.
-- **Feed reach.** A separate slider for how far your own **Nearby feed** casts, from
-  just your block out to the wider region. It's only your starting point: when your
-  area is quiet, we widen it on our own so your feed is never empty.
+- **Privacy**: who can find you and how precisely you are shown.
+- **Location**: your home base and live location.
+- **Feed**: how far your feed reaches.
 
-## How precisely you're shown
+Changes save as you make them.
 
-You choose the most anyone can ever see:
+## Choose who can find you
+
+In **Settings**, under **Privacy**:
+
+- **Ghost mode.** The master switch. Turn it on and you vanish from nearby lists and maps. The other settings pause until you turn it off.
+- **Show me in the Members directory.** Whether you are listed in the directory, and in search, at all.
+- **Who can find me nearby.** **No one**, **My connections**, or **The community**.
+- **Discoverability radius.** A slider for how far away someone can be and still discover you.
+
+## Choose how precisely you are shown
+
+Still in **Privacy**, **Location precision others see** sets the most anyone can see:
 
 - **Hidden.** No one sees your location at all.
 - **City.** Others see only your city.
-- **Neighborhood.** Others see a fuzzed area about a mile across, never your
-  exact spot.
+- **Neighborhood.** Others see a fuzzed area about a mile across, not your exact spot.
 
-Proximity features need a home location, so if you haven't set your city on your
-profile yet, that's the first step.
+## Set your home base
 
-## Live location (optional)
+In **Settings**, under **Location**, **Home base** is the place that powers what is near you. If it says "Not set yet", tap **Set your home base**. Nearby features need it.
 
-By default, "near you" means near your **home city**. If you're traveling, or at a
-festival and wanting to find your people there, you can turn on **Live location**.
-Honest fine print, the same way the app says it:
+## Share live location (optional)
 
-- **It's a snapshot, not a tracker.** Turning it on captures your position **once**
-  via your browser; it updates when the app captures it again, not continuously.
-  Treat it as "roughly where I was."
-- **Still never exact.** Your precision setting above applies exactly the same.
-  Live or not, others see the fuzzed area or city you chose, never coordinates.
-- **It doesn't widen your audience.** "Who can find me nearby" still applies;
-  going live never exposes you to anyone it wouldn't have before.
-- **One tap off.** Turning it off reverts to your home city. Ghost mode overrides
-  it entirely, anytime.
-- **Use it thoughtfully.** Sharing where you are in real time always carries some
-  risk. Enable it in communities you trust, and when in doubt, leave it off.
+By default, "near you" means near your home base. If you are traveling, or at a festival and want to find your people there, turn on **Live location** in the **Location** pane. The fine print, the same way the app says it:
 
-## Resonance matching (optional)
+- **It is not a tracker.** Your position updates when the app captures it, not continuously. Treat it as "roughly where I was".
+- **Still not exact.** Your precision setting applies exactly the same. Others see the fuzzed area or city you chose.
+- **It does not widen your audience.** **Who can find me nearby** still applies.
+- **One tap off.** Turning it off goes back to your home base. Ghost mode overrides it anytime.
+- **Share thoughtfully.** Sharing where you are in real time carries some risk. Use it with people and communities you trust. When in doubt, leave it off.
 
-Frequency can quietly find the few people you would most click with, from the Circles,
-Journeys, and practices you already share. It is **off by default**, and turning it on
-never exposes you:
+## Set how far your feed reaches
 
-- **You opt in.** Nothing matches you until you turn on **Resonance matching** here. Say
-  nothing and you are simply not in the pool.
-- **We only ever suggest.** Matches show up privately, just for you, on your Friends page.
-  No one is told they were matched with you.
-- **No one is introduced until you both say yes.** Tapping "Introduce us" on a match
-  records your yes and waits for theirs. An intro only happens once both of you say yes,
-  and a person still writes and sends the hello. Nothing goes out automatically.
-- **Mute being suggested.** Stay in for your own matches but stop being suggested to other
-  people, anytime.
-- **One tap off.** Turn matching off here whenever you like.
+In **Settings**, under **Feed**, **Feed reach** sets how far your Nearby feed casts. It is a starting point. When your area is quiet, Frequency widens it so you still see something.
 
-## What about maps?
+## Turn on Resonance matching (optional)
 
-The map on a Circle's page plots the **Circle's public meeting spot and event
-venues**, never member locations. There are no member pins, period.
+**Resonance matching**, in the **Privacy** pane, lets Frequency look for the few people you would most click with, from the Circles, Journeys, and practices you share. It is off by default.
+
+- **You opt in.** Nothing matches you until you turn it on.
+- **Suggestions only.** Matches show up privately, for you, on your Friends page.
+- **Both of you say yes.** Tapping **Introduce us** records your yes and waits for theirs. A person still writes and sends the hello.
+- **Mute being suggested.** Keep your own matches but stop being suggested to others.
+
+More in [Matching, astrology & romance](/help/connecting/matching-and-romance).
+
+## Questions
+
+### Are there member pins on maps?
+
+No. The map on a Circle's page shows the Circle's public meeting spot and event venues, not where members are.
+
+### Does anyone see a distance to me?
+
+No. In the Members directory, people nearby carry a soft label like "Nearby" or "Your area".
+
+### What is the fastest way to disappear for a while?
+
+**Ghost mode**. One switch, and it overrides everything else here.
+
+## Related
+
+- [What people see about you](/help/connecting/what-people-see-about-you)
+- [Finding people & Circles](/help/connecting/find-people)
+- [Your settings](/help/getting-started/your-settings)
+- [Meeting people safely](/help/safety/meeting-people-safely)
