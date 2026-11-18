@@ -5,7 +5,10 @@ import { aiEnabled as envAiReady } from '@/lib/ai/client'
 import { FEATURE_DAILY_CAP_USD, dailyCapFor } from '@/lib/ai/budget'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export type AiFeatureRow = { feature: string; spent: number; reserved: number; uncertain: number; pendingIds: string[]; cap: number }
+/** Today's token sums for one feature (PROG-E8 4b). promptTokens is the whole prompt; the two cache
+ *  counts cover only the splitRows that recorded them (unsplitRows predate the split or lack it). */
+export type AiTokenSplit = { promptTokens: number; outputTokens: number; cacheReadTokens: number; cacheCreationTokens: number; splitRows: number; unsplitRows: number }
+export type AiFeatureRow = { feature: string; spent: number; reserved: number; uncertain: number; pendingIds: string[]; cap: number; tokens: AiTokenSplit | null }
 export type AiSwitchEvent = { id: string; value: boolean; source: string; createdAt: string | null; who: string }
 
 // "AI controls" data for the /admin/ai page and the in-place Platform·AI module
@@ -33,9 +36,31 @@ export async function getAiControlsData() {
     costs.clear()
     log.error('ai.accounting.operator_read_failed')
   }
+  // The cache split (migration 20270346130000). Optional: before that migration is applied, or on any
+  // bad value, the page shows no token figures rather than zeros. Never affects the spend rows.
+  const tokens = new Map<string, AiTokenSplit>()
+  if (accountingAvailable) {
+    try {
+      const { data, error } = await accountingRpc(admin, 'ai_tokens_today', undefined)
+      if (error || !Array.isArray(data)) throw new Error('AI token split unavailable')
+      for (const row of data) {
+        const split: AiTokenSplit = {
+          promptTokens: Number(row.prompt_tokens), outputTokens: Number(row.output_tokens),
+          cacheReadTokens: Number(row.cache_read_tokens), cacheCreationTokens: Number(row.cache_creation_tokens),
+          splitRows: Number(row.split_rows), unsplitRows: Number(row.unsplit_rows),
+        }
+        if (Object.values(split).some((value) => !Number.isFinite(value) || value < 0)) throw new Error('Invalid AI token split')
+        tokens.set(row.feature, split)
+      }
+    } catch {
+      tokens.clear()
+      log.error('ai.accounting.token_split_read_failed')
+    }
+  }
   const features = Array.from(new Set([...Object.keys(FEATURE_DAILY_CAP_USD), ...costs.keys()])).sort()
   const rows: AiFeatureRow[] = accountingAvailable ? features.map((feature) => ({
     feature, ...(costs.get(feature) ?? { spent: 0, reserved: 0, uncertain: 0, pendingIds: [] }), cap: dailyCapFor(feature),
+    tokens: tokens.get(feature) ?? null,
   })) : []
   const totalSpend = accountingAvailable ? rows.reduce((sum, row) => sum + row.spent, 0) : null
 
