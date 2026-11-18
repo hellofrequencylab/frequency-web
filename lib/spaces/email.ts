@@ -918,6 +918,9 @@ export const runSpaceCampaignEmail: JobHandler = async (p, context) => {
 export async function handleSpaceSendWebhook(
   resendId: string | null | undefined,
   eventType: 'delivered' | 'bounced' | 'complained',
+  /** False for a soft bounce that has not repeated yet (EMAIL-052): the send row still records
+   *  the bounce, but the address is not suppressed for the Space. */
+  opts: { suppressAddress?: boolean } = {},
 ): Promise<boolean> {
   if (!resendId) return false
   try {
@@ -951,6 +954,7 @@ export async function handleSpaceSendWebhook(
     // here: suppressing an address that just RECEIVED an email would silence the Space's best
     // contacts. Only the two failure outcomes suppress.
     if (eventType === 'delivered') return true
+    if (opts.suppressAddress === false) return true
 
     // Record a SPACE-SCOPED suppression so this Space stops re-mailing the address. A complaint is
     // also globally significant, but the global webhook path already adds the GLOBAL suppression; we

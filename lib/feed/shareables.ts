@@ -1,6 +1,9 @@
 // The Practices and Journeys a member can share into a post (LIVE-682, the composer's Share kind).
-// Read through the SESSION client, so RLS hands back only the caller's own rows and the Practices
-// and Journeys they can read; the share is a link, and the target page keeps governing who can open it.
+// Practices read through the SESSION client, so RLS hands back only the caller's own rows. Journeys
+// cannot: journey_enrollments is a deny-all table (RLS on, no policies), so the session read always
+// came back empty and the composer never offered a Journey (LIVE-2356). The caller passes a
+// service reader, and every read here is pinned to the caller's own profileId. The share is a link,
+// and the target page keeps governing who can open it.
 
 import { createClient } from '@/lib/supabase/server'
 
@@ -8,7 +11,10 @@ import type { Shareable } from './share-line'
 
 export type { Shareable }
 
-export async function listShareablesFor(profileId: string): Promise<Shareable[]> {
+/** A client that can read journey_enrollments (the service client). Typed loosely on purpose. */
+type EnrollmentReader = Pick<Awaited<ReturnType<typeof createClient>>, 'from'>
+
+export async function listShareablesFor(profileId: string, enrollments: EnrollmentReader): Promise<Shareable[]> {
   const supabase = await createClient()
   const [{ data: practices }, { data: journeys }] = await Promise.all([
     supabase
@@ -18,7 +24,7 @@ export async function listShareablesFor(profileId: string): Promise<Shareable[]>
       .eq('active', true)
       .order('created_at', { ascending: false })
       .limit(20),
-    supabase
+    enrollments
       .from('journey_enrollments')
       .select('plan_id, journey_plans(slug, title)')
       .eq('profile_id', profileId)

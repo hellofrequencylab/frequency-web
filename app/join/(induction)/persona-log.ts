@@ -16,10 +16,18 @@
 // registry we do not edit from here. A dedicated `onboarding.persona_selected` event would be cleaner but
 // needs a one-line taxonomy registry edit (a shared seam) — see the handoff report.
 
+import { headers } from 'next/headers'
 import { sanitizeProps } from '@/lib/analytics/sanitize'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { resolveAcquisition } from '@/lib/attribution/server'
 import { isPersonaId } from '@/lib/onboarding/personas'
+import { rateLimitOk } from '@/lib/rate-limit'
+
+/** Most persona picks one visitor can log a minute. The picker is debounced, so a real person sends a
+ *  handful; anything past this is a script filling the engagement ledger (SEC-024). */
+const PICKS_PER_MINUTE = 30
+/** Longest sequence label kept. The client sends a short beta-sequence slug. */
+const MAX_SEQUENCE = 64
 
 /**
  * Record the visitor's current persona selection (best-effort, anonymous-safe). Called from the picker
@@ -36,7 +44,12 @@ export async function logPersonaSelection(input: {
   try {
     const persona = isPersonaId(input.persona) ? input.persona : null
     if (!persona) return
-    const personas = (Array.isArray(input.personas) ? input.personas : []).filter(isPersonaId)
+    // SEC-024: anonymous by design, so the only brake is per-IP. Fails open when the limiter is not
+    // configured, like the other funnel captures: losing a pick is worse than an unthrottled preview.
+    const hdrs = await headers()
+    const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown'
+    if (!(await rateLimitOk('persona-log', ip, PICKS_PER_MINUTE, '1 m', { whenUnconfigured: 'allow' }))) return
+    const personas = (Array.isArray(input.personas) ? input.personas.slice(0, 32) : []).filter(isPersonaId)
     // Anonymous-safe attribution key: the first-touch channel + any beta-sequence signal, so an
     // abandoned selection is still tied to how the visitor arrived without any profile write.
     const acq = await resolveAcquisition()
@@ -53,7 +66,7 @@ export async function logPersonaSelection(input: {
         persona,
         personas: personas.join(','),
         count: personas.length,
-        sequence: input.sequence ?? '',
+        sequence: typeof input.sequence === 'string' ? input.sequence.slice(0, MAX_SEQUENCE) : '',
         channel: acq.channel,
       }),
     })
