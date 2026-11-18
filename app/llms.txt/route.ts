@@ -152,6 +152,9 @@ const GUIDES: { path: string; label: string; desc: string }[] = [
   // The operator track. /tools-for-community-builders merged into this guide (SCAN-1017), which now
   // carries the four jobs a community builder's tools do.
   { path: '/how-to-build-community', label: 'How to build community', desc: 'How to build community that lasts, step by step: host a recurring gathering, run a community space without burning out, and the four tools a builder actually needs.' },
+  // The course library (LIVE-2354): free, self-paced courses Frequency teaches, and the first sales page.
+  { path: '/courses', label: 'Free courses', desc: 'Free, self-paced courses from Frequency for people who gather others, grouped by track: business and leadership, and hosting.' },
+  { path: '/courses/business-of-community', label: 'The Business of Community 101', desc: 'A free four-week course for people who already gather others. Know what a night costs you, what to charge, who came back, and who to text next week. About an hour a week.' },
   { path: '/how-to-start-a-circle', label: 'How to start a Circle', desc: 'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format each time you meet.' },
 ]
 

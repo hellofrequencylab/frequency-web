@@ -15,6 +15,7 @@ import { data as friendshipAsAnAdult } from './friendship-as-an-adult'
 import { data as howToBeMoreSocial } from './how-to-be-more-social'
 import { data as toolsForCommunityBuilders } from './tools-for-community-builders'
 import { data as whatIsFrequency } from './what-is-frequency'
+import { data as businessOfCommunity } from './business-of-community'
 import { generateDefaultProfilePage } from './profile-default'
 
 // Starter documents that re-create each editable page's content using the
@@ -54,6 +55,9 @@ const TEMPLATES: Record<string, Data> = {
   'how-to-be-more-social': howToBeMoreSocial,
   'tools-for-community-builders': toolsForCommunityBuilders,
   'what-is-frequency': whatIsFrequency,
+  // ── Course sales pages (/courses/<slug>) ─────────────────────────────────────
+  // Template-only: the route renders published -> this template, so this entry is the LAST rung.
+  'business-of-community': businessOfCommunity,
   // The member/user-page starter (cross-surface Puck template system, ADR-500). Registered here so
   // getTemplate('profile') returns the designed member default; the `user` surface in surfaces.ts
   // references the same generator. Keyed with a neutral (blank) name; a live seed passes the member's.

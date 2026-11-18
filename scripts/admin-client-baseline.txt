@@ -438,6 +438,7 @@
 # LIVE-2255: lib/onboarding/region-metrics-load.ts reads published events and last-seen profiles across every region (profiles RLS is in-region only) for the staff CSV and the signed outcomes pull, and returns totals only.
 # LIVE-2256: lib/flowweb/crm-io.ts writes FlowWeb's leads into the root Space CRM (one contact, one conversation, one message per draft step) only after /api/webhooks/flowweb-crm has verified FlowWeb's HMAC signature (FLOWWEB_OUTCOMES_SECRET) and the FLOWWEB_CRM_ENABLED switch; no member session exists on that path.
 # LIVE-2257: app/api/webhooks/flowweb-link/route.ts inserts one managed url code in qr_codes (RLS denies clients, as the /q resolver and the Link Generator) only after FlowWeb's HMAC signature (FLOWWEB_OUTCOMES_SECRET) verifies, and only for an https page on this site carrying utm_source=flowweb; no member session exists on that path.
+# LIVE-2354: lib/courses/library.ts reads the house Space's id (one public spaces row by slug) and which public Journeys an active product sells (commerce_products.journey_plan_id), for the ISR /courses page, the same reads lib/journeys/paid.ts and listPublicJourneys make under service role. It writes nothing and returns only what /discover/journeys already shows.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -919,6 +920,7 @@ lib/connections/welcomes.ts
 lib/consent/consent.ts
 lib/consent/retention.ts
 lib/core/load-capabilities.ts
+lib/courses/library.ts
 lib/create-space/draft-io.ts
 lib/create-space/draft-recovery-io.ts
 lib/crew/boost.ts

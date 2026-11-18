@@ -39,6 +39,8 @@ export const PAGE_UPDATED = {
   for: '2026-11-14',
   vs: '2026-11-14',
   'north-county-san-diego': '2026-11-16',
+  // The course library and its sales pages (/courses, /courses/<slug>).
+  courses: '2026-11-17',
 } as const
 
 type PageUpdatedSlug = keyof typeof PAGE_UPDATED

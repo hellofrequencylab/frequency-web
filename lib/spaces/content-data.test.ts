@@ -212,7 +212,7 @@ describe('getSpacePractices', () => {
       { id: 'p2', slug: null, title: 'Sit', summary: null, description: 'Just sit', icon: null },
     ])
     listJourneyPlansForSpace.mockResolvedValue([
-      { id: 'j1', slug: 'reset', title: 'Reset', summary: 'A week', emoji: '🧭', adopt_count: 3 },
+      { id: 'j1', slug: 'reset', title: 'Reset', summary: 'A week', emoji: '🧭', adopt_count: 3, category: 'Creator Lab' },
       { id: 'j2', slug: 'grow', title: 'Grow', summary: null, emoji: null, adopt_count: 0 },
     ])
     const out = await getSpacePractices('space-1')
@@ -220,7 +220,7 @@ describe('getSpacePractices', () => {
       { kind: 'practice', id: 'p1', slug: 'breath', title: 'Breath', summary: 'Calm', emoji: '🌬️', adoptCount: 0 },
       { kind: 'practice', id: 'p2', slug: 'p2', title: 'Sit', summary: 'Just sit', emoji: null, adoptCount: 0 },
     ])
-    expect(out.journeys[0]).toEqual({ kind: 'journey', id: 'j1', slug: 'reset', title: 'Reset', summary: 'A week', emoji: '🧭', adoptCount: 3 })
+    expect(out.journeys[0]).toEqual({ kind: 'journey', id: 'j1', slug: 'reset', title: 'Reset', summary: 'A week', emoji: '🧭', adoptCount: 3, category: 'Creator Lab' })
     expect(out.journeys[1].adoptCount).toBe(0)
   })
 

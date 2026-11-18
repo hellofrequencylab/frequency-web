@@ -110,6 +110,8 @@ const LEAD: IndexedPage[] = present([
   blocks('how-to-build-community'),
   blocks('tools-for-community-builders'),
   blocks('what-is-frequency'),
+  blocks('business-of-community', 'The Business of Community 101', 'The course sales page.'),
+  { label: 'Courses', path: '/courses', editor: 'live', note: 'Frequency’s own courses, by track.' },
   { label: 'Mindless', path: '/mindless', editor: 'coded', note: 'The breathing timer.' },
   {
     label: 'Frequency vs the rest',
