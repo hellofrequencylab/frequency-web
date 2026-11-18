@@ -2,7 +2,8 @@
 title: Plan your calendar
 description: Hold a date in pencil, plan it with your team, and turn it into a real event when it's ready.
 category: spaces
-order: 6
+order: 8
+group: Run it day to day
 published: 2026-10-26
 updated: 2026-11-18
 audience: host

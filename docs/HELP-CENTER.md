@@ -59,6 +59,25 @@ Front-matter fields:
   weighs them just under the title. One line, no commas inside a phrase.
 - **status**: `published` (default) or `draft` (hidden from the public site).
 
+## Order, groups and navigation
+
+- **order** is the article's place in its topic, and every article in a folder has its own number.
+  Order a topic the way a person would meet it: the first thing they need first. Previous and Next
+  follow this order.
+- **group** (optional) is a sub-heading on the topic page, for example `group: Get set up`. Use it
+  when a topic has more than about ten articles. Articles in a group sit together in `order`.
+- A topic's `_category.json` sets its `order` among the topics. `"audience": "hosts"` lists the
+  topic under "Hosting and running a Space" in the help index, after the member topics.
+- The help front page shows the first four articles of each topic and a link to the rest, so put
+  the four a new reader needs most at the top.
+
+## Open in Frequency
+
+Each article shows up to three buttons that open the part of the product it describes. They come
+from the article's `featureKeys`, through `lib/help/site-links.ts`. Do not type product routes
+into `featureKeys` or invent a link: add the door once in that file, where a test checks that
+every address is a real page.
+
 ## Search
 
 Every help search box runs the same matcher, `lib/help/search.ts`: the public front page and

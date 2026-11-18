@@ -77,6 +77,7 @@ export default async function HelpArticlePage({ params }: Params) {
         description={article.description}
         body={article.body}
         updated={article.updated}
+        featureKeys={article.featureKeys}
         category={{ slug: cat.slug, title: cat.title }}
         prev={prev ? { title: prev.title, href: helpHref(cat.slug, prev.slug) } : null}
         next={next ? { title: next.title, href: helpHref(cat.slug, next.slug) } : null}

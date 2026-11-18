@@ -2,7 +2,8 @@
 title: Run Regulars and hunts
 description: Give the people who keep coming back a stamp card, a counter scanner, and a hunt with the Spaces around you.
 category: spaces
-order: 8
+order: 11
+group: Run it day to day
 published: 2026-10-26
 updated: 2026-11-18
 audience: host

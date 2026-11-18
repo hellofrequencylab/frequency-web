@@ -2,7 +2,8 @@
 title: Pick a theme
 description: A theme is one look for your Spotlight, website and email. Here are the ones you can pick, where to pick them, and how to try one on first.
 category: spaces
-order: 13
+order: 3
+group: Get set up
 published: 2026-11-18
 updated: 2026-11-18
 audience: member
@@ -28,7 +29,7 @@ These are the themes in the picker, in the order it shows them:
 - **Services**: night-first and glossy, for people who book, sell and show up for clients.
 - **CyberWitch**: concrete and chain-link under blackletter type, with one neon accent. Dark only.
 
-You can browse them with pictures on the public gallery at `/themes`.
+You can browse them with pictures on the [public theme gallery](/themes).
 
 ## Know what a theme dresses
 

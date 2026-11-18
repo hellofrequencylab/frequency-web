@@ -2,7 +2,8 @@
 title: Teaching across several studios
 description: Teach at a few studios? A free Space gives you one page, your own Events and workshops, and a student list you keep, wherever you teach.
 category: spaces
-order: 6
+order: 14
+group: Run it day to day
 published: 2026-10-06
 updated: 2026-11-18
 audience: member

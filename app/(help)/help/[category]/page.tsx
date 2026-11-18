@@ -53,7 +53,7 @@ export default async function HelpCategoryPage({ params }: Params) {
         slug={cat.slug}
         title={cat.title}
         description={cat.description}
-        articles={cat.articles.map((a) => ({ title: a.title, description: a.description, href: helpHref(cat.slug, a.slug) }))}
+        articles={cat.articles.map((a) => ({ title: a.title, description: a.description, href: helpHref(cat.slug, a.slug), group: a.group }))}
       />
     </>
   )
