@@ -32,7 +32,7 @@ Newsletters and updates from Frequency carry a personal **Manage emails** link a
 2. A page called "Manage your emails" opens. You do not need to sign in: the link is yours alone, so do not forward it.
 3. Flip the switch next to each kind of email. Changes save automatically.
 
-Other emails, like a reply to a conversation, also show **Manage emails** in the footer, but that link is not personal. It opens a page that says "This link is invalid or expired." with a **Manage all preferences** button. Press it, sign in, and you land in Settings.
+Other emails, like a reply to a conversation, carry the same **Manage emails** link in the footer. If you are a member it opens your own page, the same as above. If we do not have an account for your address, it opens a page with a **Manage all preferences** button. Press it, sign in, and you land in Settings.
 
 ## Know what each switch covers
 
@@ -58,11 +58,11 @@ An email from a Space has its own unsubscribe link. It opens a page for that sen
 
 ### The page says "This link is invalid or expired." What now?
 
-Either the link is old, or that email did not carry a personal link. Press **Manage all preferences**, sign in, and change your emails in Settings instead. If you cannot sign in, reply to one of our emails and we will help.
+The link is old or was cut off when it was copied. Press **Manage all preferences**, sign in, and change your emails in Settings instead. If you cannot sign in, reply to one of our emails and we will help.
 
 ### Do I have to sign in to stop an email?
 
-Not from a newsletter or update: its **Manage emails** and **Unsubscribe** links work on their own. For anything else, sign in and use Settings.
+No. The **Manage emails** and **Unsubscribe** links in an email we send you work on their own. You only need to sign in when you go through Settings.
 
 ## Related
 

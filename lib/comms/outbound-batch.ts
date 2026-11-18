@@ -17,6 +17,7 @@ import { enqueueEmail } from '@/lib/email'
 import { buildSpaceConversationReplyAddress } from '@/lib/comms/tenant-reply-alias'
 import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
 import { bodyToHtml, renderCoalescedEmail } from '@/lib/comms/email-template'
+import { conversationManageUrl } from '@/lib/comms/manage-emails-link'
 import { palette } from '@/lib/theme/palette'
 import { resolveEmailOrigin, resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { resolveSpaceEmailIdentity } from '@/lib/spaces/email-identity-registry'
@@ -309,7 +310,7 @@ export async function flushConversationBatches(
     const signature = firstBatchSignature(ordered)
     const brand = await resolveSpaceEmailBrand(conv.spaceId)
     const origin = await resolveEmailOrigin(conv)
-    const { html: signedHtml, text: signedText } = renderCoalescedEmail(text, html, signature, brand, origin)
+    const { html: signedHtml, text: signedText } = renderCoalescedEmail(text, html, signature, brand, origin, conversationManageUrl(conv.memberProfileId))
     // SCAN-828: a burst stamped with a custom Space identity is resolved AGAIN here, against the plan,
     // the pause flag and the provider's verification as they are now, not as they were when the reply
     // was queued. A held identity fails the burst visibly (delivery_status 'failed'); it never sends
