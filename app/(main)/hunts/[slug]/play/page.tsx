@@ -16,7 +16,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { projectForPlayer, visitedPins } from '@/lib/hunts/player'
 import { loadRallyFinale } from '@/lib/hunts/rally-finale-store'
-import { loadPlayerRun, loadPublishedTrail, loadRunCredits, loadVisitedStopPoints, startOrResumeRun } from '@/lib/hunts/run-store'
+import { loadLockedMysteries, loadPlayerRun, loadPublishedTrail, loadRunCredits, loadVisitedStopPoints, startOrResumeRun } from '@/lib/hunts/run-store'
 import { myTeamPanel } from '@/lib/hunts/team-store'
 
 export const dynamic = 'force-dynamic'
@@ -49,7 +49,11 @@ export default async function PlayPage({ params, searchParams }: {
   const { hint, team: joinParam } = await searchParams
   const run = hint === undefined ? await startOrResumeRun(trail, profileId) : await loadPlayerRun(trail, profileId)
   const credits = run ? await loadRunCredits(run.runId, profileId) : []
+  // FH-042S: a Mystery is kind `answer`. Only the kind is read here; the answer never is.
+  const mysteryKeys = new Set(trail.graph.missions.filter((m) => m.kind === 'answer').map((m) => m.mission_key))
+  const lockedMysteries = run && mysteryKeys.size > 0 ? await loadLockedMysteries(run.runId, profileId, [...mysteryKeys]) : []
   const view = projectForPlayer({
+    lockedMysteries,
     graph: trail.graph,
     content: trail.content,
     credits,
@@ -67,8 +71,6 @@ export default async function PlayPage({ params, searchParams }: {
   const team = teamsOpen ? await myTeamPanel(profileId, slug).catch(() => null) : null
   const joinTeamId = typeof joinParam === 'string' && UUID.test(joinParam) ? joinParam : null
   const canConfirm = huntSwitchOn('claims') && view.canClaim && run?.state === 'active' && !team
-  // FH-042S: a Mystery (kind `answer`) asks for an answer with the code. Only the kind is read; the answer never is.
-  const mysteryKeys = new Set(trail.graph.missions.filter((m) => m.kind === 'answer').map((m) => m.mission_key))
   // A failed finale read shows no panel rather than a wrong seat; the Event page stays the authority.
   const finale = run ? await loadRallyFinale(run.runId, profileId, new Date().toISOString()).catch(() => null) : null
 
@@ -99,6 +101,7 @@ export default async function PlayPage({ params, searchParams }: {
                 </p>
                 {s.clue ? <p className="text-body-sm text-muted">{s.clue}</p> : null}
                 {!s.clue ? <p className="text-body-sm text-subtle">Locked for now.</p> : null}
+                {s.answerLocked ? <p className="mt-2 text-body-sm text-muted">Out of tries for this question. The stop that stands in for it still counts, so head there next.</p> : null}
                 {s.hint ? <p className="mt-2 break-words text-body-sm text-muted">Hint: {s.hint}</p> : null}
                 {s.canRevealHint && (
                   <Link
@@ -123,7 +126,7 @@ export default async function PlayPage({ params, searchParams }: {
             <Link href={{ pathname: '/scan', query: { hint: 'trail' } }} prefetch={false} className={buttonClasses('primary', 'md')}>
               Scan the code at this stop
             </Link>
-            <ClaimStopForm slug={slug} askAnswer={view.stops.some((st) => st.state === 'eligible' && mysteryKeys.has(st.key))} />
+            <ClaimStopForm slug={slug} askAnswer={view.stops.some((st) => st.state === 'eligible' && mysteryKeys.has(st.key) && !st.answerLocked)} />
           </div>
         )}
         {teamsOpen && (

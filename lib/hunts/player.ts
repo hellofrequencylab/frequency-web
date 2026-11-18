@@ -31,6 +31,8 @@ type PlayerStop = {
   /** Only for the current stop when the player asks to reveal it. */
   hint?: string
   canRevealHint?: true
+  /** FH-042S: a Mystery whose tries are used up. Still open, but the way on is its stand-in stop. */
+  answerLocked?: true
 }
 
 type Projection = {
@@ -52,18 +54,21 @@ export function projectForPlayer(input: {
   revision: number
   /** Omitted for callers that still show a locked teaser. */
   hints?: { enabled: boolean; requestedKey?: string }
+  /** FH-042S: Mysteries this run used every try on. Never the next stop; the stand-in is. */
+  lockedMysteries?: readonly string[]
 }): Projection {
   const ev = evaluate(input.graph, input.credits, input.now)
   const view = playerView(input.huntState)
+  const locked = new Set(input.lockedMysteries ?? [])
   const nextKey = view.canClaim && !ev.finished
-    ? input.content.find((c) => ev.status[c.mission_key] === 'eligible')?.mission_key ?? null
+    ? input.content.find((c) => ev.status[c.mission_key] === 'eligible' && !locked.has(c.mission_key))?.mission_key ?? null
     : null
   const stops: PlayerStop[] = input.content.map((c, i) => {
     const state = ev.status[c.mission_key] ?? 'locked'
     const base = { key: c.mission_key, position: i + 1, state }
     if (state === 'credited') return { ...base, place: c.title, clue: c.visible_body }
     if (state === 'eligible') {
-      const visible = { ...base, clue: c.visible_body }
+      const visible = { ...base, clue: c.visible_body, ...(locked.has(c.mission_key) ? { answerLocked: true as const } : {}) }
       if (!input.hints?.enabled || c.mission_key !== nextKey || !c.locked_teaser) return visible
       if (input.hints.requestedKey === nextKey) return { ...visible, hint: c.locked_teaser }
       return { ...visible, canRevealHint: true }

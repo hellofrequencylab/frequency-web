@@ -11,6 +11,7 @@ const store = vi.hoisted(() => ({
   loadRunCredits: vi.fn(),
   loadVisitedStopPoints: vi.fn(),
   startOrResumeRun: vi.fn(),
+  loadLockedMysteries: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({ getMyProfileId: store.getMyProfileId }))
@@ -61,6 +62,7 @@ beforeEach(() => {
   store.loadPlayerRun.mockResolvedValue(run)
   teams.myTeamPanel.mockResolvedValue(null)
   finales.loadRallyFinale.mockResolvedValue({ kind: 'none' })
+  store.loadLockedMysteries.mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -284,5 +286,30 @@ describe('Trail player Mystery stop (FH-042S)', () => {
     expect(await render()).toContain('name="answer"')
     store.loadRunCredits.mockResolvedValue([{ mission_key: 'stop-1' }])
     expect(await render()).not.toContain('name="answer"')
+  })
+
+  it('stops naming a locked-out Mystery as the next stop and points at its stand-in', async () => {
+    const graph = {
+      missions: [
+        { mission_key: 'stop-1', rule_groups: [] },
+        { mission_key: 'stop-2', kind: 'answer', fallback_group: 'stand-in-1', rule_groups: [{ logic: 'all' as const, members: ['stop-1'] }] },
+        { mission_key: 'stop-3', fallback_group: 'stand-in-1', rule_groups: [{ logic: 'all' as const, members: ['stop-1'] }] },
+      ],
+      finish: { rule_groups: [{ logic: 'any' as const, members: ['stop-2', 'stop-3'] }] },
+    }
+    store.loadPublishedTrail.mockResolvedValue({ ...trail, graph })
+    store.loadRunCredits.mockResolvedValue([{ mission_key: 'stop-1' }])
+    expect(await render()).toContain('name="answer"')
+    expect(store.loadLockedMysteries).toHaveBeenCalledWith('run-1', 'player-1', ['stop-2'])
+
+    store.loadLockedMysteries.mockResolvedValue(['stop-2'])
+    const html = await render()
+    expect(html).toContain('Out of tries for this question. The stop that stands in for it still counts, so head there next.')
+    expect(html).not.toContain('name="answer"')
+  })
+
+  it('reads no attempts on a Trail with no Mystery', async () => {
+    await render()
+    expect(store.loadLockedMysteries).not.toHaveBeenCalled()
   })
 })
