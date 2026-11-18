@@ -94,7 +94,7 @@ export function SuiteSettings({
               </Button>
             ) : null}
           </div>
-          <CalendarSyncSoon />
+          <CalendarSyncSoon slug={slug} />
           <p className="cal-set-line">
             <span>Spaces you plan with</span>
             <span className="cal-as">{plans(sharedPlans)}</span>
