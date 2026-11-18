@@ -11,13 +11,15 @@ import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
 import { NETWORK_KIT_SCHEMES, NETWORK_KIT_SCHEME_ORDER } from '@/lib/theme/network-kit'
 import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
 import { FREE_HUMAN_PROFILES } from '@/lib/theme/free-human'
-import { freeHumanPhotoSrc } from '@/lib/sites/free-human-photo-src'
 import { SERVICES_ACCENTS } from '@/lib/theme/services'
 import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { CYBERWITCH_ACCENTS } from '@/lib/theme/cyberwitch'
 import { MINDLESS_ACCENTS } from '@/lib/theme/mindless'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
+
+// Honey's library path (lib/sites/free-human-photos.ts freeHumanPhotoSrc), kept here so the preview never loads the photo table JSON.
+const freeHumanPhotoSrc = (name: string): string => (name.startsWith('fq-') ? `/brand/frequency/photos/${name.slice(3)}.jpg` : `/sites/free-human/photos/${name}.webp`)
 
 type IntentId = (typeof WIZARD_INTENTS)[number]['id']
 

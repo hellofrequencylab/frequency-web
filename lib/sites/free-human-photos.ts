@@ -1,5 +1,4 @@
 import photos from './free-human-photos.json'
-import { freeHumanPhotoSrc } from './free-human-photo-src'
 
 // THE FREE HUMAN PHOTO LIBRARY (design: photos/selects/manifest.json). The selects under public/sites/free-human/photos, each with its
 // size and average colour (free-human-photos.json), which a frame uses as its loading background so it never flashes empty.
@@ -15,7 +14,11 @@ interface FreeHumanPhoto {
 
 export const FREE_HUMAN_PHOTOS: Record<string, FreeHumanPhoto> = photos
 
-export { freeHumanPhotoSrc }
+/** A library name to its file: an `fq-` name is a Frequency photo (public/brand/frequency/photos, served as it is), any other is
+ *  one of the theme's own honey-light shots. */
+export function freeHumanPhotoSrc(name: string): string {
+  return name.startsWith('fq-') ? `/brand/frequency/photos/${name.slice(3)}.jpg` : `/sites/free-human/photos/${name}.webp`
+}
 
 export function freeHumanPhoto(name: string): (FreeHumanPhoto & { src: string }) | null {
   const p = FREE_HUMAN_PHOTOS[name]
