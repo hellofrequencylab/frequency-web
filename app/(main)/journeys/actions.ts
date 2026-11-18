@@ -528,7 +528,7 @@ export async function setJourneyVisibility(
   // JRN-005: the guide's Ready checklist (a real name, phases with steps), enforced here so every
   // publish door agrees. Going back to a private draft never needs it.
   if (visibility !== 'private') {
-    const ready = await checkJourneyReadyToPublish(planId)
+    const ready = await checkJourneyReadyToPublish(createAdminClient(), planId)
     if (!ready.ok) return fail(ready.error)
   }
 

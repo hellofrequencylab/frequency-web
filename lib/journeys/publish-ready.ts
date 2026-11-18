@@ -6,13 +6,15 @@
 // a fresh draft (three empty phases) could go live in the library with nothing to start. This runs
 // the SAME pure checklist over the stored row + block counts, so every publish door agrees.
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { readyCheck, readyToPublish } from './wizard'
 
 type PublishReady = { ok: true } | { ok: false; error: string }
 
-export async function checkJourneyReadyToPublish(planId: string): Promise<PublishReady> {
-  const admin = createAdminClient()
+/** The caller passes the client it already holds (the visibility action's service-role client, after
+ *  it has checked the viewer may manage this Journey), so this module adds no RLS bypass of its own. */
+export async function checkJourneyReadyToPublish(admin: SupabaseClient<Database>, planId: string): Promise<PublishReady> {
   const [{ data: plan, error: planError }, { data: items, error: itemsError }] = await Promise.all([
     admin
       .from('journey_plans')
