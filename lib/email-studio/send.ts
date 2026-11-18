@@ -41,6 +41,15 @@ import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-gu
 import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
 import { applyMergeTags } from './render'
 import { appendCampaignUtm as appendUtm } from './utm'
+import {
+  broadcastsEnabled,
+  sendCampaignAsBroadcast,
+  toResendMergeTags,
+  resolveStaticMergeTags,
+  RESEND_UNSUBSCRIBE_PLACEHOLDER,
+  MANAGE_URL_PLACEHOLDER,
+  type BroadcastRecipient,
+} from './broadcast'
 import { resolveProductRefs, productVarsFromLayout } from './product-block'
 import { resolveDataBlockRefs } from './data-blocks'
 import { MERGE_TAG_DEFAULT_FALLBACKS } from './types'
@@ -838,182 +847,234 @@ export async function sendCampaignNow(
       else pending.push(r)
     }
 
-    // One recipient's email, or null when the gate refuses them. Pure per recipient, so a chunk builds
-    // its recipients concurrently.
-    const buildOne = async (r: (typeof recipients)[number], names: Map<string, string | null>) => {
-      let unsubscribeUrl: string
-      // "Manage emails" opens the preference page (adjust categories / resubscribe), kept DISTINCT from the
-      // one-click unsubscribe so it never fires the opt-out on load.
-      let manageUrl: string
-      if (r.profileId) {
-        // Member / profile-bearing contact: the ONE unified send-gate (suppression + consent +
-        // preference) — the same seam the marketing composer and the beta send ride, run under the
-        // audience's consent category (see above).
-        const decision = await resolveSendGate(r.profileId, 'email', sendCategory, { email: r.email })
-        if (!decision.allowed) return null
-        // The unsubscribe link toggles the lifecycle preference (the broad email opt-out); a global
-        // broadcast unsubscribe is a hard opt-out regardless of the send's gate category.
-        unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
-        manageUrl = buildManageEmailsUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
-      } else {
-        // Profile-less imported lead (only the `all_contacts` audience yields these). There is no profile
-        // to run the member send-gate against, so gate by the hard suppression list (global OR root-space)
-        // and rely on resolveSegment's not-unsubscribed filter — the opt-out subscriber model the owner
-        // asked for. Unsubscribe rides the per-address root-space token (records a root-space suppression,
-        // which isSuppressed then honors on the next send). A missing root space id → skip (fail-closed).
-        if (!rootSpaceId) return null
-        if (await isSuppressed(r.email, rootSpaceId)) return null
-        unsubscribeUrl = buildSpaceUnsubscribeUrl({ baseUrl: SITE_URL, spaceId: rootSpaceId, email: r.email })
-        // The per-Space /unsubscribe?s=&e= landing IS a preference center (opt down individual topics or
-        // unsubscribe from everything), so "Manage emails" points a profile-less lead at that same token page.
-        manageUrl = unsubscribeUrl
-      }
-      const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
-      // Per-recipient contact vars, plus the shared product vars resolved above (a product is the same for
-      // every recipient, so it rides the fallbacks bag).
-      const vars = mergeVars({ firstName, lastName, email: r.email })
-      const fallbacks = { ...MERGE_TAG_DEFAULT_FALLBACKS, ...productVars }
-
-      // Compile per recipient so the footer carries THIS recipient's unsubscribe link, then
-      // resolve merge tags: HTML gets escaped values (default), text + subject stay raw.
-      const compiled = compileEmailDoc(doc, { unsubscribeUrl, manageUrl })
-      // Links back to this site carry utm_source/medium/campaign so first-touch attribution names the email.
-      const html = appendUtm(applyMergeTags(compiled.html, vars, { fallbacks }), { siteUrl: SITE_URL, campaignId })
-      const text = applyMergeTags(compiled.text, vars, { fallbacks, escape: false })
-      const subject = applyMergeTags(subjectTemplate, vars, { fallbacks, escape: false })
-
-      // Tag the campaign id so its delivery/engagement events attribute EXACTLY (not by the old
-      // segment+window heuristic). It rides two channels Resend echoes back on the webhook: a
-      // custom header and a tag. The recorder (lib/suppression.recordEmailEvent) writes whichever
-      // it finds to email_events.campaign_id, and getCampaignMetrics counts by it.
-      // The send identity. BROADCAST (default) is unchanged: the campaign From, the brand Reply-To, and the
-      // one-click unsubscribe headers. CONVERSATION swaps in the conversational From, a per-recipient
-      // reply address that routes back to this recipient's thread, a Message-ID for client threading, and
-      // DROPS List-Unsubscribe (this is transactional 1:1 human mail, not bulk).
-      let emailFrom = fromHeader
-      let emailReplyTo: string | undefined = replyTo
-      let emailHeaders: Record<string, string> = { ...listUnsubscribeHeaders(unsubscribeUrl), 'X-Campaign-Id': campaignId }
-
-      if (conversationMode) {
-        const conv = await openOrGetConversation({
-          kind: 'crm',
-          externalEmail: r.email,
-          ownerProfileId: ownerProfileId!,
-          subject,
-          contactId: r.contactId,
-          memberProfileId: r.profileId ?? null,
-          // Scope spine (ADR-827): first-class campaign scope, dual-written next to the legacy
-          // metadata.campaign_id convention the workspace/webhook readers still consume.
-          scopeKind: 'campaign',
-          scopeId: campaignId,
-          metadata: { campaign_id: campaignId },
-        })
-        // A DB hiccup (or an unmigrated table) → conv is null; fall back to the broadcast identity for THIS
-        // recipient so the send still lands (the reply just won't thread).
-        if (conv) {
-          const messageId = newConversationMessageId(conv.ref)
-          emailFrom = conversationFromHeader
-          // The campaign's display name masks the signed reply address (owner ruling 2026-10-12).
-          emailReplyTo = withDisplayName(conversationFromHeader, buildConversationReplyAddress(conv.ref))
-          emailHeaders = { 'Message-ID': messageId, 'X-Campaign-Id': campaignId }
-          await appendConversationMessage({
-            conversationId: conv.id,
-            direction: 'outbound',
-            authorKind: 'leader',
-            authorId: ownerProfileId!,
-            body: text,
-            bodyHtml: html,
-            externalMessageId: messageId,
-            mirror: {
-              ownerProfileId: ownerProfileId!,
-              subjectKind: r.profileId ? 'profile' : 'contact',
-              subjectId: r.profileId ?? r.contactId,
-              subject,
-              // The mirrored touch carries the campaign lane too (ADR-827 scope spine).
-              scope: { kind: 'campaign', id: campaignId },
-            },
-          })
-        }
-      }
-      return {
-        r,
-        payload: {
-          to: r.email,
-          from: emailFrom,
-          ...(emailReplyTo ? { replyTo: emailReplyTo } : {}),
-          subject,
-          html,
-          text,
-          headers: emailHeaders,
-          tags: [{ name: 'campaign_id', value: campaignId }],
-        },
-      }
-    }
-
-    // THE FAN-OUT, in chunks (lib/email-studio/fan-out.ts). Per chunk: build the emails with bounded
-    // concurrency, queue them in ONE insert, write their ledger rows in ONE insert, checkpoint the
-    // progress and the lease. Between chunks: stop if an operator paused the campaign, and hand the rest
-    // to the next cron run when this run's clock is spent. A serial per-recipient loop did ~1 a second and
-    // died at the 300 s limit 300 people into the 585 person launch send.
-    for (let i = 0; i < pending.length; i += FAN_OUT_CHUNK) {
-      if (i > 0) {
-        if (!(await stillSending(campaignId))) {
-          // Paused (or cancelled) while sending: leave the status the operator chose, report what went out.
-          return ok({ recipientCount: count })
-        }
-        if (options.exhausted?.()) {
-          // OUT OF TIME: hand the rest to the next run. Back to 'scheduled', due now, ONLY while the row is
-          // still 'sending' (a pause must win). Everyone queued so far has a ledger row and an outbox
-          // dedupe key, so the next run sends to the rest and to nobody twice. If this write fails the row
-          // stays 'sending' with a live lease and the cron resumes it when the lease runs out.
-          const progress = count + skippedTotal
-          const { error: handoffError } = await db
-            .from('campaigns')
-            .update({ status: 'scheduled', recipient_count: progress, scheduled_for: new Date().toISOString() })
-            .eq('id', campaignId)
-            .eq('status', 'sending')
-          if (handoffError) {
-            console.error('[email-studio] could not hand the send to the next run', { campaignId, error: handoffError.message })
+    // BROADCAST PATH (EMAIL-076, owner ruling 2026-11-18). Behind EMAIL_BROADCASTS_ENABLED, a broadcast-mode
+    // campaign goes out as ONE Resend broadcast on the Marketing plan instead of one outbox email per person,
+    // so it never spends the Transactional plan's daily allowance. The same send gate decides who is allowed;
+    // the html is compiled once with Resend placeholders (lib/email-studio/broadcast.ts). Conversation mode
+    // stays on the outbox: each recipient there needs their own reply address.
+    if (broadcastsEnabled() && !conversationMode) {
+      const allowed: { r: (typeof recipients)[number]; contact: BroadcastRecipient }[] = []
+      for (let i = 0; i < pending.length; i += FAN_OUT_CHUNK) {
+        const chunk = pending.slice(i, i + FAN_OUT_CHUNK)
+        const names = await loadContactNames(chunk.map((r) => r.contactId))
+        const gated = await mapLimit(chunk, FAN_OUT_CONCURRENCY, async (r) => {
+          let manageUrl: string
+          if (r.profileId) {
+            const decision = await resolveSendGate(r.profileId, 'email', sendCategory, { email: r.email })
+            if (!decision.allowed) return null
+            // An opt-out made on Resend's own unsubscribe page lands as a root-Space suppression (the
+            // contact.updated webhook), so a member is checked against it here too.
+            if (rootSpaceId && (await isSuppressed(r.email, rootSpaceId))) return null
+            manageUrl = buildManageEmailsUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
+          } else {
+            if (!rootSpaceId) return null
+            if (await isSuppressed(r.email, rootSpaceId)) return null
+            manageUrl = buildSpaceUnsubscribeUrl({ baseUrl: SITE_URL, spaceId: rootSpaceId, email: r.email })
           }
-          console.info('[email-studio] send handed to the next run', { campaignId, queued: count, remaining: pending.length - i })
-          return ok({ recipientCount: count, complete: false as const })
-        }
+          const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
+          return { r, contact: { email: r.email, firstName, lastName, manageUrl } }
+        })
+        for (const g of gated) if (g) allowed.push(g)
       }
-      const chunk = pending.slice(i, i + FAN_OUT_CHUNK)
-      const names = await loadContactNames(chunk.map((r) => r.contactId))
-      const built = (await mapLimit(chunk, FAN_OUT_CONCURRENCY, (r) => buildOne(r, names))).filter(
-        (b): b is NonNullable<typeof b> => b !== null,
-      )
-      if (built.length > 0) {
-        // The BULK lane, dripped. A campaign is mail nobody is sitting and waiting for, so it must
-        // never be the reason a welcome email misses the daily sending quota (LIVE-091: on
-        // 2026-07-17 a 356-recipient campaign took the quota and two welcomes dead-lettered behind
-        // it). `bulkRunAfter` staggers when each job becomes DUE so the fan-out cannot fill the
-        // claim window either — the claim is ordered by run_after and knows nothing about lanes.
-        await enqueueEmailBatch(
-          built.map((b, k) => ({
-            payload: b.payload,
-            runAfter: bulkRunAfter(count + k, fanOutStartedAt),
-            dedupeKey: campaignDedupeKey(campaignId, b.r),
-          })),
-          { lane: 'bulk' },
-        )
-        count += built.length
-        // COMMITTED: the outbox has the jobs, so these recipients must never be enqueued again for this
-        // campaign. Written after the enqueue and best-effort, the same order and posture as the Space
-        // seam (lib/spaces/email.ts): the emails are already going out, and a ledger blip must not fail
-        // a send that succeeded.
+      if (allowed.length > 0) {
+        const fallbacks = { ...MERGE_TAG_DEFAULT_FALLBACKS, ...productVars }
+        const compiled = compileEmailDoc(doc, { unsubscribeUrl: RESEND_UNSUBSCRIBE_PLACEHOLDER, manageUrl: MANAGE_URL_PLACEHOLDER })
+        await sendCampaignAsBroadcast({
+          campaignId,
+          from: fromHeader,
+          replyTo,
+          subject: resolveStaticMergeTags(subjectTemplate, fallbacks),
+          html: appendUtm(toResendMergeTags(compiled.html, fallbacks), { siteUrl: SITE_URL, campaignId }),
+          text: toResendMergeTags(compiled.text, fallbacks, { escape: false }),
+          recipients: allowed.map((a) => a.contact),
+        })
+        count = allowed.length
         if (rootSpaceId) {
           await recordLedgerSends(
             rootSpaceId,
             campaignId,
-            built.map((b) => ({ contactId: b.r.contactId || null, email: b.r.email })),
+            allowed.map((a) => ({ contactId: a.r.contactId || null, email: a.r.email })),
           )
         }
       }
-      // Checkpoint: the console shows live progress, a crash keeps its count, and a long run keeps its lease.
-      await db.from('campaigns').update({ recipient_count: count + skippedTotal }).eq('id', campaignId)
-      await stampSendColumns(campaignId, { sending_started_at: new Date().toISOString() })
+    } else {
+      // One recipient's email, or null when the gate refuses them. Pure per recipient, so a chunk builds
+      // its recipients concurrently.
+      const buildOne = async (r: (typeof recipients)[number], names: Map<string, string | null>) => {
+        let unsubscribeUrl: string
+        // "Manage emails" opens the preference page (adjust categories / resubscribe), kept DISTINCT from the
+        // one-click unsubscribe so it never fires the opt-out on load.
+        let manageUrl: string
+        if (r.profileId) {
+          // Member / profile-bearing contact: the ONE unified send-gate (suppression + consent +
+          // preference) — the same seam the marketing composer and the beta send ride, run under the
+          // audience's consent category (see above).
+          const decision = await resolveSendGate(r.profileId, 'email', sendCategory, { email: r.email })
+          if (!decision.allowed) return null
+          // The unsubscribe link toggles the lifecycle preference (the broad email opt-out); a global
+          // broadcast unsubscribe is a hard opt-out regardless of the send's gate category.
+          unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
+          manageUrl = buildManageEmailsUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
+        } else {
+          // Profile-less imported lead (only the `all_contacts` audience yields these). There is no profile
+          // to run the member send-gate against, so gate by the hard suppression list (global OR root-space)
+          // and rely on resolveSegment's not-unsubscribed filter — the opt-out subscriber model the owner
+          // asked for. Unsubscribe rides the per-address root-space token (records a root-space suppression,
+          // which isSuppressed then honors on the next send). A missing root space id → skip (fail-closed).
+          if (!rootSpaceId) return null
+          if (await isSuppressed(r.email, rootSpaceId)) return null
+          unsubscribeUrl = buildSpaceUnsubscribeUrl({ baseUrl: SITE_URL, spaceId: rootSpaceId, email: r.email })
+          // The per-Space /unsubscribe?s=&e= landing IS a preference center (opt down individual topics or
+          // unsubscribe from everything), so "Manage emails" points a profile-less lead at that same token page.
+          manageUrl = unsubscribeUrl
+        }
+        const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
+        // Per-recipient contact vars, plus the shared product vars resolved above (a product is the same for
+        // every recipient, so it rides the fallbacks bag).
+        const vars = mergeVars({ firstName, lastName, email: r.email })
+        const fallbacks = { ...MERGE_TAG_DEFAULT_FALLBACKS, ...productVars }
+
+        // Compile per recipient so the footer carries THIS recipient's unsubscribe link, then
+        // resolve merge tags: HTML gets escaped values (default), text + subject stay raw.
+        const compiled = compileEmailDoc(doc, { unsubscribeUrl, manageUrl })
+        // Links back to this site carry utm_source/medium/campaign so first-touch attribution names the email.
+        const html = appendUtm(applyMergeTags(compiled.html, vars, { fallbacks }), { siteUrl: SITE_URL, campaignId })
+        const text = applyMergeTags(compiled.text, vars, { fallbacks, escape: false })
+        const subject = applyMergeTags(subjectTemplate, vars, { fallbacks, escape: false })
+
+        // Tag the campaign id so its delivery/engagement events attribute EXACTLY (not by the old
+        // segment+window heuristic). It rides two channels Resend echoes back on the webhook: a
+        // custom header and a tag. The recorder (lib/suppression.recordEmailEvent) writes whichever
+        // it finds to email_events.campaign_id, and getCampaignMetrics counts by it.
+        // The send identity. BROADCAST (default) is unchanged: the campaign From, the brand Reply-To, and the
+        // one-click unsubscribe headers. CONVERSATION swaps in the conversational From, a per-recipient
+        // reply address that routes back to this recipient's thread, a Message-ID for client threading, and
+        // DROPS List-Unsubscribe (this is transactional 1:1 human mail, not bulk).
+        let emailFrom = fromHeader
+        let emailReplyTo: string | undefined = replyTo
+        let emailHeaders: Record<string, string> = { ...listUnsubscribeHeaders(unsubscribeUrl), 'X-Campaign-Id': campaignId }
+
+        if (conversationMode) {
+          const conv = await openOrGetConversation({
+            kind: 'crm',
+            externalEmail: r.email,
+            ownerProfileId: ownerProfileId!,
+            subject,
+            contactId: r.contactId,
+            memberProfileId: r.profileId ?? null,
+            // Scope spine (ADR-827): first-class campaign scope, dual-written next to the legacy
+            // metadata.campaign_id convention the workspace/webhook readers still consume.
+            scopeKind: 'campaign',
+            scopeId: campaignId,
+            metadata: { campaign_id: campaignId },
+          })
+          // A DB hiccup (or an unmigrated table) → conv is null; fall back to the broadcast identity for THIS
+          // recipient so the send still lands (the reply just won't thread).
+          if (conv) {
+            const messageId = newConversationMessageId(conv.ref)
+            emailFrom = conversationFromHeader
+            // The campaign's display name masks the signed reply address (owner ruling 2026-10-12).
+            emailReplyTo = withDisplayName(conversationFromHeader, buildConversationReplyAddress(conv.ref))
+            emailHeaders = { 'Message-ID': messageId, 'X-Campaign-Id': campaignId }
+            await appendConversationMessage({
+              conversationId: conv.id,
+              direction: 'outbound',
+              authorKind: 'leader',
+              authorId: ownerProfileId!,
+              body: text,
+              bodyHtml: html,
+              externalMessageId: messageId,
+              mirror: {
+                ownerProfileId: ownerProfileId!,
+                subjectKind: r.profileId ? 'profile' : 'contact',
+                subjectId: r.profileId ?? r.contactId,
+                subject,
+                // The mirrored touch carries the campaign lane too (ADR-827 scope spine).
+                scope: { kind: 'campaign', id: campaignId },
+              },
+            })
+          }
+        }
+        return {
+          r,
+          payload: {
+            to: r.email,
+            from: emailFrom,
+            ...(emailReplyTo ? { replyTo: emailReplyTo } : {}),
+            subject,
+            html,
+            text,
+            headers: emailHeaders,
+            tags: [{ name: 'campaign_id', value: campaignId }],
+          },
+        }
+      }
+
+      // THE FAN-OUT, in chunks (lib/email-studio/fan-out.ts). Per chunk: build the emails with bounded
+      // concurrency, queue them in ONE insert, write their ledger rows in ONE insert, checkpoint the
+      // progress and the lease. Between chunks: stop if an operator paused the campaign, and hand the rest
+      // to the next cron run when this run's clock is spent. A serial per-recipient loop did ~1 a second and
+      // died at the 300 s limit 300 people into the 585 person launch send.
+      for (let i = 0; i < pending.length; i += FAN_OUT_CHUNK) {
+        if (i > 0) {
+          if (!(await stillSending(campaignId))) {
+            // Paused (or cancelled) while sending: leave the status the operator chose, report what went out.
+            return ok({ recipientCount: count })
+          }
+          if (options.exhausted?.()) {
+            // OUT OF TIME: hand the rest to the next run. Back to 'scheduled', due now, ONLY while the row is
+            // still 'sending' (a pause must win). Everyone queued so far has a ledger row and an outbox
+            // dedupe key, so the next run sends to the rest and to nobody twice. If this write fails the row
+            // stays 'sending' with a live lease and the cron resumes it when the lease runs out.
+            const progress = count + skippedTotal
+            const { error: handoffError } = await db
+              .from('campaigns')
+              .update({ status: 'scheduled', recipient_count: progress, scheduled_for: new Date().toISOString() })
+              .eq('id', campaignId)
+              .eq('status', 'sending')
+            if (handoffError) {
+              console.error('[email-studio] could not hand the send to the next run', { campaignId, error: handoffError.message })
+            }
+            console.info('[email-studio] send handed to the next run', { campaignId, queued: count, remaining: pending.length - i })
+            return ok({ recipientCount: count, complete: false as const })
+          }
+        }
+        const chunk = pending.slice(i, i + FAN_OUT_CHUNK)
+        const names = await loadContactNames(chunk.map((r) => r.contactId))
+        const built = (await mapLimit(chunk, FAN_OUT_CONCURRENCY, (r) => buildOne(r, names))).filter(
+          (b): b is NonNullable<typeof b> => b !== null,
+        )
+        if (built.length > 0) {
+          // The BULK lane, dripped. A campaign is mail nobody is sitting and waiting for, so it must
+          // never be the reason a welcome email misses the daily sending quota (LIVE-091: on
+          // 2026-07-17 a 356-recipient campaign took the quota and two welcomes dead-lettered behind
+          // it). `bulkRunAfter` staggers when each job becomes DUE so the fan-out cannot fill the
+          // claim window either — the claim is ordered by run_after and knows nothing about lanes.
+          await enqueueEmailBatch(
+            built.map((b, k) => ({
+              payload: b.payload,
+              runAfter: bulkRunAfter(count + k, fanOutStartedAt),
+              dedupeKey: campaignDedupeKey(campaignId, b.r),
+            })),
+            { lane: 'bulk' },
+          )
+          count += built.length
+          // COMMITTED: the outbox has the jobs, so these recipients must never be enqueued again for this
+          // campaign. Written after the enqueue and best-effort, the same order and posture as the Space
+          // seam (lib/spaces/email.ts): the emails are already going out, and a ledger blip must not fail
+          // a send that succeeded.
+          if (rootSpaceId) {
+            await recordLedgerSends(
+              rootSpaceId,
+              campaignId,
+              built.map((b) => ({ contactId: b.r.contactId || null, email: b.r.email })),
+            )
+          }
+        }
+        // Checkpoint: the console shows live progress, a crash keeps its count, and a long run keeps its lease.
+        await db.from('campaigns').update({ recipient_count: count + skippedTotal }).eq('id', campaignId)
+        await stampSendColumns(campaignId, { sending_started_at: new Date().toISOString() })
+      }
     }
     if (skippedTotal > 0) {
       console.info('[email-studio] re-send skipped recipients already queued', {

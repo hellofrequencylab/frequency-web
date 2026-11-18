@@ -20,6 +20,8 @@ const H = vi.hoisted(() => ({
   recordThrows: false,
   timelineThrows: false,
   priorTransient: 0,
+  rootSpaceId: 'root-space' as string | null,
+  scoped: [] as { email: string; reason: string; spaceId?: string }[],
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -54,9 +56,10 @@ vi.mock('@/lib/suppression', async (importOriginal) => {
     if (H.recordThrows) throw new Error('email_events insert failed')
     H.recorded.push({ email: input.email, eventType: input.eventType })
   },
-  suppress: async (email: string) => {
+  suppress: async (email: string, reason: string, spaceId?: string) => {
     if (H.suppressThrows) throw new Error('suppression insert failed')
     H.suppressed.push(email)
+    H.scoped.push({ email, reason, spaceId })
   },
   }
 })
@@ -66,6 +69,8 @@ vi.mock('@/lib/spaces/email', () => ({
     if (H.timelineThrows) throw new Error('timeline write failed')
   },
 }))
+
+vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: async () => H.rootSpaceId }))
 
 import { POST } from './route'
 
@@ -102,6 +107,8 @@ beforeEach(() => {
   H.recordThrows = false
   H.timelineThrows = false
   H.priorTransient = 0
+  H.rootSpaceId = 'root-space'
+  H.scoped.length = 0
   vi.spyOn(console, 'error').mockImplementation(() => {})
   vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
@@ -193,5 +200,37 @@ describe('POST /api/webhooks/resend', () => {
     const res = await POST(tampered)
     expect(res.status).toBe(401)
     expect(H.claimed.size).toBe(0)
+  })
+  // EMAIL-076: campaigns go out as Resend broadcasts, so an opt-out made on Resend's page comes back
+  // as contact.updated and must land as a ROOT-Space suppression (never a global one).
+  describe('contact.updated', () => {
+    const optOut = { type: 'contact.updated', data: { email: 'c@x.com', unsubscribed: true } }
+
+    it('mirrors a Resend opt-out as a root-Space unsubscribe suppression', async () => {
+      const res = await POST(signedRequest('msg_c1', optOut))
+      expect(res.status).toBe(200)
+      expect(H.scoped).toEqual([{ email: 'c@x.com', reason: 'unsubscribe', spaceId: 'root-space' }])
+      expect(H.recorded).toEqual([])
+    })
+
+    it('does nothing for a contact that is still subscribed', async () => {
+      const res = await POST(signedRequest('msg_c2', { type: 'contact.updated', data: { email: 'c@x.com', unsubscribed: false } }))
+      expect(res.status).toBe(200)
+      expect(H.scoped).toEqual([])
+    })
+
+    it('503s and releases the claim when the suppression write fails, so Resend redelivers', async () => {
+      H.suppressThrows = true
+      const res = await POST(signedRequest('msg_c3', optOut))
+      expect(res.status).toBe(503)
+      expect(H.released).toEqual(['msg_c3'])
+    })
+
+    it('never writes a global suppression when there is no root Space', async () => {
+      H.rootSpaceId = null
+      const res = await POST(signedRequest('msg_c4', optOut))
+      expect(res.status).toBe(200)
+      expect(H.scoped).toEqual([])
+    })
   })
 })

@@ -1044,6 +1044,23 @@ Check: GA4 Admin, DebugView or Realtime shows `sign_up` after a fresh signup in 
 **Off:** blank the variable; held sends go out on their next run.
 
 
+## Campaign broadcasts
+
+`EMAIL_BROADCASTS_ENABLED` (EMAIL-076, owner ruling 2026-11-18). The Resend team is on Transactional Free (100 emails a day) and Marketing Pro (unlimited broadcasts, 5,000 contacts). Off: an Email Studio campaign queues one outbox email per person and spends the daily allowance (EMAIL-060 parks it at the limit). On: `sendCampaignNow` runs the same send gate, then `sendCampaignAsBroadcast` (`lib/email-studio/broadcast.ts`) makes a Resend segment named `campaign:<id>`, imports the allowed people into it (CSV upsert, `manage_url` contact property), waits for the import and sends one broadcast. Conversation-mode campaigns and the quiet-member trigger stay on the outbox. A broadcast named for the campaign already existing means a re-run sends nothing new.
+
+The footer's Unsubscribe link is Resend's `{{{RESEND_UNSUBSCRIBE_URL}}}`; Resend also sets List-Unsubscribe. An opt-out there comes back as `contact.updated` and the webhook writes a root-Space `unsubscribe` suppression (never global, so sign-in links still go). Manage emails is our signed preference link.
+
+**Gate before turning it on:**
+1. `RESEND_API_KEY` in Vercel Production has Full access, not Sending access (segments, contacts and broadcasts need it).
+2. The Resend webhook for `/api/webhooks/resend` also sends `contact.updated` (Resend, Webhooks, the endpoint, Events).
+3. The broadcast From address's domain is verified in Resend (`EMAIL_BROADCAST_FROM`, else `EMAIL_FROM`).
+4. A test campaign to a one-person direct audience (a staff address) arrives with a working Unsubscribe and Manage emails link, and pressing Unsubscribe adds a root-Space row: `select email, reason, space_id from email_suppressions where email = '<staff address>'`.
+
+**Watch:** a failed broadcast marks the campaign `failed` with the provider message in `send_error`. Resend, Broadcasts shows each send and its numbers.
+
+**Off:** blank the variable; the next campaign goes through the outbox.
+
+
 ## Practice support evidence
 
 `PRACTICE_SUPPORT_EVIDENCE_ENABLED` is a server-only reader switch. Blank, unset, `0`, `false` and unrecognized values keep it off. Only `1`, `true` or `on` enable it through `envFlag`. Keep it off until the schema and acceptance below are verified. Implementation tracking belongs to LIVE-2294 in the merged backlog; this section is the activation procedure, not release status.
