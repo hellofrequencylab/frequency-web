@@ -17,7 +17,7 @@ export type ServicesKitLayoutId = `services-kit:${LayoutName}`
 export type CyberWitchKitLayoutId = `cyberwitch-kit:${LayoutName}`
 export type MindlessKitLayoutId = `mindless-kit:${LayoutName}`
 /** Bold, Wildheart and Nocturne share one layout set (LIVE-2357, components/spotlight/house-kit-layouts.tsx), each in its own tokens. */
-export type HouseKitLayoutId = `bold-kit:${LayoutName}` | `wildheart-kit:${LayoutName}` | `nocturne-kit:${LayoutName}`
+type HouseKitLayoutId = `bold-kit:${LayoutName}` | `wildheart-kit:${LayoutName}` | `nocturne-kit:${LayoutName}`
 export type SpotlightLayoutId = NetworkKitLayoutId | DesignerKitLayoutId | TempleKitLayoutId | FreeHumanLayoutId | NewWorldKitLayoutId | ServicesKitLayoutId | CyberWitchKitLayoutId | MindlessKitLayoutId | HouseKitLayoutId
 
 interface SpotlightLayoutInfo {
