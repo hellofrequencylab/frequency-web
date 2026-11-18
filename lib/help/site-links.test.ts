@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { FEATURE_KEYS } from './feature-keys'
@@ -8,9 +8,10 @@ import { helpSiteLinks } from './site-links'
 function pageExists(route: string): boolean {
   const walk = (dir: string, segments: string[]): boolean => {
     if (segments.length === 0 && existsSync(path.join(dir, 'page.tsx'))) return true
-    for (const name of readdirSync(dir)) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      const name = entry.name
       const full = path.join(dir, name)
-      if (!statSync(full).isDirectory()) continue
       if (name.startsWith('(') && walk(full, segments)) return true
       if (segments.length > 0 && name === segments[0] && walk(full, segments.slice(1))) return true
     }

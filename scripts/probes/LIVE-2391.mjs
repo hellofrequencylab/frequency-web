@@ -3,13 +3,13 @@
 // Fails while: two guides in a topic share an `order`, two topics share one, a guide page offers no
 // "Open in Frequency" doors, or the reading column still lays lists out as flex (which drops every
 // bullet and step number).
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 
 const root = new URL('../../', import.meta.url)
 const read = (p) => readFileSync(new URL(p, root), 'utf8')
 const fails = []
 
-const topics = readdirSync(new URL('content/help/', root)).filter((d) => statSync(new URL(`content/help/${d}`, root)).isDirectory())
+const topics = readdirSync(new URL('content/help/', root), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name)
 const topicOrders = new Map()
 for (const t of topics) {
   const meta = JSON.parse(read(`content/help/${t}/_category.json`))
