@@ -22,7 +22,7 @@ import { renderSpaceBlockNodes } from '@/components/widgets/space-profile/space-
 import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
 import { SpotlightAccent, SpotlightHeader } from '@/components/spotlight/space-spotlight'
 import { spotlightLookOf, spotlightWearsTheme, ThemedSpaceSpotlight } from '@/components/spotlight/themed-space-spotlight'
-import { spaceLooksFor } from '@/lib/spotlight/layouts'
+import { HOUSE_KIT_OPT_IN, spaceLooksFor } from '@/lib/spotlight/layouts'
 import { PREVIEW_KITS } from '@/lib/create-space/preview-site'
 import { readSiteStyle } from '@/lib/theme/site-style'
 import { SpaceSpotlightEditor } from '@/components/spotlight/space-spotlight-editor'
@@ -194,8 +194,19 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
         ownLinks={ownLinks}
         clicks={canManage ? clicks : undefined}
         themes={{ options: PREVIEW_KITS.filter((k) => spaceLooksFor(k.id).length > 0).map((k) => ({ id: k.id, label: k.label })), current: readSiteStyle(space.preferences).theme }}
-        looks={themed ? { options: spaceLooksFor(readSiteStyle(space.preferences).theme), current: spotlightLookOf(space) } : undefined}
+        looks={spotlightLookPicker(space, themed)}
       />
     </ConsoleFocusTemplate>
   )
+}
+
+/** The Look picker. Bold, Wildheart and Nocturne lead with Blocks (the page as the owner arranged it), so wearing a house
+ *  layout is the owner's own pick and a Space already on one of them is never moved (LIVE-2357). */
+function spotlightLookPicker(space: Parameters<typeof spotlightWearsTheme>[0], themed: boolean) {
+  const theme = readSiteStyle(space.preferences).theme
+  const options = spaceLooksFor(theme)
+  if (HOUSE_KIT_OPT_IN.has(theme) && options.length > 0) {
+    return { options: [{ look: 'blocks', label: 'Blocks', blurb: 'Your blocks, as you arranged them' }, ...options], current: themed ? spotlightLookOf(space) : 'blocks' }
+  }
+  return themed ? { options, current: spotlightLookOf(space) } : undefined
 }

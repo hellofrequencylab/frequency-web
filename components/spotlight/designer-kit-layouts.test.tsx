@@ -30,7 +30,7 @@ describe('Designer Theme Kit Spotlight layouts', () => {
     expect(spotlightLayoutsFor('designer-kit').map((l) => l.id.split(':')[1])).toEqual(IDS)
     expect(spotlightLayoutsFor('designer-kit').every((l) => l.id.startsWith('designer-kit:'))).toBe(true)
     expect(spotlightLayoutsFor('network-kit').map((l) => l.id.split(':')[1])).toEqual(IDS)
-    expect(spotlightLayoutsFor('midnight')).toEqual([])
+    expect(spotlightLayoutsFor('frequency')).toEqual([])
   })
 
   it('leaves the existing Designer preset and every other theme\'s validated output unchanged', () => {
