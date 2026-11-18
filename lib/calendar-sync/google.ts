@@ -1,4 +1,4 @@
-type DatePoint = { date: string } | { dateTime: string; timeZone?: string }
+import type { DatePoint, RemoteEvent, SyncOp } from './plan'
 
 type GoogleChange =
   | { id: string; kind: 'cancelled' }
@@ -102,4 +102,117 @@ export async function updateGoogleCalendarTimes({
   const body: unknown = await response.json()
   if (!isRecord(body) || typeof body.etag !== 'string' || !body.etag) throw new Error('Google Calendar update returned no revision.')
   return { kind: 'updated', etag: body.etag }
+}
+
+// ── TWO-WAY SYNC (LIVE-1179, ADR-1976) ──────────────────────────────────────────────────────────
+// A window read with only the fields the rule in lib/calendar-sync/plan.ts needs, and the writes it
+// makes. Every write on an existing event carries If-Match, so an edit made there in the seconds
+// between the read and the write comes back as a conflict instead of being overwritten.
+
+const WINDOW_FIELDS = 'summary,nextPageToken,items(id,etag,status,summary,location,start,end,transparency,extendedProperties/private)'
+
+function remoteEvent(value: unknown): RemoteEvent | null {
+  if (!isRecord(value) || typeof value.id !== 'string' || !value.id || typeof value.etag !== 'string') return null
+  const cancelled = value.status === 'cancelled'
+  let start: DatePoint
+  let end: DatePoint
+  try {
+    start = point(value.start)
+    end = point(value.end)
+  } catch {
+    if (!cancelled) return null
+    start = end = { date: '1970-01-01' }
+  }
+  const ext = isRecord(value.extendedProperties) && isRecord(value.extendedProperties.private) ? value.extendedProperties.private : {}
+  const text = (v: unknown) => (typeof v === 'string' ? v : null)
+  return {
+    id: value.id,
+    etag: value.etag,
+    cancelled,
+    transparent: value.transparency === 'transparent',
+    summary: text(value.summary),
+    location: text(value.location),
+    start,
+    end,
+    ...(typeof ext.frequencyEventId === 'string' ? { frequencyEventId: ext.frequencyEventId } : {}),
+    ...(typeof ext.frequencyFingerprint === 'string' ? { fingerprint: ext.frequencyFingerprint } : {}),
+    ...(ext.frequencyDetached === '1' ? { detached: true } : {}),
+  }
+}
+
+/** Every event in [timeMin, timeMax), repeats expanded, plus the calendar's own name. */
+export async function listGoogleCalendarWindow({
+  accessToken, calendarId, timeMin, timeMax, request = fetch,
+}: { accessToken: string; calendarId: string; timeMin: string; timeMax: string; request?: Fetch }): Promise<{ label: string | null; events: RemoteEvent[] }> {
+  const url = eventUrl(calendarId)
+  url.searchParams.set('fields', WINDOW_FIELDS)
+  url.searchParams.set('singleEvents', 'true')
+  url.searchParams.set('timeMin', timeMin)
+  url.searchParams.set('timeMax', timeMax)
+  url.searchParams.set('maxResults', '250')
+  const events: RemoteEvent[] = []
+  let label: string | null = null
+  const pages = new Set<string>()
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const response = await request(url.href, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: 'no-store',
+      redirect: 'error',
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!response.ok) throw new Error(`Google Calendar list failed with status ${response.status}.`)
+    const body: unknown = await response.json()
+    if (!isRecord(body) || (body.items !== undefined && !Array.isArray(body.items))) throw new Error('Google Calendar returned an invalid page.')
+    if (typeof body.summary === 'string') label = body.summary.slice(0, 300)
+    for (const item of (body.items as unknown[] | undefined) ?? []) {
+      const entry = remoteEvent(item)
+      if (entry) events.push(entry)
+    }
+    if (typeof body.nextPageToken !== 'string' || !body.nextPageToken) return { label, events }
+    if (pages.has(body.nextPageToken)) throw new Error('Google Calendar repeated its page token.')
+    pages.add(body.nextPageToken)
+    url.searchParams.set('pageToken', body.nextPageToken)
+  }
+  throw new Error('Google Calendar exceeded the page limit.')
+}
+
+type WriteResult = { kind: 'done' } | { kind: 'conflict' } | { kind: 'missing' }
+
+async function write(
+  request: Fetch, accessToken: string, url: URL, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown, etag?: string,
+): Promise<WriteResult> {
+  url.searchParams.set('sendUpdates', 'none')
+  const response = await request(url.href, {
+    method,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(etag ? { 'If-Match': etag } : {}),
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+    cache: 'no-store',
+    redirect: 'error',
+    signal: AbortSignal.timeout(10_000),
+  })
+  await response.body?.cancel().catch(() => undefined)
+  if (response.status === 412) return { kind: 'conflict' }
+  if (response.status === 404 || response.status === 410) return { kind: 'missing' }
+  if (!response.ok) throw new Error(`Google Calendar ${method} failed with status ${response.status}.`)
+  return { kind: 'done' }
+}
+
+/** Apply one planned write. A 412 means the copy changed since the read: the next sync lists it. */
+export async function applyGoogleCalendarOp({
+  accessToken, calendarId, op, request = fetch,
+}: { accessToken: string; calendarId: string; op: SyncOp; request?: Fetch }): Promise<WriteResult> {
+  switch (op.kind) {
+    case 'create':
+      return write(request, accessToken, eventUrl(calendarId), 'POST', op.body)
+    case 'update':
+      return write(request, accessToken, eventUrl(calendarId, op.remoteId), 'PATCH', op.body, op.etag)
+    case 'delete':
+      return write(request, accessToken, eventUrl(calendarId, op.remoteId), 'DELETE', undefined, op.etag)
+    case 'detach':
+      return write(request, accessToken, eventUrl(calendarId, op.remoteId), 'PATCH', { extendedProperties: { private: { frequencyEventId: op.eventId, frequencyFingerprint: op.fingerprint, frequencyDetached: '1' } } }, op.etag)
+  }
 }

@@ -869,6 +869,23 @@ Then set `CALENDAR_HOLDS_ENABLED` to `1`, `true` or `on` and redeploy.
 
 **What to read when it looks wrong.** `cron.calendar_holds` carries `released`, `warned`, `nudged`, `quiet` (muted, suppressed or already sent) and `failed`; `calendar.holds.release_failed` names the Plan and the step.
 
+## Calendar sync
+
+`CALENDAR_SYNC_ENABLED` defaults off (LIVE-1179, ADR-1976). Same `envFlag` contract (`1` / `true` / `on`). Off, the calendar settings sheet lists Google, Outlook, Apple and Notion with no Connect button and reads nothing. On, and with the Google client and the seal key set, a Space owner or admin gets **Connect Google Calendar**, then **Sync now**, **Disconnect** and the conflicts list. A sync runs on demand inside the request (and once right after connecting): it pushes the Space's published events to the connected calendar and mirrors that calendar's busy time back as `Busy` Unavailable entries (`space_calendar_entries.source_kind = 'calendar_sync'`). The conflict rule is in `lib/calendar-sync/plan.ts`.
+
+**Gate before turning it on.** All **owner** unless tagged.
+
+1. Migration `20270346100000_space_calendar_sync_connections.sql` is applied in production through the migration readiness process. **agent** can check with a read-only select on `space_calendar_sync_connections`.
+2. In Google Cloud, on the OAuth client behind `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`: the Google Calendar API is enabled, the consent screen lists the `https://www.googleapis.com/auth/calendar.events` scope (a sensitive scope, so Google verification applies before members outside the test-user list can connect), and the redirect URI `https://frequencylocal.com/api/integrations/calendar/google/callback` is registered (plus the same path on any other origin you run, such as a preview or `http://localhost:3000`).
+3. `CALENDAR_SYNC_ENCRYPTION_KEY` is set to `openssl rand -base64 32` output. Changing it later strands every stored connection; each Space then connects again.
+4. One test Space connects a test Google account, Sync now shows its events in Google Calendar, a busy event in that Google calendar shows as Unavailable, and an edit made in Google Calendar to a pushed event shows in the conflicts list instead of being overwritten. **agent** with the owner's go.
+
+Then set `CALENDAR_SYNC_ENABLED` to `1`, `true` or `on` and redeploy.
+
+**Turn it off.** Unset. The Connect button and Sync now disappear; stored connections stay sealed and unused, mirrored busy entries stay until a Space disconnects (switch back on first) or they are removed by hand with `update space_calendar_entries set removed_at = now() where source_kind = 'calendar_sync'`.
+
+**What to read when it looks wrong.** A failed run logs `calendar_sync.run_failed` with the provider and the error, and the settings row shows the last error in plain words. "Google stopped accepting this connection" means the refresh token was revoked or expired: the Space connects again.
+
 ## IndexNow ping
 
 `INDEXNOW_ENABLED` defaults off. Same `envFlag` contract (`1` / `true` / `on`). The `indexnow` cron (`/api/cron/indexnow`, daily 14:00 UTC) reads `app/sitemap.ts`, keeps the URLs whose `lastModified` is inside the last 26 hours and posts them once to `api.indexnow.org` with the key in `lib/seo/indexnow.ts`. It can only name URLs the sitemap already advertises. The key is public by protocol; the proof is `public/<key>.txt` at the site root.
