@@ -12,7 +12,8 @@
 import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition, useMemo, useRef, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass, AlertTriangle, Anchor, CalendarClock, Layers, X } from 'lucide-react'
+import Link from 'next/link'
+import { Check, ChevronLeft, ChevronRight, ChevronDown, Clock, List, Lock, Sparkles, Award, AlertTriangle, Anchor, CalendarClock, Layers, X } from 'lucide-react'
 import { useMindless } from '@/components/on-air/mindless'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
@@ -23,21 +24,24 @@ import { PracticeActions } from '@/components/journey/v2/learn/practice-actions'
 import type { JourneyTree } from '@/lib/journeys/tree'
 import type { LessonContent, CheckConfig } from '@/lib/journeys/store'
 import type { PartialToday } from '@/lib/practices'
-import { ProgressTrack } from '@/components/ui/progress-track'
-import { Button } from '@/components/ui/button'
+import { focusFacts, phaseHeading, splitTitle } from '@/lib/journeys/lesson-markdown'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { Dialog } from '@/components/ui/dialog'
 
 interface Props {
   slug: string
-  /** The journey's name — used only for the completion celebration (the page header carries the
-   *  visible title, so the progress card doesn't repeat it). */
+  /** The journey's name: the bar's label and the completion celebration. The page's h1 is the
+   *  lesson's own title, so a member always knows which step they are reading. */
   title: string
   tree: JourneyTree
   lessonsById: Record<string, LessonContent>
   /** Pre-rendered rich detail for a step (practice write-up etc.), keyed by lesson/item id. The
    *  player renders this node in the lesson pane when present (server-rendered, no client cost). */
   detailById?: Record<string, ReactNode>
+  /** Each open lesson's body, pre-rendered on the server as a lesson (LessonProse: real lists,
+   *  headings, pull quotes), keyed by lesson id. A lesson with no node falls back to plain text. */
+  bodyById?: Record<string, ReactNode>
   /** Each phase's focus copy (the week's "what we're working on"), keyed by phase id. */
   phaseFocusById?: Record<string, string>
   /** Pillar name for a practice step, keyed by lesson id — drives the badge in the syllabus + header. */
@@ -74,6 +78,21 @@ interface Props {
    *  when it is not in this Journey or sits in a locked phase. */
   initialLessonId?: string | null
 }
+
+// What kind of step this is, when the author's title does not already say ("Overview · ...").
+const TYPE_LABEL: Record<string, string> = {
+  video: 'Video',
+  reading: 'Reading',
+  exercise: 'Exercise',
+  reflection: 'Reflection',
+  check: 'Knowledge check',
+  resource: 'Resource',
+  practice: 'Practice',
+}
+
+/** "6 min read", "6 min watch", "6 min": the time a step asks for, in the words of what it is. */
+const timeLine = (minutes: number | null, type: string) =>
+  minutes && minutes > 0 ? `${minutes} min${type === 'reading' ? ' read' : type === 'video' ? ' watch' : ''}` : null
 
 // The drip copy is shared with the course home, so "Opens in 3 days" reads the same on both.
 const unlockLabel = (d: Date | null): string => unlockLine(d)
@@ -151,6 +170,7 @@ export function LearnPlayer({
   tree,
   lessonsById,
   detailById = {},
+  bodyById = {},
   phaseFocusById = {},
   pillarByLesson = {},
   practiceIdByLesson = {},
@@ -304,6 +324,20 @@ export function LearnPlayer({
   }
 
   const lessonNo = idx >= 0 ? idx + 1 : 0
+  const nextLesson = nextId ? lessonsById[nextId] ?? null : null
+  const bodyNode = selectedId && !selectedLocked ? bodyById[selectedId] : null
+
+  // The lesson's heading: "Overview · Slow is smooth" reads as the kind (a tag) and the name (the h1).
+  const heading = splitTitle(lesson?.title ?? '')
+  const kindLabel = heading.kind ?? (lesson ? TYPE_LABEL[lesson.type] ?? null : null)
+  // The week this step is in. A flat Journey has one untitled implicit phase: no week line there.
+  const phaseIndex = tree.phases.findIndex((p) => p.id === selectedPhaseId)
+  const phase = phaseIndex >= 0 ? tree.phases[phaseIndex] : null
+  const weekLine = phase && phase.title ? phaseHeading(phase.title, phaseIndex, unit) : null
+  const weekLessons = phase ? phase.modules.flatMap((m) => m.lessons) : []
+  const facts = phaseFocus ? focusFacts(phaseFocus) : []
+  // What the week is for is said once, on the week's first step, not on every step after it.
+  const showFacts = facts.length > 0 && weekLessons[0]?.id === selectedId
 
   return (
     // No local data-skin: the player is regular in-app content and inherits the active Space's
@@ -317,21 +351,41 @@ export function LearnPlayer({
     <div ref={topRef} className="scroll-mt-4">
       {milestone && <TrophyCelebration milestone={milestone} onDismiss={() => setMilestone(null)} />}
 
-      <div className="sticky top-2 z-20 mb-5 flex items-center gap-2 rounded-pill border border-border bg-surface/95 p-1.5 shadow-pop backdrop-blur-sm">
-        <Button type="button" variant="ghost" size="sm" onClick={() => setTocOpen(true)} aria-haspopup="dialog">
-          <List className="h-4 w-4" aria-hidden /> Contents
+      <div className="mc-fbar">
+        <Link href={`/journeys/${slug}/learn`} className={buttonClasses('ghost', 'sm')} aria-label="Back to the course">
+          <ChevronLeft className="h-4 w-4" aria-hidden /> <span className="hidden sm:inline">Course</span>
+        </Link>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setTocOpen(true)} aria-haspopup="dialog" aria-label="Contents">
+          <List className="h-4 w-4" aria-hidden /> <span className="hidden sm:inline">Contents</span>
         </Button>
-        <span className="hidden shrink-0 text-meta tabular-nums text-muted sm:inline">
-          Lesson {lessonNo} of {order.length}
+        <span className="mc-fbar-title">{title}</span>
+        {/* The whole Journey, one segment per week, each as wide as its share of the steps. */}
+        <div
+          className="mc-segs"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={tree.totalRequired}
+          aria-valuenow={tree.doneRequired}
+          aria-label={`${tree.doneRequired} of ${tree.totalRequired} done`}
+        >
+          {tree.phases.map((p, pi) => (
+            <span
+              key={p.id}
+              className={p.id === selectedPhaseId ? 'mc-seg on' : 'mc-seg'}
+              style={{ flexGrow: Math.max(1, p.modules.reduce((n, m) => n + m.lessons.length, 0)) }}
+              title={`${phaseHeading(p.title, pi, unit)}: ${p.doneRequired} of ${p.totalRequired} done`}
+            >
+              <i style={{ width: `${p.totalRequired ? p.percent : 0}%` }} />
+            </span>
+          ))}
+        </div>
+        <span className="mc-fbar-count">
+          <b>{lessonNo}</b> / {order.length}
         </span>
-        <span className="min-w-0 flex-1 px-1">
-          <ProgressTrack value={tree.percent} minVisible={2} label={`${tree.doneRequired} of ${tree.totalRequired} done`} size="sm" animate />
-        </span>
-        <span className="shrink-0 text-meta font-semibold tabular-nums text-text">{tree.percent}%</span>
-        <IconButton label="Previous lesson" onClick={() => goTo(prevId)} disabled={!prevId}>
+        <IconButton label="Previous step" onClick={() => goTo(prevId)} disabled={!prevId}>
           <ChevronLeft className="h-4 w-4" />
         </IconButton>
-        <IconButton label="Next lesson" onClick={() => goTo(nextId)} disabled={!nextId || nextLocked}>
+        <IconButton label="Next step" onClick={() => goTo(nextId)} disabled={!nextId || nextLocked}>
           <ChevronRight className="h-4 w-4" />
         </IconButton>
       </div>
@@ -479,60 +533,105 @@ export function LearnPlayer({
         </div>
       </Dialog>
 
-      <div className="mx-auto max-w-3xl">
-          {/* Lesson pane — one idea, one action. Reading content at a ~prose measure (rule 2). */}
-          <article className="rounded-card border border-border bg-surface p-5 sm:p-8">
-            {!lesson ? (
-              <p className="text-body-sm text-muted">This journey has no lessons yet.</p>
-            ) : selectedLocked ? (
-              <div className="flex flex-col items-center gap-2 py-10 text-center">
-                <Lock className="h-6 w-6 text-subtle" />
-                <p className="text-body-sm font-semibold text-text">This phase is still locked</p>
-                <p className="max-w-prose text-body-sm text-muted">
-                  {unlockLabel(phaseLock.get(phaseOfLesson.get(selectedId!) ?? '')?.unlockAt ?? null)}. One phase opens at a time, so the whole Circle moves together. Catch up on the current phase while you wait.
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* The week's focus — orients the follower before the step. */}
-                {phaseFocus && (
-                  <div className="mb-4 flex items-start gap-2 rounded-card border border-border bg-surface-elevated/40 p-3">
-                    <Compass className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                    <p className="text-body-sm leading-relaxed text-muted">
-                      <span className="font-semibold text-text">This {unit}:</span> {phaseFocus}
-                    </p>
-                  </div>
-                )}
+      {!lesson ? (
+        <div className="panel mc-lesson">
+          <p className="t2">This Journey has no lessons yet.</p>
+        </div>
+      ) : selectedLocked ? (
+        <div className="panel mc-lesson flex flex-col items-center gap-2 py-10 text-center">
+          <Lock className="h-6 w-6 text-subtle" />
+          <p className="text-body-sm font-semibold text-text">This phase is still locked</p>
+          <p className="max-w-prose text-body-sm text-muted">
+            {unlockLabel(phaseLock.get(phaseOfLesson.get(selectedId!) ?? '')?.unlockAt ?? null)}. One phase opens at a time, so the whole Circle moves together. Catch up on the current phase while you wait.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* The lesson's own heading. The week sits above the title; what kind of step it is, how
+              long it takes and where it falls in the Journey sit under it. */}
+          <header className="mc-fhead">
+            {weekLine && <p className="k">{weekLine}</p>}
+            <h1 className="h1 mc-ftitle">{heading.name}</h1>
+            <div className="mc-fmeta">
+              {kindLabel && <span className="tag mc-kind">{kindLabel}</span>}
+              {timeLine(lesson.estMinutes, lesson.type) && (
+                <span className="tag">
+                  <Clock aria-hidden /> {timeLine(lesson.estMinutes, lesson.type)}
+                </span>
+              )}
+              <span className="tag">
+                Step {lessonNo} of {order.length}
+              </span>
+              {!lesson.required && <span className="tag">Optional</span>}
+              {selectedId === anchorLessonId && (
+                <span className="tag">
+                  <Anchor aria-hidden /> Daily anchor
+                </span>
+              )}
+              {selectedPillar && <span className="tag">{selectedPillar}</span>}
+              {/* Extra credit: a bonus task, above and beyond, that pays Zaps once on completion.
+                  Optional, never gates finishing the Journey. */}
+              {lesson.extraCredit && (
+                <span className="tag">
+                  <Award aria-hidden /> Extra credit{lesson.bonusZaps > 0 ? ` · +${lesson.bonusZaps} Zaps` : ''}
+                </span>
+              )}
+              {isDone && (
+                <span className="tag">
+                  <Check aria-hidden /> Done
+                </span>
+              )}
+            </div>
+            {selectedId === anchorLessonId && (
+              <p className="mc-fnote">Your through-line. Do this one every day, all the way through.</p>
+            )}
+          </header>
 
-                <p className={capsLabel('text-2xs font-semibold text-muted')}>
-                  Lesson {idx + 1} of {order.length}{lesson.estMinutes ? ` · ${lesson.estMinutes} min` : ''}{lesson.required ? '' : ' · optional'}
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <h2 className="text-lead font-bold text-text">{lesson.title}</h2>
-                  {selectedId === anchorLessonId && (
-                    <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
-                      <Anchor className="h-3 w-3" aria-hidden /> Daily anchor
-                    </span>
-                  )}
-                  {selectedPillar && (
-                    <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">{selectedPillar}</span>
-                  )}
+          {/* This week: what the week is for (on its first step), then every step of the week as a
+              place you can go, so "Overview, Lesson, Homework" reads as one short path. */}
+          {(showFacts || weekLessons.length > 1) && (
+            <nav aria-label={`This ${unit}`} className="mc-week">
+              {showFacts && (
+                <div className="mc-facts">
+                  {facts.map((f, i) => (
+                    <div key={i} className="mc-fact">
+                      <span className="k">{f.label ?? `This ${unit}`}</span>
+                      <span className="why">{f.value}</span>
+                    </div>
+                  ))}
                 </div>
-                {selectedId === anchorLessonId && (
-                  <p className="mt-1 text-meta text-muted">Your through-line. Do this one every day, all the way through.</p>
-                )}
+              )}
+              {weekLessons.length > 1 && (
+                <ol className="mc-wsteps">
+                  {weekLessons.map((l, i) => {
+                    const t = splitTitle(l.title)
+                    const active = l.id === selectedId
+                    return (
+                      <li key={l.id}>
+                        <button type="button" className="mc-wstep" aria-current={active ? 'step' : undefined} onClick={() => goTo(l.id)}>
+                          <span className={l.done ? 'mc-node done' : active ? 'mc-node now' : 'mc-node'} aria-hidden>
+                            {l.done ? <Check /> : i + 1}
+                          </span>
+                          <span>
+                            <b>{t.kind ?? t.name}</b>
+                            <span className="t2">
+                              {[l.done ? 'Done' : null, l.estMinutes ? `${l.estMinutes} min` : null].filter(Boolean).join(' · ') || (t.kind ? t.name : '')}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ol>
+              )}
+            </nav>
+          )}
 
-                {/* Extra-credit badge: a bonus task, above and beyond, that pays Zaps once on
-                    completion. Optional, never gates finishing the Journey. */}
-                {lesson.extraCredit && (
-                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-pill border border-signal/30 bg-signal-bg/50 px-2.5 py-1 text-meta font-semibold text-signal-strong">
-                    <Award className="h-3.5 w-3.5" aria-hidden /> Extra credit{lesson.bonusZaps > 0 ? ` · +${lesson.bonusZaps} Zaps` : ''}
-                  </div>
-                )}
-
+          {/* Lesson pane: one idea, one action, at a reading measure. */}
+          <article className="panel mc-lesson">
                 {/* KEEP bg-black: the letterbox behind a video frame, which is black on every generation. */}
                 {video && (
-                  <div className="mt-4 aspect-video overflow-hidden rounded-card bg-black">
+                  <div className="aspect-video overflow-hidden rounded-card bg-black">
                     {video.provider === 'file' ? (
                       <video src={video.url} controls className="h-full w-full" />
                     ) : (
@@ -547,12 +646,10 @@ export function LearnPlayer({
                   </div>
                 )}
 
-                {/* Prose body — only when it isn't a bare video URL; constrained measure + text-body.
-                    (Lesson / extra-credit blocks carry their own body here; practice steps render
-                    their full library write-up in the pre-rendered detail node below.) */}
-                {lesson.body && !video && (
-                  <div className="mt-4 max-w-prose whitespace-pre-wrap text-body leading-relaxed text-text">{lesson.body}</div>
-                )}
+                {/* The body, set as a lesson (pre-rendered on the server). Only when it isn't a bare
+                    video URL. Lesson and extra-credit blocks carry their own body here; practice
+                    steps render their full library write-up in the pre-rendered detail node below. */}
+                {lesson.body && !video && (bodyNode ?? <div className="mc-prose whitespace-pre-wrap">{lesson.body}</div>)}
 
                 {/* Rich, server-rendered detail for the step (the practice write-up: summary ·
                     cadence · time · Pillar · "Why it works / How to do it / In The Quest"). */}
@@ -598,14 +695,28 @@ export function LearnPlayer({
                   </div>
                 )}
 
-                {/* One clear next action */}
-                <div className="mt-6 flex items-center gap-2 border-t border-border pt-4">
-                  {prevId && (
-                    <button type="button" onClick={() => goTo(prevId)} className="inline-flex items-center gap-1 rounded-control px-2.5 py-2 text-body-sm text-muted hover:text-text">
-                      <ChevronLeft className="h-4 w-4" /> Back
-                    </button>
-                  )}
-                  <div className="ml-auto flex items-center gap-2">
+                {/* What comes next, and the one action that gets you there. */}
+                <div className="mc-fnext">
+                  <div className="mc-fnext-up">
+                    {nextLesson ? (
+                      <>
+                        <span className="k">{nextLocked ? unlockLabel(phaseLock.get(phaseOfLesson.get(nextId!) ?? '')?.unlockAt ?? null) : 'Up next'}</span>
+                        <span className="t1">{nextLesson.title}</span>
+                        {timeLine(nextLesson.estMinutes, nextLesson.type) && <span className="t2">{timeLine(nextLesson.estMinutes, nextLesson.type)}</span>}
+                      </>
+                    ) : (
+                      <>
+                        <span className="k">Last step</span>
+                        <span className="t1">This is the end of the path.</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="mc-fnext-acts">
+                    {prevId && (
+                      <Button type="button" variant="ghost" onClick={() => goTo(prevId)}>
+                        <ChevronLeft className="h-4 w-4" aria-hidden /> Back
+                      </Button>
+                    )}
                     {isDone ? (
                       nextId && nextLocked ? (
                         <span className="inline-flex items-center gap-1.5 text-body-sm font-medium text-subtle">
@@ -650,10 +761,9 @@ export function LearnPlayer({
                     )}
                   </div>
                 </div>
-              </>
-            )}
           </article>
-      </div>
+        </>
+      )}
     </div>
   )
 }
