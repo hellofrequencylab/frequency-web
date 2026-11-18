@@ -23,6 +23,14 @@ const reportLinks = (src) => [...src.matchAll(/<ReportLink\b[^>]*\/>/g)].map((m)
 }))
 
 const PROBES = {
+  // /llms.txt describes the theme library from the list the pickers offer, not a sentence that went stale.
+  'LIVE-2388': () => {
+    const f = []
+    const route = read('app/llms.txt/route.ts')
+    if (/Two themes, Default and Bold/.test(route)) f.push('/llms.txt still says "Two themes, Default and Bold"')
+    if (!/SITE_THEMES/.test(route)) f.push('/llms.txt does not read the offered themes (SITE_THEMES in lib/theme/site-style.ts)')
+    return f
+  },
   // A member can report a person, a comment and an event on the web, through the same dialog and the same
   // server action a post report uses, and never on their own profile, their own comment or their own event.
   'LIVE-2389': () => {
