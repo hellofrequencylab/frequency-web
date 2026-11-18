@@ -16,6 +16,8 @@ import {
 } from "@/lib/events/series-seo";
 import { getSeriesDisplayConfig } from "@/lib/events/series-config";
 import { listPublicJourneys } from "@/lib/journey-plans";
+import { houseSpaceId } from "@/lib/courses/library";
+import { courseHref, isCourse } from "@/lib/courses/tracks";
 import { listPublicPractices } from "@/lib/practices";
 import {
   DISCOVERY_FETCH_LIMIT,
@@ -693,12 +695,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...(e.image ? { images: [e.image] } : {}),
     }));
 
-    const journeyRoutes: MetadataRoute.Sitemap = journeys.map((j) => ({
-      url: `${SITE_URL}/discover/journeys/${j.slug}`,
-      ...((j.updated_at) ? { lastModified: new Date(j.updated_at) } : {}),
-      changeFrequency: "weekly",
-      priority: 0.6,
-    }));
+    // ONE HOME PER COURSE (owner 2026-11-18): a Journey that is one of Frequency's courses is listed by its
+    // /courses home and its free Week 1 page, never by /discover/journeys/<slug>, whose canonical points home.
+    // The hand-built BOC page is already in the static list above.
+    const hq = await houseSpaceId();
+    const journeyRoutes: MetadataRoute.Sitemap = journeys.flatMap((j) => {
+      const lastModified = j.updated_at ? { lastModified: new Date(j.updated_at) } : {};
+      if (!isCourse({ ...j, category: j.category ?? null }, hq)) {
+        return [{ url: `${SITE_URL}/discover/journeys/${j.slug}`, ...lastModified, changeFrequency: "weekly" as const, priority: 0.6 }];
+      }
+      const home = courseHref(j.slug);
+      return [
+        ...(home === `/courses/${j.slug}` ? [{ url: `${SITE_URL}${home}`, ...lastModified, changeFrequency: "weekly" as const, priority: 0.7 }] : []),
+        { url: `${SITE_URL}/courses/${j.slug}/week-1`, ...lastModified, changeFrequency: "monthly" as const, priority: 0.6 },
+      ];
+    });
 
     // Frequency Store product detail pages (/store/[id]) — mirrors the spaceRoutes pattern; each
     // carries its first photo for the image sitemap when set.

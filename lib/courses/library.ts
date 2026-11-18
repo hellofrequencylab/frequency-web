@@ -5,7 +5,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listPublicJourneys, planShapes, type JourneyPlan } from '@/lib/journey-plans'
 import { log } from '@/lib/log'
-import { HOUSE_SPACE_SLUG, isCourse } from './tracks'
+import { HOUSE_SPACE_SLUG, isCourse, offersCertified } from './tracks'
 
 export interface CourseCard {
   slug: string
@@ -19,9 +19,13 @@ export interface CourseCard {
   minutes: number
   /** True unless an active product sells this Journey. */
   free: boolean
+  /** Completion issues a certificate. */
+  certificate: boolean
+  /** The first session of the next Run on the calendar (wall-clock ISO), or null: self-paced. */
+  nextRun: string | null
 }
 
-async function houseSpaceId(): Promise<string | null> {
+export async function houseSpaceId(): Promise<string | null> {
   try {
     const { data } = await createAdminClient().from('spaces').select('id').eq('slug', HOUSE_SPACE_SLUG).maybeSingle()
     return (data as { id: string } | null)?.id ?? null
@@ -47,12 +51,35 @@ async function pricedPlanIds(planIds: string[]): Promise<Set<string>> {
   }
 }
 
+/** The first upcoming session per Journey, from events linked by journey_id (a Run on the calendar). */
+async function nextRuns(planIds: string[]): Promise<Map<string, string>> {
+  if (planIds.length === 0) return new Map()
+  try {
+    const { data } = await createAdminClient()
+      .from('events')
+      .select('journey_id, starts_at')
+      .in('journey_id', planIds)
+      .eq('status', 'published')
+      .eq('is_cancelled', false)
+      .gte('starts_at', new Date().toISOString().slice(0, 10))
+      .order('starts_at', { ascending: true })
+    const out = new Map<string, string>()
+    for (const r of (data as { journey_id: string | null; starts_at: string }[] | null) ?? []) {
+      if (r.journey_id && !out.has(r.journey_id)) out.set(r.journey_id, r.starts_at)
+    }
+    return out
+  } catch (err) {
+    log.warn('courses.next_runs_failed', { error: err instanceof Error ? err.message : String(err) })
+    return new Map()
+  }
+}
+
 /** Frequency's courses, ready for a card, most-adopted first (the order listPublicJourneys returns). */
 export async function listCourses(): Promise<CourseCard[]> {
   const [journeys, hq] = await Promise.all([listPublicJourneys(), houseSpaceId()])
   const courses: JourneyPlan[] = journeys.filter((j) => isCourse({ ...j, category: j.category ?? null }, hq))
   const ids = courses.map((c) => c.id)
-  const [shapes, priced] = await Promise.all([planShapes(ids), pricedPlanIds(ids)])
+  const [shapes, priced, runs] = await Promise.all([planShapes(ids), pricedPlanIds(ids), nextRuns(ids)])
   return courses.map((c) => {
     const shape = shapes.get(c.id)
     return {
@@ -64,6 +91,13 @@ export async function listCourses(): Promise<CourseCard[]> {
       weeks: shape?.phaseCount ?? 0,
       minutes: shape?.minutes ?? 0,
       free: !priced.has(c.id),
+      certificate: Boolean(c.certificate_enabled) || runs.has(c.id) || offersCertified(c.slug),
+      nextRun: runs.get(c.id) ?? null,
     }
   })
+}
+
+/** Is this public Journey one of Frequency's courses? One read of the house Space id. */
+export async function isFrequencyCourse(plan: JourneyPlan): Promise<boolean> {
+  return isCourse({ ...plan, category: plan.category ?? null }, await houseSpaceId())
 }

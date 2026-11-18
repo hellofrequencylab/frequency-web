@@ -11,7 +11,7 @@
 //     export and the host's roster all work per session with no new machinery.
 //   · Stepping back from one session leaves the others alone: a person who can't make Week 3 still has
 //     Weeks 1, 2 and 4.
-//   · A course page offers one calendar file for every session of its Run (/courses/<slug>/calendar.ics).
+//   · /events/run/<runKey>/calendar.ics adds every session of the Run to a calendar in one tap.
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
