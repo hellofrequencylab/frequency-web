@@ -26,7 +26,7 @@ const guide = read('app/(main)/journeys/[slug]/guide/actions.ts')
 if (!/\{ data, error \} = await admin\s*\.from\('journey_plan_items'\)\s*\.insert/.test(guide) || !/\.delete\(\)\.in\('id', landed\)/.test(guide)) fails.push('a failed guide template insert is ignored and leaves a half skeleton')
 
 const jsonld = body(read('lib/jsonld.ts'), 'export function journeySchema(')
-if (!/isContainer\(/.test(jsonld)) fails.push('the HowTo schema lists phases and modules as steps')
+if (!/isContainerBlock\(/.test(jsonld)) fails.push('the HowTo schema lists phases and modules as steps')
 if (!/plan\.cover_image/.test(jsonld)) fails.push('the HowTo schema ignores the Journey cover')
 
 if (fails.length) {

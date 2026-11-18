@@ -8,7 +8,6 @@ import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TAGLINE, SITE_OG_IMAGE, FOU
 import { eventIsoWithOffset } from '@/lib/time/zone'
 import type { PublicCircle, PublicEvent, TopicalChannel } from '@/lib/discover'
 import type { JourneyPlan, JourneyPlanItem } from '@/lib/journey-plans'
-import { isContainer } from '@/lib/journeys/block-order'
 
 const abs = (path: string) => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`
 
@@ -608,9 +607,11 @@ export function topicListSchema(channels: TopicalChannel[], listName: string) {
 
 export function journeySchema(plan: JourneyPlan, items: JourneyPlanItem[]) {
   const url = abs(`/discover/journeys/${plan.slug}`)
-  // Only LEAF blocks are steps. Phases and modules are containers (lib/journeys/block-order.ts), and
-  // listing them as "Step N" told answer engines a 12-phase Journey with no lessons had 24 steps.
-  const steps = items.filter((it) => !isContainer(it.block_type))
+  // Only LEAF blocks are steps. Phases and modules are containers (isContainer in
+  // lib/journeys/block-order.ts, restated here because this module is loaded standalone by the SEO
+  // probes), and listing them as "Step N" told answer engines a 12-phase Journey had 24 steps.
+  const isContainerBlock = (t: string | null | undefined) => t === 'phase' || t === 'module'
+  const steps = items.filter((it) => !isContainerBlock(it.block_type))
   // Estimated total time from each step's own est_minutes, when known (lives on the item, not the
   // embedded practice — see ITEM_COLS in lib/journey-plans.ts).
   const totalMinutes = steps.reduce((sum, it) => {
