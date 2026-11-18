@@ -3892,7 +3892,7 @@
       "expiresAt": "2026-11-25T23:59:59Z",
       "migrations": [
         {
-          "file": "supabase/migrations/20270346100000_space_calendar_sync_connections.sql",
+          "file": "supabase/migrations/20270346100000_calendar_sync_connections.sql",
           "sha256": "785f2ac85c1429027c807376e921174f32e30771ecb3320fa2a248727750a954"
         }
       ],
@@ -3935,7 +3935,7 @@
         {
           "file": "docs/RUNBOOKS.md",
           "status": "modified",
-          "sha256": "8b36a17d258700c1300ac6a1a4c7ab777282be376e8e172ea07a56249b4f6364",
+          "sha256": "11c3414111eff2857e6f9601f1552abc30dcbcb4d67e15ebfd7103a6fe2497e1",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -3949,7 +3949,7 @@
         {
           "file": "docs/ledger/rows/LIVE-1179.json",
           "status": "added",
-          "sha256": "2dc5df05d9143914dad94f98041b317be6fc4045e9953e4480fb7d50f6f26edd",
+          "sha256": "4500523454966c2befe9df1ea463fbe9dfb6290859938e0c07df274fd2ef50f4",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -3963,7 +3963,7 @@
         {
           "file": "lib/calendar-sync/oauth.ts",
           "status": "added",
-          "sha256": "65e02da8c9a677e57b8d7168a655df8fd09336967d9e78369bd3dbfe8ee72540",
+          "sha256": "c8fd8d2f1722ff67170cba8fec72ae7cf0fca307f05342f1a1f5172380e4ee44",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -3984,7 +3984,7 @@
         {
           "file": "lib/calendar-sync/run.ts",
           "status": "added",
-          "sha256": "67dbf778b4c67d27c67004eac9160971ca38de3d47e813f26ecd477ef68af86c",
+          "sha256": "ad7dca0e76fe92678a98bfc9b3062c5568bb21f46b73db6707a2346b5f8e14e3",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -4005,14 +4005,14 @@
         {
           "file": "lib/calendar-sync/store.ts",
           "status": "added",
-          "sha256": "3e26f9b1df2a05a042edadb431b531a9f02832dcd203220d2e00798840fd0ca7",
+          "sha256": "2da7451b9571323646654be44d6324a81315bffb5065a9c36f5e23e4f6db8816",
           "baseMode": "000000",
           "headMode": "100644"
         },
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "a1acd2d9044775b429b6d052cf781181dded1895af1ec046c2e8767b999ea855",
+          "sha256": "787d31562bdba2c490bd90f34a850d975ed2aa009dcfcb5587e44045f3e5ef04",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -4024,7 +4024,7 @@
           "headMode": "100644"
         },
         {
-          "file": "supabase/migrations/20270346100000_space_calendar_sync_connections.sql",
+          "file": "supabase/migrations/20270346100000_calendar_sync_connections.sql",
           "status": "added",
           "sha256": "785f2ac85c1429027c807376e921174f32e30771ecb3320fa2a248727750a954",
           "baseMode": "000000",
