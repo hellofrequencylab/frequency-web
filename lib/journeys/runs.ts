@@ -393,3 +393,18 @@ export async function getCohortProgress(runId: string, planId: string): Promise<
   })
   return aggregateCohort(members, phaseIds)
 }
+
+/** Stamp a member's open enrolment(s) on a plan complete (JRN-010). tryCompleteJourney
+ *  (lib/quest/complete.ts) stamps only ranked-eligible Journeys finished through practice logs, so
+ *  a member who ticked the last lesson of any other Journey stayed "active" forever: holding an
+ *  enroll_cap seat, counting on the people meter, and sitting in the drip and prompt crons.
+ *  Idempotent (only open rows). Best-effort: a failed stamp is logged and never blocks the tick. */
+export async function stampEnrollmentComplete(profileId: string, planId: string): Promise<void> {
+  const { error } = await db()
+    .from('journey_enrollments')
+    .update({ completed_at: new Date().toISOString() })
+    .eq('profile_id', profileId)
+    .eq('plan_id', planId)
+    .is('completed_at', null)
+  if (error) console.error('[journeys] completed_at stamp failed', { planId, error: error.message })
+}
