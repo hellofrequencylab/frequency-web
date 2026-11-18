@@ -156,7 +156,7 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
     // synced Free Human website wears Classic (a serif headline over a quiet body); Cormorant Garamond, Marcellus and
     // Hanken Grotesk load on the website alone.
     id: 'free-human',
-    label: 'Free Human',
+    label: 'Honey',
     description: 'Limewash and honey light: a gilt arch, a madder accent and a candle-dark night, for movement, ritual and the village around it.',
     defaultFonts: 'classic',
   },

@@ -48,7 +48,7 @@ function Wheel({ p, metadata, now, pad, vis }: Common) {
 }
 
 export const freeHumanWheelBlocks: Record<string, ComponentConfig> = {
-  FreeHumanYearWheel: block('Free Human year wheel (live)', {
+  FreeHumanYearWheel: block('Honey year wheel (live)', {
     ...groundFields, eyebrow: text('Small label'), title: area('Heading', VOICE_HINT),
     defaultMode: { type: 'select', label: 'Turns by', options: [{ label: 'Hand (click and drag)', value: 'click' }, { label: 'Scroll (on a wide screen)', value: 'scroll' }] },
     stepHeight: { type: 'number', label: 'Scroll length per stop (screen height, 30 to 90)', min: 30, max: 90 },

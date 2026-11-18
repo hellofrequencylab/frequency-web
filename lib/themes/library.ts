@@ -119,6 +119,7 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
   },  // The five themes below joined the catalog 2026-11-18 (owner: "Every theme should have a full, standardized design system"
   // and "Make sure Free Human Movement is in the theme library as well as Mindless"). Each has its own feature page.
   {
+    // Shown as Honey (owner 2026-11-18: "Change the theme name to honey"); the code id stays `free-human`.
     id: 'free-human',
     tagline: 'Limewash, honey light and a gilt arch.',
     madeFor: 'movement, ritual, retreats and the village that gathers around them',
