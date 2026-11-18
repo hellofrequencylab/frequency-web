@@ -3834,6 +3834,13 @@
           "headMode": "100644"
         },
         {
+          "file": "lib/moderation/suspension-coverage.ts",
+          "status": "modified",
+          "sha256": "8a1a89bb9163b67dacf21bc42b29b8f2f1d0a7212fc613c47098fc29d0f287bf",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
           "file": "scripts/rls-deny-all.txt",
           "status": "modified",
           "sha256": "a7fca8f505b63d336ee9da526506ab12fae38d51a970c13dd88c34baa0a4d52c",

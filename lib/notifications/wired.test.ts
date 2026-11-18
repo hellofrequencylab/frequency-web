@@ -200,7 +200,7 @@ describe('lib/notifications/wired.ts agrees with the tree, both ways', () => {
     expect(mismatches, `\n${mismatches.join('\n')}\n`).toEqual([])
   })
 
-  it('pins the hidden set (meta-scan B9 D1/D6, the SCAN-528 shape): five of twenty-one', () => {
+  it('pins the hidden set (meta-scan B9 D1/D6, the SCAN-528 shape): four of twenty-one', () => {
     // The in-app switches outside Practice, Replies and Mentions, the Mentions email and push rows, Replies
     // email, and Practice email. TWO emitters landed on 2026-09-08 and this pin carries both: the
     // Guestbook sign notice (ADR-1279) turned the Replies in-app + push pair back on, and Matches
@@ -209,12 +209,13 @@ describe('lib/notifications/wired.ts agrees with the tree, both ways', () => {
     // in-app switch on, and the event.notice row (SCAN-1161) did the same for Events in-app, each
     // with Daniel's go-ahead to update this pin. Ten of eighteen before either. The message.direct row (a direct message,
     // EMAIL-055) turned the Mentions email and push switches on, seven to five, with Daniel's words on 2026-11-18: "update
-    // the wired pin for mentions". If this changes, an emitter shipped (good) or a reader was removed (say so).
+    // the wired pin for mentions". The community.joined row (LIVE-2366, owner join/follow notices)
+    // turned Lifecycle in-app on, five to four, with Daniel's go-ahead on 2026-11-18. If this changes, an emitter shipped (good) or a reader was removed (say so).
     expect(WIRED_PREFERENCE_CHANNELS).toEqual({
       dispatches: ['email', 'push'],
       events:     ['email', 'push', 'inapp'],
       mentions:   ['email', 'push', 'inapp'],
-      lifecycle:  ['email', 'push'],
+      lifecycle:  ['email', 'push', 'inapp'],
       comments:   ['inapp', 'push'],
       practice:   ['inapp', 'push'],
       matches:    ['email', 'push'],
@@ -223,7 +224,7 @@ describe('lib/notifications/wired.ts agrees with the tree, both ways', () => {
     for (const category of NOTIFICATION_CATEGORIES) {
       for (const channel of CHANNELS) if (!isPreferenceWired(channel, category)) hidden.push(`${channel}_${category}`)
     }
-    expect(hidden).toHaveLength(5)
+    expect(hidden).toHaveLength(4)
     expect(wiredCategories(NOTIFICATION_CATEGORIES)).toEqual(['dispatches', 'events', 'mentions', 'lifecycle', 'comments', 'practice', 'matches'])
   })
 })

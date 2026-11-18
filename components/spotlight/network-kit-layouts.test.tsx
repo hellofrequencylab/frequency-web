@@ -27,7 +27,7 @@ function shellFor(layout: string, kit = 'general', scheme?: Record<string, unkno
 describe('Network Theme Kit Spotlight layouts', () => {
   it('registers the six layouts of the design for network-kit and none for the themes that have none', () => {
     expect(spotlightLayoutsFor('network-kit').map((l) => l.id.split(':')[1])).toEqual(IDS)
-    expect(spotlightLayoutsFor('midnight')).toEqual([])
+    expect(spotlightLayoutsFor('frequency')).toEqual([])
     expect(THEME_PRESETS.filter((p) => p.id !== 'network-kit' && p.id !== 'temple-kit' && p.id !== 'free-human' && p.id !== 'new-world' && p.id !== 'services' && p.id !== 'cyberwitch' && p.id !== 'mindless').every((p) => !('layout' in p.theme))).toBe(true)
   })
 

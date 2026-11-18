@@ -114,3 +114,19 @@ describe('source shape: GET cannot be re-aliased onto POST', () => {
     expect(SRC).not.toMatch(/export\s+(const|let|var)\s+GET\s*=/)
   })
 })
+
+// EMAIL-062: a one-click unsubscribe whose write failed used to answer 200, so the mailbox treated the opt-out as
+// done and it was lost. A failed write now answers 503; a bad link still answers 200 and reveals nothing.
+describe('POST /api/unsubscribe when the save fails (EMAIL-062)', () => {
+  it('answers 503 when the preference could not be saved', async () => {
+    actions.processUnsubscribe.mockImplementationOnce(async () => ({ error: 'Could not save your preference. Please try again.' }) as never)
+    const res = await POST(request('POST'))
+    expect(res.status).toBe(503)
+  })
+
+  it('still answers 200 for a bad link', async () => {
+    actions.processUnsubscribe.mockImplementationOnce(async () => ({ error: 'This unsubscribe link is invalid or expired.' }) as never)
+    const res = await POST(request('POST'))
+    expect(res.status).toBe(200)
+  })
+})

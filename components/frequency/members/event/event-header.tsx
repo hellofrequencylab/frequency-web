@@ -28,11 +28,14 @@ export function FqEventCover({
   unoptimized,
   dateDay,
   dateMonth,
+  height = 'standard',
 }: {
   src: string | null
   alt: string
   focus: string | null
   unoptimized: boolean
+  /** The host's Hero height (events.theme.heroHeight, LIVE-2363): short / standard / tall. */
+  height?: 'short' | 'standard' | 'tall'
   /** The no-cover placeholder leads with the date, like the DAWN one. */
   dateDay: string
   dateMonth: string
@@ -48,7 +51,7 @@ export function FqEventCover({
     )
   }
   return (
-    <div className="fqm-evh-cover">
+    <div className="fqm-evh-cover" data-height={height === 'standard' ? undefined : height}>
       <Image
         src={src}
         alt={alt}

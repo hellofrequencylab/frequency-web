@@ -146,3 +146,15 @@ describe('processUnsubscribe on a marketing send link (SCAN-728)', () => {
     expect(db.tables.contacts[0].consent_state).toBe('subscribed')
   })
 })
+
+// EMAIL-062: a failed read of the member's preferences used to read as "no row", so the upsert wrote the defaults and
+// switched back on every category the member had already turned off.
+describe('processUnsubscribe when the preference read fails (EMAIL-062)', () => {
+  it('fails without writing, so the member keeps the categories they turned off', async () => {
+    db.tables.notification_preferences.push({ profile_id: PID, email_lifecycle: true, email_events: false })
+    db.fail = { table: 'notification_preferences', op: 'select' }
+    const res = await processUnsubscribe(emittedLink())
+    expect(res).toEqual({ error: expect.stringMatching(/Could not save/) })
+    expect(db.tables.notification_preferences).toEqual([{ profile_id: PID, email_lifecycle: true, email_events: false }])
+  })
+})

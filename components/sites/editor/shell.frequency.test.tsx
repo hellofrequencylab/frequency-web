@@ -400,3 +400,34 @@ it('docks Vera as a tab at the bottom right that opens and closes', () => {
   expect(node.querySelector('.stage .vera-tab')).toBeNull()
   expect(document.activeElement?.getAttribute('aria-label')).toBe('Ask Vera')
 })
+
+// ── PROG-E6 item 6: the Layers tree is one tab stop, arrows walk it, and the row shortcuts act. ──
+it('keeps one tab stop in Layers and walks it with the arrow keys', () => {
+  const { node, click } = mount()
+  click('Duplicate')
+  const rows = () => Array.from(node.querySelectorAll<HTMLButtonElement>('.rail .row[data-layer-id]'))
+  expect(rows()).toHaveLength(2)
+  expect(rows().map((row) => row.tabIndex).filter((t) => t === 0)).toHaveLength(1)
+  const first = rows()[0]
+  act(() => first.focus())
+  act(() => { first.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })) })
+  expect(document.activeElement).toBe(rows()[1])
+  expect(rows()[1].tabIndex).toBe(0)
+  expect(rows()[0].tabIndex).toBe(-1)
+  act(() => { rows()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true })) })
+  expect(document.activeElement).toBe(rows()[0])
+})
+
+it('duplicates and removes the focused layer from the keyboard', async () => {
+  const { node, click, onSave } = mount()
+  const rows = () => Array.from(node.querySelectorAll<HTMLButtonElement>('.rail .row[data-layer-id]'))
+  expect(rows()).toHaveLength(1)
+  act(() => { rows()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'd', ctrlKey: true, bubbles: true })) })
+  expect(rows()).toHaveLength(2)
+  act(() => { rows()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true })) })
+  expect(rows()).toHaveLength(1)
+  await act(async () => { click('Save draft'); await Promise.resolve() })
+  const ids = onSave.mock.calls.at(-1)?.[1].pages[0].doc.content.map((block: { props: { id?: string } }) => block.props.id)
+  expect(ids).toHaveLength(1)
+  expect(ids?.[0]).not.toBe('cards')
+})
