@@ -41,3 +41,9 @@ export function startClientSentry(): RouterTransitionHook {
   maybeInitSentry()
   return Sentry.captureRouterTransitionStart
 }
+
+/** An error caught by the pre-init buffer in `instrumentation-client.ts` (PERF-009): thrown after
+ *  the page started but before the deferred SDK loaded. Tagged so it is easy to tell apart. */
+export function captureEarlyError(err: unknown): void {
+  Sentry.captureException(err, { tags: { captured: 'pre-init-buffer' } })
+}

@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-075",
+  "title": "Create a Space draft reminders go to one draft per person and stop once that person has a Space",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "lib/create-space/draft-recovery-io.ts",
+    "ref": "Email and messaging check 2026-11-18 (thread: Check every email and message system)"
+  },
+  "detail": "2026-11-18: the draft reminder runner selects every unconverted draft and dedupes per draft id, not per address, though migration 20270346028600 says the cron takes the newest unconverted row per address; two browsers mean six emails. markDraftConverted stamps only the claimed token's row from /launch/claim, so a person who finishes on another device or through /spaces/new keeps getting finish-your-Space mail, and the runner does not read the person's own lifecycle email switch. Timing (1h, 1d, 3d, local hours) is right. Done when the runner picks the newest draft per address, skips addresses that already own a Space, and honors email_lifecycle.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-scan-2026-11-18.mjs draft-reminder-per-address",
+    "note": "Fails on main today; passes once the fix lands."
+  }
+}

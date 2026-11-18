@@ -37,7 +37,8 @@ export const WIRED_PREFERENCE_CHANNELS: Record<NotificationCategory, readonly No
   // The `post.mention` registry row (feed @mentions) gates in-app on inapp_mentions, and the
   // `message.direct` row (EMAIL-055, a direct message) gates in-app, push and email.
   mentions:   ['email', 'push', 'inapp'],
-  lifecycle:  ['email', 'push'],
+  // In-app is read by the `community.joined` registry row (a new Circle member or Space follower, LIVE-2366).
+  lifecycle:  ['email', 'push', 'inapp'],
   // The Guestbook sign notice (ADR-1279) reads inapp_comments directly and push_comments through
   // the registry row `guestbook.sign`; no reply EMAIL emitter exists yet.
   comments:   ['inapp', 'push'],

@@ -365,7 +365,7 @@
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-legend span{display:inline-flex;align-items:center;gap:7px}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-legend i{width:10px;height:10px;border-radius:3px;background:var(--fq-surface-raised);box-shadow:inset 0 0 0 1px var(--fq-border-strong)}
 /* the four weeks */
-[data-design="frequency"] [data-kit="site"] .pa-boc .boc-weeks{display:grid;gap:18px}
+[data-design="frequency"] [data-kit="site"] .pa-boc .boc-weeks{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-week{display:grid;grid-template-columns:300px minmax(0,1fr);border-radius:30px;overflow:hidden;background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-week-ph{position:relative;margin:0;min-height:230px}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-week-ph img{position:absolute;inset:0}
@@ -436,8 +436,8 @@
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-hero-main{height:440px}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-probs{grid-template-columns:1fr}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-beats{grid-template-columns:1fr 1fr}
-[data-design="frequency"] [data-kit="site"] .pa-boc .boc-week{grid-template-columns:1fr}
-[data-design="frequency"] [data-kit="site"] .pa-boc .boc-week-g{grid-template-columns:1fr;gap:18px}
+[data-design="frequency"] [data-kit="site"] .pa-boc .boc-week{grid-template-columns:minmax(0,1fr)}
+[data-design="frequency"] [data-kit="site"] .pa-boc .boc-week-g{grid-template-columns:minmax(0,1fr);gap:18px}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-band-in{grid-template-columns:repeat(3,1fr)}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-guide{grid-template-columns:1fr}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-book{grid-template-columns:1fr 1fr}
@@ -449,6 +449,8 @@
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-hero-main{position:relative;width:100%;height:360px}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-hero-small{display:none}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-beats{grid-template-columns:1fr}
+[data-design="frequency"] [data-kit="site"] .pa-boc .boc-week-b{padding:26px 22px}
+[data-design="frequency"] [data-kit="site"] .pa-boc .boc-week-t .boc-chip{white-space:normal;line-height:1.3}
 [data-design="frequency"] [data-kit="site"] .pa-boc .boc-shot,[data-design="frequency"] [data-kit="site"] .pa-boc .boc-shot:nth-child(even){height:180px;margin-top:0}
 }
 

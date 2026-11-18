@@ -13,6 +13,9 @@ import { isError, type ActionResult } from '@/lib/action-result'
 
 export const dynamic = 'force-dynamic'
 
+/** The actions' answer when a write failed (app/unsubscribe/actions.ts), as opposed to a bad link. */
+const SAVE_FAILED = /^Could not save your preference/
+
 export async function POST(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const t = searchParams.get('t') ?? ''
@@ -35,6 +38,13 @@ export async function POST(req: NextRequest) {
         })
 
   if (isError(result)) {
+    // EMAIL-062: a WRITE that failed is not a bad link. Answer 503 so the opt-out is not silently lost
+    // (the mailbox may retry, and the error is loud). A bad token or an unknown pair still answers 200
+    // with nothing written, so the response never reveals whether a profile or Space exists.
+    if (SAVE_FAILED.test(result.error)) {
+      console.error('[api/unsubscribe] unsubscribe write failed:', result.error)
+      return NextResponse.json({ ok: false }, { status: 503 })
+    }
     // Log the reason internally but return 200 so the mailbox UI shows
     // success. (Revealing the failure invites probing.)
     console.warn('[api/unsubscribe] unsubscribe failed:', result.error)

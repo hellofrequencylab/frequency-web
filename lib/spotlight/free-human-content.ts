@@ -47,8 +47,8 @@ const DOORS: Door[] = [
 
 const SESSIONS: Offering[] = [
   { name: 'Breath for birth', minutes: 180, price: null, photo: 'light-honey-spoon' },
-  { name: 'Postpartum restoration', minutes: 90, price: null, photo: 'body-morning-bed' },
-  { name: 'Floor play with littles', minutes: 60, price: null, photo: 'craft-yarn-bodies' },
+  { name: 'Postpartum restoration', minutes: 90, price: null, photo: 'fq-boc-beach-yoga' },
+  { name: 'Floor play with littles', minutes: 60, price: null, photo: 'fq-boc-craft-table' },
 ]
 
 const DATES: DateRow[] = [
@@ -76,10 +76,10 @@ export function freeHumanSpotlightContent(profile: string, opts: { name?: string
       title: 'Move like the woman who',
       em: 'made a world.',
       body: 'A practice for women who are creating life, birthing it, and raising it. Old wisdom, practiced in a modern body.',
-      photo: opts.photo ?? freeHumanPhotoSrc('heritage-a-virgin'),
+      photo: opts.photo ?? freeHumanPhotoSrc('fq-boc-circle-sunset'),
       pos: '50% 20%',
     },
-    portrait: freeHumanPhotoSrc('place-daisies'),
+    portrait: freeHumanPhotoSrc('fq-day-park-yoga'),
     cta: { label: 'Join the circle', href: '/membership' },
     doors: DOORS,
     featured: sample

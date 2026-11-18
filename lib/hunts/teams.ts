@@ -27,6 +27,14 @@ export function newInviteCode(): string {
   return code
 }
 
+/**
+ * The idempotency key for one member's claim of one stop code on one Trail. The typed form and the scan
+ * use the same key, so a scan after a typed code (or a second device) replays instead of crediting twice.
+ */
+export function teamClaimKey(profileId: string, slug: string, code: string): string {
+  return createHash('sha256').update(`team-play:${profileId}:${slug}:${code}`).digest('hex')
+}
+
 /** The stored form of an invite code: case and spacing do not matter, so a typed code matches a shared one. */
 export function inviteHash(code: string): string {
   return createHash('sha256').update(code.replace(/[\s-]/g, '').toUpperCase()).digest('hex')

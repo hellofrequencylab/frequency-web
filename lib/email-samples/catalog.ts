@@ -77,6 +77,7 @@ import { MINDLESS_SURFACE } from '@/lib/theme/mindless'
 import { MINDLESS_EMAIL_TYPES, mindlessKitEmail, type MindlessKitEmailBrand } from '@/lib/theme/mindless-kit-email'
 import { NEW_WORLD_EMAIL_TIDE, NEW_WORLD_EMAIL_TYPES, newWorldKitEmail, newWorldKitEmailFrom } from '@/lib/theme/new-world-kit-email'
 import { newWorldKitSpotlightContent } from '@/lib/spotlight/new-world-kit-content'
+import { houseKitDatesEmail, houseKitNoteEmail, houseKitReceiptEmail, houseKitWelcomeEmail, type HouseKitEmailBrand, type HouseKitEmailTheme } from '@/lib/theme/house-kit-email'
 import { freeHumanDatesEmail, freeHumanNoteEmail, freeHumanReceiptEmail, freeHumanWelcomeEmail, type FreeHumanEmailBrand } from '@/lib/theme/free-human-email'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
@@ -276,6 +277,38 @@ const FREE_HUMAN_BRAND: FreeHumanEmailBrand = {
   unsubscribeUrl: `${SITE}/unsubscribe/s`,
   manageUrl: `${SITE}/manage-emails`,
 }
+/** The Bold and Wildheart kits' four emails. Every default is generic and coaches the owner what to write there. */
+const houseKitBrand = (theme: HouseKitEmailTheme): HouseKitEmailBrand => ({
+  theme,
+  spaceName: 'Your Space name',
+  mastheadNote: 'Where you meet · Your city',
+  postalLine: PLATFORM_POSTAL_LINE,
+  siteUrl: 'https://yourspace.example',
+  siteLabel: 'yourspace.example',
+  unsubscribeUrl: `${SITE}/unsubscribe/s`,
+  manageUrl: `${SITE}/manage-emails`,
+})
+const HOUSE_KIT_COVER: Record<HouseKitEmailTheme, string> = {
+  bold: `${SITE}/brand/frequency/photos/boc-fire-night.jpg`,
+  wildheart: `${SITE}/brand/wildheart/photos/cacao-circle.jpg`,
+}
+const HOUSE_KIT_DATES = [
+  { lead: '14', title: 'Name the gathering', sub: 'Time · Where it happens · How many spots are left' },
+  { lead: '21', title: 'The next one', sub: 'Time · Where it happens' },
+  { lead: '28', title: 'One more worth the trip', sub: 'Time · Where it happens' },
+]
+const HOUSE_KIT_QUOTE = { text: 'Paste a real line from someone who came. One or two sentences in their own words.', who: 'Their first name', role: 'What they came to' }
+const houseKitSamples = (theme: HouseKitEmailTheme) => {
+  const b = houseKitBrand(theme)
+  const cover = { coverUrl: HOUSE_KIT_COVER[theme], coverAlt: 'Describe the photo in a few words for people who cannot see it.' }
+  const url = 'https://yourspace.example/calendar'
+  return [
+    { id: `${theme}-kit-note`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...houseKitNoteEmail(b, { subject: 'Say what this note is about in a few words', title: 'Lead with the one thing', em: 'people should feel.', lead: 'Start with what your people are missing, then say what is coming up and why it is worth showing up for. Two or three sentences is plenty.', ctaLabel: 'See what is on', ctaUrl: url, ...cover, feature: { kicker: 'Coming up', title: 'The next few dates', rows: HOUSE_KIT_DATES, ctaLabel: 'See all dates', ctaUrl: url }, quote: HOUSE_KIT_QUOTE }) }) },
+    { id: `${theme}-kit-welcome`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...houseKitWelcomeEmail(b, { ...cover, ctaLabel: 'See what is on', ctaUrl: url, steps: [{ title: 'Name the first thing to do', sub: 'Say it in one line: come to a date, book a call, or read one post.' }, { title: 'Name the second', sub: 'Something small that helps a new person feel at home.' }, { title: 'Say hello', sub: 'Reply to this email. It goes to a person, not a robot.' }], quote: HOUSE_KIT_QUOTE }) }) },
+    { id: `${theme}-kit-dates`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...houseKitDatesEmail(b, { dates: HOUSE_KIT_DATES, ctaUrl: url }) }) },
+    { id: `${theme}-kit-receipt`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...houseKitReceiptEmail(b, { what: 'The name of what they booked', when: 'Day, date · Time', where: 'Where it happens', who: 'One place', whoNote: 'Reserved under their name', paid: 'The price', paidNote: 'Card ending 4242 · Receipt no. 1047', calendarUrl: 'https://yourspace.example/calendar.ics', manageUrl: 'https://yourspace.example/bookings' }) }) },
+  ]
+}
 const SERVICES_BRAND: ServicesKitEmailBrand = {
   name: 'Harbor Home Care', descriptor: 'Home repair & maintenance', owner: 'Alex Rivera', role: 'Owner', city: 'San Diego', phone: '(619) 555-0100',
   accent: { fill: SERVICES_SURFACE.accent.accent, text: SERVICES_SURFACE.accent.text }, register: 'night', postalLine: PLATFORM_POSTAL_LINE,
@@ -291,7 +324,7 @@ const MINDLESS_BRAND: MindlessKitEmailBrand = {
   accent: { fill: MINDLESS_SURFACE.accent.accent, text: MINDLESS_SURFACE.accent.text }, postalLine: PLATFORM_POSTAL_LINE,
   siteUrl: 'https://mindless.one', siteLabel: 'mindless.one', unsubscribeUrl: `${SITE}/unsubscribe/s`,
 }
-const FREE_HUMAN_COVER = `${SITE}/sites/free-human/email/place-sea-sunset.jpg`
+const FREE_HUMAN_COVER = `${SITE}/brand/frequency/photos/boc-beach-sound-bath.jpg`
 const FREE_HUMAN_DATES = [
   { lead: '20', title: 'New moon circle', sub: '7:00 PM · The long room' },
   { lead: '29', title: 'Honey and bread supper', sub: '6:00 PM · The garden table' },
@@ -405,6 +438,9 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'free-human-welcome', group: 'Spaces and campaigns', run: () => { const out = freeHumanWelcomeEmail(FREE_HUMAN_BRAND, { coverUrl: FREE_HUMAN_COVER, coverAlt: 'The sea at sunset, warm and wide.', ctaLabel: 'See what is open', ctaUrl: 'https://freehumanmovement.example/calendar', steps: [{ title: 'Come to one thing', sub: 'Pick a date from the calendar and show up. No account needed.' }, { title: 'See the next few dates', sub: 'Circles, suppers and wheels, all on the calendar.' }, { title: 'Say hello', sub: 'Reply to this letter. It goes to a person, not a robot.' }], quote: { text: 'I walked in carrying everything and walked out lighter.', who: 'A member', role: 'Came to the new moon circle' } }); return { to: TO, ...out } } },
   { id: 'free-human-dates', group: 'Spaces and campaigns', run: () => { const out = freeHumanDatesEmail(FREE_HUMAN_BRAND, { dates: FREE_HUMAN_DATES, ctaUrl: 'https://freehumanmovement.example/calendar' }); return { to: TO, ...out } } },
   { id: 'free-human-receipt', group: 'Spaces and campaigns', run: () => { const out = freeHumanReceiptEmail(FREE_HUMAN_BRAND, { what: 'New moon circle', when: 'Thursday, November 20 · 7:00 PM', where: 'The long room', who: 'One place', whoNote: 'Reserved under your name', paid: '$25', paidNote: 'Card ending 4242 · Receipt no. 1047', calendarUrl: 'https://freehumanmovement.example/calendar.ics', manageUrl: 'https://freehumanmovement.example/bookings' }); return { to: TO, ...out } } },
+  // ── The Bold and Wildheart Theme Kits' emails (generic, coaching defaults) ─────────────────────────────
+  ...houseKitSamples('bold'),
+  ...houseKitSamples('wildheart'),
   ...NEW_WORLD_EMAIL_TYPES.map((type) => ({ id: `new-world-${type}`, group: 'Spaces and campaigns' as const, run: () => { const k = newWorldKitEmailFrom(newWorldKitSpotlightContent('general')); return { to: TO, ...newWorldKitEmail(type, { ...SERVICES_BRAND, ...k.brand, accent: NEW_WORLD_EMAIL_TIDE }, k.facts) } } })),
   ...CYBERWITCH_EMAIL_TYPES.map((type) => ({ id: `cyberwitch-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...cyberwitchKitEmail(type, CYBERWITCH_BRAND) }) })),
   ...MINDLESS_EMAIL_TYPES.map((type) => ({ id: `mindless-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...mindlessKitEmail(type, MINDLESS_BRAND) }) })),

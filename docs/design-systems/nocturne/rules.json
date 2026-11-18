@@ -308,5 +308,17 @@
       "target": "app/themes/frequency/space-page.css"
     }
   ],
-  "baseline": "docs/design-systems/nocturne/baseline.json"
+  "baseline": "docs/design-systems/nocturne/baseline.json",
+  "copyRulings": [
+    {
+      "phrase": "Make every Frequency theme FULLY generic with copy that coaches them what to write. Be sure anybody using a theme keeps their content but give the templates a full scrub.",
+      "reason": "Daniel 2026-11-18 (LIVE-2372): the Nocturne template no longer invents fixed dates (the prototype's sample next opening and Journey run dates), so these sample date lines are ruled out of the repo.",
+      "ids": [
+        "copy:ui_kits/products/SpacePage.html#db1b2132",
+        "copy:ui_kits/products/shared.jsx#247543b2",
+        "copy:ui_kits/site/data.js#9534866a",
+        "copy:ui_kits/site/data.js#2f081065"
+      ]
+    }
+  ]
 }

@@ -32,7 +32,7 @@ import { FreeHumanFooterTop } from './free-human-footer'
 import { FreeHumanGlyph } from './free-human-glyph'
 import { FreeHumanLogo } from './free-human-logo'
 import { FreeHumanTools } from './free-human-tools'
-import { freeHumanNav, FREE_HUMAN_CHROME_COPY } from '@/lib/sites/free-human-chrome'
+import { freeHumanNav, FREE_HUMAN_CHROME_COPY, FREE_HUMAN_MOVEMENT_CHROME, isFreeHumanMovement } from '@/lib/sites/free-human-chrome'
 import { FREE_HUMAN_PHOTOS } from '@/lib/sites/free-human-photos'
 import { MidnightLogo } from './midnight-logo'
 import { MidnightBar } from './midnight-bar'
@@ -236,7 +236,7 @@ export function SiteChrome({
   const kitFoot = sv || skin?.theme === 'new-world'
   const svPhone = sv ? footer?.columns.flatMap((c) => c.links).find((l) => /^tel:/i.test(l.href)) ?? null : null
   const fhShop = fh ? templeKitShopHref(links) : null
-  const fhLinks: HouseHeaderLink[] | null = fh ? freeHumanNavLinks(links, homeHref) : null
+  const fhLinks: HouseHeaderLink[] | null = fh ? freeHumanNavLinks(links, homeHref, isFreeHumanMovement(spaceSlug, brandName)) : null
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
   // that reserves its height, so nothing shifts when the date line folds away on scroll.
   const header = (
@@ -256,7 +256,7 @@ export function SiteChrome({
       megaChevron={fh ? <FreeHumanGlyph name="chevron-down" size={14} /> : null}
       defaultMega={fh ? previewMega : null}
       menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}
-      brandMark={sv ? <span className="sv-wordmark" style={{ ['--sv-wm-len' as string]: brandName.length }}>{brandName}</span> : wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? FREE_HUMAN_CHROME_COPY.wordmark.tagline} logoUrl={logoUrl} /> : null}
+      brandMark={sv ? <span className="sv-wordmark" style={{ ['--sv-wm-len' as string]: brandName.length }}>{brandName}</span> : wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? (isFreeHumanMovement(spaceSlug, brandName) ? FREE_HUMAN_MOVEMENT_CHROME.tagline : null)} logoUrl={logoUrl} /> : null}
     />
   )
   const year = new Date().getFullYear()
@@ -456,8 +456,8 @@ export function SiteChrome({
 
 /** The Free Human header menu in the shape the house header draws: the four mega menus (glyph doors, the lyric, two pictured tiles) then Calendar
  *  with its glyph. Pure data in, server-drawn nodes out (lib/sites/free-human-chrome.ts decides what is in it). */
-function freeHumanNavLinks(links: SiteLink[], homeHref: string): HouseHeaderLink[] {
-  return freeHumanNav(links, homeHref, (photo) => FREE_HUMAN_PHOTOS[photo]?.avg ?? null).map((n): HouseHeaderLink => ({
+function freeHumanNavLinks(links: SiteLink[], homeHref: string, own: boolean): HouseHeaderLink[] {
+  return freeHumanNav(links, homeHref, (photo) => FREE_HUMAN_PHOTOS[photo]?.avg ?? null, own).map((n): HouseHeaderLink => ({
     href: n.href,
     label: n.label,
     icon: n.glyph ? <FreeHumanGlyph name={n.glyph} size={16} /> : undefined,

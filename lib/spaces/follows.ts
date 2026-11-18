@@ -18,6 +18,7 @@
 // and join without following. This file never touches space_members.
 
 import { revalidatePath } from 'next/cache'
+import { routeNotification } from '@/lib/notifications/router'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -45,6 +46,19 @@ export async function followSpace(spaceId: string): Promise<ActionResult> {
   const space = await getSpaceById(spaceId)
   if (!space) return fail('Space not found.')
 
+  // A brand-new follow tells the owner (LIVE-2366); a re-follow of a Space already followed does not.
+  let alreadyFollowing = false
+  try {
+    const { data: prior } = await followsTable()
+      .select('id')
+      .eq('space_id', spaceId)
+      .eq('follower_profile_id', profileId)
+      .maybeSingle()
+    alreadyFollowing = !!prior
+  } catch {
+    alreadyFollowing = true // unreadable: stay quiet rather than risk a duplicate notice
+  }
+
   try {
     const { error } = await followsTable()
       .upsert(
@@ -56,6 +70,15 @@ export async function followSpace(spaceId: string): Promise<ActionResult> {
     if (error) return fail('Could not follow this space. Try again.')
   } catch {
     return fail('Could not follow this space. Try again.')
+  }
+
+  if (!alreadyFollowing && space.ownerProfileId && space.ownerProfileId !== profileId) {
+    await routeNotification('community.joined', { profileId: space.ownerProfileId }, {
+      actorId: profileId,
+      kind: 'space',
+      name: space.name,
+      reference: space.slug,
+    }).catch(() => {})
   }
 
   revalidatePath(`/spaces/${space.slug}`, 'layout')

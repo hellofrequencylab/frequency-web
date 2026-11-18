@@ -8,6 +8,8 @@ import { QrShareDropdown } from '@/modules/qr'
 import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor, listJourneyCoHostSpaces, getCompletedLessonIds, listPublicJourneys } from '@/lib/journey-plans'
+import { listJourneyGuides } from '@/lib/journeys/guides'
+import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { JourneyBody } from '@/components/frequency/members/journey/journey-body'
 import { listFriendsOnJourney } from '@/lib/journeys/friends-on-journey'
 import { buildJourneyTree } from '@/lib/journeys/tree'
@@ -100,10 +102,25 @@ export default async function JourneyPlanPage({
   }
 
   // Co-host Spaces (journey_plan_space_shares, accepted only): a credit line, never edit access.
-  const [author, coHosts] = await Promise.all([
+  const [author, coHosts, guides, hostSpace, rootSpaceId] = await Promise.all([
     getPlanAuthor(plan.author_id),
     listJourneyCoHostSpaces(plan.id, plan.space_id),
+    listJourneyGuides(plan.id),
+    plan.space_id ? getSpaceById(plan.space_id) : Promise.resolve(null),
+    loadRootSpaceId(),
   ])
+  // HOST and GUIDES (owner 2026-11-17): the home Space hosts; its named guides lead. With no guides the
+  // Space is the guide, and a member's own Journey (root sentinel, no host) falls back to its author.
+  const host =
+    hostSpace && hostSpace.id !== rootSpaceId
+      ? { slug: hostSpace.slug, name: hostSpace.brandName ?? hostSpace.name, logoUrl: hostSpace.brandLogoUrl ?? null }
+      : null
+  const leads =
+    guides.length > 0
+      ? guides.map((g) => ({ href: `/people/${g.handle}`, name: g.displayName, avatarUrl: g.avatarUrl, sub: `@${g.handle}` }))
+      : host
+        ? [{ href: `/spaces/${host.slug}`, name: host.name, avatarUrl: host.logoUrl, sub: 'Hosts and guides this Journey.' }]
+        : []
 
   // ACTIVE → the lesson player. An enrolled learner goes to /learn. An author stays on the pitch
   // so they can sell; they reach the course with Continue. `?preview=1` keeps an enrolled member
@@ -186,8 +203,8 @@ export default async function JourneyPlanPage({
   // stat chips, enroll/manage) stays in the light `band` under the hero, so those controls keep their
   // normal styling and contrast. Layout + height resolve from the header element's master config
   // (/admin/elements), defaulting to identity/standard, so an operator can retune it without a deploy.
-  // The author's picked overlay (journey_plans) is the surface default; an operator master value still
-  // overrides site-wide. Only none/shadow/fade are honored; anything else falls back to the registry default.
+  // The author's header choices (journey_plans cover_focus, header_overlay_style/color, logo_image) ride
+  // into JourneyBody's cover (LIVE-2365). Only none/shadow/fade and a strict hex color are honored.
   const completed = docked && profileId ? [...(await getCompletedLessonIds(profileId, plan.id))] : []
   const tree = buildJourneyTree(itemsToBlocks(items), completed)
   const [publicJourneys, friends] = await Promise.all([
@@ -222,12 +239,29 @@ export default async function JourneyPlanPage({
     </>
   )
   const credits =
-    author || coHosts.length > 0 ? (
+    host || author || coHosts.length > 0 ? (
       <span className="stack mc-gap-6">
-        {author && (
-          <Link className="t2" href={`/people/${author.handle}`}>
-            By {author.displayName}
+        {host ? (
+          <Link className="t2" href={`/spaces/${host.slug}`}>
+            Hosted by {host.name}
           </Link>
+        ) : (
+          author && (
+            <Link className="t2" href={`/people/${author.handle}`}>
+              By {author.displayName}
+            </Link>
+          )
+        )}
+        {guides.length > 0 && (
+          <span className="t2">
+            Guided by{' '}
+            {guides.map((g, i) => (
+              <span key={g.handle}>
+                {i > 0 ? (i === guides.length - 1 ? ' and ' : ', ') : ''}
+                <Link href={`/people/${g.handle}`}>{g.displayName}</Link>
+              </span>
+            ))}
+          </span>
         )}
         {coHosts.map((s) => (
           <Link key={s.id} className="t2" href={`/spaces/${s.slug}`}>
@@ -240,7 +274,7 @@ export default async function JourneyPlanPage({
     <>
       <ShareImageProvider imageUrl={plan.cover_image ?? null}>
         <JourneyBody
-          plan={{ slug: plan.slug, title: plan.title, summary: plan.summary, adoptCount: plan.adopt_count, coverImage: plan.cover_image }}
+          plan={{ slug: plan.slug, title: plan.title, summary: plan.summary, adoptCount: plan.adopt_count, coverImage: plan.cover_image, coverFocus: plan.cover_focus, overlayStyle: plan.header_overlay_style, overlayColor: plan.header_overlay_color, logoImage: plan.logo_image }}
           tree={tree}
           tracked={docked}
           inside={adopted || isAuthor}
@@ -279,7 +313,7 @@ export default async function JourneyPlanPage({
           details={
             <>
               <OutcomesBlock outcomes={readJourneyOutcomes(plan.page_config)} />
-              <InstructorBlock author={author} />
+              <InstructorBlock author={author} leads={leads} />
               {reviewProductId && reviews && (
                 <ProductReviews
                   productId={reviewProductId}

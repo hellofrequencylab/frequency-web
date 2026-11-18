@@ -212,6 +212,18 @@ export function isFullWidthEditor(pathname: string): boolean {
   return FULL_WIDTH_EDITOR_PATTERNS.some((re) => re.test(pathname))
 }
 
+// ── JOURNEY MODE ─────────────────────────────────────────────────────────────
+// A member TAKING a Journey (its course page, the lesson player, the guide, the welcome) reads one
+// thing at a time, so the right rail arrives FOLDED to its micro strip there (owner 2026-11-17:
+// "whenever anyone is in Journey mode as a user, minimize the right rail"). Folded, never removed:
+// the rail is still the global chrome, and its chevron opens it for the visit. The Journey's own
+// sales page (/journeys/<slug>), the editor and the launch flow are not Journey mode.
+const JOURNEY_MODE = /^\/journeys\/[^/]+\/(learn|play|guide|welcome)(\/|$)/
+
+export function isJourneyMode(pathname: string): boolean {
+  return JOURNEY_MODE.test(pathname)
+}
+
 // ⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️
 // Do NOT suppress the rail for /events/<slug> (a past change set it to 'none' to dodge a
 // "double right column" — that was wrong). The global rail is a fixed part of the member

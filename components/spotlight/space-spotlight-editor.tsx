@@ -112,7 +112,7 @@ export function SpaceSpotlightEditor({
     setLook(next)
     setError(null)
     startTransition(async () => {
-      const res = await setSpaceSpotlightLook(slug, next)
+      const res = await setSpaceSpotlightLook(slug, next === 'blocks' ? null : next)
       if (res.error) {
         setLook(prev)
         setError(res.error)

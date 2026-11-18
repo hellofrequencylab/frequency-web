@@ -12,6 +12,7 @@ import { updateRoom, deleteRoom } from '@/app/(main)/messages/rooms/actions'
 import { canEditRoomVisibility } from '@/lib/messages/room-settings-policy'
 import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { Button } from '@/components/ui/button'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // Room (message board) settings — the room-admin's edit + delete, in the shared Studio popup.
 // Edit name / description / visibility (updateRoom), and a type-to-confirm delete (deleteRoom,
@@ -134,11 +135,10 @@ export function RoomSettings({
                     type="button"
                     onClick={() => setVis(v)}
                     aria-pressed={vis === v}
-                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-body-sm font-medium transition-colors ${
-                      vis === v
-                        ? 'border-primary bg-primary-bg text-primary-strong ring-2 ring-primary/30'
-                        : 'border-border bg-surface text-muted hover:border-border-strong'
-                    }`}
+                    className={choiceTileClasses(
+                      vis === v,
+                      `inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-medium ${vis === v ? 'text-primary-strong ring-2 ring-primary/30' : 'text-muted'}`,
+                    )}
                   >
                     <Icon className="h-4 w-4" /> {lbl}
                   </button>

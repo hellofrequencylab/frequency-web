@@ -134,7 +134,7 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   // shadow). Every value reads the one Midnight token set (lib/theme/midnight.ts); the faces are the nearest of the
   // allowlist (Bodoni Moda and Marcellus load on websites only).
   {
-    id: 'midnight', label: 'Midnight',
+    id: 'midnight', label: 'Nocturne',
     theme: { accent: MIDNIGHT_ACCENT.accent.toLowerCase(), surface: MIDNIGHT_SURFACE.raised, text: MIDNIGHT_SURFACE.text, font: { heading: 'serif', body: 'sans' }, card: { radius: 'sm', shadow: 'none', style: 'solid' }, header: { show: true, height: 200, focusY: 50 },
       bg: { kind: 'solid', color: MIDNIGHT_SURFACE.canvas } },
   },
@@ -159,7 +159,7 @@ export const THEME_PRESETS: { id: string; label: string; theme: SpotlightTheme }
   { id: 'temple-kit', label: 'Temple', theme: { ...surfacePreset('temple-kit', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'temple-kit:stack', kit: 'general' } },
   // The Free Human Theme Kit (lib/theme/free-human.ts): limewash ground, umber type, one madder accent, soft cards. Cormorant and
   // Hanken Grotesk load on websites and on its Spotlight layouts only, so the nearest allowlisted faces stand in for the block body.
-  { id: 'free-human', label: 'Free Human', theme: { ...surfacePreset('free-human', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'free-human:stack', kit: 'general' } },
+  { id: 'free-human', label: 'Honey', theme: { ...surfacePreset('free-human', { heading: 'serif', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'free-human:stack', kit: 'general' } },
   // Services (lib/theme/services.ts): the Night register, one Tide accent, soft cards, starting on its own Stack Spotlight layout (LIVE-1994).
   { id: 'services', label: 'Services', theme: { ...surfacePreset('services', { heading: 'display', body: 'sans' }, { radius: 'lg', shadow: 'soft', style: 'solid' }), layout: 'services-kit:stack', kit: 'general' } },
   // New World (lib/theme/new-world.ts): the Night register, one Tide accent, soft cards. Its own Spotlight layouts follow with LIVE-2057.

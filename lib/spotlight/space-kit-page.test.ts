@@ -9,15 +9,16 @@ const base = { slug: 'dan', name: 'Dan', tagline: 'Alchemy' }
 
 describe('Space Spotlight looks', () => {
   it('offers six looks to every kit theme and none to a theme without layouts', () => {
-    for (const t of ['new-world', 'services', 'cyberwitch', 'designer', 'temple-kit', 'free-human', 'network-kit']) {
+    for (const t of ['new-world', 'services', 'cyberwitch', 'designer', 'temple-kit', 'free-human', 'network-kit', 'bold', 'wildheart', 'midnight']) {
       expect(spaceLooksFor(t).map((l) => l.look)).toEqual(['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile'])
     }
-    for (const t of ['midnight', 'bold', 'wildheart', 'frequency']) expect(spaceLooksFor(t)).toEqual([])
+    for (const t of ['frequency', 'network', 'temple']) expect(spaceLooksFor(t)).toEqual([])
   })
   it('maps a theme and look to the registered layout id', () => {
     expect(spaceLayoutId('designer', 'profile')).toBe('designer-kit:profile')
     expect(spaceLayoutId('new-world', 'stack')).toBe('new-world-kit:stack')
-    expect(spaceLayoutId('bold', 'stack')).toBeNull()
+    expect(spaceLayoutId('bold', 'stack')).toBe('bold-kit:stack')
+    expect(spaceLayoutId('frequency', 'stack')).toBeNull()
     expect(asSpotlightLook('nope')).toBeNull()
   })
   it('stores a look, keeps it across a publish toggle, and clears it with null', () => {

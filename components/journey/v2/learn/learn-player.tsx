@@ -456,13 +456,15 @@ export function LearnPlayer({
                               const q = moduleQueue(m.lessons.map((l) => l.id))
                               if (q.length < 2) return null
                               return (
-                                <button
+                                <Button
                                   type="button"
+                                  variant="primarySoft"
+                                  size="xs"
                                   onClick={() => mindless.open({ queue: q })}
-                                  className="mt-1 inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg"
+                                  className="mt-1 gap-1.5"
                                 >
                                   <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden /> Start all {q.length} as one session
-                                </button>
+                                </Button>
                               )
                             })()}
                           </div>

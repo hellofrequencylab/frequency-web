@@ -1,0 +1,20 @@
+{
+  "id": "JRN-020",
+  "title": "The course page shows the headcount once and names a Frequency course \"Creator Lab · Course\"",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/members/journey/journey-course-body.tsx",
+    "ref": "Owner 2026-11-18: drop the duplicate \"1 person on this Journey\" from the header meta line and keep it in the On this Journey panel; change the eyebrow for Frequency courses to \"Creator Lab · Course\"."
+  },
+  "detail": "The header meta line on /journeys/<slug>/learn ended with the headcount, and the On this Journey panel beside it said the same thing. The meta line now stops at the week and the next step. The eyebrow is a prop: a Frequency course (isCourse: official, public, Creator Lab or hosted by the house Space) reads \"Creator Lab · Course\", and every other Journey keeps \"The Quest · Journey\".",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-020.mjs",
+    "note": "Fails on main: the meta line repeats the headcount and every course reads \"The Quest · Journey\"."
+  },
+  "wave": "W7",
+  "closed": "2026-11-18"
+}

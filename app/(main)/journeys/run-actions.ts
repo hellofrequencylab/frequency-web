@@ -18,6 +18,7 @@ import {
   type PhaseEventKind,
   type RunEndState,
 } from '@/lib/journeys/runs'
+import { guideMayRunIn } from '@/lib/journeys/guides'
 import { resolveRunGate, journeysOfferedBySpace } from '@/lib/journeys/run-gate'
 import { checkFreeEnrol } from '@/lib/journeys/free-enrol-gate'
 import { checkJourneyTier } from '@/lib/journeys/tier-gate'
@@ -45,7 +46,11 @@ export async function startJourneyRunAction(input: {
   // staff. One shared seam so the Space Circles surface and the Circle page agree.
   const gate = await resolveRunGate(input.circleId, caller.id)
   if (!gate.circleSlug) return fail('Circle not found.')
-  if (!gate.allowed) return fail('Only the circle team or the space team can start a run.')
+  // A GUIDE of this Journey may also start a Run of it in a Circle of the Journey's own home Space
+  // (owner 2026-11-17, journey_plan_guides: "credit + host Runs"). Never in any other Circle.
+  if (!gate.allowed && !(await guideMayRunIn(input.planId, caller.id, gate.spaceId))) {
+    return fail('Only the circle team, the space team or a guide of this Journey can start a run.')
+  }
 
   // WHAT they may pick, for a SPACE Circle: only a Journey that Space offers. Checked here and
   // not just in the picker, so a smuggled plan id is refused rather than quietly run.
@@ -167,7 +172,8 @@ export async function endJourneyRunAction(input: {
   if (!run) return fail('Run not found.')
 
   const gate = await resolveRunGate(run.circleId, caller.id)
-  if (!gate.allowed) return fail('Only the circle team or the space team can end a run.')
+  // The Run's own host (a guide who started it) may end it too.
+  if (!gate.allowed && run.hostId !== caller.id) return fail('Only the circle team, the space team or the run host can end a run.')
 
   if (!(await setRunEndState(input.runId, input.state))) {
     return fail('That run has already ended.')

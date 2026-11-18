@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2368",
+  "title": "Every website block sits in an editor palette group (no uncategorized \"More\" left), and the Nocturne groups say Nocturne",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-18",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "Daniel 2026-11-18: \"Make sure every block is assigned to the editor and build the rest of the theme elements from the design systems in the repo.\""
+  },
+  "detail": "Survey 2026-11-18 (themes-complete-2026-11-18/SURVEY.md): 325 website blocks registered, three in no palette group (DisplayHeading, Prose, SpaceArrangement), so they fell through to the uncategorized More bucket on every surface. DisplayHeading and Prose join Content beside Heading and Text; SpaceArrangement joins Profile beside SpaceLayout and keeps its own render on website pages. The palette-scope pin now holds an empty orphan list, so a new uncategorized block fails it. The two Nocturne section groups were titled Midnight in the palette; they now say Nocturne (the code id stays midnight).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/themes/LIVE-2368.mjs"
+  },
+  "wave": "W7"
+}

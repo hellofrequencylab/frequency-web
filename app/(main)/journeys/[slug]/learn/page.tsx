@@ -5,6 +5,8 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getJourneyOffer, seatLine } from '@/lib/journeys/paid'
 import { HostSchedule } from '@/components/journey/v2/learn/host-schedule'
 import { getPlanAuthor, countActiveAdopters } from '@/lib/journey-plans'
+import { listJourneyGuides } from '@/lib/journeys/guides'
+import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { getLinkedEvent, pillarsById } from '@/lib/journeys/learn'
 import { loadJourneyLearnRoute } from '@/lib/journeys/learn-route'
 import { phaseLockStates, phaseUnlockAt } from '@/lib/journeys/schedule'
@@ -19,6 +21,7 @@ import { JourneyCourseBody } from '@/components/frequency/members/journey/journe
 import { OnThisJourneyPanel, MoreJourneysPanel, GuidePanel } from '@/components/frequency/members/journey/journey-side'
 import { listFriendsOnJourney } from '@/lib/journeys/friends-on-journey'
 import { listPublicJourneys } from '@/lib/journey-plans'
+import { HOUSE_SPACE_SLUG, courseHref, isCourse } from '@/lib/courses/tracks'
 
 // THE COURSE HOME — where an enrolled member lands (ADR-252 J1b, split from the player). One of the
 // four Journey views the dock links: About (the sales page, /journeys/<slug>), Course (here), Focus
@@ -33,13 +36,33 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const r = await loadJourneyLearnRoute(slug, 'learn')
   const { plan, tree, extras, entry, isAuthor, cohort, kickoff, anchorStart, dripIntervalDays, unit, cycle, runId, isRunHost, phaseEventsById } = r
   const canManageJourney = entry.canManage
+  // The sales page: a course's own page (/courses/...) when it has one, since /journeys/<slug> sends an
+  // enrolled manager who is not the author straight back here (owner 2026-11-18). Otherwise the Journey's
+  // own page, which an author always reaches, priced.
+  const coursePage = courseHref(slug)
+  const salesHref = coursePage.startsWith('/courses/') ? coursePage : `/journeys/${slug}`
   const journeyCaps = entry.caps
 
-  const [author, meetupEvent, gatheringEvent] = await Promise.all([
+  const [author, meetupEvent, gatheringEvent, guides, hostSpace, rootSpaceId] = await Promise.all([
     getPlanAuthor(plan.author_id),
     getLinkedEvent(extras.meeting.eventId),
     getLinkedEvent(extras.meeting.gathering?.eventId ?? null),
+    listJourneyGuides(plan.id),
+    plan.space_id ? getSpaceById(plan.space_id) : Promise.resolve(null),
+    loadRootSpaceId(),
   ])
+  // The Journey's HOST is its home Space (never the root sentinel, which means "a member's own").
+  const host =
+    hostSpace && hostSpace.id !== rootSpaceId
+      ? { slug: hostSpace.slug, name: hostSpace.brandName ?? hostSpace.name, logoUrl: hostSpace.brandLogoUrl ?? null }
+      : null
+
+  // One of Frequency's own courses (official, public, Creator Lab or hosted by the house Space) reads
+  // "Creator Lab · Course" above its title; every other Journey keeps "The Quest · Journey".
+  const frequencyCourse = isCourse(
+    { ...plan, category: plan.category ?? null },
+    hostSpace?.slug === HOUSE_SPACE_SLUG ? hostSpace.id : null,
+  )
 
   // Members currently ON this Journey, named in the unpublish confirmation. Author + public only.
   const adopterCount = isAuthor && plan.visibility === 'public' ? await countActiveAdopters(plan.id, r.profileId) : 0
@@ -91,8 +114,9 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
       <JourneyCourseBody
         slug={slug}
         title={plan.title}
+        coverImage={plan.cover_image ?? null}
         summary={plan.summary ?? null}
-        adoptCount={adoptCount}
+        eyebrow={frequencyCourse ? 'Creator Lab · Course' : undefined}
         tree={tree}
         locks={locks}
         unit={unit}
@@ -124,7 +148,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
               />
             )}
             {canManageJourney && (
-              <Link href={`/journeys/${slug}`} className="btn sm">
+              <Link href={salesHref} className="btn sm">
                 <Eye className="h-4 w-4" aria-hidden /> Sales page
               </Link>
             )}
@@ -139,7 +163,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
             <OnThisJourneyPanel friends={friends} adoptCount={adoptCount}>
               {cohort && <CohortMeter progress={cohort} />}
             </OnThisJourneyPanel>
-            <GuidePanel author={author} />
+            <GuidePanel guides={guides} host={host} author={author} />
             <MoreJourneysPanel more={more} />
           </>
         }

@@ -18,6 +18,9 @@ import { MINDLESS_ACCENTS } from '@/lib/theme/mindless'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 
+// Honey's library path (lib/sites/free-human-photos.ts freeHumanPhotoSrc), kept here so the preview never loads the photo table JSON.
+const freeHumanPhotoSrc = (name: string): string => (name.startsWith('fq-') ? `/brand/frequency/photos/${name.slice(3)}.jpg` : `/sites/free-human/photos/${name}.webp`)
+
 type IntentId = (typeof WIZARD_INTENTS)[number]['id']
 
 interface IntentLook {
@@ -69,7 +72,7 @@ const NOCTURNE_PHOTO = (name: string) => `/sites/midnight/photos/${name}.jpg`
 const NEW_WORLD_PHOTO = (name: string) => `/sites/new-world/photos/${name}.webp`
 const CYBERWITCH_PHOTO = (name: string) => `/sites/cyberwitch/photos/${name}.jpg`
 const MINDLESS_PHOTO = (name: string) => `/sites/mindless/photos/${name}.jpg`
-const FREE_HUMAN_PHOTO = (name: string) => `/sites/free-human/photos/${name}.webp`
+const FREE_HUMAN_PHOTO = (name: string) => freeHumanPhotoSrc(name)
 const WILDHEART_PHOTO = (name: string) => `/brand/wildheart/photos/${name}.jpg`
 
 const FREQUENCY_IMAGERY: KitImagery = {
@@ -98,10 +101,10 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
   // Free Human's own library (lib/sites/free-human-home.ts wears the same files): the walking virgin is its hero, the
   // founder its portrait.
   'free-human': {
-    hero: FREE_HUMAN_PHOTO('heritage-a-virgin'), heroPos: 'center 20%', portrait: FREE_HUMAN_PHOTO('founder-audrey'), portraitPos: 'center 30%',
-    strip: [FREE_HUMAN_PHOTO('place-daisies'), FREE_HUMAN_PHOTO('light-sun'), FREE_HUMAN_PHOTO('light-floating-candles')], nav1: 'Program', cta2: 'See the program',
-    covers: [FREE_HUMAN_PHOTO('heritage-a-virgin'), FREE_HUMAN_PHOTO('place-daisies'), FREE_HUMAN_PHOTO('light-sun'), FREE_HUMAN_PHOTO('light-floating-candles'), FREE_HUMAN_PHOTO('light-lanterns')],
-    portraits: [FREE_HUMAN_PHOTO('founder-audrey'), FREE_HUMAN_PHOTO('light-honey-dipper')],
+    hero: FREE_HUMAN_PHOTO('fq-boc-circle-sunset'), heroPos: 'center 20%', portrait: FREE_HUMAN_PHOTO('fq-day-meditation-circle'), portraitPos: 'center 30%',
+    strip: [FREE_HUMAN_PHOTO('fq-day-park-yoga'), FREE_HUMAN_PHOTO('light-sun'), FREE_HUMAN_PHOTO('light-floating-candles')], nav1: 'Program', cta2: 'See the program',
+    covers: [FREE_HUMAN_PHOTO('fq-boc-circle-sunset'), FREE_HUMAN_PHOTO('fq-day-park-yoga'), FREE_HUMAN_PHOTO('light-sun'), FREE_HUMAN_PHOTO('light-floating-candles'), FREE_HUMAN_PHOTO('light-lanterns')],
+    portraits: [FREE_HUMAN_PHOTO('fq-day-meditation-circle'), FREE_HUMAN_PHOTO('light-honey-dipper')],
   },
   // CyberWitch's own pictures (the zip's assets/imagery): the sprayed hero is its hero, the founder its portrait. The Hex pair is the
   // default; kitImagery(kit, accentAt) swaps in the picked neon's pair.

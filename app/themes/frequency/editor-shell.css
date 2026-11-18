@@ -126,6 +126,9 @@
 [data-design="frequency"] [data-kit="editor"] .row:disabled, [data-design="frequency"] [data-kit="editor"] .blk:disabled{opacity:.45;cursor:default;transform:none}
 [data-design="frequency"] [data-kit="editor"] .ih .grow{flex:1;min-width:0}
 [data-design="frequency"] [data-kit="editor"] .slot{display:block;padding:4px 8px;font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-faint)}
+/* A column's label takes a block dragged across from another column (PROG-E6); an empty one says so. */
+[data-design="frequency"] [data-kit="editor"] .slot .we-layer-empty{font:400 var(--fq-text-meta)/1 var(--fq-font-sans);letter-spacing:0;text-transform:none}
+[data-design="frequency"] [data-kit="editor"] .slot.we-layer-drop{border-radius:var(--fq-radius-s);box-shadow:inset 0 0 0 2px var(--fq-focus-ring)}
 [data-design="frequency"] [data-kit="editor"] .scroller{display:flex;flex-direction:column;padding:0}
 [data-design="frequency"] [data-kit="editor"] .frame{display:block;flex:1;width:100%;min-height:0;border:0}
 /* The stage zoom (design: the .zoom control scales the frame). --pe-zoom is set on .stage by the shell. */

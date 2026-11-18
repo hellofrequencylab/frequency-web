@@ -5,13 +5,44 @@
     "editor": "Services",
     "site": "services"
   },
-  "offered": false,
+  "offered": true,
   "site": {
     "label": "Services",
     "description": "Night-first and glossy, with a day register: for people who book, sell and show up for clients. Six accents, sixteen starter kits.",
     "defaultFonts": "modern"
   },
-  "library": null,
+  "library": {
+    "tagline": "Prices up front, a time to book and reviews on top.",
+    "madeFor": "trades, salons, studios, clinics and anyone who books, sells and shows up for clients",
+    "signature": "Night first and glossy, with a day register, one accent from six, and every service with a price and a length.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "ready",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "ready",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/services"
+  },
   "editor": {
     "tokens": {
       "source": "lib/sites/editor/theme-contract.json",

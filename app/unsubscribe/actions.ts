@@ -54,11 +54,17 @@ export async function processUnsubscribe(params: {
   const key = `email_${cat}` as keyof NotificationPreferences
 
   // Read existing row (if any) so we can preserve other settings during upsert.
-  const { data: existing } = await admin
+  const { data: existing, error: readError } = await admin
     .from('notification_preferences')
     .select('*')
     .eq('profile_id', profileId)
     .maybeSingle()
+  // EMAIL-062: a failed read is not "no row". Upserting the defaults here would switch back on every
+  // category the member had already turned off, so stop and let the click be retried.
+  if (readError) {
+    console.error('[unsubscribe] read preferences:', readError.message)
+    return fail('Could not save your preference. Please try again.')
+  }
 
   const next = existing
     ? { ...(existing as unknown as NotificationPreferences), [key]: false }

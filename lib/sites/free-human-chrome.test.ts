@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { FREE_HUMAN_CHROME_COPY, FREE_HUMAN_PANELS, freeHumanNav } from './free-human-chrome'
+import { FREE_HUMAN_CHROME_COPY, FREE_HUMAN_PANELS, freeHumanNav, isFreeHumanMovement } from './free-human-chrome'
 import { FREE_HUMAN_PHOTOS, freeHumanPhoto, freeHumanPhotoSrc } from './free-human-photos'
 import { hasFreeHumanGlyph } from '@/components/sites/free-human-glyph'
 import { existsSync } from 'node:fs'
@@ -16,8 +16,11 @@ const own = [
 
 describe('the Free Human chrome', () => {
   it('has the design\'s four panels then Calendar as a direct link', () => {
+    // The theme's menus are generic (Daniel 2026-11-18: "Make every Frequency theme FULLY generic with copy that coaches them what
+    // to write. Be sure anybody using a theme keeps their content"): About, not a person; the Free Human Movement Space keeps its own.
     const nav = freeHumanNav(own, HOME)
-    expect(nav.map((n) => n.label)).toEqual(['Program', 'Gather', 'Read', 'Audrey', 'Calendar'])
+    expect(nav.map((n) => n.label)).toEqual(['Program', 'Gather', 'Read', 'About', 'Calendar'])
+    expect(freeHumanNav(own, HOME, undefined, true).map((n) => n.label)).toEqual(['Program', 'Gather', 'Read', 'Audrey', 'Calendar'])
     expect(nav[4]).toMatchObject({ href: '/calendar', glyph: 'calendar' })
     expect(nav[4].mega).toBeUndefined()
   })
@@ -26,7 +29,7 @@ describe('the Free Human chrome', () => {
     const gather = freeHumanNav(own, HOME).find((n) => n.label === 'Gather')!.mega!
     expect(gather.doors.find((d) => d.label === 'Workshops')?.href).toBe('/workshops')
     expect(gather.doors.find((d) => d.label === 'Events & gatherings')?.href).toBe('/calendar')
-    expect(gather.doors.find((d) => d.label === 'Solstice retreat')).toBeUndefined()
+    expect(gather.doors.find((d) => d.label === 'Retreats')).toBeUndefined()
     const bare = freeHumanNav([], '/')
     expect(bare.find((n) => n.label === 'Gather')!.mega!.doors.find((d) => d.label === 'Workshops')?.href).toBe('/#workshops')
     expect(bare.find((n) => n.label === 'Calendar')).toBeUndefined()
@@ -45,13 +48,21 @@ describe('the Free Human chrome', () => {
   })
 
   it('ships every select with a size and a loading colour', () => {
-    expect(Object.keys(FREE_HUMAN_PHOTOS)).toHaveLength(32)
+    expect(Object.keys(FREE_HUMAN_PHOTOS)).toHaveLength(25)
     for (const [name, p] of Object.entries(FREE_HUMAN_PHOTOS)) {
       expect(p.avg).toMatch(/^#[0-9a-f]{6}$/)
       expect(existsSync(join(process.cwd(), 'public', freeHumanPhotoSrc(name)))).toBe(true)
     }
     expect(freeHumanPhoto('light-sun')?.src).toBe('/sites/free-human/photos/light-sun.webp')
     expect(freeHumanPhoto('nope')).toBeNull()
+  })
+
+  it('names no person, book or brand in the theme\'s own menus and letter, and keeps the one Space\'s own words for it', () => {
+    const words = JSON.stringify(FREE_HUMAN_PANELS) + JSON.stringify(FREE_HUMAN_CHROME_COPY)
+    expect(words).not.toMatch(/Audrey|Wilder|Beyond The Wild|Defying Men|Free Human/)
+    expect(isFreeHumanMovement('freehumanmovement')).toBe(true)
+    expect(isFreeHumanMovement(null, 'Free Human Movement')).toBe(true)
+    expect(isFreeHumanMovement('salthouse', 'Salt House')).toBe(false)
   })
 
   it('keeps invented counts and dates out of the menu words', () => {

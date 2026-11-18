@@ -62,6 +62,19 @@ describe('IconButton required states, every variant', () => {
     expect(el.className).toContain('disabled:pointer-events-none')
   })
 
+  it('lg is the 44px transport control, and md and xs keep the sizes they had', () => {
+    const size = (s: 'md' | 'xs' | 'lg') =>
+      mount(
+        <IconButton label="Play" variant="filled" size={s}>
+          <svg />
+        </IconButton>,
+      ).querySelector('button')!.className
+    expect(size('lg')).toContain('h-11 w-11')
+    expect(size('lg')).not.toContain('h-8')
+    expect(size('md')).toContain('tap-target h-8 w-8')
+    expect(size('xs')).toContain('h-7 w-7')
+  })
+
   it('an icon-only control is still named, for a screen reader and for the tooltip', () => {
     const el = btn()
     expect(el.getAttribute('aria-label')).toBe('Pick')

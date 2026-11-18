@@ -1,0 +1,20 @@
+{
+  "id": "JRN-015",
+  "title": "A Journey has a host Space and any number of Guides, and a Guide can host Runs of it",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/journeys/guides.ts",
+    "ref": "Owner 2026-11-17: \"We need co hosting on journeys like we have on events. For Journeys we can have a host space as well as a guide. If it's just the space, they are host and guide. Multiple guides could be a part of a journey.\" Rights ruled: credit + host Runs."
+  },
+  "detail": "journey_plan_guides (migration 20270346090000, service role only) holds the people who lead a Journey, in order. The Journey page and the course page credit them (Hosted by <Space>, Guided by ...); with none, the host Space is the guide; a member's own Journey falls back to its author. The Space's Journeys manager adds and removes guides by handle, gated on the Space steward. A guide may start a Run of the Journey in a Circle of its home Space and end a Run they host; content, settings and price stay with the Space team. Space co-hosts already existed (journey_plan_space_shares). The migration is the owner's to apply; until it is, guide reads fail soft to no guides.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-015.mjs",
+    "note": "Fails on main: no guides table, no guide credit, no manager panel, no guide Run gate."
+  },
+  "wave": "W7",
+  "closed": "2026-11-17"
+}

@@ -26,7 +26,14 @@ interface JourneyBodyPlan {
   adoptCount: number
   /** The Journey's cover photo (journey_plans.cover_image), drawn as the kit's `.ph` band. */
   coverImage?: string | null
+  /** The author's header choices (LIVE-2365): focal point, overlay style + hex color, and logo. */
+  coverFocus?: string | null
+  overlayStyle?: string | null
+  overlayColor?: string | null
+  logoImage?: string | null
 }
+
+const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
 
 export type { MoreJourney }
 
@@ -87,7 +94,7 @@ export function JourneyBody({
         `${tree.phases.length} ${tree.phases.length === 1 ? 'phase' : 'phases'}`,
         `${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'}`,
       ]
-  if (tracked && next && nextNumber) metaParts.push(`Lesson ${nextNumber} next`)
+  if (tracked && next && nextNumber) metaParts.push(`Step ${nextNumber} next`)
   metaParts.push(peopleLine(plan.adoptCount))
 
   const primary = empty ? null : inside ? (
@@ -109,16 +116,31 @@ export function JourneyBody({
         title={<SerifTail text={plan.title} />}
         meta={metaParts.join(' · ')}
         actions={<div className="mu-actions row wrap">{actions}</div>}
+        actionsBelow
       />
 
       {/* The cover: the kit's photo block (`.ph`, as Event.html draws its header photo). The Journey template
           has none, so a Journey with a cover_image showed nothing at all. Decorative: the title says it. */}
       {plan.coverImage ? (
         <div
-          className="ph"
+          className="ph mc-cover-art"
           aria-hidden
-          style={{ height: 'clamp(180px, 26vw, 300px)', borderRadius: 28, marginBottom: 20, backgroundImage: `url("${encodeURI(plan.coverImage)}")` }}
-        />
+          data-overlay={plan.overlayStyle === 'shadow' || plan.overlayStyle === 'fade' ? plan.overlayStyle : undefined}
+          style={{
+            height: 'clamp(180px, 26vw, 300px)',
+            borderRadius: 28,
+            marginBottom: 20,
+            backgroundImage: `url("${encodeURI(plan.coverImage)}")`,
+            backgroundPosition: plan.coverFocus ?? undefined,
+            // A strict hex only (the save path enforces it too); the CSS falls back to the token.
+            ...(plan.overlayColor && HEX.test(plan.overlayColor) ? ({ '--mc-overlay': plan.overlayColor } as React.CSSProperties) : {}),
+          }}
+        >
+          {plan.logoImage ? (
+            // eslint-disable-next-line @next/next/no-img-element -- an author-supplied logo URL, decorative under aria-hidden
+            <img className="mc-cover-logo" src={plan.logoImage} alt="" />
+          ) : null}
+        </div>
       ) : null}
 
       <section className="panel mc-hero">
@@ -132,9 +154,9 @@ export function JourneyBody({
           <span>{percent}%</span>
         </div>
         <div className="stack grow mc-gap-10">
-          <span className="k">{empty ? 'Still being written' : tree.complete && tracked ? 'Every lesson done' : 'Up next'}</span>
+          <span className="k">{empty ? 'Still being written' : tree.complete && tracked ? 'Every step done' : 'Up next'}</span>
           <span className="h2">
-            {next ? `${nextNumber ? `Lesson ${nextNumber} · ` : ''}${next.title}` : plan.title}
+            {next ? next.title || `Step ${nextNumber ?? 1}` : plan.title}
           </span>
           {plan.summary ? (
             <span className="why">{plan.summary}</span>
@@ -174,7 +196,8 @@ export function JourneyBody({
                     const done = tracked && lesson.done
                     const isNext = !!next && lesson.id === next.id && tracked
                     const n = numberOf.get(lesson.id)
-                    const label = lesson.title === 'Lesson' ? `Lesson ${n}` : `Lesson ${n} · ${lesson.title}`
+                    // The entry's own title, as its author wrote it (Overview, Lesson, Homework...).
+                    const label = lesson.title || `Step ${n}`
                     const sub = [minutesLine(lesson), done ? 'Done' : null, lesson.required ? null : 'Optional']
                       .filter(Boolean)
                       .join(' · ')

@@ -61,6 +61,8 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
   const [nodes, setNodes] = useState<ReadonlyMap<string, StoredNode>>(() => new Map(document?.nodes.map((n) => [n.nid, n.node])))
   const [shape, setShape] = useState<Shape>(() => ({ layers: document?.layers ?? [], tree: document?.tree, inserter: document?.inserter, views: document?.nodes ?? [] }))
   const [selectedId, setSelectedId] = useState<string | null>(document?.nodes[0]?.nid ?? null)
+  // The block this tab last added (PROG-E8): the one moment Vera may speak first is that block's creation.
+  const [createdId, setCreatedId] = useState<string | null>(null)
   const [save, setSave] = useState<CanvasSaveState>(document?.canSave ? 'saved' : 'read-only')
   const [problem, setProblem] = useState<string | null>(null)
 
@@ -143,6 +145,7 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
           if (job && job.change.kind !== 'move' && job.change.kind !== 'hide') setSelectedId(result.node.nid)
           // An add is undone by taking the new block away, and only now is its id known.
           if (job && !job.undoing && (job.change.kind === 'insert' || job.change.kind === 'duplicate')) remember({ nid: result.node.nid, change: UNDO_ADD, job })
+          if (job && !job.undoing && job.change.kind === 'insert') setCreatedId(result.node.nid)
           // A new row is undone by taking it off again, and its id too is only known now.
           const added = job && !job.undoing && job.change.kind === 'row-add' ? result.view.tree?.[job.change.at]?.id : undefined
           if (job && added) remember({ nid: job.nid, change: { kind: 'row-remove', rowId: added }, job })
@@ -256,6 +259,8 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
     send({ nid, change, undoing: true })
   }, [document, move, send, spaceOn])
 
+  // Picking a block by hand ends the moment its creation was: Vera does not speak first on coming back to it.
+  const select = useCallback((nid: string | null) => { setSelectedId(nid); setCreatedId(null) }, [])
   const view = shape.views.find((n) => n.nid === selectedId)
   // Every block on the page with its newest bags, for the frame's whole-page drawing (PROG-E6E).
   const blocks = useMemo(() => new Map(shape.views.map((v) => [v.nid, { title: v.title, fields: v.fields, node: nodes.get(v.nid) ?? v.node }])), [nodes, shape.views])
@@ -264,7 +269,10 @@ export function useCanvasDocument(document: CanvasDocumentView | undefined) {
     /** The selected node with its controls, or null (no document, or nothing selected). */
     selected: view && node ? { ...view, node } : null,
     selectedId,
-    select: setSelectedId,
+    select,
+    /** The block this tab added last, until the owner picks another block; null otherwise. A copy is not a
+     *  creation: it arrives with words. */
+    createdId,
     /** Every block on the page, by id, as the frame draws it. */
     blocks,
     edit,
