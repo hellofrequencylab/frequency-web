@@ -72,7 +72,16 @@ export async function startRun(input: {
     plan_id: input.planId,
     run_id: runId,
   }))
-  if (rows.length) await db().from('journey_enrollments').insert(rows)
+  if (rows.length) {
+    // JRN-007: a Run with nobody enrolled is not a started Run. Undo it and report failure, so the
+    // host is not told it started.
+    const { error: enrolError } = await db().from('journey_enrollments').insert(rows)
+    if (enrolError) {
+      console.error('[journeys] run enrolment failed', { runId, planId: input.planId, error: enrolError.message })
+      await db().from('journey_runs').delete().eq('id', runId)
+      return null
+    }
+  }
   // Each Run member also needs the plan's practices adopted + a journey_plan_adoptions row —
   // the current-leg reader (getCurrentLeg) keys on journey_plan_adoptions, so without this a
   // cohort member saw none of the Run's practices in On Air. ONE bulk call for the whole

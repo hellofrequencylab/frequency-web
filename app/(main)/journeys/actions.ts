@@ -394,7 +394,9 @@ export async function setJourneyAttributes(
   }
   // New columns (migration 20260630000000) aren't in the generated types yet — cast the payload.
   if (Object.keys(update).length) {
-    await admin.from('journey_plans').update(update as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
+    // JRN-007: a failed write is reported, never answered with ok().
+    const { error } = await admin.from('journey_plans').update(update as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
+    if (error) return fail('Could not save that. Try again.')
   }
   revalidatePath('/journeys', 'layout')
   return ok()
@@ -412,7 +414,8 @@ export async function setJourneyMeeting(
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   const admin = createAdminClient()
   const payload = { meeting: normalizeJourneyMeeting(meeting) }
-  await admin.from('journey_plans').update(payload as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
+  const { error } = await admin.from('journey_plans').update(payload as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
+  if (error) return fail('Could not save that. Try again.')
   revalidatePath('/journeys', 'layout')
   return ok()
 }
@@ -425,7 +428,8 @@ export async function setJourneyHeaderFocus(planId: string, focus: string): Prom
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   const admin = createAdminClient()
   const payload = { cover_focus: normalizeJourneyCoverFocus(focus) }
-  await admin.from('journey_plans').update(payload as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
+  const { error } = await admin.from('journey_plans').update(payload as unknown as Database['public']['Tables']['journey_plans']['Update']).eq('id', planId)
+  if (error) return fail('Could not save that. Try again.')
   revalidatePath('/journeys', 'layout')
   return ok()
 }

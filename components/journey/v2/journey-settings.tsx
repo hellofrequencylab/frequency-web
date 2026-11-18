@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation'
 import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw, Repeat, Video, MapPin, Users, Clock } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { HeaderImageField } from '@/components/ui/header-image-field'
-import { isError } from '@/lib/action-result'
+import { isError, type ActionResult } from '@/lib/action-result'
 import { saveJourneyMeta, setJourneyRewards, setJourneyVisibility, setJourneyDelivery, submitJourneyForReview, setJourneyAttributes, setJourneyMeeting, setJourneyHeaderFocus } from '@/app/(main)/journeys/actions'
 // The pure meeting coercion, NOT from '@/lib/journey-plans' — that module is `server-only` (it
 // opens the service-role client), and this is a client component. lib/journeys/meeting.ts is the
@@ -89,9 +89,17 @@ export interface JourneySettingsProps {
 export function JourneySettings(props: JourneySettingsProps) {
   const router = useRouter()
   const [, start] = useTransition()
+  // JRN-007: a refused or failed save says so (a member-tier gate with no Space, a write error)
+  // instead of leaving the author believing a setting stuck.
+  const [saveError, setSaveError] = useState<string | null>(null)
   const save = (fn: () => Promise<unknown>) =>
     start(async () => {
-      await fn()
+      const res = (await fn()) as ActionResult<unknown> | undefined
+      if (res && typeof res === 'object' && isError(res)) {
+        setSaveError(res.error)
+        return
+      }
+      setSaveError(null)
       router.refresh()
     })
 
@@ -112,7 +120,8 @@ export function JourneySettings(props: JourneySettingsProps) {
     if (focusTimer.current) clearTimeout(focusTimer.current)
     focusTimer.current = setTimeout(() => {
       startFocus(async () => {
-        await setJourneyHeaderFocus(props.planId, next)
+        const res = await setJourneyHeaderFocus(props.planId, next)
+        setSaveError(isError(res) ? res.error : null)
       })
     }, 400)
   }
@@ -480,6 +489,15 @@ export function JourneySettings(props: JourneySettingsProps) {
           whether finishing this Journey can count toward season rank. Shown once it's public. */}
       {visibility === 'public' && (review || reviewing) && (
         <VeraRankPanel review={review} reviewing={reviewing} onResubmit={resubmitForReview} />
+      )}
+
+      {saveError && (
+        <p
+          role="alert"
+          className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-md rounded-card border border-danger/50 bg-danger-bg px-4 py-3 text-body-sm font-medium text-danger lift-3"
+        >
+          {saveError}
+        </p>
       )}
     </section>
   )

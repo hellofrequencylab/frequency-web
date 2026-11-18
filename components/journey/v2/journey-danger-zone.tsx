@@ -14,11 +14,15 @@ export function JourneyDangerZone({ planId, title }: { planId: string; title: st
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [pending, start] = useTransition()
+  // JRN-007: a refused delete says why instead of doing nothing.
+  const [error, setError] = useState<string | null>(null)
 
   function remove() {
     start(async () => {
+      setError(null)
       const r = await deleteJourney(planId)
-      if (!isError(r)) router.push('/journeys')
+      if (isError(r)) setError(r.error)
+      else router.push('/journeys')
     })
   }
 
@@ -34,6 +38,11 @@ export function JourneyDangerZone({ planId, title }: { planId: string; title: st
         <Trash2 className="h-4 w-4" /> Delete this Journey
       </button>
       <p className="mt-1.5 text-2xs text-muted">Removes the Journey and everyone&apos;s progress on it. This cannot be undone.</p>
+      {error && (
+        <p role="alert" className="mt-1.5 text-body-sm text-danger">
+          {error}
+        </p>
+      )}
 
       <DangerModal
         open={open}
