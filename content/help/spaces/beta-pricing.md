@@ -2,7 +2,8 @@
 title: The Beta offer
 description: The beta end date, Founding Year offer, and where to check current plan prices and fees.
 category: spaces
-order: 9
+order: 18
+group: Money and plans
 published: 2026-10-26
 updated: 2026-11-18
 audience: host

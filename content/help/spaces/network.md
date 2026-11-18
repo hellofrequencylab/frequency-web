@@ -2,7 +2,8 @@
 title: Network
 description: What the Network plan is for, how it differs from Collective, what it includes and how to set one up.
 category: spaces
-order: 6
+order: 20
+group: Money and plans
 published: 2026-10-16
 updated: 2026-11-18
 audience: member

@@ -57,6 +57,10 @@ type ShownTopic = Omit<HelpTopic, 'articles'> & {
 /** Where a topic's best article sits in the ranked hits, so the topic with the best answer leads. */
 const rank = (hits: { to: string }[], t: ShownTopic) => hits.findIndex((h) => h.to === t.articles[0]?.href)
 
+// The front page leads each topic with its first few guides and a door to the rest, so ten topics
+// read as one page instead of a list of every article. A search shows every match, uncut.
+const LEAD = 4
+
 export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
   const [query, setQuery] = useState('')
   const [reached, setReached] = useState(false)
@@ -137,7 +141,7 @@ export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
                 {t.description && <p className="hp-d">{t.description}</p>}
               </div>
               <div className="qa">
-                {t.articles.map((a) => (
+                {(q ? t.articles : t.articles.slice(0, LEAD)).map((a) => (
                   <Link key={a.href} className="hp-a" href={a.href}>
                     <span>
                       <b>{a.title}</b>
@@ -148,6 +152,11 @@ export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
                     </span>
                   </Link>
                 ))}
+                {!q && t.articles.length > LEAD && (
+                  <Link className="hp-all" href={`/help/${t.slug}`}>
+                    All {t.articles.length} guides in {t.title} <span aria-hidden="true">→</span>
+                  </Link>
+                )}
               </div>
             </div>
           ))}

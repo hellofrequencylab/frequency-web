@@ -2,7 +2,8 @@
 title: Your menu and logo
 description: The menu on your Space page, the separate menu on your website, where each link shows, dropdowns, and how your logo appears.
 category: spaces
-order: 4
+order: 6
+group: Get set up
 published: 2026-10-10
 updated: 2026-11-18
 audience: member

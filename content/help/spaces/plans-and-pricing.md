@@ -2,7 +2,8 @@
 title: Plans and pricing
 description: What each Space plan is for, what it turns on, and how to pick the one that fits.
 category: spaces
-order: 2
+order: 16
+group: Money and plans
 published: 2026-07-27
 updated: 2026-11-18
 audience: member

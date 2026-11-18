@@ -2,7 +2,8 @@
 title: Get paid
 description: Where your Space's money lands, how the owner connects the payout account, which money paths can take payment, and what the network takes.
 category: spaces
-order: 4
+order: 15
+group: Money and plans
 published: 2026-09-10
 updated: 2026-11-18
 audience: member

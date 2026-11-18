@@ -2,7 +2,8 @@
 title: Your website
 description: Publish your Space as a standalone website, put it on your own domain, pick a theme and global styles, edit it in the website builder, and take bookings from guests.
 category: spaces
-order: 7
+order: 5
+group: Get set up
 published: 2026-10-12
 updated: 2026-11-18
 audience: member

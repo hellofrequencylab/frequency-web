@@ -351,6 +351,8 @@
 [data-design="frequency"] [data-kit="site"] .qa a.hp-a b{display:block;font:600 17px/1.3 var(--fq-font-sans);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="site"] .qa a.hp-a small{display:block;margin-top:6px;font-size:14.5px;line-height:1.5;color:var(--fq-text-body)}
 [data-design="frequency"] [data-kit="site"] .qa a.hp-a .ar{color:var(--fq-side);flex:none}
+[data-design="frequency"] [data-kit="site"] .qa a.hp-all{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;font:600 var(--fq-text-body-s)/1.3 var(--fq-font-sans);color:var(--fq-side);text-decoration:none}
+[data-design="frequency"] [data-kit="site"] .qa a.hp-all:hover{text-decoration:underline;text-underline-offset:3px}
 [data-design="frequency"] [data-kit="site"] .hp-c{display:flex;flex-direction:column;gap:10px}
 [data-design="frequency"] [data-kit="site"] .hp-c textarea{padding:14px 16px;border-radius:14px;border:0;background:color-mix(in srgb,var(--fq-text-strong) 6%,transparent);box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fq-text-strong);font:500 var(--fq-text-body-size)/1.4 var(--fq-font-sans);resize:vertical}
 [data-design="frequency"] [data-kit="site"] .hp-c .btn{align-self:flex-start}
@@ -468,6 +470,49 @@
 [data-design="frequency"] [data-kit="site"] .hc-stuck{max-width:68ch;margin:40px 0 0;padding-top:18px;border-top:1px solid var(--fq-border-hair);font-size:var(--fq-text-body-s);line-height:1.5;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="site"] .hc-stuck a{color:var(--fq-side);font-weight:600;text-decoration:none}
 [data-design="frequency"] [data-kit="site"] .hc-stuck a:hover{text-decoration:underline;text-underline-offset:3px}
+/* Reading polish (2026-11-18). Lists were flex columns, which turns each item into a block and drops its
+   bullet or number, so steps read as loose paragraphs. They are plain lists again, with the marker in
+   the side colour, and a numbered step carries its number in a quiet disc. */
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose ul, [data-design="frequency"] [data-kit="site"] .hc-body .hp-prose ol{display:block;padding-left:0;margin:0 0 20px;list-style:none}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose li{position:relative;margin:0 0 10px;padding-left:30px}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose li:last-child{margin-bottom:0}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose ul>li::before{content:"";position:absolute;left:11px;top:.72em;width:6px;height:6px;border-radius:50%;background:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose ol{counter-reset:hc-step}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose ol>li{counter-increment:hc-step;padding-left:40px;margin-bottom:12px}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose ol>li::before{content:counter(hc-step);position:absolute;left:0;top:.18em;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--fq-side) 12%,transparent);color:var(--fq-text-strong);font:600 13px/1 var(--fq-font-sans);font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose li>ul, [data-design="frequency"] [data-kit="site"] .hc-body .hp-prose li>ol{margin:10px 0 0}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose li>p{margin:0 0 8px}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose li>p:last-child{margin-bottom:0}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose h2{padding-top:28px;border-top:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose>h2:first-child{padding-top:0;border-top:0}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose h3{margin-top:28px}
+/* The breadcrumb's slash sat above the words: the row wrapped on its own line box. Centre it. */
+[data-design="frequency"] [data-kit="site"] .hc-crumbs{align-items:center;row-gap:4px}
+[data-design="frequency"] [data-kit="site"] .hc-crumbs .hp-crumb{align-items:center}
+/* "On this page": numbered, and two columns when there is room for them. */
+[data-design="frequency"] [data-kit="site"] .hc-toc ol{display:block;columns:2 220px;column-gap:28px;padding-left:0;list-style:none;counter-reset:hc-toc}
+[data-design="frequency"] [data-kit="site"] .hc-toc li{counter-increment:hc-toc;break-inside:avoid;margin:0 0 6px;padding-left:26px;position:relative}
+[data-design="frequency"] [data-kit="site"] .hc-toc li::before{content:counter(hc-toc);position:absolute;left:0;top:0;width:18px;text-align:right;color:var(--fq-text-muted);font-variant-numeric:tabular-nums}
+/* "Open in Frequency": the doors from a guide into the product (lib/help/site-links.ts). */
+[data-design="frequency"] [data-kit="site"] .hc-doors{max-width:68ch;margin:22px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+[data-design="frequency"] [data-kit="site"] .hc-doors>span{margin-right:4px;font:600 var(--fq-text-meta)/1.2 var(--fq-font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .hc-doors a{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:var(--fq-radius-orb);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-strong);font:600 var(--fq-text-body-s)/1 var(--fq-font-sans);color:var(--fq-text-strong);text-decoration:none;transition:box-shadow var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="site"] .hc-doors a:hover{box-shadow:inset 0 0 0 1.5px var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .hc-doors a:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
+[data-design="frequency"] [data-kit="site"] .hc-doors i{font-style:normal;color:var(--fq-side)}
+/* The index, in two labelled halves: member topics, then hosting and running a Space. */
+[data-design="frequency"] [data-kit="site"] .hc-set+.hc-set{margin-top:18px;padding-top:16px;border-top:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="site"] .hc-set-k{margin:0 0 6px;padding:0 12px;font:600 var(--fq-text-meta)/1.3 var(--fq-font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--fq-text-muted)}
+/* A topic page whose articles sit under sub-headings (front matter `group`). */
+[data-design="frequency"] [data-kit="site"] .hc-run+.hc-run{margin-top:36px}
+[data-design="frequency"] [data-kit="site"] .hc-run-h{max-width:68ch;margin:28px 0 0;font:600 var(--fq-text-body-l)/1.3 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .hc-run-h+.hc-list{margin-top:12px}
+/* The article's closing "Related" list reads as a short set of links, not as steps. */
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose h2#related+ul>li{padding-left:0;margin-bottom:6px}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose h2#related+ul>li::before{content:none}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose h2#related+ul a{font-weight:600;text-decoration:none}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose h2#related+ul a::after{content:" →";color:var(--fq-side)}
+[data-design="frequency"] [data-kit="site"] .hc-body .hp-prose h2#related+ul a:hover{text-decoration:underline;text-underline-offset:3px}
 /* Phone and tablet: one column, the index folded above the page. */
 @media (max-width:960px){
 [data-design="frequency"] [data-kit="site"] .hc{grid-template-columns:minmax(0,1fr);gap:24px;padding-top:20px;padding-bottom:72px}

@@ -2,7 +2,8 @@
 title: How do people find my Space in search?
 description: Link your Frequency page from the places people already look, name your town and what you do in plain words, and claim your free Google Business Profile if you have a place.
 category: spaces
-order: 9
+order: 7
+group: Get set up
 published: 2026-10-22
 updated: 2026-11-18
 audience: host

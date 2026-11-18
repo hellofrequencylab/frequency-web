@@ -2,7 +2,8 @@
 title: Collective
 description: What the Collective plan is for, what it includes beyond Business, where the network page and report live, and what is still being built.
 category: spaces
-order: 5
+order: 19
+group: Money and plans
 published: 2026-10-06
 updated: 2026-11-18
 audience: member

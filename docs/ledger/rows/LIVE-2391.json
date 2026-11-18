@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2391",
+  "title": "The help center reads in order, shows its steps and bullets, and every guide opens the part of Frequency it describes",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/site/pages/help/frequency-help-pages.tsx",
+    "ref": "Owner ask 2026-11-18: give the help docs a design polish, make relevant site links readily accessible, make navigation make sense"
+  },
+  "detail": "Found on the rendered help center after the 2026-11-18 rewrite: every list in a guide rendered without its bullet or step number (the reading column laid lists out as flex columns, which turns list items into blocks); the breadcrumb slash sat above the words; dates read as 2026-11-18; the help front page listed all 88 guides, about 12,000 pixels tall; topics mixed member and owner subjects (Find your people and Circles shared order 2, Finding people and Leading a Circle shared order 4); 18 guides shared an order number with a neighbour, so Running a Space opened on Community Resonance and ended on Create a Space; no guide linked into the product.\n\nDONE 2026-11-18: steps carry numbered discs and bullets show; breadcrumb and dates fixed; On this page is numbered in two columns and drops Related; topics run member first, then Leading a Circle and Running a Space under their own label in the index; every folder is ordered start to finish with no shared numbers; Getting started and Running a Space are grouped under sub-headings (front matter `group`); the front page leads each topic with four guides and a link to the rest; each guide shows up to three Open in Frequency buttons from its feature keys (lib/help/site-links.ts), and a test fails when any of those addresses stops being a real page.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2391.mjs",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}
