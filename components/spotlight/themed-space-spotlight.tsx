@@ -3,7 +3,11 @@ import type { Space } from '@/lib/spaces/types'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { readSpaceSpotlight, spotlightSiteGrid } from '@/lib/spaces/spotlight'
 import { readSiteStyle } from '@/lib/theme/site-style'
-import { asSpotlightLook, spaceLayoutId, spaceLooksFor, type SpotlightLook } from '@/lib/spotlight/layouts'
+import { HOUSE_KIT_OPT_IN, asSpotlightLook, spaceLayoutId, spaceLooksFor, type SpotlightLook } from '@/lib/spotlight/layouts'
+import { HouseKitSpotlightLayout } from '@/components/spotlight/house-kit-layouts'
+import { houseKitSpotlightContent, isHouseKitTheme } from '@/lib/spotlight/house-kit-content'
+import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
+import { MIDNIGHT_FONT_CLASS } from '@/components/sites/midnight-fonts'
 import { overlaySpaceOnKit, spaceFactsFromGrid, type SpaceSpotlightFacts } from '@/lib/spotlight/space-kit-page'
 import { presetForAccent } from '@/lib/spotlight/space-accent'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
@@ -44,11 +48,14 @@ import { CountedLinkScope } from '@/components/spotlight/counted-link-scope'
 // theme's Stack). The public page (components/spotlight/space-spotlight.tsx) and the console preview
 // (app/(main)/spaces/[slug]/manage/spotlight/page.tsx) both draw THIS, so what the editor shows is what the link shows.
 // The owner's Links become the doors and the Button the main call; every other Spotlight block (About, Contact form, ...)
-// keeps its real renderer below. A theme without layouts (Nocturne, Bold, Wildheart) is not drawn here: it keeps the block page.
+// keeps its real renderer below. Bold, Wildheart and Nocturne share the house layouts (LIVE-2357) and are drawn here only once
+// the owner has picked a look, so a Space already on one of them keeps its block page until its owner chooses.
 
 /** True when this Space's theme has whole-page Spotlight layouts. */
 export function spotlightWearsTheme(space: Pick<Space, 'preferences'>): boolean {
-  return spaceLooksFor(readSiteStyle(space.preferences).theme).length > 0
+  const theme = readSiteStyle(space.preferences).theme
+  if (spaceLooksFor(theme).length === 0) return false
+  return !HOUSE_KIT_OPT_IN.has(theme) || asSpotlightLook(readSpaceSpotlight(space.preferences).look) !== null
 }
 
 /** The look a Space's Spotlight wears: the owner's pick when the theme offers it, else the Stack. */
@@ -128,6 +135,11 @@ export function ThemedSpaceSpotlight({ space, tagline, saved, appOrigin }: { spa
     const c = overlaySpaceOnKit(freeHumanSpotlightContent(presetForAccent(FREE_HUMAN_PROFILES, accent) ?? 'general', { name, sample: false, photo }), facts)
     if (facts.button) drop = new Set(['links', 'button'])
     body = wrap(FREE_HUMAN_FONT_CLASS, <FreeHumanSpotlightLayout layout={layout as `free-human:${SpotlightLook}`} content={portrait ? { ...c, portrait } : c} />)
+  } else if (isHouseKitTheme(theme)) {
+    const c = overlaySpaceOnKit(houseKitSpotlightContent(theme, { name, sample: false, accent: accent ?? undefined, photo, portrait }), facts)
+    if (facts.button) drop = new Set(['links', 'button'])
+    const fonts = theme === 'wildheart' ? WILDHEART_FONT_CLASS : theme === 'midnight' ? MIDNIGHT_FONT_CLASS : undefined
+    body = wrap(fonts, <HouseKitSpotlightLayout layout={layout} content={c} />)
   } else if (theme === 'network-kit') {
     const raw = networkKitSpotlightContent('general', { name, sample: false, photo })
     const c = overlaySpaceOnKit({ ...raw, scheme: presetForAccent(NETWORK_KIT_SCHEMES, accent) ?? raw.scheme }, facts)
