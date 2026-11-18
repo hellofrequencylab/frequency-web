@@ -52,6 +52,38 @@ const PROBES = {
     ]) if (new RegExp(`export async function ${fn}\\(`).test(read(file))) f.push(`${file} still exports ${fn}, which nothing calls`)
     return f
   },
+  // A member who asks to join (or says yes to) an event the host runs: the host hears about it.
+  'LIVE-2360': () => {
+    const f = []
+    const src = read('app/(main)/events/actions.ts')
+    if (!/async function notifyHostOfRsvp\(/.test(src)) f.push('events/actions.ts has no host RSVP notice')
+    const calls = (src.match(/notifyHostOfRsvp\(eventId, myProfileId, 'rsvp_request'\)/g) ?? []).length
+    if (calls < 2) f.push(`a pending RSVP request notifies the host on ${calls} of the 2 RSVP paths`)
+    if (!/notifyEventPeople\(\[ev\.host_id\]/.test(src)) f.push('the host notice does not ride the gated event.notice seam')
+    return f
+  },
+  // The Mentions switch holds for every bell row typed as a mention, a mention never swallows a reply
+  // notice the member still wants, and an order notice opens the order list.
+  'LIVE-2361': () => {
+    const f = []
+    for (const file of ['lib/circles/social-fuel.ts', 'app/(main)/outreach/actions.ts']) {
+      const src = read(file)
+      const at = src.indexOf("type: 'mention'")
+      if (at < 0) continue
+      const before = src.slice(Math.max(0, at - 1200), at)
+      if (!/resolveSendGate\([^)]*'inapp', 'mentions'\)/.test(before)) f.push(`${file} writes a mention bell row without the Mentions gate`)
+    }
+    const feed = read('app/(main)/feed/actions.ts')
+    const body = feed.slice(feed.indexOf('async function notifyParentAuthor('), feed.indexOf('async function notifyParentAuthor(') + 1200)
+    if (!/resolveSendGate\(authorId, 'inapp', 'mentions'\)/.test(body)) f.push('a reply that @mentions the author is dropped even when their Mentions switch is off')
+    if (!/case 'order':\s*return '\/orders'/.test(read('lib/notifications/href.ts'))) f.push("an 'order' notice (a refund) still opens /feed")
+    return f
+  },
+  // A Wildheart "Your first night" block with no link set shows no dead button.
+  'LIVE-2362': () => {
+    const src = read('components/sites/wildheart-first-night.tsx')
+    return /<button type="button" className="hs-btn/.test(src) ? ['the first-night CTA renders a button with no handler when no link is set'] : []
+  },
 }
 
 const id = process.argv[2]
