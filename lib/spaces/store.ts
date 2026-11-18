@@ -11,6 +11,7 @@ import { columnImageUrl } from '@/lib/library/column-image'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { resolvePrecision } from './location'
 import { log } from '@/lib/log'
+import { PROFILE_DRAFT_REVISION_KEY, saveSpaceProfileDraft } from './profile-draft-write'
 import { memberSpacePlan } from '@/lib/collective/member-spaces'
 import { planEntitlements, asSpacePlan } from '@/lib/pricing/plans'
 import { normalizeSpaceType } from './types'
@@ -476,15 +477,25 @@ export async function patchSpacePreferences(
  *  COMPARE AND WRITE in ONE update (PROG-E5B): the blob lands only while the counter stored at
  *  `preferences.<revisionKey>` still equals `expected` (an absent counter is 0), so of two tabs
  *  that read the same revision exactly one writes and the other gets `stale`. The caller puts
- *  `expected + 1` under the same key in `preferences`. There is no SQL function for this key, so
- *  it REPLACES the whole blob like `writeSpacePreferences` (SCAN-833 applies: a different key
- *  saved between the caller's read and this write is reverted). */
+ *  `expected + 1` under the same key in `preferences`.
+ *
+ *  KEY-SCOPED FIRST (PROG-E5 item 1): given `draft` (the Space page draft and the acting profile), the
+ *  write goes through save_space_profile_draft, which checks manage access, compares the same counter
+ *  and sets ONLY the draft key, so nothing else in the blob is reverted. Only when that function is
+ *  unavailable (not yet applied, or the call failed) does the whole-blob update below run, which
+ *  REPLACES the blob like `writeSpacePreferences` (SCAN-833 applies to that fallback). */
 export async function writeSpacePreferencesAtRevision(
   spaceId: string,
   preferences: Record<string, unknown>,
   guard: { revisionKey: string; expected: number },
-): Promise<'written' | 'stale' | 'error'> {
+  draft?: { actor: string; draft: Record<string, unknown> | null },
+): Promise<'written' | 'stale' | 'forbidden' | 'error'> {
   if (!spaceId || !/^[A-Za-z]{1,60}$/.test(guard.revisionKey) || !Number.isSafeInteger(guard.expected) || guard.expected < 0) return 'error'
+  if (draft && guard.revisionKey === PROFILE_DRAFT_REVISION_KEY) {
+    const keyed = await saveSpaceProfileDraft({ spaceId, actor: draft.actor, draft: draft.draft, expected: guard.expected })
+    if (keyed.status === 'written' || keyed.status === 'stale' || keyed.status === 'forbidden') return keyed.status
+    if (keyed.status === 'missing') return 'error'
+  }
   type Guarded = {
     eq: (column: string, value: string) => Guarded
     is: (column: string, value: null) => Guarded
