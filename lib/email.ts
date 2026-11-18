@@ -1848,6 +1848,60 @@ Notes on Circles, practices, and events, a few times a month. You can unsubscrib
 Did not request this? You can ignore this email. Confirmation is required to join this list.`
 }
 
+// ── Event replay ("Here's the replay") ────────────────────────────────────────
+// Sent once per address per event by the follow-up cron's replay pass (app/api/cron/event-followups),
+// to everyone who saved a seat, whether or not they came. Members pass the events-category send gate and
+// carry its one-click unsubscribe; guests get the transactional footer of the seat they took.
+
+export async function sendEventReplayEmail(params: {
+  to: string
+  eventTitle: string
+  eventUrl: string
+  replayUrl: string
+  next: { title: string; whenAbsolute: string; url: string } | null
+  unsubscribeUrl?: string | null
+  dedupeKey: string
+}) {
+  const { to, eventTitle, eventUrl, replayUrl, next, dedupeKey } = params
+  const unsubscribeUrl = params.unsubscribeUrl ?? null
+  const footer = `You are getting this because you saved a seat for ${eventTitle}.`
+  await enqueueEmail(
+    {
+      to,
+      subject: `The replay: ${eventTitle}`,
+      ...(unsubscribeUrl ? { headers: listUnsubscribeHeaders(unsubscribeUrl) } : {}),
+      html: emailShell(
+        `
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">The replay is up. Watch it whenever suits you, whether you came or not.</p>
+      ${emailButton('Watch the replay', replayUrl)}
+      <p data-fq="fq-p" style="${pStyle}margin-top:16px;"><a href="${eventUrl}" style="color:${palette.emailPrimaryStrong};">The session page</a></p>${
+        next
+          ? `
+      <hr data-fq="fq-rule" style="${dividerStyle}">
+      <p data-fq="fq-p" style="${pStyle}">Next up: ${escapeHtml(next.title)}, ${escapeHtml(next.whenAbsolute)}. Your seat is saved.</p>
+      <p data-fq="fq-p" style="${pStyle}"><a href="${next.url}" style="color:${palette.emailPrimaryStrong};font-weight:700;">See the next session</a></p>`
+          : ''
+      }
+      <hr data-fq="fq-rule" style="${dividerStyle}">
+      <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">${escapeHtml(footer)}${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from event emails</a>` : ''}</p>
+    `,
+        { text: escapeHtml(footer), unsubscribe: Boolean(unsubscribeUrl) },
+      ),
+      text: `${eventTitle}
+
+The replay is up. Watch it whenever suits you, whether you came or not.
+
+Watch the replay: ${replayUrl}
+The session page: ${eventUrl}
+${next ? `\nNext up: ${next.title}, ${next.whenAbsolute}. Your seat is saved.\nSee the next session: ${next.url}\n` : ''}
+${footer}${unsubscribeUrl ? `\nUnsubscribe from event emails: ${unsubscribeUrl}` : ''}
+`,
+    },
+    { dedupeKey },
+  )
+}
+
 // ── Subscribe welcome ("you're in") ───────────────────────────────────────────
 // The FIRST marketing email, sent once consent is confirmed. Carries a working
 // List-Unsubscribe (the caller passes a per-contact unsubscribe URL) for CAN-SPAM.

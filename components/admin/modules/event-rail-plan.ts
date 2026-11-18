@@ -83,6 +83,7 @@ export const EVENT_SETTINGS_WRITES = [
   // the door note, which was write-only for the life of the column.
   'details.features',
   'details.specialInstructions',
+  'details.replayUrl',
   'details.sponsors',
   'details.tickets',
   'details.schedule',
@@ -151,6 +152,7 @@ export const EVENT_COLUMNS: Record<EventRailPath, string> = {
   // collections arrive as JSON, because a table of rows has no flat form a FormData can carry.
   'details.features': 'details_features',
   'details.specialInstructions': 'special_instructions',
+  'details.replayUrl': 'replay_url',
   'details.sponsors': 'details_sponsors',
   'details.tickets': 'details_tickets',
   'details.schedule': 'details_schedule',
@@ -340,6 +342,7 @@ const READERS: Partial<Record<EventSettingsPath, (row: EventRailRow) => string>>
   'details.features': (r) => listOf(detailsOf(r).features),
   'details.sponsors': (r) => listOf(detailsOf(r).sponsors),
   'details.specialInstructions': (r) => str(detailsOf(r).specialInstructions),
+  'details.replayUrl': (r) => str(detailsOf(r).replayUrl),
   priceCents: (r) => (typeof r.price_cents === 'number' && r.price_cents > 0 ? String(r.price_cents / 100) : ''),
   hideAddress: (r) => bool(r.hide_address),
   rsvpRequiresApproval: (r) => bool(r.rsvp_requires_approval),
