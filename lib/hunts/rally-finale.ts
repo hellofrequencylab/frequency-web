@@ -34,6 +34,14 @@ export function parseFinale(policy: unknown): { eventId: string } | null {
   return typeof eventId === 'string' && UUID.test(eventId) ? { eventId: eventId.toLowerCase() } : null
 }
 
+/**
+ * Where a finale notice sits in the Hunt outbox (FH-032S): rows with this aggregate are the finale's
+ * broadcast, so route health can say whether it went out. A producer that queues a finale notice uses it.
+ */
+export function finaleBroadcastAggregate(eventId: string): { kind: 'finale'; id: string } {
+  return { kind: 'finale', id: eventId }
+}
+
 export type HostEvent = Readonly<{
   id: string
   title: string

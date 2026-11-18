@@ -139,6 +139,21 @@ export default async function HuntRouteHealthPage({ params }: { params: Promise<
             )}
           </section>
 
+          {health.formerVenues.length > 0 && (
+            <section aria-labelledby="route-health-former" className="space-y-3">
+              <h2 id="route-health-former" className="text-body font-semibold text-text">Venues that left</h2>
+              <p className="text-body-sm text-muted">No longer part of the Trail. What players earned there still counts.</p>
+              <ul className="space-y-1 text-body-sm">
+                {health.formerVenues.map((v) => (
+                  <li key={v.spaceId}>
+                    <span className="font-medium text-text">{v.name}</span>: {v.confirmedStops} confirmed stops, {v.handedOver} rewards handed over
+                    {v.awaitingReview > 0 ? `, ${v.awaitingReview} waiting for review` : ''}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <section aria-labelledby="route-health-messages" className="space-y-3">
             <h2 id="route-health-messages" className="text-body font-semibold text-text">Messages</h2>
             <div className="grid gap-3 sm:grid-cols-4">
@@ -148,6 +163,22 @@ export default async function HuntRouteHealthPage({ params }: { params: Promise<
               <StatCard label="Failed" value={health.messages.failed} detail="Needs a replay" />
             </div>
           </section>
+
+          {health.finale && (
+            <section aria-labelledby="route-health-finale" className="space-y-3">
+              <h2 id="route-health-finale" className="text-body font-semibold text-text">Finale</h2>
+              <p className="text-body-sm text-muted">
+                {health.finale.title ? `The Trail ends at ${health.finale.title}.` : 'The Trail ends at an event that could not be read.'}
+                {health.finale.eventOn ? '' : ' That event is not on right now, so players see the finale as unavailable.'}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-4">
+                <StatCard label="Finale notices sent" value={health.finale.sent} />
+                <StatCard label="Waiting" value={health.finale.waiting} />
+                <StatCard label="Sending now" value={health.finale.sending} />
+                <StatCard label="Failed" value={health.finale.failed} detail="Needs a replay" />
+              </div>
+            </section>
+          )}
         </div>
       )}
     </FocusTemplate>

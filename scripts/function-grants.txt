@@ -392,3 +392,5 @@ analytics_growth_snapshot internal
 # LIVE-2291: immutable support snapshots and enrollment contracts are trigger-only.
 freeze_journey_completion_policy internal
 freeze_practice_support_evidence internal
+# PROG-E5: the Space page draft write is called by gated server actions through the admin client.
+save_space_profile_draft internal

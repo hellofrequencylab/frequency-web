@@ -13,8 +13,9 @@
 //     and the next revision is the base plus one.
 //   - `fingerprint`: a hash of the document the tab loaded. The Space page builder saves the same draft and
 //     does not move the counter, so the counter alone would let a stale canvas tab overwrite a builder save.
-//     The fingerprint is compared against a fresh read in the same action. That part is read then write, not
-//     one statement; closing it fully needs a SQL function (no migration in this slice).
+//     The fingerprint is compared against a fresh read in the same action. Once save_space_profile_draft
+//     (PROG-E5 item 1, lib/spaces/profile-draft-write.ts) is applied, a builder save moves the same counter, so the
+//     write itself refuses a tab behind it; until then the fingerprint check is read then write.
 
 import type { InspectorFieldView } from './inspector-fields'
 import type { InspectorDeviceValues } from './inspector-model'

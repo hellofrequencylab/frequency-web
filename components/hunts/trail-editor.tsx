@@ -14,9 +14,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowDown, ArrowUp, Check, Lock, Map, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -72,7 +73,10 @@ const stopValue = (s: Stop, path: string): string => {
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
-export function TrailEditor({ initial }: { initial: TrailEditorState }) {
+/** The live Trail's other screens (FH-032S): route health for organisers, the venue report for venue staff. */
+type ManageLinks = { health: string; report: string }
+
+export function TrailEditor({ initial, manage = null }: { initial: TrailEditorState; manage?: ManageLinks | null }) {
   const router = useRouter()
   const [draft, setDraft] = useState<TrailDraft>(initial.draft)
   const [revision, setRevision] = useState(initial.revision)
@@ -483,6 +487,12 @@ export function TrailEditor({ initial }: { initial: TrailEditorState }) {
             <StudioNote>
               <strong>This trail is live.</strong> Editing a stop opens a new version; the live one stays as it is until you publish again.
             </StudioNote>
+          )}
+          {published && manage && (
+            <div className="flex flex-wrap gap-2">
+              <Link href={manage.health} prefetch={false} className={buttonClasses('secondary', 'md')}>Route health</Link>
+              <Link href={manage.report} prefetch={false} className={buttonClasses('secondary', 'md')}>Venue report</Link>
+            </div>
           )}
           <ul className="space-y-2">
             {checklist.items.map((item, i) => (
