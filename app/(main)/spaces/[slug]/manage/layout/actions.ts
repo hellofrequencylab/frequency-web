@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { storeSpaceImage } from '@/lib/spaces/space-image-store'
 import { getCallerProfile } from '@/lib/auth'
-import { getVisibleSpaceBySlug, stageSpaceDomain, activateSpaceDomain } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, stageSpaceDomain, activateSpaceDomain, patchSpacePreferences } from '@/lib/spaces/store'
+import { preferencesPatch } from '@/lib/spaces/preferences-patch'
 import { readSiteDomainCandidate, siteDomainReady } from '@/lib/sites/domain-setup'
 import { getSpaceCapabilities, spaceCanUseFullWebsite, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { isValidAccent } from '@/lib/spaces/accent'
@@ -76,8 +77,8 @@ import { asFooterBadgeMode, badgeRemovalHeld, nextFooterBadgePreferences } from 
 // (the route gate is UX; this is the authority). Staff preview (a janitor who is not an editor) is
 // read-only: it has no canEditProfile, so every write below fails closed.
 //
-// NON-DESTRUCTIVE: each write touches only the one preferences node it owns (coverSize / the pages
-// nav / a single branding node), preserving every other key. No em dashes (owner copy, CONTENT-VOICE).
+// NON-DESTRUCTIVE: each write sends only the preferences keys it changes (coverSize / the pages nav / a
+// single branding node) through set_space_preferences (LIVE-2347), so every other key stays as stored. No em dashes (owner copy, CONTENT-VOICE).
 
 /** Authorize the caller as an EDITOR (owner / admin / editor) of `slug`'s space; returns the resolved
  *  space id + its current preferences blob, or null on any miss. Mirrors edit-page/actions.ts's shape
@@ -112,18 +113,19 @@ async function authorizeEditor(slug: string): Promise<{
   }
 }
 
-/** Untyped scoped update of the space's preferences column (ADR-246), bound to the id. */
+/** KEY-SCOPED write of the space's preferences (LIVE-2347): only the top-level keys `next` changes
+ *  against the snapshot `before` are sent, through patchSpacePreferences (set_space_preferences), so a
+ *  key another console saved after this request read the Space (a Spotlight publish, a website editor
+ *  stub, a menu save) is never written back with a stale copy. A multi-key change (a page plus its doc)
+ *  lands in ONE call. Nothing changed is a successful no-op. */
 async function writePreferences(
   spaceId: string,
-  preferences: Record<string, unknown>,
+  before: Record<string, unknown>,
+  next: Record<string, unknown>,
 ): Promise<boolean> {
-  const db = createAdminClient() as unknown as {
-    from: (t: string) => {
-      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
-    }
-  }
-  const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
-  return !error
+  const patch = preferencesPatch(before, next)
+  if (Object.keys(patch).length === 0) return true
+  return patchSpacePreferences(spaceId, patch)
 }
 
 /**
@@ -139,7 +141,7 @@ export async function setSpaceBusinessInfo(slug: string, patch: ProfileDataPatch
   if (!auth) return fail('You do not have access to edit this page.')
 
   const next = withProfileData(auth.preferences, patch)
-  if (!(await writePreferences(auth.spaceId, next))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, next))) {
     return fail('Could not save your business info. Try again.')
   }
 
@@ -231,7 +233,7 @@ export async function setSpaceCoverScrim(slug: string, scrim: CoverScrim): Promi
   if (!auth) return fail('You do not have access to edit this page.')
 
   const next = nextCoverScrimPreferences(auth.preferences, scrim)
-  if (!(await writePreferences(auth.spaceId, next))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, next))) {
     return fail('Could not update the cover style. Try again.')
   }
 
@@ -256,7 +258,7 @@ export async function setSpaceLogoBackdrop(slug: string, backdrop: LogoBackdrop)
   if (!auth) return fail('You do not have access to edit this page.')
 
   const next = nextLogoBackdropPreferences(auth.preferences, backdrop)
-  if (!(await writePreferences(auth.spaceId, next))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, next))) {
     return fail('Could not update the logo backdrop. Try again.')
   }
 
@@ -279,7 +281,7 @@ export async function setSpaceCoverFocus(slug: string, focus: string): Promise<A
   if (!auth) return fail('You do not have access to edit this page.')
 
   const next = nextCoverFocusPreferences(auth.preferences, focus)
-  if (!(await writePreferences(auth.spaceId, next))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, next))) {
     return fail('Could not update the cover position. Try again.')
   }
 
@@ -323,7 +325,7 @@ export async function setSpaceHeaderCta(
   if (!auth) return fail('You do not have access to edit this page.')
 
   const next = nextHeaderCtaPreferences(auth.preferences, clean)
-  if (!(await writePreferences(auth.spaceId, next))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, next))) {
     return fail('Could not update your button. Try again.')
   }
 
@@ -354,7 +356,7 @@ export async function setSpaceHeroLook(
   }
   const cleanHero = sanitizeHeroConfig(merged)
   const next = nextHeroPreferences(auth.preferences, cleanHero)
-  if (!(await writePreferences(auth.spaceId, next))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, next))) {
     return fail('Could not save. Try again.')
   }
 
@@ -394,7 +396,7 @@ export async function setSiteHero(
     action: button(input?.action),
     secondary: button(input?.secondary),
   })
-  if (!(await writePreferences(auth.spaceId, next))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, next))) {
     return fail('Could not save your headline. Try again.')
   }
 
@@ -418,7 +420,7 @@ export async function setSiteBadge(slug: string, mode: string): Promise<ActionRe
   if (chosen === 'none' && !badgeRemovalHeld(auth.plan, auth.entitlements)) {
     return fail('Removing the Frequency credit is a paid option. Ask your Network, or move to Independent.')
   }
-  if (!(await writePreferences(auth.spaceId, nextFooterBadgePreferences(auth.preferences, chosen)))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, nextFooterBadgePreferences(auth.preferences, chosen)))) {
     return fail('Could not save your footer. Try again.')
   }
   revalidatePath(`/spaces/${slug}`, 'layout')
@@ -471,7 +473,7 @@ export async function setWebsitePublished(slug: string, published: boolean): Pro
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
 
-  const saved = await writePreferences(auth.spaceId, { ...auth.preferences, websitePublished: published === true })
+  const saved = await patchSpacePreferences(auth.spaceId, { websitePublished: published === true })
   if (!saved) return fail('Could not update your website. Try again.')
   // LIVE-2335: counted when the website goes from off to on, never on a repeat or an unpublish.
   if (published === true && auth.preferences.websitePublished !== true) scheduleSpaceEvent('space.website_published', { spaceId: auth.spaceId })
@@ -646,10 +648,10 @@ export async function domainConnectLink(slug: string): Promise<ActionResult<OneC
 }
 
 // ── THE NAV MANAGER actions (multi-page model). Create / rename / reorder / delete the operator-defined
-// profile pages. Each calls a PURE mutator from profile-pages.ts and writes the WHOLE preferences blob
-// back, re-gating canEditProfile server-side (owner/admin/editor). Guardrails from the research: Home is
-// required + non-deletable; a reserved / invalid / duplicate slug is rejected with a plain message; the
-// nav is capped at MAX_PROFILE_PAGES. Copy is plain, sentence-case, no em dashes (CONTENT-VOICE §10).
+// profile pages. Each calls a PURE mutator from profile-pages.ts and writes back only the keys it
+// changed (writePreferences, LIVE-2347), re-gating canEditProfile server-side (owner/admin/editor).
+// Guardrails from the research: Home is required + non-deletable; a reserved / invalid / duplicate slug
+// is rejected with a plain message; the nav is capped at MAX_PROFILE_PAGES. Copy is plain, sentence-case, no em dashes (CONTENT-VOICE §10).
 
 /** Revalidate the surfaces a nav change touches: the whole profile subtree (the nav renders on every
  *  page) + the Page manager. */
@@ -693,7 +695,7 @@ export async function createSpacePage(slug: string, label: string): Promise<Acti
   if (!plan.ok) return fail(addPageError(plan.reason))
 
   const preferences = addPage(auth.preferences, plan.slug, plan.label, auth.canUseFullWebsite)
-  if (!(await writePreferences(auth.spaceId, preferences))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, preferences))) {
     return fail('Could not add the page. Try again.')
   }
   revalidateNav(slug)
@@ -721,7 +723,7 @@ export async function startOfferPage(slug: string): Promise<ActionResult<string>
   const space = await getVisibleSpaceBySlug(slug, (await getCallerProfile())?.id ?? null)
   const withPage = hasPage(auth.preferences, OFFER_PAGE_SLUG) ? auth.preferences : addPage(auth.preferences, plan.slug, plan.label, auth.canUseFullWebsite)
   const preferences = withPageDoc(withPage, plan.slug, generateOfferPage(space?.name ?? '', seed))
-  if (!(await writePreferences(auth.spaceId, preferences))) return fail('Could not make the page. Try again.')
+  if (!(await writePreferences(auth.spaceId, auth.preferences, preferences))) return fail('Could not make the page. Try again.')
   revalidateNav(slug)
   return ok(plan.slug)
 }
@@ -743,7 +745,7 @@ export async function renameSpacePage(
   if (!hasPage(auth.preferences, pageSlug)) return fail('That page no longer exists.')
 
   const preferences = renamePage(auth.preferences, pageSlug, trimmed)
-  if (!(await writePreferences(auth.spaceId, preferences))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, preferences))) {
     return fail('Could not rename the page. Try again.')
   }
   revalidateNav(slug)
@@ -762,7 +764,7 @@ export async function reorderSpacePages(slug: string, order: string[]): Promise<
   if (!auth) return fail('You do not have access to edit this page.')
 
   const preferences = reorderPages(auth.preferences, order)
-  if (!(await writePreferences(auth.spaceId, preferences))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, preferences))) {
     return fail('Could not reorder your pages. Try again.')
   }
   revalidateNav(slug)
@@ -781,7 +783,7 @@ export async function deleteSpacePage(slug: string, pageSlug: string): Promise<A
   if (!hasPage(auth.preferences, pageSlug)) return fail('That page no longer exists.')
 
   const preferences = removePage(auth.preferences, pageSlug)
-  if (!(await writePreferences(auth.spaceId, preferences))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, preferences))) {
     return fail('Could not delete the page. Try again.')
   }
   revalidateNav(slug)

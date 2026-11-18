@@ -28,9 +28,8 @@ describe('member detail routes redirect a signed-out visitor to their public twi
     expect(PROXY).toContain('!isTwinRedirectable')
   })
 
-  describe('the two families whose twin is a pure rewrite (partners left on 2026-10-14)', () => {
+  describe('the family whose twin is a pure rewrite (partners left on 2026-10-14; journeys became a lookup, JRN-004)', () => {
     const DIRECT: [string, string][] = [
-      ['/journeys/morning-light', '/discover/journeys/morning-light'],
       ['/practices/abc-123', '/discover/practices/abc-123'],
     ]
     for (const [from, to] of DIRECT) {
@@ -49,6 +48,13 @@ describe('member detail routes redirect a signed-out visitor to their public twi
       expect(m?.segment).toBe('sunrise-swim')
       // No path: resolving it without the lookup would send the visitor to a 404.
       expect(m?.path).toBeUndefined()
+    })
+    it('a Journey needs the public-gate lookup, so an unlisted one is not sent into a 404 (JRN-004)', () => {
+      const m = matchPublicTwin('/journeys/morning-light')
+      expect(m?.lookup).toBe('journey')
+      expect(m?.segment).toBe('morning-light')
+      expect(m?.path).toBeUndefined()
+      expect(LAYOUT).toMatch(/match\.lookup === 'journey'[\s\S]{0,800}sign-in\?next=/)
     })
     it('a Channel needs the id to slug lookup', () => {
       const m = matchPublicTwin('/channels/2f1c9a44-0000-4000-8000-000000000000')

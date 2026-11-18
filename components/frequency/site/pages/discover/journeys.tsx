@@ -147,6 +147,8 @@ export function FrequencyJourney({
   reviews: ReactNode
 }) {
   const time = formatMinutes(facts.totalMinutes)
+  // The sign-in door for BOTH a paid and a free Journey: it carries `next`, so a visitor who signs up
+  // here lands back on this Journey, not the default home (JRN-004).
   const buyHref = journeyBuySignInPath(plan.slug)
   return (
     <DirPage side="p">
@@ -287,7 +289,7 @@ export function FrequencyJourney({
             ) : (
               <>
                 <p>Read the phases and access details before you start. Try the steps solo, or choose the Journey with your Circle.</p>
-                <Link className="btn fq-iri-btn" href="/sign-in">
+                <Link className="btn fq-iri-btn" href={buyHref}>
                   Create a free account
                 </Link>
                 <p className="dd-fine">Free to start. Run it with your Circle or solo.</p>
@@ -322,7 +324,7 @@ export function FrequencyJourney({
         <KeepGoing
           title="Start this Journey."
           body="Sign up free to start it. Read the phases and access details before you start. Try the steps solo, or choose the Journey with your Circle."
-          primary={{ href: '/sign-in', label: 'Create a free account' }}
+          primary={{ href: buyHref, label: 'Create a free account' }}
           secondary={{ href: '/discover/journeys', label: 'More Journeys' }}
         />
       )}
