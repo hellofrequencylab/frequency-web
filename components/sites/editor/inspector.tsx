@@ -15,6 +15,7 @@ import { cleanSectionAnchor, resolveWebsiteChrome, validWebsiteChrome, type Webs
 import { slugify } from '@/lib/utils'
 import { bindSlots, keepSlotTokens, readSlots } from '@/lib/spaces/content-slots'
 import { inspectorTarget, type FieldFocus } from '@/lib/sites/editor/field-sync'
+import { breakpointSourceLabel, resetSectionField, sectionFieldSource, type BreakpointField } from '@/lib/sites/editor/breakpoint-source'
 
 // THE FREQUENCY DESIGN AND ADVANCED TABS (design_handoff/frequency/templates/admin/editor/editor.js renderInsp):
 // background tone, content width, align, spacing in four steps, columns; then reveal on scroll, show on each
@@ -129,10 +130,22 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
   const fq = FQ_EDITOR && !!part
   const base = (doc.root.props?.websiteLayout?.[block.props.id!]?.desktop ?? {}) as SectionDisplay
   const grid = liveOverride || liveFeatures || Object.values(schema).some((field) => field.type === 'array')
+  // Tablet and phone (PROG-E5): each breakpoint setting says where its value comes from, and an override has its
+  // own reset that clears that one setting on this device and nothing else. Desktop is the base, so it shows none.
+  const source = (field: BreakpointField, label: string) => {
+    if (device === 'desktop') return null
+    const from = sectionFieldSource(doc, block.props.id!, device, field)
+    return <p className={k('we-note')} data-breakpoint-source={field} data-source={from ?? 'theme'}>
+      {breakpointSourceLabel(device, from)}
+      {from === device && <button type="button" className={k('we-row')} aria-label={`Reset ${label} to desktop`} onClick={() => onDisplay(resetSectionField(doc, block.props.id!, device, field))}>Reset to desktop</button>}
+    </p>
+  }
   const moreLayout = <>
     {block.type === 'Zigzag' && <div className={k('we-field')}><span className="l">Layout</span><div className={k('we-actions')}>{(['left', 'right', 'stacked'] as const).map((preset) => <button type="button" className={k('we-action secondary')} key={preset} aria-pressed={preset === 'stacked' ? display.columns === 1 : display.columns !== 1 && (editableProps.mediaSide ?? 'left') === preset} onClick={() => { const next = sectionLayoutPreset(editableProps, display, preset); onChange(next.props); onDisplay(next.display) }}>{preset === 'left' ? 'Photo left' : preset === 'right' ? 'Photo right' : 'Stacked'}</button>)}</div></div>}
     <label className={k('we-field')}>Column gap <span>{display.gap === undefined ? 'Theme default' : `${display.gap}px`}</span><Input variant="seamless" aria-label="Column gap" type="range" min={0} max={96} step={4} value={display.gap ?? 0} onChange={(e) => onDisplay({ ...display, gap: Number(e.target.value) })} /></label>
+    {source('gap', 'column gap')}
     <label className={k('we-field')}>Heading size <span>{display.textSize ?? 0}px · 0 uses theme</span><Input variant="seamless" aria-label="Heading size" type="range" min={0} max={120} step={2} value={display.textSize ?? 0} onChange={(e) => onDisplay({ ...display, textSize: Number(e.target.value) })} /></label>
+    {source('textSize', 'heading size')}
     {(display.padding !== undefined || display.gap !== undefined) && <button type="button" className={k('we-row')} onClick={() => onDisplay({ ...display, padding: undefined, gap: undefined })}>Use theme spacing</button>}
     {device !== 'desktop' && <button type="button" className={k('we-row')} onClick={() => onDisplay(null)}>Reset {device} overrides</button>}
   </>
@@ -155,9 +168,9 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
     return <>
       <div className="fld"><span className="l">Background <em>{base.tone ? TONES.find((t) => t.id === base.tone)?.label : 'Theme'}</em></span><div className="opts" role="group" aria-label="Background">{TONES.map((t) => <button type="button" key={t.id} className={on(base.tone === t.id).trim() || undefined} aria-pressed={base.tone === t.id} onClick={() => onBase?.({ tone: base.tone === t.id ? undefined : t.id })}><i data-tone={t.id} aria-hidden />{t.label}</button>)}</div></div>
       <div className="fld"><span className="l">Content width</span><div className="opts" role="group" aria-label="Content width">{WIDTHS.map((w) => { const active = (base.width ?? 'default') === w.id; return <button type="button" key={w.id} className={on(active).trim() || undefined} aria-pressed={active} onClick={() => onBase?.({ width: w.id === 'default' ? undefined : w.id })}><i data-width={w.id} aria-hidden />{w.label}</button> })}</div></div>
-      <div className="fld"><span className="l">Align <em>{DEVICE_LABEL[device]}</em></span><div className="seg" role="group" aria-label="Align">{(['left', 'center'] as const).map((a) => { const active = (display.align ?? 'left') === a; return <button type="button" key={a} className={on(active).trim() || undefined} aria-pressed={active} onClick={() => onDisplay({ ...display, align: a })}>{a === 'left' ? 'Left' : 'Center'}</button> })}</div></div>
-      <div className="fld"><label htmlFor="we-pad">Space above and below <em>{pad === null ? 'Theme' : PAD_LABEL[pad]}</em></label><div className="range"><Input id="we-pad" type="range" min={0} max={3} step={1} value={pad ?? 2} aria-valuetext={pad === null ? 'Theme spacing' : `${PAD_LABEL[pad]}, ${DESIGN_PAD[pad]} pixels`} onChange={(e) => onDisplay({ ...display, padding: DESIGN_PAD[Number(e.target.value)] })} /><output htmlFor="we-pad">{pad === null ? 'Theme' : `${DESIGN_PAD[pad]}px`}</output></div></div>
-      {grid && <div className="fld"><label htmlFor="we-cols">Columns <em>{device}</em></label><div className="range"><Input id="we-cols" type="range" min={1} max={4} step={1} value={display.columns ?? 3} onChange={(e) => onDisplay({ ...display, columns: Number(e.target.value) })} /><output htmlFor="we-cols">{display.columns ?? 'Theme'}</output></div></div>}
+      <div className="fld"><span className="l">Align <em>{DEVICE_LABEL[device]}</em></span><div className="seg" role="group" aria-label="Align">{(['left', 'center'] as const).map((a) => { const active = (display.align ?? 'left') === a; return <button type="button" key={a} className={on(active).trim() || undefined} aria-pressed={active} onClick={() => onDisplay({ ...display, align: a })}>{a === 'left' ? 'Left' : 'Center'}</button> })}</div>{source('align', 'align')}</div>
+      <div className="fld"><label htmlFor="we-pad">Space above and below <em>{pad === null ? 'Theme' : PAD_LABEL[pad]}</em></label><div className="range"><Input id="we-pad" type="range" min={0} max={3} step={1} value={pad ?? 2} aria-valuetext={pad === null ? 'Theme spacing' : `${PAD_LABEL[pad]}, ${DESIGN_PAD[pad]} pixels`} onChange={(e) => onDisplay({ ...display, padding: DESIGN_PAD[Number(e.target.value)] })} /><output htmlFor="we-pad">{pad === null ? 'Theme' : `${DESIGN_PAD[pad]}px`}</output></div>{source('padding', 'space above and below')}</div>
+      {grid && <div className="fld"><label htmlFor="we-cols">Columns <em>{device}</em></label><div className="range"><Input id="we-cols" type="range" min={1} max={4} step={1} value={display.columns ?? 3} onChange={(e) => onDisplay({ ...display, columns: Number(e.target.value) })} /><output htmlFor="we-cols">{display.columns ?? 'Theme'}</output></div>{source('columns', 'columns')}</div>}
       <details className="drw"><summary>More layout</summary>{moreLayout}</details>
     </>
   }
@@ -187,13 +200,18 @@ export function WebsiteInspector({ config, block, doc, device, metadata, sourceS
     {!tab && !part && <div className={k('we-caption')}>Section</div>}
     <details className={k('we-drawer')} open><summary>Spacing</summary>
       <label className={k('we-field')}>Column gap <span>{display.gap === undefined ? 'Theme default' : `${display.gap}px`}</span><Input variant="seamless" aria-label="Column gap" type="range" min={0} max={96} step={4} value={display.gap ?? 0} onChange={(e) => onDisplay({ ...display, gap: Number(e.target.value) })} /></label>
+      {source('gap', 'column gap')}
       <label className={k('we-field')}>Space above and below <span>{display.padding === undefined ? 'Theme default' : `${display.padding}px`}</span><Input variant="seamless" aria-label="Section spacing" type="range" min={0} max={SECTION_SPACING_STEPS.length - 1} step={1} value={Math.max(0, SECTION_SPACING_STEPS.findIndex((step) => step === snapSectionSpacing(display.padding ?? 0)))} onChange={(e) => onDisplay({ ...display, padding: SECTION_SPACING_STEPS[Number(e.target.value)] })} /></label>
+      {source('padding', 'space above and below')}
       <button type="button" className={k('we-row')} onClick={() => onDisplay({ ...display, padding: undefined, gap: undefined })}>Use theme spacing</button>
     </details>
     <details className={k('we-drawer')} open={tab === 'design' || undefined}><summary>Breakpoints</summary><div className={k('we-note')}>{device === 'desktop' ? 'Desktop is the base layout. Tablet and phone inherit it.' : `You are editing ${device} only. Unchanged values inherit the desktop layout.`}</div>
       <label className={k('we-field')}>Columns<Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={display.columns ?? ''} onChange={(e) => onDisplay({ ...display, columns: e.target.value ? Number(e.target.value) : undefined })}><option value="">Theme default</option>{[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}</Select></label>
+      {source('columns', 'columns')}
       <label className={k('we-field')}>Heading size <span>{display.textSize ?? 0}px · 0 uses theme</span><Input variant="seamless" aria-label="Heading size" type="range" min={0} max={120} step={2} value={display.textSize ?? 0} onChange={(e) => onDisplay({ ...display, textSize: Number(e.target.value) })} /></label>
+      {source('textSize', 'heading size')}
       <label className={k('we-field')}>Text alignment<Select wrapperClassName="!contents [&>svg]:hidden" className="we-select" value={display.align ?? ''} onChange={(e) => onDisplay({ ...display, align: e.target.value ? e.target.value as 'left' | 'center' | 'right' : undefined })}><option value="">Theme default</option><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></Select></label>
+      {source('align', 'text alignment')}
       {device !== 'desktop'  && <button type="button" className={k('we-row')} onClick={() => onDisplay(null)}>Reset {device} overrides</button>}
     </details>
     </>}
