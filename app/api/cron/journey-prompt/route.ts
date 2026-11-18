@@ -44,6 +44,7 @@ import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
 import { sendPushToProfile } from '@/lib/push'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { getDailyJourneyPrompt, formatJourneyPrompt, type JourneyPrompt } from '@/lib/journey-prompt'
 import { listEnrolledMemberIds } from '@/lib/journeys/progress'
 import { briefError, log } from '@/lib/log'
@@ -141,12 +142,17 @@ async function handler(req: NextRequest) {
       body,
       dedupe_key: `journey-prompt:${profileId}:${day}`,
     } as unknown as Database['public']['Tables']['notifications']['Insert']
-    const { error: insertError } = await admin.from('notifications').insert(row)
-    if (!insertError) inapp++
-    else if (insertError.code === UNIQUE_VIOLATION) deduped++
-    else {
-      failed++
-      log.error('cron.journey_prompt.notify_failed', { profile_id: profileId, error: insertError.message })
+    // JRN-012: the member's in-app Practice setting is honoured (ADR-169 send gate). The push leg
+    // below re-checks its own preference, so it is not gated here.
+    const gate = await resolveSendGate(profileId, 'inapp', 'practice')
+    if (gate.allowed) {
+      const { error: insertError } = await admin.from('notifications').insert(row)
+      if (!insertError) inapp++
+      else if (insertError.code === UNIQUE_VIOLATION) deduped++
+      else {
+        failed++
+        log.error('cron.journey_prompt.notify_failed', { profile_id: profileId, error: insertError.message })
+      }
     }
 
     // Push (opt-in; sendPushToProfile re-checks the member's push preference + consent).
