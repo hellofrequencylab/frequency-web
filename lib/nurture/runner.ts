@@ -140,6 +140,20 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
       .eq('id', e.id)
       .eq('next_run_at', e.next_run_at)
 
+  // Move the enrollment past `order`: to the next enabled step's time, or complete it.
+  const advance = async (e: EnrRow, order: number) => {
+    const next = nextStepAfter(stepsBySeq.get(e.sequence_id) ?? [], order)
+    if (next) {
+      await db
+        .from('nurture_enrollments')
+        .update({ next_step_order: next.order, next_run_at: runAtFrom(Date.now(), next.delayHours), last_sent_at: new Date().toISOString() })
+        .eq('id', e.id)
+    } else {
+      await complete(e.id)
+      completed++
+    }
+  }
+
   for (const e of due) {
     // A disabled sequence is paused: leave the enrollment due for when it's re-enabled. The due
     // query already excludes these; this is the backstop for a sequence paused mid-run.
@@ -202,32 +216,33 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
     // LIFECYCLE_CAP_ENABLED is set, when this always answers 'reserved'.
     const reservation = await reserveLifecycleSend(db, { recipient: e.email, profileId: contact.profile_id, kind: 'nurture_step', dedupeKey: `nurture_step:${e.id}:${step.order}` })
     if (reservation === 'capped' || reservation === 'error') { await deferTransient({ ...e, next_run_at: lockUntil }); continue }
-    if (reservation === 'duplicate') continue
+    // EMAIL-061: a reservation row outlives a send only when the enqueue below succeeded (a failed enqueue releases
+    // it), so 'duplicate' means this step already went out and only the cursor move was lost. Move the cursor on
+    // instead of skipping, or the enrollment is re-picked every run and never reaches its next step.
+    if (reservation === 'duplicate') { await advance(e, step.order); continue }
 
     // A drip step is BULK mail: scheduled marketing to a list, not a message someone is waiting
     // on. The lane keeps it behind transactional sends when the daily quota is tight (LIVE-091).
-    await enqueueEmail(
-      {
-        to: e.email,
-        subject: message.subject,
-        html: message.html,
-        text: message.text,
-        headers: listUnsubscribeHeaders(unsubscribeUrl),
-      },
-      { lane: 'bulk' },
-    )
-    sent++
-
-    const next = nextStepAfter(steps, step.order)
-    if (next) {
-      await db
-        .from('nurture_enrollments')
-        .update({ next_step_order: next.order, next_run_at: runAtFrom(Date.now(), next.delayHours), last_sent_at: new Date().toISOString() })
-        .eq('id', e.id)
-    } else {
-      await complete(e.id)
-      completed++
+    try {
+      await enqueueEmail(
+        {
+          to: e.email,
+          subject: message.subject,
+          html: message.html,
+          text: message.text,
+          headers: listUnsubscribeHeaders(unsubscribeUrl),
+        },
+        { lane: 'bulk' },
+      )
+    } catch (err) {
+      // EMAIL-061: release the cap reservation so the next run can send this step, then retry later.
+      console.error('[nurture] enqueue failed, releasing the cap reservation', err instanceof Error ? err.message : String(err))
+      await db.from('lifecycle_send_log').delete().eq('dedupe_key', `nurture_step:${e.id}:${step.order}`)
+      await deferTransient({ ...e, next_run_at: lockUntil })
+      continue
     }
+    sent++
+    await advance(e, step.order)
   }
 
   return { processed: due.length, sent, completed, cancelled }
