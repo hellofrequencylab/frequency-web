@@ -275,3 +275,14 @@ describe('Trail player finale panel (FH-031S)', () => {
     expect(finales.loadRallyFinale).not.toHaveBeenCalled()
   })
 })
+
+describe('Trail player Mystery stop (FH-042S)', () => {
+  it('shows the answer field only when the open stop asks a question', async () => {
+    expect(await render()).not.toContain('name="answer"')
+    const mystery = { ...trail, graph: { ...trail.graph, missions: trail.graph.missions.map((m) => (m.mission_key === 'stop-1' ? { ...m, kind: 'answer' } : m)) } }
+    store.loadPublishedTrail.mockResolvedValue(mystery)
+    expect(await render()).toContain('name="answer"')
+    store.loadRunCredits.mockResolvedValue([{ mission_key: 'stop-1' }])
+    expect(await render()).not.toContain('name="answer"')
+  })
+})

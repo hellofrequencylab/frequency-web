@@ -109,3 +109,41 @@ describe('claimStopAction', () => {
     expect(mocks.loadScanPlacement).not.toHaveBeenCalled()
   })
 })
+
+describe('claimStopAction for a Mystery stop (FH-042S)', () => {
+  it('passes the trimmed answer to claimAsPlayer, and nothing when it is blank', async () => {
+    await claimStopAction(idle, form({ ...good, answer: '  the old lighthouse  ' }))
+    expect(mocks.claimAsPlayer.mock.calls[0][1]).toMatchObject({ answer: 'the old lighthouse' })
+    await claimStopAction(idle, form({ ...good, answer: '   ' }))
+    expect(mocks.claimAsPlayer.mock.calls[1][1]).not.toHaveProperty('answer')
+  })
+
+  it('asks for the answer when the stop needs one', async () => {
+    mocks.claimAsPlayer.mockResolvedValue({ ok: false, reason: 'answer_required' })
+    const out = await claimStopAction(idle, form(good))
+    expect(out).toEqual({ status: 'error', message: 'This stop asks a question. Type your answer and confirm again.', askAnswer: true })
+  })
+
+  it('words a wrong answer with the tries left and the hint, and never the answer', async () => {
+    mocks.claimAsPlayer.mockResolvedValue({ ok: false, reason: 'answer_wrong', attemptsLeft: 3 })
+    expect((await claimStopAction(idle, form({ ...good, answer: 'guess' }))).message).toBe('Not quite. You have 3 tries left.')
+    mocks.claimAsPlayer.mockResolvedValue({ ok: false, reason: 'answer_wrong', attemptsLeft: 1, hint: 'Look up.' })
+    const out = await claimStopAction(idle, form({ ...good, answer: 'guess' }))
+    expect(out).toMatchObject({ status: 'error', askAnswer: true, message: 'Not quite. You have 1 try left. Hint: Look up.' })
+    expect(mocks.revalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('points a locked answer at the stop that stands in for it', async () => {
+    mocks.claimAsPlayer.mockResolvedValue({ ok: false, reason: 'answer_locked', attemptsLeft: 0, hint: 'Ask at the desk.' })
+    const out = await claimStopAction(idle, form({ ...good, answer: 'guess' }))
+    expect(out.status).toBe('error')
+    expect(out.askAnswer).toBeUndefined()
+    expect(out.message).toBe('That was the last try for this question. The stop that stands in for it still counts, so head there next. Hint: Ask at the desk.')
+    expect(out.message).not.toMatch(/—/)
+  })
+
+  it('tells a player a closed branch is a path they did not take', async () => {
+    mocks.claimAsPlayer.mockResolvedValue({ ok: false, reason: 'mission_not_eligible' })
+    expect((await claimStopAction(idle, form(good))).message).toBe('This stop is not open for you yet, or it is on a path you did not take.')
+  })
+})

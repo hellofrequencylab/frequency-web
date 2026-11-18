@@ -67,6 +67,8 @@ export default async function PlayPage({ params, searchParams }: {
   const team = teamsOpen ? await myTeamPanel(profileId, slug).catch(() => null) : null
   const joinTeamId = typeof joinParam === 'string' && UUID.test(joinParam) ? joinParam : null
   const canConfirm = huntSwitchOn('claims') && view.canClaim && run?.state === 'active' && !team
+  // FH-042S: a Mystery (kind `answer`) asks for an answer with the code. Only the kind is read; the answer never is.
+  const mysteryKeys = new Set(trail.graph.missions.filter((m) => m.kind === 'answer').map((m) => m.mission_key))
   // A failed finale read shows no panel rather than a wrong seat; the Event page stays the authority.
   const finale = run ? await loadRallyFinale(run.runId, profileId, new Date().toISOString()).catch(() => null) : null
 
@@ -121,7 +123,7 @@ export default async function PlayPage({ params, searchParams }: {
             <Link href={{ pathname: '/scan', query: { hint: 'trail' } }} prefetch={false} className={buttonClasses('primary', 'md')}>
               Scan the code at this stop
             </Link>
-            <ClaimStopForm slug={slug} />
+            <ClaimStopForm slug={slug} askAnswer={view.stops.some((st) => st.state === 'eligible' && mysteryKeys.has(st.key))} />
           </div>
         )}
         {teamsOpen && (
