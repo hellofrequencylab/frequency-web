@@ -6,7 +6,8 @@ import { THEME_ASSETS_READY } from './library-assets'
 
 describe('theme library', () => {
   it('has one entry per Mega Theme that is offered, in the same order (the earlier network and temple themes are not)', () => {
-    expect(THEME_LIBRARY.map((t) => t.id)).toEqual(MEGA_THEMES.map((t) => t.id).filter((id) => id !== 'frequency' && id !== 'network' && id !== 'temple' && id !== 'free-human' && id !== 'services' && id !== 'new-world' && id !== 'cyberwitch' && id !== 'mindless'))
+    // Free Human, Services, New World, CyberWitch and Mindless joined 2026-11-18 (owner: "Every theme should have a full, standardized design system").
+    expect(THEME_LIBRARY.map((t) => t.id)).toEqual(MEGA_THEMES.map((t) => t.id).filter((id) => id !== 'frequency' && id !== 'network' && id !== 'temple'))
   })
   it('keeps every tagline to 70 characters and every surface listed once', () => {
     for (const t of THEME_LIBRARY) {
@@ -43,7 +44,7 @@ describe('theme library', () => {
 describe('themeCatalogFacts', () => {
   it('answers readiness from the manifest library entry and both registers from a supported register dial', () => {
     expect(themeCatalogFacts('wildheart')).toEqual({ ready: { spotlight: false, website: true, email: false, space: true }, registers: null })
-    expect(themeCatalogFacts('new-world')).toEqual({ ready: null, registers: 'both' })
+    expect(themeCatalogFacts('new-world')).toEqual({ ready: { spotlight: true, website: true, email: true, space: true }, registers: 'both' })
     expect(themeCatalogFacts('midnight')?.ready).toEqual({ spotlight: true, website: true, email: true, space: true })
   })
   it('agrees with the library for every theme that has an entry, and knows nothing about an id with no manifest', () => {

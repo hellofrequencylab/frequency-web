@@ -116,6 +116,42 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
     madeFor: 'designers, builders, makers and anyone selling craft',
     signature: 'Plaster grounds, charcoal type, arched photos, with Cormorant and Jost.',
     surfaces: surfaces('ready', 'ready'),
+  },  // The five themes below joined the catalog 2026-11-18 (owner: "Every theme should have a full, standardized design system"
+  // and "Make sure Free Human Movement is in the theme library as well as Mindless"). Each has its own feature page.
+  {
+    id: 'free-human',
+    tagline: 'Limewash, honey light and a gilt arch.',
+    madeFor: 'movement, ritual, retreats and the village that gathers around them',
+    signature: 'Limewash and a candle-dark night, a gilt arch and one madder accent, with Cormorant, Marcellus and Hanken Grotesk.',
+    surfaces: surfaces('ready', 'ready'),
+  },
+  {
+    id: 'services',
+    tagline: 'Prices up front, a time to book and reviews on top.',
+    madeFor: 'trades, salons, studios, clinics and anyone who books, sells and shows up for clients',
+    signature: 'Night first and glossy, with a day register, one accent from six, and every service with a price and a length.',
+    surfaces: surfaces('ready', 'ready'),
+  },
+  {
+    id: 'new-world',
+    tagline: 'The theme every Space starts in. Night and Day in one look.',
+    madeFor: 'any place that gathers people: studios, cafés, clubs, coaches, hosts, venues and non-profits',
+    signature: 'Night and Day in one look, Tide teal to start, with Unbounded, Hanken Grotesk and Instrument Serif.',
+    surfaces: surfaces('ready', 'ready'),
+  },
+  {
+    id: 'cyberwitch',
+    tagline: 'Concrete, chain-link and a spell book. One neon over it all.',
+    madeFor: 'readers, ritual workers, bands, labels, studios and anyone who wants a room with some edge',
+    signature: 'Dark only, with blackletter headlines, riveted plates and one neon accent from five.',
+    surfaces: surfaces('ready', 'ready'),
+  },
+  {
+    id: 'mindless',
+    tagline: 'Warm ink, bone and one paint. Unwind your mind.',
+    madeFor: 'meditation circles, guides, programs, studios and anyone who teaches people to slow down',
+    signature: 'Night first with a Day register, a drip headline, paint-sticker buttons and one accent from three.',
+    surfaces: surfaces('ready', 'ready'),
   },
 ]
 

@@ -5,13 +5,44 @@
     "editor": "FreeHuman",
     "site": "free-human"
   },
-  "offered": false,
+  "offered": true,
   "site": {
     "label": "Free Human",
     "description": "Limewash and honey light: a gilt arch, a madder accent and a candle-dark night, for movement, ritual and the village around it.",
     "defaultFonts": "classic"
   },
-  "library": null,
+  "library": {
+    "tagline": "Limewash, honey light and a gilt arch.",
+    "madeFor": "movement, ritual, retreats and the village that gathers around them",
+    "signature": "Limewash and a candle-dark night, a gilt arch and one madder accent, with Cormorant, Marcellus and Hanken Grotesk.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "ready",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "ready",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/free-human"
+  },
   "editor": {
     "tokens": {
       "source": "lib/sites/editor/theme-contract.json",
