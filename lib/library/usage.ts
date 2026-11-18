@@ -4,6 +4,7 @@ import type { Json } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { pathForSlug } from '@/lib/page-editor/data'
 import { swapAssetRefs, type AssetSwapTarget } from '@/lib/library/asset-ref'
+import { preferencesPatch } from '@/lib/spaces/preferences-patch'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE USAGE INDEX (PROG-D4, ADR-1502): "which pages use this asset?"
@@ -382,10 +383,19 @@ export async function swapLibraryAssetRefs(fromId: string, toId: string): Promis
       if (!row) continue
       const out = swapSpacePreferences(row.preferences, from, to)
       if (out.swapped === 0) continue
-      const { error: writeErr } = await admin
-        .from('spaces')
-        .update({ preferences: out.preferences as Json })
-        .eq('id', row.id)
+      // Key-scoped (LIVE-2352): send only the top-level keys the swap rewrote (pageDocs, puck,
+      // profileLayout, profileLayoutDraft) through set_space_preferences (SCAN-833), never the whole
+      // blob, so a key another console saved after this read (a Spotlight publish, a menu save) is
+      // not turned back. The function is service_role only, which is this admin client.
+      const patch = preferencesPatch(
+        row.preferences as Record<string, unknown>,
+        out.preferences as Record<string, unknown>,
+      )
+      if (Object.keys(patch).length === 0) continue
+      const { error: writeErr } = await admin.rpc('set_space_preferences', {
+        p_space_id: row.id,
+        p_patch: patch as Json,
+      })
       if (writeErr) return failed('Space', writeErr.message)
       documents += 1
       refs += out.swapped
