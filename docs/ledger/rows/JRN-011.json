@@ -1,0 +1,20 @@
+{
+  "id": "JRN-011",
+  "title": "Weekly Journey phase notices reach every member, stop for ended Runs and private Journeys, and respect settings",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "lib/journeys/drip-sends.ts",
+    "ref": "Journey audit 2026-11-17 (project thread: Dial in the Journey Wizard and Journeys)"
+  },
+  "detail": "runDueJourneyDripSends read the 200 oldest active enrolments every hour with no cursor, and finished or abandoned enrolments never leave that head, so past 200 active enrolments every newer member never got a phase-unlock notice. It read Runs without their status, so members of a cancelled or completed Run kept getting 'Week N is now open'; it read plans without visibility, so a Journey made private kept sending a link that 404s for everyone but the author (learn-route.ts); and it inserted the in-app notification without the send gate, ignoring a member who turned in-app Practice notices off (the push leg already checks its own). Fixed 2026-11-17: the pass counts active enrolments and reads one page that rotates with the hour (dripScanPage, every enrolment at least once every ceil(total/limit) hours); Runs are read with status and cancelled or completed ones are skipped; private plans are skipped unless the member is the author; the in-app insert goes through resolveSendGate(profile, 'inapp', 'practice') and a refused send stamps the ledger row skipped. Guarded by lib/journeys/drip-scan-page.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-011.mjs",
+    "note": "Fails if the drip pass reads a fixed head again, stops reading Run status, sends for private Journeys, or bypasses the send gate."
+  },
+  "wave": "W7"
+}
