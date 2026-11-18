@@ -1,6 +1,6 @@
 import { HOME_TZ } from '../time/home-zone.ts'
 import type { WebsiteEditorState, WebsiteSnapshot } from '@/lib/sites/editor/state'
-import { freeHumanAudreyPage, freeHumanBooksPage, freeHumanCalendarPage, freeHumanHomeBlocks, freeHumanProgramPage, freeHumanWorkshopsPage } from '@/lib/sites/free-human-home'
+import { freeHumanMovementAudreyPage, freeHumanMovementBooksPage, freeHumanMovementCalendarPage, freeHumanMovementHomeBlocks, freeHumanMovementProgramPage, freeHumanMovementWorkshopsPage } from '@/lib/sites/free-human-movement-home'
 import { FREE_HUMAN_ACCENT } from '@/lib/theme/free-human'
 import { freeHumanPhotoSrc } from './free-human-photos'
 
@@ -45,8 +45,8 @@ function toSections(value: unknown): unknown {
 /** The Home, the Calendar and the menu's own pages (Program, Workshops, Books, Audrey), with a stable id on every block. */
 function freeHumanSitePages() {
   return [
-    { slug: 'home', label: 'Home', seo: { title: 'Free Human Movement', description: FREE_HUMAN_SPACE.about }, blocks: freeHumanHomeBlocks() },
-    ...[freeHumanProgramPage(), freeHumanWorkshopsPage(), freeHumanBooksPage(), freeHumanAudreyPage(), freeHumanCalendarPage()].map((p) => ({ slug: p.slug, label: p.label, seo: p.seo, blocks: p.blocks })),
+    { slug: 'home', label: 'Home', seo: { title: 'Free Human Movement', description: FREE_HUMAN_SPACE.about }, blocks: freeHumanMovementHomeBlocks() },
+    ...[freeHumanMovementProgramPage(), freeHumanMovementWorkshopsPage(), freeHumanMovementBooksPage(), freeHumanMovementAudreyPage(), freeHumanMovementCalendarPage()].map((p) => ({ slug: p.slug, label: p.label, seo: p.seo, blocks: p.blocks })),
   ].map((p) => ({
     slug: p.slug,
     label: p.label,
