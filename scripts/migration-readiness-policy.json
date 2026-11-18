@@ -4041,6 +4041,126 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5276,
+      "expiresAt": "2026-11-25T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346120000_save_space_profile_draft.sql",
+          "sha256": "6c1bd6393d283b594e1858c6ce0ecde99a775bc633eeeb74c51c4dcae87f531b"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/pages/canvas/document-actions-keyed.test.ts",
+          "status": "added",
+          "sha256": "f774f5924cd6ba38ed2a5e8a087a7db1431cbb69720b5317d1d1bd862c162871",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/pages/canvas/document-actions.ts",
+          "status": "modified",
+          "sha256": "a79347bf7228378276fd2f7f4f1ae94189268feac70a24e692939c1d15a5cca7",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/profile/actions.draft-write.test.ts",
+          "status": "added",
+          "sha256": "dd6012ea2172c5d452551303d5792885b9dce681c14a9cd0ed3718602b9e8793",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/profile/actions.ts",
+          "status": "modified",
+          "sha256": "d2543f44e00cba2fd0805ece15adfce88b03a1b3f74c53acc3618b3381a10f6b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/PROG-E5.json",
+          "status": "modified",
+          "sha256": "085c8f4e61ae60373bf780b0833b224bd34087ecbee773a324b57b7bed836f48",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/builder/canvas-document.ts",
+          "status": "modified",
+          "sha256": "f0ec5025b4b079a201d67c2611a1acabef4cddf83c7d6b165f84c82c801a3b41",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/profile-draft-write.test.ts",
+          "status": "added",
+          "sha256": "0534e1bf3447f0685933555ef2aadd3ef3d1468a68f2cff185e95ba531bec198",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/profile-draft-write.ts",
+          "status": "added",
+          "sha256": "c358603d5838c8e1bd3f839b2ce6208b9b7497bc46b567cfc2b6764d7640bcfc",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/store.ts",
+          "status": "modified",
+          "sha256": "0318653b9ae4f8c573266d8c76fb6c6b273b09e8b311eedd710ef6bf22dafbc9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "e50d7391a28b5fb3a1718fcf82ba5e6c89b7d2faa25b6cf3284afc16ec81392f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "195a7d35a5ec8b04231deb86716f869b6283d1fe3810fe9e9d11681659347a3d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "987014c4dee28930fde5b9bb01c74bfaccf4301ba3e567da970549368d0464ac",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346120000_save_space_profile_draft.sql",
+          "status": "added",
+          "sha256": "6c1bd6393d283b594e1858c6ce0ecde99a775bc633eeeb74c51c4dcae87f531b",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/save_space_profile_draft.test.sql",
+          "status": "added",
+          "sha256": "cbbd39b6d0c0bf935e1082010a8dd426215b64fc66264b3835a66ee833a5a164",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
