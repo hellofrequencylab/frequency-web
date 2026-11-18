@@ -19,7 +19,7 @@
 //
 // IDEMPOTENT + re-runnable, keyed by the target space_id: a re-run OVERWRITES the seeded
 // surfaces rather than duplicating them (availability / faqs are delete-then-insert; events
-// are matched by (space_id, slug); preferences are read-modify-write). For P0, overwrite
+// are matched by (space_id, slug); preferences send only the keys they change, LIVE-2351). For P0, overwrite
 // semantics are acceptable.
 //
 // EDIT-WINS ON RE-APPLY (P5, docs §5 — shipped): a re-apply preserves operator edits to the live Space.
@@ -33,7 +33,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { mergeProfileMeta, mergeProfileMetaPath } from '@/lib/profiles/meta'
-import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
+import { getSpaceById, loadRootSpaceId, patchSpacePreferences } from '@/lib/spaces/store'
+import { preferencesPatch } from '@/lib/spaces/preferences-patch'
 import { insertSpaceLibraryImage, fileAssetsIntoSpacesCollection } from '@/lib/library/store'
 import { sweepIntakeStaging } from './harvest/staging-lifecycle'
 import { withImageOrder } from './media-order'
@@ -404,12 +405,12 @@ async function updateSpaceIdentity(
   }
 }
 
-// ── Step 2: profileData + layout (read-modify-write of spaces.preferences) ──────────────
+// ── Step 2: profileData + layout (key-scoped patch of spaces.preferences) ──────────────
 
 /**
  * Write the central profileData + the profileLayout jsonb + accent + the SITE Home doc onto
- * spaces.preferences, as a read-modify-write that PRESERVES every other preferences key (mode,
- * moduleMenu, isDemo, …). The layout is sanitized to space blocks (`sanitizeEntityLayout(layout,
+ * spaces.preferences, as a key-scoped patch (LIVE-2351) that PRESERVES every other preferences key (mode,
+ * moduleMenu, isDemo, …), even one saved after the read. The layout is sanitized to space blocks (`sanitizeEntityLayout(layout,
  * 'space')`) so a bad block id or content bag never persists. Bound to the space id. Returns whether
  * profileData was written.
  *
@@ -473,16 +474,18 @@ async function writeProfileDataAndLayout(
   }
 
   // EDIT-WINS baseline (P5): stamp the marker recording the identity values this apply left live, so the
-  // NEXT re-apply can diff against them and preserve any operator edit. Read-modify-write preserves every
-  // other preferences key.
+  // NEXT re-apply can diff against them and preserve any operator edit.
   next = writeSeedEditWins(next, seedMarker)
 
-  try {
-    await adminFrom('spaces').update({ preferences: next }).eq('id', spaceId)
-    return { profileData: Object.keys(plan.profileData).length > 0, siteDoc }
-  } catch {
-    return { profileData: false, siteDoc: false }
-  }
+  // KEY-SCOPED WRITE (LIVE-2351). Send ONLY the top-level keys this apply changed (profileData,
+  // profileLayout, theme, pageDocs, the edit-wins marker), diffed against the snapshot read above, through
+  // patchSpacePreferences (set_space_preferences, service_role, which is the admin client this background
+  // path already runs as). A key another console saved between the read and this write (a Spotlight
+  // publish, a menu save, a website editor stub) is left exactly as stored instead of being turned back.
+  const patch = preferencesPatch(currentPrefs, next)
+  const written = Object.keys(patch).length === 0 || (await patchSpacePreferences(spaceId, patch))
+  if (!written) return { profileData: false, siteDoc: false }
+  return { profileData: Object.keys(plan.profileData).length > 0, siteDoc }
 }
 
 /** Whether the Space already carries an operator-authored Home Puck doc at preferences.pageDocs.home
