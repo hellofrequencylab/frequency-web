@@ -28,7 +28,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { decide, type HuntAction, type PartnerRow, type RoleGrant } from '@/lib/hunts/authz'
 import { huntSwitchOn } from '@/lib/hunts/flags'
-import { publishVenueBlocks } from '@/lib/hunts/partners'
+import { partnerLive, publishVenueBlocks } from '@/lib/hunts/partners'
 import { challengeViews, parseChallenges, type Challenge, type ChallengeView } from '@/lib/hunts/challenges'
 import { slugify } from '@/lib/utils'
 import { generateSlug } from '@/lib/qr/codes'
@@ -42,6 +42,7 @@ import {
   publishRows,
   stopEvidencePolicy,
   stopKey,
+  stopVenue,
   type ChecklistItem,
   type DraftStore,
   type TrailDraft,
@@ -95,6 +96,8 @@ export type TrailEditorState = {
   draft: TrailDraft
   /** FH-042S: the Trail's challenges as the editor may see them: whether an answer is set, never its hash. */
   challenges: ChallengeView[]
+  /** FH-020Y: the Spaces with a live partner row on this Hunt, the only venues a stop may name. */
+  partnerVenues: { spaceId: string; name: string }[]
 }
 
 export type Actor = { profileId: string }
@@ -227,7 +230,22 @@ export async function loadTrail(huntId: string, actor: Actor): Promise<TrailEdit
     hasVenue: hunt.owner_space_id !== null,
     draft: trailOf(version),
     challenges: challengeViews(challengesOf(version)),
+    partnerVenues: await livePartnerVenues(client, hunt.id),
   }
+}
+
+/** FH-020Y: the live partner Spaces of a Hunt, by name. A failed read offers none rather than a wrong one. */
+async function livePartnerVenues(client: SupabaseClient, huntId: string): Promise<{ spaceId: string; name: string }[]> {
+  const rows = await client.from('hunt_partners').select('space_id, status, effective_at, revoked_at').eq('hunt_id', huntId)
+  if (rows.error) return []
+  const now = new Date().toISOString()
+  const live = ((rows.data ?? []) as { space_id: string; status: PartnerRow['status']; effective_at: string | null; revoked_at: string | null }[])
+    .filter((p) => partnerLive({ status: p.status, effectiveAt: p.effective_at, revokedAt: p.revoked_at }, now))
+    .map((p) => p.space_id)
+  if (live.length === 0) return []
+  const names = await client.from('spaces').select('id, name').in('id', live)
+  if (names.error) return []
+  return ((names.data ?? []) as { id: string; name: string }[]).map((n) => ({ spaceId: n.id, name: n.name })).sort((a, b) => a.name.localeCompare(b.name))
 }
 
 type TrailSummary = { huntId: string; title: string; status: string; visibility: HuntRow['visibility']; stops: number; updatedAt: string | null }
@@ -423,12 +441,20 @@ async function bindStopPlacements(client: SupabaseClient, hunt: HuntRow, version
     hunt_id: hunt.id,
     mission_key: stopKey(i),
     placement_id,
-    venue_space_id: hunt.owner_space_id,
+    // FH-020Y: a partner venue named for the stop, else the Space that runs the Trail (or none).
+    venue_space_id: stopVenue(draft, i) ?? hunt.owner_space_id,
     evidence_policy: stopEvidencePolicy(draft.stops[i]),
   }))
   // A binding that already exists keeps its row: publishTrail's evidencePolicyUpdates pass then sets its policy.
   const { error } = await client.from('hunt_mission_placements').upsert(rows, { onConflict: 'version_id,mission_key,placement_id', ignoreDuplicates: true })
   if (error) throw new Error(error.message)
+  // ...and a stop whose partner venue changed since that row was written takes the new venue.
+  for (const row of rows) {
+    if (!stopVenue(draft, ids.indexOf(row.placement_id))) continue
+    const { error: venueError } = await client.from('hunt_mission_placements').update({ venue_space_id: row.venue_space_id })
+      .eq('version_id', versionId).eq('hunt_id', hunt.id).eq('mission_key', row.mission_key).eq('placement_id', row.placement_id)
+    if (venueError) throw new Error(venueError.message)
+  }
   return ids
 }
 
@@ -471,10 +497,11 @@ export type PublishResult =
  * partner rows now, so a venue that withdrew a minute ago blocks. A read that fails throws: a publish
  * that cannot check its partners does not go out.
  */
-async function venuesBlockingPublish(client: SupabaseClient, hunt: HuntRow, versionId: string): Promise<string[]> {
+async function venuesBlockingPublish(client: SupabaseClient, hunt: HuntRow, versionId: string, named: readonly string[] = []): Promise<string[]> {
   const bound = await client.from('hunt_mission_placements').select('venue_space_id').eq('hunt_id', hunt.id).eq('version_id', versionId)
   if (bound.error) throw new Error(bound.error.message)
-  const venueSpaceIds = ((bound.data ?? []) as { venue_space_id: string | null }[]).map((r) => r.venue_space_id)
+  // FH-020Y: the partner venues the draft names count too, before a binding carries them.
+  const venueSpaceIds = [...((bound.data ?? []) as { venue_space_id: string | null }[]).map((r) => r.venue_space_id), ...named]
   if (!venueSpaceIds.some(Boolean)) return []
   const rows = await client.from('hunt_partners').select('hunt_id, space_id, status, effective_at, revoked_at, permitted_roles').eq('hunt_id', hunt.id)
   if (rows.error) throw new Error(rows.error.message)
@@ -514,7 +541,7 @@ export async function publishTrail(
   const checklist = publishChecklist(draft, hunt.revision, { venue: hunt.owner_space_id !== null, challenges })
   if (hunt.revision !== baseRevision) return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
   if (!checklist.ok) return { ok: false, reason: 'checklist', items: checklist.items }
-  const blockedVenues = await venuesBlockingPublish(client, hunt, version.id)
+  const blockedVenues = await venuesBlockingPublish(client, hunt, version.id, (draft.venues ?? []).map((v) => v.venueSpaceId))
   if (blockedVenues.length > 0) return { ok: false, reason: 'partners', spaceIds: blockedVenues }
 
   const bumped = await bumpRevision(client, huntId, baseRevision)
