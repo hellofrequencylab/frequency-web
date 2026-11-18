@@ -49,7 +49,7 @@ export async function listJourneyGuides(planId: string): Promise<JourneyGuide[]>
 }
 
 /** Is this person a guide of this Journey? */
-export async function isJourneyGuide(planId: string, profileId: string | null): Promise<boolean> {
+async function isJourneyGuide(planId: string, profileId: string | null): Promise<boolean> {
   if (!profileId) return false
   const { data } = await db().from('journey_plan_guides').select('id').eq('plan_id', planId).eq('profile_id', profileId).maybeSingle()
   return !!data
