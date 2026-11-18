@@ -15,7 +15,7 @@ import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { readHeroConfig, resolveHero } from '@/lib/spaces/hero-config'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
-import { readCoverSize, readCoverFocus, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { readCoverSize, readCoverFocus, readLogoBackdrop, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readTagline } from '@/lib/spaces/tagline'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
@@ -211,6 +211,8 @@ export default async function SpaceProfileChromeLayout({
   // Whether the brand logo chip keeps its plate. Default 'plate' = today's look; an operator picks 'none'
   // for a mark drawn with a transparent background (Identity & Branding -> Logo backdrop).
   const logoBackdrop = readLogoBackdrop(space.preferences)
+  // The Header style overlay (None / Shade / Blend), saved by Identity & Branding (LIVE-2353).
+  const coverScrim = readCoverScrim(space.preferences)
 
   // ── THE COVER + IDENTITY ─────────────────────────────────────────────────────────────────────────
   // A real uploaded cover always wins; a Space with NONE falls back to a calm SITE stock photo. The
@@ -296,6 +298,9 @@ export default async function SpaceProfileChromeLayout({
         coverImage={coverSrc}
         coverFocus={coverFocus}
         tall={isHero}
+        scrim={coverScrim}
+        height={hero.height}
+        buttons={hero.buttonOrientation}
         logo={showLogoChip ? <BrandAnchor name={brandName} logoUrl={logoChipUrl} backdrop={logoBackdrop} /> : null}
         eyebrow={heroEyebrow}
         name={heroHeading}

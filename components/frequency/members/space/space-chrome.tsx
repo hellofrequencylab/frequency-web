@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import type { CoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import type { HeroButtonOrientation, HeroHeight } from '@/lib/spaces/hero-config'
 import '@/app/themes/active/kit-members'
 import '@/app/themes/active/space-page'
 
@@ -31,6 +33,9 @@ export function FqSpaceChrome({
   coverImage,
   coverFocus,
   tall,
+  scrim = 'shade',
+  height = 'standard',
+  buttons = 'row',
   logo,
   eyebrow,
   name,
@@ -52,6 +57,12 @@ export function FqSpaceChrome({
   coverFocus?: string
   /** The Hero cover size: a taller card. */
   tall?: boolean
+  /** The owner's Header style (LIVE-2353): the overlay between the photo and the identity (None / Shade /
+   *  Blend), the cover height, and whether the buttons sit in a row or stack. Read by the caller off
+   *  preferences; the CSS in space-page.css keys off the data attributes below. */
+  scrim?: CoverScrim
+  height?: HeroHeight
+  buttons?: HeroButtonOrientation
   /** The Space's logo chip, when the owner shows one. */
   logo?: ReactNode
   /** The owner's optional kicker above the name. */
@@ -114,6 +125,9 @@ export function FqSpaceChrome({
         // HERO SIZE: the identity sits on the photo, over the scrim.
         <section
           className="ph fqs-hero tall"
+          data-scrim={scrim}
+          data-height={height}
+          data-buttons={buttons}
           style={{ backgroundImage: `url('${coverImage}')`, backgroundPosition: coverFocus }}
         >
           {coverBadge && <div className="fqs-cover-badge">{coverBadge}</div>}
@@ -127,7 +141,7 @@ export function FqSpaceChrome({
         // HEADER SIZE (the default, DAWN's grammar): a clean cover band, the logo hanging off its bottom
         // edge, then one identity row on the page ground with the buttons at its right.
         <>
-          <div className="fqs-cover">
+          <div className="fqs-cover" data-scrim={scrim}>
             <div
               className="fqs-cover-img"
               role="img"
