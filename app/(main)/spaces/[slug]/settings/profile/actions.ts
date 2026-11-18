@@ -32,6 +32,7 @@ import { layoutRendersSame } from '@/lib/entity-blocks/layout-equal'
 import { takeAboutBody, takeStoryBody } from '@/lib/spaces/promote-about'
 import { withProfileData } from '@/lib/spaces/profile-data'
 import { refreshSite } from '@/lib/sites/site-cache'
+import { syncInstancesForSurface } from '@/lib/apps/instances'
 import { sanitizeBlockContent } from '@/lib/entity-blocks/block-content'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { getIntakeBySpaceId } from '@/lib/importer/store'
@@ -256,6 +257,10 @@ export async function publishSpaceProfileLayout(slug: string): Promise<{ error?:
   if (!(await updateSpacePreferences(space.id, current, newAbout))) {
     return { error: 'Could not publish your page. Try again.' }
   }
+
+  // PROG-E0 tasks 16+17: record each placed block in app_instances (keyed by node id). Best effort and dark
+  // behind EDITOR_CANVAS: it never throws, and a failed sync never fails the publish.
+  await syncInstancesForSurface(space.id, { type: 'space-profile', ref: space.id }, current.profileLayout, caller?.id ?? null)
 
   revalidatePath(`/spaces/${space.slug}`)
   revalidatePath(`/spaces/${space.slug}/profile-preview`)
