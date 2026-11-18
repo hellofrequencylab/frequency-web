@@ -51,7 +51,7 @@
 .vx-root [data-time="night"][data-night="thermal"][data-energy="charge"],.vx-root[data-time="night"][data-night="thermal"][data-energy="charge"]{--aura-1:var(--th-ember);--aura-2:var(--th-amber);--aura-3:var(--th-teal);--aura-speed:4s;--aura-opacity:.8;}
 
 /* tokens/themes.css */
-.vx-root{--x-violet-neon:#8B5CFF;--x-violet-deep:#5B3FD0;
+.vx-root{--x-violet-neon:#8B5CFF;--x-ink-deep:#1E1B18;
 --x-magenta-neon:#FF2BD6;--x-magenta-deep:#B0287F;
 --x-aqua-neon:#3DF2FF;--x-aqua-deep:#17788A;
 --x-sun-neon:#FFC46B;--x-sun-deep:#9A6200;}
@@ -63,10 +63,10 @@
 --wash:radial-gradient(60% 50% at 6% 0%,rgba(214,190,250,.24),transparent 70%),radial-gradient(50% 50% at 98% 14%,rgba(143,233,255,.28),transparent 70%),radial-gradient(55% 50% at 70% 100%,rgba(184,162,255,.18),transparent 70%);
 --amb-1:rgba(214,190,250,.18);--amb-2:rgba(196,184,255,.16);--amb-3:rgba(238,193,236,.14);--amb-4:rgba(143,233,255,.16);
 --tip-bg:rgba(52,49,46,.92);--border-strong:rgba(30,27,24,.2);
---action-primary:var(--x-violet-deep);--action-primary-text:#FFFFFF;--action-primary-hover:#4A31B8;--action-glow:0 6px 18px -8px rgba(91,63,208,.55);
---accent:var(--x-violet-deep);--accent-soft:#ECE6FF;--accent-2:var(--x-aqua-deep);
+--action-primary:var(--x-ink-deep);--action-primary-text:#FFFFFF;--action-primary-hover:#000000;--action-glow:0 6px 18px -8px rgba(30,27,24,.4);
+--accent:var(--x-ink-deep);--accent-soft:#ECE6FF;--accent-2:var(--x-aqua-deep);
 --live:var(--x-magenta-deep);--live-soft:#FBE3F1;--presence:var(--x-aqua-deep);--presence-soft:#DDF3F5;--reward:var(--x-sun-deep);--reward-soft:#FFF0D6;
---focus-ring:var(--x-violet-deep);--text-link:var(--x-violet-deep);--text-link-hover:#1E1B18;
+--focus-ring:var(--x-ink-deep);--text-link:var(--x-ink-deep);--text-link-hover:#5B544C;
 --logo-filter:none;}
 .vx-root [data-theme="commons"][data-time="night"],.vx-root[data-theme="commons"][data-time="night"]{--bg-canvas:#0E0B09;--bg-sunken:#090706;--surface-card:#18120E;--surface-raised:#221A14;--surface-glass:rgba(34,26,20,.7);
 --text-strong:#FBF2E6;--text-body:#E3D6C6;--text-muted:#B3A391;--text-faint:#857767;--text-on-accent:#120C08;
