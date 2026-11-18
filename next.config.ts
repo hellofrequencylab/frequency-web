@@ -544,7 +544,7 @@ const nextConfig: NextConfig = {
       { source: '/for/wellness-and-retreats', destination: '/for/studios', permanent: true },
       { source: '/for/markets-and-festivals', destination: '/for/event-hosts', permanent: true },
       { source: '/for/schools-and-programs', destination: '/for/clubs-and-groups', permanent: true },
-      // LIVE-2380: FlowWeb's reply drafts link to six short niche doors (/for/teacher and five more) that the
+      // LIVE-2381: FlowWeb's reply drafts link to six short niche doors (/for/teacher and five more) that the
       // registry never served, so each was a 404. Each lands on the closest live door, query tags kept.
       // Temporary, so the short slugs stay free for real doors later.
       { source: '/for/teacher', destination: '/for/coaches-and-healers', permanent: false },
