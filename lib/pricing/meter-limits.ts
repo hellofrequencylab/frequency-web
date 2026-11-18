@@ -45,7 +45,7 @@ export const SIBLING_PLAN_TIERS: readonly string[] = ['nonprofit', 'independent'
 export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>> = {
   space_crm: { free: 250, business: 5_000, collective: 25_000 },
   space_email: { free: 1_000, business: 25_000, collective: 100_000 },
-  space_bookings: { free: 20, business: null, collective: null },
+  space_bookings: { free: 15, business: null, collective: null },
   space_journey: { free: 25, business: null, collective: null },
   space_journey_publish: { free: 1, business: 10, collective: null },
   space_tickets: { free: 50, business: null, collective: null },
