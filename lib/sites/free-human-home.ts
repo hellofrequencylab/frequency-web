@@ -36,8 +36,8 @@ export const FREE_HUMAN_HERO = {
   lead: 'A year-round embodiment practice for women who are creating life, birthing it, and raising it. Old wisdom, practiced in a modern body.',
   primaryLabel: 'Join the circle', primaryHref: '~/program', primaryStyle: 'madder',
   secondaryLabel: 'See the year', secondaryHref: '~/program',
-  image: ph('heritage-a-virgin'), alt: 'Painting of a woman in golden robes walking forward with two children', pos: 'center 20%',
-  eggImage: ph('light-honey-dipper'), sunImage: ph('light-sun'), pebbleImage: ph('place-daisies'),
+  image: ph('fq-boc-circle-sunset'), alt: 'A circle of people standing together at sunset', pos: 'center 20%',
+  eggImage: ph('light-honey-dipper'), sunImage: ph('light-sun'), pebbleImage: ph('fq-day-park-yoga'),
   rays: true,
 }
 
@@ -48,9 +48,9 @@ export const FREE_HUMAN_SEASONS = {
   lead: 'Join in any month. Each season brings a new module of movement, teaching and ritual, held together by a live circle.',
   seasons: [
     { season: 'winter', name: 'Rest', glyph: 'moon', texture: 'water', body: 'Yoga nidra, slow mornings and the art of doing less.', image: ph('light-floating-candles'), alt: 'Candles floating on dark water', pos: 'center', href: '~/program' },
-    { season: 'spring', name: 'Embody', glyph: 'seedling', texture: 'plant', body: 'Floor work that brings you back into pelvis, breath and spine.', image: ph('place-daisies'), alt: 'Daisies in a green meadow', pos: 'center', href: '~/program' },
-    { season: 'summer', name: 'Create', glyph: 'sun', texture: 'fire', body: 'Conception, pregnancy and birth, held as sacred work.', image: ph('place-fruit-branch'), alt: 'Ripening fruit on a branch', pos: 'center', href: '~/program' },
-    { season: 'fall', name: 'Raise', glyph: 'olive', texture: 'earth', body: 'Rhythm, play and the village you were promised.', image: ph('heritage-madonna-nursing'), alt: 'Painting of a mother holding her newborn by candlelight', pos: 'center', href: '~/program' },
+    { season: 'spring', name: 'Embody', glyph: 'seedling', texture: 'plant', body: 'Floor work that brings you back into pelvis, breath and spine.', image: ph('fq-day-park-yoga'), alt: 'Yoga mats spread out on a park lawn', pos: 'center', href: '~/program' },
+    { season: 'summer', name: 'Create', glyph: 'sun', texture: 'fire', body: 'Conception, pregnancy and birth, held as sacred work.', image: ph('fq-boc-garden-rugs'), alt: 'Rugs laid out for a circle in a garden', pos: 'center', href: '~/program' },
+    { season: 'fall', name: 'Raise', glyph: 'olive', texture: 'earth', body: 'Rhythm, play and the village you were promised.', image: ph('fq-boc-group-hug'), alt: 'Friends wrapped in a group hug', pos: 'center', href: '~/program' },
   ],
   buttonLabel: 'Join the year', buttonHref: '~/program',
   badges: ['Join in any month', 'A live circle each season'],
@@ -74,8 +74,8 @@ export const FREE_HUMAN_WORKSHOPS = {
   tag: 'workshop', count: 3,
   rows: [
     { when: 'Date to come', mode: 'Online', title: 'Breath *for birth*', body: 'Three hours of breath and sound for the last trimester. Partners welcome.', image: ph('light-honey-spoon'), pos: 'center 60%', shape: 'egg', href: '~/workshops' },
-    { when: 'Date to come', mode: 'In person', title: 'Mother anger, *held*', body: 'What rage is asking for, and how to move it through the body with care.', image: ph('heritage-magdalene'), pos: 'center 25%', shape: 'arch', href: '~/workshops' },
-    { when: 'Date to come', mode: 'Family', title: 'Floor play *with littles*', body: 'Bring your children. We move, build and rest together on the floor.', image: ph('craft-yarn-bodies'), pos: 'center', shape: 'circle', href: '~/workshops' },
+    { when: 'Date to come', mode: 'In person', title: 'Mother anger, *held*', body: 'What rage is asking for, and how to move it through the body with care.', image: ph('fq-boc-lawn-rest'), pos: 'center 25%', shape: 'arch', href: '~/workshops' },
+    { when: 'Date to come', mode: 'Family', title: 'Floor play *with littles*', body: 'Bring your children. We move, build and rest together on the floor.', image: ph('fq-boc-craft-table'), pos: 'center', shape: 'circle', href: '~/workshops' },
   ],
   buttonLabel: 'Reserve',
 }
@@ -101,8 +101,8 @@ export const FREE_HUMAN_BOOKS = {
   eyebrow: 'Books by Audrey Uma Wilder',
   title: 'Words for the *wild work.*',
   books: [
-    { title: 'Beyond *The Wild*', subtitle: 'A guide to rearing children.', body: 'On raising children with rhythm, freedom and old wisdom, and on the mother who grows alongside them.', status: 'New', cover: 'jade', image: ph('craft-beaded-deer'), pos: 'center 60%', rays: false, primaryLabel: 'Order now', primaryHref: '~/shop', secondaryLabel: 'Read an excerpt', secondaryHref: '~/books' },
-    { title: 'Defying *Men*', subtitle: 'How to move through the modern world.', body: 'For women who are done shrinking. A field guide to living in a body that is fully your own.', status: 'Pre-order', cover: 'oxblood', image: ph('heritage-maiden-sword'), pos: 'center 15%', rays: true, primaryStyle: 'gilt', primaryLabel: 'Pre-order', primaryHref: '~/shop', secondaryLabel: 'Read an excerpt', secondaryHref: '~/books' },
+    { title: 'Beyond *The Wild*', subtitle: 'A guide to rearing children.', body: 'On raising children with rhythm, freedom and old wisdom, and on the mother who grows alongside them.', status: 'New', cover: 'jade', image: ph('fq-boc-backyard-craft'), pos: 'center 60%', rays: false, primaryLabel: 'Order now', primaryHref: '~/shop', secondaryLabel: 'Read an excerpt', secondaryHref: '~/books' },
+    { title: 'Defying *Men*', subtitle: 'How to move through the modern world.', body: 'For women who are done shrinking. A field guide to living in a body that is fully your own.', status: 'Pre-order', cover: 'oxblood', image: ph('fq-boc-circle-arms-up'), pos: 'center 15%', rays: true, primaryStyle: 'gilt', primaryLabel: 'Pre-order', primaryHref: '~/shop', secondaryLabel: 'Read an excerpt', secondaryHref: '~/books' },
   ],
 }
 
@@ -111,8 +111,8 @@ export const FREE_HUMAN_SPEAKING = {
   eyebrow: 'Your guide · Speaking',
   title: 'Audrey Uma *Wilder*',
   body: 'Audrey created Free Human Movement for women in their season of creation: conceiving, carrying, birthing and raising. She speaks on embodiment, motherhood and feminine power at conferences, retreats, schools and on podcasts.',
-  image: ph('founder-audrey'), alt: 'Audrey Uma Wilder laughing in a garden, holding purple flowers', pos: 'center 22%',
-  accentImage: ph('myth-guanyin'), accentPos: 'center 30%',
+  image: ph('fq-day-meditation-circle'), alt: 'A meditation circle seated in the morning light', pos: 'center 22%',
+  accentImage: ph('fq-boc-fire-meditation'), accentPos: 'center 30%',
   topics: [{ glyph: 'bloom', label: 'Embodied motherhood' }, { glyph: 'seedling', label: 'Rearing children wild' }, { glyph: 'sparkle', label: 'Women and power' }, { glyph: 'moon', label: 'Ritual in daily life' }],
   formTitle: 'Bring Audrey *to your gathering.*',
   kinds: ['Conference or summit', 'Retreat', 'School or parent group', 'Podcast or interview', 'Something else'],
@@ -127,11 +127,11 @@ export const FREE_HUMAN_LINEAGE = {
   title: 'The women *before us.*',
   aside: 'Maiden, mother, Magdalene, goddess. We practice in good company.',
   photos: [
-    { image: ph('heritage-mosaic-magdalena'), alt: 'Mosaic of Mary Magdalene', pos: 'center 30%' },
-    { image: ph('heritage-carved-madonna'), alt: 'Carved wooden Madonna', pos: 'center 20%' },
-    { image: ph('myth-bronze-tara'), alt: 'Bronze statue of Tara', pos: 'center 30%' },
-    { image: ph('myth-antler-moon'), alt: 'Antlered woman before a full moon', pos: 'center 40%' },
-    { image: ph('myth-golden-egg'), alt: 'Woman in a red veil holding a glowing golden egg', pos: 'center 45%' },
+    { image: ph('fq-boc-writing-cushions'), alt: 'Notebooks and cushions laid out for a writing circle', pos: 'center 30%' },
+    { image: ph('fq-boc-circle-dusk'), alt: 'A circle gathered at dusk', pos: 'center 20%' },
+    { image: ph('fq-boc-small-circle'), alt: 'A small circle seated outdoors', pos: 'center 30%' },
+    { image: ph('fq-night-string-lights-web'), alt: 'String lights over an evening gathering', pos: 'center 40%' },
+    { image: ph('fq-boc-fire-night'), alt: 'People gathered around a fire at night', pos: 'center 45%' },
   ],
 }
 
@@ -212,7 +212,7 @@ export function freeHumanProgramPage() {
     slug: 'program', label: 'Program',
     seo: { title: 'The year-round program', description: FREE_HUMAN_SEASONS.lead },
     blocks: [
-      { type: 'FreeHumanHero', props: pageHero({ badge: 'Join in any month', title: 'The year-round *program.*', lead: 'Four seasons, one live circle. Come in any month and begin where the year is.', primaryLabel: 'See the dates', primaryHref: '~/calendar', secondaryLabel: 'Meet Audrey', secondaryHref: '~/audrey', image: ph('craft-folk-circle'), alt: 'A painted circle of birds, deer and spirals on green and blue', pos: 'center 50%' }) },
+      { type: 'FreeHumanHero', props: pageHero({ badge: 'Join in any month', title: 'The year-round *program.*', lead: 'Four seasons, one live circle. Come in any month and begin where the year is.', primaryLabel: 'See the dates', primaryHref: '~/calendar', secondaryLabel: 'Meet Audrey', secondaryHref: '~/audrey', image: ph('fq-gathering-04'), alt: 'A group gathered in a circle outdoors', pos: 'center 50%' }) },
       { type: 'FreeHumanSeasons', props: { ...FREE_HUMAN_SEASONS, buttonLabel: 'See the dates', buttonHref: '~/calendar', seasons: FREE_HUMAN_SEASONS.seasons.map((x) => ({ ...x, href: '~/calendar' })) } },
       { type: 'FreeHumanLyric', props: { ...FREE_HUMAN_LYRIC } },
       { type: 'FreeHumanEvents', props: { ...FREE_HUMAN_EVENTS } },
@@ -225,7 +225,7 @@ export function freeHumanWorkshopsPage() {
     slug: 'workshops', label: 'Workshops',
     seo: { title: 'Workshops', description: FREE_HUMAN_WORKSHOPS.aside },
     blocks: [
-      { type: 'FreeHumanHero', props: pageHero({ badge: 'Open to everyone', title: 'Small groups, *long pauses.*', lead: 'Go deeper in a single afternoon. Members or not, come and take a seat.', primaryLabel: 'See the dates', primaryHref: '~/calendar', secondaryLabel: 'The year-round program', secondaryHref: '~/program', image: ph('craft-mosaic-sun'), alt: 'A quilted sun ringed with birds and flowers', pos: 'center 50%' }) },
+      { type: 'FreeHumanHero', props: pageHero({ badge: 'Open to everyone', title: 'Small groups, *long pauses.*', lead: 'Go deeper in a single afternoon. Members or not, come and take a seat.', primaryLabel: 'See the dates', primaryHref: '~/calendar', secondaryLabel: 'The year-round program', secondaryHref: '~/program', image: ph('fq-day-beach-hoop'), alt: 'A hoop dancer on the beach', pos: 'center 50%' }) },
       { type: 'FreeHumanWorkshops', props: { ...FREE_HUMAN_WORKSHOPS, rows: FREE_HUMAN_WORKSHOPS.rows.map((r) => ({ ...r, href: '~/calendar' })) } },
       { type: 'FreeHumanLyric', props: { ...FREE_HUMAN_LYRIC } },
       { type: 'FreeHumanEvents', props: { ...FREE_HUMAN_EVENTS } },
@@ -238,7 +238,7 @@ export function freeHumanBooksPage() {
     slug: 'books', label: 'Books',
     seo: { title: 'Books by Audrey Uma Wilder', description: 'Beyond The Wild, a guide to rearing children, and Defying Men, on how to move through the modern world.' },
     blocks: [
-      { type: 'FreeHumanHero', props: pageHero({ badge: 'New and on the way', title: 'Books by *Audrey Uma Wilder.*', lead: 'On raising children with rhythm, freedom and old wisdom, and on living in a body that is fully your own.', primaryLabel: 'Meet Audrey', primaryHref: '~/audrey', secondaryLabel: 'The calendar', secondaryHref: '~/calendar', image: ph('craft-cave-nest'), alt: 'A reading nook with bookshelves in a soft stone cave', pos: 'center 40%' }) },
+      { type: 'FreeHumanHero', props: pageHero({ badge: 'New and on the way', title: 'Books by *Audrey Uma Wilder.*', lead: 'On raising children with rhythm, freedom and old wisdom, and on living in a body that is fully your own.', primaryLabel: 'Meet Audrey', primaryHref: '~/audrey', secondaryLabel: 'The calendar', secondaryHref: '~/calendar', image: ph('fq-gathering-11'), alt: 'A small group sharing a quiet afternoon', pos: 'center 40%' }) },
       { type: 'FreeHumanBooks', props: { ...FREE_HUMAN_BOOKS, books: FREE_HUMAN_BOOKS.books.map((b) => ({ ...b, secondaryHref: '~/audrey' })) } },
       { type: 'FreeHumanLyric', props: { ...FREE_HUMAN_LYRIC } },
     ] as FreeHumanBlockSeed[],

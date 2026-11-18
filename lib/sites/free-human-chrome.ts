@@ -62,7 +62,7 @@ export const FREE_HUMAN_PANELS: readonly Panel[] = [
       { glyph: 'moon', label: 'Live circle', desc: 'Every week, live', match: /\b(circle|live)\b/i },
     ],
     tiles: [
-      { photo: 'heritage-madonna-nursing', kicker: 'Now', title: 'Raise', match: /\b(season|module|raise)\b/i, anchor: 'program' },
+      { photo: 'fq-boc-group-hug', kicker: 'Now', title: 'Raise', match: /\b(season|module|raise)\b/i, anchor: 'program' },
       { photo: 'light-floating-candles', kicker: 'Next', title: 'Winter rest begins', match: /\b(winter|rest)\b/i, anchor: 'program' },
     ],
   },
@@ -90,8 +90,8 @@ export const FREE_HUMAN_PANELS: readonly Panel[] = [
       { glyph: 'breath', label: 'Recordings', desc: 'Practices to take with you', match: /\b(recordings?|audio)\b/i },
     ],
     tiles: [
-      { photo: 'craft-beaded-deer', kicker: 'New', title: 'Beyond The Wild', match: /\b(books?|beyond)\b/i, anchor: 'books' },
-      { photo: 'heritage-maiden-sword', kicker: 'Pre-order', title: 'Defying Men', match: /\b(books?|defying)\b/i, anchor: 'books' },
+      { photo: 'fq-boc-backyard-craft', kicker: 'New', title: 'Beyond The Wild', match: /\b(books?|beyond)\b/i, anchor: 'books' },
+      { photo: 'fq-boc-circle-arms-up', kicker: 'Pre-order', title: 'Defying Men', match: /\b(books?|defying)\b/i, anchor: 'books' },
     ],
   },
   {
@@ -104,8 +104,8 @@ export const FREE_HUMAN_PANELS: readonly Panel[] = [
       { glyph: 'chat', label: 'Contact', desc: 'We reply within a week', match: /\bcontact\b/i },
     ],
     tiles: [
-      { photo: 'founder-audrey', kicker: 'Speaking', title: 'Bring Audrey to you', match: /\b(speaking|bookings?)\b/i, anchor: 'speaking' },
-      { photo: 'myth-guanyin', kicker: 'Lineage', title: 'The women before us', match: /\blineage\b/i, anchor: 'lineage' },
+      { photo: 'fq-day-meditation-circle', kicker: 'Speaking', title: 'Bring Audrey to you', match: /\b(speaking|bookings?)\b/i, anchor: 'speaking' },
+      { photo: 'fq-boc-fire-meditation', kicker: 'Lineage', title: 'The women before us', match: /\blineage\b/i, anchor: 'lineage' },
     ],
   },
 ]

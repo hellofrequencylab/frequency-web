@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2358",
+  "title": "Free Human (shown as Honey) is in the theme library and the pickers, and every offered theme has a catalog entry",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-11-18",
+  "source": {
+    "file": "docs/THEME-COHESION.md",
+    "ref": "Daniel 2026-11-18: \"Make sure Free Human Movement is in the theme library as well as Mindless.\" Ruling 18:00Z: A (public for everyone), but keep it in draft until all new pictures are in."
+  },
+  "detail": "Survey 2026-11-18 (project folder themes-complete-2026-11-18/SURVEY.md): Free Human and Mindless are fully built (website, Spotlight, Space, email) but sit in RETIRED_FROM_PICKERS and outside THEME_LIBRARY, so no owner can pick them and the /themes library does not list them. New World, Services and CyberWitch are offered but have no catalog entry, so their manifests carry library: null. This row un-retires the two, adds catalog entries for all five, regenerates the manifests and updates the two pins on the owner's words. Held as a draft PR until Daniel's new pictures land (showcase cards and the /themes/free-human feature page wait on them). 2026-11-18 18:01Z (Daniel: \"Use photos from Frequency for Free Human Movement. Change the theme name to honey and keep a few of the honey shots.\"): the theme shows as Honey everywhere a person reads it (picker, editor, Spotlight preset, block labels); the code id stays free-human so saved sites keep it. Its photo library is Frequency's own photos (fq-* names served from public/brand/frequency/photos) plus five honey-light shots; alt text rewritten to match. The editor shell's Nocturne label no longer says Midnight. The old Free Human photo files leave the repo in a separate mechanical PR, to stay under the file gate. 2026-11-18 19:10Z: split on the coordinator's relay of Daniel's picture ruling. Honey's pictures are settled (Frequency photos plus honey shots), so Honey ships; Mindless stays retired from the pickers and out of the library until Daniel's Mindless pictures land, in its own row.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/themes/LIVE-2358.mjs"
+  },
+  "wave": "W7"
+}

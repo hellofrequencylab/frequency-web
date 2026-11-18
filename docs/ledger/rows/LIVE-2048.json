@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-2048",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs -e \"const a=require('node:assert/strict'),id='free-human',m=require('./lib/themes/manifests/'+id+'.manifest.json'),d=require('./lib/themes/editor-schema2.json')[id],e=require('./lib/themes/editor-dials.ts'),{THEME_LOOK,SITE_THEMES}=require('./lib/theme/site-style.ts');a.equal(m.schema,2);a.deepEqual(m.editor.functions,d.functions);const picker=e.themeEditor(m.legacyIds.site);a.deepEqual(Object.values(THEME_LOOK[m.legacyIds.site]),[\\\"soft\\\",\\\"airy\\\",\\\"bar\\\",\\\"full\\\"]);a.deepEqual(picker.looks.filter(l=>l.id!=='own').map(l=>l.id),[]);for(const key of ['corners','spacing','header','footer'])a.ok(picker.dials.some(x=>x.id===key));a.equal(m.offered,true);a.ok(SITE_THEMES.some(t=>t.id===id));\""
+    }
+  },
+  "append": {
+    "detail": "2026-11-18 (Daniel: \"Make sure Free Human Movement is in the theme library\", then \"A, but keep it in draft\"): Free Human is offered as Honey (LIVE-2358), so the probe now checks it is in the pickers instead of held out."
+  },
+  "wave": "W7"
+}

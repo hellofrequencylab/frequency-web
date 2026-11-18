@@ -16,7 +16,7 @@ export const FREE_HUMAN_SPACE = {
   name: 'Free Human Movement',
   tagline: 'Embody. Create. Rise.',
   /** The Space's cover (a wide photo), its mark and its time zone, all from the design's own shipped files. */
-  cover: freeHumanPhotoSrc('place-sea-sunset'),
+  cover: freeHumanPhotoSrc('fq-boc-beach-sound-bath'),
   logo: '/sites/free-human/logo-mark.svg',
   timeZone: HOME_TZ,
   about: 'Embodiment and child-rearing for women in their season of creation: conceiving, carrying, birthing and raising. A year-round program, circles at the full moon and a calendar of gatherings. Created by Audrey Uma Wilder.',
@@ -80,7 +80,7 @@ export const FREE_HUMAN_SPOTLIGHT_BLOCKS = ['image', 'about', 'button', 'text', 
 
 const PHOTO = freeHumanPhotoSrc
 const SPOTLIGHT_CONTENT: Record<string, Record<string, unknown>> = {
-  image: { src: PHOTO('heritage-a-virgin'), alt: 'Painting of a woman in golden robes walking forward with two children' },
+  image: { src: PHOTO('fq-boc-circle-sunset'), alt: 'A circle of people standing together at sunset' },
   about: { eyebrow: 'Free Human Movement', title: 'Move like the woman who made a world.' },
   button: { label: 'Join the circle', url: `${FREE_HUMAN_SITE_URL}/#program`, align: 'center' },
   linkCards: { eyebrow: 'Come as you are', title: 'Ways to join' },
@@ -100,7 +100,7 @@ const SPOTLIGHT_CONTENT: Record<string, Record<string, unknown>> = {
     title: 'Say hello',
     body: 'Tell us about your gathering, retreat, school or podcast. We write back to every request.',
     showMessage: true, messageLabel: 'About your gathering', submitLabel: 'Send', successMessage: 'Thank you. Your request is with Audrey.',
-    image: PHOTO('founder-audrey'),
+    image: PHOTO('fq-day-meditation-circle'),
   },
 }
 
