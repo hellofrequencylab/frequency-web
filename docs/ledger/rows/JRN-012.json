@@ -1,0 +1,20 @@
+{
+  "id": "JRN-012",
+  "title": "The daily Journey prompt reaches every enrolled member and respects the in-app Practice setting",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "lib/journeys/progress.ts",
+    "ref": "Journey audit 2026-11-17 (project thread: Dial in the Journey Wizard and Journeys)"
+  },
+  "detail": "listEnrolledMemberIds read active journey_enrollments once with no range, order or error check; PostgREST caps a read at max_rows = 1000 (supabase/config.toml) even for the service role, so past 1000 active enrolment rows an arbitrary set of members silently missed their morning prompt, and a failed read looked like nobody enrolled. The journey-prompt cron also inserted the in-app notification without the ADR-169 send gate, so a member who turned in-app Practice notices off still got the daily prompt (the push leg already checked its own preference). Fixed 2026-11-17: listEnrolledMemberIds reads ordered 1000-row pages until a short page and throws on an error; the cron inserts the in-app row only when resolveSendGate(profile, 'inapp', 'practice') allows it. route.test.ts mocks the gate and pins the new refusal.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-012.mjs",
+    "note": "Fails if listEnrolledMemberIds stops paging or swallows an error, or the prompt cron bypasses the send gate."
+  },
+  "wave": "W7"
+}
