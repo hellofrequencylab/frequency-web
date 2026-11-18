@@ -1,0 +1,20 @@
+{
+  "id": "SRCH-005",
+  "title": "Help search answers a plain question, forgives a typo and links to the section that answers",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/help/search.ts",
+    "ref": "Help center audit and rework 2026-11-18 (project thread: Rework every help doc and help search)"
+  },
+  "detail": "Owner ask 2026-11-18: rework help search to reflect the current structure and make it a seamless, smart experience. Before: three help search boxes ran three different matchers. The public front page matched the whole query as one substring of title plus summary, the sidebar matched titles only, and the member Help page and Vera's launcher required every typed word to appear, so 'how do I stop the emails', 'unsubscribe', 'dm someone' and 'custom domain' found nothing or the wrong guide, and a hit always opened the top of the article. The index held the title, summary and the first 160 characters of the body.\n\nDONE 2026-11-18: one matcher (lib/help/search.ts) behind all four boxes. It drops filler words, meets plurals and one-letter typos, maps everyday words onto product names through a short synonym list, reads each article's new `keywords` front matter and its section headings, and links a hit to the section that matched. The static index (app/api/help/search-index) carries keywords and sections; the public boxes fetch it the first time someone reaches for search and keep a plain title match until it arrives. lib/help/search.test.ts pins the behaviour; docs/HELP-CENTER.md documents keywords and the search rules.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/help-rework-2026-11-18.mjs SRCH-005",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

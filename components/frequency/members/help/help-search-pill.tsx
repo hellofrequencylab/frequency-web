@@ -8,9 +8,10 @@ import { searchHelp } from '@/lib/help/search'
 import { Input } from '@/components/ui/field'
 import { openSupport } from '@/components/support/support-launcher'
 
-// The reference's search pill (Help.html) over the same owned index and scoring as the help centre's
-// sidebar search (lib/help/search). Client-side, instant, no backend. Escape clears it; a search with
-// no match says so and hands the question to a person (the support dialog) instead of a dead end.
+// The reference's search pill (Help.html) over the same owned index and scoring as every other help
+// search box (lib/help/search). Client-side, instant, no backend. A hit that lands in one section of a
+// guide names the section and links straight to it. Escape clears it; a search with no match says so
+// and hands the question to a person (the support dialog) instead of a dead end.
 export function HelpSearchPill({ index }: { index: HelpSearchEntry[] }) {
   const [q, setQ] = useState('')
   const results = useMemo(() => searchHelp(index, q), [q, index])
@@ -40,10 +41,10 @@ export function HelpSearchPill({ index }: { index: HelpSearchEntry[] }) {
       {results.length > 0 ? (
         <div id="mc-help-results" className="panel list mc-results">
           {results.map((r) => (
-            <Link key={r.href} href={r.href} onClick={() => setQ('')}>
+            <Link key={r.href} href={r.to} onClick={() => setQ('')}>
               <span className="grow">
                 <span className="t1 mc-block">{r.title}</span>
-                <span className="t2">{r.categoryTitle}</span>
+                <span className="t2">{r.sectionTitle ? `${r.categoryTitle} · ${r.sectionTitle}` : r.categoryTitle}</span>
               </span>
             </Link>
           ))}

@@ -16,6 +16,11 @@
 //   render states — DAWN light/dark × Midnight light/dark (test/e2e/surfaces.ts).
 //                   The member shell captures the two MODE states only; see
 //                   SHELL_RENDER_STATES for why the skin axis is not ours there.
+//
+//                   🔴 THE MATRIX IS BUDGETED (SCAN-1222). Not every cell is photographed: the
+//                   committed PNGs are held to 50 MB, so VISUAL_PUBLIC_CAPTURES,
+//                   VISUAL_MIDNIGHT_SLUGS and VISUAL_OPERATOR_PROJECTS in surfaces.ts name the
+//                   public pages, widths and looks that are. Read the note there before adding one.
 //   projects      — `desktop` (1280×800), `mobile` (390×844) and `narrow` (320×568), from
 //                   playwright.config.ts.
 //
@@ -54,6 +59,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { BASELINE_DIR, baselineNameFor, readSharedBaselines } from './shared-baselines'
 import {
+  DEFAULT_STATE,
   NARROW_PROJECT,
   PUBLIC_RENDER_STATES,
   SHELL_RENDER_STATES,
@@ -83,6 +89,10 @@ import {
   type RenderState,
   type ServerErrorLog,
   type Surface,
+  VISUAL_OPERATOR_PROJECTS,
+  isVisualPublicSurface,
+  visualPublicSkipReason,
+  visualStatesFor,
 } from './surfaces'
 
 const baseURL = process.env.PW_BASE_URL
@@ -315,13 +325,18 @@ test.describe('visual', { tag: '@visual' }, () => {
     'The narrow project photographs the shell and the header band; the public surfaces are measured at 320 by overflow.spec.ts instead (ADR-1270).',
   )
 
+  // SCAN-1222: only the surfaces, widths and looks in VISUAL_PUBLIC_CAPTURES (surfaces.ts) are
+  // photographed. The rest of publicSurfaces() is walked by a11y.spec.ts and overflow.spec.ts.
   for (const state of PUBLIC_RENDER_STATES) {
     test.describe(state.id, () => {
       // LIVE-373: /discover is photographed in the advisory describe below. Its height is a
       // function of production Circles, events and posts, so a new listed Circle used to fail
       // every open PR's blocking visual job.
-      for (const surface of publicSurfaces().filter((s) => s.path !== '/discover')) {
+      for (const surface of publicSurfaces().filter((s) => s.path !== '/discover').filter(isVisualPublicSurface)) {
+        if (!visualStatesFor(surface, PUBLIC_RENDER_STATES).includes(state)) continue
         test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
+          const skip = visualPublicSkipReason(surface, test.info().project.name)
+          test.skip(skip !== null, skip ?? '')
           await capture(page, surface, state, serverErrors)
         })
       }
@@ -350,8 +365,11 @@ test.describe('visual · discover', { tag: ['@visual', '@advisory'] }, () => {
 
   for (const state of PUBLIC_RENDER_STATES) {
     test.describe(state.id, () => {
-      for (const surface of publicSurfaces().filter((s) => s.path === '/discover')) {
+      for (const surface of publicSurfaces().filter((s) => s.path === '/discover').filter(isVisualPublicSurface)) {
+        if (!visualStatesFor(surface, PUBLIC_RENDER_STATES).includes(state)) continue
         test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
+          const skip = visualPublicSkipReason(surface, test.info().project.name)
+          test.skip(skip !== null, skip ?? '')
           await capture(page, surface, state, serverErrors)
         })
       }
@@ -435,7 +453,14 @@ test.describe('visual · operator console', { tag: ['@visual', '@shell'] }, () =
   // empty advisory describe reads as coverage. `visual-tiers.test.ts` holds the two in step:
   // the day an entry goes back into the roster, the filter and the describe come back with it,
   // same session, same skips, and the same `capture()`.
-  for (const state of SHELL_RENDER_STATES) {
+  // SCAN-1222: desktop and Dawn light only. The console is a desk, and the dark repaint is
+  // already photographed on the member shell above. See VISUAL_OPERATOR_PROJECTS in surfaces.ts.
+  test.skip(
+    () => !VISUAL_OPERATOR_PROJECTS.includes(test.info().project.name),
+    'The operator console is photographed at desktop only, to keep the committed baselines under 50 MB (SCAN-1222).',
+  )
+
+  for (const state of SHELL_RENDER_STATES.filter((s) => s.id === DEFAULT_STATE.id)) {
     test.describe(state.id, () => {
       for (const surface of operatorSurfaces()) {
         test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
@@ -470,7 +495,9 @@ test.describe('visual · header band', { tag: '@visual' }, () => {
 
   for (const state of PUBLIC_RENDER_STATES) {
     test.describe(state.id, () => {
+      // The header band is the one surface still photographed in Midnight light (SCAN-1222).
       for (const surface of headerBandSurfaces()) {
+        if (!visualStatesFor(surface, PUBLIC_RENDER_STATES).includes(state)) continue
         test(`${surface.path} header band matches baseline`, async ({ page, serverErrors }) => {
           await capture(page, surface, state, serverErrors)
         })
@@ -497,6 +524,7 @@ test.describe('visual · editor', { tag: '@visual' }, () => {
   for (const state of PUBLIC_RENDER_STATES) {
     test.describe(state.id, () => {
       for (const surface of editorTargetSurfaces()) {
+        if (!visualStatesFor(surface, PUBLIC_RENDER_STATES).includes(state)) continue
         test(`${surface.path} matches baseline`, async ({ page, serverErrors }) => {
           await capture(page, surface, state, serverErrors)
         })
