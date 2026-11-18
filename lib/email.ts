@@ -1563,6 +1563,52 @@ Unsubscribe from match emails: ${unsubscribeUrl}
   }
 }
 
+// ── A direct message waiting (EMAIL-055) ───────────────────────────────────────────────────────
+// Built, not sent: the notification router transports it on the `mentions` category once the
+// recipient's own email switch and the suppression list have been read. lib/messages/dm-notify.ts is
+// the one caller, and it only asks for the FIRST message of a burst, so a back-and-forth is one
+// email, not one per line. Voice: who wrote, a short preview, one button.
+
+interface DirectMessageEmailParams {
+  to: string
+  recipientName: string
+  recipientProfileId: string
+  senderName: string
+  /** The message, already trimmed to a preview by the caller. */
+  preview: string
+  /** Site-relative path the button opens (made absolute here). */
+  threadPath: string
+}
+
+export function buildDirectMessageEmail(params: DirectMessageEmailParams): EmailPayload {
+  const { to, recipientName, recipientProfileId, senderName, preview, threadPath } = params
+  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: BASE_URL, profileId: recipientProfileId, category: 'mentions' })
+  const threadUrl = `${BASE_URL}${threadPath}`
+  const subject = `${senderName} sent you a message`
+  return {
+    to,
+    subject,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html: emailShell(`
+      ${emailKicker('Messages')}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(subject)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">Hi ${escapeHtml(recipientName)}, here is what they said:</p>
+      <p data-fq="fq-p" style="${pStyle}">&ldquo;${escapeHtml(preview)}&rdquo;</p>
+      ${emailButton('Reply', threadUrl)}
+    `),
+    text: `${subject}
+
+Hi ${recipientName}, here is what they said:
+
+"${preview}"
+
+Reply: ${threadUrl}
+
+Unsubscribe from message emails: ${unsubscribeUrl}
+`,
+  }
+}
+
 // ── A Plan share, offered or answered (PROG-CAL7 Together, LIVE-545) ──────────
 // Built, not sent: the notification router transports it on the `lifecycle` category once the
 // approver's own switch and the suppression list have been read; lib/calendar/plan-notify.ts is

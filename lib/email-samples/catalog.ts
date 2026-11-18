@@ -11,6 +11,7 @@
 import type { EmailPayload } from '@/lib/email'
 import {
   buildBookingReminderEmail,
+  buildDirectMessageEmail,
   buildHousingMatchEmail,
   buildPlanShareEmail,
   sendBookingCancelledEmail,
@@ -362,6 +363,7 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   // ── Community ────────────────────────────────────────────────────────────────────────────────────────
   { id: 'dispatch-notification', group: 'Community', run: () => sendDispatchNotificationEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, authorName: 'Jordan', dispatchTitle: 'Notes from the water', excerpt: 'Three mornings, one tide chart, and a new favorite spot.', dispatchUrl: `${SITE}/dispatches/notes-from-the-water` }) },
   { id: 'outreach-note', group: 'Community', run: () => sendOutreachNoteEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, authorName: 'Jordan', body: 'We missed you at the last two swims. The water is warm and the group asked about you. Come Tuesday?' }) },
+  { id: 'direct-message', group: 'Community', run: () => buildDirectMessageEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, senderName: 'Sam', preview: 'Is the room on Fifth still free for December? I can come by Saturday to see it.', threadPath: '/messages/abc123' }) },
   { id: 'housing-match', group: 'Community', run: () => buildHousingMatchEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, counterpartName: 'Sam', kind: 'listing', city: 'Encinitas', matchPath: '/housing/matches/abc123' }) },
   { id: 'automation-note', group: 'Community', run: () => { const out = actorEmailMessage('Hi Maya,\n\nYou made it to three swims this month. The group noticed, and so did we.\n\nSee you at the water,\nThe Frequency team', UNSUB); return { to: TO, subject: 'Three swims this month', html: out.html, text: out.text } } },
   { id: 'plan-share-requested', group: 'Community', run: () => buildPlanShareEmail({ to: TO, recipientName: 'Jordan', recipientProfileId: PROFILE, moment: 'requested', otherSpaceName: 'Tidepool Trust', planTitle: 'Winter beach cleanups', calendarPath: '/spaces/north-light/settings/calendar' }) },
