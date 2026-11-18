@@ -4118,7 +4118,7 @@
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "e50d7391a28b5fb3a1718fcf82ba5e6c89b7d2faa25b6cf3284afc16ec81392f",
+          "sha256": "fe3ec70d5815a0f83c8a77c9ee36cef7fd6a72e2c4fb55fe359d18a8292ca402",
           "baseMode": "100644",
           "headMode": "100644"
         },
