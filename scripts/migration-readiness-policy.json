@@ -4224,7 +4224,7 @@
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "fb7a595fbafbf9f83ba7b8cf6374274aeaff377d26eccb5a6570d1005393f86b",
+          "sha256": "4853f52d795bf6397f02dfb0e55fdeea8754c5464c3f80073bbf262fe4419777",
           "baseMode": "100644",
           "headMode": "100644"
         },
