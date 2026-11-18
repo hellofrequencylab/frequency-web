@@ -27,7 +27,7 @@ interface RunSibling {
 const RUN_KEY_RE = /^[a-z0-9-]{1,64}$/
 
 /** PURE: the Run key an event's details carry, or null. */
-export function runKeyOf(details: unknown): string | null {
+function runKeyOf(details: unknown): string | null {
   if (!details || typeof details !== 'object' || Array.isArray(details)) return null
   const k = (details as Record<string, unknown>).runKey
   return typeof k === 'string' && RUN_KEY_RE.test(k) ? k : null
