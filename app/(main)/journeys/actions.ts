@@ -34,6 +34,7 @@ import {
 } from '@/lib/journey-plans'
 import { getSeasonalQuests } from '@/lib/quests'
 import { checkJourneyPublish } from '@/lib/journeys/publish-gate'
+import { checkJourneyReadyToPublish } from '@/lib/journeys/publish-ready'
 import { canEditJourney } from '@/lib/journeys/authoring'
 import { normalizeJourneyCoverFocus } from '@/lib/journeys/header'
 import { writeJourneyOutcomes } from '@/lib/journeys/outcomes'
@@ -536,6 +537,13 @@ export async function setJourneyVisibility(
   // on an unresolved row, so this never blocks an operator's legitimate edit by accident.)
   const gate = await checkJourneyPublish(planId, visibility)
   if (!gate.ok) return fail(gate.message ?? 'That is a paid feature.')
+
+  // JRN-005: the guide's Ready checklist (a real name, phases with steps), enforced here so every
+  // publish door agrees. Going back to a private draft never needs it.
+  if (visibility !== 'private') {
+    const ready = await checkJourneyReadyToPublish(createAdminClient(), planId)
+    if (!ready.ok) return fail(ready.error)
+  }
 
   if (visibility === 'public') {
     const published = await publishPlan(planId)
