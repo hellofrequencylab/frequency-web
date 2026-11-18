@@ -426,6 +426,8 @@ hunt_sponsor_settlements              internal
 commerce_carts                        internal
 # PROG-E0 tasks 16+17 app_instances: one row per placed block, keyed by node id; service role only, written on publish by lib/apps/instances.ts
 app_instances                         internal
+# DEF-ETSY P3 seller shipping profiles (2026-11-18): service role only; written by the Shop console behind its Space manage gate, read by the cart
+commerce_shipping_profiles            internal
 # FH-020S Hunt staff-proof nonces: service role only; spent by hunt_staff_nonce_consume
 hunt_staff_nonces                     internal
 # FH-021 Frequency Hunts reward specs and grants: service role only; written by hunt_reward_grant

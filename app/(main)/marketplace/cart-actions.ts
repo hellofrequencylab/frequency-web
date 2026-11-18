@@ -55,6 +55,7 @@ export async function mergeGuestCartAction(guestLines: unknown): Promise<CartRes
 }
 
 const CART_CHANGED = 'Something in your cart changed since you last looked. Check it over, then check out again.'
+const SHIPPING_NOT_CHARGED = 'A seller here charges shipping, and checkout cannot add it yet. Your cart is saved for when it can.'
 
 export type CartCheckoutResult =
   | { clientSecret: string; sessionId?: string; url?: undefined; error?: undefined }
@@ -82,6 +83,8 @@ export async function startCartCheckoutAction(opts?: { forceHosted?: boolean }):
   }
   if (view.removed.length > 0 || view.reduced.length > 0) return { error: CART_CHANGED }
   if (view.lines.length === 0) return { error: 'Your cart is empty.' }
+  // DEF-ETSY P3: the door carries no shipping line yet, so a cart that owes seller shipping is never charged without it.
+  if (view.shipping?.totals.some((t) => t.cents > 0)) return { error: SHIPPING_NOT_CHARGED }
   const r = await createCommerceCheckout({
     buyerProfileId: profileId,
     items: view.lines.map((l) => ({ productId: l.productId, variantId: l.variantId, qty: l.qty })),
