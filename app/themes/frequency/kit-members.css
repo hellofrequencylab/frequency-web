@@ -209,6 +209,10 @@
 [data-design="frequency"] [data-kit="members"] .head>div{display:flex;flex-direction:column;gap:12px}
 /* A heading's actions group stays a ROW: `.head>div` (a column, for the title stack) out-ranks a bare `.row`, which stacked every header button. */
 [data-design="frequency"] [data-kit="members"] .head>div.row{flex-direction:row;align-items:center;gap:8px}
+/* A heading whose actions sit under the title, on the meta line (MemberHead actionsBelow). */
+[data-design="frequency"] [data-kit="members"] .head>.head-under{flex:1 1 100%}
+[data-design="frequency"] [data-kit="members"] .head-meta-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 16px}
+[data-design="frequency"] [data-kit="members"] .head-meta-row>.row{flex-direction:row;align-items:center;gap:8px}
 [data-design="frequency"] [data-kit="members"] .sec{margin-top:64px}
 [data-design="frequency"] [data-kit="members"] .sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:20px}
 [data-design="frequency"] [data-kit="members"] .stack{display:flex;flex-direction:column;gap:16px}

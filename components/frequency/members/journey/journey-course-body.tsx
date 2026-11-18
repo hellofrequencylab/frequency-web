@@ -180,6 +180,7 @@ export function JourneyCourseBody({
         title={<SerifTail text={title} />}
         meta={metaParts.join(' · ')}
         actions={<div className="row wrap">{actions}</div>}
+        actionsBelow
       />
 
       <section className="panel mc-hero" aria-label="Your progress">

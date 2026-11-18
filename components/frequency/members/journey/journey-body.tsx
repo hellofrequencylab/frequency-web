@@ -109,6 +109,7 @@ export function JourneyBody({
         title={<SerifTail text={plan.title} />}
         meta={metaParts.join(' · ')}
         actions={<div className="mu-actions row wrap">{actions}</div>}
+        actionsBelow
       />
 
       {/* The cover: the kit's photo block (`.ph`, as Event.html draws its header photo). The Journey template
