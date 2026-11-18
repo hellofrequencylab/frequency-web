@@ -191,3 +191,38 @@ describe('the partner view', () => {
     expect(view.placements).toEqual({ open: 0, closed: 0 })
   })
 })
+
+describe('live partner state and the finale broadcast (FH-032S)', () => {
+  it('drops a withdrawn venue from the active list on the next read, and keeps its past counts apart', () => {
+    const withdrawn = facts(base, { partners: [partner(CAFE, { status: 'withdrawn', revokedAt: '2026-11-15T00:00:00Z' }), partner(BOOKS)] })
+    const health = buildRouteHealth(withdrawn, NOW)
+    expect(health.venues.map((v) => v.spaceId)).toEqual([OWNER_SPACE, BOOKS])
+    expect(health.formerVenues).toEqual([
+      { spaceId: CAFE, name: 'Corner Cafe', confirmedStops: 7, players: 7, awaitingReview: 0, handedOver: 1 },
+    ])
+    // Reconciles: every confirmed stop is counted once, at an active venue or one that left.
+    const live = buildRouteHealth(facts(base), NOW)
+    const sum = (h: typeof health) => [...h.venues, ...h.formerVenues].reduce((n, v) => n + v.confirmedStops, 0)
+    expect(sum(health)).toBe(sum(live))
+  })
+
+  it('lists no former venue that holds nothing', () => {
+    expect(buildRouteHealth(facts(base), NOW).formerVenues).toEqual([])
+  })
+
+  it('a suspended partner is not live, the same rule as lib/hunts/partners.ts', () => {
+    expect(activeVenues(facts(base, { partners: [partner(CAFE, { status: 'suspended' })] }), NOW)).toEqual([OWNER_SPACE])
+  })
+
+  it('reports the finale and whether its notice went out, beside the whole outbox', () => {
+    const health = buildRouteHealth(facts(base, { finale: { title: 'Harbor Party', eventOn: true, outbox: { pending: 0, leased: 0, done: 12, dead: 1 } } }), NOW)
+    expect(health.finale).toEqual({ title: 'Harbor Party', eventOn: true, sent: 12, waiting: 0, sending: 0, failed: 1 })
+    expect(health.messages).toEqual({ waiting: 2, sending: 1, sent: 40, failed: 3 })
+    expect(buildRouteHealth(facts(base), NOW).finale).toBeNull()
+  })
+
+  it('keeps the finale out of the partner view', () => {
+    const view = partnerRouteView(facts(base, { finale: { title: 'Harbor Party', eventOn: true, outbox: { pending: 0, leased: 0, done: 12, dead: 0 } } }), CAFE, NOW)
+    expect(JSON.stringify(view)).not.toContain('Harbor Party')
+  })
+})
