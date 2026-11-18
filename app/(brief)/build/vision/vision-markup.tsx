@@ -508,20 +508,9 @@ export function VisionMarkup({ v }: { v: Record<string, any> }) {
   <a href={v.prev.href} style={{display:"flex",alignItems:"baseline",gap:"10px",textDecoration:"none",color:"var(--text-strong)",fontWeight:"700"}}><span style={{font:"700 12px var(--font-sans)",color:`${v.prev.ink}`}}>← {v.prev.hz} Hz</span>{v.prev.title}</a>
   <a href={v.p.bandHref} style={{fontWeight:"700",textDecoration:"none"}}>Back to the Vision ↑</a>
 </div>
-<footer style={{padding:"20px clamp(16px,4vw,40px) 36px",display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:"12px",font:"500 12px var(--font-sans)",color:"var(--text-muted)"}}><span>Wireframe · real copy, placeholder media · figures to verify</span><a href="#/gate" style={{color:"var(--text-body)"}}>Invite gate</a></footer>
+<footer style={{padding:"20px clamp(16px,4vw,40px) 36px",display:"flex",flexWrap:"wrap",justifyContent:"space-between",gap:"12px",font:"500 12px var(--font-sans)",color:"var(--text-muted)"}}><span>Wireframe · real copy, placeholder media · figures to verify</span></footer>
 </>) : null}
-{v.isGate ? (<>
-<div data-screen-label="Invite gate" style={{position:"fixed",inset:"0",zIndex:"60",overflow:"auto",background:"var(--surface-card)",color:"var(--text-strong)",display:"grid",placeItems:"center",padding:"40px 20px",boxSizing:"border-box"}}>
-  <svg viewBox="0 0 1000 400" preserveAspectRatio="none" style={{position:"absolute",left:"0",right:"0",bottom:"0",width:"100%",height:"45%",pointerEvents:"none",opacity:".55"}}>{(v.gateWaves as any[]).map((w: any, k9: number) => (<Fragment key={k9}><path d={w.d} style={{fill:"none",stroke:`${w.color}`,strokeWidth:"1.4"}} vectorEffect="non-scaling-stroke" /></Fragment>))}</svg>
-  <div style={{position:"relative",width:"100%",maxWidth:"440px",display:"flex",flexDirection:"column",gap:"22px"}}>
-    <span style={{font:"600 12px var(--font-sans)",letterSpacing:".08em",color:"var(--text-muted)"}}>INVITE ONLY · WIREFRAME</span>
-    <span style={{fontFamily:"var(--font-display)",fontWeight:"500",fontSize:"clamp(31px,6vw,46px)",lineHeight:"1.05",letterSpacing:"-.04em",color:"var(--text-strong)"}}>The Frequency Vision</span>
-    <span style={{fontSize:"17px",lineHeight:"1.65",color:"var(--text-body)"}}>The full plan for Frequency in Encinitas, in seven chapters. Enter the code from your invite.</span>
-    <div style={{display:"flex",flexDirection:"column",gap:"10px"}}><label style={{font:"700 13px var(--font-sans)",color:"var(--text-muted)"}}>Invite code</label><input placeholder="e.g. ENCINITAS-0417" style={{font:"500 16px var(--font-sans)",padding:"14px 16px",borderRadius:"var(--radius-s)",border:"1px solid rgb(246 240 255 / .25)",background:"rgb(246 240 255 / .06)",color:"var(--text-strong)",outline:"none"}} /><a href="#top" onClick={v.goHome} style={{textAlign:"center",padding:"14px 18px",borderRadius:"var(--radius-orb)",background:"var(--action-primary)",color:"var(--action-primary-text)",font:"800 16px var(--font-sans)",textDecoration:"none"}}>Enter</a></div>
-    <span style={{fontSize:"13px",fontFamily:"var(--font-sans)",color:"var(--text-muted)"}}>Wire note: any code passes in this mock.</span>
-  </div>
-</div>
-</>) : null}
+
 </div>
 </>)
 }

@@ -28,7 +28,8 @@ not allow, so the port is: `vision-markup.tsx` (the canvas template turned into 
 `vision-data.ts` (the seven bands and their chapters), `vision.css` (the design-system token sheets from
 `design_handoff/frequency/tokens` plus the canvas's own styles, scoped under `.vx-root`) and `vision-page.tsx`
 (the canvas's logic, by hand: hash chapters `#/852` and `#/852/2`, the chapter mega menu, the header that
-tightens on scroll, the marker on the frequency line). The three generated files say not to hand-edit:
+tightens on scroll, the marker on the frequency line). The canvas's invite gate, a wireframe mock that let
+any code through, is not ported: the page is link-only. The three generated files say not to hand-edit:
 change the canvas and regenerate. The canvas's uploaded photos could not be exported, so each photo slot
 uses the same shoot already in `public/brand/frequency` and `public/images/site`. The opening date reads 2028
 (owner, 2026-11-18), matching /build/facilities and /build/lab.

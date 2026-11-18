@@ -9,6 +9,8 @@ import './vision.css'
 // (vision.css) are generated from the design canvas; this file is the canvas's own logic, ported from its
 // script: hash routes (#/852 opens a chapter, #/852/2 a section, #hz-852 a band of the index), the
 // chapter mega menu, the header that tightens on scroll, and the marker that rides the frequency line.
+// The canvas's invite gate (#/gate, a wireframe mock that let any code through) is not ported: the page
+// is link-only, and #/gate opens the index.
 
 const CH: VisionBand[] = [V963, ...BANDS]
 const SHORT: Record<number, string> = { 963: 'Vision', 852: 'Community', 741: 'Platform', 639: 'Belonging', 528: 'Facilities', 417: 'Business', 396: 'Structure' }
@@ -147,8 +149,7 @@ export class VisionPage extends Component<Record<string, never>, State> {
     let sub: string | null = null
     if (h.startsWith('#/')) {
       const [a, b] = h.slice(2).split('/')
-      if (a === 'gate') route = 'gate'
-      else if (BANDS.some((x) => x.key === a)) {
+      if (BANDS.some((x) => x.key === a)) {
         route = a
         sub = b || null
       }
@@ -157,7 +158,7 @@ export class VisionPage extends Component<Record<string, never>, State> {
     this.setState({ route, sub, mega: null }, () => requestAnimationFrame(() => {
       let el: HTMLElement | null = null
       if (route === 'index' && h.startsWith('#hz-')) el = document.getElementById(h.slice(1))
-      if (route !== 'index' && route !== 'gate' && sub) el = document.getElementById(route + '-' + sub)
+      if (route !== 'index' && sub) el = document.getElementById(route + '-' + sub)
       if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 120, behavior: changed || first ? 'auto' : 'smooth' })
       else if (changed && !(route === 'index' && h === '#top' && first)) window.scrollTo(0, 0)
       this.updateMarker()
@@ -189,7 +190,7 @@ export class VisionPage extends Component<Record<string, never>, State> {
       })
       const last = els[els.length - 1]
       if (last && last.getBoundingClientRect().bottom < probe) act = 0
-    } else if (r !== 'gate') {
+    } else {
       const k = CH.findIndex((c) => c.key === r)
       const max = Math.max(1, document.documentElement.scrollHeight - vh)
       x = ((k + Math.min(1, window.scrollY / max)) / 7) * 1000
@@ -230,7 +231,7 @@ export class VisionPage extends Component<Record<string, never>, State> {
     if (k === 0) {
       return {
         hz: 963, color: col, ink: c.ink, tint: tint(col), barD: sineD(963, 10, 3, 5, 6), kicker: 'Chapter 1 · The index', title: c.title, lede: c.lede,
-        openLabel: 'Start at the top', openHref: '#hz-963', bandLabel: 'Invite gate', bandHref: '#/gate',
+        openLabel: 'Start at the top', openHref: '#hz-963', bandLabel: 'Open chapter 2 →', bandHref: '#/' + BANDS[0].key,
         items: BANDS.map((b, i) => ({ num: String(i + 2).padStart(2, '0'), title: b.band, sub: b.title, href: '#/' + b.key, ink: b.ink })),
       }
     }
@@ -243,12 +244,12 @@ export class VisionPage extends Component<Record<string, never>, State> {
 
   vals() {
     const { active: a, route: r, w, roomy, mega, compact, wide } = this.state
-    const isChapter = r !== 'index' && r !== 'gate'
+    const isChapter = r !== 'index'
     const ck = isChapter ? CH.findIndex((c) => c.key === r) : a ? 7 - a : -1
     this.hot = ck
     const mOpen = mega != null
     const v: Record<string, unknown> = {
-      isIndex: r === 'index', isChapter, isGate: r === 'gate',
+      isIndex: r === 'index', isChapter,
       activeHz: HZS[ck] || 963,
       gaugeDisplay: wide ? 'flex' : 'none',
       railPos: roomy ? 'sticky' : 'static', railFlex: roomy ? '0 1 150px' : '1 1 100%', railMax: roomy ? '150px' : '760px',
@@ -291,7 +292,6 @@ export class VisionPage extends Component<Record<string, never>, State> {
       megaEnter: () => clearTimeout(this.mt),
       megaLeave: () => { clearTimeout(this.ht); clearTimeout(this.mt); this.mt = setTimeout(() => this.setState({ mega: null }), 280) },
       megaClose: () => this.setState({ mega: null }),
-      gateWaves: CH.map((x, k) => ({ color: colorOf(x), d: sineD(x.hz, 60, 9, 31 + k, 90 + k * 40) })),
     }
     for (let n = 1; n <= 7; n++) {
       v['op' + n] = a === n ? 1 : 0.5
