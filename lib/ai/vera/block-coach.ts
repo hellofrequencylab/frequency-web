@@ -25,7 +25,7 @@ const SYSTEM = withVoice(
     COACHING_SELECTION_RULES,
 )
 
-export interface BlockCoachInput {
+interface BlockCoachInput {
   blockType: string
   fields: readonly CoachField[]
   /** The block's current values. Untrusted owner text: only which word fields are empty, and a capped excerpt. */
