@@ -11,7 +11,7 @@ const fails = []
 const actions = read('app/(main)/journeys/actions.ts')
 const at = actions.indexOf('export async function setJourneyVisibility(')
 const body = at < 0 ? '' : actions.slice(at, actions.indexOf('\nexport ', at + 10))
-if (!/checkJourneyReadyToPublish\([^)]*planId\)/.test(body)) fails.push('setJourneyVisibility publishes without the server-side ready check (an empty draft can go live)')
+if (!/checkJourneyReadyToPublish\(createAdminClient\(\), planId\)/.test(body)) fails.push('setJourneyVisibility publishes without the server-side ready check (an empty draft can go live)')
 const ready = read('lib/journeys/publish-ready.ts')
 if (!/readyToPublish\(checks\)/.test(ready)) fails.push('lib/journeys/publish-ready.ts does not run the guide\'s readyCheck/readyToPublish')
 const settings = read('components/journey/v2/journey-settings.tsx')
