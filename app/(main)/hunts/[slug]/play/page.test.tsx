@@ -15,6 +15,8 @@ const store = vi.hoisted(() => ({
 
 vi.mock('@/lib/auth', () => ({ getMyProfileId: store.getMyProfileId }))
 vi.mock('@/lib/hunts/run-store', () => store)
+const teams = vi.hoisted(() => ({ myTeamPanel: vi.fn() }))
+vi.mock('@/lib/hunts/team-store', () => teams)
 vi.mock('@/components/templates', () => ({ FocusTemplate: ({ children }: { children: ReactNode }) => <main>{children}</main> }))
 // The map is a client leaf: what the server passes it is what reaches the browser, so capture it whole.
 const mapProps = vi.hoisted(() => ({ sent: [] as string[] }))
@@ -55,6 +57,7 @@ beforeEach(() => {
   mapProps.sent.length = 0
   store.startOrResumeRun.mockResolvedValue(run)
   store.loadPlayerRun.mockResolvedValue(run)
+  teams.myTeamPanel.mockResolvedValue(null)
 })
 
 afterEach(() => {
@@ -170,5 +173,55 @@ describe('Trail player hint reveal', () => {
     await expect(render('stop-1')).rejects.toThrow('/sign-in?next=/hunts/coast-trail/play')
     expect(store.loadPlayerRun).not.toHaveBeenCalled()
     expect(store.startOrResumeRun).not.toHaveBeenCalled()
+  })
+})
+
+describe('Trail player team panel (FH-043S)', () => {
+  const TEAM = '00000000-0000-4000-a043-0000000000aa'
+  const team = { teamId: TEAM, huntId: 'hunt-1', versionId: 'version-1', name: 'The Lanterns', state: 'locked', runId: 'team-run', captain: false, size: 3, stopsDone: 2 }
+  const renderWith = async (search: Record<string, string>) => renderToStaticMarkup(await PlayPage({
+    params: Promise.resolve({ slug: 'coast-trail' }), searchParams: Promise.resolve(search),
+  }))
+
+  it('offers to start a team, and a join form only from a captain\'s link', async () => {
+    const html = await render()
+    expect(html).toContain('Play as a team')
+    expect(html).toContain('Start a team')
+    expect(html).not.toContain('Join the team')
+    expect(teams.myTeamPanel).toHaveBeenCalledWith('player-1', 'coast-trail')
+    const join = await renderWith({ team: TEAM })
+    expect(join).toContain('Join the team')
+    expect(join).toContain(`value="${TEAM}"`)
+    expect(await renderWith({ team: 'not-a-team' })).not.toContain('Join the team')
+  })
+
+  it('shows a locked member the team\'s count and the team confirm, never the solo form or a roster', async () => {
+    teams.myTeamPanel.mockResolvedValue(team)
+    const html = await render()
+    expect(html).toContain('The Lanterns')
+    expect(html).toContain('3 people, roster locked. Your team has 2 stops.')
+    expect(html).toContain('Confirm stop for your team')
+    expect(html).toContain('Leave the team')
+    expect(html).not.toContain('Lock the roster')
+    expect(html).not.toMatch(/>Confirm stop<|team-run|hunt-1/)
+  })
+
+  it('gives the captain of a forming team the lock button', async () => {
+    teams.myTeamPanel.mockResolvedValue({ ...team, state: 'forming', runId: null, captain: true, size: 2, stopsDone: null })
+    const html = await render()
+    expect(html).toContain('Lock the roster')
+    expect(html).not.toContain('Confirm stop for your team')
+  })
+
+  it('reads no team with claims off or the Trail paused, and survives a failed read', async () => {
+    vi.stubEnv('HUNTS_CLAIMS_ENABLED', '')
+    expect(await render()).not.toContain('Play as a team')
+    vi.stubEnv('HUNTS_CLAIMS_ENABLED', 'on')
+    store.loadPublishedTrail.mockResolvedValue({ ...trail, huntState: 'paused' })
+    expect(await render()).not.toContain('Play as a team')
+    expect(teams.myTeamPanel).not.toHaveBeenCalled()
+    store.loadPublishedTrail.mockResolvedValue(trail)
+    teams.myTeamPanel.mockRejectedValue(new Error('read failed'))
+    expect(await render()).toContain('Start a team')
   })
 })

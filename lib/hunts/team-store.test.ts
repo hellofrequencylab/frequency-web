@@ -13,7 +13,8 @@ vi.mock('./claim-store', () => ({ loadScanPlacement: mocks.loadScanPlacement }))
 vi.mock('./run-store', () => ({ loadPublishedTrail: mocks.loadPublishedTrail }))
 vi.mock('./staff-store', () => ({ huntRpc: () => mocks.rpc, loadUniquePlacementMission: mocks.loadUniquePlacementMission }))
 
-import { claimAsTeamMember, joinMyTeam, leaveMyTeam, lockMyTeam, myTeam, startTeam } from './team-store'
+import { issueClaimToken } from './placement'
+import { claimAsTeamMember, joinMyTeam, leaveMyTeam, lockMyTeam, myTeam, myTeamPanel, openTeamClaim, startTeam } from './team-store'
 
 const TEAM = '00000000-0000-4000-a043-0000000000aa'
 type Row = Record<string, unknown>
@@ -151,6 +152,47 @@ describe('roster commands', () => {
     expect(await lockMyTeam('p', TEAM)).toMatchObject({ result: 'not_captain' })
     mocks.rpc.mockResolvedValueOnce({ data: { result: 'left', disbanded: true }, error: null })
     expect(await leaveMyTeam('p', TEAM)).toEqual({ result: 'left', disbanded: true, captainId: null })
+  })
+})
+
+describe('the scan hand-off (FH-043S)', () => {
+  beforeEach(() => vi.stubEnv('HUNTS_PROOF_SECRET', 'test-proof-secret'))
+
+  it('issues a landing token bound to the team run, and the scan credits the team with it', async () => {
+    const opened = await openTeamClaim('member', 'stop-code-1', input.nowEpoch)
+    if (!opened) throw new Error('a locked member must get a team token')
+    expect(await claimAsTeamMember('member', { ...input, token: opened.token })).toEqual({ ok: true, result: 'credited', replayed: false })
+    expect(mocks.rpc.mock.calls[0][1]).toMatchObject({ p_actor: 'member', p_team_id: TEAM })
+  })
+
+  it('refuses a solo-run token, another stop\'s token and an expired token before any command', async () => {
+    const solo = issueClaimToken({ secret: 'test-proof-secret', scope: { runId: 'member-own-run', placementId: 'pl-1' }, now: input.nowEpoch })
+    const otherStop = issueClaimToken({ secret: 'test-proof-secret', scope: { runId: 'team-run', placementId: 'pl-2' }, now: input.nowEpoch })
+    const expired = issueClaimToken({ secret: 'test-proof-secret', scope: { runId: 'team-run', placementId: 'pl-1' }, now: input.nowEpoch - 3600 })
+    for (const token of [solo, otherStop, expired, 'not-a-token']) {
+      expect(await claimAsTeamMember('member', { ...input, token })).toEqual({ ok: false, reason: 'bad_token' })
+    }
+    expect(mocks.rpc).not.toHaveBeenCalled()
+  })
+
+  it('gives no team token to an outsider, a departed member, a forming team or a revoked code', async () => {
+    expect(await openTeamClaim('outsider', 'stop-code-1', input.nowEpoch)).toBeNull()
+    expect(await openTeamClaim('departed', 'stop-code-1', input.nowEpoch)).toBeNull()
+    mocks.loadScanPlacement.mockResolvedValueOnce({ id: 'pl-1', huntId: 'hunt-1', revokedAt: '2026-11-01T00:00:00Z', huntSlug: 'coast-trail' })
+    expect(await openTeamClaim('member', 'stop-code-1', input.nowEpoch)).toBeNull()
+    tables.hunt_teams[0] = { ...tables.hunt_teams[0], state: 'forming', run_id: null }
+    expect(await openTeamClaim('member', 'stop-code-1', input.nowEpoch)).toBeNull()
+  })
+
+  it('shows the panel a count of the team\'s stops once locked, and none while forming', async () => {
+    tables.hunt_progress = [
+      { run_id: 'team-run', mission_key: 'stop-1', disposition: 'credited' },
+      { run_id: 'other-run', mission_key: 'stop-1', disposition: 'credited' },
+    ]
+    expect(await myTeamPanel('member', 'coast-trail')).toMatchObject({ teamId: TEAM, size: 2, stopsDone: 1 })
+    tables.hunt_teams[0] = { ...tables.hunt_teams[0], state: 'forming', run_id: null }
+    expect(await myTeamPanel('captain', 'coast-trail')).toMatchObject({ captain: true, stopsDone: null })
+    expect(await myTeamPanel('outsider', 'coast-trail')).toBeNull()
   })
 })
 
