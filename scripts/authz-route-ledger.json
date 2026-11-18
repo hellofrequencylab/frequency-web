@@ -387,6 +387,12 @@
       "reason": "Unauthenticated .ics of a course's next Run by design (owner 2026-11-18): the link is the calendar invite. Reads only events linked to a PUBLIC Frequency course (getPublicJourney + isFrequencyCourse) that are themselves published, visibility public and uncancelled, and emits title, time, the event URL and the fixed line 'Online · Zoom'. It never reads a venue, address or join link, so it publishes less than each public event page already shows.",
       "checked": "2026-11-18",
       "digest": "b96d5371685e7579"
+    },
+    "app/(marketing)/credentials/[id]/badge.svg/route.ts": {
+      "verdict": "model-gated",
+      "reason": "Unauthenticated credential badge by design (owner 2026-11-18): the credential id (a random uuid) is the share. Reads one credential through getPublicCredential, which returns only the holder's display name, the course title and the issue date, the same as the public /credentials/<id> page; a revoked or unknown id is 404.",
+      "checked": "2026-11-18",
+      "digest": "8eaa80b6d2f0e253"
     }
   }
 }

@@ -27,7 +27,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { eventInstant } from '@/lib/time/zone'
-import { sendEventReplayEmail, sendMadeItEmail } from '@/lib/email'
+import { sendCredentialEmail, sendEventReplayEmail, sendMadeItEmail } from '@/lib/email'
+import { issueAttendedForRun } from '@/lib/courses/credentials'
+import { runKeyOf } from '@/lib/events/run-series'
+import { courseHref } from '@/lib/courses/tracks'
 import { isSuppressed } from '@/lib/suppression'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
@@ -212,10 +215,61 @@ async function handler(req: NextRequest) {
   }
 
   const replays = budget.exhausted() ? 0 : await sendReplays(admin, now, appUrl, budget)
+  const attended = budget.exhausted() ? 0 : await issueAttended(admin, events, appUrl)
 
   const summary = budget.summary(processed, events.length - processed)
-  log.info('cron.event_followups', { events: events.length, sent, replays, stoppedOnBudget, ...summary })
-  return NextResponse.json({ ok: true, events: processed, sent, replays, budget: summary })
+  log.info('cron.event_followups', { events: events.length, sent, replays, attended, stoppedOnBudget, ...summary })
+  return NextResponse.json({ ok: true, events: processed, sent, replays, attended, budget: summary })
+}
+
+/**
+ * ATTENDED (owner 2026-11-18). When the follow-up window reaches the LAST session of a Run (a course's live
+ * sessions sharing details.runKey, lib/events/run-series.ts), everyone marked as having come to every session
+ * gets the Attended credential and one email with its link. Idempotent: the credential is unique per person,
+ * course and level, and the email is deduped on the credential id.
+ */
+async function issueAttended(admin: ReturnType<typeof createAdminClient>, due: EventRow[], appUrl: string): Promise<number> {
+  let issued = 0
+  const ids = due.map((e) => e.id)
+  if (ids.length === 0) return 0
+  const { data } = await admin.from('events').select('id, starts_at, details, journey_id').in('id', ids).not('journey_id', 'is', null)
+  for (const ev of (data ?? []) as { id: string; starts_at: string; details: unknown; journey_id: string | null }[]) {
+    const runKey = runKeyOf(ev.details)
+    if (!runKey || !ev.journey_id) continue
+    const { count } = await admin
+      .from('events')
+      .select('id', { count: 'exact', head: true })
+      .eq('details->>runKey', runKey)
+      .eq('is_cancelled', false)
+      .gt('starts_at', ev.starts_at)
+    if ((count ?? 0) > 0) continue
+    try {
+      const fresh = await issueAttendedForRun(runKey)
+      const { data: plan } = await admin.from('journey_plans').select('title, slug').eq('id', ev.journey_id).maybeSingle()
+      if (!plan) continue
+      for (const f of fresh) {
+        const { data: profile } = await admin.from('profiles').select('id, display_name, auth_user_id').eq('id', f.profileId).maybeSingle()
+        if (!profile?.auth_user_id) continue
+        const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+        if (!user?.email) continue
+        await sendCredentialEmail({
+          to: user.email,
+          name: profile.display_name,
+          courseTitle: plan.title,
+          level: 'attended',
+          credentialUrl: `${appUrl}/credentials/${f.credentialId}`,
+          note: null,
+          retryUrl: `${appUrl}/courses/${plan.slug}/certify`,
+          courseUrl: `${appUrl}${courseHref(plan.slug)}`,
+          dedupeKey: `credential:${f.credentialId}`,
+        })
+        issued += 1
+      }
+    } catch (err) {
+      log.error('cron.event_followups.attended_failed', { runKey, err: String(err) })
+    }
+  }
+  return issued
 }
 
 /** The one replay key per address per event. */
