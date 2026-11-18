@@ -301,7 +301,9 @@ export function JourneyBuilder({
   const meta = (patch: Parameters<typeof saveJourneyMeta>[1]) => {
     if (!planId) return
     start(async () => {
-      await saveJourneyMeta(planId, patch)
+      // JRN-007: a refused save (a bad title, a write error) is shown, not dropped.
+      const res = await saveJourneyMeta(planId, patch)
+      if (isError(res)) { setNote(res.error); return }
       router.refresh()
     })
   }

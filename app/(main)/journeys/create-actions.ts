@@ -382,10 +382,13 @@ export async function createJourneyFromSparkAction(input: {
   }
   // difficulty/category/tags/daily_minutes aren't in the generated types yet — cast the payload
   // (ADR-246: cast the payload, never the admin client). source_overview was added to the types.
-  await admin
+  // JRN-007: this write carries the intro, outline, cover, accent, meeting and tags; a failure is
+  // logged with the other seed failures instead of vanishing.
+  const { error: planUpdateError } = await admin
     .from('journey_plans')
     .update(planUpdate as unknown as Database['public']['Tables']['journey_plans']['Update'])
     .eq('id', plan.id)
+  if (planUpdateError) seedFailed('spark.plan_update', plan.id, planUpdateError)
 
   // One Phase per week, titled + described by Vera's weekly ARC (so every week is filled with a
   // focus, not an empty "Week N"). Falls back to a plain week label when the arc is missing.
