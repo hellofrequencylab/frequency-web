@@ -42,6 +42,7 @@ export type NotificationEvent =
   | 'plan.todo_overdue'
   | 'order.shipped'
   | 'loyalty.nudge'
+  | 'community.joined'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
  *  and its call sites share one shape and a typo is a compile error, not a runtime one. */
@@ -106,6 +107,9 @@ export interface NotificationContexts {
    *  (lib/loyalty/visit.ts nudgeOneAway) authors the copy in-voice; `tag` collapses a repeat for
    *  the same Space on the device, and the subject lets a per-Space mute win. */
   'loyalty.nudge': { title: string; body: string; url: string; tag: string }
+  /** Someone joined a Circle you host or followed a Space you own (LIVE-2366, owner ruling
+   *  2026-11-18). The caller names the place; the bell links to it. */
+  'community.joined': { actorId: string; kind: 'circle' | 'space'; name: string; reference: string }
 }
 
 /** One bell row, in the shape of a `notifications` row (the table the bell and /notifications
@@ -200,6 +204,23 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
         referenceId: ctx.ownerHandle,
       },
       push: { title: ctx.title, body: ctx.body, url: ctx.url },
+    }),
+  },
+
+  // A new Circle member or Space follower, told to the host / owner (LIVE-2366). Owner ruling
+  // 2026-11-18: under "Updates and messages", so inapp_lifecycle decides and the owner can turn it off.
+  'community.joined': {
+    event: 'community.joined',
+    category: 'lifecycle',
+    channels: ['inapp'],
+    render: (ctx) => ({
+      inapp: {
+        type: ctx.kind === 'circle' ? 'circle_joined' : 'space_followed',
+        body: ctx.kind === 'circle' ? `joined your Circle "${ctx.name}"` : `followed your Space "${ctx.name}"`,
+        actorId: ctx.actorId,
+        referenceType: ctx.kind,
+        referenceId: ctx.reference,
+      },
     }),
   },
 
