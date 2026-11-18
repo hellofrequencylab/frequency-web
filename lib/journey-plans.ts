@@ -286,7 +286,7 @@ export async function planShapes(planIds: string[]): Promise<Map<string, { phase
     .select('plan_id, block_type, est_minutes')
     .in('plan_id', planIds)
   if (error) {
-    log.warn('journey_plans.plan_shapes_failed', { error: error.message })
+    log.warn('journey.plan_shapes_failed', { error: error.message })
     return out
   }
   for (const r of (data as { plan_id: string; block_type: string | null; est_minutes: number | null }[] | null) ?? []) {

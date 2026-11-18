@@ -229,7 +229,7 @@ export const spec: ArticleSpec = {
       question: 'Why do most groups fizzle out?',
       answer:
         'Because they lean on charisma and energy instead of structure. The host burns out, the rhythm slips, and the group quietly stops.',
-      body: 'Groups do not usually die from low numbers. They die from chaos and burnout: a night that has to be reinvented every time, one person carrying all of it, no clear next date. The fix is boring and reliable: a format that repeats, small roles spread around, and a standing slot on the calendar that nobody has to decide on again. If you want that structure laid out week by week, Frequency\'s [free courses](/courses) walk through it.',
+      body: 'Groups do not usually die from low numbers. They die from chaos and burnout: a night that has to be reinvented every time, one person carrying all of it, no clear next date. The fix is boring and reliable: a format that repeats, small roles spread around, and a standing slot on the calendar that nobody has to decide on again.',
       beat: {
         kind: 'media',
         image: '/images/site/adult-play.jpg',
