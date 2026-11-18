@@ -99,7 +99,7 @@ export async function getJourneyOffer(planId: string): Promise<JourneyOffer | nu
  *  door enrolled anyone. Here any product that is not archived means the Journey is sold:
  *  'on_sale' when it is active, 'paused' otherwise. FAIL-CLOSED: a failed read is 'paused', because
  *  a broken price lookup must never hand away a paid program (free-enrol-gate.ts). */
-export type JourneySaleState = 'free' | 'on_sale' | 'paused'
+type JourneySaleState = 'free' | 'on_sale' | 'paused'
 
 export async function getJourneySaleState(planId: string): Promise<JourneySaleState> {
   try {
