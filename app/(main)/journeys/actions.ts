@@ -36,6 +36,7 @@ import { checkJourneyPublish } from '@/lib/journeys/publish-gate'
 import { canEditJourney } from '@/lib/journeys/authoring'
 import { normalizeJourneyCoverFocus } from '@/lib/journeys/header'
 import { writeJourneyOutcomes } from '@/lib/journeys/outcomes'
+import { mergePageLayout } from '@/lib/journeys/page-layout-merge'
 import { writeJourneyGuarantee } from '@/lib/journeys/guarantee'
 import { writeJourneyFaq, type JourneyFaqItem } from '@/lib/journeys/faq'
 import { reviewJourneyForLibrary } from '@/lib/ai/journey-review'
@@ -624,13 +625,20 @@ export async function setJourneyDelivery(
   return ok()
 }
 
-/** Page-layout section: the ordered widget toggle/reorder config. */
+/** Page-layout section: the ordered widget toggle/reorder config. JRN-001: the client sends only
+ *  the widgets it lists, as `{ id, enabled }`, so the save is MERGED onto the stored config
+ *  (mergePageLayout): story settings (outcomes, guarantee, FAQ) and the wizard row survive it. */
 export async function setJourneyPageConfig(
   planId: string,
   pageConfig: PageWidgetConfig[] | null,
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
-  const saved = await updatePlan(planId, { pageConfig })
+  const admin = createAdminClient()
+  const { data, error } = await admin.from('journey_plans').select('page_config').eq('id', planId).maybeSingle()
+  if (error) return fail('Could not save the layout. Try again.')
+  if (!data) return fail('That Journey is gone.')
+  const stored = (data as { page_config: PageWidgetConfig[] | null }).page_config
+  const saved = await updatePlan(planId, { pageConfig: mergePageLayout(stored, pageConfig) })
   if (!saved.ok) return fail(saved.error)
   revalidatePath('/journeys', 'layout')
   return ok()
