@@ -439,6 +439,9 @@
 # LIVE-2256: lib/flowweb/crm-io.ts writes FlowWeb's leads into the root Space CRM (one contact, one conversation, one message per draft step) only after /api/webhooks/flowweb-crm has verified FlowWeb's HMAC signature (FLOWWEB_OUTCOMES_SECRET) and the FLOWWEB_CRM_ENABLED switch; no member session exists on that path.
 # LIVE-2257: app/api/webhooks/flowweb-link/route.ts inserts one managed url code in qr_codes (RLS denies clients, as the /q resolver and the Link Generator) only after FlowWeb's HMAC signature (FLOWWEB_OUTCOMES_SECRET) verifies, and only for an https page on this site carrying utm_source=flowweb; no member session exists on that path.
 # LIVE-2354: lib/courses/library.ts reads the house Space's id (one public spaces row by slug) and which public Journeys an active product sells (commerce_products.journey_plan_id), for the ISR /courses page, the same reads lib/journeys/paid.ts and listPublicJourneys make under service role. It writes nothing and returns only what /discover/journeys already shows.
+# COURSE PAGES (owner 2026-11-18, JRN-017). Each read here is public data, behind isFrequencyCourse.
+#   lib/courses/course-context.ts: a public course's guides (display name and handle), its host Space's name, and its upcoming public event dates. Writes nothing.
+#   app/(marketing)/courses/[slug]/calendar.ics/route.ts: the same public, published, uncancelled sessions the course page lists, as one calendar file. Writes nothing.
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -648,6 +651,7 @@ app/(main)/spaces/[slug]/venue-actions.ts
 app/(main)/timezone-actions.ts
 app/(main)/upgrade/actions.ts
 app/(marketing)/about/page.tsx
+app/(marketing)/courses/[slug]/calendar.ics/route.ts
 app/(marketing)/pricing/page.tsx
 app/(marketing)/rsvp/[token]/page.tsx
 app/(marketing)/spaces/page.tsx
@@ -918,6 +922,7 @@ lib/connections/welcomes.ts
 lib/consent/consent.ts
 lib/consent/retention.ts
 lib/core/load-capabilities.ts
+lib/courses/course-context.ts
 lib/courses/library.ts
 lib/create-space/draft-io.ts
 lib/create-space/draft-recovery-io.ts
