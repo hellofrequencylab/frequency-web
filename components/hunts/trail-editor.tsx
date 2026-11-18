@@ -34,6 +34,7 @@ import {
   publishChecklist,
   stopKey,
   type Stop,
+  type StopVenue,
   type TrailDraft,
 } from '@/lib/hunts/draft'
 import type { TrailEditorState } from '@/lib/hunts/store'
@@ -48,6 +49,10 @@ import { EDITOR_STEPS, TRAIL_STEPS, stepNumber, type EditorStep } from './trail-
 const STOPS_REPEAT = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'stops')
 const STOP_FIELDS: FieldDef[] = (STOPS_REPEAT?.fields ?? []).map((f) => ({ ...f, section: STOPS_REPEAT?.section ?? 'stops' }))
 const VISIBILITY_FIELD = HUNT_MANIFEST.fields.find((f) => f.path === 'visibility')
+// FH-020Y: the per-stop partner venue, from the manifest's venues repeat.
+const VENUES_REPEAT = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'venues')
+const VENUE_DEF = VENUES_REPEAT?.fields.find((f) => f.path === 'venueSpaceId')
+const VENUE_FIELD: FieldDef | undefined = VENUE_DEF && { ...VENUE_DEF, section: VENUES_REPEAT?.section ?? 'stops' }
 // The pass benefit fields (FH-036S), from the manifest's repeat like the stops.
 const BENEFITS_REPEAT = HUNT_MANIFEST.repeats?.find((r) => r.arrayPath === 'benefits')
 const BENEFIT_FIELDS: FieldDef[] = (BENEFITS_REPEAT?.fields ?? []).map((f) => ({ ...f, section: BENEFITS_REPEAT?.section ?? 'publishing' }))
@@ -195,9 +200,21 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
     setChallenges((cs) => remapChallenges(cs, order))
     setChallengesDirty(true)
   }
+  // FH-020Y: a stop's partner venue is named by position too, and moves with its stop in the same edit.
+  const withVenues = (d: TrailDraft, venues: StopVenue[]): TrailDraft => {
+    const { venues: _old, ...rest } = d
+    void _old
+    return venues.length > 0 ? { ...rest, venues } : rest
+  }
+  const setStopVenue = (i: number, venueSpaceId: string) =>
+    edit((d) => {
+      const others = (d.venues ?? []).filter((v) => v.stop !== i)
+      return withVenues(d, venueSpaceId ? [...others, { stop: i, venueSpaceId }].sort((a, b) => a.stop - b.stop) : others)
+    })
   const removeStop = (i: number) => {
-    reorderChallenges(draft.stops.map((_, j) => j).filter((j) => j !== i))
-    edit((d) => ({ ...d, stops: d.stops.filter((_, j) => j !== i) }))
+    const order = draft.stops.map((_, j) => j).filter((j) => j !== i)
+    reorderChallenges(order)
+    edit((d) => withVenues({ ...d, stops: d.stops.filter((_, j) => j !== i) }, remapChallenges(d.venues ?? [], order)))
   }
   const moveStop = (i: number, dir: -1 | 1) => {
     const j = i + dir
@@ -208,7 +225,7 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
     edit((d) => {
       const stops = [...d.stops]
       ;[stops[i], stops[j]] = [stops[j], stops[i]]
-      return { ...d, stops }
+      return withVenues({ ...d, stops }, remapChallenges(d.venues ?? [], order))
     })
   }
 
@@ -422,6 +439,18 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
                     />
                   </StudioField>
                 ),
+              )}
+              {VENUE_FIELD && initial.partnerVenues.length > 0 && (
+                <StudioField label={VENUE_FIELD.label}>
+                  <FieldControl
+                    id={`stop-${i}-venue`}
+                    def={VENUE_FIELD}
+                    loaded={{ 'hunt-partner-venues': initial.partnerVenues.map((v) => ({ value: v.spaceId, label: v.name })) }}
+                    value={draft.venues?.find((v) => v.stop === i)?.venueSpaceId ?? ''}
+                    onChange={(v) => setStopVenue(i, scalar(v))}
+                    disabled={conflict !== null}
+                  />
+                </StudioField>
               )}
             </section>
           ))}

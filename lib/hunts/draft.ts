@@ -37,6 +37,13 @@ type DraftBenefit = { label: string; code: string }
 
 export const MAX_BENEFITS = 10
 
+/**
+ * FH-020Y: a partner venue named for one stop, by position. Only a Space with a live hunt_partners row
+ * for this Hunt may be named (the editor offers those; publish checks again, lib/hunts/partners.ts
+ * publishVenueBlocks). It lets a resident's Trail, which no Space runs, have a stop staff confirm.
+ */
+export type StopVenue = { stop: number; venueSpaceId: string }
+
 export type TrailDraft = {
   title: string
   hook: string
@@ -49,6 +56,8 @@ export type TrailDraft = {
   permissionConfirmed: boolean
   /** What a paid pass for this trail includes. Absent on a trail that sells nothing, which is most of them. */
   benefits?: DraftBenefit[]
+  /** FH-020Y: partner venues named per stop. Absent when none is, which keeps older drafts unchanged. */
+  venues?: StopVenue[]
 }
 
 export const MIN_STOPS = 3
@@ -93,6 +102,15 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     const r = (b && typeof b === 'object' ? b : {}) as Record<string, unknown>
     return { label: text(r.label, 80), code: text(r.code, 41).toLowerCase() }
   })
+  // One venue per stop, a real stop position and a well formed Space id; liveness is checked at publish.
+  const venues: StopVenue[] = []
+  for (const v of Array.isArray(o.venues) ? o.venues.slice(0, MAX_STOPS) : []) {
+    const r = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>
+    const stop = r.stop
+    if (typeof stop !== 'number' || !Number.isInteger(stop) || stop < 0 || stop >= stops.length) continue
+    if (typeof r.venueSpaceId !== 'string' || !UUID.test(r.venueSpaceId) || venues.some((x) => x.stop === stop)) continue
+    venues.push({ stop, venueSpaceId: r.venueSpaceId.toLowerCase() })
+  }
   return {
     title: text(o.title, TRAIL_LIMITS.title),
     hook: text(o.hook, TRAIL_LIMITS.line),
@@ -103,7 +121,13 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     permissionConfirmed: o.permissionConfirmed === true,
     // Present only when there is one, so a trail with no benefits is stored exactly as it always was.
     ...(benefits.length > 0 ? { benefits } : {}),
+    ...(venues.length > 0 ? { venues: venues.sort((a, b) => a.stop - b.stop) } : {}),
   }
+}
+
+/** FH-020Y: the partner venue named for stop `i`, or null. */
+export function stopVenue(draft: Pick<TrailDraft, 'venues'>, i: number): string | null {
+  return draft.venues?.find((v) => v.stop === i)?.venueSpaceId ?? null
 }
 
 /** A short code from a label, e.g. "Tasting flight" gives `tasting-flight`. Empty when nothing usable is left. */
@@ -184,7 +208,8 @@ export function publishChecklist(draft: TrailDraft, revision: number, opts: { ve
     items.push({ code: 'stop_text', ok: s.place.trim() !== '' && s.clue.trim() !== '', stop: i, message: 'This stop needs a place name and a clue.' })
     items.push({ code: 'stop_placement', ok: s.placementReady, stop: i, message: 'Print or place a code at this stop so people can prove they were here.' })
     if (s.staffConfirmed === true) {
-      items.push({ code: 'stop_staff_venue', ok: opts.venue === true, stop: i, message: 'Staff can confirm visits only on a trail a Space runs. Turn off staff confirming for this stop.' })
+      // FH-020Y: a partner venue named for the stop also has staff who can confirm a visit there.
+      items.push({ code: 'stop_staff_venue', ok: opts.venue === true || stopVenue(draft, i) !== null, stop: i, message: 'Staff can confirm visits only where a venue runs the stop. Pick a partner venue for this stop, or turn off staff confirming.' })
     }
   })
   // FH-042S: the challenge blockers come in plain words; the engine's graph check above still runs.

@@ -75,6 +75,21 @@ export const HUNT_MANIFEST: EntityManifest = {
         { path: 'holdForReview', label: 'If staff cannot confirm a visit on the spot, keep it for them to check later', kind: 'toggle' },
       ],
     },
+    // FH-020Y: a partner venue named per stop, so a Trail no Space runs (a resident's) can still have a
+    // stop that staff confirm. Stored as TrailDraft.venues ({ stop, venueSpaceId }) and written as the
+    // stop binding's venue_space_id at publish. The choices are the Spaces with a live hunt_partners row
+    // for this Hunt (lib/hunts/store.ts loadTrail); publish checks liveness again (publishVenueBlocks).
+    {
+      arrayPath: 'venues',
+      label: 'Partner venues',
+      over: 'array',
+      section: 'stops',
+      itemLabel: (item, index) => (typeof item.stop === 'number' ? `Stop ${item.stop + 1}` : `Venue ${index + 1}`),
+      fields: [
+        { path: 'stop', label: 'Stop', kind: 'select', required: true, optionsFrom: 'trail-stops' },
+        { path: 'venueSpaceId', label: 'Partner venue whose staff confirm visits here', kind: 'select', optionsFrom: 'hunt-partner-venues' },
+      ],
+    },
     // FH-042S (ADR-1977): the challenges, their own list beside the stops, saved by their own action
     // (app/(main)/hunts/challenge-actions.ts) to hunt_versions.policy.challenges. Each names a stop and
     // publishes onto that stop's mission (lib/hunts/challenges.ts): a Mystery as kind `answer` with only
