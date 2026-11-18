@@ -263,6 +263,12 @@ export async function nudgeCircleMate(nudgerProfileId: string, mateProfileId: st
       .maybeSingle()
     if (recent) return { nudged: true, reason: 'sent' }
 
+    // The poke lands in the bell as a mention, so the mate's own in-app Mentions switch decides
+    // (LIVE-2361). A switched-off mate reads as sent to the nudger, so the refusal reveals nothing.
+    // Loaded on use, so the Circle recognition path in this file keeps its narrow import set.
+    const { resolveSendGate } = await import('@/lib/comms/send-gate')
+    if (!(await resolveSendGate(mateProfileId, 'inapp', 'mentions')).allowed) return { nudged: true, reason: 'sent' }
+
     // The poke is an in-app notification from the nudger to the mate. supabase-js returns a write
     // failure as a value, so it is read here instead of trusted (SCAN-692).
     const { error } = await admin.from('notifications').insert({

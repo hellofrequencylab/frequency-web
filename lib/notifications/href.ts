@@ -117,6 +117,11 @@ export function notificationHref(n: NotificationItem): string {
     case 'membership':
       return '/circles'
 
+    // A refund or other order notice (lib/commerce/checkout.ts) opens the buyer's order list
+    // rather than the feed (LIVE-2361).
+    case 'order':
+      return '/orders'
+
     // Events and Journeys are slug-addressed too, and the notice carries the id.
     case 'event':
       return '/events'
