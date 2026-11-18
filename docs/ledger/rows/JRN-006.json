@@ -1,0 +1,20 @@
+{
+  "id": "JRN-006",
+  "title": "Space editors get the Journey admin rail and owner access on their Space's Journeys",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "lib/core/load-capabilities.ts",
+    "ref": "Journey audit 2026-11-17 (project thread: Dial in the Journey Wizard and Journeys)"
+  },
+  "detail": "canEditJourney (lib/journeys/authoring.ts) lets a manager of the owning Space edit its Journeys (team authoring, LIVE-732), but getJourneyCapabilities never passed viewerManagesScope, so the resolver granted journey.editSettings only to the author and staff. A Space editor opening a teammate's Space Journey got no Settings, Builder, Export or Sell rail modules (getJourneyRailData / getJourneySellData return null), no Manage trigger on the Journey page, and startJourneyRunAction treated them as a non-owner (price and tier gates, and 'Journey not found' on a private draft). Fixed 2026-11-17: getJourneyCapabilities reads the plan's space_id and, for a non-root Space, sets viewerManagesScope from getSpaceCapabilities(...).canEditProfile, the same rule canEditJourney and the event capabilities use. The root Space is everyone's personal home, so managing it grants nothing here.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-006.mjs",
+    "note": "Fails if getJourneyCapabilities stops computing viewerManagesScope from the owning non-root Space."
+  },
+  "wave": "W7"
+}
