@@ -87,7 +87,7 @@ export function JourneyBody({
         `${tree.phases.length} ${tree.phases.length === 1 ? 'phase' : 'phases'}`,
         `${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'}`,
       ]
-  if (tracked && next && nextNumber) metaParts.push(`Lesson ${nextNumber} next`)
+  if (tracked && next && nextNumber) metaParts.push(`Step ${nextNumber} next`)
   metaParts.push(peopleLine(plan.adoptCount))
 
   const primary = empty ? null : inside ? (
@@ -133,9 +133,9 @@ export function JourneyBody({
           <span>{percent}%</span>
         </div>
         <div className="stack grow mc-gap-10">
-          <span className="k">{empty ? 'Still being written' : tree.complete && tracked ? 'Every lesson done' : 'Up next'}</span>
+          <span className="k">{empty ? 'Still being written' : tree.complete && tracked ? 'Every step done' : 'Up next'}</span>
           <span className="h2">
-            {next ? `${nextNumber ? `Lesson ${nextNumber} · ` : ''}${next.title}` : plan.title}
+            {next ? next.title || `Step ${nextNumber ?? 1}` : plan.title}
           </span>
           {plan.summary ? (
             <span className="why">{plan.summary}</span>
@@ -175,7 +175,8 @@ export function JourneyBody({
                     const done = tracked && lesson.done
                     const isNext = !!next && lesson.id === next.id && tracked
                     const n = numberOf.get(lesson.id)
-                    const label = lesson.title === 'Lesson' ? `Lesson ${n}` : `Lesson ${n} · ${lesson.title}`
+                    // The entry's own title, as its author wrote it (Overview, Lesson, Homework...).
+                    const label = lesson.title || `Step ${n}`
                     const sub = [minutesLine(lesson), done ? 'Done' : null, lesson.required ? null : 'Optional']
                       .filter(Boolean)
                       .join(' · ')
