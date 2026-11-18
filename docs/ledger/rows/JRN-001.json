@@ -1,0 +1,20 @@
+{
+  "id": "JRN-001",
+  "title": "Saving the Journey discovery layout keeps the outcomes, guarantee, FAQ and guide progress",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "app/(main)/journeys/actions.ts",
+    "ref": "Journey audit 2026-11-17 (project thread: Dial in the Journey Wizard and Journeys)"
+  },
+  "detail": "The Advanced panel's Discovery layout control (components/journey/v2/journey-advanced.tsx) sends only the discovery widgets as bare { id, enabled } rows, and setJourneyPageConfig wrote that array straight to journey_plans.page_config. The story widget's settings carry the authored outcomes, guarantee and FAQ (LIVE-393, LIVE-395) and the reserved wizard row carries the guide's progress (ADR-839), so hiding or reordering one widget silently erased the Journey's sales copy and reset the guide. Fixed 2026-11-17: setJourneyPageConfig reads the stored config and writes mergePageLayout(stored, layout) (lib/journeys/page-layout-merge.ts), which takes only enabled and order from the save, keeps each entry's stored settings, and keeps every stored entry the save did not name. Guarded by lib/journeys/page-layout-merge.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-001.mjs",
+    "note": "Fails if setJourneyPageConfig writes the layout without merging it onto the stored page_config, or the merge drops stored settings or unnamed entries."
+  },
+  "wave": "W7"
+}

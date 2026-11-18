@@ -14,7 +14,7 @@
 // WHERE IT LIVES: one reserved entry in journey_plans.page_config (`{ id: 'wizard',
 // enabled: false, settings: <JourneyWizardState> }`). page_config is a closed-union widget
 // list, so every renderer (normalizePageConfig / editorPageConfig) already drops the unknown
-// 'wizard' id on read; the write paths preserve it (see setJourneyPageConfig).
+// 'wizard' id on read; the write paths preserve it (setJourneyPageConfig merges, JRN-001).
 //
 // PURE + dependency-light (only the PageWidgetConfig shape), so it is safe to import from
 // Server Components, the client guide, and vitest alike.

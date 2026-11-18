@@ -52,7 +52,7 @@ interface LookupRule {
   kind: 'lookup'
   re: RegExp
   /** Which lookup the caller must perform. */
-  entity: 'circle' | 'channel'
+  entity: 'circle' | 'channel' | 'journey'
 }
 
 type TwinRule = DirectRule | LookupRule
@@ -74,9 +74,12 @@ type TwinRule = DirectRule | LookupRule
  *   • `/hubs` and `/nexuses` — no public twin exists at all yet.
  */
 export const TWIN_RULES: readonly TwinRule[] = [
-  // Journeys are keyed by the SAME slug on both sides. Partners left this table on 2026-10-14: their
-  // public twin (/discover/partners/<slug>) merged into /discover/spaces, so a partner page has none.
-  { kind: 'direct', re: /^\/journeys\/([^/]+)$/, to: (s) => `/discover/journeys/${s}` },
+  // Journeys are keyed by the SAME slug on both sides, but this is a LOOKUP (JRN-004): only a PUBLIC,
+  // non-rejected Journey has a /discover twin. An UNLISTED one is shared by link on purpose, and the
+  // direct rewrite sent every signed-out recipient of that link into a 404; the layout now sends them
+  // to sign-in with `next` instead. Partners left this table on 2026-10-14: their public twin
+  // (/discover/partners/<slug>) merged into /discover/spaces, so a partner page has none.
+  { kind: 'lookup', re: /^\/journeys\/([^/]+)$/, entity: 'journey' },
   // Practices: the member route is keyed by id, and the twin's `[id]` segment resolves EITHER a
   // slug or an id (getPublicPractice takes both, and the page self-canonicals to `slug ?? id`),
   // so the captured segment passes straight through and the canonical is emitted by the twin.
@@ -96,7 +99,7 @@ interface TwinMatch {
   /** For a direct rule, the resolved twin path. Absent when a lookup is required. */
   path?: string
   /** For a lookup rule, which read the caller must perform. Absent for a direct rule. */
-  lookup?: 'circle' | 'channel'
+  lookup?: 'circle' | 'channel' | 'journey'
 }
 
 /**
