@@ -6,7 +6,8 @@
 // /events signed in added the Around you ranking as six reads in series. Checks the consequence in source:
 //   1. The proxy verifies the session token locally (getClaims) instead of a network getUser (owner ruling
 //      2026-11-18: only the proxy's check; the page keeps its strict getUser).
-//   2. The member shell starts the offer "is it due" read beside its wave, not after it.
+//   2. The member shell starts the offer "is it due", announcement and page-settings reads beside its wave,
+//      not after it, and reads the announcement's message and date together.
 //   3. My Frequency reads host seats and owned Circles together.
 //   4. The /events loader issues its public read before awaiting the viewer, and the payout gate and the
 //      payee read run together.
@@ -30,6 +31,12 @@ const prefetchAt = layout.indexOf('prefetchOfferDue(profile.id')
 const waveAt = layout.indexOf('] = await Promise.all([\n    applyViewAs(realRole)')
 if (prefetchAt < 0 || waveAt < 0 || prefetchAt > waveAt) fails.push('the shell does not start the offer read before its parallel wave')
 if (!/offerBarState\([^)]*offerDueP\)/.test(layout)) fails.push('the offer bar does not use the early read')
+const announceAt = layout.indexOf('const announcementP = announcementBannerState()')
+const gateEarlyAt = layout.indexOf('const pageGateEarlyP')
+if (announceAt < 0 || announceAt > waveAt) fails.push('the announcement reads still wait for the shell wave')
+if (gateEarlyAt < 0 || gateEarlyAt > waveAt) fails.push('the page-settings gate read still waits for the shell wave')
+const banner = code('components/layout/announcement-banner.tsx')
+if (!/Promise\.all\(\[announcementMessage\(\), announcementEndsAt\(\)\]\)/.test(banner)) fails.push('the announcement message and date are still read in series')
 
 const myFreq = code('lib/nav/my-frequency.ts')
 const myCircles = myFreq.slice(myFreq.indexOf('async function myCircles'), myFreq.indexOf('const MAX_ENTRIES'))
