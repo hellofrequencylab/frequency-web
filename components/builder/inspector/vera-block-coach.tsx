@@ -5,7 +5,8 @@
 //
 // Creation-time only (ADR-976 D-4): when the block arrives with its word fields empty she asks once, by herself.
 // After that she speaks only when the owner presses Ask Vera. An edit, an idle canvas or a save never calls her.
-// Mounted only by the staff-only, EDITOR_CANVAS-gated /pages/canvas route.
+// Mounted only by the staff-only, EDITOR_CANVAS-gated /pages/canvas route: on the demo Banner, and on the block
+// selected in a real Space page document (`nid`), where the server reads the block's type from the stored page.
 //
 // WHAT THE OWNER CAN DO WITH A QUESTION (PROG-E8B). Two things, and neither writes a word. "Answer this" moves the
 // cursor to that field in the inspector beside her, so the owner types the answer themselves. "Not now" puts the
@@ -23,7 +24,7 @@ import { askVeraAboutCanvasBlock } from '@/app/(main)/pages/canvas/actions'
 const keyOf = (q: BlockQuestion) => `${q.field}:${q.questionId}`
 
 export function VeraBlockCoach({
-  title, values, fresh, spaceId,
+  title, values, fresh, spaceId, nid,
 }: {
   /** The block's name, for the heading. */
   title: string
@@ -32,6 +33,8 @@ export function VeraBlockCoach({
   /** True when the block was just created with its word fields empty: the one moment she speaks first. */
   fresh: boolean
   spaceId?: string
+  /** On a real document: the selected node's id. The server reads its type and fields from the stored page. */
+  nid?: string
 }) {
   const [coaching, setCoaching] = useState<BlockCoaching | null>(null)
   const [quiet, setQuiet] = useState(false)
@@ -43,7 +46,7 @@ export function VeraBlockCoach({
 
   const ask = (trigger: 'block-created' | 'asked') =>
     start(async () => {
-      const result = await askVeraAboutCanvasBlock({ trigger, values, spaceId }).catch(() => null)
+      const result = await askVeraAboutCanvasBlock({ trigger, values, spaceId, ...(nid ? { nid } : {}) }).catch(() => null)
       setCoaching(result)
       setOutcomes({})
       setQuiet(result === null)
@@ -73,7 +76,7 @@ export function VeraBlockCoach({
     if (!scope) return
     for (const row of scope.querySelectorAll<HTMLElement>('[data-field]')) {
       if (row.dataset.field !== field || section.current?.contains(row)) continue
-      row.querySelector<HTMLElement>('input, textarea')?.focus()
+      row.querySelector<HTMLElement>('input, textarea, [role="textbox"]')?.focus()
       return
     }
   }

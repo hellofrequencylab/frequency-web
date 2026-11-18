@@ -104,7 +104,7 @@ interface FreeHumanProfile { label: string; accent: string; hover: string; text:
 
 /** The thirteen profiles, from handoff/frequency/theme-contract.free-human.json. Accent only; the type is shared. */
 export const FREE_HUMAN_PROFILES = {
-  general: { label: "Free Human", accent: '#B3361F', hover: '#7E1E12', text: '#7E1E12', soft: '#E98A66', bg: '#FADBCF', deep: '#7E1E12', on: '#FFF8EC' },
+  general: { label: "Honey", accent: '#B3361F', hover: '#7E1E12', text: '#7E1E12', soft: '#E98A66', bg: '#FADBCF', deep: '#7E1E12', on: '#FFF8EC' },
   wellness: { label: "Wellness and retreats", accent: '#B3361F', hover: '#7E1E12', text: '#7E1E12', soft: '#E98A66', bg: '#FADBCF', deep: '#7E1E12', on: '#FFF8EC' },
   coaches: { label: "Coaches and healers", accent: '#3E6B2E', hover: '#233F14', text: '#3E6B2E', soft: '#ADC596', bg: '#E6EEDB', deep: '#233F14', on: '#FFF8EC' },
   creators: { label: "Creators", accent: '#7A2638', hover: '#4F1524', text: '#7A2638', soft: '#C8604A', bg: '#F0E5EC', deep: '#4F1524', on: '#FFF8EC' },

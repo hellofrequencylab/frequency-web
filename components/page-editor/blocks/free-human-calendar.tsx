@@ -153,12 +153,12 @@ function Calendar({ p, metadata, now, pad, vis }: Common) {
 // ── Registry ─────────────────────────────────────────────────────────────────────────────────
 
 export const freeHumanCalendarBlocks: Record<string, ComponentConfig> = {
-  FreeHumanCalendarHero: block('Free Human calendar hero (live)', {
+  FreeHumanCalendarHero: block('Honey calendar hero (live)', {
     ...groundFields, eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading'),
     primaryLabel: text('Button'), primaryHref: text('Button: where it goes', `${LINK_HINT} Empty goes to the dates below.`), feedLabel: text('Calendar feed link'),
     nextEmpty: text('Next, when nothing is scheduled'), nextEmptyNote: text('Next, when nothing is scheduled: line under'),
   }, FREE_HUMAN_CALENDAR_HERO, CalendarHero),
-  FreeHumanCalendar: block('Free Human calendar (live)', {
+  FreeHumanCalendar: block('Honey calendar (live)', {
     ...groundFields, eyebrow: text('Small label'), title: area('Heading', VOICE_HINT),
     defaultView: { type: 'select', label: 'Opens on', options: [{ label: 'Month', value: 'month' }, { label: 'Agenda', value: 'agenda' }] },
     wheel: { type: 'radio', label: 'Offer "See it on the wheel"', options: [{ label: 'Yes', value: true }, { label: 'No', value: false }] },

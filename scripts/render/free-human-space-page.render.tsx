@@ -53,7 +53,7 @@ it('renders the Free Human Space page', async () => {
   seedEvents.rows = FREE_HUMAN_SEED_EVENTS.slice(0, 5).map((e) => ({ id: e.id, slug: e.id, title: e.title, startsAt: e.startsAt.replace('+00', 'Z'), endsAt: e.endsAt.replace('+00', 'Z'), timeZone: 'America/Los_Angeles', description: e.summary }))
   const preferences = { siteStyle: { theme: 'free-human', synced: true, spaceFonts: 'classic' }, profileLayout: layout, profileData: { about: 'x', offerings } }
   seedEvents.profile = readProfileData(preferences)
-  const space = { id: 's1', slug: 'freehumanmovement', type: 'business', brandName: 'Free Human Movement', logoUrl: '/sites/free-human/logo-mark.svg', coverUrl: '/sites/free-human/photos/heritage-madonna-nursing.webp', tagline: 'Embody. Create. Rise.', entitlements: {}, featureRoles: {}, preferences, profile: readProfileData(preferences) }
+  const space = { id: 's1', slug: 'freehumanmovement', type: 'business', brandName: 'Free Human Movement', logoUrl: '/sites/free-human/logo-mark.svg', coverUrl: '/sites/free-human/photos/fq-boc-group-hug.webp', tagline: 'Embody. Create. Rise.', entitlements: {}, featureRoles: {}, preferences, profile: readProfileData(preferences) }
   const body = await SpaceProfileModules({ space: space as never, grid: parseEntityLayout(layout) })
   const accent = spacePageDefaultAccent(preferences, '')
   const page = h(

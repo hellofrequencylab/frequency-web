@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   loadPublicTrailSummary: vi.fn(),
   loadScanPlacement: vi.fn(),
   openClaim: vi.fn(),
+  openTeamClaim: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({ headers: mocks.headers }))
@@ -25,6 +26,7 @@ vi.mock('@/lib/elements/header', () => ({
 }))
 vi.mock('@/lib/auth', () => ({ getMyProfileId: mocks.getMyProfileId }))
 vi.mock('@/lib/hunts/run-store', () => ({ loadPublicTrailSummary: mocks.loadPublicTrailSummary }))
+vi.mock('@/lib/hunts/team-store', () => ({ openTeamClaim: mocks.openTeamClaim }))
 vi.mock('@/lib/hunts/claim-store', () => ({
   loadScanPlacement: mocks.loadScanPlacement,
   openClaim: mocks.openClaim,
@@ -51,6 +53,7 @@ beforeEach(() => {
   mocks.loadPublicTrailSummary.mockResolvedValue(trail)
   mocks.loadScanPlacement.mockResolvedValue(placement)
   mocks.openClaim.mockResolvedValue({ ok: true, runId: 'private-run-id', token: 'signed-fixture' })
+  mocks.openTeamClaim.mockResolvedValue(null)
 })
 
 afterEach(() => {
@@ -151,6 +154,26 @@ describe('Public Trail landing', () => {
 
     mocks.headers.mockResolvedValue(new Headers({ 'user-agent': 'Googlebot' }))
     expect(await render(undefined, 'credited')).not.toContain('role="status"')
+  })
+
+  it('hands a locked team member a token for the team run, not their own (FH-043S)', async () => {
+    mocks.getMyProfileId.mockResolvedValue('player-2')
+    mocks.openTeamClaim.mockResolvedValue({ token: 'team-signed-fixture' })
+    const html = await render('coast-001')
+    expect(html).toContain('<form action="/hunts/p/coast-001" method="post">')
+    expect(html.match(/<input\b[^>]*>/g)).toEqual([
+      expect.stringMatching(/type="hidden".*name="token".*value="team-signed-fixture"/),
+    ])
+    expect(html).toContain('Confirm stop for your team')
+    expect(mocks.openTeamClaim).toHaveBeenCalledWith('player-2', 'coast-001', expect.any(Number))
+    expect(mocks.openClaim).not.toHaveBeenCalled()
+  })
+
+  it('words the team answers from the scan POST', async () => {
+    mocks.getMyProfileId.mockResolvedValue('player-2')
+    expect(await render(undefined, 'team_credited')).toContain('Stop confirmed for your team.')
+    expect(await render(undefined, 'team_already_credited')).toContain('Your team already has this stop.')
+    expect(await render(undefined, 'team_not_locked')).toContain('Your captain needs to lock the roster before stops count.')
   })
 
   it('uses request-time rendering and only public Trail data in OG metadata', async () => {

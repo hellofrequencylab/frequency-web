@@ -5,13 +5,44 @@
     "editor": "NewWorld",
     "site": "new-world"
   },
-  "offered": false,
+  "offered": true,
   "site": {
     "label": "New World",
     "description": "The Frequency house look: Night and Day in one theme, Tide teal to start, and a kit for every kind of gathering.",
     "defaultFonts": "modern"
   },
-  "library": null,
+  "library": {
+    "tagline": "The theme every Space starts in. Night and Day in one look.",
+    "madeFor": "any place that gathers people: studios, cafés, clubs, coaches, hosts, venues and non-profits",
+    "signature": "Night and Day in one look, Tide teal to start, with Unbounded, Hanken Grotesk and Instrument Serif.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "ready",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "ready",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/new-world"
+  },
   "editor": {
     "tokens": {
       "source": "lib/sites/editor/theme-contract.json",

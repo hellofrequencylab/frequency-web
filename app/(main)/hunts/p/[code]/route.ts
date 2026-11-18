@@ -4,6 +4,8 @@ import { deferHuntEvent, reasonClass } from '@/lib/hunts/analytics'
 import { claimAsPlayer, loadScanPlacement } from '@/lib/hunts/claim-store'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { isCrawler, resolvePlacement } from '@/lib/hunts/placement'
+import { claimAsTeamMember, myTeam } from '@/lib/hunts/team-store'
+import { teamClaimKey } from '@/lib/hunts/teams'
 import { appOrigin } from '@/lib/sites/host'
 
 export const dynamic = 'force-dynamic'
@@ -101,12 +103,18 @@ export async function POST(request: Request, { params }: Context) {
   const placement = await loadScanPlacement({ code })
   if (!placement?.huntSlug || placement.revokedAt) return notFound()
 
-  const outcome = await claimAsPlayer(caller.id, {
-    placementId: placement.id,
-    token,
-    idempotencyKey: createHash('sha256').update(token).digest('hex'),
-    nowEpoch: Math.floor(Date.now() / 1000),
-  })
+  const nowEpoch = Math.floor(Date.now() / 1000)
+  // FH-043S: a member of an Expedition team credits the team's one run, never their own. The token the
+  // landing issued names that run; the key matches the typed form, so a scan after a typed code replays.
+  const team = await myTeam(caller.id, placement.huntSlug)
+  const outcome = team
+    ? await claimAsTeamMember(caller.id, { slug: placement.huntSlug, code, token, idempotencyKey: teamClaimKey(caller.id, placement.huntSlug, code), nowEpoch })
+    : await claimAsPlayer(caller.id, {
+      placementId: placement.id,
+      token,
+      idempotencyKey: createHash('sha256').update(token).digest('hex'),
+      nowEpoch,
+    })
   deferHuntEvent({
     event: 'hunt.stop_claim',
     actorProfileId: caller.id,
@@ -115,6 +123,8 @@ export async function POST(request: Request, { params }: Context) {
   const landing = new URL(`/play/${encodeURIComponent(placement.huntSlug)}`, origin)
   const result = outcome.ok ? outcome.result : null
   // FH-020V: a visit kept for staff review is its own answer on the landing, never a credit and never a refusal.
-  landing.searchParams.set('claim', result === 'credited' || result === 'already_credited' || result === 'held' ? result : 'unavailable')
+  landing.searchParams.set('claim', result === 'credited' || result === 'already_credited' || result === 'held'
+    ? (team && result !== 'held' ? `team_${result}` : result)
+    : !outcome.ok && outcome.reason === 'roster_not_locked' ? 'team_not_locked' : 'unavailable')
   return redirect(landing, 303)
 }

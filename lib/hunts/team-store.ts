@@ -5,23 +5,31 @@
  * decides again under its own locks (supabase/migrations/20270346082000_hunt_teams_editions.sql).
  *
  *   myTeam(actorId, slug)              the caller's own team on a Trail: its state and size, never a roster
+ *   myTeamPanel(actorId, slug)         the same, plus the team run's stop count, for the Trail page
  *   startTeam / joinMyTeam / lockMyTeam / leaveMyTeam   the roster commands
- *   claimAsTeamMember(actorId, input)  a member credits a stop on the team's run
+ *   openTeamClaim(actorId, code, now)  the scan landing: a claim token bound to the team's run and the stop
+ *   claimAsTeamMember(actorId, input)  a member credits a stop on the team's run (typed, or a scan with its token)
  *
  * Nothing here returns another member's name or traversal: docs/hunts/ROLE-MATRIX.md has no roster view.
  * Dark: every function answers `disabled` until HUNTS_CLAIMS_ENABLED (which needs HUNTS_ENABLED) is on.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { signingSecret } from '@/lib/signing-secret'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadScanPlacement } from './claim-store'
 import { huntSwitchOn } from './flags'
 import { evaluate, validateGraph } from './graph'
+import { issueClaimToken, verifyClaimToken } from './placement'
 import { loadPublishedTrail } from './run-store'
 import { huntRpc, loadUniquePlacementMission } from './staff-store'
 import { applyTeamClaim, createTeam, joinTeam, leaveTeam, lockTeam, type TeamResult } from './teams'
 
 // eslint-disable-next-line no-restricted-syntax -- the hunt tables are not in the generated types yet (ADR-246 exception)
 const db = () => createAdminClient() as unknown as SupabaseClient
+
+// The same proof secret as the solo door (claim-store.ts). A token names its run, so a solo token never
+// opens the team run and a team token never opens a member's own run.
+const secret = () => signingSecret('hunt-claim-proof', ['HUNTS_PROOF_SECRET'])
 
 type Disabled = { result: 'disabled' }
 const OFF: Disabled = { result: 'disabled' }
@@ -79,6 +87,31 @@ export async function myTeam(actorId: string, slug: string): Promise<MyTeam | nu
   return hunt ? loadMyTeam(client, actorId, hunt.id) : null
 }
 
+/**
+ * The Trail page's team panel (FH-043S): the caller's own team plus the team run's credited stop count
+ * once the roster is locked (null while forming, or when the read is incomplete). Never a roster.
+ */
+export async function myTeamPanel(actorId: string, slug: string): Promise<(MyTeam & { stopsDone: number | null }) | null> {
+  const team = await myTeam(actorId, slug)
+  if (!team) return null
+  const progress = team.state === 'locked' && team.runId ? await teamProgress(db(), team.runId) : null
+  return { ...team, stopsDone: progress ? progress.credits.length : null }
+}
+
+/**
+ * The scan landing for a team member (FH-043S): a short-lived claim token bound to the TEAM's run and the
+ * scanned stop, so the confirm POST credits the team once. Null when the caller is on no locked team for
+ * this code's Trail; the landing then falls back to the member's own run.
+ */
+export async function openTeamClaim(actorId: string, code: string, nowEpoch: number): Promise<{ token: string } | null> {
+  if (!huntSwitchOn('claims')) return null
+  const placement = await loadScanPlacement({ code })
+  if (!placement || placement.revokedAt !== null) return null
+  const team = await loadMyTeam(db(), actorId, placement.huntId)
+  if (!team || team.state !== 'locked' || !team.runId) return null
+  return { token: issueClaimToken({ secret: secret(), scope: { runId: team.runId, placementId: placement.id }, now: nowEpoch }) }
+}
+
 export async function startTeam(actorId: string, input: { slug: string; name: string }) {
   if (!huntSwitchOn('claims')) return OFF
   const hunt = await liveHunt(db(), input.slug)
@@ -113,16 +146,17 @@ async function teamProgress(client: SupabaseClient, runId: string): Promise<{ cr
   return { total: rows.length, credits: rows.filter((r) => r.disposition === 'credited').map((r) => ({ mission_key: r.mission_key as string })) }
 }
 
-type TeamClaimRefusal = 'not_on_team' | 'roster_not_locked' | 'placement_not_found' | 'mission_binding_unavailable' | 'eligibility_unavailable' | 'mission_not_eligible'
+type TeamClaimRefusal = 'bad_token' | 'not_on_team' | 'roster_not_locked' | 'placement_not_found' | 'mission_binding_unavailable' | 'eligibility_unavailable' | 'mission_not_eligible'
 
 /**
  * A team member confirms a stop with the code printed there. The placement binding picks the stop, the
  * caller's own membership picks the team and its run; neither a team id nor a run id is taken from the
- * request. The database then checks the roster again under the team lock.
+ * request. The database then checks the roster again under the team lock. A scan passes the token the
+ * landing issued (openTeamClaim); it must name this team's run and this stop, or nothing is asked.
  */
 export async function claimAsTeamMember(
   actorId: string,
-  input: { slug: string; code: string; idempotencyKey: string; nowEpoch: number },
+  input: { slug: string; code: string; idempotencyKey: string; nowEpoch: number; token?: string },
 ): Promise<{ ok: true; result: TeamResult; replayed: boolean } | { ok: false; reason: TeamClaimRefusal | 'disabled' }> {
   if (!huntSwitchOn('claims')) return { ok: false, reason: 'disabled' }
   const placement = await loadScanPlacement({ code: input.code })
@@ -132,6 +166,10 @@ export async function claimAsTeamMember(
   const team = await loadMyTeam(client, actorId, placement.huntId)
   if (!team) return { ok: false, reason: 'not_on_team' }
   if (team.state !== 'locked' || !team.runId) return { ok: false, reason: 'roster_not_locked' }
+  if (input.token !== undefined
+    && !verifyClaimToken({ secret: secret(), token: input.token, now: input.nowEpoch, expected: { runId: team.runId, placementId: placement.id } })) {
+    return { ok: false, reason: 'bad_token' }
+  }
 
   const [trail, missionKey, first] = await Promise.all([
     loadPublishedTrail(input.slug),
