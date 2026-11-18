@@ -56,7 +56,8 @@ describe('Space learning is a public catalog under request RLS', () => {
     const result = await readSpaceLearningPage('space-a', 'journey')
     expect(result.items.map(item => item.id)).toEqual(['j1'])
     expect(result.items[0].href).toBe('/journeys/published')
-    expect(matchPublicTwin(result.items[0].href)).toEqual({ segment: 'published', path: '/discover/journeys/published' })
+    // JRN-004: a Journey's twin is the public-gate lookup (an unlisted one must not be sent into a 404).
+    expect(matchPublicTwin(result.items[0].href)).toEqual({ segment: 'published', lookup: 'journey' })
     expect(fixture.calls[0].predicates).toContainEqual(['not:is', 'published_at', null])
   })
   it('refuses other-tenant, private and unapproved Practices even for an owner-readable response', async () => {
