@@ -221,6 +221,9 @@ export const EVENT_MANIFEST: EntityManifest = {
     // and the check-in block now prints it. Not prose: it is a list of practical facts (parking, a
     // door code, what to bring, an accessibility note), not the page's narrative.
     { path: 'details.specialInstructions', label: SPECIAL_INSTRUCTIONS_LABEL, kind: 'longtext', section: 'where', veraDrafts: true, omitWhenEmpty: true, read: (d) => str((d.details as Record<string, unknown> | undefined)?.specialInstructions) },
+    // THE REPLAY (owner 2026-11-18). A link to the recording; once set, everyone who saved a seat gets it
+    // in one email (app/api/cron/event-replays). Host-only: never drafted from a flyer.
+    { path: 'details.replayUrl', label: 'Replay link', kind: 'url', section: 'where', veraDrafts: false, omitWhenEmpty: true, read: (d) => str((d.details as Record<string, unknown> | undefined)?.replayUrl) },
 
     // ── Tickets and price. Both asked in the Spark: a flyer without a price is a real gap,
     //    and nobody but the host can settle it. Not `commercial` (no ledger, host is the source). ──

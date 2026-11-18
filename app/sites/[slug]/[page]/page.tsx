@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { permanentRedirect } from 'next/navigation'
 import { markAnonymousRender } from '@/lib/core/anonymous-render'
 
 // Owner ask 2026-10-06: /sites/<slug>/<page> forwards to the same page on the Space's public profile.
@@ -13,5 +13,5 @@ export function generateStaticParams(): { slug: string; page: string }[] {
 export default async function SpaceWebsitePage({ params }: { params: Promise<{ slug: string; page: string }> }) {
   markAnonymousRender()
   const { slug, page } = await params
-  redirect(`/spaces/${encodeURIComponent(slug)}/${encodeURIComponent(page)}`)
+  permanentRedirect(`/spaces/${encodeURIComponent(slug)}/${encodeURIComponent(page)}`)
 }

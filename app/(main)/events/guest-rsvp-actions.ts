@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { sendGuestRsvpReceipt } from '@/lib/events/guest-rsvp-email'
 import { resolveAcquisition } from '@/lib/attribution/server'
 import { recordVerifiedLeadCapture } from '@/lib/analytics/leads'
+import { runSiblings } from '@/lib/events/run-series'
 
 // SIGNED-OUT GUEST RSVP — one field, and a seat that obeys the member rules.
 //
@@ -130,6 +131,24 @@ export async function submitGuestRsvp(input: {
     // seat does not exist, so the reader must not be told to check their email for it.
     console.error('[guest-rsvp] capture_guest_rsvp threw', { eventId: input.eventId, error: e instanceof Error ? e.message : String(e) })
     return WRITE_FAILED
+  }
+
+  // ONE SEAT FOR THE WHOLE RUN (lib/events/run-series.ts): a guest who saves a seat for one session of a
+  // Run is seated for every upcoming session of the same Run, through the SAME anon-granted function, so
+  // the SQL re-validates each one exactly as if the guest had submitted it. Best-effort and silent: the
+  // reply stays the one identical reply, and the receipt below stays one email for the first session.
+  try {
+    const siblings = supabase ? await runSiblings(supabase as unknown as Parameters<typeof runSiblings>[0], input.eventId) : []
+    for (const s of siblings) {
+      await (supabase as unknown as UntypedRpc).rpc('capture_guest_rsvp', {
+        p_event_id: s.id,
+        p_email: email,
+        p_name: name,
+        p_ticket_type_id: null,
+      })
+    }
+  } catch (e) {
+    console.error('[guest-rsvp] run siblings failed', { eventId: input.eventId, error: e instanceof Error ? e.message : String(e) })
   }
 
   try {
