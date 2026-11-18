@@ -37,11 +37,14 @@ const TYPE_LABEL: Record<string, string> = {
 
 const unitWord = (u: Unit) => (u === 'month' ? 'Month' : 'Week')
 
-/** "Week 2 · Attention", or "Week 2" when the title only repeats the label. */
+/** "Week 2 · Attention", or "Week 2" when the title only repeats the label. A title that already
+ *  leads with its label ("Week 1 · The Engine") is used as written, never doubled. */
 function phaseHeading(p: Phase, i: number, u: Unit): string {
   const label = `${unitWord(u)} ${i + 1}`
   const own = p.title?.trim()
-  return own && own.toLowerCase() !== label.toLowerCase() ? `${label} · ${own}` : label
+  if (!own || own.toLowerCase() === label.toLowerCase()) return label
+  if (own.toLowerCase().startsWith(label.toLowerCase()) && /^[\s·:,.-]/.test(own.slice(label.length))) return own
+  return `${label} · ${own}`
 }
 
 function lessonSub(l: Lesson, done: boolean, pillar: string | undefined, anchor: boolean): string {
@@ -85,6 +88,7 @@ export function JourneyCourseBody({
   side,
   details,
   leave,
+  coverImage,
 }: {
   slug: string
   title: string
@@ -109,6 +113,8 @@ export function JourneyCourseBody({
   details: React.ReactNode
   /** The quiet exit, for an enrolled member. */
   leave: React.ReactNode
+  /** The Journey's cover photo, drawn as a band above the heading (as on /journeys/<slug>). */
+  coverImage?: string | null
 }) {
   const lessons = tree.phases.flatMap((p) => p.modules.flatMap((m) => m.lessons))
   const numberOf = new Map(lessons.map((l, i) => [l.id, i + 1]))
@@ -126,14 +132,15 @@ export function JourneyCourseBody({
   if (tree.phases.length > 0 && !empty) {
     metaParts.push(`${unitWord(unit)} ${currentIndex + 1} of ${tree.phases.length}${cycle ? ` · Year ${cycle.year}` : ''}`)
   }
-  if (next && nextNumber) metaParts.push(`Lesson ${nextNumber} next`)
+  // An entry is titled by its author (Overview, Lesson, Homework...), so nothing here calls it a "Lesson N".
+  if (next && nextNumber) metaParts.push(`Step ${nextNumber} next`)
   metaParts.push(`${adoptCount.toLocaleString()} ${adoptCount === 1 ? 'person' : 'people'} on this Journey`)
 
   const kicker = empty ? 'Still being written' : tree.complete ? (cycle ? `Every ${unit} is done` : 'Journey finished') : waiting ? 'You are caught up' : 'Up next'
   const heroTitle = empty
     ? 'No lessons yet.'
     : next
-    ? `${nextNumber ? `Lesson ${nextNumber} · ` : ''}${next.lesson.title}`
+    ? next.lesson.title || `Step ${nextNumber ?? 1}`
     : tree.complete
       ? cycle
         ? 'This Journey repeats each year.'
@@ -162,11 +169,19 @@ export function JourneyCourseBody({
 
   return (
     <MembersBody>
+      {coverImage ? (
+        <div
+          className="ph"
+          aria-hidden
+          style={{ height: 'clamp(160px, 22vw, 260px)', borderRadius: 28, marginBottom: 24, backgroundImage: `url("${encodeURI(coverImage)}")` }}
+        />
+      ) : null}
       <MemberHead
         kicker="The Quest · Journey"
         title={<SerifTail text={title} />}
         meta={metaParts.join(' · ')}
         actions={<div className="row wrap">{actions}</div>}
+        actionsBelow
       />
 
       <section className="panel mc-hero" aria-label="Your progress">
@@ -193,7 +208,7 @@ export function JourneyCourseBody({
           )}
           {tree.totalRequired > 0 && (
             <span className="t2">
-              {tree.doneRequired} of {tree.totalRequired} lessons done
+              {tree.doneRequired} of {tree.totalRequired} steps done
               {nextLock?.unlockAt && !waiting ? ` · Next ${unit} ${unlockLine(nextLock.unlockAt).toLowerCase()}` : ''}
             </span>
           )}
@@ -256,7 +271,7 @@ export function JourneyCourseBody({
                   {phaseLessons.map((l) => {
                     const isNext = next?.lesson.id === l.id
                     const n = numberOf.get(l.id)
-                    const label = `Lesson ${n} · ${l.title}`
+                    const label = l.title || `Step ${n}`
                     const sub = lessonSub(l, l.done, pillarByLesson[l.id], l.id === anchorLessonId)
                     const inner = (
                       <>

@@ -81,7 +81,52 @@ export function MoreJourneysPanel({ more }: { more: MoreJourney[] }) {
 }
 
 /** The guide, in the kit: their face, their name, a door to their profile. */
-export function GuidePanel({ author }: { author: { handle: string; displayName: string; avatarUrl: string | null } | null }) {
+/** Who leads this Journey (owner 2026-11-17). Its GUIDES, the people named on it, in order; with none, the
+ *  Space that hosts it is the guide; a member's own Journey (no host Space) falls back to its author. */
+export function GuidePanel({
+  guides = [],
+  host = null,
+  author = null,
+}: {
+  guides?: Array<{ handle: string; displayName: string; avatarUrl: string | null }>
+  host?: { slug: string; name: string; logoUrl: string | null } | null
+  author?: { handle: string; displayName: string; avatarUrl: string | null } | null
+}) {
+  if (guides.length > 0) {
+    return (
+      <div className="panel stack">
+        <span className="k">{guides.length > 1 ? 'Your guides' : 'Your guide'}</span>
+        {guides.map((g) => (
+          <Link key={g.handle} className="row" href={`/people/${g.handle}`}>
+            <FqAvatar url={g.avatarUrl} name={g.displayName} size="m" />
+            <span className="grow">
+              <span className="t1 mc-block">{g.displayName}</span>
+              <span className="t2">@{g.handle}</span>
+            </span>
+          </Link>
+        ))}
+        {host ? (
+          <Link className="t2" href={`/spaces/${host.slug}`}>
+            Hosted by {host.name}
+          </Link>
+        ) : null}
+      </div>
+    )
+  }
+  if (host) {
+    return (
+      <div className="panel stack">
+        <span className="k">Your guide</span>
+        <Link className="row" href={`/spaces/${host.slug}`}>
+          <FqAvatar url={host.logoUrl} name={host.name} size="m" />
+          <span className="grow">
+            <span className="t1 mc-block">{host.name}</span>
+            <span className="t2">Hosts and guides this Journey.</span>
+          </span>
+        </Link>
+      </div>
+    )
+  }
   if (!author) return null
   return (
     <div className="panel stack">

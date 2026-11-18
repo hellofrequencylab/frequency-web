@@ -1,0 +1,20 @@
+{
+  "id": "JRN-016",
+  "title": "Taking a Journey reads clean: the right rail folds, heading buttons are one row, week titles are not doubled, the course page has its cover",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/members/shell/rail-layout.tsx",
+    "ref": "Owner 2026-11-17: \"Check all the journey page headers. Clean it up.\" and \"Whenever anyone is in Journey mode as a user, minimize the right rail.\""
+  },
+  "detail": "Journey mode (/journeys/<slug>/learn, play, guide, welcome) folds the right rail to its micro strip on arrival; the chevron opens it for that page only and the member's stored rail choice is untouched. kit-members.css `.head>div` (a column, for the title stack) out-ranked `.row`, stacking every header action; `.head>div.row` restores the row. phaseHeading no longer prefixes a label the title already leads with. The course page draws the cover band the Journey page already had.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-016.mjs",
+    "note": "Fails on main: no Journey mode, stacked heading actions, doubled week titles, no cover on the course page."
+  },
+  "wave": "W7",
+  "closed": "2026-11-17"
+}

@@ -521,3 +521,15 @@ describe('the MANAGED_ROUTES catalog is internally consistent', () => {
     expect(routes).toEqual([...new Set(routes)])
   })
 })
+
+describe('isJourneyMode', () => {
+  it('folds the right rail only while a member is taking a Journey', async () => {
+    const { isJourneyMode } = await import('./page-chrome')
+    for (const p of ['/journeys/the-business-of-community-101/learn', '/journeys/x/play', '/journeys/x/guide', '/journeys/x/welcome', '/journeys/x/learn/']) {
+      expect(isJourneyMode(p)).toBe(true)
+    }
+    for (const p of ['/journeys', '/journeys/x', '/journeys/x/edit', '/journeys/x/launch', '/discover/journeys/x', '/journeys/x/learning']) {
+      expect(isJourneyMode(p)).toBe(false)
+    }
+  })
+})
