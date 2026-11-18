@@ -4,208 +4,148 @@ description: Pick one thing, set a standing time, recruit a co-host, and run a s
 category: leading
 order: 1
 published: 2026-06-23
-updated: 2026-09-30
+updated: 2026-11-18
 audience: host
 role: host
 featureKeys: [circles, events]
+keywords: [create a group, new circle, become a host, hosting, first meetup, hand off, unlisted, who can join]
 status: published
 ---
 
-You start a Circle by picking one thing you practice, setting a standing time,
-and inviting a handful of people to the first one. That is the whole move. You do
-not have to build a community from scratch or be a natural leader. You host one
-Circle, on a fixed night, and we hand you the format.
+You start a Circle by picking one thing you practice, setting a standing time, and inviting a handful of people to the first one. That is the whole move. You do not have to build a community from scratch or be a natural leader. You host one Circle, on a fixed night, and we hand you the format.
 
-## What do I actually need to start?
+**Where to find it:** tap **Create** at the top of the left rail, then **New Circle**. You can also open **Circles** and choose **Start a Circle**.
+
+## Gather what you need
 
 Three things, and none of them is charisma:
 
-- **One thing to do.** A practice, a walk, a discussion, a project. One Channel,
-  one activity. Not a program. One repeatable thing.
-- **A standing time.** A fixed night and place, like "every Thursday at 7." The
-  standing time does more work than anything else you will do.
-- **A few people.** You do not need a crowd. Four people who keep coming back beats
-  twenty who came once.
+- **One thing to do.** A practice, a walk, a discussion, a project. One repeatable thing.
+- **A standing time.** A fixed night and place, like "every Thursday at 7." The standing time does more work than anything else you will do.
+- **A few people.** You do not need a crowd. Four people who keep coming back beats twenty who came once.
 
-That is the kit. Everything below is how to use it.
+## Create the Circle
 
-## How do I create the Circle?
-
-1. Open **Circles** and choose **Start a Circle**.
-2. Pick the **Channel** it is built around (the one thing you practice together).
-   You can add up to two more later from the Circle's settings, but one is the
-   right place to start.
-3. Name it plainly and say where and when it meets. A clear name and a standing
-   time tell people exactly what they are walking into.
-4. Set the first **gathering** with a date, time, and place so people have
-   something concrete to RSVP to.
-5. Invite your first handful directly, and share the Circle so others nearby can
-   find it.
+1. Tap **Create**, then **New Circle**.
+2. Pick a way in:
+   - **Answer a few questions.** Say what it is about, who it is for, and how it meets. Vera organizes your words for review, then you tap **Create the draft**.
+   - **Start from scratch.** A blank Circle. You write every field yourself.
+   - **Start from a Starter Circle.** Remix a staff-made blueprint, then make it yours.
+   - Already have an outline? Drop in a file or paste it on the same screen.
+3. You land in the Circle builder with a **private draft**. Only you can see it. Fill in the name, the About, how it meets, the rhythm, and the agreements. Name it plainly, so people know what they are walking into.
+4. Tap **Publish**. Now it is live.
+5. After you publish, tap **Generate the standing events** to put your regular gatherings on the calendar, so people have something to RSVP to.
+6. Invite your first handful directly, and share the Circle so others nearby can find it.
 
 You are now a **Host**. The role is earned by doing this, never bought.
 
-Your free membership includes hosting a Circle of your own. To host more, join
-**Crew**, which carries a host kit with room for several: choosing "Start a Circle"
-offers a one-tap upgrade when you are at your limit, and you keep everything you
-have. Any member can **join** as many as they like.
+Your free membership includes hosting a Circle of your own. To host more, join **Crew**, which has room for several. Any member can **join** as many Circles as they like.
+
+## Pick your Channels
+
+A Circle can carry up to three [Channels](/help/groups/channels), the topics people browse by. The first one listed is the primary. One is the right place to start. Set them in the Circle's settings.
 
 ## Set a standing time and do not move it
 
-Pick one night and keep it. The single biggest reason groups survive is that
-nobody has to decide each week whether it is happening. "Every Thursday at 7" is a
-structure. "Let's find a time that works for everyone" is how a group dies before
-it starts. Lock the night, put it on a repeating schedule, and let people build
-their week around it. Every other Thursday counts as a standing time, and so does
-the third Thursday of the month: what kills a Circle is a night nobody can
-predict, not a night that comes round twice a month. Set the pattern once under
-**Repeats** when you create the gathering and every date is made for you.
+Pick one night and keep it. The biggest reason groups survive is that nobody has to decide each week whether it is happening. "Every Thursday at 7" is a structure. "Let's find a time that works for everyone" is how a group dies before it starts.
+
+Every other Thursday counts as a standing time, and so does the third Thursday of the month. What kills a Circle is a night nobody can predict, not a night that comes round twice a month. When you create a gathering, turn on **Repeat event**, set the pattern once, and every date is made for you.
 
 ## Recruit a co-host before the first night
 
-Find one person to hold it with you. A co-host is the difference between a Circle
-that depends on you showing up perfectly and one that survives a week you are
-sick. They greet people when you are mid-conversation, they remember the oranges,
-and they keep the thing alive when life happens to you. Add them as a cohost so
-they can help run gatherings right alongside you. Do not host alone.
+Find one person to hold it with you. A co-host is the difference between a Circle that depends on you showing up perfectly and one that survives a week you are sick. They greet people when you are mid-conversation, they remember the oranges, and they keep the thing alive when life happens to you.
+
+Make them an **Admin** on your Circle (see [Circle roles](/help/leading/circle-roles)), and add them as a cohost on your gatherings. Do not host alone.
 
 ## Run a simple first night
 
-Keep the first gathering small and structured. A format people can predict is what
-makes them comfortable enough to come back. A first night that works:
+Keep the first gathering small and structured. A format people can predict is what makes them comfortable enough to come back.
 
-1. **Welcome (5 minutes).** Greet people as they arrive. Open with a one-line
-   round so everyone has spoken once. Keep it light.
-2. **The thing (the bulk of the time).** Do the activity you came for. Let it
-   carry the room. You are not performing; you are doing the practice alongside
-   everyone.
-3. **Close and lock the next one (5 minutes).** Thank people, then say the single
-   most important sentence of the night: "Same time next week." Name the date out
-   loud and make sure everyone knows when the next one is before they leave.
+1. **Welcome (5 minutes).** Greet people as they arrive. Open with a one-line round so everyone has spoken once. Keep it light.
+2. **The thing (most of the time).** Do the activity you came for. You are not performing. You are doing the practice alongside everyone.
+3. **Close and lock the next one (5 minutes).** Thank people, then say the most important sentence of the night: "Same time next week." Name the date out loud before anyone leaves.
 
-End a little early rather than dragging it out. Leave people wanting the next one.
+End a little early. Leave people wanting the next one.
+
+## Run your Circle day to day
+
+Open your Circle and tap **Manage**. That is your console, in three tabs:
+
+- **Home**: your numbers, and a message center where you can look up any member and reach them directly.
+- **Events**: everything your Circle has coming up. **Add an event** brings one of your existing events into the Circle. It keeps its RSVPs and its page.
+- **Settings**: the rest, including place and time, your people, and who can find and join the Circle.
+
+The **Edit** button beside Manage is for the Circle itself: name, cover image, meeting details, and the rest.
+
+## Decide who can find it and who can come in
+
+Two separate settings in your Circle's settings, and they do different jobs. Mixing them up is the usual reason a Circle is quieter than its Host expected.
+
+**Unlisted** decides whether people can find it. Leave it off and your Circle shows up in the directory, on the map, and in search. Turn it on and it disappears from all three, but anyone with the link can still open it.
+
+**Who can join** decides whether people can come in:
+
+- **Anyone can join** is the default, and the right one while you are filling the room.
+- **Members only** means you add people yourself. Nobody else sees inside.
+- **By invite only** means an invite link or a QR code is the only way in.
+- Circles a Space owns get three more: **Space team only**, **Space members only** for anyone with an active membership in the Space, and **Included with a membership**. A free Space can run a membership tier that is free to join. Charging for one starts at **Business**, with a payout account.
+
+The pairing most Hosts miss: leave the Circle listed and set who can join to **Members only**. Strangers find it by name, read what it is about, and ask to come. You keep the room shut until you say otherwise.
+
+## Put your Circle on the map
+
+In your Circle's settings, open **Place & Time**. Set it to **In person** and fill in the city. Your Circle lands on the map at that city, and people browsing Around You can find it.
+
+Want the pin somewhere more exact? Drag it on the map in the same settings. A pin you place by hand wins over the city, so you can move it to the park or the studio you actually meet at.
+
+An online Circle has no pin, on purpose. There is nowhere to turn up.
+
+## Hand your Circle to someone else
+
+Open your Circle's settings and find **Move this circle**. From there you can move it into a Space you help run, or hand it to a person.
+
+Handing it to a person is an **offer**, not a move:
+
+- They see it on the Circle and choose to accept or pass.
+- It stays yours until they accept. You can take the offer back any time before they answer.
+- When they accept, the Circle becomes theirs to host, and its members come along.
+
+## If a Space runs your Circles
+
+- **Move a Circle.** In the Space, go to **Manage**, then **Circles**. You can move a Circle to another Space you run, or take it as your own.
+- **Bring one in.** In the same place, choose **Attach a circle you host** to bring one of your own Circles into the Space. The Circle keeps its host and its members. Its gatherings join the Space's calendar and stay on the Circle's own page too. Move the Circle out again and its gatherings leave with it.
+- **Include a Circle with a membership.** In the Space's Memberships settings, open **Circles** and choose which Circle a tier includes. Join that membership and you are in the Circle while the membership is active. If it ends, you leave the Circle too, unless you had joined it on your own first.
+- **Where people find them.** On the Space's own page, under **Circles**. An unlisted Circle stays off that page. Visitors see the tab once there is a Circle they could open. You see it from the start, so you can set things up.
 
 ## Questions people ask
 
 ### How many people do I need for it to "work"?
 
-Three or four who come back. A small group that is reliable beats a big one that is
-flaky. Circles are meant to stay small enough that people are missed when they are
-not there, so do not chase numbers. When a Circle gets full, it seeds a new one
-nearby rather than growing into a crowd.
+Three or four who come back. A small group that is reliable beats a big one that is flaky. Circles are meant to stay small enough that people are missed when they are not there, so do not chase numbers. When a Circle gets full, seed a new one nearby instead of growing into a crowd.
 
 ### What if nobody comes the first time?
 
-Run it anyway, with whoever shows, even if it is one person and you. A group that
-meets with two people this week and three next week is alive. The fizzle comes from
-canceling, not from a small turnout. See
-[why groups fizzle, and how to get the return](/help/leading/why-groups-fizzle).
-
-### Running your Circle day to day
-
-Open your Circle and hit **Manage**. That is your console: one dashboard for the
-whole Circle, in tabs. Home opens on your message center, where you can look up any
-member and reach them directly. Events shows everything your Circle has coming up,
-and **Add an event** brings one of your existing events into the Circle: it keeps
-its RSVPs and its page, it just belongs here now. Settings holds the rest, including
-your roster, member roles, and who can find and join the Circle.
-
-The **Edit** button beside Manage is for the Circle itself: name, cover image
-(including where the photo sits when it gets cropped, and how tall the header
-stands), meeting details, and the rest.
-
-### Can I hand my Circle to someone else?
-
-Yes. Open your Circle and find **Move this circle** in its settings. From there you can
-move it into another space you help run, or hand it to a person. If a space runs the
-Circle, the space's Circles console has the same **Move** control, plus one more option:
-take the Circle as your own. You get there from **Manage**, then **Circles**.
-
-Handing it to a person is an **offer**, not a move: they see it on the Circle and
-choose to accept or pass, and nothing changes until they accept. It stays yours the
-whole time, and you can take the offer back until they answer. A Circle carries its
-members, so it never lands on someone who did not agree to take it. When they accept,
-the Circle becomes theirs to host, and its members and anything it is running come
-along.
-
-It works in the other direction too. If you help run a space, open that Circles console
-and choose **Attach a circle you host** to bring one of your own Circles into the
-space. The Circle keeps its host and its members. Its gatherings join the space's
-calendar, and they stay on the Circle's own page as well, so nobody loses track of
-where to show up. Move the Circle out again and its gatherings leave with it.
-
-A space can also include a Circle with a membership. In the space's Memberships
-settings, each tier can name one Circle under **Circle access**. Join that
-membership and you are in the Circle while your membership is active; if it ends,
-you leave the Circle too, unless you had joined it on your own first. Your own
-joins are always yours to keep.
-
-### Where do people find the Circles my space runs?
-
-On the space's own page, under **Circles**. Every Circle the space runs shows up there
-with its meeting place, how many people are in it, and how much room is left, and anyone
-can open one and join from there. A Circle you have set to unlisted stays off that page,
-so it is reachable only by its link. The tab appears once the space has a Circle someone
-could actually open, so a visitor is never sent to an empty page.
-
-You see it at every stage, even before you have made your first Circle, with a link
-through to the console. Everyone else sees it only once there is something behind it.
+Run it anyway, with whoever shows, even if it is one person and you. A group that meets with two people this week and three next week is alive. The fizzle comes from canceling, not from a small turnout. See [why groups fizzle, and how to get the return](/help/leading/why-groups-fizzle).
 
 ### Do I have to be an expert in the activity?
 
-No. You are the Host, not the teacher. Your job is to hold the time and welcome
-people, not to be the most skilled person in the room. Plenty of great Circles are
-run by someone learning the thing right alongside everyone else.
+No. You are the Host, not the teacher. Your job is to hold the time and welcome people, not to be the most skilled person in the room. Plenty of good Circles are run by someone learning the thing right alongside everyone else.
 
 ### How do I get people to the first gathering?
 
-Share your personal invite link. Every gathering gives you a link and a QR with
-your name on them, and the people you invite can RSVP without an account. Text it
-to a few friends, one at a time, and ask them plainly to come. Guests who RSVP,
-show up, or join land in your Contacts and earn you **Zaps** as a Connector, so the
-work of filling the room counts. See [Events & RSVPs](/help/groups/events).
-
-### Who gets to find it, and who gets to come in
-
-Two separate settings, both under **Settings** on your Circle, and they do
-different jobs. Getting them mixed up is the usual reason a Circle is quieter than
-its Host expected.
-
-**Unlisted** decides whether people can FIND it. Leave it off and your Circle shows
-up in the directory, on the map, and in search. Turn it on and it disappears from
-all three, but anyone you send the link to can still open it.
-
-**Who can join** decides whether people can COME IN.
-
-- **Anyone can join** is the default, and it is the right one while you are filling
-  the room.
-- **Members only** means you add people yourself. Nobody else sees inside.
-- **By invite only** means a link or a QR code is the only way in.
-- Circles a Space owns get three more: **Space team only** for the people who help
-  run the Space, **Space members only** for anyone with an active membership in it,
-  and **Included with a membership** if that Space has one. A free Space can run a
-  membership tier that is free to join; charging for one starts at **Business**,
-  with a payout account.
-
-The useful pairing most Hosts miss: leave the Circle **listed** and set who can
-join to **Members only**. Strangers find it by name, read what it is about, and ask
-to come. You keep the room shut until you say otherwise.
+Share your personal invite link. Every gathering gives you a link and a QR code with your name on them, and the people you invite can RSVP without an account. Text it to a few friends, one at a time, and ask them plainly to come. Guests who RSVP, show up, or join land in your Contacts and earn you **Zaps** as a Connector. See [Events & RSVPs](/help/groups/events).
 
 ### Does it have to meet in person?
 
-No. A Circle can meet on a call, and many start virtual while the Host builds a
-local group. The standing time matters more than the room. Virtual is the default;
-in person is the bonus.
+No. A Circle can meet on a call, and many start online while the Host builds a local group. The standing time matters more than the room.
 
-### How do I get my Circle onto the map?
+### Can I hand my Circle to someone else?
 
-Set it to meet **in person** and fill in the city under **Place & Time**. That is
-enough: your Circle lands on the map at that city, and people browsing Around You
-can find it.
+Yes. Use **Move this circle** in your Circle's settings to offer it to a person or move it into a Space you help run. Nothing changes until they accept.
 
-If you want the pin somewhere more exact, drag it on the map in the same settings.
-A pin you place by hand always wins over the city, so you can move it to the park
-or the studio you actually meet at and it stays there.
+## Related
 
-An online Circle has no pin, and that is on purpose. There is nowhere to turn up.
-
-Next: [why groups fizzle, and how to get the return](/help/leading/why-groups-fizzle).
+- [Why groups fizzle, and how to get the return](/help/leading/why-groups-fizzle)
+- [Circle roles](/help/leading/circle-roles)
+- [Events & RSVPs](/help/groups/events)
+- [Channels](/help/groups/channels)

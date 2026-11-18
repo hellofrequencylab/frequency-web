@@ -1,153 +1,206 @@
 ---
 title: Events & RSVPs
-description: Find gatherings, RSVP, and add them to your calendar.
+description: Find gatherings, RSVP, add them to your calendar, and host your own.
 category: groups
 order: 3
 published: 2026-06-03
-updated: 2026-10-19
+updated: 2026-11-18
 audience: member
 role: host
 featureKeys: [events]
+keywords: [rsvp, tickets, waitlist, check in, calendar, host an event, recurring, gathering]
 status: published
 ---
 
-Events are the gatherings that make Frequency real: the in-person and online meetups your Circles host. This is where showing up actually happens.
+Events are where showing up actually happens: the in-person and online gatherings that Circles, Spaces, and members host. This page covers finding one, saying you are coming, and running your own.
 
-## RSVPing
+**Where to find it:** **Events** in the left rail. To host, tap **Create** at the top of the left rail, then **New event**.
 
-- Open an event to see the details and **RSVP** so the host knows you're coming. Not sure yet? Mark yourself **Interested** instead. It signals you're curious without claiming a spot.
-- **On a ticketed event, buying the ticket is how you say you are coming.** That box is headed **Tickets**, and you pay on the event page itself: tap **Get tickets**, and the card fields open underneath. Your ticket counts as a Going, so you show up in the count and on the host's list like anyone else.
-- **The answer switch is there on a ticketed event too**, under the Tickets box. Tap **Going** before you have a ticket and it opens the card fields instead of recording an answer, because on these events the ticket is the answer. **Interested** and **Can't go** you can give either way, ticket or no ticket, and the host reads them. Saying **Can't go** tells the host you are not coming; it does not cancel or refund a ticket you have already bought. For that, ask the host.
-- Bringing people? On a "going" RSVP you can add **+1, +2 guests** so the host has an accurate headcount.
-- The event page shows **who's already going** (faces, the count, your guests, and anyone from your Circles) so you can see the room before you arrive.
-- Changed your plans? You can update your RSVP anytime, right up until the event ends. A gathering that has already started still takes an answer, so you can say you are coming to something running now, or withdraw from a session part way through.
-- **Hosts can set a window for answers.** Some events open RSVPs on a date, close them a few days before the door, or both. When a window is set and it is not open yet, the page says so instead of showing the RSVP button. Closing RSVPs only stops NEW answers: if you are signed in and already said you were coming, your own controls stay there and you can still change or cancel. A guest who RSVP'd by email has no controls either way, window or no window; signing in with that address attaches the seat to an account, and then it is yours to change.
-- When you RSVP, we **email you a confirmation** with the details and a one-tap calendar link (and a quick note if you land on the waitlist), then nudge you again as the date nears.
-- Your upcoming events surface in your feed so they don't sneak up on you.
-- **No account needed.** Any public event takes an RSVP from a signed-out visitor: one email field, and a name if they want to give one. They get the same confirmation, the same reminders, and the same notice if you cancel. The moment they sign in with that address their RSVPs attach to their account, whether it is brand new or one they already had.
-- **Checking in still needs an account.** A guest holds a real spot, but check-in is what counts someone as having shown up, and that is tied to an account. Your checked-in number therefore covers members only; guests who never sign in are not counted either way, rather than counted as absent.
+## Find an event
 
-## Capacity & waitlists
+- **Around you** sits at the top of the Events page. It leads with your next event when you have one this week, or the one we think you will like most, with a few more picks under it and a live list of what is yours, what is for you, this week's events, and what is nearby.
+- Tap **Map** in the toolbar to see every event on a map. Search it, pick a day or a category, show only what you are going to, and sort by soonest, nearest, or most going. Pins sit on each host's area, never an exact address.
+- **Filter the library** by category, format (in person, online, or both), date, price, pace (calm or active), and whether it still has open spots.
+- **Filter by distance** once you set a home location on your profile: within 10, 25, or 50 km. We use your approximate neighborhood, never your exact address.
+- **For you** suggests gatherings that fit, and tells you plainly *why*. If we do not have enough to go on yet, you just see what is soonest and nearest.
+- A **Featured** event is one the Frequency team has highlighted.
+- We also point out **people to meet**: folks going to the same event who share a Channel with you and are not connected yet.
+- **Organizer pages** gather everything a host runs at one link, so you can keep up with the people whose gatherings you like.
 
-- Some gatherings have a **limited group size** so they stay intimate. When an event is full, you can **join the waitlist**.
-- If someone's plans change and a spot opens up, the next person on the waitlist is **moved to "going" automatically**, no need to keep checking.
-- You'll only ever see a "filling up" note when spots are genuinely running low. We don't do fake countdowns or pressure.
-- Guests without an account **take up a spot like anyone else**, and hit the waitlist on a full event like anyone else. There is one set of rules, not two.
+You will see events from the Circles you have joined, plus public events in your area.
 
-## Approving people before they are in
+## RSVP
 
-- In **Event settings**, turn on **"Approve each person before they are in"**. Answers become requests instead of spots, and they wait in the approvals queue on your Manage screen.
-- It applies to **everyone**, whether or not they have an account. A signed-out guest waits exactly as long as a member does.
-- Turning it on later does not unseat anyone already going. It only applies to people who answer after you switch it on.
-- A full event still sends approved people to the waitlist. Approving says "yes, you are welcome", not "there is room".
-- **They are emailed when you approve them**, so nobody is left refreshing the page to find out.
+1. Open the event.
+2. Tap **Going** so the host knows you are coming. Not sure yet? Tap **Interested**. It says you are curious without claiming a spot. **Can't go** tells the host you are out.
+3. Bringing people? Once you are going, add your guests so the host has an honest headcount.
 
-## Recurring events & your calendar
+A few things worth knowing:
 
-- Many Circles run **recurring** gatherings (a weekly sit, a monthly walk), and each date is its own event you can RSVP to.
-- **A series can follow more than a simple weekly rhythm.** Every other Thursday, the third Thursday of the month, weekdays only, the 15th of each month: whatever pattern the host set, each date still stands on its own with its own page and its own RSVP. The event page says the pattern in plain words, so "Every 2 weeks on Wednesday" tells you when the next one lands without you working it out.
-- **Browsing shows the next few dates, not all of them.** A weekly sit would otherwise fill the whole events library with itself. Open any date and look for **Upcoming dates**: the next five are listed there, each with its own page and its own RSVP.
-- Nothing is hidden. Your calendar, a Space's calendar, and the calendar file you subscribe to all still carry every date.
-- **Some Spaces mark the moon and the zodiac.** If a Space has switched it on, its calendar shows the new and full moons, and the day the Sun enters each sign. The equinoxes and solstices sit on the four days they fall on, named alongside the sign. It is off unless the Space turned it on, so you will not see it everywhere.
-- **Add to calendar in one tap.** Right where you RSVP, you can drop the event into Google Calendar or any app (it exports a standard calendar file). Putting it on your calendar is the single best way to actually make it.
+- **You can change your answer** any time until the event ends. A gathering that has already started still takes an answer.
+- **The event page shows who is already going**: faces, the count, your guests, and anyone from your Circles.
+- **We email you a confirmation** with the details and a calendar link, plus a note if you land on the waitlist, and a reminder as the date gets close.
+- **Hosts can set a window for answers.** Some events open RSVPs on a date, close them before the door, or both. When the window is not open, the page says so. Closing RSVPs only stops new answers: if you are signed in and already said you were coming, you can still change or cancel.
+- **No account needed for a public event.** A signed-out visitor can RSVP with an email, and a name if they want to give one. They get the same confirmation, reminders, and cancellation notice. When they sign in with that address, their RSVPs attach to their account. Until then, a guest who answered by email has no controls to change it.
 
-## Finding events
+For a slower walk through your first one, see [How to RSVP](/help/getting-started/how-to-rsvp).
 
-- Browse the events library and filter by **what kind of gathering** it is (ceremony, movement, learning, social, and more), by its **energy** (grounding vs. high-activation), or to show only events that still **have open spots**.
-- An event with a small star is **Featured**: a gathering the Frequency team has highlighted.
-- Set a home location on your profile and you can also filter by **distance**, showing only gatherings hosted within 10, 25, or 50 km of you. (We use your approximate neighborhood, never your exact address.)
-- When we have a sense of what fits you, a **"For You"** lane suggests gatherings you'd be into, and tells you, plainly, *why*. If we don't have enough to go on yet, you'll just see what's soonest and nearest.
-- Space pages show their upcoming events too, as a list, cards, or a little calendar. Tap one and a small window opens with the basics and the RSVP button, so you can answer right there. **View full event** takes you to the whole page.
-- **A Space's Calendar and its Events are one page.** Open **Calendar** on any Space. What is next sits at the top under **Up next**, soonest first, so you can see the run of it without hunting through a month. Below that is the month itself, with the month name, arrows, and a jump to any month and year.
-- **Read it the way you like.** The **Grid** and **List** buttons switch the same month between a calendar grid and a plain list of dates. If the Space also publishes times it is closed, chips appear for **Events** and **Unavailable** so you can show just one. **Subscribe** drops the whole calendar into Google or Apple Calendar and keeps it current on its own.
-- **A cancelled gathering stays on that Space calendar** as a small note at the bottom of the day, and as the same muted note under that month in the list. It is not a crossed-out chip, and it is not hidden. Dates the team is still deciding stay off the public calendar. If a Space has not published a gathering yet, the page says so and points you to subscribe.
+## Tickets and paying
 
-## Post an event you found
+- Many gatherings are free: just RSVP. Some are **ticketed**, and hosts can price them as a set price, pay-what-you-can, a sliding scale, or a donation. Pick the amount that works for you, within any minimum the host sets.
+- **On a ticketed event, buying the ticket is how you say you are coming.** In the **Tickets** box, tap **Get tickets** and the card fields open right on the event page. Your ticket counts as a Going.
+- **The answer buttons are still there**, under the Tickets box. Tap **Going** before you have a ticket and it opens the card fields. **Interested** and **Can't go** work either way. Saying **Can't go** does not cancel or refund a ticket you already bought. For that, ask the host.
+- Some tickets are **reserved for members** of the Space hosting the event. You will see a small lock naming the Space. Tap the membership row and you can join right on the event page, and the ticket unlocks.
+- Payment goes to the host. Hosts can refund a ticket, and if a host cancels the event, everyone who paid is refunded and emailed.
 
-See a cool event poster around town, or one on Eventbrite or in a group chat? Capture it and put the event on Frequency.
+## Full events and waitlists
 
-- Open **Capture** and tap **Upload a poster**. Snap the whole poster, ideally squared up and out of direct glare; the app reads it and drafts the event for you: title, time, place, lineup, the works. A slight tilt or a little shine is fine, it straightens and reads the poster on its own.
-- **Found it online instead?** Start a new event and paste the write-up you copied from an Eventbrite page, a WhatsApp group, or the event's website. Add the flyer photo too if you have one. Vera reads the text and the image together, lays out the date, place, lineup, tickets, and every link, and keeps the photo as the cover.
-- If the poster has a **QR code**, the app reads it too and saves the booking or RSVP link straight onto the event.
-- Check the draft, fix anything the poster made hard to read, and publish. Add a real start date first, or it won't show in the library (the scan sometimes misreads the year). If it's **your** event, you become the host. If you **found** it, it posts to local events with your name on it: "Posted by you" with a little Zap.
-- Add the **organizer's email** in the draft, and when you publish as "I found this," we email them a link to claim it automatically. No email on hand? You also get a ready-to-send message and link to share yourself.
-- The event page is clearly marked as community-posted, naming you and the organizer, with a **"Is this your event? Claim it"** button. When the organizer claims it, the event becomes theirs to run, your credit stays, and you earn a **claim bonus**.
-- Run a Space? If your Space could host an event someone else runs, the event page shows an **ask to host** option. The current host decides; nothing changes hands until they accept.
-- Keep it honest: events that real people RSVP to and organizers actually claim build your posting reputation. Flooding the library with events nobody engages with earns nothing.
+- Some gatherings have a **limited group size** so they stay intimate. When an event is full, tap **Join waitlist**.
+- If a spot opens up, the next person on the waitlist is moved to going automatically.
+- You only see a "filling up" note when spots are really running low. No fake countdowns.
+- Guests without an account take up a spot like anyone else, and land on the waitlist on a full event like anyone else. One set of rules.
 
-## Tickets & paying
+## When the host approves each person
 
-- Many gatherings are free; just RSVP. Some are **ticketed**, and hosts can price them however fits: a set price, **pay-what-you-can**, a **sliding scale**, or a **donation**. Pick the amount that works for you (within any minimum the host sets).
-- Some tickets are **reserved for members** of the Space hosting the event. You'll see a small lock naming the Space; tap the membership row and you can join right on the event page, and the ticket unlocks. Hosts often pair one with a public ticket, so membership can include events that everyone else pays for.
-- Payment goes **straight to the host**. If plans change, hosts can **refund** a ticket, and if a host **cancels the event, everyone who paid is refunded automatically** and emailed to let you know.
+Some hosts review answers before anyone is in. Your answer becomes a request, and you are emailed when the host approves you. It works the same whether or not you have an account.
 
-## Checking in verifies you
+## Put it on your calendar
 
-When you **check in at the door** of an event you're going to, you earn your Zaps, keep your streak, and you also become a **verified member**: a small check appears by your name. Showing up in the real world is the truest sign you're a real person, so it's how verification works here. Nothing to upload, no form, just turn up.
+- **Add to calendar.** Right where you RSVP, drop the event into Google Calendar or any other calendar app. It exports a standard calendar file. This is the single best way to actually make it.
+- **Subscribe to your events.** Add one link to Google or Apple Calendar and your RSVPs show up on their own.
+- **Subscribe to a Space.** Open **Calendar** on any Space and tap **Subscribe to calendar** to keep that Space's events in your calendar app.
 
-**How to check in.** It is one box near the top of the event page, under Share, and you can watch it the whole time. Before the doors open it counts down to the start. When the event begins it turns into a **Check in** button for anyone marked going, from the start time onward, so a late arrival can still check in. Once you have checked in it reads **Checked in** with the Zaps you earned, and tapping again changes nothing, so there is no way to count yourself twice.
+Connecting Google Calendar for two-way sync is not switched on yet. For now, subscribing is the way to keep a calendar current.
 
-**If you scan a door code and nothing happens, the event page now says why.** Scanning a host's check-in code lands you on the event, and if it could not check you in you get one line explaining it: the window has not opened yet or has closed, you are not marked going, your spot is still waiting on the host, the host turned check-in off for this event, or you need to sign in first. Before, the scan simply took you to the page and left you guessing.
+## Recurring events
 
-**Check-in closes a few hours after the event.** You have until four hours past the end time, so remembering in the car still counts. After that the box is gone and the event is done. If the host set no end time, the four hours run from the start.
+- Many Circles run **recurring** gatherings, like a weekly sit or a monthly walk. Each date is its own event with its own page and its own RSVP.
+- **A series can follow more than a weekly rhythm.** Every other Thursday, the third Thursday of the month, weekdays only, the 15th of each month. The event page says the pattern in plain words, like "Every 2 weeks on Wednesday".
+- **Browsing shows the next few dates, not all of them.** Open any date and look for **Upcoming dates** to see the next ones, each with its own page.
+- Nothing is hidden. Your calendar, a Space's calendar, and the calendar link you subscribe to still carry every date.
 
-**You need an account to check in.** A guest who RSVPs by email holds a real spot, but check-in is tied to an account. Sign in with the address you used and your RSVP comes with you.
+## Events on a Space
 
-**Hosts choose whether there is a door at all.** Check-in fits a class or a weekly cowork, and does not fit a planning session or a long working block where the only question is who is coming. In event settings there is a **Let guests check in** switch. Leave it on and check-in opens once the event starts, the way it always has. Turn it off and there is no check-in on that event: no box, no countdown, and no mention of the Zaps it would have paid. RSVPs are the whole answer.
+- **A Space's calendar and its events are one page.** Open **Calendar** on any Space. What is next sits at the top, soonest first. Below that is the month, with arrows and a jump to any month and year.
+- **Read it your way.** Switch the same month between a grid and a list.
+- Tap an event on a Space page and a small window opens with the basics and the RSVP button. **View full event** takes you to the whole page.
+- **A cancelled gathering stays on the Space calendar** as a small muted note on its day. Dates the team is still deciding stay off the public calendar.
+- **Some Spaces mark the moon and the zodiac.** If a Space has switched it on, its calendar shows new and full moons, the day the Sun enters each sign, and the equinoxes and solstices. It is off unless the Space turned it on.
+
+## Check in at the door
+
+When you check in to an event you are going to, you earn your Zaps, keep your streak, and become a **verified member**: a small check appears by your name. Turning up in the real world is how verification works here. Nothing to upload.
+
+- **How to check in.** It is one box near the top of the event page. Before the start it counts down. From the start time on, it is a **Check in** button for anyone marked going, so a late arrival can still check in. After that it reads **Checked in**, and tapping again changes nothing.
+- **If you scan a door code and it does not check you in**, the event page says why: the window is not open yet or has closed, you are not marked going, your spot is waiting on the host, the host turned check-in off, or you need to sign in first.
+- **Check-in closes four hours after the event ends.** If the host set no end time, the four hours run from the start.
+- **You need an account to check in.** A guest who RSVP'd by email holds a real spot, but check-in is tied to an account. Sign in with the address you used and your RSVP comes with you.
+- **Not every event has a door.** Hosts can turn check-in off. Then there is no box, no countdown, and RSVPs are the whole answer.
 
 ## Invite people with your own link
 
-Every event gives you a personal invite to share: a link and a QR code that point straight at the event with your name on them. Text the link, drop it in a group chat, or let someone scan the code off your phone.
+Every event gives you a personal invite: a link and a QR code that point at the event with your name on them. Text the link, drop it in a group chat, or let someone scan the code off your phone.
 
-- **The person you invite does not need an account.** When someone who isn't on Frequency opens your link, they get a simple RSVP form: name, email, a phone number if they want, and going or maybe. That's it. They're in.
-- **Your guests are yours, and they're private.** Anyone who RSVPs through your link lands in your own Contacts, stamped with the event. They are **not** added to any mailing list and nobody blasts them. It works like saving a name in your phone, not like handing out an email list.
+- **The person you invite does not need an account.** They get a simple RSVP form: name, email, a phone number if they want, and going or maybe.
+- **Your guests are yours, and they are private.** Anyone who RSVPs through your link lands in your own Contacts, stamped with the event. They are not added to any mailing list.
 - **We keep the count straight.** If the same person RSVPs twice, it updates their card instead of making a duplicate.
 
-## What you earn for bringing people
+### What you earn for bringing people
 
-Sharing your invite is how you earn as a **Connector**. You get credit for the real thing that happens, not for a name on a list. The reward gets bigger the realer the outcome:
+Sharing your invite is how you earn as a **Connector**. The reward grows with how real the outcome is:
 
 - Someone fills out your RSVP form: a few **Zaps**.
 - They RSVP going or maybe: more **Zaps**.
-- They show up and check in at the door: more **Zaps** again.
-- They join Frequency: the biggest payout, **Zaps plus a Gem**.
+- They show up and check in: more **Zaps** again.
+- They join Frequency: the biggest payout, **Zaps plus Gems**.
 
-Keep it real. The reward is for people who actually RSVP, show up, or join, never for adding rows nobody engages with, and there's a daily cap so the loop can't be farmed. Bring in **10, 25, or 100** real connections and you earn the **Connector** achievement, a permanent badge in [your Vault](/help/membership/the-vault).
+The reward is for people who actually RSVP, show up, or join, and there is a daily cap so the loop cannot be farmed. Bring in **10, 25, or 100** real connections and you earn the **Connector** achievement, a permanent badge in [your Vault](/help/membership/the-vault).
 
 ## Chat and photos
 
-- Every event has a little **activity feed**. Say hi before the day, ask a question, or thank the host after. RSVP to join in.
-- Once it's over, drop your photos in the shared **recap album** so the whole group keeps the memory.
+- Every event has a small **activity feed**. Say hi before the day, ask a question, or thank the host after. RSVP to join in.
+- Once it is over, drop your photos in the shared **recap album** so the whole group keeps the memory.
 
-## Subscribe and discover
+## Post an event you found
 
-- **Subscribe to your events as a calendar.** Add one link to Google or Apple Calendar and your RSVPs show up automatically, no re-checking.
-- **Organizer pages** gather everything a host runs at one link, so you can follow the people whose gatherings you like.
-- **Around you** sits at the top of the Events page. It leads with your next event when you have one this week, or the one we think you'll like most, with a few more picks under it and a live list of what's yours, what's for you, this week's events and what's nearby.
-- Tap the **map** (in Around you, or Map in the toolbar) to open every event on a map. Search it, pick a day or a category, show only what you're going to, and sort by soonest, nearest or most going. Pins sit on each host's area, never an exact address.
-- We'll quietly point out **people you might click with**: folks going to the same event who share a Channel with you and aren't connected yet.
+See a good poster around town, or an event on another site or in a group chat? Put it on Frequency.
 
-## For hosts
+1. Tap the **Zap** in the header to open Capture, then tap **Event**. Snap the whole poster, squared up and out of direct glare if you can. Vera reads it and drafts the event: title, time, place, lineup.
+2. **Found it online instead?** Tap **Create**, then **New event**, and paste the write-up. Add the flyer photo if you have one. Vera reads the text and the image together and keeps the photo as the cover.
+3. If the poster has a **QR code**, the scan saves the booking or RSVP link onto the event.
+4. Check the draft and fix anything the poster made hard to read. Add a real start date, or it will not show in the library.
+5. Publish. If it is your event, you become the host. If you choose **I found this event**, it posts to local events with your name on it as the person who posted it.
 
-- **Add photos to your event.** Set a cover image as the poster, then add as many more photos as you like. They show up as a gallery on the event page, with the poster first, and any photo opens full screen when someone taps it. Your cover is also the image people see when your event's link is shared. You can add or remove photos anytime by editing the event.
-- **Announce to your guests.** Send a note to everyone who's coming, across in-app, push, and email. Anyone who muted the event or turned off event notifications is skipped.
-- **Manage screen.** One dashboard for your whole event, organized in tabs. Home opens with your numbers at a glance, a "Message everyone" box that reaches your whole guest list at once (by email, in-app message, or a Dispatch, with texting on the way), and a message center where you can look up any attendee and message them directly. Guests holds the full list, the waitlist, and approvals; the other tabs cover your questionnaire (with export), tickets, updates, and the event's settings. You reach it from the event page or the event's editor.
-- **Cohosts.** Add a cohost and they can help run the event right alongside you, including messaging the guest list while the event is on. After the event ends, a cohost on a personal account can still see the whole list and every stat, and can invite everyone to their next event. Messaging the list about anything else takes a Business Space.
-- **Collaborators.** Share your event with another Business Space and, once a steward there approves, your event shows on their calendar too and their Space is featured on your event page. Hosting with Collaborators is part of the Business plan. Being one is free for any Business Space.
-- **Host as your Space.** If you run exactly one Space, a new event starts as part of that Space: the event page carries its name, and registrations and ticket payments run through it. The first screen says so. Open the full form if that is not right. Creating from your Space's calendar does the same thing. You can switch any of your events between you and a Space you help run from the event's settings, under "Hosted by." Before a Space-hosted event can sell a ticket, the Space needs to be on Business and its owner needs a payout account, which they set up in **Manage, then Get paid** (see [Get paid](/help/spaces/get-paid)).
-- **Tickets for your members.** A Space-hosted event can reserve a ticket for its own members, or for one membership tier, under "Who can buy" in the ticket editor. Make it free next to a public paid ticket and your membership includes the event. You can also set this for every upcoming event at once from your Space's Memberships settings, under Event access.
-- **How people join.** In the event's settings, pick one: **RSVP** (first come, first served; any prices show as information, paid at the door or covered by membership) or **Tickets** (buying is how people attend). Automatic picks tickets when the event is priced.
-- **Where your event shows up.** Two settings, doing two different jobs. **"Who can see this"** is who is allowed in: "Anyone" makes it public, "Anyone with the link" keeps it link-only (the page is there for people you send it to, and search engines are told not to list it), and the Circle and invite options keep it close. **"List this event publicly"** is separate: leave it on and your public event shows up when people browse events, turn it off and it stays public and fully shareable, it just is not in the listings. A public event hosted by a Circle now shows up in browse too, the same as any other public event.
-- **What people see when you share.** Paste your event's link into a message and the preview shows your cover image, the title, the date, and the location. A closed event does not do that. If "Who can see this" is set to a Circle or to invite only, or the event is still a draft, the preview is a plain Frequency card with no title, date, or venue, so a forwarded link does not announce a gathering someone is not allowed into. "Anyone with the link" gets the full preview, because that is what the setting is for. A cancelled event still shows its card, marked cancelled, so anyone holding the link learns it is off.
-- **Hide the address.** Turn on "Hide the address until someone registers" in the event's settings and people browsing see the city only. That includes the calendar file anyone can subscribe to, which carries the city too, and the preview image someone sees when your link is pasted into a message. The venue, street, map pin, and directions appear once they RSVP or get a ticket, and their own calendar entry carries the full address.
-- **Make it repeat.** An event is a date until you say otherwise. In the event's settings, turn on **Repeat event** and the settings open underneath it: how many days, weeks, months or years sit between dates, which weekdays a weekly run lands on, and for a monthly one whether you mean the date ("the 15th") or the weekday ("the third Wednesday"). Then say when the run stops: never, on a date, or after a set number of times. A sentence at the bottom reads back what you built, so you can check it before you save. Turn the switch off and it is a single date again.
-- **Editing one date asks what you mean.** Open the settings on any date of a repeating series and the first thing you see is the question: apply this to **this event only**, or to **this event and all future dates**. It starts on "this event only", so a quick fix to one night's venue or title stays on that night. Pick the wider one and what you change moves forward from the date you are looking at, leaving the dates before it alone. How often it repeats lives on the whole series, so that control only appears under the wider choice.
-- **Change the rhythm and the dates follow.** Move a weekly run to every 2 weeks and the dates the old pattern made come off the calendar, so what people see is the run you have now rather than the one you started with. One thing stays put on purpose: a date somebody has already RSVP'd to, bought a ticket for, been invited to, or that you have posted an update on. Taking that off the calendar is a cancellation, and the people who said yes deserve to hear it from you rather than find an empty space, so cancel those from the date itself. Dates that already happened are never touched.
-- **Cancel a whole series.** Each date of a recurring event is its own event, so cancelling one date only takes that date off the calendar. When the whole run is off, open any upcoming date and use **Cancel the rest of this series** in its settings, under Danger zone. It cancels every date still to come in one go and refunds every paid ticket on them, and dates that already happened are left as they are.
-- **Your Space calendar is a manager.** On the Space Calendar tab you switch five views without reloading the page: **Guest** (what visitors see), **Admin** (the same month as Guest, with every draft and team-only date), **List** (a slim gathering list on the left, a control console on the right with the stage pill next to the title), **Timeline** (the month as a time scale), and **Projects** (move an event on its way through Pencil, Planning, Production, and Cancelled). The tab remembers the last view you used. Guest is live events only, and a cancelled gathering as a small note on that day (and under that month in the list). Dates that are only penciled or still in planning stay off Guest. In Calendar settings you still flip the month grid and a list, click any event to edit it, and handle co-host requests. Drafts and past events show there too. You can start a **Plan** behind one or more dates, keep team notes and to-dos on it, and **Make it a Production** when you are ready: that opens the same new-event form, already filled in. A private team calendar link lives in Calendar settings and is never on the public Space page.
+More on found events:
 
-## Tips
+- Add the **organizer's contact** in the draft, and when you publish a found event with their email, we send them a link to claim it.
+- The event page is marked as community-posted, with an **Is this your event? Claim it** button. When the organizer claims it, the event becomes theirs to run and your credit stays.
+- Run a Space? If your Space could host an event someone else runs, the event page shows an **Ask to host** option. The current host decides. Nothing changes hands until they accept.
+- Keep it honest. Events that real people RSVP to and organizers claim build your posting reputation. Flooding the library earns nothing.
 
-- New to a Circle? An event is the easiest way in: say you're coming, then just show up.
-- You'll see events from the Circles you've joined, plus public local events happening in your area.
-- Want to host? Any member can create an event. If you run one Space, it starts as that Space's event. You can still make a public local gathering, or put it inside a Circle you host. A repeating event counts as one gathering on a free membership, not one per date. Featuring another business on your event as a Collaborator is a Business Space feature.
+## Host an event
+
+Any member can create an event.
+
+1. Tap **Create** at the top of the left rail, then **New event**.
+2. Pick how to start: **Answer a few questions** and Vera sorts the date, place, and details, or **Fill it in myself** to go straight to the full form. You can also drop in a write-up or a flyer photo.
+3. Check the review screen and tap **Create event**.
+
+A repeating event counts as one gathering on a free membership, not one per date.
+
+### Who is hosting
+
+- **Host as your Space.** If you run exactly one Space, a new event starts as part of that Space: the event page carries its name, and registrations and ticket payments run through it. The first screen says so. Open the full form if that is not right.
+- You can switch an event between you and a Space you help run from the event's settings, under **Hosted by**.
+- Before a Space-hosted event can sell a ticket, the Space needs to be on Business and its owner needs a payout account, set up under **Manage**, then **Get paid**. See [Get paid](/help/spaces/get-paid).
+- You can also put an event inside a Circle you host, or make it a public local gathering.
+
+### Event settings
+
+Open the event, tap **Manage**, then **Settings**.
+
+- **How people join.** Pick **RSVP** (first come, first served, any prices are information) or **Tickets** (buying is how people attend). Automatic picks tickets when the event is priced.
+- **Who can see this.** **Anyone** makes it public. **Anyone with the link** keeps it link-only, and search engines are told not to list it. **My circle** and **Invite only** keep it close.
+- **List this event publicly.** A separate switch. Leave it on and your public event shows when people browse. Turn it off and it stays public and shareable, it just is not in the listings.
+- **Group size.** Set a cap and a full event starts a waitlist.
+- **Approve each person before they are in.** Answers become requests and wait in the approvals queue. It applies to everyone, account or not. Turning it on later does not unseat anyone already going. A full event still sends approved people to the waitlist. Approving says "yes, you are welcome", not "there is room". People are emailed when you approve them.
+- **RSVPs open** and **RSVPs close.** Set a window for answers.
+- **Hide the address until someone registers.** People browsing see the city only, including in the calendar link and the share preview. The venue, street, map pin, and directions appear once they RSVP or get a ticket.
+- **Let guests check in.** Leave it on for a class or a weekly cowork. Turn it off for a planning session where the only question is who is coming.
+
+### Tickets
+
+- Set up ticket tiers under **Manage**, then **Tickets**: fixed, free, pay-what-you-can, sliding scale, or donation.
+- **Tickets for your members.** A Space-hosted event can reserve a ticket for its own members, or for one membership tier, under **Who can buy**. Make it free next to a public paid ticket and your membership includes the event. You can also set this for upcoming events from your Space's Memberships settings, under **Event access**.
+
+### Make it repeat
+
+- Turn on **Repeat event** and choose how often: days, weeks, months, or years between dates, which weekdays a weekly run lands on, and for a monthly one whether you mean the date ("the 15th") or the weekday ("the third Wednesday"). Then say when it stops: never, on a date, or after a set number of times. A sentence reads back what you built.
+- **Editing one date asks what you mean.** Apply the change to this event only, or to this event and all future dates. It starts on this event only, so a quick fix to one night stays on that night.
+- **Change the rhythm and the dates follow.** Dates the old pattern made come off the calendar. One thing stays put on purpose: a date somebody has already RSVP'd to, bought a ticket for, or been invited to. Cancel those from the date itself, so the people who said yes hear it from you. Dates that already happened are never touched.
+- **Cancel a whole series.** Cancelling one date only takes that date off. When the whole run is off, open any upcoming date and use **Cancel the rest of this series** in its settings. It cancels every date still to come and refunds every paid ticket on them.
+
+### Run the day
+
+- **Manage** is one dashboard for your event, in tabs: **Home**, **Guests**, **Questions**, **Tickets**, **Updates**, and **Settings**.
+- **Home** opens with your numbers and a **Message everyone** box that reaches your whole guest list. You can also look up any attendee and message them directly.
+- **Guests** holds the full list, the waitlist, and approvals. **Questions** covers what you ask people when they RSVP, with an export.
+- **Announce to your guests.** Anyone who muted the event or turned off event notifications is skipped.
+- **Add photos.** Set a cover image, then add more. They show as a gallery on the event page, and your cover is the image people see when the link is shared.
+- **Cohosts.** Add a cohost from the event's settings and they can help run it alongside you, including messaging the guest list while the event is on.
+- **Collaborators.** Share your event with another Business Space and, once they approve, it shows on their calendar too and their Space is featured on your event page. Hosting with Collaborators is part of the Business plan. Being one is free for any Business Space.
+
+### What people see when you share
+
+Paste your event's link into a message and the preview shows your cover image, title, date, and location. A closed event does not do that. If it is set to a Circle, to invite only, or is still a draft, the preview is a plain Frequency card, so a forwarded link does not announce a gathering someone cannot get into. A cancelled event still shows its card, marked cancelled.
+
+### Plan on your Space calendar
+
+A Space's team can pencil in dates, plan them together, and turn them into real events from the Space calendar. See [Plan your calendar](/help/spaces/plan-your-calendar).
+
+## Related
+
+- [How to RSVP](/help/getting-started/how-to-rsvp)
+- [How to start a Circle](/help/leading/how-to-start-a-circle)
+- [Plan your calendar](/help/spaces/plan-your-calendar)
+- [Get paid](/help/spaces/get-paid)
