@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2380",
+  "title": "Partner pages under /build: an index of image cards, the Encinitas Vision page, and /how, /facilities and /lab moved there",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/BUILD-BACKLOG.json",
+    "ref": "Requested by Daniel, 2026-11-18: 'Build this page into frequency as a page hidden from indexing like our other pitch pages. I want to change the structure around to have all these pages at frequencylocal.com/build... Make a card with image for each page on the index.'"
+  },
+  "detail": "WHAT: /build is the link-only index of the partner pages (app/(brief)/build/page.tsx, one card with a photo per entry in build-pages.ts). /build/vision is The Frequency Vision, Encinitas, generated from the design canvas in the Frequency Facilities Project (vision-markup.tsx, vision-data.ts, vision.css) with the canvas logic ported to vision-page.tsx: hash chapters (#/852, #/852/2), the chapter mega menu, the tightening header and the frequency-line marker. Opening date reads 2028 everywhere (owner). /how, /facilities and /lab moved to /build/how, /build/facilities and /build/lab; the old paths 308 there with the query kept, so shared ?r= links keep their reader. The old /build 308 to /the-community (a retired guide) is gone. All five pages carry LINK_ONLY_ROBOTS, stay out of app/sitemap.ts and the nav, and are tracked (PRIVATE_PAGES; the old three stay accepted for tabs opened before the move). check-seo now reads robots: LINK_ONLY_ROBOTS as a noindex. Photos: the canvas's uploads could not be exported, so each slot uses the same shoot already in public/ (mapping in the generator header note, docs/HOW-BRIEF.md).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=f=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const bad=[];const idx=r('app/(brief)/build/page.tsx');if(!idx.includes('robots: LINK_ONLY_ROBOTS'))bad.push('index not link-only');const list=r('app/(brief)/build/build-pages.ts');for(const p of ['/build/vision','/build/how','/build/facilities','/build/lab'])if(!list.includes(\\\"href: '\\\"+p+\\\"'\\\"))bad.push('no card '+p);if(!r('app/(brief)/build/vision/page.tsx').includes('robots: LINK_ONLY_ROBOTS'))bad.push('vision not link-only');if(!r('app/(brief)/build/vision/vision-markup.tsx').includes('Every town'))bad.push('vision markup');const nc=r('next.config.ts');for(const p of ['how','facilities','lab'])if(!nc.includes(\\\"{ source: '/\\\"+p+\\\"', destination: '/build/\\\"+p+\\\"', permanent: true }\\\"))bad.push('no redirect /'+p);if(nc.includes(\\\"source: '/build', destination\\\"))bad.push('/build still redirects');const ev=r('lib/how/brief-events.ts');for(const p of ['/build','/build/vision','/build/how'])if(!ev.includes(\\\"'\\\"+p+\\\"'\\\"))bad.push('untracked '+p);if(/['\\\"]\\/build(\\/[a-z]+)?['\\\"]/.test(r('app/sitemap.ts')+r('lib/frequency/site-nav.ts')))bad.push('listed');if(/Late 2027/.test(r('app/(brief)/build/vision/vision-markup.tsx')+r('app/(brief)/build/vision/vision-data.ts')))bad.push('date');if(bad.length){console.error('LIVE-2380: '+bad.join(', '));process.exit(1)}\"",
+    "note": "Fails if the index or the Vision page loses its noindex or a card, an old path stops forwarding, /build redirects away again, a page drops out of tracking, a /build page enters the sitemap or nav, or the Vision page says Late 2027 again."
+  },
+  "wave": "W7",
+  "closed": "2026-11-18"
+}

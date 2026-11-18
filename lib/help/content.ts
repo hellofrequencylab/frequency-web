@@ -9,6 +9,7 @@
 // from a script, import this from the app. See ADR-1078 for why the split exists.
 
 import { cache } from 'react'
+import { helpSections } from './toc.ts'
 import {
   loadCategoriesFromDisk,
   selectCategories,
@@ -56,5 +57,14 @@ export async function getArticle(
 
 /** Flat, serializable index for the client-side search box. */
 export async function getSearchIndex(): Promise<HelpSearchEntry[]> {
-  return searchIndexFrom(await getAllCategories())
+  const cats = await getAllCategories()
+  // searchIndexFrom walks categories then articles, so the two lists line up one to one. The
+  // keywords and section headings are added here, not in content-core, because the heading ids
+  // come from toc.ts and content-core may import nothing the indexer cannot resolve (ADR-1078).
+  const articles = cats.flatMap((c) => c.articles)
+  return searchIndexFrom(cats).map((entry, i) => ({
+    ...entry,
+    keywords: articles[i].keywords ?? [],
+    sections: helpSections(articles[i].body),
+  }))
 }

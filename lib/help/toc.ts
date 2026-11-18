@@ -36,6 +36,19 @@ interface HelpTocEntry {
  * a body-level `#` is demoted to h2 under the page's own h1), outside fenced code.
  */
 export function helpToc(body: string): HelpTocEntry[] {
+  return headings(body, 2)
+}
+
+/**
+ * Every heading help search can land on: the sections above plus their `###` subsections (each FAQ
+ * question is one), minus the "Related" link list, which answers nothing.
+ */
+export function helpSections(body: string): HelpTocEntry[] {
+  return headings(body, 3).filter((h) => h.id !== 'related')
+}
+
+function headings(body: string, depth: 2 | 3): HelpTocEntry[] {
+  const heading = new RegExp(`^ {0,3}#{1,${depth}}[ \\t]+(.+?)(?:[ \\t]+#+)?[ \\t]*$`)
   const out: HelpTocEntry[] = []
   let fence: string | null = null
   for (const line of body.split(/\r?\n/)) {
@@ -46,7 +59,7 @@ export function helpToc(body: string): HelpTocEntry[] {
       continue
     }
     if (fence) continue
-    const m = line.match(/^ {0,3}#{1,2}[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/)
+    const m = line.match(heading)
     if (!m) continue
     const title = inlineText(m[1])
     const id = helpHeadingSlug(title)

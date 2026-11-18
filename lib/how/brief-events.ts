@@ -26,7 +26,9 @@ export type BriefEventName = (typeof BRIEF_EVENT_NAMES)[number]
 const NAMES = new Set<string>(BRIEF_EVENT_NAMES)
 
 /** The link-only partner pages that send these events (lib/seo/link-only.ts carries their noindex). */
-export const PRIVATE_PAGES = ['/how', '/facilities', '/lab'] as const
+// They live under /build (owner 2026-11-18). The old paths stay accepted: they 308 to /build now, but a tab
+// opened before the move still posts its batches under the page it loaded.
+export const PRIVATE_PAGES = ['/build', '/build/how', '/build/facilities', '/build/lab', '/build/vision', '/how', '/facilities', '/lab'] as const
 export type PrivatePage = (typeof PRIVATE_PAGES)[number]
 const PAGES = new Set<string>(PRIVATE_PAGES)
 

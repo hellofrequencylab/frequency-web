@@ -37,11 +37,12 @@ order: 2
 updated: 2026-05-31
 audience: member
 featureKeys: [circles, memberships]
+keywords: [find a group, local group, sign up, membership]
 status: published
 ---
 
 Body in Markdown. Use headings, lists, links, bold, blockquotes, code.
-Avoid GitHub-flavored tables (remark-gfm is not installed); use lists instead.
+GitHub-flavored tables render, but a list reads better on a phone; prefer lists.
 ```
 
 Front-matter fields:
@@ -53,7 +54,23 @@ Front-matter fields:
 - **audience**: `member` (default), `host`, `guide`, `janitor`, or `partner`.
 - **featureKeys**: the code areas this article documents (e.g. `circles`, `gamification`).
   **This is the drift hook**: when those areas change, the article is flagged for review.
+- **keywords**: four to eight words or short phrases a person would type to find this article
+  that its title does not carry (their word for the problem, an old or casual name). Help search
+  weighs them just under the title. One line, no commas inside a phrase.
 - **status**: `published` (default) or `draft` (hidden from the public site).
+
+## Search
+
+Every help search box runs the same matcher, `lib/help/search.ts`: the public front page and
+sidebar (`components/frequency/site/pages/help/help-client.tsx`), the member Help page at
+`/support`, and Vera's launcher. It reads the static index at `/api/help/search-index`, which
+carries each article's title, summary, `keywords` and section headings. So:
+
+- Write headings a person would search for ("Change your RSVP", not "Details"). A hit on a
+  heading links straight to that section and names it in the result.
+- Put the words people use in `keywords` rather than bending the title around them.
+- A word that maps onto a product name across many articles (dm to Messages, shop to Marketplace)
+  belongs in the synonym list at the top of `lib/help/search.ts`.
 
 Add a new category by creating `content/help/<category>/_category.json`
 (`{ "title", "description", "order" }`).

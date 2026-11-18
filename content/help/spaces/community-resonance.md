@@ -4,76 +4,77 @@ description: Community Resonance is your Space's CRM. Track the people you work 
 category: spaces
 order: 1
 published: 2026-06-22
-updated: 2026-10-13
+updated: 2026-11-18
 audience: member
 featureKeys: [crm]
+keywords: [crm, contacts, pipeline, deals, stages, import contacts, leads, customer list]
 status: published
 ---
 
-Community Resonance is your Space's CRM, the place to track the people you work with. It is a set of
-stages, a card for each person, and a contact list, all kept inside your Space. It builds on My Contacts, the private address
-book every member already has.
+Keeping track of people in your head, or in three different apps, stops working fast. Community Resonance is your Space's CRM: a contact list, a pipeline of stages, and private notes on each person, all kept inside your Space. It builds on My Contacts, the private address book every member already has.
 
-## What is Community Resonance?
-
-It is a set of stages and a contact list that belong to your Space.
-
-- The **stages** are a row, with a card for each person. The stages match what you do: a Business gets
-  a sales funnel, a Non Profit gets a donor funnel, and any other Space gets a simple funnel.
-- The **contacts** list is the people you track for this Space. Open a contact to read or add private
-  notes about them.
-- A live band at the top shows your open deals, open value, won value, and tasks due.
-
-Your Space gets its starting stages the first time you open it. You can work from there.
-
-## How do I open it?
-
-Open it from **Manage** on your Space.
+## Find it
 
 1. Go to your Space and open **Manage**.
-2. Pick the **Contacts** card.
+2. Pick the **Community Resonance** tab.
+3. Open the **CRM** card.
 
-You see it if your Space has it turned on and you are an owner or admin. If you are on the team but
-not an admin, ask an owner to add you. If your Space does not have Contacts turned on yet, the page
-tells you how to turn it on.
+Every Space has it, with an allowance that grows with your plan. Owners and admins can open it. If you are on the team but not an admin, you see a short note instead, so ask an owner or admin to bring you in.
 
-## How do I bring my contacts in?
+## Get to know the views
 
-Use **Bring your contacts into this Space** on the Contacts page.
+Tabs across the top switch between four views:
 
-1. Open Contacts for your Space.
-2. In the **Bring your contacts into this Space** box, pick a status or type a tag to choose who
-   comes in. Leave both blank to bring everyone.
-3. Select **Bring contacts in**.
+- **People** is the front door: everyone you track for this Space. Open a person to see their details, history, deals, and your private notes.
+- **Pipeline** shows your stages as a row, with a card for each deal, plus the tasks you owe.
+- **Cockpit** is the health read: who needs you and where people stall.
+- **Import** brings in contacts from a file or a pasted list.
 
-Frequency copies those people from My Contacts into your Space and starts a deal for each one in your
-first stage. It skips anyone you have already brought in and anyone without an email. Your private My
-Contacts list stays exactly as it is.
+A band at the top shows **Open deals**, **Open value**, **Won value**, and **Tasks due**.
 
-## Does this change My Contacts?
+Your Space gets its starting stages the first time you open the CRM. They fit the kind of Space you run, and you can work from there.
 
-No. My Contacts stays private to you and unchanged.
+## Bring your contacts in
 
-Bringing contacts in copies them into your Space. The people are linked, so reading the same person twice
-will not make a duplicate, but your personal list, your notes, and your follow-ups are all still yours.
+Use the box titled **Bring your contacts into your Space CRM** on the **People** view.
 
-## Frequently asked questions
+1. Pick a status or type a tag to choose who comes in. Leave both blank to bring everyone.
+2. Select **Bring contacts in**.
+
+Frequency copies those people from My Contacts into your Space and starts a deal for each one. It skips anyone you have already brought in and anyone without an email. Your private My Contacts list stays exactly as it is.
+
+Have a spreadsheet instead? Open **Import**. Frequency matches your columns, skips anyone the Space already has, and shows a preview before anything is saved.
+
+## Keep My Contacts private
+
+Bringing contacts in copies them. It does not move them, and it does not change My Contacts.
+
+The people are linked, so bringing the same person in twice will not make a duplicate. Your personal list, your notes, and your follow-ups are all still yours.
+
+## Change your stages
+
+Open **Pipeline** and select **Edit stages** to add, rename or reorder them. You need to be able to edit the Space to see it.
+
+## Questions
 
 ### Who can see my Community Resonance?
 
-Only the owners and admins of your Space. The stages, the contacts, and the notes are scoped to your
-Space and never shared with another Space.
+By default, the owners and admins of your Space. The stages, the contacts, and the notes are scoped to your Space and never shared with another Space.
 
 ### Why are some contacts skipped?
 
-A contact is skipped if you have already brought it into this Space, or if it has no email address. You
-can add an email in My Contacts and bring it in again.
+A contact is skipped if you have already brought it into this Space, or if it has no email address. You can add an email in My Contacts and bring it in again.
 
 ### Can I change the stages?
 
-The starting stages are set by the kind of Space you run. Custom stages and fields come later.
+Yes. The starting stages are set by the kind of Space you run, and you can edit them from **Pipeline** with **Edit stages**.
 
 ### Is a deal the same as money?
 
-Not yet. A deal is a card you move through your stages to track where a person is. Paid features come
-later.
+No. A deal is a card you move through your stages to track where a person is. You can give it a value so your totals add up, but it does not charge anyone. Taking money is a separate setup: see [Get paid](/help/spaces/get-paid).
+
+## Related
+
+- [Teaching across several studios](/help/spaces/teaching-across-studios)
+- [Plans and pricing](/help/spaces/plans-and-pricing)
+- [Get paid](/help/spaces/get-paid)
