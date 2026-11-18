@@ -61,8 +61,15 @@ import type { ReactNode } from 'react'
 // Both toast files previously carried an identical comment block asserting "bottom-20 clears it
 // by 12px" while the class on the very next line read `md:bottom-24`. The prose was describing a
 // value neither file used — corrected here, in the one place the value now lives.
+//
+// ── WIDTH (2026-11-18) ───────────────────────────────────────────────────────
+//
+// Below md the lane is a full-width bar (16px gutters) sitting on the tab bar, so a toast reads as
+// part of the bottom chrome rather than a card dropped onto the middle of the page. It used to
+// hug the right edge at its content width, which on a phone parked it over the right two Feed
+// practice tiles. From md it is the corner stack again, capped so a long line wraps.
 export const TOAST_LANE_CLASS =
-  'pointer-events-none fixed bottom-[calc(var(--tab-bar-clearance)+0.75rem)] right-4 z-[60] flex flex-col items-end gap-3 md:bottom-24 print:hidden'
+  'pointer-events-none fixed bottom-[calc(var(--tab-bar-clearance)+0.75rem)] inset-x-4 z-[60] flex flex-col items-stretch gap-3 md:inset-x-auto md:right-4 md:bottom-24 md:w-80 print:hidden'
 
 /**
  * The single fixed column every bottom-right toast renders into. Stacks are plain children, so

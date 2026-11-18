@@ -26,6 +26,7 @@ import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon
 import { IconButton } from '@/components/ui/icon-button'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { completeSession } from '@/app/(main)/on-air/actions'
+import { claimReward } from '@/components/zap-toast'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { createScreenWakeLock } from '@/lib/on-air/screen-wake-lock'
@@ -1215,6 +1216,9 @@ export function OnAirSession({
       setStage('error')
       return
     }
+    // The reveal counts these up itself: claim them so their Realtime echo raises no toast on top.
+    claimReward('zaps', result.data.zapsAwarded)
+    for (const b of result.data.bonuses) claimReward(b.kind, b.amount)
     setPayload(result.data)
     setStage('reveal')
     // The leg completed (log saved). Signal the provider so a sequenced run (P6) can auto-advance
