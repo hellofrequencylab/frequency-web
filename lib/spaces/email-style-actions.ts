@@ -8,13 +8,16 @@
 //
 // AUTHZ (ADR-246/328/329): gated on canEditProfile (owner / admin / editor). Never trusts the wire — the bag is
 // re-sanitized to strict 6-digit hex on known EmailColors keys (sanitizeSpaceEmailStyle) before it is written.
-// The `preferences` write is non-destructive (nextEmailStylePreferences preserves every other node). Reached
-// through the untyped admin client (ADR-246), like every other spaces.preferences writer (content-actions.ts).
+// The `preferences` write is non-destructive and KEY-SCOPED (LIVE-2350): nextEmailStylePreferences builds the
+// next bag from a fresh read, preferencesPatch reduces it to the one key it changes (emailStyle, null to clear),
+// and patchSpacePreferences (set_space_preferences, SCAN-833) sets just that key, so a save here can never turn
+// back a key another console saved after the read (a Spotlight publish, a website editor stub, a menu save).
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
+import { preferencesPatch } from '@/lib/spaces/preferences-patch'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
@@ -28,7 +31,6 @@ type SpacesPrefsClient = {
     select: (c: string) => {
       eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { preferences?: unknown } | null }> }
     }
-    update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> }
   }
 }
 
@@ -57,8 +59,10 @@ export async function setSpaceEmailStyle(slug: string, raw: unknown): Promise<Ac
       : {}
   const next = nextEmailStylePreferences(current, style)
 
-  const { error } = await admin.from('spaces').update({ preferences: next }).eq('id', space.id)
-  if (error) return fail('Could not save your email style. Try again.')
+  const patch = preferencesPatch(current, next)
+  if (Object.keys(patch).length > 0 && !(await patchSpacePreferences(space.id, patch))) {
+    return fail('Could not save your email style. Try again.')
+  }
 
   // Refresh the Space surfaces that read the palette so a later render reflects the change.
   revalidatePath(`/spaces/${slug}/settings/email-style`)

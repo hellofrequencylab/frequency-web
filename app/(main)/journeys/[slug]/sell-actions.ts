@@ -72,6 +72,15 @@ export async function setJourneyPriceAction(input: {
   const row = plan as { title: string; summary: string | null; cover_image: string | null; space_id: string | null } | null
   if (!row?.space_id) return fail('This Journey has no Space to sell it.')
 
+  // JRN-002: remember the live offer so a failed re-price can put it back instead of leaving the
+  // Journey with no product at all.
+  const { data: prior } = await db()
+    .from('commerce_products')
+    .select('id, status')
+    .eq('journey_plan_id', input.planId)
+    .neq('status', 'archived')
+  const previous = (prior ?? []) as { id: string; status: string }[]
+
   await archiveCurrentOffer(input.planId)
 
   const product = await createProduct({
@@ -86,7 +95,13 @@ export async function setJourneyPriceAction(input: {
     journeyPlanId: input.planId,
     marketPublished: input.listInMarket ?? false,
   })
-  if (!product) return fail('Could not put this Journey on sale. Try again.')
+  if (!product) {
+    for (const p of previous) {
+      const { error: restoreError } = await db().from('commerce_products').update({ status: p.status }).eq('id', p.id)
+      if (restoreError) console.error('[journeys] could not restore the previous offer', { planId: input.planId, productId: p.id, error: restoreError.message })
+    }
+    return fail('Could not change the price. The old price is still live. Try again.')
+  }
 
   // createProduct writes `draft`; a priced Journey is meant to be buyable.
   const { error } = await db().from('commerce_products').update({ status: 'active' }).eq('id', product.id)

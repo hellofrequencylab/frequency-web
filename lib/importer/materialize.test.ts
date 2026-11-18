@@ -131,7 +131,29 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 // getSpaceById / loadRootSpaceId read the mocked spaces table and map to the Space shape the
 // materializer needs (id / ownerProfileId / preferences).
+// patchSpacePreferences stands in for set_space_preferences (LIVE-2351): each top-level key in the patch is
+// set in place, a null deletes its key, every other key is left as stored. Calls are recorded, and a test
+// can set `Prefs.beforePatch` to land a "concurrent" save between the materializer's read and its write.
+const Prefs = vi.hoisted(() => ({
+  patches: [] as Array<{ spaceId: string; patch: Record<string, unknown> }>,
+  beforePatch: null as null | ((spaceId: string) => void),
+  refuse: false,
+}))
 vi.mock('@/lib/spaces/store', () => ({
+  patchSpacePreferences: async (spaceId: string, patch: Record<string, unknown>) => {
+    Prefs.beforePatch?.(spaceId)
+    if (Prefs.refuse) return false
+    const row = H.tables.spaces.find((r) => r.id === spaceId)
+    if (!row) return false
+    const prefs = { ...((row.preferences as Record<string, unknown>) ?? {}) }
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null) delete prefs[k]
+      else prefs[k] = v
+    }
+    row.preferences = prefs
+    Prefs.patches.push({ spaceId, patch })
+    return true
+  },
   loadRootSpaceId: async () => 'root-space',
   getSpaceById: async (id: string) => {
     const row = H.tables.spaces.find((r) => r.id === id)
@@ -568,4 +590,59 @@ it('manual Apply writes source quotes or human edits, never rejected extraction 
   expect(JSON.stringify(H.tables.spaces)).toContain('I wrote this myself.')
   for (const words of ['Human headline','Human offering description','Human question?','Human answer','Human event title','Human event description']) expect(JSON.stringify(H.tables)).toContain(words)
   expect(JSON.stringify(H.tables)).not.toContain('INVENTED')
+})
+
+// KEY-SCOPED WRITE (LIVE-2351): the re-seed sends only the preference keys it changes, so a key another
+// console saved between the materializer's read and its write (a Spotlight publish) is never turned back.
+describe('materializeBusiness — preferences are a key-scoped patch', () => {
+  beforeEach(() => {
+    Prefs.patches.length = 0
+    Prefs.beforePatch = null
+    Prefs.refuse = false
+  })
+
+  it('keeps a key saved meanwhile and never sends keys it did not change', async () => {
+    const created = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
+    const spaceId = created.spaceId!
+    const row = H.tables.spaces.find((s) => s.id === spaceId)!
+    // A stale stored profile (so the re-seed has something to change) plus a key the importer never owns.
+    const { profileData: _stale, ...rest } = row.preferences as Record<string, unknown>
+    void _stale
+    row.preferences = { ...rest, mode: 'studio' }
+    Prefs.patches.length = 0
+    Prefs.beforePatch = (id) => {
+      const r = H.tables.spaces.find((s) => s.id === id)!
+      r.preferences = { ...(r.preferences as Record<string, unknown>), spotlight: { enabled: true } }
+    }
+
+    const rerun = await materializeBusiness(wellnessStudioFixture, { kind: 'update', spaceId }, { verificationPolicy: 'allow' })
+    expect(rerun.ok).toBe(true)
+
+    expect(Prefs.patches.length).toBe(1)
+    const sent = Object.keys(Prefs.patches[0].patch)
+    expect(sent).toContain('profileData')
+    expect(sent).not.toContain('mode')
+    expect(sent).not.toContain('isDemo')
+    expect(sent).not.toContain('spotlight')
+    expect(sent).not.toContain('profileLayout')
+    const prefs = row.preferences as Record<string, unknown>
+    expect(prefs.spotlight).toEqual({ enabled: true })
+    expect(prefs.mode).toBe('studio')
+    expect(prefs.isDemo).toBe(true)
+    expect((prefs.profileData as Record<string, unknown>).phone).toBe('(503) 555-0142')
+  })
+
+  it('reports nothing written when the patch is refused', async () => {
+    const created = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
+    const row = H.tables.spaces.find((s) => s.id === created.spaceId)!
+    const { profileData: _stale, ...rest } = row.preferences as Record<string, unknown>
+    void _stale
+    row.preferences = rest
+    Prefs.patches.length = 0
+    Prefs.refuse = true
+    const res = await materializeBusiness(wellnessStudioFixture, { kind: 'update', spaceId: created.spaceId! }, { verificationPolicy: 'allow' })
+    expect(Prefs.patches.length).toBe(0)
+    expect(res.seeded?.profileData).toBe(false)
+    expect(res.seeded?.siteDoc).toBe(false)
+  })
 })

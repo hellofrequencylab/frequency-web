@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2350: Frequency's courses have a public, indexable home, and the Business of Community has a
+// LIVE-2354: Frequency's courses have a public, indexable home, and the Business of Community has a
 // sales page. Checks the consequence in source:
 //   1. /courses and /courses/business-of-community are advertised in the sitemap and llms.txt.
 //   2. The sales page is an editable page whose template renders, with Course schema on the route.
@@ -39,7 +39,7 @@ if (!/\(j\.category \?\? ''\)/.test(read('components/page-editor/blocks/profile.
 if (!read('lib/spaces/content-data.ts').includes('category: j.category ?? null')) fails.push('SpacePractices items do not carry category')
 
 if (fails.length) {
-  console.error(`LIVE-2350 FAIL\n - ${fails.join('\n - ')}`)
+  console.error(`LIVE-2354 FAIL\n - ${fails.join('\n - ')}`)
   process.exit(1)
 }
-console.log('LIVE-2350 ok: /courses and the Business of Community sales page are live, advertised and wired to the Funnel')
+console.log('LIVE-2354 ok: /courses and the Business of Community sales page are live, advertised and wired to the Funnel')

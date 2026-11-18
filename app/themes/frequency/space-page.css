@@ -415,6 +415,23 @@
 [data-design="frequency"] [data-kit="members"] .fqs-tagline a{color:inherit;text-decoration:underline dashed;text-underline-offset:4px}
 [data-design="frequency"] [data-kit="members"] .fqs-tagline .serif{font-size:1.1em}
 [data-design="frequency"] [data-kit="members"] .fqs-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* THE HEADER STYLE (LIVE-2353). Identity & Branding saves an overlay, a height and a button layout; these
+   rules are what make each pick show. Shade is the gradient above (the default). None drops it and keeps
+   the name readable with a soft text shadow. Blend fades the photo into the page ground and sets the
+   identity in the page's own ink, so it follows light and dark. Standard keeps the shipped 440px. */
+[data-design="frequency"] [data-kit="members"] .fqs-hero[data-scrim="none"]::before{display:none}
+[data-design="frequency"] [data-kit="members"] .fqs-hero[data-scrim="none"] :is(.h1,.fqs-k,.fqs-tagline){text-shadow:0 1px 16px color-mix(in oklab,var(--fq-ink) 55%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqs-hero[data-scrim="blend"]::before{background:linear-gradient(180deg,transparent 20%,color-mix(in oklab,var(--fq-bg-canvas) 78%,transparent) 58%,var(--fq-bg-canvas) 92%)}
+[data-design="frequency"] [data-kit="members"] .fqs-hero[data-scrim="blend"] .fqs-id .h1{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqs-hero[data-scrim="blend"] .fqs-k{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqs-hero[data-scrim="blend"] .fqs-tagline{color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqs-cover[data-scrim="blend"] .fqs-cover-img{-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqs-hero.tall[data-height="short"]{min-height:320px}
+[data-design="frequency"] [data-kit="members"] .fqs-hero.tall[data-height="tall"]{min-height:576px}
+@media (max-width:720px){
+[data-design="frequency"] [data-kit="members"] .fqs-hero.tall[data-height="short"]{min-height:280px}
+[data-design="frequency"] [data-kit="members"] .fqs-hero.tall[data-height="tall"]{min-height:520px}}
+[data-design="frequency"] [data-kit="members"] .fqs-hero[data-buttons="stacked"] .fqs-acts{flex-direction:column;align-items:stretch;flex-wrap:nowrap}
 /* On the photo the quiet buttons are frosted glass. */
 [data-design="frequency"] [data-kit="members"] .fqs-hero .btn.fqs-frost{background:color-mix(in oklab,var(--fq-surface-card) 86%,transparent);box-shadow:none;color:var(--fq-ink);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 /* THE DAWN HEADER, WEARING FREQUENCY (LIVE-1029). The Space page's default header is DAWN's: a clean cover

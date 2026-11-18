@@ -1,0 +1,20 @@
+{
+  "id": "JRN-007",
+  "title": "Journey settings saves, Run starts and deletes say when they fail instead of looking saved",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "app/(main)/journeys/actions.ts",
+    "ref": "Journey audit 2026-11-17 (project thread: Dial in the Journey Wizard and Journeys)"
+  },
+  "detail": "Silent failures across the Journey authoring path. setJourneyAttributes, setJourneyMeeting and setJourneyHeaderFocus awaited the journey_plans update without reading its error and returned ok(); the Spark create's follow-up write (intro, source outline, cover, accent, meeting, difficulty, category, tags) was never checked; the settings panel's save helper and the editor header's saveJourneyMeta dropped every result, so a refusal such as 'Attach this Journey to a Space first' (member-tier gate) never reached the author; startRun ignored a failed journey_enrollments insert and reported a started Run with nobody in it; and the Danger zone and manage-card deletes did nothing visible on a refusal. Fixed 2026-11-17: the three actions return fail on a write error; the Spark write logs through seedFailed('spark.plan_update'); the settings save helper (and the header-focus drag) shows the error in an alert; the editor header shows it in its note; startRun deletes the Run and returns null when the enrolment insert fails; both deletes show the refusal.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-007.mjs",
+    "note": "Fails if a journey_plans update in the Journey actions ignores its error again, the Spark write is unchecked, startRun ignores a failed enrolment, or the settings, header or delete controls drop a refusal."
+  },
+  "wave": "W7"
+}

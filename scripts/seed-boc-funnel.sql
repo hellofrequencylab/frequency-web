@@ -1,4 +1,4 @@
--- The Business of Community course Funnel (LIVE-2350). Apply by hand; this PR writes no database rows.
+-- The Business of Community course Funnel (LIVE-2354). Apply by hand; this PR writes no database rows.
 --
 -- The "Start the course" door on /courses/business-of-community links /join?seq=business-of-community.
 -- This row makes that link a real audience Funnel (docs/FUNNELS.md): Vera's beats in the hot register

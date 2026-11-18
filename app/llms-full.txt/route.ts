@@ -80,7 +80,7 @@ function guidesAndAnswers(): string[] {
       if (!spec) continue
       out.push('', `### ${spec.title}`, `${SITE_URL}${pathForSlug(page.slug)}`, spec.answer, ...qaLines(spec.faq))
     }
-    // The course sales page (LIVE-2350): not an article, so it has no spec; its questions are the same
+    // The course sales page (LIVE-2354): not an article, so it has no spec; its questions are the same
     // rows its Accordion renders.
     out.push(
       '',

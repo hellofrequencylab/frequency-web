@@ -159,7 +159,7 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: true,
   },
   {
-    // The Business of Community course Funnel (LIVE-2350): /join?seq=business-of-community, the
+    // The Business of Community course Funnel (LIVE-2354): /join?seq=business-of-community, the
     // "Start the course" door on /courses/business-of-community. Same stored beta_ prefix (ADR-1090).
     key: 'beta_business_of_community',
     label: 'Beta · Business of Community',

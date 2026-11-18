@@ -16,6 +16,31 @@ type Row = Record<string, unknown>
 const tables: Record<string, Row[]> = {}
 const writes: { table: string; patch: Row; filters: [string, unknown][] }[] = []
 let failWrite: string | null = null
+// Runs once after the next read of that table, to stage a save from another console landing between
+// the swap's read and its write (the LIVE-2352 race).
+let afterRead: { table: string; run: () => void } | null = null
+
+// set_space_preferences (SCAN-833) as the database applies it: a JSON null drops its key, every
+// other key in the patch is set, and every key the patch does not name is left as stored.
+function fakeSetSpacePreferences(args: Record<string, unknown>) {
+  const id = args.p_space_id as string
+  const patch = args.p_patch as Row
+  if (failWrite === 'spaces') {
+    failWrite = null
+    return Promise.resolve({ data: null, error: { message: 'connection reset' } })
+  }
+  const row = (tables.spaces ?? []).find((r) => r.id === id)
+  if (row) {
+    const prefs = { ...((row.preferences as Row | null) ?? {}) }
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === null) delete prefs[k]
+      else prefs[k] = v
+    }
+    row.preferences = prefs
+  }
+  writes.push({ table: 'spaces', patch, filters: [['id', id]] })
+  return Promise.resolve({ data: !!row, error: null })
+}
 
 function fakeFrom(table: string) {
   const filters: [string, unknown][] = []
@@ -27,7 +52,13 @@ function fakeFrom(table: string) {
     },
     maybeSingle() {
       const row = (tables[table] ?? []).find(matches) ?? null
-      return Promise.resolve({ data: row ? { ...row } : null, error: null })
+      const snapshot = row ? { ...row } : null
+      if (afterRead && afterRead.table === table) {
+        const hook = afterRead
+        afterRead = null
+        hook.run()
+      }
+      return Promise.resolve({ data: snapshot, error: null })
     },
   }
   return {
@@ -53,6 +84,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     rpc: (fn: string, args: Record<string, unknown>) => {
       if (throwOnRpc) throw new Error('no credentials')
+      if (fn === 'set_space_preferences') return fakeSetSpacePreferences(args)
       rpcCalls.push({ fn, args })
       return Promise.resolve(result)
     },
@@ -84,6 +116,7 @@ beforeEach(() => {
   for (const k of Object.keys(tables)) delete tables[k]
   writes.length = 0
   failWrite = null
+  afterRead = null
 })
 
 describe('findLibraryAssetUsage', () => {
@@ -382,6 +415,35 @@ describe('swapLibraryAssetRefs', () => {
     const listed = [tables.pages, prefs.pageDocs, prefs.profileLayout, prefs.profileLayoutDraft, tables.space_plans]
     expect(refsIn(listed).filter((r) => r.assetId === A)).toEqual([])
     expect(refsIn(prefs.puck).filter((r) => r.assetId === A).length).toBe(1)
+  })
+})
+
+describe('swapLibraryAssetRefs Space write is key-scoped (LIVE-2352)', () => {
+  it('sends only the preference keys the swap rewrote, through set_space_preferences', async () => {
+    seedCorpus()
+    await swapLibraryAssetRefs(A, B)
+    const spaceWrites = writes.filter((w) => w.table === 'spaces')
+    expect(spaceWrites).toHaveLength(1)
+    expect(Object.keys(spaceWrites[0].patch).sort()).toEqual(['pageDocs', 'profileLayout', 'profileLayoutDraft'])
+    expect(spaceWrites[0].patch).not.toHaveProperty('theme')
+    expect(spaceWrites[0].patch).not.toHaveProperty('puck')
+  })
+
+  it('does not turn back a key another console saved between the read and the write', async () => {
+    seedCorpus()
+    afterRead = {
+      table: 'spaces',
+      run: () => {
+        const row = tables.spaces[0]
+        row.preferences = { ...(row.preferences as Row), spotlight: { published: true }, theme: 'bold' }
+      },
+    }
+    const out = await swapLibraryAssetRefs(A, B)
+    expect(out.ok).toBe(true)
+    const prefs = tables.spaces[0].preferences as Row
+    expect(prefs.spotlight).toEqual({ published: true })
+    expect(prefs.theme).toBe('bold')
+    expect(refsIn([prefs.pageDocs, prefs.profileLayout, prefs.profileLayoutDraft]).filter((r) => r.assetId === A)).toEqual([])
   })
 })
 

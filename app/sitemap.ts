@@ -395,7 +395,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/loneliness`, lastModified: GUIDE_LAST_MODIFIED["loneliness"], changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/friendship-as-an-adult`, lastModified: GUIDE_LAST_MODIFIED["friendship-as-an-adult"], changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/how-to-build-community`, lastModified: GUIDE_LAST_MODIFIED["how-to-build-community"], changeFrequency: "monthly", priority: 0.7 },
-    // The course library and the Business of Community sales page (LIVE-2350): the leader track's
+    // The course library and the Business of Community sales page (LIVE-2354): the leader track's
     // next step after the build-community guide. Free courses, so they sit with the guides.
     { url: `${SITE_URL}/courses`, lastModified: pageLastModified("courses"), changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/courses/business-of-community`, lastModified: pageLastModified("courses"), changeFrequency: "monthly", priority: 0.7 },

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2354",
+  "title": "Frequency's free courses get a public library at /courses and a sales page for The Business of Community 101",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/(marketing)/courses/page.tsx",
+    "ref": "Owner request 2026-11-17: fan out and build the course library, the BOC sales page, its Funnel and the Space library filter"
+  },
+  "detail": "The courses Frequency teaches (official public Journeys in the Creator Lab category or in the house Space hq) had no public home: the only sales copy lived on the hq Space website. /courses lists them by derived track (lib/courses/tracks.ts: slug rule, then category rule, then Other), each card linking to its sales page or its public /discover/journeys page, never the robots-disallowed /journeys/*. /courses/business-of-community is an EDITABLE_PAGES template rebuilt in the marketing blocks from the hq sales doc, with Course, WebPage, FAQPage and Breadcrumb schema. Both are in the sitemap, llms.txt and llms-full; /courses is linked from the footer Guides list and from /how-to-build-community. Start the course goes to /join?seq=business-of-community; the Funnel row (tag beta_business_of_community, registered here; destination /journeys/the-business-of-community-101) is scripts/seed-boc-funnel.sql, NOT yet applied: until it is, the link runs the default flow. SpacePractices `only` now also matches a journey's category.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2354.mjs",
+    "note": "Fails on main: there is no /courses, no sales page, no registered Funnel tag. Passes once both pages are advertised, the sales page renders its template with Course schema, and the Funnel and filter are wired."
+  },
+  "wave": "W7",
+  "closed": "2026-11-17"
+}
