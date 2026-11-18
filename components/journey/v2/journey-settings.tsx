@@ -559,7 +559,7 @@ export function useJourneyPublishing({
 export function PublishCelebration({ celebrate, error }: { celebrate: PublishCelebration; error?: string | null }) {
   if (error) {
     return (
-      <p role="alert" className="rounded-xl border border-danger/50 bg-danger-bg px-4 py-3 text-body-sm font-medium text-danger">
+      <p role="alert" className="rounded-card border border-danger/50 bg-danger-bg px-4 py-3 text-body-sm font-medium text-danger">
         {error}
       </p>
     )

@@ -9,7 +9,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { readyCheck, readyToPublish } from './wizard'
 
-export type PublishReady = { ok: true } | { ok: false; error: string }
+type PublishReady = { ok: true } | { ok: false; error: string }
 
 export async function checkJourneyReadyToPublish(planId: string): Promise<PublishReady> {
   const admin = createAdminClient()
