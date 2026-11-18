@@ -1,20 +1,24 @@
-// /courses: the library of Frequency's own courses, grouped by track (lib/courses/tracks.ts). Public and
-// indexable. The page loads the courses, sets metadata and schema, and renders the kit body.
+// /courses: Creator Lab, Frequency's training library (owner 2026-11-18: one named library, tracks, one page per
+// course). Public and indexable. The page loads the courses, sets metadata and schema, and renders the kit body.
+//
+// SCHEMA. The ItemList names each course by its ONE home (courseHref: /courses/<slug>, or a hand-built sales
+// page), each of which carries a Course node. That pair is Google's Course list summary-page pattern, which
+// needs at least three courses marked up.
 import type { Metadata } from 'next'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema, journeyListSchema } from '@/lib/jsonld'
+import { breadcrumbSchema, courseListSchema } from '@/lib/jsonld'
 import { listCourses } from '@/lib/courses/library'
-import { groupByTrack } from '@/lib/courses/tracks'
+import { courseHref, groupByTrack, LIBRARY_NAME } from '@/lib/courses/tracks'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { FrequencyCourses } from '@/components/frequency/site/pages/courses/courses'
 
 export const revalidate = 3600
 
 const PATH = '/courses'
-const TITLE = 'Free courses for community hosts'
+const TITLE = `${LIBRARY_NAME}: free training for people who gather others`
 const DESCRIPTION =
-  'Free, self-paced courses from Frequency for people who gather others: the business side of hosting, and the craft of holding a room.'
-const IMAGE = '/brand/frequency/photos/gathering-03.jpg'
+  'Creator Lab is Frequency’s free training library for community hosts: live workshops and short self-paced courses on the business of community and the craft of holding a room.'
+const IMAGE = '/brand/frequency/photos/boc-circle-dusk.jpg'
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -34,17 +38,15 @@ export const metadata: Metadata = {
 export default async function CoursesPage() {
   const courses = await listCourses()
   const shelves = groupByTrack(courses)
-  // The ItemList names each course by its canonical public Journey page, the same URL the Journey's own
-  // HowTo node carries, so the list and the detail agree on identity.
   const ordered = shelves.flatMap((s) => s.courses)
   return (
     <>
       <JsonLd
         data={[
-          breadcrumbSchema([{ name: 'Courses', path: PATH }]),
-          journeyListSchema(
-            ordered.map((c) => ({ slug: c.slug, title: c.title })),
-            `Courses on ${SITE_NAME}`,
+          breadcrumbSchema([{ name: LIBRARY_NAME, path: PATH }]),
+          courseListSchema(
+            ordered.map((c) => ({ path: courseHref(c.slug), name: c.title })),
+            `${LIBRARY_NAME} on ${SITE_NAME}`,
           ),
         ]}
       />

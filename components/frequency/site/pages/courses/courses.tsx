@@ -1,16 +1,23 @@
-// /courses under the Frequency design: Frequency's own courses, one shelf per track. Drawn with the
-// directory pieces every /discover index shares (dir-parts: the .phero hero, the labelled .sh head, the
-// .g3 card grid), so the library reads like the rest of the public site. Server component, no client JS.
+// /courses under the Frequency design: Creator Lab, Frequency's training library, one shelf per track. Drawn
+// with the directory pieces every /discover index shares (dir-parts: the .phero hero, the labelled .sh head,
+// the .g3 card grid), so the library reads like the rest of the public site. Server component, no client JS.
 //
-// Every card links to the course's sales page when it has one, else to its public Journey page under
-// /discover/journeys. Never /journeys/*: that is the member route, and robots.ts disallows it.
+// Every card links to the course's ONE home (courseHref) and states the same facts in the same order: format
+// (live or self-paced), length, certificate. Never /journeys/*: that is the member route, robots.ts disallows it.
 
 import Link from 'next/link'
 import type { CourseCard } from '@/lib/courses/library'
-import { courseHref, type CourseTrack } from '@/lib/courses/tracks'
+import { COURSE_HUB, courseHref, LIBRARY_NAME, type CourseTrack } from '@/lib/courses/tracks'
 import { formatMinutes } from '@/components/journey/discovery-widgets'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import { count, DirCard, DirEmpty, DirGrid, DirHero, DirPage, DirSection, photo } from '../discover/dir-parts'
+
+const startFmt = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })
+
+/** "January 7": event timestamps hold the host's wall clock, so they read in UTC. */
+function runStart(iso: string): string {
+  return startFmt.format(new Date(iso))
+}
 
 /** The word a shelf counts its course's phases in: the Business of Community runs in weeks, the hosting
  *  courses in parts. */
@@ -23,20 +30,20 @@ export function FrequencyCourses({ shelves }: { shelves: { track: CourseTrack; c
   return (
     <DirPage side="p">
       <DirHero
-        crumbs={[{ label: 'Home', href: '/' }, { label: 'Courses' }]}
-        image={photo('gathering-03.jpg')}
+        crumbs={[{ label: 'Home', href: '/' }, { label: LIBRARY_NAME }]}
+        image={photo('boc-circle-dusk.jpg')}
         title={
           <>
-            Free courses for people <em className="fq-iri-text">who gather others.</em>
+            {LIBRARY_NAME}. Free training for people <em className="fq-iri-text">who gather others.</em>
           </>
         }
-        lede="Short, self-paced courses from Frequency. Learn the business side of hosting, then the craft of holding a room. Each one tells you how long it takes before you start."
+        lede="Live workshops and short self-paced courses from Frequency. The business side of community, and the craft of holding a room. Every course tells you who it’s for, when it runs and how long it takes before you start, and the first part of each one is free to read."
       >
         <Link className="btn fq-iri-btn" href="/courses/business-of-community">
           The Business of Community
         </Link>
-        <Link className="btn btn-ghost fq-iri-rim" href="/how-to-build-community">
-          How to build community
+        <Link className="btn btn-ghost fq-iri-rim" href={COURSE_HUB.path}>
+          {COURSE_HUB.label}
         </Link>
       </DirHero>
 
@@ -69,10 +76,10 @@ export function FrequencyCourses({ shelves }: { shelves: { track: CourseTrack; c
                     href={courseHref(c.slug)}
                     icon="lesson"
                     image={c.cover}
-                    tags={[c.free && 'Free']}
+                    tags={[c.free && 'Free', c.nextRun ? 'Live' : 'Self-paced', c.certificate && 'Certificate']}
                     title={c.title}
                     body={c.summary}
-                    meta={[c.weeks > 0 && count(c.weeks, one, many), formatMinutes(c.minutes)]}
+                    meta={[c.nextRun && `Next Run ${runStart(c.nextRun)}`, c.weeks > 0 && count(c.weeks, one, many), formatMinutes(c.minutes)]}
                   />
                 ))}
               </DirGrid>
@@ -83,7 +90,7 @@ export function FrequencyCourses({ shelves }: { shelves: { track: CourseTrack; c
 
       <KeepGoing
         title="Start with one course."
-        body="Pick the one that fits your season. Read how long it takes, then start when it suits you."
+        body="Pick the one that fits your season. Read the first part free, then save your seat or start when it suits you."
         primary={{ href: '/courses/business-of-community', label: 'The Business of Community' }}
         secondary={{ href: '/discover/journeys', label: 'All Journeys' }}
       />

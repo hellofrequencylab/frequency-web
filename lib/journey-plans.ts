@@ -20,6 +20,7 @@ import { acceptedCrossListingSubjects } from '@/lib/collective/cross-listing-sto
 // browser can execute a line of. The directive turns the comment into a BUILD FAILURE: any client
 // module that reaches this file now breaks the build instead of quietly shipping the database to a
 // phone. The pure `meeting` helpers live in lib/journeys/meeting.ts so a client CAN import them.
+import { HOUSE_SPACE_SLUG, isHouseProgram } from '@/lib/courses/tracks'
 import 'server-only'
 import { listReadFailClosed } from '@/lib/discover'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -1321,6 +1322,10 @@ export async function forkPlan(profileId: string, planId: string): Promise<Journ
   const { data: srcRow } = await client.from('journey_plans').select(PLAN_COLS).eq('id', planId).maybeSingle()
   const src = srcRow as JourneyPlan | null
   if (!src || src.visibility !== 'public') return null
+  // House programs are never remixed (owner 2026-11-18, lib/courses/tracks.ts isHouseProgram). The house
+  // Space is read here rather than through lib/courses/library, which imports this module.
+  const { data: house } = await client.from('spaces').select('id').eq('slug', HOUSE_SPACE_SLUG).maybeSingle()
+  if (isHouseProgram({ ...src, category: src.category ?? null }, (house as { id: string } | null)?.id ?? null)) return null
 
   const includeBodies = !(await planIsPaywalled(client, planId, src.space_tier_id))
 

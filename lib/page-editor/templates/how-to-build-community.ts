@@ -273,6 +273,18 @@ export const spec: ArticleSpec = {
         { label: 'Run a group you already gather', href: '/spaces', variant: 'secondary' },
       ],
     },
+    // The pillar links down to the library (owner 2026-11-18): every Creator Lab course links up to this page,
+    // and this page links to the library, so the guide and the courses read as one body of work.
+    {
+      question: 'Where can I learn to host?',
+      answer:
+        'Creator Lab, Frequency’s free training library. Live workshops and short self-paced courses on the business of community and the craft of holding a room, and the first part of every course is free to read.',
+      body: 'Start with The Business of Community if you already gather people and it is wearing you out: four Thursdays on Zoom, four simple meetings you can run with your own people. Start with Host Foundations if you are about to hold your first circle.',
+      links: [
+        { label: 'Browse Creator Lab', href: '/courses', variant: 'primary' },
+        { label: 'The Business of Community', href: '/courses/business-of-community', variant: 'secondary' },
+      ],
+    },
   ],
 
   faq: [

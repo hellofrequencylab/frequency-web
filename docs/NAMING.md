@@ -952,3 +952,8 @@ Phase-6 zero-hits grep carves them out:
 - **draft / published**: a Circle lifecycle. `status='draft'` is owner-only
   (hidden from discovery); publishing flips it to `active`. Creating a Circle
   makes you a **Host**, which opens the Leadership tab (`/lead`).
+
+## People's names (owner ruling, 2026-11-18)
+
+- **Feargal Walsh** is always spelled "Feargal", on every surface and in every doc, however the name is typed in a request. Title: Experience and Technology, Frequency. `pnpm check:canon` fails on the common misspellings (Feargul, Fergal, Fergul).
+- **Daniel Tyack**. Title: Founder and Architect, Frequency.

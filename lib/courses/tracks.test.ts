@@ -21,7 +21,7 @@ describe('course tracks', () => {
 
   it('links a course with a sales page there, and every other course to its public Journey page', () => {
     expect(courseHref('the-business-of-community-101')).toBe('/courses/business-of-community')
-    expect(courseHref('host-foundations')).toBe('/discover/journeys/host-foundations')
+    expect(courseHref('host-foundations')).toBe('/courses/host-foundations')
     expect(courseHref('host-foundations').startsWith('/journeys/')).toBe(false)
   })
 

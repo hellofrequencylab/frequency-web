@@ -193,6 +193,17 @@
 [data-design="frequency"] [data-kit="site"] .dd-panel dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font:var(--fq-type-meta)}
 [data-design="frequency"] [data-kit="site"] .dd-panel dt{color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="site"] .dd-panel dd{margin:0;color:var(--fq-text-strong);text-align:right}
+/* Course pages (/courses/<slug>): the facts list reads as label over value, and the Week 1 email form. */
+[data-design="frequency"] [data-kit="site"] .dd-panel .dd-facts-list{grid-template-columns:1fr;gap:2px}
+[data-design="frequency"] [data-kit="site"] .dd-panel .dd-facts-list dd{text-align:left;margin:0 0 10px;font:var(--fq-type-body)}
+[data-design="frequency"] [data-kit="site"] .dd-lead{display:flex;flex-direction:column;gap:10px}
+[data-design="frequency"] [data-kit="site"] .dd-lead label{display:flex;flex-direction:column;gap:6px;font:var(--fq-type-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dd-lead .dd-err{color:var(--fq-danger)}
+[data-design="frequency"] [data-kit="site"] .dd-week{max-width:68ch}
+[data-design="frequency"] [data-kit="site"] .dd-week h2{margin:40px 0 12px;font:600 var(--fq-text-h3)/var(--fq-lh-h3) var(--fq-font-display);letter-spacing:var(--fq-track-h3);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="site"] .dd-week h2 small{display:block;margin-top:4px;font:var(--fq-type-meta);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="site"] .dd-week p,[data-design="frequency"] [data-kit="site"] .dd-week li{font-size:var(--fq-text-body-l);line-height:1.65;color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .dd-week ul{padding-left:1.2em}
 [data-design="frequency"] [data-kit="site"] .dd-guide{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit}
 [data-design="frequency"] [data-kit="site"] .dd-guide b{display:block;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="site"] .dd-guide small{color:var(--fq-text-muted)}

@@ -86,7 +86,7 @@ function guidesAndAnswers(): string[] {
       '',
       '### The Business of Community 101',
       `${SITE_URL}/courses/business-of-community`,
-      'A free four-week course for people who already gather others: The Engine, The Container, The Gathering and The Exchange. Five short lessons a week, about an hour. Every Frequency course is listed at ' +
+      'Frequency’s free core training for anyone who gathers people. Four weeks, four simple meetings on the PULSE rhythm (Presence, Unite, Lead, Settle, Exhale): the weekly sit-down, the opening, the full gathering and the money hour. Free live workshop on Zoom, run several times a year, with a workbook to read before each session; Business Hours for Spaces on the Business plan. Every Frequency course is listed at ' +
         `${SITE_URL}/courses.`,
       ...qaLines(BOC_FAQ),
     )

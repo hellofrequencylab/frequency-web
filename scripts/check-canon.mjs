@@ -131,6 +131,8 @@ export const RULES = [
   { name: 'em-dash in brand copy', re: /—/, hint: 'use a comma, period, or colon', audience: 'member' },
   { name: 'lowercase "zaps" (proper noun Zaps)', re: /\bzaps\b/, hint: 'capitalize: Zaps', audience: 'everyone' },
   { name: 'lowercase "gems" (proper noun Gems)', re: /\bgems\b/, hint: 'capitalize: Gems', audience: 'everyone' },
+  // A guide's name is spelled one way on every surface: Feargal Walsh (owner ruling 2026-11-18).
+  { name: 'misspelled "Feargal"', re: /\b(?:Feargul|Fergal|Fergul|Feargall|Faregal)\b/i, hint: 'spell it "Feargal"', audience: 'everyone' },
   // NAMING.md §Co-op / Run: "Member/host copy always says 'Run,' never 'cohort' (cohort is
   // INTERNAL/RESEARCH FRAMING ONLY)". The canon licenses the word on an operator surface, so an
   // `everyone` audience here would be a rule that fails the canon: /admin/crm's trait catalog and

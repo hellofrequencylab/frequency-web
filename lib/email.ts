@@ -1802,6 +1802,172 @@ Notes on Circles, practices, and events, a few times a month. You can unsubscrib
 Did not request this? You can ignore this email. Confirmation is required to join this list.`
 }
 
+// ── Course credential (Attended / Certified, or a Community Book returned) ─────
+// Transactional: the holder earned a credential (lib/courses/credentials.ts) or a reviewer sent their
+// Community Book back with a note. `level` null with a note is the "returned" email.
+
+export async function sendCredentialEmail(params: {
+  to: string
+  name: string | null
+  courseTitle: string
+  level: 'attended' | 'certified' | null
+  credentialUrl: string | null
+  note: string | null
+  retryUrl: string
+  courseUrl: string
+  /** One send per credential (the cron re-reads a Run; the queue's dedupe keeps it to one). */
+  dedupeKey?: string
+}) {
+  const { to, name, courseTitle, level, credentialUrl, note, retryUrl, courseUrl } = params
+  const hi = name ? `${escapeHtml(name)}, ` : ''
+  const label = level === 'certified' ? 'Certified' : level === 'attended' ? 'Attended' : null
+  const subject = label ? `You’re ${label.toLowerCase()}: ${courseTitle}` : `Your Community Book for ${courseTitle}`
+  const lead = label
+    ? level === 'certified'
+      ? `${hi}a reviewer read your Community Book and signed off. You’re Certified in ${escapeHtml(courseTitle)}.`
+      : `${hi}you came to every live session. You’ve Attended ${escapeHtml(courseTitle)}.`
+    : `${hi}a reviewer read your Community Book for ${escapeHtml(courseTitle)} and sent it back with a note.`
+  const html = emailShell(
+    `
+    <h1 data-fq="fq-h1" style="${h1Style}">${label ? `You’re ${label.toLowerCase()}.` : 'One more pass.'}</h1>
+    <p data-fq="fq-p" style="${pStyle}">${lead}</p>
+    ${note ? `<p data-fq="fq-p" style="${pStyle}"><strong>The note:</strong> ${escapeHtml(note)}</p>` : ''}
+    ${
+      credentialUrl
+        ? `<p data-fq="fq-p" style="${pStyle}">Your credential has its own page anyone can check, and a badge you can add to your Space or your site.</p>
+    <p style="margin:0 0 28px;">${emailButton('See your credential', credentialUrl)}</p>`
+        : `<p style="margin:0 0 28px;">${emailButton(label ? 'See the course' : 'Send it again', label ? courseUrl : retryUrl)}</p>`
+    }
+    ${level === 'attended' ? `<p data-fq="fq-p" style="${pStyle}">Want Certified too? Send in your Community Book: <a href="${retryUrl}">${retryUrl}</a></p>` : ''}
+  `,
+    { text: `You are receiving this because of your work in ${escapeHtml(courseTitle)} on Frequency.`, unsubscribe: false },
+  )
+  const text = [
+    label ? `You’re ${label.toLowerCase()}.` : 'One more pass.',
+    '',
+    lead.replace(/<[^>]+>/g, ''),
+    ...(note ? ['', `The note: ${note}`] : []),
+    '',
+    credentialUrl ? `See your credential: ${credentialUrl}` : label ? `See the course: ${courseUrl}` : `Send it again: ${retryUrl}`,
+    ...(level === 'attended' ? ['', `Want Certified too? Send in your Community Book: ${retryUrl}`] : []),
+  ].join('\n')
+  await enqueueEmail({ to, subject, html, text }, params.dedupeKey ? { dedupeKey: params.dedupeKey } : undefined)
+}
+
+// ── Event replay ("Here's the replay") ────────────────────────────────────────
+// Sent once per address per event by the follow-up cron's replay pass (app/api/cron/event-followups),
+// to everyone who saved a seat, whether or not they came. Members pass the events-category send gate and
+// carry its one-click unsubscribe; guests get the transactional footer of the seat they took.
+
+export async function sendEventReplayEmail(params: {
+  to: string
+  eventTitle: string
+  eventUrl: string
+  replayUrl: string
+  next: { title: string; whenAbsolute: string; url: string } | null
+  unsubscribeUrl?: string | null
+  dedupeKey: string
+}) {
+  const { to, eventTitle, eventUrl, replayUrl, next, dedupeKey } = params
+  const unsubscribeUrl = params.unsubscribeUrl ?? null
+  const footer = `You are getting this because you saved a seat for ${eventTitle}.`
+  await enqueueEmail(
+    {
+      to,
+      subject: `The replay: ${eventTitle}`,
+      ...(unsubscribeUrl ? { headers: listUnsubscribeHeaders(unsubscribeUrl) } : {}),
+      html: emailShell(
+        `
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">The replay is up. Watch it whenever suits you, whether you came or not.</p>
+      ${emailButton('Watch the replay', replayUrl)}
+      <p data-fq="fq-p" style="${pStyle}margin-top:16px;"><a href="${eventUrl}" style="color:${palette.emailPrimaryStrong};">The session page</a></p>${
+        next
+          ? `
+      <hr data-fq="fq-rule" style="${dividerStyle}">
+      <p data-fq="fq-p" style="${pStyle}">Next up: ${escapeHtml(next.title)}, ${escapeHtml(next.whenAbsolute)}. Your seat is saved.</p>
+      <p data-fq="fq-p" style="${pStyle}"><a href="${next.url}" style="color:${palette.emailPrimaryStrong};font-weight:700;">See the next session</a></p>`
+          : ''
+      }
+      <hr data-fq="fq-rule" style="${dividerStyle}">
+      <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">${escapeHtml(footer)}${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from event emails</a>` : ''}</p>
+    `,
+        { text: escapeHtml(footer), unsubscribe: Boolean(unsubscribeUrl) },
+      ),
+      text: `${eventTitle}
+
+The replay is up. Watch it whenever suits you, whether you came or not.
+
+Watch the replay: ${replayUrl}
+The session page: ${eventUrl}
+${next ? `\nNext up: ${next.title}, ${next.whenAbsolute}. Your seat is saved.\nSee the next session: ${next.url}\n` : ''}
+${footer}${unsubscribeUrl ? `\nUnsubscribe from event emails: ${unsubscribeUrl}` : ''}
+`,
+    },
+    { dedupeKey },
+  )
+}
+
+// ── Course preview ("Email me Week 1") ────────────────────────────────────────
+// Transactional: the person asked for this one email from a course page (app/(marketing)/courses/actions.ts).
+// It carries the Week 1 link and, when the course has a Run on the calendar, the dates and the seat link.
+// Joining the notes list is a SEPARATE yes: the confirm link appears only for an address that is not on the
+// list yet, and nothing changes until it is clicked.
+
+export async function sendCoursePreviewEmail(params: {
+  to: string
+  courseTitle: string
+  week1Url: string
+  courseUrl: string
+  run: { label: string; time: string; seatUrl: string } | null
+  confirmUrl: string | null
+}) {
+  const { to, courseTitle, week1Url, courseUrl, run, confirmUrl } = params
+  const t = escapeHtml(courseTitle)
+  const html = emailShell(
+    `
+    <h1 data-fq="fq-h1" style="${h1Style}">Here’s Week 1 of ${t}.</h1>
+    <p data-fq="fq-p" style="${pStyle}">
+      You asked for it on the course page. Read it now, no account needed. It takes about fifteen minutes.
+    </p>
+    <p style="margin:0 0 28px;">${emailButton('Read Week 1', week1Url)}</p>
+    ${
+      run
+        ? `<p data-fq="fq-p" style="${pStyle}">
+      <strong>The next Run:</strong> ${escapeHtml(run.label)}, ${escapeHtml(run.time)}, on Zoom. Free.
+      Save your seat once and you’re in for every session, with reminders and the replay.
+    </p>
+    <p style="margin:0 0 28px;">${emailButton('Save your seat', run.seatUrl)}</p>`
+        : `<p data-fq="fq-p" style="${pStyle}">When you’re ready, the whole course is free on Frequency: <a href="${courseUrl}">${t}</a>.</p>`
+    }
+    ${
+      confirmUrl
+        ? `<hr data-fq="fq-rule" style="${dividerStyle}">
+    <p data-fq="fq-p" style="${pStyle}">
+      Want notes from Frequency when a new course or Run opens? It’s a separate yes. Nothing else comes from us
+      unless you confirm.
+    </p>
+    <p style="margin:0 0 12px;">${emailButton('Yes, send me notes', confirmUrl)}</p>`
+        : ''
+    }
+  `,
+    { text: 'You are receiving this one email because this address asked for it on a Frequency course page.', unsubscribe: false },
+  )
+  const text = [
+    `Here’s Week 1 of ${courseTitle}.`,
+    '',
+    `Read it now, no account needed: ${week1Url}`,
+    '',
+    run
+      ? `The next Run: ${run.label}, ${run.time}, on Zoom. Free. Save your seat: ${run.seatUrl}`
+      : `The whole course is free on Frequency: ${courseUrl}`,
+    ...(confirmUrl ? ['', `Want notes from Frequency when a new course or Run opens? Confirm here: ${confirmUrl}`] : []),
+    '',
+    'You are receiving this one email because this address asked for it on a Frequency course page.',
+  ].join('\n')
+  await enqueueEmail({ to, subject: `Week 1 of ${courseTitle}`, html, text })
+}
+
 // ── Subscribe welcome ("you're in") ───────────────────────────────────────────
 // The FIRST marketing email, sent once consent is confirmed. Carries a working
 // List-Unsubscribe (the caller passes a per-contact unsubscribe URL) for CAN-SPAM.

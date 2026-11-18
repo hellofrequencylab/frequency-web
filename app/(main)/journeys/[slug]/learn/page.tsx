@@ -5,6 +5,8 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getJourneyOffer, seatLine } from '@/lib/journeys/paid'
 import { HostSchedule } from '@/components/journey/v2/learn/host-schedule'
 import { getPlanAuthor, countActiveAdopters } from '@/lib/journey-plans'
+import { listJourneyGuides } from '@/lib/journeys/guides'
+import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { getLinkedEvent, pillarsById } from '@/lib/journeys/learn'
 import { loadJourneyLearnRoute } from '@/lib/journeys/learn-route'
 import { phaseLockStates, phaseUnlockAt } from '@/lib/journeys/schedule'
@@ -35,11 +37,19 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const canManageJourney = entry.canManage
   const journeyCaps = entry.caps
 
-  const [author, meetupEvent, gatheringEvent] = await Promise.all([
+  const [author, meetupEvent, gatheringEvent, guides, hostSpace, rootSpaceId] = await Promise.all([
     getPlanAuthor(plan.author_id),
     getLinkedEvent(extras.meeting.eventId),
     getLinkedEvent(extras.meeting.gathering?.eventId ?? null),
+    listJourneyGuides(plan.id),
+    plan.space_id ? getSpaceById(plan.space_id) : Promise.resolve(null),
+    loadRootSpaceId(),
   ])
+  // The Journey's HOST is its home Space (never the root sentinel, which means "a member's own").
+  const host =
+    hostSpace && hostSpace.id !== rootSpaceId
+      ? { slug: hostSpace.slug, name: hostSpace.brandName ?? hostSpace.name, logoUrl: hostSpace.brandLogoUrl ?? null }
+      : null
 
   // Members currently ON this Journey, named in the unpublish confirmation. Author + public only.
   const adopterCount = isAuthor && plan.visibility === 'public' ? await countActiveAdopters(plan.id, r.profileId) : 0
@@ -91,6 +101,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
       <JourneyCourseBody
         slug={slug}
         title={plan.title}
+        coverImage={plan.cover_image ?? null}
         summary={plan.summary ?? null}
         adoptCount={adoptCount}
         tree={tree}
@@ -139,7 +150,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
             <OnThisJourneyPanel friends={friends} adoptCount={adoptCount}>
               {cohort && <CohortMeter progress={cohort} />}
             </OnThisJourneyPanel>
-            <GuidePanel author={author} />
+            <GuidePanel guides={guides} host={host} author={author} />
             <MoreJourneysPanel more={more} />
           </>
         }

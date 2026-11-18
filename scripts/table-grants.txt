@@ -61,6 +61,7 @@ commerce_variants                    authenticated
 comms_assignments                    authenticated
 comms_conversations                  authenticated
 comms_messages                       authenticated
+community_book_submissions           internal
 connection_settings                  public
 consent_records                      authenticated
 contact_channel_preferences          authenticated
@@ -71,6 +72,7 @@ contacts                             authenticated
 content_ratings                      internal
 conversation_participants            authenticated
 conversations                        authenticated
+course_credentials                   internal
 creator_tips                         internal
 crew_boosts                          internal
 crew_completions                     authenticated
@@ -142,6 +144,7 @@ journey_enrollments                  internal
 journey_lesson_progress              authenticated
 journey_phase_events                 internal
 journey_plan_adoptions               authenticated
+journey_plan_guides                  internal
 journey_plan_items                   authenticated
 journey_plan_space_shares            internal
 journey_plans                        authenticated

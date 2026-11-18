@@ -25,7 +25,9 @@ business_intake
 challenge_qr_codes
 circle_transfer_offers
 commerce_order_transfers
+community_book_submissions
 content_ratings
+course_credentials
 creator_tips
 cron_run_markers
 element_settings
@@ -49,6 +51,7 @@ invite_links
 journey_drip_sends
 journey_enrollments
 journey_phase_events
+journey_plan_guides
 journey_plan_space_shares
 journey_runs
 library_styles

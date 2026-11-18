@@ -1,5 +1,6 @@
 'use server'
 
+import { runSiblings } from '@/lib/events/run-series'
 import { scheduleConfirmedRsvp } from '@/lib/analytics/rsvp-telemetry'
 import { revalidatePath } from 'next/cache'
 import { approvalResetOnEdit } from '@/lib/collective/network-tools'
@@ -1524,7 +1525,7 @@ export async function toggleRSVP(eventId: string) {
 export async function setRsvpStatus(
   eventId: string,
   intent: 'going' | 'maybe' | 'not_going',
-  opts?: { slug?: string; message?: string },
+  opts?: { slug?: string; message?: string; /** Internal: a sibling seat of a Run (lib/events/run-series.ts). */ fromRun?: boolean },
 ): Promise<ActionResult<void> | void> {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
@@ -1629,9 +1630,26 @@ export async function setRsvpStatus(
         if (effective === 'going') onGoing(!existing)
         // Post the "RSVP'd" entry (with the note) only for a confirmed seat.
         await syncRsvpActivityPost(eventId, myProfileId, effective === 'going', opts?.message)
-        sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
-          console.error('[events rsvp confirmation email]', e)
-        )
+        // A Run's sibling seats ride on the first session's confirmation: one email, not four.
+        if (!opts?.fromRun) {
+          sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
+            console.error('[events rsvp confirmation email]', e)
+          )
+        }
+      }
+      // ONE SEAT FOR THE WHOLE RUN (lib/events/run-series.ts): saving a seat for one session of a Run
+      // saves it for every upcoming session of the same Run, each through this same function, so every
+      // gate (window, capacity, approval) applies per session. Siblings never recurse.
+      if (!opts?.fromRun) {
+        const siblings = await runSiblings(admin, eventId).catch((e) => {
+          console.error('[events run siblings]', e)
+          return []
+        })
+        for (const s of siblings) {
+          await setRsvpStatus(s.id, 'going', { slug: s.slug, fromRun: true }).catch((e) =>
+            console.error('[events run sibling rsvp]', { eventId: s.id, e }),
+          )
+        }
       }
       // Segment into the hosting Space's CRM for follow-up (fire-and-forget).
       void captureRsvpLead(eventId, myProfileId, 'rsvp')

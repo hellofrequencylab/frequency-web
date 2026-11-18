@@ -68,6 +68,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // ── Admin Journeys blocks (/admin/content/journeys) — the curation surface ──
   { id: 'admin-journeys-stats', label: 'Journey stats', description: 'Headline counts: library size, awaiting review, official, and active adoptions.' },
   { id: 'admin-journeys-review', label: 'Review queue', description: 'Member-submitted Journeys waiting for an approve or reject decision.' },
+  { id: 'admin-journeys-credentials', label: 'Community Books', description: 'Community Books sent in for Certified, with the certify and send-back controls.' },
   { id: 'admin-journeys-library', label: 'Journey library', description: 'The ranked public library with the official, feature, and restore controls.' },
 
   // ── Journeys blocks (/journeys) — the member browse + build page ──
@@ -369,6 +370,7 @@ const ADMIN_PRACTICES_MODULE_IDS = [
 const ADMIN_JOURNEYS_MODULE_IDS = [
   'admin-journeys-stats',
   'admin-journeys-review',
+  'admin-journeys-credentials',
   'admin-journeys-library',
 ] as const
 
