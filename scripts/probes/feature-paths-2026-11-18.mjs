@@ -40,6 +40,18 @@ const PROBES = {
     }
     return f
   },
+  // No server action ships without a caller: each one is a callable endpoint, and these three had none
+  // (the Circle cover moved to the Loom picker, the Circle undo had nothing to undo, the booking confirm
+  // moved to a POST button under SCAN-858).
+  'HYG-247': () => {
+    const f = []
+    for (const [file, fn] of [
+      ['app/(main)/circles/admin-actions.ts', 'uploadCircleCover'],
+      ['app/(main)/circles/actions.ts', 'restoreCircleAction'],
+      ['lib/spaces/booking-actions.ts', 'confirmGuestBookingAction'],
+    ]) if (new RegExp(`export async function ${fn}\\(`).test(read(file))) f.push(`${file} still exports ${fn}, which nothing calls`)
+    return f
+  },
 }
 
 const id = process.argv[2]
