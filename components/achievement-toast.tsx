@@ -42,7 +42,7 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
 
   return (
     <Toast
-      className="w-80"
+      className="w-80 max-w-full"
       size="lg"
       skin={{ surface: tier.bg, border: tier.border, ink: tier.color, glow: tier.glow }}
       icon={<Icon className="h-6 w-6" />}
@@ -99,7 +99,7 @@ export function AchievementToastContainer() {
     // zap stack. This container used to declare its own `fixed bottom-32 md:bottom-24 right-4
     // z-50`, byte-identical to the zap toast's, so two independent boxes claimed the same rect
     // and DOM order decided which one a member could read. See components/toast-lane.tsx.
-    <div className="flex flex-col items-end gap-3">
+    <div className="flex flex-col gap-3">
       {toasts.map(t => (
         <AchievementToastCard
           key={t.id}
