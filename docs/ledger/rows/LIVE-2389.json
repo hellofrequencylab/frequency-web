@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2389",
+  "title": "A member can report a person, a comment or an event on the web",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/context-actions.tsx",
+    "ref": "Help center audit 2026-11-18"
+  },
+  "detail": "The web offered Report only on posts, Dispatches, guestbook notes and Market or Housing listings, while reportContent (app/(main)/feed/report-actions.ts) already accepts member, comment and event targets and the moderation queue already handles them. A member who saw a harmful comment, profile or event had no way to flag it from the web.\n\nDONE 2026-11-18: a shared ReportLink (components/report-link.tsx) opens the same content report dialog and the same reportContent action the post menu uses, loaded on the first tap. It sits beside Block on a member profile (not your own), beside Reply on a comment (not your own), and beside Share on an event page (not for the host, a cohost or a manager). Signed-out viewers do not see it, the same as the post menu.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/help-audit-fixes-2026-11-18.mjs LIVE-2389",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

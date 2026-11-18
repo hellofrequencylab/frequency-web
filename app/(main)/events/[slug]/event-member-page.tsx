@@ -67,6 +67,7 @@ import { circleScopeId, hostingSpaceId, venueSpaceId } from '@/lib/events/belong
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { HostHovercard } from '@/components/events/host-hovercard'
 import { EventShareButton } from '@/components/events/event-share-button'
+import { ReportLink } from '@/components/report-link'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { CohostInviteBanner } from '@/components/events/cohost-invite-banner'
 import { listCohosts, listCohostInvites, getMyCohostInvite } from '@/lib/events/cohosts'
@@ -1230,6 +1231,9 @@ export default async function EventDetailPage({
   // host/cohost-only below.
   const canContribute = !!myProfileId
   const canDispatch = isHost || isCohost
+  // Report (LIVE-2389): any signed-in member except the people running the event (its host, a
+  // cohost, a manager). The same dialog and action the post menu opens, beside Share.
+  const canReportEvent = !!myProfileId && !isHost && !isCohost && !canManage
 
   const commentPosts: ActivityPost[] = ((rawActivity ?? []) as unknown as RawActivityPost[]).map((p) => ({
     id: p.id,
@@ -2263,6 +2267,7 @@ export default async function EventDetailPage({
                   : null
               }
             />
+            {canReportEvent && <ReportLink targetType="event" targetId={event.id} className="btn sm" />}
             {canManage && (
               <>
                 <Link className="btn sm" href={`/events/${event.slug}/manage`}>
@@ -2510,7 +2515,14 @@ export default async function EventDetailPage({
         (
           <FqEventActionRow
             primary={fqPrimary}
-            share={shareButton}
+            share={
+              <>
+                {shareButton}
+                {canReportEvent && (
+                  <ReportLink targetType="event" targetId={event.id} icon={<FqIcon name="flag" />} className="btn txt" />
+                )}
+              </>
+            }
             manage={
               canManage ? (
                 <>

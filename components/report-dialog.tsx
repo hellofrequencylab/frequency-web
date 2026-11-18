@@ -100,7 +100,7 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
             </h3>
             <p className="text-meta text-muted mb-4 leading-relaxed">
               Why are you reporting this? Select the reason that best applies. We review every
-              report within 24 hours against our{' '}
+              report as soon as we can, against our{' '}
               <Link href="/guidelines" className="text-primary-strong hover:underline">community guidelines</Link>.
             </p>
 
