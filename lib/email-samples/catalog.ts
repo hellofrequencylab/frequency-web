@@ -29,6 +29,7 @@ import {
   sendGuestTicketEmail,
   sendInviteEmail,
   sendMadeItEmail,
+  sendEventReplayEmail,
   sendMemberTicketEmail,
   sendOptinConfirmEmail,
   sendOptinWelcomeEmail,
@@ -317,6 +318,7 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'event-cancelled', group: 'Events', run: () => sendEventCancelledEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, eventTitle: 'Sunrise sound bath', whenAbsolute: WHEN, eventUrl: EVENT_URL, refunded: true }) },
   { id: 'guest-event-cancelled', group: 'Events', run: () => sendGuestEventCancelledEmail({ to: TO, guestName: 'Maya', eventTitle: 'Sunrise sound bath', whenAbsolute: WHEN, eventUrl: EVENT_URL, refunded: false }) },
   { id: 'made-it', group: 'Events', run: () => sendMadeItEmail({ to: TO, name: 'Maya', eventTitle: 'Sunrise sound bath', eventUrl: EVENT_URL, madeItUrl: `${EVENT_URL}/made-it`, next: { title: 'Full moon swim', whenAbsolute: 'Friday, November 20, 6:30 PM PT', url: `${SITE}/events/full-moon-swim`, shareUrl: `${SITE}/events/full-moon-swim?share=1` }, joinUrl: `${SITE}/sign-up`, unsubscribeUrl: `${SITE}/unsubscribe/t`, dedupeKey: 'sample' }) },
+  { id: 'event-replay', group: 'Events', run: () => sendEventReplayEmail({ to: TO, eventTitle: 'The Business of Community · Live series · Week 1 · The Engine', eventUrl: EVENT_URL, replayUrl: 'https://example.com/replay', next: { title: 'Week 2 · The Container', whenAbsolute: 'Thursday, January 14, 10:00 AM PT', url: `${SITE}/events/week-2` }, unsubscribeUrl: `${SITE}/unsubscribe/t`, dedupeKey: 'sample' }) },
   { id: 'promoted-seat', group: 'Events', run: () => { const p = { recipientName: 'Maya', eventTitle: 'Sunrise sound bath', whenAbsolute: WHEN, location: 'Moonlight Beach, Encinitas', hostName: 'Jordan', circleName: 'Dawn swimmers', eventUrl: EVENT_URL, icsUrl: `${EVENT_URL}.ics`, googleCalUrl: 'https://calendar.google.com/calendar/r/eventedit?text=Sunrise+sound+bath', unsubscribeUrl: UNSUB }; return { to: TO, subject: `${PROMOTED_SEAT_LINE} Sunrise sound bath`, html: promotedSeatHtml(p), text: promotedSeatText(p) } } },
   { id: 'event-claim-invite', group: 'Events', run: () => sendEventClaimInviteEmail({ to: TO, organizerName: 'Jordan', posterName: 'Jordan', eventTitle: 'Sunrise sound bath', whenLine: WHEN, location: 'Moonlight Beach, Encinitas', claimUrl: `${SITE}/claim/abc123`, eventUrl: EVENT_URL }) },
 
