@@ -18,9 +18,9 @@ import { NODE_ID_RE, upgradeLayout } from '@/lib/entity-blocks/node-tree'
 //
 // Dark: with EDITOR_CANVAS off this does nothing. Turn it on only after the migration is applied.
 
-export type SurfaceType = 'profile-inapp' | 'spotlight-public' | 'space-profile' | 'space-site'
+type SurfaceType = 'profile-inapp' | 'spotlight-public' | 'space-profile' | 'space-site'
 
-export interface InstanceNode {
+interface InstanceNode {
   nid: string
   type: string
   slot: string
@@ -34,16 +34,16 @@ interface InstanceRow {
   position: number
 }
 
-export interface InstancePlan {
+interface InstancePlan {
   insert: InstanceNode[]
   update: InstanceNode[]
   remove: string[]
 }
 
-export type InstanceSyncResult = { ok: true; skipped?: 'off' | 'not-node-layout'; plan?: InstancePlan } | { ok: false }
+type InstanceSyncResult = { ok: true; skipped?: 'off' | 'not-node-layout'; plan?: InstancePlan } | { ok: false }
 
 /** Is the instance writer switched on? Shares E0's switch with versioned page publishing. */
-export function appInstancesEnabled(): boolean {
+function appInstancesEnabled(): boolean {
   return envFlag('EDITOR_CANVAS')
 }
 
