@@ -21,7 +21,8 @@ type Data = Awaited<ReturnType<typeof getAiControlsData>>
 type FeatureRow = Data['rows'][number]
 
 const fmtUsd = (n: number | null) => n === null ? 'Unavailable' : `$${n.toFixed(2)}`
-const fmtWhen = (s: string | null) =>
+const fmtTokens = (n: number) => n.toLocaleString('en-US')
+const fmtWhen =(s: string | null) =>
   s ? new Date(s).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''
 
 export function AiControlsView({
@@ -49,6 +50,17 @@ export function AiControlsView({
     { key: 'uncertain', header: 'Uncertain today', type: 'currency', render: (r) => (
       <span title={r.pendingIds.join(', ')}>{fmtUsd(r.uncertain)}{r.uncertain > 0 && <span className="sr-only"> References: {r.pendingIds.join(', ')}</span>}</span>
     ) },
+    // PROG-E8 4b: the prompt-cache split, from rows that recorded it. "Not recorded" before the
+    // migration is applied, or on a day with only older or embedding rows.
+    { key: 'cache', header: 'Prompt cache today', render: (r) => {
+      const t = r.tokens
+      if (!t || t.splitRows === 0) return <span className="text-subtle">Not recorded</span>
+      return (
+        <span className="text-muted" title={t.unsplitRows > 0 ? `${t.unsplitRows} request(s) today did not record the split` : undefined}>
+          {fmtTokens(t.cacheReadTokens)} read, {fmtTokens(t.cacheCreationTokens)} written of {fmtTokens(t.promptTokens)} prompt
+        </span>
+      )
+    } },
     { key: 'cap', header: 'Daily cap', type: 'currency', render: (r) => <span className="text-subtle">{fmtUsd(r.cap)}</span> },
     {
       key: 'state',
