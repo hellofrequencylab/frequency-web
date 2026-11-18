@@ -1,0 +1,20 @@
+{
+  "id": "OWN-111",
+  "title": "Move the Resend Transactional plan from Free to Pro ($20 a month) when there is budget",
+  "lane": "owner",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "docs/RUNBOOKS.md",
+    "ref": "Owner request 2026-11-18 (Daniel): \"let's fix it soon when I get some cash. Put it in the backlog.\""
+  },
+  "detail": "Daniel's Resend usage page on 2026-11-18 shows the hellofrequencylab team on Transactional FREE (100 emails a day, 3,000 a month; 201/100 that day, 1,084/3,000 that month) and Marketing PRO (5,000 contacts, unlimited broadcasts). Free sends past 100 a day are refused (429 daily_quota_exceeded) or accepted and then failed (email.failed, reached_daily_quota), which is how sign-in links and reminders were lost after the campaign drains of 11-17 and 11-18 (EMAIL-060). Transactional Pro is $20 a month: 50,000 emails a month and no daily limit. Daniel has no budget for it today (cost beats speed), so the interim fix is option A, chosen 2026-11-18: campaigns go out as Resend Broadcasts on the Marketing Pro plan and one-to-one mail is held under 100 a day (EMAIL_DAILY_SEND_LIMIT). When Daniel upgrades: Resend, Settings, Usage, Transactional, Upgrade, pick Pro. Then raise or unset EMAIL_DAILY_SEND_LIMIT in Vercel Production so the outbox stops parking mail.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-18",
+    "evidence": "Owner screenshot of resend.com/settings/usage, 2026-11-18 10:42 Pacific: Transactional Free, daily limit 201/100, monthly 1,084/3,000; Marketing Pro. Closes when the same page shows Transactional Pro (no daily limit)."
+  },
+  "wave": "W7",
+  "ownerAction": "account"
+}
