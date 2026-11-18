@@ -82,7 +82,9 @@ export async function sendOutreach(message: string): Promise<ActionResult<{ sent
           .eq('body', body)
           .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
           .limit(1)
-        if (!existing?.length) {
+        // The inbox row is a mention, so the member's in-app Mentions switch decides it (LIVE-2361);
+        // the email and push below keep their own gates.
+        if (!existing?.length && (await resolveSendGate(p.id, 'inapp', 'mentions')).allowed) {
           await admin.from('notifications').insert({
             recipient_id: p.id,
             actor_id: caller.id,

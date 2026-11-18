@@ -27,6 +27,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isBlockedBetween } from '@/lib/blocking'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 
 // ── Pure: the cooperative Circle streak (local-only) ─────────────────────────────
 
@@ -262,6 +263,10 @@ export async function nudgeCircleMate(nudgerProfileId: string, mateProfileId: st
       .limit(1)
       .maybeSingle()
     if (recent) return { nudged: true, reason: 'sent' }
+
+    // The poke lands in the bell as a mention, so the mate's own in-app Mentions switch decides
+    // (LIVE-2361). A switched-off mate reads as sent to the nudger, so the refusal reveals nothing.
+    if (!(await resolveSendGate(mateProfileId, 'inapp', 'mentions')).allowed) return { nudged: true, reason: 'sent' }
 
     // The poke is an in-app notification from the nudger to the mate. supabase-js returns a write
     // failure as a value, so it is read here instead of trusted (SCAN-692).
