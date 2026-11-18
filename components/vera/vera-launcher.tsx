@@ -820,9 +820,9 @@ export function VeraLauncher({ veraTease }: { veraTease?: TeaseGate }) {
                       ) : (
                         results.map((r) => (
                           <li key={r.href}>
-                            <Link href={r.href} onClick={close} className="block px-3 py-2 hover:bg-surface-elevated">
+                            <Link href={r.to} onClick={close} className="block px-3 py-2 hover:bg-surface-elevated">
                               <span className="block text-body-sm font-medium text-text">{r.title}</span>
-                              <span className="block text-meta text-muted">{r.categoryTitle}</span>
+                              <span className="block text-meta text-muted">{r.sectionTitle ? `${r.categoryTitle} · ${r.sectionTitle}` : r.categoryTitle}</span>
                             </Link>
                           </li>
                         ))

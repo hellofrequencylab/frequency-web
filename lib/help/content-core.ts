@@ -57,6 +57,9 @@ export interface HelpArticle {
   role?: string
   /** Code areas this article documents; powers drift detection (docs/HELP-CENTER.md). */
   featureKeys: string[]
+  /** Words a person would type to find this article that its title does not carry (front matter
+   *  `keywords`). Help search weighs them just under the title (lib/help/search.ts). */
+  keywords?: string[]
   status: HelpStatus
   /** Optional `canonical:` key: the path (or absolute URL) that should rank for this article's query
    *  instead of the article itself. A member-facing twin of a marketing guide names the guide here,
@@ -142,6 +145,10 @@ export interface HelpSearchEntry {
   categoryTitle: string
   href: string
   excerpt: string
+  /** The article's `keywords` front matter. Absent on an index built before the field existed. */
+  keywords?: string[]
+  /** The article's section headings with their anchor ids, so a hit can link to the section. */
+  sections?: { id: string; title: string }[]
 }
 
 type FrontMatter = Record<string, string | string[]>
@@ -202,6 +209,7 @@ async function readArticle(category: string, file: string): Promise<HelpArticle>
     audience: str(data.audience, 'member'),
     role: str(data.role) || undefined,
     featureKeys: arr(data.featureKeys),
+    keywords: arr(data.keywords),
     status: (str(data.status, 'published') as HelpStatus) === 'draft' ? 'draft' : 'published',
     canonical: str(data.canonical).trim(),
     body: content,
