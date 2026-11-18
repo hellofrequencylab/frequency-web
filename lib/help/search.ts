@@ -15,7 +15,7 @@
 import type { HelpSearchEntry } from './content'
 
 /** A ranked match. `to` is where the result should link: the article, or the section that matched. */
-export interface HelpSearchHit extends HelpSearchEntry {
+interface HelpSearchHit extends HelpSearchEntry {
   to: string
   /** The heading of the matching section, when a section explains the query better than the title. */
   sectionTitle?: string
