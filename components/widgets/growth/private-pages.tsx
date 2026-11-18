@@ -6,7 +6,7 @@ import { formatDateShort, formatTimeShort } from '@/lib/format-date'
 import { HOME_TZ } from '@/lib/time/home-zone'
 import { loadPrivateReads, type ClickRow, type ReaderSummary } from '@/lib/how/private-readers'
 
-// PRIVATE PAGES (LIVE-2345, LIVE-2372): who opened the link-only partner pages under /build and what they clicked
+// PRIVATE PAGES (LIVE-2345, LIVE-2380): who opened the link-only partner pages under /build and what they clicked
 // (owner 2026-11-17). Every row is first-party (engagement_events via /api/how/beacon); nothing here
 // went to a pixel. Give each person their own link, e.g. frequencylocal.com/build/facilities?r=jane, and the
 // code carries to the other private pages in the same tab. Staff visits are excluded at the beacon.

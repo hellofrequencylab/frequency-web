@@ -1,7 +1,7 @@
 # /build: the link-only partner pages
 
 Status and open owner actions live in docs/BUILD-BACKLOG.json (rows LIVE-2323, LIVE-2344, LIVE-2345,
-LIVE-2372), not here.
+LIVE-2380), not here.
 
 Every page Daniel shows a partner lives under `/build`. None is secret: each is shared by link, carries
 `LINK_ONLY_ROBOTS` (`lib/seo/link-only.ts`: noindex, nofollow, noarchive, nosnippet, noimageindex), and is
