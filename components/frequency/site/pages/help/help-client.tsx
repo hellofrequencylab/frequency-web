@@ -10,9 +10,35 @@
 // product has no contact endpoint, so Send opens the visitor's own mail app addressed to the real
 // contact address: nothing is submitted on their behalf, and no new endpoint is invented.
 import Link from 'next/link'
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { Input, Textarea } from '@/components/ui/field'
+import type { HelpSearchEntry } from '@/lib/help/content'
+import { searchHelp } from '@/lib/help/search'
+
+/**
+ * The full help search index (keywords and section headings included), fetched once per page the
+ * first time someone reaches for search. It is the static file Vera's launcher reads
+ * (app/api/help/search-index), so it costs the page nothing until it is wanted. Null until it
+ * arrives or when it cannot be read; each caller keeps a plain title match for that case.
+ */
+function useHelpIndex(wanted: boolean): HelpSearchEntry[] | null {
+  const [index, setIndex] = useState<HelpSearchEntry[] | null>(null)
+  useEffect(() => {
+    if (!wanted || index) return
+    let live = true
+    fetch('/api/help/search-index')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`help index ${r.status}`))))
+      .then((rows: HelpSearchEntry[]) => {
+        if (live) setIndex(rows)
+      })
+      .catch((err) => console.warn('[help] search index unavailable, matching titles only', err))
+    return () => {
+      live = false
+    }
+  }, [wanted, index])
+  return index
+}
 
 export interface HelpTopic {
   slug: string
@@ -24,8 +50,16 @@ export interface HelpTopic {
 const matches = (q: string, a: { title: string; description: string }) =>
   !q || `${a.title} ${a.description}`.toLowerCase().includes(q)
 
+type ShownTopic = Omit<HelpTopic, 'articles'> & {
+  articles: (HelpTopic['articles'][number] & { section?: string })[]
+}
+
+/** Where a topic's best article sits in the ranked hits, so the topic with the best answer leads. */
+const rank = (hits: { to: string }[], t: ShownTopic) => hits.findIndex((h) => h.to === t.articles[0]?.href)
+
 export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
   const [query, setQuery] = useState('')
+  const [reached, setReached] = useState(false)
   // The help center's index search submits here as `/help?q=…` (HelpIndexSearch). The page is static,
   // so the query is read from the URL after hydration, not from searchParams on the server.
   useEffect(() => {
@@ -34,9 +68,25 @@ export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
     if (fromUrl) setQuery(fromUrl)
   }, [])
   const q = query.trim().toLowerCase()
-  const shown = topics
-    .map((t) => ({ ...t, articles: t.articles.filter((a) => matches(q, a)) }))
-    .filter((t) => t.articles.length > 0)
+  const index = useHelpIndex(reached || q.length > 0)
+  // With the index in hand the shared matcher ranks the articles (lib/help/search): it reads
+  // keywords and section headings, forgives a typo, and can point at the section that answers.
+  // Until it arrives, and if it never does, the list filters on title and summary as it always has.
+  const hits = useMemo(() => (index && q.length >= 2 ? searchHelp(index, q, 60) : null), [index, q])
+  const shown: ShownTopic[] = hits
+    ? topics
+        .map((t) => ({
+          ...t,
+          articles: hits.flatMap((h) => {
+            const a = t.articles.find((x) => x.href === h.href)
+            return a ? [{ ...a, href: h.to, section: h.sectionTitle }] : []
+          }),
+        }))
+        .filter((t) => t.articles.length > 0)
+        .sort((a, b) => rank(hits, a) - rank(hits, b))
+    : topics
+        .map((t) => ({ ...t, articles: t.articles.filter((a) => matches(q, a)) }))
+        .filter((t) => t.articles.length > 0)
 
   return (
     <>
@@ -60,6 +110,7 @@ export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
               placeholder="Search questions"
               aria-label="Search help"
               value={query}
+              onFocus={() => setReached(true)}
               onChange={(e) => setQuery(e.target.value)}
             />
           </label>
@@ -90,7 +141,7 @@ export function HelpCenter({ topics }: { topics: HelpTopic[] }) {
                   <Link key={a.href} className="hp-a" href={a.href}>
                     <span>
                       <b>{a.title}</b>
-                      {a.description && <small>{a.description}</small>}
+                      {a.section ? <small>In this guide: {a.section}</small> : a.description && <small>{a.description}</small>}
                     </span>
                     <span className="ar" aria-hidden="true">
                       →
@@ -180,16 +231,22 @@ export interface HelpIndexEntry {
 }
 
 /**
- * The help center index's search box (the inner pages' left column). It filters every article title
- * in place as you type; Enter (or no JavaScript) submits to the front page's search, `/help?q=…`,
- * which filters titles and summaries across every topic.
+ * The help center index's search box (the inner pages' left column). It ranks the articles in place
+ * as you type, with the same matcher as every other help search (titles before the index arrives);
+ * Enter (or no JavaScript) submits to the front page's search, `/help?q=…`, across every topic.
  */
 export function HelpIndexSearch({ entries }: { entries: HelpIndexEntry[] }) {
   const [query, setQuery] = useState('')
+  const [reached, setReached] = useState(false)
   const listId = useId()
   const q = query.trim().toLowerCase()
   const open = q.length >= 2
-  const hits = open ? entries.filter((e) => `${e.title} ${e.topic}`.toLowerCase().includes(q)).slice(0, 8) : []
+  const index = useHelpIndex(reached)
+  const hits: (HelpIndexEntry & { section?: string })[] = !open
+    ? []
+    : index
+      ? searchHelp(index, q, 8).map((h) => ({ title: h.title, topic: h.categoryTitle, href: h.to, section: h.sectionTitle }))
+      : entries.filter((e) => `${e.title} ${e.topic}`.toLowerCase().includes(q)).slice(0, 8)
   return (
     <form className="hc-s" role="search" action="/help" method="get">
       <label className="hc-sl">
@@ -202,6 +259,7 @@ export function HelpIndexSearch({ entries }: { entries: HelpIndexEntry[] }) {
           aria-controls={open ? listId : undefined}
           autoComplete="off"
           value={query}
+          onFocus={() => setReached(true)}
           onChange={(e) => setQuery(e.target.value)}
         />
       </label>
@@ -213,13 +271,13 @@ export function HelpIndexSearch({ entries }: { entries: HelpIndexEntry[] }) {
                 <li key={h.href}>
                   <Link href={h.href} onClick={() => setQuery('')}>
                     <b>{h.title}</b>
-                    <small>{h.topic}</small>
+                    <small>{h.section ? `${h.topic} · ${h.section}` : h.topic}</small>
                   </Link>
                 </li>
               ))}
             </ul>
           ) : (
-            <p>No titles match. Press Enter to search every article.</p>
+            <p>No guides match that yet. Press Enter to search every article.</p>
           )}
         </div>
       )}
