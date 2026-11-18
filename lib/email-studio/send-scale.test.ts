@@ -177,6 +177,20 @@ vi.mock('./product-block', () => ({
   productVarsFromLayout: () => ({}),
 }))
 vi.mock('./data-blocks', () => ({ resolveDataBlockRefs: async (layout: unknown) => layout }))
+// EMAIL-076: the broadcast path. Off unless a test sets EMAIL_BROADCASTS_ENABLED; the provider call is a spy.
+const broadcastCalls = vi.hoisted(() => [] as { recipients: { email: string }[]; html: string; subject: string }[])
+const broadcastFails = vi.hoisted(() => ({ value: false }))
+vi.mock('./broadcast', async (importOriginal) => {
+  const real = await importOriginal<typeof import('./broadcast')>()
+  return {
+    ...real,
+    sendCampaignAsBroadcast: async (input: { recipients: { email: string }[]; html: string; subject: string }) => {
+      if (broadcastFails.value) throw new Error('resend refused the broadcast')
+      broadcastCalls.push(input)
+      return { broadcastId: 'bc_1', existing: false }
+    },
+  }
+})
 
 import { sendCampaignNow } from './send'
 import { FAN_OUT_CHUNK } from './fan-out'
@@ -213,6 +227,9 @@ beforeEach(() => {
   queued = []
   takenKeys = new Set()
   batchSizes.length = 0
+  broadcastCalls.length = 0
+  broadcastFails.value = false
+  delete process.env.EMAIL_BROADCASTS_ENABLED
   vi.spyOn(console, 'error').mockImplementation(() => {})
   vi.spyOn(console, 'info').mockImplementation(() => {})
 })
@@ -315,5 +332,40 @@ describe('a large send', () => {
     await sendCampaignNow('camp-1')
     expect(row.status).toBe('sent')
     expect(unique(queued.map((q) => q.to))).toBe(450 - FAN_OUT_CHUNK)
+  })
+})
+
+describe('EMAIL-076: sent as one Resend broadcast when EMAIL_BROADCASTS_ENABLED is on', () => {
+  it('hands the whole gated audience to one broadcast, queues nothing on the outbox, and lands sent', async () => {
+    process.env.EMAIL_BROADCASTS_ENABLED = '1'
+    const res = await sendCampaignNow('camp-1')
+    expect(res).toEqual({ data: { recipientCount: 450 } })
+    expect(queued).toEqual([])
+    expect(broadcastCalls).toHaveLength(1)
+    expect(unique(broadcastCalls[0].recipients.map((r) => r.email))).toBe(450)
+    // One html for everyone: Resend fills the opt-out link and the name in per recipient.
+    expect(broadcastCalls[0].html).toContain('{{{RESEND_UNSUBSCRIBE_URL}}}')
+    expect(broadcastCalls[0].html).toContain('{{{contact.manage_url}}}')
+    // The subject is static, so an inbox list never shows a raw placeholder.
+    expect(broadcastCalls[0].subject).toBe('Hello there')
+    expect(row.status).toBe('sent')
+    expect(ledger).toHaveLength(450)
+  })
+
+  it('a provider refusal records the campaign failed (re-sendable), never sent', async () => {
+    process.env.EMAIL_BROADCASTS_ENABLED = '1'
+    broadcastFails.value = true
+    const res = await sendCampaignNow('camp-1')
+    expect('error' in res).toBe(true)
+    expect(row.status).toBe('failed')
+    expect(row.sent_at).toBeNull()
+    expect(queued).toEqual([])
+  })
+
+  it('switch off: the outbox path runs exactly as before', async () => {
+    const res = await sendCampaignNow('camp-1')
+    expect(res).toEqual({ data: { recipientCount: 450 } })
+    expect(broadcastCalls).toEqual([])
+    expect(queued).toHaveLength(450)
   })
 })
