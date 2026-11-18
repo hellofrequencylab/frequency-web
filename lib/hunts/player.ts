@@ -11,6 +11,7 @@
 import { APPROX_SPACE_NOTE } from '@/lib/maps/approximate'
 import { evaluate, type Instant } from './graph'
 import type { Credit, HuntGraph, MissionState } from './graph'
+import { placementsAllClosed } from './closures'
 import { playerView } from './moderation'
 
 /** What a player reads when a visit is kept for staff to check (FH-020V). Plain and warm, no blame. */
@@ -33,6 +34,8 @@ type PlayerStop = {
   canRevealHint?: true
   /** FH-042S: a Mystery whose tries are used up. Still open, but the way on is its stand-in stop. */
   answerLocked?: true
+  /** FH-030S: closed because its place is closed right now (a revoked code, a venue that left). Not a lost fork. */
+  placeClosed?: true
 }
 
 type Projection = {
@@ -60,6 +63,7 @@ export function projectForPlayer(input: {
   const ev = evaluate(input.graph, input.credits, input.now)
   const view = playerView(input.huntState)
   const locked = new Set(input.lockedMysteries ?? [])
+  const closedPlaces = new Set(input.graph.missions.filter(placementsAllClosed).map((m) => m.mission_key))
   const nextKey = view.canClaim && !ev.finished
     ? input.content.find((c) => ev.status[c.mission_key] === 'eligible' && !locked.has(c.mission_key))?.mission_key ?? null
     : null
@@ -73,7 +77,9 @@ export function projectForPlayer(input: {
       if (input.hints.requestedKey === nextKey) return { ...visible, hint: c.locked_teaser }
       return { ...visible, canRevealHint: true }
     }
-    return !input.hints && c.locked_teaser ? { ...base, teaser: c.locked_teaser } : base
+    // FH-030S: a stop whose every placement is closed says so, so nobody walks to a shut door.
+    const shut = state === 'closed' && closedPlaces.has(c.mission_key) ? { placeClosed: true as const } : {}
+    return !input.hints && c.locked_teaser ? { ...base, ...shut, teaser: c.locked_teaser } : { ...base, ...shut }
   })
   return {
     revision: input.revision,

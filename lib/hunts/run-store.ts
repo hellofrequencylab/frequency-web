@@ -15,6 +15,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { approximatePoint } from '@/lib/maps/approximate'
 import { resolvePrecision } from '@/lib/spaces/location'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { PartnerRow } from './authz'
+import { closedPlacements, closedVenues } from './closures'
 import type { Chapter, Credit, HuntGraph } from './graph'
 import { MAX_ANSWER_ATTEMPTS } from './mystery'
 
@@ -29,8 +31,11 @@ type MissionRow = {
 type GroupRow = { id: string; target_mission_key: string | null; target_finish: boolean; logic: 'all' | 'any' | 'count'; min_count: number | null; group_key: string | null }
 type MemberRow = { group_id: string; member_mission_key: string }
 type PlacementRow = { mission_key: string; placement_id: string; venue_space_id: string | null }
-/** FH-030 count rules a version may carry: its mission-to-placement bindings and `policy.chapters`. */
-type CountRuleRows = { placements?: readonly PlacementRow[]; chapters?: readonly Chapter[] }
+/**
+ * FH-030 count rules a version may carry: its mission-to-placement bindings and `policy.chapters`, plus
+ * (FH-030S) the placements closed right now, which are live state and never part of the version.
+ */
+type CountRuleRows = { placements?: readonly PlacementRow[]; chapters?: readonly Chapter[]; closed?: ReadonlySet<string> }
 
 /** Players see a Hunt that is running or paused (paused shows its banner). Everything else is not found. */
 export function playerHuntState(status: string): 'published' | 'paused' | 'closed' | null {
@@ -45,8 +50,10 @@ export function playerHuntState(status: string): 'published' | 'paused' | 'close
  * as written by publishRows, and the numeric part is compared as a number so stop-10 follows stop-9).
  *
  * `rules` adds what the count rules read (FH-030): each mission's equivalent placements with their
- * venue, so two missions in one shop share a bucket, and the version's regional chapters. A revoked
- * placement is not marked closed here: `hunt_claim_apply` refuses it under the run lock.
+ * venue, so two missions in one shop share a bucket, and the version's regional chapters. FH-030S: a
+ * placement in `rules.closed` (revoked, or at a venue whose partner row is not in force) is marked
+ * closed, so the evaluation shows its stop as closed and a count rule stops counting it. The claim
+ * path still refuses it on its own (`hunt_claim_apply`), under the run lock.
  */
 export function assembleTrail(missions: readonly MissionRow[], groups: readonly GroupRow[], members: readonly MemberRow[], rules: CountRuleRows = {}) {
   const num = (k: string) => Number(k.match(/(\d+)$/)?.[1] ?? 0)
@@ -61,7 +68,7 @@ export function assembleTrail(missions: readonly MissionRow[], groups: readonly 
   const placementsOf = (missionKey: string) =>
     (rules.placements ?? [])
       .filter((p) => p.mission_key === missionKey)
-      .map((p) => ({ placement_key: p.placement_id, venue: p.venue_space_id }))
+      .map((p) => ({ placement_key: p.placement_id, venue: p.venue_space_id, ...(rules.closed?.has(p.placement_id) ? { closed: true } : {}) }))
       .sort((a, b) => (a.placement_key < b.placement_key ? -1 : 1))
   const graph: HuntGraph = {
     missions: ordered.map((m) => {
@@ -161,21 +168,54 @@ export async function loadPublicTrailSummary(slug: string): Promise<{ slug: stri
 /**
  * The published Trail a player may open, by slug. Never the open draft: it reads the version the Hunt
  * points at, and only when that version is published. Null for a draft, a private Hunt, or no such slug.
+ *
+ * FH-030S: with `liveClosures` (the player page), placements closed right now are marked closed in the
+ * graph, so the player sees a closed stop as closed. The claim path leaves it off: hunt_claim_apply
+ * refuses a revoked placement or a venue that is not a live partner on its own, under the run lock.
  */
-export async function loadPublishedTrail(slug: string): Promise<PublishedTrail | null> {
+export async function loadPublishedTrail(slug: string, opts: { liveClosures?: boolean } = {}): Promise<PublishedTrail | null> {
   const client = db()
   const version = await readPublishedVersion(client, slug, false)
   if (!version) return null
+  const read = await readVersionGraph(client, version.huntId, version.versionId, opts.liveClosures === true)
+  if (!read) return null
+  return {
+    huntId: version.huntId,
+    slug: version.slug,
+    versionId: version.versionId,
+    revision: version.revision,
+    title: version.title,
+    huntState: version.huntState,
+    graph: read.graph,
+    content: read.content,
+  }
+}
 
-  const [m, g, mem, bound, policy] = await Promise.all([
-    client.from('hunt_missions').select('mission_key, title, visible_body, locked_teaser, opens_at, closes_at, kind, choice_group, fallback_group', { count: 'exact' }).eq('version_id', version.versionId),
-    client.from('hunt_rule_groups').select('id, target_mission_key, target_finish, logic, min_count, group_key', { count: 'exact' }).eq('version_id', version.versionId),
-    client.from('hunt_rule_group_members').select('group_id, member_mission_key', { count: 'exact' }).eq('version_id', version.versionId),
-    client.from('hunt_mission_placements').select('mission_key, placement_id, venue_space_id', { count: 'exact' }).eq('version_id', version.versionId),
-    client.from('hunt_versions').select('chapters:policy->chapters').eq('id', version.versionId).maybeSingle(),
+/**
+ * FH-030S: the graph of one version of a Hunt with today's closures, for a guard that must know whether a
+ * planned closure leaves players a way to finish (lib/hunts/partner-store.ts `revokePartner`). Null when
+ * any read failed, so the caller refuses instead of guessing.
+ */
+export async function loadVersionGraph(huntId: string, versionId: string): Promise<HuntGraph | null> {
+  return (await readVersionGraph(db(), huntId, versionId, true))?.graph ?? null
+}
+
+/** Rows that are always complete: a read that was not asked for. */
+const NOT_ASKED = { data: [] as object[], count: 0, error: null }
+
+async function readVersionGraph(client: SupabaseClient, huntId: string, versionId: string, withClosures: boolean): Promise<ReturnType<typeof assembleTrail> | null> {
+  const [m, g, mem, bound, policy, placed, partnered] = await Promise.all([
+    client.from('hunt_missions').select('mission_key, title, visible_body, locked_teaser, opens_at, closes_at, kind, choice_group, fallback_group', { count: 'exact' }).eq('version_id', versionId),
+    client.from('hunt_rule_groups').select('id, target_mission_key, target_finish, logic, min_count, group_key', { count: 'exact' }).eq('version_id', versionId),
+    client.from('hunt_rule_group_members').select('group_id, member_mission_key', { count: 'exact' }).eq('version_id', versionId),
+    client.from('hunt_mission_placements').select('mission_key, placement_id, venue_space_id', { count: 'exact' }).eq('version_id', versionId),
+    client.from('hunt_versions').select('chapters:policy->chapters').eq('id', versionId).maybeSingle(),
+    // FH-030S: live closure state, read now: revoked placements and partner rows of this Hunt.
+    withClosures ? client.from('hunt_placements').select('id, revoked_at', { count: 'exact' }).eq('hunt_id', huntId) : NOT_ASKED,
+    withClosures ? client.from('hunt_partners').select('space_id, status, effective_at, revoked_at', { count: 'exact' }).eq('hunt_id', huntId) : NOT_ASKED,
   ])
-  // Neither a failed read nor a response truncated by the API row cap may drop prerequisites.
-  if (!completeRows(m) || !completeRows(g) || !completeRows(mem) || !completeRows(bound) || policy.error) return null
+  // Neither a failed read nor a response truncated by the API row cap may drop prerequisites, or a closure.
+  if (!completeRows(m) || !completeRows(g) || !completeRows(mem) || !completeRows(bound) || policy.error || !completeRows(placed) || !completeRows(partnered)) return null
   const missions = m.data as MissionRow[]
   const groups = g.data as GroupRow[]
   const members = mem.data as MemberRow[]
@@ -192,17 +232,11 @@ export async function loadPublishedTrail(slug: string): Promise<PublishedTrail |
     || placements.some((p) => !missionKeys.has(p.mission_key) || typeof p.placement_id !== 'string' || !p.placement_id
       || (p.venue_space_id !== null && p.venue_space_id !== undefined && typeof p.venue_space_id !== 'string'))) return null
 
-  const { graph, content } = assembleTrail(missions, groups, members, { placements, chapters: rawChapters as Chapter[] })
-  return {
-    huntId: version.huntId,
-    slug: version.slug,
-    versionId: version.versionId,
-    revision: version.revision,
-    title: version.title,
-    huntState: version.huntState,
-    graph,
-    content,
-  }
+  const revoked = new Set((placed.data as { id: unknown; revoked_at: unknown }[]).filter((p) => typeof p.id === 'string' && p.revoked_at !== null && p.revoked_at !== undefined).map((p) => p.id as string))
+  const partners = (partnered.data as { space_id: string; status: PartnerRow['status']; effective_at: string | null; revoked_at: string | null }[])
+    .map((p) => ({ spaceId: p.space_id, status: p.status, effectiveAt: p.effective_at, revokedAt: p.revoked_at }))
+  const closed = closedPlacements(placements, revoked, closedVenues(partners, new Date().toISOString()))
+  return assembleTrail(missions, groups, members, { placements, chapters: rawChapters as Chapter[], closed })
 }
 
 type PlayerRun = { runId: string; state: string }
