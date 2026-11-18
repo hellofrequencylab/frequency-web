@@ -382,10 +382,13 @@ export async function createJourneyFromSparkAction(input: {
   }
   // difficulty/category/tags/daily_minutes aren't in the generated types yet — cast the payload
   // (ADR-246: cast the payload, never the admin client). source_overview was added to the types.
-  await admin
+  // JRN-007: this write carries the intro, outline, cover, accent, meeting and tags; a failure is
+  // logged with the other seed failures instead of vanishing.
+  const { error: planUpdateError } = await admin
     .from('journey_plans')
     .update(planUpdate as unknown as Database['public']['Tables']['journey_plans']['Update'])
     .eq('id', plan.id)
+  if (planUpdateError) seedFailed('spark.plan_update', plan.id, planUpdateError)
 
   // One Phase per week, titled + described by Vera's weekly ARC (so every week is filled with a
   // focus, not an empty "Week N"). Falls back to a plain week label when the arc is missing.
@@ -493,14 +496,27 @@ export async function createMasterFrameworkAction(input: {
   if ('error' in ctx) return fail(ctx.error)
 
   const title = input.title?.trim().slice(0, 120) || MASTER_FRAMEWORK.name
-  const plan = await createPlan({
-    authorId: ctx.authorId,
-    title,
-    emoji: MASTER_FRAMEWORK.emoji,
+  // THE GOVERNED WRITE (ADR-988, ADR-1249), the same seam the template and blank roads use: the
+  // Master Framework road was the one create path that wrote the plan without it.
+  const governed = await proposeAndConfirmCreate({
+    entity: 'journey',
+    draft: { title, emoji: MASTER_FRAMEWORK.emoji },
     spaceId: ctx.spaceId,
-    spacePlanId: ctx.spacePlanId,
+    rationale: 'Journey builder, Master Framework road: the author picked the recommended shape and committed it.',
+    commit: async () => {
+      const created = await createPlan({
+        authorId: ctx.authorId,
+        title,
+        emoji: MASTER_FRAMEWORK.emoji,
+        spaceId: ctx.spaceId,
+        spacePlanId: ctx.spacePlanId,
+      })
+      if (!created) throw new Error('Could not create the Journey.')
+      return created
+    },
   })
-  if (!plan) return fail('Could not create the Journey. Try again in a moment.')
+  if ('error' in governed) return fail('Could not create the Journey. Try again in a moment.')
+  const plan = governed.data
 
   // Resolve real Pillar ids the way the composer does, then stamp the framework's blocks in order
   // (parents before children) so each child's parent_id resolves to a real inserted id.

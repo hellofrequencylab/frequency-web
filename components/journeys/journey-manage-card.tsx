@@ -183,8 +183,11 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
 
   const remove = () =>
     start(async () => {
+      setNote(null)
       const res = await deleteJourney(plan.id)
-      if (!isError(res)) router.refresh()
+      // JRN-007: a refused delete says why instead of doing nothing.
+      if (isError(res)) { setNote(res.error); return }
+      router.refresh()
     })
 
   const btn = 'inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60'

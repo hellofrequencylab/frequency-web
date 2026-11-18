@@ -607,27 +607,39 @@ export function topicListSchema(channels: TopicalChannel[], listName: string) {
 
 export function journeySchema(plan: JourneyPlan, items: JourneyPlanItem[]) {
   const url = abs(`/discover/journeys/${plan.slug}`)
+  // Only LEAF blocks are steps. Phases and modules are containers (isContainer in
+  // lib/journeys/block-order.ts, restated here because this module is loaded standalone by the SEO
+  // probes), and listing them as "Step N" told answer engines a 12-phase Journey had 24 steps.
+  const isContainerBlock = (t: string | null | undefined) => t === 'phase' || t === 'module'
+  const steps = items.filter((it) => !isContainerBlock(it.block_type))
   // Estimated total time from each step's own est_minutes, when known (lives on the item, not the
   // embedded practice — see ITEM_COLS in lib/journey-plans.ts).
-  const totalMinutes = items.reduce((sum, it) => {
+  const totalMinutes = steps.reduce((sum, it) => {
     return sum + (it.est_minutes ?? 0)
   }, 0)
+  // The Journey's OWN public cover leads when it has one, the way an Event's does (SCAN-660). A
+  // storage path or anything that is not an absolute https url is skipped, never invented.
+  const cover = plan.cover_image && /^https:\/\//.test(plan.cover_image) ? plan.cover_image : null
 
   return {
     '@context': 'https://schema.org',
     '@type': 'HowTo',
     name: plan.title,
     ...(plan.summary ? { description: plan.summary } : {}),
-    image: [SITE_OG_IMAGE],
+    image: cover ? [cover, SITE_OG_IMAGE] : [SITE_OG_IMAGE],
     url,
     ...(totalMinutes > 0 ? { totalTime: `PT${totalMinutes}M` } : {}),
-    step: items.map((it, i) => ({
-      '@type': 'HowToStep',
-      position: i + 1,
-      name: it.practice?.title ?? `Step ${i + 1}`,
-      text: it.note ?? it.practice?.description ?? it.practice?.title ?? `Step ${i + 1}`,
-      url: `${url}#step-${i + 1}`,
-    })),
+    step: steps.map((it, i) => {
+      const isPractice = (it.block_type ?? 'practice') === 'practice'
+      const name = (isPractice ? it.practice?.title : it.title) ?? it.title ?? `Step ${i + 1}`
+      return {
+        '@type': 'HowToStep',
+        position: i + 1,
+        name,
+        text: it.note ?? (isPractice ? it.practice?.description : null) ?? name,
+        url: `${url}#step-${i + 1}`,
+      }
+    }),
   }
 }
 

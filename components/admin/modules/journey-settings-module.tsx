@@ -266,7 +266,7 @@ function JourneySettingsRail({ data }: { data: JourneyRailData }) {
 
   return (
     <div className="space-y-5">
-      <PublishCelebration celebrate={publishing.celebrate} />
+      <PublishCelebration celebrate={publishing.celebrate} error={publishing.publishError} />
 
       {/* Identity: the inline plane, hosted here until /journeys/[slug] has an inline canvas. */}
       <RailAutosaveForm action={saveIdentity}>{zone(JOURNEY_RAIL.identity.fields)}</RailAutosaveForm>

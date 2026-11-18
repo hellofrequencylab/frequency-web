@@ -14,11 +14,11 @@
 // FAIL-SAFE ON THE CAP, FAIL-CLOSED ON THE PRICE. They point opposite ways on purpose: a broken
 // enrolment COUNT should not lock a free Journey (the worst case is one seat over), while a broken
 // PRICE lookup must never hand away a paid program. `getJourneyOffer` already reads a failure as
-// free, so the price check is only as fail-closed as that read is honest; it is a single indexed
-// lookup on a unique column, which is about as honest as a read gets.
+// free, which is why the free door does NOT use it: it reads getJourneySaleState, where any
+// non-archived product means paid and a failed read means paused (JRN-002).
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getJourneyOffer } from './paid'
+import { getJourneySaleState } from './paid'
 import { journeyHasRoom, JOURNEY_FULL_MESSAGE } from './journey-access'
 import { checkJourneyTier } from './tier-gate'
 import { checkJourneyPeopleMeter } from '@/lib/spaces/counted-meters'
@@ -28,6 +28,9 @@ type FreeEnrolCheck = { ok: true } | { ok: false; error: string }
 
 /** Copy for a Journey that costs money. Names the next step, never the wall (CONTENT-VOICE). */
 const JOURNEY_NEEDS_PURCHASE_MESSAGE = 'This Journey is paid. Open its page to get access.'
+
+/** Copy for a paid Journey whose sales are paused (product hidden, sold out, or mid re-price). */
+const JOURNEY_SALES_PAUSED_MESSAGE = 'This Journey is not taking new people right now. Check back soon.'
 
 /**
  * May `profileId` enrol in `planId` without paying?
@@ -40,9 +43,13 @@ export async function checkFreeEnrol(
   profileId: string,
   opts: { isOwner?: boolean } = {},
 ): Promise<FreeEnrolCheck> {
-  const offer = await getJourneyOffer(planId)
-
-  if (offer && !opts.isOwner) return { ok: false, error: JOURNEY_NEEDS_PURCHASE_MESSAGE }
+  // JRN-002: any product that is not archived makes the Journey paid, including one hidden or
+  // sold out in the Shop; a failed lookup reads as paused (fail-closed on the price).
+  if (!opts.isOwner) {
+    const sale = await getJourneySaleState(planId)
+    if (sale === 'on_sale') return { ok: false, error: JOURNEY_NEEDS_PURCHASE_MESSAGE }
+    if (sale === 'paused') return { ok: false, error: JOURNEY_SALES_PAUSED_MESSAGE }
+  }
 
   const tier = await checkJourneyTier(planId, profileId, { isOwner: opts.isOwner })
   if (!tier.ok) return { ok: false, error: tier.error }
