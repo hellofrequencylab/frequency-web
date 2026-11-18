@@ -38,12 +38,16 @@ export function JourneyAuthorActions({
   const [justUnpublished, setJustUnpublished] = useState(false)
   const [adopt, setAdopt] = useState(true)
   const [confirmUnpublish, setConfirmUnpublish] = useState(false)
+  // JRN-005: a refused publish or unpublish says why (not ready yet, a paid-only listing).
+  const [note, setNote] = useState<string | null>(null)
   const live = justUnpublished ? false : visibility === 'public' || justPublished
 
   const publish = () =>
     start(async () => {
+      setNote(null)
       const res = await setJourneyVisibility(planId, 'public')
-      if (!isError(res)) {
+      if (isError(res)) setNote(res.error)
+      else {
         // Optionally adopt it for yourself too, so you can run it from On Air.
         if (adopt) await adoptJourney(planId)
         setJustUnpublished(false)
@@ -59,8 +63,10 @@ export function JourneyAuthorActions({
   // The same chokepoint re-checks the caps server-side; `next` is null for private, so we stay put.
   const unpublish = () =>
     start(async () => {
+      setNote(null)
       const res = await setJourneyVisibility(planId, 'private')
-      if (!isError(res)) {
+      if (isError(res)) setNote(res.error)
+      else {
         setJustPublished(false)
         setJustUnpublished(true)
         router.refresh()
@@ -105,6 +111,12 @@ export function JourneyAuthorActions({
             label={<span className="text-muted">Adopt it for myself</span>}
           />
         </>
+      )}
+
+      {note && (
+        <p role="alert" className="w-full text-body-sm text-danger">
+          {note}
+        </p>
       )}
 
       <DangerModal

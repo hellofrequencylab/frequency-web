@@ -153,7 +153,7 @@ export function JourneySettings(props: JourneySettingsProps) {
   const [ongoing, setOngoing] = useState(props.initialOngoing ?? false)
 
   // The publish flow is shared with the Inspector rail (ADR-1246), so it lives in one hook below.
-  const { visibility, status, review, reviewing, celebrate, changeVisibility, resubmitForReview } =
+  const { visibility, status, review, reviewing, celebrate, publishError, changeVisibility, resubmitForReview } =
     useJourneyPublishing({
       planId: props.planId,
       initialVisibility: props.initialVisibility,
@@ -165,7 +165,7 @@ export function JourneySettings(props: JourneySettingsProps) {
 
   return (
     <section className="space-y-6">
-      <PublishCelebration celebrate={celebrate} />
+      <PublishCelebration celebrate={celebrate} error={publishError} />
 
       {/* Identity — just the Journey title + a one-line summary. Both the icon picker AND the accent-dot
           picker were removed from this rail (owner ask): the Journey's leading mark is the logo/profile
@@ -509,6 +509,8 @@ export function useJourneyPublishing({
   const [visibility, setVisibility] = useState<PlanVisibility>(initialVisibility)
   const [status, setStatus] = useState<PlanStatus>(initialStatus)
   const [celebrate, setCelebrate] = useState<PublishCelebration>(null)
+  // JRN-005: a refused publish (not ready, a paid-only listing) says why instead of quietly reverting.
+  const [publishError, setPublishError] = useState<string | null>(null)
 
   // Vera's rank-eligibility gate: the verdict + coaching, refreshed on publish/resubmit.
   const [review, setReview] = useState<StoredVeraReview | null>(initialReview)
@@ -517,11 +519,13 @@ export function useJourneyPublishing({
   const changeVisibility = (v: PlanVisibility) => {
     const prev = visibility
     setVisibility(v)
+    setPublishError(null)
     if (v === 'public') setReviewing(true)
     start(async () => {
       const res = await setJourneyVisibility(planId, v)
       if (isError(res)) {
         setVisibility(prev)
+        setPublishError(res.error)
       } else {
         setStatus(res.data.status)
         if (v === 'public') {
@@ -548,11 +552,18 @@ export function useJourneyPublishing({
     })
   }
 
-  return { visibility, status, review, reviewing, celebrate, changeVisibility, resubmitForReview }
+  return { visibility, status, review, reviewing, celebrate, publishError, changeVisibility, resubmitForReview }
 }
 
 /** The moment-after-publish banner: live in the library, or submitted for a Guide's review. */
-export function PublishCelebration({ celebrate }: { celebrate: PublishCelebration }) {
+export function PublishCelebration({ celebrate, error }: { celebrate: PublishCelebration; error?: string | null }) {
+  if (error) {
+    return (
+      <p role="alert" className="rounded-xl border border-danger/50 bg-danger-bg px-4 py-3 text-body-sm font-medium text-danger">
+        {error}
+      </p>
+    )
+  }
   if (celebrate === 'live') {
     return (
       <div className="flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg px-4 py-3 text-body-sm font-medium text-success">
