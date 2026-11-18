@@ -36,10 +36,11 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const r = await loadJourneyLearnRoute(slug, 'learn')
   const { plan, tree, extras, entry, isAuthor, cohort, kickoff, anchorStart, dripIntervalDays, unit, cycle, runId, isRunHost, phaseEventsById } = r
   const canManageJourney = entry.canManage
-  // The sales page: a course's own page (/courses/...), else the Journey's public page. `?preview=1` keeps an
-  // enrolled manager on it; without it /journeys/<slug> sends them straight back here (owner 2026-11-18).
+  // The sales page: a course's own page (/courses/...) when it has one, since /journeys/<slug> sends an
+  // enrolled manager who is not the author straight back here (owner 2026-11-18). Otherwise the Journey's
+  // own page, which an author always reaches, priced.
   const coursePage = courseHref(slug)
-  const salesHref = coursePage.startsWith('/courses/') ? coursePage : `/journeys/${slug}?preview=1`
+  const salesHref = coursePage.startsWith('/courses/') ? coursePage : `/journeys/${slug}`
   const journeyCaps = entry.caps
 
   const [author, meetupEvent, gatheringEvent, guides, hostSpace, rootSpaceId] = await Promise.all([
