@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 const state = vi.hoisted(() => ({
-  enqueued: [] as { to: string; subject: string; key: string | undefined }[],
+  enqueued: [] as { to: string; subject: string; key: string | undefined; headers?: Record<string, string> }[],
   allowed: true,
   // undefined = the inventory read failed (loadInventory returns null); otherwise the sections it hands back.
   inventory: undefined as unknown,
@@ -10,8 +10,8 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@/lib/email', async (orig) => ({
   ...(await orig<typeof import('@/lib/email')>()),
-  enqueueEmail: async (p: { to: string; subject: string }, o?: { dedupeKey?: string }) => {
-    state.enqueued.push({ to: p.to, subject: p.subject, key: o?.dedupeKey })
+  enqueueEmail: async (p: { to: string; subject: string; headers?: Record<string, string> }, o?: { dedupeKey?: string }) => {
+    state.enqueued.push({ to: p.to, subject: p.subject, key: o?.dedupeKey, headers: p.headers })
   },
 }))
 vi.mock('@/lib/comms/send-gate', () => ({ resolveSendGate: async () => ({ allowed: state.allowed }) }))
@@ -43,6 +43,7 @@ const space = (id: string, age: number) => ({
 })
 
 beforeEach(() => {
+  vi.stubEnv('UNSUBSCRIBE_SECRET', 'test-secret-for-operator-lifecycle-unsubscribe-063')
   state.enqueued = []
   state.allowed = true
   state.inventory = undefined
@@ -66,6 +67,9 @@ describe('sendOperatorLifecycle', () => {
     expect(r).toEqual({ sent: 2, skipped: 1, failed: 0 })
     expect(state.enqueued.map((e) => e.key)).toEqual(['operator_lifecycle:a:1', 'operator_lifecycle:c:3'])
     expect(state.enqueued[0].to).toBe('sam@example.com')
+    // EMAIL-063: one-click unsubscribe on lifecycle mail, no sign-in needed.
+    expect(state.enqueued[0].headers?.['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click')
+    expect(state.enqueued[0].headers?.['List-Unsubscribe']).toMatch(/\/api\/unsubscribe\?p=.*&c=lifecycle&t=/)
   })
 
   it('sends nothing when the send gate says no', async () => {
