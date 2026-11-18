@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ChevronDown, ChevronUp, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { blockEditsAllFieldsInRail, fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
@@ -10,6 +10,7 @@ import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { SpaceCanvasBlock, isCanvasTextField, isCanvasImageField } from './space-canvas-block'
 import { Input } from '@/components/ui/field'
 import { capsLabel } from '@/components/ui/caps-label'
+import { flattenLayers, layerTabStop, planLayerKey } from '@/lib/sites/editor/layer-focus'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 
 // THE ON-CANVAS WYSIWYG SPACE PAGE EDITOR — the space mirror of the Email Studio canvas editor. A two-pane
@@ -73,6 +74,10 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [addingAt, setAddingAt] = useState<{ rowId: string; col: number } | null>(null)
+  // The rail's block tiles are one tab stop (a roving tabindex, PROG-E6): the tile last focused, else the
+  // selected block, else the first. Arrows walk every tile in reading order (section by section, column by
+  // column), Alt and Up or Down moves the block inside its column, Delete or Backspace removes it.
+  const [tileFocus, setTileFocus] = useState<string | null>(null)
 
   // Vertical rail alignment (railOffset): when a block is selected (usually by clicking it on the canvas),
   // the LEFT section list translates so the selected tile sits on the SAME horizontal line as the block on
@@ -170,6 +175,25 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
     if (selectedId === key) setSelectedId(null)
   }
 
+  const tileRows = flattenLayers(model.rows.flatMap((row) => row.cells.flat().map((block) => ({ id: block.key, slots: [] }))))
+  const tileStop = tileFocus && tileRows.some((row) => row.id === tileFocus) ? tileFocus : layerTabStop(tileRows, selectedId)
+  const focusTile = (key: string) => {
+    setTileFocus(key)
+    requestAnimationFrame(() => tileRefs.current.get(key)?.querySelector<HTMLElement>('[data-layer-id]')?.focus())
+  }
+  const onTilesKey = (event: KeyboardEvent<HTMLOListElement>) => {
+    const key = (event.target as HTMLElement).closest<HTMLElement>('[data-layer-id]')?.dataset.layerId
+    if (!key || event.defaultPrevented) return
+    const plan = planLayerKey(tileRows, key, 0, event)
+    // Duplicate, hide and comments are website builder actions; the Space page builder has none of them.
+    if (!plan || (plan.kind === 'act' && plan.shortcut !== 'delete')) return
+    event.preventDefault()
+    if (plan.kind === 'move') { model.nudge(key, plan.direction); focusTile(key) }
+    else if (plan.kind === 'focus') focusTile(plan.id)
+    else if (plan.kind === 'act') { onRemoveBlock(key); if (plan.refocus) focusTile(plan.refocus) }
+    // Alt and Left or Right ('column') is only taken, so the browser's Back does not leave the builder.
+  }
+
   const activeSplit = (columns: number, ratio: string | undefined): RowSplit =>
     columns === 1 ? 'full' : ratio === 'lead' ? 'lead' : ratio === 'trail' ? 'sidebar' : 'even'
 
@@ -197,6 +221,7 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
         ) : (
           <ol
             ref={listRef}
+            onKeyDown={onTilesKey}
             className="relative space-y-2 transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
             style={{ transform: railOffset ? `translateY(${railOffset}px)` : undefined }}
           >
@@ -257,6 +282,9 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
                         <BlockTile
                           key={block.key}
                           id={block.type}
+                          blockKey={block.key}
+                          tabStop={block.key === tileStop}
+                          onFocusTile={() => setTileFocus(block.key)}
                           active={block.key === selectedId}
                           canUp={si > 0}
                           canDown={si < stack.length - 1}
@@ -356,6 +384,9 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
 // ── A block tile in the rail: select to expand its SETTINGS-ONLY fields (no text content). ──
 function BlockTile({
   id,
+  blockKey,
+  tabStop,
+  onFocusTile,
   active,
   canUp,
   canDown,
@@ -369,6 +400,10 @@ function BlockTile({
   onRemove,
 }: {
   id: string
+  blockKey: string
+  /** The one tile in the rail that takes Tab (the roving tabindex). */
+  tabStop: boolean
+  onFocusTile: () => void
   active: boolean
   canUp: boolean
   canDown: boolean
@@ -396,8 +431,13 @@ function BlockTile({
         <button
           type="button"
           onClick={onSelect}
+          onFocus={onFocusTile}
           aria-current={active}
           aria-expanded={active}
+          aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Delete"
+          data-layer-id={blockKey}
+          tabIndex={tabStop ? 0 : -1}
+          title="Arrows walk the blocks. Alt and an arrow moves this one."
           className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-meta font-semibold text-text"
         >
           <Settings2 className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
