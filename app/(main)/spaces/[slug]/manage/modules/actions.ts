@@ -8,8 +8,8 @@
 //      previewer cannot reshape the menu (FAIL-CLOSED), matching setSpaceFeatureEnabled's authority.
 //   3. VALIDATE the client lists down to known SPACE_MODULES ids only, dropping any UNHIDEABLE id from the
 //      hidden list (never trust the wire — the owner can never hide the shell / Danger / Module Manager).
-//   4. MERGE into spaces.preferences.moduleMenu through the untyped admin client (ADR-246: the preferences
-//      jsonb is not in the generated types), SCOPED to the resolved space id, preserving every other key.
+//   4. PATCH spaces.preferences.moduleMenu alone through patchSpacePreferences (set_space_preferences,
+//      LIVE-2349), SCOPED to the resolved space id, so every other key is left exactly as stored.
 //
 // This file also owns the FEATURE writes the Module Manager calls directly (ADR-552 Phase 4, merged here
 // from the retired settings/features surface so menu + features live in ONE place): setSpaceFeatureEnabled
@@ -20,7 +20,8 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
+import { preferencesPatch } from '@/lib/spaces/preferences-patch'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { sanitizeModuleOrder, sanitizeHiddenModules, sanitizeActivatedModules } from '@/lib/spaces/module-menu'
 import { spaceFunctionDef, DEFAULT_FUNCTION_ROLE, type SpaceFunctionKey } from '@/lib/spaces/functions'
@@ -30,15 +31,19 @@ import { isMegaNicheId, readMegaTheme, withMegaTheme } from '@/lib/theme/mega-th
 import { isUntouchedSetup, nicheBundle } from '@/lib/spaces/niche-defaults'
 import { startSpaceFromNiche } from '@/lib/spaces/niche-start'
 
-/** Untyped scoped update of the space's preferences jsonb (ADR-246), bound to the resolved id. */
-async function updateSpacePreferences(spaceId: string, preferences: Record<string, unknown>): Promise<boolean> {
-  const db = createAdminClient() as unknown as {
-    from: (t: string) => {
-      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
-    }
-  }
-  const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
-  return !error
+/** Key-scoped preferences write (LIVE-2349, as LIVE-2347 does for the Page panel): diff the mutator's
+ *  result against the request's snapshot and send ONLY the top-level keys that changed through
+ *  patchSpacePreferences (set_space_preferences), a removed key as null. A menu or niche save can no
+ *  longer turn back a key another console saved after this request read the row (a just-published
+ *  Spotlight). Nothing changed is a successful no-op. */
+async function writePreferences(
+  spaceId: string,
+  before: Record<string, unknown>,
+  next: Record<string, unknown>,
+): Promise<boolean> {
+  const patch = preferencesPatch(before, next)
+  if (Object.keys(patch).length === 0) return true
+  return patchSpacePreferences(spaceId, patch)
 }
 
 /**
@@ -68,11 +73,12 @@ export async function saveSpaceModuleMenu(
   const hidden = sanitizeHiddenModules(input.hidden)
   const activated = sanitizeActivatedModules(input.activated)
 
-  // Merge into the existing preferences blob, preserving every other key.
-  const current =
+  // Build the next blob from the snapshot; writePreferences sends only the moduleMenu key.
+  const before =
     space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
-      ? { ...(space.preferences as Record<string, unknown>) }
+      ? (space.preferences as Record<string, unknown>)
       : {}
+  const current = { ...before }
 
   const node: Record<string, unknown> = {}
   if (order.length) node.order = order
@@ -81,7 +87,7 @@ export async function saveSpaceModuleMenu(
   if (Object.keys(node).length) current.moduleMenu = node
   else delete current.moduleMenu
 
-  if (!(await updateSpacePreferences(space.id, current))) {
+  if (!(await writePreferences(space.id, before, current))) {
     return fail('Could not save your menu. Try again.')
   }
 
@@ -218,7 +224,7 @@ export async function chooseSpaceNiche(slug: string, niche: string): Promise<Act
   const fresh = isUntouchedSetup(space.entitlements, space.featureRoles)
   const applied = fresh ? await startSpaceFromNiche(space.id, niche) : false
   if (fresh && nicheBundle(niche) && !applied) return fail('Could not save that change.')
-  if (!(await updateSpacePreferences(space.id, withMegaTheme(prefs, { niche })))) return fail('Could not save that change.')
+  if (!(await writePreferences(space.id, prefs, withMegaTheme(prefs, { niche })))) return fail('Could not save that change.')
   revalidateFeatureSurfaces(slug)
   return ok({ applied })
 }
