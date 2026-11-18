@@ -6,8 +6,8 @@ import { THEME_ASSETS_READY } from './library-assets'
 
 describe('theme library', () => {
   it('has one entry per Mega Theme that is offered, in the same order (the earlier network and temple themes are not)', () => {
-    // Free Human, Services, New World, CyberWitch and Mindless joined 2026-11-18 (owner: "Every theme should have a full, standardized design system").
-    expect(THEME_LIBRARY.map((t) => t.id)).toEqual(MEGA_THEMES.map((t) => t.id).filter((id) => id !== 'frequency' && id !== 'network' && id !== 'temple'))
+    // Free Human, Services, New World and CyberWitch joined 2026-11-18 (Mindless waits on its pictures) (owner: "Every theme should have a full, standardized design system").
+    expect(THEME_LIBRARY.map((t) => t.id)).toEqual(MEGA_THEMES.map((t) => t.id).filter((id) => id !== 'frequency' && id !== 'network' && id !== 'temple' && id !== 'mindless'))
   })
   it('keeps every tagline to 70 characters and every surface listed once', () => {
     for (const t of THEME_LIBRARY) {

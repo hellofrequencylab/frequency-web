@@ -5,44 +5,13 @@
     "editor": "Mindless",
     "site": "mindless"
   },
-  "offered": true,
+  "offered": false,
   "site": {
     "label": "Mindless",
     "description": "Warm ink and bone, one paint accent and a drip headline. Night first with a Day register, three accents, six starter kits.",
     "defaultFonts": "modern"
   },
-  "library": {
-    "tagline": "Warm ink, bone and one paint. Unwind your mind.",
-    "madeFor": "meditation circles, guides, programs, studios and anyone who teaches people to slow down",
-    "signature": "Night first with a Day register, a drip headline, paint-sticker buttons and one accent from three.",
-    "surfaces": [
-      {
-        "id": "spotlight",
-        "name": "Spotlight",
-        "status": "ready",
-        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
-      },
-      {
-        "id": "website",
-        "name": "Website",
-        "status": "ready",
-        "carries": "Every page, header, footer and block in the full look, on your own domain."
-      },
-      {
-        "id": "email",
-        "name": "Email",
-        "status": "ready",
-        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
-      },
-      {
-        "id": "space",
-        "name": "Space page",
-        "status": "ready",
-        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
-      }
-    ],
-    "page": "/themes/mindless"
-  },
+  "library": null,
   "editor": {
     "tokens": {
       "source": "lib/sites/editor/theme-contract.json",
