@@ -129,6 +129,7 @@
     "block-usage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/block-usage.mts",
     "seed:demo-space": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/seed-demo-space.mts",
     "seed:wildheart": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/seed-wildheart.mts",
+    "seed:frequency-hosts": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/seed-frequency-hosts.mts",
     "check:node-document-safety": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-node-document-safety.mjs"
   },
   "dependencies": {
