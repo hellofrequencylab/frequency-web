@@ -67,3 +67,58 @@ it('drops a dragged block onto an empty column', async () => {
   await save()
   expect(columns()).toEqual({ left: ['t1'], right: ['t2'] })
 })
+
+// PROG-E6: on a phone the same moves start with a long press, since HTML drag never starts from a finger.
+function press(target: HTMLElement, type: string, pointerType = 'touch', x = 10, y = 10) {
+  act(() => { target.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerType, clientX: x, clientY: y })) })
+}
+function under(target: Element) { Object.assign(document, { elementFromPoint: () => target }) }
+
+it('moves a block into an empty column by a long press and a drag', async () => {
+  vi.useFakeTimers()
+  try {
+    const { node, save, columns } = mount()
+    const right = Array.from(node.querySelectorAll<HTMLElement>('.rail .slot'))[1]
+    press(row(node, 't2'), 'pointerdown')
+    act(() => { vi.advanceTimersByTime(400) })
+    under(right)
+    press(row(node, 't2'), 'pointermove', 'touch', 10, 80)
+    expect(right.className).toContain('drop')
+    press(row(node, 't2'), 'pointerup', 'touch', 10, 80)
+    await save()
+    expect(columns()).toEqual({ left: ['t1'], right: ['t2'] })
+  } finally { vi.useRealTimers() }
+})
+
+it('reorders inside a column by dropping on another row', async () => {
+  vi.useFakeTimers()
+  try {
+    const { node, save, columns } = mount()
+    press(row(node, 't2'), 'pointerdown')
+    act(() => { vi.advanceTimersByTime(400) })
+    under(row(node, 't1'))
+    press(row(node, 't2'), 'pointermove', 'touch', 10, 0)
+    press(row(node, 't2'), 'pointerup', 'touch', 10, 0)
+    await save()
+    expect(columns()).toEqual({ left: ['t2', 't1'], right: [] })
+  } finally { vi.useRealTimers() }
+})
+
+it('lets a finger that moves before the press lands scroll, and leaves a mouse to HTML drag', async () => {
+  vi.useFakeTimers()
+  try {
+    const { node, save, columns } = mount()
+    const right = Array.from(node.querySelectorAll<HTMLElement>('.rail .slot'))[1]
+    under(right)
+    press(row(node, 't2'), 'pointerdown')
+    press(row(node, 't2'), 'pointermove', 'touch', 10, 60)
+    act(() => { vi.advanceTimersByTime(400) })
+    press(row(node, 't2'), 'pointerup', 'touch', 10, 60)
+    press(row(node, 't1'), 'pointerdown', 'mouse')
+    act(() => { vi.advanceTimersByTime(400) })
+    press(row(node, 't1'), 'pointermove', 'mouse', 10, 60)
+    press(row(node, 't1'), 'pointerup', 'mouse', 10, 60)
+    await save()
+    expect(columns()).toEqual({ left: ['t1', 't2'], right: [] })
+  } finally { vi.useRealTimers() }
+})
