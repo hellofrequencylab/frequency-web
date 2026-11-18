@@ -2,7 +2,9 @@ import { createHash } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GET, POST } from './route'
 
-const { getCallerProfile, loadScanPlacement, claimAsPlayer, from, rpc } = vi.hoisted(() => ({
+const { getCallerProfile, loadScanPlacement, claimAsPlayer, from, rpc, myTeam, claimAsTeamMember } = vi.hoisted(() => ({
+  myTeam: vi.fn(),
+  claimAsTeamMember: vi.fn(),
   getCallerProfile: vi.fn(),
   loadScanPlacement: vi.fn(),
   claimAsPlayer: vi.fn(),
@@ -12,6 +14,7 @@ const { getCallerProfile, loadScanPlacement, claimAsPlayer, from, rpc } = vi.hoi
 
 vi.mock('@/lib/auth', () => ({ getCallerProfile }))
 vi.mock('@/lib/hunts/claim-store', () => ({ loadScanPlacement, claimAsPlayer }))
+vi.mock('@/lib/hunts/team-store', () => ({ myTeam, claimAsTeamMember }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from, rpc }) }))
 
 const origin = 'https://frequencylocal.com'
@@ -40,6 +43,7 @@ beforeEach(() => {
   getCallerProfile.mockResolvedValue({ id: 'player-1' })
   loadScanPlacement.mockResolvedValue(placement)
   claimAsPlayer.mockResolvedValue({ ok: true, result: 'credited', replayed: false })
+  myTeam.mockResolvedValue(null)
 })
 
 afterEach(() => {
@@ -182,6 +186,47 @@ describe('Hunt placement scan', () => {
     expect((await scan({ from })).headers.get('Location')).toBe(`${from}${landingPath}?p=trail-stop`)
     expect((await confirm({ from })).headers.get('Location')).toBe(`${from}${landingPath}?claim=credited`)
     expect((await confirm({ from: 'https://foreign.vercel.app' })).status).toBe(403)
+  })
+})
+
+describe('Hunt placement confirmation for an Expedition team member (FH-043S)', () => {
+  const team = { teamId: 'team-1', state: 'locked', runId: 'team-run-1', captain: false, size: 3, stopsDone: 1 }
+
+  it('credits the team run through claimAsTeamMember, never the member\'s own run', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_123)
+    myTeam.mockResolvedValue(team)
+    claimAsTeamMember.mockResolvedValue({ ok: true, result: 'credited', replayed: false })
+
+    const response = await confirm()
+
+    expect(myTeam).toHaveBeenCalledWith('player-1', 'neighborhood-trail')
+    expect(claimAsPlayer).not.toHaveBeenCalled()
+    expect(claimAsTeamMember).toHaveBeenCalledExactlyOnceWith('player-1', {
+      slug: 'neighborhood-trail', code: 'trail-stop', token,
+      idempotencyKey: createHash('sha256').update('team-play:player-1:neighborhood-trail:trail-stop').digest('hex'),
+      nowEpoch: 1_700_000_000,
+    })
+    expect(response.status).toBe(303)
+    expect(response.headers.get('Location')).toBe(`${origin}${landingPath}?claim=team_credited`)
+  })
+
+  it('lands a replay, an unlocked roster and a refusal on their own answers', async () => {
+    myTeam.mockResolvedValue(team)
+    claimAsTeamMember.mockResolvedValueOnce({ ok: true, result: 'already_credited', replayed: true })
+    expect((await confirm()).headers.get('Location')).toBe(`${origin}${landingPath}?claim=team_already_credited`)
+    claimAsTeamMember.mockResolvedValueOnce({ ok: false, reason: 'roster_not_locked' })
+    expect((await confirm()).headers.get('Location')).toBe(`${origin}${landingPath}?claim=team_not_locked`)
+    claimAsTeamMember.mockResolvedValueOnce({ ok: false, reason: 'bad_token' })
+    expect((await confirm()).headers.get('Location')).toBe(`${origin}${landingPath}?claim=unavailable`)
+    expect(claimAsPlayer).not.toHaveBeenCalled()
+  })
+
+  it('never reads a team for a signed-out or cross-site POST', async () => {
+    getCallerProfile.mockResolvedValue(null)
+    expect((await confirm()).status).toBe(401)
+    expect((await confirm({ sentOrigin: 'https://evil.example' })).status).toBe(403)
+    expect(myTeam).not.toHaveBeenCalled()
+    expect(claimAsTeamMember).not.toHaveBeenCalled()
   })
 })
 

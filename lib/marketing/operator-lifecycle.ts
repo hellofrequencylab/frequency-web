@@ -4,7 +4,8 @@
 // and the outbox dedupes on the Space and the day. Every send passes the lifecycle send gate (preference, consent and
 // suppression in one decision), and one owner's failure never stops the next.
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { enqueueEmail } from '@/lib/email'
+import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildOperatorEmail, operatorFocus, OPERATOR_DAYS, type OperatorDay } from '@/lib/marketing/operator-emails'
 import { loadInventory } from '@/lib/launch/inventory-io'
@@ -72,17 +73,22 @@ export async function sendOperatorEmailForSpace(
   const kind = pd?.kind ?? pd?.category
   // A Network is a Space with member Spaces; only the later emails care, so the count is read just for them.
   const hasChapters = day === 0 ? false : ((await admin.from('spaces').select('id', { count: 'exact', head: true }).eq('parent_id', space.id)).count ?? 0) > 0
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
+  // EMAIL-063: this is lifecycle mail, so it carries the RFC 8058 one-click unsubscribe like every other lifecycle
+  // sender. The footer's own link opens /settings/notifications, which needs a sign-in.
+  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl, profileId: space.owner_profile_id, category: 'lifecycle' })
+  const message = buildOperatorEmail({
+    day,
+    focus: operatorFocus(space.type, space.mode_variant, { kind: kind ?? null, hasChapters }),
+    to: email,
+    greetingName: profile.display_name,
+    spaceName: space.name ?? 'your Space',
+    spaceSlug: space.slug,
+    next,
+    baseUrl,
+  })
   await enqueueEmail(
-    buildOperatorEmail({
-      day,
-      focus: operatorFocus(space.type, space.mode_variant, { kind: kind ?? null, hasChapters }),
-      to: email,
-      greetingName: profile.display_name,
-      spaceName: space.name ?? 'your Space',
-      spaceSlug: space.slug,
-      next,
-      baseUrl: process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com',
-    }),
+    { ...message, headers: listUnsubscribeHeaders(unsubscribeUrl) },
     { dedupeKey: `operator_lifecycle:${space.id}:${day}` },
   )
   return 'sent'

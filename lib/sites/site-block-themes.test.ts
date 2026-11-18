@@ -22,8 +22,9 @@ import { MENSWORK_PAGE_CSS } from '@/components/sites/menswork-page-css'
 
 /** Website page blocks that keep the Space page's own render (inside the themed `.mw-other` band). */
 const PAGE_OWN_RENDER = new Set([
-  // Layout wrappers: their children are blocks with their own render.
-  'Container', 'Columns', 'SpaceLayout',
+  // Layout wrappers: their children are blocks with their own render. SpaceArrangement joined the Profile group
+  // on Daniel's 2026-11-18 "Make sure every block is assigned to the editor."
+  'Container', 'Columns', 'SpaceLayout', 'SpaceArrangement',
   // Space data cards the Space page already draws from its own rows.
   'SpaceIdentityHeader', 'SpaceCallout', 'SpaceAbout', 'SpaceHighlights', 'SpaceStats', 'SpaceQuickLinks', 'SpaceBooking',
   'SpaceAction', 'SpaceOfferings', 'SpaceContact', 'SpaceJoinList', 'SpaceBusiness', 'SpaceTeam', 'SpaceReviews',

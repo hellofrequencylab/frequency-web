@@ -18,11 +18,11 @@ const face = (fam: string, f: string, style = 'normal', w = '100 900') => `@font
 it('renders the Free Human Home', async () => {
   if (!out) throw new Error('set RENDER_OUT')
   const { freeHumanBlocks } = await import('@/components/page-editor/blocks/free-human')
-  const m = await import('@/lib/sites/free-human-home')
+  const m = await import('@/lib/sites/free-human-movement-home')
   const { freeHumanCalendarBlocks } = await import('@/components/page-editor/blocks/free-human-calendar')
   const { freeHumanWheelBlocks } = await import('@/components/page-editor/blocks/free-human-wheel')
   const reg = { ...freeHumanBlocks, ...freeHumanCalendarBlocks, ...freeHumanWheelBlocks } as Record<string, { render: unknown; defaultProps: Record<string, unknown> }>
-  const PAGES: Record<string, () => { type: string; props: Record<string, unknown> }[]> = { home: m.freeHumanHomeBlocks as never, program: () => m.freeHumanProgramPage().blocks as never, workshops: () => m.freeHumanWorkshopsPage().blocks as never, books: () => m.freeHumanBooksPage().blocks as never, audrey: () => m.freeHumanAudreyPage().blocks as never, calendar: () => m.freeHumanCalendarPage().blocks as never }
+  const PAGES: Record<string, () => { type: string; props: Record<string, unknown> }[]> = { home: m.freeHumanMovementHomeBlocks as never, program: () => m.freeHumanMovementProgramPage().blocks as never, workshops: () => m.freeHumanMovementWorkshopsPage().blocks as never, books: () => m.freeHumanMovementBooksPage().blocks as never, audrey: () => m.freeHumanMovementAudreyPage().blocks as never, calendar: () => m.freeHumanMovementCalendarPage().blocks as never }
   const { SiteChrome } = await import('@/components/sites/site-chrome')
   const { FREE_HUMAN_CSS } = await import('@/components/sites/free-human-css')
   const { HOUSE_CSS } = await import('@/components/sites/house-css')

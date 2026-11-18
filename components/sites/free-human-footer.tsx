@@ -1,6 +1,6 @@
 import { FreeHumanLogo } from '@/components/sites/free-human-logo'
 import { FreeHumanLetterForm } from '@/components/sites/free-human-letter-form'
-import { FREE_HUMAN_CHROME_COPY as COPY } from '@/lib/sites/free-human-chrome'
+import { FREE_HUMAN_CHROME_COPY as COPY, FREE_HUMAN_MOVEMENT_CHROME, isFreeHumanMovement } from '@/lib/sites/free-human-chrome'
 import { templeKitFooterColumns, templeKitLetterParts } from '@/lib/sites/temple-kit-chrome'
 import type { SiteFooter } from '@/lib/sites/site-footer'
 
@@ -19,7 +19,7 @@ const MOTES = [
 ] as const
 
 export function FreeHumanFooterTop({ brandName, homeHref, tagline, logoUrl, links, footer, slug }: { brandName: string; homeHref: string; tagline: string | null; logoUrl: string | null; links: { label: string; href: string }[]; footer: SiteFooter | null; slug: string | null }) {
-  const L = COPY.letter
+  const L = isFreeHumanMovement(slug, brandName) ? { ...COPY.letter, ...FREE_HUMAN_MOVEMENT_CHROME.letter } : COPY.letter
   const sub = footer?.subscribe ?? null
   const parts = templeKitLetterParts(sub?.title ?? L.title)
   const columns = templeKitFooterColumns(links, footer?.columns ?? null)

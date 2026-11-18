@@ -476,52 +476,52 @@ const buttons = (n: string) => ({ [`${n}Label`]: text('Button'), [`${n}Href`]: t
 const anchorField = { anchor: text('Jump link name', 'Lets a jump bar scroll here. Letters, digits and hyphens.') }
 
 export const midnightPracticeComponents: Record<string, ComponentConfig> = {
-  MidnightPageHero: block('Midnight page hero', heroFields, { eyebrow: 'Services', title: 'Reclaim your *magic*', lead: '', image: '', alt: '', pos: '', height: 460 }, MidnightPageHeroBlock),
-  MidnightJump: block('Midnight jump bar', {
+  MidnightPageHero: block('Nocturne page hero', heroFields, { eyebrow: 'Services', title: 'Reclaim your *magic*', lead: '', image: '', alt: '', pos: '', height: 460 }, MidnightPageHeroBlock),
+  MidnightJump: block('Nocturne jump bar', {
     items: { type: 'array', label: 'Links', arrayFields: { label: text('Label'), href: text('Where it goes', 'Start with # for a spot on this page, like #reiki.') } },
   }, { items: [] }, MidnightJumpBlock),
-  MidnightWelcome: block('Midnight welcome', {
+  MidnightWelcome: block('Nocturne welcome', {
     logo: { ...image, label: 'Logo' }, logoAlt: text('Logo description'), eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), lead: area('Intro'),
     image, alt: text('Photo description'), tone, heading: area('Second heading', VOICE_HINT), body: area('Paragraphs', PARA_HINT), ...buttons('button'),
   }, { logo: '', logoAlt: '', eyebrow: '', title: '', lead: '', image: '', alt: '', tone: 'mono', heading: '', body: '', buttonLabel: '', buttonHref: '' }, MidnightWelcomeBlock),
-  MidnightHost: block('Midnight meet the host', {
+  MidnightHost: block('Nocturne meet the host', {
     eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), body: area('Paragraphs', PARA_HINT), ...buttons('primary'), ...buttons('secondary'), image, alt: text('Photo description'), caption: text('Caption under the photo'), tone,
   }, { eyebrow: '', title: '', body: '', primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '', image: '', alt: '', caption: '', tone: 'mono' }, MidnightHostBlock),
-  MidnightPillars: block('Midnight pillars', {
+  MidnightPillars: block('Nocturne pillars', {
     ...head,
     pillars: { type: 'array', label: 'Pillars', arrayFields: { sigil: glyph, title: text('Name'), body: area('Line under the name') } },
   }, { eyebrow: '', title: '', lead: '', pillars: [] }, MidnightPillarsBlock),
-  MidnightService: block('Midnight service with options', {
+  MidnightService: block('Nocturne service with options', {
     ...anchorField, image, alt: text('Photo description'), tone, side: { type: 'select', label: 'Photo side', options: [{ label: 'Left', value: 'left' }, { label: 'Right', value: 'right' }] },
     sigil: glyph, numeral: text('Roman numeral'), label: text('Small label'), title: text('Name'), body: area('Words'), pull: area('Pull quote'), note: text('Badge'),
     options: { type: 'array', label: 'Options', arrayFields: { name: text('Name'), meta: text('Length'), text: area('Words'), price: text('Price'), buttonLabel: text('Button'), href: text('Button link', LINK_HINT) } },
     panelSigil: glyph, panelMeta: text('Panel: small label'), panelTitle: text('Panel: heading (leave empty for no panel)', VOICE_HINT), panelBody: area('Panel: words'), panelButtonLabel: text('Panel: button'), panelButtonHref: text('Panel: button link', LINK_HINT), panelPrice: text('Panel: price'),
   }, { anchor: '', image: '', alt: '', tone: 'soft', side: 'left', sigil: 'moon-full', numeral: '', label: '', title: '', body: '', pull: '', note: '', options: [], panelSigil: 'mic', panelMeta: '', panelTitle: '', panelBody: '', panelButtonLabel: '', panelButtonHref: '', panelPrice: '' }, MidnightServiceBlock),
-  MidnightCustomRecording: block('Midnight recording panel', {
+  MidnightCustomRecording: block('Nocturne recording panel', {
     sigil: glyph, meta: text('Small label'), title: text('Heading', VOICE_HINT), body: area('Words'), ...buttons('button'), price: text('Price'),
   }, { sigil: 'mic', meta: '', title: '', body: '', buttonLabel: '', buttonHref: '', price: '' }, MidnightCustomRecordingBlock),
-  MidnightRecordings: block('Midnight recordings', {
+  MidnightRecordings: block('Nocturne recordings', {
     ...anchorField, ...head, ...action, count: { type: 'number', label: 'How many to show', min: 1, max: 24 }, note: text('Small line beside each button'),
     items: { type: 'array', label: 'Recordings', arrayFields: { sigil: glyph, title: text('Name'), price: text('Price'), blurb: area('Words'), points: area('What it does', LINES_HINT), buttonLabel: text('Button'), href: text('Button link', LINK_HINT) } },
   }, { anchor: '', eyebrow: '', title: '', lead: '', actionLabel: '', actionHref: '', count: 24, note: '', items: [] }, MidnightRecordingsBlock),
-  MidnightProgram: block('Midnight program', {
+  MidnightProgram: block('Nocturne program', {
     ...anchorField, tagA: text('Tagline, first part'), tagB: text('Tagline, second part (in the accent)'), title: text('Name'), badges: area('Badges', LINES_HINT), flag: text('Accent badge'), body: area('Paragraphs', PARA_HINT),
     image, alt: text('Photo description'), tone,
     includes: { type: 'array', label: 'What is included', arrayFields: { sigil: glyph, title: text('Name'), body: area('Words') } },
     addonLabel: text('Add-on: small label'), addonBody: area('Add-on: words (leave empty for none)'), ...buttons('primary'), ...buttons('secondary'), note: text('Small note'),
   }, { anchor: '', tagA: '', tagB: '', title: '', badges: '', flag: '', body: '', image: '', alt: '', tone: 'soft', includes: [], addonLabel: '', addonBody: '', primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '', note: '' }, MidnightProgramBlock),
-  MidnightStatement: block('Midnight statement', { label: text('Label in the ornament'), body: area('Words') }, { label: '', body: '' }, MidnightStatementBlock),
-  MidnightEventRows: block('Midnight event rows (live)', {
+  MidnightStatement: block('Nocturne statement', { label: text('Label in the ornament'), body: area('Words') }, { label: '', body: '' }, MidnightStatementBlock),
+  MidnightEventRows: block('Nocturne event rows (live)', {
     count: { type: 'number', label: 'How many to show', min: 1, max: 24 }, buttonLabel: text('Button on each row'), zone: text('Time zone mark', 'Shown after a live time, like PT.'), empty: text('When there are no dates'),
     rows: { type: 'array', label: 'Rows', hint: 'Used when the Space has no upcoming events of its own.', arrayFields: { month: text('Month'), day: text('Day'), badge: text('Where'), left: text('Places left'), title: text('Name'), summary: area('Words'), when: text('When'), format: text('Format'), price: text('Price'), href: text('Link', LINK_HINT) } },
   }, { count: 12, buttonLabel: 'Reserve', zone: '', empty: 'New dates are on the way.', rows: [] }, MidnightEventRowsBlock),
-  MidnightBand: block('Midnight closing band', { title: area('Heading', VOICE_HINT), ...buttons('button') }, { title: '', buttonLabel: '', buttonHref: '' }, MidnightBandBlock),
-  MidnightSignup: block('Midnight email sign-up', { title: area('Heading', VOICE_HINT), buttonLabel: text('Button'), successMessage: text('Thank-you line') }, { title: 'Join our *email list*', buttonLabel: 'Join our email list', successMessage: 'You are in. The next letter arrives on the 1st.' }, MidnightSignupBlock),
-  MidnightArchive: block('Midnight letter archive', {
+  MidnightBand: block('Nocturne closing band', { title: area('Heading', VOICE_HINT), ...buttons('button') }, { title: '', buttonLabel: '', buttonHref: '' }, MidnightBandBlock),
+  MidnightSignup: block('Nocturne email sign-up', { title: area('Heading', VOICE_HINT), buttonLabel: text('Button'), successMessage: text('Thank-you line') }, { title: 'Join our *email list*', buttonLabel: 'Join our email list', successMessage: 'You are in. The next letter arrives on the 1st.' }, MidnightSignupBlock),
+  MidnightArchive: block('Nocturne letter archive', {
     eyebrow: text('Small label'), signupTitle: text('Title over the sign-up in a letter'), buttonLabel: text('Sign-up button'), successMessage: text('Thank-you line'),
     letters: { type: 'array', label: 'Letters', arrayFields: { no: text('Number'), title: text('Title'), date: text('Date'), read: text('Read time'), body: area('Paragraphs', PARA_HINT) } },
   }, { eyebrow: 'The archive', signupTitle: 'Get the next one *in your inbox*', buttonLabel: 'Join our email list', successMessage: 'You are in. The next letter arrives on the 1st.', letters: [] }, MidnightArchiveBlock),
-  MidnightContact: block('Midnight contact', {
+  MidnightContact: block('Nocturne contact', {
     image, alt: text('Photo description'), tone, title: text('Heading'), lead: area('First line'), body: area('Second line'), buttonLabel: text('Button'), successTitle: text('Thank-you heading'), successBody: text('Thank-you line'),
   }, { image: '', alt: '', tone: 'mono', title: 'Contact', lead: '', body: '', buttonLabel: 'Send', successTitle: 'Received.', successBody: 'We will be in touch soon.' }, MidnightContactBlock),
 }

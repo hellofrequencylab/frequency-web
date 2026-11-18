@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2369",
+  "title": "The Nocturne theme's editor blocks are named Nocturne, never Midnight",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-18",
+  "source": {
+    "file": "docs/NAMING.md",
+    "ref": "Owner rule (project memory): never say \"Midnight\" in the product; the theme is Nocturne (code id midnight)."
+  },
+  "detail": "Theme survey 2026-11-18: the 28 Nocturne section blocks in the website editor were labelled \"Midnight hero\", \"Midnight offerings\" and so on (components/page-editor/blocks/midnight.tsx, midnight-practice.tsx), so an owner building a Nocturne site read Midnight in the palette and the block panel. The labels now say Nocturne. Block type names (MidnightHero etc.) and the code id stay, so saved pages are untouched.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/themes/LIVE-2369.mjs"
+  },
+  "wave": "W7"
+}
