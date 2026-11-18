@@ -98,6 +98,9 @@ export const SUSPENSION_EXEMPT: Record<string, string> = {
   commerce_orders: 'ledger row written by checkout and webhooks',
   // Page documents are written by the janitor-gated editor actions with the service role; there is no member write path.
   page_versions: 'immutable publish history written by staff-only editor actions (service role only)',
+  // A Community Book is the holder's own coursework, sent for review: it reaches only a Frequency reviewer, never another
+  // member, and it issues nothing until that reviewer decides (owner 2026-11-18, Certified).
+  community_book_submissions: 'coursework sent to staff review only, written by the holder\'s own action (service role only); never shown to another member',
   loom_functions: 'Loom function declarations written by the staff-only composer through lib/loom/store.ts (service role only)',
   commerce_order_transfers: 'transfer ledger written by settle, the Stripe webhook and the reconciler (service role only)',
   // RETIRED (LIVE-361): the contribution charge and its recorder are gone, so nothing writes this
