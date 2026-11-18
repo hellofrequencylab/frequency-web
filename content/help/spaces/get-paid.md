@@ -4,140 +4,109 @@ description: Where your Space's money lands, how the owner connects the payout a
 category: spaces
 order: 4
 published: 2026-09-10
-updated: 2026-10-13
+updated: 2026-11-18
 audience: member
 featureKeys: [payouts]
+keywords: [payouts, stripe, bank account, connect bank, earnings, take payments, network fee, sell]
 status: published
 ---
 
-Everything your Space **receives** lives in one place: **Manage, then Get paid**. That is where you
-connect the account your money lands in, see which of your money paths can take payment today, and
-read the rate the network takes.
+Everything your Space receives lives on one page, **Get paid**. That is where you connect the account your money lands in, see which of your money paths can take payment today, and read the rate the network takes.
 
-What your Space **pays** is a different page. See [Billing](/help/spaces/billing) for your plan, your
-card, and invoices. Setting up one does nothing to the other.
+What your Space pays is a different page. See [Billing](/help/spaces/billing) for your plan, your card, and invoices. Setting up one does nothing to the other.
 
-## Where Get paid lives
+## Find it
 
 1. Go to your Space and open **Manage**.
 2. Pick **Offerings & Money**.
-3. **Get paid** is the first card, under its own heading.
+3. **Get paid** is the first card, under its own heading, above Booking, Memberships, Donations and your Shop.
 
-In the Manage menu it sits under **Offerings and money**, beside Booking, Memberships and Donations.
+Anyone who can edit your Space can open the page. Only the owner can connect the account, for the reason below.
 
-Anyone who can edit your Space can open the page. Only the owner can connect the account, for the
-reason below.
+## Connect your payout account
 
-## Connecting your payout account
+Money moves through Stripe, and Stripe pays a person, not a page. The person it pays is the Space owner, so the owner's payout account is the one that has to exist.
 
-Money moves through Stripe, and Stripe pays a person, not a page. The person it pays is the **Space
-owner**, so the owner's payout account is the one that has to exist.
+1. Open **Get paid** and select **Set up payouts**, or **Finish payout setup** if you started once and stopped.
+2. Fill in Stripe's own form: bank details and the ID check Stripe needs. It takes about two minutes.
+3. When you finish, Stripe sends you back to your own settings, under **Receive payments**. Your Space picks the account up right away, so there is nothing to save on the Space side.
 
-- Open **Get paid** and press **Set up payouts**, or **Finish payout setup** if you started once and
-  stopped. Either one opens Stripe's own form: bank details and the ID check Stripe needs. It takes
-  about two minutes.
-- When you finish, Stripe sends you back to your own settings, under **Receive payments**. Your Space
-  picks the account up right away, so there is nothing to save on the Space side.
-- **One account per person.** The same payout account covers every Space you own and anything you sell
-  yourself, so if you have already set it up somewhere else, you are done.
-- **An admin cannot do this for the owner.** If you are an admin and the account is missing, the card
-  names the Space and asks you to get the owner to add it. That is not a permission we withheld: Stripe
-  will only pay the account it verified.
-- **Changing your bank details** happens in Stripe, not here. Once the account works, the card carries
-  a **Manage payouts** button that opens your Stripe dashboard.
+A few things worth knowing:
 
-Your bank details never touch Frequency. Stripe holds them, the same way it holds your card on the
-billing side.
+- One account per person. The same payout account covers every Space you own and anything you sell yourself, so if you have already set it up somewhere else, you are done.
+- An admin cannot do this for the owner. If you are an admin and the account is missing, the card names the Space and asks you to get the owner to add it. That is not a permission we withheld: Stripe will only pay the account it verified.
+- Changing your bank details happens in Stripe, not here. Once the account works, the card carries a **Manage payouts** button that opens your Stripe dashboard.
 
-## Your money paths
+Your bank details never touch Frequency. Stripe holds them, the same way it holds your card on the billing side.
 
-There are six ways a Space can take money, and Get paid lists all six with the state each one is in:
+## Check your money paths
 
-| Money path | What it is |
-| --- | --- |
-| **Memberships** | Paid tiers people join. Paid tiers open at Business; a free tier works on every plan. |
-| **Bookings** | Paid time on your calendar, deposit included at checkout. Deposits open at Business. |
-| **Orders** | Sales from your Shop. Checkout opens at Business. |
-| **Donations** | Your fund and the amounts people can pick. Opens at Business. |
-| **Tickets** | Paid tickets on an event your Space hosts. Opens at Business. |
-| **Journeys** | A price on a Journey this Space sells. |
+There are six ways a Space can take money, and Get paid lists all six under **Your money paths** with the state each one is in:
 
-Three things have to be true for a path to take money: your Space is on a plan that sells (Business,
-Collective, Network, or Non Profit), the path has its own setup, and the payout account exists. So a path can read **Ready once payouts are on** while everything else about it
-is finished, and a path you have not turned on reads **Turned off in your settings** even when payouts
-are live.
+- **Memberships.** Paid tiers people join. Paid tiers open at Business; a free tier works on every plan.
+- **Bookings.** Paid time on your calendar, deposit included at checkout. Deposits open at Business.
+- **Orders.** Sales from your Shop. Checkout opens at Business.
+- **Donations.** Your fund and the amounts people can pick. Opens at Business.
+- **Tickets.** Paid tickets on an event your Space hosts. Opens at Business.
+- **Journeys.** A price on a Journey this Space sells.
 
-Set each path up from the tool that owns it. Booking, memberships, donations and your **Shop** all sit
-beside Get paid under **Offerings & Money**. Tickets live in the event's own settings. Journeys use
-**Sell this Journey** on the Journey itself.
+Three things have to be true for a path to take money: your Space is on a plan that sells (Business, Collective, Network, or Non Profit), the path has its own setup, and the payout account exists. Each path shows one of these:
 
-## Your rate
+- **Live.** It can take money today.
+- **Ready once payouts are on.** Everything else about it is finished, and it is waiting on the owner's payout account.
+- **Turned off in your settings.** You have not turned that tool on for this Space, even if payouts are live.
 
-Get paid shows two numbers, and they are the whole story.
+Set each path up from the tool that owns it. Booking, memberships, donations and your **Shop** all sit beside Get paid under **Offerings & Money**. Tickets live in the event's own settings. Journeys use **Sell this Journey** on the Journey itself.
 
-- **0% on your own people, always, on every plan.** Someone who already follows your Space, or who you
-  brought here yourself, costs you nothing. Tips are 0% too, on every plan.
-- **The network fee, only when Frequency found the buyer.** Discovery, a referral, or the Market, and
-  only once, at that customer's first purchase. The page shows the fee your plan is on. A free Space
-  takes tips, which carry no fee.
+## Read your rate
 
-If your Space is not connected to the network, it takes no network sales at all, so it pays **0% on
-everything**.
+Under **Your rate**, Get paid shows two numbers, and they are the whole story.
 
-[Plans and pricing](/help/spaces/plans-and-pricing) has the rate for each plan and what counts as your
-own people.
+- **0% on your own people, always, on every plan.** Someone who already follows your Space, or who you brought here yourself, costs you nothing. Tips are 0% too, on every plan.
+- **The network fee, only when Frequency found the buyer.** Discovery, a referral, or the Market, and only once, at that customer's first purchase. The page shows the fee your plan is on. A free Space takes tips, which carry no fee.
 
-## What you receive, and what you pay
+If your Space is not connected to the network, it takes no network sales at all, so it pays **0% on everything**.
 
-You **receive** every sale, membership, booking deposit, donation and ticket, minus the rate above and
-Stripe's processing fee. Stripe sends it to your bank on its own schedule.
+[Plans and pricing](/help/spaces/plans-and-pricing) explains how the fee works for each plan, and the [pricing page](/pricing) has the current rates.
 
-You **pay** Frequency for your plan. That is a separate charge, and it is the only one. See
-[Billing](/help/spaces/billing).
+## Know what you receive, and what you pay
+
+You receive every sale, membership, booking deposit, donation, ticket and Journey, minus the rate above and Stripe's processing fee. Stripe sends it to your bank on its own schedule.
+
+You pay Frequency for your plan. That is a separate charge, and it is the only one. See [Billing](/help/spaces/billing).
 
 ## Common questions
 
 ### Do I need a plan to take money?
 
-For tips, no: tips are open on every plan, with no fee. For
-selling, yes. Paid tickets, paid memberships, donations, shop checkout, booking deposits and priced
-Journeys open at Business. Hosting stays free, so you can build everything on a free Space and pick
-Business on the day you start charging. Nothing you built is lost either way. A payout account is what
-actually starts the money.
+For tips, no: tips are open on every plan, with no fee. For selling, yes. Paid tickets, paid memberships, donations, shop checkout, booking deposits and priced Journeys open at Business. Hosting stays free, so you can build everything on a free Space and pick Business on the day you start charging. Nothing you built is lost either way. A payout account is what actually starts the money.
 
 ### Get paid says payments are not turned on yet. Is something wrong?
 
-No. That line is about the
-platform, not your account. You can set your money paths up now, and payouts go live with the rest of
-billing.
+No. That line is about the platform, not your account. You can set your money paths up now, and payouts go live with the rest of billing.
 
 ### When does the money reach my bank?
 
-On Stripe's payout schedule, to the account the owner
-connected. **Manage payouts** opens the Stripe dashboard, where you can see a payout and manage your
-bank details and payout schedule.
+On Stripe's payout schedule, to the account the owner connected. **Manage payouts** opens the Stripe dashboard, where you can see a payout and manage your bank details and payout schedule.
 
 ### Where are my sales totals?
 
-Not on this page. Get paid answers "can I take money". **Home** shows
-the last 30 days across shop orders, tickets, and gifts to your fund. Orders also sit in your
-**Shop** console, and tickets sit on the event's manage screen.
+Not on this page. Get paid answers "can I take money". **Home**, the first tab in Manage, shows your recent revenue. Orders also sit in your **Shop** console, and tickets sit on the event's manage screen.
 
 ### I am the owner and I already set up payouts. Why does a tool still say it cannot take payment?
 
-The
-payout account is one of two conditions. Check the path's own setup as well: a tier, a product or a
-ticket that is still a draft stops that path on its own, whatever your payout account says.
+The payout account is one of the conditions. Check the path's own setup as well: a tier, a product or a ticket that is still a draft stops that path on its own, whatever your payout account says. Check your plan too, since selling opens at Business.
 
 ### A member shows Payment failed. Did they leave?
 
-No. Their renewal did not go through, and they
-are still a member while Stripe retries the card. They see the same notice on the Space and in
-Settings. You can cancel them from the member list if you need the seat.
+No. Their renewal did not go through, and they are still a member while Stripe retries the card. They see the same notice on the Space and in Settings. You can cancel them from the member list if you need the seat.
 
 ### Why do my booking page and receipts say Made with Frequency?
 
-It is one small line at the foot of
-your booking page, the booking confirmation your customer gets, and the receipt for a shop order. It
-links to Frequency's home page, so a customer who likes how it went can find their way to hosting
-too. Your own copy of a booking notice does not carry it.
+It is one small line at the foot of your booking page, the booking confirmation your customer gets, and the receipt for a shop order. It links to Frequency's home page, so a customer who likes how it went can find their way to hosting too. Your own copy of a booking notice does not carry it.
+
+## Related
+
+- [Billing](/help/spaces/billing)
+- [Plans and pricing](/help/spaces/plans-and-pricing)
+- [Take bookings](/help/spaces/take-bookings)
