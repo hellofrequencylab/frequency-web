@@ -1,14 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { BETA_ENDS_DAY_LABEL, FOUNDING_MEMBER_COPY } from '@/lib/core/launch-dates'
 import { BOC_FAQ, data } from './business-of-community'
 
-// The Certified review date is literal copy in an editable template. This keeps it on the beta clock.
+// The Certified review window is literal copy in an editable template (owner 2026-11-17: free for Community
+// Books submitted by February 28, 2027, the January launch workshop's window).
 describe('business-of-community template', () => {
-  const date = `${BETA_ENDS_DAY_LABEL}, ${FOUNDING_MEMBER_COPY.endsOn.slice(0, 4)}`
 
-  it('dates the free Certified review to the end of the beta', () => {
+  it('dates the free Certified review to the January workshop window', () => {
     const cost = BOC_FAQ.find((f) => f.q === 'What does it cost?')
-    expect(cost?.a).toContain(`Certified review is free through ${date}, then comes with a paid Space.`)
+    expect(cost?.a).toContain('Certified review is free for Community Books submitted by February 28, 2027, then comes with the Business plan.')
   })
 
   it('never uses a dash or an exclamation point in its copy', () => {
@@ -16,7 +15,7 @@ describe('business-of-community template', () => {
     expect(text).not.toMatch(/[\u2013\u2014!]/)
   })
 
-  it('answers the seven questions the brief names', () => {
-    expect(BOC_FAQ).toHaveLength(7)
+  it('answers the eight workshop questions', () => {
+    expect(BOC_FAQ).toHaveLength(8)
   })
 })

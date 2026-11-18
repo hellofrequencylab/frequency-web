@@ -13,6 +13,7 @@ const NOW = new Date('2026-12-01T10:00:00.000Z')
 const enqueued: { to: string }[] = []
 vi.mock('@/lib/email', () => ({
   enqueueEmail: async (m: { to: string }) => {
+    if (enqueueFails) throw new Error('queue insert failed')
     enqueued.push(m)
   },
   listUnsubscribeHeaders: () => ({}),
@@ -24,7 +25,15 @@ vi.mock('@/lib/suppression', () => ({ isSuppressed: async () => suppressed }))
 vi.mock('@/lib/connections/lead-unsub', () => ({ buildLeadUnsubUrl: (id: string) => `https://x.test/u/${id}` }))
 vi.mock('@/lib/email-studio/data-blocks', () => ({ resolveDataBlockRefs: async (l: unknown) => l }))
 
+vi.mock('@/lib/lifecycle/cap-io', () => ({
+  reserveLifecycleSend: async () => reservation,
+  releaseLifecycleSend: async (_db: unknown, key: string) => { released.push(key) },
+}))
+
 let gateResult: { allowed: boolean; reason?: string } = { allowed: true }
+let enqueueFails = false
+let reservation: 'reserved' | 'capped' | 'duplicate' | 'error' = 'reserved'
+const released: string[] = []
 let suppressed = false
 let stealClaim = false
 
@@ -98,6 +107,9 @@ beforeEach(() => {
   gateResult = { allowed: true }
   suppressed = false
   stealClaim = false
+  enqueueFails = false
+  reservation = 'reserved'
+  released.length = 0
 })
 afterEach(() => vi.useRealTimers())
 
@@ -167,5 +179,27 @@ describe('runDueNurture', () => {
     seed()
     tables.nurture_enrollments.push({ ...enr('due'), id: 'due2', email: 'b@x.test' })
     expect((await runDueNurture(1)).processed).toBe(1)
+  })
+})
+
+// EMAIL-061: with the lifecycle cap on, a failed enqueue used to leave the reservation behind, and every later run
+// read 'duplicate' and skipped without moving the cursor, so the enrollment never sent that step or any after it.
+describe('runDueNurture with the lifecycle cap (EMAIL-061)', () => {
+  it('releases the reservation and retries later when the enqueue fails', async () => {
+    seed()
+    enqueueFails = true
+    const r = await runDueNurture()
+    expect(r.sent).toBe(0)
+    expect(released).toEqual(['nurture_step:due:1'])
+    expect(enr('due').next_step_order).toBe(1)
+  })
+
+  it('moves the cursor on, without sending again, when the step was already reserved', async () => {
+    seed()
+    reservation = 'duplicate'
+    const r = await runDueNurture()
+    expect(enqueued).toHaveLength(0)
+    expect(r.sent).toBe(0)
+    expect(enr('due')).toMatchObject({ next_step_order: 2, next_run_at: iso(48 * H) })
   })
 })

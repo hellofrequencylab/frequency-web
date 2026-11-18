@@ -673,6 +673,16 @@ export async function updateEventSettings(
     else delete nextDetails.specialInstructions
   }
 
+  // The replay (owner 2026-11-18, Journeys rework): a link to the recording, which the replay cron
+  // (app/api/cron/event-replays) mails once to everyone who saved a seat. Handled on its own for the same
+  // reason as the door note. https only; an empty value clears it.
+  const replayRaw = fd.get('replay_url')
+  if (typeof replayRaw === 'string') {
+    const url = replayRaw.trim().slice(0, 500)
+    if (url && /^https:\/\/[^\s]+$/i.test(url)) nextDetails.replayUrl = url
+    else if (!url) delete nextDetails.replayUrl
+  }
+
   // Public listing (ADR-844): read-merge-write into events.theme beside coverFocus/heroHeight, and
   // ONLY when the form carries the control ('on'/'off'), so a form without it can never silently
   // relist an event the host took out of the listings.

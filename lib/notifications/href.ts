@@ -88,6 +88,11 @@ export function notificationHref(n: NotificationItem): string {
     case 'practice':
       return id ? `/practices/${id}` : '/practices'
 
+    // A direct message (EMAIL-055): the 1:1 thread by conversation id. When the DM page is retired
+    // the route itself forwards to the dock.
+    case 'direct_message':
+      return id ? `/messages/${id}` : '/messages'
+
     // An inbound reply on the comms spine: the Conversation workspace opens the thread by id.
     case 'conversation':
       return id ? `/admin/crm/conversations?id=${encodeURIComponent(id)}` : '/admin/crm/conversations'
@@ -111,6 +116,11 @@ export function notificationHref(n: NotificationItem): string {
     case 'circle':
     case 'membership':
       return '/circles'
+
+    // A refund or other order notice (lib/commerce/checkout.ts) opens the buyer's order list
+    // rather than the feed (LIVE-2361).
+    case 'order':
+      return '/orders'
 
     // Events and Journeys are slug-addressed too, and the notice carries the id.
     case 'event':
