@@ -1,6 +1,7 @@
 // Verified-source layout compatibility utilities and human writing guidance.
 // Model layout composition is disabled: advice never becomes persisted page copy.
-import { writingCoach } from '@/lib/ai/writing-coach'
+import { coachBlock } from '@/lib/ai/vera/block-coach'
+import { WRITING_QUESTIONS } from '@/lib/ai/writing-questions'
 import { stripEmDashes } from '@/lib/ai/space-copilot'
 import { isReadyMediaUrl, type CommercialPolicy } from './map'
 import { normalizeRowTitle, type EntityLayout, type RowColumns, type RowDef } from '@/lib/entity-blocks/layout'
@@ -605,21 +606,26 @@ export async function composeMarketingLayout(_profile: BusinessProfile, _gallery
  return null
 }
 
-// ── Per-block copy re-seed (ADR-582, task #17) ────────────────────────────────────────────────────────────
-// Regenerate the copy of ONE block on a live Space from its master profile, on the operator's demand. Unlike
-// composeMarketingLayout (which designs the whole page), this rewrites only the given block's TEXT fields and
-// touches nothing else. The operator clicks "Re-seed copy" on a single block. Grounded ONLY in the verified
-// brief plus (when the caller has it) the business's OWN WORDS, so a re-seed lifts from the same source the
-// composer did. Never invents a fact, house voice, no em dashes. Returns a partial content bag keyed by the
-// block's own field keys, or null when there is nothing to do (no text fields, no profile, AI off / over
-// budget).
+// ── Per-block "rewrite this block" (ADR-582, task #17; questions only since ADR-1939 §4) ─────────────────────
+// The operator clicks "Re-seed copy" on one block of a live Space. Nothing is rewritten: Vera asks up to three
+// reviewed questions about that block's own word fields (lib/ai/vera/block-coach.ts coachBlock, the coachTool seam),
+// and the panel shows them beside the owner's words. PURE of any write; null when the block has no text fields or
+// the master profile has no name to ground on.
 
-/** Regenerate ONE block's text copy from the master profile (task #17). Rewrites only the block's `text` /
- *  `textarea` fields, grounded in the brief (and the verbatim excerpt when the caller has one); returns a
- *  partial content bag (the rewritten field values) to merge over the block's current content, or null when
- *  there is nothing to regenerate. PURE of any write: the caller persists the merge through the normal
- *  editor save path. */
-export async function reseedBlockCopy(blockId: string, profile: BusinessProfile, current: Record<string, unknown>, opts: { profileId?: string | null; directions?: string; sourceExcerpt?: string } = {}): Promise<{ questions: string[] } | null> {
- if (!fieldsForBlock(blockId).some(field => field.type === 'text' || field.type === 'textarea') || !(profile.name ?? '').trim()) return null
- return { questions: await writingCoach({ feature: 'seed-compose', profileId: opts.profileId, context: JSON.stringify({ section: blockId, current, source: opts.sourceExcerpt, directions: opts.directions, name: profile.name }) }) }
+export async function reseedBlockCopy(blockId: string, profile: BusinessProfile, current: Record<string, unknown>, opts: { profileId?: string | null; spaceId?: string | null; directions?: string; sourceExcerpt?: string } = {}): Promise<{ questions: string[] } | null> {
+ const fields = fieldsForBlock(blockId)
+ if (!fields.some(field => field.type === 'text' || field.type === 'textarea') || !(profile.name ?? '').trim()) return null
+ // Vera's coachTool (LIVE-890 amended 2026-11-18): the model can only pick one of this block's word fields and a
+ // reviewed question id; the wording shown is the catalog's. With no model answer (AI off, over budget, rate limited,
+ // a failed call or a reply that does not parse) the fixed writing questions stand, as before.
+ const coaching = await coachBlock({
+  blockType: blockId,
+  fields,
+  values: current,
+  profileId: opts.profileId ?? null,
+  spaceId: opts.spaceId ?? null,
+  grounding: opts.sourceExcerpt ? { about: opts.sourceExcerpt, offerings: [] } : null,
+ })
+ if (!coaching || coaching.source !== 'vera') return { questions: [...WRITING_QUESTIONS] }
+ return { questions: [...new Set(coaching.questions.map(question => question.question))] }
 }
