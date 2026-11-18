@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { Check, Lock, MapPin } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { ClaimStopForm } from '@/components/hunts/claim-stop-form'
+import { FinalePanel } from '@/components/hunts/finale-panel'
 import { HuntFundraising } from '@/components/hunts/hunt-fundraising'
 import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
 import { TeamPanel } from '@/components/hunts/team-panel'
@@ -14,6 +15,7 @@ import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { projectForPlayer, visitedPins } from '@/lib/hunts/player'
+import { loadRallyFinale } from '@/lib/hunts/rally-finale-store'
 import { loadPlayerRun, loadPublishedTrail, loadRunCredits, loadVisitedStopPoints, startOrResumeRun } from '@/lib/hunts/run-store'
 import { myTeamPanel } from '@/lib/hunts/team-store'
 
@@ -26,6 +28,8 @@ export const dynamic = 'force-dynamic'
 // gets pins for visited stops only: the loader asks for credited stops and `visitedPins` drops the rest.
 // The team panel (FH-043S) shows the caller's own Expedition team, never a roster; a team member confirms
 // stops for the team's one run, so the solo confirm form steps aside while they are on a team.
+// The finale panel (FH-031S) shows a Trail's host Event from the Events tables: places left, the
+// player's own seat or why there is none, and a link to the Event. It never claims or holds a seat.
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -63,6 +67,8 @@ export default async function PlayPage({ params, searchParams }: {
   const team = teamsOpen ? await myTeamPanel(profileId, slug).catch(() => null) : null
   const joinTeamId = typeof joinParam === 'string' && UUID.test(joinParam) ? joinParam : null
   const canConfirm = huntSwitchOn('claims') && view.canClaim && run?.state === 'active' && !team
+  // A failed finale read shows no panel rather than a wrong seat; the Event page stays the authority.
+  const finale = run ? await loadRallyFinale(run.runId, profileId, new Date().toISOString()).catch(() => null) : null
 
   return (
     <FocusTemplate
@@ -105,6 +111,7 @@ export default async function PlayPage({ params, searchParams }: {
             </li>
           ))}
         </ol>
+        <FinalePanel finale={finale} />
         <VisitedStops stops={view.stops} />
         <TrailStoreLinks links={await loadTrailStoreLinks(trail.huntId)} />
         <VisitedStopsMap pins={pins} />
