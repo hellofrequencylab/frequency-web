@@ -31,7 +31,7 @@ const IMAGES = ['/images/site/community-1.jpg', '/images/site/community-dinner.j
 // The dates the coded article published under. Kept here rather than in the document
 // because they belong to the ROUTE's Article node, not to the words an operator edits.
 const PUBLISHED = '2026-06-24'
-const UPDATED = '2026-07-24'
+const UPDATED = '2026-11-17'
 
 // Share-card copy, shared by the OG and Twitter blocks below so the two can never drift.
 const OG_TITLE = 'How to build community · Frequency'

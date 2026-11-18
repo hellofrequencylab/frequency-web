@@ -10,6 +10,7 @@ import { spec as howToBuildCommunity } from '@/lib/page-editor/templates/how-to-
 import { spec as loneliness } from '@/lib/page-editor/templates/loneliness'
 import { spec as friendshipAsAnAdult } from '@/lib/page-editor/templates/friendship-as-an-adult'
 import { spec as howToBeMoreSocial } from '@/lib/page-editor/templates/how-to-be-more-social'
+import { BOC_FAQ } from '@/lib/page-editor/templates/business-of-community'
 import { COMPARISONS, comparisonCopy, comparisonPath } from '@/lib/marketing/comparisons'
 import { WHO_FREQUENCY_IS_FOR, WHO_FREQUENCY_IS_FOR_HEADING } from '@/lib/marketing/who-its-for'
 import { quickAnswers, localAnswers } from '@/lib/marketing/quick-answers'
@@ -79,6 +80,16 @@ function guidesAndAnswers(): string[] {
       if (!spec) continue
       out.push('', `### ${spec.title}`, `${SITE_URL}${pathForSlug(page.slug)}`, spec.answer, ...qaLines(spec.faq))
     }
+    // The course sales page (LIVE-2350): not an article, so it has no spec; its questions are the same
+    // rows its Accordion renders.
+    out.push(
+      '',
+      '### The Business of Community 101',
+      `${SITE_URL}/courses/business-of-community`,
+      'A free four-week course for people who already gather others: The Engine, The Container, The Gathering and The Exchange. Five short lessons a week, about an hour. Every Frequency course is listed at ' +
+        `${SITE_URL}/courses.`,
+      ...qaLines(BOC_FAQ),
+    )
     for (const c of COMPARISONS) {
       const copy = comparisonCopy(c)
       out.push('', `### ${copy.h1}`, `${SITE_URL}${comparisonPath(c.slug)}`, copy.lede, ...qaLines(copy.faq))

@@ -12,7 +12,7 @@ interface PageDates {
 export const GUIDE_DATES = {
   loneliness: { published: '2026-06-24', updated: '2026-07-24' },
   'friendship-as-an-adult': { published: '2026-06-24', updated: '2026-07-24' },
-  'how-to-build-community': { published: '2026-06-24', updated: '2026-07-24' },
+  'how-to-build-community': { published: '2026-06-24', updated: '2026-11-17' },
   'how-to-start-a-circle': { published: '2026-06-24', updated: '2026-07-24' },
   'how-to-be-more-social': { published: '2026-06-29', updated: '2026-07-24' },
   'the-community': { published: '2026-07-28', updated: '2026-08-05' },
@@ -39,6 +39,8 @@ export const PAGE_UPDATED = {
   for: '2026-11-14',
   vs: '2026-11-14',
   'north-county-san-diego': '2026-11-16',
+  // The course library and its sales pages (/courses, /courses/<slug>).
+  courses: '2026-11-17',
 } as const
 
 type PageUpdatedSlug = keyof typeof PAGE_UPDATED

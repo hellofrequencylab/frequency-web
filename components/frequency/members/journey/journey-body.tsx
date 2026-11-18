@@ -24,6 +24,8 @@ interface JourneyBodyPlan {
   title: string
   summary: string | null
   adoptCount: number
+  /** The Journey's cover photo (journey_plans.cover_image), drawn as the kit's `.ph` band. */
+  coverImage?: string | null
 }
 
 export type { MoreJourney }
@@ -106,8 +108,18 @@ export function JourneyBody({
         kicker="The Quest · Journey"
         title={<SerifTail text={plan.title} />}
         meta={metaParts.join(' · ')}
-        actions={<div className="row wrap">{actions}</div>}
+        actions={<div className="mu-actions row wrap">{actions}</div>}
       />
+
+      {/* The cover: the kit's photo block (`.ph`, as Event.html draws its header photo). The Journey template
+          has none, so a Journey with a cover_image showed nothing at all. Decorative: the title says it. */}
+      {plan.coverImage ? (
+        <div
+          className="ph"
+          aria-hidden
+          style={{ height: 'clamp(180px, 26vw, 300px)', borderRadius: 28, marginBottom: 20, backgroundImage: `url("${encodeURI(plan.coverImage)}")` }}
+        />
+      ) : null}
 
       <section className="panel mc-hero">
         <div className="fq-aura" aria-hidden />

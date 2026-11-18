@@ -227,3 +227,10 @@ how-to-be-more-social  0  # ✅ ENROLLED + template-only 2026-08-20 (Lift 5d, AD
                     #    renders as Tiers cards rather than the coded compact list, and the cards
                     #    read "Learn more" (the block's word) instead of "Read more".
                     #    Template-only from here.
+
+# ── The course sales pages (/courses/<slug>), enrolled one per PR ───────────────
+business-of-community  0  # ✅ ENROLLED + template-only 2026-11-17 (LIVE-2350). A new page, so there was no
+                    #    coded body: lib/page-editor/templates/business-of-community.ts is the whole page,
+                    #    rebuilt in the marketing blocks from the house Space's sales doc
+                    #    (scripts/seed-frequency-hq-boc-sales.mts). Schema: Course + Breadcrumb from the
+                    #    route, Article from <BlockDocJsonLd>, FAQPage from the Accordion. Template-only.

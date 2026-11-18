@@ -108,6 +108,14 @@ function bookingFrom(puck: PuckArg): SpaceBookingInfo | undefined {
   const space = puck?.metadata?.space as { booking?: SpaceBookingInfo } | undefined
   return space?.booking
 }
+/** The SpacePractices `only` filter: keep a journey whose title contains the word or whose category
+ *  equals it (both case-insensitive). Blank keeps everything. */
+export function filterJourneysByOnly(journeys: SpacePracticeItem[], only: unknown): SpacePracticeItem[] {
+  const word = String(only ?? '').trim().toLowerCase()
+  if (!word) return journeys
+  return journeys.filter((j) => j.title.toLowerCase().includes(word) || (j.category ?? '').trim().toLowerCase() === word)
+}
+
 function practicesFrom(puck: PuckArg): SpacePracticesData | undefined {
   const space = puck?.metadata?.space as { practices?: SpacePracticesData } | undefined
   return space?.practices
@@ -2044,7 +2052,7 @@ export const profileComponents: Record<string, ComponentConfig> = {
       heading: { type: 'text', label: 'Heading (optional)' },
       practicesHeading: { type: 'text', label: 'Practices label' },
       journeysHeading: { type: 'text', label: 'Journeys label' },
-      only: { type: 'text', label: 'Only journeys whose title has this word (website pages, optional)' },
+      only: { type: 'text', label: 'Only journeys whose title has this word, or whose category is this (e.g. Creator Lab; optional)' },
     },
     defaultProps: {
       eyebrow: 'Start here',
@@ -2053,8 +2061,11 @@ export const profileComponents: Record<string, ComponentConfig> = {
       journeysHeading: 'Journeys to begin',
       only: '',
     },
-    render: ({ eyebrow, heading, practicesHeading, journeysHeading, puck }) => {
-      const data = practicesFrom(puck)
+    render: ({ eyebrow, heading, practicesHeading, journeysHeading, only, puck }) => {
+      // `only` narrows the journeys to titles carrying the word, or to the category it names exactly
+      // (case-insensitive), so a Creator Lab page can list its courses by category.
+      const all = practicesFrom(puck)
+      const data = all ? { ...all, journeys: filterJourneysByOnly(all.journeys, only) } : all
       // Placeholder in the editor, nothing on the live page. Gated on what the block would
       // RENDER (SpacePracticesBlock returns null for an empty pair), not on whether metadata
       // arrived: the Space page editor injects the real rows, so an operator with no practices

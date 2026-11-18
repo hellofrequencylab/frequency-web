@@ -676,7 +676,7 @@ export function journeyOfferSchema(
 
 // ── ItemList (Journey listing) ────────────────────────────────────────────────
 
-export function journeyListSchema(plans: JourneyPlan[], listName: string) {
+export function journeyListSchema(plans: Pick<JourneyPlan, 'slug' | 'title'>[], listName: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -1013,6 +1013,52 @@ export function faqSchema(qas: { q: string; a: string }[]) {
       name: q,
       acceptedAnswer: { '@type': 'Answer', text: a },
     })),
+  }
+}
+
+// ── Course ────────────────────────────────────────────────────────────────────
+// A course Frequency itself teaches (schema.org/Course), for a course sales page. The provider is the
+// ONE Frequency Organization node (shared @id). `free` emits a zero-price Offer in the Free category,
+// which is how Course rich results read a free course; a priced course passes no `free` and gets no
+// Offer here (a priced Journey's Offer already ships as journeyOfferSchema on its Journey page).
+// `workload`, `schedule` and `inLanguage` are optional, emitted only when given: a page states the rhythm
+// it actually promises rather than a total this file works out.
+
+export function courseSchema(course: {
+  name: string
+  description: string
+  path: string
+  image?: string | null
+  free?: boolean
+  /** ISO 8601 duration of the whole course, e.g. `PT4H`. */
+  workload?: string
+  /** The rhythm, when the course states one (e.g. about an hour, weekly, four times). */
+  schedule?: { duration: string; repeatFrequency: 'Daily' | 'Weekly' | 'Monthly'; repeatCount: number }
+  /** A course with a public Journey page names it, so the two nodes resolve as one course. */
+  sameAs?: string
+  inLanguage?: string
+}) {
+  const url = abs(course.path)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: course.name,
+    description: course.description,
+    url,
+    ...(course.image ? { image: [course.image.startsWith('http') ? course.image : abs(course.image)] } : {}),
+    ...(course.sameAs ? { sameAs: abs(course.sameAs) } : {}),
+    inLanguage: course.inLanguage ?? 'en',
+    isAccessibleForFree: Boolean(course.free),
+    provider: { '@type': 'Organization', '@id': ORG_ID, name: SITE_NAME, url: SITE_URL },
+    ...(course.free
+      ? { offers: { '@type': 'Offer', category: 'Free', price: '0', priceCurrency: 'USD', url } }
+      : {}),
+    hasCourseInstance: {
+      '@type': 'CourseInstance',
+      courseMode: 'Online',
+      ...(course.workload ? { courseWorkload: course.workload } : {}),
+      ...(course.schedule ? { courseSchedule: { '@type': 'Schedule', ...course.schedule } } : {}),
+    },
   }
 }
 

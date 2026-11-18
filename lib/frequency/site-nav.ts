@@ -361,6 +361,7 @@ export const FOOTER_COLUMNS: { heading: string; links: SiteLink[] }[] = [
       { href: '/friendship-as-an-adult', label: 'Friends as an adult' },
       { href: '/how-to-start-a-circle', label: 'Start a Circle' },
       { href: '/how-to-build-community', label: 'Build community' },
+      { href: '/courses', label: 'Free courses' },
       { href: '/how-to-be-more-social', label: 'Be more social' },
       { href: '/mindless', label: 'Calm down fast' },
       { href: '/vs', label: 'Frequency vs the rest' },

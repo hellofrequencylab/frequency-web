@@ -159,6 +159,16 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     systemManaged: true,
   },
   {
+    // The Business of Community course Funnel (LIVE-2350): /join?seq=business-of-community, the
+    // "Start the course" door on /courses/business-of-community. Same stored beta_ prefix (ADR-1090).
+    key: 'beta_business_of_community',
+    label: 'Beta · Business of Community',
+    description: 'Arrived through the Business of Community course funnel: signed up from the course sales page to start the free four-week course.',
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  },
+  {
     // The breathwork FEATURE funnel (ADR-619): played the box-breath demo and signed up to keep the
     // streak it started. Stamped at completion via the fq_beta_seq cohort cookie, like the niche funnels.
     key: 'beta_breathwork',

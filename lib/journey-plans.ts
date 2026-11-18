@@ -111,6 +111,9 @@ export interface JourneyPlan {
   space_tier_id?: string | null
   /** Meeting / format details: how a Circle gathers around the Journey. Defaults to {} (jsonb). */
   meeting: JourneyMeeting
+  /** The authoring category (free text, e.g. 'Creator Lab'). PLAN_COLS has always selected it; typed
+   *  optional because older fixtures build a JourneyPlan without it. */
+  category?: string | null
 }
 
 // ── The Circle Meetup / Weekend Gathering shape moved to lib/journeys/meeting.ts (LIVE-009) ──────
@@ -269,6 +272,30 @@ export async function getMyPlanSummaries(authorId: string): Promise<MyPlanSummar
     else if (bt !== 'module') stepBy.set(r.plan_id, (stepBy.get(r.plan_id) ?? 0) + 1)
   }
   return plans.map((p) => ({ ...p, phaseCount: phaseBy.get(p.id) ?? 0, stepCount: stepBy.get(p.id) ?? 0 }))
+}
+
+/** The shape of several plans at once, for a library card: weekly Phases and the summed lesson minutes
+ *  (each item's own est_minutes, the same source journeyFacts reads). One grouped read; a plan with no
+ *  rows maps to zeros. FAIL-SAFE: a failed read returns an empty map, so a card shows no counts rather
+ *  than the page failing. */
+export async function planShapes(planIds: string[]): Promise<Map<string, { phaseCount: number; minutes: number }>> {
+  const out = new Map<string, { phaseCount: number; minutes: number }>()
+  if (planIds.length === 0) return out
+  const { data, error } = await db()
+    .from('journey_plan_items')
+    .select('plan_id, block_type, est_minutes')
+    .in('plan_id', planIds)
+  if (error) {
+    log.warn('journey_plans.plan_shapes_failed', { error: error.message })
+    return out
+  }
+  for (const r of (data as { plan_id: string; block_type: string | null; est_minutes: number | null }[] | null) ?? []) {
+    const s = out.get(r.plan_id) ?? { phaseCount: 0, minutes: 0 }
+    if (r.block_type === 'phase') s.phaseCount += 1
+    else s.minutes += r.est_minutes ?? 0
+    out.set(r.plan_id, s)
+  }
+  return out
 }
 
 /** Public, published plans for the open library, most-adopted first. Rejected ("needs changes")

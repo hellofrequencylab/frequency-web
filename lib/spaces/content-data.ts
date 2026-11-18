@@ -160,6 +160,9 @@ export type SpacePracticeItem = {
   emoji: string | null
   /** Live adoption count for a journey (0 for a practice), only surfaced when positive. */
   adoptCount: number
+  /** A journey's authoring category (e.g. 'Creator Lab'), so a block can list one category. Null for a
+   *  practice or an uncategorised journey. Optional so older literals stay valid. */
+  category?: string | null
 }
 
 /** The live practices + journeys the SpacePractices block reads. Split so the block can render the two
@@ -803,6 +806,7 @@ export async function getSpacePractices(spaceId: string): Promise<SpacePractices
         summary: j.summary ?? null,
         emoji: j.emoji ?? null,
         adoptCount: j.adopt_count > 0 ? j.adopt_count : 0,
+        category: j.category ?? null,
       })),
     }
   } catch {

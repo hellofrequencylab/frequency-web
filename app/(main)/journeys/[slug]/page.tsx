@@ -218,7 +218,7 @@ export default async function JourneyPlanPage({
           className="btn sm"
         />
       )}
-      <QrShareDropdown manager={canManageJourney} />
+      <QrShareDropdown manager={canManageJourney} className="btn sm" />
     </>
   )
   const credits =
@@ -240,7 +240,7 @@ export default async function JourneyPlanPage({
     <>
       <ShareImageProvider imageUrl={plan.cover_image ?? null}>
         <JourneyBody
-          plan={{ slug: plan.slug, title: plan.title, summary: plan.summary, adoptCount: plan.adopt_count }}
+          plan={{ slug: plan.slug, title: plan.title, summary: plan.summary, adoptCount: plan.adopt_count, coverImage: plan.cover_image }}
           tree={tree}
           tracked={docked}
           inside={adopted || isAuthor}

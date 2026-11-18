@@ -16,6 +16,7 @@ import {
   cityEventListSchema,
   eventsListingSchema,
   faqSchema,
+  courseSchema,
   personSchema,
   spaceSchema,
   productSchema,
@@ -659,6 +660,42 @@ describe('faqSchema', () => {
     expect(q['@type']).toBe('Question')
     expect(q.name).toBe('What is Frequency?')
     expect(q.acceptedAnswer).toMatchObject({ '@type': 'Answer', text: 'A community platform.' })
+  })
+})
+
+// ── courseSchema ──────────────────────────────────────────────────────────────
+
+describe('courseSchema', () => {
+  it('emits a Course with the Frequency provider, a free Offer and an online instance', () => {
+    const r = courseSchema({
+      name: 'The Business of Community 101',
+      description: 'A free four-week course.',
+      path: '/courses/business-of-community',
+      image: '/brand/frequency/photos/gathering-03.jpg',
+      free: true,
+      schedule: { duration: 'PT1H', repeatFrequency: 'Weekly', repeatCount: 4 },
+      sameAs: '/discover/journeys/the-business-of-community-101',
+    })
+    expect(r).toMatchObject({
+      '@type': 'Course',
+      url: `${SITE_URL}/courses/business-of-community`,
+      provider: { '@type': 'Organization', '@id': `${SITE_URL}/#organization`, name: SITE_NAME },
+      offers: { '@type': 'Offer', category: 'Free', price: '0' },
+      isAccessibleForFree: true,
+      hasCourseInstance: {
+        '@type': 'CourseInstance',
+        courseMode: 'Online',
+        courseSchedule: { '@type': 'Schedule', duration: 'PT1H', repeatFrequency: 'Weekly', repeatCount: 4 },
+      },
+      image: [`${SITE_URL}/brand/frequency/photos/gathering-03.jpg`],
+      sameAs: `${SITE_URL}/discover/journeys/the-business-of-community-101`,
+    })
+  })
+
+  it('emits no Offer for a course that is not free', () => {
+    const r = courseSchema({ name: 'N', description: 'D', path: '/courses/x' }) as Record<string, unknown>
+    expect(r).not.toHaveProperty('offers')
+    expect(r.isAccessibleForFree).toBe(false)
   })
 })
 
