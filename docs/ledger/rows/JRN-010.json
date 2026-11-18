@@ -1,0 +1,20 @@
+{
+  "id": "JRN-010",
+  "title": "Finishing the last lesson of any Journey marks the member's enrolment complete",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "app/(main)/journeys/[slug]/learn/actions.ts",
+    "ref": "Journey audit 2026-11-17 (project thread: Dial in the Journey Wizard and Journeys)"
+  },
+  "detail": "journey_enrollments.completed_at was written only by tryCompleteJourney (lib/quest/complete.ts), which runs from practice logs and only for ranked_eligible plans. The lesson check-off (completeJourneyLessonAction) fired the journey_complete reward event but never stamped the enrolment, so a member who finished a paid, Space or member-built Journey stayed active forever: holding an enroll_cap seat (free-enrol-gate and paid.ts count completed_at is null, so a capped Journey stayed Full), counting on the people meter, and sitting in the drip and daily-prompt crons. Fixed 2026-11-17: lib/journeys/runs.ts stampEnrollmentComplete (idempotent, only open rows, best-effort) runs when the check-off's events include journey_complete. Not changed: unticking a lesson after finishing leaves the stamp, as tryCompleteJourney does.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-010.mjs",
+    "note": "Fails if the lesson check-off stops stamping completed_at on journey_complete, or the stamp helper stops being idempotent."
+  },
+  "wave": "W7"
+}

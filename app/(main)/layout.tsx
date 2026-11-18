@@ -144,6 +144,18 @@ async function resolvePublicTwin(pathname: string | null): Promise<string | null
       const hit = circles.find((c) => c.slug === match.segment)
       return hit ? `/discover/circles/${hit.slug ?? hit.id}` : null
     }
+    if (match.lookup === 'journey') {
+      // JRN-004: the public twin exists only for a PUBLIC, non-rejected Journey (getPublicJourney is
+      // the twin page's own gate). Any other slug, an unlisted Journey shared by link above all, goes
+      // to sign-in and comes back to the member page, never into a /discover 404.
+      // Dynamic import: this branch runs only for a signed-out visitor, so the Journey module stays
+      // off the static graph of the shell every member route shares (DEPLOY-SAFETY fan-out).
+      const { getPublicJourney } = await import('@/lib/journey-plans')
+      const pub = await getPublicJourney(match.segment)
+      return pub
+        ? `/discover/journeys/${pub.plan.slug}`
+        : `/sign-in?next=${encodeURIComponent(`/journeys/${match.segment}`)}`
+    }
     if (match.lookup === 'channel') {
       // Member route is keyed by id, the twin by slug.
       const channels = await getTopicalChannels()

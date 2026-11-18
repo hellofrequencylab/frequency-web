@@ -11,7 +11,7 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan, completeLesson, uncompleteLesson } from '@/lib/journey-plans'
 import { loadJourneyEntryFacts } from '@/lib/journeys/entry-door'
 import { canEnterJourney } from '@/lib/journeys/entry-gate'
-import { getMemberRunForPlan, getSoloEnrollmentStart } from '@/lib/journeys/runs'
+import { getMemberRunForPlan, getSoloEnrollmentStart, stampEnrollmentComplete } from '@/lib/journeys/runs'
 import { isPhaseUnlocked } from '@/lib/journeys/schedule'
 import { getJourneyTree } from '@/lib/journeys/store'
 import type { JourneyTree } from '@/lib/journeys/tree'
@@ -74,6 +74,10 @@ export async function completeJourneyLessonAction(
 
   const events =
     before && after ? rewardEventsForTransition({ profileId: caller.id, planId, before, after }) : []
+
+  // JRN-010: the last lesson finishes the Journey for every Journey, ranked or not, so the
+  // enrolment is stamped here too (it frees the seat and stops the drip and prompt notices).
+  if (events.some((e) => e.kind === 'journey_complete')) await stampEnrollmentComplete(caller.id, planId)
 
   // SCAN-722: nobody who can edit this Journey (author, Space manager, operator) collects its
   // rewards. Editors set the phase count and every block's bonus_zaps, so paying them would let a
