@@ -28,6 +28,18 @@ const PROBES = {
     if (!/listShareablesFor\(profileId, createAdminClient\(\)\)/.test(action)) f.push('listShareables does not hand shareables a reader that can see journey_enrollments')
     return f
   },
+  // Every secret the draft links sign with is documented, so an operator can set it apart from the
+  // unsubscribe secret instead of discovering the shared fallback only after a rotation.
+  'HYG-246': () => {
+    const f = []
+    const io = read('lib/create-space/draft-io.ts')
+    const example = has('.env.example') ? readFileSync(new URL('.env.example', root), 'utf8') : ''
+    for (const name of io.match(/'[A-Z][A-Z0-9_]+_SECRET'/g) ?? []) {
+      const key = name.slice(1, -1)
+      if (!new RegExp(`^${key}=`, 'm').test(example)) f.push(`${key} is read by draft-io.ts but missing from .env.example`)
+    }
+    return f
+  },
 }
 
 const id = process.argv[2]
