@@ -25,6 +25,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { unlockedPhaseCount } from '@/lib/journeys/schedule'
 import { sendPushToProfile } from '@/lib/push'
 import { log, briefError } from '@/lib/log'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 
 // ── PURE: due-step selection (unit-tested, no IO) ────────────────────────────────────────────────
 
@@ -93,6 +94,19 @@ interface PlanRow {
   slug: string
   title: string
   drip_interval_days: number
+  visibility: string | null
+  author_id: string | null
+}
+
+/** Which page of the active enrolments this pass scans (JRN-011). The pass used to read the same
+ *  `limit` oldest rows every hour, and abandoned or long enrolments never leave that head, so past
+ *  `limit` active enrolments every newer member was never reached. The page rotates with the hour:
+ *  every enrolment is scanned at least once every ceil(total / limit) hours, which is well inside a
+ *  phase interval measured in days. PURE; tested. */
+export function dripScanPage(total: number, limit: number, now: Date): number {
+  if (total <= limit || limit <= 0) return 0
+  const pages = Math.ceil(total / limit)
+  return Math.floor(now.getTime() / 3_600_000) % pages
 }
 
 interface PhaseRow {
@@ -122,13 +136,19 @@ export async function runDueJourneyDripSends(limit = 200): Promise<JourneyDripRu
   const empty: JourneyDripRunResult = { scanned: 0, due: 0, claimed: 0, sent: 0, skipped: 0 }
   const admin = createAdminClient()
 
-  // 1. Active enrollments (not yet completed), oldest first so long-running cohorts stay served.
+  // 1. Active enrollments (not yet completed), one rotating page of them per pass (JRN-011).
+  const { count: activeCount } = await admin
+    .from('journey_enrollments')
+    .select('id', { count: 'exact', head: true })
+    .is('completed_at', null)
+  const page = dripScanPage(activeCount ?? 0, limit, new Date())
   const { data: enrollData, error: enrollErr } = await admin
     .from('journey_enrollments')
     .select('id, profile_id, plan_id, run_id, started_at')
     .is('completed_at', null)
     .order('started_at', { ascending: true })
-    .limit(limit)
+    .order('id', { ascending: true })
+    .range(page * limit, page * limit + limit - 1)
   if (enrollErr || !enrollData || enrollData.length === 0) return empty
   const enrollments: EnrollmentRow[] = enrollData
 
@@ -136,7 +156,7 @@ export async function runDueJourneyDripSends(limit = 200): Promise<JourneyDripRu
   const planIds = [...new Set(enrollments.map((e) => e.plan_id))]
   const { data: planData } = await admin
     .from('journey_plans')
-    .select('id, slug, title, drip_interval_days')
+    .select('id, slug, title, drip_interval_days, visibility, author_id')
     .in('id', planIds)
   const plans = new Map<string, PlanRow>()
   for (const p of (planData ?? []) as PlanRow[]) plans.set(p.id, p)
@@ -159,10 +179,13 @@ export async function runDueJourneyDripSends(limit = 200): Promise<JourneyDripRu
   // 4. Cohort anchors: a Run enrollment drips from the Run's start, not the personal one.
   const runIds = [...new Set(enrollments.map((e) => e.run_id).filter((id): id is string => !!id))]
   const runStarts = new Map<string, string>()
+  // JRN-011: a cancelled or completed Run is over; its members get no more phase notices.
+  const endedRuns = new Set<string>()
   if (runIds.length > 0) {
-    const { data: runData } = await admin.from('journey_runs').select('id, started_at').in('id', runIds)
-    for (const r of (runData ?? []) as { id: string; started_at: string | null }[]) {
+    const { data: runData } = await admin.from('journey_runs').select('id, started_at, status').in('id', runIds)
+    for (const r of (runData ?? []) as { id: string; started_at: string | null; status: string | null }[]) {
       if (r.started_at) runStarts.set(r.id, r.started_at)
+      if (r.status === 'cancelled' || r.status === 'completed') endedRuns.add(r.id)
     }
   }
 
@@ -199,6 +222,10 @@ export async function runDueJourneyDripSends(limit = 200): Promise<JourneyDripRu
     try {
       const plan = plans.get(enrollment.plan_id)
       if (!plan) continue
+      // JRN-011: no notice for an ended Run, or for a Journey made private (its learn page is
+      // author-only, so the link would 404 for everyone else).
+      if (enrollment.run_id && endedRuns.has(enrollment.run_id)) continue
+      if (plan.visibility === 'private' && plan.author_id !== enrollment.profile_id) continue
       const phases = phasesByPlan.get(enrollment.plan_id) ?? []
       if (phases.length <= 1) continue
 
@@ -246,6 +273,14 @@ export async function runDueJourneyDripSends(limit = 200): Promise<JourneyDripRu
       const body = prevTitle
         ? `${prevTitle} is complete. ${phaseTitle} is now open in ${plan.title}; this week's practices take its place.`
         : `${phaseTitle} is now open in ${plan.title}. Pick up where you left off.`
+      // JRN-011: the member's in-app Practice setting is honoured (the push leg already checks its
+      // own preference). A member who turned it off gets the ledger row stamped and no notice.
+      const gate = await resolveSendGate(enrollment.profile_id, 'inapp', 'practice')
+      if (!gate.allowed) {
+        await dripSendsTable().update({ status: 'skipped' }).eq('id', winner.id)
+        skipped++
+        continue
+      }
       const { error: notifyErr } = await admin.from('notifications').insert({
         recipient_id: enrollment.profile_id,
         actor_id: null,
