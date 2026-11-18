@@ -22,6 +22,7 @@ import { isBlockedBetween } from '@/lib/blocking'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { RASTER_IMAGE_MESSAGE, verifyRasterUpload } from '@/lib/storage/raster-image'
 import { eventOpenForRsvp, MAX_PLUS_ONES } from '@/lib/events/rsvp-gate'
+import { notifyDirectMessage } from '@/lib/messages/dm-notify'
 
 // Post-event social loop (slice B-2): the event activity feed (event_posts), the
 // recap album (event_media), and cohosts (event_cohosts).
@@ -120,6 +121,7 @@ export async function messageHost(
     body: trimmed,
   })
   if (error) return fail('Could not send your message. Try again.')
+  await notifyDirectMessage(admin, { conversationId, senderId: profileId, recipientId: hostId, body: trimmed })
 
   revalidatePath('/messages')
   revalidatePath(`/messages/${conversationId}`)
