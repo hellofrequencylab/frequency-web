@@ -67,11 +67,25 @@ interface PlanLite {
  *  candidate set for the daily next-step prompt cron. Keeps the untyped enrollment read behind
  *  this lib (journey_enrollments isn't in the generated types yet). */
 export async function listEnrolledMemberIds(): Promise<string[]> {
-  const { data } = await db()
-    .from('journey_enrollments')
-    .select('profile_id')
-    .is('completed_at', null)
-  return [...new Set(((data ?? []) as { profile_id: string }[]).map((r) => r.profile_id))]
+  // JRN-012: PostgREST caps a read at max_rows (1000, supabase/config.toml) even for the service
+  // role, so one unranged read silently dropped every member past the first 1000 rows. Read in
+  // ordered pages until a short page, and throw on an error so the cron reports it instead of
+  // reading a failure as "nobody is enrolled".
+  const PAGE = 1000
+  const ids = new Set<string>()
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await db()
+      .from('journey_enrollments')
+      .select('profile_id')
+      .is('completed_at', null)
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1)
+    if (error) throw new Error(`listEnrolledMemberIds: ${error.message}`)
+    const rows = (data ?? []) as { profile_id: string }[]
+    for (const r of rows) ids.add(r.profile_id)
+    if (rows.length < PAGE) break
+  }
+  return [...ids]
 }
 
 /**

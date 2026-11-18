@@ -24,6 +24,13 @@ const state = vi.hoisted(() => ({
   /** profiles.home_timezone by member; absent = no timezone on file. */
   timezones: new Map<string, string | null>(),
   logged: { error: [] as { event: string; fields?: Record<string, unknown> }[] },
+  /** Members whose in-app Practice notices are off (JRN-012). */
+  inappOff: new Set<string>(),
+}))
+
+vi.mock('@/lib/comms/send-gate', () => ({
+  resolveSendGate: (id: string) =>
+    Promise.resolve(state.inappOff.has(id) ? { allowed: false, reason: 'pref_off' } : { allowed: true, reason: 'ok' }),
 }))
 
 vi.mock('@/lib/journeys/progress', () => ({
@@ -106,6 +113,7 @@ beforeEach(() => {
   state.pushed.length = 0
   state.timezones.clear()
   state.logged.error.length = 0
+  state.inappOff.clear()
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-09-05T13:00:00Z'))
 })
@@ -262,5 +270,16 @@ describe('GET /api/cron/journey-prompt, the prompt lands at the member\'s LOCAL 
     const dueHours = hours.filter((d) => morningFor(d, 'America/New_York').due).map((d) => d.getUTCHours())
     expect(dueHours).toEqual([LOCAL_MORNING_HOUR + 4]) // EDT is UTC-4 in September
     expect(hours.filter((d) => morningFor(d, undefined).due).map((d) => d.getUTCHours())).toEqual([LEGACY_UTC_HOUR])
+  })
+})
+
+describe('GET /api/cron/journey-prompt, the in-app Practice setting (JRN-012)', () => {
+  it('sends no in-app prompt to a member who turned in-app Practice notices off', async () => {
+    state.members = ['p1', 'p2']
+    state.inappOff.add('p2')
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    expect(state.inserted.map((r) => r.recipient_id)).toEqual(['p1'])
+    expect(await res.json()).toMatchObject({ ok: true, inapp: 1, failed: 0 })
   })
 })

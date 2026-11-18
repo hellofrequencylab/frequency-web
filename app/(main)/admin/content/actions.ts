@@ -17,6 +17,7 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logAdminAction } from '@/lib/admin/audit'
 import { setPlanStatus, setPlanOfficial, deletePlan, type PlanStatus } from '@/lib/journey-plans'
+import { journeyDeleteBlocker } from '@/lib/journeys/paid'
 import {
   setPracticeFlags,
   WEIGHT_CLASSES,
@@ -115,6 +116,10 @@ export async function deleteJourneyPlanAction(id: string): Promise<ActionResult>
     return fail('You need curation access for this.')
   }
   try {
+    // JRN-009: the curator delete meets the same rule as the author's: never a Journey on sale or
+    // one people paid for.
+    const blocked = await journeyDeleteBlocker(id)
+    if (blocked) return fail(blocked)
     const r = await deletePlan(id)
     if (!r.ok) return fail(r.error)
   } catch (e) {
