@@ -1,0 +1,20 @@
+{
+  "id": "PERF-008",
+  "title": "Signed-in pages answer faster: no proxy auth round trip, and the shell and Events read in parallel",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "proxy.ts",
+    "ref": "Production timing 2026-11-18 (signed-in Chrome, fetch of the document): /feed, /settings, /notifications, /circles, /people and /events took 0.6 to 1.5 s to the first byte signed in, against about 0.2 s signed out. Supabase edge_logs for one /settings load: GET /auth/v1/user from the proxy (~130 ms), a second from the page (~125 ms), then the shell's reads in four serial waves."
+  },
+  "detail": "Owner ruling 2026-11-18 (decision card, option 'Only the first check'): the proxy verifies the session token locally with supabase.auth.getClaims() (the project signs with ES256, so verification uses the cached JWKS and makes no network call; an expiring session still refreshes), and every page keeps its strict getUser() in lib/auth.ts getCachedUser. The proxy only asks whether someone is signed in. proxy-csp, proxy-consent and proxy-markers tests mock getClaims instead of getUser, per that ruling. Shell critical path: the offer bar's 'is it due' read (two round trips for a Space owner with no offer clock, the launch audience) now starts beside the shell's parallel wave (prefetchOfferDue) instead of after it, and My Frequency reads host seats and owned Circles together (lib/nav/my-frequency.ts), one round trip off the wave's longest chain. /events: the event queries wait only for the listing horizon and the demo pair, not the header content and its asset read; the public read is issued before the viewer is awaited; getConnectReadyMap runs the payouts gate beside the payee read. The Around you ranking (lib/events/matching.ts scoreEventsForViewer) reads in three waves instead of six serial reads. No behavior change: same queries, same results, fail-safes kept. No migration.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-008.mjs",
+    "note": "Fails on main: the proxy calls getUser, the offer read runs after the wave, My Frequency and the Around you ranking read in series, and the /events queries wait on the header content. Passes once the proxy uses getClaims (the page keeps getUser) and those reads run in parallel."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

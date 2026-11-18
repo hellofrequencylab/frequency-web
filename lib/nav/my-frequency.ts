@@ -120,16 +120,21 @@ async function noticeCounts(profileId: string): Promise<Map<string, number>> {
 /** The Circles this member RUNS (host seat or circles.host_id), not ones they merely joined. Owner ruling 2026-11-13. */
 async function myCircles(profileId: string): Promise<CircleNameRow[]> {
   const db = await createClient()
-  const { data: memberships, error } = await db
-    .from('memberships')
-    .select('circle_id, volunteer_role')
-    .eq('profile_id', profileId)
-    .eq('status', 'active')
-    // Read past the cap: seeded Circles are filtered out after this, so they must not eat the 8 slots.
-    .limit(CIRCLE_READ_LIMIT)
+  // The host seats and the owned Circles are read TOGETHER (PERF-008): neither depends on the other,
+  // and this menu sits on the member shell's critical path, so the serial pair was a full round trip
+  // in front of every signed-in first paint.
+  const [{ data: memberships, error }, { data: owned }] = await Promise.all([
+    db
+      .from('memberships')
+      .select('circle_id, volunteer_role')
+      .eq('profile_id', profileId)
+      .eq('status', 'active')
+      // Read past the cap: seeded Circles are filtered out after this, so they must not eat the 8 slots.
+      .limit(CIRCLE_READ_LIMIT),
+    db.from('circles').select('id').eq('host_id', profileId).limit(CIRCLE_READ_LIMIT),
+  ])
   if (error || !memberships?.length) return []
   const hostIds = (memberships as CircleRow[]).filter((m) => m.volunteer_role === 'host').map((m) => m.circle_id).filter(Boolean)
-  const { data: owned } = await db.from('circles').select('id').eq('host_id', profileId).limit(CIRCLE_READ_LIMIT)
   const ids = [...new Set([...hostIds, ...((owned ?? []) as { id: string }[]).map((c) => c.id)])]
   if (ids.length === 0) return []
   const { data: circles } = await db.from('circles').select('id, name, slug, space_id, image_url').in('id', ids)

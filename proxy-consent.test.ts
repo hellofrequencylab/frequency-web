@@ -17,10 +17,10 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 // Everything mocked below is a NETWORK edge (the Supabase session read, the platform flag), never a
 // rule under test. The consent decision, the first-touch decision and their order are the real code.
 
-const getUser = vi.fn(async () => ({ data: { user: null } }))
+const getClaims = vi.fn(async () => ({ data: null as { claims: { sub: string } } | null }))
 
 vi.mock('@supabase/ssr', () => ({
-  createServerClient: () => ({ auth: { getUser } }),
+  createServerClient: () => ({ auth: { getClaims } }),
 }))
 
 vi.mock('@/lib/platform-flags', () => ({

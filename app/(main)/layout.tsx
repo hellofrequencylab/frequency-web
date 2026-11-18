@@ -10,7 +10,7 @@ import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import { announcementBannerState, countdownLabel } from '@/components/layout/announcement-banner'
 import { AnnouncementBar } from '@/components/layout/announcement-bar'
 import { OfferBar } from '@/components/offers/offer-bar'
-import { offerBarState } from '@/lib/offers/operator-offer-server'
+import { offerBarState, prefetchOfferDue } from '@/lib/offers/operator-offer-server'
 import { offerBarDisplayState } from '@/lib/offers/offer-bar-policy'
 import { matchPublicTwin } from '@/lib/nav/public-twin'
 import { getPublicCircles, getTopicalChannels } from '@/lib/discover'
@@ -322,6 +322,10 @@ export default async function MainLayout({
   // second query.
   const fqStats = loadGameStats(profile.id).catch((): DockData | null => null)
 
+  // The offer bar's "is it due" read, started now so it overlaps the wave below instead of running
+  // after it (PERF-008). Null when the offer clock already answers; never rejects.
+  const offerDueP = prefetchOfferDue(profile.id, profile.meta)
+
   // Request headers (host + current route) — read once and reused below.
   const reqHeaders = await headers()
   const reqPath = reqHeaders.get('x-pathname')
@@ -418,7 +422,7 @@ export default async function MainLayout({
 
   // The timed Beta offer (try-first funnel): a live countdown strip, or a one-time nudge to the offer
   // page once a new Space owner has something built. Null for everyone else, at no query.
-  const offerState = previewingDown ? null : await offerBarState(profile.id, profile.meta, operatesSpaces)
+  const offerState = previewingDown ? null : await offerBarState(profile.id, profile.meta, operatesSpaces, offerDueP)
   const offerDisplayState = offerBarDisplayState(offerState)
   const offerBanner = offerDisplayState ? (
     <OfferBar href="/offer" endsAtMs={offerDisplayState.endsAtMs} pending={offerDisplayState.pending} />
