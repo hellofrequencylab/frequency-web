@@ -11,7 +11,7 @@ import { calendarSealKey } from './seal'
 
 export type CalendarProvider = 'google'
 
-export const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events'
+const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events'
 
 export interface CalendarTokens {
   accessToken: string
@@ -34,7 +34,7 @@ export function calendarSyncReady(provider: CalendarProvider): boolean {
   return envFlag('CALENDAR_SYNC_ENABLED') && provider === 'google' && !!googleClient() && !!calendarSealKey()
 }
 
-export function calendarRedirectUri(provider: CalendarProvider): string {
+function calendarRedirectUri(provider: CalendarProvider): string {
   return `${appOrigin()}/api/integrations/calendar/${provider}/callback`
 }
 

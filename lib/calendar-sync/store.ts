@@ -15,7 +15,7 @@ import type { BusyBlock, MirroredBlock, SyncConflict } from './plan'
 // Both tables are reached through a narrow untyped seam until lib/database.types.ts regenerates
 // (ADR-246). Every function fails safe: null, false or [] on any error.
 
-export interface SyncConnection {
+interface SyncConnection {
   id: string
   spaceId: string
   provider: CalendarProvider

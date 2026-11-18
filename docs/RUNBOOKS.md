@@ -875,7 +875,7 @@ Then set `CALENDAR_HOLDS_ENABLED` to `1`, `true` or `on` and redeploy.
 
 **Gate before turning it on.** All **owner** unless tagged.
 
-1. Migration `20270346100000_space_calendar_sync_connections.sql` is applied in production through the migration readiness process. **agent** can check with a read-only select on `space_calendar_sync_connections`.
+1. Migration `20270346100000_calendar_sync_connections.sql` is applied in production through the migration readiness process. **agent** can check with a read-only select on `space_calendar_sync_connections`.
 2. In Google Cloud, on the OAuth client behind `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`: the Google Calendar API is enabled, the consent screen lists the `https://www.googleapis.com/auth/calendar.events` scope (a sensitive scope, so Google verification applies before members outside the test-user list can connect), and the redirect URI `https://frequencylocal.com/api/integrations/calendar/google/callback` is registered (plus the same path on any other origin you run, such as a preview or `http://localhost:3000`).
 3. `CALENDAR_SYNC_ENCRYPTION_KEY` is set to `openssl rand -base64 32` output. Changing it later strands every stored connection; each Space then connects again.
 4. One test Space connects a test Google account, Sync now shows its events in Google Calendar, a busy event in that Google calendar shows as Unavailable, and an edit made in Google Calendar to a pushed event shows in the conflicts list instead of being overwritten. **agent** with the owner's go.

@@ -27,7 +27,7 @@ import {
 const EVENT_LIMIT = 200
 const MAX_WRITES = 60
 
-export interface SyncOutcome {
+interface SyncOutcome {
   ok: boolean
   pushed: number
   busy: number
