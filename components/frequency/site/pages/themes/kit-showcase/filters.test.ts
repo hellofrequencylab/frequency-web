@@ -11,7 +11,7 @@ describe('kitFacts', () => {
     expect(kitFacts(card({ modes: 1 }), 'new-world').registers).toBe('both')
   })
   it('falls back to the card where the manifest says nothing', () => {
-    expect(kitFacts(card({ status: { website: 1, spotlight: 0, email: 0, space: 1 } }), 'cyberwitch').ready).toEqual({ website: true, spotlight: false, email: false, space: true })
+    expect(kitFacts(card({ status: { website: 1, spotlight: 0, email: 0, space: 1 } }), 'temple').ready).toEqual({ website: true, spotlight: false, email: false, space: true })
     expect(kitFacts(card({ reg: 'light', modes: 1 }), 'bold').registers).toBe('day')
     expect(kitFacts(card({ reg: 'dark', modes: 2 }), null).registers).toBe('both')
     expect(kitFacts(card({ reg: 'dark', modes: 1 }), 'nope').registers).toBe('night')

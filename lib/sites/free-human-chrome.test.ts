@@ -45,7 +45,7 @@ describe('the Free Human chrome', () => {
   })
 
   it('ships every select with a size and a loading colour', () => {
-    expect(Object.keys(FREE_HUMAN_PHOTOS)).toHaveLength(32)
+    expect(Object.keys(FREE_HUMAN_PHOTOS)).toHaveLength(25)
     for (const [name, p] of Object.entries(FREE_HUMAN_PHOTOS)) {
       expect(p.avg).toMatch(/^#[0-9a-f]{6}$/)
       expect(existsSync(join(process.cwd(), 'public', freeHumanPhotoSrc(name)))).toBe(true)

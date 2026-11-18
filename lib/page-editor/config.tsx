@@ -237,7 +237,7 @@ export const config: Config = {
     },
     // The Free Human Theme Kit's section family (the Free Human Movement design system): website pages only.
     freeHuman: {
-      title: 'Free Human sections',
+      title: 'Honey sections',
       components: [...Object.keys(freeHumanBlocks), ...Object.keys(freeHumanCalendarBlocks), ...Object.keys(freeHumanWheelBlocks)],
     },
     // The Services Theme Kit's section family (the Services design system): website pages only.

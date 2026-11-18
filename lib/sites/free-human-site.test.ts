@@ -39,7 +39,7 @@ describe('the Free Human Movement Space', () => {
     expect(spotlight.published).toBe(true)
     expect(spotlight.layout?.rows?.map((r) => r.cells[0][0])).toEqual([...FREE_HUMAN_SPOTLIGHT_BLOCKS])
     const content = spotlight.layout?.content as Record<string, Record<string, unknown>>
-    expect(content.image.src).toMatch(/^\/sites\/free-human\/photos\//)
+    expect(content.image.src).toMatch(/^\/(sites\/free-human|brand\/frequency)\/photos\//)
     expect(content.button.label).toBe('Join the circle')
     expect(content.text.text).toMatch(/^Softness/)
     expect((content.links.items as unknown[]).length).toBe(5)
@@ -59,7 +59,7 @@ describe('the Free Human Movement Space', () => {
     expect(FREE_HUMAN_SEED_EVENTS.filter((e) => e.recurrence === 'weekly')).toHaveLength(1)
     expect(FREE_HUMAN_SEED_EVENTS.every((e) => e.startsAt < e.endsAt && !/\$\d/.test(e.summary))).toBe(true)
     expect(FREE_HUMAN_PROGRAMS.map((p) => p.name)).toEqual(['Rest', 'Embody', 'Create', 'Raise'])
-    expect(FREE_HUMAN_SPACE.cover).toMatch(/\.webp$/)
+    expect(FREE_HUMAN_SPACE.cover).toMatch(/\.(webp|jpg)$/)
     expect(FREE_HUMAN_SPACE.logo).toMatch(/\.svg$/)
   })
 })

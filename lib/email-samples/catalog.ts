@@ -290,7 +290,7 @@ const MINDLESS_BRAND: MindlessKitEmailBrand = {
   accent: { fill: MINDLESS_SURFACE.accent.accent, text: MINDLESS_SURFACE.accent.text }, postalLine: PLATFORM_POSTAL_LINE,
   siteUrl: 'https://mindless.one', siteLabel: 'mindless.one', unsubscribeUrl: `${SITE}/unsubscribe/s`,
 }
-const FREE_HUMAN_COVER = `${SITE}/sites/free-human/email/place-sea-sunset.jpg`
+const FREE_HUMAN_COVER = `${SITE}/brand/frequency/photos/boc-beach-sound-bath.jpg`
 const FREE_HUMAN_DATES = [
   { lead: '20', title: 'New moon circle', sub: '7:00 PM · The long room' },
   { lead: '29', title: 'Honey and bread supper', sub: '6:00 PM · The garden table' },

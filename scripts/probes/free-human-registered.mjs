@@ -11,7 +11,8 @@ const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '')
 
 if (!/id: 'free-human', editor: 'FreeHuman', site: 'free-human'/.test(read('lib/theme/mega-theme.ts'))) fail('MEGA_THEMES has no free-human entry')
 if (!/'FreeHuman'\]\)/.test(read('lib/sites/editor/state.ts').split('WEBSITE_THEMES_LIVE')[1] ?? '')) fail('FreeHuman is not in WEBSITE_THEMES_LIVE')
-if (!/RETIRED_FROM_PICKERS[^\n]*'free-human'/.test(read('lib/theme/site-style.ts'))) fail('free-human is not held out of the site theme picker')
+// Daniel 2026-11-18: "Make sure Free Human Movement is in the theme library" (offered as Honey, LIVE-2358).
+if (/RETIRED_FROM_PICKERS[^\n]*'free-human'/.test(read('lib/theme/site-style.ts'))) fail('free-human is held out of the site theme picker')
 if (!/id !== 'free-human'/.test(read('lib/spaces/create-wizard.ts'))) fail('the wizard look step offers free-human')
 if (!/'free-human': FREE_HUMAN_SURFACE/.test(read('lib/theme/mega-surfaces.ts'))) fail('free-human has no email and Spotlight surface')
 if (!/id: 'free-human'/.test(read('lib/spotlight/theme.ts'))) fail('free-human has no Spotlight preset')
