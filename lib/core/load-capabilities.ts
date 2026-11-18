@@ -422,13 +422,34 @@ export async function getJourneyCapabilities(journeyId: string): Promise<Set<Cap
   const admin = createAdminClient()
   const { data: j } = await admin
     .from('journey_plans')
-    .select('author_id')
+    .select('author_id, space_id')
     .eq('id', journeyId)
     .maybeSingle()
+  const row = j as { author_id: string | null; space_id: string | null } | null
+
+  // JRN-006: "if you run the Space, you run its Journeys", the same team-authoring rule as
+  // canEditJourney (lib/journeys/authoring.ts). Without it a Space editor could edit a teammate's
+  // Journey through the actions but got no admin rail (Settings, Builder, Export, Sell). The root
+  // Space is everyone's personal home, so managing it grants nothing here (canEditJourney agrees).
+  let viewerManagesScope = false
+  if (row?.space_id && viewer.profileId) {
+    const { data: space } = await admin
+      .from('spaces')
+      .select('id, owner_profile_id, type')
+      .eq('id', row.space_id)
+      .maybeSingle()
+    const sp = space as { id: string; owner_profile_id: string | null; type: string | null } | null
+    if (sp && sp.type !== 'root') {
+      const spaceCaps = await getSpaceCapabilities({ id: sp.id, ownerProfileId: sp.owner_profile_id }, viewer.profileId)
+      viewerManagesScope = spaceCaps.canEditProfile
+    }
+  }
+
   return resolveCapabilities(viewer, {
     kind: 'journey',
     journeyId,
-    authorId: (j as { author_id: string | null } | null)?.author_id ?? null,
+    authorId: row?.author_id ?? null,
+    viewerManagesScope,
   })
 }
 
