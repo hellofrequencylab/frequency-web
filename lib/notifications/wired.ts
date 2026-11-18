@@ -34,9 +34,9 @@ export const WIRED_PREFERENCE_CHANNELS: Record<NotificationCategory, readonly No
   // The `event.notice` registry row (share, placement, host transfer, co-host invites) gates
   // in-app on inapp_events; email and push are read by the dispatch and reminder paths.
   events:     ['email', 'push', 'inapp'],
-  // The `post.mention` registry row (feed @mentions) gates in-app on inapp_mentions. No mention
-  // email or push emitter exists, so those stay unwired.
-  mentions:   ['inapp'],
+  // The `post.mention` registry row (feed @mentions) gates in-app on inapp_mentions, and the
+  // `message.direct` row (EMAIL-055, a direct message) gates in-app, push and email.
+  mentions:   ['email', 'push', 'inapp'],
   lifecycle:  ['email', 'push'],
   // The Guestbook sign notice (ADR-1279) reads inapp_comments directly and push_comments through
   // the registry row `guestbook.sign`; no reply EMAIL emitter exists yet.

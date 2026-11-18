@@ -17,6 +17,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { formatPriceCents } from '@/lib/commerce/types'
 import { getMyProfileId } from '@/lib/auth'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
+import { notifyDirectMessage } from '@/lib/messages/dm-notify'
 
 export type OfferTargetKind = 'market_listing' | 'listing' | 'product'
 
@@ -102,6 +103,7 @@ export async function submitListingContact(input: {
       body,
     })
     if (msgError) return { error: 'Could not send your message. Please try again.' }
+    await notifyDirectMessage(admin, { conversationId, senderId: viewerId, recipientId: sellerId, body })
 
     // Mark the sender read up to now, mirroring sendMessage (keeps their own outgoing note from unreading them).
     await admin
