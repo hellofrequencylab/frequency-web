@@ -38,6 +38,9 @@ import {
 } from '@/lib/hunts/draft'
 import type { TrailEditorState } from '@/lib/hunts/store'
 import { publishTrailAction, routeTestedAction, saveTrailAction } from '@/app/(main)/hunts/actions'
+import { saveChallengesAction } from '@/app/(main)/hunts/challenge-actions'
+import { remapChallenges } from '@/lib/hunts/challenges'
+import { TrailChallenges, type EditableChallenge } from './trail-challenges'
 import { EDITOR_STEPS, TRAIL_STEPS, stepNumber, type EditorStep } from './trail-steps'
 
 // The stop fields, from the manifest's repeat. The kernel keeps a repeat field's `section` on the
@@ -89,6 +92,9 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
   const [permission, setPermission] = useState(initial.draft.permissionConfirmed)
   const [publishing, setPublishing] = useState(false)
   const [justPublished, setJustPublished] = useState<'unlisted' | 'public' | null>(null)
+  const [challenges, setChallenges] = useState<EditableChallenge[]>(initial.challenges)
+  const [challengesDirty, setChallengesDirty] = useState(false)
+  const [savingChallenges, setSavingChallenges] = useState(false)
 
   // ── Autosave, revision-checked ───────────────────────────────────────────────────────────
   // The latest draft and revision live in refs the effects keep current, so a save that fires from
@@ -183,15 +189,56 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
     })
     setPasted('')
   }
-  const removeStop = (i: number) => edit((d) => ({ ...d, stops: d.stops.filter((_, j) => j !== i) }))
-  const moveStop = (i: number, dir: -1 | 1) =>
+  // A challenge names its stop by position, so moving or removing a stop moves its challenge with it.
+  const reorderChallenges = (order: number[]) => {
+    if (challenges.length === 0) return
+    setChallenges((cs) => remapChallenges(cs, order))
+    setChallengesDirty(true)
+  }
+  const removeStop = (i: number) => {
+    reorderChallenges(draft.stops.map((_, j) => j).filter((j) => j !== i))
+    edit((d) => ({ ...d, stops: d.stops.filter((_, j) => j !== i) }))
+  }
+  const moveStop = (i: number, dir: -1 | 1) => {
+    const j = i + dir
+    if (j < 0 || j >= draft.stops.length) return
+    const order = draft.stops.map((_, k) => k)
+    ;[order[i], order[j]] = [order[j], order[i]]
+    reorderChallenges(order)
     edit((d) => {
-      const j = i + dir
-      if (j < 0 || j >= d.stops.length) return d
       const stops = [...d.stops]
       ;[stops[i], stops[j]] = [stops[j], stops[i]]
       return { ...d, stops }
     })
+  }
+
+  // ── Challenges (FH-042S) ─────────────────────────────────────────────────────────────────
+  // Their own list and their own save: a typed answer goes to the server once and comes back only as
+  // "an answer is set". A save moves the revision like any edit, so the route test runs again.
+  const changeChallenges = (next: EditableChallenge[]) => {
+    setChallenges(next)
+    setChallengesDirty(true)
+  }
+  const saveChallenges = async () => {
+    setSavingChallenges(true)
+    const res = await saveChallengesAction({ huntId: initial.huntId, baseRevision: revisionRef.current, challenges })
+    setSavingChallenges(false)
+    if ('error' in res) {
+      setError(res.error)
+      return
+    }
+    if ('conflict' in res.data) {
+      frozen.current = true
+      setConflict(res.data.currentRevision)
+      return
+    }
+    revisionRef.current = res.data.revision
+    setRevision(res.data.revision)
+    setChallenges(res.data.challenges)
+    setChallengesDirty(false)
+    setPublished(false)
+    setError(null)
+  }
 
   // ── Pass benefits (FH-036S) ──────────────────────────────────────────────────────────────
   // The short code follows the name until the resident types their own, so nobody has to invent one.
@@ -210,7 +257,7 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
 
   // ── Preview (in memory, writes nothing) ──────────────────────────────────────────────────
   const [credited, setCredited] = useState<string[]>([])
-  const evaluation = useMemo(() => previewTrail(draft, credited), [draft, credited])
+  const evaluation = useMemo(() => previewTrail(draft, credited, new Date(), challenges), [draft, credited, challenges])
   const testedHere = draft.routeTestedAtRevision === revision
   const recordedFor = useRef<number | null>(null)
   useEffect(() => {
@@ -232,8 +279,8 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
 
   // ── Publish ──────────────────────────────────────────────────────────────────────────────
   const checklist = useMemo(
-    () => publishChecklist({ ...draft, permissionConfirmed: permission }, revision, { venue: initial.hasVenue }),
-    [draft, permission, revision, initial.hasVenue],
+    () => publishChecklist({ ...draft, permissionConfirmed: permission }, revision, { venue: initial.hasVenue, challenges }),
+    [draft, permission, revision, initial.hasVenue, challenges],
   )
 
   const publish = async () => {
@@ -302,7 +349,7 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
         <Button variant="secondary" size="lg" className="flex-1" onClick={back} disabled={publishing}>
           Back
         </Button>
-        <Button size="lg" className="flex-1" onClick={publish} disabled={!checklist.ok || published || conflict !== null || !settled} loading={publishing}>
+        <Button size="lg" className="flex-1" onClick={publish} disabled={!checklist.ok || published || conflict !== null || !settled || challengesDirty} loading={publishing}>
           {published ? 'Published' : 'Publish'}
         </Button>
       </div>
@@ -424,10 +471,19 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
             {draft.stops.map((s, i) => (
               <li key={i}>
                 {i + 1}. {s.place.trim() || `Stop ${i + 1}`}
-                {i < draft.stops.length - 1 ? ' opens the next' : ' finishes the trail'}
+                {challenges.length > 0 ? '' : i < draft.stops.length - 1 ? ' opens the next' : ' finishes the trail'}
               </li>
             ))}
           </ol>
+          <TrailChallenges
+            stops={draft.stops}
+            challenges={challenges}
+            onChange={changeChallenges}
+            onSave={() => void saveChallenges()}
+            dirty={challengesDirty}
+            saving={savingChallenges}
+            disabled={conflict !== null || !settled}
+          />
         </div>
       )}
 
@@ -455,7 +511,8 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
                     </div>
                   </>
                 )}
-                {state === 'locked' && <p className="mt-1 text-body-sm text-muted">Opens after stop {i}.</p>}
+                {state === 'locked' && <p className="mt-1 text-body-sm text-muted">{challenges.length > 0 ? 'Opens after an earlier stop.' : `Opens after stop ${i}.`}</p>}
+                {state === 'closed' && <p className="mt-1 text-body-sm text-muted">Closed. A player took the other way.</p>}
               </div>
             )
           })}

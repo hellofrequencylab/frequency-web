@@ -6,6 +6,8 @@
 // eligibility and calls hunt_claim_apply (lib/hunts/apply-claim.ts). It never takes a profile id,
 // run id or mission key from the request: the placement binding picks the mission.
 // A visit kept for staff review (FH-020V) answers `held` with its own words; nothing is credited.
+// A Mystery stop (FH-042S) takes the player's answer from the same form. The server judges it
+// (lib/hunts/claim-store.ts, lib/hunts/mystery.ts); only the verdict comes back, worded here.
 // Dark until HUNTS_CLAIMS_ENABLED is on.
 
 import { createHash } from 'node:crypto'
@@ -16,12 +18,38 @@ import { claimAsPlayer, loadScanPlacement, openClaim } from '@/lib/hunts/claim-s
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { HELD_VISIT_MESSAGE } from '@/lib/hunts/player'
 
-export type ClaimStopState = { status: 'idle' | 'credited' | 'already_credited' | 'held' | 'error'; message: string }
+export type ClaimStopState = {
+  status: 'idle' | 'credited' | 'already_credited' | 'held' | 'error'
+  message: string
+  /** The stop asks a question: the form shows the answer field and keeps the code. */
+  askAnswer?: boolean
+}
 
 const CODE = /^[a-z0-9-]{6,80}$/
 const SLUG = /^[a-z0-9-]{1,120}$/
 const UPDATED = 'This Trail changed since you started. Open the Trail again to carry on.'
 const error = (message: string): ClaimStopState => ({ status: 'error', message })
+const MAX_ANSWER = 120
+const tries = (n: number) => `${n} ${n === 1 ? 'try' : 'tries'}`
+const withHint = (line: string, hint?: string) => (hint ? `${line} Hint: ${hint}` : line)
+
+/** The words for a Mystery verdict or a closed stop. Never says what the answer was. */
+function refusalMessage(outcome: { reason: string; attemptsLeft?: number; hint?: string }): ClaimStopState {
+  switch (outcome.reason) {
+    case 'answer_required':
+      return { ...error('This stop asks a question. Type your answer and confirm again.'), askAnswer: true }
+    case 'answer_wrong':
+      return { ...error(withHint(`Not quite. You have ${tries(outcome.attemptsLeft ?? 0)} left.`, outcome.hint)), askAnswer: true }
+    case 'answer_locked':
+      return error(withHint('That was the last try for this question. The stop that stands in for it still counts, so head there next.', outcome.hint))
+    case 'mission_not_eligible':
+      return error('This stop is not open for you yet, or it is on a path you did not take.')
+    case 'version_superseded':
+      return error(UPDATED)
+    default:
+      return error('This stop could not be confirmed.')
+  }
+}
 
 export async function claimStopAction(_previous: ClaimStopState, formData: FormData): Promise<ClaimStopState> {
   if (!huntSwitchOn('claims')) return error('Stops cannot be confirmed yet.')
@@ -30,6 +58,8 @@ export async function claimStopAction(_previous: ClaimStopState, formData: FormD
   if (typeof slug !== 'string' || !SLUG.test(slug) || typeof rawCode !== 'string') return error('Enter the code from the stop.')
   const code = rawCode.trim().toLowerCase()
   if (!CODE.test(code)) return error('That code does not look right. Check it and try again.')
+  const rawAnswer = formData.get('answer')
+  const answer = typeof rawAnswer === 'string' && rawAnswer.trim() ? rawAnswer.trim().slice(0, MAX_ANSWER) : undefined
 
   const caller = await getCallerProfile()
   if (!caller) return error('Sign in to confirm a stop.')
@@ -44,14 +74,14 @@ export async function claimStopAction(_previous: ClaimStopState, formData: FormD
 
   // One key per player, run and placement: a retry or a second device replays instead of double crediting.
   const idempotencyKey = createHash('sha256').update(`play:${caller.id}:${opened.runId}:${placement.id}`).digest('hex')
-  const outcome = await claimAsPlayer(caller.id, { placementId: placement.id, token: opened.token, idempotencyKey, nowEpoch })
+  const outcome = await claimAsPlayer(caller.id, { placementId: placement.id, token: opened.token, idempotencyKey, nowEpoch, ...(answer ? { answer } : {}) })
   // FH-025: the outcome class only. The code, the placement and the stop never reach the event.
   deferHuntEvent({
     event: 'hunt.stop_claim',
     actorProfileId: caller.id,
     props: { hunt_id: placement.huntId, medium: 'typed', assurance: 'signed_node', reason_class: reasonClass(outcome.ok ? outcome.result : outcome.reason), replayed: outcome.ok && outcome.replayed },
   })
-  if (!outcome.ok) return error(outcome.reason === 'version_superseded' ? UPDATED : 'This stop could not be confirmed.')
+  if (!outcome.ok) return refusalMessage(outcome)
 
   if (outcome.result === 'credited' || outcome.result === 'already_credited') {
     revalidatePath(`/hunts/${slug}/play`)

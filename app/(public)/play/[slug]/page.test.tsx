@@ -176,6 +176,12 @@ describe('Public Trail landing', () => {
     expect(await render(undefined, 'team_not_locked')).toContain('Your captain needs to lock the roster before stops count.')
   })
 
+  it('sends a Mystery answer to the Trail page (FH-042S)', async () => {
+    mocks.getMyProfileId.mockResolvedValue('player-1')
+    expect(await render(undefined, 'answer')).toContain('This stop asks a question. Open the Trail to answer it with the code.')
+    expect(await render(undefined, 'answer_locked')).toContain('That was the last try for this question.')
+  })
+
   it('uses request-time rendering and only public Trail data in OG metadata', async () => {
     expect(dynamic).toBe('force-dynamic')
     expect(await generateMetadata({ params })).toEqual({
