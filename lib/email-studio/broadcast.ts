@@ -34,7 +34,7 @@ export function broadcastsEnabled(): boolean {
 /** The Resend placeholder for the per-recipient one-click opt-out Resend generates. */
 export const RESEND_UNSUBSCRIBE_PLACEHOLDER = '{{{RESEND_UNSUBSCRIBE_URL}}}'
 /** The contact property that carries each recipient's signed "Manage emails" link. */
-export const MANAGE_URL_PROPERTY = 'manage_url'
+const MANAGE_URL_PROPERTY = 'manage_url'
 export const MANAGE_URL_PLACEHOLDER = `{{{contact.${MANAGE_URL_PROPERTY}}}}`
 
 /** The contact fields Resend can personalize from, by our merge-tag token. */
@@ -137,7 +137,7 @@ export interface BroadcastSendInput {
   recipients: readonly BroadcastRecipient[]
 }
 
-export interface BroadcastSendResult {
+interface BroadcastSendResult {
   broadcastId: string
   /** True when an earlier run already created this campaign's broadcast and nothing new was sent. */
   existing: boolean
