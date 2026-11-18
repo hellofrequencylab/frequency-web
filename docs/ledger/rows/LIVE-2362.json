@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2362",
+  "title": "A Wildheart first-night block with no link shows no dead button",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/sites/wildheart-first-night.tsx",
+    "ref": "Unwired-things scan 2026-11-18 (project thread: Verify every feature path end to end); owner: full approval to make it all right"
+  },
+  "detail": "On Space websites using the Wildheart theme, the Your first night block showed its Save my place button even when the block had no link, as a button with no handler: a visitor picked an option, the button appeared, and clicking it did nothing. Now the button renders only when the block has a link.\n\nDONE 2026-11-18.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/feature-paths-2026-11-18.mjs LIVE-2362",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}
