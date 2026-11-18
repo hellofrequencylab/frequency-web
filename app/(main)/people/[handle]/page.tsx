@@ -577,12 +577,7 @@ export default async function ProfilePage({
             </div>
           ) : null
         }
-        cover={{
-          image: fqHero.coverImage ?? fqPlaceholderArt(profileId),
-          focus: fqHero.coverFocus,
-          overlay: readProfileOverlayStyle((profile as { meta?: unknown }).meta),
-          overlayColor: readProfileOverlayColor((profile as { meta?: unknown }).meta),
-        }}
+        cover={{ image: fqHero.coverImage ?? fqPlaceholderArt(profileId), focus: fqHero.coverFocus, overlay: readProfileOverlayStyle((profile as { meta?: unknown }).meta), overlayColor: readProfileOverlayColor((profile as { meta?: unknown }).meta) }}
         avatar={
           <CosmeticBorder value={equippedBorder}>
             <ProfilePhoto src={profile.avatar_url} initials={initials} name={profile.display_name} focus={readProfileAvatarFocusWithFallback(profile.meta, profile.avatar_url)} dimmed={isDemo} />
