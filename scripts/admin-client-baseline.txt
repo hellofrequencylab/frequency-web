@@ -631,7 +631,6 @@ app/(main)/settings/profile/spotlight-actions.ts
 app/(main)/spaces/[slug]/collaborations-actions.ts
 app/(main)/spaces/[slug]/crm/actions.ts
 app/(main)/spaces/[slug]/crm/conversations-actions.ts
-app/(main)/spaces/[slug]/edit-page/actions.ts
 app/(main)/spaces/[slug]/journeys/cohost-actions.ts
 app/(main)/spaces/[slug]/manage/identity-editor.tsx
 app/(main)/spaces/[slug]/manage/layout/actions.ts
@@ -645,7 +644,6 @@ app/(main)/spaces/[slug]/settings/billing/billing-body.tsx
 app/(main)/spaces/[slug]/settings/members/members-body.tsx
 app/(main)/spaces/[slug]/settings/memberships/section.tsx
 app/(main)/spaces/[slug]/settings/profile/actions.ts
-app/(main)/spaces/[slug]/settings/shop/shop-actions.ts
 app/(main)/spaces/[slug]/venue-actions.ts
 app/(main)/timezone-actions.ts
 app/(main)/upgrade/actions.ts
