@@ -579,7 +579,7 @@ export function block<P extends Props>(label: string, fields: Record<string, unk
 }
 
 export const midnightComponents: Record<string, ComponentConfig> = {
-  MidnightHero: block('Midnight hero', {
+  MidnightHero: block('Nocturne hero', {
     layout: { type: 'select', label: 'Layout', options: [{ label: 'Split with the arch', value: 'split' }, { label: 'Photo, text on the photo', value: 'center' }, { label: 'Photo, text on the left', value: 'left' }, { label: 'Banner', value: 'banner' }] },
     eyebrow: text('Small label'), title: area('Heading', `${VOICE_HINT} A new line starts a new row.`), lead: area('Intro'),
     primaryLabel: text('Main button'), primaryHref: text('Main button link', LINK_HINT), secondaryLabel: text('Second button'), secondaryHref: text('Second button link', LINK_HINT),
@@ -587,52 +587,52 @@ export const midnightComponents: Record<string, ComponentConfig> = {
     pos: text('Photo crop', 'Where the photo is held when it is cropped, like center 40%.'),
     tone: { type: 'select', label: 'Photo tone', options: [{ label: 'Black and white', value: 'mono' }, { label: 'Soft colour', value: 'soft' }] },
   }, { ...MIDNIGHT_HERO, pos: '', tone: 'mono' }, MidnightHeroBlock),
-  MidnightLive: block('Midnight liveness strip (live)', {
+  MidnightLive: block('Nocturne liveness strip (live)', {
     items: { type: 'array', label: 'Up to four facts', hint: 'A fact set to a live source shows the Space\'s own next event, Journeys or members when there are any.', arrayFields: {
       source: { type: 'select', label: 'Source', options: [{ label: 'Written by hand', value: 'custom' }, { label: 'Next event', value: 'nextEvent' }, { label: 'Journeys open', value: 'journeys' }, { label: 'Members', value: 'members' }] },
       sigil: { ...sigil, options: MIDNIGHT_GLYPH_NAMES.map((v) => ({ label: v, value: v })) }, label: text('Label'), value: text('Words'), href: text('Link', LINK_HINT),
     } },
   }, { ...MIDNIGHT_LIVE }, MidnightLiveBlock),
-  MidnightDoors: block('Midnight ways in', {
+  MidnightDoors: block('Nocturne ways in', {
     ...head,
     doors: { type: 'array', label: 'Doors', arrayFields: { sigil, title: text('Name'), body: area('Line under the name'), href: text('Link', LINK_HINT) } },
   }, { ...MIDNIGHT_DOORS }, MidnightDoorsBlock),
-  MidnightOfferings: block('Midnight offerings', {
+  MidnightOfferings: block('Nocturne offerings', {
     ...head, ...action,
     offerings: { type: 'array', label: 'Offerings', arrayFields: { sigil, name: text('Name'), minutes: text('Minutes'), blurb: area('Line under the name'), price: text('Price'), href: text('Link', LINK_HINT) } },
   }, { ...MIDNIGHT_OFFERINGS }, MidnightOfferingsBlock),
-  MidnightJourneys: block('Midnight Journeys (live)', {
+  MidnightJourneys: block('Nocturne Journeys (live)', {
     ...head, ...action, count: { type: 'number', label: 'How many to show', min: 1, max: 12 },
     cards: { type: 'array', label: 'Cards', hint: 'Used when the Space has no live Journeys of its own.', arrayFields: { image, eyebrow: text('Small label'), title: text('Name'), meta: text('Next run'), body: area('Outcome'), price: text('Price'), note: text('Small note'), href: text('Link', LINK_HINT) } },
   }, { ...MIDNIGHT_JOURNEYS }, MidnightJourneysBlock),
-  MidnightGatherings: block('Midnight gatherings (live)', {
+  MidnightGatherings: block('Nocturne gatherings (live)', {
     ...head, ...action, count: { type: 'number', label: 'How many to show', min: 1, max: 12 }, image, alt: text('Photo description', 'For screen readers.'),
     empty: area('Line when there are no dates yet'),
     rows: { type: 'array', label: 'Rows', hint: 'Used when the Space has no upcoming events of its own.', arrayFields: { month: text('Month'), day: text('Day'), title: text('Name'), meta: text('Time and place'), note: text('Price or seats'), href: text('Link', LINK_HINT) } },
   }, { ...MIDNIGHT_GATHERINGS }, MidnightGatheringsBlock),
-  MidnightMembership: block('Midnight membership', {
+  MidnightMembership: block('Nocturne membership', {
     ...head,
     tiers: { type: 'array', label: 'Tiers', hint: 'A tier with a badge is the lead one.', arrayFields: { sigil, name: text('Name'), blurb: area('Line under the name'), price: text('Price'), badge: text('Badge'), buttonLabel: text('Button'), href: text('Link', LINK_HINT) } },
   }, { ...MIDNIGHT_MEMBERSHIP }, MidnightMembershipBlock),
-  MidnightProof: block('Midnight quote band (live)', {
+  MidnightProof: block('Nocturne quote band (live)', {
     live: { type: 'radio', label: 'Use the Space\'s latest review', options: [{ label: 'Yes', value: true }, { label: 'No', value: false }] },
     quote: area('Quote'), who: text('Name'), role: text('Role'), rating: text('Rating line'),
   }, { ...MIDNIGHT_PROOF }, MidnightProofBlock),
-  MidnightShop: block('Midnight shop', {
+  MidnightShop: block('Nocturne shop', {
     ...head, ...action,
     products: { type: 'array', label: 'Products', arrayFields: { image, name: text('Name'), kind: text('Kind'), price: text('Price'), rating: text('Rating line'), href: text('Link', LINK_HINT) } },
   }, { ...MIDNIGHT_SHOP }, MidnightShopBlock),
-  MidnightLibrary: block('Midnight library', {
+  MidnightLibrary: block('Nocturne library', {
     ...head, ...action,
     resources: { type: 'array', label: 'Resources', arrayFields: { sigil, type: text('Kind'), title: text('Name'), meta: text('Small line'), price: text('Price'), href: text('Link', LINK_HINT) } },
   }, { ...MIDNIGHT_LIBRARY }, MidnightLibraryBlock),
-  MidnightLetter: block('Midnight letter sign-up', {
+  MidnightLetter: block('Nocturne letter sign-up', {
     title: text('Heading'), em: text('Heading, italic part'), lead: area('Line under the heading'), placeholder: text('Email field hint'), buttonLabel: text('Button'), successMessage: text('Thank-you line'),
   }, { ...MIDNIGHT_LETTER }, MidnightLetterBlock),
-  MidnightFAQ: block('Midnight questions (live)', {
+  MidnightFAQ: block('Nocturne questions (live)', {
     ...head, items: { type: 'array', label: 'Questions', hint: 'Used when the Space has no questions of its own.', arrayFields: { q: text('Question'), a: area('Answer') } },
   }, { ...MIDNIGHT_FAQ }, MidnightFAQBlock),
-  MidnightCTA: block('Midnight closing call', {
+  MidnightCTA: block('Nocturne closing call', {
     title: area('Heading', `${VOICE_HINT} A new line starts a new row.`), buttonLabel: text('Button'), buttonHref: text('Button link', LINK_HINT),
   }, { ...MIDNIGHT_CTA }, MidnightCTABlock),
 }
