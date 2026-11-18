@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Play, X } from 'lucide-react'
+import { IconButton } from '@/components/ui/icon-button'
 import { AirwavesPlayer } from '@/components/airwaves/player'
 
 // Airwaves P3 — the listener EPISODE LIST for a public Show page (ADR-608). A client island so one
@@ -53,15 +54,16 @@ export function ShowEpisodes({ episodes }: { episodes: ShowEpisodeItem[] }) {
             className="scroll-mt-24 rounded-card border border-border bg-surface p-5 lift-1"
           >
             <div className="flex items-start gap-4">
-              <button
-                type="button"
+              <IconButton
+                label={active ? `Close ${ep.title}` : `Play ${ep.title}`}
+                variant="filled"
+                size="lg"
                 onClick={() => setActiveId(active ? null : ep.id)}
                 aria-pressed={active}
-                aria-label={active ? `Close ${ep.title}` : `Play ${ep.title}`}
-                className="press mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-primary text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                className="mt-0.5 shrink-0 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               >
                 {active ? <X className="h-5 w-5" aria-hidden /> : <Play className="h-5 w-5" aria-hidden />}
-              </button>
+              </IconButton>
 
               <div className="min-w-0 flex-1">
                 <h3 className="text-body font-bold leading-tight text-text">{ep.title}</h3>

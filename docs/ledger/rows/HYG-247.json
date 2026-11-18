@@ -1,0 +1,20 @@
+{
+  "id": "HYG-247",
+  "title": "No server action ships without a caller (old Circle cover upload, Circle undo, old booking confirm removed)",
+  "lane": "hygiene",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/circles/admin-actions.ts",
+    "ref": "Feature-path wiring scan 2026-11-18 (project thread: Verify every feature path end to end); owner 2026-11-18: full approval to fix the unused leftovers"
+  },
+  "detail": "Three exported server actions had no caller, so each was a callable endpoint that no screen used. uploadCircleCover (the Circle settings module uses setCircleCoverUrl and removeCircleCover from the Loom picker; PAGE-FRAMEWORK and EMBEDDED-ADMIN still named it as the pattern to mirror). restoreCircleAction (the undo for a Circle redraw, but redrawCircleAction only coaches and always returns changes: [], so there was nothing to undo; its path map and write patch went with it). confirmGuestBookingAction (the website booking confirm moved to the POST button confirmGuestBookingFormAction under SCAN-858; SCAN-834's probe still passes on the form action). Left on purpose: mergeGuestCartAction (the seam for a future guest cart), getCartAction and listSpaceTasks (pinned by tests), buildDraftAction (named by a probe).\n\nDONE 2026-11-18: the three actions are removed and the two docs point at setCircleCoverUrl.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/feature-paths-2026-11-18.mjs HYG-247",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

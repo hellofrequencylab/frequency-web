@@ -448,49 +448,10 @@ export async function setCircleChannelsAction(
   return { ok: true }
 }
 
-// Cover image: upload to the public `site-media` bucket and persist image_url, or
-// clear it. Both re-check circle.editSettings (capabilities are law).
-// (This used to cite lib/page-editor/upload-action.ts as the model. That uploader was
-// deleted 2026-08-11: the Puck image fields moved to the Loom picker and stopped calling
-// it, leaving it with zero callers. This is now the reference implementation, not a copy.)
-export async function uploadCircleCover(
-  id: string,
-  slug: string,
-  formData: FormData,
-): Promise<{ url: string } | { error: string }> {
-  const caps = await getCircleCapabilities(id)
-  if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
-
-  const file = formData.get('file')
-  if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
-  if (file.size > 8 * 1024 * 1024) return { error: 'Image must be under 8MB.' }
-  // Safe raster types only. The public site-media bucket has no MIME constraint, so an arbitrary
-  // content-type (text/html, image/svg+xml) would serve EXECUTABLE from the stored CDN URL (stored
-  // XSS). SVG is excluded deliberately (it can carry script).
-  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'].includes(file.type)) {
-    return { error: 'Use a JPEG, PNG, WebP, GIF, or AVIF image.' }
-  }
-
-  const admin = createAdminClient()
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const path = `circles/${id}/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
-
-  const { error: upErr } = await admin.storage
-    .from('site-media')
-    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
-  if (upErr) return { error: upErr.message }
-
-  const { data } = admin.storage.from('site-media').getPublicUrl(path)
-  const { error: dbErr } = await admin.from('circles').update({ image_url: data.publicUrl }).eq('id', id)
-  if (dbErr) return { error: dbErr.message }
-
-  revalidatePath(`/circles/${slug}`)
-  revalidatePath('/circles')
-  return { url: data.publicUrl }
-}
-
-/** Persist a Loom-picked cover URL (the URL-only sibling of uploadCircleCover). Same
+// Cover image: the Loom picker hands a Supabase public URL (setCircleCoverUrl), or the cover is
+// cleared (removeCircleCover). Both re-check circle.editSettings (capabilities are law). The old
+// direct-upload action had no caller once the picker took over and was removed (HYG-247).
+/** Persist a Loom-picked cover URL. Same
  *  circle.editSettings gate; the URL must be a Supabase public object URL. */
 export async function setCircleCoverUrl(
   id: string,

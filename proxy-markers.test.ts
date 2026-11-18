@@ -13,10 +13,10 @@ import { describe, it, expect, vi, beforeAll } from 'vitest'
 // Like proxy-consent.test.ts this runs the REAL proxy against a real NextRequest and reads the
 // Set-Cookie headers off the response. Only the network edge (the Supabase session read) is mocked.
 
-const getUser = vi.fn(async () => ({ data: { user: { id: 'member-1' } } }))
+const getClaims = vi.fn(async () => ({ data: { claims: { sub: 'member-1' } } }))
 
 vi.mock('@supabase/ssr', () => ({
-  createServerClient: () => ({ auth: { getUser } }),
+  createServerClient: () => ({ auth: { getClaims } }),
 }))
 
 vi.mock('@/lib/platform-flags', () => ({
@@ -85,7 +85,7 @@ describe('the markers still do their job', () => {
   })
 
   it('a visitor who left the region still has fq_ask cleared', async () => {
-    getUser.mockResolvedValueOnce({ data: { user: null } } as never)
+    getClaims.mockResolvedValueOnce({ data: null } as never)
     const response = await proxy(
       new NextRequest('https://frequencylocal.com/', { headers: { cookie: 'fq_ask=1', 'x-vercel-ip-country': 'US' } }),
     )
@@ -95,11 +95,11 @@ describe('the markers still do their job', () => {
 })
 
 describe('SCAN-1122: an anonymous request skips the Supabase session read', () => {
-  it('makes no getUser call without a session cookie, and still makes one with it', async () => {
-    getUser.mockClear()
+  it('makes no getClaims call without a session cookie, and still makes one with it', async () => {
+    getClaims.mockClear()
     await proxy(new NextRequest('https://frequencylocal.com/', { headers: { cookie: 'fq_ask=1' } }))
-    expect(getUser).not.toHaveBeenCalled()
+    expect(getClaims).not.toHaveBeenCalled()
     await proxy(new NextRequest('https://frequencylocal.com/', { headers: { cookie: 'sb-ref-auth-token.0=x' } }))
-    expect(getUser).toHaveBeenCalledTimes(1)
+    expect(getClaims).toHaveBeenCalledTimes(1)
   })
 })

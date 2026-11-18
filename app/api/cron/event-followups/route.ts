@@ -16,11 +16,18 @@
 // 2 and 26 hours ago, read through the event's own zone (eventInstant). Hourly runs re-enter the
 // window about a day's worth of times; the queue's dedupe key, one per address per event, keeps
 // it to one send. Cancelled events and pending approvals are never read.
+//
+// THE REPLAY PASS (owner 2026-11-18, Journeys rework). When a host sets a replay link on an event
+// (events.details.replayUrl, the settings rail's "Replay link"), everyone who saved a seat gets it once,
+// whether or not they came: a missed session is the moment a live Run loses people. Read here rather than
+// in a new cron so it inherits this route's schedule, budget, heartbeat and send gates. An event is
+// eligible for 21 days after it starts; one dedupe key per address per event keeps it to one send, and
+// details.replaySentAt records that the pass ran so a later hour skips the event's reads entirely.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { eventInstant } from '@/lib/time/zone'
-import { sendMadeItEmail } from '@/lib/email'
+import { sendEventReplayEmail, sendMadeItEmail } from '@/lib/email'
 import { isSuppressed } from '@/lib/suppression'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
@@ -204,9 +211,104 @@ async function handler(req: NextRequest) {
     }
   }
 
+  const replays = budget.exhausted() ? 0 : await sendReplays(admin, now, appUrl, budget)
+
   const summary = budget.summary(processed, events.length - processed)
-  log.info('cron.event_followups', { events: events.length, sent, stoppedOnBudget, ...summary })
-  return NextResponse.json({ ok: true, events: processed, sent, budget: summary })
+  log.info('cron.event_followups', { events: events.length, sent, replays, stoppedOnBudget, ...summary })
+  return NextResponse.json({ ok: true, events: processed, sent, replays, budget: summary })
+}
+
+/** The one replay key per address per event. */
+export function replayKey(eventId: string, email: string): string {
+  return `replay:${eventId}:${email.trim().toLowerCase()}`
+}
+
+/** Pure: is a replay link a link we will mail? https only. */
+export function replayUrlOf(details: unknown): string | null {
+  if (!details || typeof details !== 'object' || Array.isArray(details)) return null
+  const d = details as Record<string, unknown>
+  if (d.replaySentAt) return null
+  const url = typeof d.replayUrl === 'string' ? d.replayUrl.trim() : ''
+  return /^https:\/\/\S+$/i.test(url) ? url : null
+}
+
+async function sendReplays(
+  admin: ReturnType<typeof createAdminClient>,
+  now: Date,
+  appUrl: string,
+  budget: ReturnType<typeof cronBudget>,
+): Promise<number> {
+  const since = new Date(now.getTime() - 21 * 24 * HOUR).toISOString()
+  const { data } = await admin
+    .from('events')
+    .select('id, title, slug, starts_at, details, journey_id')
+    .eq('is_cancelled', false)
+    .not('details->>replayUrl', 'is', null)
+    .is('details->>replaySentAt', null)
+    .gte('starts_at', since)
+    .lte('starts_at', now.toISOString())
+    .limit(20)
+  let sent = 0
+  for (const ev of (data ?? []) as { id: string; title: string; slug: string; starts_at: string; details: unknown; journey_id: string | null }[]) {
+    if (budget.exhausted()) break
+    const replayUrl = replayUrlOf(ev.details)
+    if (!replayUrl) continue
+    const eventUrl = `${appUrl}/events/${ev.slug}`
+    // The next session of the same course, when the event belongs to one: "your seat is saved".
+    let next: { title: string; whenAbsolute: string; url: string } | null = null
+    if (ev.journey_id) {
+      const { data: n } = await admin
+        .from('events')
+        .select('title, slug, starts_at, time_zone')
+        .eq('journey_id', ev.journey_id)
+        .eq('is_cancelled', false)
+        .gt('starts_at', ev.starts_at)
+        .order('starts_at', { ascending: true })
+        .limit(1)
+      const row = (n ?? [])[0] as { title: string; slug: string; starts_at: string; time_zone: string | null } | undefined
+      if (row) next = { title: row.title, whenAbsolute: formatAbsolute(row.starts_at, row.time_zone), url: `${appUrl}/events/${row.slug}` }
+    }
+    const { data: seats } = await admin
+      .from('event_rsvps')
+      .select('profile_id, guest_email, approval_status')
+      .eq('event_id', ev.id)
+      .in('status', ['going', 'waitlist'])
+    for (const seat of (seats ?? []) as { profile_id: string | null; guest_email: string | null; approval_status: string | null }[]) {
+      if (seat.approval_status === 'pending' || budget.exhausted()) continue
+      try {
+        if (seat.profile_id) {
+          const { data: profile } = await admin.from('profiles').select('id, auth_user_id').eq('id', seat.profile_id).maybeSingle()
+          if (!profile?.auth_user_id) continue
+          const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+          if (!user?.email) continue
+          if (!(await resolveSendGate(profile.id, 'email', 'events', { email: user.email })).allowed) continue
+          await sendEventReplayEmail({
+            to: user.email,
+            eventTitle: ev.title,
+            eventUrl,
+            replayUrl,
+            next,
+            unsubscribeUrl: buildUnsubscribeUrl({ baseUrl: appUrl, profileId: profile.id, category: 'events' }),
+            dedupeKey: replayKey(ev.id, user.email),
+          })
+        } else if (seat.guest_email) {
+          const email = seat.guest_email.trim().toLowerCase()
+          if (await isSuppressed(email)) continue
+          await sendEventReplayEmail({ to: email, eventTitle: ev.title, eventUrl, replayUrl, next, dedupeKey: replayKey(ev.id, email) })
+        } else continue
+        sent += 1
+      } catch (err) {
+        log.error('cron.event_followups.replay_send_failed', { eventId: ev.id, err: String(err) })
+      }
+    }
+    // Recorded only when the pass finished this event's seats inside the budget; an interrupted pass
+    // re-reads next hour and the dedupe keys skip whoever already has it.
+    if (!budget.exhausted()) {
+      const details = { ...(ev.details as Record<string, unknown>), replaySentAt: now.toISOString() }
+      await admin.from('events').update({ details: details as never }).eq('id', ev.id)
+    }
+  }
+  return sent
 }
 
 /**

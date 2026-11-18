@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2360",
+  "title": "A host hears when a member asks to join their event, or says they are going",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/events/actions.ts",
+    "ref": "Unwired-things scan 2026-11-18 (project thread: Verify every feature path end to end); owner: full approval to make it all right"
+  },
+  "detail": "On an event that needs the host's approval, an RSVP was written as pending with no notice to anyone, so the guest waited on a host who never knew a request existed; a plain going RSVP did not reach the host either. Both RSVP paths (first RSVP and re-join) now send the host an event.notice (rsvp_request: asked to join, rsvp_going: is going), so the host's own in-app Events switch decides.\n\nDONE 2026-11-18.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/feature-paths-2026-11-18.mjs LIVE-2360",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

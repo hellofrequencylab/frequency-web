@@ -33,11 +33,8 @@ export function WildheartFirstNight({ options, chosen, cta, href }: { options: A
         {options.map((o, i) => (
           <span key={i} className="wh-fn-note" hidden={on !== i}>{o.note}</span>
         ))}
-          {href ? (
-            <a className="hs-btn hs-btn-primary wh-btn-wide" href={href}>{cta}</a>
-          ) : (
-            <button type="button" className="hs-btn hs-btn-primary wh-btn-wide">{cta}</button>
-          )}
+          {/* No link set on the block means no button (LIVE-2362): a button that goes nowhere is a dead end. */}
+          {href ? <a className="hs-btn hs-btn-primary wh-btn-wide" href={href}>{cta}</a> : null}
       </div>
     </>
   )

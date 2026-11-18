@@ -1,9 +1,8 @@
-import { spawnSync } from 'node:child_process'
-
 // Exercise actual paid conversion, taxonomy, ledger, mirror and Google payload with isolated I/O.
-const result = spawnSync(process.execPath, [
-  'node_modules/vitest/vitest.mjs', 'run',
-  'lib/analytics/purchase-google-chain.test.ts', '--maxWorkers=2',
-], { cwd: process.cwd(), stdio: 'inherit' })
-if (result.error) throw result.error
-process.exit(result.status ?? 1)
+// HYG-242: the required `test` job runs these files on every pull request. This probe asks, in-process, that they are
+// still in that run with their cases, instead of paying a second vitest startup in the backlog sweep.
+import { requireInSuite } from './in-suite.mjs'
+
+requireInSuite({
+  'lib/analytics/purchase-google-chain.test.ts': 8
+})

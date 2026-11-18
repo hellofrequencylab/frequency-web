@@ -9,10 +9,10 @@ import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
 //     NextResponse.next({ request: { headers } }) carries them), because Next takes the nonce from
 //     the REQUEST's Content-Security-Policy and the (main) layout from `x-nonce`.
 
-const getUser = vi.fn(async () => ({ data: { user: { id: 'member-1' } as { id: string } | null } }))
+const getClaims = vi.fn(async () => ({ data: { claims: { sub: 'member-1' } } as { claims: { sub: string } } | null }))
 
 vi.mock('@supabase/ssr', () => ({
-  createServerClient: () => ({ auth: { getUser } }),
+  createServerClient: () => ({ auth: { getClaims } }),
 }))
 
 vi.mock('@/lib/platform-flags', () => ({
@@ -31,14 +31,14 @@ beforeAll(async () => {
 
 afterEach(() => {
   vi.unstubAllEnvs()
-  getUser.mockClear()
+  getClaims.mockClear()
 })
 
 async function visit(path: string, opts: { signedIn?: boolean; headers?: Record<string, string> } = {}) {
   const signedIn = opts.signedIn ?? true
   const headers = new Headers(opts.headers)
   if (signedIn) headers.set('cookie', 'sb-test-auth-token=x; fq_acct=1')
-  else getUser.mockResolvedValueOnce({ data: { user: null } })
+  else getClaims.mockResolvedValueOnce({ data: null })
   const response = await proxy(new NextRequest(`https://frequencylocal.com${path}`, { headers }))
   return {
     status: response.status,

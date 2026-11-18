@@ -1563,6 +1563,52 @@ Unsubscribe from match emails: ${unsubscribeUrl}
   }
 }
 
+// ── A direct message waiting (EMAIL-055) ───────────────────────────────────────────────────────
+// Built, not sent: the notification router transports it on the `mentions` category once the
+// recipient's own email switch and the suppression list have been read. lib/messages/dm-notify.ts is
+// the one caller, and it only asks for the FIRST message of a burst, so a back-and-forth is one
+// email, not one per line. Voice: who wrote, a short preview, one button.
+
+interface DirectMessageEmailParams {
+  to: string
+  recipientName: string
+  recipientProfileId: string
+  senderName: string
+  /** The message, already trimmed to a preview by the caller. */
+  preview: string
+  /** Site-relative path the button opens (made absolute here). */
+  threadPath: string
+}
+
+export function buildDirectMessageEmail(params: DirectMessageEmailParams): EmailPayload {
+  const { to, recipientName, recipientProfileId, senderName, preview, threadPath } = params
+  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: BASE_URL, profileId: recipientProfileId, category: 'mentions' })
+  const threadUrl = `${BASE_URL}${threadPath}`
+  const subject = `${senderName} sent you a message`
+  return {
+    to,
+    subject,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html: emailShell(`
+      ${emailKicker('Messages')}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(subject)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">Hi ${escapeHtml(recipientName)}, here is what they said:</p>
+      <p data-fq="fq-p" style="${pStyle}">&ldquo;${escapeHtml(preview)}&rdquo;</p>
+      ${emailButton('Reply', threadUrl)}
+    `),
+    text: `${subject}
+
+Hi ${recipientName}, here is what they said:
+
+"${preview}"
+
+Reply: ${threadUrl}
+
+Unsubscribe from message emails: ${unsubscribeUrl}
+`,
+  }
+}
+
 // ── A Plan share, offered or answered (PROG-CAL7 Together, LIVE-545) ──────────
 // Built, not sent: the notification router transports it on the `lifecycle` category once the
 // approver's own switch and the suppression list have been read; lib/calendar/plan-notify.ts is
@@ -1800,6 +1846,60 @@ ${confirmUrl}
 Notes on Circles, practices, and events, a few times a month. You can unsubscribe from these notes anytime.
 
 Did not request this? You can ignore this email. Confirmation is required to join this list.`
+}
+
+// ── Event replay ("Here's the replay") ────────────────────────────────────────
+// Sent once per address per event by the follow-up cron's replay pass (app/api/cron/event-followups),
+// to everyone who saved a seat, whether or not they came. Members pass the events-category send gate and
+// carry its one-click unsubscribe; guests get the transactional footer of the seat they took.
+
+export async function sendEventReplayEmail(params: {
+  to: string
+  eventTitle: string
+  eventUrl: string
+  replayUrl: string
+  next: { title: string; whenAbsolute: string; url: string } | null
+  unsubscribeUrl?: string | null
+  dedupeKey: string
+}) {
+  const { to, eventTitle, eventUrl, replayUrl, next, dedupeKey } = params
+  const unsubscribeUrl = params.unsubscribeUrl ?? null
+  const footer = `You are getting this because you saved a seat for ${eventTitle}.`
+  await enqueueEmail(
+    {
+      to,
+      subject: `The replay: ${eventTitle}`,
+      ...(unsubscribeUrl ? { headers: listUnsubscribeHeaders(unsubscribeUrl) } : {}),
+      html: emailShell(
+        `
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">The replay is up. Watch it whenever suits you, whether you came or not.</p>
+      ${emailButton('Watch the replay', replayUrl)}
+      <p data-fq="fq-p" style="${pStyle}margin-top:16px;"><a href="${eventUrl}" style="color:${palette.emailPrimaryStrong};">The session page</a></p>${
+        next
+          ? `
+      <hr data-fq="fq-rule" style="${dividerStyle}">
+      <p data-fq="fq-p" style="${pStyle}">Next up: ${escapeHtml(next.title)}, ${escapeHtml(next.whenAbsolute)}. Your seat is saved.</p>
+      <p data-fq="fq-p" style="${pStyle}"><a href="${next.url}" style="color:${palette.emailPrimaryStrong};font-weight:700;">See the next session</a></p>`
+          : ''
+      }
+      <hr data-fq="fq-rule" style="${dividerStyle}">
+      <p data-fq="fq-muted" style="font-size:13px;color:${palette.textMuted};">${escapeHtml(footer)}${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color:${palette.textMuted};">Unsubscribe from event emails</a>` : ''}</p>
+    `,
+        { text: escapeHtml(footer), unsubscribe: Boolean(unsubscribeUrl) },
+      ),
+      text: `${eventTitle}
+
+The replay is up. Watch it whenever suits you, whether you came or not.
+
+Watch the replay: ${replayUrl}
+The session page: ${eventUrl}
+${next ? `\nNext up: ${next.title}, ${next.whenAbsolute}. Your seat is saved.\nSee the next session: ${next.url}\n` : ''}
+${footer}${unsubscribeUrl ? `\nUnsubscribe from event emails: ${unsubscribeUrl}` : ''}
+`,
+    },
+    { dedupeKey },
+  )
 }
 
 // ── Subscribe welcome ("you're in") ───────────────────────────────────────────

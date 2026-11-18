@@ -61,15 +61,31 @@ export async function operatorOfferClosed(profileId: string | null | undefined):
   }
 }
 
+/** Start the "is the offer due" read EARLY, beside the member shell's parallel wave (PERF-008). It is
+ *  two round trips (the owner's first Space, then its event and contact counts) that used to run in
+ *  series AFTER the wave, in front of every first paint for a Space owner with no offer clock yet,
+ *  which is exactly the launch audience. Null when the clock already decides the answer (live or
+ *  expired), so a member with a running or finished offer costs no query. The caller passes the
+ *  promise to `offerBarState`, which awaits it only when the owner gate says the answer matters, so
+ *  the result shown is identical; a member who operates nothing pays one cheap indexed read, in
+ *  parallel, whose answer is discarded. Fail-quiet like offerIsDue: it never rejects. */
+export function prefetchOfferDue(profileId: string, meta: unknown): Promise<boolean> | null {
+  const offer = readOperatorOffer(meta, Date.now())
+  if (offer.status !== 'none') return null
+  return offerIsDue(profileId)
+}
+
 /** What the member shell shows for this person: a live countdown, a one-time "open the offer" nudge
  *  when it is due, or nothing. Only Space owners can be due, so everyone else costs no query. */
 export async function offerBarState(
   profileId: string,
   meta: unknown,
   operatesSpaces: boolean,
+  /** The early read from `prefetchOfferDue`, when the caller started one. */
+  dueP?: Promise<boolean> | null,
 ): Promise<{ endsAtMs: number | null; pending: boolean } | null> {
   const offer = readOperatorOffer(meta, Date.now())
   if (offer.status === 'live') return { endsAtMs: offer.endsAtMs, pending: false }
   if (offer.status === 'expired' || !operatesSpaces) return null
-  return (await offerIsDue(profileId)) ? { endsAtMs: null, pending: true } : null
+  return (await (dueP ?? offerIsDue(profileId))) ? { endsAtMs: null, pending: true } : null
 }
