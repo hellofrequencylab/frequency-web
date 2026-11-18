@@ -361,6 +361,21 @@ export async function listOrdersForBuyer(profileId: string, opts: { limit?: numb
   })
 }
 
+/** One of the buyer's own orders, or null when it is not theirs, never completed, or unreadable
+ *  (DEF-ETSY P6: the order a buyer messages a seller about). Lines carry their seller. */
+export async function getOrderForBuyer(orderId: string, profileId: string): Promise<CommerceOrder | null> {
+  if (!orderId || !profileId) return null
+  const { data, error } = await db()
+    .from('commerce_orders')
+    .select(ORDER_COLS)
+    .eq('id', orderId)
+    .eq('buyer_profile_id', profileId)
+    .neq('status', 'pending')
+    .maybeSingle()
+  if (error || !data) return null
+  return rowToOrder(data as unknown as Record<string, unknown>)
+}
+
 /** A maker's sales (orders for products they own, and their share of every split order that pays
  *  them, LIVE-624), newest first. */
 export async function listOrdersForSeller(profileId: string, opts: { limit?: number } = {}): Promise<CommerceOrder[]> {
