@@ -763,7 +763,8 @@ export async function listShareables(): Promise<{ label: string; href: string; k
   const profileId = await getMyProfileId()
   if (!profileId) return []
   try {
-    return await listShareablesFor(profileId)
+    // journey_enrollments is deny-all under RLS; the service reader is pinned to the caller's id.
+    return await listShareablesFor(profileId, createAdminClient())
   } catch {
     return []
   }
