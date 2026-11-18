@@ -118,9 +118,12 @@ describe('a scoped-out block never reappears under "More"', () => {
       Object.values((config.categories ?? {}) as Record<string, { components?: readonly string[] }>)
         .flatMap((c) => c.components ?? []),
     )
+    // Daniel 2026-11-18: "Make sure every block is assigned to the editor." The last three orphans (DisplayHeading,
+    // Prose, SpaceArrangement) now sit in Content and Profile, so the pinned list is empty.
     const orphans = Object.keys(config.components).filter((t) => !placed.has(t))
-    expect(orphans.sort()).toEqual(['DisplayHeading', 'Prose', 'SpaceArrangement'])
-    for (const surface of SURFACES) expect(groupKeys(surface)).toContain('__other')
+    expect(orphans.sort()).toEqual([])
+    // With no orphan left, no surface needs the uncategorized "More" group.
+    for (const surface of SURFACES) expect(groupKeys(surface)).not.toContain('__other')
   })
 })
 
@@ -179,7 +182,8 @@ describe('the allowlist covers the library', () => {
 
 describe('the fail-safe opens, it never empties', () => {
   it('offers the whole library when no surface is given', () => {
-    expect(groupKeys(undefined).sort()).toEqual([...configCategoryKeys, '__other'].sort())
+    // Every block sits in a group (Daniel 2026-11-18: "Make sure every block is assigned to the editor"), so there is no "More".
+    expect(groupKeys(undefined).sort()).toEqual([...configCategoryKeys].sort())
   })
 
   it('offers the whole library for a surface this build does not recognise', () => {
