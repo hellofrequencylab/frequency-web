@@ -494,7 +494,7 @@ export function JourneySettings(props: JourneySettingsProps) {
       {saveError && (
         <p
           role="alert"
-          className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-md rounded-xl border border-danger/50 bg-danger-bg px-4 py-3 text-body-sm font-medium text-danger shadow-lg"
+          className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-md rounded-card border border-danger/50 bg-danger-bg px-4 py-3 text-body-sm font-medium text-danger lift-3"
         >
           {saveError}
         </p>
