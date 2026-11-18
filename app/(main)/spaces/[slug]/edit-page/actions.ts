@@ -2,9 +2,9 @@
 
 import type { Data } from '@/lib/page-editor/types'
 import { revalidatePath } from 'next/cache'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, patchSpacePreferences } from '@/lib/spaces/store'
+import { preferencesPatch } from '@/lib/spaces/preferences-patch'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isWellFormedSpaceDoc } from '@/lib/page-editor/templates/space'
 import { withPageDoc, withoutPageDoc, hasPage, readPageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
@@ -20,9 +20,9 @@ import { refreshSite } from '@/lib/sites/site-cache'
 // another space's page (the route gate is UX; this is the authority). Staff preview (a janitor
 // who is not an editor) is read-only: it has no canEditProfile, so every write fails closed.
 //
-// NON-DESTRUCTIVE: writing only REPLACES the one page's doc under `pageDocs`, preserving every
-// other key (the other pages' docs, mode overrides, cover size) via the pure `withPageDoc`
-// mutator. A reset drops just that page's doc (withoutPageDoc); the resolver then falls back to
+// NON-DESTRUCTIVE: writing only REPLACES the one page's doc under `pageDocs`, and only the keys that
+// changed are sent (LIVE-2347), preserving every other key (the other pages' docs, mode overrides,
+// cover size) via the pure `withPageDoc` mutator. A reset drops just that page's doc (withoutPageDoc); the resolver then falls back to
 // the universal default page. No other data is touched.
 
 /** The public path a page renders at: Home at the profile index, a custom page under its slug. */
@@ -47,18 +47,18 @@ async function authorizeEditor(slug: string): Promise<{
   return { spaceId: space.id, preferences: asRecord(space.preferences) }
 }
 
-/** Untyped scoped update of the space's preferences column (ADR-246), bound to the id. */
+/** KEY-SCOPED write of the space's preferences (LIVE-2347): only the top-level keys `next` changes
+ *  against the snapshot `before` (pageDocs, and for Home the legacy single doc) are sent through
+ *  patchSpacePreferences (set_space_preferences) in ONE call, so a key another console saved after this
+ *  request read the Space (a Spotlight publish, a website editor stub) is never written back stale. */
 async function writePreferences(
   spaceId: string,
-  preferences: Record<string, unknown>,
+  before: Record<string, unknown>,
+  next: Record<string, unknown>,
 ): Promise<boolean> {
-  const db = createAdminClient() as unknown as {
-    from: (t: string) => {
-      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
-    }
-  }
-  const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
-  return !error
+  const patch = preferencesPatch(before, next)
+  if (Object.keys(patch).length === 0) return true
+  return patchSpacePreferences(spaceId, patch)
 }
 
 /**
@@ -88,7 +88,7 @@ export async function publishSpaceLanding(
   const merged = withParkedBlocks(readPageDoc(auth.preferences, pageSlug), data)
 
   const preferences = withPageDoc(auth.preferences, pageSlug, merged)
-  if (!(await writePreferences(auth.spaceId, preferences))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, preferences))) {
     return fail('Could not publish your changes. Try again.')
   }
 
@@ -112,7 +112,7 @@ export async function resetSpaceLanding(
   if (!auth) return fail('You do not have access to edit this page.')
 
   const preferences = withoutPageDoc(auth.preferences, pageSlug)
-  if (!(await writePreferences(auth.spaceId, preferences))) {
+  if (!(await writePreferences(auth.spaceId, auth.preferences, preferences))) {
     return fail('Could not reset the page. Try again.')
   }
 

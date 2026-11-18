@@ -46,7 +46,13 @@ export default async function NewJourneyPage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/')
+  // JRN-004: back to this page after sign-in, query and all (a Space's ?space=, a Plan's ?plan=).
+  if (!user) {
+    const sp = new URLSearchParams()
+    for (const [k, v] of Object.entries(await searchParams)) if (typeof v === 'string') sp.set(k, v)
+    const here = sp.size ? `/journeys/new?${sp.toString()}` : '/journeys/new'
+    redirect(`/sign-in?next=${encodeURIComponent(here)}`)
+  }
 
   const { space: spaceSlug, plan: planParam } = await searchParams
   const caller = await getCallerProfile()

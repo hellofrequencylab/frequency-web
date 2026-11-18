@@ -100,6 +100,9 @@ export async function setJourneyStatusAction(id: string, status: PlanStatus): Pr
     return fail(e instanceof Error ? e.message : 'Could not update the journey.')
   }
   revalidateContent('journeys')
+  // JRN-003: a rejected Journey leaves the member library and the public pages now, not in an hour.
+  revalidatePath('/journeys', 'layout')
+  revalidatePath('/discover/journeys', 'layout')
   return ok()
 }
 
@@ -119,6 +122,7 @@ export async function deleteJourneyPlanAction(id: string): Promise<ActionResult>
   }
   revalidateContent('journeys')
   revalidatePath('/journeys', 'layout')
+  revalidatePath('/discover/journeys', 'layout')
   return ok()
 }
 

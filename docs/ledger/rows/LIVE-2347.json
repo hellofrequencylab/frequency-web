@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2347",
+  "title": "A Page panel or page editor save writes only the preference keys it changes",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/manage/layout/actions.ts",
+    "ref": "Space function scan 2026-11-17, the residual LIVE-2334 named (manage/layout/actions.ts and edit-page/actions.ts)"
+  },
+  "detail": "The Page panel (manage/layout/actions.ts, fourteen writers: business info, cover scrim, logo backdrop, cover focus, header button, hero look, website hero, footer badge, website publish switch, and the nav manager's create, offer page, rename, reorder and delete) and the page editor (edit-page/actions.ts, publish and reset) built the whole spaces.preferences object from a snapshot read at the start of the request and wrote it all back. A save there landing beside a save from another console (a Spotlight publish, a website editor stub, a menu save) could undo it, for example turning a just-published Spotlight back off. Fixed: each file's writePreferences now diffs the mutator's result against the snapshot (lib/spaces/preferences-patch.ts preferencesPatch) and sends only the top-level keys that changed through patchSpacePreferences (set_space_preferences, SCAN-833), in one call, a removed key as null. A multi-key change (a page and its doc, a Home reset that drops pageDocs.home and the legacy puck doc) is one patch of exactly those keys. The website publish switch patches websitePublished alone. websiteEditor and programOverview are never sent. No migration. Residual: the RPC merges top-level keys only, so two saves to the SAME key from different tabs (two pages published at once both rewrite pageDocs) can still overwrite each other inside that key. Other whole-blob writers outside these two files remain (settings/shop/shop-actions.ts, manage/modules/actions.ts, lib/spaces/email-style-actions.ts, lib/importer/materialize.ts, lib/library/usage.ts, and the canvas draft's revision-guarded writeSpacePreferencesAtRevision).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-preferences-key-scoped.mjs",
+    "note": "Fails while manage/layout/actions.ts or edit-page/actions.ts replaces the whole preferences blob instead of sending a key-scoped patch. Behavior tests: lib/spaces/preferences-patch.test.ts, app/(main)/spaces/[slug]/manage/layout/actions.test.ts, app/(main)/spaces/[slug]/edit-page/actions.test.ts."
+  },
+  "wave": "W7",
+  "closed": "2026-11-17"
+}
