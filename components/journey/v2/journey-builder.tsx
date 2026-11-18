@@ -78,7 +78,8 @@ function JourneyActions({
   // holds; a second click proceeds. Once acknowledged, it stays acknowledged for the session.
   const [anchorAck, setAnchorAck] = useState(false)
   const missingAnchor = hasAnchor === false
-  const live = visibility === 'public' || justPublished
+  // Unlisted is live too: anyone with the link can open and join it, so it must not offer Publish again.
+  const live = visibility === 'public' || visibility === 'unlisted' || justPublished
   const viewHref = slug ? `/journeys/${slug}/learn` : '/journeys'
 
   // Save Draft → View mode. Fields already autosave on blur, so this just takes the author to the

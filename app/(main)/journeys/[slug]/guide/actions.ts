@@ -112,7 +112,7 @@ export async function applyGuideTemplateAction(
 
   const idMap = new Map<string, string>()
   for (const r of rows) {
-    const { data } = await admin
+    const { data, error } = await admin
       .from('journey_plan_items')
       .insert({
         ...r.insert,
@@ -122,7 +122,14 @@ export async function applyGuideTemplateAction(
       .select('id')
       .maybeSingle()
     const realId = (data as { id: string } | null)?.id
-    if (realId) idMap.set(r.tempId, realId)
+    if (error || !realId) {
+      // A half-built skeleton would also block a retry (the phase count check above), so take back
+      // what landed and say so, instead of recording the template as applied.
+      const landed = [...idMap.values()]
+      if (landed.length > 0) await admin.from('journey_plan_items').delete().in('id', landed)
+      return fail('The template did not finish loading. Try again.')
+    }
+    idMap.set(r.tempId, realId)
   }
 
   // Record the choice on the wizard state (progress metadata, not content).
