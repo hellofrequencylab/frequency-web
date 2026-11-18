@@ -12,7 +12,7 @@ import { journeyCourseSchema } from '@/lib/jsonld'
 import { SITE_URL } from '@/lib/site'
 import type { CourseView } from '@/components/frequency/site/pages/courses/course'
 import { isFrequencyCourse } from './library'
-import { courseHref, trackOf } from './tracks'
+import { courseHref, offersCertified, trackOf } from './tracks'
 import { courseRun, getCourseContext, type CourseContext } from './course-context'
 
 export interface CoursePage {
@@ -56,6 +56,7 @@ export async function loadCoursePage(slug: string): Promise<CoursePage | null> {
     guides: context.guides,
     hostName: context.provider?.name ?? null,
     certificate: plan.certificate_enabled || context.sessions.length > 0,
+    certified: offersCertified(plan.slug),
     priceLabel: price(offer),
     startHref: journeyBuySignInPath(plan.slug),
     hasPreview: facts.phaseCount > 0 && facts.lessonCount > 0,

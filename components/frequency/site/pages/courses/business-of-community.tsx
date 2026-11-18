@@ -26,6 +26,7 @@ import { aura, photo, photoImg } from '../shared/parts'
 const EVENT = '/events/business-of-community-pilot-session-1'
 const BUSINESS_HOURS = '/circles/business-hours'
 const JOURNEY_SLUG = 'the-business-of-community-101'
+const CERTIFY = `/courses/${JOURNEY_SLUG}/certify`
 const WEEK_ONE = `/courses/${JOURNEY_SLUG}/week-1`
 const RUN_ICS = `/courses/${JOURNEY_SLUG}/calendar.ics`
 
@@ -639,6 +640,11 @@ export function FrequencyBusinessOfCommunity() {
               Each one has its own page anyone can check, and a badge for your Space or your site. A certificate of
               completion and competency from Frequency. Not an accredited certification.
             </p>
+            <div className="ctas boc-gap-s">
+              <Link className="btn btn-ghost fq-iri-rim" href={CERTIFY}>
+                Send in your Community Book
+              </Link>
+            </div>
           </div>
         </div>
       </section>

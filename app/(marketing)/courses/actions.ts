@@ -10,7 +10,9 @@ import { buildOptinConfirmUrl } from '@/lib/crm/optin/tokens'
 import { SITE_URL } from '@/lib/site'
 import { getPublicJourney } from '@/lib/journey-plans'
 import { isFrequencyCourse } from '@/lib/courses/library'
-import { courseHref } from '@/lib/courses/tracks'
+import { courseHref, offersCertified } from '@/lib/courses/tracks'
+import { submitCommunityBook } from '@/lib/courses/credentials'
+import { getMyProfileId } from '@/lib/auth'
 import { getCourseContext } from '@/lib/courses/course-context'
 import { runLabel, sessionTime } from '@/lib/courses/run-format'
 import { log } from '@/lib/log'
@@ -80,4 +82,31 @@ export async function requestCoursePreview(input: { email: string; slug: string 
     return { ok: false, error: 'Something went wrong on our end. Please try again.' }
   }
   return { ok: true }
+}
+
+export type CertifyResult = { ok: true } | { ok: false; error: string }
+
+/**
+ * Send in a Community Book for Certified review (owner 2026-11-17: "Send in your Community Book, filled in
+ * from real gatherings, and Frequency reviews it for Certified"). The signed-in holder only: the profile is
+ * derived from the session, never taken from the form. One waiting submission per person per course.
+ */
+// authz-ok: the writer is the session's own profile (getMyProfileId), on a public Frequency course that offers
+// Certified; the row is theirs alone and service-role only, so this action is the one door to it.
+export async function submitCommunityBookAction(input: { slug: string; body: string }): Promise<CertifyResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return { ok: false, error: 'Sign in to send in your Community Book.' }
+  const slug = (input.slug || '').trim()
+  const body = (input.body || '').trim()
+  if (!SLUG_RE.test(slug) || !offersCertified(slug)) return { ok: false, error: 'This course does not offer Certified.' }
+  if (body.length < 40) return { ok: false, error: 'Add your four pages, or the links to them, before you send.' }
+  if (body.length > 20000) return { ok: false, error: 'That is longer than we can take. Send links to the pages instead.' }
+  const found = await getPublicJourney(slug)
+  if (!found || !(await isFrequencyCourse(found.plan))) return { ok: false, error: 'That course was not found.' }
+  const res = await submitCommunityBook(found.plan.id, profileId, body)
+  if (res.ok) return { ok: true }
+  return {
+    ok: false,
+    error: res.reason === 'open' ? 'Your Community Book is already waiting for review.' : 'That did not send. Please try again.',
+  }
 }

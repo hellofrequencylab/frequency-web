@@ -46,7 +46,7 @@ describe('moduleIdsForScope', () => {
   it('a nested admin route resolves its exact set', () => {
     const j = moduleIdsForScope('/admin/content/journeys')
     expect(j).toBe(ROUTE_MODULE_IDS['/admin/content/journeys'])
-    expect(j).toEqual(['admin-journeys-stats', 'admin-journeys-review', 'admin-journeys-library'])
+    expect(j).toEqual(['admin-journeys-stats', 'admin-journeys-review', 'admin-journeys-credentials', 'admin-journeys-library'])
   })
 
   it('the admin practices workspace resolves its curation blocks, in order, no leakage', () => {
