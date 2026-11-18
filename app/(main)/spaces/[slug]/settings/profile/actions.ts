@@ -21,6 +21,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { saveSpaceProfileDraft } from '@/lib/spaces/profile-draft-write'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { profileBlockById, type ProfileBlockId } from '@/lib/entity-blocks/space-profile'
 import { sanitizeEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
@@ -152,7 +153,20 @@ async function saveSpaceProfileLayout(
     }
   }
 
-  if (!(await updateSpacePreferences(space.id, current))) {
+  // PROG-E5 item 1: a draft save sets ONLY the draft key and moves the draft revision the canvas compares against
+  // (save_space_profile_draft, which checks manage access again). Until that function is applied, or if the call
+  // fails, the whole-blob write below runs as it always has. A published-node write keeps the whole-blob path.
+  const keyed = target === 'profileLayoutDraft' && caller?.id
+    ? await saveSpaceProfileDraft({
+      spaceId: space.id,
+      actor: caller.id,
+      draft: Object.prototype.hasOwnProperty.call(current, 'profileLayoutDraft') ? (current.profileLayoutDraft as Record<string, unknown>) : null,
+      expected: null,
+    })
+    : null
+  if (keyed?.status === 'forbidden') return fail('You do not have permission to edit this space.')
+  if (keyed && keyed.status !== 'written' && keyed.status !== 'unavailable') return fail('Could not save your layout. Try again.')
+  if (keyed?.status !== 'written' && !(await updateSpacePreferences(space.id, current))) {
     return fail('Could not save your layout. Try again.')
   }
 

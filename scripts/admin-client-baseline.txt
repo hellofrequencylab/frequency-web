@@ -1345,3 +1345,6 @@ lib/analytics/server-google-policy.ts
 lib/analytics/growth-read.ts
 components/admin/crm/welcome-actions.ts
 lib/crm/welcome-io.ts
+# PROG-E5 (2026-11-18): lib/spaces/profile-draft-write.ts calls save_space_profile_draft (service role only) after the canvas and Space page builder actions ran resolveSpaceManageAccess; the function checks manage access for the actor again and writes only spaces.preferences.profileLayoutDraft and its revision counter. Not a new bypass of a tenant table: it replaces the whole-blob preferences update both actions already made on the service-role client. Its test mocks the same module.
+lib/spaces/profile-draft-write.ts
+lib/spaces/profile-draft-write.test.ts

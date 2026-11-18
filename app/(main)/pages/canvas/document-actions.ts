@@ -11,7 +11,13 @@
 //
 // A stale tab cannot overwrite a newer draft: the save carries the base it loaded (a revision counter and a
 // document fingerprint, lib/builder/canvas-document.ts). The fingerprint is checked against the fresh read; the
-// counter is compared again inside the single UPDATE that writes (writeSpacePreferencesAtRevision).
+// counter is compared again inside the single UPDATE that writes.
+//
+// THE WRITE (PROG-E5 item 1): writeSpacePreferencesAtRevision, given the draft and the actor, saves through
+// save_space_profile_draft (lib/spaces/profile-draft-write.ts), which sets only the draft key and moves the counter
+// after its own manage-access check, so another preferences key saved meanwhile is kept and a Space page builder
+// save (which moves the same counter) makes this tab stale in the write itself. Until that function is applied,
+// or if the call fails, the old guarded whole-blob write runs.
 
 import { revalidatePath } from 'next/cache'
 import { envFlag } from '@/lib/env/string'
@@ -76,7 +82,8 @@ const CHANGED = 'This page was changed somewhere else. Reload to see the newer d
 
 export async function saveCanvasNodeDraft(raw: unknown): Promise<CanvasSaveResult> {
   if (!envFlag('EDITOR_CANVAS')) return refuse('The canvas is switched off.')
-  if (!(await getJanitor())) return refuse('Only staff can use the canvas.')
+  const staff = await getJanitor()
+  if (!staff) return refuse('Only staff can use the canvas.')
   let input: z.infer<typeof saveInput>
   try {
     input = parseInput(saveInput, raw)
@@ -111,7 +118,8 @@ export async function saveCanvasNodeDraft(raw: unknown): Promise<CanvasSaveResul
   if (plan.status === 'refused') return refuse(REFUSED[structure?.kind ?? 'move'] ?? REFUSED.move!)
   if (plan.status !== 'ready') return refuse('That change could not be saved. The draft was left as it was.')
 
-  const written = await writeSpacePreferencesAtRevision(space.id, plan.preferences, { revisionKey: CANVAS_REVISION_KEY, expected: input.base.revision })
+  const written = await writeSpacePreferencesAtRevision(space.id, plan.preferences, { revisionKey: CANVAS_REVISION_KEY, expected: input.base.revision }, { actor: staff.profileId, draft: plan.layout as unknown as Record<string, unknown> })
+  if (written === 'forbidden') return refuse('You cannot save this page.')
   if (written === 'stale') return refuse(CHANGED, true)
   if (written !== 'written') return refuse('Could not save the draft. Try again.')
 
