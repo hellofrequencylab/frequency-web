@@ -77,7 +77,10 @@ describe('the Midnight block family', () => {
 
   it('falls back to the written cards when the Space has no rows, and drops a cancelled event', () => {
     const empty = { space: { events: [], series: [] }, links }
-    expect(draw('MidnightGatherings', {}, empty)).toContain('New moon: clear decisions')
+    // The template no longer invents dates (Daniel 2026-11-18: "Make every Frequency theme FULLY generic ... give the templates a
+    // full scrub"): with no rows of its own it says so; rows an owner wrote are still the fallback.
+    expect(draw('MidnightGatherings', {}, empty)).toContain('No dates are open right now')
+    expect(draw('MidnightGatherings', { rows: [{ month: 'Nov', day: '18', title: 'New moon: clear decisions', meta: '', note: '', href: '' }] }, empty)).toContain('New moon: clear decisions')
     expect(draw('MidnightJourneys', {}, empty)).toContain('Thirty days of clear decisions')
     const cancelled = { space: { events: [row('x', 'Cancelled circle', '2099-11-18T09:30:00.000Z', { isCancelled: true })], series: [] }, links }
     expect(draw('MidnightGatherings', {}, cancelled)).not.toContain('Cancelled circle')
