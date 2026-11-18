@@ -90,12 +90,12 @@ const nodeX = (k: number) => ((k + 0.5) / 7) * 1000
 const tint = (c: string) => 'color-mix(in oklab,' + c + ' 13%,transparent)'
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n).replace(/\s+\S*$/, '') + '…' : s)
 
-interface State { route: string; sub: string | null; compact: boolean; active: number; mega: number | null; w: number; wide: boolean; roomy: boolean }
+interface State { route: string; compact: boolean; active: number; mega: number | null; w: number; wide: boolean; roomy: boolean }
 
 export class VisionPage extends Component<Record<string, never>, State> {
   // Server render and first client render agree (a 1200px desktop at the top of the index); the real
   // width and the hash are read on mount, as the canvas did.
-  state: State = { route: 'index', sub: null, compact: false, active: 0, mega: null, w: 1200, wide: true, roomy: true }
+  state: State = { route: 'index', compact: false, active: 0, mega: null, w: 1200, wide: true, roomy: true }
   mx = 0
   hot = -1
   lastY: number | null = null
@@ -155,7 +155,7 @@ export class VisionPage extends Component<Record<string, never>, State> {
       }
     }
     const changed = route !== this.state.route
-    this.setState({ route, sub, mega: null }, () => requestAnimationFrame(() => {
+    this.setState({ route, mega: null }, () => requestAnimationFrame(() => {
       let el: HTMLElement | null = null
       if (route === 'index' && h.startsWith('#hz-')) el = document.getElementById(h.slice(1))
       if (route !== 'index' && sub) el = document.getElementById(route + '-' + sub)
