@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { checkFreeEnrol } from '@/lib/journeys/free-enrol-gate'
+import { journeyDeleteBlocker } from '@/lib/journeys/paid'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import {
   updatePlan,
@@ -557,6 +558,8 @@ export async function setJourneyVisibility(
  *  the author remove their own Journey straight from the editor. */
 export async function deleteJourney(planId: string): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
+  const blocked = await journeyDeleteBlocker(planId)
+  if (blocked) return fail(blocked)
   const deleted = await deletePlan(planId)
   if (!deleted.ok) return fail(deleted.error)
   revalidatePath('/journeys', 'layout')

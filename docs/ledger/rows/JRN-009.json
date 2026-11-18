@@ -1,0 +1,20 @@
+{
+  "id": "JRN-009",
+  "title": "A Journey that is on sale or that people paid for cannot be deleted",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-17",
+  "source": {
+    "file": "app/(main)/journeys/actions.ts",
+    "ref": "Journey audit 2026-11-17 (project thread: Dial in the Journey Wizard and Journeys)"
+  },
+  "detail": "deleteJourney (the editor Danger zone and the manage card) and the curator's deleteJourneyPlanAction called deletePlan with no check for a sale. A plan delete cascades to its product (commerce_products.journey_plan_id on delete cascade, migration 20270345005900) and with it the product's reviews and variants, and to every enrolment, so a buyer lost the program they paid for although the sell header promises 'people who paid keep what they bought'. Fixed 2026-11-17: lib/journeys/paid.ts journeyDeleteBlocker refuses while any non-archived product sells the Journey ('Take it off sale first') or any enrolment carries an order_id ('Set it to private to hide it; buyers keep their access'), and refuses on a failed read since a delete cannot be undone. Both delete actions call it first. Guarded by lib/journeys/delete-blocker.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-009.mjs",
+    "note": "Fails if journeyDeleteBlocker stops checking live offers or paid enrolments, or either delete action stops calling it."
+  },
+  "wave": "W7"
+}
