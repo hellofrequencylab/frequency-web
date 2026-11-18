@@ -151,3 +151,20 @@ describe('recordEmailEvent surfaces a database failure (SCAN-763)', () => {
     await expect(recordEmailEvent({ email: 'a@b.com', eventType: 'bounced' })).rejects.toThrow('internal_error')
   })
 })
+
+describe('bounce classification (EMAIL-052)', async () => {
+  const { classifyBounce, bounceSuppressionReason, SOFT_BOUNCE_LIMIT } = await import('./suppression')
+  it('only an explicit Transient is soft', () => {
+    expect(classifyBounce({ bounce: { type: 'Transient', subType: 'MailboxFull' } })).toBe('transient')
+    expect(classifyBounce({ bounce: { type: 'Permanent' } })).toBe('permanent')
+    expect(classifyBounce({ bounce: { type: 'Undetermined' } })).toBe('permanent')
+    expect(classifyBounce({})).toBe('permanent')
+    expect(classifyBounce(null)).toBe('permanent')
+  })
+  it('a soft bounce suppresses only once it repeats', () => {
+    expect(bounceSuppressionReason('permanent', 0)).toBe('hard_bounce')
+    expect(bounceSuppressionReason('transient', 0)).toBeNull()
+    expect(bounceSuppressionReason('transient', SOFT_BOUNCE_LIMIT - 2)).toBeNull()
+    expect(bounceSuppressionReason('transient', SOFT_BOUNCE_LIMIT - 1)).toBe('soft_bounce_repeat')
+  })
+})
