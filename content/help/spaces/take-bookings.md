@@ -1,16 +1,19 @@
 ---
 title: Take bookings
-description: Set the services people can book, the weekly hours you offer them, and how a booking, a hold and a deposit work.
+description: Set the services people can book, the weekly hours you offer them, and how a booking, a hold and payment at booking work.
 category: spaces
 order: 5
 published: 2026-10-26
-updated: 2026-10-26
+updated: 2026-11-18
 audience: host
 featureKeys: [events, payouts]
+keywords: [appointments, scheduling, availability, sessions, deposit, office hours, book a call, days off]
 status: published
 ---
 
-You're good with people, and the back-and-forth of "does Tuesday work?" shouldn't eat your week. Booking lets people pick a service and a time that's already open, and it puts the booking on your calendar.
+You're good with people, and the back-and-forth of "does Tuesday work?" shouldn't eat your week. Booking lets people pick a service and a time that's already open, and it puts the booking on your list.
+
+Where to find it: open your Space, then **Manage**, then **Offerings & Money**, then **Booking**.
 
 ## Set it up
 
@@ -20,29 +23,33 @@ You're good with people, and the back-and-forth of "does Tuesday work?" shouldn'
 4. Set your weekly hours. These are the windows people can book inside.
 5. Under **Scheduling rules**, add buffers between sessions, a minimum notice, how far ahead people can book, and any days off or one-off hours.
 
-People pick a service first, then a time. Upcoming bookings show at the bottom of the same page.
+People pick a service first, then a time. Bookings on the way show under **Upcoming bookings** at the bottom of the same page.
 
-## What people see
+## Know what people see
 
-A person picks a time and confirms. If they aren't signed in, we email them a link to confirm, and the slot is held for 30 minutes while they do. If they don't confirm, the slot opens back up on its own. Once a booking stands, you and your guest get a confirmation with a calendar file, plus a reminder, and the guest lands in your Space's contacts so you can welcome them back by name.
+A member who is signed in picks a time and confirms, and the booking stands.
 
-## Deposits
+A guest on your website books with a name and an email. We email them a link to confirm, and the slot is held for 30 minutes while they do. If they don't confirm, the slot opens back up on its own. Until they click, the booking shows in your list as awaiting the guest's confirmation.
 
-A service can take a deposit at booking. The slot is held while the deposit goes through, and it's confirmed when the payment lands. If the payment doesn't land, the hold is released.
+Once a booking stands, you and the person who booked get a confirmation with a calendar file, plus a reminder, and they land in your Space's contacts so you can welcome them back by name.
 
-A deposit needs three things, the same three as every money path:
+## Take payment at booking
+
+A service with its own price can take payment when someone books. The slot is held while the payment goes through, and it's confirmed when the payment lands. If the payment doesn't land, the hold is released. For now a booking charges the full price. Partial deposits are coming.
+
+Paid booking needs three things, the same three as every money path:
 
 - Your Space is on a plan that sells, which starts at Business.
 - The Space owner has connected a payout account. See [Get paid](/help/spaces/get-paid).
 - The service has its own price set up.
 
-Until all three are true, that service can't be booked online. The booking page tells the guest to send you a message instead. A free service books the whole time, on any plan.
+Until all three are true, the service books as a plain confirmation with no payment. A guest without an account can't book a paid service yet, so they need to sign in first.
 
 ## Common questions
 
 ### Do I need a paid plan?
 
-Not to take free bookings. Deposits open at Business. See [Plans and pricing](/help/spaces/plans-and-pricing).
+Not to take free bookings. The free plan comes with a monthly booking allowance, and paid plans lift it. Payment at booking opens at Business. See [Plans and pricing](/help/spaces/plans-and-pricing).
 
 ### Can I take a day off?
 
@@ -50,4 +57,14 @@ Yes. Add it under **Scheduling rules** as a day off and nobody can book it.
 
 ### Where do my bookings show up?
 
-Under **Upcoming bookings** on the Booking page, and on your Space calendar. To pull your calendar into Google or Apple Calendar, see [Subscribe to a Space calendar](/help/spaces/calendar-feed).
+Under **Upcoming bookings** on the Booking page. You can cancel one from there, and the person is told.
+
+### Can guests book without a Frequency account?
+
+Yes, on your website's Book page. See [Your website](/help/spaces/your-website).
+
+## Related
+
+- [Get paid](/help/spaces/get-paid)
+- [Your website](/help/spaces/your-website)
+- [Plan your calendar](/help/spaces/plan-your-calendar)

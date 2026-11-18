@@ -135,6 +135,16 @@ export const FEATURE_KEYS: FeatureKey[] = [
   { key: 'website', label: 'Space website', area: 'operator', routes: ['/hosted/[host]', '/sites/[slug]', '/spaces/[slug]/manage/layout'], core: false },
   { key: 'collective', label: 'Collective network', area: 'operator', routes: ['/spaces/[slug]/network', '/spaces/[slug]/partners', '/spaces/[slug]/settings/reach', '/spaces/[slug]/settings/cross-listing', '/spaces/[slug]/settings/chapters'], core: false },
   { key: 'space-email', label: 'Space email and sender domain', area: 'operator', routes: ['/spaces/[slug]/settings/email'], core: false },
+  // 2026-11-18 (help center rework): four keys for articles that had no key to stand on. Every route
+  // prefix was checked against a real file under app/ (feature-keys.test.ts walks the tree). `themes`
+  // has no route for the picker itself (it sits on the console's Profile & Settings tab), so the form
+  // that draws it is a source prefix. `support` is the member Help page and the launcher that opens it;
+  // the public help center under /help is the articles themselves, so it is not a prefix here (every
+  // help page edit would flag one article).
+  { key: 'create-space', label: 'Create a Space', area: 'operator', routes: ['/spaces/new', '/create-a-space'], core: false },
+  { key: 'spotlight', label: 'Spotlight link page', area: 'account', routes: ['/settings/profile/spotlight', '/spaces/[slug]/manage/spotlight', '/spotlight/[handle]', '/spaces/[slug]/spotlight'], core: false },
+  { key: 'themes', label: 'Themes', area: 'operator', routes: ['/themes'], sourcePrefixes: ['components/spaces/space-branding-form.tsx', 'lib/theme/site-style.ts'], core: false },
+  { key: 'support', label: 'Help and support', area: 'account', routes: ['/support'], sourcePrefixes: ['components/vera/vera-launcher.tsx', 'components/support'], core: false },
 ]
 
 /** Fast membership check for the coverage tool + any future validation. */
