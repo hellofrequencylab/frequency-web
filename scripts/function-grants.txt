@@ -301,6 +301,9 @@ ai_settle_attempt                  internal
 ai_hold_attempt                  internal
 ai_budget_status_today                  internal
 ai_member_turns_today                  internal
+# PROG-E8 4b (20270346130000, unapplied): service-only per-feature token split read; the six-argument
+# ai_settle_attempt overload shares the ai_settle_attempt row above and is revoked by name too.
+ai_tokens_today                      internal
 
 claim_space_email_domain_operation internal
 # EMAIL-003: inactive durable acceptance ledger, service-role only.

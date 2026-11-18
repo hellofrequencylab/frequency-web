@@ -47,6 +47,8 @@ export interface CourseView {
   /** The hosting Space's name, or null for a Frequency course. */
   hostName: string | null
   certificate: boolean
+  /** Offers Certified (a reviewer reads the Community Book) and Attended (every live session). */
+  certified: boolean
   /** Null: free. */
   priceLabel: string | null
   /** Where "Start" goes: the sign-in door that returns to the Journey. */
@@ -248,7 +250,12 @@ export function FrequencyCourse({ v }: { v: CourseView }) {
                 <dd>{v.outcomes[0] ?? 'A practice you can run with your own people'}</dd>
                 <dt>Certificate</dt>
                 <dd>
-                  {v.certificate ? (
+                  {v.certified ? (
+                    <>
+                      Attended for every live session. Certified when a reviewer reads your Community Book.{' '}
+                      <Link href={`/courses/${v.slug}/certify`}>Send yours in</Link>
+                    </>
+                  ) : v.certificate ? (
                     'Yes, a shareable certificate from Frequency'
                   ) : (
                     'Not for this course'

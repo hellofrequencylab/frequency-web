@@ -2,7 +2,7 @@
 title: Free courses
 description: Short, self-paced courses from Frequency for people who gather others, covering the business side of hosting and the craft of holding a room.
 category: the-quest
-order: 9
+order: 11
 published: 2026-11-18
 updated: 2026-11-18
 audience: member
@@ -15,7 +15,7 @@ If you gather people, or want to start, Frequency teaches a small library of cou
 
 ## Find them
 
-Open `/courses`. The **Free courses** link in the footer of the public site takes you there too.
+Open [Free courses](/courses). The **Free courses** link in the footer of the public site takes you there too.
 
 ## Browse the shelves
 

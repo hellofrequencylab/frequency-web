@@ -2,11 +2,12 @@
 title: Sharing a membership with your household
 description: One payment, several seats. How to invite people, what a seat gets them, and what happens when someone leaves or the payment lapses.
 category: membership
-order: 3
+order: 5
 published: 2026-08-12
-updated: 2026-09-21
+updated: 2026-11-18
 audience: member
 featureKeys: [vault, memberships]
+keywords: [family plan, share membership, seats, invite family, group plan, bundle]
 status: draft
 draftNote: Drafted 2026-09-21 by owner ruling (LIVE-448) because bundle_household_enabled is off and nobody can buy a household bundle. It returns to published when the bundle is purchasable.
 ---
@@ -14,7 +15,7 @@ draftNote: Drafted 2026-09-21 by owner ruling (LIVE-448) because bundle_househol
 A household bundle is one membership payment that covers several people. You pay, you
 invite the others, and each of them gets full member access on your plan.
 
-## What you get
+## See what you get
 
 A bundle comes with **four seats** by default, and yours is one of them. So you plus
 three other people.
@@ -24,17 +25,18 @@ bundle is paid. Their account stays their own: their own profile, their own Circ
 their own practice history, their own streak. A seat is not a shared login. It is their
 membership, paid for by you.
 
-## Buying a bundle
+## Buy a bundle
 
-Open **Settings**, then **Billing**. The card fields open under the button you
-pressed. After you pay, you invite the others from the same page.
+Open your avatar menu and choose **Plan & billing**. The **Household bundle** offer sits
+in the Membership section, and the card fields open under the button you pressed. After
+you pay, you invite the others from the same page.
 
-## Inviting people
+## Invite people
 
-Open **Settings**, then **Billing**, and find your bundle. You will see your seats, who
+Open **Plan & billing** again and find **Household bundle**. You will see your seats, who
 is in them, and any invites still waiting for an answer.
 
-Send an invite and the other person chooses to accept or pass. Nothing happens to their
+Invite someone by their handle, and they choose to accept or pass. Nothing happens to their
 account until they accept, and you can take an invite back any time before they answer.
 
 **Invites count against your seats while they are pending.** If you have three seats open
@@ -44,7 +46,7 @@ last two would be told they had a seat and land on nothing.
 
 You cannot accept on someone else's behalf. Only they can take the seat.
 
-## Only you can manage the bundle
+## Know who manages the bundle
 
 You are the owner because you are the payer. You send the invites, you take them back, and
 you remove someone from a seat. Nobody on a seat can invite anyone else or change the
@@ -68,7 +70,7 @@ does not lose access because a card expired on a Tuesday.
 If the payment never goes through and the subscription ends, the seats empty together. Pay
 again and you can seat everyone back.
 
-## Questions people ask
+## Questions
 
 ### Do the other people have to live with me?
 

@@ -2,52 +2,50 @@
 title: Achievements & badges
 description: The permanent badges you collect for showing up: the firsts, the streak and Amplitude milestones, your Trophies, and the Certificate.
 category: the-quest
-order: 7
+order: 6
 published: 2026-06-09
-updated: 2026-06-18
+updated: 2026-11-18
 audience: member
 featureKeys: [achievements, gamification]
+keywords: [awards, trophies, trophy case, medals, secret badge, certificate, collection, milestones]
 status: published
 ---
 
-Achievements are the **permanent badges** you collect on Frequency. Unlike season
-Zaps, they never reset; once a badge is yours, it's yours for good. They're the
-long record of who you've been in the community. The set is small on purpose, so
-each one means something.
+Achievements are the permanent badges you collect on Frequency. In the app they are called Awards. Unlike season Zaps, they never reset: once one is yours, it is yours for good.
 
-## Where to find them
+## Find them
 
-Open **The Vault** and scroll to **Your Awards**. You'll see your whole collection:
-what you've earned, what's still locked, and your collection progress, sitting right
-beside your Trophy Case.
+Open **The Quest** in the header, choose **The Vault**, and scroll to **Awards**. You will see the ones you have earned first, then the ones still locked, with a count of how many you hold. **Trophies** sits right below once you have finished a Journey.
 
 ## How you earn them
 
-You don't apply for achievements; you earn them **automatically** the moment you
-qualify, and Frequency lets you know when one lands. Many also pay **Zaps** when
-they land, so a badge is often a bonus on top of the thing you already did.
+You do not apply for an Award. It lands on its own the moment you qualify, and Frequency lets you know. Many also pay Zaps when they land, so a badge is often a bonus on top of the thing you already did.
 
-A few examples of the kind of thing that earns one:
+A few examples:
 
 - **First Circle.** Join your first Circle.
 - **First Gathering.** Attend your first event.
-- **First Journey.** Finish your first Journey of the season.
-- **Streak milestones.** Keep a daily practice streak going to 3, 7, 14, 30, 60, 100,
-  and 365 days.
-- **Amplitude milestones.** Cross big lifetime Zap totals (1,000, then 5,000, and beyond).
+- **The Welcomer.** Be the first to welcome five new members.
+- **Streak milestones.** Keep a daily practice streak going to 3, 7, 14, 30, 60, 100, and 365 days. See [Streaks](/help/the-quest/streaks).
+- **Amplitude milestones.** Cross big lifetime Zap totals: 1,000, then 5,000, and beyond.
 
-## The core set
+Some Awards are secret. They show as "Secret" with the line "Keep exploring to find it" until you earn them.
 
-The collection is lean and deliberate. It is built from:
+## Trophies and the Certificate
 
-- **Firsts**: your first Circle, first gathering, first Journey.
-- **Streak milestones**: the checkpoints on your daily practice streak.
-- **Amplitude milestones**: crossing big lifetime Zap totals.
-- **Pillar Trophies**: one for each Journey you finish (Mind, Body, Spirit).
-- **The Certificate**: the season capstone for finishing all three Journeys.
+These two come from Journeys, and they are the ones that carry the most weight.
 
-## Where your badges show
+- **Pillar Trophies**: one for each Journey you finish (Mind, Body, or Spirit). Every one stays in your Vault across seasons.
+- **The Certificate**: the season capstone for finishing all three Journeys. It comes with a unique cosmetic and 100 Gems.
 
-Your badges ride with you. Recent ones appear on your **My Quest** dashboard, and your
-full collection lives in **The Vault** under Your Awards. Collecting them is never
-required; they're a record, not homework.
+See [Season ranks](/help/the-quest/season-ranks) for how the three Journeys fit together.
+
+## They are a record, not homework
+
+Collecting Awards is never required. They are the long record of who you have been in the community, and they stay put while the season scoreboard resets around them.
+
+## Related
+
+- [Season ranks](/help/the-quest/season-ranks)
+- [Streaks](/help/the-quest/streaks)
+- [The Vault](/help/membership/the-vault)
