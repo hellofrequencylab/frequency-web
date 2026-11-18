@@ -28,6 +28,7 @@ import {
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { resolveSignature } from '@/lib/comms/signature'
 import { bodyToHtml, renderReplyEmail } from '@/lib/comms/email-template'
+import { conversationManageUrl } from '@/lib/comms/manage-emails-link'
 import { withDisplayName } from '@/lib/comms/from-address'
 import { type ConversationPriority } from '@/lib/comms/labels'
 import { veraDraftReply, veraSummarize, veraSuggestTriage } from '@/lib/comms/vera-conversation'
@@ -161,7 +162,7 @@ export async function sendConversationReply(input: {
   } else {
     // IMMEDIATE (default): send the branded, signed email now (header/footer + signature), then record the
     // CLEAN outbound message (no chrome) on the thread + CRM timeline.
-    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature)
+    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature, null, null, conversationManageUrl(conv.memberProfileId))
     const messageId = newConversationMessageId(conv.ref)
     try {
       await enqueueEmail({

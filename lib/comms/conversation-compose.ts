@@ -24,6 +24,7 @@ import type { InteractionScopeRef } from '@/lib/crm/interactions'
 import { conversationSigningAvailable } from '@/lib/comms/reply-address'
 import { buildSpaceConversationReplyAddress, spaceReplyAliasReady } from './tenant-reply-alias'
 import { renderReplyEmail } from '@/lib/comms/email-template'
+import { conversationManageUrl } from '@/lib/comms/manage-emails-link'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
 import { resolveEmailOrigin, resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
@@ -151,7 +152,7 @@ export async function startConversationMessage(
     : await resolveEmailOrigin({ scopeKind: input.scope?.kind, scopeId: input.scope?.id, ownerProfileId: input.ownerProfileId })
   const rendered = input.bodyHtml
     ? { html: input.bodyHtml, text: body }
-    : renderReplyEmail(body, input.signature, brand, origin)
+    : renderReplyEmail(body, input.signature, brand, origin, conversationManageUrl(input.profileId))
 
   if (conversationBatchWindowMinutes() > 0) {
     const queued = await queueOutboundMessage({

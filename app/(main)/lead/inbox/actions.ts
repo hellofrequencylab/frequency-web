@@ -29,6 +29,7 @@ import { sendLeaderMessageToDownline } from '@/lib/comms/leader-send'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { resolveSignature } from '@/lib/comms/signature'
 import { bodyToHtml, renderReplyEmail } from '@/lib/comms/email-template'
+import { conversationManageUrl } from '@/lib/comms/manage-emails-link'
 import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { type ConversationPriority } from '@/lib/comms/labels'
 import { veraDraftReply, veraSummarize, veraSuggestTriage } from '@/lib/comms/vera-conversation'
@@ -137,7 +138,7 @@ export async function sendLeaderReply(input: {
     // A reply on a Space's thread wears the Space's brand (owner ruling 2026-10-12, LIVE-898); a thread
     // with no Space, or a brand read fault, renders the plain Frequency wrapper.
     const brand = await resolveSpaceEmailBrand(conv.spaceId)
-    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature, brand)
+    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature, brand, null, conversationManageUrl(conv.memberProfileId))
     const messageId = newConversationMessageId(conv.ref)
     try {
       await enqueueEmail({
