@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/field'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { capsLabel } from '@/components/ui/caps-label'
 import { Switch } from '@/components/ui/switch'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 
 // THE REUSABLE INSPECTOR CONTROL PRIMITIVES (ADR-569 C6). A tight, modern, Framer/Webflow/Notion-style set
 // of controls the block editor composes — and that a FEATURE agent attaches to a block by DECLARING a field,
@@ -430,11 +431,10 @@ export function PickerControl({
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggle(it.id)}
-                className={`flex min-w-0 flex-1 items-center gap-2 rounded-control border px-2 py-1.5 text-left text-meta font-medium transition-colors ${
-                  on
-                    ? 'border-primary bg-primary-bg text-text'
-                    : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
-                }`}
+                className={choiceTileClasses(
+                  on,
+                  `flex min-w-0 flex-1 items-center gap-2 rounded-control px-2 py-1.5 text-left text-meta font-medium ${on ? 'text-text' : 'text-muted hover:text-text'}`,
+                )}
               >
                 <span
                   aria-hidden

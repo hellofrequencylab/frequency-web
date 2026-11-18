@@ -633,25 +633,29 @@ export function JourneyEditor({
                       <span className="text-2xs text-muted">No practice yet.</span>
                       {/* Mint a REAL practice from this slot (title + note + Pillar), so it carries a
                           timer and earns Zaps in the player instead of staying an inert block. */}
-                      <button
+                      <Button
                         type="button"
+                        variant="primarySoft"
+                        size="xs"
                         disabled={pending}
                         onClick={() => run(() => mintPracticeForBlockAction(slug, l.id))}
-                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-meta font-medium text-primary-strong hover:bg-primary-bg"
+                        className="gap-1"
                         title="Create a real, timer-carrying practice from this slot"
                       >
                         <Sparkles className="h-3.5 w-3.5" /> Make it real
-                      </button>
+                      </Button>
                     </>
                   )}
                   {practices.length > 0 && (
-                    <button
+                    <Button
                       type="button"
+                      variant="primarySoft"
+                      size="xs"
                       onClick={() => { setReplacing((v) => (v === l.id ? null : l.id)); setQuery('') }}
-                      className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-meta font-medium text-primary-strong hover:bg-primary-bg"
+                      className="gap-1"
                     >
                       {l.practiceId ? <><RefreshCw className="h-3.5 w-3.5" /> Replace</> : <><Plus className="h-3.5 w-3.5" /> Add a Practice</>}
-                    </button>
+                    </Button>
                   )}
                 </div>
                 {replacing === l.id &&
@@ -664,16 +668,18 @@ export function JourneyEditor({
                     on notes that an anchor already exists, but never blocks (the orchestrator can
                     enforce uniqueness later). */}
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant={anchored ? 'primarySoft' : 'ghost'}
+                    size="xs"
                     disabled={pending || !planId}
                     onClick={() => toggleAnchor(l.id, !anchored)}
                     aria-pressed={anchored}
                     title="Anchor: the one daily practice that runs through the whole Journey"
-                    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-meta font-medium transition-colors disabled:opacity-60 ${anchored ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text'}`}
+                    className="gap-1"
                   >
                     <Anchor className="h-3.5 w-3.5" /> {anchored ? 'Anchor (daily through-line)' : 'Make this the Anchor'}
-                  </button>
+                  </Button>
                   {!anchored && anchorBlock && (
                     <span className="text-2xs text-muted">
                       An anchor is already set on {anchorBlock.title || 'another practice'}.
@@ -722,22 +728,26 @@ export function JourneyEditor({
   const stepTools = (parentId: string | null, pickerKey: string) => (
     <>
       <div className="mt-2 flex flex-wrap items-center gap-1">
-        <button
+        <Button
           type="button"
+          variant="primarySoft"
+          size="xs"
           disabled={pending}
           onClick={() => addAndOpen(() => addLessonAction(slug, parentId, 'lesson'))}
-          className="inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-body-sm font-medium text-primary-strong hover:bg-primary-bg"
+          className="gap-1"
         >
           <Plus className="h-4 w-4" /> Add lesson
-        </button>
+        </Button>
         {practices.length > 0 && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="xs"
             onClick={() => { setPicker((v) => (v === pickerKey ? null : pickerKey)); setQuery('') }}
-            className="inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated hover:text-text"
+            className="gap-1"
           >
             <Dumbbell className="h-4 w-4" /> Add practice
-          </button>
+          </Button>
         )}
         <button
           type="button"
@@ -839,14 +849,15 @@ export function JourneyEditor({
                 // An unfilled week: let Vera read the outline + earlier weeks and fill this one. She
                 // pulls relevant library practices; the author can also add or create their own below.
                 <div className="mt-3">
-                  <button
+                  <Button
                     type="button"
+                    variant="primarySoft"
                     disabled={pending}
                     onClick={() => coachWeek(p.id)}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary-bg/30 px-3 py-2.5 text-body-sm font-semibold text-primary-strong transition-colors hover:bg-primary-bg disabled:opacity-60"
+                    className="w-full gap-1.5"
                   >
                     <Sparkles className="h-4 w-4" /> {pending ? 'Thinking…' : 'Get questions for this week'}
-                  </button>
+                  </Button>
                   <p className="mt-1.5 text-center text-2xs text-muted">Use the questions to plan your week, then choose practices or write your own below.</p>
                 </div>
               )}

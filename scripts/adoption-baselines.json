@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 595,
+      "baseline": 591,
       "frozen": {
-        "at": "2026-11-16",
-        "value": 595,
+        "at": "2026-11-18",
+        "value": 591,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "SCAN-1242: the join name-hint (i) moved off a hand-rolled rounded-pill glyph onto IconButton (596 to 595)",
-        "from": 596
+        "reason": "SCAN-1133 slice 14: the Journey v2 editor buttons that moved onto the kit Button dropped their hand-written rounded-md and rounded-xl; 595 to 591.",
+        "from": 595
       },
       "history": [
         {
@@ -406,6 +406,13 @@
           "to": 595,
           "direction": "lowered",
           "reason": "SCAN-1242: the join name-hint (i) moved off a hand-rolled rounded-pill glyph onto IconButton (596 to 595)"
+        },
+        {
+          "at": "2026-11-18",
+          "from": 595,
+          "to": 591,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 14: the Journey v2 editor buttons that moved onto the kit Button dropped their hand-written rounded-md and rounded-xl; 595 to 591."
         }
       ]
     },
@@ -779,14 +786,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 39,
+      "baseline": 29,
       "frozen": {
-        "at": "2026-11-17",
-        "value": 39,
+        "at": "2026-11-18",
+        "value": 29,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice 13: dispute reasons, event boops and the Dispatch toggle move to chipClasses; the practice term and swap choices and the Space events rows move to choiceTileClasses",
-        "from": 45
+        "reason": "SCAN-1133 slice 14: Journey v2 editor quiet actions to the kit Button (primarySoft and ghost at xs), Journey template and event picker tiles and the block inspector entity filter rows to choiceTileClasses; 39 to 29.",
+        "from": 39
       },
       "history": [
         {
@@ -1117,6 +1124,13 @@
           "to": 39,
           "direction": "lowered",
           "reason": "SCAN-1133 slice 13: dispute reasons, event boops and the Dispatch toggle move to chipClasses; the practice term and swap choices and the Space events rows move to choiceTileClasses"
+        },
+        {
+          "at": "2026-11-18",
+          "from": 39,
+          "to": 29,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 14: Journey v2 editor quiet actions to the kit Button (primarySoft and ghost at xs), Journey template and event picker tiles and the block inspector entity filter rows to choiceTileClasses; 39 to 29."
         }
       ]
     },
