@@ -101,17 +101,22 @@ export async function scoreEventsForViewer(
   const now = Date.now()
   const nowIso = new Date(now).toISOString()
 
-  // ── Candidate events ─────────────────────────────────────────────────────
-  let events: EventRow[] = []
-  if (eventIds && eventIds.length > 0) {
-    const { data } = await client
-      .from('events')
-      .select('id, starts_at, scope_id, scope_type, is_cancelled, parent_event_id')
-      .in('id', eventIds)
-      .eq('is_cancelled', false)
-      .gte('starts_at', nowIso)
-    events = (data ?? []) as EventRow[]
-  } else {
+  // THREE WAVES, not six serial reads (PERF-008, 2026-11-18). This ranks the "Around you" spotlight at
+  // the top of /events for every signed-in member, and each read below used to wait for the one before
+  // it although most depend only on the viewer. Wave 1 is everything keyed on the viewer alone (plus
+  // the candidate rows); wave 2 needs the candidates or the viewer's circles; wave 3 needs both.
+
+  // ── Wave 1: candidates + viewer-only reads ─────────────────────────────────
+  const candidatesP: Promise<EventRow[]> = (async () => {
+    if (eventIds && eventIds.length > 0) {
+      const { data } = await client
+        .from('events')
+        .select('id, starts_at, scope_id, scope_type, is_cancelled, parent_event_id')
+        .in('id', eventIds)
+        .eq('is_cancelled', false)
+        .gte('starts_at', nowIso)
+      return (data ?? []) as EventRow[]
+    }
     // Default scope: upcoming events in the viewer's active circles.
     const { data: memberships } = await client
       .from('memberships')
@@ -128,8 +133,19 @@ export async function scoreEventsForViewer(
       .gte('starts_at', nowIso)
       .order('starts_at', { ascending: true })
       .limit(60)
-    events = (data ?? []) as EventRow[]
-  }
+    return (data ?? []) as EventRow[]
+  })()
+
+  const [events, { data: meRow }, { data: myMemberships }, { data: friendships }] = await Promise.all([
+    candidatesP,
+    client.from('profiles').select('embedding, home_lat, home_lng').eq('id', profileId).maybeSingle(),
+    client.from('memberships').select('circle_id').eq('profile_id', profileId).eq('status', 'active'),
+    client
+      .from('friendships')
+      .select('user_a_id, user_b_id')
+      .eq('status', 'accepted')
+      .or(`user_a_id.eq.${profileId},user_b_id.eq.${profileId}`),
+  ])
   if (events.length === 0) return []
 
   const ids = events.map((e) => e.id)
@@ -151,10 +167,39 @@ export async function scoreEventsForViewer(
     keyForRow.set(e.id, key)
     keys.add(key)
   }
-  const [{ data: meRow }, { data: embRows }] = await Promise.all([
-    client.from('profiles').select('embedding, home_lat, home_lng').eq('id', profileId).maybeSingle(),
+
+  // ── social: circle-mates + connections who are 'going' ─────────────────────
+  // Build the viewer's "people I know" set, then count how many are going to each.
+  const myCircleIds = ((myMemberships ?? []) as { circle_id: string }[]).map((m) => m.circle_id)
+  const connectionIds = new Set<string>()
+  for (const f of (friendships ?? []) as { user_a_id: string; user_b_id: string }[]) {
+    connectionIds.add(f.user_a_id === profileId ? f.user_b_id : f.user_a_id)
+  }
+
+  const circleScopeIds = [
+    ...new Set(events.filter((e) => e.scope_type === 'circle').map((e) => e.scope_id)),
+  ]
+
+  // ── Wave 2: embeddings, circle-mates and host-circle coordinates ───────────
+  const [{ data: embRows }, matesRows, circlesRows] = await Promise.all([
     client.from('event_embeddings').select('event_id, embedding').in('event_id', [...keys]),
+    myCircleIds.length > 0
+      ? client
+          .from('memberships')
+          .select('profile_id')
+          .in('circle_id', myCircleIds)
+          .eq('status', 'active')
+          .then(({ data }) => (data ?? []) as { profile_id: string }[])
+      : Promise.resolve([] as { profile_id: string }[]),
+    circleScopeIds.length > 0
+      ? client
+          .from('circles')
+          .select('id, latitude, longitude')
+          .in('id', circleScopeIds)
+          .then(({ data }) => (data ?? []) as { id: string; latitude: number | null; longitude: number | null }[])
+      : Promise.resolve([] as { id: string; latitude: number | null; longitude: number | null }[]),
   ])
+
   const viewerVec = parseVector((meRow as { embedding?: unknown } | null)?.embedding)
   const byKey: Record<string, number[]> = {}
   for (const r of (embRows ?? []) as { event_id: string; embedding: unknown }[]) {
@@ -169,33 +214,9 @@ export async function scoreEventsForViewer(
     if (own) eventVec[e.id] = own
   }
 
-  // ── social: circle-mates + connections who are 'going' ─────────────────────
-  // Build the viewer's "people I know" set, then count how many are going to each.
-  const [{ data: myMemberships }, { data: friendships }] = await Promise.all([
-    client.from('memberships').select('circle_id').eq('profile_id', profileId).eq('status', 'active'),
-    client
-      .from('friendships')
-      .select('user_a_id, user_b_id')
-      .eq('status', 'accepted')
-      .or(`user_a_id.eq.${profileId},user_b_id.eq.${profileId}`),
-  ])
-  const myCircleIds = ((myMemberships ?? []) as { circle_id: string }[]).map((m) => m.circle_id)
-
-  const connectionIds = new Set<string>()
-  for (const f of (friendships ?? []) as { user_a_id: string; user_b_id: string }[]) {
-    connectionIds.add(f.user_a_id === profileId ? f.user_b_id : f.user_a_id)
-  }
-
   const circleMateIds = new Set<string>()
-  if (myCircleIds.length > 0) {
-    const { data: mates } = await client
-      .from('memberships')
-      .select('profile_id')
-      .in('circle_id', myCircleIds)
-      .eq('status', 'active')
-    for (const m of (mates ?? []) as { profile_id: string }[]) {
-      if (m.profile_id !== profileId) circleMateIds.add(m.profile_id)
-    }
+  for (const m of matesRows) {
+    if (m.profile_id !== profileId) circleMateIds.add(m.profile_id)
   }
 
   // Weight per known person: a connection outranks a plain circle-mate.
@@ -203,6 +224,7 @@ export async function scoreEventsForViewer(
   for (const id of circleMateIds) knownWeight.set(id, CIRCLEMATE_WEIGHT)
   for (const id of connectionIds) knownWeight.set(id, CONNECTION_WEIGHT) // overrides upward
 
+  // ── Wave 3: who you know is going ──────────────────────────────────────────
   const socialRaw: Record<string, number> = {}
   if (knownWeight.size > 0) {
     const { data: going } = await client
@@ -224,18 +246,9 @@ export async function scoreEventsForViewer(
   const homeLat = home?.home_lat != null ? Number(home.home_lat) : null
   const homeLng = home?.home_lng != null ? Number(home.home_lng) : null
 
-  const circleScopeIds = [
-    ...new Set(events.filter((e) => e.scope_type === 'circle').map((e) => e.scope_id)),
-  ]
   const circleCoords: Record<string, { lat: number | null; lng: number | null }> = {}
-  if (circleScopeIds.length > 0) {
-    const { data: circles } = await client
-      .from('circles')
-      .select('id, latitude, longitude')
-      .in('id', circleScopeIds)
-    for (const c of (circles ?? []) as { id: string; latitude: number | null; longitude: number | null }[]) {
-      circleCoords[c.id] = { lat: c.latitude != null ? Number(c.latitude) : null, lng: c.longitude != null ? Number(c.longitude) : null }
-    }
+  for (const c of circlesRows) {
+    circleCoords[c.id] = { lat: c.latitude != null ? Number(c.latitude) : null, lng: c.longitude != null ? Number(c.longitude) : null }
   }
 
   // ── Compose ────────────────────────────────────────────────────────────────
