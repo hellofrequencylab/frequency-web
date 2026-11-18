@@ -703,8 +703,14 @@ const nextConfig: NextConfig = {
       // All 15 also come out of check-seo.mjs's INTENTIONALLY_EXCLUDED in this same change — that
       // allowlist warns on an entry with no backing page, so leaving them would trade one stale
       // record for another.
-      { source: '/build', destination: '/the-community', permanent: true },
+      // /build is no longer a retired guide: it is the link-only index of partner pages (owner 2026-11-18).
       { source: '/demo', destination: '/the-community', permanent: true },
+
+      // The link-only partner pages moved under /build (owner 2026-11-18). Permanent, and Next carries the
+      // query across, so a shared ?r=<reader> link keeps its reader code.
+      { source: '/how', destination: '/build/how', permanent: true },
+      { source: '/facilities', destination: '/build/facilities', permanent: true },
+      { source: '/lab', destination: '/build/lab', permanent: true },
       { source: '/feel-less-awkward-in-groups', destination: '/how-to-be-more-social', permanent: true },
       { source: '/find-like-minded-people', destination: '/friendship-as-an-adult', permanent: true },
       { source: '/host-a-recurring-gathering', destination: '/how-to-build-community', permanent: true },

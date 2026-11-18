@@ -8,9 +8,9 @@
     "The class definitions and what each one exempts are in the header of the THEME GATE section of check-tokens.mjs."
   ],
   "frozen": {
-    "at": "2026-11-17",
+    "at": "2026-11-18",
     "direction": "raised",
-    "reason": "app/(brief)/how/brief.css is GENERATED from the Frequency Overview design canvas (docs/HOW-BRIEF.md): the design-system token sheets plus the brief's own styles, scoped under .ov-root. Its colours ARE the design, as with the installer-generated theme sheets; hand-tokenising them would fork the page from its source."
+    "reason": "app/(brief)/build/vision/vision.css is GENERATED from The Frequency Vision - Encinitas design canvas (docs/HOW-BRIEF.md): the design-system token sheets plus the canvas's own styles, scoped under .vx-root. Its colours ARE the design; hand-tokenising them would fork the page from its source. (brief.css only moved to app/(brief)/build/how.)"
   },
   "counts": {
     "tsx-style-colour": {},
@@ -22,12 +22,14 @@
     "tsx-style-font-family": {},
     "tsx-colour-function": {},
     "css-colour": {
-      "app/(brief)/how/brief.css": 1192,
+      "app/(brief)/build/how/brief.css": 1192,
+      "app/(brief)/build/vision/vision.css": 249,
       "app/themes/frequency.css": 3,
       "components/sites/editor/editor.css": 8
     },
     "css-font-family": {
-      "app/(brief)/how/brief.css": 14
+      "app/(brief)/build/how/brief.css": 14,
+      "app/(brief)/build/vision/vision.css": 13
     },
     "css-font-size-floor": {
       "app/themes/frequency/members-a.css": 1,
@@ -124,7 +126,7 @@
     {
       "at": "2026-11-17",
       "direction": "raised",
-      "reason": "app/(brief)/how/brief.css is GENERATED from the Frequency Overview design canvas (docs/HOW-BRIEF.md): the design-system token sheets plus the brief's own styles, scoped under .ov-root. Its colours ARE the design, as with the installer-generated theme sheets; hand-tokenising them would fork the page from its source.",
+      "reason": "app/(brief)/build/how/brief.css is GENERATED from the Frequency Overview design canvas (docs/HOW-BRIEF.md): the design-system token sheets plus the brief's own styles, scoped under .ov-root. Its colours ARE the design, as with the installer-generated theme sheets; hand-tokenising them would fork the page from its source.",
       "totals": {
         "tsx-style-colour": 0,
         "tsx-style-font-size": 21,
@@ -132,6 +134,20 @@
         "tsx-colour-function": 0,
         "css-colour": 1203,
         "css-font-family": 14,
+        "css-font-size-floor": 7
+      }
+    },
+    {
+      "at": "2026-11-18",
+      "direction": "raised",
+      "reason": "app/(brief)/build/vision/vision.css is GENERATED from The Frequency Vision - Encinitas design canvas (docs/HOW-BRIEF.md): the design-system token sheets plus the canvas's own styles, scoped under .vx-root. Its colours ARE the design; hand-tokenising them would fork the page from its source. (brief.css only moved to app/(brief)/build/how.)",
+      "totals": {
+        "tsx-style-colour": 0,
+        "tsx-style-font-size": 21,
+        "tsx-style-font-family": 0,
+        "tsx-colour-function": 0,
+        "css-colour": 1452,
+        "css-font-family": 27,
         "css-font-size-floor": 7
       }
     }

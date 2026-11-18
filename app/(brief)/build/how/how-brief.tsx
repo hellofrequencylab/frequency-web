@@ -18,7 +18,7 @@ export function HowBrief() {
     const root = host?.querySelector<HTMLElement>('.ov-root')
     if (!host || !root) return
     const state: BriefState = { ...BRIEF_DEFAULTS }
-    const tracker = startBriefTracker(root)
+    const tracker = startBriefTracker(root, '/build/how')
 
     // ── calculators ─────────────────────────────────────────────────────────
     const textHoles = Array.from(root.querySelectorAll<HTMLElement>('[data-b]'))

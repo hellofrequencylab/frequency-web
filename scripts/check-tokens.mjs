@@ -152,11 +152,17 @@ const ALLOWLIST = [
   //     carry styling — one builds a model prompt, the other validates a settings form.
   (p) => p === 'lib/ai/connections-ai.ts',
   (p) => p === 'lib/spaces/profile-settings.ts',
-  // (6) A DESIGN-CANVAS EXPORT. app/(brief)/how/brief-html.ts is the /how brief's markup, generated
+  // (6) DESIGN-CANVAS EXPORTS. app/(brief)/build/how/brief-html.ts is the /build/how brief's markup, generated
   //     from the "Frequency Overview" design canvas (docs/HOW-BRIEF.md, LIVE-2323): its inline SVG
   //     fills, stops and drop-shadows ARE the design, and the file says not to hand-edit it. Its
   //     stylesheet (brief.css) is held by the per-file theme ratchet in token-baselines.json instead.
-  (p) => p === 'app/(brief)/how/brief-html.ts',
+  (p) => p === 'app/(brief)/build/how/brief-html.ts',
+  //     app/(brief)/build/vision/vision-markup.tsx is the same kind of file for /build/vision, generated
+  //     from "The Frequency Vision - Encinitas" canvas (docs/HOW-BRIEF.md): every inline style, oklch
+  //     band colour and font size is the design. Its stylesheet (vision.css) is held by the ratchet.
+  (p) => p === 'app/(brief)/build/vision/vision-markup.tsx',
+  //     vision-data.ts is that canvas's band data: each band's colour is part of what the band IS.
+  (p) => p === 'app/(brief)/build/vision/vision-data.ts',
 ]
 
 /**

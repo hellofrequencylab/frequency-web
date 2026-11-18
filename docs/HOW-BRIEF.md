@@ -1,11 +1,44 @@
-# /how: the Frequency overview brief
+# /build: the link-only partner pages
 
-Status and open owner actions live in docs/BUILD-BACKLOG.json (row LIVE-2323), not here.
+Status and open owner actions live in docs/BUILD-BACKLOG.json (rows LIVE-2323, LIVE-2344, LIVE-2345,
+LIVE-2372), not here.
+
+Every page Daniel shows a partner lives under `/build`. None is secret: each is shared by link, carries
+`LINK_ONLY_ROBOTS` (`lib/seo/link-only.ts`: noindex, nofollow, noarchive, nosnippet, noimageindex), and is
+kept out of `app/sitemap.ts`, the site nav and `app/robots.ts` DISALLOW (a blocked page's noindex is never read).
+
+| URL | What it is | Source |
+|---|---|---|
+| `/build` | The index: one card with a photo per page | `app/(brief)/build/page.tsx`, cards in `build-pages.ts` |
+| `/build/vision` | The Frequency Vision, Encinitas: the whole plan in seven chapters | `app/(brief)/build/vision/` (generated, below) |
+| `/build/how` | How Frequency works, and where the money comes from (the advisor brief) | `app/(brief)/build/how/` |
+| `/build/facilities` | Frequency third spaces: the facilities vision | `app/(marketing)/build/facilities/page.tsx` |
+| `/build/lab` | The Lab, the 2028 third-space plan | `app/(marketing)/build/lab/page.tsx` |
+
+The old `/how`, `/facilities` and `/lab` 308 to their `/build` paths (`next.config.ts`), query included, so
+a link already sent with `?r=` keeps its reader. **To add a page:** put it under `/build`, give it
+`robots: LINK_ONLY_ROBOTS` and a `PrivatePageTracker`, add its path to `PRIVATE_PAGES`, and add a card to
+`build-pages.ts`.
+
+## /build/vision
+
+Generated from the design canvas "The Frequency Vision - Encinitas" in the Frequency Facilities Project
+(Claude Design). The canvas runs on a runtime that compiles its script at load, which the site's CSP does
+not allow, so the port is: `vision-markup.tsx` (the canvas template turned into JSX, bindings intact),
+`vision-data.ts` (the seven bands and their chapters), `vision.css` (the design-system token sheets from
+`design_handoff/frequency/tokens` plus the canvas's own styles, scoped under `.vx-root`) and `vision-page.tsx`
+(the canvas's logic, by hand: hash chapters `#/852` and `#/852/2`, the chapter mega menu, the header that
+tightens on scroll, the marker on the frequency line). The three generated files say not to hand-edit:
+change the canvas and regenerate. The canvas's uploaded photos could not be exported, so each photo slot
+uses the same shoot already in `public/brand/frequency` and `public/images/site`. The opening date reads 2028
+(owner, 2026-11-18), matching /build/facilities and /build/lab.
+
+# /build/how: the Frequency overview brief
 
 A link-only page that explains how Frequency works and where the money comes from. It is written
 for coaches, advisors and partners, and is shared by direct link only.
 
-- **URL:** `https://frequencylocal.com/how`
+- **URL:** `https://frequencylocal.com/build/how` (`/how` 308s here)
 - **Not indexed:** page-level `robots` metadata (noindex, nofollow, noarchive, nosnippet,
   noimageindex). It is deliberately **not** disallowed in `robots.txt`, because a blocked page's
   noindex is never read.
@@ -18,7 +51,7 @@ for coaches, advisors and partners, and is shared by direct link only.
 Give each reader their own link, so you can see who read what:
 
 ```
-https://frequencylocal.com/how?r=jane-coach
+https://frequencylocal.com/build/how?r=jane-coach
 ```
 
 `r` is any short code you choose (letters, digits, `-` and `_`, up to 40 characters). It is kept
@@ -30,11 +63,11 @@ too.
 | Path | What it is |
 |---|---|
 | `app/(brief)/layout.tsx` | Route group layout: self-hosted Unbounded, Hanken Grotesk and Fraunces italic |
-| `app/(brief)/how/page.tsx` | Metadata (noindex) and a static render |
-| `app/(brief)/how/how-brief.tsx` | Client component: mounts the brief, runs the calculators, rail and tracking |
-| `app/(brief)/how/brief-html.ts` | **Generated** page markup. Do not hand-edit |
-| `app/(brief)/how/brief.css` | **Generated** styles (design-system tokens plus the brief's own) |
-| `app/(brief)/how/brief-motion.ts` | Side index rail, and the "Groups fade" loop that winds down when the reader stops scrolling |
+| `app/(brief)/build/how/page.tsx` | Metadata (noindex) and a static render |
+| `app/(brief)/build/how/how-brief.tsx` | Client component: mounts the brief, runs the calculators, rail and tracking |
+| `app/(brief)/build/how/brief-html.ts` | **Generated** page markup. Do not hand-edit |
+| `app/(brief)/build/how/brief.css` | **Generated** styles (design-system tokens plus the brief's own) |
+| `app/(brief)/build/how/brief-motion.ts` | Side index rail, and the "Groups fade" loop that winds down when the reader stops scrolling |
 | `lib/how/brief-tracker.ts` | Client tracker for every private page: batches events to the beacon |
 | `lib/how/private-readers.ts` | Folds the events into readers and clicks for the admin view |
 | `app/api/how/beacon/route.ts` | Anonymous event intake: consent and GPC checks, rate limit, writes via `track()` |
@@ -48,9 +81,9 @@ overwritten.
 
 ## Tracking
 
-**All private pages.** The same tracker runs on `/how`, `/facilities` and `/lab` (`PRIVATE_PAGES` in
+**All private pages.** The same tracker runs on every `/build` page (`PRIVATE_PAGES` in
 `lib/how/brief-events.ts`). Every event carries `page`. The `?r=` code carries across the private pages
-in one tab, so `frequencylocal.com/facilities?r=jane` followed by a click to `/lab` stays Jane. Clicks
+in one tab, so `frequencylocal.com/build/facilities?r=jane` followed by a click to `/build/lab` stays Jane. Clicks
 are page-wide (every link, button and expander, header and footer included) and a form submit records
 only the option picked, never what was typed. **See it at `/admin/growth#private-pages`** (the Private pages
 section at the bottom of the Growth dashboard; not its own route, because the deploy sits at the 8 GB
@@ -58,7 +91,7 @@ build budget): one row per reader and the full click log.
 
 Every event goes to `engagement_events` with `source = 'web'`, no profile (`actor_profile_id` is
 null), and its details in `context`. Each event carries `sid` (one visit), `ref` (the `?r=` code)
-and `page = '/how'`. Nothing is sent when the browser signals Global Privacy Control, or when the
+and `page` (`'/build/how'` here; events from before the move say `'/how'`). Nothing is sent when the browser signals Global Privacy Control, or when the
 visitor has declined analytics.
 
 | Event | When | Key details |
