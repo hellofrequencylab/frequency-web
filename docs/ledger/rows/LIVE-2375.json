@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2375",
+  "title": "Network kit's template library prices nothing as Free",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-18",
+  "source": {
+    "file": "docs/THEME-COHESION.md",
+    "ref": "Daniel 2026-11-18: \"Make every Frequency theme FULLY generic with copy that coaches them what to write. Be sure anybody using a theme keeps their content but give the templates a full scrub.\" Depth ruled the same day on the card: \"Strip specifics, keep ready copy\"."
+  },
+  "detail": "The template scrub's survey of the offered themes found Bold, Wildheart, Designer and Services already carry no invented price, rating or free promise in their kit and template copy (Designer's 'short, free call' is its own ruled softening and stays). Network kit's template (lib/sites/network-kit-home.ts) still priced its three library cards 'Free' and said the library was 'many of them free'; the prices are now empty and the live strip says what the library holds.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/themes/LIVE-2375.mjs"
+  },
+  "wave": "W7"
+}
