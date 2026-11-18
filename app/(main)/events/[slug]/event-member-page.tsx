@@ -75,6 +75,7 @@ import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { pointFromGeog } from '@/lib/events/geo'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { EVENT_MEDIA_BUCKET, eventHeroCandidates } from '@/lib/events/hero-url'
+import { readEventHeroHeight } from '@/lib/events/hero-height'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
@@ -2442,6 +2443,7 @@ export default async function EventDetailPage({
             src={heroUrl}
             alt={event.title}
             focus={coverFocus}
+            height={readEventHeroHeight(extra?.theme)}
             unoptimized={!heroIsPublic}
             dateDay={new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
             dateMonth={new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}
