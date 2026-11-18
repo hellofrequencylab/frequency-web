@@ -64,21 +64,20 @@ async function grantGemsOnce(
 /** Grant the Gems for the PHASE milestones in `events` (idempotent). Returns what was
  *  NEWLY granted (for the celebration toast).
  *
- *  `completionGems` is retained on the signature for caller compatibility but is no
- *  longer paid: per the Quest COMPLETION model (ADR-Quest), finishing a Journey is no
- *  longer "checked off every lesson" — it is logging the Journey's Practices on 14
- *  distinct days + completing its Expression Challenge, and the completion engine
- *  (lib/quest/complete.ts) owns the finish rewards (+75 Zaps and the Trophy — no Gems;
- *  the escalating rank-bonus this line used to name is RETIRED by ADR-305 and was removed
- *  from that path by LIVE-185). The old flat-30 journey-complete grant is retired here
- *  so a Journey is never double-rewarded. */
+ *  `completionGems` is retained on the signature for caller compatibility but is not paid
+ *  HERE: per the Quest COMPLETION model (ADR-Quest), finishing a Journey is no longer
+ *  "checked off every lesson" — it is logging the Journey's Practices on 14 distinct days +
+ *  completing its Expression Challenge, and the completion engine (lib/quest/complete.ts)
+ *  owns the finish rewards (+75 Zaps, the Trophy, and, since LIVE-2367, the plan's own
+ *  completion_gems via grantJourneyCompletionGems below). Paying it here too would
+ *  double-reward a Journey. */
 export async function grantJourneyRewards(opts: {
   profileId: string
   /** @deprecated retired by ADR-Quest — no longer paid (see fn doc). Kept for callers. */
   completionGems?: number
   events: readonly JourneyRewardEvent[]
 }): Promise<GrantedJourneyReward[]> {
-  void opts.completionGems // intentionally unused — journey-complete Gems retired (ADR-Quest)
+  void opts.completionGems // paid by the completion engine instead (grantJourneyCompletionGems)
   const admin = db()
   const granted: GrantedJourneyReward[] = []
   for (const ev of opts.events) {
@@ -93,6 +92,32 @@ export async function grantJourneyRewards(opts: {
     // unaffected and still pay above.
   }
   return granted
+}
+
+/** Pay a Journey's own `completion_gems` (the number its author set and the Journey card shows)
+ *  when the member genuinely finishes it, ONCE per member per Journey across all seasons
+ *  (LIVE-2367, owner ruling 2026-11-18). Called by the completion engine on a fresh finish.
+ *  Claim-then-pay like every other Journey grant; best-effort, never throws. Returns the Gems
+ *  newly paid (0 when already paid, zero-valued, or the plan is missing). */
+export async function grantJourneyCompletionGems(profileId: string, journeyId: string): Promise<number> {
+  try {
+    const admin = db()
+    const { data: plan } = await admin
+      .from('journey_plans')
+      .select('title, completion_gems')
+      .eq('id', journeyId)
+      .maybeSingle()
+    const row = plan as { title: string | null; completion_gems: number | null } | null
+    if (!row) return 0
+    const raw = Number(row.completion_gems ?? 0)
+    const amount = Number.isFinite(raw) ? Math.min(100, Math.max(0, Math.round(raw))) : 0
+    if (amount <= 0) return 0
+    const label = `Journey complete${row.title ? `: ${row.title}` : ''}`.slice(0, 200)
+    return (await grantGemsOnce(admin, `journey.finish.gems:${journeyId}`, profileId, amount, label)) ? amount : 0
+  } catch (err) {
+    console.error('[grantJourneyCompletionGems]', err instanceof Error ? err.message : err)
+    return 0
+  }
 }
 
 // ── Extra-credit Challenges (ADR-300 Part 2) ────────────────────────────────────────────

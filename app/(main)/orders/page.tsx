@@ -16,13 +16,17 @@ import { disputesForOrders, type CommerceDispute } from '@/lib/commerce/disputes
 import { DisputeButton } from '@/components/marketplace/dispute-button'
 import { FULFILLMENT_LABEL, orderNeedsFulfilment, type OrderFulfilment } from '@/lib/commerce/fulfilment-state'
 import type { FulfillmentStatus } from '@/lib/commerce/types'
+import { cartEnabled } from '@/lib/commerce/cart-flag'
+import { orderIsMessageable } from '@/lib/commerce/order-message'
+import { OrderMessageButton } from '@/components/marketplace/order-message-button'
 
 // My Orders — a member's purchase history across Makers + Shop. Checkout's success_url
 // lands here. Connect-only verticals (General / Housing) never create orders. An order that needs
 // sending shows where it stands and the tracking link once the seller marks it shipped (LIVE-606).
 // A split order (one payment, several sellers, LIVE-621) lists its lines under each seller's name, so
 // the buyer can tell who is sending what (LIVE-624), and each seller's group says where THAT
-// seller's share stands, since each ships their own (LIVE-705).
+// seller's share stands, since each ships their own (LIVE-705). Behind COMMERCE_CART_ENABLED each
+// seller's lines carry a Message button that opens the 1:1 thread about this order (DEF-ETSY P6).
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'My orders' }
@@ -78,10 +82,13 @@ function OrderCard({
   order,
   dispute,
   names,
+  messaging,
 }: {
   order: CommerceOrder
   dispute: CommerceDispute | null
   names: Map<string, string>
+  /** Order messages are on (the cart switch, DEF-ETSY P6). */
+  messaging: boolean
 }) {
   const when = formatDateMedium(order.createdAt)
   // A dispute makes sense on a completed purchase, not a failed / cancelled checkout.
@@ -94,6 +101,13 @@ function OrderCard({
   const byShare = order.fundsFlow === 'separate' && order.sellerFulfilments
     ? new Map(order.sellerFulfilments.map((s) => [sellerNameKey(s.seller), s]))
     : null
+  const canMessage = messaging && orderIsMessageable(order.status)
+  /** The seller key a line group messages: the group's own on a split order, the one seller otherwise. */
+  const messageKey = (g: { key: string; items: Line[] }): string | null => {
+    if (g.key !== 'all') return g.key === 'unknown' ? null : g.key
+    const seller = g.items.find((it) => it.seller)?.seller
+    return seller ? sellerNameKey(seller) : null
+  }
   return (
     <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-3">
@@ -119,6 +133,7 @@ function OrderCard({
           {byShare && disputable && orderNeedsFulfilment(g.items.map((it) => it.productKind)) && byShare.get(g.key) && (
             <ShippingLine status={byShare.get(g.key)!.fulfillmentStatus} f={byShare.get(g.key)!.fulfilment} />
           )}
+          {canMessage && messageKey(g) && <OrderMessageButton orderId={order.id} sellerKey={messageKey(g)!} sellerLabel={names.get(g.key) ?? null} />}
         </div>
       ))}
       {shippingState && !byShare && <ShippingLine status={order.fulfillmentStatus} f={order.fulfilment} />}
@@ -167,6 +182,7 @@ export default async function OrdersPage({
     }
   }
   const orders = await listOrdersForBuyer(profileId)
+  const messaging = cartEnabled()
   const [disputes, names, tickets] = await Promise.all([
     disputesForOrders(orders.map((o) => o.id)),
     // Seller names only for split orders, the one card that labels its lines by seller.
@@ -218,7 +234,7 @@ export default async function OrdersPage({
       ) : (
         <div className="space-y-4">
           {orders.map((o) => (
-            <OrderCard key={o.id} order={o} dispute={disputes.get(o.id) ?? null} names={names} />
+            <OrderCard key={o.id} order={o} dispute={disputes.get(o.id) ?? null} names={names} messaging={messaging} />
           ))}
         </div>
       )}

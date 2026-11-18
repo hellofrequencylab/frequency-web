@@ -203,8 +203,8 @@ export default async function JourneyPlanPage({
   // stat chips, enroll/manage) stays in the light `band` under the hero, so those controls keep their
   // normal styling and contrast. Layout + height resolve from the header element's master config
   // (/admin/elements), defaulting to identity/standard, so an operator can retune it without a deploy.
-  // The author's picked overlay (journey_plans) is the surface default; an operator master value still
-  // overrides site-wide. Only none/shadow/fade are honored; anything else falls back to the registry default.
+  // The author's header choices (journey_plans cover_focus, header_overlay_style/color, logo_image) ride
+  // into JourneyBody's cover (LIVE-2365). Only none/shadow/fade and a strict hex color are honored.
   const completed = docked && profileId ? [...(await getCompletedLessonIds(profileId, plan.id))] : []
   const tree = buildJourneyTree(itemsToBlocks(items), completed)
   const [publicJourneys, friends] = await Promise.all([
@@ -274,7 +274,7 @@ export default async function JourneyPlanPage({
     <>
       <ShareImageProvider imageUrl={plan.cover_image ?? null}>
         <JourneyBody
-          plan={{ slug: plan.slug, title: plan.title, summary: plan.summary, adoptCount: plan.adopt_count, coverImage: plan.cover_image }}
+          plan={{ slug: plan.slug, title: plan.title, summary: plan.summary, adoptCount: plan.adopt_count, coverImage: plan.cover_image, coverFocus: plan.cover_focus, overlayStyle: plan.header_overlay_style, overlayColor: plan.header_overlay_color, logoImage: plan.logo_image }}
           tree={tree}
           tracked={docked}
           inside={adopted || isAuthor}

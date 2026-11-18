@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-070",
+  "title": "A reminder Resend accepts and then drops for the daily limit is sent again the next day",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "app/api/webhooks/resend/route.ts",
+    "ref": "Email and messaging check 2026-11-18 (thread: Check every email and message system)"
+  },
+  "detail": "2026-11-18: Resend accepts a send over the account's daily limit and then reports email.failed with reason reached_daily_quota. The outbox already marked it accepted, so it is lost: 25 such failures from Nov 12 to Nov 18, mostly event reminders. the reserve valve in EMAIL-060 (PR #5225) makes this rarer once switched on, and a Transactional plan without a daily cap removes it, but when it happens a transactional email should go back on the outbox for the next UTC day: the webhook can look up email_provider_attempts by provider_id and re-enqueue its frozen payload once (bulk sends stay dropped; a campaign already counts them as failed). Done when the webhook handles reached_daily_quota and the probe passes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-scan-2026-11-18.mjs quota-failed-requeue",
+    "note": "Fails on main today; passes once the fix lands."
+  }
+}

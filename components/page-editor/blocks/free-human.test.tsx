@@ -22,7 +22,7 @@ describe('the Free Human Home seed', () => {
     const json = JSON.stringify(freeHumanHomeBlocks())
     for (const m of json.matchAll(/"glyph":"([^"]+)"/g)) expect(hasFreeHumanGlyph(m[1]), m[1]).toBe(true)
     const known = new Set(Object.values(FREE_HUMAN_PHOTOS).map((p) => (p as { src?: string }).src).filter(Boolean))
-    for (const m of json.matchAll(/"(?:image|accentImage)":"([^"]+)"/g)) expect(m[1].startsWith('/sites/free-human/photos/') || known.has(m[1]), m[1]).toBe(true)
+    for (const m of json.matchAll(/"(?:image|accentImage)":"([^"]+)"/g)) expect(m[1].startsWith('/sites/free-human/photos/') || m[1].startsWith('/brand/frequency/photos/') || known.has(m[1]), m[1]).toBe(true)
   })
   it('draws every block with its defaults', () => {
     for (const b of freeHumanHomeBlocks()) {

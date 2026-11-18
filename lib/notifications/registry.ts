@@ -42,6 +42,8 @@ export type NotificationEvent =
   | 'plan.todo_overdue'
   | 'order.shipped'
   | 'loyalty.nudge'
+  | 'community.joined'
+  | 'message.direct'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
  *  and its call sites share one shape and a typo is a compile error, not a runtime one. */
@@ -106,6 +108,13 @@ export interface NotificationContexts {
    *  (lib/loyalty/visit.ts nudgeOneAway) authors the copy in-voice; `tag` collapses a repeat for
    *  the same Space on the device, and the subject lets a per-Space mute win. */
   'loyalty.nudge': { title: string; body: string; url: string; tag: string }
+  /** Someone joined a Circle you host or followed a Space you own (LIVE-2366, owner ruling
+   *  2026-11-18). The caller names the place; the bell links to it. */
+  'community.joined': { actorId: string; kind: 'circle' | 'space'; name: string; reference: string }
+  /** The first message of a burst in a 1:1 conversation (EMAIL-055). The caller
+   *  (lib/messages/dm-notify.ts) decides it is the first unread one, authors the push copy, and
+   *  renders the email when the recipient has an address. `tag` collapses the burst on the device. */
+  'message.direct': { senderId: string; conversationId: string; title: string; body: string; url: string; tag: string; email?: EmailPayload }
 }
 
 /** One bell row, in the shape of a `notifications` row (the table the bell and /notifications
@@ -200,6 +209,23 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
         referenceId: ctx.ownerHandle,
       },
       push: { title: ctx.title, body: ctx.body, url: ctx.url },
+    }),
+  },
+
+  // A new Circle member or Space follower, told to the host / owner (LIVE-2366). Owner ruling
+  // 2026-11-18: under "Updates and messages", so inapp_lifecycle decides and the owner can turn it off.
+  'community.joined': {
+    event: 'community.joined',
+    category: 'lifecycle',
+    channels: ['inapp'],
+    render: (ctx) => ({
+      inapp: {
+        type: ctx.kind === 'circle' ? 'circle_joined' : 'space_followed',
+        body: ctx.kind === 'circle' ? `joined your Circle "${ctx.name}"` : `followed your Space "${ctx.name}"`,
+        actorId: ctx.actorId,
+        referenceType: ctx.kind,
+        referenceId: ctx.reference,
+      },
     }),
   },
 
@@ -373,6 +399,24 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
     channels: ['push'],
     render: (ctx) => ({
       push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+    }),
+  },
+  // A direct message (EMAIL-055). `mentions`: someone wrote to you, by name. In-app and email are on by
+  // default (inapp_mentions, email_mentions), push follows the member's own push_mentions switch.
+  'message.direct': {
+    event: 'message.direct',
+    category: 'mentions',
+    channels: ['inapp', 'push', 'email'],
+    render: (ctx) => ({
+      inapp: {
+        type: 'direct_message',
+        body: 'sent you a message',
+        actorId: ctx.senderId,
+        referenceType: 'direct_message',
+        referenceId: ctx.conversationId,
+      },
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+      ...(ctx.email ? { email: ctx.email } : {}),
     }),
   },
 }

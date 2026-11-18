@@ -1,5 +1,6 @@
 // The member join, as one path (SCAN-774). See joinCircleAsMember.
 
+import { routeNotification } from '@/lib/notifications/router'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isPlatformStaff } from '@/lib/auth'
 import { asCircleAccess, canJoinCircle, LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
@@ -55,7 +56,7 @@ export async function joinCircleAsMember(
     }
   })
     .from('circles')
-    .select('member_count, member_cap, hub_id, access, unlisted, space_id, host_id, status')
+    .select('member_count, member_cap, hub_id, access, unlisted, space_id, host_id, status, name')
     .eq('id', circleId)
     .maybeSingle()
 
@@ -202,6 +203,16 @@ export async function joinCircleAsMember(
   awardGems(myProfileId, 'circle_join').catch(() => {})
   // Activation-funnel step 3 + the engagement funnel's join step (ADR-075). Best-effort.
   await track('circle.joined', { circleId }, myProfileId)
+  // The host hears about a new member (LIVE-2366): their in-app Updates switch decides. Best-effort.
+  const hostId = typeof circleRaw.host_id === 'string' ? circleRaw.host_id : null
+  if (hostId && hostId !== myProfileId) {
+    await routeNotification('community.joined', { profileId: hostId }, {
+      actorId: myProfileId,
+      kind: 'circle',
+      name: typeof circleRaw.name === 'string' && circleRaw.name.trim() ? circleRaw.name.trim() : 'your Circle',
+      reference: circleId,
+    }).catch(() => {})
+  }
 
   return ok({ joined: true })
 }

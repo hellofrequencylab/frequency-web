@@ -15,11 +15,12 @@
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { recordEmailEvent, suppress } from '@/lib/suppression'
+import { bounceSuppressionReason, classifyBounce, priorTransientBounces, recordEmailEvent, suppress } from '@/lib/suppression'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
 import { handleSpaceSendWebhook, handleSpaceSendEngagement } from '@/lib/spaces/email'
 import { recordSpaceSendEventFromResend, spaceEventKindForResend } from '@/lib/spaces/email-tracking'
 import { mapResendEventToInteraction, type ResendTimelineEventType } from '@/lib/spaces/email-timeline'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,8 +59,11 @@ export async function POST(req: Request) {
     data?: {
       to?: string | string[]
       email_id?: string
+      bounce?: { type?: string }
       headers?: unknown
       tags?: unknown
+      email?: string
+      unsubscribed?: boolean
     }
   }
   try {
@@ -81,6 +85,15 @@ export async function POST(req: Request) {
     }
     console.error('[resend-webhook] idempotency claim failed', { type, code: claim.error.code ?? 'n/a' })
     return NextResponse.json({ ok: false, error: 'claim failed' }, { status: 500 })
+  }
+
+  // A Resend CONTACT changed (EMAIL-076). Campaigns go out as Resend broadcasts, and a recipient can
+  // opt out on Resend's own unsubscribe page or through the inbox button Resend's List-Unsubscribe
+  // header drives. Mirror that opt-out as a ROOT-Space suppression, the same record our own
+  // per-address unsubscribe writes, so the platform campaign send gate honors it. It is never a
+  // global suppression: sign-in links and reminders still reach the person.
+  if (event.type === 'contact.updated') {
+    return handleContactUpdated(id, event.data?.email, event.data?.unsubscribed === true)
   }
 
   const to = Array.isArray(event.data?.to) ? event.data?.to[0] : event.data?.to
@@ -108,9 +121,18 @@ export async function POST(req: Request) {
   // re-runs suppression and appends exactly one row.
   const errors: string[] = []
 
+  // A complaint always suppresses. A bounce suppresses when it is Permanent, or when a Transient
+  // one (a full mailbox, an expired delivery) repeats (EMAIL-052, lib/suppression.ts).
+  let suppressReason: string | null = null
   if (type === 'bounced' || type === 'complained') {
     try {
-      await suppress(to, type === 'bounced' ? 'hard_bounce' : 'complaint')
+      if (type === 'complained') {
+        suppressReason = 'complaint'
+      } else {
+        const kind = classifyBounce(event.data)
+        suppressReason = bounceSuppressionReason(kind, kind === 'transient' ? await priorTransientBounces(to) : 0)
+      }
+      if (suppressReason) await suppress(to, suppressReason)
     } catch (err) {
       errors.push(`suppress: ${err instanceof Error ? err.message : String(err)}`)
     }
@@ -128,7 +150,7 @@ export async function POST(req: Request) {
   // Sending without delivery feedback is worse than not sending.
   if (type === 'delivered' || type === 'bounced' || type === 'complained') {
     try {
-      await handleSpaceSendWebhook(event.data?.email_id ?? null, type)
+      await handleSpaceSendWebhook(event.data?.email_id ?? null, type, { suppressAddress: suppressReason !== null })
     } catch (err) {
       errors.push(`spaceSend: ${err instanceof Error ? err.message : String(err)}`)
     }
@@ -189,6 +211,27 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true })
+}
+
+/** contact.updated: record an opt-out made on Resend's side. A subscribe or a profile edit needs
+ *  nothing. A failed suppression write releases the claim and answers 503, so Resend redelivers. */
+async function handleContactUpdated(eventId: string, email: string | undefined, unsubscribed: boolean): Promise<Response> {
+  if (!unsubscribed || !email) return NextResponse.json({ ok: true, skipped: 'no opt-out' })
+  const rootSpaceId = await loadRootSpaceId()
+  if (!rootSpaceId) {
+    // No root Space to scope the opt-out to: retrying cannot create one. Logged loudly; Resend itself
+    // still skips this contact in every broadcast.
+    console.error('[resend-webhook] contact opt-out not mirrored: no root space')
+    return NextResponse.json({ ok: true, skipped: 'no root space' })
+  }
+  try {
+    await suppress(email, 'unsubscribe', rootSpaceId)
+  } catch (err) {
+    console.error('[resend-webhook] contact opt-out suppression failed', { error: err instanceof Error ? err.message : String(err) })
+    await releaseClaim(eventId)
+    return NextResponse.json({ ok: false, error: 'processing failed' }, { status: 503 })
+  }
+  return NextResponse.json({ ok: true, unsubscribed: true })
 }
 
 /** Release a claimed svix-id so Resend's redelivery is processed rather than answered as a duplicate.

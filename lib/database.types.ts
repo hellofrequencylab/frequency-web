@@ -4087,6 +4087,67 @@ export type Database = {
           },
         ]
       }
+      community_book_submissions: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          plan_id: string
+          profile_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_note: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          plan_id: string
+          profile_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          plan_id?: string
+          profile_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_note?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_book_submissions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_book_submissions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_book_submissions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_ratings: {
         Row: {
           content_id: string
@@ -4284,6 +4345,64 @@ export type Database = {
             columns: ["draft_id"]
             isOneToOne: false
             referencedRelation: "create_space_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_credentials: {
+        Row: {
+          created_at: string
+          id: string
+          issued_at: string
+          issued_by: string | null
+          level: string
+          plan_id: string
+          profile_id: string
+          revoked_at: string | null
+          run_key: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          level: string
+          plan_id: string
+          profile_id: string
+          revoked_at?: string | null
+          run_key?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          issued_at?: string
+          issued_by?: string | null
+          level?: string
+          plan_id?: string
+          profile_id?: string
+          revoked_at?: string | null
+          run_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_credentials_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_credentials_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_credentials_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -8400,6 +8519,55 @@ export type Database = {
             columns: ["practice_id"]
             isOneToOne: false
             referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_plan_guides: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          plan_id: string
+          profile_id: string
+          sort_order: number
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          plan_id: string
+          profile_id: string
+          sort_order?: number
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          plan_id?: string
+          profile_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_plan_guides_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_guides_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_guides_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

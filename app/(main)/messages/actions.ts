@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireProfileId as getMyProfileId } from '@/lib/auth'
 import { isBlockedBetween } from '@/lib/blocking'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
+import { notifyDirectMessage } from '@/lib/messages/dm-notify'
 import { dmThreadHref } from '@/lib/messages/dm-destination'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
@@ -223,6 +224,11 @@ export async function sendMessage(conversationId: string, formData: FormData) {
   // intentionally not folded here (prioritize the 1:1 DM path per the Phase 1 plan).
   if (inserted?.id && others.length === 1) {
     await recordDmTouch(myProfileId, others[0], inserted.id as string)
+  }
+
+  // Tell the recipient (EMAIL-055): bell, push and email per their own Mentions switches, once per burst.
+  if (others.length === 1) {
+    await notifyDirectMessage(admin, { conversationId, senderId: myProfileId, recipientId: others[0], messageId: (inserted?.id as string | undefined) ?? null, body })
   }
 
   // Mark the sender as having read up to now

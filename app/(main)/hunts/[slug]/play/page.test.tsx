@@ -15,6 +15,10 @@ const store = vi.hoisted(() => ({
 
 vi.mock('@/lib/auth', () => ({ getMyProfileId: store.getMyProfileId }))
 vi.mock('@/lib/hunts/run-store', () => store)
+const teams = vi.hoisted(() => ({ myTeamPanel: vi.fn() }))
+vi.mock('@/lib/hunts/team-store', () => teams)
+const finales = vi.hoisted(() => ({ loadRallyFinale: vi.fn() }))
+vi.mock('@/lib/hunts/rally-finale-store', () => finales)
 vi.mock('@/components/templates', () => ({ FocusTemplate: ({ children }: { children: ReactNode }) => <main>{children}</main> }))
 // The map is a client leaf: what the server passes it is what reaches the browser, so capture it whole.
 const mapProps = vi.hoisted(() => ({ sent: [] as string[] }))
@@ -55,6 +59,8 @@ beforeEach(() => {
   mapProps.sent.length = 0
   store.startOrResumeRun.mockResolvedValue(run)
   store.loadPlayerRun.mockResolvedValue(run)
+  teams.myTeamPanel.mockResolvedValue(null)
+  finales.loadRallyFinale.mockResolvedValue({ kind: 'none' })
 })
 
 afterEach(() => {
@@ -170,5 +176,102 @@ describe('Trail player hint reveal', () => {
     await expect(render('stop-1')).rejects.toThrow('/sign-in?next=/hunts/coast-trail/play')
     expect(store.loadPlayerRun).not.toHaveBeenCalled()
     expect(store.startOrResumeRun).not.toHaveBeenCalled()
+  })
+})
+
+describe('Trail player team panel (FH-043S)', () => {
+  const TEAM = '00000000-0000-4000-a043-0000000000aa'
+  const team = { teamId: TEAM, huntId: 'hunt-1', versionId: 'version-1', name: 'The Lanterns', state: 'locked', runId: 'team-run', captain: false, size: 3, stopsDone: 2 }
+  const renderWith = async (search: Record<string, string>) => renderToStaticMarkup(await PlayPage({
+    params: Promise.resolve({ slug: 'coast-trail' }), searchParams: Promise.resolve(search),
+  }))
+
+  it('offers to start a team, and a join form only from a captain\'s link', async () => {
+    const html = await render()
+    expect(html).toContain('Play as a team')
+    expect(html).toContain('Start a team')
+    expect(html).not.toContain('Join the team')
+    expect(teams.myTeamPanel).toHaveBeenCalledWith('player-1', 'coast-trail')
+    const join = await renderWith({ team: TEAM })
+    expect(join).toContain('Join the team')
+    expect(join).toContain(`value="${TEAM}"`)
+    expect(await renderWith({ team: 'not-a-team' })).not.toContain('Join the team')
+  })
+
+  it('shows a locked member the team\'s count and the team confirm, never the solo form or a roster', async () => {
+    teams.myTeamPanel.mockResolvedValue(team)
+    const html = await render()
+    expect(html).toContain('The Lanterns')
+    expect(html).toContain('3 people, roster locked. Your team has 2 stops.')
+    expect(html).toContain('Confirm stop for your team')
+    expect(html).toContain('Leave the team')
+    expect(html).not.toContain('Lock the roster')
+    expect(html).not.toMatch(/>Confirm stop<|team-run|hunt-1/)
+  })
+
+  it('gives the captain of a forming team the lock button', async () => {
+    teams.myTeamPanel.mockResolvedValue({ ...team, state: 'forming', runId: null, captain: true, size: 2, stopsDone: null })
+    const html = await render()
+    expect(html).toContain('Lock the roster')
+    expect(html).not.toContain('Confirm stop for your team')
+  })
+
+  it('reads no team with claims off or the Trail paused, and survives a failed read', async () => {
+    vi.stubEnv('HUNTS_CLAIMS_ENABLED', '')
+    expect(await render()).not.toContain('Play as a team')
+    vi.stubEnv('HUNTS_CLAIMS_ENABLED', 'on')
+    store.loadPublishedTrail.mockResolvedValue({ ...trail, huntState: 'paused' })
+    expect(await render()).not.toContain('Play as a team')
+    expect(teams.myTeamPanel).not.toHaveBeenCalled()
+    store.loadPublishedTrail.mockResolvedValue(trail)
+    teams.myTeamPanel.mockRejectedValue(new Error('read failed'))
+    expect(await render()).toContain('Start a team')
+  })
+})
+
+describe('Trail player finale panel (FH-031S)', () => {
+  const event = { id: '00000000-0000-4000-a031-0000000000e1', title: 'Harbor Party', slug: 'harbor-party', startsAt: '2026-12-05T19:00:00Z' }
+  const finale = (over: Record<string, unknown>) => ({
+    kind: 'finale', event, capacity: { capacity: 40, going: 40, spotsLeft: 0, isFull: true },
+    admission: 'none', attendance: 'none', seat: null, access: { allowed: false, reason: 'event_full' }, ...over,
+  })
+
+  it('reads the finale for the player\'s own run and shows nothing for a Trail without one', async () => {
+    const html = await render()
+    expect(finales.loadRallyFinale).toHaveBeenCalledWith('run-1', 'player-1', expect.any(String))
+    expect(html).not.toContain('The finale')
+  })
+
+  it('tells a finished player with no seat at a full Event that it is full, with no way to claim a seat', async () => {
+    finales.loadRallyFinale.mockResolvedValue(finale({}))
+    const html = await render()
+    expect(html).toContain('The finale: Harbor Party')
+    expect(html).toContain('No places left.')
+    expect(html).toContain('The finale is full. Finishing the trail does not hold a place')
+    expect(html).toContain('href="/events/harbor-party"')
+    expect(html).not.toMatch(/<form[^>]*finale|Claim (a|your) (seat|place)|RSVP now/)
+  })
+
+  it('shows a seat holder their seat and the places left', async () => {
+    finales.loadRallyFinale.mockResolvedValue(finale({
+      capacity: { capacity: 40, going: 37, spotsLeft: 3, isFull: false }, admission: 'ticket', seat: { kind: 'ticket', id: 't-1' }, access: { allowed: true, via: 'ticket' },
+    }))
+    const html = await render()
+    expect(html).toContain('3 places left.')
+    expect(html).toContain('Your ticket gets you in.')
+    expect(html).not.toContain('t-1')
+  })
+
+  it('says the finale is unavailable for a cancelled Event, and survives a failed read', async () => {
+    finales.loadRallyFinale.mockResolvedValue({ kind: 'unavailable', access: { allowed: false, reason: 'event_unavailable' } })
+    expect(await render()).toContain('The finale is not available right now.')
+    finales.loadRallyFinale.mockRejectedValue(new Error('read failed'))
+    expect(await render()).not.toContain('The finale')
+  })
+
+  it('reads no finale when the player has no run', async () => {
+    store.startOrResumeRun.mockResolvedValue(null)
+    await render()
+    expect(finales.loadRallyFinale).not.toHaveBeenCalled()
   })
 })

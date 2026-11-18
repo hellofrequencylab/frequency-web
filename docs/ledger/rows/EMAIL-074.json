@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-074",
+  "title": "A reply notice sent to a leader or a Space owner opens their own inbox instead of the staff-only page",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "lib/comms/inbound.ts",
+    "ref": "Email and messaging check 2026-11-18 (thread: Check every email and message system)"
+  },
+  "detail": "2026-11-18: notifyConversationReply (lib/comms/inbound.ts) writes reference_type 'conversation' for the conversation owner, and lib/notifications/href.ts sends 'conversation' to /admin/crm/conversations, which requires staff. Leaders (kind leader, inbox /lead/inbox) and Space owners (Space-lane threads under /spaces/[slug]/crm/conversations) are bounced by every reply bell. Same class as LIVE-505. Done when the bell row carries a destination the owner can open.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-scan-2026-11-18.mjs reply-bell-destination",
+    "note": "Fails on main today; passes once the fix lands."
+  }
+}

@@ -14,6 +14,7 @@ import { canModeratePost } from '@/lib/moderation/scope'
 import { canInteractOnWall } from '@/lib/spaces/community-wall'
 import { isBlockedBetween } from '@/lib/blocking'
 import { routeNotification } from '@/lib/notifications/router'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { log } from '@/lib/log'
 import { listShareablesFor } from '@/lib/feed/shareables'
 import { asWebRole, isStaff, type CommunityRole } from '@/lib/core/roles'
@@ -480,7 +481,11 @@ async function notifyParentAuthor(
   try {
     const { data: author } = await admin.from('profiles').select('handle').eq('id', authorId).maybeSingle()
     const handle = author?.handle?.toLowerCase()
-    if (handle && new RegExp(`@${handle}(?![a-zA-Z0-9_])`, 'i').test(replyBody)) return
+    // A reply that @mentions the author already reaches them as a mention, so the reply notice
+    // steps aside. Only when that mention can actually land, though: with Mentions off and
+    // Replies on, the reply notice is the one they asked for (LIVE-2361).
+    if (handle && new RegExp(`@${handle}(?![a-zA-Z0-9_])`, 'i').test(replyBody)
+      && (await resolveSendGate(authorId, 'inapp', 'mentions')).allowed) return
     await routeNotification('post.reply', { profileId: authorId }, { replierId, postId })
   } catch (err) {
     log.warn('[feed] reply notice failed', { authorId, postId, error: err instanceof Error ? err.message : String(err) })
@@ -763,7 +768,8 @@ export async function listShareables(): Promise<{ label: string; href: string; k
   const profileId = await getMyProfileId()
   if (!profileId) return []
   try {
-    return await listShareablesFor(profileId)
+    // journey_enrollments is deny-all under RLS; the service reader is pinned to the caller's id.
+    return await listShareablesFor(profileId, createAdminClient())
   } catch {
     return []
   }

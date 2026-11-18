@@ -42,7 +42,7 @@ export const NETWORK_KIT_LIVE = {
     { source: 'journeys', glyph: 'arc', label: 'Programs', value: '', href: '~/journeys' },
     { source: 'members', glyph: 'users', label: 'Members', value: '', href: '~/membership' },
     { source: 'custom', glyph: 'calendar-clock', label: 'Welcome calls', value: 'Book a time that suits you', href: '~/book' },
-    { source: 'custom', glyph: 'spark', label: 'The library', value: 'Guides and stories, many of them free', href: '~/resources' },
+    { source: 'custom', glyph: 'spark', label: 'The library', value: 'Guides and stories from the tables', href: '~/resources' },
   ],
   band: '',
 }
@@ -167,10 +167,10 @@ export const NETWORK_KIT_LIBRARY = {
   actionLabel: 'The whole library',
   actionHref: '~/resources',
   resources: [
-    { glyph: 'half', type: 'Guide', title: 'A host guide for the first ten minutes', meta: 'PDF', price: 'Free', href: '~/resources' },
-    { glyph: 'audio', type: 'Recording', title: 'How a good introduction sounds', meta: 'Audio', price: 'Free', href: '~/resources' },
+    { glyph: 'half', type: 'Guide', title: 'A host guide for the first ten minutes', meta: 'PDF', price: '', href: '~/resources' },
+    { glyph: 'audio', type: 'Recording', title: 'How a good introduction sounds', meta: 'Audio', price: '', href: '~/resources' },
     { glyph: 'file', type: 'Template', title: 'A welcome email for new members', meta: 'Docs', price: '', href: '~/resources' },
-    { glyph: 'star', type: 'Story', title: 'Member stories from around the tables', meta: 'Read', price: 'Free', href: '~/resources' },
+    { glyph: 'star', type: 'Story', title: 'Member stories from around the tables', meta: 'Read', price: '', href: '~/resources' },
   ],
   band: '',
 }

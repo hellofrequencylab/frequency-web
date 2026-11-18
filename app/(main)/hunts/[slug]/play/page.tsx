@@ -4,8 +4,10 @@ import { notFound, redirect } from 'next/navigation'
 import { Check, Lock, MapPin } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { ClaimStopForm } from '@/components/hunts/claim-stop-form'
+import { FinalePanel } from '@/components/hunts/finale-panel'
 import { HuntFundraising } from '@/components/hunts/hunt-fundraising'
 import { HuntPlayerSafety } from '@/components/hunts/moderation-screens'
+import { TeamPanel } from '@/components/hunts/team-panel'
 import { TrailStoreLinks, loadTrailStoreLinks } from '@/components/hunts/trail-store-links'
 import { VisitedStops } from '@/components/hunts/visited-stops'
 import { VisitedStopsMap } from '@/components/hunts/visited-stops-map'
@@ -13,7 +15,9 @@ import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { projectForPlayer, visitedPins } from '@/lib/hunts/player'
+import { loadRallyFinale } from '@/lib/hunts/rally-finale-store'
 import { loadPlayerRun, loadPublishedTrail, loadRunCredits, loadVisitedStopPoints, startOrResumeRun } from '@/lib/hunts/run-store'
+import { myTeamPanel } from '@/lib/hunts/team-store'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,12 +26,18 @@ export const dynamic = 'force-dynamic'
 // a locked stop shows its position, an open stop shows its clue without the place, and a visited
 // stop shows both. The current stop's optional hint requires an explicit request. The map (FH-016T)
 // gets pins for visited stops only: the loader asks for credited stops and `visitedPins` drops the rest.
+// The team panel (FH-043S) shows the caller's own Expedition team, never a roster; a team member confirms
+// stops for the team's one run, so the solo confirm form steps aside while they are on a team.
+// The finale panel (FH-031S) shows a Trail's host Event from the Events tables: places left, the
+// player's own seat or why there is none, and a link to the Event. It never claims or holds a seat.
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const metadata: Metadata = { title: 'Play a Trail', robots: { index: false } }
 
 export default async function PlayPage({ params, searchParams }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ hint?: string | string[] }>
+  searchParams: Promise<{ hint?: string | string[]; team?: string | string[] }>
 }) {
   const { slug } = await params
   if (!huntSwitchOn('enabled')) notFound()
@@ -36,7 +46,7 @@ export default async function PlayPage({ params, searchParams }: {
   const profileId = await getMyProfileId()
   if (!profileId) redirect(`/sign-in?next=/hunts/${slug}/play`)
 
-  const { hint } = await searchParams
+  const { hint, team: joinParam } = await searchParams
   const run = hint === undefined ? await startOrResumeRun(trail, profileId) : await loadPlayerRun(trail, profileId)
   const credits = run ? await loadRunCredits(run.runId, profileId) : []
   const view = projectForPlayer({
@@ -52,7 +62,13 @@ export default async function PlayPage({ params, searchParams }: {
     },
   })
   const pins = visitedPins(view.stops, run ? await loadVisitedStopPoints(trail, credits) : [])
-  const canConfirm = huntSwitchOn('claims') && view.canClaim && run?.state === 'active'
+  const teamsOpen = huntSwitchOn('claims') && trail.huntState === 'published'
+  // A failed team read leaves the panel on its start door; every team action checks again on the server.
+  const team = teamsOpen ? await myTeamPanel(profileId, slug).catch(() => null) : null
+  const joinTeamId = typeof joinParam === 'string' && UUID.test(joinParam) ? joinParam : null
+  const canConfirm = huntSwitchOn('claims') && view.canClaim && run?.state === 'active' && !team
+  // A failed finale read shows no panel rather than a wrong seat; the Event page stays the authority.
+  const finale = run ? await loadRallyFinale(run.runId, profileId, new Date().toISOString()).catch(() => null) : null
 
   return (
     <FocusTemplate
@@ -95,6 +111,7 @@ export default async function PlayPage({ params, searchParams }: {
             </li>
           ))}
         </ol>
+        <FinalePanel finale={finale} />
         <VisitedStops stops={view.stops} />
         <TrailStoreLinks links={await loadTrailStoreLinks(trail.huntId)} />
         <VisitedStopsMap pins={pins} />
@@ -106,6 +123,13 @@ export default async function PlayPage({ params, searchParams }: {
             </Link>
             <ClaimStopForm slug={slug} />
           </div>
+        )}
+        {teamsOpen && (
+          <TeamPanel
+            slug={slug}
+            team={team && team.state !== 'disbanded' ? { teamId: team.teamId, name: team.name, state: team.state, captain: team.captain, size: team.size, stopsDone: team.stopsDone } : null}
+            joinTeamId={joinTeamId}
+          />
         )}
         <HuntFundraising huntId={trail.huntId} />
       </div>

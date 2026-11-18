@@ -387,45 +387,45 @@ const row = (fields: Record<string, unknown>) => ({ type: 'array', label: 'Rows'
 const links = (n: string) => ({ [`${n}Label`]: text('Button'), [`${n}Href`]: text('Button: where it goes', LINK_HINT) })
 
 export const freeHumanBlocks: Record<string, ComponentConfig> = {
-  FreeHumanHero: block('Free Human hero', {
+  FreeHumanHero: block('Honey hero', {
     ...groundFields, badge: text('Badge'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading'),
     ...links('primary'), primaryStyle: { type: 'select', label: 'Button colour', options: [{ label: 'Madder', value: 'madder' }, { label: 'Gilt', value: 'gilt' }] },
     ...links('secondary'), image, alt: text('Photo description'), pos: text('Photo focus', 'Like center 20%.'),
     eggImage: { ...image, label: 'Egg photo' }, sunImage: { ...image, label: 'Round photo' }, pebbleImage: { ...image, label: 'Pebble photo' },
     rays: { type: 'radio', label: 'Turning rays', options: [{ label: 'Yes', value: true }, { label: 'No', value: false }] },
   }, FREE_HUMAN_HERO, Hero),
-  FreeHumanSeasons: block('Free Human seasons', {
+  FreeHumanSeasons: block('Honey seasons', {
     ...groundFields, ...head, lead: area('Line under the heading'),
     seasons: row({ season: { type: 'select', label: 'Season', options: ['winter', 'spring', 'summer', 'fall'].map((v) => ({ label: v, value: v })) }, name: text('Name'), glyph: glyphField, texture: text('Texture'), body: area('Line'), image, alt: text('Photo description'), pos: text('Photo focus'), href: text('Link', LINK_HINT) }),
     ...links('button'), badges: { type: 'array', label: 'Badges', arrayFields: {}, getItemSummary: (it: unknown) => String(it) },
   }, FREE_HUMAN_SEASONS, Seasons),
-  FreeHumanLyric: block('Free Human lyric band', {
+  FreeHumanLyric: block('Honey lyric band', {
     ...groundFields, line: area('The line', VOICE_HINT),
     feelings: row({ glyph: glyphField, label: text('Word') }), note: text('Line under the words'),
   }, FREE_HUMAN_LYRIC, Lyric),
-  FreeHumanWorkshops: block('Free Human workshops (live)', {
+  FreeHumanWorkshops: block('Honey workshops (live)', {
     ...groundFields, ...head, aside: area('Line beside the heading'),
     tag: text('Show events of this kind', 'workshop, retreat, moon, turn, program, book or circle. Empty shows every kind.'),
     count: { type: 'number', label: 'How many', min: 1, max: 6 }, buttonLabel: text('Button'),
     rows: row({ when: text('Date line'), mode: text('Online or in person'), title: area('Title', VOICE_HINT), body: area('Line'), image, pos: text('Photo focus'), shape: shapeField, href: text('Link', LINK_HINT) }),
   }, FREE_HUMAN_WORKSHOPS, Workshops),
-  FreeHumanEvents: block('Free Human events (live)', {
+  FreeHumanEvents: block('Honey events (live)', {
     ...groundFields, ...head, image, alt: text('Photo description'), pos: text('Photo focus'),
     count: { type: 'number', label: 'How many', min: 1, max: 8 }, empty: text('When nothing is open'), buttonLabel: text('Button'),
     rows: row({ glyph: glyphField, title: text('Title'), meta: text('Line under'), href: text('Link', LINK_HINT), featured: { type: 'radio', label: 'Featured', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] } }),
     calendarLabel: text('Calendar link'), calendarHref: text('Calendar link: where it goes', LINK_HINT),
   }, FREE_HUMAN_EVENTS, Events),
-  FreeHumanBooks: block('Free Human books', {
+  FreeHumanBooks: block('Honey books', {
     ...groundFields, ...head,
     books: row({ title: text('Title', VOICE_HINT), subtitle: text('Subtitle'), body: area('Line'), status: text('Badge'), cover: { type: 'select', label: 'Cover', options: [{ label: 'Jade', value: 'jade' }, { label: 'Oxblood', value: 'oxblood' }] }, image, pos: text('Photo focus'), rays: { type: 'radio', label: 'Rays on the cover', options: [{ label: 'No', value: false }, { label: 'Yes', value: true }] }, ...links('primary'), primaryStyle: { type: 'select', label: 'Button colour', options: [{ label: 'Madder', value: 'madder' }, { label: 'Gilt', value: 'gilt' }] }, ...links('secondary') }),
   }, FREE_HUMAN_BOOKS, Books),
-  FreeHumanSpeaking: block('Free Human speaking and booking', {
+  FreeHumanSpeaking: block('Honey speaking and booking', {
     ...groundFields, eyebrow: text('Small label'), title: text('Name', VOICE_HINT), body: area('About'), image, alt: text('Photo description'), pos: text('Photo focus'), accentImage: { ...image, label: 'Small photo' }, accentPos: text('Small photo focus'),
     topics: row({ glyph: glyphField, label: text('Topic') }), formTitle: text('Form heading', VOICE_HINT),
     kinds: { type: 'array', label: 'Kinds of gathering', arrayFields: {}, getItemSummary: (it: unknown) => String(it) },
     buttonLabel: text('Button'), note: text('Line beside the button'), successMessage: text('After it is sent'),
   }, FREE_HUMAN_SPEAKING, Speaking),
-  FreeHumanLineage: block('Free Human lineage', {
+  FreeHumanLineage: block('Honey lineage', {
     ...groundFields, ...head, aside: area('Line beside the heading'),
     photos: row({ image, alt: text('Photo description'), pos: text('Photo focus') }),
   }, FREE_HUMAN_LINEAGE, Lineage),

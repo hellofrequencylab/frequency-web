@@ -43,9 +43,11 @@ import { announcementMessage, announcementEndsAt } from '@/lib/platform-flags'
  *  Request-time "now" via `new Date()` — the repo's server-render pattern, which keeps
  *  react-hooks/purity happy in a way `Date.now()` does not. */
 export async function announcementBannerState(): Promise<{ message: string; ends: Date | null } | null> {
-  const message = (await announcementMessage()).trim()
+  // Both reads TOGETHER (PERF-008): the date read is one cheap row, and in series it was a second
+  // round trip on the member shell's critical path. Its value is still ignored when there is no message.
+  const [rawMessage, ends] = await Promise.all([announcementMessage(), announcementEndsAt()])
+  const message = rawMessage.trim()
   if (!message) return null
-  const ends = await announcementEndsAt()
   const live = ends && ends.getTime() > new Date().getTime() ? ends : null
   return { message, ends: live }
 }

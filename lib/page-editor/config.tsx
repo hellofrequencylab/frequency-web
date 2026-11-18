@@ -127,7 +127,7 @@ export const config: Config = {
     },
     content: {
       title: 'Content',
-      components: ['Heading', 'Text', 'Statement', 'StoryBeats', 'Quote', 'Buttons'],
+      components: ['Heading', 'DisplayHeading', 'Text', 'Prose', 'Statement', 'StoryBeats', 'Quote', 'Buttons'],
     },
     sections: {
       title: 'Sections',
@@ -152,6 +152,7 @@ export const config: Config = {
       title: 'Profile',
       components: [
         'SpaceLayout',
+        'SpaceArrangement',
         'SpaceIdentityHeader',
         'SpaceSectionTitle',
         'SpaceCallout',
@@ -220,14 +221,14 @@ export const config: Config = {
       title: 'Temple Kit sections',
       components: [...TEMPLE_KIT_CATEGORY_COMPONENTS, ...Object.keys(templeKitInnerComponents), ...Object.keys(templeKitInnerBComponents), ...Object.keys(templeKitInnerCComponents), ...Object.keys(templeKitInnerDComponents)],
     },
-    // The Midnight theme's section family (the Midnight design system's Web Theme): website pages only.
+    // The Nocturne theme's section family (code id midnight, the Nocturne design system's Web Theme): website pages only.
     midnight: {
-      title: 'Midnight sections',
+      title: 'Nocturne sections',
       components: [...MIDNIGHT_CATEGORY_COMPONENTS],
     },
-    // The Midnight practice sections (the House of Fates design, the Hypnotist kit): website pages only.
+    // The Nocturne practice sections (the House of Fates design, the Hypnotist kit): website pages only.
     midnightPractice: {
-      title: 'Midnight practice sections',
+      title: 'Nocturne practice sections',
       components: [...MIDNIGHT_PRACTICE_CATEGORY_COMPONENTS],
     },
     // The Designer theme's section family (the Alli Rae Build + Design system): website pages only.
@@ -237,7 +238,7 @@ export const config: Config = {
     },
     // The Free Human Theme Kit's section family (the Free Human Movement design system): website pages only.
     freeHuman: {
-      title: 'Free Human sections',
+      title: 'Honey sections',
       components: [...Object.keys(freeHumanBlocks), ...Object.keys(freeHumanCalendarBlocks), ...Object.keys(freeHumanWheelBlocks)],
     },
     // The Services Theme Kit's section family (the Services design system): website pages only.

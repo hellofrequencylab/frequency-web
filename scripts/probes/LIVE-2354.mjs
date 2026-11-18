@@ -33,7 +33,7 @@ if (/['`]\/journeys\//.test(tracks + read('components/frequency/site/pages/cours
 
 if (!read('lib/traits/registry.ts').includes("key: 'beta_business_of_community'")) fails.push('the Funnel tag is not registered')
 const sql = read('scripts/seed-boc-funnel.sql')
-if (!sql.includes('"marketingTag": "beta_business_of_community"') || !sql.includes('"url": "/journeys/the-business-of-community-101"')) fails.push('the Funnel SQL lacks its tag or course destination')
+if (!sql.includes('"marketingTag": "beta_business_of_community"') || !sql.includes('"url": "/events/business-of-community-pilot-session-1"')) fails.push('the Funnel SQL lacks its tag or Week 1 event destination')
 
 if (!/\(j\.category \?\? ''\)/.test(read('components/page-editor/blocks/profile.tsx'))) fails.push('SpacePractices only does not match category')
 if (!read('lib/spaces/content-data.ts').includes('category: j.category ?? null')) fails.push('SpacePractices items do not carry category')

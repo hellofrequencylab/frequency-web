@@ -1,11 +1,9 @@
-import { spawnSync } from 'node:child_process'
-
 // Exercise the actual gateway request and weekly server-action boundaries.
-const result = spawnSync(process.execPath, [
-  'node_modules/vitest/vitest.mjs', 'run',
-  'lib/ai/journey-support-review.test.ts',
-  'app/(main)/journeys/[slug]/edit/support-week-coaching.test.tsx',
-  '--maxWorkers=2',
-], { cwd: process.cwd(), stdio: 'inherit' })
-if (result.error) throw result.error
-process.exit(result.status ?? 1)
+// HYG-242: the required `test` job runs these files on every pull request. This probe asks, in-process, that they are
+// still in that run with their cases, instead of paying a second vitest startup in the backlog sweep.
+import { requireInSuite } from './in-suite.mjs'
+
+requireInSuite({
+  'lib/ai/journey-support-review.test.ts': 4,
+  'app/(main)/journeys/[slug]/edit/support-week-coaching.test.tsx': 3
+})

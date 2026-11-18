@@ -13,7 +13,7 @@ import { NetworkKitSpotlightLayout } from './network-kit-layouts'
 import { networkKitSpotlightContent } from '@/lib/spotlight/network-kit-content'
 import { DesignerKitSpotlightLayout } from './designer-kit-layouts'
 import { designerKitSpotlightContent, designerProfileForAccent } from '@/lib/spotlight/designer-kit-content'
-import { isCyberWitchKitLayout, isMindlessKitLayout, isDesignerKitLayout, isFreeHumanLayout, isNewWorldKitLayout, isServicesKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
+import { isCyberWitchKitLayout, isHouseKitLayout, isMindlessKitLayout, isDesignerKitLayout, isFreeHumanLayout, isNewWorldKitLayout, isServicesKitLayout, isTempleKitLayout } from '@/lib/spotlight/layouts'
 import { ServicesKitSpotlightLayout } from './services-kit-layouts'
 import { CyberWitchKitSpotlightLayout } from './cyberwitch-kit-layouts'
 import { cyberwitchKitSpotlightContent } from '@/lib/spotlight/cyberwitch-kit-content'
@@ -32,6 +32,8 @@ import { TempleKitSpotlightLayout } from './temple-kit-layouts'
 import { templeKitSpotlightContent } from '@/lib/spotlight/temple-kit-content'
 import { FreeHumanSpotlightLayout } from './free-human-layouts'
 import { freeHumanSpotlightContent } from '@/lib/spotlight/free-human-content'
+import { HouseKitSpotlightLayout } from './house-kit-layouts'
+import { houseKitSpotlightContent, type HouseKitTheme } from '@/lib/spotlight/house-kit-content'
 
 // THE SHARED PUBLIC SPOTLIGHT CHROME. The member's identity header + theme wrapper + optional
 // background + join CTA footer, with the BLOCK BODY handed in as `children`. Since ADR-523 the ONLY body
@@ -68,6 +70,18 @@ export function SpotlightShell({
   // A theme with a registered whole-page layout (lib/spotlight/layouts.ts) swaps the identity header and the block body for
   // that layout, keeping the shell's wrapper and footer. A live page carries none of the design's sample dates or prices.
   if (theme.layout) {
+    if (isHouseKitLayout(theme.layout)) {
+      // Bold, Wildheart and Nocturne share one layout set, each in its own tokens (LIVE-2357).
+      const kit: HouseKitTheme = theme.layout.startsWith('bold-kit:') ? 'bold' : theme.layout.startsWith('wildheart-kit:') ? 'wildheart' : 'midnight'
+      const content = houseKitSpotlightContent(kit, { name, sample: sampleContent, accent: theme.accent ?? undefined, photo: profile.header_image_url ?? undefined, portrait: profile.avatar_url ? avatarSrc(profile.avatar_url) : undefined })
+      return (
+        <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
+          <main className="relative mx-auto max-w-xl">
+            <HouseKitSpotlightLayout layout={theme.layout} content={content} />
+          </main>
+        </div>
+      )
+    }
     if (isDesignerKitLayout(theme.layout)) {
       // The Designer kit draws its own full-width plaster page and keeps the column inside it.
       const content = designerKitSpotlightContent(designerProfileForAccent(theme.accent) ?? theme.kit ?? 'general', { name, sample: sampleContent, photo: profile.header_image_url ?? undefined })

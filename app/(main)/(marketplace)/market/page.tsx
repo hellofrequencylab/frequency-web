@@ -7,6 +7,8 @@ import { foundingSellersFor } from '@/lib/founding/status'
 import { asMarketGroup, marketGroupForKind, type MarketGroup, type MarketItem } from '@/lib/commerce/types'
 import { listTicketedEventProjections } from '@/lib/commerce/ticket-projection'
 import { FqMarketBody } from '@/components/frequency/members/marketplace/marketplace-body'
+import { cartEnabled } from '@/lib/commerce/cart-flag'
+import { itemMatchesMarketFacets, parseMarketFacets } from '@/lib/commerce/market-facets'
 
 // Market — the community commerce umbrella (ADR-596). Hero-led (the site PhotoHero grammar), a stats
 // band, then Products / Services / Tickets rails aggregating market-published listings across makers and
@@ -29,18 +31,23 @@ export const metadata = {
 export default async function MarketPage({
   searchParams,
 }: {
-  searchParams: Promise<{ group?: string | string[] }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { group: groupParam } = await searchParams
-  const group = asMarketGroup(groupParam)
+  const params = await searchParams
+  const group = asMarketGroup(params.group)
+  // Facets (DEF-ETSY P4) ride the cart switch while the Store is dark: blank COMMERCE_CART_ENABLED
+  // keeps this page exactly as it was, with no filter form and the facet params ignored.
+  const facets = cartEnabled() ? parseMarketFacets(params) : undefined
   const viewerProfileId = await getMyProfileId()
 
   // One read powers the stats band, the rails, and the grid (grouped in-process). The hero search bar
   // filters every rail instantly on the client (InstantGrid / InstantSection read the shared query).
-  const all = await withJourneySalesHref(await listMarketListings({ limit: 100 }))
+  const all = await withJourneySalesHref(await listMarketListings({ limit: 100, facets }))
   // Read-only projection (ADR-596 / audit #2): ticketed events surface in the Tickets rail and deep-link
   // to the event ticket flow. Events stay the source of truth (no commerce_products row). Fail-soft to [].
-  const ticketProjections = await listTicketedEventProjections({ limit: 60 })
+  const ticketProjections = (await listTicketedEventProjections({ limit: 60 })).filter(
+    (p) => !facets || itemMatchesMarketFacets(p, facets),
+  )
   // Trust & Safety (Phase 8): aggregate ratings + seller verification for every commerce card, in batch
   // reads. Plus the Founding charter mark (ADR-599). Projections carry none of these (they are events).
   const [ratings, verified, founding] = await Promise.all([
@@ -67,6 +74,7 @@ export default async function MarketPage({
       ratings={ratings}
       verified={verified}
       founding={founding}
+      facets={facets}
     />
   )
 }

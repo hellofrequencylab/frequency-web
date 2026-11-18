@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-072",
+  "title": "A leader's note to all their Circle members has a one-click unsubscribe and skips people who blocked them",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "lib/comms/leader-send.ts",
+    "ref": "Email and messaging check 2026-11-18 (thread: Check every email and message system)"
+  },
+  "detail": "2026-11-18: leader-send emails every member of every Circle a leader runs with only a Message-ID header, no unsubscribe link or List-Unsubscribe header, on the transactional lane, and without isBlockedBetween (lib/comms/bulk-dm.ts does check it). A list fan-out with no one-click opt-out breaks the Gmail and Yahoo bulk rules and CAN-SPAM, and a member who blocked the leader still gets mail. Done when the send carries listUnsubscribeHeaders with a footer link, rides the bulk lane, and skips blocked pairs.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-scan-2026-11-18.mjs leader-send-unsubscribe",
+    "note": "Fails on main today; passes once the fix lands."
+  }
+}

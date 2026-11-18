@@ -31,7 +31,7 @@ export async function generateMetadata({
   const space = await getVisibleSpaceBySlug(slug, null)
   if (!space) return { title: 'Show not found', robots: { index: false, follow: false } }
   const feed = await assembleShowFeed(space.id, showSlug)
-  if (!feed) return { title: 'Show not found' }
+  if (!feed) return { title: 'Show not found', robots: { index: false, follow: false } }
   return showPageMetadata(slug, showSlug, feed)
 }
 

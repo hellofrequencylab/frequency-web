@@ -1,0 +1,20 @@
+{
+  "id": "SEC-025",
+  "title": "Stop dynamic pages from advertising the framework in an x-powered-by header",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "next.config.ts",
+    "ref": "security and SEO/GEO meta scan 2026-11-18"
+  },
+  "detail": "Security meta scan 2026-11-18, live headers. Static and ISR responses (/how, /robots.txt, /llms.txt, /api/status) carry the full header set: CSP with report-uri, HSTS 2 years with preload, nosniff, X-Frame-Options SAMEORIGIN, Referrer-Policy strict-origin-when-cross-origin, Permissions-Policy. A dynamic page (/classifieds/<id>) also answered x-powered-by: Next.js, which names the framework to every scanner. next.config.ts now sets poweredByHeader: false. Same PR shrinks scripts/admin-client-baseline.txt by the two entries check:admin-client reported as no longer importing the admin client (edit-page/actions.ts, settings/shop/shop-actions.ts).\n\nKnown and left to its own gate: script-src still allows 'unsafe-inline' (ADR-170); the nonce policy in lib/security/csp-nonce.ts activates through CSP_NONCE_REPORT_ONLY then CSP_NONCE_ENFORCE per docs/RUNBOOKS.md \"Nonce-based script policy\". That section was referenced by .env.example, csp-nonce.md and ADR-1954 but did not exist; this PR writes it (steps, watch, gate, rollback).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SEC-025.mjs",
+    "note": "Fails on main: next.config.ts leaves poweredByHeader at its default (on). Passes when it is false."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

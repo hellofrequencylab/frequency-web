@@ -45,9 +45,9 @@ describe('preview site', () => {
 
   it('Free Human wears its own library; Services wears New World\'s until it has one (LIVE-2102)', () => {
     const fh = kitImagery('free-human')
-    expect(fh.hero).toBe('/sites/free-human/photos/heritage-a-virgin.webp')
-    expect(fh.portrait).toMatch(/^\/sites\/free-human\/photos\//)
-    for (const src of [...fh.strip, ...fh.covers, ...fh.portraits]) expect(src).toMatch(/^\/sites\/free-human\/photos\//)
+    expect(fh.hero).toBe('/brand/frequency/photos/boc-circle-sunset.jpg')
+    // Frequency's own photos plus the honey-light shots (owner 2026-11-18: "Use photos from Frequency for Free Human Movement").
+    for (const src of [fh.portrait, ...fh.strip, ...fh.covers, ...fh.portraits]) expect(src).toMatch(/^\/(sites\/free-human|brand\/frequency)\/photos\//)
     expect(fh).not.toEqual(kitImagery('frequency'))
     expect(kitImagery('services').hero).toBe('/sites/services/hero-squeegee.webp')
   })

@@ -22,7 +22,7 @@ const { DESIGNER_KIT_LAYOUTS_CSS, designerKitAccentCss } = await import('../../c
 const IDS = ['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile'].map((i) => `designer-kit:${i}`)
 assert.deepEqual(layouts.spotlightLayoutsFor('designer-kit').map((l) => l.id), IDS)
 assert.equal(layouts.spotlightLayoutsFor('network-kit').length, 6)
-assert.deepEqual(layouts.spotlightLayoutsFor('midnight'), [])
+assert.deepEqual(layouts.spotlightLayoutsFor('frequency'), []) // Nocturne has the house layouts since LIVE-2357
 const designer = theme.THEME_PRESETS.find((p) => p.id === 'designer')
 assert.equal(theme.validateSpotlightTheme({ ...designer.theme, layout: 'designer-kit:story', kit: 'coaches' }).layout, 'designer-kit:story')
 assert.equal('layout' in theme.validateSpotlightTheme({ ...designer.theme, layout: 'designer-kit:nope' }), false, 'an unregistered layout is dropped')

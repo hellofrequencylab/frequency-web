@@ -13,6 +13,7 @@ import { formatDateWeekday } from '@/lib/format-date'
 import { useEffect, useState, useTransition } from 'react'
 import { CalendarPlus, Link2, Plus, X, ExternalLink, RefreshCw } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { isError } from '@/lib/action-result'
 import { listMyJourneyEvents, getJourneyMeetingEvent, type JourneyEventOption } from '@/app/(main)/journeys/actions'
 
@@ -217,7 +218,7 @@ function EventPickerDialog({
                   <button
                     type="button"
                     onClick={() => onPick(e.id)}
-                    className="flex w-full items-center gap-2 rounded-control border border-border bg-canvas px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-primary-bg"
+                    className={choiceTileClasses(false, 'flex w-full items-center gap-2 rounded-control px-3 py-2 text-left')}
                   >
                     <Link2 className="h-4 w-4 shrink-0 text-muted" aria-hidden />
                     <span className="min-w-0 flex-1">

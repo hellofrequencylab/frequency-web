@@ -16,7 +16,9 @@ export type NewWorldKitLayoutId = `new-world-kit:${LayoutName}`
 export type ServicesKitLayoutId = `services-kit:${LayoutName}`
 export type CyberWitchKitLayoutId = `cyberwitch-kit:${LayoutName}`
 export type MindlessKitLayoutId = `mindless-kit:${LayoutName}`
-export type SpotlightLayoutId = NetworkKitLayoutId | DesignerKitLayoutId | TempleKitLayoutId | FreeHumanLayoutId | NewWorldKitLayoutId | ServicesKitLayoutId | CyberWitchKitLayoutId | MindlessKitLayoutId
+/** Bold, Wildheart and Nocturne share one layout set (LIVE-2357, components/spotlight/house-kit-layouts.tsx), each in its own tokens. */
+type HouseKitLayoutId = `bold-kit:${LayoutName}` | `wildheart-kit:${LayoutName}` | `nocturne-kit:${LayoutName}`
+export type SpotlightLayoutId = NetworkKitLayoutId | DesignerKitLayoutId | TempleKitLayoutId | FreeHumanLayoutId | NewWorldKitLayoutId | ServicesKitLayoutId | CyberWitchKitLayoutId | MindlessKitLayoutId | HouseKitLayoutId
 
 interface SpotlightLayoutInfo {
   id: SpotlightLayoutId
@@ -50,6 +52,9 @@ const SPOTLIGHT_LAYOUTS_BY_THEME: Record<string, readonly SpotlightLayoutInfo[]>
   services: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `services-kit:${n}` as ServicesKitLayoutId, label, blurb })),
   cyberwitch: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `cyberwitch-kit:${n}` as CyberWitchKitLayoutId, label, blurb })),
   mindless: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `mindless-kit:${n}` as MindlessKitLayoutId, label, blurb })),
+  bold: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `bold-kit:${n}` as HouseKitLayoutId, label, blurb })),
+  wildheart: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `wildheart-kit:${n}` as HouseKitLayoutId, label, blurb })),
+  midnight: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `nocturne-kit:${n}` as HouseKitLayoutId, label, blurb })),
 }
 
 const ALL_IDS: ReadonlySet<string> = new Set(Object.values(SPOTLIGHT_LAYOUTS_BY_THEME).flatMap((l) => l.map((i) => i.id)))
@@ -94,6 +99,11 @@ export function isCyberWitchKitLayout(id: SpotlightLayoutId): id is CyberWitchKi
   return id.startsWith('cyberwitch-kit:')
 }
 
+/** True for a layout the shared house kit draws for Bold, Wildheart or Nocturne (components/spotlight/house-kit-layouts.tsx). */
+export function isHouseKitLayout(id: SpotlightLayoutId): id is HouseKitLayoutId {
+  return id.startsWith('bold-kit:') || id.startsWith('wildheart-kit:') || id.startsWith('nocturne-kit:')
+}
+
 /** True for a layout the Mindless theme draws (components/spotlight/mindless-kit-layouts.tsx). */
 export function isMindlessKitLayout(id: SpotlightLayoutId): id is MindlessKitLayoutId {
   return id.startsWith('mindless-kit:')
@@ -108,12 +118,16 @@ export function asSpotlightLook(v: unknown): SpotlightLook | null {
   return typeof v === 'string' && (SPOTLIGHT_LOOKS as readonly string[]).includes(v) ? (v as SpotlightLook) : null
 }
 
-/** A Space's website theme id to the registry key that holds its Spotlight layouts. A theme missing here (Nocturne, Bold,
- *  Wildheart, the older Network and Temple) has no whole-page layouts, so its Spotlight stays the block page. */
+/** A Space's website theme id to the registry key that holds its Spotlight layouts. A theme missing here (the older Network and
+ *  Temple) has no whole-page layouts, so its Spotlight stays the block page. Bold, Wildheart and Nocturne have the shared house
+ *  layouts (LIVE-2357) but are OPT-IN: a Space on one of them keeps its block page until its owner picks a look
+ *  (HOUSE_KIT_OPT_IN), so no Space that already wears them changes on its own. */
 const SPACE_THEME_LAYOUT_KEY: Record<string, string> = {
   'new-world': 'new-world', services: 'services', cyberwitch: 'cyberwitch', mindless: 'mindless', designer: 'designer-kit',
-  'temple-kit': 'temple-kit', 'free-human': 'free-human', 'network-kit': 'network-kit',
+  'temple-kit': 'temple-kit', 'free-human': 'free-human', 'network-kit': 'network-kit', bold: 'bold', wildheart: 'wildheart', midnight: 'midnight',
 }
+/** The themes whose Space Spotlight wears a layout only once the owner has stored a look. */
+export const HOUSE_KIT_OPT_IN: ReadonlySet<string> = new Set(['bold', 'wildheart', 'midnight'])
 
 /** The looks a Space on `siteTheme` can pick for its Spotlight (empty for a theme with none). */
 export function spaceLooksFor(siteTheme: string): readonly { look: SpotlightLook; label: string; blurb: string }[] {

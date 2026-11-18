@@ -215,6 +215,55 @@ export function retryDelayFor(
   return { ...nextRetry(ctx.attempts, ctx.maxAttempts), countsAsAttempt: true, reason: 'error' }
 }
 
+// ── The bulk share of a daily send limit (EMAIL-060) ─────────────────────────────────────
+//
+// The lane trip above only fires AFTER the provider refuses. On 2026-11-17 and 2026-11-18 the
+// Founding Member campaign drained ~200 at the UTC day's start, which was the whole Resend daily
+// quota; the transactional mail after it (event reminders, the Vera brief, a Message Member send)
+// was ACCEPTED by the API and then failed asynchronously with `reached_daily_quota`, so the queue
+// marked it done and nobody got it. A refusal never came back, so the trip never fired.
+// The fix is to stop bulk BEFORE the quota: when EMAIL_DAILY_SEND_LIMIT is set, bulk may spend at
+// most the limit minus a reserve each UTC day, and the reserve is left for one-to-one mail.
+
+/** The reserve kept for transactional mail: a quarter of the limit, never fewer than 20 sends. */
+export const TRANSACTIONAL_RESERVE_SHARE = 0.25
+export const TRANSACTIONAL_RESERVE_MIN = 20
+
+/** How many bulk sends a UTC day may spend under `dailyLimit`, or null when no limit is set
+ *  (unknown limit = the old behaviour, gated only by the provider's own refusal). Pure. */
+export function bulkDailyBudget(dailyLimit: number | null): number | null {
+  if (!dailyLimit || !Number.isFinite(dailyLimit) || dailyLimit <= 0) return null
+  const reserve = Math.max(TRANSACTIONAL_RESERVE_MIN, Math.ceil(dailyLimit * TRANSACTIONAL_RESERVE_SHARE))
+  return Math.max(0, Math.floor(dailyLimit) - reserve)
+}
+
+/** A bulk-lane job that becomes an email to the provider (the only kinds the daily limit counts). */
+function isBulkEmail(job: Pick<QueueJob, 'kind' | 'payload'>): boolean {
+  return (job.kind === 'email' || job.kind === 'space-campaign-email') && laneFor(job.payload) === 'bulk'
+}
+
+function configuredDailyLimit(): number | null {
+  const n = Number.parseInt((process.env.EMAIL_DAILY_SEND_LIMIT ?? '').trim(), 10)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+/** Bulk email jobs the drain finished since the current UTC midnight (the provider's day). */
+async function bulkSentToday(client: ReturnType<typeof db>, now: Date): Promise<number> {
+  const since = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString()
+  const { count, error } = await client
+    .from('notification_queue')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'done')
+    .eq(`payload->>${LANE_KEY}`, 'bulk')
+    .gte('updated_at', since)
+  // Fail closed for bulk: an unreadable count must not let a campaign spend the reserve.
+  if (error) {
+    console.error(`[outbox] bulk daily count failed, holding bulk this drain: ${error.message}`)
+    return Number.POSITIVE_INFINITY
+  }
+  return count ?? 0
+}
+
 // ── Lanes: a campaign must never spend the quota a welcome email is waiting for ───────
 //
 // Bulk = a fan-out to a list (a campaign, a drip). Valuable, but nobody is sitting at an inbox
@@ -475,6 +524,14 @@ export async function processQueue(
   // one refused request. Either way the refusal costs them nothing: it spends no attempt.
   let quotaClosedForMs: number | null = null
 
+  // EMAIL-060: the bulk share of the day's send limit. Read once per batch, only when a limit is set
+  // and the batch holds bulk email, then counted forward locally as bulk jobs finish.
+  const bulkBudget = bulkDailyBudget(configuredDailyLimit())
+  let bulkSpent = 0
+  if (bulkBudget !== null && list.some((j) => isBulkEmail(j))) {
+    bulkSpent = await bulkSentToday(client, new Date())
+  }
+
   for (const job of list) {
     const attempts = job.attempts + 1
     const lane = laneFor(job.payload)
@@ -501,6 +558,19 @@ export async function processQueue(
         status: 'pending',
         run_after: new Date(Date.now() + quotaClosedForMs).toISOString(),
         last_error: '[outbox] deferred: send quota closed earlier in this drain',
+        updated_at: new Date().toISOString(),
+      })
+      deferred++
+      continue
+    }
+
+    // EMAIL-060: the bulk share is spent for this UTC day. Park the job until midnight, unspent, so the
+    // reserve stays free for the welcome, the reminder and the reply someone is waiting on.
+    if (bulkBudget !== null && isBulkEmail(job) && bulkSpent >= bulkBudget) {
+      await persistStatus(job.id, {
+        status: 'pending',
+        run_after: new Date(Date.now() + msUntilNextUtcMidnight(new Date())).toISOString(),
+        last_error: '[outbox] deferred: the bulk share of the daily send limit is spent; the rest is kept for one-to-one mail',
         updated_at: new Date().toISOString(),
       })
       deferred++
@@ -562,6 +632,7 @@ export async function processQueue(
     // without scheduling a handler that already completed. The existing stale-claim recovery applies.
     await persistStatus(job.id, { status: 'done', attempts, last_error: null, updated_at: new Date().toISOString() })
     done++
+    if (isBulkEmail(job)) bulkSpent++
   }
 
   return { processed: list.length, done, failed, retried, deferred }

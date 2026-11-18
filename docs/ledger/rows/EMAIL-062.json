@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-062",
+  "title": "An unsubscribe click is never lost and never turns other emails back on",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/unsubscribe/actions.ts",
+    "ref": "Email and messaging check 2026-11-18 (project thread: Check every email and message system)"
+  },
+  "detail": "Two gaps in the member unsubscribe. (1) processUnsubscribe ignored the error from reading notification_preferences, so a database blip read as 'no row' and the upsert wrote DEFAULT_PREFERENCES, switching back on every email category the member had already turned off. (2) The RFC 8058 one-click POST (app/api/unsubscribe/route.ts) answered 200 even when the preference, consent or suppression write failed, so the mailbox treated the opt-out as done and it was lost with only a warn log. Fix: a failed read stops with the save-failed answer and writes nothing; the one-click route answers 503 on a failed write (logged as an error) and still 200 on a bad link, revealing nothing.\n\nDONE 2026-11-18: both fixed with tests in app/unsubscribe/actions.test.ts and app/api/unsubscribe/route.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/EMAIL-062.mjs",
+    "note": "Passes while a failed read stops the unsubscribe and a failed one-click write answers 503."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

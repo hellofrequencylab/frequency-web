@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2363",
+  "title": "An event's hero height setting changes the event page",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/events/[slug]/event-member-page.tsx",
+    "ref": "Unwired-things scan 2026-11-18 (project thread: Verify every feature path end to end); owner: full approval to make it all right"
+  },
+  "detail": "The event editor saved a hero height (short, standard, tall) and nothing read it, so the member event page always drew the standard cover. The page now reads readEventHeroHeight and the cover takes a short or tall height from the members theme.\n\nDONE 2026-11-18.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/feature-paths-2026-11-18.mjs LIVE-2363",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

@@ -55,7 +55,7 @@ export interface PageIndexSection {
 }
 
 /** The slugs whose route file renders a coded design page under Frequency (its `SITE_DESIGN` branch). */
-export const CODED_UNDER_FREQUENCY: ReadonlySet<string> = new Set(['home', 'the-community', 'spaces', 'pricing', 'circles'])
+export const CODED_UNDER_FREQUENCY: ReadonlySet<string> = new Set(['home', 'the-community', 'spaces', 'pricing', 'circles', 'business-of-community'])
 
 const FREQUENCY = SITE_DESIGN === 'frequency'
 

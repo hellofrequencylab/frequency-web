@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2367",
+  "title": "Finishing a Journey pays the completion Gems its card shows",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/quest/complete.ts",
+    "ref": "Unwired-things scan 2026-11-18 (project thread: Verify every feature path end to end); owner: full approval to make it all right"
+  },
+  "detail": "Journeys show completion Gems (the author sets them, the discovery card prints them) and nothing paid them since the Quest completion model retired the lesson-tree grant. Owner ruling 2026-11-18: pay them. The completion engine now pays the plan's completion_gems on a fresh finish, once per member per Journey, through a reward_grants claim (journey.finish.gems:<planId>).\n\nDONE 2026-11-18.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/feature-paths-2026-11-18.mjs LIVE-2367",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

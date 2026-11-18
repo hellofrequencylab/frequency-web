@@ -10,7 +10,7 @@ import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import { announcementBannerState, countdownLabel } from '@/components/layout/announcement-banner'
 import { AnnouncementBar } from '@/components/layout/announcement-bar'
 import { OfferBar } from '@/components/offers/offer-bar'
-import { offerBarState } from '@/lib/offers/operator-offer-server'
+import { offerBarState, prefetchOfferDue } from '@/lib/offers/operator-offer-server'
 import { offerBarDisplayState } from '@/lib/offers/offer-bar-policy'
 import { matchPublicTwin } from '@/lib/nav/public-twin'
 import { getPublicCircles, getTopicalChannels } from '@/lib/discover'
@@ -322,6 +322,13 @@ export default async function MainLayout({
   // second query.
   const fqStats = loadGameStats(profile.id).catch((): DockData | null => null)
 
+  // The offer bar's "is it due" read, started now so it overlaps the wave below instead of running
+  // after it (PERF-008). Null when the offer clock already answers; never rejects.
+  const offerDueP = prefetchOfferDue(profile.id, profile.meta)
+  // The announcement bar's two settings reads, started here for the same reason: they depend on
+  // nothing, and waiting for the theme wave put them after the whole shell wave (PERF-008).
+  const announcementP = announcementBannerState()
+
   // Request headers (host + current route) — read once and reused below.
   const reqHeaders = await headers()
   const reqPath = reqHeaders.get('x-pathname')
@@ -330,6 +337,15 @@ export default async function MainLayout({
   // (docs/ADMIN-RAIL.md Phase 6) threaded into PageAdminProvider, mirroring the chrome overrides. A
   // null scope (full-viewport takeover) has nothing to manage, so no overrides load.
   const pageScope = reqPath && isSafeRoute(reqPath) ? adminScopeFor(reqPath) : null
+
+  // The page-settings gate read (ADR-269), started BEFORE the shell wave so it overlaps it (PERF-008).
+  // It used to start in the theme wave, after the whole shell wave. Staff never get gated, so the
+  // result is discarded for them below; the read itself is the request-cached loadPageSettings the
+  // page's own metadata reuses, so starting it early adds no query.
+  const pageGateEarlyP =
+    reqPath && reqPath !== '/feed' && isSafeRoute(reqPath)
+      ? loadPageSettings(reqPath).catch(() => null)
+      : Promise.resolve(null)
 
   // ONE parallel wave of the shell's independent reads. Every entry depends only on
   // `profile` / `realRole` (or nothing), so they run concurrently instead of as ~16 serial
@@ -418,7 +434,7 @@ export default async function MainLayout({
 
   // The timed Beta offer (try-first funnel): a live countdown strip, or a one-time nudge to the offer
   // page once a new Space owner has something built. Null for everyone else, at no query.
-  const offerState = previewingDown ? null : await offerBarState(profile.id, profile.meta, operatesSpaces)
+  const offerState = previewingDown ? null : await offerBarState(profile.id, profile.meta, operatesSpaces, offerDueP)
   const offerDisplayState = offerBarDisplayState(offerState)
   const offerBanner = offerDisplayState ? (
     <OfferBar href="/offer" endsAtMs={offerDisplayState.endsAtMs} pending={offerDisplayState.pending} />
@@ -545,15 +561,13 @@ export default async function MainLayout({
     // Page status & visibility (ADR-269): DRAFT / min-role gating from page_settings.
     // LOCKOUT-PROOF + FAIL-SAFE exactly as before: staff always pass, errors mean no
     // gate, and /feed itself is never gated so a mis-set home can't loop.
-    reqPath && reqPath !== '/feed' && isSafeRoute(reqPath) && !isStaff(pageWebRole)
-      ? loadPageSettings(reqPath).catch(() => null)
-      : Promise.resolve(null),
+    !isStaff(pageWebRole) ? pageGateEarlyP : Promise.resolve(null),
     // The beta countdown's date, read HERE rather than inside the banner (ADR-1030). It rides this
     // wave, so it costs no wall-clock — five reads were already in flight. What it buys is that the
     // shell knows whether a banner is coming BEFORE it renders: the banner ships in the first flush
     // and reserves its own height, instead of arriving late behind a `fallback={null}` and shoving
     // the page down. Null when unset, unreadable, or already past; fail-safe throughout.
-    announcementBannerState(),
+    announcementP,
   ])
   if (pageGate) {
     const draftHidden = pageGate.status === 'draft'

@@ -5,13 +5,44 @@
     "editor": "CyberWitch",
     "site": "cyberwitch"
   },
-  "offered": false,
+  "offered": true,
   "site": {
     "label": "CyberWitch",
     "description": "Concrete and chain-link under a blackletter grimoire, one neon accent sprayed over everything. Dark only, five accents, six starter kits.",
     "defaultFonts": "classic"
   },
-  "library": null,
+  "library": {
+    "tagline": "Concrete, chain-link and a spell book. One neon over it all.",
+    "madeFor": "readers, ritual workers, bands, labels, studios and anyone who wants a room with some edge",
+    "signature": "Dark only, with blackletter headlines, riveted plates and one neon accent from five.",
+    "surfaces": [
+      {
+        "id": "spotlight",
+        "name": "Spotlight",
+        "status": "ready",
+        "carries": "Your link-in-bio page in the full look: ground, type, cards and one main button."
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "status": "ready",
+        "carries": "Every page, header, footer and block in the full look, on your own domain."
+      },
+      {
+        "id": "email",
+        "name": "Email",
+        "status": "ready",
+        "carries": "Receipts, reminders and newsletters in the same ground, type and button."
+      },
+      {
+        "id": "space",
+        "name": "Space page",
+        "status": "ready",
+        "carries": "Your fonts, your accent and your offers. It stays the Frequency page people already know."
+      }
+    ],
+    "page": "/themes/cyberwitch"
+  },
   "editor": {
     "tokens": {
       "source": "lib/sites/editor/theme-contract.json",
