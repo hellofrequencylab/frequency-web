@@ -575,32 +575,27 @@ export function IconPicker({
             <div className="grid max-h-48 grid-cols-6 gap-1 overflow-y-auto">
               {source === 'icon'
                 ? lucideResults.map((i) => (
-                    <button
+                    <IconButton
                       key={i.name}
-                      type="button"
-                      aria-label={i.name}
-                      title={i.name}
+                      label={i.name}
+                      variant={value === i.name ? 'tinted' : 'plain'}
+                      aria-pressed={value === i.name}
                       onClick={() => pick(i.name)}
-                      className={`flex h-8 w-8 items-center justify-center rounded-md border transition-colors hover:bg-surface-elevated ${
-                        value === i.name ? 'border-primary bg-primary-bg text-primary-strong' : 'border-transparent text-text'
-                      }`}
                     >
                       <BlockIcon name={i.name} size={18} />
-                    </button>
+                    </IconButton>
                   ))
                 : emojiResults.map((e) => (
-                    <button
+                    <IconButton
                       key={e.char}
-                      type="button"
-                      aria-label={e.keywords.split(' ')[0]}
-                      title={e.keywords.split(' ')[0]}
+                      label={e.keywords.split(' ')[0]}
+                      variant={value === e.char ? 'tinted' : 'plain'}
+                      aria-pressed={value === e.char}
                       onClick={() => pick(e.char)}
-                      className={`flex h-8 w-8 items-center justify-center rounded-md border text-body-lg leading-none transition-colors hover:bg-surface-elevated ${
-                        value === e.char ? 'border-primary bg-primary-bg' : 'border-transparent'
-                      }`}
+                      className="text-body-lg leading-none"
                     >
                       {e.char}
-                    </button>
+                    </IconButton>
                   ))}
               {((source === 'icon' && lucideResults.length === 0) || (source === 'emoji' && emojiResults.length === 0)) && (
                 <p className="col-span-6 py-3 text-center text-2xs text-muted">No matches. Try another word.</p>

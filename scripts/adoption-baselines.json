@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 591,
+      "baseline": 589,
       "frozen": {
         "at": "2026-11-18",
-        "value": 591,
+        "value": 589,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "SCAN-1133 slice 14: the Journey v2 editor buttons that moved onto the kit Button dropped their hand-written rounded-md and rounded-xl; 595 to 591.",
-        "from": 595
+        "reason": "SCAN-1133 slice 15: the inspector icon and emoji picker cells dropped their rounded-md onto IconButton and the room kind pills their rounded-pill onto chipClasses; 591 to 589.",
+        "from": 591
       },
       "history": [
         {
@@ -413,6 +413,13 @@
           "to": 591,
           "direction": "lowered",
           "reason": "SCAN-1133 slice 14: the Journey v2 editor buttons that moved onto the kit Button dropped their hand-written rounded-md and rounded-xl; 595 to 591."
+        },
+        {
+          "at": "2026-11-18",
+          "from": 591,
+          "to": 589,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 15: the inspector icon and emoji picker cells dropped their rounded-md onto IconButton and the room kind pills their rounded-pill onto chipClasses; 591 to 589."
         }
       ]
     },
@@ -786,14 +793,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 29,
+      "baseline": 22,
       "frozen": {
         "at": "2026-11-18",
-        "value": 29,
+        "value": 22,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "SCAN-1133 slice 14: Journey v2 editor quiet actions to the kit Button (primarySoft and ghost at xs), Journey template and event picker tiles and the block inspector entity filter rows to choiceTileClasses; 39 to 29.",
-        "from": 39
+        "reason": "SCAN-1133 slice 15: IconButton gains a 44px lg size for the Airwaves and show episode Play buttons, the inspector icon and emoji cells move to IconButton tinted, the automations status toggle to Button xs, room visibility tiles and room compose kind pills to the kit; 29 to 22.",
+        "from": 29
       },
       "history": [
         {
@@ -1131,6 +1138,13 @@
           "to": 29,
           "direction": "lowered",
           "reason": "SCAN-1133 slice 14: Journey v2 editor quiet actions to the kit Button (primarySoft and ghost at xs), Journey template and event picker tiles and the block inspector entity filter rows to choiceTileClasses; 39 to 29."
+        },
+        {
+          "at": "2026-11-18",
+          "from": 29,
+          "to": 22,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 15: IconButton gains a 44px lg size for the Airwaves and show episode Play buttons, the inspector icon and emoji cells move to IconButton tinted, the automations status toggle to Button xs, room visibility tiles and room compose kind pills to the kit; 29 to 22."
         }
       ]
     },
@@ -1808,14 +1822,14 @@
         "**/*.{test,spec}.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 1,
+      "baseline": 0,
       "frozen": {
-        "at": "2026-11-01",
-        "value": 1,
+        "at": "2026-11-18",
+        "value": 0,
         "direction": "lowered",
         "basis": "1e0d98756efd",
-        "reason": "Re-freeze: sweeps already on main retired sites in this class",
-        "from": 3
+        "reason": "SCAN-1133 slice 15: the last hand-rolled icon button (an inspector icon picker cell) moved onto IconButton tinted; 1 to 0.",
+        "from": 1
       },
       "history": [
         {
@@ -1880,6 +1894,13 @@
           "to": 1,
           "direction": "lowered",
           "reason": "Re-freeze: sweeps already on main retired sites in this class"
+        },
+        {
+          "at": "2026-11-18",
+          "from": 1,
+          "to": 0,
+          "direction": "lowered",
+          "reason": "SCAN-1133 slice 15: the last hand-rolled icon button (an inspector icon picker cell) moved onto IconButton tinted; 1 to 0."
         }
       ]
     },
