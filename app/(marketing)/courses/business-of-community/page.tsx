@@ -6,7 +6,8 @@
 // starting document. templates.test.ts asserts it renders under the current block config.
 //
 // SCHEMA, and who emits each node:
-//   · Course      here, from the course's facts (free, four weekly 90-minute live sessions, run several times a year).
+//   · Course      here, from the live Journey (lib/courses/course-page.ts): its Run on the calendar, guides,
+//                 outcomes and parts. The static facts below are the fallback when the Journey cannot be read.
 //   · WebPage     <BlockDocJsonLd>, from this route's own title and description (a published document only).
 //   · FAQPage     the kit page's questions (BOC_FAQ), or a published document's Accordion block.
 //   · Breadcrumb  here: a block cannot know the route's place in the site.
@@ -22,12 +23,15 @@ import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
 import { isWellFormed } from '@/lib/page-editor/templates'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, courseSchema } from '@/lib/jsonld'
+import { coursePageSchema, loadCoursePage } from '@/lib/courses/course-page'
+import { LIBRARY_NAME } from '@/lib/courses/tracks'
 import { FrequencyBusinessOfCommunity } from '@/components/frequency/site/pages/courses/business-of-community'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 
 export const revalidate = 3600
 
 const SLUG = 'business-of-community'
+const JOURNEY_SLUG = 'the-business-of-community-101'
 const PATH = '/courses/business-of-community'
 const COURSE_NAME = 'The Business of Community 101'
 const TITLE = 'The Business of Community 101: free core training'
@@ -55,7 +59,7 @@ export function generateMetadata(): Metadata {
 }
 
 export default async function BusinessOfCommunityPage() {
-  const page = await getPublishedPage(SLUG)
+  const [page, course] = await Promise.all([getPublishedPage(SLUG), loadCoursePage(JOURNEY_SLUG).catch(() => null)])
   const published = page?.doc ?? null
   const data: Data | null = isWellFormed(published) ? published : null
   return (
@@ -63,17 +67,19 @@ export default async function BusinessOfCommunityPage() {
       <JsonLd
         data={[
           breadcrumbSchema([
-            { name: 'Courses', path: '/courses' },
+            { name: LIBRARY_NAME, path: '/courses' },
             { name: COURSE_NAME, path: PATH },
           ]),
-          courseSchema({
-            name: COURSE_NAME,
-            description: DESCRIPTION,
-            path: PATH,
-            image: IMAGE,
-            free: true,
-            schedule: { duration: 'PT1H30M', repeatFrequency: 'Weekly', repeatCount: 4 },
-          }),
+          course
+            ? coursePageSchema(course)
+            : courseSchema({
+                name: COURSE_NAME,
+                description: DESCRIPTION,
+                path: PATH,
+                image: IMAGE,
+                free: true,
+                schedule: { duration: 'PT1H30M', repeatFrequency: 'Weekly', repeatCount: 4 },
+              }),
         ]}
       />
       {data ? (

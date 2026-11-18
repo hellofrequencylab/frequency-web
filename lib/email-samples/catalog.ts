@@ -11,7 +11,6 @@
 import type { EmailPayload } from '@/lib/email'
 import {
   buildBookingReminderEmail,
-  buildDirectMessageEmail,
   buildHousingMatchEmail,
   buildPlanShareEmail,
   sendBookingCancelledEmail,
@@ -31,6 +30,7 @@ import {
   sendInviteEmail,
   sendMadeItEmail,
   sendEventReplayEmail,
+  sendCoursePreviewEmail,
   sendMemberTicketEmail,
   sendOptinConfirmEmail,
   sendOptinWelcomeEmail,
@@ -320,6 +320,7 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'guest-event-cancelled', group: 'Events', run: () => sendGuestEventCancelledEmail({ to: TO, guestName: 'Maya', eventTitle: 'Sunrise sound bath', whenAbsolute: WHEN, eventUrl: EVENT_URL, refunded: false }) },
   { id: 'made-it', group: 'Events', run: () => sendMadeItEmail({ to: TO, name: 'Maya', eventTitle: 'Sunrise sound bath', eventUrl: EVENT_URL, madeItUrl: `${EVENT_URL}/made-it`, next: { title: 'Full moon swim', whenAbsolute: 'Friday, November 20, 6:30 PM PT', url: `${SITE}/events/full-moon-swim`, shareUrl: `${SITE}/events/full-moon-swim?share=1` }, joinUrl: `${SITE}/sign-up`, unsubscribeUrl: `${SITE}/unsubscribe/t`, dedupeKey: 'sample' }) },
   { id: 'event-replay', group: 'Events', run: () => sendEventReplayEmail({ to: TO, eventTitle: 'The Business of Community · Live series · Week 1 · The Engine', eventUrl: EVENT_URL, replayUrl: 'https://example.com/replay', next: { title: 'Week 2 · The Container', whenAbsolute: 'Thursday, January 14, 10:00 AM PT', url: `${SITE}/events/week-2` }, unsubscribeUrl: `${SITE}/unsubscribe/t`, dedupeKey: 'sample' }) },
+  { id: 'course-preview', group: 'Welcome and sign-up', run: () => sendCoursePreviewEmail({ to: TO, courseTitle: 'The Business of Community 101', week1Url: `${SITE}/courses/the-business-of-community-101/week-1`, courseUrl: `${SITE}/courses/business-of-community`, run: { label: 'Thursdays, January 7 to 28', time: '10:00 AM to 11:30 AM PT', seatUrl: `${SITE}/events/week-1` }, confirmUrl: `${SITE}/subscribe/confirm?t=abc` }) },
   { id: 'promoted-seat', group: 'Events', run: () => { const p = { recipientName: 'Maya', eventTitle: 'Sunrise sound bath', whenAbsolute: WHEN, location: 'Moonlight Beach, Encinitas', hostName: 'Jordan', circleName: 'Dawn swimmers', eventUrl: EVENT_URL, icsUrl: `${EVENT_URL}.ics`, googleCalUrl: 'https://calendar.google.com/calendar/r/eventedit?text=Sunrise+sound+bath', unsubscribeUrl: UNSUB }; return { to: TO, subject: `${PROMOTED_SEAT_LINE} Sunrise sound bath`, html: promotedSeatHtml(p), text: promotedSeatText(p) } } },
   { id: 'event-claim-invite', group: 'Events', run: () => sendEventClaimInviteEmail({ to: TO, organizerName: 'Jordan', posterName: 'Jordan', eventTitle: 'Sunrise sound bath', whenLine: WHEN, location: 'Moonlight Beach, Encinitas', claimUrl: `${SITE}/claim/abc123`, eventUrl: EVENT_URL }) },
 
@@ -361,7 +362,6 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   // ── Community ────────────────────────────────────────────────────────────────────────────────────────
   { id: 'dispatch-notification', group: 'Community', run: () => sendDispatchNotificationEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, authorName: 'Jordan', dispatchTitle: 'Notes from the water', excerpt: 'Three mornings, one tide chart, and a new favorite spot.', dispatchUrl: `${SITE}/dispatches/notes-from-the-water` }) },
   { id: 'outreach-note', group: 'Community', run: () => sendOutreachNoteEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, authorName: 'Jordan', body: 'We missed you at the last two swims. The water is warm and the group asked about you. Come Tuesday?' }) },
-  { id: 'direct-message', group: 'Community', run: () => buildDirectMessageEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, senderName: 'Sam', preview: 'Is the room on Fifth still free for December? I can come by Saturday to see it.', threadPath: '/messages/abc123' }) },
   { id: 'housing-match', group: 'Community', run: () => buildHousingMatchEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, counterpartName: 'Sam', kind: 'listing', city: 'Encinitas', matchPath: '/housing/matches/abc123' }) },
   { id: 'automation-note', group: 'Community', run: () => { const out = actorEmailMessage('Hi Maya,\n\nYou made it to three swims this month. The group noticed, and so did we.\n\nSee you at the water,\nThe Frequency team', UNSUB); return { to: TO, subject: 'Three swims this month', html: out.html, text: out.text } } },
   { id: 'plan-share-requested', group: 'Community', run: () => buildPlanShareEmail({ to: TO, recipientName: 'Jordan', recipientProfileId: PROFILE, moment: 'requested', otherSpaceName: 'Tidepool Trust', planTitle: 'Winter beach cleanups', calendarPath: '/spaces/north-light/settings/calendar' }) },

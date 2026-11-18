@@ -4,7 +4,8 @@
 //   1. /courses and /courses/business-of-community are advertised in the sitemap and llms.txt.
 //   2. The sales page is an editable page whose template renders, with Course schema on the route.
 //   3. Course cards never link to the robots-disallowed /journeys/* member route.
-//   4. The Funnel's cohort tag is registered, and its SQL lands the member on the course.
+//   4. The Funnel's cohort tag is registered, and its SQL lands the member on the Week 1 workshop event
+//      (owner 2026-11-17: the course is a live workshop run in cohorts, not self-paced).
 //   5. SpacePractices `only` also matches a journey's category.
 import { existsSync, readFileSync } from 'node:fs'
 
@@ -24,11 +25,14 @@ if (!existsSync(new URL(route, root))) fails.push(`${route} is missing`)
 else if (!/courseSchema\(/.test(read(route)) || !/<BlockRender/.test(read(route))) fails.push('the sales page lacks Course schema or the block render path')
 if (!/slug: 'business-of-community'.*path: '\/courses\/business-of-community'/.test(read('lib/page-editor/data.ts'))) fails.push('business-of-community is not an EDITABLE_PAGES slug')
 if (!/'business-of-community': businessOfCommunity/.test(read('lib/page-editor/templates/index.ts'))) fails.push('the sales template is not registered')
-if (!read('lib/page-editor/templates/business-of-community.ts').includes("'/join?seq=business-of-community'")) fails.push('Start the course does not go to the Funnel')
+if (!read('lib/page-editor/templates/business-of-community.ts').includes("'/join?seq=business-of-community'")) fails.push('Save your seat does not go to the Funnel')
 
 if (!existsSync(new URL('app/(marketing)/courses/page.tsx', root))) fails.push('/courses is missing')
 const tracks = read('lib/courses/tracks.ts')
-if (!tracks.includes('`/discover/journeys/${slug}`')) fails.push('course cards do not link to the public Journey page')
+// 2026-11-18 (owner: one home per course): a card links to the course's own /courses page, and the public
+// Journey page names that page as its canonical, so the two never compete in search.
+if (!tracks.includes('`/courses/${slug}`')) fails.push('course cards do not link to the course page')
+if (!read('app/discover/journeys/[slug]/page.tsx').includes('courseHref(plan.slug)')) fails.push('the public Journey page of a course does not name its course page as canonical')
 if (/['`]\/journeys\//.test(tracks + read('components/frequency/site/pages/courses/courses.tsx'))) fails.push('a course card links to /journeys/*')
 
 if (!read('lib/traits/registry.ts').includes("key: 'beta_business_of_community'")) fails.push('the Funnel tag is not registered')

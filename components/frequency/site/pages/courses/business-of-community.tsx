@@ -16,15 +16,18 @@ import '@/app/themes/active/site-pages-a'
 import '@/app/themes/active/site-pages-showcase'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import '@/app/themes/active/site-discover'
+import { CourseLeadForm } from './course-lead-form'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
 import { BOC_FAQ } from '@/lib/page-editor/templates/business-of-community'
 import { aura, photo, photoImg } from '../shared/parts'
 
 const EVENT = '/events/business-of-community-pilot-session-1'
-const CALENDAR = '/spaces/hq/calendar'
 const BUSINESS_HOURS = '/circles/business-hours'
-
+const JOURNEY_SLUG = 'the-business-of-community-101'
+const WEEK_ONE = `/courses/${JOURNEY_SLUG}/week-1`
+const RUN_ICS = `/courses/${JOURNEY_SLUG}/calendar.ics`
 
 const p = (name: string) => photo(`boc-${name}.jpg`)
 
@@ -242,8 +245,8 @@ export function FrequencyBusinessOfCommunity() {
             </p>
             <div className="ctas">
               <SaveSeat />
-              <Link className="btn btn-ghost fq-iri-rim" href={CALENDAR}>
-                See the calendar
+              <Link className="btn btn-ghost fq-iri-rim" href={WEEK_ONE}>
+                Read Week 1 free
               </Link>
             </div>
             <div className="boc-leads">
@@ -633,7 +636,10 @@ export function FrequencyBusinessOfCommunity() {
                 </p>
               </div>
             </div>
-            <p className="boc-m boc-gap-s">A certificate of completion and competency from Frequency. Not an accredited certification.</p>
+            <p className="boc-m boc-gap-s">
+              Each one has its own page anyone can check, and a badge for your Space or your site. A certificate of
+              completion and competency from Frequency. Not an accredited certification.
+            </p>
           </div>
         </div>
       </section>
@@ -672,9 +678,13 @@ export function FrequencyBusinessOfCommunity() {
           </h2>
           <div className="ctas">
             <SaveSeat />
-            <Link className="btn btn-ghost fq-iri-rim" href={CALENDAR}>
-              See the calendar
-            </Link>
+            <a className="btn btn-ghost fq-iri-rim" href={RUN_ICS}>
+              Add all four to your calendar
+            </a>
+          </div>
+          <div className="boc-close-lead">
+            <p className="boc-m">Not ready to sign up? Get Week 1 and the dates in your inbox.</p>
+            <CourseLeadForm slug={JOURNEY_SLUG} />
           </div>
         </div>
       </section>
