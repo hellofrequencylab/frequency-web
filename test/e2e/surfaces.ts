@@ -65,6 +65,63 @@ export const PUBLIC_RENDER_STATES: readonly RenderState[] = [DAWN_LIGHT, MIDNIGH
 /** The canonical look: what an anonymous visitor sees with no stored preference. */
 export const DEFAULT_STATE: RenderState = DAWN_LIGHT
 
+/**
+ * THE VISUAL SUITE'S CAPTURE BUDGET (SCAN-1222, owner ruling 2026-11-18).
+ *
+ * The committed baselines are checked out by every clone, CI job and agent session, and the probe
+ * holds them to 50 MB. Full-page marketing captures run 2 to 9 MB each, so the photographed set is
+ * chosen, not derived: one representative per look, and the launch-critical public pages.
+ *
+ *   · LOOKS. Dawn light everywhere. Dawn dark on the member shell, the one place it is reachable
+ *     and repaints the whole shell. Midnight light on the header band only (VISUAL_MIDNIGHT_SLUGS):
+ *     both skins are light, and on the public pages the two captures measured 96 to 100 percent
+ *     identical (baseline-distinctness.test.ts), so one surface is enough to notice the skin break.
+ *   · PUBLIC PAGES. VISUAL_PUBLIC_CAPTURES below, each with the widths it is photographed at. Every
+ *     other public surface is still walked by a11y.spec.ts and overflow.spec.ts, which read
+ *     `publicSurfaces()` and need no baseline.
+ *   · OPERATOR CONSOLE. Desktop only, dawn light only: it is a desk (see the narrow skip in
+ *     visual.spec.ts), and the dark repaint is already proved on the member shell.
+ *
+ * Widening any of these adds megabytes to every checkout. Measure the new PNGs against the probe
+ * (`node scripts/probes/audit-2026-11-16.mjs SCAN-1222`) in the same change.
+ */
+export const VISUAL_PUBLIC_CAPTURES: Readonly<Record<string, readonly string[]>> = {
+  '/': ['desktop', 'mobile'],
+  '/pricing': ['desktop', 'mobile'],
+  '/join': ['desktop', 'mobile'],
+  // One launch door stands for the six (SCAN-1136): they share the template, and the funnel lands on phones.
+  '/for/coaches-and-healers': ['mobile'],
+  // A FAQ page LIVE-040's probe reads off the baselines. (Its other one, the-lab--dawn-light-mobile.png,
+  // is kept for that probe alone: /the-lab redirects to /about and no test photographs it.)
+  '/the-community': ['mobile'],
+  // Advisory (LIVE-373): live data, so the narrow first column is enough to notice a broken page.
+  '/discover': ['mobile'],
+}
+
+/** Slugs photographed in Midnight light as well as Dawn light. See VISUAL_PUBLIC_CAPTURES. */
+export const VISUAL_MIDNIGHT_SLUGS: readonly string[] = ['header-band']
+
+/** Projects the operator console is photographed at. See VISUAL_PUBLIC_CAPTURES. */
+export const VISUAL_OPERATOR_PROJECTS: readonly string[] = ['desktop']
+
+/** The public surfaces the visual suite photographs at all. */
+export function isVisualPublicSurface(surface: Surface): boolean {
+  return Object.hasOwn(VISUAL_PUBLIC_CAPTURES, surface.path)
+}
+
+/** Why a public surface is not photographed at this project, or null when it is. */
+export function visualPublicSkipReason(surface: Surface, project: string): string | null {
+  const projects = VISUAL_PUBLIC_CAPTURES[surface.path]
+  if (projects?.includes(project)) return null
+  return `${surface.path} is photographed at ${projects?.join(' and ') ?? 'no width'} only, to keep the committed baselines under 50 MB (SCAN-1222).`
+}
+
+/** The render states a surface is photographed in, from the states its describe allows. */
+export function visualStatesFor(surface: Surface, states: readonly RenderState[]): readonly RenderState[] {
+  if (VISUAL_MIDNIGHT_SLUGS.includes(surface.slug)) return states
+  return states.filter((s) => s.skin === DEFAULT_STATE.skin)
+}
+
 /** The states that are MEANINGFUL inside the member shell — see applyRenderState's note:
  *  the authed shell renders `[data-skin]` server-side on the shell root (a DESCENDANT of
  *  <html>), so it wins over anything we stamp on <html>. Only the mode axis is ours there,
