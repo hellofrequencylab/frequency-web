@@ -112,6 +112,7 @@ const HINTS: Record<string, string> = {
   checkInEnabled: CHECK_IN_HELP,
   marketListed: MARKET_LISTING_HELP,
   'details.specialInstructions': SPECIAL_INSTRUCTIONS_HELP,
+  'details.replayUrl': 'A link to the recording. Once it is set, everyone who saved a seat gets it in one email, whether or not they came.',
 }
 
 const [COVER, MORE_PHOTOS] = EVENT_RAIL.gallery.fields

@@ -116,3 +116,44 @@ export async function recordEmailEvent(input: {
   // release its claim and 503; a swallowed failure would lose the event for good.
   if (error) throw new Error(error.message)
 }
+
+// ── Soft bounces are not hard bounces (EMAIL-052) ─────────────────────────────────────────────
+//
+// Resend relays Amazon SES bounce types: Permanent (the address does not exist), Transient (the
+// mailbox is full, the server timed out, the message expired) and Undetermined. Until 2026-11-18
+// every `email.bounced` became a permanent `hard_bounce` suppression, so nine real people with a
+// full inbox or a slow mail server were blocked from every Frequency email for good. A Transient
+// bounce now suppresses only once it repeats: SOFT_BOUNCE_LIMIT within SOFT_BOUNCE_WINDOW_DAYS.
+
+/** Transient bounces in the window that turn into a suppression (this one included). */
+export const SOFT_BOUNCE_LIMIT = 3
+const SOFT_BOUNCE_WINDOW_DAYS = 30
+
+/** 'transient' only when the provider says so; a missing or Undetermined type stays permanent,
+ *  the safe reading for sender reputation. Pure. */
+export function classifyBounce(data: unknown): 'permanent' | 'transient' {
+  const bounce = (data as { bounce?: { type?: unknown } } | null | undefined)?.bounce
+  return typeof bounce?.type === 'string' && bounce.type.toLowerCase() === 'transient' ? 'transient' : 'permanent'
+}
+
+/** The suppression reason a bounce earns, or null when it should not suppress yet. `priorTransient`
+ *  is how many Transient bounces the address already logged in the window. Pure. */
+export function bounceSuppressionReason(kind: 'permanent' | 'transient', priorTransient: number): string | null {
+  if (kind === 'permanent') return 'hard_bounce'
+  return priorTransient + 1 >= SOFT_BOUNCE_LIMIT ? 'soft_bounce_repeat' : null
+}
+
+/** Transient bounces already logged for this address in the window. THROWS on a read error, so the
+ *  webhook releases its claim and Resend redelivers instead of guessing. */
+export async function priorTransientBounces(email: string): Promise<number> {
+  const since = new Date(Date.now() - SOFT_BOUNCE_WINDOW_DAYS * 86_400_000).toISOString()
+  const { count, error } = await db()
+    .from('email_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('email', norm(email))
+    .eq('event_type', 'bounced')
+    .eq('payload->data->bounce->>type', 'Transient')
+    .gte('created_at', since)
+  if (error) throw new Error(error.message)
+  return count ?? 0
+}

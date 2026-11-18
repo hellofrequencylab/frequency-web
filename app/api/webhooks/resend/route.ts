@@ -15,7 +15,7 @@
 
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { recordEmailEvent, suppress } from '@/lib/suppression'
+import { bounceSuppressionReason, classifyBounce, priorTransientBounces, recordEmailEvent, suppress } from '@/lib/suppression'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
 import { handleSpaceSendWebhook, handleSpaceSendEngagement } from '@/lib/spaces/email'
 import { recordSpaceSendEventFromResend, spaceEventKindForResend } from '@/lib/spaces/email-tracking'
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
     data?: {
       to?: string | string[]
       email_id?: string
+      bounce?: { type?: string }
       headers?: unknown
       tags?: unknown
     }
@@ -108,9 +109,18 @@ export async function POST(req: Request) {
   // re-runs suppression and appends exactly one row.
   const errors: string[] = []
 
+  // A complaint always suppresses. A bounce suppresses when it is Permanent, or when a Transient
+  // one (a full mailbox, an expired delivery) repeats (EMAIL-052, lib/suppression.ts).
+  let suppressReason: string | null = null
   if (type === 'bounced' || type === 'complained') {
     try {
-      await suppress(to, type === 'bounced' ? 'hard_bounce' : 'complaint')
+      if (type === 'complained') {
+        suppressReason = 'complaint'
+      } else {
+        const kind = classifyBounce(event.data)
+        suppressReason = bounceSuppressionReason(kind, kind === 'transient' ? await priorTransientBounces(to) : 0)
+      }
+      if (suppressReason) await suppress(to, suppressReason)
     } catch (err) {
       errors.push(`suppress: ${err instanceof Error ? err.message : String(err)}`)
     }
@@ -128,7 +138,7 @@ export async function POST(req: Request) {
   // Sending without delivery feedback is worse than not sending.
   if (type === 'delivered' || type === 'bounced' || type === 'complained') {
     try {
-      await handleSpaceSendWebhook(event.data?.email_id ?? null, type)
+      await handleSpaceSendWebhook(event.data?.email_id ?? null, type, { suppressAddress: suppressReason !== null })
     } catch (err) {
       errors.push(`spaceSend: ${err instanceof Error ? err.message : String(err)}`)
     }

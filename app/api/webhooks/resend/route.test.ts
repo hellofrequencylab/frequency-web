@@ -19,6 +19,7 @@ const H = vi.hoisted(() => ({
   suppressThrows: false,
   recordThrows: false,
   timelineThrows: false,
+  priorTransient: 0,
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -43,7 +44,12 @@ vi.mock('@/lib/supabase/admin', () => ({
     },
   }),
 }))
-vi.mock('@/lib/suppression', () => ({
+vi.mock('@/lib/suppression', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/suppression')>()
+  return {
+  classifyBounce: real.classifyBounce,
+  bounceSuppressionReason: real.bounceSuppressionReason,
+  priorTransientBounces: async () => H.priorTransient,
   recordEmailEvent: async (input: { email: string; eventType: string }) => {
     if (H.recordThrows) throw new Error('email_events insert failed')
     H.recorded.push({ email: input.email, eventType: input.eventType })
@@ -52,7 +58,8 @@ vi.mock('@/lib/suppression', () => ({
     if (H.suppressThrows) throw new Error('suppression insert failed')
     H.suppressed.push(email)
   },
-}))
+  }
+})
 vi.mock('@/lib/spaces/email', () => ({
   handleSpaceSendWebhook: async () => {},
   handleSpaceSendEngagement: async () => {
@@ -94,6 +101,7 @@ beforeEach(() => {
   H.suppressThrows = false
   H.recordThrows = false
   H.timelineThrows = false
+  H.priorTransient = 0
   vi.spyOn(console, 'error').mockImplementation(() => {})
   vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
@@ -136,6 +144,28 @@ describe('POST /api/webhooks/resend', () => {
     expect(retry.status).toBe(200)
     expect(H.suppressed).toEqual(['b@x.com'])
     expect(H.recorded).toHaveLength(1)
+  })
+
+  it('a Transient bounce (full mailbox) records the event but does not suppress the address', async () => {
+    const soft = { type: 'email.bounced', data: { to: ['c@x.com'], email_id: 're_3', bounce: { type: 'Transient', subType: 'MailboxFull' } } }
+    const res = await POST(signedRequest('msg_soft', soft))
+    expect(res.status).toBe(200)
+    expect(H.suppressed).toEqual([])
+    expect(H.recorded).toEqual([{ email: 'c@x.com', eventType: 'bounced' }])
+  })
+
+  it('a third Transient bounce in the window suppresses', async () => {
+    H.priorTransient = 2
+    const soft = { type: 'email.bounced', data: { to: ['c@x.com'], email_id: 're_4', bounce: { type: 'Transient' } } }
+    const res = await POST(signedRequest('msg_soft3', soft))
+    expect(res.status).toBe(200)
+    expect(H.suppressed).toEqual(['c@x.com'])
+  })
+
+  it('a Permanent bounce suppresses on the first event', async () => {
+    const hard = { type: 'email.bounced', data: { to: ['d@x.com'], email_id: 're_5', bounce: { type: 'Permanent' } } }
+    await POST(signedRequest('msg_hard', hard))
+    expect(H.suppressed).toEqual(['d@x.com'])
   })
 
   it('a recordEmailEvent failure 503s with the claim released (nothing was written)', async () => {
