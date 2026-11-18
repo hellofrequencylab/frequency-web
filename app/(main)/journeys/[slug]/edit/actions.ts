@@ -68,6 +68,50 @@ async function nextSortOrder(
   return ((data?.[0] as { sort_order: number } | undefined)?.sort_order ?? -1) + 1
 }
 
+/** JRN-013: a block's parent must be a block of THIS Journey. The insert actions took parent_id from
+ *  the client, so a crafted call could hang a block under another Journey's phase, where it is
+ *  orphaned in its own tree, deleted with the other Journey's phase (parent_id cascades), and
+ *  makes that phase look non-empty. A null parent is the top level and always fine. */
+async function parentInPlan(
+  admin: ReturnType<typeof createAdminClient>,
+  planId: string,
+  parentId: string | null,
+): Promise<boolean> {
+  if (!parentId) return true
+  const { data, error } = await admin
+    .from('journey_plan_items')
+    .select('id')
+    .eq('id', parentId)
+    .eq('plan_id', planId)
+    .maybeSingle()
+  return !error && !!data
+}
+
+/** JRN-013: the practice a block links must be one the author may use: an approved library
+ *  practice, the author's own, or one that belongs to the Journey's Space. Otherwise another
+ *  member's private draft practice could be pulled into a Journey and shown to its members. */
+async function loadUsablePractice(
+  admin: ReturnType<typeof createAdminClient>,
+  planId: string,
+  profileId: string,
+  practiceId: string,
+): Promise<{ title: string | null; domain_id: string | null } | null> {
+  const [{ data: pr }, { data: plan }] = await Promise.all([
+    admin.from('practices').select('title, domain_id, status, created_by, space_id').eq('id', practiceId).maybeSingle(),
+    admin.from('journey_plans').select('space_id').eq('id', planId).maybeSingle(),
+  ])
+  const practice = pr as
+    | { title: string | null; domain_id: string | null; status: string | null; created_by: string | null; space_id: string | null }
+    | null
+  if (!practice) return null
+  const planSpace = (plan as { space_id: string | null } | null)?.space_id ?? null
+  const usable =
+    practice.status === 'approved' ||
+    practice.created_by === profileId ||
+    (!!practice.space_id && practice.space_id === planSpace)
+  return usable ? { title: practice.title, domain_id: practice.domain_id } : null
+}
+
 function done(slug: string): void {
   revalidatePath(`/journeys/${slug}/edit`)
   revalidatePath(`/journeys/${slug}/learn`)
@@ -123,6 +167,7 @@ export async function addModuleAction(slug: string, phaseId: string): Promise<Ac
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
   const admin = db()
+  if (!(await parentInPlan(admin, a.planId, phaseId))) return fail('That phase is not part of this Journey.')
   const sort = await nextSortOrder(admin, a.planId, phaseId)
   const { data, error } = await admin
     .from('journey_plan_items')
@@ -143,6 +188,7 @@ export async function addLessonAction(
   if (!a) return fail('Only the author can edit this journey.')
   const type = (LEAF_TYPES as readonly string[]).includes(blockType) ? blockType : 'lesson'
   const admin = db()
+  if (!(await parentInPlan(admin, a.planId, parentId))) return fail('That phase is not part of this Journey.')
   const sort = await nextSortOrder(admin, a.planId, parentId)
   const { data, error } = await admin
     .from('journey_plan_items')
@@ -160,6 +206,7 @@ export async function addExtraCreditAction(slug: string, parentId: string | null
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
   const admin = db()
+  if (!(await parentInPlan(admin, a.planId, parentId))) return fail('That phase is not part of this Journey.')
   const sort = await nextSortOrder(admin, a.planId, parentId)
   const row = extraCreditRow(EXTRA_CREDIT_PLACEHOLDER.title, EXTRA_CREDIT_PLACEHOLDER.body)
   const { data, error } = await admin
@@ -184,8 +231,9 @@ export async function addPracticeBlockAction(
   if (!a) return fail('Only the author can edit this journey.')
   if (!practiceId) return fail('No practice given.')
   const admin = db()
-  const { data: pr } = await admin.from('practices').select('title, domain_id').eq('id', practiceId).maybeSingle()
-  const practice = pr as { title: string | null; domain_id: string | null } | null
+  if (!(await parentInPlan(admin, a.planId, parentId))) return fail('That phase is not part of this Journey.')
+  const practice = await loadUsablePractice(admin, a.planId, a.profileId, practiceId)
+  if (!practice) return fail('That practice is not in the library.')
   const sort = await nextSortOrder(admin, a.planId, parentId)
   const { data, error } = await admin
     .from('journey_plan_items')
@@ -219,8 +267,7 @@ export async function setBlockPracticeAction(
   if (!a) return fail('Only the author can edit this journey.')
   if (!practiceId) return fail('No practice given.')
   const admin = db()
-  const { data: pr } = await admin.from('practices').select('title, domain_id').eq('id', practiceId).maybeSingle()
-  const practice = pr as { title: string | null; domain_id: string | null } | null
+  const practice = await loadUsablePractice(admin, a.planId, a.profileId, practiceId)
   if (!practice) return fail('That practice is no longer in the library.')
   const { error } = await admin
     .from('journey_plan_items')
