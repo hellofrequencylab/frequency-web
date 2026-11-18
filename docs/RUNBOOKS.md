@@ -1087,3 +1087,17 @@ The drain also recognizes already queued EMAIL-049 resource copies by their cano
 **Activation gate:** keep the variable blank until the owner approves requested-resource sending and exact-head checks/real preview verify default-off inline access, opted-in transactional enqueue, suppression/dedupe and off-to-enabled drain replay. Review the existing held resource backlog and link freshness before enabling; enabling allows due held copies to resume. Confirm deployed identity and configuration in both the public form runtime and queue worker before acceptance. Tests and fixture renders are not production sending approval.
 
 **Rollback:** blank the flag in both runtimes and redeploy/restart if required. New resource copies stop being queued; queued canonical resource copies defer without spending attempts. Keep the resource available inline. Do not cancel jobs or change unrelated email controls to perform this rollback. This cannot recall mail already accepted by the provider or stop an old worker before the new deployment takes over.
+
+## Nonce-based script policy
+
+`CSP_NONCE_REPORT_ONLY` then `CSP_NONCE_ENFORCE` (SCAN-1243, ADR-1954, design in `docs/security/csp-nonce.md`). Both blank by default: the site sends exactly today's policy. Only member-app pages (rendered under `app/(main)`) are affected; static and ISR pages keep `'unsafe-inline'`.
+
+**Step 1, the test run:** set `CSP_NONCE_REPORT_ONLY=1` on Production and let the next deploy pick it up. Member pages then also send `Content-Security-Policy-Report-Only` with the strict policy (nonce, `'strict-dynamic'`, the root scripts' hashes). Nothing is blocked. The owner's 2026-11-16 answer on SCAN-1243 approved this step.
+
+**Watch:** runtime logs for `csp.violation` with `policy: nonce`. Expected noise: `vercel.live` on previews only. A report naming an inline script on a member page (the analytics head hash, a not-found page under a member path) is a fix before step 2.
+
+**Gate before step 2:** seven days of production with no unexplained `policy: nonce` report; one preview with `CSP_NONCE_ENFORCE=1` where sign-in, the feed, a Space page, Stripe checkout, a map and GA all load in a real browser; and the owner's go.
+
+**Step 2:** set `CSP_NONCE_ENFORCE=1` on Production and redeploy. It wins over step 1.
+
+**Off:** blank the switch and redeploy.
