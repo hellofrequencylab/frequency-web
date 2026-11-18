@@ -1,0 +1,18 @@
+{
+  "id": "FH-031T",
+  "title": "Hunts FH-031T: Let the author pick the finale Event, and gate the completion reward on a seat",
+  "lane": "program",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/hunts/rally-finale.ts",
+    "ref": "Split from FH-031S (2026-11-18): the player's finale panel shipped dark; the author, reward and Event stop halves move here."
+  },
+  "detail": "Owed after FH-031S. (1) Web: the author picks the host Event in the Trail editor, limited to Events of the Hunt's own Space or a live partner, and publish writes it to hunt_versions.policy.finale.event_id (lib/hunts/draft.ts publish policy), checked again on the server at publish. (2) Game systems: the first route that grants a completion reward calls grantFinaleReward, and hunt_reward_grant gets the same seat check in SQL so the rule does not rest on one caller (a migration through the serialized gate). (3) An Event stop credits through hunt_claim_apply with finaleDoorEvidence at assurance event_door. (4) Operator: on a preview deployment, a finished player with no seat at a full host Event sees the full message and holds no RSVP, ticket or reward afterwards. Done when: a creator can publish a Trail with a finale without touching JSON, and a completion reward is never granted to a player the host Event does not admit. Requires: FH-031S. Owner role: Web, with Game systems. Hunts switches stay OFF.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(\"fs\");const d=f.readFileSync(\"lib/hunts/draft.ts\",\"utf8\");const hit=(r)=>f.readdirSync(r,{recursive:true}).map(String).filter(x=>/\\.tsx?$/.test(x)&&!/\\.test\\.tsx?$/.test(x)&&!(r+\"/\"+x).endsWith(\"lib/hunts/rally-finale.ts\")).some(x=>f.readFileSync(r+\"/\"+x,\"utf8\").includes(\"grantFinaleReward(\"));process.exit(/finale/.test(d)&&(hit(\"lib\")||hit(\"app\"))?0:1)'"
+  },
+  "wave": "W7"
+}
