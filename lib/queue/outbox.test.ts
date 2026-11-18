@@ -124,6 +124,8 @@ const updates: Array<Record<string, unknown>> = []
 const updateResults: Array<{ message: string } | Error | null> = []
 const inserts: Array<Record<string, unknown>> = []
 let insertResult: { error: { code?: string; message: string } | null } = { error: null }
+let countResult: { count: number | null; error: { message: string } | null } = { count: 0, error: null }
+const countFilters: Array<[string, unknown]> = []
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -144,11 +146,19 @@ vi.mock('@/lib/supabase/admin', () => ({
         inserts.push(row)
         return insertResult
       },
+      // EMAIL-060: the bulk-sent-today count (select head + eq/eq/gte chain).
+      select: () => {
+        const chain = {
+          eq: (col: string, val: unknown) => { countFilters.push([col, val]); return chain },
+          gte: async (col: string, val: unknown) => { countFilters.push([col, val]); return countResult },
+        }
+        return chain
+      },
     }),
   }),
 }))
 
-import { processQueue, enqueue, DEAD_LETTER_STATUS } from '@/lib/queue/outbox'
+import { processQueue, enqueue, DEAD_LETTER_STATUS, bulkDailyBudget } from '@/lib/queue/outbox'
 
 const job = (over: Partial<Record<string, unknown>> = {}) => ({
   id: 'j1', kind: 'push', payload: { to: 'p1' }, attempts: 0, max_attempts: 5, ...over,
@@ -161,6 +171,9 @@ beforeEach(() => {
   updateResults.length = 0
   inserts.length = 0
   insertResult = { error: null }
+  countResult = { count: 0, error: null }
+  countFilters.length = 0
+  delete process.env.EMAIL_DAILY_SEND_LIMIT
 })
 
 // ── enqueue: the optional dedupe key (scan two L2-02, migration 20270345000700) ───────────────
@@ -381,4 +394,61 @@ it('uncertain acceptance hold becomes visible dead-letter without spending autom
   expect(result.failed).toBe(1)
   expect(result.retried).toBe(0)
   expect(updates[0]).toMatchObject({ status: 'failed', last_error: 'reconcile uncertain acceptance' })
+})
+
+// EMAIL-060: on 2026-11-17/18 a campaign spent the whole Resend daily quota at the UTC day's start, and
+// every reminder after it was accepted by the API and then failed with reached_daily_quota.
+describe('the bulk share of the daily send limit (EMAIL-060)', () => {
+  const bulkJob = (id: string) => ({
+    id, kind: 'email', payload: { to: `${id}@example.com`, subject: 'Campaign', [LANE_KEY]: 'bulk' },
+    attempts: 0, max_attempts: 5, created_at: new Date().toISOString(),
+  })
+  const txJob = (id: string) => ({
+    id, kind: 'email', payload: { to: `${id}@example.com`, subject: 'Tomorrow at The Group' },
+    attempts: 0, max_attempts: 5, created_at: new Date().toISOString(),
+  })
+
+  it('keeps a quarter of the limit (at least 20) for one-to-one mail', () => {
+    expect(bulkDailyBudget(null)).toBeNull()
+    expect(bulkDailyBudget(0)).toBeNull()
+    expect(bulkDailyBudget(200)).toBe(150)
+    expect(bulkDailyBudget(100)).toBe(75)
+    expect(bulkDailyBudget(40)).toBe(20)
+    expect(bulkDailyBudget(10)).toBe(0)
+    expect(bulkDailyBudget(50_000)).toBe(37_500)
+  })
+
+  it('parks bulk past midnight once the bulk share is spent, and still sends transactional mail', async () => {
+    process.env.EMAIL_DAILY_SEND_LIMIT = '200'
+    countResult = { count: 149, error: null }
+    rpcResult = { data: [bulkJob('b1'), bulkJob('b2'), txJob('t1')], error: null }
+    const sent: string[] = []
+    const r = await processQueue({ email: async (p) => { sent.push(p.to as string) } }, 25)
+    // Transactional first, then one bulk send fits (149 -> 150), the next is parked unspent.
+    expect(sent).toEqual(['t1@example.com', 'b1@example.com'])
+    expect(r).toMatchObject({ done: 2, deferred: 1, failed: 0 })
+    const parked = updates.find((u) => u.status === 'pending')!
+    expect(parked).not.toHaveProperty('attempts')
+    expect(String(parked.last_error)).toMatch(/bulk share of the daily send limit/)
+    expect(Date.parse(String(parked.run_after))).toBeGreaterThan(Date.now())
+    expect(countFilters).toContainEqual([`payload->>${LANE_KEY}`, 'bulk'])
+  })
+
+  it('holds bulk when the count cannot be read, rather than spending the reserve', async () => {
+    process.env.EMAIL_DAILY_SEND_LIMIT = '200'
+    countResult = { count: null, error: { message: 'db down' } }
+    rpcResult = { data: [bulkJob('b1')], error: null }
+    const sent: string[] = []
+    const r = await processQueue({ email: async (p) => { sent.push(p.to as string) } }, 25)
+    expect(sent).toEqual([])
+    expect(r).toMatchObject({ done: 0, deferred: 1 })
+  })
+
+  it('changes nothing when no limit is set', async () => {
+    rpcResult = { data: [bulkJob('b1')], error: null }
+    const sent: string[] = []
+    await processQueue({ email: async (p) => { sent.push(p.to as string) } }, 25)
+    expect(sent).toEqual(['b1@example.com'])
+    expect(countFilters).toEqual([])
+  })
 })
