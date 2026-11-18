@@ -1,0 +1,19 @@
+{
+  "id": "JRN-017",
+  "title": "Journeys as Creator Lab training: one home per course, Course markup, free Week 1, one seat per Run and replays",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "lib/courses/course-page.ts",
+    "ref": "Owner 2026-11-18: rework every Journeys presentation and marketing suggestion"
+  },
+  "detail": "Owner 2026-11-18: Journeys are Frequency's training modules, built as lead funnels and authority. (1) Course markup: every public Journey page emits schema.org/Course (journeyCourseSchema: provider, Free or Paid offer, CourseInstance with the Run's schedule or the lessons' workload, syllabus, instructors), and /courses emits the Course list ItemList over each course's one home. (2) One home: /courses/<slug> is the standard course page for every Creator Lab course (the hand-built BOC page keeps its own), /discover/journeys/<slug> of a course names it canonical, the sitemap lists the home and Week 1, the hub links to the library. (3) The free piece: /courses/<slug>/week-1 shows the first part in full, and 'Email me Week 1' sends it with the next Run's dates through the double opt-in contact (source course_preview:<slug>). (4) Runs: sessions linked by events.journey_id plus details.runKey are one seat (members and guests), /courses/<slug>/calendar.ics adds them all, the event settings rail has a Replay link that the follow-up cron mails once to every seat holder, and sessions are titled as a live series. (5) Library: /courses is Creator Lab, cards carry Live or Self-paced, the next Run and Certificate. Attended and Certified credentials ship separately (JRN-019). House programs (house Space or official Creator Lab) are never remixable.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-017.mjs"
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

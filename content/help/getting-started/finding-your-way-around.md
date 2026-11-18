@@ -2,7 +2,8 @@
 title: Finding your way around
 description: A map of the app: what lives in the header, the left rail, your avatar menu and the phone bottom bar, and where each one takes you.
 category: getting-started
-order: 17
+order: 3
+group: Start here
 published: 2026-11-18
 updated: 2026-11-18
 audience: member

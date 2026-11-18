@@ -69,3 +69,14 @@ export function writeJourneyOutcomes(
   }
   return list
 }
+
+/** Who a course is for, one line, from the story widget's `settings.audience` (same home as the
+ *  outcomes, no schema change). Empty when none was written: the course page falls back to its track. */
+export function readJourneyAudience(stored: PageWidgetConfig[] | null | undefined): string {
+  for (const entry of stored ?? []) {
+    if (entry?.id !== 'story' || !isPlain(entry.settings)) continue
+    const a = entry.settings.audience
+    if (typeof a === 'string' && a.trim()) return a.trim().slice(0, JOURNEY_OUTCOME_MAX_LEN)
+  }
+  return ''
+}

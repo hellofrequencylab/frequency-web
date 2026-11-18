@@ -2,7 +2,8 @@
 title: Get help when you are stuck
 description: Search the help center, ask Vera, message a person, or report a bug. Every one of them is a tap or two away.
 category: getting-started
-order: 16
+order: 17
+group: Your account
 published: 2026-11-18
 updated: 2026-11-18
 audience: member

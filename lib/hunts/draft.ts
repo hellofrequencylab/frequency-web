@@ -9,6 +9,7 @@
 import { evaluate, validateGraph } from '@/lib/hunts/graph'
 import type { Blocker, HuntGraph } from '@/lib/hunts/graph'
 import { BENEFIT_CODE } from '@/lib/hunts/pass-binding'
+import { challengeProblems, stopLayers, stopPlay, type Challenge, type ChallengeView } from '@/lib/hunts/challenges'
 import { slugify } from '@/lib/utils'
 
 export type Stop = {
@@ -36,6 +37,13 @@ type DraftBenefit = { label: string; code: string }
 
 export const MAX_BENEFITS = 10
 
+/**
+ * FH-020Y: a partner venue named for one stop, by position. Only a Space with a live hunt_partners row
+ * for this Hunt may be named (the editor offers those; publish checks again, lib/hunts/partners.ts
+ * publishVenueBlocks). It lets a resident's Trail, which no Space runs, have a stop staff confirm.
+ */
+export type StopVenue = { stop: number; venueSpaceId: string }
+
 export type TrailDraft = {
   title: string
   hook: string
@@ -48,6 +56,8 @@ export type TrailDraft = {
   permissionConfirmed: boolean
   /** What a paid pass for this trail includes. Absent on a trail that sells nothing, which is most of them. */
   benefits?: DraftBenefit[]
+  /** FH-020Y: partner venues named per stop. Absent when none is, which keeps older drafts unchanged. */
+  venues?: StopVenue[]
 }
 
 export const MIN_STOPS = 3
@@ -92,6 +102,15 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     const r = (b && typeof b === 'object' ? b : {}) as Record<string, unknown>
     return { label: text(r.label, 80), code: text(r.code, 41).toLowerCase() }
   })
+  // One venue per stop, a real stop position and a well formed Space id; liveness is checked at publish.
+  const venues: StopVenue[] = []
+  for (const v of Array.isArray(o.venues) ? o.venues.slice(0, MAX_STOPS) : []) {
+    const r = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>
+    const stop = r.stop
+    if (typeof stop !== 'number' || !Number.isInteger(stop) || stop < 0 || stop >= stops.length) continue
+    if (typeof r.venueSpaceId !== 'string' || !UUID.test(r.venueSpaceId) || venues.some((x) => x.stop === stop)) continue
+    venues.push({ stop, venueSpaceId: r.venueSpaceId.toLowerCase() })
+  }
   return {
     title: text(o.title, TRAIL_LIMITS.title),
     hook: text(o.hook, TRAIL_LIMITS.line),
@@ -102,7 +121,13 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     permissionConfirmed: o.permissionConfirmed === true,
     // Present only when there is one, so a trail with no benefits is stored exactly as it always was.
     ...(benefits.length > 0 ? { benefits } : {}),
+    ...(venues.length > 0 ? { venues: venues.sort((a, b) => a.stop - b.stop) } : {}),
   }
+}
+
+/** FH-020Y: the partner venue named for stop `i`, or null. */
+export function stopVenue(draft: Pick<TrailDraft, 'venues'>, i: number): string | null {
+  return draft.venues?.find((v) => v.stop === i)?.venueSpaceId ?? null
 }
 
 /** A short code from a label, e.g. "Tasting flight" gives `tasting-flight`. Empty when nothing usable is left. */
@@ -117,18 +142,45 @@ export function benefitsReady(benefits: readonly DraftBenefit[]): boolean {
   return benefits.every((b) => b.label.trim() !== '' && BENEFIT_CODE.test(b.code)) && new Set(codes).size === codes.length
 }
 
-/** The Trail graph for a draft: each stop needs the one before it, the finish needs the last. */
-export function draftToGraph(draft: Pick<TrailDraft, 'stops'>): HuntGraph {
-  const missions = draft.stops.map((_, i) => ({
-    mission_key: stopKey(i),
-    rule_groups: i === 0 ? [] : [{ logic: 'all' as const, members: [stopKey(i - 1)] }],
-  }))
-  const last = draft.stops.length - 1
-  return {
-    missions,
-    finish: { rule_groups: last >= 0 ? [{ logic: 'all' as const, members: [stopKey(last)] }] : [] },
+/**
+ * The Trail graph for a draft: each stop needs the one before it, the finish needs the last. With
+ * challenges (FH-042S, lib/hunts/challenges.ts), neighbouring stops in one fork or stand-in set form one
+ * layer: each of them needs the layer before, and what comes after needs any one of them. A Trail with
+ * no challenges gets exactly the graph it always had.
+ */
+export function draftToGraph(draft: Pick<TrailDraft, 'stops'>, challenges: readonly ChallengeLike[] = []): HuntGraph {
+  if (challenges.length === 0) {
+    const missions = draft.stops.map((_, i) => ({
+      mission_key: stopKey(i),
+      rule_groups: i === 0 ? [] : [{ logic: 'all' as const, members: [stopKey(i - 1)] }],
+    }))
+    const last = draft.stops.length - 1
+    return {
+      missions,
+      finish: { rule_groups: last >= 0 ? [{ logic: 'all' as const, members: [stopKey(last)] }] : [] },
+    }
   }
+  const layers = stopLayers(draft.stops.length, challenges)
+  const needs = (layer: number[] | undefined) =>
+    layer ? [{ logic: layer.length > 1 ? ('any' as const) : ('all' as const), members: layer.map(stopKey) }] : []
+  const layerOf = (i: number) => layers.findIndex((l) => l.includes(i))
+  const missions = draft.stops.map((_, i) => {
+    const play = stopPlay(challenges.map(asChallenge), i)
+    return {
+      mission_key: stopKey(i),
+      ...(play.kind === 'answer' ? { kind: 'answer' } : {}),
+      ...(play.choiceGroup ? { choice_group: play.choiceGroup } : {}),
+      ...(play.fallbackGroup ? { fallback_group: play.fallbackGroup } : {}),
+      rule_groups: needs(layers[layerOf(i) - 1]),
+    }
+  })
+  return { missions, finish: { rule_groups: needs(layers[layers.length - 1]) } }
 }
+
+/** A stored challenge or the editor's view of one: the graph and checklist read neither the hash nor the answer. */
+type ChallengeLike = Challenge | ChallengeView
+const asChallenge = (c: ChallengeLike): Challenge => ('answerHash' in c ? c : { ...c, answerHash: null })
+const answerIsSet = (c: ChallengeLike): boolean => ('answerSet' in c ? c.answerSet : c.answerHash !== null)
 
 export type ChecklistItem = { code: string; ok: boolean; message: string; stop?: number }
 
@@ -137,9 +189,10 @@ export type ChecklistItem = { code: string; ok: boolean; message: string; stop?:
  * has a venue Space whose staff can confirm a visit (FH-020X); unknown counts as none, so a stop that
  * staff must confirm never goes live where nobody can confirm it.
  */
-export function publishChecklist(draft: TrailDraft, revision: number, opts: { venue?: boolean } = {}): { ok: boolean; items: ChecklistItem[] } {
+export function publishChecklist(draft: TrailDraft, revision: number, opts: { venue?: boolean; challenges?: readonly ChallengeLike[] } = {}): { ok: boolean; items: ChecklistItem[] } {
   const items: ChecklistItem[] = []
-  const graph = validateGraph(draftToGraph(draft))
+  const challenges = opts.challenges ?? []
+  const graph = validateGraph(draftToGraph(draft, challenges))
   const blockers: Blocker[] = draft.stops.length >= MIN_STOPS ? graph.blockers : []
   items.push({
     code: 'stops_count',
@@ -155,9 +208,14 @@ export function publishChecklist(draft: TrailDraft, revision: number, opts: { ve
     items.push({ code: 'stop_text', ok: s.place.trim() !== '' && s.clue.trim() !== '', stop: i, message: 'This stop needs a place name and a clue.' })
     items.push({ code: 'stop_placement', ok: s.placementReady, stop: i, message: 'Print or place a code at this stop so people can prove they were here.' })
     if (s.staffConfirmed === true) {
-      items.push({ code: 'stop_staff_venue', ok: opts.venue === true, stop: i, message: 'Staff can confirm visits only on a trail a Space runs. Turn off staff confirming for this stop.' })
+      // FH-020Y: a partner venue named for the stop also has staff who can confirm a visit there.
+      items.push({ code: 'stop_staff_venue', ok: opts.venue === true || stopVenue(draft, i) !== null, stop: i, message: 'Staff can confirm visits only where a venue runs the stop. Pick a partner venue for this stop, or turn off staff confirming.' })
     }
   })
+  // FH-042S: the challenge blockers come in plain words; the engine's graph check above still runs.
+  for (const p of challengeProblems(draft.stops.length, challenges.map((c) => ({ ...asChallenge(c), answerSet: answerIsSet(c) })))) {
+    items.push({ code: 'challenge', ok: false, message: p.message, ...(p.stop !== undefined ? { stop: p.stop } : {}) })
+  }
   items.push({ code: 'title', ok: draft.title.trim() !== '', message: 'Give the trail a title.' })
   if (draft.benefits?.length) {
     items.push({ code: 'benefits', ok: benefitsReady(draft.benefits), message: 'Each pass benefit needs a name and its own short code.' })
@@ -171,9 +229,9 @@ export function publishChecklist(draft: TrailDraft, revision: number, opts: { ve
  * Preview: what a player would see after earning `credited` stops, evaluated in memory. Writes nothing.
  * Returns keys and states only, like the real evaluator.
  */
-export function previewTrail(draft: Pick<TrailDraft, 'stops'>, credited: readonly string[], now: Date = new Date()) {
+export function previewTrail(draft: Pick<TrailDraft, 'stops'>, credited: readonly string[], now: Date = new Date(), challenges: readonly ChallengeLike[] = []) {
   return evaluate(
-    draftToGraph(draft),
+    draftToGraph(draft, challenges),
     credited.map((mission_key) => ({ mission_key })),
     now,
   )
@@ -200,30 +258,49 @@ export async function saveDraft(store: DraftStore, input: { huntId: string; base
 
 /** The rows an immutable published version holds (FH-005 tables), derived from the draft. Pure. */
 type PublishRows = {
-  missions: { mission_key: string; title: string; visible_body: string; locked_teaser: string | null; kind: 'visit'; required_assurance: 'signed_node' | 'staff' }[]
+  missions: {
+    mission_key: string; title: string; visible_body: string; locked_teaser: string | null; kind: 'visit' | 'answer'; required_assurance: 'signed_node' | 'staff'
+    /** FH-042S: present on every row when the Trail has challenges, so one upsert writes one column set. */
+    choice_group?: string | null; fallback_group?: string | null; answer_hash?: string | null
+  }[]
   /** One prerequisite group per stop after the first, plus the finish group. */
-  groups: { key: string; target_mission_key: string | null; target_finish: boolean; logic: 'all'; members: string[] }[]
+  groups: { key: string; target_mission_key: string | null; target_finish: boolean; logic: 'all' | 'any'; members: string[] }[]
 }
 
-export function publishRows(draft: TrailDraft): PublishRows {
-  const graph = draftToGraph(draft)
-  const missions = draft.stops.map((s, i) => ({
-    mission_key: stopKey(i),
-    title: s.place.trim(),
-    visible_body: s.clue.trim(),
-    locked_teaser: s.hint?.trim() ? s.hint.trim() : null,
-    kind: 'visit' as const,
-    // FH-020X: a staff-confirmed stop needs staff assurance; every other stop keeps the signed scan.
-    required_assurance: s.staffConfirmed === true ? ('staff' as const) : ('signed_node' as const),
-  }))
+export function publishRows(draft: TrailDraft, challenges: readonly Challenge[] = []): PublishRows {
+  const graph = draftToGraph(draft, challenges)
+  const missions = draft.stops.map((s, i) => {
+    const base = {
+      mission_key: stopKey(i),
+      title: s.place.trim(),
+      visible_body: s.clue.trim(),
+      locked_teaser: s.hint?.trim() ? s.hint.trim() : null,
+      kind: 'visit' as 'visit' | 'answer',
+      // FH-020X: a staff-confirmed stop needs staff assurance; every other stop keeps the signed scan.
+      required_assurance: s.staffConfirmed === true ? ('staff' as const) : ('signed_node' as const),
+    }
+    if (challenges.length === 0) return base
+    // FH-042S: a Mystery adds its question to the clue, takes the challenge hint (shown after the second
+    // wrong try) and carries only the answer's hash. Forks and stand-in sets publish as their groups.
+    const play = stopPlay(challenges, i)
+    return {
+      ...base,
+      visible_body: play.question ? `${base.visible_body}\n\nQuestion: ${play.question}` : base.visible_body,
+      locked_teaser: play.hint || base.locked_teaser,
+      kind: play.kind,
+      choice_group: play.choiceGroup,
+      fallback_group: play.fallbackGroup,
+      answer_hash: play.answerHash,
+    }
+  })
   const groups: PublishRows['groups'] = []
   for (const m of graph.missions) {
     for (const g of m.rule_groups) {
-      groups.push({ key: `${m.mission_key}:needs`, target_mission_key: m.mission_key, target_finish: false, logic: 'all', members: g.members })
+      groups.push({ key: `${m.mission_key}:needs`, target_mission_key: m.mission_key, target_finish: false, logic: g.logic === 'any' ? 'any' : 'all', members: g.members })
     }
   }
   for (const g of graph.finish.rule_groups) {
-    groups.push({ key: 'finish', target_mission_key: null, target_finish: true, logic: 'all', members: g.members })
+    groups.push({ key: 'finish', target_mission_key: null, target_finish: true, logic: g.logic === 'any' ? 'any' : 'all', members: g.members })
   }
   return { missions, groups }
 }
@@ -287,8 +364,9 @@ export function planStopPlacements(
  * and any material change hashes differently. Key order is fixed here; the hash itself is the
  * store's (node:crypto is not pure).
  */
-export function canonicalContent(draft: TrailDraft): string {
-  const rows = publishRows(draft)
+export function canonicalContent(draft: TrailDraft, challenges: readonly Challenge[] = []): string {
+  // With no challenges the rows are what they always were, so every earlier Trail keeps its hash.
+  const rows = publishRows(draft, challenges)
   const benefits = (draft.benefits ?? []).map((b) => ({ code: b.code, label: b.label.trim() }))
   return JSON.stringify({
     schema: 1,

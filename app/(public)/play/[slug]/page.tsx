@@ -65,6 +65,8 @@ function claimFeedback(result: string | string[] | undefined): string | undefine
     case 'team_credited': return teamMessage('credited')
     case 'team_already_credited': return teamMessage('already_credited')
     case 'team_not_locked': return teamMessage('roster_not_locked')
+    case 'answer': return 'This stop asks a question. Open the Trail to answer it with the code.'
+    case 'answer_locked': return 'That was the last try for this question. The stop that stands in for it still counts.'
     case 'unavailable': return 'This stop could not be confirmed.'
   }
 }

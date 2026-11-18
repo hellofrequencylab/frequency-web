@@ -1,33 +1,51 @@
 ---
 title: Matching, astrology & romance
-description: The optional signals that shape who we suggest, and how romance mode works.
+description: The optional signals that shape who we suggest, and how being open to romance works.
 category: connecting
-order: 7
+order: 10
 published: 2026-06-26
-updated: 2026-06-26
+updated: 2026-11-18
 audience: member
 featureKeys: [connections, resonance]
+keywords: [dating, zodiac, birth chart, star sign, suggestions, open to romance, resonance, opt in]
 status: published
 ---
 
-Frequency suggests people you'd genuinely click with, built from real signals: the Circles you share, the people you both know, and the rhythms you keep. A couple of extra signals are **optional and off until you turn them on**, in **Settings, Connections & Location**.
+Frequency suggests people you might get along with, based on real things: the Circles you share, the people you both know, and the rhythms you keep. A few extra signals are optional, and every one of them is off until you turn it on.
 
-## The astrology signal
+## Find the switches
 
-Turn this on and add your birth date, and we'll add a quiet note like *your signs click* to suggestions, but only for people who also opted in. It's a soft touch, never a verdict, and it never reorders your feed on its own.
+Where to find it: your avatar menu, then **Settings**, then **Privacy**. Look for **Resonance matching** and, below it, **Matching**.
 
-- **Your chart is worked out, never shown.** We build a birth chart from your birth date and use it to spot quiet overlaps. Nobody sees your birth date or your chart, and nobody gets a breakdown of the score.
-- **Both sides choose it.** You only ever see the astrology note next to someone who also turned it on.
+## Turn on the astrology signal
 
-## Romance mode
+1. Under **Matching**, switch on **Astrology signal**.
+2. Add **Your birth date**.
 
-If you're open to more than friendship, you can turn on **romance mode**. It's built to be calm and safe, not a dating-app grind.
+Suggestions can then carry a quiet note like "your signs click", but only next to people who also opted in. It is a soft touch, not a verdict.
 
-- **It's mutual, always.** You only ever appear to, and see, people who **also** turned romance mode on. Nobody who hasn't opted in is involved, and you're invisible in this lane to everyone who hasn't.
-- **Verified to appear.** You can browse here right away, but you'll only **appear to others** once you're verified. Verifying is easy and on-brand: [show up to an event](/help/groups/events) and check in at the door. That's it.
-- **No swiping.** There's no card stack to burn through. We surface a few people you already share Circles or connections with, in a clearly labeled "Open to connection" row on your feed.
-- **You're in control.** Turn it off anytime, and use the X to remove anyone you're not interested in. We won't suggest them again.
+- **Your chart is worked out, never shown.** Frequency builds a private birth chart from your birth date and uses it to spot overlaps. Nobody sees your birth date or your chart.
+- **Both sides choose it.** You only see the note next to someone who also turned it on.
 
-## Meeting safely
+## Say you are open to romance
 
-However you connect, the safe way to meet is the Frequency way: **at a Circle or a public event**, around something you both care about. See [Meeting people safely](/help/safety/meeting-people-safely) for the full guide, and remember the promise we always keep: your exact location is never shared.
+If you are open to more than friendship, switch on **Open to romance** under **Matching**. It is built to be calm, not a dating-app grind.
+
+- **It is mutual.** You only appear to, and only see, people who also turned it on. Everyone else never knows.
+- **Verified to appear.** You can look right away, but you only appear to others once you are verified. The simple way: [show up to an event](/help/groups/events) and check in at the door.
+- **No swiping.** There is no card stack. A few people you already share Circles or connections with appear in a clearly labeled **Open to connection** row on your feed.
+- **You are in control.** Turn it off anytime, in the same place.
+
+## Let Frequency suggest a few people
+
+**Resonance matching** is a separate switch in the same pane. It looks for the few people you would most click with, from the Circles, Journeys, and practices you share. Matches show up privately on your Friends page, and no one is introduced until you both say yes. More in [Your location & being found nearby](/help/connecting/your-location).
+
+## Meet safely
+
+However you connect, the safe way to meet is at a Circle or a public event, around something you both care about. See [Meeting people safely](/help/safety/meeting-people-safely) for the full guide.
+
+## Related
+
+- [Friends](/help/connecting/friends)
+- [Meeting people safely](/help/safety/meeting-people-safely)
+- [What people see about you](/help/connecting/what-people-see-about-you)

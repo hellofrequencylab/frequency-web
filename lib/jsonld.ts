@@ -703,6 +703,135 @@ export function journeyListSchema(plans: Pick<JourneyPlan, 'slug' | 'title'>[], 
   }
 }
 
+/** A course library's ItemList for the Course host carousel: each entry is the course's ONE canonical
+ *  page (a /courses/<slug> page for Frequency's own courses), which carries its own Course node. Google
+ *  reads a summary page like this as a carousel only with at least three courses marked up. */
+export function courseListSchema(courses: { path: string; name: string }[], listName: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: courses.length,
+    itemListElement: courses.map((c, i) => ({ '@type': 'ListItem', position: i + 1, url: abs(c.path), name: c.name })),
+  }
+}
+
+// ── Journey as a Course ───────────────────────────────────────────────────────
+// Every public Journey is a training module (owner 2026-11-18: "These journeys will be Training modules
+// within Frequency"), so its public page states it as a schema.org/Course: the type Google's Course list
+// and Course info results read. HowTo no longer earns a result of its own.
+//
+// What a Course info result needs, and where it comes from here:
+//   provider            the hosting Space (or Frequency itself for a house course)
+//   offers              free: price 0 in the Free category; priced: the Journey's live price
+//   hasCourseInstance   courseMode plus courseWorkload (the lessons' own est_minutes) or courseSchedule
+//                       (a live Run), with the start and end dates when the Run has sessions on the calendar
+//   syllabusSections    the Journey's top-level phases, so an answer engine sees the shape of the course
+// Nothing is invented: a field this file cannot read from the plan is left out.
+
+export interface CourseRun {
+  /** ISO dates of the first and last session. */
+  startDate: string
+  endDate?: string
+  /** Live sessions in the Run, and how long each one is. */
+  sessions: number
+  sessionMinutes: number
+  repeatFrequency?: 'Daily' | 'Weekly' | 'Monthly'
+}
+
+export function journeyCourseSchema(
+  plan: JourneyPlan,
+  items: JourneyPlanItem[],
+  opts: {
+    /** The course's canonical page. */
+    path: string
+    provider?: { name: string; url: string } | null
+    offer?: { priceCents: number; currency: string } | null
+    aggregateRating?: { ratingValue: number; reviewCount: number } | null
+    outcomes?: string[]
+    instructors?: { name: string; path?: string }[]
+    run?: CourseRun | null
+  },
+) {
+  const url = abs(opts.path)
+  const isContainerBlock = (t: string | null | undefined) => t === 'phase' || t === 'module'
+  const leaves = items.filter((it) => !isContainerBlock(it.block_type))
+  const minutes = leaves.reduce((sum, it) => sum + (it.est_minutes ?? 0), 0)
+  const phases = items.filter((it) => (it.block_type as string | null | undefined) === 'phase' && !it.parent_id)
+  const cover = plan.cover_image
+    ? /^https:\/\//.test(plan.cover_image)
+      ? plan.cover_image
+      : plan.cover_image.startsWith('/')
+        ? abs(plan.cover_image)
+        : null
+    : null
+  const provider = opts.provider
+    ? { '@type': 'Organization', name: opts.provider.name, url: opts.provider.url }
+    : { '@type': 'Organization', '@id': ORG_ID, name: SITE_NAME, url: SITE_URL }
+  const offers = opts.offer
+    ? {
+        '@type': 'Offer',
+        category: 'Paid',
+        price: (opts.offer.priceCents / 100).toFixed(2),
+        priceCurrency: (opts.offer.currency || 'usd').toUpperCase(),
+        url,
+      }
+    : { '@type': 'Offer', category: 'Free', price: '0', priceCurrency: 'USD', url }
+  const live = opts.run && opts.run.sessions > 0
+  const mode = plan.meeting?.format === 'in_person' ? 'Onsite' : 'Online'
+  const instance = {
+    '@type': 'CourseInstance',
+    courseMode: mode,
+    ...(live
+      ? {
+          courseSchedule: {
+            '@type': 'Schedule',
+            duration: `PT${opts.run!.sessionMinutes}M`,
+            repeatFrequency: opts.run!.repeatFrequency ?? 'Weekly',
+            repeatCount: opts.run!.sessions,
+            startDate: opts.run!.startDate,
+            ...(opts.run!.endDate ? { endDate: opts.run!.endDate } : {}),
+          },
+        }
+      : minutes > 0
+        ? { courseWorkload: `PT${minutes}M` }
+        : {}),
+    ...(opts.instructors?.length
+      ? { instructor: opts.instructors.map((p) => ({ '@type': 'Person', name: p.name, ...(p.path ? { url: abs(p.path) } : {}) })) }
+      : {}),
+  }
+  const rating = aggregateRatingNode(opts.aggregateRating)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: plan.title,
+    description: plan.summary ?? plan.title,
+    url,
+    image: cover ? [cover, SITE_OG_IMAGE] : [SITE_OG_IMAGE],
+    inLanguage: 'en',
+    isAccessibleForFree: !opts.offer,
+    provider,
+    offers,
+    // `difficulty` is selected (PLAN_COLS) but not on the JourneyPlan type.
+    ...((plan as { difficulty?: string | null }).difficulty
+      ? { educationalLevel: (plan as { difficulty?: string | null }).difficulty === 'gentle' ? 'Beginner' : 'Intermediate' }
+      : {}),
+    ...(minutes > 0 ? { timeRequired: `PT${minutes}M` } : {}),
+    ...(opts.outcomes?.length ? { teaches: opts.outcomes } : {}),
+    ...(phases.length
+      ? {
+          syllabusSections: phases.map((p) => ({
+            '@type': 'Syllabus',
+            name: p.title ?? '',
+            ...(p.body ? { description: p.body.split('\n')[0] } : {}),
+          })),
+        }
+      : {}),
+    hasCourseInstance: instance,
+    ...(rating ? { aggregateRating: rating } : {}),
+  }
+}
+
 // ── Person ────────────────────────────────────────────────────────────────────
 // A public profile of a real person (an event organizer/host, a practitioner). schema.org/Person
 // gives an answer engine an identity node for "who hosts X" / "who runs Y". Name + canonical url +

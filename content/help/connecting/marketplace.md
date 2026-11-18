@@ -1,103 +1,126 @@
 ---
 title: Buying, selling & sharing
-description: Swap and share with neighbors, plus housing, the community Market, and the Frequency Store.
+description: Shop the community Market, swap and share in Classifieds, find housing and roommates, and keep track of your orders.
 category: connecting
-order: 5
+order: 11
 published: 2026-06-06
-updated: 2026-09-30
+updated: 2026-11-18
 audience: member
 featureKeys: [marketplace]
+keywords: [market, shop, classifieds, housing, roommates, sell something, orders, message seller]
 status: published
 ---
 
-Frequency has a few places where the community trades, shares, and finds what it needs. There
-are a few areas: **Classifieds** to swap or give things away, **Housing** for rentals and roommates,
-the **Market** where members and businesses sell, **Events** for paid and free gatherings
-nearby, and the **Frequency Store** for Frequency's own merch and passes. The area bar at the
-top moves you between them, and each area opens with a search bar right under the banner.
+Want to buy from someone local, give a couch away, or find a room? The Marketplace is where the community trades, shares, and finds what it needs.
 
-Classifieds and Housing are no-fee and connect-only. No money changes hands in the app. You
-reach the person and arrange the rest offline.
+## Find it
 
-## Classifieds
+Tap **Marketplace** in the left menu. It opens on the **Market**. A bar across the top moves you between the areas:
 
-- Open **Classifieds** at `/classifieds` to see what's around.
-- Filter by type: **Offering**, **Free**, **To lend**, or **Looking for**.
-- Tap **Near me** to sort by distance using your device location. The closest show first.
-- **Post a listing** with a title, a type, and a few details. Add a price in plain words
-  ("twenty dollars", "a trade", "free"). There's no checkout. Edit it anytime, or mark it claimed or
-  closed when it's done.
+- **Market**: products, services, and tickets from makers and businesses.
+- **Classifieds**: swap, sell, lend, or give things away with neighbors.
+- **Housing**: rentals, sublets, and roommates.
+- **Events**: gatherings with a ticket price.
 
-## Housing
+Classifieds and Housing are connect-only. No money changes hands in the app. You message the person and arrange the rest yourselves.
 
-- Open **Housing** to browse rentals, sublets, and rooms with a roommate.
-- Browse by **category** along the top (house, apartment, room, and more), or open
-  **Roommates** for matches. Narrow further by price and amenities in the filters.
-- **List housing** with the type, the rent, and the basics. Contact stays in messages, like
-  Classifieds.
-- **Find a roommate** opens roommate matches in two tabs: **Rooms** shows places looking for
-  a roommate, and **People** shows other members searching too. Tell us your budget, city,
-  and how you like to live, and the Resonance engine suggests matches, the same matching that
-  powers introductions. It is opt-in, so you stay in control.
-- Each match says **why it fits** in plain words, like "Budget fits" or "Similar lifestyle,"
-  next to the overall match. Your budget and answers stay private; matches only ever see the
-  match itself.
-- Tap the **heart** on any home to keep it, then open **Saved** at the top of Housing to
-  come back to your list. If you listed a place, you can now **edit** it from its page.
+The Frequency Store, for Frequency's own goods, is not open to members yet.
 
-## Events
+## Shop the Market
 
-- Open **Events** to see paid and free gatherings nearby, from community Circles and Hosts.
-- Search from the top, then filter by category, date, price, and more, and sort by soonest,
-  most going, or nearest.
-- **RSVP** to a free event or grab a **ticket** for a paid one. It shows up in your account.
+- The chips under the heading split the Market into **Products**, **Services**, and **Tickets**. **All** shows everything.
+- Type in **Search the Market** to narrow the cards as you type.
+- A **Verified** or **Founding** tag on a card tells you a bit about the seller. Ratings show next to the title when a listing has reviews.
+- Open a card to see the listing. Some listings have checkout right on the page. Others say **Contact seller**, which means you reach the maker and sort it out together.
 
-## Market and Frequency Store
+### Filter by category, price, condition, and seller
 
-- The **Market** is where businesses sell. Selling takes a Space on Business: open a storefront to
-  list your first product, then manage it and set up payouts from **My storefront**.
-- The **Frequency Store** is Frequency's own store for merch, event passes, and retreats.
-- Anything you buy shows up under **My orders** in your account menu.
-- A cart can hold things from more than one Market seller, and you pay once. Your receipt email
-  lists what each seller is sending, under their name. Each seller sends their own items, so they
-  can arrive separately.
-- If the thing you buy has to be shipped, checkout asks for a delivery address and checks it
-  before the charge. A Journey or a download stays on the page and does not ask.
-- **Reviews** on a Market listing or a Journey are from people who bought it. If you have not,
-  the listing still shows other people's reviews, and you cannot leave one yet.
+Filters are rolling out on the Market. When you have them, open **More filters** under the chips:
 
-## On a listing
+1. Pick a **Category**. Choosing a whole group includes everything inside it.
+2. Pick a **Price** band, from free upward.
+3. Pick a **Condition**: **New** or **Used**.
+4. Pick **Sold by**: **Makers** for a person's own listings, **Businesses** for a Space's.
+5. Tap **Apply filters**.
 
-- **Contact the seller** opens a message and, if you want, lets you **make an offer**. The seller
-  sees it in their messages. The highest offer so far shows on the listing so everyone knows where
-  things stand. No payment happens in the app; you arrange that offline.
-- **Item details** on the right spell out the specifics the seller added, like condition, brand, or
-  size.
-- **Pickup area** shows the general spot on a map. The exact address stays private until the seller
-  shares it with you, so a listing never puts someone's front door on a public page.
-- **QR & Link** gives you a code and a link that open the listing directly, handy for sharing it.
+Filters stay on as you move between Products, Services, and Tickets. The filtered page is a normal link, so you can share it. **Clear** takes them all off. There is no location filter yet.
 
-## Making contact
+If you do not see **More filters**, it has not reached you yet.
 
-- A Classifieds or Housing listing links to the poster's profile, where you can reach out and
-  arrange the details.
-- Every listing has a **Questions** box. Ask in the open and the answer helps the next person too.
-  The poster can reply there and add anything the listing left out. Keep it kind and local. This is
-  mutual support first.
+## Track your orders
 
-## Claiming a listing
+Anything you buy shows up in **Orders**, under **You** in the top menu.
 
-Sometimes Frequency posts a Classifieds or Housing listing for a neighbor and reaches out so
-they can take it over. If that's you, open the link we send, sign in, and the listing becomes
-yours to edit or close. A listing still waiting for its owner shows an **Unclaimed** tag on its
-card until someone claims it.
+- If an order has items from more than one seller, you pay once and each seller's items are listed under their name. Each seller sends their own, so things can arrive separately.
+- If something has to be shipped, checkout asks for a delivery address. A Journey or a download does not ask.
+- **Reviews** on a Market listing or a Journey come from people who bought it.
 
-## A note on privacy
+### Message a seller about an order
 
-Distance sorting works from your device location and shows only an approximate distance.
-Frequency never publishes your exact address or a listing's precise coordinates.
+This is rolling out alongside the filters. When you have it, each seller's items in **Orders** carry a message button with the seller's name.
 
-Housing listings add one more dial: **address precision**. Your listing shows the city by
-default. You can choose to add the neighborhood, or share the street address, and the street
-address is only ever shown to signed-in members. Search engines and link previews always get
-the city, nothing closer.
+1. Open **Orders** and find the order.
+2. Tap the message button under that seller's items.
+3. Frequency starts the conversation for you with the order date, the items, and the order reference, then opens the chat so you can add your question.
+
+If you have never talked with that seller and you are not friends, you will be asked to use **Contact seller** on the listing first.
+
+## Sell on the Market
+
+1. Tap **List a product** at the top of the Market, or from **Create** in the left menu.
+2. Add photos, a title, a price, and the details.
+3. Manage what you have listed from **My storefront**.
+
+Any member can list. A personal listing works as an inquiry: the buyer messages you, and you arrange the rest. Selling takes a Space on Business: that is what turns on checkout and payouts for a full shop.
+
+## Swap and share in Classifieds
+
+- Filter by kind: **Offering**, **Free**, **To lend**, or **Looking for**.
+- Tap **Near me** to sort by distance using your device location.
+- **Post a listing** with a title, a kind, and a few details. Put the price in plain words, like "a trade" or "free". There is no checkout.
+- When it is gone, mark your listing claimed from its page.
+
+## Find housing and roommates
+
+You need to be signed in to browse Housing.
+
+- Browse by property type along the top. Open **More filters** to narrow by rent and amenities.
+- Tap the heart on a home to keep it, then open **Saved** to come back to your list.
+- **List housing** posts your own place. Contact stays in messages, like Classifieds.
+- **Find a roommate** opens your matches in two tabs. **Rooms** shows places looking for a roommate. **People** shows other members who are searching too.
+- Roommate matching is opt-in. You save your preferences and turn on **Resonance matching** to be compared. Each match says why it fits in plain words, like "Budget fits" or "Similar lifestyle". Your budget and answers stay private.
+
+When you list housing, you choose how much of the address shows: **City only**, **Neighborhood and city**, or **Exact address for signed-in members**. Search engines and link previews only ever get the city.
+
+## Read a Classifieds or Housing listing
+
+- The message button, with the poster's first name on it, opens a note to them. On some listings you can add an offer too. The highest offer so far shows on the listing. No payment happens in the app.
+- **Item details** spell out the specifics the poster added, like condition, brand, or size.
+- **Pickup area** shows the general spot. The exact address stays private unless the poster chooses to share it.
+- **Questions** is an open box. Ask there and the answer helps the next person too.
+- **QR & Link** gives you a code and a link that open the listing directly.
+
+## Claim a listing posted for you
+
+Sometimes Frequency posts a Classifieds or Housing listing for a neighbor and reaches out so they can take it over. If that is you, open the link we sent and sign in. The listing becomes yours to edit or close. A listing still waiting for its owner shows an **Unclaimed** tag.
+
+## Questions
+
+### Why don't I see the Frequency Store?
+
+It is not open to members yet.
+
+### Why is there no Buy button on a listing?
+
+That seller takes inquiries instead of checkout. Use **Contact seller** and arrange it with them.
+
+### Does Frequency show my address?
+
+No. Distance sorting uses your device location to order the cards, and a listing shows a general area unless its poster chooses to share more.
+
+## Related
+
+- [Messages & rooms](/help/connecting/messages)
+- [Search](/help/connecting/search)
+- [Events](/help/groups/events)
+- [Get paid](/help/spaces/get-paid)

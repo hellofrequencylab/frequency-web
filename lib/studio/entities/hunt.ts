@@ -23,6 +23,14 @@ const HUNT_PUBLISH_VISIBILITY: readonly FieldOption[] = [
   { value: 'public', label: 'Public (on the list, after a person looks at it)' },
 ]
 
+/** A challenge's fork or stand-in set (lib/hunts/challenges.ts). Empty is none. */
+const HUNT_CHALLENGE_GROUPS: readonly FieldOption[] = [
+  { value: '', label: 'None' },
+  { value: '1', label: 'Set 1' },
+  { value: '2', label: 'Set 2' },
+  { value: '3', label: 'Set 3' },
+]
+
 export const HUNT_MANIFEST: EntityManifest = {
   entity: 'hunt',
   label: 'Hunt',
@@ -36,6 +44,7 @@ export const HUNT_MANIFEST: EntityManifest = {
   sections: [
     { key: 'identity', title: 'Name it', desc: 'The title, the one-line hook, the area and who it is for.' },
     { key: 'stops', title: 'Stops', desc: 'Three to ten stops in order. Each one has a place, a clue and a way to prove the visit.' },
+    { key: 'challenges', title: 'Challenges', desc: 'Optional. A question to answer at a stop, a fork where players pick one stop, or two stops where either one counts.' },
     { key: 'publishing', title: 'Publish', desc: 'Where the trail can be found once it is live.' },
   ],
   fields: [
@@ -64,6 +73,44 @@ export const HUNT_MANIFEST: EntityManifest = {
         // It is a plain switch, never a JSON field: lib/hunts/draft.ts `stopEvidencePolicy` is the one
         // place that turns it into the stored key, and it only matters at a stop that staff confirm.
         { path: 'holdForReview', label: 'If staff cannot confirm a visit on the spot, keep it for them to check later', kind: 'toggle' },
+      ],
+    },
+    // FH-020Y: a partner venue named per stop, so a Trail no Space runs (a resident's) can still have a
+    // stop that staff confirm. Stored as TrailDraft.venues ({ stop, venueSpaceId }) and written as the
+    // stop binding's venue_space_id at publish. The choices are the Spaces with a live hunt_partners row
+    // for this Hunt (lib/hunts/store.ts loadTrail); publish checks liveness again (publishVenueBlocks).
+    {
+      arrayPath: 'venues',
+      label: 'Partner venues',
+      over: 'array',
+      section: 'stops',
+      itemLabel: (item, index) => (typeof item.stop === 'number' ? `Stop ${item.stop + 1}` : `Venue ${index + 1}`),
+      fields: [
+        { path: 'stop', label: 'Stop', kind: 'select', required: true, optionsFrom: 'trail-stops' },
+        { path: 'venueSpaceId', label: 'Partner venue whose staff confirm visits here', kind: 'select', optionsFrom: 'hunt-partner-venues' },
+      ],
+    },
+    // FH-042S (ADR-1977): the challenges, their own list beside the stops, saved by their own action
+    // (app/(main)/hunts/challenge-actions.ts) to hunt_versions.policy.challenges. Each names a stop and
+    // publishes onto that stop's mission (lib/hunts/challenges.ts): a Mystery as kind `answer` with only
+    // the answer's hash (hashAnswer, lib/hunts/mystery.ts), a fork as hunt_missions.choice_group, a
+    // stand-in set as hunt_missions.fallback_group. The plain answer is a write-only field: it is hashed
+    // by the action and never read back.
+    {
+      arrayPath: 'challenges',
+      label: 'Challenges',
+      over: 'array',
+      section: 'challenges',
+      itemLabel: (item, index) => (typeof item.stop === 'number' ? `Stop ${item.stop + 1}` : `Challenge ${index + 1}`),
+      fields: [
+        // The stops of this trail, loaded by the editor (a stop is named by its position).
+        { path: 'stop', label: 'Stop', kind: 'select', required: true, optionsFrom: 'trail-stops' },
+        { path: 'mystery', label: 'Players answer a question here', kind: 'toggle' },
+        { path: 'question', label: 'The question', kind: 'text' },
+        { path: 'answer', label: 'The answer (kept scrambled, so leave it blank to keep the one you set)', kind: 'text' },
+        { path: 'hint', label: 'Hint after the second wrong try (optional)', kind: 'text' },
+        { path: 'fork', label: 'Fork: players pick one stop', kind: 'select', options: HUNT_CHALLENGE_GROUPS },
+        { path: 'standIn', label: 'Stand-in: either stop counts', kind: 'select', options: HUNT_CHALLENGE_GROUPS },
       ],
     },
     // FH-036S: what a paid pass for this trail includes. Published with the version as `policy.benefits`

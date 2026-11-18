@@ -16,27 +16,30 @@ import '@/app/themes/active/site-pages-a'
 import '@/app/themes/active/site-pages-showcase'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import '@/app/themes/active/site-discover'
+import { CourseLeadForm } from './course-lead-form'
 import { JsonLd } from '@/components/json-ld'
 import { faqSchema } from '@/lib/jsonld'
 import { BOC_FAQ } from '@/lib/page-editor/templates/business-of-community'
 import { aura, photo, photoImg } from '../shared/parts'
 
 const EVENT = '/events/business-of-community-pilot-session-1'
-const CALENDAR = '/spaces/hq/calendar'
 const BUSINESS_HOURS = '/circles/business-hours'
-
+const JOURNEY_SLUG = 'the-business-of-community-101'
+const CERTIFY = `/courses/${JOURNEY_SLUG}/certify`
+const WEEK_ONE = `/courses/${JOURNEY_SLUG}/week-1`
+const RUN_ICS = `/courses/${JOURNEY_SLUG}/calendar.ics`
 
 const p = (name: string) => photo(`boc-${name}.jpg`)
 
-type Shot = { src: string; alt: string }
+type Shot = { src: string; alt: string; crop?: string }
 
 const BAND: Shot[] = [
   { src: p('circle-arms-up'), alt: 'A circle on a seaside terrace, arms raised together' },
   { src: p('beach-yoga'), alt: 'A yoga class in tree pose on the beach' },
   { src: p('backyard-craft'), alt: 'Neighbors on rugs in a backyard, making things together' },
-  { src: p('fire-night'), alt: 'Friends around a fire pit at night' },
   { src: p('beach-sound-bath'), alt: 'A sound bath on the beach, people resting on blankets' },
-  { src: p('beach-yoga-gull'), alt: 'A gull on the sand in front of a beach yoga class' },
+  { src: p('beach-yoga-gull'), alt: 'A gull on the sand in front of a beach yoga class', crop: 'boc-crop-gull' },
 ]
 
 const WHO = [
@@ -242,8 +245,8 @@ export function FrequencyBusinessOfCommunity() {
             </p>
             <div className="ctas">
               <SaveSeat />
-              <Link className="btn btn-ghost fq-iri-rim" href={CALENDAR}>
-                See the calendar
+              <Link className="btn btn-ghost fq-iri-rim" href={WEEK_ONE}>
+                Read Week 1 free
               </Link>
             </div>
             <div className="boc-leads">
@@ -264,7 +267,7 @@ export function FrequencyBusinessOfCommunity() {
               <span className="fq-grain" />
             </figure>
             <figure className="boc-hero-small">
-              <Img shot={{ src: p('group-hug'), alt: 'A big group hug on a terrace by the ocean' }} sizes="(max-width: 980px) 40vw, 18vw" />
+              <Img shot={{ src: p('group-hug'), alt: 'A big group hug on a terrace by the ocean' }} sizes="(max-width: 980px) 70vw, 28vw" />
             </figure>
             <div className="boc-run fq-panel">
               <div className="boc-run-t">
@@ -293,7 +296,7 @@ export function FrequencyBusinessOfCommunity() {
         <div className="boc-band-in">
           {BAND.map((s) => (
             <figure className="boc-shot" key={s.src}>
-              <Img shot={s} sizes="(max-width: 980px) 34vw, 17vw" />
+              <Img className={s.crop} shot={s} sizes="(max-width: 980px) 80vw, 34vw" />
             </figure>
           ))}
         </div>
@@ -633,7 +636,15 @@ export function FrequencyBusinessOfCommunity() {
                 </p>
               </div>
             </div>
-            <p className="boc-m boc-gap-s">A certificate of completion and competency from Frequency. Not an accredited certification.</p>
+            <p className="boc-m boc-gap-s">
+              Each one has its own page anyone can check, and a badge for your Space or your site. A certificate of
+              completion and competency from Frequency. Not an accredited certification.
+            </p>
+            <div className="ctas boc-gap-s">
+              <Link className="btn btn-ghost fq-iri-rim" href={CERTIFY}>
+                Send in your Community Book
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -672,9 +683,13 @@ export function FrequencyBusinessOfCommunity() {
           </h2>
           <div className="ctas">
             <SaveSeat />
-            <Link className="btn btn-ghost fq-iri-rim" href={CALENDAR}>
-              See the calendar
-            </Link>
+            <a className="btn btn-ghost fq-iri-rim" href={RUN_ICS}>
+              Add all four to your calendar
+            </a>
+          </div>
+          <div className="boc-close-lead">
+            <p className="boc-m">Not ready to sign up? Get Week 1 and the dates in your inbox.</p>
+            <CourseLeadForm slug={JOURNEY_SLUG} />
           </div>
         </div>
       </section>

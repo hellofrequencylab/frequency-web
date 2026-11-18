@@ -230,6 +230,13 @@ describe('Hunt placement confirmation for an Expedition team member (FH-043S)', 
   })
 })
 
+describe('Hunt placement confirmation for a Mystery stop (FH-042S)', () => {
+  it.each([['answer_required', 'answer'], ['answer_wrong', 'answer'], ['answer_locked', 'answer_locked']])('lands %s on the Trail page answer prompt', async (reason, claim) => {
+    claimAsPlayer.mockResolvedValue({ ok: false, reason, attemptsLeft: 2 })
+    expect((await confirm()).headers.get('Location')).toBe(`${origin}${landingPath}?claim=${claim}`)
+  })
+})
+
 async function realClaimAdapter() {
   const adapter = await vi.importActual<typeof import('@/lib/hunts/claim-store')>('@/lib/hunts/claim-store')
   loadScanPlacement.mockImplementation(adapter.loadScanPlacement)

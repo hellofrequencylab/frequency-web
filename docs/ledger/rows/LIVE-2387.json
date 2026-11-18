@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2387",
+  "title": "The Quest, groups, leading, membership, safety and sharing guides match the product",
+  "lane": "live",
+  "priority": "P2",
+  "size": "L",
+  "status": "done",
+  "source": {
+    "file": "content/help/the-quest/leaderboard.md",
+    "ref": "Help center audit and rework 2026-11-18 (project thread: Rework every help doc and help search)"
+  },
+  "detail": "Owner ask 2026-11-18: read every help doc against the code and fix what is stale. The audit found, among others: leaderboard.md placed the board in The Vault and said there is no global board (it is The Quest, Leaderboard, and the Season scope is global, leaderboard-body.tsx); streaks.md said a rest runs up to two weeks (Rest a week is seven days); zaps-and-gems.md listed a Share reward nothing awards and said practice logging has no cap (it has a daily cap); talk-on-a-space.md said the conversation is called Discussion and never Community (it is the Community tab); events.md described a poster upload path and an energy filter that do not exist; how-to-start-a-circle.md walked a wizard that is not the one in circle-wizard.tsx; crew.md named a Not right now button that does not exist; build-a-journey.md said listing in the library is free (it needs Crew or a paid Space, lib/journeys/publish-gate.ts) and described a three-step guide nothing links to; reporting.md said a comment, person or event can be reported (the web offers Report on posts, Dispatches, guestbook notes and listings).\n\nDONE 2026-11-18: all 32 articles in the six folders rewritten against the code, with one format and search keywords. Hunts stay described as not open while the HUNTS switches are off.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/help-rework-2026-11-18.mjs LIVE-2387",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

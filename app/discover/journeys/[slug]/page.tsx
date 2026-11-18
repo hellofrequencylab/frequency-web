@@ -7,9 +7,13 @@ import { getPillars, pillarsById } from '@/lib/pillars'
 import { journeyFacts, primaryPillar } from '@/components/journey/discovery-widgets'
 import { getPlanAuthor } from '@/lib/journey-plans'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
-import { OG_SITE, SITE_NAME } from '@/lib/site'
+import { OG_SITE, SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { journeySchema, breadcrumbSchema, journeyOfferSchema } from '@/lib/jsonld'
+import { journeyCourseSchema, breadcrumbSchema, journeyOfferSchema } from '@/lib/jsonld'
+import { isFrequencyCourse } from '@/lib/courses/library'
+import { courseHref } from '@/lib/courses/tracks'
+import { courseRun, getCourseContext } from '@/lib/courses/course-context'
+
 import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
 import { getProductReviews } from '@/lib/commerce/reviews'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
@@ -21,8 +25,14 @@ import { FrequencyJourney } from '@/components/frequency/site/pages/discover/jou
 // page's header (badge + Pillar + stat chips) + two-column body + sticky "At a glance"
 // card, but in the MARKETING register: anonymous visitors get a "Create a free account"
 // CTA in place of the enroll actions. Revalidated hourly, canonical + OG/Twitter
-// metadata, and JSON-LD (HowTo). Reuses the same discovery widgets so the public face
+// metadata, and JSON-LD. Reuses the same discovery widgets so the public face
 // and the member face stay in lockstep. Voice is v2; no em dashes.
+//
+// EVERY JOURNEY IS A TRAINING MODULE (owner 2026-11-18), so the structured data is a schema.org/Course
+// (lib/jsonld.ts journeyCourseSchema), the type Google's Course results read; HowTo earned no result.
+// ONE HOME PER COURSE: a Journey that is one of Frequency's own courses names its /courses page as the
+// canonical, so this page (kept for shares, QR codes and the signed-out redirect) never competes with it,
+// and its Course node lives only on that page.
 export const revalidate = 3600
 
 // Pre-render the public library. listPublicJourneys applies exactly the gate this
@@ -49,6 +59,7 @@ export async function generateMetadata({
   if (!found) return { title: 'Journey not found' }
   const { plan } = found
 
+  const canonical = (await isFrequencyCourse(plan)) ? courseHref(plan.slug) : `/discover/journeys/${plan.slug}`
   const full =
     plan.summary ?? `${plan.title}: a guided practice Journey on ${SITE_NAME}. Sign in to start it.`
   // Search snippets truncate around 155 chars — keep the meta description tight.
@@ -57,7 +68,7 @@ export async function generateMetadata({
   return {
     title: plan.title,
     description,
-    alternates: { canonical: `/discover/journeys/${plan.slug}` },
+    alternates: { canonical },
     openGraph: {
       ...OG_SITE,
       title: ogTitle,
@@ -122,8 +133,22 @@ export default async function DiscoverJourneyPage({
     : null
   const soldOut = offer ? isSoldOut(offer) : false
 
+  const [isCourse, context] = await Promise.all([isFrequencyCourse(plan), getCourseContext(plan)])
   const schema = [
-    journeySchema(plan, items),
+    // A Frequency course's Course node lives on its one home (/courses); everyone else's lives here.
+    ...(isCourse
+      ? []
+      : [
+          journeyCourseSchema(plan, items, {
+            path: `/discover/journeys/${plan.slug}`,
+            provider: context.provider ? { name: context.provider.name, url: `${SITE_URL}/spaces/${context.provider.slug}` } : null,
+            offer: offer ? { priceCents: offer.priceCents, currency: offer.currency } : null,
+            aggregateRating: rating,
+            outcomes: readJourneyOutcomes(plan.page_config),
+            instructors: context.guides.map((g) => ({ name: g.name, ...(g.handle ? { path: `/people/${g.handle}` } : {}) })),
+            run: courseRun(context.sessions),
+          }),
+        ]),
     // A priced Journey also emits a Product node carrying its Offer, so the canonical page
     // states the price in structured data and not only in the markup. Absent when free.
     ...(offer && priceLabel ? [journeyOfferSchema(plan, offer, soldOut, rating)] : []),

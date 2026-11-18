@@ -16,6 +16,7 @@ import { approximatePoint } from '@/lib/maps/approximate'
 import { resolvePrecision } from '@/lib/spaces/location'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Chapter, Credit, HuntGraph } from './graph'
+import { MAX_ANSWER_ATTEMPTS } from './mystery'
 
 // eslint-disable-next-line no-restricted-syntax -- the FH-005 hunt tables are not in the generated types yet (ADR-246 exception)
 const db = () => createAdminClient() as unknown as SupabaseClient
@@ -246,6 +247,33 @@ export async function startOrResumeRun(trail: Pick<PublishedTrail, 'huntId' | 'v
 /** The credits a run holds. Only `credited` rows count; reversed or void rows are history. */
 export async function loadRunCredits(runId: string, profileId: string): Promise<Credit[]> {
   return (await loadRunProgressSnapshot(runId, profileId))?.credits ?? []
+}
+
+/**
+ * FH-042S: the Mysteries this run has used every try on without a right answer, so the Trail page stops
+ * naming one as the next stop and sends the player to its stand-in. Reads the attempt rows' count and
+ * verdict only, never a guess. A failed or truncated read returns none, which only means the page keeps
+ * showing the question; the claim door still refuses a locked answer on its own.
+ */
+export async function loadLockedMysteries(runId: string, profileId: string, missionKeys: readonly string[]): Promise<string[]> {
+  if (missionKeys.length === 0) return []
+  const client = db()
+  const { data: run, error: runError } = await client.from('hunt_runs').select('id').eq('id', runId).eq('subject_profile_id', profileId).maybeSingle()
+  if (runError || !run) return []
+  const attempts = await client
+    .from('hunt_claims')
+    .select('mission_key, correct:policy_result->>correct', { count: 'exact' })
+    .eq('run_id', runId)
+    .in('mission_key', [...missionKeys])
+    .like('evidence_id', 'answer:%')
+  if (!completeRows(attempts)) return []
+  const tally = new Map<string, { used: number; right: boolean }>()
+  for (const a of attempts.data as { mission_key: unknown; correct: unknown }[]) {
+    if (typeof a.mission_key !== 'string') continue
+    const t = tally.get(a.mission_key) ?? { used: 0, right: false }
+    tally.set(a.mission_key, { used: t.used + 1, right: t.right || a.correct === 'true' })
+  }
+  return [...tally].filter(([, t]) => !t.right && t.used >= MAX_ANSWER_ATTEMPTS).map(([key]) => key)
 }
 
 /** One complete read of a run's progress: every row's total (any disposition) and the credited missions.

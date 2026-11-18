@@ -3,6 +3,7 @@ title: Choose which emails you get
 description: Turn one kind of email off, or back on, from Settings or from the link at the bottom of a newsletter.
 category: getting-started
 order: 15
+group: Your account
 published: 2026-11-18
 updated: 2026-11-18
 audience: member

@@ -31,6 +31,8 @@ import {
   sendInviteEmail,
   sendMadeItEmail,
   sendEventReplayEmail,
+  sendCoursePreviewEmail,
+  sendCredentialEmail,
   sendMemberTicketEmail,
   sendOptinConfirmEmail,
   sendOptinWelcomeEmail,
@@ -353,6 +355,9 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'guest-event-cancelled', group: 'Events', run: () => sendGuestEventCancelledEmail({ to: TO, guestName: 'Maya', eventTitle: 'Sunrise sound bath', whenAbsolute: WHEN, eventUrl: EVENT_URL, refunded: false }) },
   { id: 'made-it', group: 'Events', run: () => sendMadeItEmail({ to: TO, name: 'Maya', eventTitle: 'Sunrise sound bath', eventUrl: EVENT_URL, madeItUrl: `${EVENT_URL}/made-it`, next: { title: 'Full moon swim', whenAbsolute: 'Friday, November 20, 6:30 PM PT', url: `${SITE}/events/full-moon-swim`, shareUrl: `${SITE}/events/full-moon-swim?share=1` }, joinUrl: `${SITE}/sign-up`, unsubscribeUrl: `${SITE}/unsubscribe/t`, dedupeKey: 'sample' }) },
   { id: 'event-replay', group: 'Events', run: () => sendEventReplayEmail({ to: TO, eventTitle: 'The Business of Community · Live series · Week 1 · The Engine', eventUrl: EVENT_URL, replayUrl: 'https://example.com/replay', next: { title: 'Week 2 · The Container', whenAbsolute: 'Thursday, January 14, 10:00 AM PT', url: `${SITE}/events/week-2` }, unsubscribeUrl: `${SITE}/unsubscribe/t`, dedupeKey: 'sample' }) },
+  { id: 'course-preview', group: 'Welcome and sign-up', run: () => sendCoursePreviewEmail({ to: TO, courseTitle: 'The Business of Community 101', week1Url: `${SITE}/courses/the-business-of-community-101/week-1`, courseUrl: `${SITE}/courses/business-of-community`, run: { label: 'Thursdays, January 7 to 28', time: '10:00 AM to 11:30 AM PT', seatUrl: `${SITE}/events/week-1` }, confirmUrl: `${SITE}/subscribe/confirm?t=abc` }) },
+  { id: 'credential-certified', group: 'Community', run: () => sendCredentialEmail({ to: TO, name: 'Maya', courseTitle: 'The Business of Community 101', level: 'certified', credentialUrl: `${SITE}/credentials/abc`, note: null, retryUrl: `${SITE}/courses/the-business-of-community-101/certify`, courseUrl: `${SITE}/courses/business-of-community` }) },
+  { id: 'credential-returned', group: 'Community', run: () => sendCredentialEmail({ to: TO, name: 'Maya', courseTitle: 'The Business of Community 101', level: null, credentialUrl: null, note: 'Add the run sheet from a gathering you actually ran.', retryUrl: `${SITE}/courses/the-business-of-community-101/certify`, courseUrl: `${SITE}/courses/business-of-community` }) },
   { id: 'promoted-seat', group: 'Events', run: () => { const p = { recipientName: 'Maya', eventTitle: 'Sunrise sound bath', whenAbsolute: WHEN, location: 'Moonlight Beach, Encinitas', hostName: 'Jordan', circleName: 'Dawn swimmers', eventUrl: EVENT_URL, icsUrl: `${EVENT_URL}.ics`, googleCalUrl: 'https://calendar.google.com/calendar/r/eventedit?text=Sunrise+sound+bath', unsubscribeUrl: UNSUB }; return { to: TO, subject: `${PROMOTED_SEAT_LINE} Sunrise sound bath`, html: promotedSeatHtml(p), text: promotedSeatText(p) } } },
   { id: 'event-claim-invite', group: 'Events', run: () => sendEventClaimInviteEmail({ to: TO, organizerName: 'Jordan', posterName: 'Jordan', eventTitle: 'Sunrise sound bath', whenLine: WHEN, location: 'Moonlight Beach, Encinitas', claimUrl: `${SITE}/claim/abc123`, eventUrl: EVENT_URL }) },
 

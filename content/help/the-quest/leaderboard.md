@@ -2,54 +2,66 @@
 title: The leaderboard
 description: One shared goal first. Where people stand sits below it, scoped to your Circle and yours to opt out of.
 category: the-quest
-order: 8
+order: 7
 published: 2026-06-09
-updated: 2026-09-19
+updated: 2026-11-18
 audience: member
 featureKeys: [leaderboard, gamification]
+keywords: [rankings, standings, scoreboard, hide me, opt out, top members, who is winning, circle stats]
 status: published
 ---
 
-The leaderboard leads with one thing: a goal your Circle is filling **together**. Individual standings sit below it, start local, and are yours to step out of. You'll find it in **The Vault**, under your standing.
+If leaderboards usually make you feel behind, this one is built differently. It leads with a goal your people are filling together. The individual standings sit below that, start local, and you can step off them any time.
+
+## Find it
+
+Open **The Quest** in the header and choose **Leaderboard**. You can also get there from **My Quest** or **The Vault**, which each carry a **Leaderboard** button.
 
 ## The shared goal comes first
 
-At the top is a **collective goal**: the combined season Zaps of everyone in your scope, filling a shared milestone, with a count of how many people have chipped in. This is the headline because the season is something you do together, not a race to beat your friends. Even if you hide yourself from the board below, your Zaps still count toward this goal.
+At the top is one number: the combined season Zaps of everyone in your scope, filling toward the next milestone, with a count of how many people are pitching in. Every practice you log adds to the same total.
+
+This is the headline because a season is something you do together. Even if you hide yourself from the board below, your Zaps still count here.
 
 ## Where people stand
 
 Below the shared goal is the individual board. Two controls shape it.
 
-**Scope** decides who you're compared with. It stays local on purpose: the people you actually practice with, not the whole world. There is no global board.
+**Whose board.** This decides who you are compared with. It starts local on purpose.
 
-- **Circle** (the default): people in your circles.
-- **Nearby Spaces**: everyone across the parent [Space that holds nearby Circles](/help/groups/hubs).
+- **Circle**: the people in your Circles. This is the default.
+- **Hub**: everyone across the [Space that holds your nearby Circles](/help/groups/hubs).
+- **Season**: everyone active this season.
 
-**Track** decides what the board ranks by.
+**Ranked by.** This decides what the board counts.
 
 - **Zaps**: season Zaps, the real-world showing up.
-- **Consistency**: your daily practice streak, so the steady person who shows up every day leads on showing up, not only on raw output.
+- **Consistency**: the daily practice streak, so the steady person can lead on showing up and not only on raw output.
 
-Each row shows the member's standing on the active track, their streak, and their current [season rank](/help/the-quest/season-ranks). Your own row is highlighted.
+Each row shows a member's place, their [season rank](/help/the-quest/season-ranks), and their number on the track you picked. Your own row is marked "you".
 
-## You can step off the board
+## Step off the board
 
-Ranking is opt-in by feel. One tap on **Hide me from the board** removes your row from the list. You still count toward the shared goal up top, you just don't appear as a row. Tap again to show yourself any time.
+Ranking is optional. On the leaderboard page, turn off **Show me on leaderboards**. Your row disappears from every board at once. You still count toward the shared goal. Turn it back on whenever you like.
+
+## Your streak lives here too
+
+Under the board is the **Consistency** section: your daily practice streak, your reserve, the next badge, and the button to set a rest. See [Streaks](/help/the-quest/streaks).
 
 ## The board inside a Circle is a different thing
 
-Your Circle has its own **Circle Stats** tab, and the board on it does not rank anyone. It compares each member's week
-against **their own** usual week, so a beginner and a veteran can both be having a good one at the
-same time. There is no first place and no last place on it.
+Your Circle has its own **Circle Stats** tab, and the board on it does not rank anyone. It compares each member's week against their own usual week, so a beginner and a veteran can both be having a good one at the same time. There is no first place and no last place.
 
-Your usual week is the median of your last four weeks that had any activity, which means a quiet
-month never counts against you. Each row carries a plain label instead of a number: *Above usual*,
-*Usual week*, *Lighter week*, *Back this week*, or *No usual week yet* if you have not been around
-long enough for us to have one to compare with.
+Your usual week is the middle of your last four weeks that had any activity, so a quiet month never counts against you. Each row carries a plain label instead of a position: Above usual, Usual week, Lighter week, Back this week, or No usual week yet if you have not been around long enough to have one.
 
-The Vault board described above still works the way it always has. The two are separate on purpose:
-one is the season scoreboard, the other is a read on how your Circle is doing this week.
+Circle Stats has its own **Hide me from the board** button. It is the same preference as the switch above.
 
-## A fresh race every season
+## A fresh start every season
 
-The season standings reset when the season does, so nobody is permanently out of reach and every season is a new climb. Your [rank](/help/the-quest/season-ranks) comes from the Journeys you finish, and what the Zaps measure is real-world showing up. The leaderboard isn't the Quest, it's the scoreboard for the part of life that happens off the screen.
+Season standings reset when the season does, so nobody is permanently out of reach. The leaderboard is not the Quest. It is the scoreboard for the part of life that happens off the screen.
+
+## Related
+
+- [Streaks](/help/the-quest/streaks)
+- [Season ranks](/help/the-quest/season-ranks)
+- [Zaps and Gems explained](/help/the-quest/zaps-and-gems)

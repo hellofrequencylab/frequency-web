@@ -125,6 +125,9 @@ export async function POST(request: Request, { params }: Context) {
   // FH-020V: a visit kept for staff review is its own answer on the landing, never a credit and never a refusal.
   landing.searchParams.set('claim', result === 'credited' || result === 'already_credited' || result === 'held'
     ? (team && result !== 'held' ? `team_${result}` : result)
-    : !outcome.ok && outcome.reason === 'roster_not_locked' ? 'team_not_locked' : 'unavailable')
+    : !outcome.ok && outcome.reason === 'roster_not_locked' ? 'team_not_locked'
+      // FH-042S: a Mystery stop asks its question on the Trail page, where the answer form is.
+      : !outcome.ok && (outcome.reason === 'answer_required' || outcome.reason === 'answer_wrong') ? 'answer'
+        : !outcome.ok && outcome.reason === 'answer_locked' ? 'answer_locked' : 'unavailable')
   return redirect(landing, 303)
 }

@@ -28,7 +28,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { decide, type HuntAction, type PartnerRow, type RoleGrant } from '@/lib/hunts/authz'
 import { huntSwitchOn } from '@/lib/hunts/flags'
-import { publishVenueBlocks } from '@/lib/hunts/partners'
+import { partnerLive, publishVenueBlocks } from '@/lib/hunts/partners'
+import { challengeViews, parseChallenges, type Challenge, type ChallengeView } from '@/lib/hunts/challenges'
 import { slugify } from '@/lib/utils'
 import { generateSlug } from '@/lib/qr/codes'
 import {
@@ -41,6 +42,7 @@ import {
   publishRows,
   stopEvidencePolicy,
   stopKey,
+  stopVenue,
   type ChecklistItem,
   type DraftStore,
   type TrailDraft,
@@ -92,6 +94,10 @@ export type TrailEditorState = {
   /** FH-020X: a venue Space runs this Trail, so its staff can confirm a stop. */
   hasVenue: boolean
   draft: TrailDraft
+  /** FH-042S: the Trail's challenges as the editor may see them: whether an answer is set, never its hash. */
+  challenges: ChallengeView[]
+  /** FH-020Y: the Spaces with a live partner row on this Hunt, the only venues a stop may name. */
+  partnerVenues: { spaceId: string; name: string }[]
 }
 
 export type Actor = { profileId: string }
@@ -156,6 +162,8 @@ async function latestVersion(client: SupabaseClient, huntId: string): Promise<Ve
 }
 
 const trailOf = (v: VersionRow | null): TrailDraft => parseTrailDraft(v?.policy?.trail)
+/** FH-042S: the challenges live beside the trail at policy.challenges, so the stops autosave never carries a hash. */
+const challengesOf = (v: VersionRow | null): Challenge[] => parseChallenges(v?.policy?.challenges)
 
 // ── Create ───────────────────────────────────────────────────────────────────────────────────
 
@@ -221,7 +229,23 @@ export async function loadTrail(huntId: string, actor: Actor): Promise<TrailEdit
     passBenefits: huntSwitchOn('commerce'),
     hasVenue: hunt.owner_space_id !== null,
     draft: trailOf(version),
+    challenges: challengeViews(challengesOf(version)),
+    partnerVenues: await livePartnerVenues(client, hunt.id),
   }
+}
+
+/** FH-020Y: the live partner Spaces of a Hunt, by name. A failed read offers none rather than a wrong one. */
+async function livePartnerVenues(client: SupabaseClient, huntId: string): Promise<{ spaceId: string; name: string }[]> {
+  const rows = await client.from('hunt_partners').select('space_id, status, effective_at, revoked_at').eq('hunt_id', huntId)
+  if (rows.error) return []
+  const now = new Date().toISOString()
+  const live = ((rows.data ?? []) as { space_id: string; status: PartnerRow['status']; effective_at: string | null; revoked_at: string | null }[])
+    .filter((p) => partnerLive({ status: p.status, effectiveAt: p.effective_at, revokedAt: p.revoked_at }, now))
+    .map((p) => p.space_id)
+  if (live.length === 0) return []
+  const names = await client.from('spaces').select('id, name').in('id', live)
+  if (names.error) return []
+  return ((names.data ?? []) as { id: string; name: string }[]).map((n) => ({ spaceId: n.id, name: n.name })).sort((a, b) => a.name.localeCompare(b.name))
 }
 
 type TrailSummary = { huntId: string; title: string; status: string; visibility: HuntRow['visibility']; stops: number; updatedAt: string | null }
@@ -284,14 +308,57 @@ async function writeTrail(client: SupabaseClient, huntId: string, actorId: strin
     if (error) throw new Error(error.message)
     return
   }
+  // The next version starts from the frozen one's challenges (FH-042S), so an edit keeps them.
+  const challenges = challengesOf(version)
   const { error } = await client.from('hunt_versions').insert({
     hunt_id: huntId,
     version_no: (version?.version_no ?? 0) + 1,
     status: 'draft',
-    policy: { trail: draft },
+    policy: { trail: draft, ...(challenges.length > 0 ? { challenges } : {}) },
     created_by: actorId,
   })
   if (error) throw new Error(error.message)
+}
+
+/** FH-042S: the stored challenges of the latest version, for the save action to keep hashes it was not sent. */
+export async function loadChallenges(huntId: string, actor: Actor): Promise<Challenge[] | null> {
+  const client = db()
+  const hunt = await authorizeHunt(client, huntId, actor, 'edit_draft')
+  if (!hunt) return null
+  return challengesOf(await latestVersion(client, huntId))
+}
+
+/**
+ * FH-042S: save the challenges list, revision-checked like a draft save. The caller has already
+ * replaced every plain answer with its hash (app/(main)/hunts/actions.ts saveChallengesAction). A
+ * frozen latest version opens the next one with the current trail, as a draft save does.
+ */
+export async function saveChallenges(huntId: string, actor: Actor, baseRevision: number, challenges: readonly Challenge[]): Promise<{ applied: true; revision: number } | { applied: false; currentRevision: number }> {
+  const client = db()
+  const hunt = await authorizeHunt(client, huntId, actor, 'edit_draft')
+  if (!hunt) return { applied: false, currentRevision: baseRevision }
+  const bumped = await bumpRevision(client, huntId, baseRevision)
+  if (!bumped.applied) return bumped
+  const version = await latestVersion(client, huntId)
+  if (version && version.status === 'draft') {
+    const { error } = await client
+      .from('hunt_versions')
+      .update({ policy: { ...(version.policy ?? {}), challenges } })
+      .eq('id', version.id)
+      .eq('hunt_id', huntId)
+      .eq('status', 'draft')
+    if (error) throw new Error(error.message)
+    return bumped
+  }
+  const { error } = await client.from('hunt_versions').insert({
+    hunt_id: huntId,
+    version_no: (version?.version_no ?? 0) + 1,
+    status: 'draft',
+    policy: { trail: { ...trailOf(version), routeTestedAtRevision: null }, challenges },
+    created_by: actor.profileId,
+  })
+  if (error) throw new Error(error.message)
+  return bumped
 }
 
 /** The DraftStore lib/hunts/draft.ts `saveDraft` writes through, bound to one authorized actor. */
@@ -334,7 +401,7 @@ export async function markRouteTested(huntId: string, actor: Actor, revision: nu
 
 // ── Publish ──────────────────────────────────────────────────────────────────────────────────
 
-const contentHash = (draft: TrailDraft): string => createHash('sha256').update(canonicalContent(draft)).digest('hex')
+const contentHash = (draft: TrailDraft, challenges: readonly Challenge[] = []): string => createHash('sha256').update(canonicalContent(draft, challenges)).digest('hex')
 
 /**
  * THE placement binding command (FH-020X): every stop of the version being published gets one live
@@ -374,12 +441,20 @@ async function bindStopPlacements(client: SupabaseClient, hunt: HuntRow, version
     hunt_id: hunt.id,
     mission_key: stopKey(i),
     placement_id,
-    venue_space_id: hunt.owner_space_id,
+    // FH-020Y: a partner venue named for the stop, else the Space that runs the Trail (or none).
+    venue_space_id: stopVenue(draft, i) ?? hunt.owner_space_id,
     evidence_policy: stopEvidencePolicy(draft.stops[i]),
   }))
   // A binding that already exists keeps its row: publishTrail's evidencePolicyUpdates pass then sets its policy.
   const { error } = await client.from('hunt_mission_placements').upsert(rows, { onConflict: 'version_id,mission_key,placement_id', ignoreDuplicates: true })
   if (error) throw new Error(error.message)
+  // ...and a stop whose partner venue changed since that row was written takes the new venue.
+  for (const row of rows) {
+    if (!stopVenue(draft, ids.indexOf(row.placement_id))) continue
+    const { error: venueError } = await client.from('hunt_mission_placements').update({ venue_space_id: row.venue_space_id })
+      .eq('version_id', versionId).eq('hunt_id', hunt.id).eq('mission_key', row.mission_key).eq('placement_id', row.placement_id)
+    if (venueError) throw new Error(venueError.message)
+  }
   return ids
 }
 
@@ -422,10 +497,11 @@ export type PublishResult =
  * partner rows now, so a venue that withdrew a minute ago blocks. A read that fails throws: a publish
  * that cannot check its partners does not go out.
  */
-async function venuesBlockingPublish(client: SupabaseClient, hunt: HuntRow, versionId: string): Promise<string[]> {
+async function venuesBlockingPublish(client: SupabaseClient, hunt: HuntRow, versionId: string, named: readonly string[] = []): Promise<string[]> {
   const bound = await client.from('hunt_mission_placements').select('venue_space_id').eq('hunt_id', hunt.id).eq('version_id', versionId)
   if (bound.error) throw new Error(bound.error.message)
-  const venueSpaceIds = ((bound.data ?? []) as { venue_space_id: string | null }[]).map((r) => r.venue_space_id)
+  // FH-020Y: the partner venues the draft names count too, before a binding carries them.
+  const venueSpaceIds = [...((bound.data ?? []) as { venue_space_id: string | null }[]).map((r) => r.venue_space_id), ...named]
   if (!venueSpaceIds.some(Boolean)) return []
   const rows = await client.from('hunt_partners').select('hunt_id, space_id, status, effective_at, revoked_at, permitted_roles').eq('hunt_id', hunt.id)
   if (rows.error) throw new Error(rows.error.message)
@@ -461,16 +537,17 @@ export async function publishTrail(
   const version = await latestVersion(client, huntId)
   if (!version || version.status !== 'draft') return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
   const draft: TrailDraft = { ...trailOf(version), permissionConfirmed }
-  const checklist = publishChecklist(draft, hunt.revision, { venue: hunt.owner_space_id !== null })
+  const challenges = challengesOf(version)
+  const checklist = publishChecklist(draft, hunt.revision, { venue: hunt.owner_space_id !== null, challenges })
   if (hunt.revision !== baseRevision) return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
   if (!checklist.ok) return { ok: false, reason: 'checklist', items: checklist.items }
-  const blockedVenues = await venuesBlockingPublish(client, hunt, version.id)
+  const blockedVenues = await venuesBlockingPublish(client, hunt, version.id, (draft.venues ?? []).map((v) => v.venueSpaceId))
   if (blockedVenues.length > 0) return { ok: false, reason: 'partners', spaceIds: blockedVenues }
 
   const bumped = await bumpRevision(client, huntId, baseRevision)
   if (!bumped.applied) return { ok: false, reason: 'conflict', currentRevision: bumped.currentRevision }
 
-  const rows = publishRows(draft)
+  const rows = publishRows(draft, challenges)
   const missions = rows.missions.map((m) => ({ ...m, version_id: version.id, hunt_id: huntId }))
   const { error: missionError } = await client.from('hunt_missions').upsert(missions, { onConflict: 'version_id,mission_key' })
   if (missionError) throw new Error(missionError.message)
@@ -510,7 +587,7 @@ export async function publishTrail(
     if (memberError) throw new Error(memberError.message)
   }
 
-  const hash = contentHash(draft)
+  const hash = contentHash(draft, challenges)
   const publishedAt = new Date().toISOString()
   const { error: flipError } = await client
     .from('hunt_versions')

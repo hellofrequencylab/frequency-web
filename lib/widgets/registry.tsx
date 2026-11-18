@@ -25,6 +25,7 @@ import { PracticeRemixLevers } from '@/components/widgets/practices/admin/remix-
 import { PracticeContributorRecognition } from '@/components/widgets/practices/admin/contributor-recognition'
 import { AdminJourneysStats } from '@/components/widgets/admin/admin-journeys-stats'
 import { AdminJourneysReview } from '@/components/widgets/admin/admin-journeys-review'
+import { AdminJourneysCredentials } from '@/components/widgets/admin/admin-journeys-credentials'
 import { AdminJourneysLibrary } from '@/components/widgets/admin/admin-journeys-library'
 import { JourneysStart } from '@/components/widgets/journeys/journeys-start'
 import { JourneysMine } from '@/components/widgets/journeys/journeys-mine'
@@ -175,6 +176,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   // Admin Journeys blocks (/admin/content/journeys).
   'admin-journeys-stats': AdminJourneysStats,
   'admin-journeys-review': AdminJourneysReview,
+  'admin-journeys-credentials': AdminJourneysCredentials,
   'admin-journeys-library': AdminJourneysLibrary,
   // Journeys member page (/journeys).
   'journeys-start': JourneysStart,
