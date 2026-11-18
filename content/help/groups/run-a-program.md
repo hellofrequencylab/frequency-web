@@ -4,139 +4,100 @@ description: For Space owners: turn your model into a Program so members anywher
 category: groups
 order: 5
 published: 2026-07-27
-updated: 2026-10-06
+updated: 2026-11-18
 audience: host
 featureKeys: [channels, circles]
+keywords: [blueprint, chapters, scale my model, flagship circle, pause program, refresh blueprint, expand to other cities]
 status: published
 ---
 
-Running a **Program** means your model becomes something other people can start
-where they live. You pick one circle you already run, we save its setup as the
-blueprint, and your Program gets its own Channel. From there, members anywhere can
-start a **Chapter** from your blueprint. Running a Program is a **Business** plan
-feature.
+Running a **Program** means your model becomes something other people can start where they live. You pick one Circle you already run, we save its setup as the blueprint, and your Program gets its own Channel. From there, members anywhere can start a **Chapter** from your blueprint. Running a Program is a **Business** plan feature.
 
-If you're here as a member looking to join or start a Chapter, read
-[Programs and Chapters](/help/groups/programs-and-chapters) instead.
+Here as a member looking to join or start a Chapter? Read [Programs and Chapters](/help/groups/programs-and-chapters) instead.
 
-## What do I need before I start?
+**Where to find it:** open your Space, tap **Manage**, and open **Program** under Content.
+
+## Check what you need
 
 Two things:
 
-- **A Space on the Business plan.** Programs are part of Business. See
-  [plans and pricing](/help/spaces/plans-and-pricing) for what else it carries.
-  During the Opening Beta every Space has full access, so you can build one now and
-  see how it goes before the plans start doing what they say.
-- **One live circle in your Space.** This is your flagship, the one your Program is
-  modeled on. It has to be published and running. A draft can't anchor a Program,
-  because a draft hasn't proven anything yet.
+- **A Space on the Business plan.** Programs are part of Business. See [plans and pricing](/help/spaces/plans-and-pricing) for what else it carries. During the open beta you can build one now and see how it goes. See [beta pricing](/help/spaces/beta-pricing) for how the beta works.
+- **One live Circle in your Space.** This is your flagship, the one your Program is modeled on. It has to be published and running. A draft cannot anchor a Program.
 
-You also need to be able to manage the Space. If the Program tool is switched off
-for your Space, an admin can turn it back on in the module settings.
+You also need to be able to manage the Space. If you do not have a Circle yet, the Program page sends you to create one first.
 
-## How do I create the Program?
+## Create the Program
 
-Open your Space, go to **Manage**, and open **Program** under Content. Then:
-
-1. **Name your Program.** This is what members see on the Channel.
-2. **Write the one liner.** One plain sentence on what a Chapter does together.
-3. **Pick your blueprint circle.** One of your live circles.
-4. Choose **Create Program**.
+1. Fill in **Program name**. This is what members see on the Channel.
+2. Write the **One liner**. One plain sentence on what a Chapter does together.
+3. Pick your **Blueprint circle**. One of your live Circles.
+4. Tap **Create Program**.
 
 Three things happen at once:
 
-- We take a **snapshot** of that circle's current setup: what the group does, the
-  meeting rhythm, the gathering format, the suggested size, the agreements. That
-  snapshot is the blueprint. Your circle itself is not changed.
-- Your Program gets its own **Channel**, which members can open, tune into, and post
-  in.
-- Your flagship circle becomes **Chapter one**, listed on the Channel like every
-  Chapter that follows.
+- We take a **snapshot** of that Circle's current setup: what the group does, the meeting rhythm, the gathering format, the suggested size, the agreements. That snapshot is the blueprint. Your Circle itself is not changed.
+- Your Program gets its own **Channel**, which members can open, tune into, and post in.
+- Your flagship Circle becomes **Chapter one**, listed on the Channel like every Chapter that follows.
 
-From then on, any member can open your Channel and start a Chapter (it counts toward
-the Circles they can host, and Crew hosts more). They get a private draft
-built from your blueprint, they shape it, and they publish it when it's ready.
+From then on, any member can open your Channel and start a Chapter. It counts toward the Circles they can host, and Crew hosts more. They get a private draft built from your blueprint, shape it, and publish it when it is ready.
 
-## What can I change later?
+## Change it later
 
 From the same Program page:
 
-| What | What it does |
-| --- | --- |
-| **Name** | Changes what members see on the Channel |
-| **One liner** | Changes the description on the Channel and in the Chapter start flow |
-| **Blueprint** | Re-saves the snapshot from one of your live circles |
-| **Pause / Resume** | Stops or restarts new Chapters |
+- **Program name**: changes what members see on the Channel. Renaming keeps your Channel at the same address, so links people have shared keep working.
+- **One liner**: changes the description on the Channel and in the Chapter start flow.
+- **Blueprint**: re-saves the snapshot from one of your live Circles.
+- **Pause Program** or **Resume Program**: stops or restarts new Chapters.
 
-Renaming keeps your Channel at the **same address**, so every link anyone has ever
-shared keeps working.
+## Refresh the blueprint
 
-## What does refreshing the blueprint do?
+Under **Blueprint**, pick the Circle and tap **Refresh blueprint**. That saves the current setup of one of your live Circles as the new snapshot.
 
-Refreshing the blueprint saves the current setup of one of your live circles as the
-new snapshot. Pick the circle, choose **Refresh blueprint**, done.
+It does not reach into Chapters that already exist. A Chapter copied the blueprint at the moment it started, so it keeps what it has. Refreshing only affects Chapters started from now on. That is deliberate: the people running your Chapters keep the group they built.
 
-What it does **not** do is reach into Chapters that already exist. A Chapter copied
-the blueprint at the moment it started, so it keeps what it has. **Refreshing only
-affects Chapters started from now on.** That is deliberate: the people running your
-Chapters get to keep the group they built, and nothing they set up changes under
-them overnight.
+The source Circle has to be one your Space runs, and it has to be live. Drafts and archived Circles are not offered.
 
-The source circle has to be one your Space runs, and it has to be live. Drafts and
-archived circles aren't offered.
+## Pause the Program
 
-## When should I pause a Program?
-
-Pause when you don't want new Chapters right now: you're rethinking the model, or
-you want to work with the Chapters you have before adding more.
+Pause when you do not want new Chapters right now: you are rethinking the model, or you want to work with the Chapters you have before adding more.
 
 While a Program is paused:
 
 - The Channel page is hidden.
-- No new Chapters can start, by any route.
-- Every existing Chapter keeps everything. Members, gatherings, feed, settings.
-  Nothing is removed and nothing is hidden.
+- No new Chapters can start.
+- Every existing Chapter keeps everything: members, gatherings, feed, settings.
 
-Resume is one click, and both come straight back.
+Tap **Resume Program** and both come back.
 
 ## Questions people ask
 
 ### Can I run more than one Program?
 
-No. One Program per Space. If you want to run a different model, edit the one you
-have, or talk to the crew about what you're trying to do.
+No. One Program per Space. If you want to run a different model, edit the one you have, or talk to the crew about what you are trying to do.
 
 ### Can I delete a Program?
 
-That one goes through the crew. Deleting a Program touches every Chapter running
-your model at once, so it's a conversation rather than a button. Everything else on
-the Program page is yours to change directly. If you just want to stop new Chapters,
-pause it instead.
+That one goes through the crew. Deleting a Program touches every Chapter running your model at once, so it is a conversation, not a button. Everything else on the Program page is yours to change directly. If you just want to stop new Chapters, pause it instead.
 
 ### Do the Chapters belong to me?
 
-No, and that's the point. Each Chapter belongs to the person who started it. They
-host it, their members are their members, and they can change what doesn't fit their
-city. What you own is the model and the Channel it lives on.
+No, and that is the point. Each Chapter belongs to the person who started it. They host it, their members are their members, and they can change what does not fit their city. What you own is the model and the Channel it lives on.
 
 ### Can I stop someone from starting a Chapter?
 
-Not one person at a time. Starting a Chapter is open to any member while
-your Program is running, which is what makes a Program spread. If you need to stop
-new Chapters entirely, pause the Program.
+Not one person at a time. Starting a Chapter is open to any member while your Program is running, which is what makes a Program spread. If you need to stop new Chapters entirely, pause the Program.
 
-### Does my flagship circle change when I create the Program?
+### Does my flagship Circle change when I create the Program?
 
-Only in one way: it joins your Program's Channel as the first Chapter. Its host,
-members, gatherings, and settings are untouched, and the blueprint is a copy, so
-editing the circle later doesn't quietly rewrite the blueprint. Refresh the blueprint
-when you want those edits to reach new Chapters.
+Only in one way: it joins your Program's Channel as the first Chapter. Its host, members, gatherings, and settings are untouched, and the blueprint is a copy, so editing the Circle later does not quietly rewrite the blueprint. Refresh the blueprint when you want those edits to reach new Chapters.
 
 ### What do members see?
 
-They see your Program as a Channel: your name, your one liner, the feed, and a
-**Chapters** tab where they can sort by **Near me** or start their own. See
-[Programs and Chapters](/help/groups/programs-and-chapters) for the member's side of
-it.
+They see your Program as a Channel: your name, your one liner, the forum, and a **Chapters** tab where they can sort by **Near me** or start their own. See [Programs and Chapters](/help/groups/programs-and-chapters) for the member's side of it.
 
-Next: [Channels](/help/groups/channels) and [plans and pricing](/help/spaces/plans-and-pricing).
+## Related
+
+- [Programs and Chapters](/help/groups/programs-and-chapters)
+- [Channels](/help/groups/channels)
+- [Plans and pricing](/help/spaces/plans-and-pricing)

@@ -4,88 +4,77 @@ description: The two currencies, how you earn them, and what they are for.
 category: the-quest
 order: 1
 published: 2026-05-31
-updated: 2026-06-18
+updated: 2026-11-18
 audience: member
 featureKeys: [gamification, zaps, gems]
+keywords: [points, rewards, currency, how to earn, score, coins, what are zaps, spend gems]
 status: published
 ---
 
-Frequency's game is called **The Quest**: a light, seasonal game that rewards
-real community. There are two currencies, split by where the activity happens.
-The simple rule: anything you do in the real world earns **Zaps**; anything you
-do online earns **Gems**.
+Frequency's game is called The Quest: a light, seasonal game that rewards real community. It runs on two currencies, split by where the activity happens. Things you do out in the world earn Zaps. Things you do online earn Gems.
 
-## Zaps: the real-world currency
+## Zaps: for showing up
 
-You earn **Zaps** for getting out into the world: going to gatherings, inviting
-someone new, hosting, outreach, and logging your practices. Zaps are your seasonal
-score. They convert into Gems when the season ends and they feed your lifetime
-Amplitude. Your **rank** is a separate thing, earned by finishing
-[Journeys](/help/the-quest/your-journey), not by piling up Zaps. Logging a practice
-never hits a cap; a few other actions have a sensible daily limit so the day stays
-about showing up, not farming.
+You earn Zaps for the real-world stuff: going to gatherings, hosting, starting a Circle, bringing someone new in, and logging your practices. Zaps are your score for the season. They reset when the season ends, and on the way out they turn into Gems.
 
-Roughly what things are worth (the biggest rewards live off the screen):
+Your rank is a separate thing. It comes from finishing [Journeys](/help/the-quest/your-journey), not from piling up Zaps. See [Season ranks](/help/the-quest/season-ranks).
 
-- Found or start a Circle: **100**
-- Finish a Journey: **75** (plus a Trophy)
+Roughly what things are worth. The biggest rewards live off the screen:
+
+- Start a Circle: **100**
+- Finish a Journey: **75**, plus a Trophy
 - Host an event: **60**
 - Expression Challenge, in person at a Circle: **50**
+- Someone you invited joins: **40**
 - A verified event check-in: **25**
-- An outreach task (a flyer or QR code): **20**
-- Log a practice: **10**, **15**, or **25**, set by how often the practice is meant
-  to be done (daily, three times a week, or weekly)
+- An outreach task, like a flyer or a QR code: **20**
+- Log a practice: a smaller amount each time, set by the practice. Each practice shows its own number.
 
-**Every practice you log earns Zaps**, whether it is tied to a Circle or it is just
-your own. The practice is the real-world doing; the log is the record of it. Zaps
-reset each season, so every season is a fresh climb.
+A few of these have a daily limit, so the day stays about showing up and not about farming points.
 
-## Gems: the online currency
+## Gems: for keeping it warm online
 
-You earn **Gems** for keeping the community warm between gatherings: welcoming
-newcomers, posting, replying, reacting, and showing up day to day. They are small
-and **capped per day** so they cannot be farmed, and they are the currency you
-**spend** in the Vault on titles, cosmetics, and more. For example:
+You earn Gems for the small things that keep the community going between gatherings: welcoming a newcomer, posting, replying, reacting, and checking in day to day. Gems are small on purpose and most are capped per day. They are the currency you spend in the Vault Store.
 
-- Welcome a newcomer: **5**, once for each newcomer you welcome
-- RSVP to an event, or join a Circle: **5**
-- Post: **3** (up to 5 a day)
-- Comment or reply: **2** (up to 8 a day)
-- Share: **2** (up to 5 a day)
-- Daily presence: **2** (once a day)
-- React: **1** (up to 8 a day)
+For example:
 
-Unlike Zaps, Gems never reset. Two numbers track them: your **earned** total only
-ever goes up, and your **spendable** balance is that total minus whatever you have
-spent.
+- Welcome a newcomer: **5**, once for each newcomer
+- RSVP to an event: **5**, once a day
+- Join a Circle: **5**
+- Post: **3**, up to 5 a day
+- Comment or reply: **2**, up to 8 a day
+- Daily check-in: **2**, once a day
+- React: **1**, up to 8 a day
 
-## Make something others use
+Gems never reset. Your spendable balance is what you have earned minus what you have spent.
 
-When you publish a Journey, an event, or a practice, you get a small Gem token right
-away. The bigger reward comes later: when another member actually **uses** what you
-made (adopts your Journey, logs your practice, or RSVPs to your event), you earn the
-real payout in both Zaps and Gems. Publish a Journey and you will see "you'll earn
-when a member uses this." When it happens, the reward lands as a notification.
+## See the live numbers
+
+The amounts above can be tuned from season to season. The Vault always shows the current ones.
+
+1. Open **The Quest** in the header and choose **The Vault**.
+2. Scroll to **How you earn**. You will see two tables: Zaps for the real world, Gems for online, with any daily cap next to each row.
 
 ## See exactly how you earned
 
-Your Vault keeps a running **Zaps, Gems and streaks log**. Open it from the Vault
-("How you earned") to see every Gem and Zap you have banked, what earned it, and
-when, plus your live streaks. Even finishing a challenge or a Journey pays you in the
-currency that matches what you actually did.
+Open **The Vault** and tap **How you earned**. It lists every Zap and Gem you have banked, what earned it, and when. The Vault also shows where this season's Zaps came from, grouped by source.
+
+## Make something others use
+
+When you publish a Journey, an event, or a practice, you get a small Gem token right away. The bigger reward comes later, the first time another member actually uses what you made: adopts your Journey, logs your practice, or RSVPs to your event. That pays in both Zaps and Gems, and it lands as a notification.
 
 ## How they connect
 
-At the end of each season, your Zaps convert into Gems at a flat **5 to 1**, the
-same rate for everyone. So the real-world doing (Zaps) turns into the durable,
-spendable reward (Gems) over time.
-
-Your Zaps also feed **Amplitude**, your lifetime total. Season Zaps reset; Amplitude
-never does. Hosting-class acts (hosting an event, running a program, founding or
-activating a Circle) count double toward it. You will see it next to your rank, like
-"Adept · 14,200".
+- **Season end.** Your season Zaps convert into Gems at a flat 5 to 1, the same rate for everyone. The Vault shows what your current Zaps would roll into.
+- **Amplitude.** Every Zap you earn also feeds Amplitude, your lifetime total. Season Zaps reset. Amplitude never does. Hosting-class acts, like hosting an event or starting a Circle, count double toward it.
 
 ## The one thing to remember
 
-The Quest is not the point; it is the nudge. Everything of real value rewards the
-same thing: showing up for your people in the real world.
+The Quest is not the point. It is the nudge. Everything of real value here rewards the same thing: showing up for your people in the real world.
+
+## Related
+
+- [Season ranks](/help/the-quest/season-ranks)
+- [Your Journey](/help/the-quest/your-journey)
+- [Streaks](/help/the-quest/streaks)
+- [The Gem Store](/help/membership/the-gem-store)

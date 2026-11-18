@@ -4,161 +4,132 @@ description: Shape a Journey around an intention, choose supporting practices, a
 category: sharing
 order: 3
 published: 2026-06-06
-updated: 2026-11-14
+updated: 2026-11-18
 audience: member
 featureKeys: [journeys]
+keywords: [course, program, curriculum, create a journey, publish, teach, lessons, sell a course]
 status: published
 ---
 
-A **Journey** is a guided program you build and share: **Phases**, each with a few short
-**Lessons** and **Practices**. It can be a single week or a full multi-week course. You decide
-how deep to go.
+A **Journey** is a guided program you build and share: **Phases**, each with a few short **Lessons** and **Practices**. It can be a single week or a full multi-week course. You decide how deep to go.
+
+## Find Journeys
+
+Open **The Quest** in the top menu, then **Journeys**. That page holds everything:
+
+- **Keep going.** The Journeys you are on, with your place kept in each one.
+- **Yours.** The Journeys you have built. **Your journeys** opens the full list, where you can filter by Drafts and Published.
+- **The library.** Journeys from the community that you can start.
+
+Journeys is not in the left menu, so the top menu is the way in. You can also reach it from **My Quest**.
 
 ## Start one
 
-From **Journeys**, hit **New journey**. You start in the **guide**, which walks you through setting
-the Journey up one step at a time. **Nothing is saved until you name it**, so hitting the button never
-leaves a half-made draft behind. The moment you give it a name, the Journey is created with **three
-phases ready to fill**, and from then on everything **saves as you go** (there's no Save button).
+On the Journeys page, tap **New journey**. You get four ways to begin, and every one of them makes the same kind of Journey:
 
-The guide has three steps once your Journey exists:
+- **Tell me about your Journey.** Write a paragraph on who it is for and where someone lands at the end. Vera comes back with coaching questions, and you write the Journey in your own words.
+- **Upload Documents.** Already have an outline? Add it, with any supporting documents, and keep your own structure.
+- **Build it yourself.** Go straight to the builder and shape the Phases, modules, and lessons your own way.
+- **Start with a template.** Pick a proven shape. It opens as a private draft for you to make yours.
 
-- **Shape.** Pick a template or lay the phases down yourself.
-- **Schedule.** Set the dates it runs between, and how many days sit between phase unlocks.
-- **Ready.** A last look at what's set and what's still missing, then publish.
-
-**You can switch to the editor at any step** and switch back. The guide and the editor work on the
-same Journey, so nothing you do in one gets lost in the other. Use the guide when you want to be
-walked through it, and the editor when you know exactly what you want to change. The editor is one
-page laid out like the Journey itself: cover photo up top, a **title and subtitle you click to edit**,
-the curriculum in the middle, and the settings in a panel on the right.
-
-Leave partway through and you'll come back to the step you stopped on.
+A Journey runs one Phase per week, anywhere from one to twelve weeks. Nothing is saved until you name it and tap **Create Journey**, so starting never leaves a half-made draft behind. From then on, every field saves as you go.
 
 ## Shape a Journey that fits
 
-Begin with an intention and one anchor practice: something people can return to.
-Add supporting practices when they serve that intention. Mind, Body, and Spirit
-can overlap; they do not need equal time or equal Zaps. Expression can be woven
-through the Journey as making, speaking, helping, or connecting. It can stay private.
+Begin with an intention and one anchor practice: something people can return to. Add supporting practices when they serve that intention. Mind, Body, and Spirit can overlap. They do not need equal time or equal Zaps. Expression can be woven through the Journey as making, speaking, helping, or connecting. It can stay private.
 
-The template is a starting shape, not a daily quota. You can replace, remove, or
-reorder its suggested practices. Changing a template does not rewrite the steps
-or requirements of Journeys people are already taking.
+A template is a starting shape, not a daily quota. You can replace, remove, or reorder its suggested practices. Changing a template does not rewrite the steps or requirements of Journeys people are already taking.
 
-**Vera offers coaching questions.** Tell her what you are making and use the
-questions to clarify it. You write the names, guidance, and steps and choose what
-to save. The manual shape is available when you prefer to work without AI.
-
-An **extra-credit Challenge** is an optional task with a separate bonus. Use
-**Add extra credit** in the Curriculum when you want one. Its reward is separate
-from a practice's support areas; choosing more areas does not multiply rewards.
+**Vera offers coaching questions.** In the editor, **Plan with Vera** asks about your plan, and **Get questions for this week** does the same for a single Phase. You write the names, guidance, and steps, and you choose what to save. The builder works just as well without her.
 
 ## Build the structure
 
-- **Add a Phase** for each stage of the program. Phases are the milestones: finishing one earns the
-  member a Trophy.
-- **Add Lessons** inside a Phase: a video (paste a YouTube or Vimeo link), a reading, an exercise, a
-  reflection, or a quick check. Keep them short.
-- **Add a Practice** from the library when a step is something to do in the world, not just read or
-  watch. The picker is sorted by **Pillar** (Mind, Body, Spirit, Expression): tap a Pillar to see its
-  practices; the others stay on screen, greyed, one tap away. You can search by name too.
-- **Coach each practice.** Every practice step has a **Vera coaching prompt** you can draft with one
-  tap: a short nudge tuned to the season and the practice's Pillar. Members see it when they reach
-  that step in the Journey. Edit it or write your own.
-- **Reorder** by dragging a step by its grip, or with the up and down arrows. Lessons, practices, and
-  modules mix freely, so a practice can sit between two lessons. The order you see is the order
-  members follow. Edit titles and content inline.
+Creating a Journey opens the editor: the cover, title, and subtitle up top (click any of them to edit), the **Curriculum** in the middle, and **Settings** beside it.
 
-## Set it up (the settings panel)
+- **Add phase** for each stage of the program. Phases are the milestones, and finishing one earns the member a Trophy.
+- **Add lesson** inside a Phase. A lesson can be a video (paste a YouTube or Vimeo link), a reading, an exercise, a reflection, or a quick knowledge check. Keep them short.
+- **Add practice** when a step is something to do in the world, not just read or watch. Search the library by name, or browse by Pillar (Mind, Body, Spirit, Expression).
+- **Add module** when a Phase needs its lessons grouped.
+- **Add extra credit** for an optional Challenge with its own bonus Zaps. Its reward is separate from a practice's support areas, and choosing more areas does not multiply rewards.
+- **Make this the Anchor** on the one daily practice that runs through the whole Journey.
+- **Coach each practice.** Every practice step has a **Vera coaching prompt** field. Write what people should consider when they reach that step, or tap **Get writing questions** for a nudge.
+- **Reorder** by dragging a step by its grip, or with the up and down arrows. The order you see is the order members follow.
 
-The **title**, **subtitle**, and **cover photo** live in the header, where you click to edit them.
-Everything else sits in the **settings panel** on the right:
+## Set it up
 
-- **Icon, accent, and story.** Give the Journey a face and say why it matters.
-- **What you'll learn.** List the outcomes, one line each. Visitors see that list next to the
-  story on the Journey page, the public page, and the store listing. Leave it empty and the
-  block stays off. Do not restate the one-line promise.
+The settings cover the rest:
+
+- **Icon, accent, and cover.** Give the Journey a face.
+- **What you'll learn.** List the outcomes, one line each. Visitors see that list on the Journey page. Leave it empty and the block stays off.
 - **Completion Gems.** What finishing the Journey earns.
 - **Certificate.** Turn on a printable certificate for people who finish.
-- **Phase drip.** How many days between Phase unlocks (weekly by default), so a Circle moving through
-  it together stays in step. Everyone taking the Journey gets a note when their next phase opens.
-- **Run between dates.** An optional start and end, so a Journey can open on a date and close on one.
-  Leave them empty and it simply stays open.
-- **What visitors see.** Under Advanced you can show, hide, and reorder the story, the path, and
-  the pillar balance. The path always stays on. How many people have started, and the Gems for
-  finishing, stay in the header.
-- **Members of this tier.** If the Journey belongs to a Space, you can pick one membership so
-  only those members can start or buy it. Leave it on Anyone and the other doors still apply.
-- **Who can see it**, the rest of the advanced bits, and a **Danger zone** if you ever need to
-  delete the Journey. Guides and Mentors can mark a Journey **official** and attach it to a Season
-  here.
+- **Phase drip.** How many days between Phase unlocks (weekly by default), so a Circle moving through it together stays in step.
+- **Repeats each year.** After the last Phase it starts again at the first, so people can join any time.
+- **Open dates.** An optional open and close date. Leave them empty and it stays open.
+- **Difficulty, Category, Tags, Minutes a day, and Max people.** How people find it, and what it asks of them.
+- **Circle Meetup and Weekend Gathering.** When and where the group meets, online or in person.
+- **Members of this tier.** If the Journey belongs to a Space, you can pick one membership so only those members can start it. Leave it empty and anyone can.
+- **Discovery page.** Show, hide, and reorder the blocks visitors see before they start.
+- **Danger zone.** Delete the Journey if you ever need to.
+
+Guides and Mentors can also mark a Journey official and attach it to a Season.
 
 ## Publish or keep it
 
-Your Journey starts **private** (just you). When you're ready:
+Your Journey starts private. Under **Who can see it**, choose:
 
+- **Just me.** A draft only you can see.
 - **Anyone with the link.** Share it directly without listing it.
-- **Community library.** Publish it so anyone can take it. Publishing, taking, and remixing are all
-  **free**. When you publish, a Guide gives it a quick look before it lists in the library, so the
-  shelf stays worth browsing. A Guide or Mentor's own Journey lists right away.
+- **Community library.** List it so anyone can find and start it. Listing in the library comes with Crew, or with a Space on a paid plan. A Guide gives a newly listed Journey a quick look first, and it reads **In review** until then.
 
-Building drafts is free and unlimited, so you can work on as many as you like. A free account keeps
-**one Journey published** at a time. Paid plans and Business Spaces raise that.
+In the editor, **Save Draft** takes you to the Journey as members will see it, **Preview** opens it in a new tab, and **Publish** sends it to the community library. Leave **Adopt it for myself** ticked and you are enrolled in your own Journey too.
+
+Building drafts is free and unlimited, so you can work on as many as you like. A free account keeps **one Journey published** at a time. Crew and paid Spaces raise that. The [pricing page](/pricing) shows the room on each.
 
 ## Tell people it exists
 
-Publishing drops you on the **launch** page, because a Journey nobody hears about is a Journey nobody
-takes. It hands you a short series of messages already written, dated off your Journey's start:
+Publishing drops you on the launch page, because a Journey nobody hears about is a Journey nobody takes. **The launch series** hands you a short run of messages already written, dated off your Journey's start:
 
 - **Announce**, the day you publish.
 - **Enrollment open**, once the announcement has landed.
 - **Last call**, a couple of days before you start.
 - **Kickoff**, on day one.
 
-Edit any of them, change when they send, and schedule them one at a time or all at once. You can also
-message the people already enrolled from the same page. Sending on a schedule needs a Space with a
-contact list behind it; without one you still get the drafts to copy and send yourself.
+Edit any of them, change when they send, and schedule them one at a time or all at once. You can also message the people already enrolled from the same page. Sending on a schedule needs a Space with a contact list behind it. Without one you still get the drafts to copy and send yourself.
 
-## Vera checks it for rank
+## Let Vera check it for rank
 
-Getting listed is one thing. Counting toward season **rank** is a higher bar, so **Vera** (the app's
-helper) reads every Journey you publish and checks it against the authoring standard. This is separate
-from the Guide's listing check, and it never holds up sharing. It's only about whether finishing your
-Journey can move someone's rank.
+Getting listed is one thing. Counting toward season rank is a higher bar, so Vera reads a published Journey and checks it against the authoring standard. This is separate from the Guide's listing check, and it never holds up sharing.
 
-You'll see her verdict right in the **settings panel**:
+You'll see her verdict in the settings:
 
-- **Added to the ranked library.** Vera approved it. Finishing it now counts toward rank, the same as
-  a season Journey.
-- **Notes before it can count.** Vera lists what to tighten, with a button to send it back for another
-  look once you've made changes.
+- **Added to the ranked library.** Finishing it now counts toward rank.
+- **Notes before it can count.** Vera lists what to tighten. Make your changes, then tap **Revise and submit for review**.
 
-Either way the Journey stays live the whole time. Vera's notes are coaching to make it stronger, not a
-gate on sharing.
-
-If the Journey belongs to a Space you run, that Space's **Home** page shows how many people
-started and finished your Journeys, and the finish rate. A person who starts again still
-counts as one.
+Either way the Journey stays live the whole time. Vera's notes are coaching to make it stronger, not a gate on sharing.
 
 ## Sell it from a Space
 
-Selling starts at Business, so a Space on **Business, Collective, or Non Profit** can put a price on a Journey from **Sell this Journey** in its settings. Leave
-**Also list it in the main Market** off to sell only from the Journey page and that Space's Shop.
-Turn it on to show the same offer in the Market too. There is still one price and one set of seats.
-If the Space cannot take money yet, that same panel asks the owner to add a payout account. It
-takes about two minutes. You can still set the price while that finishes.
+Selling starts at Business. See [Plans and pricing](/help/spaces/plans-and-pricing). A Journey that belongs to a Space on a selling plan gets **Sell this Journey** in its settings.
 
-People who are not enrolled see the sales page (the story, the outline, the price, and any
-reviews). They see the lessons after they pay or, for a free Journey, after they start it.
-Changing the price keeps those reviews on the Journey. Only people who bought the Journey can
-leave a review.
+1. Enter a price and tap **Put it on sale**.
+2. Leave **Also list it in the main Market** off to sell only from the Journey page and that Space's Shop. Turn it on to show the same offer in the Market too. There is still one price.
+
+If the Space cannot take money yet, the same panel asks the owner to add a payout account. See [Get paid](/help/spaces/get-paid).
+
+People who have not enrolled see the sales page: the story, the outline, and the price. They see the lessons after they pay or, for a free Journey, after they start it.
 
 ## Run it with a Circle
 
-Once it's shared, a Circle **Host** can launch a **Run**: the whole Circle is enrolled and moves
-through the Journey together, Phase by Phase, with shared progress and group Trophies.
+Once it's published, a Circle **Host** can start a **Run** from the Circle: pick the Journey, add a kickoff meetup if you like, and tap **Start the run**. The whole Circle is enrolled and moves through the Journey together, Phase by Phase.
 
 ## The one thing to remember
 
-A Journey is you, shared. Build the path; the people who take it are walking something you laid down.
+A Journey is you, shared. Build the path. The people who take it are walking something you laid down.
+
+## Related
+
+- [Your Journey](/help/the-quest/your-journey)
+- [Season ranks](/help/the-quest/season-ranks)
+- [Practices](/help/getting-started/practices)
+- [Plans and pricing](/help/spaces/plans-and-pricing)

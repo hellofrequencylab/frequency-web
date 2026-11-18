@@ -2,74 +2,62 @@
 title: QR codes & checking in
 description: Scan a Frequency code to earn, and share your own code to connect.
 category: the-quest
-order: 3
+order: 4
 published: 2026-06-04
-updated: 2026-07-12
+updated: 2026-11-18
 audience: member
 featureKeys: [codes]
+keywords: [scan, nfc, tap, claim, my code, referral, invite link, contact card]
 status: published
 ---
 
-Frequency codes turn showing up in the real world into Zaps. Scan one to check
-in and earn; share your own code so people you meet can find you.
+Frequency codes turn showing up in the real world into Zaps. Scan one to check in and earn. Share your own so the people you meet can find you.
 
-## Scanning a code to earn
+## Scan a code to earn
 
-You'll see Frequency QR codes on posters, plaques, and at events.
+You will see Frequency QR codes on posters, plaques, and at events.
 
-- Point your phone's camera at the code. No special app needed.
-- Some plaques and stickers are also **NFC tags**: just tap your phone to them
-  (no camera needed) and the same page opens.
-- You'll land on a check-in page. Tap **Claim** to earn your **Zaps**.
-- A check-in also counts as a **verified practice**: proof you really showed up.
+1. Point your phone's camera at the code. No special app needed. Some plaques and stickers are also NFC tags: tap your phone to one and the same page opens.
+2. You land on a check-in page that says how many Zaps the spot is worth.
+3. Tap **Claim**. If you are signed out, you will be asked to sign in first and brought straight back.
 
-Each code sets its own rules: some you can claim once, some every time you visit,
-and some are limited to the first set number of people. If a code has expired,
-you've already claimed it, or it's reached its limit, the page will tell you.
+A check-in at a Space's door opens that Space's own page, with the check-in at the top.
 
-Some codes are **location-aware**: you can only claim them while you're actually
-there. Your phone may ask to share your location when you tap **Claim**; if you're
-too far away (or don't share it), the page lets you know.
+## When a claim does not go through
+
+Each code sets its own rules, and the page tells you plainly what happened:
+
+- **Already claimed.** Some codes can only be claimed once.
+- **Reached its limit.** Some are for the first set number of people.
+- **Not active.** A code can have a start date or an end date.
+- **Not close enough.** Some codes only work while you are actually there. Your phone may ask to share your location when you tap **Claim**. If you are too far away, or you do not share it, the page lets you know.
 
 ## Your personal code
 
-Open **My code** (from your account menu) to see your own QR. You have **one**
-personal code, and it does double duty.
+Open **You** in the header and choose **My Code**. You have one personal code, and it does double duty.
 
-- **Connect:** it points to your profile, so anyone who scans it can send you a
-  friend request or a message.
-- **Invite:** anyone who scans it and then joins Frequency is **credited to you**.
-  It's your referral code too.
-- **Make it yours:** tap **Customize** to restyle it (colors, shape, logo), and
-  **Download** to save it as a PNG or SVG, handy for a wallpaper, a name tag, or a
-  slide when you're hosting.
-- **Contact card:** turn on **Contact card** to let people tap **Save contact** when
-  they scan you, and it saves a vCard to their phone. You choose exactly what it
-  shares (your photo, and optionally an email, phone, title, or website); nothing
-  you don't fill in is included.
+- **Connect.** People scan it to find you and connect.
+- **Invite.** Anyone who scans it and then joins Frequency is credited to you. The page shows how many have joined through your code.
+- **Make it yours.** Tap **Customize** to restyle it, then **PNG** or **SVG** to save it. Handy for a wallpaper, a name tag, or a slide when you are hosting.
+- **Contact card.** Under **Contact card**, turn on the "Save contact" option to let people save you to their phone when they scan. You choose what it shares: your photo, and optionally an email, phone, title, organization, or website. Only the fields you fill in are included.
 
-## Space and page codes
+The same page lets you make up to three extra codes that point at a Circle or event you are promoting.
 
-People are not the only thing with a code. A Space, event, Journey, and other
-pages each have their own. Open the page and use its **QR** action to share that
-page's code: whoever scans it lands on that page, the code carries the page's own
-image, and anyone who joins Frequency through your share is credited to you. A
-business Space can also offer a **Save contact** card, so a scan saves the
-business to your phone.
+## Codes for Spaces, events, and other pages
+
+People are not the only thing with a code. Open a Space or an event and use its share button to show that page's QR code. Whoever scans it lands on that page, and anyone who joins Frequency through your share is credited to you.
 
 ## Partner codes
 
-Some codes belong to local **partners**. Scanning one opens that partner's
-current member offer at the counter. Partner codes reward you with the offer
-rather than a verified practice.
+Some codes belong to local partners. Claiming one can unlock that partner's current member offer, which shows on the page right after you claim. See [Partners](/help/membership/partners).
 
-## Scavenger hunts & campaigns
+## Hunts
 
-Sometimes a set of codes forms a **campaign**: a scavenger hunt. Scan the codes
-in the set (all of them, or any few, depending on the hunt) and you complete the
-challenge for a bonus Zap reward.
+Hunts, where a set of codes around town adds up to one challenge, are coming soon.
 
-- You'll find these alongside your other challenges under **The Quest → Challenges**,
-  with a progress bar showing how many you've scanned.
-- Each code counts once, so revisiting the same one won't move the bar. Go find
-  the next.
+## Related
+
+- [Zaps and Gems explained](/help/the-quest/zaps-and-gems)
+- [Save someone by scanning their code](/help/connecting/save-by-scanning)
+- [Tap to meet](/help/connecting/tap-to-meet)
+- [Regulars](/help/getting-started/regulars)

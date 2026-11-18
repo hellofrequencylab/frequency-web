@@ -2,70 +2,72 @@
 title: Streaks
 description: How your daily practice streak works, the reserve that forgives a slip, the rest you can plan, and the rewards for showing up.
 category: the-quest
-order: 5
+order: 3
 published: 2026-06-06
-updated: 2026-06-18
+updated: 2026-11-18
 audience: member
 featureKeys: [practices, gamification]
+keywords: [daily streak, lost my streak, freeze, missed a day, pause, rest, reserve, broke my streak]
 status: published
 ---
 
-Your **streak** is the number of days in a row you’ve logged a practice. It’s the
-heartbeat of Frequency (one small thing, every day) and it shows up front and
-centre on your home screen. One missed day won’t break it, and a planned rest
-doesn’t count against you.
+Your streak is the number of days in a row you have logged a practice. It is built to survive a normal life: one missed day will not break it, and a planned rest does not count against you.
+
+## Find it
+
+Open **The Quest** in the header, choose **Leaderboard**, and scroll to **Consistency**. You will see your current streak, your best, your reserve, and the next badge. **The Vault** shows the short version: your streak, your best, and how many freezes you have left.
 
 ## How it grows
 
-Log **any** practice and today counts. Do it again tomorrow and your streak ticks
-up. You only need one practice a day to keep it. Logging more is great, but it
-won’t double-count.
+Log any practice and today counts. Do it again tomorrow and the streak ticks up. One practice a day is all it takes. Logging more is great, it just does not count twice.
 
-A new badge lands at each checkpoint (**3, 7, 14, 30, 60, 100 and 365 days**) and
-each one pays **Zaps** (which drive your season rank). The further you go, the bigger
-the reward.
+## Badges along the way
 
-## Your reserve (one slip won’t break it)
+Each checkpoint lands a badge and pays Zaps the first time you reach it. The further you go, the bigger the reward.
 
-The streak is built to survive a normal life. You bank a small **reserve** of grace
-days (up to two), and if you miss a single day a reserve day bridges it the next time
-you log. So one slip never zeroes your streak.
+- **Spark**, 3 days: 10 Zaps
+- **Week**, 7 days: 25 Zaps
+- **Fortnight**, 14 days: 40 Zaps
+- **Month**, 30 days: 75 Zaps
+- **Roots**, 60 days: 120 Zaps
+- **Century**, 100 days: 200 Zaps
+- **Year**, 365 days: 500 Zaps
 
-The rule is simple: **never miss twice.** Miss two days in a row and the streak starts
-fresh from one. Your best-ever streak stays on record either way, so nothing you built
-disappears.
+## Your reserve: one slip will not break it
 
-You bank a reserve day two ways:
+You can bank up to two reserve days, also called freezes. Miss a single day and a reserve day bridges it the next time you log.
 
-- Reach the **Week, Month, Century and Year** badges.
-- Buy one with **Gems** in the Vault, for the weeks you know are going to be busy.
+The rule is simple: never miss twice. Miss two days in a row and the streak starts fresh. Your best streak stays on record either way.
 
-## Resting (when you’re planning time off)
+You bank a reserve day three ways:
 
-Going away, sick, or just need a break? Open the **Leaderboard** (it lives in **The
-Vault**) and, under your streak, **set a rest**. The days you’re resting don’t count
-against the streak, so a planned break isn’t a miss. Rest runs up to two weeks; end it
-early whenever you’re ready, and log one practice to pick the streak back up right where
-it was.
+- Reach the Week, Month, Century, or Year badge.
+- Earn five Full Day bonuses on a Journey.
+- Buy one with Gems in the [Vault Store](/help/membership/the-gem-store), for the weeks you know will be busy.
 
-## Picking it back up
+## Rest when you are planning time off
 
-If the streak does reset, there’s no lost-streak lecture. The page reads **pick it
-back up today**, your best-ever streak is still there, and one practice starts day one
-again. If you’ve been away a week or more, your first practice back also pays a small
-**Welcome Back** bonus.
+Going away, sick, or just need a break?
 
-## Keeping it going
+1. Open the **Leaderboard** and scroll to **Consistency**.
+2. Tap **Rest a week**.
+3. When you are ready, tap **End rest**, or just let the week run out.
 
-If you haven’t logged yet today, your home screen notes that today isn’t logged yet so
-you don’t miss it by accident. Log one practice and you’re set until tomorrow.
+The days you are resting do not count against the streak, so a planned break is not a miss. Log a practice afterward and you pick up where you were.
 
-You can see your current streak, your best-ever streak, your reserve and the next
-badge to chase on the **Leaderboard**, in the consistency section under the shared goal.
+## Pick it back up
 
-## Practicing together
+If the streak does reset, there is no lecture. The page reads "Pick it back up today. Your best is still here." One practice starts day one again.
 
-A streak is yours, but it is better with company. Walk a Journey alongside the people in
-your Circle, practice the same things over the same weeks, and do your Expression
-Challenges together at a gathering. Nobody is ranked against their Circle. Showing up
-together is the point.
+Been away a week or more? Your first practice back also pays a small Welcome Back bonus in Zaps.
+
+## Practice together
+
+A streak is yours, but it is better with company. If a Circle mate has a streak going and has not logged yet today, the Consistency section may show them under "Mates on the line" with a one-tap nudge.
+
+## Related
+
+- [Mindless, the practice timer](/help/the-quest/on-air)
+- [The leaderboard](/help/the-quest/leaderboard)
+- [What if I miss a week?](/help/getting-started/what-if-i-miss-a-week)
+- [Achievements & badges](/help/the-quest/achievements)
