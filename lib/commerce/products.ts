@@ -8,6 +8,7 @@ import { listReadFailClosed } from '@/lib/discover'
 import { ENTITY_ID } from '@/lib/finance/record'
 import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus, MarketGroup, ServiceConfig, ProductCondition } from './types'
 import { kindsForGroup } from './types'
+import { categoryFacetValues, priceBandBounds, sellerOwnerKind, type MarketFacets } from './market-facets'
 
 /** Drop undefined keys from a ServiceConfig so a partial edit never writes `undefined` into the JSON
  *  (and an all-undefined config collapses to null, meaning "no policy"). Copies only the KNOWN
@@ -265,7 +266,7 @@ export async function productOwnerSpaceId(id: string): Promise<string | null> {
  *  plain commerce_products query. Gated on market_published (NOT status alone), so a Space's active-in-
  *  its-own-Shop listing only reaches the global Market when the owner opts in. */
 export async function listMarketListings(
-  opts: { group?: MarketGroup; q?: string; limit?: number; offset?: number } = {},
+  opts: { group?: MarketGroup; q?: string; limit?: number; offset?: number; facets?: MarketFacets } = {},
 ): Promise<CommerceProduct[]> {
   const limit = Math.min(Math.max(opts.limit ?? 40, 1), 100)
   // Same failure contract as listShopProducts (LIVE-331); the thunk builds a fresh query per attempt.
@@ -279,6 +280,21 @@ export async function listMarketListings(
       .order('created_at', { ascending: false })
     if (opts.group) query = query.in('product_kind', kindsForGroup(opts.group))
     if (opts.q?.trim()) query = query.ilike('title', `%${opts.q.trim()}%`)
+    // Market facets (DEF-ETSY P4). The page only passes them behind the cart switch; the in-memory twin
+    // for the event projections is itemMatchesMarketFacets in lib/commerce/market-facets.ts.
+    const f = opts.facets
+    if (f) {
+      const categories = categoryFacetValues(f.category)
+      if (categories.length > 0) query = query.in('category', categories)
+      const band = priceBandBounds(f.price)
+      if (band) {
+        query = query.gte('price_cents', band.min)
+        if (band.max !== null) query = query.lt('price_cents', band.max)
+      }
+      if (f.condition) query = query.eq('condition', f.condition)
+      const ownerKind = sellerOwnerKind(f.seller)
+      if (ownerKind) query = query.eq('owner_kind', ownerKind)
+    }
     // A caller that names an offset is walking pages (app/sitemap.ts, SCAN-1262). See `pageBounds`.
     if (opts.offset === undefined) return query.limit(limit)
     return query.order('id', { ascending: false }).range(...pageBounds(limit, opts.offset))
