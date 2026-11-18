@@ -93,6 +93,25 @@ export async function getJourneyOffer(planId: string): Promise<JourneyOffer | nu
   }
 }
 
+/** Why a Journey may not be deleted, or null when it may (JRN-009). Deleting a plan cascades to its
+ *  product (commerce_products.journey_plan_id on delete cascade) and every enrolment, so a Journey
+ *  that is on sale, or that anyone paid for, would take the buyers' program and the product's
+ *  reviews with it. Those Journeys are taken off sale and set to private instead. FAIL-CLOSED: a
+ *  failed read refuses, since a delete cannot be undone. */
+export async function journeyDeleteBlocker(planId: string): Promise<string | null> {
+  const admin = createAdminClient()
+  const [offers, paid] = await Promise.all([
+    admin.from('commerce_products').select('id').eq('journey_plan_id', planId).neq('status', 'archived').limit(1),
+    admin.from('journey_enrollments').select('id').eq('plan_id', planId).not('order_id', 'is', null).limit(1),
+  ])
+  if (offers.error || paid.error) return 'Could not check whether people paid for this Journey. Try again.'
+  if ((offers.data ?? []).length > 0) return 'This Journey is on sale. Take it off sale first.'
+  if ((paid.data ?? []).length > 0) {
+    return 'People paid for this Journey, so it cannot be deleted. Set it to private to hide it; buyers keep their access.'
+  }
+  return null
+}
+
 /** Slugs for Journey plan ids, one round trip. Used so Market and Shop cards can point at the
  *  sales page without each listing file taking its own admin-client import. */
 export async function journeySlugsByPlanId(planIds: string[]): Promise<Map<string, string>> {
