@@ -1,12 +1,14 @@
 // /courses/business-of-community: the sales page for The Business of Community 101. Public and
-// indexable. An EDITABLE_PAGES slug: an operator's published document wins, then the code template
-// (lib/page-editor/templates/business-of-community.ts), the LAST rung. templates.test.ts asserts the
-// template renders under the current block config, so the fall to EMPTY below cannot happen quietly.
+// indexable. An EDITABLE_PAGES slug, on the /the-community pattern (ADR-1880): an operator's published
+// document wins and is drawn by <BlockRender>; until one exists the body is the Frequency kit page
+// (components/frequency/site/pages/courses/business-of-community.tsx), the approved design (owner
+// 2026-11-18). The code template (lib/page-editor/templates/business-of-community.ts) stays the editor's
+// starting document. templates.test.ts asserts it renders under the current block config.
 //
 // SCHEMA, and who emits each node:
-//   · Course      here, from the course's facts (free, four weekly sessions of about an hour).
-//   · WebPage     <BlockDocJsonLd>, from this route's own title and description.
-//   · FAQPage     the document's Accordion block, from the questions a visitor can read.
+//   · Course      here, from the course's facts (free, four weekly 90-minute live sessions, run several times a year).
+//   · WebPage     <BlockDocJsonLd>, from this route's own title and description (a published document only).
+//   · FAQPage     the kit page's questions (BOC_FAQ), or a published document's Accordion block.
 //   · Breadcrumb  here: a block cannot know the route's place in the site.
 //
 // ⚠️ Do NOT add a coded section to this file. scripts/render-path-bodies.txt records
@@ -17,10 +19,10 @@ import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
-import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
-import { BOC_JOURNEY_PATH } from '@/lib/page-editor/templates/business-of-community'
+import { isWellFormed } from '@/lib/page-editor/templates'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, courseSchema } from '@/lib/jsonld'
+import { FrequencyBusinessOfCommunity } from '@/components/frequency/site/pages/courses/business-of-community'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 
 export const revalidate = 3600
@@ -28,10 +30,10 @@ export const revalidate = 3600
 const SLUG = 'business-of-community'
 const PATH = '/courses/business-of-community'
 const COURSE_NAME = 'The Business of Community 101'
-const TITLE = 'The Business of Community 101: a free course'
+const TITLE = 'The Business of Community 101: free core training'
 const DESCRIPTION =
-  'A free four-week course for people who already gather others. Know what a night costs you, what to charge, who came back, and who to text next week.'
-const IMAGE = '/sites/new-world/photos/backyard-class.webp'
+  'Frequency’s free four-week live workshop for anyone who gathers people. Four simple meetings on the PULSE rhythm, live on Zoom and run several times a year.'
+const IMAGE = '/brand/frequency/photos/boc-circle-dusk.jpg'
 const PUBLISHED = '2026-11-17'
 
 export function generateMetadata(): Metadata {
@@ -52,14 +54,10 @@ export function generateMetadata(): Metadata {
   }
 }
 
-// A last-resort empty document so `data` is always a Data. Unreachable while the template renders.
-const EMPTY: Data = { content: [], root: {} }
-
 export default async function BusinessOfCommunityPage() {
   const page = await getPublishedPage(SLUG)
   const published = page?.doc ?? null
-  const template = getTemplate(SLUG)
-  const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
+  const data: Data | null = isWellFormed(published) ? published : null
   return (
     <>
       <JsonLd
@@ -74,22 +72,27 @@ export default async function BusinessOfCommunityPage() {
             path: PATH,
             image: IMAGE,
             free: true,
-            schedule: { duration: 'PT1H', repeatFrequency: 'Weekly', repeatCount: 4 },
-            sameAs: BOC_JOURNEY_PATH,
+            schedule: { duration: 'PT1H30M', repeatFrequency: 'Weekly', repeatCount: 4 },
           }),
         ]}
       />
-      <BlockDocJsonLd
-        data={data}
-        path={PATH}
-        title={TITLE}
-        description={DESCRIPTION}
-        published={PUBLISHED}
-        updated={latestDay(PUBLISHED, page?.published_at)}
-        image={IMAGE}
-        schemaType="WebPage"
-      />
-      <BlockRender config={config} data={data} />
+      {data ? (
+        <>
+          <BlockDocJsonLd
+            data={data}
+            path={PATH}
+            title={TITLE}
+            description={DESCRIPTION}
+            published={PUBLISHED}
+            updated={latestDay(PUBLISHED, page?.published_at)}
+            image={IMAGE}
+            schemaType="WebPage"
+          />
+          <BlockRender config={config} data={data} />
+        </>
+      ) : (
+        <FrequencyBusinessOfCommunity />
+      )}
     </>
   )
 }

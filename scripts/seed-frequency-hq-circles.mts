@@ -68,31 +68,51 @@ export const DECEMBER_START: SeedCircle = {
   id: uuidFrom('circle:creator-lab-december-start'),
   slug: 'creator-lab-december-start',
   name: 'Creator Lab · December Start',
+  // RETIRED 2026-11-17 (owner: "Remove the self paced course."). The workshop runs several times a year; the January Run
+  // Circle replaces the monthly start. Kept unlisted so nothing is deleted.
   about:
-    'Everyone starting The Business of Community this month moves through it together. One week at a time, a short practice, and a thread to share what you tried.',
+    'Retired. The Business of Community is now a live workshop that runs several times a year: join the January Run at /circles/business-of-community-january-2027.',
   hostId: FREQUENCY_ID,
   memberCap: 50,
   access: 'open',
-  unlisted: false,
+  unlisted: true,
   meetup: { text: 'Online · one week at a time', length: '' },
 }
 
 export const PILOT_COHORT: SeedCircle = {
   id: uuidFrom('circle:business-of-community-pilot'),
   slug: 'business-of-community-pilot',
-  name: 'The Business of Community · Pilot Cohort',
+  name: 'The Business of Community · Pilot Run',
+  // RETIRED 2026-11-17 (owner: "anybody can join the workshop"). The four live sessions are now public HQ events, free
+  // for anyone. The circle stays, unlisted and invite-only, so nothing is deleted (hide, then redirect, then delete).
   about:
-    'The first live cohort of The Business of Community 101: 8 to 12 Space owners, four weekly 2.5-hour Zoom workshops, ending in the Certified capstone.',
+    'Retired. The Business of Community live workshop is now open to everyone: find it on the Frequency calendar.',
   hostId: DANIEL_ID,
   memberCap: 12,
   // Invite-only door (lib/circles/visibility.ts: 'invite' refuses a self-join, 'invite-only').
   // Kept LISTED so the name, host and about show in discovery while the roster and posts stay shut.
   access: 'invite',
-  unlisted: false,
-  meetup: { text: 'Thursdays · 10 AM Pacific · 2.5 hours', length: '2.5 hours' },
+  unlisted: true,
+  meetup: { text: 'Retired', length: '' },
 }
 
-export const CIRCLES: SeedCircle[] = [DECEMBER_START, PILOT_COHORT]
+// Business Hours (owner 2026-11-17: "Wednesday morning, in a membership-based Circle cohort"): its own Circle, so the
+// cohort has a roster, a wall and a home between calls. Invite-only: Spaces on the Business plan are added by hand
+// while it runs as a pilot. Listed, so the name and rhythm show in discovery while the roster and posts stay shut.
+export const BUSINESS_HOURS_CIRCLE: SeedCircle = {
+  id: uuidFrom('circle:business-hours'),
+  slug: 'business-hours',
+  name: 'Business Hours',
+  about:
+    'A weekly hour for Spaces on the Business plan, Wednesday mornings on Zoom, run on PULSE. Bring one number and one stuck thing. Members only: Business plan owners are added to the Circle.',
+  hostId: DANIEL_ID,
+  memberCap: 30,
+  access: 'invite',
+  unlisted: false,
+  meetup: { text: 'Wednesdays · 10 AM Pacific · 1 hour', length: '1 hour' },
+}
+
+export const CIRCLES: SeedCircle[] = [DECEMBER_START, PILOT_COHORT, BUSINESS_HOURS_CIRCLE]
 
 /** Both house profiles are seated as hosts of both circles (createBlankCircleDraft's membership shape). */
 export const CIRCLE_HOSTS = [FREQUENCY_ID, DANIEL_ID]
@@ -110,13 +130,18 @@ export interface SeedEvent {
   circleId: string | null
   visibility: 'public' | 'unlisted' | 'circle_only' | 'private'
   recurrence?: { type: 'weekly'; rule: string }
+  /** The course this session belongs to (events.journey_id, by Journey slug) and its Run (details.runKey).
+   *  Saving a seat for one session of a Run saves it for all of them (lib/events/run-series.ts). */
+  run?: { journeySlug: string; key: string }
 }
 
-export const BUSINESS_HOURS_ANCHOR = '2026-11-24' // a Tuesday
-export const BUSINESS_HOURS_RULE = 'FREQ=WEEKLY;BYDAY=TU'
-export const BUSINESS_HOURS_THROUGH = '2027-02-23'
+export const BUSINESS_HOURS_ANCHOR = '2027-01-06' // a Wednesday, launch week
+export const BUSINESS_HOURS_RULE = 'FREQ=WEEKLY;BYDAY=WE'
+export const BUSINESS_HOURS_THROUGH = '2027-03-31'
+/** The first series (Tuesdays from 2026-11-24, owner brief before 2026-11-17). Cancelled, never deleted. */
+export const RETIRED_BUSINESS_HOURS_SLUG = 'hq-business-hours-2026-11-24'
 
-/** Every Tuesday after the anchor through BUSINESS_HOURS_THROUGH (the anchor itself is its own row,
+/** Every Wednesday after the anchor through BUSINESS_HOURS_THROUGH (the anchor itself is its own row,
  *  as generateOccurrencesForAnchor mints them with includeAnchor false). */
 export function businessHoursOccurrences(): string[] {
   const out: string[] = []
@@ -133,38 +158,44 @@ export function businessHoursOccurrences(): string[] {
 export const BUSINESS_HOURS: SeedEvent = {
   slug: `hq-business-hours-${BUSINESS_HOURS_ANCHOR}`,
   title: 'Business Hours',
-  // The owner's words, verbatim. The Zoom note rides details.specialInstructions (the event's notes field).
+  // The owner's agenda, put on PULSE (owner rework 2026-11-17). The Zoom note rides details.specialInstructions.
   description:
-    "A weekly hour for paid Space owners. Bring one number and one stuck thing. The room (5 min): who's new, who shipped. Commitments (10 min): last week's if-then, read back out loud. Hot seat (20 min): one operator, a real problem, their own screen. Work block (15 min): everyone does the one thing. Commit (10 min): each person writes and says one if-then for next week. Same hour every week, on Zoom. Paid Space owners are invited by hand while we pilot it.",
+    "A weekly hour for Spaces on the Business plan, run on PULSE. Bring one number and one stuck thing. Presence (5 min): arrive, breathe, who's new. Unite (10 min): last week's commitment read back out loud, and your number: how many came back. Lead (30 min): the hot seat, one owner, one real problem, their own screen. Settle (5 min): quiet, write your next step. Exhale (10 min): each person says one commitment for next week. Same hour every Wednesday, on Zoom, for the members of the Business Hours Circle.",
   date: BUSINESS_HOURS_ANCHOR,
   start: '10:00',
   end: '11:00',
-  hostId: FREQUENCY_ID,
-  circleId: null,
-  // 'unlisted': link-reachable, never broadcast to the calendar or discovery. circle_only is not
-  // valid on a Space event (coerceVisibilityForScope steps it down to unlisted anyway), and
-  // 'private' is the guest-card / host-only shape (lib/events/guests.ts), which would hide it from
-  // the very owners who get the link by hand.
-  visibility: 'unlisted',
+  hostId: DANIEL_ID,
+  // A circle event of the Business Hours Circle: only its members see it (the RLS circle_only branch).
+  circleId: BUSINESS_HOURS_CIRCLE.id,
+  visibility: 'circle_only',
   recurrence: { type: 'weekly', rule: BUSINESS_HOURS_RULE },
 }
 
-export const PILOT_SESSIONS: SeedEvent[] = [
-  { n: 1, name: 'The Engine', date: '2026-12-03' },
-  { n: 2, name: 'The Container', date: '2026-12-10' },
-  { n: 3, name: 'The Gathering', date: '2026-12-17' },
-  { n: 4, name: 'The Exchange', date: '2027-01-07' },
-].map(({ n, name, date }) => ({
+// The live workshop (owner 2026-11-17: "anybody can join the workshop"; moved into the January launch month the same
+// night): four public HQ events, free, 90 minutes on PULSE, Thursdays January 7 to 28, 2027.
+// Slugs keep their pilot names so the rows (and any RSVPs and journey links) carry over.
+// Week titles are the owner's (2026-11-18): The Engine, The Container, The Gathering, The Exchange; the meeting is the subtitle.
+const WORKSHOP_WEEKS = [
+  { n: 1, name: 'The Engine', meeting: 'The weekly sit-down', date: '2027-01-07' },
+  { n: 2, name: 'The Container', meeting: 'The opening', date: '2027-01-14' },
+  { n: 3, name: 'The Gathering', meeting: 'The full gathering', date: '2027-01-21' },
+  { n: 4, name: 'The Exchange', meeting: 'The money hour', date: '2027-01-28' },
+]
+
+export const PILOT_SESSIONS: SeedEvent[] = WORKSHOP_WEEKS.map(({ n, name, meeting, date }) => ({
   slug: `business-of-community-pilot-session-${n}`,
-  title: `The Business of Community · Week ${n} · ${name}`,
-  description: `Week ${n} of 4 · The Business of Community 101 pilot cohort · a 2.5-hour live workshop on Zoom.`,
+  // "Live series" in the title: webinar programs named as a series draw more sign-ups and better attendance.
+  title: `The Business of Community · Live series · Week ${n} · ${name}`,
+  description: `Week ${n} of 4 of The Business of Community, Frequency's free live workshop, on Zoom. ${name}: ${meeting.toLowerCase()}. Anyone can join. 90 minutes on PULSE: Presence (the idea and a story), Unite (check-ins in small groups, starting from your report backs), Lead (learn and practice ${meeting.toLowerCase()} together), Settle (how to stay steady with it), Exhale (one commitment each, out loud). Read the week's overview and lesson before the session.`,
   date,
   start: '10:00',
-  end: '12:30',
+  end: '11:30',
   hostId: DANIEL_ID,
-  circleId: PILOT_COHORT.id,
-  // Only the cohort sees its calls (the RLS circle_only branch keys on scope_type 'circle').
-  visibility: 'circle_only' as const,
+  // A Space event of HQ, public on the calendar.
+  circleId: null,
+  visibility: 'public' as const,
+  // One Run: the four sessions are one seat, and the course page lists them (lib/courses/course-context.ts).
+  run: { journeySlug: 'the-business-of-community-101', key: 'boc-2027-01' },
 }))
 
 // ── SQL ────────────────────────────────────────────────────────────────────────────────────────
@@ -197,9 +228,10 @@ export function sqlEventUpsert(e: SeedEvent): string {
   const scopeId = e.circleId ? q(e.circleId) : '(select region_id from _hq)'
   const scopeType = e.circleId ? 'circle' : 'public'
   const scopeCircle = e.circleId ? q(e.circleId) : 'null'
-  return `insert into events (slug, title, description, host_id, scope_id, scope_type, scope_circle_id, starts_at, ends_at, time_zone, location, details, visibility, status, published_at, join_mode, category, energy_tag, attendance_mode, online_url, source, space_id, host_space_id, recurrence_type, recurrence_rule, is_cancelled)
-values (${q(e.slug)}, ${q(e.title)}, ${q(e.description)}, ${q(e.hostId)}, ${scopeId}, ${q(scopeType)}, ${scopeCircle}, ${pt(e.date, e.start)}, ${pt(e.date, e.end)}, ${q(TZ)}, 'Online · Zoom', ${qj({ specialInstructions: ZOOM_NOTE })}, ${q(e.visibility)}, 'published', now(), 'rsvp', 'learning', null, 'online', null, 'manual', ${q(SPACE_ID)}, ${q(SPACE_ID)}, ${q(e.recurrence?.type ?? 'none')}, ${q(e.recurrence?.rule ?? null)}, false)
-on conflict (slug) do update set title = excluded.title, description = excluded.description, host_id = excluded.host_id, scope_id = excluded.scope_id, scope_type = excluded.scope_type, scope_circle_id = excluded.scope_circle_id, starts_at = excluded.starts_at, ends_at = excluded.ends_at, time_zone = excluded.time_zone, location = excluded.location, details = events.details || excluded.details, visibility = excluded.visibility, status = excluded.status, published_at = coalesce(events.published_at, excluded.published_at), join_mode = excluded.join_mode, category = excluded.category, attendance_mode = excluded.attendance_mode, space_id = excluded.space_id, host_space_id = excluded.host_space_id, recurrence_type = excluded.recurrence_type, recurrence_rule = excluded.recurrence_rule
+  const journey = e.run ? `(select id from journey_plans where slug = ${q(e.run.journeySlug)})` : 'null'
+  return `insert into events (slug, title, description, host_id, scope_id, scope_type, scope_circle_id, starts_at, ends_at, time_zone, location, details, visibility, status, published_at, join_mode, category, energy_tag, attendance_mode, online_url, source, space_id, host_space_id, recurrence_type, recurrence_rule, is_cancelled, journey_id)
+values (${q(e.slug)}, ${q(e.title)}, ${q(e.description)}, ${q(e.hostId)}, ${scopeId}, ${q(scopeType)}, ${scopeCircle}, ${pt(e.date, e.start)}, ${pt(e.date, e.end)}, ${q(TZ)}, 'Online · Zoom', ${qj({ specialInstructions: ZOOM_NOTE, ...(e.run ? { runKey: e.run.key } : {}) })}, ${q(e.visibility)}, 'published', now(), 'rsvp', 'learning', null, 'online', null, 'manual', ${q(SPACE_ID)}, ${q(SPACE_ID)}, ${q(e.recurrence?.type ?? 'none')}, ${q(e.recurrence?.rule ?? null)}, false, ${journey})
+on conflict (slug) do update set title = excluded.title, description = excluded.description, host_id = excluded.host_id, scope_id = excluded.scope_id, scope_type = excluded.scope_type, scope_circle_id = excluded.scope_circle_id, starts_at = excluded.starts_at, ends_at = excluded.ends_at, time_zone = excluded.time_zone, location = excluded.location, details = events.details || excluded.details, visibility = excluded.visibility, status = excluded.status, published_at = coalesce(events.published_at, excluded.published_at), join_mode = excluded.join_mode, category = excluded.category, attendance_mode = excluded.attendance_mode, space_id = excluded.space_id, host_space_id = excluded.host_space_id, recurrence_type = excluded.recurrence_type, recurrence_rule = excluded.recurrence_rule, journey_id = coalesce(excluded.journey_id, events.journey_id)
 where events.space_id = ${q(SPACE_ID)};`
 }
 
@@ -208,12 +240,12 @@ where events.space_id = ${q(SPACE_ID)};`
 export function sqlOccurrencesInsert(anchor: SeedEvent, days: string[]): string {
   return [
     'insert into events (slug, parent_event_id, starts_at, ends_at, recurrence_type, recurrence_until, recurrence_rule, is_cancelled,',
-    '  title, description, host_id, scope_id, scope_type, location, visibility, status, published_at, price_cents, currency, capacity, venmo_handle, join_mode,',
+    '  title, description, host_id, scope_id, scope_type, scope_circle_id, location, visibility, status, published_at, price_cents, currency, capacity, venmo_handle, join_mode,',
     '  category, energy_tag, time_zone, cover_image_path, gallery_image_paths, poster_path, theme, details, space_id, host_space_id, domain_id,',
     '  attendance_mode, online_url, venue_name, street, city, region, country, postal_code, geog, hide_address, journey_id, source, is_demo,',
     '  posted_by_profile_id, organizer_name, organizer_contact)',
     `select a.slug || '-' || d.day, a.id, (d.day || ' ${anchor.start}+00')::timestamptz, (d.day || ' ${anchor.end}+00')::timestamptz, 'none', null, null, false,`,
-    '  a.title, a.description, a.host_id, a.scope_id, a.scope_type, a.location, a.visibility, a.status, a.published_at, a.price_cents, a.currency, a.capacity, a.venmo_handle, a.join_mode,',
+    '  a.title, a.description, a.host_id, a.scope_id, a.scope_type, a.scope_circle_id, a.location, a.visibility, a.status, a.published_at, a.price_cents, a.currency, a.capacity, a.venmo_handle, a.join_mode,',
     '  a.category, a.energy_tag, a.time_zone, a.cover_image_path, a.gallery_image_paths, a.poster_path, a.theme, a.details, a.space_id, a.host_space_id, a.domain_id,',
     '  a.attendance_mode, a.online_url, a.venue_name, a.street, a.city, a.region, a.country, a.postal_code, a.geog, a.hide_address, a.journey_id, a.source, a.is_demo,',
     '  a.posted_by_profile_id, a.organizer_name, a.organizer_contact',
@@ -228,7 +260,7 @@ export function renderCirclesSql(): string {
   const L: string[] = []
   const p = (...lines: string[]) => L.push(...lines)
   p(
-    '-- Frequency HQ: Creator Lab circles, Business Hours and the pilot cohort calls.',
+    '-- Frequency HQ: Creator Lab circles, Business Hours and The Business of Community live workshop.',
     '-- GENERATED from scripts/seed-frequency-hq-circles.mts. Edit the .mts, then regenerate.',
     '-- ONE transaction. Idempotent: deterministic ids / slugs, upserts guarded to HQ rows only.',
     '-- No video link is set (online_url null): the Zoom link goes to registered members by hand.',
@@ -258,30 +290,30 @@ export function renderCirclesSql(): string {
     '  end if;',
     'end $guard$;',
     '',
-    '-- 1. Circles: topic circles under HQ (ADR-1938), online, active. December Start is open to anyone;',
-    '--    the Pilot Cohort is invite-only (access invite) but listed. Meetup lines on circle_profiles.',
+    '-- 1. Circles: topic circles under HQ (ADR-1938), online, active. December Start is retired and unlisted;',
+    '--    the Pilot Run is retired: invite-only and unlisted. Meetup lines on circle_profiles.',
     ...CIRCLES.map(sqlCircleUpsert),
     '',
     '-- 2. Hosts: @frequency and @danieltyack seated in both circles (createBlankCircleDraft shape).',
     '--    member_count follows from trg_memberships_member_count; it is not written by hand.',
     ...CIRCLES.map(sqlHostMemberships),
     '',
-    `-- 3. Business Hours: a Space event of HQ, weekly Tuesdays 10:00 to 11:00 PT (${BUSINESS_HOURS_RULE}),`,
-    `--    anchor ${BUSINESS_HOURS_ANCHOR}, unlisted (paid owners get the link by hand).`,
+    `-- 3. Business Hours: a circle event of the Business Hours Circle, weekly Wednesdays 10:00 to 11:00 PT (${BUSINESS_HOURS_RULE}),`,
+    `--    anchor ${BUSINESS_HOURS_ANCHOR}, circle_only. The first Tuesday series is cancelled (kept, never deleted).`,
+    `update events set is_cancelled = true where space_id = ${q(SPACE_ID)} and (slug = ${q(RETIRED_BUSINESS_HOURS_SLUG)} or slug like ${q(RETIRED_BUSINESS_HOURS_SLUG + '-%')});`,
     sqlEventUpsert(BUSINESS_HOURS),
     '',
-    `--    Occurrences ${days[0]} through ${days[days.length - 1]} (${days.length} Tuesdays), as occurrenceRow mints them.`,
+    `--    Occurrences ${days[0]} through ${days[days.length - 1]} (${days.length} Wednesdays), as occurrenceRow mints them.`,
     '--    The daily cron rolls the window forward from here and dedupes on the per-day slug.',
     sqlOccurrencesInsert(BUSINESS_HOURS, days),
     '',
-    '-- 4. The four pilot calls, circle events of the Pilot Cohort (livePlacementPatch shape),',
-    '--    Thursdays 10:00 AM to 12:30 PM PT (2.5 hours), circle_only.',
+    '-- 4. The live workshop: four public Space events of HQ, Thursdays Jan 7 to 28, 2027, 10:00 to 11:30 AM PT, free for anyone.',
     ...PILOT_SESSIONS.map(sqlEventUpsert),
     '',
     `-- VERIFY: select slug, type, access, unlisted, member_cap, member_count, host_id from circles where space_id = '${SPACE_ID}' order by slug;`,
-    '-- EXPECT: business-of-community-pilot | online | invite | f | 12 | 2   and   creator-lab-december-start | online | open | f | 50 | 2',
-    `-- VERIFY: select count(*) total, count(*) filter (where recurrence_type <> 'none') anchors, count(*) filter (where parent_event_id is not null) occurrences, count(*) filter (where scope_type = 'circle' and scope_circle_id is not null) circle_events from events where space_id = '${SPACE_ID}';`,
-    `-- EXPECT: ${1 + days.length + PILOT_SESSIONS.length} | 1 | ${days.length} | ${PILOT_SESSIONS.length}`,
+    '-- EXPECT: business-hours | online | invite | f | 30 | 2,  business-of-community-pilot | online | invite | t | 12 | 2,  creator-lab-december-start | online | open | t | 50 | 2',
+    `-- VERIFY: select count(*) total, count(*) filter (where recurrence_type <> 'none') anchors, count(*) filter (where parent_event_id is not null) occurrences, count(*) filter (where scope_type = 'circle' and scope_circle_id is not null) circle_events from events where space_id = '${SPACE_ID}' and not is_cancelled;`,
+    `-- EXPECT: ${1 + days.length + PILOT_SESSIONS.length} | 1 | ${days.length} | ${1 + days.length}`,
     '',
     'commit;',
   )
