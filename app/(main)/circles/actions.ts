@@ -16,10 +16,7 @@ import { safeWritingQuestions } from '@/lib/ai/writing-coach'
 import { planCircleEdit } from '@/lib/ai/circle-edit'
 import {
   getCircleDraft,
-  saveCircleDraft,
-  CIRCLE_DRAFT_SAVE_ERROR,
   type CircleDraft,
-  type CircleDraftPatch,
 } from '@/lib/circles/draft'
 import type { FieldChange } from '@/lib/studio/kernel/redraw'
 
@@ -203,100 +200,12 @@ export async function inviteByEmail(
 
 // ── Edit re-entry: the redraw (ADR-450 §2 · ADR-994 · ADR-996) ────────────────────────────────
 //
-// The Guided section of a Circle's Inspector rail: the same three dials the Spark had (mood ·
-// directions · lock), run over the LIVE Circle. Same four steps as every other entity's redraw
-// (lib/studio/kernel/redraw.ts): resolve the pins, DELETE them from the patch, diff what is left
-// against what is there, write only what moved.
-//
-// The one thing that is genuinely a Circle's own is the TRANSLATION. Vera's circle editor speaks
-// the spark's flat vocabulary (`card`, `meetup` as a plain string) while the manifest and the
-// draft speak paths (`about`, `meetup.text`), so the two maps below are what a Practice did not
-// need and a Circle cannot do without. Both directions are named once, so the redraw and the
-// put-it-back walk the same list.
-//
-// LOCK here covers `identity` (the name and the About) and `agreements`. The agreements are the
-// group's own norms, so pinning them has to actually hold: they are a REPEATED collection, which
-// the kernel now resolves to its `agreements` path (ADR-996) and deletes like any other.
-
-/** The lock the Guided rail offers is only as good as the paths it resolves to, so a Circle's
- *  redraw is bounded to exactly these manifest paths. Anything else Vera returns is dropped. */
-const CIRCLE_REDRAW_PATHS = [
-  'name',
-  'about',
-  'pillarsInside.mind',
-  'pillarsInside.body',
-  'pillarsInside.spirit',
-  'pillarsInside.expression',
-  'meetup.text',
-  'gathering.text',
-  'thread',
-  'format',
-  'sizeLabel',
-  'agreements',
-  'remixOptions',
-] as const
-
-/** A path-keyed snapshot: scalars as strings, the two collections as string arrays. */
-type CircleValues = Record<string, unknown>
-
-/** The live Circle, in manifest-path space. */
-
-
-/** Vera's spark-shaped patch, translated into manifest-path space. `card` / `oneLiner` /
- *  `identity` all describe the same thing on a live Circle (its About), so the first one she
- *  returns wins rather than three of them fighting over one column. */
-
-
-/** Manifest-path space back to the draft's own storage shape. The two rhythm beats carry the
- *  length the draft already had, so re-drafting the wording never drops "90 minutes". */
-function circleWritePatch(values: CircleValues, draft: CircleDraft, paths: readonly string[]): CircleDraftPatch {
-  const out: CircleDraftPatch = {}
-  const wanted = new Set(paths)
-  const text = (path: string): string | undefined =>
-    wanted.has(path) && typeof values[path] === 'string' ? (values[path] as string) : undefined
-  const list = (path: string): string[] | undefined =>
-    wanted.has(path) && Array.isArray(values[path])
-      ? (values[path] as unknown[]).filter((v): v is string => typeof v === 'string')
-      : undefined
-
-  const name = text('name')
-  if (name !== undefined) out.name = name
-  const about = text('about')
-  if (about !== undefined) out.about = about
-
-  const pillarsInside = { ...(draft.pillarsInside ?? {}) }
-  let touchedPillars = false
-  for (const p of ['mind', 'body', 'spirit', 'expression'] as const) {
-    const line = text(`pillarsInside.${p}`)
-    if (line !== undefined) {
-      pillarsInside[p] = line
-      touchedPillars = true
-    }
-  }
-  if (touchedPillars) out.pillarsInside = pillarsInside
-
-  const meetup = text('meetup.text')
-  if (meetup !== undefined) out.meetup = { text: meetup, length: draft.meetup?.length }
-  const gathering = text('gathering.text')
-  if (gathering !== undefined) out.gathering = { text: gathering, length: draft.gathering?.length }
-
-  const thread = text('thread')
-  if (thread !== undefined) out.thread = thread
-  const format = text('format')
-  if (format !== undefined) out.format = format
-  const sizeLabel = text('sizeLabel')
-  if (sizeLabel !== undefined) out.sizeLabel = sizeLabel
-
-  const agreements = list('agreements')
-  if (agreements !== undefined) out.agreements = agreements
-  const remixOptions = list('remixOptions')
-  if (remixOptions !== undefined) out.remixOptions = remixOptions
-
-  return out
-}
+// The Guided section of a Circle's Inspector rail runs over the LIVE Circle. Today it coaches only:
+// Vera asks planning questions and writes nothing, so a redraw reports no changes and there is
+// nothing to put back (the undo action and its path maps were removed with no caller, HYG-247).
 
 /** What one Circle redraw did: what moved, what the pins held, and the previous values of
- *  exactly the changed paths (feed straight back to restoreCircleAction to undo). */
+ *  exactly the changed paths. */
 export interface CircleRedrawResult {
   questions?: string[]
   changes: FieldChange[]
@@ -324,28 +233,6 @@ export async function redrawCircleAction(circleId: string, input: { mood?: strin
  if ('error' in gate) return fail(gate.error)
  const advice = await planCircleEdit({ request: input.directions ?? '', circle: { name: gate.draft.name, identity: gate.draft.about ?? '' }, profileId: gate.profileId })
  return ok({ questions: safeWritingQuestions(advice), changes: [], kept: [], before: {} })
-}
-
-/** Put it back: write the pre-redraw values the diff handed the rail. Same gate, same write
- *  mapping, so an undo can only ever restore paths a redraw was allowed to touch. */
-export async function restoreCircleAction(
-  circleId: string,
-  before: Record<string, unknown>,
-): Promise<ActionResult> {
-  const gate = await authorCircle(circleId)
-  if ('error' in gate) return fail(gate.error)
-  const { draft } = gate
-  const paths = Object.keys(before).filter((p) => (CIRCLE_REDRAW_PATHS as readonly string[]).includes(p))
-  if (paths.length === 0) return fail('Nothing to put back.')
-  try {
-    await saveCircleDraft(circleId, circleWritePatch(before, draft, paths))
-  } catch (e) {
-    return fail(e instanceof Error ? e.message : CIRCLE_DRAFT_SAVE_ERROR)
-  }
-  revalidatePath('/circles')
-  revalidatePath(`/circles/${draft.slug}`)
-  revalidatePath(`/circles/${draft.slug}/edit`)
-  return ok()
 }
 
 export async function leaveCircle(circleId: string) {

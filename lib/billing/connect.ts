@@ -163,11 +163,17 @@ export async function getConnectStatus(profileId: string): Promise<ConnectStatus
 export async function getConnectReadyMap(profileIds: string[]): Promise<Record<string, boolean>> {
   const ids = [...new Set(profileIds.filter(Boolean))]
   if (ids.length === 0) return {}
-  if (!(await payoutsLive())) return {}
-  const { data, error } = await db()
-    .from('profiles')
-    .select('id, stripe_charges_enabled, stripe_payouts_enabled')
-    .in('id', ids)
+  // The platform gate and the profile read run TOGETHER (PERF-008): they are independent,
+  // and on /events they were two serial round trips at the tail of the loader. The gate still wins:
+  // when payouts are not live the profile rows are discarded and nobody is ready.
+  const [live, { data, error }] = await Promise.all([
+    payoutsLive(),
+    db()
+      .from('profiles')
+      .select('id, stripe_charges_enabled, stripe_payouts_enabled')
+      .in('id', ids),
+  ])
+  if (!live) return {}
   // Fails CLOSED by design (an absent id reads as not-ready everywhere, which is the safe direction
   // for "will this money land?"), but it says so now. Its three siblings were changed to notice a
   // failed read in the same pass; leaving this one silent is how the file drifts back.

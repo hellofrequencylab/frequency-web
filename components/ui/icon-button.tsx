@@ -86,8 +86,13 @@ export type IconButtonVariant = 'plain' | 'bordered' | 'filled' | 'tinted' | 'so
 // one line inside a 640px card and the 44px floor would push the row onto two. It does not take the
 // tap floor, which is exactly what the hand-rolled `p-1.5` buttons it replaces did. Anything that
 // is not a toolbar row stays `md`.
-export type IconButtonSize = 'md' | 'xs'
-const SIZE: Record<IconButtonSize, string> = { md: 'tap-target h-8 w-8', xs: 'h-7 w-7' }
+//
+// `lg` (SCAN-1133 slice 15, 2026-11-18) is the 44px transport control: the one round Play or Pause
+// a player or an episode row is built around. It is already at the 44px tap floor, so it needs no
+// `tap-target`; it is the size the Airwaves player and the show episode list hand-rolled. Use it
+// with `filled` for that one control, never for a row of actions.
+export type IconButtonSize = 'md' | 'xs' | 'lg'
+const SIZE: Record<IconButtonSize, string> = { md: 'tap-target h-8 w-8', xs: 'h-7 w-7', lg: 'h-11 w-11' }
 
 // Quiet at rest, one step louder on hover -- so a cluster of these never shouts. `plain`
 // rests one step quieter than `bordered` because it has no border to carry the affordance.

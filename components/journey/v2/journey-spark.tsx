@@ -58,6 +58,7 @@ import {
   type SparkDoor,
 } from '@/components/studio/spark'
 import { InfoTip } from '@/components/ui/info-tip'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { isError } from '@/lib/action-result'
 import { JOURNEY_MANIFEST } from '@/lib/studio/entities/journey'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
@@ -506,7 +507,7 @@ export function JourneySpark({
               type="button"
               onClick={() => chooseTemplate(FRAMEWORK_ID)}
               disabled={pending}
-              className="flex w-full items-start gap-3 rounded-control border border-primary/50 bg-primary-bg px-4 py-3 text-left transition-colors hover:bg-surface-elevated disabled:opacity-60"
+              className={choiceTileClasses(true, 'flex w-full items-start gap-3 rounded-control px-4 py-3 text-left')}
             >
               <Compass className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
               <span className="min-w-0 flex-1">

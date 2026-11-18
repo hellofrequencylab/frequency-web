@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-071",
+  "title": "The database refuses a direct message between two people when one blocked the other",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "supabase/migrations/20240103000000_direct_messages.sql",
+    "ref": "Email and messaging check 2026-11-18 (thread: Check every email and message system)"
+  },
+  "detail": "2026-11-18: the live INSERT policy participants_send_messages on public.messages checks only am_participant(conversation_id) and sender = own profile. sendMessage checks isBlockedBetween, but a member in a thread that existed before the block can insert straight through PostgREST with their own session. Done when an additive, idempotent migration replaces the policy with one that also requires not private/public is_blocked_between(sender, other participant), applied per docs/DATABASE.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-scan-2026-11-18.mjs dm-rls-block",
+    "note": "Fails on main today; passes once the fix lands."
+  }
+}

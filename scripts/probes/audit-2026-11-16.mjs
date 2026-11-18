@@ -6,7 +6,9 @@
 // REWRITTEN CHECKS. Daniel approved rewriting four of these on 2026-11-16 15:02Z ("rewrite the
 // audit-written checks for SCAN-1226, 1213, 1225 and 1215 to measure the real fix"). Each of the four
 // is a function in REWRITTEN below, with what the old check got wrong written above it. A rewritten
-// check prints what it found, so a red run names the files. No other entry in CHECKS was changed.
+// check prints what it found, so a red run names the files. Daniel approved a fifth on 2026-11-18
+// 17:52Z (project thread, answer "4. A": retime the dead-code check to what is deletable now):
+// SCAN-1240. No other entry in CHECKS was changed.
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -187,6 +189,31 @@ const REWRITTEN = {
     console.log(`SCAN-1226 founding towns in llms.txt: ${townsOk ? 'ok' : 'RED'}`)
     return lastmodOk && !!paged && townsOk
   },
+  // SCAN-1240. The finding: modules, scripts and images nothing uses. The old check could not pass
+  // as written: it required a non-test file to IMPORT components/spaces/dashboard/space-dashboard,
+  // which Daniel ruled deleted on 2026-11-16 15:01Z, and it required two files gone that live work
+  // still holds (components/marketplace/etsy-preview.tsx is the dark fixture of the active DEF-ETSY
+  // packet; components/sites/temple-kit-inner/pages-e.ts is pinned by the done row LIVE-1689).
+  // Retimed to what is deletable now. Green means: the abandoned files are gone and stay gone (the
+  // wired-in stub, the old Space dashboard with no importer left, the three unreferenced site
+  // photos), and the never-run .test.mjs is a vitest file that the required test job collects.
+  'SCAN-1240': () => {
+    const gone = [
+      'components/frequency/site/pages/shared/wired-in.tsx',
+      'components/spaces/dashboard/space-dashboard.tsx',
+      'scripts/space-email-program.test.mjs',
+      'public/images/site/downward-dog.jpg',
+      'public/images/site/outdoor-yoga.jpg',
+      'public/images/site/kundalini-group-outdoor.jpg',
+    ]
+    const back = gone.filter((p) => existsSync(p))
+    const importers = tracked('app', 'components', 'lib').filter((p) => /\.tsx?$/.test(p) && /components\/spaces\/dashboard\/space-dashboard['"]/.test(readFileSync(p, 'utf8')))
+    const runs = existsSync('scripts/space-email-program.test.ts')
+    console.log(`SCAN-1240 dead files gone: ${back.length ? 'RED (' + back.join(', ') + ')' : 'ok'}`)
+    console.log(`SCAN-1240 nothing imports the old Space dashboard: ${importers.length ? 'RED (' + importers.join(', ') + ')' : 'ok'}`)
+    console.log(`SCAN-1240 space email program assertions run under vitest: ${runs ? 'ok' : 'RED (scripts/space-email-program.test.ts missing)'}`)
+    return !back.length && !importers.length && runs
+  },
 }
 
 const CHECKS = {
@@ -220,7 +247,6 @@ const CHECKS = {
   "SCAN-1237": "node -e \"const s=require('fs').readFileSync('proxy.ts','utf8');process.exit(/%5C|%5c/.test(s)?0:1)\"",
   "SCAN-1238": "node -e \"const fs=require('fs');const dir='supabase/migrations/';const hit=fs.readdirSync(dir).some(f=>/drop table[^;]*zz_backup_/i.test(fs.readFileSync(dir+f,'utf8')));process.exit(hit?0:1)\"",
   "SCAN-1239": "(grep -q rateLimitOk app/api/csp-report/route.ts && grep -q rateLimitOk app/api/status/queue-lag/route.ts) && (grep -q rateLimitOk app/api/track/route.ts && grep -q rateLimitOk app/api/observe/route.ts) && (test $(grep -l FLOWWEB_OUTCOMES_SECRET app/api/webhooks/*/route.ts | wc -l) -le 1) && (grep -rq rateLimitConfigured .github/workflows)",
-  "SCAN-1240": "(test ! -e components/frequency/site/pages/shared/wired-in.tsx -a ! -e components/marketplace/etsy-preview.tsx -a ! -e components/sites/temple-kit-inner/pages-e.ts) && (git grep -lE \"components/spaces/dashboard/space-dashboard'\" -- app components lib ':!*.test.*' | grep -q .) && (test ! -e scripts/space-email-program.test.mjs) && (test ! -e public/images/site/downward-dog.jpg -a ! -e public/images/site/outdoor-yoga.jpg -a ! -e public/images/site/kundalini-group-outdoor.jpg)",
   "SCAN-1241": "(test $(git grep -E 'function (money|formatPrice|formatMoney)\\(' -- 'app' 'components' 'lib' ':!*.test.*' | wc -l) -le 2) && (test $(git grep -E 'toLocale(Date|Time)String' -- 'app' 'components' ':!*.test.*' | wc -l) -le 100)",
   "SCAN-1242": "(node -e \"const b=require('./scripts/adoption-baselines.json');const e=(b.entries||b);const x=(Array.isArray(e)?e:Object.values(e)).find(k=>k.key==='raw-input');process.exit(x.baseline<=60?0:1)\") && (test $(git grep -c '<button' -- 'app/join/(induction)/induction.tsx' | cut -d: -f2) -le 5) && (test $(grep -v '^#' scripts/templates-baseline.txt | grep -c .) -le 40)",
   "SCAN-1243": "! grep -qE \"script-src 'self' 'unsafe-inline'\" next.config.ts"

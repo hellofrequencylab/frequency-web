@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-061",
+  "title": "A nurture email that fails to queue is retried instead of stalling that person's series for good",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/nurture/runner.ts",
+    "ref": "Email and messaging check 2026-11-18 (project thread: Check every email and message system)"
+  },
+  "detail": "With LIFECYCLE_CAP_ENABLED on in production (since 2026-11-17), the nurture runner writes a lifecycle_send_log reservation before it enqueues the step. If the enqueue threw, the reservation stayed; every later run got 'duplicate' from reserveLifecycleSend and hit `continue` without moving the cursor, so the enrollment was re-picked every run and never sent that step or any after it (the /subscribe casual-browser series rides this runner). Fix: a failed enqueue deletes its reservation and defers 15 minutes; a 'duplicate' means the step already went out, so the cursor moves on without a second send.\n\nDONE 2026-11-18: lib/nurture/runner.ts advance() + release on enqueue failure (releaseLifecycleSend in lib/lifecycle/cap-io.ts); two runner tests.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/EMAIL-061.mjs",
+    "note": "Passes while a failed enqueue releases the reservation and a duplicate advances the enrollment."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

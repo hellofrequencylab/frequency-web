@@ -11,6 +11,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { useTypingIndicator } from '@/lib/realtime/use-typing'
 import { TypingIndicator } from '@/components/messages/typing-indicator'
 import { ChatComposer } from '@/components/ui/chat-composer'
+import { chipClasses } from '@/components/ui/chip'
 import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 import { roomPostGateReason, type RoomVisibility } from '@/lib/messages/room-access'
 
@@ -222,11 +223,7 @@ export function RoomThread({
                       type="button"
                       aria-pressed={on}
                       onClick={() => setKind(on ? null : k)}
-                      className={`rounded-pill border px-2.5 py-1 text-meta font-medium transition-colors ${
-                        on
-                          ? 'border-primary/40 bg-primary-bg text-primary-strong'
-                          : 'border-border text-muted hover:text-text'
-                      }`}
+                      className={chipClasses(on)}
                     >
                       {KIND_COPY[k].chip}
                     </button>

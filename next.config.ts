@@ -225,6 +225,9 @@ const ROOT_CARD_FONTS = [
 ]
 
 const nextConfig: NextConfig = {
+  // SEC-025: no `x-powered-by: Next.js` on dynamic responses. It names the framework to every
+  // scanner and buys nothing; the static and ISR responses never carried it.
+  poweredByHeader: false,
   // TYPECHECKING IS CI'S JOB, NOT THE BUILD'S (2026-07-28). `next build` ran a FULL
   // TypeScript pass on top of the compile, and as the repo grew that second pass began
   // exhausting the Vercel build container: the worker took a SIGKILL with an OOM event

@@ -50,3 +50,11 @@ export async function reserveLifecycleSend(
     return 'error'
   }
 }
+
+/** Give back a reservation whose send never got queued (EMAIL-061), so the next run can reserve and send it. A no-op
+ *  with the cap off. Best-effort: a failed delete is logged, and the caller still defers. */
+export async function releaseLifecycleSend(admin: SupabaseClient, dedupeKey: string): Promise<void> {
+  if (!envFlag('LIFECYCLE_CAP_ENABLED')) return
+  const { error } = await admin.from('lifecycle_send_log').delete().eq('dedupe_key', dedupeKey)
+  if (error) log.error('lifecycle.cap.release_failed', { dedupe_key: dedupeKey, error: error.message })
+}

@@ -347,15 +347,16 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   const settingsP = Promise.all([
     // Operator-editable page header (ADR-180) — falls back to the coded defaults.
     resolvePageContent('/events', CONTENT_FALLBACK),
-    eventsListingHorizonDays(),
-    demoModeEnabled(),
-    viewerHidesDemo(),
     // How many cards one repeating series may occupy here (ADR-897). Operator-tunable with no
     // deploy (/admin/events > Repeating events); zero configuration is DEFAULT_CARDS_PER_SERIES = 3,
     // and a failed settings read returns the same 3, so the knob can only ever show fewer
     // duplicates, never an empty index. Read ONCE per surface, at the top of the loader, never
     // per row.
     getSeriesDisplayConfig(),
+    // THE QUERY GATE: the three values the event reads are built from (horizon + demo pair).
+    eventsListingHorizonDays(),
+    demoModeEnabled(),
+    viewerHidesDemo(),
   ])
 
   // The request-cached identity the member layout already resolved (lib/auth.ts): the auth user and
@@ -364,6 +365,94 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // Auth), then a profiles read by auth id, then memberships, then circles: four round trips in
   // series in front of every event query. Now the two viewer-specific reads below run together.
   void settingsP.catch(() => undefined) // awaited below; this only keeps an early rejection handled
+  const nowDate = new Date()
+
+  // ── The query gate: started at the top of the loader ───────────────────────────
+  // The listing horizon and the demo-mode pair, the only settings the event reads are built from.
+  // They are keyed on constants and on the viewer's cookie, so they resolve concurrently, and they
+  // overlap the viewer chain (EVT-SPEED). The header content and the series config resolve beside
+  // them in the same wave (SCAN-303 pins all five to ONE Promise.all); the PUBLIC read below starts
+  // the moment it lands, before the viewer is awaited (PERF-008).
+  //
+  // `hideDemo` was `!(await demoModeEnabled()) || (await viewerHidesDemo())`, whose `||`
+  // short-circuited the second read away when demo mode was OFF. Evaluating both is free:
+  // viewerHidesDemo is a cookie read with no I/O and no side effects, and the boolean it feeds
+  // is identical either way.
+  const [
+    { title: pageTitle, description: pageDescription, body: pageBody, heroImage, ctaLabel, ctaHref },
+    { cardsPerSeries },
+    horizonDays,
+    demoOn,
+    viewerHidesDemoContent,
+  ] = await settingsP
+
+  // THE LISTING HORIZON — operator-set, and UNCAPPED by default (owner ruling 2026-08-20).
+  //
+  // This was a hardcoded 60 days. A host published a gathering 64 days out, it never appeared here,
+  // and nothing anywhere explained why. `eventsListingHorizonDays()` is the setting that replaced
+  // it (/admin/events > Listing horizon): 0 means NO CAP, and 0 is the default, the missing-row
+  // reading, and the fail-safe on a settings read error. A positive number caps at that many days.
+  //
+  // NULL means "omit the upper bound entirely" on all three reads below. Deliberately not a
+  // far-future sentinel date: an unbounded query is the honest expression of no cap, and a sentinel
+  // is only a hardcoded 60 wearing a bigger number.
+  //
+  // ⚠️ REMOVING THE DATE CEILING DOES NOT REMOVE THE ROW BUDGET. Every read below still carries
+  // .limit(SERIES_WIDE_READ) and the ADR-897 series fold that budget exists for. If the far-future
+  // set ever grows past that budget, the rows dropped are the FURTHEST out (each query is ordered
+  // by starts_at ascending), which is the right tail to lose — raise SERIES_WIDE_READ deliberately
+  // rather than reaching for a date ceiling again.
+  const listUntil =
+    horizonDays > 0
+      ? new Date(nowDate.getTime() + horizonDays * 24 * 60 * 60 * 1000).toISOString()
+      : null
+  // An event stays "upcoming" through the end of its start day. starts_at stores the
+  // wall-clock as UTC PARTS, so the floor must be the start of TODAY in the community's
+  // HOME zone expressed the same way — otherwise, once UTC rolls past midnight (~5pm PT),
+  // a plain UTC start-of-day floor lands on "tomorrow" and silently drops tonight's
+  // not-yet-started events from every listing.
+  const listableFrom = `${dayInZone(nowDate, HOME_TZ)}T00:00:00.000Z`
+
+  const hideDemo = !demoOn || viewerHidesDemoContent
+
+  // The columns we read for the card + facets. category / attendance_mode /
+  // capacity / price_cents / cover_image_path are newer than the generated DB
+  // types — read them through an untyped client (repo convention for
+  // not-yet-regenerated columns; see lib/events/geocode.ts).
+  const EVENT_SELECT = `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
+       featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
+       cover_image_path, theme, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, poster_path, geog,
+       hide_address, city, region,
+       host_id, host_space_id, join_mode,
+       host:profiles!host_id ( id, display_name, handle ),
+       host_space:spaces!host_space_id ( name, brand_name, status )`
+
+  // PUBLIC browse. `visibility = 'public'` is the whole rule for whether an event may be listed
+  // publicly (ADR-844). A circle-scoped event used to be excluded outright, which meant a host who
+  // set their circle's event to "Anyone" still never appeared to anyone outside that circle: the
+  // setting said public and the browse said otherwise. Members still reach their own circles'
+  // events through the circle query above (which also carries 'circle_only'), and the union
+  // de-dupes, so honoring the host's choice here adds reach without duplicating rows.
+  let publicQuery = admin
+    .from('events')
+    .select(EVENT_SELECT)
+    .eq('visibility', 'public')
+    .eq('status', 'published')
+    .eq('is_cancelled', false)
+    .gte('starts_at', listableFrom)
+  // The ceiling is applied only when there IS one; uncapped omits the bound (see listUntil).
+  if (listUntil) publicQuery = publicQuery.lte('starts_at', listUntil)
+  if (hideDemo) publicQuery = publicQuery.eq('is_demo', false)
+  // A GLOBAL cap on the community's whole upcoming public set, not a display count: rows past it are
+  // dropped by the DATABASE before the fold can run, so it is raised rather than multiplied (ADR-897).
+  const rawPublicP = publicQuery
+    .order('starts_at', { ascending: true })
+    .limit(SERIES_WIDE_READ)
+    .then(({ data }) => (data ?? []) as unknown as EventRow[])
+
+  // The public read above is issued BEFORE the viewer is awaited (PERF-008): it needs only the query
+  // gate. On every /events render the (main) layout has already resolved this request-cached row, so
+  // awaiting it here costs nothing, and the public read overlaps the profile + memberships read below.
   const viewer = await getCachedViewerProfile()
 
   let myProfileId: string | null = null
@@ -408,68 +497,6 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     myCircles = rows.flatMap((m) => (m.circle ? [{ id: m.circle.id, name: m.circle.name }] : []))
   }
 
-  const nowDate = new Date()
-
-  // ── Settings + flags: the wave started at the top of the loader ───────────────
-  // Four reads that between them cost four serial round trips in front of the event queries,
-  // and NOT ONE of them depends on another (or on anything above): the operator-editable header
-  // content, the listing horizon, the demo-mode pair, and the series display config. They are
-  // keyed on constants and on the viewer's cookie, so they resolve concurrently, and since
-  // EVT-SPEED they also overlap the viewer chain.
-  //
-  // `hideDemo` was `!(await demoModeEnabled()) || (await viewerHidesDemo())`, whose `||`
-  // short-circuited the second read away when demo mode was OFF. Evaluating both is free:
-  // viewerHidesDemo is a cookie read with no I/O and no side effects, and the boolean it feeds
-  // is identical either way.
-  const [
-    { title: pageTitle, description: pageDescription, body: pageBody, heroImage, ctaLabel, ctaHref },
-    horizonDays,
-    demoOn,
-    viewerHidesDemoContent,
-    { cardsPerSeries },
-  ] = await settingsP
-
-  // THE LISTING HORIZON — operator-set, and UNCAPPED by default (owner ruling 2026-08-20).
-  //
-  // This was a hardcoded 60 days. A host published a gathering 64 days out, it never appeared here,
-  // and nothing anywhere explained why. `eventsListingHorizonDays()` is the setting that replaced
-  // it (/admin/events > Listing horizon): 0 means NO CAP, and 0 is the default, the missing-row
-  // reading, and the fail-safe on a settings read error. A positive number caps at that many days.
-  //
-  // NULL means "omit the upper bound entirely" on all three reads below. Deliberately not a
-  // far-future sentinel date: an unbounded query is the honest expression of no cap, and a sentinel
-  // is only a hardcoded 60 wearing a bigger number.
-  //
-  // ⚠️ REMOVING THE DATE CEILING DOES NOT REMOVE THE ROW BUDGET. Every read below still carries
-  // .limit(SERIES_WIDE_READ) and the ADR-897 series fold that budget exists for. If the far-future
-  // set ever grows past that budget, the rows dropped are the FURTHEST out (each query is ordered
-  // by starts_at ascending), which is the right tail to lose — raise SERIES_WIDE_READ deliberately
-  // rather than reaching for a date ceiling again.
-  const listUntil =
-    horizonDays > 0
-      ? new Date(nowDate.getTime() + horizonDays * 24 * 60 * 60 * 1000).toISOString()
-      : null
-  // An event stays "upcoming" through the end of its start day. starts_at stores the
-  // wall-clock as UTC PARTS, so the floor must be the start of TODAY in the community's
-  // HOME zone expressed the same way — otherwise, once UTC rolls past midnight (~5pm PT),
-  // a plain UTC start-of-day floor lands on "tomorrow" and silently drops tonight's
-  // not-yet-started events from every listing.
-  const listableFrom = `${dayInZone(nowDate, HOME_TZ)}T00:00:00.000Z`
-
-  const hideDemo = !demoOn || viewerHidesDemoContent
-
-  // The columns we read for the card + facets. category / attendance_mode /
-  // capacity / price_cents / cover_image_path are newer than the generated DB
-  // types — read them through an untyped client (repo convention for
-  // not-yet-regenerated columns; see lib/events/geocode.ts).
-  const EVENT_SELECT = `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
-       featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
-       cover_image_path, theme, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, poster_path, geog,
-       hide_address, city, region,
-       host_id, host_space_id, join_mode,
-       host:profiles!host_id ( id, display_name, handle ),
-       host_space:spaces!host_space_id ( name, brand_name, status )`
-
   // ── The three event sources + proximity, fetched in ONE wave ────────────────
   // (1) in-scope CIRCLE events, (2) every upcoming standalone PUBLIC event (hybrid scope,
   // ADR-254 — proximity never gates whether a public gathering appears; the nearby_events RPC
@@ -504,29 +531,6 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
           .then(({ data }) => (data ?? []) as unknown as EventRow[])
       })()
     : Promise.resolve([])
-
-  // PUBLIC browse. `visibility = 'public'` is the whole rule for whether an event may be listed
-  // publicly (ADR-844). A circle-scoped event used to be excluded outright, which meant a host who
-  // set their circle's event to "Anyone" still never appeared to anyone outside that circle: the
-  // setting said public and the browse said otherwise. Members still reach their own circles'
-  // events through the circle query above (which also carries 'circle_only'), and the union
-  // de-dupes, so honoring the host's choice here adds reach without duplicating rows.
-  let publicQuery = admin
-    .from('events')
-    .select(EVENT_SELECT)
-    .eq('visibility', 'public')
-    .eq('status', 'published')
-    .eq('is_cancelled', false)
-    .gte('starts_at', listableFrom)
-  // The ceiling is applied only when there IS one; uncapped omits the bound (see listUntil).
-  if (listUntil) publicQuery = publicQuery.lte('starts_at', listUntil)
-  if (hideDemo) publicQuery = publicQuery.eq('is_demo', false)
-  // A GLOBAL cap on the community's whole upcoming public set, not a display count: rows past it are
-  // dropped by the DATABASE before the fold can run, so it is raised rather than multiplied (ADR-897).
-  const rawPublicP = publicQuery
-    .order('starts_at', { ascending: true })
-    .limit(SERIES_WIDE_READ)
-    .then(({ data }) => (data ?? []) as unknown as EventRow[])
 
   const distanceByIdP: Promise<Map<string, number | null>> = myGeocell
     ? nearbyEvents(supabase, { lat: myGeocell.lat, lng: myGeocell.lng, radiusM: 50_000, limit: SERIES_WIDE_READ })

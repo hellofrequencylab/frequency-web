@@ -200,16 +200,25 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: Do not add any logic between createServerClient and getUser().
+  // IMPORTANT: Do not add any logic between createServerClient and getClaims().
   // A stray await or early return can silently break session refresh, causing
   // users to appear randomly logged out.
   //
+  // getClaims, NOT getUser (owner ruling 2026-11-18, PERF-008): the project signs access tokens with an
+  // asymmetric ES256 key, so getClaims verifies the token's signature and expiry LOCALLY against the
+  // published JWKS (cached per warm function for 10 minutes) and refreshes an expiring session exactly
+  // as getUser did. getUser was a GET /auth/v1/user network call, about 130 ms, in front of every
+  // signed-in request. The proxy only ever asks "is someone signed in" (routing and the account
+  // marker); every page still makes its own strict getUser check (lib/auth.ts getCachedUser), so a
+  // revoked session is still refused by the render that reads data. This is Supabase's documented
+  // middleware pattern for asymmetric keys.
+  //
   // SCAN-1122: a request with no Supabase auth cookie cannot hold a session, so the network round
-  // trip to Supabase is skipped for it and `user` is null (the same answer getUser() would give).
+  // trip to Supabase is skipped for it and `user` is null (the same answer getClaims() would give).
   // Anonymous visitors and crawlers are most public-page traffic. Cookie names are the @supabase/ssr
   // defaults: `sb-<project-ref>-auth-token`, split into `.0`, `.1` chunks when large.
   const hasAuthCookie = request.cookies.getAll().some((c) => /^sb-.+-auth-token(\.\d+)?$/.test(c.name))
-  const user = hasAuthCookie ? (await supabase.auth.getUser()).data.user : null
+  const user = hasAuthCookie ? ((await supabase.auth.getClaims()).data?.claims ?? null) : null
 
   // The ACCOUNT MARKER (owner, 2026-09-11: "user cannot change to dark until they have an account").
   //
@@ -371,7 +380,7 @@ export async function proxy(request: NextRequest) {
   //   · one rule covers web and phone together. The installed PWA's manifest `start_url` is
   //     "/" (public/manifest.json), so opening the app from a home screen is the same request
   //     a desktop browser makes, and both now open on the feed;
-  //   · the proxy already holds `user` from the getUser() above, so this costs no extra read.
+  //   · the proxy already holds `user` from the getClaims() above, so this costs no extra read.
   //
   // `?preview` is the ONE way through for a signed-in viewer, and it is not invented here: it
   // is the href the page editor's "View home" button already uses
@@ -577,7 +586,7 @@ export const config = {
     //
     // `/api/v1` is the APP CONTRACT (LIVE-715, ADR-1643) and is excluded for the same reason: none
     // of this middleware is for it. A native caller sends a bearer token and no cookie, so the
-    // proxy's getUser() would see nobody, write a first-touch record whose landing page is an API
+    // proxy's getClaims() would see nobody, write a first-touch record whose landing page is an API
     // path, and set the account and consent marker cookies on JSON responses an app never stores.
     // The route establishes its own caller (lib/contract/caller.ts); a web caller's cookie session
     // is read and refreshed there by the server client, which may write cookies in a route handler.

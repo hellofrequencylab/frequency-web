@@ -30,7 +30,7 @@
 
 import { createHash } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
-import { BOC_101 } from './seed-frequency-hq-boc.mts'
+import { BOC_101, BOC_PAGE_STORY, BOC_WEEKS } from './seed-frequency-hq-boc.mts'
 import { buildBocSalesDoc, BOC_SALES_META } from './seed-frequency-hq-boc-sales.mts'
 
 // ── Fixed ids ──────────────────────────────────────────────────────────────────────────────────
@@ -109,18 +109,15 @@ export const PAGES = [
 const FORUM = PAGE('community')
 const TICKET = '/support'
 
-// Creator Lab (owner rulings 2026-11-17/18): The Business of Community 101 is free and evergreen for every Space;
-// Business Hours and the live cohort come with a paid Space. Course content: scripts/seed-frequency-hq-boc.mts.
+// Creator Lab (owner rulings 2026-11-17/18): The Business of Community 101 is Frequency's core training, free for anyone,
+// run as a free live workshop on Zoom several times a year (owner 2026-11-17: no self-paced course); Business Hours comes with the Business plan.
+// The Journey is the workbook: lessons to read before each session. Content: scripts/seed-frequency-hq-boc.mts.
 export const BOC_SLUG = 'the-business-of-community-101'
-export const START_CIRCLE_SLUG = 'creator-lab-december-start'
+export const COHORT_CIRCLE_SLUG = 'business-of-community-january-2027'
+const BOC_EVENT = '/events/business-of-community-pilot-session-1'
 const CIRCLE = (slug: string) => `/circles/${slug}`
-/** The four sessions' one ideas, from the owner's session spec (business-of-community-101.md). */
-const BOC_PAGE_SESSIONS = [
-  { n: 1, name: 'The Engine', idea: "Structure isn't the opposite of soul. It's what keeps the soul from burning out." },
-  { n: 2, name: 'The Container', idea: "A container isn't what you believe. It's what you've written down, said out loud, and will enforce." },
-  { n: 3, name: 'The Gathering', idea: "Whatever authority you don't hold, the loudest guest will." },
-  { n: 4, name: 'The Exchange', idea: 'Charging is what makes your presence renewable.' },
-]
+/** The four weeks: the meeting each one teaches (scripts/seed-frequency-hq-boc.mts). */
+const BOC_PAGE_SESSIONS = BOC_WEEKS
 
 // The four Pillars (docs/NAMING.md: Mind / Body / Spirit / Expression; never Channels or Domains).
 export const PILLARS = [
@@ -135,7 +132,7 @@ export const PROGRAMS = [
   { icon: 'award', name: 'The Quest', body: 'Daily practices and Journeys you take with your Circle, across the four Pillars. Show up, earn Zaps and Gems, and climb the season.', who: 'Every member', rhythm: 'Daily', href: '/help/the-quest', image: PHOTOS.sunset, alt: ALT.sunset, button: 'How The Quest works' },
   { icon: 'users', name: 'Circles', body: 'Small groups of 12 to 18 people who meet at the same time in the same place, on the PULSE rhythm.', who: 'Every member', rhythm: 'Weekly or every other week', href: '/circles', image: PHOTOS.armsOut, alt: ALT.armsOut, button: 'Find a Circle' },
   { icon: 'calendar', name: "What's happening", body: 'Local events from Circles and Spaces near you. RSVP, add it to your calendar, bring someone.', who: 'Everyone', rhythm: 'Any week', href: '/events', image: PHOTOS.parachute, alt: ALT.parachute, button: "See what's happening" },
-  { icon: 'sparkle', name: 'Creator Lab', body: 'Business and leadership for community creators. The Business of Community 101 is free for every Space; paid Spaces add Business Hours on Zoom.', who: 'Every Space', rhythm: 'One week at a time', href: PAGE('creator-lab'), image: PHOTOS.rugs, alt: ALT.rugs, button: 'Open Creator Lab' },
+  { icon: 'sparkle', name: 'Creator Lab', body: 'Core training for the people who gather others. The Business of Community is a free four-week live workshop on Zoom, run several times a year; the Business plan adds Business Hours on Zoom.', who: 'Anyone', rhythm: 'One week at a time', href: PAGE('creator-lab'), image: PHOTOS.rugs, alt: ALT.rugs, button: 'Open Creator Lab' },
   { icon: 'heart', name: 'Host training', body: 'Free courses on the PULSE rhythm, care and consent, and the three circle formats, then a co-host apprenticeship.', who: 'Hosts and future hosts', rhythm: 'Self-paced', href: PAGE('creator-lab'), image: PHOTOS.circle, alt: ALT.circle, button: 'Start host training' },
 ]
 
@@ -221,6 +218,12 @@ export interface SeedJourney {
   sequential: boolean
   cover: string
   modules: Module[]
+  /** A live schedule. Absent: the Journey is self-paced. `eventSlug` links the session people RSVP to. */
+  meeting?: { format: 'online' | 'in_person'; schedule: string; eventSlug?: string }
+  /** Issue a certificate on completion (journey_plans.certificate_enabled). */
+  certificate?: boolean
+  /** Guides by profile handle, in display order (journey_plan_guides). */
+  guides?: string[]
 }
 
 const AGREEMENT_LINES = AGREEMENTS.map((a) => `- ${a.title}. ${a.body}`).join('\n')
@@ -441,7 +444,7 @@ export function buildPageDocs(): Record<string, unknown> {
         useEvents: true,
         rows: [
           { weekday: 'Help', mon: 'Desk', day: '1', title: 'Open a help ticket', body: 'A real person reads every ticket.', time: 'Any time', where: 'Online', spots: 'Open', kind: 'session', href: TICKET },
-          { weekday: 'Course', mon: 'Free', day: '2', title: 'The Business of Community 101', body: 'Run your community like it’s going to last. Four weeks, free for every Space.', time: '4 weeks · about an hour each', where: 'Online', spots: 'Open', kind: 'session', href: JOURNEY(BOC_SLUG) },
+          { weekday: 'Workshop', mon: 'Free', day: '2', title: 'The Business of Community', body: 'A free four-week live workshop on the PULSE rhythm. Starts January 7.', time: '4 weeks · live on Zoom', where: 'Online', spots: 'Open', kind: 'session', href: BOC_EVENT },
           { weekday: 'Course', mon: 'Free', day: '3', title: 'Host Foundations', body: JOURNEYS[0]!.summary, time: 'Self-paced · 4 parts', where: 'Online', spots: 'Open', kind: 'session', href: JOURNEY('host-foundations') },
         ],
         ...reg,
@@ -591,32 +594,31 @@ export function buildPageDocs(): Record<string, unknown> {
   ])
 
   const creatorLab = doc([
-    { type: 'NewWorldPageHead', props: { id: id('lab-head'), index: '', eyebrow: 'Creator Lab', title: 'Run your community like it’s *going to last.*', lede: "Creator Lab is Frequency's business and leadership track for the people who gather others. It starts with The Business of Community 101: free for every Space, with a weekly room on Zoom for paid Spaces.", ...reg } },
+    { type: 'NewWorldPageHead', props: { id: id('lab-head'), index: '', eyebrow: 'Creator Lab', title: 'Run your community like it’s *going to last.*', lede: "Creator Lab is Frequency's business and leadership track for the people who gather others. It starts with The Business of Community, Frequency's core training: a free four-week live workshop on Zoom, run several times a year.", ...reg } },
     {
       type: 'NewWorldWayRows',
       props: {
-        id: id('lab-rows'), costLabel: 'For', whenLabel: 'Rhythm', buttonLabel: 'Start the course', buttonHref: JOURNEY(BOC_SLUG), secondaryLabel: 'Questions', secondaryHref: PAGE('help'),
+        id: id('lab-rows'), costLabel: 'For', whenLabel: 'Rhythm', buttonLabel: 'Save your seat', buttonHref: BOC_EVENT, secondaryLabel: 'Questions', secondaryHref: PAGE('help'),
         rows: [
-          { icon: 'calendar', tags: 'Free · 4 weeks', name: 'The Business of Community 101', body: 'Four weeks: The Engine, The Container, The Gathering, The Exchange. Five short lessons a week, about an hour, ending in one commitment.', price: 'Every Space', when: 'One week at a time', image: PHOTOS.rugs, alt: ALT.rugs, buttonLabel: 'Start the course', href: JOURNEY(BOC_SLUG) },
-          { icon: 'users', tags: 'Free · monthly start', name: 'This month’s start', body: 'Everyone who starts this month moves through it together. A thread to share what you tried, and someone noticing when you don’t.', price: 'Every Space', when: 'Starts each month', image: PHOTOS.huddle, alt: ALT.huddle, buttonLabel: 'Join this month', href: CIRCLE(START_CIRCLE_SLUG) },
-          { icon: 'message', tags: 'Paid Spaces · Zoom', name: 'Business Hours', body: 'Same hour every week. Bring one number and one stuck thing. Commitments read back, one hot seat, a work block, and a new if-then.', price: 'Paid Spaces', when: 'Tuesdays · 10 AM Pacific', image: PHOTOS.cafe, alt: ALT.cafe, buttonLabel: 'See the calendar', href: PAGE('calendar') },
-          { icon: 'award', tags: 'Paid Spaces · Zoom', name: 'Live cohort', body: 'Eight to twelve Space owners, four weekly 2.5-hour workshops, ending in the Certified capstone. The pilot runs this December.', price: 'Paid Spaces', when: 'Four weeks', image: PHOTOS.armsOut, alt: ALT.armsOut, buttonLabel: 'Ask for a seat', href: TICKET },
+          { icon: 'calendar', tags: 'Free · 4 weeks', name: 'The Business of Community', body: 'Frequency’s free live workshop. Four 90-minute sessions on Zoom, all on PULSE: the weekly sit-down, the opening, the full gathering and the money hour. Short lessons to read before each one.', price: 'Anyone', when: 'Thursdays · 10 AM Pacific', image: PHOTOS.armsOut, alt: ALT.armsOut, buttonLabel: 'Save your seat', href: BOC_EVENT },
+          { icon: 'users', tags: 'Free · January Run', name: 'The January Run', body: 'Everyone in the launch Run, together. A thread to share what you tried between sessions, and someone noticing when you don’t show. Thursdays Jan 7, 14, 21 and 28.', price: 'Anyone', when: 'Starts January 7', image: PHOTOS.huddle, alt: ALT.huddle, buttonLabel: 'Join the Run', href: CIRCLE(COHORT_CIRCLE_SLUG) },
+          { icon: 'message', tags: 'Business plan · Zoom', name: 'Business Hours', body: 'Same hour every week, run on PULSE. Bring one number and one stuck thing. Last week’s commitments read back, one hot seat, and a new commitment each.', price: 'Business plan', when: 'Wednesdays · 10 AM Pacific', image: PHOTOS.cafe, alt: ALT.cafe, buttonLabel: 'See the Circle', href: '/circles/business-hours' },
         ],
         ...reg,
       },
     },
     {
       type: 'NewWorldProcess',
-      props: { id: id('lab-sessions'), index: '01', eyebrow: 'The Business of Community 101', title: 'Four weeks. *One idea each.*', lede: 'Each one fixes something that breaks in real life, and ends with you doing it inside your own Space.', rows: BOC_PAGE_SESSIONS.map((x, i) => ({ icon: ['calendar', 'check', 'users', 'heart'][i] ?? 'check', title: `Week ${x.n} · ${x.name}`, body: x.idea })), ...reg },
+      props: { id: id('lab-sessions'), index: '01', eyebrow: 'The Business of Community 101', title: 'Four weeks. *Four meetings you can run.*', lede: 'Each one runs on PULSE and fixes something that breaks in real life.', rows: BOC_PAGE_SESSIONS.map((x, i) => ({ icon: ['calendar', 'check', 'users', 'heart'][i] ?? 'check', title: `Week ${x.n} · ${x.meeting}`, body: `${x.length.charAt(0).toUpperCase()}${x.length.slice(1)}. ${x.leaveWith}` })), ...reg },
     },
     {
       type: 'NewWorldPlans',
       props: {
-        id: id('lab-plans'), index: '02', eyebrow: 'What each Space gets', title: 'Free to learn. *More with a paid Space.*', lede: 'The course is free for everyone, always. Doing the builds needs a Space. Business Hours comes with a paid Space.', aside: 'Included with your plan. Nothing extra to buy.', featuredLabel: 'Most support',
+        id: id('lab-plans'), index: '02', eyebrow: 'Who gets what', title: 'Free to learn. *More with the Business plan.*', lede: 'The live workshop is free for anyone, always. Business Hours comes with the Business plan.', aside: 'Included with your plan. Nothing extra to buy.', featuredLabel: 'Most support',
         note: 'Plans and prices live on the pricing page.',
         rows: [
-          { name: 'Every Space', body: 'The Business of Community 101, four weeks at your own pace. This month’s start. The forum and the help desk.', price: '', featured: false, buttonLabel: 'Start free', href: JOURNEY(BOC_SLUG) },
-          { name: 'Paid Space', body: 'Everything free, plus Business Hours every week on Zoom, a seat in a live cohort, and your Certified capstone reviewed.', price: '', featured: true, buttonLabel: 'See plans', href: '/pricing' },
+          { name: 'Anyone', body: 'The Business of Community, a four-week live workshop on Zoom. The forum and the help desk.', price: '', featured: false, buttonLabel: 'Save your seat', href: BOC_EVENT },
+          { name: 'Business plan', body: 'Everything free, plus Business Hours every week on Zoom, run on PULSE, and your Certified review after February 28, 2027.', price: '', featured: true, buttonLabel: 'See plans', href: '/pricing' },
           { name: 'Certified', body: 'For Certified graduates: 102, six more sessions, when it opens.', price: '', featured: false, buttonLabel: 'How Certified works', href: JOURNEY(BOC_SLUG) },
         ],
         ...reg,
@@ -628,8 +630,8 @@ export function buildPageDocs(): Record<string, unknown> {
         id: id('lab-cert'), index: '03', eyebrow: 'Two ways to finish', title: 'Attended or *Certified.*', lede: '',
         note: 'Live sessions are on Zoom. The link goes to registered members before each call. A certificate of completion and competency, not an accredited certification.',
         rows: [
-          { title: 'Attended', body: 'Finish all four weeks. Ten contact hours.' },
-          { title: 'Certified', body: 'Submit The Community Book and finish the four builds inside your own Space. Named, written, tested: it survived a real gathering.' },
+          { title: 'Attended', body: 'Come to all four live sessions. Ten contact hours.' },
+          { title: 'Certified', body: 'Send in The Community Book by February 28, 2027 for free review, and finish the four builds inside your own Space. Named, written, tested: it survived a real gathering.' },
           { title: 'What you leave with', body: 'You know what a gathering costs you, what you charge, who came back, and who to text next week.' },
           { title: "What's next", body: '102, six more sessions, opens to Certified graduates.' },
         ],
@@ -637,7 +639,7 @@ export function buildPageDocs(): Record<string, unknown> {
       },
     },
     { type: 'NewWorldQuote', props: { id: id('lab-quote'), label: 'The one idea', quote: 'The question is not how many came. It’s *how many came back.*', by: 'Daniel Tyack · Founder', ...reg } },
-    CLOSER('creator-lab', { title: 'Start with *week one.*', primaryLabel: 'Start the course', primaryHref: JOURNEY(BOC_SLUG), secondaryLabel: 'Join this month', secondaryHref: CIRCLE(START_CIRCLE_SLUG) }),
+    CLOSER('creator-lab', { title: 'Start with *week one.*', primaryLabel: 'Save your seat', primaryHref: BOC_EVENT, secondaryLabel: 'Join the Run', secondaryHref: CIRCLE(COHORT_CIRCLE_SLUG) }),
   ])
 
   const help = doc([
@@ -694,10 +696,10 @@ export function buildPageDocs(): Record<string, unknown> {
   type Row = Record<string, string>
   const labRows = (creatorLab.content[1].props.rows as Row[]).map((r, i) => ({
     ...r,
-    tags: `Business · ${r.tags.replace(/^(Free|Paid Spaces) · /, '')}`,
+    tags: `Business · ${r.tags.replace(/^(Free|Paid Spaces|Business plan) · /, '')}`,
     when: i === 0 ? '4 weeks' : r.when,
-    price: i < 2 ? 'Free' : 'Paid Spaces',
-    ...(i === 0 ? { buttonLabel: 'See the course', href: PAGE(BOC_SALES_META.slug) } : {}),
+    price: i < 2 ? 'Free' : 'Business plan',
+    ...(i === 0 ? { buttonLabel: 'See the workshop', href: PAGE(BOC_SALES_META.slug) } : {}),
   }))
   const hostRows = (training.content[1].props.rows as Row[]).map((r) => ({ ...r, tags: `Hosting · ${r.tags.replace(' · self-paced', '')}` }))
   const hosting = training.content.slice(3, 8).map((blk, i) => ({ ...blk, props: { ...blk.props, index: String(i + 2).padStart(2, '0') } }))
@@ -706,10 +708,10 @@ export function buildPageDocs(): Record<string, unknown> {
     {
       type: 'NewWorldPromises',
       props: {
-        id: id('lib-tracks'), index: '01', eyebrow: 'The library', title: 'Two *tracks.*', lede: 'Each course is free. Paid Spaces add a weekly room on Zoom.',
+        id: id('lib-tracks'), index: '01', eyebrow: 'The library', title: 'Two *tracks.*', lede: 'Each course is free. The Business plan adds a weekly room on Zoom.',
         rows: [
           { icon: 'heart', title: 'Hosting', body: 'The PULSE rhythm, care and consent, the three circle formats, and an apprenticeship beside a trained host.' },
-          { icon: 'sparkle', title: 'Business and leadership', body: 'The Business of Community: what a gathering costs you, what to charge, who came back, and who to text next week.' },
+          { icon: 'sparkle', title: 'Business and leadership', body: 'The Business of Community: four simple meetings on PULSE that bring people back, and keep you going.' },
         ],
         ...reg,
       },
@@ -803,7 +805,7 @@ export function buildProfileLayout(): Record<string, unknown> {
           { icon: '1', title: 'Programs', text: 'The Quest, Circles, events and host training: the structured ways to take part.' },
           { icon: '2', title: 'Host training', text: 'Free courses on the PULSE rhythm, care and consent, and the three circle formats.' },
           { icon: '3', title: 'Help desk', text: 'Open a ticket, browse the help center, or report something that feels off. A real person answers.' },
-          { icon: '4', title: 'Creator Lab', text: 'Business and leadership for community creators, starting with The Business of Community 101. Free for every Space.' },
+          { icon: '4', title: 'Creator Lab', text: 'Core training for community creators, starting with The Business of Community 101. Free for anyone.' },
           { icon: '5', title: 'Community forum', text: 'Ask a question, share what worked, suggest a feature. Hosts and the team read it.' },
         ],
       },
@@ -961,13 +963,29 @@ export function renderSql(): string {
     '-- 3. The training Journeys (journey_plans, scripts/seed-wildheart.mts shape), published on the Space.',
   )
   for (const j of JOURNEYS) {
-    const meeting = { format: j.key === 'apprenticeship' ? 'in_person' : 'online', schedule: j.key === 'apprenticeship' ? 'Three circles with a trained host' : 'Self-paced', timezone: TZ, location: null, link: null, notes: null, eventId: null, gathering: null }
+    const fallback = { format: j.key === 'apprenticeship' ? 'in_person' : 'online', schedule: j.key === 'apprenticeship' ? 'Three circles with a trained host' : 'Self-paced' }
+    const m = j.meeting ?? fallback
+    const meeting = { format: m.format, schedule: m.schedule, timezone: TZ, location: null, link: null, notes: null, eventId: null, gathering: null }
+    // The Event is looked up by slug at apply time, so the seed never pins a generated id.
+    const meetingSql = j.meeting?.eventSlug
+      ? `jsonb_set(${qj(meeting)}, '{eventId}', coalesce((select to_jsonb(id::text) from events where slug = ${q(j.meeting.eventSlug)} limit 1), 'null'::jsonb))`
+      : qj(meeting)
+    const pageConfig = j.key === BOC_101.key ? qj([BOC_PAGE_STORY]) : 'null'
     p(
-      'insert into journey_plans (id, slug, title, summary, intro, author_id, space_id, visibility, status, published_at, category, difficulty, tags, daily_minutes, enroll_cap, meeting, ongoing, drip_interval_days, sequential, cover_image, official)',
-      `values (${q(uuidFrom(`journey:${j.key}`))}, ${q(j.slug)}, ${q(j.title)}, ${q(j.summary)}, ${q(j.intro)}, ${q(OWNER_ID)}, (select id from spaces where slug = ${q(SLUG)}), 'public', 'approved', now(), ${q(j.category)}, ${q(j.difficulty)}, ${qarr(j.tags)}, ${j.dailyMinutes}, null, ${qj(meeting)}, false, 0, ${j.sequential}, ${q(j.cover)}, true)`,
-      'on conflict (slug) do update set title = excluded.title, summary = excluded.summary, intro = excluded.intro, space_id = excluded.space_id, visibility = excluded.visibility, status = excluded.status, published_at = coalesce(journey_plans.published_at, excluded.published_at), category = excluded.category, difficulty = excluded.difficulty, tags = excluded.tags, daily_minutes = excluded.daily_minutes, meeting = excluded.meeting, sequential = excluded.sequential, cover_image = excluded.cover_image, official = excluded.official, updated_at = now()',
+      'insert into journey_plans (id, slug, title, summary, intro, author_id, space_id, visibility, status, published_at, category, difficulty, tags, daily_minutes, enroll_cap, meeting, ongoing, drip_interval_days, sequential, cover_image, official, certificate_enabled, page_config)',
+      `values (${q(uuidFrom(`journey:${j.key}`))}, ${q(j.slug)}, ${q(j.title)}, ${q(j.summary)}, ${q(j.intro)}, ${q(OWNER_ID)}, (select id from spaces where slug = ${q(SLUG)}), 'public', 'approved', now(), ${q(j.category)}, ${q(j.difficulty)}, ${qarr(j.tags)}, ${j.dailyMinutes}, null, ${meetingSql}, false, 0, ${j.sequential}, ${q(j.cover)}, true, ${j.certificate ? 'true' : 'false'}, ${pageConfig})`,
+      'on conflict (slug) do update set title = excluded.title, summary = excluded.summary, intro = excluded.intro, space_id = excluded.space_id, visibility = excluded.visibility, status = excluded.status, published_at = coalesce(journey_plans.published_at, excluded.published_at), category = excluded.category, difficulty = excluded.difficulty, tags = excluded.tags, daily_minutes = excluded.daily_minutes, meeting = excluded.meeting, sequential = excluded.sequential, cover_image = excluded.cover_image, official = excluded.official, certificate_enabled = excluded.certificate_enabled, page_config = coalesce(excluded.page_config, journey_plans.page_config), updated_at = now()',
       `where journey_plans.author_id = ${q(OWNER_ID)};`,
     )
+    if (j.guides?.length) {
+      p(
+        `-- Guides for ${j.slug}, by handle. Re-runs keep the list exact.`,
+        `delete from journey_plan_guides where plan_id = ${q(uuidFrom(`journey:${j.key}`))} and profile_id not in (select id from profiles where handle = any(${qarr(j.guides)}));`,
+        'insert into journey_plan_guides (plan_id, profile_id, added_by, sort_order)',
+        `select ${q(uuidFrom(`journey:${j.key}`))}, pr.id, ${q(ADMIN_ID)}, g.ord - 1 from unnest(${qarr(j.guides)}) with ordinality g(handle, ord) join profiles pr on pr.handle = g.handle`,
+        'on conflict (plan_id, profile_id) do update set sort_order = excluded.sort_order;',
+      )
+    }
   }
   p('', '-- 4. The phase / module / lesson tree (parents sort before children, so one insert satisfies parent_id).')
   const items = buildItems()
@@ -975,6 +993,9 @@ export function renderSql(): string {
     'insert into journey_plan_items (id, plan_id, block_type, parent_id, title, body, sort_order, required, est_minutes) values',
     items.map((r) => `(${q(r.id)}, ${q(r.plan_id)}, ${q(r.block_type)}, ${r.parent_id ? q(r.parent_id) : 'null'}, ${q(r.title)}, ${q(r.body)}, ${r.sort_order}, ${r.required}, ${r.est_minutes ?? 'null'})`).join(',\n'),
     'on conflict (id) do update set block_type = excluded.block_type, parent_id = excluded.parent_id, title = excluded.title, body = excluded.body, sort_order = excluded.sort_order, required = excluded.required, est_minutes = excluded.est_minutes;',
+    '-- 4b. The workshop workbook went from five lessons a week to three (owner 2026-11-17). Drop its leftover items so',
+    '--     the tree matches the seed. Scoped to that one plan; progress on a dropped item cascades with it.',
+    `delete from journey_plan_items where plan_id = ${q(uuidFrom(`journey:${BOC_101.key}`))} and id <> all(${qarr(items.filter((r) => r.plan_id === uuidFrom(`journey:${BOC_101.key}`)).map((r) => r.id))}::uuid[]);`,
   )
   p(
     '',

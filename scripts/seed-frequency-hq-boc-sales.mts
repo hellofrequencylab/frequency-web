@@ -1,255 +1,219 @@
-// THE BUSINESS OF COMMUNITY 101: THE SALES PAGE. One page on the Frequency house Space's website (Space `hq`), served at
-// /spaces/hq/business-of-community. It is a Puck doc of New World blocks (components/page-editor/blocks/new-world.tsx), the
-// same blocks and prop names scripts/seed-frequency-hosts.mts writes for the other hq pages. This file only builds the doc;
-// scripts/seed-frequency-hosts.mts wires it into PAGES, pageDocs and the website snapshot.
+// THE BUSINESS OF COMMUNITY 101: THE SALES PAGE. One page on the Frequency house Space (Space `hq`), served at
+// /spaces/hq/business-of-community. This file only builds the doc; scripts/seed-frequency-hosts.mts wires it into
+// PAGES, pageDocs and the website snapshot.
 //
-// Course facts: scripts/seed-frequency-hq-boc.mts (four weeks, free, by Daniel Tyack). No prices, no plan names, no invented
-// numbers, reviews or outcomes. Quotes are Daniel's own lines. Photos are files under public/brand/frequency/photos and
-// public/sites/new-world/photos only.
+// SPACE RULES (owner 2026-11-17: "The space page should follow space rules", "You have way too many styles on the
+// space page"). A Space page offers only the Space palette (lib/page-editor/palette-scope.ts SURFACE_CATEGORIES.space),
+// and it wears ONE style system: app/themes/frequency/space-page.css over [data-space-page], with the Space's one brand
+// accent and its one font set (components/spaces/accent-scope.tsx). Theme families such as New World are website-only:
+// their CSS lives in the website theme's sheet, so on the Space page they render bare. So this page is built from the
+// five design blocks (PhotoHero, Zigzag, CardGrid, EditorialSection, AccentBeat; three of each at most,
+// lib/page-editor/block-limits.ts), the same grammar as The Group's Fridays page. They also wear the website's theme
+// when the website shows the same doc (ADR-1727, one render path).
 //
-// Block choices that matter:
-// - No NewWorldFaq: it draws the Space's own live FAQ (space_faqs) when the Space has any, and hq does, so it would show the
-//   house questions, not these. The questions use NewWorldPromises instead, which only ever draws its own rows.
-// - No NewWorldPlans: it draws the Space's live memberships (with prices) when it has any.
-// - The hero's proof and aside lines are empty on purpose: either one draws the faces strip, which reads as social proof.
+// Frequency's live business workshop, sold as two ways in (owner 2026-11-17): the workshop (free, anyone, four
+// 90-minute sessions on Zoom, several times a year) and Business Hours (a members-only cohort for Spaces on the Business plan).
+// Facts come from scripts/seed-frequency-hq-boc.mts (BOC_WEEKS, BOC_FAQ), so this page and the workbook cannot drift.
+// No prices, no invented numbers, reviews or outcomes. The FAQ is an EditorialSection, never SpaceFAQ: SpaceFAQ draws
+// the Space's own live questions (space_faqs), and hq's are the house questions, not these.
+import { BOC_FAQ, BOC_WEEKS } from './seed-frequency-hq-boc.mts'
 
 type Block = { type: string; props: Record<string, unknown> }
 
 const SLUG = 'hq'
 const PAGE = (slug = '') => (slug ? `/spaces/${SLUG}/${slug}` : `/spaces/${SLUG}`)
-const COURSE = '/journeys/the-business-of-community-101'
-const START_CIRCLE = '/circles/creator-lab-december-start'
-const CALENDAR = PAGE('calendar')
+/** The workshop's Week 1 session: "Save your seat" RSVPs on the Event (owner 2026-11-17). No self-paced course door. */
+const EVENT = '/events/business-of-community-pilot-session-1'
+/** The launch Run's Circle: join it to move through all four weeks together. */
+const COHORT = '/circles/business-of-community-january-2027'
+const BUSINESS_HOURS = '/circles/business-hours'
 const HELP = PAGE('help')
 const PLANS = '/pricing'
-const SEAT = '/support'
-const START = 'Start the course'
-const DANIEL = 'Daniel Tyack · Founder'
+const SAVE = 'Save your seat'
 
+// Daniel's own photos (owner 2026-11-18: "use them throughout"), the same set as the public sales page.
 const PHOTOS = {
-  backyard: '/sites/new-world/photos/backyard-class.webp',
-  workshop: '/sites/new-world/photos/workshop-table.webp',
+  hero: '/brand/frequency/photos/boc-circle-dusk.jpg',
+  circle: '/brand/frequency/photos/boc-small-circle.jpg',
+  workshop: '/brand/frequency/photos/boc-writing-cushions.jpg',
+  fire: '/brand/frequency/photos/boc-fire-night.jpg',
+  daniel: '/brand/frequency/photos/guide-daniel-tyack.jpg',
+  feargal: '/brand/frequency/photos/guide-feargal-walsh.jpg',
 }
 const ALT = {
-  backyard: 'A teacher leads a stretching class on mats and rugs on a sunny backyard patio',
-  workshop: 'Adults and kids making crafts around a long table in a workshop room',
+  hero: 'A circle of people sitting together outdoors at dusk',
+  circle: 'A small circle sitting on cushions on an outdoor terrace',
+  workshop: 'People writing on cushions on a rug in a garden',
+  fire: 'Friends around a fire pit at night',
+  daniel: 'Daniel Tyack',
+  feargal: 'Feargal Walsh',
 }
+
+/** The workshop's Thursdays, in order (scripts/seed-frequency-hq-circles.mts WORKSHOP_WEEKS). */
+const DATES = ['Jan 7', 'Jan 14', 'Jan 21', 'Jan 28']
 
 let n = 0
 const id = (key: string) => `boc-${key}-${(n++).toString(36)}`
-const reg = { register: 'auto' }
 
 export const BOC_SALES_META = {
   slug: 'business-of-community',
   label: 'The Business of Community',
   seo: {
     title: 'The Business of Community 101 · Frequency',
-    description: 'A free four-week course for people who already gather others. Know what a night costs you, what to charge, who came back, and who to text next week.',
+    description: 'Frequency’s free four-week live business workshop for anyone who gathers people. Four simple meetings on the PULSE rhythm, live on Zoom. Starts January 7, 2027.',
   },
 } as const
-
-const WEEKS = [
-  { n: 1, name: 'The Engine', idea: "Structure isn't the opposite of soul. It's what keeps the soul from burning out." },
-  { n: 2, name: 'The Container', idea: "A container isn't what you believe. It's what you've written down, said out loud, and will enforce." },
-  { n: 3, name: 'The Gathering', idea: "Whatever authority you don't hold, the loudest guest will." },
-  { n: 4, name: 'The Exchange', idea: 'Charging is what makes your presence renewable.' },
-]
 
 export function buildBocSalesDoc(): { root: { props: Record<string, unknown> }; content: Block[] } {
   n = 0
   const content: Block[] = [
-    // Hero: the pain in one line, the offer in the next.
+    // The opener: the pain in one line, the offer in the next.
     {
-      type: 'NewWorldHero',
+      type: 'PhotoHero',
       props: {
         id: id('hero'),
-        eyebrow: 'Free course · The Business of Community 101',
-        title: 'A full room. *A night that still didn’t pay.*',
-        lead: "A free four-week course for people who already gather others. Learn what a night really costs you, what to charge, who came back, and who to text next week. About an hour a week.",
-        primaryLabel: START, primaryHref: COURSE,
-        secondaryLabel: 'Join this month', secondaryHref: START_CIRCLE,
-        proof: '',
-        aside: '',
-        image: PHOTOS.backyard, alt: ALT.backyard, badge: 'Free for every Space',
-        useEvents: false,
-        rows: [
-          { weekday: 'Course', mon: 'Free', day: '1', title: 'The Business of Community 101', body: 'Four weeks, five short lessons each.', time: 'Self-paced · about an hour a week', where: 'Online', spots: 'Open', kind: 'session', href: COURSE },
-          { weekday: 'Circle', mon: 'Free', day: '2', title: 'This month’s start', body: 'Start with others who began this month.', time: 'Starts each month', where: 'Online', spots: 'Open', kind: 'session', href: START_CIRCLE },
-          { weekday: 'Zoom', mon: 'Tue', day: '3', title: 'Business Hours', body: 'A weekly hour for paid Spaces.', time: 'Tuesdays · 10 AM Pacific', where: 'Zoom', spots: 'Paid Spaces', kind: 'session', href: CALENDAR },
-        ],
-        areas: [],
-        ...reg,
+        variant: 'image', display: 'beside', height: 'medium', scrim: 'light',
+        image: PHOTOS.hero, alt: ALT.hero,
+        eyebrow: 'Live workshop · Free',
+        title: 'People showed up once. Here’s how they come back.',
+        accentWord: 'Here’s how they come back.',
+        subtitle: 'The Business of Community is Frequency’s free four-week live workshop for anyone who gathers people. Four simple meetings you can run, all on the PULSE rhythm. It assumes you’re starting from scratch.',
+        actionPrimaryLabel: SAVE, actionPrimaryHref: EVENT,
+        actionSecondaryLabel: 'Join the January Run', actionSecondaryHref: COHORT,
+        note: 'Thursdays, January 7 to 28 · 10 to 11:30 AM Pacific · on Zoom',
       },
     },
 
-    // The plain facts of the offer. Course facts only, no outcomes.
+    // The one idea.
     {
-      type: 'NewWorldStats',
+      type: 'Zigzag',
       props: {
-        id: id('facts'),
+        id: id('idea'),
+        image: PHOTOS.circle, alt: ALT.circle, mediaSide: 'right', background: 'canvas',
+        eyebrow: 'The one idea',
+        title: 'Frequency. The how-often kind.',
+        accentWord: 'The how-often kind.',
+        body: 'lead',
+        lead: 'Most people who gather others count heads. How many came. How full it looked.<br><br>A community lives on a different number: how many came back. A small room where people return is healthier than a big room you never see again. That number runs through all four weeks.',
+        items: [], quoteBy: '', ctaLabel: '', ctaHref: '',
+      },
+    },
+
+    // The four meetings, one a week, with the dates.
+    {
+      type: 'CardGrid',
+      props: {
+        id: id('weeks'),
+        role: 'step', columns: 2,
+        eyebrow: 'The four weeks',
+        title: 'Four meetings you can run.',
+        accentWord: 'you can run.',
+        cards: BOC_WEEKS.map((w, i) => ({ title: `${DATES[i]} · ${w.meeting}`, body: w.leaveWith })),
+        browseLabel: '', browseHref: '',
+      },
+    },
+
+    // How a week works: before, live, after.
+    {
+      type: 'Zigzag',
+      props: {
+        id: id('week'),
+        image: PHOTOS.workshop, alt: ALT.workshop, mediaSide: 'left', background: 'accent-wash',
+        eyebrow: 'How each week works',
+        title: 'Read it. Practice it. Run it.',
+        accentWord: 'Run it.',
+        body: 'list',
+        lead: '',
         items: [
-          { icon: 'heart', value: 'Free', label: 'for every Space', note: 'Every lesson, every week' },
-          { icon: 'calendar', value: '4', label: 'weeks', note: 'One idea each' },
-          { icon: 'check', value: '5', label: 'short lessons a week', note: 'Story, tools, practice, build, commit' },
-          { icon: 'clock', value: '1', label: 'hour a week, about', note: 'Spreadsheet and phone are enough' },
+          { text: 'Before Thursday, about 15 minutes: a short overview and one lesson.' },
+          { text: 'Thursday, 90 minutes live on Zoom, on PULSE: a story, check-ins in small groups, the meeting and a practice run, a moment to steady, and one commitment said out loud.' },
+          { text: 'After: run the meeting once with your own people, fill in your one page, and post a three-line report back to your Run.' },
         ],
-        ...reg,
+        quoteBy: '', ctaLabel: SAVE, ctaHref: EVENT,
       },
     },
 
-    // 01 The pain.
+    // The guides.
     {
-      type: 'NewWorldPromises',
+      type: 'CardGrid',
       props: {
-        id: id('pain'), index: '01', eyebrow: 'Sound familiar?', title: 'Three ways a good room *wears you out.*',
-        lede: "People love what you run. That part is working. These are the parts nobody taught you.",
-        rows: [
-          { icon: 'tag', title: "A full room that doesn't cover the night", body: 'Rent, gear, snacks, your drive, your hours. The room was packed and you still came home behind.' },
-          { icon: 'heart', title: 'You carry all of it', body: 'Booking, texting, setup, the money, the hard conversations. It all runs through you, and nobody covers when you need a week off.' },
-          { icon: 'message', title: 'The loudest guest runs the room', body: "Nobody said the rules out loud, so the person with the most opinions made them. Quieter people stop coming back." },
+        id: id('guides'),
+        role: 'media', columns: 2,
+        eyebrow: 'Your guides',
+        title: 'Hosted by Frequency. Led by Daniel and Feargal.',
+        accentWord: 'Led by Daniel and Feargal.',
+        cards: [
+          { image: PHOTOS.daniel, alt: ALT.daniel, title: 'Daniel Tyack', body: 'Founder and Architect of Frequency. Daniel has spent years building and leading rooms, from music to men’s work to ceremony, and created PULSE, the rhythm the workshop runs on.' },
+          { image: PHOTOS.feargal, alt: ALT.feargal, title: 'Feargal Walsh', body: 'Experience and Technology at Frequency. Feargal turns the systems organizers need into tools that are simple to run week after week.' },
         ],
-        ...reg,
+        browseLabel: '', browseHref: '',
       },
     },
 
-    // 02 The one idea.
+    // Two ways in.
     {
-      type: 'NewWorldLongStory',
+      type: 'CardGrid',
       props: {
-        id: id('idea'), index: '02', eyebrow: 'The one idea', title: 'Frequency. Not the sound kind. *The how-often kind.*',
-        paragraphs: [
-          "Most people who gather others count heads. How many came. How many RSVP'd. How full it looked.",
-          "The question isn't how many came. It's how many came back. A small room where people return is healthier than a big room you never see again.",
-          'Return frequency is the number this course is built around. Every week gives you one more way to keep people coming back without running yourself into the ground.',
+        id: id('ways'),
+        role: 'feature', columns: 2,
+        eyebrow: 'Two ways in',
+        title: 'Four weeks together, then every week.',
+        accentWord: 'then every week.',
+        cards: [
+          { icon: '◎', title: 'The live workshop', body: 'Free for anyone, Space or not. Four Thursdays on Zoom, 10 to 11:30 AM Pacific. It runs several times a year; the launch Run meets January 7 to 28.', button: { label: SAVE, href: EVENT } },
+          { icon: '↗', title: 'Business Hours', body: 'For Spaces on the Business plan. Wednesday mornings at 10 AM Pacific on Zoom, run on PULSE in a members-only Circle. Bring one number and one stuck thing.', button: { label: 'See the Circle', href: BUSINESS_HOURS } },
         ],
-        ...reg,
-      },
-    },
-    { type: 'NewWorldQuote', props: { id: id('quote'), label: 'In Daniel’s words', quote: "The question isn't how many came. It's *how many came back.*", by: DANIEL, ...reg } },
-
-    // 03 The four weeks.
-    {
-      type: 'NewWorldStory',
-      props: {
-        id: id('weeks'), index: '03', eyebrow: 'The four weeks', title: 'Four weeks. *One idea each.*',
-        paragraphs: WEEKS.map((w) => `Week ${w.n}, ${w.name}. ${w.idea}`),
-        buttonLabel: START, buttonHref: COURSE,
-        secondaryLabel: 'Join this month’s start', secondaryHref: START_CIRCLE,
-        image: PHOTOS.workshop, alt: ALT.workshop,
-        quote: '', quoteBy: '',
-        ...reg,
+        browseLabel: 'See the Business plan', browseHref: PLANS,
       },
     },
 
-    // 04 What you leave with.
+    // Attended or Certified.
     {
-      type: 'NewWorldAlways',
+      type: 'Zigzag',
       props: {
-        id: id('leave'), index: '04', eyebrow: 'By the end', title: 'Four things *you will know.*',
-        items: ['What a gathering costs you', 'What you charge', 'Who came back', 'Who to text next week'],
-        ...reg,
-      },
-    },
-
-    // 05 Who it's for.
-    {
-      type: 'NewWorldPromises',
-      props: {
-        id: id('who'), index: '05', eyebrow: "Who it's for", title: 'People who *already gather.*',
-        lede: 'Local creators running their thing solo or nearly, with somewhere between ten and a hundred and fifty people.',
-        rows: [
-          { icon: 'heart', title: 'Yoga and breathwork teachers', body: 'Classes, workshops and retreats you mostly run yourself.' },
-          { icon: 'sparkle', title: 'Sound healers', body: 'Sound baths and circles in studios, homes and parks.' },
-          { icon: 'users', title: 'Dance and meetup organizers', body: 'The regular night people plan their week around.' },
-          { icon: 'star', title: 'Musicians and open mic hosts', body: 'The list, the room, the regulars and the newcomers.' },
-          { icon: 'award', title: 'Makers', body: 'Workshops, classes and craft nights around a table.' },
-          { icon: 'pin', title: 'House and small venues', body: 'A living room, a backyard or a small room that hosts others.' },
+        id: id('finish'),
+        image: PHOTOS.fire, alt: ALT.fire, mediaSide: 'right', background: 'canvas',
+        eyebrow: 'Two ways to finish',
+        title: 'Attended or Certified.',
+        accentWord: 'Certified.',
+        body: 'list',
+        lead: '',
+        items: [
+          { text: 'Attended: come to all four live sessions.' },
+          { text: 'Certified: send in your Community Book, your four pages filled in from real gatherings. Review is free for Community Books submitted by February 28, 2027, then comes with the Business plan.' },
+          { text: 'Certified is a certificate of completion and competency from Frequency. It is not an accredited certification.' },
         ],
-        ...reg,
+        quoteBy: '', ctaLabel: '', ctaHref: '',
       },
     },
 
-    // 06 How each week works.
+    // Questions.
     {
-      type: 'NewWorldProcess',
+      type: 'EditorialSection',
       props: {
-        id: id('each-week'), index: '06', eyebrow: 'How each week works', title: 'Five short lessons. *About an hour.*',
-        lede: 'It works on a spreadsheet and a phone. The build steps happen inside your own Space.',
-        rows: [
-          { icon: 'eye', title: 'The idea', body: 'A short story, stopped right at the decision. What would you do?' },
-          { icon: 'check', title: 'Four tools', body: 'Plain, small tools you can use before your next gathering.' },
-          { icon: 'message', title: 'Practice out loud', body: 'Say the hard sentence before you need it in the room.' },
-          { icon: 'calendar', title: 'Build it on Frequency', body: 'Set it up inside your own Space, so it keeps working after the lesson.' },
-          { icon: 'heart', title: 'One commitment', body: 'Write one commitment down and say it to another person.' },
-        ],
-        ...reg,
+        id: id('faq'),
+        eyebrow: 'Questions',
+        title: 'Good to know.',
+        accentWord: 'know.',
+        kicker: 'Anything else, ask. A person on the Frequency team answers.',
+        body: 'faq', surface: 'open', lead: '', stats: [],
+        faqs: BOC_FAQ.map((f) => ({ q: f.q, a: f.a })),
       },
     },
 
-    // 07 Attended or Certified.
+    // The close.
     {
-      type: 'NewWorldFirstVisit',
-      props: {
-        id: id('finish'), index: '07', eyebrow: 'Two ways to finish', title: 'Attended or *Certified.*',
-        lede: 'Pick the one that fits your season.',
-        note: 'Certified is a certificate of completion and competency from Frequency. It is not an accredited certification.',
-        rows: [
-          { title: 'Attended', body: 'Finish all four weeks. That counts as 10 contact hours.' },
-          { title: 'Certified', body: 'Submit your Community Book: four one-page sheets plus a 13-week season plan, and do the four builds in your own Space. Review is free through January 31, 2027, then comes with a paid Space.' },
-        ],
-        ...reg,
-      },
-    },
-
-    // 08 What paid Spaces add.
-    {
-      type: 'NewWorldTools',
-      props: {
-        id: id('paid'), index: '08', eyebrow: 'With a paid Space', title: 'The course is free. *A paid Space adds a room.*',
-        lede: 'The course works on your own. A paid Space adds a regular hour with other Space owners. Plans live on the pricing page.',
-        buttonLabel: 'See plans', buttonHref: PLANS,
-        secondaryLabel: 'Ask for a seat', secondaryHref: SEAT,
-        note: 'Live sessions are on Zoom. Times are Pacific. Check the calendar for the next one.',
-        rows: [
-          { icon: 'clock', title: 'Business Hours', body: 'Every Tuesday, 10 AM Pacific, on Zoom. Bring one number and one stuck thing.' },
-          { icon: 'users', title: 'The live pilot cohort', body: '8 to 12 Space owners on Zoom this December. Thursdays Dec 3, 10, 17 and Jan 7, 10:00 to 12:30 Pacific.' },
-          { icon: 'check', title: 'The course stays free', body: 'Every lesson, and this month’s start, is open to every Space.' },
-        ],
-        ...reg,
-      },
-    },
-
-    // The live course card (the Journey), as on the Creator Lab page.
-
-    // 09 Questions. NewWorldPromises, not NewWorldFaq (see the note at the top).
-    {
-      type: 'NewWorldPromises',
-      props: {
-        id: id('faq'), index: '09', eyebrow: 'Questions', title: 'Good to *know.*', lede: 'Anything else, ask. A real person answers.',
-        rows: [
-          { icon: 'tag', title: 'What does it cost?', body: 'Nothing. The course and this month’s start are free for every Space. Certified review is free through January 31, 2027, then comes with a paid Space.' },
-          { icon: 'clock', title: 'How much time each week?', body: 'About an hour: five short lessons. Do them in one sitting or spread them out.' },
-          { icon: 'pin', title: 'Do I need a Space?', body: 'The build steps happen inside your own Space, and Certified needs the four builds done there. The rest works on a spreadsheet and a phone.' },
-          { icon: 'award', title: 'Is it accredited?', body: 'No. Certified is a certificate of completion and competency from Frequency, not an accredited certification.' },
-          { icon: 'calendar', title: 'What if I miss a week?', body: 'Pick it up where you left off. The lessons wait for you.' },
-          { icon: 'eye', title: 'Is it live or self-paced?', body: 'Self-paced. Paid Spaces can add a live hour each week and a seat in the live pilot cohort on Zoom.' },
-          { icon: 'message', title: 'What is Business Hours?', body: 'A weekly hour on Zoom for paid Spaces, Tuesdays at 10 AM Pacific. Bring one number and one stuck thing.' },
-        ],
-        ...reg,
-      },
-    },
-
-    // Closer.
-    {
-      type: 'NewWorldCloser',
+      type: 'AccentBeat',
       props: {
         id: id('closer'),
-        aside: 'Free. Four weeks. About an hour each.',
-        title: 'Keep the room. *Keep yourself.*',
-        primaryLabel: START, primaryHref: COURSE,
-        secondaryLabel: 'Ask a question', secondaryHref: HELP,
-        note: 'Want company? This month’s start is free too.',
-        ...reg,
+        mode: 'cta', background: 'accent-wash', image: '', alt: '',
+        eyebrow: 'Free · Four weeks · Live on Zoom',
+        title: 'Keep the room. Keep yourself.',
+        accentWord: 'Keep yourself.',
+        body: 'The launch Run starts Thursday, January 7.',
+        quoteBy: '',
+        ctaLabel: SAVE, ctaHref: EVENT,
+        ctaSecondaryLabel: 'Ask a question', ctaSecondaryHref: HELP,
       },
     },
   ]

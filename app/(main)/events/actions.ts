@@ -38,6 +38,7 @@ import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { notifyPromotedSeat } from '@/lib/events/waitlist-notify'
+import { notifyEventPeople } from '@/lib/notifications/event-notice'
 import { stampEventSpaceId } from '@/lib/events/store'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { spaceIdForCircle } from '@/lib/circles/store'
@@ -1333,6 +1334,22 @@ async function captureRsvpLead(
   }
 }
 
+/** Tell the host a member asked to join, or is going (LIVE-2360). A request the host must approve
+ *  used to land with no notice at all, so the guest waited on a host who never knew. Rides the
+ *  `event.notice` row, so the host's own inapp_events switch decides. Best-effort, never throws. */
+async function notifyHostOfRsvp(eventId: string, actorId: string, kind: 'rsvp_request' | 'rsvp_going'): Promise<void> {
+  try {
+    const { data } = await createAdminClient().from('events').select('host_id, title').eq('id', eventId).maybeSingle()
+    const ev = data as { host_id: string | null; title: string | null } | null
+    if (!ev?.host_id || ev.host_id === actorId) return
+    const title = ev.title?.trim() || 'your event'
+    const body = kind === 'rsvp_request' ? `asked to join "${title}"` : `is going to "${title}"`
+    await notifyEventPeople([ev.host_id], actorId, kind, eventId, body)
+  } catch (e) {
+    console.error('[events rsvp host notice]', e)
+  }
+}
+
 export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
@@ -1432,6 +1449,8 @@ export async function toggleRSVP(eventId: string) {
       const effective: 'going' | 'waitlist' = stored === 'going' ? 'going' : 'waitlist'
       // Nothing that means "you are in" fires while the request is pending (mirrors the
       // first-RSVP arm below): no gems/payout, no feed line, no "you're going" email.
+      if (needsApproval) void notifyHostOfRsvp(eventId, myProfileId, 'rsvp_request')
+      else if (effective === 'going') void notifyHostOfRsvp(eventId, myProfileId, 'rsvp_going')
       if (!needsApproval) {
         if (effective === 'going') onGoing(false)
         // Post the "RSVP'd" activity entry only for a confirmed seat (never waitlist).
@@ -1474,6 +1493,8 @@ export async function toggleRSVP(eventId: string) {
     // Nothing that means "you are in" fires while a request is pending: no seat-confirming email,
     // no feed line, no gems. Telling someone they are going and then making them wait for a host
     // is worse than either outcome on its own.
+    if (needsApproval) void notifyHostOfRsvp(eventId, myProfileId, 'rsvp_request')
+    else if (effective === 'going') void notifyHostOfRsvp(eventId, myProfileId, 'rsvp_going')
     if (!needsApproval) {
       if (effective === 'going') onGoing(true)
       await syncRsvpActivityPost(eventId, myProfileId, effective === 'going')

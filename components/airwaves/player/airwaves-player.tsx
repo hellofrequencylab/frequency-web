@@ -13,6 +13,7 @@
 // component.
 
 import { chipClasses } from '@/components/ui/chip'
+import { IconButton } from '@/components/ui/icon-button'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Play,
@@ -534,14 +535,15 @@ export function AirwavesPlayer({
             >
               <Rewind className="h-4 w-4" aria-hidden />
             </button>
-            <button
-              type="button"
+            <IconButton
+              label={playing ? 'Pause' : 'Play'}
+              variant="filled"
+              size="lg"
               onClick={togglePlay}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-pill bg-primary text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-              aria-label={playing ? 'Pause' : 'Play'}
+              className="focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >
               {playing ? <Pause className="h-5 w-5" aria-hidden /> : <Play className="h-5 w-5 translate-x-0.5" aria-hidden />}
-            </button>
+            </IconButton>
             <button
               type="button"
               onClick={() => skip(SKIP_SECONDS)}

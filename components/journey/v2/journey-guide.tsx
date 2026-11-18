@@ -253,7 +253,7 @@ export function JourneyGuide({
                   type="button"
                   onClick={() => applyTemplate('master-framework')}
                   disabled={pending}
-                  className="flex w-full items-start gap-3 rounded-xl border border-primary/40 bg-primary-bg/30 px-4 py-3 text-left transition-colors hover:bg-primary-bg/50 disabled:opacity-60"
+                  className={choiceTileClasses(true, 'flex w-full items-start gap-3 rounded-xl px-4 py-3 text-left')}
                 >
                   {pending ? (
                     <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-primary-strong" />

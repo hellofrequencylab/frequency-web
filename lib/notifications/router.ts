@@ -150,7 +150,7 @@ export async function routeNotification<E extends NotificationEvent>(
 //   ✅ in-app channel            — the 'inapp' outbox handler (lib/notifications/inapp.ts) exists and
 //       `guestbook.sign` rides it. The remaining direct `notifications` inserts migrate one row at
 //       a time (a registry row declaring 'inapp' + the call-site swap).
-//   ⏳ mentions / comments in-app emitters — no mention emitter exists on any channel.
+//   ✅ mentions / comments in-app emitters — `post.mention` and `post.reply` ride the router.
 //       ⚠️ The in-app switches (other than Practice reminders and the Replies row) and the Mentions
 //       row are HIDDEN from the settings grid by lib/notifications/wired.ts until a reader ships,
 //       because a switch nothing reads is a lie (meta-scan B9 D1/D6). Shipping a mention / reply
