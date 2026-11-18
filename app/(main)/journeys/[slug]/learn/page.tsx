@@ -21,6 +21,7 @@ import { JourneyCourseBody } from '@/components/frequency/members/journey/journe
 import { OnThisJourneyPanel, MoreJourneysPanel, GuidePanel } from '@/components/frequency/members/journey/journey-side'
 import { listFriendsOnJourney } from '@/lib/journeys/friends-on-journey'
 import { listPublicJourneys } from '@/lib/journey-plans'
+import { courseHref } from '@/lib/courses/tracks'
 
 // THE COURSE HOME — where an enrolled member lands (ADR-252 J1b, split from the player). One of the
 // four Journey views the dock links: About (the sales page, /journeys/<slug>), Course (here), Focus
@@ -35,6 +36,10 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const r = await loadJourneyLearnRoute(slug, 'learn')
   const { plan, tree, extras, entry, isAuthor, cohort, kickoff, anchorStart, dripIntervalDays, unit, cycle, runId, isRunHost, phaseEventsById } = r
   const canManageJourney = entry.canManage
+  // The sales page: a course's own page (/courses/...), else the Journey's public page. `?preview=1` keeps an
+  // enrolled manager on it; without it /journeys/<slug> sends them straight back here (owner 2026-11-18).
+  const coursePage = courseHref(slug)
+  const salesHref = coursePage.startsWith('/courses/') ? coursePage : `/journeys/${slug}?preview=1`
   const journeyCaps = entry.caps
 
   const [author, meetupEvent, gatheringEvent, guides, hostSpace, rootSpaceId] = await Promise.all([
@@ -135,7 +140,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
               />
             )}
             {canManageJourney && (
-              <Link href={`/journeys/${slug}`} className="btn sm">
+              <Link href={salesHref} className="btn sm">
                 <Eye className="h-4 w-4" aria-hidden /> Sales page
               </Link>
             )}
