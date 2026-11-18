@@ -14,7 +14,7 @@ import { HOME_TZ } from '@/lib/time/zone'
 // (lib/journeys/learn-route.ts: the door, the drip anchor, the Run reads) and hands this body the
 // tree, the locks and the controls it already built:
 //
-//   head          The Quest · Journey / the title / Week N of M · Lesson K next · people on it
+//   head          The Quest · Journey (Creator Lab · Course for a Frequency course) / the title / Week N of M · Step K next
 //   aura panel    the progress ring, Up next (or caught up / finished), the one primary action
 //   columns       each week as a lesson list: done, next (orb + Start), still to come; a locked week
 //                 is dimmed with the day it opens; a Run's dated meetup sits in its week  |  who is on
@@ -73,7 +73,7 @@ export function JourneyCourseBody({
   slug,
   title,
   summary,
-  adoptCount,
+  eyebrow = 'The Quest · Journey',
   tree,
   locks,
   unit,
@@ -93,7 +93,8 @@ export function JourneyCourseBody({
   slug: string
   title: string
   summary: string | null
-  adoptCount: number
+  /** The eyebrow above the title. A Frequency course passes "Creator Lab · Course". */
+  eyebrow?: string
   tree: JourneyTree
   locks: PhaseLockState[]
   unit: Unit
@@ -134,7 +135,7 @@ export function JourneyCourseBody({
   }
   // An entry is titled by its author (Overview, Lesson, Homework...), so nothing here calls it a "Lesson N".
   if (next && nextNumber) metaParts.push(`Step ${nextNumber} next`)
-  metaParts.push(`${adoptCount.toLocaleString()} ${adoptCount === 1 ? 'person' : 'people'} on this Journey`)
+  // The headcount is NOT repeated here: the On this Journey panel beside it already says it (owner 2026-11-18).
 
   const kicker = empty ? 'Still being written' : tree.complete ? (cycle ? `Every ${unit} is done` : 'Journey finished') : waiting ? 'You are caught up' : 'Up next'
   const heroTitle = empty
@@ -177,7 +178,7 @@ export function JourneyCourseBody({
         />
       ) : null}
       <MemberHead
-        kicker="The Quest · Journey"
+        kicker={eyebrow}
         title={<SerifTail text={title} />}
         meta={metaParts.join(' · ')}
         actions={<div className="row wrap">{actions}</div>}

@@ -21,7 +21,7 @@ import { JourneyCourseBody } from '@/components/frequency/members/journey/journe
 import { OnThisJourneyPanel, MoreJourneysPanel, GuidePanel } from '@/components/frequency/members/journey/journey-side'
 import { listFriendsOnJourney } from '@/lib/journeys/friends-on-journey'
 import { listPublicJourneys } from '@/lib/journey-plans'
-import { courseHref } from '@/lib/courses/tracks'
+import { HOUSE_SPACE_SLUG, courseHref, isCourse } from '@/lib/courses/tracks'
 
 // THE COURSE HOME — where an enrolled member lands (ADR-252 J1b, split from the player). One of the
 // four Journey views the dock links: About (the sales page, /journeys/<slug>), Course (here), Focus
@@ -56,6 +56,13 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
     hostSpace && hostSpace.id !== rootSpaceId
       ? { slug: hostSpace.slug, name: hostSpace.brandName ?? hostSpace.name, logoUrl: hostSpace.brandLogoUrl ?? null }
       : null
+
+  // One of Frequency's own courses (official, public, Creator Lab or hosted by the house Space) reads
+  // "Creator Lab · Course" above its title; every other Journey keeps "The Quest · Journey".
+  const frequencyCourse = isCourse(
+    { ...plan, category: plan.category ?? null },
+    hostSpace?.slug === HOUSE_SPACE_SLUG ? hostSpace.id : null,
+  )
 
   // Members currently ON this Journey, named in the unpublish confirmation. Author + public only.
   const adopterCount = isAuthor && plan.visibility === 'public' ? await countActiveAdopters(plan.id, r.profileId) : 0
@@ -109,7 +116,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         title={plan.title}
         coverImage={plan.cover_image ?? null}
         summary={plan.summary ?? null}
-        adoptCount={adoptCount}
+        eyebrow={frequencyCourse ? 'Creator Lab · Course' : undefined}
         tree={tree}
         locks={locks}
         unit={unit}
