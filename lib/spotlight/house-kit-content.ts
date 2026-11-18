@@ -111,7 +111,7 @@ export function houseKitSpotlightContent(theme: HouseKitTheme, opts: { name?: st
   const first = openings[0]
   const doors: HouseKitDoor[] = [
     ...offers.map((o, i): HouseKitDoor => ({ id: `offer-${i}`, icon: 'tag', title: o.name, meta: `${o.price} · ${o.dur}`, href: '/services' })),
-    { id: 'events', icon: 'calendar', title: "What's on", meta: 'Dates, times and how to join', href: '/events' },
+    { id: 'events', icon: 'calendar', title: "What's happening", meta: 'Dates, times and how to join', href: '/events' },
     { id: 'reviews', icon: 'star', title: 'Read reviews', meta: 'What the regulars say', href: '/reviews' },
     { id: 'circles', icon: 'users', title: 'Find your people', meta: 'The small rooms where the same faces meet again', href: '/groups' },
     { id: 'letter', icon: 'mail', title: 'Get the letter', meta: 'A short note when something opens up', href: '/letter' },
