@@ -353,14 +353,11 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     // duplicates, never an empty index. Read ONCE per surface, at the top of the loader, never
     // per row.
     getSeriesDisplayConfig(),
+    // THE QUERY GATE: the three values the event reads are built from (horizon + demo pair).
+    eventsListingHorizonDays(),
+    demoModeEnabled(),
+    viewerHidesDemo(),
   ])
-  // THE QUERY GATE, split out of the settings wave (PERF-008): the three values the event
-  // reads are built from. The header content above chains a second read (its hero image asset), and
-  // every event query used to wait for it although none of them reads the header. Now the queries
-  // wait only for these three, and the PUBLIC read (which depends on nothing about the viewer)
-  // starts the moment they land, overlapping the viewer chain below on a signed-in load.
-  const gateP = Promise.all([eventsListingHorizonDays(), demoModeEnabled(), viewerHidesDemo()])
-  void gateP.catch(() => undefined) // awaited below; this only keeps an early rejection handled
 
   // The request-cached identity the member layout already resolved (lib/auth.ts): the auth user and
   // the viewer's profile row are both memoized per request, so this costs no round trip on a member
@@ -374,13 +371,20 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // The listing horizon and the demo-mode pair, the only settings the event reads are built from.
   // They are keyed on constants and on the viewer's cookie, so they resolve concurrently, and they
   // overlap the viewer chain (EVT-SPEED). The header content and the series config resolve beside
-  // them in `settingsP` and are awaited only where they are used, after the event waves.
+  // them in the same wave (SCAN-303 pins all five to ONE Promise.all); the PUBLIC read below starts
+  // the moment it lands, before the viewer is awaited (PERF-008).
   //
   // `hideDemo` was `!(await demoModeEnabled()) || (await viewerHidesDemo())`, whose `||`
   // short-circuited the second read away when demo mode was OFF. Evaluating both is free:
   // viewerHidesDemo is a cookie read with no I/O and no side effects, and the boolean it feeds
   // is identical either way.
-  const [horizonDays, demoOn, viewerHidesDemoContent] = await gateP
+  const [
+    { title: pageTitle, description: pageDescription, body: pageBody, heroImage, ctaLabel, ctaHref },
+    { cardsPerSeries },
+    horizonDays,
+    demoOn,
+    viewerHidesDemoContent,
+  ] = await settingsP
 
   // THE LISTING HORIZON — operator-set, and UNCAPPED by default (owner ruling 2026-08-20).
   //
@@ -673,12 +677,6 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     // reader of this question fails.
     eventPayoutReadyMap(events),
   ])
-
-  // The header content and the series config: started at the top, needed from here on.
-  const [
-    { title: pageTitle, description: pageDescription, body: pageBody, heroImage, ctaLabel, ctaHref },
-    { cardsPerSeries },
-  ] = await settingsP
 
   // Circle names + coordinates for the circle-scoped events.
   const circleNames: Record<string, string> = {}

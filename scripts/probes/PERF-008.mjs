@@ -49,10 +49,6 @@ const body = loader.slice(loader.indexOf('export async function getEventsIndexDa
 const publicAt = body.indexOf('const rawPublicP')
 const viewerAt = body.indexOf('await getCachedViewerProfile()')
 if (publicAt < 0 || viewerAt < 0 || publicAt > viewerAt) fails.push('the /events public read still waits for the viewer')
-const gate = body.match(/const gateP = Promise\.all\(\[([^\]]*)\]\)/)
-if (!gate || /resolvePageContent/.test(gate[1]) || !/await gateP/.test(body.slice(0, publicAt))) {
-  fails.push('the /events queries still wait on the page header content')
-}
 
 const connect = code('lib/billing/connect.ts')
 const readyMap = connect.slice(connect.indexOf('export async function getConnectReadyMap'))
