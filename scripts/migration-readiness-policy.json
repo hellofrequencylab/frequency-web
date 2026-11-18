@@ -4010,6 +4010,13 @@
           "headMode": "100644"
         },
         {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "a1acd2d9044775b429b6d052cf781181dded1895af1ec046c2e8767b999ea855",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
           "file": "scripts/table-grants.txt",
           "status": "modified",
           "sha256": "788b5a493fbeca368f88abe66d01c128f58cb1ec2948390f78ac45c31a18597f",
