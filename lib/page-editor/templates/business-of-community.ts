@@ -26,7 +26,7 @@ const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as 
 const EMPHASIS = { scale: 'default', accent: 'none' } as const
 
 /** The DB-built Funnel for this course (scripts/seed-boc-funnel.sql). Completion lands in the course. */
-export const BOC_FUNNEL_HREF = '/join?seq=business-of-community'
+const BOC_FUNNEL_HREF = '/join?seq=business-of-community'
 /** The course's public, canonical Journey page. */
 export const BOC_JOURNEY_PATH = '/discover/journeys/the-business-of-community-101'
 const START = 'Start the course'

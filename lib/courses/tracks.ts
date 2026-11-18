@@ -10,9 +10,9 @@
 export const HOUSE_SPACE_SLUG = 'hq'
 
 /** The category that marks a Creator Lab course wherever it is hosted. */
-export const CREATOR_LAB_CATEGORY = 'Creator Lab'
+const CREATOR_LAB_CATEGORY = 'Creator Lab'
 
-export type CourseTrackKey = 'business' | 'hosting' | 'other'
+type CourseTrackKey = 'business' | 'hosting' | 'other'
 
 export interface CourseTrack {
   key: CourseTrackKey
@@ -21,7 +21,7 @@ export interface CourseTrack {
 }
 
 /** The shelves, in page order. `other` is the fallback and only renders when something lands in it. */
-export const COURSE_TRACKS: readonly CourseTrack[] = [
+const COURSE_TRACKS: readonly CourseTrack[] = [
   {
     key: 'business',
     label: 'Business and leadership',
@@ -54,7 +54,7 @@ const TRACK_BY_CATEGORY: Readonly<Record<string, CourseTrackKey>> = {
 }
 
 /** Journeys that have their own sales page under /courses. Every other card links to the public Journey page. */
-export const COURSE_SALES_PAGES: Readonly<Record<string, string>> = {
+const COURSE_SALES_PAGES: Readonly<Record<string, string>> = {
   'the-business-of-community-101': '/courses/business-of-community',
 }
 
