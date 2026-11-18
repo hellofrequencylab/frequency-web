@@ -3886,6 +3886,154 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5255,
+      "expiresAt": "2026-11-25T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346100000_space_calendar_sync_connections.sql",
+          "sha256": "785f2ac85c1429027c807376e921174f32e30771ecb3320fa2a248727750a954"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": ".env.example",
+          "status": "modified",
+          "sha256": "e0119d137783755788f454cf2e982c8f37e2dd21108f27dbb1fa50e8963b5601",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/calendar-sync-actions.ts",
+          "status": "added",
+          "sha256": "41331c5ec80a2ecc9e9e5a05a17d3b5ff7cccd01b0af14f0f20d8a6b3c9c764a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/calendar-sync-soon.tsx",
+          "status": "modified",
+          "sha256": "805c9e22aed2ac03a59644d7dfe06214f3dd5c3e2b37809a2a2b50023e88561d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/api/integrations/calendar/[provider]/callback/route.ts",
+          "status": "added",
+          "sha256": "b434b07f8ef5990fb9b41ca17091b9333fbfa4afb754667462ee53ad17d4950d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/calendar-suite/suite-settings.tsx",
+          "status": "modified",
+          "sha256": "9a648912e6d3dcbbc0483c0a0ceb360df0c44d18443dac1ca9e0fdcbad0a78ba",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "8b36a17d258700c1300ac6a1a4c7ab777282be376e8e172ea07a56249b4f6364",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/adr/ADR-1976.md",
+          "status": "added",
+          "sha256": "7f89cb8c19c45835baf2f03a38b7c74fde0c7e549720d7b499fd459dbb890751",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-1179.json",
+          "status": "added",
+          "sha256": "2dc5df05d9143914dad94f98041b317be6fc4045e9953e4480fb7d50f6f26edd",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar-sync/google.ts",
+          "status": "modified",
+          "sha256": "ba0823f2adc7da4ef3374bfff4cb4c896a2d08abf10b5cc5dc4da13a98c7901e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar-sync/oauth.ts",
+          "status": "added",
+          "sha256": "65e02da8c9a677e57b8d7168a655df8fd09336967d9e78369bd3dbfe8ee72540",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar-sync/plan.test.ts",
+          "status": "added",
+          "sha256": "979646a0e9cca1ddaf439aa74c34fffdd0211da5a14c425f3980b87baebb7bbd",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar-sync/plan.ts",
+          "status": "added",
+          "sha256": "4ddae9ab2fcc9ec9ea621c78116a28d1c319f42be3acfc6c7d44bde372608da3",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar-sync/run.ts",
+          "status": "added",
+          "sha256": "67dbf778b4c67d27c67004eac9160971ca38de3d47e813f26ecd477ef68af86c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar-sync/seal.test.ts",
+          "status": "added",
+          "sha256": "49ff993818d931843a438a995d04e06ce8d8484cdd5f8a643fd5c55db3221e77",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar-sync/seal.ts",
+          "status": "added",
+          "sha256": "847f4890d44a461113bf0296c1d614698417f23616839a227583098db648db33",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar-sync/store.ts",
+          "status": "added",
+          "sha256": "3e26f9b1df2a05a042edadb431b531a9f02832dcd203220d2e00798840fd0ca7",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "788b5a493fbeca368f88abe66d01c128f58cb1ec2948390f78ac45c31a18597f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346100000_space_calendar_sync_connections.sql",
+          "status": "added",
+          "sha256": "785f2ac85c1429027c807376e921174f32e30771ecb3320fa2a248727750a954",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
