@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from 'next'
 import { HowBrief } from './how-brief'
 
-// /how: the advisor briefing ("How Frequency works, and where the money comes from").
+// /build/how (was /how, which now 308s here): the advisor briefing ("How Frequency works, and where the money comes from").
 // LINK-ONLY by design (owner 2026-11-16):
 //   - noindex/nofollow/noarchive/nosnippet here, and NOT in app/sitemap.ts or the site nav.
 //   - NOT added to app/robots.ts DISALLOW: a blocked page's noindex is never read (see the /join note there).
-// Share as https://frequencylocal.com/how?r=<recipient> so each reader's engagement can be told apart
+// Share as https://frequencylocal.com/build/how?r=<recipient> so each reader's engagement can be told apart
 // (lib/how/brief-events.ts, docs/HOW-BRIEF.md).
 export const metadata: Metadata = {
   title: 'How Frequency works',
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     title: 'How Frequency works, and where the money comes from',
     description: 'Get people together. Do things on purpose. How members, hosts and local businesses meet in one network, and how it pays for itself.',
     type: 'article',
-    url: '/how',
+    url: '/build/how',
     siteName: 'Frequency',
   },
   twitter: {
