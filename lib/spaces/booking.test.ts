@@ -79,6 +79,7 @@ type BookRow = {
 type ServiceTypeRow = {
   id: string
   space_id: string
+  product_id?: string | null
   name: string
   duration_minutes: number
   active: boolean
@@ -372,6 +373,20 @@ function schedulesBuilder() {
 
 // SCAN-834: what a guest hold must NOT do until the click, and what the click must do.
 const captureLeadSpy = vi.fn(async (_input: unknown) => null)
+// SEC-029: the three deposit gates, OFF by default so every existing suite keeps the dark path.
+let depositsOn = false
+vi.mock('@/lib/commerce/selling', async (orig) => ({
+  ...(await orig<typeof import('@/lib/commerce/selling')>()),
+  canTakePayments: () => depositsOn,
+}))
+vi.mock('@/lib/billing/connect', async (orig) => ({
+  ...(await orig<typeof import('@/lib/billing/connect')>()),
+  payoutsLive: async () => depositsOn,
+}))
+vi.mock('@/lib/pricing/payments-gate', async (orig) => ({
+  ...(await orig<typeof import('@/lib/pricing/payments-gate')>()),
+  spaceCanTakePayments: async () => depositsOn,
+}))
 vi.mock('@/lib/crm/lead-capture', () => ({ captureLead: captureLeadSpy }))
 const holdEmailSpy = vi.fn(async (_input: unknown) => undefined)
 vi.mock('@/lib/email', async (orig) => ({
@@ -428,6 +443,7 @@ import {
 } from './booking'
 
 beforeEach(() => {
+  depositsOn = false
   currentProfileId = 'member-0000-4000-a000-0000000membr'
   currentWebRole = 'none'
   resolvedSpace = { id: 'space-1', slug: 'river-yoga', ownerProfileId: 'owner-0000-4000-a000-0000000ownr' }
@@ -1537,5 +1553,39 @@ describe('summarizeAvailability', () => {
     expect(s.dayCount).toBe(2) // Mon + Wed (the two Monday windows collapse to one day)
     expect(s.weeklySlots).toBe(5)
     expect(s.slotLengths).toEqual([30, 60])
+  })
+})
+
+// ── SEC-029: the free confirm-only door never books a deposit service once deposits are live ─────
+describe('createBooking never skips a deposit (SEC-029)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-29T08:00:00.000Z'))
+    db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+    db.serviceTypes = []
+    db.serviceTypes.push({ id: 'svc-paid', space_id: 'space-1', product_id: 'prod-1', name: 'Paid session', duration_minutes: 30, active: true, sort_order: 0 })
+    db.serviceTypes.push({ id: 'svc-free', space_id: 'space-1', product_id: null, name: 'Free call', duration_minutes: 30, active: true, sort_order: 1 })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('refuses a deposit service while deposits are live and writes no booking', async () => {
+    depositsOn = true
+    const r = await createBooking('space-1', '2026-06-30T10:00:00.000Z', undefined, 'svc-paid')
+    expect('error' in r).toBe(true)
+    if ('error' in r) expect(r.error).toMatch(/deposit/i)
+    expect(db.bookings).toHaveLength(0)
+  })
+
+  it('still books a free service while deposits are live', async () => {
+    depositsOn = true
+    const r = await createBooking('space-1', '2026-06-30T10:00:00.000Z', undefined, 'svc-free')
+    expect('error' in r).toBe(false)
+  })
+
+  it('keeps the confirm-only path for a deposit service while deposits are dark', async () => {
+    const r = await createBooking('space-1', '2026-06-30T10:00:00.000Z', undefined, 'svc-paid')
+    expect('error' in r).toBe(false)
   })
 })

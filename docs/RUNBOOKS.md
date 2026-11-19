@@ -1068,8 +1068,8 @@ Check: GA4 Admin, DebugView or Realtime shows `sign_up` after a fresh signup in 
 It is an effective date, not a switch, so a later reader can tell what a past sale carried from its amount and its time (`sellerFeesAt` in `lib/billing/card-fee.ts`) with no new column.
 
 **Gate before setting it:**
-1. The owner has named the date, and sellers were told ahead of it (the pricing and help copy already says card processing is the seller's).
-2. LIVE-2421 is done: a split order (a co-hosted ticket, a cart with more than one seller) still leaves the card fee with Frequency until the transfer ledger can carry it.
+1. The owner has named the date (2026-11-19: Feb 1, 2027, the day the beta ends, `2027-02-01T08:00:00Z`), and sellers were told ahead of it (the pricing and help copy already says card processing is the seller's).
+2. LIVE-2421 is done AND its migration (`20270346170000_transfer_card_fee`, the `processing_fee_cents` column on `commerce_order_transfers`) is applied to production: a split order (a co-hosted ticket, a cart with more than one seller) carries each share's part of the card fee only once that column exists. Check with `select column_name from information_schema.columns where table_name = 'commerce_order_transfers' and column_name = 'processing_fee_cents'`.
 3. LIVE-2422 is done: the earnings views subtract the card fee, so a seller's net on screen matches their payout.
 4. With the date set on a preview deployment and a Stripe test key, a $25 ticket to a 0% Space shows an application fee of $1.03 on the payment in Stripe, and the sale email reads "The card fee was $1.03, so $23.97 goes to your payout account."
 

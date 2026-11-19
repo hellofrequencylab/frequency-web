@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { roomAtomicWritesEnabled, createRoomAtomic, setRoomAdminAtomic, removeRoomMemberAtomic } from '@/lib/messages/room-atomic'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { canEditRoomVisibility } from '@/lib/messages/room-settings-policy'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
 import { belongsToRoomScope, isScopedRoomVisibility, scopedRoomRefusal } from '@/lib/messages/room-scope'
 
@@ -74,7 +74,7 @@ export async function createRoom(fd: FormData): Promise<ActionResult<{ id: strin
 
   if (error || !data) {
     console.error('[createRoom] insert error:', error)
-    return fail(error?.message ?? 'Failed to create room')
+    return fail(safeErrorMessage(error, 'Could not create the room. Try again.'))
   }
 
   const { error: memberError } = await admin.from('room_members').insert({

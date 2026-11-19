@@ -99,6 +99,7 @@ function transfer(over: Partial<OrderTransfer>): OrderTransfer {
     stripeAccountId: 'acct_a',
     amountCents: 5400,
     platformFeeCents: 600,
+    processingFeeCents: 0,
     currency: 'usd',
     status: 'created',
     stripeTransferId: 'tr_123',

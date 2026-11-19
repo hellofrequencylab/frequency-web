@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 import { resolveConnectProvenance, type ConnectContext } from '@/lib/connections/edge-types'
 import { isBlockedBetween } from '@/lib/blocking'
 
@@ -81,7 +81,7 @@ export async function sendFriendRequest(
     })
 
   if (error && !error.message.toLowerCase().includes('duplicate')) {
-    return fail(error.message)
+    return fail(safeErrorMessage(error))
   }
 
   // Notify the target. But only if the row was newly inserted
@@ -116,7 +116,7 @@ export async function acceptFriendRequest(requesterProfileId: string): Promise<A
     .select('id')
     .maybeSingle()
 
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
   if (!updated) return fail('No pending request from that user')
 
   // Notify the original requester that it was accepted
@@ -147,7 +147,7 @@ export async function declineFriendRequest(requesterProfileId: string): Promise<
     .delete()
     .match({ ...pair, status: 'pending', requested_by: requesterProfileId })
 
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
   revalidatePath('/network/friends')
   return ok()
 }
@@ -165,7 +165,7 @@ export async function cancelFriendRequest(addresseeProfileId: string): Promise<A
     .delete()
     .match({ ...pair, status: 'pending', requested_by: me.id })
 
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
   revalidatePath('/network/friends')
   await revalidateProfileByHandle(admin, addresseeProfileId)
   return ok()
@@ -184,7 +184,7 @@ export async function unfriend(otherProfileId: string): Promise<ActionResult> {
     .delete()
     .match({ ...pair, status: 'accepted' })
 
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
   revalidatePath('/network/friends')
   await revalidateProfileByHandle(admin, otherProfileId)
   return ok()

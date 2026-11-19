@@ -3,6 +3,8 @@ import {
   planFundsFlow,
   splitTotals,
   sellerKey,
+  withCardFeeShares,
+  type SellerSplit,
   type FundsFlowLine,
 } from './funds-flow'
 
@@ -97,5 +99,39 @@ describe('planFundsFlow — the carts the money cannot pay as one charge', () =>
 
   it('an empty cart is refused before anything is grouped', () => {
     expect(planFundsFlow([])).toEqual({ refused: 'empty' })
+  })
+})
+
+// THE CARD FEE ON A SPLIT CHARGE (LIVE-2421). The one card fee on the charge, shared by gross.
+describe('withCardFeeShares', () => {
+  const share = (seller: SellerSplit['seller'], grossCents: number, platformFeeCents = 0): SellerSplit => ({
+    seller,
+    grossCents,
+    platformFeeCents,
+    stripeAccountId: `acct_${seller.owner_space_id ?? seller.owner_profile_id}`,
+  })
+
+  it('shares the card fee by gross, remainder to the largest share, and adds up to the card fee', () => {
+    // $30.00 at 2.9% + 30c = 117c. A 1000 / 2000 split: floor 39 and 78 = 117, nothing left over.
+    const out = withCardFeeShares([share(spaceA, 1000, 50), share(spaceB, 2000, 100)], 117)
+    expect(out.map((s) => s.processingFeeCents)).toEqual([39, 78])
+    // 100c over three equal shares: 33 each, the 1c remainder to the first of equals.
+    const even = withCardFeeShares([share(spaceA, 1000), share(spaceB, 1000), share(maker, 1000)], 100)
+    expect(even.map((s) => s.processingFeeCents)).toEqual([34, 33, 33])
+    expect(even.reduce((n, s) => n + (s.processingFeeCents ?? 0), 0)).toBe(100)
+  })
+
+  it('with the pass-through off every share carries 0', () => {
+    const out = withCardFeeShares([share(spaceA, 1000, 50), share(spaceB, 2000, 100)], 0)
+    expect(out.map((s) => s.processingFeeCents)).toEqual([0, 0])
+    expect(out.map((s) => s.platformFeeCents)).toEqual([50, 100])
+  })
+
+  it('never asks a share for more than is left after its fee; the others take it, then the platform', () => {
+    const out = withCardFeeShares([share(spaceA, 100, 98), share(spaceB, 900, 0)], 50)
+    expect(out[0].processingFeeCents).toBe(2)
+    expect(out[1].processingFeeCents).toBe(48)
+    const tiny = withCardFeeShares([share(spaceA, 2, 1), share(spaceB, 2, 1)], 31)
+    expect(tiny.map((s) => s.processingFeeCents)).toEqual([1, 1])
   })
 })

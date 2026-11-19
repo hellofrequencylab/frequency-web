@@ -1,0 +1,20 @@
+{
+  "id": "SEC-028",
+  "title": "Stop the free join action from giving away paid Space membership tiers",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/spaces/memberships.ts",
+    "ref": "deepest site audit 2026-11-19 (money paths)"
+  },
+  "detail": "Deep audit 2026-11-19. joinTier (lib/spaces/memberships-actions.ts, a public server action) records an ACTIVE membership and takes no payment. Whether a tier was paid was decided only in the browser (components/spaces/membership-join-card.tsx tries checkout first and refuses no_owner_payouts / payments_plan / no_annual_price). Access ignores payment status (isSpacePaidMember reads status only), so calling the action directly gave a member any paid tier, its linked Circle and its member benefits (including a 100% member ticket benefit) for free, and gave a free Space paid members past the payments gate. Fix: joinTier refuses a tier with a monthly or yearly price while billingLive() is true; the paid writer is checkout and its webhook. While billing is off (the beta), the display-only join stays as designed. Production holds one such row: the owner's own Temple Member test membership on royaltemple (2026-07-26). Test rewrite approved by Daniel on the decision card 2026-11-19 15:57Z: the joinTier tests now pin the display-only join with billing off, and new tests pin the refusal with billing on.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SEC-028.mjs",
+    "note": "Fails on main: joinTier inserts with no paid-tier refusal. Passes when the refusal guards the insert."
+  },
+  "closed": "2026-11-19"
+}

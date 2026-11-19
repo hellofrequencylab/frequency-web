@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { safeErrorMessage } from '@/lib/action-result'
 
 // Save the home page's SEO title + meta description (ADR-180 page_content, route
 // '/'). Janitor-gated like the rest of /pages (the generic savePageContent rides
@@ -30,7 +31,7 @@ export async function saveHomeSeo(fd: FormData): Promise<{ ok: boolean; error?: 
     updated_by: janitor.profileId,
     updated_at: new Date().toISOString(),
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: safeErrorMessage(error) }
 
   revalidatePath('/')
   revalidatePath('/pages/home')

@@ -183,6 +183,8 @@ interface ShareRow {
   order_id: string
   amount_cents: number
   platform_fee_cents: number
+  /** The card fee this share bore (LIVE-2421); absent or 0 before the pass-through date. */
+  processing_fee_cents?: number | null
   reversed_cents: number
   status: TransferStatus
   /** This seller's own step and record for their share (LIVE-705). */
@@ -190,7 +192,7 @@ interface ShareRow {
   fulfilment?: unknown
 }
 
-const SHARE_COLS = 'id, order_id, amount_cents, platform_fee_cents, reversed_cents, status, fulfillment_status, fulfilment'
+const SHARE_COLS = 'id, order_id, amount_cents, platform_fee_cents, processing_fee_cents, reversed_cents, status, fulfillment_status, fulfilment'
 
 /** This seller's transfer rows, newest first. Filtered on the seller's own owner column AND kind, so
  *  no other seller's row is ever read here. Throws on a database error; each caller decides. */
@@ -251,7 +253,7 @@ export function sellerViewOfSplitOrder(order: CommerceOrder, seller: OrderSeller
     seller.kind === 'space' ? { kind: 'space', profileId: null, spaceId: seller.id } : { kind: 'profile', profileId: seller.id, spaceId: null }
   // Their step and record, not the order's roll-up: the door below offers THEIR next step (LIVE-705).
   const view = shareView(order, lineSeller, asFulfillmentStatus(row.fulfillment_status), fulfilmentFromRecord(row.fulfilment))
-  const grossCents = row.amount_cents + row.platform_fee_cents
+  const grossCents = row.amount_cents + row.platform_fee_cents + (row.processing_fee_cents ?? 0)
   return {
     ...view,
     amountCents: grossCents,
@@ -708,7 +710,8 @@ async function splitShareEarnings(spaceId: string, sinceDays?: number, strict = 
   for (const o of (data ?? []) as { id: string; amount_cents?: number | null; status?: string; metadata?: unknown }[]) {
     const row = byOrder.get(o.id)
     if (!row) continue
-    const gross = row.amount_cents + row.platform_fee_cents
+    const card = row.processing_fee_cents ?? 0
+    const gross = row.amount_cents + row.platform_fee_cents + card
     const fee = row.platform_fee_cents
     const orderAmount = Number(o.amount_cents) || 0
     if (o.status === 'refunded') {
@@ -718,13 +721,15 @@ async function splitShareEarnings(spaceId: string, sinceDays?: number, strict = 
       const orderRefunded = partialRefundedCents(o.metadata, orderAmount)
       const refunded = orderAmount > 0 ? Math.min(gross, Math.round((orderRefunded * gross) / orderAmount)) : 0
       const feeRefunded = gross > 0 ? Math.min(fee, Math.round((fee * refunded) / gross)) : 0
+      const cardRefunded = gross > 0 ? Math.min(card, Math.round((card * refunded) / gross)) : 0
       out.grossCents += gross - refunded
       out.feeCents += fee - feeRefunded
+      // The card fee the share bore, as its row recorded it (LIVE-2421), pro rata to what stands.
+      out.cardFeeCents = (out.cardFeeCents ?? 0) + card - cardRefunded
       out.refundedCents += refunded
       out.orderCount += 1
     }
   }
-  // No card fee on a share yet: the transfer ledger does not record which share bore it (LIVE-2421).
   settleNet(out)
   return out
 }

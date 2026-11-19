@@ -151,7 +151,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'Do I need to be technical to use community-building tools?',
-      a: 'No. Good community tools are built for a host, not an engineer. If you can set a time, send a message, and welcome someone new, you can run the software. The point of a toolkit like Frequency is to take the technical weight off you, so the job stays about the people in the room.',
+      a: 'No. Good community tools are built for a host, not an engineer. If you can set a time, send a message, and welcome someone new, you can run the software. The point of a toolkit like Frequency is to take the technical weight off you, so the job stays about your people.',
     },
   ],
 

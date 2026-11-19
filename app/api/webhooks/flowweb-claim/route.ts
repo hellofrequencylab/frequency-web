@@ -9,13 +9,19 @@ import { envStringOrNull } from '@/lib/env/string'
 import { buildClaim, parseItem, verifySignature } from '@/lib/flowweb/claim'
 import { realClaimDeps } from '@/lib/flowweb/claim-io'
 import { log } from '@/lib/log'
+import { readCappedText } from '@/lib/net/capped-body'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+/** One claim item is a few hundred bytes of JSON. The body is read before the signature can be
+ *  checked, so anything past this is refused unread rather than buffered (SEC-030). */
+const MAX_CLAIM_BODY_BYTES = 64 * 1024
+
 export async function POST(req: Request) {
   const secret = envStringOrNull('FLOWWEB_CLAIM_SECRET') ?? ''
-  const body = await req.text()
+  const body = await readCappedText(req, MAX_CLAIM_BODY_BYTES)
+  if (body === null) return NextResponse.json({ error: 'payload too large' }, { status: 413 })
   const ts = req.headers.get('x-flowweb-timestamp') ?? ''
   const sig = req.headers.get('x-flowweb-signature') ?? ''
   if (!verifySignature(secret, ts, body, sig)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })

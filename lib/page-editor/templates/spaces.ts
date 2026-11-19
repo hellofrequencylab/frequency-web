@@ -76,7 +76,7 @@ export const data: Data = {
         id: 'sp-hero',
         variant: 'image',
         eyebrow: 'Spaces',
-        title: 'Bring your people. They join free. You hold the room.',
+        title: 'Bring your people. They join free. You run it.',
         titleAccent: 'They join free',
         subtitle:
           "If you already gather people, or you've been meaning to, this is where you run your own community on rails that work. Your people join free. You host free, and we hand you the format and the backup.",

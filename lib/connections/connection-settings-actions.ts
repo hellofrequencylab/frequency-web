@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { isStaff } from '@/lib/core/roles'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 import { isLocationBand, isDiscoverableBy } from '@/lib/connections/location'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
 
@@ -67,7 +67,7 @@ export async function saveMyConnectionPrefs(input: MyPrefsInput): Promise<Action
 
   const db = createAdminClient()
   const { error } = await db.from('profiles').update(patch as Database['public']['Tables']['profiles']['Update']).eq('id', me.id)
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
   revalidatePath('/settings')
   revalidatePath('/network')
   revalidatePath('/feed')
@@ -91,7 +91,7 @@ export async function setLiveLocation(input: {
       .from('profiles')
       .update({ location_mode: 'home', live_lat: null, live_lng: null, live_updated_at: null })
       .eq('id', me.id)
-    if (error) return fail(error.message)
+    if (error) return fail(safeErrorMessage(error))
     revalidatePath('/settings/connections')
     revalidatePath('/settings') // the section now renders on the unified Settings page
     return ok()
@@ -106,7 +106,7 @@ export async function setLiveLocation(input: {
     .from('profiles')
     .update({ location_mode: 'live', live_lat: lat, live_lng: lng, live_updated_at: new Date().toISOString() })
     .eq('id', me.id)
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
   revalidatePath('/settings/connections')
   revalidatePath('/settings') // the section now renders on the unified Settings page
   revalidatePath('/network')
@@ -164,7 +164,7 @@ export async function saveConnectionSettings(input: SettingsInput): Promise<Acti
 
   const db = createAdminClient()
   const { error } = await db.from('connection_settings').update(patch as Database['public']['Tables']['connection_settings']['Update']).eq('id', true)
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
   revalidatePath('/network')
   return ok()
 }

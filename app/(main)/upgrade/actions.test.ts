@@ -14,6 +14,7 @@ const {
   sessionsCreate,
   sessionsExpire,
   billingLiveMock,
+  billingLiveFlagMock,
   loadCatalogConfig,
   getUser,
   profilesMaybeSingle,
@@ -22,6 +23,7 @@ const {
   sessionsCreate: vi.fn(),
   sessionsExpire: vi.fn(),
   billingLiveMock: vi.fn(),
+  billingLiveFlagMock: vi.fn(),
   loadCatalogConfig: vi.fn(),
   getUser: vi.fn(),
   profilesMaybeSingle: vi.fn(),
@@ -32,7 +34,7 @@ vi.mock('@/lib/billing/stripe', () => ({
   stripe: { checkout: { sessions: { create: sessionsCreate, expire: sessionsExpire } } },
   appUrl: () => 'https://frequencylocal.com',
 }))
-vi.mock('@/lib/pricing/settings', () => ({ billingLive: billingLiveMock }))
+vi.mock('@/lib/pricing/settings', () => ({ billingLive: billingLiveMock, billingLiveFlag: billingLiveFlagMock }))
 vi.mock('@/lib/pricing/catalog-config', () => ({ loadCatalogConfig }))
 vi.mock('@/lib/billing/checkout', () => ({ createMembershipCheckout: vi.fn() }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
@@ -55,6 +57,7 @@ import { toggleMembership } from './actions'
 
 beforeEach(() => {
   vi.clearAllMocks()
+  billingLiveFlagMock.mockResolvedValue(false)
   getUser.mockResolvedValue({ data: { user: { id: 'auth-1' } } })
   profilesMaybeSingle.mockResolvedValue({ data: { id: 'profile-1' } })
   loadCatalogConfig.mockResolvedValue({ pwyw: { minCents: 500, suggestedCents: 1200 } })
@@ -88,6 +91,19 @@ describe('toggleMembership - closed once billing is live (LIVE-090)', () => {
     getUser.mockResolvedValue({ data: { user: null } })
     const res = await toggleMembership()
     expect(res).toEqual({ error: 'Not signed in' })
+    expect(profilesUpdate).not.toHaveBeenCalled()
+  })
+})
+
+// SEC-031 (owner ruling 2026-11-19): the billing_live switch alone closes the toggle, so a missing
+// Stripe key (billingLive() false) can never reopen free Crew while the switch is on.
+describe('toggleMembership - the billing switch alone closes it (SEC-031)', () => {
+  it('refuses and writes NOTHING when the switch is on but billingLive() is false', async () => {
+    billingLiveMock.mockResolvedValue(false)
+    billingLiveFlagMock.mockResolvedValue(true)
+    profilesMaybeSingle.mockResolvedValue({ data: { id: 'profile-1', membership_tier: 'free' } })
+    const res = await toggleMembership()
+    expect(res).toEqual({ error: 'Manage your membership in billing.' })
     expect(profilesUpdate).not.toHaveBeenCalled()
   })
 })

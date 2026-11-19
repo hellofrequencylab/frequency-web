@@ -1707,7 +1707,7 @@ export const newWorldBlocks: Record<string, ComponentConfig> = {
   NewWorldPosts: block(
     "New World posts",
     { ...head, ...links("button"), rows: rows({ kind: text("Kind"), title: text("Title"), meta: text("Small line"), href: text("Link", LINK_HINT) }), register },
-    { index: "11", eyebrow: "Notes", title: "Good to *read.*", lede: "Notes from the room, written by the people in it.", buttonLabel: "", buttonHref: "", rows: [], register: "auto" },
+    { index: "11", eyebrow: "Notes", title: "Good to *read.*", lede: "Notes from our groups, written by the people in them.", buttonLabel: "", buttonHref: "", rows: [], register: "auto" },
     Posts,
   ),
   NewWorldProcess: block(
