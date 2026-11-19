@@ -18,6 +18,7 @@ import type {
   ResolvedItem,
   ResolvedMenu,
 } from './types'
+import { safeErrorMessage } from '@/lib/action-result'
 
 // Janitor-gated CRUD for the DB-backed menu system. Mirrors
 // app/(main)/admin/menu/actions.ts (retired): a requireJanitor() gate on the web_role staff
@@ -151,7 +152,7 @@ export async function ensureMenu(surfaceKey: MenuSurfaceKey): Promise<EnsureResu
       .eq('surface_key', surfaceKey)
       .is('space_id', null)
       .limit(1)
-    if (readErr) return { ok: false, error: readErr.message }
+    if (readErr) return { ok: false, error: safeErrorMessage(readErr) }
     const found = (existing ?? [])[0]
     if (found) return { ok: true, id: found.id }
 
@@ -161,7 +162,7 @@ export async function ensureMenu(surfaceKey: MenuSurfaceKey): Promise<EnsureResu
       .insert({ space_id: null, surface_key: surfaceKey, label: def.label, columns: def.columns })
       .select('id')
       .limit(1)
-    if (insErr) return { ok: false, error: insErr.message }
+    if (insErr) return { ok: false, error: safeErrorMessage(insErr) }
     const row = (inserted ?? [])[0]
     if (!row) return { ok: false, error: 'Insert returned no row' }
 
@@ -234,7 +235,7 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
         .from<{ id: string }>('menu_categories')
         .insert(level.map(({ cat, parentDbId }) => categoryRow(cat, parentDbId)))
         .select('id')
-      if (error) return { ok: false, error: error.message }
+      if (error) return { ok: false, error: safeErrorMessage(error) }
       const ids = (data ?? []) as { id: string }[]
       if (ids.length !== level.length) {
         return { ok: false, error: 'Failed to insert menu categories (row count mismatch)' }
@@ -562,7 +563,7 @@ export async function setMenuColumns(menuId: string, columns: number): Promise<R
     if (!menuId) return { ok: false, error: 'Missing menu id' }
     const db = adminDb()
     const { error } = await db.from('menus').update({ columns: clampColumns(columns) }).eq('id', menuId)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     bustMenus()
     return { ok: true }
   } catch (err) {
@@ -614,7 +615,7 @@ export async function createCategory(input: CreateCategoryInput): Promise<Ensure
       })
       .select('id')
       .limit(1)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     const id = (data ?? [])[0]?.id
     if (!id) return { ok: false, error: 'Insert returned no row' }
     bustMenus()
@@ -662,7 +663,7 @@ export async function updateCategory(id: string, patch: UpdateCategoryPatch): Pr
 
     const db = adminDb()
     const { error } = await db.from('menu_categories').update(update).eq('id', id)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     bustMenus()
     return { ok: true }
   } catch (err) {
@@ -677,7 +678,7 @@ export async function deleteCategory(id: string): Promise<Result> {
     const db = adminDb()
     // Child categories + items cascade via the FK on delete.
     const { error } = await db.from('menu_categories').delete().eq('id', id)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     bustMenus()
     return { ok: true }
   } catch (err) {
@@ -742,7 +743,7 @@ export async function createItem(input: CreateItemInput): Promise<EnsureResult> 
       })
       .select('id')
       .limit(1)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     const id = (data ?? [])[0]?.id
     if (!id) return { ok: false, error: 'Insert returned no row' }
     bustMenus()
@@ -804,7 +805,7 @@ export async function updateItem(id: string, patch: UpdateItemPatch): Promise<Re
 
     const db = adminDb()
     const { error } = await db.from('menu_items').update(update).eq('id', id)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     bustMenus()
     return { ok: true }
   } catch (err) {
@@ -818,7 +819,7 @@ export async function deleteItem(id: string): Promise<Result> {
     if (!id) return { ok: false, error: 'Missing item id' }
     const db = adminDb()
     const { error } = await db.from('menu_items').delete().eq('id', id)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     bustMenus()
     return { ok: true }
   } catch (err) {
@@ -849,7 +850,7 @@ export async function moveItem(id: string, surfaceKey: MenuSurfaceKey): Promise<
       .from('menu_items')
       .update({ menu_id: ensured.id, category_id: null, position })
       .eq('id', id)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     bustMenus()
     return { ok: true }
   } catch (err) {
@@ -902,7 +903,7 @@ export async function moveCategory(id: string, surfaceKey: MenuSurfaceKey): Prom
       .from('menu_categories')
       .update({ parent_id: null, position })
       .eq('id', id)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     bustMenus()
     return { ok: true }
   } catch (err) {
@@ -927,7 +928,7 @@ export async function reorderItems(
       if ('grid_col' in u) update.grid_col = clampGrid(u.grid_col) ?? null
       if ('grid_row' in u) update.grid_row = clampGrid(u.grid_row) ?? null
       const { error } = await db.from('menu_items').update(update).eq('id', u.id)
-      if (error) return { ok: false, error: error.message }
+      if (error) return { ok: false, error: safeErrorMessage(error) }
     }
     bustMenus()
     return { ok: true }
@@ -951,7 +952,7 @@ export async function reorderCategories(
       const update: Record<string, unknown> = { position: Math.trunc(u.position ?? 0) }
       if ('parent_id' in u) update.parent_id = u.parent_id ?? null
       const { error } = await db.from('menu_categories').update(update).eq('id', u.id)
-      if (error) return { ok: false, error: error.message }
+      if (error) return { ok: false, error: safeErrorMessage(error) }
     }
     bustMenus()
     return { ok: true }
@@ -1000,7 +1001,7 @@ export async function createRailCard(input: CreateRailCardInput): Promise<Ensure
       })
       .select('id')
       .limit(1)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     const id = (data ?? [])[0]?.id
     if (!id) return { ok: false, error: 'Insert returned no row' }
     bustMenus()
@@ -1042,7 +1043,7 @@ export async function updateRailCard(id: string, patch: UpdateRailCardPatch): Pr
 
     const db = adminDb()
     const { error } = await db.from('menu_rail_cards').update(update).eq('id', id)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     bustMenus()
     return { ok: true }
   } catch (err) {
@@ -1056,7 +1057,7 @@ export async function deleteRailCard(id: string): Promise<Result> {
     if (!id) return { ok: false, error: 'Missing rail card id' }
     const db = adminDb()
     const { error } = await db.from('menu_rail_cards').delete().eq('id', id)
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
     bustMenus()
     return { ok: true }
   } catch (err) {
@@ -1105,7 +1106,7 @@ export async function setMenuSettings(patch: Partial<MenuSettings>): Promise<Res
       },
       { onConflict: 'id' },
     )
-    if (error) return { ok: false, error: error.message }
+    if (error) return { ok: false, error: safeErrorMessage(error) }
 
     bustMenuSettings()
     return { ok: true }

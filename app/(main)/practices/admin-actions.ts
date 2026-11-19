@@ -8,6 +8,7 @@ import { slugify } from '@/lib/utils'
 import { isLoomPublicImageUrl } from '@/lib/loom/urls'
 import { updatePractice, type PracticeEdit } from '@/lib/practices'
 import { getPillars } from '@/lib/pillars'
+import { safeErrorMessage } from '@/lib/action-result'
 
 // The practice detail route is id-based (/practices/[id]); the settings drawer also matches the
 // bespoke /practices/new. Guard so a non-uuid id never hits the uuid PK (Postgres 22P02).
@@ -130,7 +131,7 @@ export async function setPracticeCoverUrl(
   if (!isLoomPublicImageUrl(url)) return { error: 'That image could not be used.' }
   const admin = createAdminClient()
   const { error } = await admin.from('practices').update({ header_image: url }).eq('id', id)
-  if (error) return { error: error.message }
+  if (error) return { error: safeErrorMessage(error) }
   revalidatePath(`/practices/${id}`)
   if (slug) revalidatePath(`/practices/${slug}`)
   revalidatePath('/practices')
@@ -209,7 +210,7 @@ export async function updatePracticePermalink(
   }
 
   const { error } = await db.from('practices').update({ slug: next }).eq('id', id)
-  if (error) return { error: error.message }
+  if (error) return { error: safeErrorMessage(error) }
 
   revalidatePath(`/practices/${id}`)
   if (slug) revalidatePath(`/practices/${slug}`)

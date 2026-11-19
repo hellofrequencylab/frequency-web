@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1288",
+  "title": "Stop showing members raw database error text",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "lib/action-result.ts",
+    "ref": "deepest site audit 2026-11-19 (polish and security)"
+  },
+  "detail": "Deep audit 2026-11-19. 59 returns across 17 member and host server-action files (friends, partners, Spotlight, event host tools, rooms, menus, push, notifications, upgrade, connections, page content) handed error.message from Supabase straight back to the screen. That text names tables, columns, constraints and RLS policies (for example 'new row violates row-level security policy for table ...') and reads as broken to a member. Fix: safeErrorMessage() in lib/action-result.ts logs the raw error and returns a plain sentence; a RAISE EXCEPTION from our own SQL (P0001) still passes through because it is written for the person. Staff-only admin actions and internal log lines are out of scope.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1288.mjs",
+    "note": "Fails on main: 59 raw returns. Passes when none of the 17 files returns a raw message."
+  },
+  "closed": "2026-11-19"
+}

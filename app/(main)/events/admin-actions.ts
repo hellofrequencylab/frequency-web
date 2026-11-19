@@ -69,6 +69,7 @@ import {
   type ManageGuest,
   type PendingGuest,
 } from '@/app/(main)/events/[slug]/manage/load'
+import { safeErrorMessage } from '@/lib/action-result'
 
 /** The untyped update surface (ADR-246), for columns that lib/database.types.ts predates. */
 type UntypedUpdate = {
@@ -896,7 +897,7 @@ export async function useEventPosterAsCover(
 
   // Pull the poster bytes from the private bucket, write them into the public cover bucket.
   const { data: blob, error: dlErr } = await admin.storage.from('network-contacts').download(posterPath)
-  if (dlErr || !blob) return { error: dlErr?.message ?? 'Could not read the poster.' }
+  if (dlErr || !blob) return { error: safeErrorMessage(dlErr, 'Could not read the poster.') }
 
   const ext = (posterPath.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
   const path = `${id}/cover-from-poster-${Date.now()}.${ext}`
@@ -904,7 +905,7 @@ export async function useEventPosterAsCover(
   const { error: upErr } = await admin.storage
     .from('event-media')
     .upload(path, bytes, { contentType: blob.type || 'image/jpeg', upsert: false })
-  if (upErr) return { error: upErr.message }
+  if (upErr) return { error: safeErrorMessage(upErr) }
 
   // Unified gallery: the poster becomes the HEADER by leading the one gallery. Prepend its new
   // event-media path and keep cover_image_path = gallery[0], so it is a normal reorderable tile from
@@ -916,7 +917,7 @@ export async function useEventPosterAsCover(
     .from('events')
     .update({ cover_image_path: path, gallery_image_paths: paths })
     .eq('id', id)
-  if (dbErr) return { error: dbErr.message }
+  if (dbErr) return { error: safeErrorMessage(dbErr) }
 
   const { data } = admin.storage.from('event-media').getPublicUrl(path)
 
@@ -972,7 +973,7 @@ export async function updateEventHeroHeight(
     .from('events')
     .update({ theme: nextTheme as Json })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) return { error: safeErrorMessage(error) }
 
   revalidatePath(`/events/${slug}`)
   return { ok: true }
@@ -1007,7 +1008,7 @@ export async function updateEventCoverFocus(
     .from('events')
     .update({ theme: nextTheme as Json })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) return { error: safeErrorMessage(error) }
 
   revalidatePath(`/events/${slug}`)
   return { ok: true }
@@ -1067,7 +1068,7 @@ export async function uploadEventGalleryImage(
   const { error: upErr } = await admin.storage
     .from('event-media')
     .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
-  if (upErr) return { error: upErr.message }
+  if (upErr) return { error: safeErrorMessage(upErr) }
 
   // Every event upload ALSO lands in the uploader's Loom, so the photo is reusable later. Best-effort:
   // a Loom miss (or a member who runs no space) never fails the event upload.
@@ -1136,7 +1137,7 @@ export async function uploadNewEventImage(
   const { error: upErr } = await admin.storage
     .from('event-media')
     .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
-  if (upErr) return { error: upErr.message }
+  if (upErr) return { error: safeErrorMessage(upErr) }
 
   // Like the gallery upload: the photo also lands in the uploader's Loom so it is reusable later.
   // Best-effort — a Loom miss never fails the upload.
@@ -1188,7 +1189,7 @@ export async function setEventGalleryImages(
     .from('events')
     .update({ gallery_image_paths: clean, cover_image_path: nextCover })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) return { error: safeErrorMessage(error) }
 
   // Remove now-orphaned objects from storage. Only delete images under THIS event's own path
   // prefix (`${id}/…`) — a legacy user-prefixed path is left alone to avoid touching another
@@ -1266,7 +1267,7 @@ export async function addEventImageFromLoom(
   const { error: upErr } = await admin.storage
     .from('event-media')
     .upload(path, bytes, { contentType, upsert: false })
-  if (upErr) return { error: upErr.message }
+  if (upErr) return { error: safeErrorMessage(upErr) }
 
   const { data: cur } = await admin.from('events').select('gallery_image_paths').eq('id', id).maybeSingle()
   const before = ((cur as { gallery_image_paths?: string[] | null } | null)?.gallery_image_paths ?? []) as string[]
@@ -1277,7 +1278,7 @@ export async function addEventImageFromLoom(
     .from('events')
     .update({ gallery_image_paths: paths, cover_image_path: nextCover })
     .eq('id', id)
-  if (dbErr) return { error: dbErr.message }
+  if (dbErr) return { error: safeErrorMessage(dbErr) }
 
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')
@@ -1315,7 +1316,7 @@ export async function updateEventPermalink(
     .from('events')
     .update({ slug: next })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) return { error: safeErrorMessage(error) }
 
   revalidatePath(`/events/${slug}`)
   revalidatePath(`/events/${next}`)
@@ -1403,7 +1404,7 @@ export async function deleteEvent(
   }
 
   const { error } = await admin.from('events').delete().eq('id', eventId)
-  if (error) return { error: error.message }
+  if (error) return { error: safeErrorMessage(error) }
 
   const actorId = await getMyProfileId().catch(() => null)
   await logAdminAction({
