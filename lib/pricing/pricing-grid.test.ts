@@ -435,21 +435,21 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     expect(cells.free).toBe('Tips only, no platform fee (0%), plus card processing')
   })
 
-  it('holds the model invariants: 5%, 3%, 0%, and the rate only falls as the plan rises', () => {
+  it('holds the model invariants: one finder’s fee on every paying plan, and Non Profit pays none (ADR-1978)', () => {
     const net = PRICING_DEFAULTS.take_rate.network_bps
     // Non Profit takes nothing.
     expect(net.nonprofit).toBe(0)
-    // Across the ladder the rate only ever falls, which is the claim the copy makes out loud
-    // ("the rate drops as your plan rises"); Business and Independent share the paid rung (LIVE-754).
-    expect(net.free).toBeGreaterThan(net.paid)
-    expect(net.paid).toBeGreaterThan(net.collective)
-    expect(net.collective).toBeGreaterThan(net.nonprofit)
-    for (const plan of ['business', 'independent'] as const) {
+    // One rate, whatever the plan: the 5 / 3 / 2 ladder is retired, so no plan buys a lower fee.
+    expect(net.free).toBe(net.paid)
+    expect(net.paid).toBe(net.collective)
+    expect(net.collective).toBe(net.network)
+    for (const plan of ['business', 'independent', 'collective', 'network'] as const) {
       expect(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(PRICING_DEFAULTS.take_rate)), plan).toBe(net.paid)
     }
-    // The paid rung is the number the whole funnel steers to, so it is stated once, here.
-    expect(net.paid).toBe(500)
-    expect(net.collective).toBe(300)
+    // The finder's fee is the number the whole funnel quotes, so it is stated once, here.
+    expect(net.paid).toBe(1000)
+    expect(PRICING_DEFAULTS.take_rate.finder_bps).toBe(1000)
+    expect(PRICING_DEFAULTS.take_rate.finder_cap_cents).toBe(2000)
   })
 
   it('a meter row reads the tier rung on the usage ladder, not a typed number', () => {

@@ -22,6 +22,8 @@ import {
   catalogItem,
   yearlyFromMonthly,
   NETWORK_TAKE_RATE_DEFAULT,
+  FINDERS_FEE_BPS_DEFAULT,
+  FINDERS_FEE_CAP_CENTS_DEFAULT,
   type CatalogAmounts,
   type CatalogItemKey,
 } from '@/lib/billing/pricing-keys'
@@ -78,6 +80,11 @@ export interface PricingDefaults {
     // reader indexes this object by plan name. A row stored before LIVE-230 (keyed by plan name) is
     // normalised into this shape by getPricingValues, so the typed value is always rung-keyed.
     network_bps: { free: number; paid: number; collective: number; network: number; nonprofit: number }
+    /** THE ONE FINDER'S FEE (ADR-1978): the rate every plan but Non Profit pays, once, on the first
+     *  purchase of a customer Frequency introduced, and the most it can be on one purchase. These are
+     *  the two numbers that charge; the paying rungs of `network_bps` only mirror `finder_bps`. */
+    finder_bps: number
+    finder_cap_cents: number
   }
   /** Vera free-tier daily message cap. */
   vera_free_daily_cap: { messages: number }
@@ -157,6 +164,8 @@ export const PRICING_DEFAULTS: PricingDefaults = {
       network: NETWORK_TAKE_RATE_DEFAULT.network,
       nonprofit: NETWORK_TAKE_RATE_DEFAULT.nonprofit,
     },
+    finder_bps: FINDERS_FEE_BPS_DEFAULT,
+    finder_cap_cents: FINDERS_FEE_CAP_CENTS_DEFAULT,
   },
   // THE FREE VERA DAILY CAP, read from the meter (ADR-917). It used to be a hand-typed 10 here while
   // `vera_unlimited` and `space_vera` each published their own free rung of 10, so the number a member

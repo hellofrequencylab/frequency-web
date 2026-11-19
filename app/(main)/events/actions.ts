@@ -271,7 +271,7 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
 //
 // A refusal is never a dead end: its sentence is the upgrade moment's (isPaymentsRefusal), so the
 // event form opens the panel with the host's draft intact, where they can start the Business trial
-// or keep the event free and receive tips. Payout readiness is still NOT checked here: someone can
+// or keep the event free. Payout readiness is still NOT checked here: someone can
 // price their event and connect their bank in either order.
 async function priceRefusal(priceCents: number | null, hostingSpaceId: string | null): Promise<string | null> {
   if (!priceCents || priceCents <= 0) return null

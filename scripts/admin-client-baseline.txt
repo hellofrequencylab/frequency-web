@@ -1225,6 +1225,7 @@ lib/pricing/dunning.ts
 lib/pricing/gamification-access.ts
 lib/pricing/gates.ts
 lib/pricing/member-meter-usage.ts
+lib/pricing/paying-accounts.ts
 lib/pricing/payments-gate.ts
 lib/pricing/settings.ts
 lib/pricing/space-allowance.ts
@@ -1318,6 +1319,7 @@ lib/spaces/my-memberships.ts
 lib/spaces/nonprofit-verification.ts
 lib/spaces/operated.ts
 lib/spaces/private-state.ts
+lib/spaces/profile-draft-write.ts
 lib/spaces/profile-settings.ts
 lib/spaces/provision.ts
 lib/spaces/resonance-roster.ts
@@ -1362,5 +1364,3 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
-lib/spaces/profile-draft-write.ts
-lib/spaces/profile-draft-write.test.ts

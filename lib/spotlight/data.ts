@@ -67,13 +67,16 @@ export interface SpotlightData {
 }
 
 /** Can this member receive a tip right now? The same rule as the in-app profile's `canTipRecipient`
- *  (payouts live + recipient payouts-ready). Reads only the two readiness booleans through
+ *  (payouts live + recipient payouts-ready + a paying account). Reads only the two readiness booleans through
  *  getConnectStatus and returns a boolean. FAIL-CLOSED: any error reads as "no". */
 export async function readCanTip(profileId: string): Promise<boolean> {
   try {
     const { payoutsLive, getConnectStatus } = await import('@/lib/billing/connect')
     if (!(await payoutsLive())) return false
-    return (await getConnectStatus(profileId)).ready === true
+    if ((await getConnectStatus(profileId)).ready !== true) return false
+    // Only a paying account takes tips (ADR-1978): asked last, so it runs only for a ready recipient.
+    const { profileCanTakeTips } = await import('@/lib/pricing/paying-accounts')
+    return await profileCanTakeTips(profileId)
   } catch (e) {
     console.error('[spotlight] canTip read failed; hiding the Tip jar', e instanceof Error ? e.message : e)
     return false

@@ -216,24 +216,44 @@ export interface NetworkTakeRate {
   memberFree: number
   /** Individual (profile) seller on the paid CREW tier. */
   member: number
+  /** The most a finder's fee can be on one purchase, in minor units (ADR-1978). */
+  capCents: number
 }
 
-/** The seeded default network take-rate (ADR-1709, LIVE-754): Business and Independent 500 (5%),
- *  Collective 300 (3%), Non Profit and Non Profit Collective 0, charged once per customer the network
- *  introduces and 0 on a Space's own audience and on tips, always.
+/** THE FINDER'S FEE (ADR-1978, owner ruling 2026-11-18). One rate replaces the 5 / 3 / 2 ladder: 10%,
+ *  never more than $20, charged once, on the first purchase of a customer Frequency introduced. Every
+ *  paying rung and the free Space stand on it; Non Profit pays none. Stored as `finder_bps` and
+ *  `finder_cap_cents` on `pricing_settings.take_rate` (editable at /admin/pricing); a row that lacks
+ *  them prices at these. */
+export const FINDERS_FEE_BPS_DEFAULT = 1000
+export const FINDERS_FEE_CAP_CENTS_DEFAULT = 2000
+
+/** Hold a finder's fee to its cap. A cap that is missing or not a positive number is the seeded cap,
+ *  never "no cap": a broken setting must not charge a seller more than the published most. PURE. */
+export function capFindersFeeCents(feeCents: number, capCents: number | null | undefined): number {
+  const cap = typeof capCents === 'number' && Number.isFinite(capCents) && capCents > 0 ? Math.floor(capCents) : FINDERS_FEE_CAP_CENTS_DEFAULT
+  if (!Number.isFinite(feeCents) || feeCents <= 0) return 0
+  return Math.min(cap, Math.floor(feeCents))
+}
+
+/** The seeded default network vector (ADR-1978): ONE finder's fee. The free Space, Business,
+ *  Independent, Collective and Network rungs all hold the same 10%; Non Profit and Non Profit Collective
+ *  hold 0. It is charged once per customer Frequency introduces, capped at `capCents`, and is 0 on a
+ *  Space's own audience and on tips, always. The rung names stay because every reader finds a plan's
+ *  rate through `takeRateRungForPlan`; the 5 / 3 / 2 ladder they once held (ADR-1709) is retired.
  *
- *  🔴 THE FREE AND PERSONAL RUNGS ARE DEFAULT-DENY VALUES ONLY. A free Space and every personal seller
- *  are REFUSED at the payments gate (LIVE-753, lib/pricing/payments-gate.ts), so `free` (1000),
- *  `memberFree` (1000) and `member` (800) price nothing in practice. They stay so that an unknown plan,
- *  or a sale that ever slipped past the gate, prices at the HIGHER rate rather than at 0. */
+ *  The personal rungs (`memberFree`, `member`) are DEFAULT-DENY VALUES ONLY: every personal seller is
+ *  refused at the payments gate (LIVE-753, lib/pricing/payments-gate.ts), so they price nothing in
+ *  practice. An unknown plan lands on `free`, which is the finder's fee, never 0. */
 export const NETWORK_TAKE_RATE_DEFAULT: NetworkTakeRate = {
-  free: 1000,
-  paid: 500,
-  collective: 300,
-  network: 200,
+  free: FINDERS_FEE_BPS_DEFAULT,
+  paid: FINDERS_FEE_BPS_DEFAULT,
+  collective: FINDERS_FEE_BPS_DEFAULT,
+  network: FINDERS_FEE_BPS_DEFAULT,
   nonprofit: 0,
   memberFree: 1000,
   member: 800,
+  capCents: FINDERS_FEE_CAP_CENTS_DEFAULT,
 }
 
 /** THE plan-to-rung map: the one place a Space plan name meets the take-rate ladder (ADR-1709, LIVE-754).
@@ -299,31 +319,39 @@ export interface StoredTakeRateFields {
   network_bps?: Partial<Record<string, unknown>> | null
   member_free_bps?: unknown
   member_bps?: unknown
+  /** The one finder's fee (ADR-1978), and the most it can be on one purchase. */
+  finder_bps?: unknown
+  finder_cap_cents?: unknown
 }
 
-/** Assemble the operator-resolved vector from a stored `take_rate` blob of EITHER historical shape.
- *  Per-rung: a finite number stored under the rung's key wins, anything else is the seeded rung. The
- *  retired plan-named keys `business` and `independent` are NOT read (they are not rung names). The
- *  `collective` key IS a rung name again (ADR-1709), so a pre-LIVE-230 row's `collective: 300` reads as
- *  the Collective rung, which is the ruled number anyway; migration 20270346005300 rewrites the stored
- *  row in the rung shape so the question does not arise in production. PURE. */
+/** Assemble the operator-resolved vector from a stored `take_rate` blob of ANY vintage (ADR-1978).
+ *  Every paying rung and the free rung read the ONE stored `finder_bps`, else the seeded finder's fee.
+ *  The retired per-rung numbers a row may still carry under `network_bps` (`paid: 500`,
+ *  `collective: 300`, written by migration 20270346005300, and the older plan-named keys) are NOT read:
+ *  they were the 5 / 3 / 2 ladder, and reading them would keep charging it after the ruling. Only
+ *  `network_bps.nonprofit` still is, because Non Profit keeps its own rate. The cap is
+ *  `finder_cap_cents`, else the seeded cap. PURE. */
 export function networkTakeRateFromStored(stored: StoredTakeRateFields | null | undefined): NetworkTakeRate {
   const bps = (v: unknown, fallback: number): number =>
-    typeof v === 'number' && Number.isFinite(v) ? v : fallback
+    typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : fallback
   const vec = stored?.network_bps ?? {}
+  const finder = bps(stored?.finder_bps, FINDERS_FEE_BPS_DEFAULT)
+  const cap = stored?.finder_cap_cents
   return {
-    free: bps(vec.free, NETWORK_TAKE_RATE_DEFAULT.free),
-    paid: bps(vec.paid, NETWORK_TAKE_RATE_DEFAULT.paid),
-    collective: bps(vec.collective, NETWORK_TAKE_RATE_DEFAULT.collective),
-    network: bps(vec.network, NETWORK_TAKE_RATE_DEFAULT.network),
+    free: finder,
+    paid: finder,
+    collective: finder,
+    network: finder,
     nonprofit: bps(vec.nonprofit, NETWORK_TAKE_RATE_DEFAULT.nonprofit),
     memberFree: bps(stored?.member_free_bps, NETWORK_TAKE_RATE_DEFAULT.memberFree),
     member: bps(stored?.member_bps, NETWORK_TAKE_RATE_DEFAULT.member),
+    capCents: typeof cap === 'number' && Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : FINDERS_FEE_CAP_CENTS_DEFAULT,
   }
 }
 
 /** Source-aware application-fee cents for a SPACE sale. `self` → 0 (the hard promise); `network` → the
- *  plan's rung. PURE (no I/O). Floors fractional cents so the recipient is never short. */
+ *  finder's fee for the plan, held to the cap. PURE (no I/O). Floors fractional cents so the recipient
+ *  is never short. */
 export function sourceAwareTakeRateCents(
   grossCents: number,
   plan: SpacePlan | string | null | undefined,
@@ -331,7 +359,7 @@ export function sourceAwareTakeRateCents(
   rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
 ): number {
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
-  return Math.floor((grossCents * takeRateBps(plan, source, rate)) / 10000)
+  return capFindersFeeCents(Math.floor((grossCents * takeRateBps(plan, source, rate)) / 10000), rate.capCents)
 }
 
 /** The individual (profile) seller's NETWORK take-rate bps for their tier: 10% on free Member, 8% on
@@ -384,7 +412,7 @@ export function sourceAwareMemberTakeRateCents(
 ): number {
   if (source === 'self') return 0
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
-  return Math.floor((grossCents * memberNetworkTakeRateBps(sellerTier, rate)) / 10000)
+  return capFindersFeeCents(Math.floor((grossCents * memberNetworkTakeRateBps(sellerTier, rate)) / 10000), rate.capCents)
 }
 
 /** The monthly take-rate saving (cents) a not-yet-paying space would get on paid Business: the bps

@@ -32,12 +32,13 @@ export function platformFeeCents(grossCents: number): number {
 }
 
 // ── The NETWORK take-rate (ADR-811 §A, ruled ADR-913) ─────────────────────────────────────
-// A Space sale on Connect carries an application fee ONLY when the NETWORK sourced it. The ladder
-// is 5%, 3%, 0% (ADR-1709, LIVE-754), keyed by RUNG in pricing_settings.take_rate.network_bps (editable at
-// /admin/pricing): Business and Independent 5%, Collective 3%, Non Profit 0%, and 0%, always, when the
-// buyer is the seller's own audience; that short-circuits before any IO below. A plan finds its rung
-// through `takeRateRungForPlan`. The free Space and individual-seller rungs are default-deny values only:
-// the payments gate refuses those sellers (LIVE-753). A Founding Business keeps its locked 3%.
+// A Space sale on Connect carries Frequency's fee ONLY when the NETWORK sourced it. It is ONE finder's
+// fee (ADR-1978): 10%, never more than $20, on every plan but Non Profit (0), stored as `finder_bps`
+// and `finder_cap_cents` on pricing_settings.take_rate (editable at /admin/pricing), and 0%, always,
+// when the buyer is the seller's own audience; that short-circuits before any IO below. A buyer who
+// has paid this seller before IS their own audience, so the fee is charged once per customer. A plan
+// finds its rung through `takeRateRungForPlan`. The individual-seller rungs are default-deny values
+// only: the payments gate refuses those sellers (LIVE-753). A Founding Business keeps its locked 3%.
 //
 // The pure math lives in lib/billing/pricing-keys.ts (sourceAwareTakeRateCents); this IO wrapper reads the
 // operator rates and applies them. FAIL-SAFE in two layers: `networkTakeRateFromStored` rebuilds the vector
@@ -80,8 +81,8 @@ async function foundingLockedTakeBps(spaceId: string): Promise<number | null> {
   }
 }
 
-/** The NETWORK bps a Space sale settles at (ADR-1709, LIVE-754): the plan's rung off the operator vector
- *  (Business 5%, Collective 3%, Non Profit 0), bought down to a Founding Business's locked 3% when the
+/** The NETWORK bps a Space sale settles at (ADR-1978): the finder's fee off the operator vector
+ *  (10% on every plan, Non Profit 0), bought down to a Founding Business's locked 3% when the
  *  Space holds one (the owner default keeps the buy-down for Spaces already in it). Exported so a receipt
  *  records the same number the fee was computed at. Server-only. */
 export async function spaceNetworkBps(
@@ -123,7 +124,9 @@ export async function spaceTakeRateCents(
   if (source === 'self') return 0
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   try {
-    return Math.floor((grossCents * (await spaceNetworkBps(plan, spaceId))) / 10000)
+    // The finder's fee (ADR-1978): the plan's rate, held to the cap. One rate read prices both.
+    const [{ capFindersFeeCents }, rate] = await Promise.all([import('./pricing-keys'), resolvedNetworkRate()])
+    return capFindersFeeCents(Math.floor((grossCents * (await spaceNetworkBps(plan, spaceId, rate))) / 10000), rate.capCents)
   } catch {
     // Fail-safe to the platform default fee rather than 0 (never under-collect on a network sale error).
     return platformFeeCents(grossCents)

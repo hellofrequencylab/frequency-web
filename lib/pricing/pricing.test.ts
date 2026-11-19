@@ -391,21 +391,22 @@ describe('seeded defaults are sane (mirror the migration)', () => {
 
   it('take-rate: the LIVE rungs are the network vector plus BOTH individual seller rates (ADR-914)', () => {
     const t = PRICING_DEFAULTS.take_rate
-    // What actually charges (lib/billing/fees.ts): a Space pays its RUNG's network-sourced rate, and only
-    // on a sale the network sourced. The ladder (ADR-1709, LIVE-754): Business 5% → Collective 3% → Non
-    // Profit 0%. The free and personal rungs are default-deny values only: neither may take payments.
-    expect(t.network_bps.paid).toBe(500)
-    expect(t.network_bps.collective).toBe(300)
+    // What actually charges (lib/billing/fees.ts): ONE finder's fee (ADR-1978), 10% and never more than
+    // $20, on a sale the network sourced, on every plan but Non Profit. The personal rungs are
+    // default-deny values only: a personal seller may not take payments.
+    expect(t.finder_bps).toBe(1000)
+    expect(t.finder_cap_cents).toBe(2000)
+    expect(t.network_bps.paid).toBe(1000)
+    expect(t.network_bps.collective).toBe(1000)
+    expect(t.network_bps.network).toBe(1000)
     expect(t.network_bps.nonprofit).toBe(0)
-    // A free Space pays the HIGHEST rate, so an unresolved plan over-collects rather than charging 0%.
-    expect(t.network_bps.free).toBeGreaterThan(t.network_bps.paid)
+    // An unresolved plan lands on the free rung, which is the finder's fee, never 0%.
+    expect(t.network_bps.free).toBe(t.network_bps.paid)
     // TWO individual seller rungs stay in code (ADR-914) as default-deny values only: personal selling is
     // off (LIVE-753), so these never charge; they only keep an unresolved seller from reading 0%.
     expect(t.member_free_bps).toBe(1000)
     expect(t.member_bps).toBe(800)
-    // The whole ladder must descend monotonically, or a rung is being sold for nothing.
     expect(t.member_free_bps).toBeGreaterThan(t.member_bps)
-    expect(t.member_bps).toBeGreaterThan(t.network_bps.paid)
     // A free Space is held to the free-Member standard, so those two rungs are EQUAL: moving a sale into
     // a free Space must not change its rate. Only paying does.
     expect(t.member_free_bps).toBe(t.network_bps.free)

@@ -3,6 +3,9 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   NETWORK_TAKE_RATE_DEFAULT,
+  FINDERS_FEE_BPS_DEFAULT,
+  FINDERS_FEE_CAP_CENTS_DEFAULT,
+  capFindersFeeCents,
   OWN_AUDIENCE_BPS,
   TAKE_RATE_RUNGS,
   networkTakeRateBpsForPlan,
@@ -17,13 +20,14 @@ import {
 import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
 import { SPACE_PLANS } from '@/lib/pricing/plans'
 
-// ── THE WHOLE LADDER, AS A TABLE (ADR-1709, LIVE-754, superseding ADR-1335) ─────────────────────
+// ── THE WHOLE TABLE (ADR-1978, owner ruling 2026-11-18, superseding the 5 / 3 / 2 ladder of ADR-1709) ──
 //
-// The network fee is 5% on Business and Independent, 3% on Collective, 0% on Non Profit, and 0% on a
-// Space's own audience and on tips, always. The free and personal rungs (free Space 1000, free Member
+// ONE finder's fee: 10%, never more than $20, on a sale Frequency introduced, on every plan but Non
+// Profit (0), and 0% on a Space's own audience and on tips, always. The personal rungs (free Member
 // 1000, Crew 800) stay in code as DEFAULT-DENY values only: the payments gate refuses those sellers
-// (LIVE-753), so they price nothing, but a sale that ever slipped past must price high, never at 0.
-// This enumerates every rung × every source.
+// (LIVE-753), so they price nothing, but a sale that ever slipped past must never price at 0.
+// This enumerates every rung × every source. Rewritten with the owner's yes (2026-11-18, "Yes, all
+// groups in the doc").
 
 interface Rung {
   label: string
@@ -44,11 +48,12 @@ const LADDER: Rung[] = [
     expectedBps: 800,
   },
   { label: 'free Space', charge: (g, s, r) => sourceAwareTakeRateCents(g, 'free', s, r), expectedBps: 1000 },
-  // Business and Independent stand on `paid` (5%); Collective has its own 3% rung; Non Profit and Non
-  // Profit Collective are 0 (ADR-1709). A disconnected Independent collapses to `self` upstream.
-  { label: 'Business', charge: (g, s, r) => sourceAwareTakeRateCents(g, 'business', s, r), expectedBps: 500 },
-  { label: 'Collective', charge: (g, s, r) => sourceAwareTakeRateCents(g, 'collective', s, r), expectedBps: 300 },
-  { label: 'Independent', charge: (g, s, r) => sourceAwareTakeRateCents(g, 'independent', s, r), expectedBps: 500 },
+  // Every paying plan pays the same finder's fee; Non Profit and Non Profit Collective pay 0
+  // (ADR-1978). A disconnected Independent collapses to `self` upstream.
+  { label: 'Business', charge: (g, s, r) => sourceAwareTakeRateCents(g, 'business', s, r), expectedBps: 1000 },
+  { label: 'Collective', charge: (g, s, r) => sourceAwareTakeRateCents(g, 'collective', s, r), expectedBps: 1000 },
+  { label: 'Network', charge: (g, s, r) => sourceAwareTakeRateCents(g, 'network', s, r), expectedBps: 1000 },
+  { label: 'Independent', charge: (g, s, r) => sourceAwareTakeRateCents(g, 'independent', s, r), expectedBps: 1000 },
   { label: 'Non Profit', charge: (g, s, r) => sourceAwareTakeRateCents(g, 'nonprofit', s, r), expectedBps: 0 },
   {
     label: 'Non Profit Collective',
@@ -59,7 +64,7 @@ const LADDER: Rung[] = [
 
 const GROSS = 10_000 // $100, so a bps rung reads directly as cents
 
-describe('every rung × every source: the sixteen outcomes', () => {
+describe('every rung × every source', () => {
   it.each(LADDER)('$label pays its published rate on a NETWORK-sourced sale', ({ charge, expectedBps }) => {
     expect(charge(GROSS, 'network')).toBe(expectedBps)
   })
@@ -72,31 +77,50 @@ describe('every rung × every source: the sixteen outcomes', () => {
   })
 })
 
-describe('the ladder is 5%, 3%, 0%, and the deny rungs sit above it', () => {
-  it('Business 500, Collective 300, Non Profit 0, each strictly below the one before', () => {
+describe('one finder’s fee: 10%, never more than $20, and Non Profit pays none', () => {
+  it('every plan that pays stands on the same rate, and Non Profit on zero', () => {
     const r = NETWORK_TAKE_RATE_DEFAULT
-    expect(r.paid).toBe(500)
-    expect(r.collective).toBe(300)
+    expect(FINDERS_FEE_BPS_DEFAULT).toBe(1000)
+    for (const rung of [r.free, r.paid, r.collective, r.network]) expect(rung).toBe(1000)
     expect(r.nonprofit).toBe(0)
-    expect(r.collective).toBeLessThan(r.paid)
-    expect(r.nonprofit).toBeLessThan(r.collective)
   })
 
-  it('the free and personal rungs are default-deny values ABOVE every selling rung, never 0', () => {
-    // Nobody on these rungs can sell (LIVE-753). They exist so a mis-routed sale over-collects and is
+  it('the fee is held to $20 on one purchase, at every plan', () => {
+    expect(FINDERS_FEE_CAP_CENTS_DEFAULT).toBe(2000)
+    expect(NETWORK_TAKE_RATE_DEFAULT.capCents).toBe(2000)
+    for (const plan of ['free', 'business', 'collective', 'network', 'independent'] as const) {
+      expect(sourceAwareTakeRateCents(19_990, plan, 'network'), plan).toBe(1999) // under the cap: 10%
+      expect(sourceAwareTakeRateCents(20_000, plan, 'network'), plan).toBe(2000) // exactly at it
+      expect(sourceAwareTakeRateCents(50_000, plan, 'network'), plan).toBe(2000) // a $500 sale pays $20
+      expect(sourceAwareTakeRateCents(50_000, plan, 'self'), plan).toBe(0)
+    }
+    expect(sourceAwareTakeRateCents(50_000, 'nonprofit', 'network')).toBe(0)
+    expect(sourceAwareMemberTakeRateCents(50_000, 'network', NETWORK_TAKE_RATE_DEFAULT, 'free')).toBe(2000)
+  })
+
+  it('a cap that is missing or broken is the published cap, never no cap', () => {
+    expect(capFindersFeeCents(5000, undefined)).toBe(2000)
+    expect(capFindersFeeCents(5000, 0)).toBe(2000)
+    expect(capFindersFeeCents(5000, -1)).toBe(2000)
+    expect(capFindersFeeCents(5000, Number.NaN)).toBe(2000)
+    expect(capFindersFeeCents(5000, 1500)).toBe(1500)
+    expect(capFindersFeeCents(900, 1500)).toBe(900)
+    expect(capFindersFeeCents(Number.NaN, 1500)).toBe(0)
+  })
+
+  it('the personal rungs are default-deny values, never 0', () => {
+    // Nobody on these rungs can sell (LIVE-753). They exist so a mis-routed sale is charged and
     // noticed, rather than quietly pricing at 0.
     const r = NETWORK_TAKE_RATE_DEFAULT
-    expect(r.free).toBe(1000)
     expect(r.memberFree).toBe(1000)
     expect(r.member).toBe(800)
-    for (const deny of [r.free, r.memberFree, r.member]) expect(deny).toBeGreaterThan(r.paid)
   })
 })
 
 describe('the Founding Business buy-down is kept for Spaces already in it', () => {
-  it('a locked 3% lowers the Business rung and never raises a lower one', () => {
-    expect(foundingBuyDownBps(500, 300)).toBe(300)
-    expect(foundingBuyDownBps(300, 300)).toBe(300) // Collective already at 3%
+  it('a locked 3% lowers the finder’s fee and never raises a lower rate', () => {
+    expect(foundingBuyDownBps(1000, 300)).toBe(300)
+    expect(foundingBuyDownBps(300, 300)).toBe(300)
     expect(foundingBuyDownBps(0, 300)).toBe(0) // Non Profit keeps its zero
   })
 
@@ -129,7 +153,7 @@ describe('an operator override moves the real rate, and cannot break it', () => 
     const partial = { ...NETWORK_TAKE_RATE_DEFAULT, paid: 250 }
     expect(sourceAwareTakeRateCents(GROSS, 'business', 'network', partial)).toBe(250)
     expect(sourceAwareTakeRateCents(GROSS, 'independent', 'network', partial)).toBe(250) // same rung
-    expect(sourceAwareTakeRateCents(GROSS, 'collective', 'network', partial)).toBe(300) // its own rung
+    expect(sourceAwareTakeRateCents(GROSS, 'collective', 'network', partial)).toBe(1000) // its own rung
     expect(sourceAwareTakeRateCents(GROSS, 'free', 'network', partial)).toBe(1000)
     expect(sourceAwareMemberTakeRateCents(GROSS, 'network', partial, 'free')).toBe(1000)
   })
@@ -161,32 +185,32 @@ describe('an operator override moves the real rate, and cannot break it', () => 
 // `takeRateBps` is the one place the own-audience zero meets it, and `networkTakeRateFromStored` is the
 // one place a stored row of either vintage becomes the vector. Everything below pins those three seams.
 
-describe('the resolver: four outcomes, and nothing else', () => {
-  it('paid 500 / collective 300 / nonprofit 0 / own audience 0, and free 1000 as default-deny', () => {
+describe('the resolver: three outcomes, and nothing else', () => {
+  it('finder’s fee 1000 on every paying plan and the free Space / nonprofit 0 / own audience 0', () => {
     expect(takeRateBps('free', 'network')).toBe(1000)
     for (const paid of ['business', 'independent'] as const) {
-      expect(takeRateBps(paid, 'network'), paid).toBe(500)
+      expect(takeRateBps(paid, 'network'), paid).toBe(1000)
       expect(takeRateRungForPlan(paid), paid).toBe('paid')
     }
-    expect(takeRateBps('collective', 'network')).toBe(300)
+    expect(takeRateBps('collective', 'network')).toBe(1000)
     expect(takeRateRungForPlan('collective')).toBe('collective')
     expect(takeRateBps('nonprofit', 'network')).toBe(0)
     expect(takeRateRungForPlan('nonprofit')).toBe('nonprofit')
     expect(takeRateRungForPlan('nonprofit_collective')).toBe('nonprofit')
-    // The fourth outcome has no plan: every rung pays 0 on the seller's own audience.
+    // The third outcome has no plan: every rung pays 0 on the seller's own audience.
     for (const plan of SPACE_PLANS) expect(takeRateBps(plan, 'self'), plan).toBe(OWN_AUDIENCE_BPS)
     expect(OWN_AUDIENCE_BPS).toBe(0)
   })
 
-  it('the ladder carries exactly the five Space rungs, and the resolver can place every plan on one', () => {
+  it('the vector carries the five Space rungs and the cap, and the resolver can place every plan on one', () => {
     expect([...TAKE_RATE_RUNGS]).toEqual(['free', 'paid', 'collective', 'network', 'nonprofit'])
-    // Network (SCAN-956) has its own 2% rung.
     expect(takeRateRungForPlan('network')).toBe('network')
-    expect(takeRateBps('network', 'network')).toBe(200)
+    expect(takeRateBps('network', 'network')).toBe(1000)
     expect(takeRateBps('network', 'self')).toBe(0)
     for (const plan of SPACE_PLANS) expect(TAKE_RATE_RUNGS).toContain(takeRateRungForPlan(plan))
     // `business` and `independent` are not rungs: they resolve THROUGH the map, never off the vector.
     expect(Object.keys(NETWORK_TAKE_RATE_DEFAULT).sort()).toEqual([
+      'capCents',
       'collective',
       'free',
       'member',
@@ -210,59 +234,68 @@ describe('the resolver: four outcomes, and nothing else', () => {
 
   it('a rung an override left absent or non-numeric falls back to the seeded rung, never undefined and never 0', () => {
     const broken = { ...NETWORK_TAKE_RATE_DEFAULT, paid: undefined as unknown as number, free: Number.NaN }
-    expect(networkTakeRateBpsForPlan('business', broken)).toBe(500)
+    expect(networkTakeRateBpsForPlan('business', broken)).toBe(1000)
     expect(networkTakeRateBpsForPlan('free', broken)).toBe(1000)
     expect(Number.isFinite(sourceAwareTakeRateCents(GROSS, 'business', 'network', broken))).toBe(true)
   })
 })
 
-describe('the stored row: either vintage resolves to the same vector', () => {
+describe('the stored row: every vintage resolves to the one finder’s fee', () => {
+  const FEE = { free: 1000, paid: 1000, collective: 1000, network: 1000, nonprofit: 0, memberFree: 1000, member: 800, capCents: 2000 }
+
   it('a row written BEFORE LIVE-230 (keyed by plan name) resolves to the ruling, and its retired keys are not read', () => {
-    // The exact shape production still carried on 2026-10-06 (20270203000000_seed_take_rate_vector.sql).
-    // `collective` is a rung name again, so its 300 reads as the Collective rung (the ruled number);
-    // `business` and `independent` are not rungs and are not read, so the paid rung is the code 500.
+    // The exact shape production carried on 2026-10-06 (20270203000000_seed_take_rate_vector.sql).
     const legacy = {
       free_bps: 500, business_bps: 300, nonprofit_bps: 300,
       member_free_bps: 1000, member_bps: 800,
       network_bps: { free: 1000, business: 500, collective: 300, nonprofit: 0, independent: 0 },
     }
     const vec = networkTakeRateFromStored(legacy)
-    expect(vec).toEqual({ free: 1000, paid: 500, collective: 300, network: 200, nonprofit: 0, memberFree: 1000, member: 800 })
-    expect(networkTakeRateBpsForPlan('business', vec)).toBe(500)
-    expect(networkTakeRateBpsForPlan('independent', vec)).toBe(500)
+    expect(vec).toEqual(FEE)
+    expect(networkTakeRateBpsForPlan('business', vec)).toBe(1000)
+    expect(networkTakeRateBpsForPlan('independent', vec)).toBe(1000)
     expect('business' in vec).toBe(false)
   })
 
-  it('the rung-shape row migration 20270346005300 writes reads back as the ladder', () => {
+  it('🔴 the 5 / 3 row migration 20270346005300 wrote is no longer read: production prices at the finder’s fee', () => {
+    // This is the row in production. If its `paid: 500` and `collective: 300` were still read, the
+    // retired ladder would keep charging after the ruling, whatever the code default says.
     const vec = networkTakeRateFromStored({
       network_bps: { free: 1000, paid: 500, collective: 300, nonprofit: 0 },
       member_free_bps: 1000,
       member_bps: 800,
     })
     expect(vec).toEqual(NETWORK_TAKE_RATE_DEFAULT)
+    expect(vec).toEqual(FEE)
     const sql = readFileSync('supabase/migrations/20270346005300_take_rate_rungs.sql', 'utf8')
     expect(sql).toMatch(/"paid":\s*500/)
     expect(sql).toMatch(/"collective":\s*300/)
-    expect(sql).toMatch(/on conflict \(key\) do update/i)
   })
 
-  it('a row written AFTER LIVE-230 (keyed by rung) is read as stored, rung by rung', () => {
+  it('the operator’s own finder’s fee and cap are read as stored, and Non Profit keeps its own rate', () => {
     const vec = networkTakeRateFromStored({
-      network_bps: { free: 1200, paid: 450, collective: 250, nonprofit: 0 },
+      finder_bps: 800,
+      finder_cap_cents: 1500,
+      network_bps: { free: 1200, paid: 450, collective: 250, nonprofit: 100 },
       member_free_bps: 1100,
       member_bps: 700,
     })
-    // A row stored before Network existed carries no `network` rung, so it reads the seeded 200.
-    expect(vec).toEqual({ free: 1200, paid: 450, collective: 250, network: 200, nonprofit: 0, memberFree: 1100, member: 700 })
+    expect(vec).toEqual({ free: 800, paid: 800, collective: 800, network: 800, nonprofit: 100, memberFree: 1100, member: 700, capCents: 1500 })
+    expect(sourceAwareTakeRateCents(50_000, 'business', 'network', vec)).toBe(1500)
+    expect(sourceAwareTakeRateCents(10_000, 'collective', 'network', vec)).toBe(800)
   })
 
   it('an empty, partial, or malformed row never leaves a rung undefined or at 0 by accident', () => {
     expect(networkTakeRateFromStored(null)).toEqual(NETWORK_TAKE_RATE_DEFAULT)
     expect(networkTakeRateFromStored({})).toEqual(NETWORK_TAKE_RATE_DEFAULT)
     expect(networkTakeRateFromStored({ network_bps: { paid: 'three' } })).toEqual(NETWORK_TAKE_RATE_DEFAULT)
-    expect(networkTakeRateFromStored({ network_bps: { paid: 200 } })).toEqual({ ...NETWORK_TAKE_RATE_DEFAULT, paid: 200 })
-    // The seeded default is the code default, and the code default is the ladder.
-    expect(PRICING_DEFAULTS.take_rate.network_bps).toEqual({ free: 1000, paid: 500, collective: 300, network: 200, nonprofit: 0 })
+    expect(networkTakeRateFromStored({ network_bps: { paid: 200 } })).toEqual(NETWORK_TAKE_RATE_DEFAULT)
+    expect(networkTakeRateFromStored({ finder_bps: 'ten', finder_cap_cents: 0 })).toEqual(NETWORK_TAKE_RATE_DEFAULT)
+    expect(networkTakeRateFromStored({ finder_bps: -5, finder_cap_cents: -1 })).toEqual(NETWORK_TAKE_RATE_DEFAULT)
+    // The seeded default is the code default, and the code default is the finder's fee.
+    expect(PRICING_DEFAULTS.take_rate.network_bps).toEqual({ free: 1000, paid: 1000, collective: 1000, network: 1000, nonprofit: 0 })
+    expect(PRICING_DEFAULTS.take_rate.finder_bps).toBe(1000)
+    expect(PRICING_DEFAULTS.take_rate.finder_cap_cents).toBe(2000)
   })
 })
 

@@ -31,6 +31,7 @@ import { ProfileSettingsDrawer } from './profile-settings-drawer'
 import { TipButton } from './tip-button'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { recordTipFromSessionId } from '@/lib/billing/tips'
+import { profileCanTakeTips } from '@/lib/pricing/paying-accounts'
 import { EditableIdentity } from './editable-identity'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { SupporterBadge } from '@/components/supporter-badge'
@@ -263,7 +264,10 @@ export default async function ProfilePage({
   // Tips (ADR-176): show the Tip control to a signed-in non-owner only when the recipient
   // is actually payouts-ready (and billing is live). The server decides; the button never
   // appears for someone who can't receive money.
-  const canTipRecipient = !!user && !isOwner && payoutsAreLive && connectStatus.ready
+  // Only a paying account takes tips (ADR-1978): asked last, so the read runs only for a recipient
+  // who clears everything else.
+  const canTipRecipient =
+    !!user && !isOwner && payoutsAreLive && connectStatus.ready && (await profileCanTakeTips(profileId))
   const canModerateProfile = !isOwner && profileCaps.has('profile.edit')
   const isStaffViewer = !isOwner && globalCaps.has('admin.access')
   const isJanitorViewer = !isOwner && realWebRole === 'janitor'

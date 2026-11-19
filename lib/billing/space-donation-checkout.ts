@@ -31,7 +31,7 @@ import { getConnectStatus, payoutsLive } from './connect'
 import { spaceTakeRateCents } from './fees'
 import { sellerFeesNow } from './card-fee'
 import { asSpacePlan } from '@/lib/pricing/plans'
-import { spacePaymentsVerdict } from '@/lib/pricing/payments-gate'
+import { spaceMayTakeDonations } from '@/lib/pricing/paying-accounts'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -141,8 +141,10 @@ export async function createSpaceDonationCheckout(opts: {
     const space = (spaceData ?? null) as SpaceRow | null
     if (!space?.id || !space.owner_profile_id) return { error: 'This fund is not available.' }
 
-    // THE PAYMENTS GATE (LIVE-753). The donor sees a neutral sentence, never the Space's plan.
-    if (!(await spacePaymentsVerdict(space.id, { plan: space.plan ?? null })).ok) {
+    // THE PAYING-ACCOUNT RULE (LIVE-753, ADR-1978). The donor sees a neutral sentence, never the Space's plan.
+    // Donations are the one channel a free Space may open, and only when its owner pays for Crew
+    // (ADR-1978, lib/pricing/paying-accounts.ts).
+    if (!(await spaceMayTakeDonations(space.id, { plan: space.plan ?? null, ownerProfileId: space.owner_profile_id }))) {
       return { error: 'This fund is not open right now.' }
     }
 
@@ -425,7 +427,7 @@ export async function recordSpaceDonationRefundFromCharge(charge: Stripe.Charge)
  * Can this Space actually take a gift right now? The member Donate card asks before it renders a
  * button, so a donor is never handed a control that resolves to a refusal. Same four conditions the
  * checkout enforces (a configured Stripe, the platform payouts switch, an owner who can receive
- * money, a plan that clears the payments gate), read here so the surface and the action agree.
+ * money, a paying account: a plan that clears the payments gate, or an owner who pays for Crew), read here so the surface and the action agree.
  *
  * FAIL-SAFE to false: an unreadable space renders the honest "giving is not open" copy rather than a
  * button that cannot work. Never calls Stripe.
@@ -442,8 +444,8 @@ export async function spaceCanTakeDonations(spaceId: string): Promise<boolean> {
     const row = data as { owner_profile_id?: string | null; plan?: string | null } | null
     const ownerId = row?.owner_profile_id ?? null
     if (!ownerId) return false
-    // The payments gate (LIVE-753), so the Donate card never renders a button the checkout refuses.
-    if (!(await spacePaymentsVerdict(spaceId, { plan: row?.plan ?? null })).ok) return false
+    // The paying-account rule (ADR-1978), so the Donate card never renders a button the checkout refuses.
+    if (!(await spaceMayTakeDonations(spaceId, { plan: row?.plan ?? null, ownerProfileId: ownerId }))) return false
     const status = await getConnectStatus(ownerId)
     return !!status.accountId && status.ready
   } catch {

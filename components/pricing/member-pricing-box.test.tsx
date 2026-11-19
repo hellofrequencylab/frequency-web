@@ -207,7 +207,7 @@ describe('the pricing box data', () => {
 
     it('prints the operator network fee per rung and never says 0% without card processing', () => {
       const fee = box.comparison.find((r) => r.label === 'Network fee')!
-      expect(fee.cells.slice(3)).toEqual(['5%', '3%', '2%'])
+      expect(fee.cells.slice(3)).toEqual(['10%', '10%', '10%']) // one finder's fee (ADR-1978)
       for (const t of box.tiers) for (const f of t.features) if (/\b0%|no fee/i.test(f)) expect(f).toMatch(/card processing/i)
       expect(by('space').features.join(' ')).toContain('plus card processing')
     })

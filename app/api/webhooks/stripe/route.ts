@@ -72,6 +72,7 @@ import { huntsAfterChargeRefund, huntsAfterDisputeClosed, huntsAfterTicketSessio
 import { huntsAfterDonationRefund, huntsAfterDonationSession } from '@/lib/hunts/donation-sync'
 import { huntsAfterInvoicePaid } from '@/lib/hunts/sponsor-settlement'
 import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
+import { endMembershipFindersFee } from '@/lib/billing/membership-finders-fee'
 import {
   recordSpaceDonationFromSession,
   abandonSpaceDonationFromSession,
@@ -428,6 +429,9 @@ export async function POST(req: Request) {
         // FH-047S: a sponsor's paid invoice that names a Trail settlement. Dark until
         // HUNTS_COMMERCE_ENABLED, a no-op for every other invoice, and it never throws.
         await huntsAfterInvoicePaid(event.data.object as Stripe.Invoice)
+        // ADR-1978: a Space membership's finder's fee is charged on its first payment only. Last, and
+        // it may throw, so a failed update is redelivered rather than left to charge every renewal.
+        await endMembershipFindersFee(event.data.object as Stripe.Invoice)
         break
       }
 

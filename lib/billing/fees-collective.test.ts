@@ -8,9 +8,11 @@ import { spaceNetworkBps, spaceTakeRateCents } from './fees'
 beforeEach(() => { vi.clearAllMocks(); state.inherited.mockResolvedValue('business'); state.founding.mockResolvedValue(null); state.waived.mockResolvedValue(false) })
 describe('fees for Collective member Spaces', () => {
   it('uses inherited Business depth instead of the stored free-plan default', async () => {
-    expect(await spaceNetworkBps('free', 'child')).toBe(500)
+    // ADR-1978: one finder's fee, 10% capped at $20, whatever the inherited plan.
+    expect(await spaceNetworkBps('free', 'child')).toBe(1000)
     expect(state.inherited).toHaveBeenCalledWith('child', 'free')
-    expect(await spaceTakeRateCents(10000, 'free', 'network', 'child')).toBe(500)
+    expect(await spaceTakeRateCents(10000, 'free', 'network', 'child')).toBe(1000)
+    expect(await spaceTakeRateCents(50000, 'free', 'network', 'child')).toBe(2000)
   })
   it('never adds a fee or reads inheritance for the Space’s own audience', async () => {
     expect(await spaceTakeRateCents(10000, 'free', 'self', 'child')).toBe(0)
@@ -20,12 +22,14 @@ describe('fees for Collective member Spaces', () => {
     state.inherited.mockResolvedValue('free')
     expect(await spaceNetworkBps('free', 'child')).toBe(1000)
   })
-  it('a staff limits waiver lowers the fee to the waived-to plan rung (SCAN-835)', async () => {
+  it('a staff limits waiver prices at the waived-to plan, which is the same finder’s fee (SCAN-835, ADR-1978)', async () => {
+    // The waiver used to buy the Collective 3%. Every paying plan now pays one finder's fee, so the
+    // waived-to plan's rate is that fee: the waiver still never raises a rate.
     state.waived.mockResolvedValue(true)
     state.inherited.mockResolvedValue('free')
-    expect(await spaceNetworkBps('free', 'child')).toBe(300)
+    expect(await spaceNetworkBps('free', 'child')).toBe(1000)
     state.inherited.mockResolvedValue('business')
-    expect(await spaceNetworkBps('business', 'child')).toBe(300)
+    expect(await spaceNetworkBps('business', 'child')).toBe(1000)
   })
   it('a waiver never raises the fee: a Non Profit stays at 0', async () => {
     state.waived.mockResolvedValue(true)

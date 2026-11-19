@@ -10,6 +10,7 @@ import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { resolvedNetworkRate, spaceNetworkBps } from '@/lib/billing/fees'
 import { isNetworkConnected } from '@/lib/pricing/network-world'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
+import { spaceMayTakeDonations } from '@/lib/pricing/paying-accounts'
 import { PAYOUT_CHANNEL_WORDS, type PayoutChannel } from '@/lib/billing/payout-prompt'
 import { SpacePayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
 import type { Space } from '@/lib/spaces/types'
@@ -195,17 +196,23 @@ export async function RateBand({ space }: { space: Space }) {
   const bps = await spaceNetworkBps(space.plan, space.id, rate)
   const connected = isNetworkConnected(space.networkConnected)
   const pct = (bps / 100).toLocaleString(undefined, { maximumFractionDigits: 2 })
-  // A Space below Business takes tips only (ADR-1709): selling starts at Business, so it has no fee to
-  // show. Asked through the payments gate (LIVE-753), the same check every money path makes.
+  // A Space below Business sells nothing (ADR-1709), so it has no fee to show. Asked through the
+  // payments gate (LIVE-753), the same check every money path makes.
   const sells = await spaceCanTakePayments(space.id, { plan: space.plan ?? null })
 
   if (!sells) {
+    // Only a paying account processes money (ADR-1978): a free Space takes donations when its owner
+    // pays for Crew, and nothing at all when they do not.
+    const donations = await spaceMayTakeDonations(space.id, { plan: space.plan ?? null })
     return (
       <div className="rounded-card border border-border bg-surface p-5">
-        <p className="text-body font-bold leading-tight text-text">Tips are open, with no platform fee, plus card processing.</p>
+        <p className="text-body font-bold leading-tight text-text">
+          {donations ? 'Donations are open on this Space.' : 'This Space does not take money yet.'}
+        </p>
         <p className="mt-2 text-body-sm leading-relaxed text-muted">
-          A free Space takes tips from day one. Selling tickets, memberships, donations, your shop and
-          booking deposits starts at Business, and your own people stay 0% on every plan.
+          {donations
+            ? 'Its owner is a Crew member, so it can take donations: 0% on gifts from your own people, plus card processing. Selling tickets, memberships, your shop and booking deposits starts at Business.'
+            : 'A free Space takes donations once its owner is a paying Crew member. Selling tickets, memberships, your shop and booking deposits starts at Business.'}
         </p>
       </div>
     )

@@ -298,6 +298,88 @@ async function isMemberOfOwnedSpace(args: { seller: string; buyer: string }): Pr
 }
 
 /**
+ * Has this buyer already paid this seller for anything? (ADR-1978: the finder's fee is charged ONCE.)
+ *
+ * A ticket, a shop or booking order, a donation or a membership each count, so the second purchase of
+ * a customer Frequency introduced is the seller's own, whatever they bought first. Four independent
+ * reads run together; one yes is a yes, and with no yes an unreadable table is "cannot tell" (null),
+ * which the caller reads as own audience, never as a charge.
+ */
+async function hasPriorSettledPurchase(args: {
+  space: string | null
+  seller: string | null
+  buyer: string
+}): Promise<boolean | null> {
+  if (!args.space && !args.seller) return false
+  const settled = await Promise.allSettled([
+    hasPriorSettledTicket(args),
+    hasPriorPaidOrder(args),
+    args.space ? hasPriorDonation({ space: args.space, buyer: args.buyer }) : Promise.resolve(false),
+    args.space ? hasPriorMembership({ space: args.space, buyer: args.buyer }) : Promise.resolve(false),
+  ])
+  const answers = settled.map((r) => (r.status === 'fulfilled' ? r.value : null))
+  if (answers.some((v) => v === true)) return true
+  if (answers.some((v) => v === null)) return null
+  return false
+}
+
+/** A paid, unrefunded shop, service, booking or Journey order this seller received from this buyer.
+ *  An order shared between sellers is read through its first seller only. */
+async function hasPriorPaidOrder(args: { space: string | null; seller: string | null; buyer: string }): Promise<boolean | null> {
+  try {
+    return await found(() => {
+      let q = db()
+        .from('commerce_orders')
+        .select('id')
+        .eq('buyer_profile_id', args.buyer)
+        .not('paid_at', 'is', null)
+        .is('refunded_at', null)
+      if (args.space && args.seller) q = q.or(`owner_space_id.eq.${args.space},owner_profile_id.eq.${args.seller}`)
+      else if (args.space) q = q.eq('owner_space_id', args.space)
+      else q = q.eq('owner_profile_id', args.seller as string)
+      return q.limit(1)
+    })
+  } catch {
+    return null
+  }
+}
+
+/** A settled, unrefunded donation this buyer gave this Space. */
+async function hasPriorDonation(args: { space: string; buyer: string }): Promise<boolean | null> {
+  try {
+    return await found(() =>
+      db()
+        .from('space_donations')
+        .select('id')
+        .eq('space_id', args.space)
+        .eq('donor_profile_id', args.buyer)
+        .not('succeeded_at', 'is', null)
+        .is('refunded_at', null)
+        .limit(1),
+    )
+  } catch {
+    return null
+  }
+}
+
+/** A paid membership this buyer holds or held in this Space, active or not: they paid once already. */
+async function hasPriorMembership(args: { space: string; buyer: string }): Promise<boolean | null> {
+  try {
+    return await found(() =>
+      db()
+        .from('space_memberships')
+        .select('id')
+        .eq('space_id', args.space)
+        .eq('member_profile_id', args.buyer)
+        .not('stripe_subscription_id', 'is', null)
+        .limit(1),
+    )
+  } catch {
+    return null
+  }
+}
+
+/**
  * Has this buyer already paid this seller for an event?
  *
  * Two steps rather than one join: the seller's event ids first, then a bounded ticket lookup. A
@@ -305,7 +387,7 @@ async function isMemberOfOwnedSpace(args: { seller: string; buyer: string }): Pr
  * [] when the relationship name is wrong — and [] here means "charge them", which is the wrong
  * direction to be silently wrong in.
  */
-async function hasPriorSettledPurchase(args: {
+async function hasPriorSettledTicket(args: {
   space: string | null
   seller: string | null
   buyer: string
