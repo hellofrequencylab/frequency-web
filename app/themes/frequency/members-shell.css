@@ -358,9 +358,9 @@
 [data-design="frequency"] [data-kit="members"] .fqm-step-open p{margin:0;font:400 var(--fq-text-meta)/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
 [data-design="frequency"] [data-kit="members"] .fqm-step-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 [data-design="frequency"] [data-kit="members"] .fqm-step-open .btn.pa{height:40px;padding:0 16px;font-size:var(--fq-text-meta)}
-/* The Feed's own copy shows only where the rails are hidden (< 768, with the phone tab bar). */
-[data-design="frequency"] [data-kit="members"] .fqm-gs-inline{margin-top:44px}
-@media (min-width:768px){[data-design="frequency"] [data-kit="members"] .fqm-gs-inline{display:none}}
+/* The Feed's inline copy of Get started is hidden at every width (owner, 2026-11-19: no checklist
+   in the Feed on a phone). Desktop keeps the right rail's box; the list itself is unchanged. */
+[data-design="frequency"] [data-kit="members"] .fqm-gs-inline{display:none}
 [data-design="frequency"] [data-kit="members"] .fqm-rp-inline{display:flex;flex-direction:column;gap:20px}
 [data-design="frequency"] [data-kit="members"] .fqm-rp-inline>section:first-of-type{margin-top:44px}
 @media (min-width:768px){[data-design="frequency"] [data-kit="members"] .fqm-rp-inline{display:none}}

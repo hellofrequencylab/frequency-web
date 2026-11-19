@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1285",
+  "title": "The member Feed shows no Get started checklist on a phone; the desktop rail keeps it",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/themes/frequency/members-shell.css",
+    "ref": "Owner ask 2026-11-19 (project thread: Remove the feed checklist on mobile)"
+  },
+  "detail": "Owner ask 2026-11-19: remove the Get started checklist from the Feed on mobile. Before: below 768px the Feed rendered an inline copy of the right rail's Get started box (.fqm-gs-inline) above Stats and streaks. DONE 2026-11-19: members-shell.css hides .fqm-gs-inline at every width (it was already hidden from 768 up, where the rail shows the box). The right rail's Get started box, the micro rail count and the launch list are unchanged. Checked with the real stylesheet at 390, 1280 and 1440: inline hidden, rail box shown.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/feed-no-mobile-checklist.mjs",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
