@@ -21,7 +21,6 @@ import {
   PLAN_STORY,
 } from '@/lib/pricing/pricing-page'
 import { loadPricingInput } from '@/lib/pricing/pricing-input'
-import { formatBps } from '@/lib/pricing/display'
 import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { countUpcomingPublicSeries } from '@/lib/events/series-seo'
 import { getAllCategories } from '@/lib/help/content'
@@ -51,19 +50,22 @@ const THEME_LIBRARY_LINE = `A library of ${SITE_THEMES.length} themes, led by ${
  *  that need a paid plan, and the plan each opens at, are read off the gate map the same way
  *  (paidWallsPhrase), so this sentence can never name a plan for a wall the product does not enforce. */
 function takeRateStory(input: PricingGridInput, offerings: Offering[]): string {
-  // Only the rungs that take payments have a fee (ADR-1709). The personal tiers and the free Space take
-  // tips only, at 0%, so they are named as such rather than given a rate nobody is charged.
+  // Only the rungs that sell have a fee (ADR-1709), and it is ONE finder's fee with a cap on every
+  // one of them but Non Profit (ADR-1978). The rungs that do not sell are named with what they do take.
   const rates = offerings
     .filter((o) => o.sells)
-    .map((o) => `${offeringLadderLabel(o)} ${formatBps(o.networkRateBps)}`)
-    .join(', ')
-  const tipsOnly = offerings.filter((o) => !o.sells).map((o) => offeringLadderLabel(o)).join(', ')
+    .map((o) => `${offeringLadderLabel(o)} ${o.findersFee ?? 'no finder’s fee'}`)
+    .join('; ')
+  const notSelling = offerings
+    .filter((o) => !o.sells)
+    .map((o) => `${offeringLadderLabel(o)}: ${o.takeRate}`)
+    .join('; ')
   const walls = paidWallsPhrase(input.gateOverrides)
   // LIVE-253: this sentence used to tell eighteen named AI crawlers that "what a paid rung buys is
   // a lower rate plus the tools that build the list which takes that rate to zero", which is the
   // inverse of docs/CORE-MODEL.md. The reason and the rate are both PLAN_STORY now, one sentence
   // each, shared with /pricing so the corpus and the page cannot argue different models.
-  return `People join free, hosting is free with Crew, and you pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} Tips only, with no platform fee, plus card processing: ${tipsOnly}. ${PLAN_STORY.rate} The network fee applies ONLY to a customer the network introduced, once: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.${walls === 'nothing' ? '' : ` What needs a paid plan: ${walls}.`}`
+  return `People join free, hosting is free with Crew, and you pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} What the rungs that do not sell take: ${notSelling}. ${PLAN_STORY.rate} The finder’s fee applies ONLY to a customer the network introduced, once, on their first purchase: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.${walls === 'nothing' ? '' : ` What needs a paid plan: ${walls}.`}`
 }
 
 /** The plain "the ladder is X, then Y" sentence, priced from the same offerings. It states the price

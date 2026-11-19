@@ -90,7 +90,7 @@ export function TipButton({ toProfileId, recipientName }: { toProfileId: string;
   return (
     <div className="w-full max-w-sm rounded-card border border-border bg-surface p-4 lift-1">
       <p className="text-body-sm font-bold text-text">Tip {recipientName}</p>
-      <p className="mt-0.5 text-meta text-muted">Sends directly to them. Frequency takes a small fee.</p>
+      <p className="mt-0.5 text-meta text-muted">Sends directly to them. Frequency takes no fee on a tip, only card processing applies.</p>
 
       <div className="mt-3 flex flex-wrap gap-2">
         {TIP_PRESETS_CENTS.map((c) => (

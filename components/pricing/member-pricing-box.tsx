@@ -484,7 +484,7 @@ export function MemberPricingBox({
           <p className="pbx-fit">{tier.fit}</p>
           <p className="pbx-note">
             {nonprofit && tier.nonprofitMonthlyCents !== null
-              ? `Verified nonprofit price, no network fee. ${yearly ? 'Ten months of the monthly price.' : 'Or two months free yearly.'}`
+              ? `Verified nonprofit price, no finder’s fee. ${yearly ? 'Ten months of the monthly price.' : 'Or two months free yearly.'}`
               : tier.note[period]}
           </p>
         </div>
@@ -651,7 +651,7 @@ export function MemberPricingBox({
       <div className="pbx-foot2">
         <button type="button" className="pbx-np" role="switch" aria-checked={nonprofit} onClick={() => { setNonprofit((v) => !v); setSession(null) }}>
           <i aria-hidden="true" />
-          Verified nonprofit, no network fee
+          Verified nonprofit, no finder’s fee
         </button>
         <span>
           White label? <a href={INDEPENDENT_CONTACT_HREF}>Ask about Independent</a>

@@ -422,17 +422,20 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     // Pinning the numbers here is how the retired ladder ("Free Space 10%, Collective 3%") survived a
     // rate change: the test restated the very literals it was meant to guard. The row must equal what the
     // config carries, so an owner rate change moves the page and this test together (ADR-913).
-    // Only a plan that takes payments has a fee (ADR-1709); the free Space takes tips only.
+    // Only a plan that takes payments has a fee (ADR-1709); the free Space takes donations and tips
+    // (ADR-1978). A selling plan states the finder's fee with its cap, both read from the vector.
     const ladder = networkTakeRateFromStored(PRICING_DEFAULTS.take_rate)
     const cells = cellsByColumn(grid, 'take_rate')
     const offerings = spaceOfferings(input)
+    const freeLine = 'Donations and tips only, with Crew. 0% on your own people, plus card processing'
+    const capLabel = '$' + String(ladder.capCents / 100)
     for (const plan of SHOWN_SPACE_PLANS) {
       const sells = offerings.find((o) => o.id === plan)!.sells
-      expect(cells[plan], `take_rate @ ${plan}`).toBe(
-        sells ? `${networkTakeRateBpsForPlan(plan, ladder) / 100}%` : 'Tips only, no platform fee (0%), plus card processing',
-      )
+      const bps = networkTakeRateBpsForPlan(plan, ladder)
+      const selling = bps > 0 ? `${bps / 100}% once, never more than ${capLabel}` : 'No finder’s fee'
+      expect(cells[plan], `take_rate @ ${plan}`).toBe(sells ? selling : freeLine)
     }
-    expect(cells.free).toBe('Tips only, no platform fee (0%), plus card processing')
+    expect(cells.free).toBe(freeLine)
   })
 
   it('holds the model invariants: one finder’s fee on every paying plan, and Non Profit pays none (ADR-1978)', () => {
@@ -545,17 +548,18 @@ describe('member grid: Member and Crew on the personal ladder', () => {
     expect(cellsByColumn(grid, 'space')).toEqual({ member: 'Included', crew: 'Included' })
   })
 
-  it('quotes no rate on either member column: personal selling is off, tips are 0% (ADR-1709)', () => {
+  it('quotes no rate on either member column: personal selling is off, tips come with Crew at 0% (ADR-1709, ADR-1978)', () => {
     // 🔴 THE FOURTH TURN OF THIS TEST. ADR-913 had the free column say selling was not included,
     // ADR-914 had both columns sell at a rate, and ADR-1709 turns personal selling off on every
     // personal tier. The personal rungs stay in the vector as default-deny values, so neither column
-    // may quote them: what a member gets is tips, at 0%.
+    // may quote them. THE FIFTH TURN (ADR-1978): only a paying account takes money, so tips come with
+    // Crew and the free membership takes none.
     expect(grid.groups.flatMap((g) => g.rows).map((r) => r.key)).not.toContain('take_rate')
-    expect(cellsByColumn(grid, 'tips')).toEqual({ member: 'Included, no platform fee, plus card processing', crew: 'Included, no platform fee, plus card processing' })
+    expect(cellsByColumn(grid, 'tips')).toEqual({ member: 'Comes with Crew', crew: 'Included, no platform fee, plus card processing' })
   })
 
   it('takes no payments on a member column: selling runs through a Space on Business', () => {
-    expect(cellsByColumn(grid, 'payments')).toEqual({ member: 'Tips only', crew: 'Tips only' })
+    expect(cellsByColumn(grid, 'payments')).toEqual({ member: 'No payments', crew: 'Tips only' })
     expect(grid.groups.flatMap((g) => g.rows).map((r) => r.key)).not.toContain('sell_anything')
   })
 
@@ -568,9 +572,11 @@ describe('member grid: Member and Crew on the personal ladder', () => {
     }
   })
 
-  it('states tips only on both offering lines, with no personal rung quoted', () => {
+  it('states no payments on Member and tips only on Crew, with no personal rung quoted', () => {
     for (const o of memberOfferings(input)) {
-      expect(o.takeRate).toBe('Tips only, no platform fee (0%), plus card processing')
+      expect(o.takeRate).toBe(
+        o.id === 'member' ? 'No payments. Tips come with Crew, at 0% plus card processing' : 'Tips only, no platform fee (0%), plus card processing',
+      )
       expect(o.sells).toBe(false)
       expect(o.networkRateBps).toBe(0)
       expect(o.takeRate).not.toContain(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)

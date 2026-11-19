@@ -1,7 +1,7 @@
 // The /pricing FAQ and the one fee helper it shares with the fee ladder. Split out of page.tsx so the
 // page reads as its sections; every answer is still built from the live model, so no answer can quote a
 // stale price (the reasoning lives on `pricingFaq` below).
-import { annualDiscountNote, formatBps, formatCents, trialNote } from '@/lib/pricing/display'
+import { annualDiscountNote, formatCents, trialNote } from '@/lib/pricing/display'
 import {
   memberOfferings,
   planExtras,
@@ -22,10 +22,10 @@ function seatsAnswer(): string {
   return `Every plan includes its operator seats: ${n('free')} on Free (the owner), ${n('business')} on Business, ${n('collective')} on Collective plus two per member Space, and ${n('network')} on Network, one per central admin.`
 }
 
-/** The network fee on an offering that sells, as a bare figure ("5%"), read off the offering's own
- *  number. Never typed. */
-export function feeFigure(offering: Offering): string {
-  return formatBps(offering.networkRateBps)
+/** The finder's fee on an offering that sells, rate and cap together, read off the offering. Never
+ *  typed. An offering that pays none says so. */
+function feeFigure(offering: Offering): string {
+  return offering.findersFee ?? 'no finder’s fee'
 }
 
 /** The answer-first FAQ, built from the live model so no answer can quote a stale price. Mirrored into
@@ -41,7 +41,9 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     .join(' ')
   const trial = trialNote(input.values)
   const sellers = spaces.filter((s) => s.sells)
-  const fees = sellers.map((s) => `${s.label} ${feeFigure(s)}`).join(', ')
+  // ONE finder's fee on every selling plan (ADR-1978), so it is stated once, off the first plan that pays it.
+  const finder = sellers.find((s) => s.findersFee)?.findersFee ?? null
+  const feeFree = sellers.filter((s) => !s.findersFee).map((s) => s.label).join(' and ')
   const collective = spaces.find((s) => s.id === 'collective')
   const extraSpace = input.catalog.collective_space
   const npCollective = input.catalog.nonprofit_collective
@@ -68,7 +70,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
         {
           q: 'What is Collective?',
           // Price and availability read the catalog. Founding Year eligibility and the close date are separate from free Founding Member recognition.
-          a: `${PLAN_STORY.collective} It is ${collective.monthly}. A Founding Year is a paid first-year offer that closes ${COLLECTIVE_FOUNDING_ENDS_LABEL}, 2027; check /pricing for current availability, eligibility and terms. Its network fee is ${feeFigure(collective)} on customers the network introduces. On Business and higher, your own audience has no network fee; card processing still applies. Collectives that already run member Spaces keep them${extraSpace ? `, and a member Space past the ones included stays ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}; one organization with chapters takes Network instead.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no network fee.` : ''}`,
+          a: `${PLAN_STORY.collective} It is ${collective.monthly}. A Founding Year is a paid first-year offer that closes ${COLLECTIVE_FOUNDING_ENDS_LABEL}, 2027; check /pricing for current availability, eligibility and terms. Its finder’s fee is the same as Business: ${feeFigure(collective)}, on a customer the network introduces. Your own audience costs 0%; card processing still applies. Collectives that already run member Spaces keep them${extraSpace ? `, and a member Space past the ones included stays ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}; one organization with chapters takes Network instead.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no finder’s fee.` : ''}`,
         },
       ]
     : []
@@ -80,7 +82,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     ? [
         {
           q: 'Collective or Network: which one is mine?',
-          a: `Ask who owns the Spaces. If separate groups own their own Spaces and want to work together, that is Collective: you share a calendar and cross-list each other's Circles and Journeys, and each group keeps its own members and payouts. If one organization runs many chapters, that is Network: ${network.forWho} Network is ${network.monthly}. ${network.billing} Its network fee is ${feeFigure(network)}. To set one up, talk to us from the Networks page.`,
+          a: `Ask who owns the Spaces. If separate groups own their own Spaces and want to work together, that is Collective: you share a calendar and cross-list each other's Circles and Journeys, and each group keeps its own members and payouts. If one organization runs many chapters, that is Network: ${network.forWho} Network is ${network.monthly}. ${network.billing} Its finder’s fee is the same as Business: ${feeFigure(network)}. To set one up, talk to us from the Networks page.`,
         },
       ]
     : []
@@ -92,11 +94,11 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'Do I need Crew to open a Space?',
-      a: `A Space comes with Crew, the personal membership you fund at whatever amount you choose. Hosting the Space itself is free. The beta runs through ${BETA_ENDS_DAY_LABEL}, 2027, and until it ends anyone can open a Space without Crew. Check /pricing for current tools, limits and selling fees. Founding Member recognition is free; Founding Year is a separate paid first-year offer.`,
+      a: `A Space comes with Crew, the personal membership you fund at whatever amount you choose. Hosting the Space itself is free. The beta runs through ${BETA_ENDS_DAY_LABEL}, 2027, and until it ends anyone can open a Space without Crew. A free Space takes donations and tips, and selling starts at Business. Founding Member recognition is free; Founding Year is a separate paid first-year offer.`,
     },
     {
       q: 'How do selling fees work?',
-      a: `Selling options and fees depend on your Space plan and the transaction. Business and higher plans have no network fee on sales to their own audience; card processing still applies. The pricing page shows current details and available features.`,
+      a: `Selling starts at Business. Your own people cost 0%, plus card processing, always: a follower, a member, a contact, or anyone who has bought from you before. When Frequency introduces a new customer you pay one finder’s fee on their first purchase${finder ? `, ${finder}` : ''}. After that they are yours, at 0% plus card processing.${feeFree ? ` ${feeFree} pays no finder’s fee.` : ''}`,
     },
     {
       q: 'What actually needs a paid plan?',
@@ -108,12 +110,12 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'What is free?',
-      a: 'Joining Frequency and hosting a Space are free. Tips have no platform fee on any plan, though card processing still applies. Selling fees, tools and limits depend on plan; check /pricing for current details.',
+      a: 'Joining Frequency and hosting a Space are free. A free Space takes donations and tips, because it comes with Crew, and sells nothing else. Tips carry no platform fee, though card processing still applies. Selling starts at Business.',
     },
     ...betaFaq,
     {
       q: 'Do you take a cut of my sales?',
-      a: `Fees depend on your Space plan and the transaction. Business and higher plans have no network fee on sales to their own audience; card processing still applies. See /pricing for current rates.${fees ? ` Current selling-plan rates: ${fees}.` : ''}`,
+      a: `Not on your own people. A sale to someone already yours costs 0%, plus card processing. We earn one finder’s fee, once, on the first purchase from a customer the network introduces${finder ? `: ${finder}` : ''}.${feeFree ? ` ${feeFree} pays none.` : ''}`,
     },
     ...collectiveFaq,
     ...networkFaq,
@@ -141,7 +143,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'What happens if I downgrade?',
-      a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours, and you go back to the free limits. Your selling options change to those available on the free Space plan; see /pricing for current details. Tips keep working. You can export your contacts and your data before, during, or after, anytime.',
+      a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours, and you go back to the free limits. Selling stops, because a free Space sells nothing; donations and tips keep working while you have Crew. You can export your contacts and your data before, during, or after, anytime.',
     },
     {
       q: 'Can I leave and take my people with me?',

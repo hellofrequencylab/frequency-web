@@ -238,7 +238,7 @@ export function FrequencyPricing({
           <h1 className="h-xl">
             We only earn when we help <em className="fq-iri-text">your community grow.</em>
           </h1>
-          <p>{`Your regulars: 0% ${PLAN_STORY.plusProcessing}. People we bring you: a small share. Non Profits: nothing.`}</p>
+          <p>{`Your regulars: 0% ${PLAN_STORY.plusProcessing}. People we bring you: one capped fee, once. Non Profits: nothing.`}</p>
           <div className="ctas">
             <Link className="btn fq-iri-btn" href={ROUTES.createSpace}>
               Open your Space

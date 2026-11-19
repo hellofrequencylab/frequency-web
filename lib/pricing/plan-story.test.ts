@@ -11,8 +11,14 @@ describe('public plan story', () => {
     expect(copy).not.toMatch(/separate personal membership|a space is separate from crew/i)
   })
 
-  it('keeps selling terms neutral until the Free selling option is live', () => {
-    expect(PLAN_STORY.selling).toContain('Selling options and fees depend on your Space plan and the transaction')
+  // Owner 2026-11-18 (ADR-1978): "Free spaces cannot sell." "If a Crew member starts a free space, they
+  // can take donations." The fee-only free selling rate was withdrawn, so the neutral wording that
+  // waited on it is replaced by the rule. Pin rewrite approved by the owner the same day.
+  it('says selling starts at Business and a free Space takes donations and tips only', () => {
+    expect(PLAN_STORY.selling).toContain('Selling starts at Business')
+    expect(PLAN_STORY.selling).toContain('A free Space sells nothing')
+    expect(PLAN_STORY.rate).toContain('one finder’s fee, charged once on their first purchase and capped')
+    expect(PLAN_STORY.rate).toContain('Tips have no platform fee on any plan, though card processing still applies')
     expect(PLAN_STORY.selling).not.toContain('Free Spaces use the fee-only selling rate')
     expect(copy).not.toMatch(/\b\d+%|\$\d|grandfathered|founder badge|midnight|—/i)
   })

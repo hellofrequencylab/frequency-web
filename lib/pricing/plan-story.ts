@@ -29,15 +29,16 @@
  *  plan, and how the network fee works, stated so a skeptic believes it. No em dashes.
  *
  *  THE PLAN LADDER (ADR-1709, LIVE-759). Members join, Crew hosts, a Space runs, Business adds tools,
- *  Collective connects, Network unites. Current selling options and fees depend on the plan and
- *  transaction. Card processing applies to paid transactions. The current details belong on /pricing.
+ *  Collective connects, Network unites. Selling starts at Business, your own people cost 0%, and one
+ *  capped finder's fee applies once to a customer Frequency introduces (ADR-1978). Card processing
+ *  applies to paid transactions and is the seller's.
  *
  *  Plan NAMES may appear here (they are the canon in docs/NAMING.md); prices and percentages never do.
  *  A surface that needs a figure reads it from the catalog or the rate vector beside this sentence. */
 export const PLAN_STORY = {
   /** The whole spine in one breath. */
   spine:
-    'Frequency is where your local community happens. People join free. Host free with Crew. You pay when you start charging. Selling fees depend on your plan and buyer source; see /pricing for current details.',
+    'Frequency is where your local community happens. People join free. Host free with Crew. You pay when you start charging. Frequency takes no fee on your own people beyond card processing, and one capped finder’s fee, once, on a customer it introduces.',
   /** The three lines on their own (CORE-MODEL §1), for a surface that already has its own first
    *  sentence: the site description, the llms.txt header. PROG-R8 (ADR-1499) added this so the
    *  <meta> description and the crawler corpus READ the lines rather than retype them; the spine
@@ -50,12 +51,14 @@ export const PLAN_STORY = {
    *  options. Every surface interpolates this instead of arguing it again. */
   paid:
     'A Space comes with Crew, the personal membership you fund at whatever amount you choose, and hosting it is free. The pricing page shows which tools, limits, selling options and fees apply to each Space plan.',
-  /** The selling line: plan and transaction details determine the current options and fees. */
+  /** The selling line (ADR-1709, ADR-1978): only a paying account takes money. Selling is Business
+   *  and up; a free Space takes donations and tips because it comes with Crew, and sells nothing. */
   selling:
-    'Selling options and fees depend on your Space plan and the transaction. See /pricing for current details.',
-  /** The fee line, kept generic until the live catalog and plan gates expose current options. */
+    'Selling starts at Business: paid tickets, paid memberships, a shop and booking deposits. A free Space sells nothing. It takes donations and tips, because it comes with Crew.',
+  /** The fee line (ADR-1978): 0% on your own people, card processing passed through, and ONE finder's
+   *  fee, charged once and capped. No figure here: the rate and the cap are read beside this sentence. */
   rate:
-    'Selling options and fees depend on your Space plan and the transaction. Tips have no platform fee on any plan, though card processing still applies. See /pricing for current details.',
+    'On a paid plan there is no platform fee on your own people, though card processing still applies. A customer Frequency introduces costs one finder’s fee, charged once on their first purchase and capped, and from then on they are your own. Non Profit pays no finder’s fee. Tips have no platform fee on any plan, though card processing still applies, and they come with Crew. See /pricing for the current rate and cap.',
   /** The meter framing: plan tools and limits vary, and a full meter stops new writes without taking
    *  anything away. */
   meters:

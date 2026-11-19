@@ -324,7 +324,7 @@ export const data: Data = {
             icon: '',
             image: '',
             title: 'You: free until you charge',
-            body: 'Hosting is free. Open a Space, run Circles and Events, and take tips with no platform fee, only card processing. Business is what you take when you start charging, never a bill for access to people.',
+            body: 'Hosting is free. Open a Space, run Circles and Events, and take donations and tips with no platform fee, only card processing. Business is what you take when you start charging, never a bill for access to people.',
             href: '',
           },
         ],

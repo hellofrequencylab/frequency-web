@@ -87,7 +87,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
               <div className="pm-hit" tabIndex={0} role="group" aria-label={`${free.label}: what it adds`} aria-describedby="pm-t-free">
                 <span className="pm-ring" />
                 <Tip id="pm-t-free" title="Host free. The whole thing.">
-                  {`Comes with Crew, and hosting is free after that. Tips only, with no platform fee, ${PLAN_STORY.plusProcessing}.`}
+                  {`Comes with Crew, and hosting is free after that. Donations and tips only, with no platform fee on your own people, ${PLAN_STORY.plusProcessing}.`}
                 </Tip>
               </div>
             </div>
@@ -105,7 +105,7 @@ export function PlanLadderMotion({ spaces, partnerCap }: { spaces: readonly Offe
               <div className="pm-hit" tabIndex={0} role="group" aria-label={`${business.label}: what it adds`} aria-describedby="pm-t-business">
                 <span className="pm-orb pm-orb-lg" />
                 <Tip id="pm-t-business" title="Selling starts here.">
-                  {`Paid tickets, memberships, donations, a shop and booking deposits, with the limits lifted. ${business.trial ?? ''}`}
+                  {`Paid tickets, memberships, a shop and booking deposits, with the limits lifted. ${business.trial ?? ''}`}
                 </Tip>
               </div>
             </div>

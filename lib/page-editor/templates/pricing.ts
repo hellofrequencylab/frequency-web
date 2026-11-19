@@ -17,10 +17,10 @@ import {
 } from '@/lib/pricing/pricing-page'
 import { planExtras } from '@/lib/pricing/pricing-grid'
 import { PRICING_DEFAULTS } from '@/lib/pricing/defaults'
-import { formatBps } from '@/lib/pricing/display'
+import { formatBps, formatCents } from '@/lib/pricing/display'
 import { formatLoadoutCents } from '@/lib/pricing/loadout'
 import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/meter-limits'
-import { networkTakeRateBpsForPlan } from '@/lib/billing/pricing-keys'
+import { NETWORK_TAKE_RATE_DEFAULT, networkTakeRateBpsForPlan } from '@/lib/billing/pricing-keys'
 
 // Every dollar figure in this template interpolates from the ONE code catalog (priceStrings /
 // pricingCatalog) and the CREW_NOTE labels, so the CMS fallback can never drift from /pricing.
@@ -53,6 +53,11 @@ const PAID_SPACE_TIERS = SPACE_TIERS.filter((t) => t.price.month.foundingCents >
 const monthOf = (t: PricingTier) => formatLoadoutCents(t.price.month.foundingCents)
 const yearOf = (t: PricingTier) => formatLoadoutCents(t.price.year.foundingCents)
 const rateOf = (t: PricingTier) => formatBps(networkTakeRateBpsForPlan(t.id))
+/** The finder's fee on a selling tier, rate and cap together (ADR-1978), or that it pays none. */
+const feeOf = (t: PricingTier) =>
+  networkTakeRateBpsForPlan(t.id) > 0
+    ? `${rateOf(t)} once, never more than ${formatCents(NETWORK_TAKE_RATE_DEFAULT.capCents)}, on a customer the network introduces`
+    : 'no finder’s fee'
 const SELLING_TIERS = SPACE_TIERS.filter((t) => t.sells)
 
 /** Join into a plain English list: "a, b, and c". */
@@ -105,7 +110,7 @@ const SPACE_TIER_COPY: Record<PricingTier['id'], { inherits: boolean; features: 
   },
   nonprofit: {
     inherits: false,
-    features: ['Everything Business does', 'Donations built in, no network fee', 'For verified 501(c)(3) nonprofits'],
+    features: ['Everything Business does', 'Donations built in, no finder’s fee', 'For verified 501(c)(3) nonprofits'],
     noteLead: 'Flat. ',
     noteTail: ' Verified 501(c)(3).',
   },
@@ -124,7 +129,7 @@ const spaceTierCard = (t: PricingTier, i: number) => {
     cadence: free ? 'forever' : '/mo',
     priceNote: free
       ? ''
-      : `${copy.noteLead ?? ''}Or ${yearOf(t)} a year, which is two months free.${t.sells ? ` 0% on your own people ${PLAN_STORY.plusProcessing}, ${rateOf(t)} once per customer the network introduces.` : ''}${copy.noteTail ?? ''}`,
+      : `${copy.noteLead ?? ''}Or ${yearOf(t)} a year, which is two months free.${t.sells ? ` 0% on your own people ${PLAN_STORY.plusProcessing}, ${feeOf(t)}.` : ''}${copy.noteTail ?? ''}`,
     tagline: t.tagline,
     highlight: t.featured ? 'featured' : 'normal',
     badge: 'none',
@@ -263,7 +268,7 @@ export const data: Data = {
         title: 'For practitioners and businesses.', titleAccent: '',
         // LIVE-253: this kicker argued the plan with "each step up buys it down". It now argues it
         // with PLAN_STORY.paid and keeps the ladder as the fee schedule it is.
-        kicker: `Run your community as a Space. ${PLAN_STORY.paid} ${PLAN_STORY.selling} The network fee is only ever on a customer the network introduces, once: ${SELLING_TIERS.map((t) => `${t.name} ${rateOf(t)}`).join(', ')}.`,
+        kicker: `Run your community as a Space. ${PLAN_STORY.paid} ${PLAN_STORY.selling} The finder’s fee is only ever on a customer the network introduces, once: ${SELLING_TIERS.map((t) => `${t.name} ${feeOf(t)}`).join('; ')}.`,
         items: SPACE_TIERS.slice(0, 3).map(spaceTierCard),
         footnote: SPACE_TIERS.length > 3 ? '' : 'Every plan is one price, the same whenever you start. Pay yearly and you get two months free.',
         tone: 'canvas', width: 'wide', align: 'left', layout: { spaceTop: 'default', spaceBottom: SPACE_TIERS.length > 3 ? 'none' : 'default', visibility: 'all' },
@@ -332,7 +337,7 @@ export const data: Data = {
         id: 'pr-addons',
         eyebrow: 'Ways to earn',
         title: 'Tools for Space owners.', titleAccent: '',
-        kicker: 'Ways a Space owner can earn. Tips work on every plan; the rest open when your Space takes payments, on Business and up.',
+        kicker: 'Ways a Space owner can earn. Donations and tips come with Crew, so a free Space takes them; the rest open when your Space takes payments, on Business and up.',
         items: [
           {
             name: 'Space Memberships', price: 'Owner-set', strikePrice: '', cadence: '',
@@ -357,9 +362,9 @@ export const data: Data = {
             ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
           {
-            name: 'Tips', price: 'Open', strikePrice: '', cadence: 'on every plan',
+            name: 'Tips', price: 'Open', strikePrice: '', cadence: 'with Crew',
             priceNote: 'Anyone can tip, and we take nothing from it.',
-            tagline: 'The one kind of money every plan receives, free Spaces included.',
+            tagline: 'Money a free Space can receive, because it comes with Crew.',
             highlight: 'normal', badge: 'none',
             features: [
               { text: 'Open on the free Space' },
@@ -379,7 +384,7 @@ export const data: Data = {
             ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
         ],
-        footnote: 'Each one is set by the Space owner, from their own settings. Memberships, bookings, and donations take payments, which starts at Business.',
+        footnote: 'Each one is set by the Space owner, from their own settings. Memberships and bookings take payments, which starts at Business. Donations and tips come with Crew.',
         tone: 'surface', width: 'wide', align: 'left', layout: L,
       },
     },
@@ -455,7 +460,7 @@ export const data: Data = {
           { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. ${PLAN_STORY.crew} Crew is from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested. Neither personal tier takes payments: tips work on both, and selling runs through a Space on Business. Those two are the whole member ladder.` },
           { q: 'What do the Space plans cost?', a: `A Space is free to start and stays free until you start charging. ${andList(PAID_SPACE_TIERS.map((t) => `${t.name} is ${monthOf(t)} a month or ${yearOf(t)} a year`))}. Every plan is the same price whenever you start, and yearly is two months free.` },
           { q: 'Why does selling start at Business?', a: `Because free hosting is the point. ${PLAN_STORY.selling} When you set a price on a free Space, you can start a Business trial right there, or keep the thing free. Nothing you built is lost either way.` },
-          { q: 'How does the network fee work?', a: `You keep 100% of the business you bring yourself, ${PLAN_STORY.afterProcessing}, always. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. ${PLAN_STORY.rate} Where each selling plan lands: ${andList(SELLING_TIERS.map((t) => `${t.name} is ${rateOf(t)}`))}.` },
+          { q: 'How does the finder’s fee work?', a: `You keep 100% of the business you bring yourself, ${PLAN_STORY.afterProcessing}, always. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. ${PLAN_STORY.rate} Where each selling plan lands: ${SELLING_TIERS.map((t) => `${t.name} is ${feeOf(t)}`).join('; ')}.` },
           { q: 'What is Collective?', a: `${PLAN_STORY.collective} ${andList(SPACE_TIERS.filter((t) => t.id === 'collective').map((t) => `${t.name} is ${monthOf(t)} a month or ${yearOf(t)} a year`))}.` },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },

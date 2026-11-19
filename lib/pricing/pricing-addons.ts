@@ -112,7 +112,7 @@ export function pricingAddOns(input: PricingGridInput): AddOnGroups {
     price: `from ${formatCents(NETWORK_PLAN.independentYearFromCents)}/yr`,
     unit: `plus ${formatCents(NETWORK_PLAN.independentSetupCents)} once for setup`,
     who: 'A Network that leaves the Frequency network',
-    detail: 'Your own audience, no badge, no discovery, no network fee. Set up on a call.',
+    detail: 'Your own audience, no badge, no discovery, no finder’s fee. Set up on a call.',
   })
 
   const included: AddOnRow[] = [
@@ -152,9 +152,9 @@ export function pricingAddOns(input: PricingGridInput): AddOnGroups {
       key: 'tips',
       name: 'Tips',
       price: 'Included',
-      unit: 'open on every plan',
-      who: 'Everyone',
-      detail: 'No platform fee on a tip, only card processing.',
+      unit: 'comes with Crew',
+      who: 'Crew members and every Space',
+      detail: 'No platform fee on a tip, only card processing. A Space comes with Crew, so every Space takes them.',
     },
   ]
   return { paid, included }

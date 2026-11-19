@@ -92,7 +92,7 @@ const PRACTITIONER: Persona = {
   emoji: '🛠️',
   marketingTag: 'persona_practitioner',
   reel: [
-    { kind: 'render', render: 'feed', title: 'Get paid for your craft', line: 'Host free and take tips from day one. When you start charging, Business sells tickets, paid bookings, and the Journeys you teach.' },
+    { kind: 'render', render: 'feed', title: 'Get paid for your craft', line: 'Host free, with donations and tips from day one. When you start charging, Business sells tickets, paid bookings, and the Journeys you teach.' },
     { kind: 'render', render: 'circles', title: 'Build a following', line: 'Turn one-off attendees into a circle that comes back: your people, your craft, your cadence.' },
     { kind: 'render', render: 'events', title: 'Put it on the calendar', line: 'Open a Space, list your Events and offerings, and let the people already looking in your town find you.' },
   ],
