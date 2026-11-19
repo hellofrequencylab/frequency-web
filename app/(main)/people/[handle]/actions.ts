@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { getMyProfileId } from '@/lib/auth'
 import { blockUser, unblockUser } from '@/lib/blocking'
+import { safeErrorMessage } from '@/lib/action-result'
 
 export interface ModerateProfileResult {
   ok: boolean
@@ -36,7 +37,7 @@ export async function moderateUpdateProfile(
     .from('profiles')
     .update({ display_name: displayName, bio: data.bio.trim() || null })
     .eq('id', profileId)
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: safeErrorMessage(error) }
 
   if (target?.handle) revalidatePath(`/people/${target.handle}`)
   revalidatePath('/people')

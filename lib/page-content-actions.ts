@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 import { CONTENT_EDIT_ROUTES, SITE_SCOPE } from '@/lib/layout/editable-content'
 import { isLoomPublicImageUrl } from '@/lib/loom/urls'
 import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
@@ -130,7 +130,7 @@ export async function savePageContent(route: string, fd: FormData): Promise<Acti
       route, title, description, body, cta_label, cta_href,
       updated_by: me.id, updated_at: new Date().toISOString(),
     })
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
   revalidateScope(route)
   return ok()
 }
@@ -155,7 +155,7 @@ export async function setPageHeroUrl(
     updated_by: me.id,
     updated_at: new Date().toISOString(),
   })
-  if (error) return { error: error.message }
+  if (error) return { error: safeErrorMessage(error) }
   revalidateScope(route)
 }
 

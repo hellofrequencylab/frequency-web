@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getActivePersonas } from '@/lib/personas'
 import { slugify } from '@/lib/utils'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 import { buildOfferRow, type OfferInput } from '@/lib/partners/offers'
 import { hidePartnerListing } from '@/lib/partners/unpublish'
 
@@ -53,7 +53,7 @@ export async function saveListing(input: ListingInput): Promise<ActionResult<{ s
 
   if (existing) {
     const { error } = await admin.from('partners').update(fields).eq('id', existing.id)
-    if (error) return fail(error.message)
+    if (error) return fail(safeErrorMessage(error))
     revalidatePath('/partners')
     revalidatePath('/partners/listing')
     return ok({ slug: existing.slug })
@@ -65,7 +65,7 @@ export async function saveListing(input: ListingInput): Promise<ActionResult<{ s
   if (clash) slug = `${slug}-${Math.random().toString(36).slice(2, 5)}`
 
   const { error } = await admin.from('partners').insert({ ...fields, slug })
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
   revalidatePath('/partners')
   revalidatePath('/partners/listing')
   return ok({ slug })
@@ -105,7 +105,7 @@ export async function saveOffer(input: OfferInput): Promise<ActionResult<{ id: s
     .select('id, slug')
     .eq('contact_profile_id', me.id)
     .maybeSingle()
-  if (partnerError) return fail(partnerError.message)
+  if (partnerError) return fail(safeErrorMessage(partnerError))
   if (!partner) return fail('Publish your listing first, then add an offer to it.')
 
   // LIVE-673: a sponsor reward names a live Quest. Refuse an id that is not one rather than store it.
@@ -123,7 +123,7 @@ export async function saveOffer(input: OfferInput): Promise<ActionResult<{ id: s
       .eq('partner_id', partner.id)
       .select('id')
       .maybeSingle()
-    if (error) return fail(error.message)
+    if (error) return fail(safeErrorMessage(error))
     if (!updated) return fail('That offer is not on your listing.')
     id = updated.id
   } else {
@@ -132,7 +132,7 @@ export async function saveOffer(input: OfferInput): Promise<ActionResult<{ id: s
       .insert({ ...built.row, partner_id: partner.id })
       .select('id')
       .single()
-    if (error) return fail(error.message)
+    if (error) return fail(safeErrorMessage(error))
     id = inserted.id
   }
 

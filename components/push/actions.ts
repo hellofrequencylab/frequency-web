@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 
 export type SubscriptionPayload = {
   endpoint:   string
@@ -49,7 +49,7 @@ export async function saveSubscription(
 
   if (error) {
     console.error('[saveSubscription]', error.message)
-    return fail(error.message)
+    return fail(safeErrorMessage(error))
   }
 
   return ok()
