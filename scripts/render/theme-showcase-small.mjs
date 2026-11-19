@@ -6,6 +6,7 @@
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
+import { invokedDirectly } from '../lib/invoked-directly.mjs'
 
 const ROOT = 'public/themes-index'
 const force = process.argv.includes('--force')
@@ -26,7 +27,7 @@ export async function smallCopy(src) {
   return out
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (invokedDirectly(import.meta.url)) {
   let n = 0
   let before = 0
   let after = 0
