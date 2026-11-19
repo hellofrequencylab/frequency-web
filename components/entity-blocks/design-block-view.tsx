@@ -281,6 +281,8 @@ function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNod
               <img
                 src={c.image}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className={imageLeft ? 'h-full w-1/3 shrink-0 object-cover' : 'aspect-[4/3] w-full object-cover'}
               />
             ) : c.icon ? (
