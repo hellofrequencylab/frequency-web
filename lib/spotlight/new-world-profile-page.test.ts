@@ -10,7 +10,7 @@ const links = [
 describe('newWorldProfilePageContent', () => {
   it('makes frequencylocal.com the primary button and lists the other links under it', () => {
     const c = newWorldProfilePageContent({ name: 'Dan', tagline: 'Alchemy', about: null, portrait: 'p.jpg', cover: 'c.jpg', links })
-    expect(c.cta).toEqual({ label: 'frequencylocal.com', href: 'https://frequencylocal.com' })
+    expect(c.cta).toEqual({ label: 'Frequency', href: 'https://frequencylocal.com' })
     expect(c.doors.map((d) => d.title)).toEqual(['Instagram', 'Site'])
     expect(c.linkPage).toEqual({ portrait: 'p.jpg', cover: 'c.jpg' })
   })
@@ -18,5 +18,9 @@ describe('newWorldProfilePageContent', () => {
     const c = newWorldProfilePageContent({ name: 'Dan', tagline: null, about: null, portrait: null, cover: null, links: [links[0]!, links[2]!] })
     expect(c.cta.href).toBe('https://instagram.com/x')
     expect(c.doors).toHaveLength(1)
+  })
+  it('falls back to the host only when the link has no label', () => {
+    const c = newWorldProfilePageContent({ name: 'Dan', tagline: null, about: null, portrait: null, cover: null, links: [{ label: ' ', url: 'https://www.example.com/a' }] })
+    expect(c.cta.label).toBe('example.com')
   })
 })

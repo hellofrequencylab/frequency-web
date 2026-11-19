@@ -1,0 +1,20 @@
+{
+  "id": "SEC-027",
+  "title": "Stop members taking a free seat on a ticketed event by RSVPing going",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "app/(main)/events/actions.ts",
+    "ref": "deepest site audit 2026-11-19 (money paths)"
+  },
+  "detail": "Deep audit 2026-11-19. An event that sells tickets (a price or an active ticket type, join_mode not rsvp) hides the RSVP control, but neither setRsvpStatus nor the RLS policy \"event_rsvps: crew+ insert own\" nor the member write guard asked about price. A member could write their own row to going or waitlist through the action or PostgREST; isAdmitted() counted it as a seat, which unlocks a hidden address and the private online link and passes door check-in, all without a ticket. Production held no such seat (40 ticketed events, 0 member going rows without a ticket, read 2026-11-19). Fix: migration 20270346190000 adds a second BEFORE trigger, trg_b_event_rsvps_ticket_seat, that refuses a caller-role write making a member row going or waitlist on a ticketed event unless a ticket door linked it (from_ticket_id) or the member hosts or co-hosts; trusted writers (service role, definer doors) stay exempt. The existing member write guard is untouched. setRsvpStatus maps the refusal to a plain line. Proved by supabase/tests/event_rsvps_ticket_seat_guard.test.sql.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SEC-027.mjs",
+    "note": "Fails on main: no ticket seat trigger. Passes when the migration and its pgTAP proof are in the tree."
+  },
+  "closed": "2026-11-19"
+}

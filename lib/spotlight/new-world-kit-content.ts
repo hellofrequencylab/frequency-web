@@ -282,7 +282,8 @@ export function newWorldProfilePageContent(opts: {
     name: opts.name,
     story: opts.about ?? '',
     doors: rest,
-    cta: primary ? { label: host(primary.url) || primary.label, href: primary.url } : { label: '', href: '' },
+    // The button reads the owner's own words for the link (LIVE-2451); the bare host is only the fallback for an unlabelled link.
+    cta: primary ? { label: primary.label.trim() || host(primary.url), href: primary.url } : { label: '', href: '' },
     secondReview: null,
     linkPage: { portrait: opts.portrait, cover: opts.cover },
     layouts: ['profile'],
