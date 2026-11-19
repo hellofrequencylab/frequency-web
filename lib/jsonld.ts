@@ -10,6 +10,12 @@ import type { PublicCircle, PublicEvent, TopicalChannel } from '@/lib/discover'
 import type { JourneyPlan, JourneyPlanItem } from '@/lib/journey-plans'
 
 const abs = (path: string) => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`
+/** An image or link a row supplies: kept as is when it is already absolute, made absolute on the
+ *  site origin when it is root-relative (a kit logo such as `/sites/mindless/avatar.png`). A
+ *  structured-data URL must be absolute; a relative one is dropped or misread by validators and
+ *  answer engines (SCAN-1300, production crawl 2026-11-19: 20 Space pages emitted relative logos). */
+export const absUrl = (src: string, origin: string = SITE_URL) =>
+  /^https?:\/\//i.test(src) ? src : src.startsWith('//') ? `https:${src}` : `${origin.replace(/\/$/, '')}${src.startsWith('/') ? src : `/${src}`}`
 
 // Stable entity URIs so search + answer engines resolve one Frequency Organization and one WebSite
 // node across every page, and can cite the WebSite back to its publisher (AIO entity resolution,
@@ -858,7 +864,7 @@ export function personSchema(p: { name: string; path: string; image?: string | n
     '@type': 'Person',
     name: p.name,
     url: abs(p.path),
-    ...(p.image ? { image: p.image } : {}),
+    ...(p.image ? { image: absUrl(p.image) } : {}),
   }
 }
 
@@ -889,7 +895,7 @@ export function siteEntitySchema(site: {
   sameAs?: readonly (string | null | undefined)[]
 }) {
   const url = site.url.replace(/\/$/, '')
-  const image = cleanStrings(site.images)
+  const image = cleanStrings(site.images).map((src) => absUrl(src, url))
   const sameAs = cleanStrings(site.sameAs)
   return {
     '@context': 'https://schema.org',
@@ -963,7 +969,7 @@ export function spaceSchema(space: SpaceSchemaInput) {
   // event one did (LIVE-205): app/(public)/spaces/[slug]/opengraph-image.tsx is under a route group,
   // so Next serves it at `/spaces/<slug>/opengraph-image-tt3pwa`. Removed rather than hardcoded —
   // the suffix is Next's to derive. The share card is unaffected and still per-Space.
-  const image = [...(space.logoUrl ? [space.logoUrl] : []), SITE_OG_IMAGE]
+  const image = [...(space.logoUrl ? [absUrl(space.logoUrl)] : []), SITE_OG_IMAGE]
 
   const sameAs = cleanStrings(space.sameAs)
   const openingHours = cleanStrings(space.openingHours)
@@ -1425,7 +1431,7 @@ export function productSchema(p: {
     '@type': 'Product',
     name: p.title,
     ...(p.description ? { description: p.description } : {}),
-    image: [...(p.image ? [p.image] : []), SITE_OG_IMAGE],
+    image: [...(p.image ? [absUrl(p.image)] : []), SITE_OG_IMAGE],
     url,
     ...(p.sellerName ? { brand: { '@type': 'Brand', name: p.sellerName } } : {}),
     ...(rating ? { aggregateRating: rating } : {}),
@@ -1561,7 +1567,7 @@ export function housingListingSchema(h: {
     '@type': h.roomType ? ROOM_TYPE_SCHEMA[h.roomType] ?? 'Accommodation' : 'Accommodation',
     name: h.title,
     ...(h.description ? { description: h.description } : {}),
-    image: [...(h.image ? [h.image] : []), SITE_OG_IMAGE],
+    image: [...(h.image ? [absUrl(h.image)] : []), SITE_OG_IMAGE],
     url,
     ...(typeof h.bedrooms === 'number' ? { numberOfBedrooms: h.bedrooms } : {}),
     ...(h.city
