@@ -47,7 +47,7 @@ function tierLadderLines(offerings: Offering[]): string[] {
   return offerings.map((o) => {
     const anchor = o.listAnchor ? ` (list ${o.listAnchor})` : ''
     const yearly = o.yearly ? ` or ${o.yearly}` : ''
-    return `- ${offeringLadderLabel(o)}: ${o.monthly}${anchor}${yearly}. ${o.forWho} Take-rate: ${o.takeRate}.`
+    return `- ${offeringLadderLabel(o)}: ${o.monthly}${anchor}${yearly}. ${o.forWho} Fees: ${o.takeRate}.`
   })
 }
 
