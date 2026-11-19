@@ -11,6 +11,7 @@ export const CAMPAIGN_LANDINGS = {
   '/': 'Frequency home',
   '/discover': 'Discover',
   '/create-a-space': 'Create a Space',
+  '/launch-your-business': 'Launch Your Business',
   '/join': 'Join Frequency',
 } as const
 export type CampaignSource = keyof typeof CAMPAIGN_SOURCES

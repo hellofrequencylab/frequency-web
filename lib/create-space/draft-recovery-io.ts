@@ -174,7 +174,7 @@ export async function runDraftReminders(opts: DraftReminderRunOptions): Promise<
         pct: progressOf(draft, false),
         kitLabel: kitLabelOf(draft.kit),
         stoppedAtPhotos: row.step_reached === 3,
-        resumeUrl: `${baseUrl}/create-a-space?kit=${encodeURIComponent(draft.kit)}&draft=${link}`,
+        resumeUrl: `${baseUrl}/launch-your-business?kit=${encodeURIComponent(draft.kit)}&draft=${link}`,
         unsubscribeUrl,
       })
       await enqueueEmail({ ...payload, headers: listUnsubscribeHeaders(unsubscribeUrl) }, { dedupeKey: `create_space_draft:${row.id}:${kind}` })
