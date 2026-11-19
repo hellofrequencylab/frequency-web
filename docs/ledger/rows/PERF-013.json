@@ -1,0 +1,19 @@
+{
+  "id": "PERF-013",
+  "title": "Every public page ships the Space theme-kit code and the sign-in client that it does not use",
+  "lane": "live",
+  "priority": "P2",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "app/layout.tsx",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "Two shared chunks load on every anonymous public page. One (184 KB raw, 59 KB on the wire) is Space theme-kit client code (Wildheart, Temple, Network kit, moon phases, a location lookup) and is about 98% unused outside a themed Space. The other (238 KB raw, 63 KB on the wire) is the browser database client, about 95% unused for a signed-out visitor. Total script on a public page is 520 to 634 KB on the wire, and CSS arrives as 9 to 12 files (116 to 133 KB). Find what statically imports the theme kits from a shared layout or shell and move it behind the Space route; load the browser client only where a signed-out page actually calls it. Related: SCAN-1265 (home blocking time). Measure with the phone field run before and after.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-19",
+    "evidence": "Production, 2026-11-19, Lighthouse unused-javascript on 14 templates (/, /pricing, /the-community, /discover, /events, an event, a Space, /for/coaches, /north-county-san-diego, /create-a-space, a city, a help article): the theme-kit chunk was 97 to 99% unused and the browser client chunk 94 to 96% unused on every one that is not a themed Space."
+  },
+  "wave": "W7"
+}

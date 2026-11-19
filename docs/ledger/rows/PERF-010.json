@@ -1,0 +1,20 @@
+{
+  "id": "PERF-010",
+  "title": "Photos in Space blocks load when they are near the screen, not all at once",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/entity-blocks/content-block-view.tsx",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "/spaces/royaltemple weighed 11.4 MB on first load, 9.7 MB of it photos below the fold. Gallery tiles, card images, item images and Space canvas images in the block renderers are now loading=\"lazy\" decoding=\"async\". The single Image block and the Callout image stay eager because either can be the first thing on the page. No layout change: the images keep their sizes. Not done here: these photos are still served at full size (PERF-012).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-010.mjs",
+    "note": "Fails on main: one lazy image across the three renderers. Passes once the gallery, card, item and canvas images are lazy."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

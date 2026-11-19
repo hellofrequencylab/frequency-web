@@ -189,6 +189,9 @@ type EventSchemaEnrichment = {
    *  URL: a signed URL expires, and an advertised image that is not there is LIVE-205 on a timer. */
   cover_url?: string | null
   attendance_mode?: 'in_person' | 'online' | 'hybrid' | null
+  /** The networked Space hosting the event (SCAN-1272). Becomes the `organizer` when the event has
+   *  no Circle. The caller resolves it inside the public discovery boundary; absent means none. */
+  host_space?: { slug: string; name: string } | null
   is_cancelled?: boolean | null
   category?: string | null
   region?: string | null
@@ -408,6 +411,10 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
     // slug), so an answer engine can join the event to the host's indexed profile instead of a bare
     // name (SCAN-791). An event hosted by a person or a Space still emits no organizer: nothing here
     // can name their profile path yet.
+    //
+    // SCAN-1272: an event with no Circle but a networked hosting Space names that Space, with its
+    // indexed profile as the url. The Circle still wins when both exist, because it is the group
+    // that actually meets. An event hosted by a person alone still emits no organizer.
     ...(event.circle_name
       ? {
           organizer: {
@@ -416,7 +423,15 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
             ...(event.circle_id ? { url: abs(`/discover/circles/${event.circle_id}`) } : {}),
           },
         }
-      : {}),
+      : event.host_space
+        ? {
+            organizer: {
+              '@type': 'Organization',
+              name: event.host_space.name,
+              url: abs(`/spaces/${event.host_space.slug}`),
+            },
+          }
+        : {}),
     // Pricing. A TICKETED event carries its price on its active tiers, not on events.price_cents
     // (which stays null for them), so reading price_cents alone published "this event is free"
     // for every tier-priced event — wrong in the rich result, and a Google structured-data

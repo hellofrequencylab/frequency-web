@@ -412,7 +412,7 @@ export function FrequencyNewWorld() {
           </div>
           <div className="nwf-kgrid">
             {NEW_WORLD_KITS.map((k) => (
-              <a className="nwf-kit" key={k.id} href={`${START_HREF}?niche=${k.id}`} style={vars({ '--c': k.hex })}>
+              <a className="nwf-kit" key={k.id} href={`${START_HREF}${START_HREF.includes('?') ? '&' : '?'}niche=${k.id}`} style={vars({ '--c': k.hex })}>
                 <Image src={newWorldShot(k.id, 'site')} alt={`New World, ${k.name}: website`} width={1280} height={800} sizes="(max-width: 900px) 46vw, 280px" />
                 <span>
                   <i />
