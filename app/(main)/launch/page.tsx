@@ -15,6 +15,7 @@ import { sendLaunchedWelcome } from '@/lib/launch/launched-io'
 import { launchStepHref } from '@/lib/launch/steps'
 import Link from 'next/link'
 import { LaunchOverview } from '@/components/launch/launch-overview'
+import { BuildHub } from '@/components/launch/build-hub'
 import { LaunchClockSlot } from '@/components/launch/launch-clock-slot'
 import { LaunchIntent } from '@/components/launch/launch-intent'
 import { showIntent } from '@/lib/launch/intent'
@@ -111,6 +112,7 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
     >
       <div className="flex flex-col gap-4">
         <LaunchClockSlot launchId={launch.id} ownerId={profileId} stages={stages.map((s) => s.label)} stagesDone={stagesDone} done={stagesDone} total={stages.length} />
+        <BuildHub built={[]} />
         {view.made.length > 0 && (
           <p className="t2">What you have made so far: {view.made.join(', ')}.</p>
         )}
