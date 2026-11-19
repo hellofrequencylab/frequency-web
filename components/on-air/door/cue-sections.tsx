@@ -85,7 +85,7 @@ export interface CueScope {
 export const pct = (v: number) => `${Math.round(v * 100)}%`
 export const ambientLevel = (v: number) => (v < 0.4 ? 'low' : v < 0.75 ? 'medium' : 'high')
 
-function bellOptions(): { value: string; label: string }[] {
+export function bellOptions(): { value: string; label: string }[] {
   return [{ value: 'off', label: 'Off' }, ...BELL_TONES.map((t) => ({ value: t.slug, label: t.name }))]
 }
 
@@ -110,7 +110,7 @@ export function describeFeel(cues: CueSettings): string {
   return `${cues.warmupSec} s countdown, vibration ${cues.haptics ? 'on' : 'off'}`
 }
 
-function pickBell(value: string, cues: CueSettings, scope: CueScope, set: (patch: TimerSettingsPatch) => void, audio: DoorAudio) {
+export function pickBell(value: string, cues: CueSettings, scope: CueScope, set: (patch: TimerSettingsPatch) => void, audio: DoorAudio) {
   if (value === 'off') {
     set({ cues: { [scope.flag]: false } })
     return

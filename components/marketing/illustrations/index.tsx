@@ -66,7 +66,7 @@ export const illustrationNames = [
   'pipeline',
   // Onboarding + On Air house-style spot art, brought into the shared kit so The
   // Loom holds one canonical copy (welcome deck: components/onboarding/welcome-art.tsx;
-  // reveal panels: components/on-air/reveal-art.tsx).
+  // reveal panels: the retired on-air reveal art).
   'welcome',
   'zaps',
   'vera',

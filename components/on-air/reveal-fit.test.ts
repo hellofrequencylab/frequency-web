@@ -23,8 +23,7 @@ import { readFileSync } from 'node:fs'
 // THE CONTRACT NOW, in the order things give way:
 //   · the overlay is EXACTLY one viewport and does not scroll (`fit`),
 //   · the swipe rail is `shrink-0` — it is the navigation, so it never gives ground,
-//   · the spot art shrinks first, capped against `svh` (the URL-bar-out measure, so the layout
-//     does not resize under the member when mobile Safari's chrome slides away mid-read),
+//   · there is no spot art to shrink any more (LIVE-2406 removed it with the redesign),
 //   · the card body scrolls INSIDE its own box as the last resort.
 //
 // The last one is a fail-safe rather than the design, and it is deliberate: the overlay now carries
@@ -83,18 +82,12 @@ describe('the reveal distributes that budget instead of overflowing it', () => {
     expect(REVEAL).toMatch(/className="flex min-h-0 w-full shrink-0 snap-center flex-col[^"]*overflow-y-auto/)
   })
 
-  it('caps the spot art against svh, so the cards do not resize when the URL bar slides away', () => {
-    expect(REVEAL).toContain("const ART = 'mx-auto h-24 max-h-[9svh] w-auto'")
+  it('carries no spot art: one number and a line per card leaves nothing to squeeze (LIVE-2406)', () => {
+    // The art was the first thing to give way on a short screen. The Claude Design timer of
+    // 2026-11-18 removed it (owner approved rewriting this pin, 2026-11-18), so the budget is the
+    // card body alone and a fifth card can not bring an uncapped scene back.
+    expect(REVEAL).not.toMatch(/reveal-art|Art className=/)
     expect(REVEAL).not.toContain('max-h-[9dvh]')
-  })
-
-  it('routes every panel through the one capped art class', () => {
-    // Four panels, four scenes. A fifth card added with its own `h-24 w-auto` would be the one
-    // that overflows on a short screen, which is exactly how this started.
-    const direct = REVEAL.match(/Art className="mx-auto[^"]*h-24/g) ?? []
-    expect(direct).toEqual([])
-    const routed = REVEAL.match(/Art className=\{(ART|`\$\{ART\}[^`]*`)\}/g) ?? []
-    expect(routed).toHaveLength(4)
   })
 })
 

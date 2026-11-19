@@ -1,27 +1,25 @@
 'use client'
 
-// THE LIVE STAGE (LIVE-2393): the one running screen for Be Still and Get Moving. The door was
-// redesigned on the Frequency member design system (LIVE-2245); the screen a member actually sits
-// with was not: a grey clock on a white page for a sit, a green ring for a walk, two layouts that
-// shared nothing with the door. This is the door's orb, carried through:
+// THE LIVE STAGE (LIVE-2393; redrawn under LIVE-2406 from the Claude Design timer of 2026-11-18,
+// direction A): the one running screen for Be Still and Get Moving.
 //
-//   • the same orb the member set their length on is now the clock face, inside a thin ring that
-//     fills as the session runs (or as a Get Moving phase runs), so the time left reads at a glance
-//     from across a room without reading a number;
-//   • a Breathe session moves the orb itself with the breath, with the cue and the count on it;
-//   • the practice is named, the end time is said in the member's own clock ("Ends 6:42 pm"), and
-//     a Get Moving plan shows its rounds as dots;
-//   • the controls sit in one dock: one primary pill (Begin now, Pause, Resume, Finish) and the
-//     two ways out side by side. After a few idle seconds of a running session the chrome steps
-//     back so only the orb is lit; any touch, key or focus brings it back. Space pauses.
+//   • the time is one big number over a thin bar that fills as the session (or a Get Moving phase)
+//     runs, so it reads at a glance from across a room;
+//   • a Breathe session keeps the orb, which moves with the breath, with the cue and the count
+//     under it;
+//   • the practice and style are named, the end time is said in the member's own clock ("Ends
+//     6:42 pm"), and a Get Moving plan names its phase in a pill with "Round 3 of 8";
+//   • one primary pill (Begin now, Pause, Resume, Finish) with the two ways out as text under it.
+//     After a few idle seconds of a running session everything but the clock steps back; any
+//     touch, key or focus brings it back. Space pauses.
 //
 // Presentational only. Both engines keep every rule they own (the clock, the warm-up, the run-over
-// gate, the bank) and hand this their read-outs. Tokens only (docs/THEME.md); the orb number sits
-// on the pale orb in day and night, so it reads in the fixed ink, like the door.
+// gate, the bank) and hand this their read-outs. Tokens only (docs/THEME.md).
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Check, Pause, Play, RotateCcw, X } from 'lucide-react'
+import { Footprints } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ProgressTrack, type ProgressTone } from '@/components/ui/progress-track'
 import { breathPositionAt, ringScaleAt, type BreathPattern } from '@/lib/on-air'
 import { LotusIcon } from './icons'
 import type { TimerMode } from './mindless'
@@ -41,9 +39,6 @@ export type LiveState = 'warmup' | 'running' | 'paused' | 'ended'
 
 /** How long a running session sits untouched before the chrome steps back. */
 export const QUIET_AFTER_MS = 6000
-
-const RING_R = 96
-const RING_C = 2 * Math.PI * RING_R
 
 export interface LiveStageProps {
   mode: TimerMode
@@ -81,13 +76,7 @@ export interface LiveStageProps {
   onCancel: () => void
 }
 
-const ACCENT: Record<'still' | 'move' | 'work' | 'rest' | 'closing', string> = {
-  still: 'text-primary-strong',
-  move: 'text-move',
-  work: 'text-success',
-  rest: 'text-warning',
-  closing: 'text-danger',
-}
+const BAR: Record<'still' | 'move' | 'work' | 'rest' | 'closing', ProgressTone> = { still: 'primary-strong', move: 'move', work: 'success', rest: 'warning', closing: 'danger' }
 
 export function LiveStage({
   mode, state, flash = false, eyebrow, title, clock, clockLabel, progress, closing = false, accent = null, remainingSec = null,
@@ -99,8 +88,7 @@ export function LiveStage({
   const discRef = useRef<HTMLSpanElement>(null)
   const cue = useBreath(breath, state === 'paused' || state === 'warmup', discRef)
   const fill = orbFillFor(mode)
-  const tone = ACCENT[closing ? 'closing' : (accent ?? mode)]
-  const chrome = `transition-opacity duration-700 motion-reduce:transition-none ${quiet ? 'opacity-35' : 'opacity-100'}`
+  const chrome = `transition-opacity duration-700 motion-reduce:transition-none ${quiet ? 'opacity-10' : 'opacity-100'}`
   const arc = progress === null ? null : Math.min(1, Math.max(0, progress))
   const primaryRef = useRef(primary.onClick)
   useEffect(() => { primaryRef.current = primary.onClick })
@@ -119,65 +107,60 @@ export function LiveStage({
   }, [])
 
   const showBreath = !!breath && state !== 'warmup'
-  const Icon = state === 'ended' ? Check : state === 'running' ? Pause : Play
+  const style = eyebrow.split(' · ').pop() ?? eyebrow
+  const moveFill = mode === 'move' ? { background: 'var(--color-move)', color: 'var(--color-text-on-move)' } : undefined
 
   return (
     <div className="fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] overflow-y-auto bg-canvas" data-live-stage={mode} data-live-state={state} data-quiet={quiet ? 'true' : undefined}>
       <RoomWash fill={fill} />
-      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-xl flex-col px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
-        <p className={`m-0 flex items-center justify-center gap-2 eyebrow text-muted ${chrome}`}>
-          <LotusIcon className="h-4 w-4" aria-hidden /> Mindless
-        </p>
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-107.5 flex-col px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
+        <div className={`flex flex-col items-center gap-1.5 text-center ${chrome}`}>
+          <p className="m-0 flex items-center justify-center gap-2 text-body-sm font-medium text-text">
+            {mode === 'move' ? <Footprints className="h-4 w-4" aria-hidden /> : <LotusIcon className="h-4 w-4" aria-hidden />} {mode === 'move' ? 'Get Moving' : 'Mindless'}
+          </p>
+          <h1 className="m-0 text-balance text-body-sm font-normal text-muted">
+            {title}
+            <span aria-hidden> · </span>
+            <span className="sr-only">, </span>
+            {style}
+          </h1>
+        </div>
 
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 py-6 text-center">
-          <div className={`flex flex-col items-center gap-1.5 ${chrome}`}>
-            <p className={`m-0 eyebrow ${ACCENT[mode]}`}>{eyebrow}</p>
-            <h1 className="m-0 text-balance font-display text-display-card font-medium tracking-tight text-text">{title}</h1>
-          </div>
-
-          <div className="relative aspect-square w-[min(74vw,44dvh,23rem)] shrink-0" role="timer" aria-label={`${clock} ${clockLabel}`}>
-            <svg viewBox="0 0 200 200" className="absolute inset-0 h-full w-full -rotate-90" aria-hidden>
-              <circle cx="100" cy="100" r={RING_R} fill="none" strokeWidth="2" className="stroke-current text-border" />
-              {arc !== null && (
-                <circle
-                  cx="100" cy="100" r={RING_R} fill="none" strokeWidth="3" strokeLinecap="round"
-                  strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - arc)}
-                  className={`stroke-current transition-[stroke-dashoffset,color] duration-1000 ease-linear motion-reduce:transition-none ${tone}`}
-                />
-              )}
-            </svg>
-            <span aria-hidden className={`absolute inset-[4%] rounded-pill opacity-50 blur-2xl ${running && !breath ? 'fq-breathe motion-reduce:animate-none' : ''}`} style={{ background: fill }} />
-            <span
-              ref={discRef}
-              aria-hidden
-              className={`absolute inset-[7%] rounded-pill ring-1 ring-inset ring-surface/70 ${running && !breath ? 'fq-breathe motion-reduce:animate-none' : ''} ${state === 'paused' ? 'opacity-70' : ''}`}
-              style={{ background: fill, transform: showBreath ? 'scale(0.62)' : undefined }}
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-ink">
-              {showBreath ? (
-                <>
-                  <span className="font-display text-display-card font-medium tracking-tight" aria-live="polite">{cue.label}</span>
-                  {showCount && cue.count !== null && <span className="font-display text-display-h2 font-medium leading-none tabular-nums" aria-hidden>{cue.count}</span>}
-                </>
-              ) : (
-                <>
-                  <span className={`font-display text-display-h1 font-medium leading-none tracking-[-0.05em] tabular-nums ${closing ? 'text-danger' : ''}`}>{clock}</span>
-                  <span className="eyebrow opacity-70" style={{ color: 'inherit' }}>{clockLabel}</span>
-                </>
-              )}
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 py-6 text-center">
+          {showBreath && (
+            <div className="relative aspect-square w-[min(44vw,24dvh,11rem)] shrink-0" aria-hidden>
+              <span className="absolute inset-0 rounded-pill opacity-50 blur-2xl" style={{ background: fill }} />
+              <span ref={discRef} className={`absolute inset-0 rounded-pill ring-1 ring-inset ring-surface/70 ${state === 'paused' ? 'opacity-70' : ''}`} style={{ background: fill, transform: 'scale(0.62)' }} />
             </div>
-          </div>
-
-          {rounds && rounds.total > 1 && rounds.total <= 20 && (
-            <ol className={`m-0 flex list-none flex-wrap items-center justify-center gap-1.5 p-0 ${chrome}`} aria-label={`Round ${rounds.current} of ${rounds.total}`}>
-              {Array.from({ length: rounds.total }, (_, i) => (
-                <li key={i} aria-hidden className={`h-1.5 rounded-pill transition-all motion-reduce:transition-none ${i + 1 < rounds.current ? 'w-1.5 bg-move' : i + 1 === rounds.current ? 'w-5 bg-move' : 'w-1.5 bg-border'}`} />
-              ))}
-            </ol>
+          )}
+          {showBreath && (
+            <p className="serif m-0 text-display-card text-text" aria-live="polite">
+              {cue.label}
+              {showCount && cue.count !== null && <span className="ml-2 font-sans text-body-lg not-italic tabular-nums text-muted" aria-hidden>{cue.count}</span>}
+            </p>
+          )}
+          {accent && !showBreath && (
+            <div className={`flex flex-col items-center gap-2 ${chrome}`}>
+              <span className={`flex h-9 items-center gap-2 rounded-pill px-4 text-meta font-semibold uppercase tracking-[0.14em] ${accent === 'work' ? 'bg-text text-surface' : 'text-text ring-[1.5px] ring-inset ring-text'}`}>
+                <span aria-hidden className={`h-2.5 w-2.5 ${accent === 'work' ? 'rounded-[2px] bg-surface' : 'rounded-pill ring-[1.5px] ring-inset ring-text'}`} />
+                {clockLabel}
+              </span>
+              {rounds && rounds.total > 1 && <span className="text-body font-medium text-text" data-rounds>Round {rounds.current} of {rounds.total}</span>}
+            </div>
           )}
 
-          <div className={`flex min-h-12 w-full max-w-sm flex-col items-center gap-2 ${chrome}`}>
-            {showBreath && <p className="m-0 font-display text-display-card font-medium tabular-nums text-text">{clock} <span className="eyebrow text-muted">{clockLabel}</span></p>}
+          <div className="flex flex-col items-center gap-3" role="timer" aria-label={`${clock} ${clockLabel}`}>
+            <span className={`font-display font-medium leading-none tracking-[-0.04em] tabular-nums text-display-hero ${closing ? 'text-danger' : 'text-text'} ${state === 'paused' ? 'opacity-60' : ''}`}>{clock}</span>
+            {arc !== null && (
+              <span className="block w-60 max-w-[70vw]" data-live-bar>
+                <ProgressTrack value={arc * 100} label="Session progress" tone={BAR[closing ? 'closing' : (accent ?? mode)]} track="border" animate />
+              </span>
+            )}
+            {!accent && !showBreath && <span className={`text-body-sm font-medium text-text ${chrome}`}>{LABELS[clockLabel.toLowerCase()] ?? clockLabel}</span>}
+          </div>
+
+          <div className={`flex min-h-12 w-full max-w-sm flex-col items-center gap-1.5 ${chrome}`}>
+            {!accent && rounds && rounds.total > 1 && <span className="text-body-sm font-medium text-text" data-rounds>Round {rounds.current} of {rounds.total}</span>}
             {children}
             {endsAt && <p className="m-0 text-meta tabular-nums text-muted">Ends {endsAt}</p>}
           </div>
@@ -185,18 +168,18 @@ export function LiveStage({
 
         {prompt}
 
-        <div className={`sticky bottom-0 -mx-6 flex flex-col items-center gap-2 bg-canvas/80 px-6 pb-1 pt-3 backdrop-blur-md ${chrome}`}>
-          {/* The one action fill: the kit's primary pill for Be Still, the move accent for Get Moving. */}
-          <Button type="button" onClick={primary.onClick} size="lg" className="w-full max-w-xs" style={mode === 'move' ? { background: 'var(--color-move)', color: 'var(--color-text-on-move)' } : undefined}>
-            <Icon className="h-4.5 w-4.5" aria-hidden /> {primary.label}
+        <div className={`sticky bottom-0 -mx-5 flex flex-col items-center gap-1 px-5 pb-1 pt-3 ${chrome}`}>
+          {/* The one action fill: the kit's practice gradient for Be Still, the move colour for Get Moving. */}
+          <Button type="button" onClick={primary.onClick} size="lg" className={`h-15 w-full rounded-pill ${mode === 'move' ? '' : 'fq-pa'}`} style={moveFill}>
+            {primary.label}
           </Button>
-          <div className="flex w-full max-w-xs items-center justify-between gap-2">
-            <Button type="button" onClick={onCancel} variant="ghost" size="sm" className="text-muted hover:text-danger" aria-label="Cancel, don’t log">
-              <X className="h-4 w-4" aria-hidden /> Cancel
-            </Button>
-            <Button type="button" onClick={finish.onClick} variant="ghost" size="sm">
-              <Check className="h-4 w-4" aria-hidden /> {finish.label}
-            </Button>
+          <div className="flex items-center justify-center gap-4">
+            <button type="button" onClick={onCancel} className="h-11 px-3 text-body-sm font-medium text-muted hover:text-danger" aria-label="Cancel, don’t log">
+              Cancel
+            </button>
+            <button type="button" onClick={finish.onClick} className="h-11 px-3 text-body-sm font-medium text-muted hover:text-text">
+              {finish.label}
+            </button>
           </div>
         </div>
       </div>
@@ -205,14 +188,17 @@ export function LiveStage({
   )
 }
 
+/** The engines' short clock labels, said the way the design says them. */
+const LABELS: Record<string, string> = { 'warm up': 'Get settled', left: '', 'min left': '' }
+
 /** The moments either side of the reveal (LIVE-2395): the save, and a save that failed. The same orb
- *  the member just sat with, so finishing never drops them onto a bare page. Content only: the
+ *  as the door's room, so finishing never drops the member onto a bare page. Content only: the
  *  engine's own takeover hosts it. */
 export function StageNotice({
   mode, tone, title, body, action,
 }: {
   mode: TimerMode
-  /** `working`: the ring turns and the orb breathes. `problem`: the orb dims and the action shows. */
+  /** `working`: the orb breathes. `problem`: the orb dims and the action shows. */
   tone: 'working' | 'problem'
   title: string
   body?: string
@@ -221,27 +207,18 @@ export function StageNotice({
   const fill = orbFillFor(mode)
   const working = tone === 'working'
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 py-6 text-center" data-stage-notice={tone} role={working ? 'status' : 'alert'}>
+    <div className="mx-auto flex w-full max-w-107.5 flex-1 flex-col items-center justify-center gap-6 px-5 py-6 text-center" data-stage-notice={tone} role={working ? 'status' : 'alert'}>
       <RoomWash fill={fill} />
-      <div className="relative aspect-square w-[min(52vw,30dvh,14rem)] shrink-0" aria-hidden>
-        <svg viewBox="0 0 200 200" className={`absolute inset-0 h-full w-full ${working ? 'animate-spin [animation-duration:2.4s] motion-reduce:animate-none' : ''}`}>
-          <circle cx="100" cy="100" r={RING_R} fill="none" strokeWidth="2" className="stroke-current text-border" />
-          {working && (
-            <circle cx="100" cy="100" r={RING_R} fill="none" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${RING_C * 0.22} ${RING_C}`} className={`stroke-current ${ACCENT[mode]}`} />
-          )}
-        </svg>
-        <span className={`absolute inset-[4%] rounded-pill blur-2xl ${working ? 'fq-breathe opacity-50 motion-reduce:animate-none' : 'opacity-25'}`} style={{ background: fill }} />
-        <span className={`absolute inset-[7%] rounded-pill ring-1 ring-inset ring-surface/70 ${working ? 'fq-breathe motion-reduce:animate-none' : 'opacity-55'}`} style={{ background: fill }} />
-        <span className="absolute inset-0 flex items-center justify-center text-ink">
-          {working ? <LotusIcon className="h-9 w-9" aria-hidden /> : <RotateCcw className="h-8 w-8" aria-hidden />}
-        </span>
+      <div className="relative h-30 w-30 shrink-0" aria-hidden>
+        <span className={`absolute inset-0 rounded-pill blur-2xl ${working ? 'fq-breathe opacity-50 motion-reduce:animate-none' : 'opacity-25'}`} style={{ background: fill }} />
+        <span className={`absolute inset-0 rounded-pill ring-1 ring-inset ring-surface/70 ${working ? 'fq-breathe motion-reduce:animate-none' : 'opacity-45 saturate-50'}`} style={{ background: fill }} />
       </div>
-      <div className="flex max-w-xs flex-col items-center gap-1.5">
+      <div className="flex max-w-xs flex-col items-center gap-2">
         <p className="m-0 text-balance font-display text-display-card font-medium tracking-tight text-text">{title}</p>
         {body && <p className="m-0 text-body-sm text-muted">{body}</p>}
       </div>
       {action && (
-        <Button type="button" onClick={action.onClick} size="lg" className="w-full max-w-xs" style={mode === 'move' ? { background: 'var(--color-move)', color: 'var(--color-text-on-move)' } : undefined}>
+        <Button type="button" onClick={action.onClick} size="lg" className={`h-14 w-full max-w-xs rounded-pill ${mode === 'move' ? '' : 'fq-pa'}`} style={mode === 'move' ? { background: 'var(--color-move)', color: 'var(--color-text-on-move)' } : undefined}>
           {action.label}
         </Button>
       )}
