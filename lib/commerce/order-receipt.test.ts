@@ -326,7 +326,7 @@ describe('sendOrderReceipts — a split order', () => {
     expect(space).toHaveLength(1)
     expect(space[0].subject).toBe('You sold Two mugs x2')
     expect(space[0].text).toContain('Ada Lovelace bought Two mugs x2 for $24.')
-    expect(space[0].text).toContain('Network fee: $1.20')
+    expect(space[0].text).toContain('Finder’s fee, once (Frequency introduced this buyer): $1.20')
     expect(space[0].text).toContain('You receive: $22.80')
     expect(space[0].text).toContain('https://freq.test/spaces/blue-door/settings/shop')
     expect(space[0].text).not.toContain('One print')
@@ -337,7 +337,7 @@ describe('sendOrderReceipts — a split order', () => {
     expect(maker[0].subject).toBe('You sold One print')
     expect(maker[0].text).toContain('You receive: $10')
     // A 0% share prints no fee row at all.
-    expect(maker[0].text).not.toContain('Network fee')
+    expect(maker[0].text).not.toContain('Finder’s fee')
     expect(maker[0].text).not.toContain('Two mugs')
     expect(maker[0].text).toContain('https://freq.test/market/manage')
 

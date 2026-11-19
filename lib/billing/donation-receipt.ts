@@ -42,6 +42,8 @@ interface SettledDonation {
   askId: string | null
   donorProfileId: string | null
   amountCents: number
+  /** Frequency's fee on the gift, off the row. Optional so an older caller still compiles; absent reads as 0. */
+  platformFeeCents?: number | null
   currency: string | null
   message: string | null
   /** The address Stripe collected, the only way to reach a signed-out donor. */
@@ -147,9 +149,15 @@ export async function sendDonationReceipts(gift: SettledDonation): Promise<void>
           { label: 'Amount', value: amount ?? '' },
           { label: 'Date', value: when },
           { label: 'Their note', value: note ?? '' },
+          // WHICH RULE APPLIED (ADR-1978 item 7): a fee here is the one-time finder's fee on a donor
+          // Frequency introduced. A zero prints no row: the donor is the Space's own.
+          {
+            label: 'Finder’s fee, once (Frequency introduced this donor)',
+            value: (gift.platformFeeCents ?? 0) > 0 ? (receiptAmount(gift.platformFeeCents ?? 0, gift.currency) ?? '') : '',
+          },
         ],
         closing: [
-          'The gift goes to your payout account on your usual payout schedule.',
+          'The gift goes to your payout account on your usual payout schedule, after card processing.',
           'Nothing is owed in return. A gift buys nothing, so there is no order to fill.',
         ],
         actionLabel: `Go to ${space.name}`,

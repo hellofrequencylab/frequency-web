@@ -286,13 +286,18 @@ export function payoutSentence(
   // A sale that carried the card fee states BOTH figures and what is left, so the host never has to
   // work out why the payout is smaller than the ticket price. The two are never added together:
   // one is Frequency's, the other is the card company's.
+  //
+  // WHICH RULE APPLIED (ADR-1978 item 7). Under the new system a fee is charged on exactly one kind of
+  // sale: the first purchase from a customer Frequency introduced. So a fee above zero IS the finder's
+  // fee, and a zero is the own-audience rule (or a plan that pays none). The sentence names it, so the
+  // host is told why, not only how much.
+  const ours = c.feeIsZero
+    ? 'Frequency took nothing on this sale: no finder’s fee applied.'
+    : `Frequency introduced this buyer, so this sale carried the one-time finder’s fee of ${c.feeLabel}. You will not pay it again for them.`
   if (c.cardFeeLabel && c.netLabel) {
-    const ours = c.feeIsZero ? 'Frequency took nothing on this sale.' : `Frequency's fee on this sale was ${c.feeLabel}.`
     return `${ours} The card fee was ${c.cardFeeLabel}, so ${c.netLabel} goes to your payout account. Check the payment and payout status in your connected payout account.`
   }
-  return c.feeIsZero
-    ? 'Frequency took nothing on this sale. Card processing still applies. Check the payment and payout status in your connected payout account.'
-    : `Frequency's fee on this sale was ${c.feeLabel}. Card processing also applies. Check the payment and payout status in your connected payout account.`
+  return `${ours} Card processing ${c.feeIsZero ? 'still' : 'also'} applies. Check the payment and payout status in your connected payout account.`
 }
 
 // Email HTML, not UI chrome: mail clients read no design tokens, so the palette is literal hex,

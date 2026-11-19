@@ -132,7 +132,7 @@ describe('the sentences', () => {
 
   it('says what happened to the money in the canon words', () => {
     const charged = payoutSentence({ feeLabel: '$4', feeIsZero: false })
-    expect(charged).toContain("Frequency's fee on this sale was $4")
+    expect(charged).toContain('Frequency introduced this buyer, so this sale carried the one-time finder’s fee of $4.')
     expect(charged).toContain('payout account')
     // NAMING.md "Money in": member and operator copy says payout account. Stripe Connect is the
     // internal noun and never appears in something a person reads.
@@ -146,10 +146,10 @@ describe('the sentences', () => {
     // figures. Frequency's fee and the card fee are stated apart, never added into one number.
     const own = payoutSentence({ feeLabel: '$0', feeIsZero: true, cardFeeLabel: '$1.03', netLabel: '$23.97' })
     expect(own).toBe(
-      'Frequency took nothing on this sale. The card fee was $1.03, so $23.97 goes to your payout account. Check the payment and payout status in your connected payout account.',
+      'Frequency took nothing on this sale: no finder’s fee applied. The card fee was $1.03, so $23.97 goes to your payout account. Check the payment and payout status in your connected payout account.',
     )
     const introduced = payoutSentence({ feeLabel: '$2.50', feeIsZero: false, cardFeeLabel: '$1.03', netLabel: '$21.47' })
-    expect(introduced).toContain("Frequency's fee on this sale was $2.50. The card fee was $1.03, so $21.47 goes to your payout account.")
+    expect(introduced).toContain('the one-time finder’s fee of $2.50. You will not pay it again for them. The card fee was $1.03, so $21.47 goes to your payout account.')
     expect(introduced).not.toMatch(/Stripe|Connect/)
     // A sale made before the pass-through carries no card fee and reads exactly as it always did.
     expect(payoutSentence({ feeLabel: '$0', feeIsZero: true, cardFeeLabel: null, netLabel: null })).toBe(
@@ -209,7 +209,7 @@ describe('a member bought a ticket to a personal event', () => {
     expect(mail().subject).toBe('You sold 2 tickets to Sunrise Session')
     expect(mail().text).toContain('Hi Rae,')
     expect(mail().text).toContain('Dana bought 2 tickets to Sunrise Session (General) for $40.')
-    expect(mail().text).toContain("Frequency's fee on this sale was $4")
+    expect(mail().text).toContain('the one-time finder’s fee of $4')
     expect(mail().text).toContain('/events/sunrise-session')
     // Both renderings are built from the same sentences, so they cannot drift apart.
     expect(mail().html).toContain('Dana bought 2 tickets to Sunrise Session (General) for $40.')
