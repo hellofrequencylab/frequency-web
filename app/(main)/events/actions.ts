@@ -1142,11 +1142,14 @@ async function readRsvpStatus(eventId: string, profileId: string): Promise<strin
 // member sees one plain sentence. The suspension trigger (migration 20270344000000) is the one
 // refusal a member can do something about, so it gets its own line.
 const RSVP_WRITE_FAILED = 'Could not save your RSVP. Please try again.'
+// SEC-027: the database refuses a free seat on an event that sells tickets.
+const RSVP_TICKETED = 'This one sells tickets. Grab a ticket to save your seat.'
 const RSVP_SUSPENDED = 'Your account is suspended, so you cannot RSVP right now.'
 
 function rsvpWriteFailure(error: { message?: string } | null | undefined): ActionResult<never> {
   console.error('[events rsvp write]', error)
   const msg = error?.message ?? ''
+  if (/sells tickets/i.test(msg)) return fail(RSVP_TICKETED)
   return fail(/suspend/i.test(msg) ? RSVP_SUSPENDED : RSVP_WRITE_FAILED)
 }
 
