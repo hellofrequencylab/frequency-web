@@ -19,16 +19,16 @@
   ],
   "surfaces": {
     "pricing": {
-      "fingerprint": "9eaff15cbfc2a656",
-      "capturedIn": "0ff085062"
+      "fingerprint": "75839f8516387044",
+      "capturedIn": "5fa200755"
     },
     "the-community": {
       "fingerprint": "d8e183dd69b3bf05",
-      "capturedIn": "0ff085062"
+      "capturedIn": "5fa200755"
     },
     "the-lab": {
       "fingerprint": "d1064ec768d7bf22",
-      "capturedIn": "0ff085062"
+      "capturedIn": "5fa200755"
     }
   }
 }
