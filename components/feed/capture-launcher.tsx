@@ -40,9 +40,7 @@ type Prompt = {
 // page stays visible, dimmed, above it) and a centred card at sm+. The primitive owns the focus
 // trap, focus restore, the portal (so the `transform`ed admin rail cannot trap it), the z-[80]
 // tier above the mobile admin sheet, the bg-ink/60 scrim and the top safe area; the panel owns its
-// bottom inset, because the sheet touches the bottom edge. `mt-auto` pins it there: inside the
-// member kit the portaled overlay inherits `[data-kit="members"]`, whose flex column turns
-// `items-end` sideways and would float a short sheet mid-screen on a phone.
+// bottom inset, because the sheet touches the bottom edge.
 export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<Mode>('post')
@@ -168,7 +166,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   )
 
   return (
-    <Dialog open={open} onClose={close} ariaLabel="Capture a moment" align="bottom" className="mt-auto sm:max-w-md">
+    <Dialog open={open} onClose={close} ariaLabel="Capture a moment" align="bottom" className="sm:max-w-md">
       <div
         data-zap-view={view}
         className="relative flex max-h-[92dvh] w-full flex-col gap-3.5 overflow-y-auto rounded-t-[36px] border-x border-t border-border bg-canvas p-4.5 pb-[max(1rem,env(safe-area-inset-bottom))] lift-3 sm:max-h-[90dvh] sm:rounded-[36px] sm:border"
