@@ -6,7 +6,7 @@
 // open"), then copied into templates, kits, nav and help. This probe holds both halves:
 //   1. the sources that teach the voice carry the banned list (the guide and the AI primer), and
 //   2. no copy a person reads still uses the imagery.
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 const BANNED = [
@@ -40,11 +40,17 @@ const ROOTS = [
   'docs/CORE-MODEL.md', 'docs/GLOSSARY.md', 'docs/CONTENT-VOICE.md', 'docs/marketing',
 ]
 const EXT = /\.(ts|tsx|md|mdx|html)$/
+function* walkDir(dir) {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name)
+    if (e.isDirectory()) yield* walkDir(p)
+    else if (e.isFile() && EXT.test(p) && !/\.test\.tsx?$/.test(p)) yield p
+  }
+}
 function* walk(p) {
   if (!existsSync(p)) return
-  const s = statSync(p)
-  if (s.isFile()) { if (EXT.test(p) && !/\.test\.tsx?$/.test(p)) yield p; return }
-  for (const e of readdirSync(p)) yield* walk(join(p, e))
+  if (EXT.test(p)) { yield p; return }
+  yield* walkDir(p)
 }
 const hits = []
 for (const root of ROOTS) for (const file of walk(root)) {
