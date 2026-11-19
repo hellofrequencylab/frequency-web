@@ -29,7 +29,7 @@ export function HostFunnelForm({
   area: string | null
   /** The link's region, listed first in the area picker. */
   region: string | null
-  /** Ids-only query carried on to /create-a-space. */
+  /** Ids-only query carried on to /launch-your-business. */
   continueQuery: string
 }) {
   const router = useRouter()
@@ -65,7 +65,7 @@ export function HostFunnelForm({
       setBusy(false)
       return
     }
-    router.push(continueQuery ? `/create-a-space?${continueQuery}` : '/create-a-space')
+    router.push(continueQuery ? `/launch-your-business?${continueQuery}` : '/launch-your-business')
   }
 
   return (

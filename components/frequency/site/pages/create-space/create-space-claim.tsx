@@ -2,7 +2,7 @@
 
 // /create-a-space, the fifth step: save what was built and claim the handle (README section 3, step 5), and the
 // saved state after it. Signed out there are two doors, the same two /sign-in has: Google, or a link emailed to the
-// address from step 3, through the actions in app/(marketing)/create-a-space/actions.ts. Signed in there is no
+// address from step 3, through the actions in app/(marketing)/launch-your-business/actions.ts. Signed in there is no
 // account to make: one button takes the answers to the launch page. Nothing is promised that has not happened: the
 // Space is made on the launch page, when the Spotlight is published. Styles: create-space.css (cs-sum, cs-google...).
 import { GoogleMark } from '@/components/google-mark'
@@ -10,7 +10,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState, useSyncExternalStore, useTransition } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
-import { claimWithEmail, claimWithGoogle, continueSignedIn } from '@/app/(marketing)/create-a-space/actions'
+import { claimWithEmail, claimWithGoogle, continueSignedIn } from '@/app/(marketing)/launch-your-business/actions'
 import { serializeDraft } from '@/lib/create-space/builder'
 import { browserZone } from '@/lib/create-space/lead'
 import type { BuilderDraft } from '@/lib/create-space/builder'

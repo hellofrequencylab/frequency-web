@@ -1,6 +1,6 @@
 'use server'
 
-// /create-a-space, the last move: save what the visitor built and claim the handle. Three entries, one per way in,
+// /launch-your-business, the last move: save what the visitor built and claim the handle. Three entries, one per way in,
 // and none of them is a new sign-in system. The email path is the beta entry's own send (sendSignupLink: same
 // throttle buckets, same bare callback, same post-sign-in cookie), the Google path is signInWithGoogle, and a member
 // who is already signed in skips the account altogether. What differs is only the hand-over: the draft goes into the

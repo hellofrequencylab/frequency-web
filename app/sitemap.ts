@@ -298,7 +298,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // three real stories exist (owner ruling 2026-10-14): it 302s to /the-community, so it is not listed.
     ...(SITE_DESIGN === "frequency"
       ? ([
+          { url: `${SITE_URL}/launch-your-business`, changeFrequency: "monthly", priority: 0.7 },
+          { url: `${SITE_URL}/free-spotlight`, changeFrequency: "monthly", priority: 0.7 },
           { url: `${SITE_URL}/create-a-space`, changeFrequency: "monthly", priority: 0.7 },
+          { url: `${SITE_URL}/launch-your-website`, changeFrequency: "monthly", priority: 0.7 },
+          { url: `${SITE_URL}/email-marketing`, changeFrequency: "monthly", priority: 0.7 },
           // /themes (LIVE-1460): the theme gallery.
           { url: `${SITE_URL}/themes`, changeFrequency: "monthly", priority: 0.6 },
           // /themes/nocturne (LIVE-1380): the Nocturne Theme Kit's feature page (it was /themes/midnight).

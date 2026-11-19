@@ -5,7 +5,7 @@ category: spaces
 order: 10
 group: Run it day to day
 published: 2026-10-26
-updated: 2026-11-18
+updated: 2026-11-19
 audience: host
 featureKeys: [events, payouts]
 keywords: [appointments, scheduling, availability, sessions, deposit, office hours, book a call, days off]
@@ -44,7 +44,7 @@ Paid booking needs three things, the same three as every money path:
 - The Space owner has connected a payout account. See [Get paid](/help/spaces/get-paid).
 - The service has its own price set up.
 
-Until all three are true, the service books as a plain confirmation with no payment. A guest without an account can't book a paid service yet, so they need to sign in first.
+Until all three are true, the service books as a plain confirmation with no payment. Once they are, a paid service always goes through payment: nobody can book it as a free confirmation. A guest without an account can't book a paid service yet, so they need to sign in first.
 
 ## Common questions
 

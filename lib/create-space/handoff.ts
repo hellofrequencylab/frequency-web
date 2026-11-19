@@ -1,6 +1,6 @@
 // THE HAND-OVER FROM /create-a-space TO THE LAUNCH, the pure half. The builder's answers ride into the launch hold
 // (lib/launch/pending.ts) that the launch page already prefills from. PURE and client-safe: it only maps shapes and
-// names the one address. The cookie write and the sign-in are in app/(marketing)/create-a-space/actions.ts.
+// names the one address. The cookie write and the sign-in are in app/(marketing)/launch-your-business/actions.ts.
 //
 // Mapping, builder to hold (ADR-1933):
 //   name    -> answers.spotlight.name   (the Spotlight form opens with it)
