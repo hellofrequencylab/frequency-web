@@ -66,13 +66,15 @@ If an item requires a paid plan, Frequency shows the available plans and trial. 
 
 ## Know what Frequency takes
 
-**Your own people cost 0% on a paid Space plan, always, plus card processing.** Card processing still applies on every sale, and the seller pays it.
+**Your own people cost 0% on a paid Space plan, always, plus card processing.** Card processing still applies on every sale. From February 1, 2027 the seller pays it, and until then Frequency covers it. Whether guests cover it is the seller's choice: a ticket can be priced all-in, so the guest sees one price and the seller keeps what they typed. See [Get paid](/help/spaces/get-paid).
 
 **There is one finder's fee.** It is charged once, with a cap, on the first purchase from a customer Frequency introduced. See the [pricing page](/pricing) for the current rate and cap. After that first purchase that customer is yours: 0%, plus card processing. The finder's fee is the same on Business, Collective and Network. Non Profit pays no finder's fee. A Founding Business keeps its locked rate. On a membership, the finder's fee applies to the first payment only, not to renewals.
 
 **Only a paying account takes money.** A free Space sells nothing: no paid tickets, bookings, shop or paid memberships. Selling starts at Business.
 
-**Donations.** A Space on Business or higher takes donations. A free Space takes donations only when its owner is a Crew member, and nothing else sells on it.
+**Donations.** Donations carry a 0% Frequency fee, always, with no finder's fee. A Space on Business or higher takes donations. A free Space takes donations only when its owner is a Crew member, and nothing else sells on it.
+
+**Minimum price.** A new paid ticket, product or Journey has a small minimum price, and the form tells you what it is. Free stays free, and tips and donations have their own lower minimum.
 
 **Tips.** Tips go to Crew members and to people who own a Space on a paid plan. A free Member who is not Crew does not take tips. There is no platform fee on a tip, plus card processing.
 

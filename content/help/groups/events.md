@@ -4,7 +4,7 @@ description: Find gatherings, RSVP, add them to your calendar, and host your own
 category: groups
 order: 3
 published: 2026-06-03
-updated: 2026-11-18
+updated: 2026-11-19
 audience: member
 role: host
 featureKeys: [events]
@@ -49,7 +49,7 @@ For a slower walk through your first one, see [How to RSVP](/help/getting-starte
 
 - Many gatherings are free: just RSVP. Some are **ticketed**, and hosts can price them as a set price, pay-what-you-can, a sliding scale, or a donation. Pick the amount that works for you, within any minimum the host sets.
 - **On a ticketed event, buying the ticket is how you say you are coming.** In the **Tickets** box, tap **Get tickets** and the card fields open right on the event page. Your ticket counts as a Going.
-- **The answer buttons are still there**, under the Tickets box. Tap **Going** before you have a ticket and it opens the card fields. **Interested** and **Can't go** work either way. Saying **Can't go** does not cancel or refund a ticket you already bought. For that, ask the host.
+- **The answer buttons are still there**, under the Tickets box. Tap **Going** before you have a ticket and it opens the card fields. On a ticketed event, Going comes with a ticket, so there is no free seat. **Interested** and **Can't go** work either way. Saying **Can't go** does not cancel or refund a ticket you already bought. For that, ask the host.
 - Some tickets are **reserved for members** of the Space hosting the event. You will see a small lock naming the Space. Tap the membership row and you can join right on the event page, and the ticket unlocks.
 - Payment goes to the host. Hosts can refund a ticket, and if a host cancels the event, everyone who paid is refunded and emailed.
 
@@ -171,6 +171,9 @@ Open the event, tap **Manage**, then **Settings**.
 ### Tickets
 
 - Set up ticket tiers under **Manage**, then **Tickets**: fixed, free, pay-what-you-can, sliding scale, or donation.
+- **A paid ticket has a small minimum price.** The editor tells you what it is if you go under it. A ticket you priced before the minimum keeps selling, and free tickets stay free.
+- **Price a ticket all-in.** Once card processing comes out of your sales (from February 1, 2027), one tap raises a fixed ticket just enough that you keep what you typed. Guests see that one price everywhere, with nothing added at checkout. It is your choice. See [Get paid](/help/spaces/get-paid).
+- **Hosts and co-hosts can mark themselves Going without a ticket.** On a ticketed event, everyone else needs one.
 - **Tickets for your members.** A Space-hosted event can reserve a ticket for its own members, or for one membership tier, under **Who can buy**. Make it free next to a public paid ticket and your membership includes the event. You can also set this for upcoming events from your Space's Memberships settings, under **Event access**.
 
 ### Make it repeat
