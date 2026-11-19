@@ -226,7 +226,7 @@ export function FrequencyCompare({ comparison, image }: { comparison: Comparison
       </section>
 
       <KeepGoing
-        title="Skip the one-off. Find the room that meets again."
+        title="Skip the one-off. Find a group that meets again."
         body="Frequency is free to join, and it stays free. Find a Circle near you, show up, and come back."
         primary={{ href: '/discover', label: 'Find a Circle near you →' }}
         secondary={{ href: '/vs', label: 'Every comparison' }}

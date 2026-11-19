@@ -423,7 +423,7 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
     if (!recovered) {
       const partValue = (part: SplitPart): string => {
         const t = (transfers ?? []).find((x) => transferKey(x) === part.key)
-        const price = receiptAmount(part.itemsCents ?? (t ? t.amountCents + t.platformFeeCents : null), order.currency)
+        const price = receiptAmount(part.itemsCents ?? (t ? t.amountCents + t.platformFeeCents + t.processingFeeCents : null), order.currency)
         const summary = part.items.join(', ')
         if (summary && price) return `${summary} (${price})`
         return summary || price || ''
@@ -495,7 +495,7 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
       }
       const summary = part.items.length ? part.items.join(', ') : null
       const soldLabel = summary ?? 'an item'
-      const gross = receiptAmount(t.amountCents + t.platformFeeCents, t.currency)
+      const gross = receiptAmount(t.amountCents + t.platformFeeCents + t.processingFeeCents, t.currency)
       await notifyEarner({
         strict: opts?.strict,
         dedupeKey: `commerce:${order.id}:seller:${transferKey(t)}:recipient:${seller.profileId}`,
@@ -516,6 +516,8 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
             // WHICH RULE APPLIED (ADR-1978 item 7): a fee here is the one-time finder's fee on a buyer
             // Frequency introduced; a zero prints no row, because the buyer is the seller's own.
             { label: 'Finder’s fee, once (Frequency introduced this buyer)', value: receiptAmount(t.platformFeeCents, t.currency) ?? '' },
+            // The card fee this share bore (LIVE-2421); a zero prints no row, as on every sale before the date.
+            { label: 'Card processing', value: receiptAmount(t.processingFeeCents, t.currency) ?? '' },
             { label: 'You receive', value: receiptAmount(t.amountCents, t.currency) ?? '' },
             { label: 'Buyer', value: buyerName },
             { label: 'Date', value: when },

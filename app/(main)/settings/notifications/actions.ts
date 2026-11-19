@@ -10,7 +10,7 @@ import {
 } from '@/lib/notification-preferences'
 import { recordConsent } from '@/lib/consent/consent'
 import { CONSENT_SCOPES, type ConsentScope } from '@/lib/consent/scopes'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 
 // Saves the notification preferences form. Upserts (lazy-create on first save).
 // The payload is the full Phase 6 settings object, but only ONE half of it is
@@ -50,7 +50,7 @@ export async function saveNotificationPreferences(
       { onConflict: 'profile_id' },
     )
 
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
 
   revalidatePath('/settings/notifications')
   revalidatePath('/settings') // the section now renders on the unified Settings page

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { PARTNER_PERSONAS, type PartnerPersona } from '@/lib/personas'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 import { hidePartnerListing, listingProgramLost } from '@/lib/partners/unpublish'
 
 // Self-serve partner persona claim/release (P2.7, ADR-163 System 2). Claiming lands
@@ -26,14 +26,14 @@ export async function setPersona(persona: PartnerPersona, claim: boolean): Promi
         { profile_id: me.id, persona, state: 'claimed', verified_at: null, verified_by: null },
         { onConflict: 'profile_id,persona' },
       )
-    if (error) return fail(error.message)
+    if (error) return fail(safeErrorMessage(error))
   } else {
     const { error } = await admin
       .from('profile_personas')
       .update({ state: 'suspended' })
       .eq('profile_id', me.id)
       .eq('persona', persona)
-    if (error) return fail(error.message)
+    if (error) return fail(safeErrorMessage(error))
 
     // SCAN-761: the directory reads partners.status, not the persona, and the listing writers
     // refuse a caller without a live Business or Organization program. Releasing the last of

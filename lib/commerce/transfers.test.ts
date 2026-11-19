@@ -310,6 +310,33 @@ describe('planTransferShares (pure)', () => {
     if (!('shares' in plan)) throw new Error('refused')
     expect(plan.shares.map((s) => s.ownerSpaceId)).toEqual(['sp-b'])
   })
+
+  // LIVE-2421: once the card fee passes through, each share carries its part and is paid that much less.
+  it('a share that bore the card fee is paid its gross minus both fees, and records the card fee', () => {
+    const plan = planTransferShares({
+      ...order,
+      metadata: { split: [{ ...SPLIT[0], processing_fee_cents: 40 }, { ...SPLIT[1], processing_fee_cents: 77 }] },
+    })
+    if (!('shares' in plan)) throw new Error('refused')
+    expect(plan.shares.map((s) => [s.ownerSpaceId, s.amountCents, s.platformFeeCents, s.processingFeeCents])).toEqual([
+      ['sp-a', 910, 50, 40],
+      ['sp-b', 1823, 100, 77],
+    ])
+    const paid = plan.shares.reduce((n, s) => n + s.amountCents + s.platformFeeCents + s.processingFeeCents, 0)
+    expect(paid).toBe(order.amount_cents)
+  })
+
+  it('a share written before the pass-through reads a card fee of 0 and plans as it always did', () => {
+    const plan = planTransferShares(order)
+    if (!('shares' in plan)) throw new Error('refused')
+    expect(plan.shares.map((s) => s.processingFeeCents)).toEqual([0, 0])
+  })
+
+  it('refuses a share whose fees pass its gross, or whose card fee is not a whole positive amount', () => {
+    expect(planTransferShares({ ...order, metadata: { split: [{ ...SPLIT[0], processing_fee_cents: 951 }, SPLIT[1]] } })).toEqual({ refused: 'bad_share' })
+    expect(planTransferShares({ ...order, metadata: { split: [{ ...SPLIT[0], processing_fee_cents: -1 }, SPLIT[1]] } })).toEqual({ refused: 'bad_share' })
+    expect(planTransferShares({ ...order, metadata: { split: [{ ...SPLIT[0], processing_fee_cents: 1.5 }, SPLIT[1]] } })).toEqual({ refused: 'bad_share' })
+  })
 })
 
 describe('a paid split order pays each seller once', () => {

@@ -1802,7 +1802,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         },
         {
           name: 'Hold the door, week after week',
-          text: 'Show up even on the quiet weeks. The room is built by the people who keep coming back.',
+          text: 'Show up even on the quiet weeks. A group is built by the people who keep coming back.',
           image: '',
           alt: '',
         },

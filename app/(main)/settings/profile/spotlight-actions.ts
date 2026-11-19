@@ -17,6 +17,7 @@ import { allowanceAt } from '@/lib/pricing/feature-meters'
 import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { memberWithinLeadershipAllowance } from '@/lib/pricing/member-leadership'
 import type { EntitlementTier } from '@/lib/core/entitlement'
+import { safeErrorMessage } from '@/lib/action-result'
 
 // PUCK RETIRED (ADR-522 follow-up). The old Puck Spotlight editor and every writer that saved the Puck
 // nodes (meta.spotlight.layout / theme / background / themes / draft + publishSpotlightDraft) are gone —
@@ -161,7 +162,7 @@ export async function uploadSpotlightImage(
   const { error } = await admin.storage
     .from('avatars')
     .upload(path, bytes, { contentType: file.type, upsert: false })
-  if (error) return { error: error.message }
+  if (error) return { error: safeErrorMessage(error) }
 
   return { path }
 }

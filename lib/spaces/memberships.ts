@@ -715,6 +715,16 @@ export async function joinTier(
   const tier = tiers.find((t) => t.id === tierId)
   if (!tier) return fail('That tier is no longer available. Pick another.')
 
+  // SEC-028: a PAID tier is never joined here while billing is live. No payment happens in this action, so
+  // the only honest writer of a paid membership is checkout (startSpaceMembershipCheckout and its
+  // webhook). The join card used to make that call in the browser alone, so calling this action
+  // directly handed anyone a paid tier, its linked Circle and its member benefits for free. While
+  // billing is off (the beta), the display-only join stays as designed.
+  const paidTier = tier.priceCents > 0 || (tier.annualPriceCents ?? 0) > 0
+  if (paidTier && (await billingLive())) {
+    return fail('This tier takes payment. Use the Join button to pay and join.')
+  }
+
   // Already in? (A fast pre-check for a friendly message; the unique index is the real guard.)
   const existing = await readMyOpenMembership(spaceId, profileId)
   if (existing) {

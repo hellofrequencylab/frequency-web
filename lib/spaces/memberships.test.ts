@@ -541,6 +541,8 @@ describe('listMembershipTiers / listAllMembershipTiers (actions)', () => {
 describe('joinTier (action)', () => {
   beforeEach(() => {
     seedActiveTier('t0')
+    // The display-only join is the billing-off path (SEC-028); billing-live refusals are pinned below.
+    billingOn = false
   })
 
   it('rejects an anonymous caller', async () => {
@@ -926,6 +928,10 @@ describe('the yearly price on a tier (ADR-1374)', () => {
 })
 
 describe('joinTier records the cadence (ADR-1374)', () => {
+  beforeEach(() => {
+    billingOn = false
+  })
+
   it('records year when the tier offers a yearly price', async () => {
     seedActiveTier('t0', { annual_price_cents: 44000 })
     const r = await joinTier('space-1', 't0', 'year')
@@ -1000,5 +1006,33 @@ describe('membership-pricing (pure, ADR-1374)', () => {
     expect(resolveBillingInterval(monthlyOnly, 'year')).toBe('month')
     expect(resolveBillingInterval(paid, 'month')).toBe('month')
     expect(resolveBillingInterval({ ...monthlyOnly, interval: 'year' }, 'month')).toBe('year')
+  })
+})
+
+describe('joinTier never gives a paid tier away while billing is live (SEC-028)', () => {
+  beforeEach(() => {
+    billingOn = true
+  })
+
+  it('refuses a paid monthly tier: the paid path is checkout', async () => {
+    seedActiveTier('t0')
+    const r = await joinTier('space-1', 't0')
+    expect('error' in r).toBe(true)
+    if ('error' in r) expect(r.error).toMatch(/takes payment/i)
+    expect(db.memberships).toHaveLength(0)
+  })
+
+  it('refuses a tier with a yearly price, whichever cadence is asked for', async () => {
+    seedActiveTier('t0', { annual_price_cents: 44000 })
+    const r = await joinTier('space-1', 't0', 'year')
+    expect('error' in r).toBe(true)
+    expect(db.memberships).toHaveLength(0)
+  })
+
+  it('still records a free tier', async () => {
+    seedActiveTier('t0', { price_cents: 0 })
+    const r = await joinTier('space-1', 't0')
+    expect('error' in r).toBe(false)
+    expect(db.memberships).toHaveLength(1)
   })
 })

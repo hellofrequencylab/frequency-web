@@ -35,7 +35,7 @@ export const MEMBER_STAGES: MemberStage[] = [
   { key: 'finding_feet', index: 1, label: 'Finding your feet', tagline: 'Find a rhythm, one practice at a time.' },
   { key: 'regular',      index: 2, label: 'Regular',           tagline: 'Deepen it. Follow a Journey and show up for your circle.' },
   { key: 'established',  index: 3, label: 'Established',        tagline: 'Keep exploring what supports you.' },
-  { key: 'anchor',       index: 4, label: 'Anchor',            tagline: 'You hold the room. Bring others into it.' },
+  { key: 'anchor',       index: 4, label: 'Anchor',            tagline: 'You host. Bring others in.' },
 ]
 
 function stageByKey(key: StageKey): MemberStage {

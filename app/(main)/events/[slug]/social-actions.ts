@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { notifyEventPeople } from '@/lib/notifications/event-notice'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 import { isEventCohost } from '@/lib/events/cohosts'
 import { viewerActsAsEventHost } from '@/lib/events/host-gate'
 import { loadEventCrmAccess, eventCrmLockedError } from '@/lib/events/crm-access'
@@ -541,7 +541,7 @@ export async function removeCohost(
     .delete()
     .eq('event_id', eventId)
     .eq('profile_id', cohostProfileId)
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
 
   revalidateEvent(slug)
   return ok()

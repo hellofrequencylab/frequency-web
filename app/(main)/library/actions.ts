@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { canReviewLibrarySubmission } from '@/lib/moderation/scope'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 import type { ContentType } from '@/lib/library'
 
 function db(): SupabaseClient {
@@ -93,7 +93,7 @@ export async function rateContent(type: ContentType, id: string): Promise<Action
     return ok({ rated: false })
   }
   const { error } = await d.from('content_ratings').insert({ profile_id: me, content_type: type, content_id: id })
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
   revalidatePath('/practices')
   return ok({ rated: true })
 }

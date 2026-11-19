@@ -240,7 +240,7 @@ export async function FrequencyHome() {
                   <img loading="lazy" decoding="async" {...photoImg(photo('day-parachute-play.jpg'))} alt="" />
                   <span className="dk">Path one</span>
                   <b>I’m looking for an experience.</b>
-                  <span className="dp">Find a local Circle, a walk or a night out. Choose a gathering to try. Free to join.</span>
+                  <span className="dp">Find a local Circle, a walk or an event. Choose a gathering to try. Free to join.</span>
                   <span className="dg">{BETA_CTA} →</span>
                 </Link>
               </div>

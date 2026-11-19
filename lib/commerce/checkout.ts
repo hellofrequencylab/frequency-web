@@ -35,7 +35,7 @@ import { spacePaymentsVerdict } from '@/lib/pricing/payments-gate'
 import { PAYMENTS_BUYER_REFUSAL } from '@/lib/pricing/payments-copy'
 import { getVariantsByIds } from './variants'
 import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
-import { planFundsFlow, splitTotals, type SellerSplit } from './funds-flow'
+import { planFundsFlow, splitCardFeeField, splitTotals, withCardFeeShares, type SellerSplit } from './funds-flow'
 import { settleSplitOrderTransfers } from './transfers'
 import { reverseSplitTransfers, reverseSplitRefundForPaymentIntent } from './split-refund'
 import { receiptEmailFor } from '@/lib/billing/receipt-address'
@@ -394,7 +394,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     console.error('[commerce] split share with no destination account', { sellers: priced.length })
     return { error: CHECKOUT_START_FAILED }
   }
-  const splits: SellerSplit[] = head
+  const pricedSplits: SellerSplit[] = head
     ? []
     : priced.map((p) => ({
         seller: p.seller,
@@ -402,6 +402,12 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
         platformFeeCents: p.charge.platformFeeCents,
         stripeAccountId: p.charge.sellerStripeAccountId as string,
       }))
+  // THE CARD FEE ON A SPLIT CART (LIVE-2421): once the pass-through is on, each share bears its part
+  // of the one card fee on the charge, by gross, recorded beside its fee and taken from its transfer.
+  const splits = withCardFeeShares(
+    pricedSplits,
+    head ? 0 : sellerFeesNow(gross, splitTotals(pricedSplits).platformFeeCents).processingFeeCents,
+  )
   const splitFee = splitTotals(splits)
   // A split order is network-sourced when ANY share was billed at a network rung: that is the reason
   // its fee is non-zero. Its provenance tag is the first such share's.
@@ -470,6 +476,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
                 stripe_account_id: s.stripeAccountId,
                 gross_cents: s.grossCents,
                 platform_fee_cents: s.platformFeeCents,
+                ...splitCardFeeField(s),
               })),
             },
           }),
@@ -554,7 +561,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
             ? {
                 // Frequency's fee, plus the card fee once the pass-through is on
                 // (lib/billing/card-fee.ts). The order row's platform_fee_cents stays Frequency's
-                // fee alone. A SPLIT order is not covered yet (LIVE-2421): see lib/billing/tickets.ts.
+                // fee alone. A SPLIT order carries the card fee per share instead (LIVE-2421, above).
                 application_fee_amount: sellerFeesNow(gross, head.charge.platformFeeCents).applicationFeeCents,
                 transfer_data: { destination: head.charge.sellerStripeAccountId },
                 on_behalf_of: head.charge.sellerStripeAccountId,

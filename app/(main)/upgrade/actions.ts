@@ -11,7 +11,7 @@ import { loadCatalogConfig, isValidPwywAmount } from '@/lib/pricing/catalog-conf
 import { formatCents } from '@/lib/pricing/display'
 import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
 import { rateLimitOk } from '@/lib/rate-limit'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 
 // Membership is the ENTITLEMENT axis (profiles.membership_tier), orthogonal to the
 // community role (ADR-163 §11.2). Upgrading no longer touches community_role — Crew is
@@ -55,7 +55,7 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
     .update({ membership_tier: next })
     .eq('id', profile.id)
 
-  if (error) return fail(error.message)
+  if (error) return fail(safeErrorMessage(error))
 
   revalidatePath('/', 'layout')
   return ok({ tier: next })
