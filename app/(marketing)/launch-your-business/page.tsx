@@ -1,4 +1,4 @@
-// /create-a-space: the marketing funnel's second step. A visitor builds their Space here, signed out, and watches
+// /launch-your-business: the marketing funnel's second step. A visitor builds their Space here, signed out, and watches
 // their website and Spotlight take shape; the account comes at the last step. Static: the kit arrives as ?kit= and
 // is read on the client. The markup lives in components/frequency/site/pages/create-space.
 import { redirect } from 'next/navigation'
@@ -14,7 +14,7 @@ import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = frequencyPageMetadata(FREQUENCY_PAGE_SEO.createSpace)
+export const metadata: Metadata = frequencyPageMetadata(FREQUENCY_PAGE_SEO.launchBusiness)
 
 export default async function CreateASpacePage({ searchParams }: { searchParams: Promise<{ new?: string }> }) {
   const params = await searchParams
@@ -25,7 +25,7 @@ export default async function CreateASpacePage({ searchParams }: { searchParams:
   if (launch?.resume?.phase === 'launch') redirect('/launch')
   return (
     <>
-      <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.createSpace)} />
+      <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.launchBusiness)} />
       <CreateSpaceStudio initialResume={launch?.resume ?? null} nicheChoices={getOnboardingNicheChoices()} />
       <SoundFamiliar />
       <DayOne />

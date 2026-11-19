@@ -116,17 +116,17 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'Theme Kits', path: '/themes' },
     ],
   },
-  createSpace: {
-    path: '/create-a-space',
-    title: 'Create a Space: build your website, Spotlight and Space page',
+  launchBusiness: {
+    path: '/launch-your-business',
+    title: 'Launch Your Business: website, Spotlight and Space in 12 minutes',
     description:
       'Build your website and Spotlight while you watch. Name it, say what you offer, add a few photos. Free, and a private draft until you activate it.',
-    shareTitle: 'Create a Space on Frequency',
+    shareTitle: 'Launch your business on Frequency',
     headline: 'Your whole business, live in 12 minutes.',
     lede: 'You have a practice, a studio, a gathering or a group, and the tools are scattered. Build one home for all of it: your website, Spotlight, bookings and people.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
-      { name: 'Create a Space', path: '/create-a-space' },
+      { name: 'Launch Your Business', path: '/launch-your-business' },
     ],
   },
   midnight: {
