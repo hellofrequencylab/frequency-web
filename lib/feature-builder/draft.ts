@@ -3,6 +3,7 @@
 // the three cannot disagree. Every field is a short string; anything unknown is dropped and anything long is cut.
 // PURE and client-safe.
 
+import { slugify } from '@/lib/utils'
 import type { FeatureId } from './catalog'
 
 interface DraftField {
@@ -88,7 +89,7 @@ export function parseDraft(feature: FeatureId, text: unknown): FeatureDraft | nu
 /** A Space handle from what was typed (a handle, else the name): lowercase letters, numbers and single hyphens, 3 to
  *  40 characters. The same shape createSpace accepts; a taken one is retried with a suffix at the finish. */
 export function handleFrom(typed: string, name: string): string {
-  const slug = (s: string) => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/g, '')
+  const slug = (s: string) => slugify(s).slice(0, 40).replace(/-+$/g, '')
   const base = slug(typed) || slug(name) || 'my-space'
   return base.length < 3 ? `${base}-space` : base
 }
