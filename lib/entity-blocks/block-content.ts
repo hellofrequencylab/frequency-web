@@ -430,7 +430,21 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'align', label: 'Alignment', type: 'align', defaultValue: 'start' },
   ],
   text: [{ key: 'text', label: 'Text', type: 'textarea', placeholder: 'Tell your story in plain, honest sentences' }],
-  links: [{ key: 'items', label: 'Links', type: 'links' }],
+  links: [
+    { key: 'items', label: 'Links', type: 'links' },
+    // The look every link wears unless it picks its own (LIVE-2454). `button` is how a Links block has always drawn.
+    {
+      key: 'linkStyle',
+      label: 'Link style',
+      type: 'segmented',
+      defaultValue: 'button',
+      options: [
+        { value: 'button', label: 'Buttons' },
+        { value: 'card', label: 'Cards' },
+        { value: 'text', label: 'Text links' },
+      ],
+    },
+  ],
   image: [
     { key: 'src', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
     { key: 'alt', label: 'Alt text', type: 'text', placeholder: 'Describe the image' },
@@ -1198,12 +1212,23 @@ function str(raw: unknown, max: number): string {
 }
 
 /** Sanitize one link row to `{ label, url }`, dropping it (null) when it has no safe url. */
-function sanitizeLink(raw: unknown): { label: string; url: string } | null {
+/** How one link is drawn (LIVE-2454, owner ruling 2026-11-19: a Links-block default plus a per-link override).
+ *  `main` is the one big filled button at the top of a Spotlight, the owner's own pick; `button`, `card` and
+ *  `text` are the everyday looks. Each theme draws them in its own colours. */
+export const LINK_STYLES = ['main', 'button', 'card', 'text'] as const
+export type LinkStyle = (typeof LINK_STYLES)[number]
+export function asLinkStyle(v: unknown): LinkStyle | null {
+  return typeof v === 'string' && (LINK_STYLES as readonly string[]).includes(v) ? (v as LinkStyle) : null
+}
+
+/** A sanitized link: a label, a safe address and, only when the owner set one, its own style. */
+function sanitizeLink(raw: unknown): { label: string; url: string; style?: LinkStyle } | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Record<string, unknown>
   const url = safeUrl(o.url)
   if (!url) return null
-  return { label: str(o.label, MAX_LABEL) || url, url }
+  const style = asLinkStyle(o.style)
+  return { label: str(o.label, MAX_LABEL) || url, url, ...(style ? { style } : {}) }
 }
 
 /** A sanitized Features item (ADR-585): an icon token OR an image, a title + text, plus OPTIONAL price, a
@@ -1424,7 +1449,7 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
       }
       case 'links': {
         const items = Array.isArray(v)
-          ? v.slice(0, MAX_ITEMS).map(sanitizeLink).filter((x): x is { label: string; url: string } => x !== null)
+          ? v.slice(0, MAX_ITEMS).map(sanitizeLink).filter((x): x is NonNullable<ReturnType<typeof sanitizeLink>> => x !== null)
           : []
         if (items.length) out[field.key] = items
         break

@@ -45,6 +45,7 @@ import { JourneysBlock } from './journeys'
 import { DonateBlock } from './donate'
 import { LinkCardsBlock } from './link-cards'
 import { SPACE_CONTENT_BLOCKS, type SpaceContentBlockComponent } from './authored-content'
+import { inSpotlightPreview } from '@/lib/spaces/spotlight-site'
 
 // THE MODULE-ENGINE SPACE PROFILE RENDERER (Epic 1.7, S2 staff-preview). A non-Puck, block-style
 // render of a space profile: it resolves the ordered ProfileBlockId layout from the S1 registry + the
@@ -362,9 +363,20 @@ export async function SpaceProfileModules({
       rendered
     )
 
+  // The Spotlight editor's preview frame (LIVE-2453) finds each block by its node id, so a click on the page
+  // opens the block's settings and a pick in the editor scrolls the page to it. Only that preview is stamped;
+  // every visitor render is byte-identical.
+  const stamp = inSpotlightPreview()
   const renderNode = (node: BlockNode) => {
     const rendered = renderSpaceNode(node, space, data, authored)
-    return rendered === null ? null : wrap(node, rendered)
+    if (rendered === null) return null
+    return stamp ? (
+      <div key={node.nid} data-spotlight-nid={node.nid} data-spotlight-block={node.type}>
+        {wrap(node, rendered)}
+      </div>
+    ) : (
+      wrap(node, rendered)
+    )
   }
 
   // GRID path (ADR-516): resolve the effective rows AS NODES and render them. Fail-safe: unknown types drop.
