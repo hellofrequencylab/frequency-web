@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2454",
+  "title": "Spotlight links: full titles, button or text link styles, and your own main button",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/entity-blocks/controls/links-editor.tsx",
+    "ref": "Owner 2026-11-19 (project thread: Redesign the Spotlight editor): 'display different text link vs button styles. Make it easier to edit the titles and clean it all up.' Cards: a block default plus a per-link override; the owner picks the main button. Plan: https://claude.ai/artifact/WX5fSWaGKNuKhe8iXbPSYf, phase 3."
+  },
+  "detail": "The Links field squeezed each title into a third of a narrow column (about 100px), so titles were cut off. Each link is now a row with its whole title and address; it opens to a full-width title, a full-width address with a check, its style and a Make this the main button switch, and the open row follows a press on that link in the preview. Pasting an address fills a first title. A link keeps an optional style (main, button, card, text; lib/entity-blocks/block-content.ts) and the block a default (linkStyle). The Links renderer draws all four in the page's own tokens; the New World layouts take the owner's main pick, with the first link as the fallback.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2454.mjs",
+    "note": "Fails while titles are squeezed, link styles are dropped, or the main button is not the owner's pick."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
