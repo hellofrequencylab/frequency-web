@@ -20,6 +20,8 @@ const CART_BLOCK_COPY: Record<CartBlock, string> = {
     'Frequency Store items check out on their own. Remove the Store items or the others, check out, then come back for the rest.',
   contact_only:
     'One seller here takes contact only. Open their listing to message them, and remove it from your cart to check out the rest.',
+  shipping_not_charged:
+    'A seller here charges shipping, and checkout cannot add it yet. Your cart is saved for when it can.',
 }
 
 /** The name a seller is shown under: the Store, the looked-up name, or a plain fallback. */

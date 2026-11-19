@@ -7,6 +7,7 @@ import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
 import type { CommerceProduct, CommerceVariant } from './types'
 import { lineKey, pruneCart, type Cart } from './cart'
 import { planCartCheckout, type CartCheckoutPlan } from './cart-plan'
+import { quoteCartShipping, type CartShippingQuote, type ShippingProfile } from './shipping-profiles'
 
 export interface CartViewLine {
   key: string
@@ -31,6 +32,8 @@ export interface CartView {
   totals: { currency: string; cents: number }[]
   /** Who sells what, whether an address is asked for, and whether the door would refuse (./cart-plan). */
   checkout: CartCheckoutPlan
+  /** Shipping from the sellers' shipping profiles (DEF-ETSY P3), an estimate until the address is known. */
+  shipping: CartShippingQuote
 }
 
 const ON_SALE: ReadonlySet<string> = new Set(['active'])
@@ -39,6 +42,7 @@ export function buildCartView(
   cart: Cart,
   products: ReadonlyMap<string, CommerceProduct>,
   variants: ReadonlyMap<string, CommerceVariant>,
+  shippingProfiles: ReadonlyMap<string, ShippingProfile> = new Map(),
 ): CartView {
   const available = new Map<string, { stock: number | null }>()
   for (const l of cart) {
@@ -73,6 +77,11 @@ export function buildCartView(
   })
   const byCurrency = new Map<string, number>()
   for (const l of lines) byCurrency.set(l.currency, (byCurrency.get(l.currency) ?? 0) + l.lineCents)
-  const checkout = planCartCheckout(lines.map((l) => ({ key: l.key, product: products.get(l.productId)!, qty: l.qty, unitCents: l.unitCents })))
-  return { lines, removed: report.removed, reduced: report.reduced, totals: [...byCurrency].map(([currency, cents]) => ({ currency, cents })), checkout }
+  const plan = planCartCheckout(lines.map((l) => ({ key: l.key, product: products.get(l.productId)!, qty: l.qty, unitCents: l.unitCents })))
+  const shipping = quoteCartShipping(lines, shippingProfiles)
+  // The checkout door carries no shipping line yet (P3 slice 2), so a cart that owes seller shipping is not
+  // paid without it: the cart says so instead of charging less than it showed.
+  const owesShipping = shipping.totals.some((t) => t.cents > 0)
+  const checkout = !plan.blocked && owesShipping ? { ...plan, blocked: 'shipping_not_charged' as const } : plan
+  return { lines, removed: report.removed, reduced: report.reduced, totals: [...byCurrency].map(([currency, cents]) => ({ currency, cents })), checkout, shipping }
 }

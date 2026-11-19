@@ -13,8 +13,9 @@ import { canTakePayments } from './selling'
 import { cartNeedsShipping } from './shipping'
 import type { CommerceProduct } from './types'
 
-/** Why the door would refuse this cart as it stands. */
-export type CartBlock = 'mixed_currency' | 'store_with_others' | 'contact_only'
+/** Why the door would refuse this cart as it stands. `shipping_not_charged` is set by ./cart-view when a
+ *  seller's shipping profile prices shipping the door cannot charge yet (DEF-ETSY P3). */
+export type CartBlock = 'mixed_currency' | 'store_with_others' | 'contact_only' | 'shipping_not_charged'
 
 export interface CartSeller {
   /** The door's own seller identity (funds-flow sellerKey). */

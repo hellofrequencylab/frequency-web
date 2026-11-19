@@ -9,16 +9,19 @@ import { loadCart, savePrunedCart } from './cart-store'
 import { buildCartView } from './cart-view'
 import { getProductsStrict } from './products'
 import { getVariantsByIds } from './variants'
+import { shippingProfilesForProducts } from './shipping-profiles-store'
 
 export async function loadCartView(profileId: string) {
   const cart = await loadCart(profileId)
   // STRICT reads: a line is dropped from the saved cart on what these return, so a failed read throws (the
   // page errors, checkout says "could not read your cart") instead of reading as "no longer for sale".
-  const [products, variants] = await Promise.all([
+  // Shipping profiles (DEF-ETSY P3) are fail-soft: a failed read quotes no shipping, as before profiles existed.
+  const [products, variants, shipping] = await Promise.all([
     getProductsStrict(cart.map((l) => l.productId)),
     getVariantsByIds(cart.flatMap((l) => (l.variantId ? [l.variantId] : [])), { strict: true }),
+    shippingProfilesForProducts(cart.map((l) => l.productId)),
   ])
-  const view = buildCartView(cart, products, variants)
+  const view = buildCartView(cart, products, variants, shipping)
   if (view.removed.length > 0 || view.reduced.length > 0) {
     try {
       await savePrunedCart(profileId, cart, view.lines.map((l) => ({ productId: l.productId, variantId: l.variantId, qty: l.qty })))
