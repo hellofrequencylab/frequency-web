@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1279",
+  "title": "The security review of functions a signed-out visitor can call was two functions behind the live database, and its check only asked that the file exists",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "docs/security/definer-rpc-review.md",
+    "ref": "Cohesion audit handed over by Daniel 2026-11-19 (finding F1 and F2), re-checked against main 5e43ee5e and production (Frequency Community) the same day"
+  },
+  "detail": "EVIDENCE: production catalog 2026-11-19 (read-only): 25 SECURITY DEFINER functions in public are EXECUTE-able by anon. docs/security/definer-rpc-review.md (SCAN-1224) covered 23. The two missing: public_circles_page (migration 20270346066000, shipped 2026-11-16 after the review) and fw_relay_ingest_delta (in no migration, no schema_migrations row, not in scripts/function-grants.txt). The SCAN-1224 probe is `test -f` on the review file, so it stayed green.\n\nWHY IT MATTERS: a definer function bypasses row security, so the review is the only record that each one checks its own caller. A review that passes while stale is no review.\n\nFIX: the review now covers all 25. public_circles_page was read in full (clamped limit and offset, same predicate and columns as public_circles, no writes): sound. fw_relay_ingest_delta is FlowWeb's: its tables (fw_runners, fw_mirror) and 34 fw_ functions live in the other Supabase project (hook); this database holds only this one function, so every call fails with 42P01 before reading or writing anything, and pg_stat_user_functions records no calls. Daniel was asked remove / lock to service role / leave and answered 2026-11-19 05:39Z: leave it as is. It is recorded in the review as a known stray. New probe scripts/probes/definer-review-covers-anon-rpcs.mjs reconciles scripts/function-grants.txt (verdict public) with the last definition of each function in supabase/migrations and fails when a definer one is not named in the review; it found exactly the 21 repo-made functions the live catalog has, and failed on public_circles_page before the review was updated. CI has no catalog, so a hand-made function stays out of its reach; the review carries the catalog query to repeat. The SCAN-1224 probe was not edited.\n\nReview covers all 25; probe passes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/definer-review-covers-anon-rpcs.mjs",
+    "note": "Failed on main 5e43ee5e (public_circles_page not in the review). Passes once the review names every anon-callable definer function the migrations create."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
