@@ -90,6 +90,7 @@ const SITE: IndexedPage[] = present([
   // Frequency-only routes (404 under DAWN): their rows show only on a Frequency build.
   FREQUENCY ? { label: 'Features', path: '/features', editor: 'coded' } : null,
   { label: 'Free Spotlight', path: '/free-spotlight', editor: 'coded', note: 'The Free Spotlight builder: a personal Spotlight in three steps, saved to the profile at the end.' },
+  { label: 'Create a Space', path: '/create-a-space', editor: 'coded', note: 'The Create a Space builder: name, kind and one line, made through createSpace at the end.' },
   { label: 'Launch Your Business', path: '/launch-your-business', editor: 'coded', note: 'The 12-minute business builder with its live preview; ?kit= preselects a Theme Kit.' },
   blocks('pricing', 'Pricing', 'Prices come from the Pricing console.'),
   blocks('about', 'About'),

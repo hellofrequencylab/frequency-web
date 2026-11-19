@@ -7,7 +7,7 @@ const need = (cond, msg) => { if (!cond) problems.push(msg) }
 const read = (f) => (existsSync(f) ? readFileSync(f, 'utf8') : '')
 
 need(existsSync('app/(marketing)/launch-your-business/page.tsx'), 'no /launch-your-business page')
-need(/createSpace:\s*'\/launch-your-business'/.test(read('lib/frequency/site-nav.ts')), 'ROUTES has no createSpace')
+need(/launchBusiness:\s*'\/launch-your-business'/.test(read('lib/frequency/site-nav.ts')), 'ROUTES has no createSpace')
 need(read('app/sitemap.ts').includes('/launch-your-business'), 'sitemap omits /launch-your-business')
 const preview = read('components/frequency/site/pages/create-space/space-preview.tsx') + read('components/frequency/site/pages/create-space/create-space.css')
 need(preview.includes('data-preview-theme'), 'the preview does not name its theme')
