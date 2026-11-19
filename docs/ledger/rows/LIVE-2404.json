@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2404",
+  "title": "A split order (a co-hosted ticket, a cart with more than one seller) passes the card fee to its sellers too",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/commerce/transfers.ts",
+    "ref": "Owner 2026-11-18: \"is card processing taken into consideration?\" then \"make all the changes site wide to the new system\" (project thread: Rethink our take rates). ADR-1978."
+  },
+  "detail": "LIVE-2403 covers checkouts with one seller. A split order is charged on the platform and paid out by transfer, and the transfer ledger (order_transfers) rebuilds each share's gross as amount_cents + platform_fee_cents (planTransferShares refuses on sum_mismatch), so a share has nowhere to hold a card fee without breaking that sum. Until it does, Frequency pays the card fee on every split order even after CARD_FEE_PASS_THROUGH_FROM is set. Work: a processing_fee_cents column on the transfer ledger (a migration, through the serial gate in docs/DATABASE.md), the card fee allocated across shares by gross with the remainder on the largest share, each transfer reduced by its part, and the refund reversal math taught the new column. This row is a gate on setting the date (docs/RUNBOOKS.md).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2404.mjs",
+    "note": "Fails until the transfer ledger carries a card fee per share and the split ticket branch passes it through."
+  },
+  "wave": "W7"
+}
