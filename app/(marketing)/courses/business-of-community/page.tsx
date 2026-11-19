@@ -18,9 +18,9 @@ import type { Metadata } from 'next'
 import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
-import { config } from '@/lib/page-editor/config'
+import { platformConfig } from '@/lib/page-editor/platform-config'
 import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
-import { isWellFormed } from '@/lib/page-editor/templates'
+import { isWellFormed } from '@/lib/page-editor/templates/well-formed'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, courseSchema } from '@/lib/jsonld'
 import { coursePageSchema, loadCoursePage } from '@/lib/courses/course-page'
@@ -94,7 +94,7 @@ export default async function BusinessOfCommunityPage() {
             image={IMAGE}
             schemaType="WebPage"
           />
-          <BlockRender config={config} data={data} />
+          <BlockRender config={platformConfig} data={data} />
         </>
       ) : (
         <FrequencyBusinessOfCommunity />

@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
-import { config } from '@/lib/page-editor/config'
+import { platformConfig } from '@/lib/page-editor/platform-config'
 import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
-import { isWellFormed } from '@/lib/page-editor/templates'
+import { isWellFormed } from '@/lib/page-editor/templates/well-formed'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
@@ -45,7 +45,7 @@ export default async function TheCommunityPage() {
           by any block. Everything editorial (Article, FAQPage) travels with the document. */}
       <JsonLd data={breadcrumbSchema([{ name: 'The Community', path: '/the-community' }])} />
       <BlockDocJsonLd data={published} path="/the-community" published={PUBLISHED} updated={latestDay(UPDATED, page?.published_at)} />
-      <BlockRender config={config} data={published} metadata={live ? { live } : {}} />
+      <BlockRender config={platformConfig} data={published} metadata={live ? { live } : {}} />
     </>
   )
 }
