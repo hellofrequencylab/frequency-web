@@ -35,6 +35,12 @@ for (const id of ['space', 'website', 'email', 'schedule']) {
   assert.equal(s.done, s.total, `${id} reads as done for an owner who has it`)
 }
 assert.equal(item('sp-live').state, 'done')
+// A Spotlight arranged in the editor has no launch-form line: the tagline it wears counts (owner ruling 2026-11-19).
+assert.equal(item('sp-words').state, 'done')
+assert.equal(item('sp-words').found, '"Emotional Alchemy"')
+const words = (published, tagline) => inventorySections({ rows: { ...rows, tagline, preferences: { ...rows.preferences, spotlight: { ...rows.preferences.spotlight, published } } }, spaceName: 'My Space', coverImageUrl: 'c', logoUrl: 'l' }).flatMap((s) => s.items).find((i) => i.id === 'sp-words').state
+assert.equal(words(true, ''), 'todo')
+assert.equal(words(false, 'Emotional Alchemy'), 'todo')
 assert.equal(item('ci-first').state, 'todo')
 
 // The Create a Space door: Spotlight setup while it is not live, the Space's own home once it is.
