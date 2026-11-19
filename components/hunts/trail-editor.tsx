@@ -32,6 +32,7 @@ import {
   emptyStop,
   previewTrail,
   publishChecklist,
+  remapRegions,
   stopKey,
   type Stop,
   type StopVenue,
@@ -42,6 +43,7 @@ import { publishTrailAction, routeTestedAction, saveTrailAction } from '@/app/(m
 import { saveChallengesAction } from '@/app/(main)/hunts/challenge-actions'
 import { remapChallenges } from '@/lib/hunts/challenges'
 import { TrailChallenges, type EditableChallenge } from './trail-challenges'
+import { TrailShape } from './trail-shape'
 import { EDITOR_STEPS, TRAIL_STEPS, stepNumber, type EditorStep } from './trail-steps'
 
 // The stop fields, from the manifest's repeat. The kernel keeps a repeat field's `section` on the
@@ -206,6 +208,11 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
     void _old
     return venues.length > 0 ? { ...rest, venues } : rest
   }
+  // FH-030S: a Passport region names its stops by position, so it follows them the same way.
+  const moved = (d: TrailDraft, order: number[]): TrailDraft => {
+    const next = withVenues(d, remapChallenges(d.venues ?? [], order))
+    return d.regions ? { ...next, regions: remapRegions(d.regions, order) } : next
+  }
   const setStopVenue = (i: number, venueSpaceId: string) =>
     edit((d) => {
       const others = (d.venues ?? []).filter((v) => v.stop !== i)
@@ -214,7 +221,7 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
   const removeStop = (i: number) => {
     const order = draft.stops.map((_, j) => j).filter((j) => j !== i)
     reorderChallenges(order)
-    edit((d) => withVenues({ ...d, stops: d.stops.filter((_, j) => j !== i) }, remapChallenges(d.venues ?? [], order)))
+    edit((d) => moved({ ...d, stops: d.stops.filter((_, j) => j !== i) }, order))
   }
   const moveStop = (i: number, dir: -1 | 1) => {
     const j = i + dir
@@ -225,7 +232,7 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
     edit((d) => {
       const stops = [...d.stops]
       ;[stops[i], stops[j]] = [stops[j], stops[i]]
-      return withVenues({ ...d, stops }, remapChallenges(d.venues ?? [], order))
+      return moved({ ...d, stops }, order)
     })
   }
 
@@ -296,7 +303,9 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
 
   // ── Publish ──────────────────────────────────────────────────────────────────────────────
   const checklist = useMemo(
-    () => publishChecklist({ ...draft, permissionConfirmed: permission }, revision, { venue: initial.hasVenue, challenges }),
+    // FH-030S: stops with no partner venue sit at the Space that runs the Trail, as publish binds them,
+    // so a Passport whose stops all share that one venue shows the same blocker here as at publish.
+    () => publishChecklist({ ...draft, permissionConfirmed: permission }, revision, { venue: initial.hasVenue, challenges, route: { ownerVenue: initial.hasVenue ? 'this-space' : null } }),
     [draft, permission, revision, initial.hasVenue, challenges],
   )
 
@@ -482,25 +491,12 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
 
       {step === 'shape' && (
         <div className="space-y-3">
-          <div className="rounded-card border border-primary bg-surface p-4" aria-current="true">
-            <p className="flex items-center gap-2 text-body font-semibold text-text">
-              <Check className="h-4 w-4 text-primary" aria-hidden />
-              Trail
-            </p>
-            <p className="mt-1 text-body-sm text-muted">Stops in order, finish at the last. Each stop opens when the one before it is found.</p>
-          </div>
-          <div className="rounded-card border border-border bg-surface-elevated/60 p-4 opacity-70">
-            <p className="flex items-center gap-2 text-body font-semibold text-text">
-              <Lock className="h-4 w-4" aria-hidden />
-              Passport and Rally
-            </p>
-            <p className="mt-1 text-body-sm text-muted">Any order, or a race. Coming later.</p>
-          </div>
+          <TrailShape draft={draft} onEdit={edit} disabled={conflict !== null} />
           <ol className="space-y-1 text-body-sm text-muted">
             {draft.stops.map((s, i) => (
               <li key={i}>
                 {i + 1}. {s.place.trim() || `Stop ${i + 1}`}
-                {challenges.length > 0 ? '' : i < draft.stops.length - 1 ? ' opens the next' : ' finishes the trail'}
+                {challenges.length > 0 || draft.finishCount !== undefined ? '' : i < draft.stops.length - 1 ? ' opens the next' : ' finishes the trail'}
               </li>
             ))}
           </ol>

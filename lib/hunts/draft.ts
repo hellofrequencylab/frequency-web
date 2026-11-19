@@ -7,7 +7,7 @@
  * nothing here can write a claim, a credit or an audit row.
  */
 import { evaluate, validateGraph } from '@/lib/hunts/graph'
-import type { Blocker, HuntGraph } from '@/lib/hunts/graph'
+import type { Blocker, Chapter, HuntGraph } from '@/lib/hunts/graph'
 import { BENEFIT_CODE } from '@/lib/hunts/pass-binding'
 import { challengeProblems, stopLayers, stopPlay, type Challenge, type ChallengeView } from '@/lib/hunts/challenges'
 import { slugify } from '@/lib/utils'
@@ -44,6 +44,16 @@ export const MAX_BENEFITS = 10
  */
 export type StopVenue = { stop: number; venueSpaceId: string }
 
+/**
+ * FH-030S: a region of a Passport, a named group of stops the organiser can switch off (a street closed
+ * for a fair, a venue on holiday). Published as `policy.chapters` (lib/hunts/graph count rules), where a
+ * switched-off region takes no new visits and a player who stays inside one region must still be able to
+ * finish. Stops are named by position, like a venue or a challenge. A stop sits in one region at most.
+ */
+export type DraftRegion = { name: string; enabled: boolean; stops: number[] }
+
+export const MAX_REGIONS = 5
+
 export type TrailDraft = {
   title: string
   hook: string
@@ -58,6 +68,13 @@ export type TrailDraft = {
   benefits?: DraftBenefit[]
   /** FH-020Y: partner venues named per stop. Absent when none is, which keeps older drafts unchanged. */
   venues?: StopVenue[]
+  /**
+   * FH-030S: a Passport. Players visit stops in any order and finish after this many of them (a 3 of 5
+   * threshold), published as a `count` finish group with `min_count`. Absent is a Trail: stops in order.
+   */
+  finishCount?: number
+  /** FH-030S: the Passport's regions. Absent when there are none; read only while `finishCount` is set. */
+  regions?: DraftRegion[]
 }
 
 export const MIN_STOPS = 3
@@ -111,6 +128,19 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     if (typeof r.venueSpaceId !== 'string' || !UUID.test(r.venueSpaceId) || venues.some((x) => x.stop === stop)) continue
     venues.push({ stop, venueSpaceId: r.venueSpaceId.toLowerCase() })
   }
+  // A whole number of stops; whether it can be reached is the publish checklist's question.
+  const finishCount = typeof o.finishCount === 'number' && Number.isInteger(o.finishCount) && o.finishCount >= 1 && o.finishCount <= MAX_STOPS ? o.finishCount : null
+  // Regions keep real stop positions only, each stop in the first region that names it.
+  const placed = new Set<number>()
+  const regions: DraftRegion[] = (Array.isArray(o.regions) ? o.regions.slice(0, MAX_REGIONS) : []).map((g) => {
+    const r = (g && typeof g === 'object' ? g : {}) as Record<string, unknown>
+    const members = (Array.isArray(r.stops) ? r.stops : [])
+      .map((x) => (typeof x === 'string' && /^\d+$/.test(x) ? Number(x) : x))
+      .filter((x): x is number => typeof x === 'number' && Number.isInteger(x) && x >= 0 && x < stops.length && !placed.has(x))
+    const own = [...new Set(members)].sort((a, b) => a - b)
+    own.forEach((x) => placed.add(x))
+    return { name: text(r.name, 60), enabled: r.enabled === true, stops: own }
+  })
   return {
     title: text(o.title, TRAIL_LIMITS.title),
     hook: text(o.hook, TRAIL_LIMITS.line),
@@ -122,7 +152,24 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     // Present only when there is one, so a trail with no benefits is stored exactly as it always was.
     ...(benefits.length > 0 ? { benefits } : {}),
     ...(venues.length > 0 ? { venues: venues.sort((a, b) => a.stop - b.stop) } : {}),
+    // FH-030S: present only on a Passport, so every Trail is stored exactly as before.
+    ...(finishCount !== null ? { finishCount } : {}),
+    ...(regions.length > 0 ? { regions } : {}),
   }
+}
+
+/** FH-030S: the published key of the region at `index`. Keys follow position, like stop keys. */
+const regionKey = (index: number): string => `region-${index + 1}`
+
+/** FH-030S: a Passport's regions as the graph's chapters, or none. A Trail in order publishes none. */
+function draftChapters(draft: Pick<TrailDraft, 'finishCount' | 'regions'>): Chapter[] {
+  if (draft.finishCount === undefined) return []
+  return (draft.regions ?? []).map((r, i) => ({ chapter_key: regionKey(i), enabled: r.enabled, members: r.stops.map(stopKey) }))
+}
+
+/** FH-030S: region stop lists after the stops move. `order[newIndex] = oldIndex`; a removed stop leaves its region. */
+export function remapRegions(regions: readonly DraftRegion[], order: readonly number[]): DraftRegion[] {
+  return regions.map((r) => ({ ...r, stops: r.stops.map((s) => order.indexOf(s)).filter((s) => s >= 0).sort((a, b) => a - b) }))
 }
 
 /** FH-020Y: the partner venue named for stop `i`, or null. */
@@ -148,7 +195,26 @@ export function benefitsReady(benefits: readonly DraftBenefit[]): boolean {
  * layer: each of them needs the layer before, and what comes after needs any one of them. A Trail with
  * no challenges gets exactly the graph it always had.
  */
-export function draftToGraph(draft: Pick<TrailDraft, 'stops'>, challenges: readonly ChallengeLike[] = []): HuntGraph {
+export function draftToGraph(draft: Pick<TrailDraft, 'stops' | 'finishCount' | 'regions'>, challenges: readonly ChallengeLike[] = []): HuntGraph {
+  // FH-030S: a Passport has no order. Every stop is open from the start, the finish needs any
+  // `finishCount` of them (distinct venues count once), and its regions are the graph's chapters.
+  if (draft.finishCount !== undefined) {
+    const chapters = draftChapters(draft)
+    return {
+      missions: draft.stops.map((_, i) => {
+        const play = stopPlay(challenges.map(asChallenge), i)
+        return {
+          mission_key: stopKey(i),
+          ...(play.kind === 'answer' ? { kind: 'answer' } : {}),
+          ...(play.choiceGroup ? { choice_group: play.choiceGroup } : {}),
+          ...(play.fallbackGroup ? { fallback_group: play.fallbackGroup } : {}),
+          rule_groups: [],
+        }
+      }),
+      finish: { rule_groups: draft.stops.length > 0 ? [{ logic: 'count' as const, min_count: draft.finishCount, members: draft.stops.map((_, i) => stopKey(i)) }] : [] },
+      ...(chapters.length > 0 ? { chapters } : {}),
+    }
+  }
   if (challenges.length === 0) {
     const missions = draft.stops.map((_, i) => ({
       mission_key: stopKey(i),
@@ -185,14 +251,57 @@ const answerIsSet = (c: ChallengeLike): boolean => ('answerSet' in c ? c.answerS
 export type ChecklistItem = { code: string; ok: boolean; message: string; stop?: number }
 
 /**
+ * FH-030S: what the publish guard checks the route against. `ownerVenue` is the Space that runs the
+ * Trail (a stop with no partner venue sits there), and `closedVenues` are venues closed right now (a
+ * partner that withdrew or was ended), so a route that only works through a closed venue is refused.
+ */
+export type RouteFacts = { ownerVenue: string | null; closedVenues?: ReadonlySet<string> }
+
+/** FH-030S: the draft's graph with each stop placed at its venue, closed where the venue is closed. Pure. */
+export function routeGraph(draft: TrailDraft, challenges: readonly ChallengeLike[], facts: RouteFacts): HuntGraph {
+  const graph = draftToGraph(draft, challenges)
+  return {
+    ...graph,
+    missions: graph.missions.map((m, i) => {
+      const venue = stopVenue(draft, i) ?? facts.ownerVenue
+      if (!venue) return m
+      return { ...m, placements: [{ placement_key: m.mission_key, venue, ...(facts.closedVenues?.has(venue) ? { closed: true } : {}) }] }
+    }),
+  }
+}
+
+/** FH-030S: the count rule and region blockers in the resident's words. Every other blocker keeps its own. */
+function routeMessage(b: Blocker, draft: Pick<TrailDraft, 'regions'>): string {
+  const region = (key: string | undefined) => {
+    const at = draft.regions?.findIndex((_, i) => regionKey(i) === key) ?? -1
+    return at >= 0 ? draft.regions?.[at]?.name.trim() || `Region ${at + 1}` : 'One region'
+  }
+  switch (b.code) {
+    case 'COUNT_INVALID':
+    case 'COUNT_IMPOSSIBLE':
+      return 'The Passport asks for more stops than players can reach. Stops at the same venue count once, and a closed venue or a region that is off counts for nothing. Lower the number of stops needed.'
+    case 'CHAPTER_INFEASIBLE':
+    case 'CHAPTER_NO_FREE_FINISH':
+      return `${region(b.message.match(/"([^"]+)"/)?.[1])}: players who stay in this region could not finish. Add stops to it, lower the number of stops needed, or turn the region off.`
+    case 'CHAPTER_INVALID':
+      return 'Each region needs at least one stop, and a stop can be in one region only.'
+    case 'VENUE_COUNTS_TWICE':
+      return 'Two stops can be proven at the same venue, so one visit could count twice. Pick a different venue for one of them.'
+    default:
+      return b.message
+  }
+}
+
+/**
  * The publish checklist. Publishing stays off until every item is ok. `venue` says whether the Trail
  * has a venue Space whose staff can confirm a visit (FH-020X); unknown counts as none, so a stop that
  * staff must confirm never goes live where nobody can confirm it.
  */
-export function publishChecklist(draft: TrailDraft, revision: number, opts: { venue?: boolean; challenges?: readonly ChallengeLike[] } = {}): { ok: boolean; items: ChecklistItem[] } {
+export function publishChecklist(draft: TrailDraft, revision: number, opts: { venue?: boolean; challenges?: readonly ChallengeLike[]; route?: RouteFacts } = {}): { ok: boolean; items: ChecklistItem[] } {
   const items: ChecklistItem[] = []
   const challenges = opts.challenges ?? []
-  const graph = validateGraph(draftToGraph(draft, challenges))
+  // FH-030S: with route facts, each stop is checked at its venue and a closed venue counts for nothing.
+  const graph = validateGraph(opts.route ? routeGraph(draft, challenges, opts.route) : draftToGraph(draft, challenges))
   const blockers: Blocker[] = draft.stops.length >= MIN_STOPS ? graph.blockers : []
   items.push({
     code: 'stops_count',
@@ -202,7 +311,7 @@ export function publishChecklist(draft: TrailDraft, revision: number, opts: { ve
   items.push({
     code: 'graph',
     ok: blockers.length === 0,
-    message: blockers[0]?.message ?? 'The stops lead to a finish.',
+    message: blockers[0] ? routeMessage(blockers[0], draft) : 'The stops lead to a finish.',
   })
   draft.stops.forEach((s, i) => {
     items.push({ code: 'stop_text', ok: s.place.trim() !== '' && s.clue.trim() !== '', stop: i, message: 'This stop needs a place name and a clue.' })
@@ -229,7 +338,7 @@ export function publishChecklist(draft: TrailDraft, revision: number, opts: { ve
  * Preview: what a player would see after earning `credited` stops, evaluated in memory. Writes nothing.
  * Returns keys and states only, like the real evaluator.
  */
-export function previewTrail(draft: Pick<TrailDraft, 'stops'>, credited: readonly string[], now: Date = new Date(), challenges: readonly ChallengeLike[] = []) {
+export function previewTrail(draft: Pick<TrailDraft, 'stops' | 'finishCount' | 'regions'>, credited: readonly string[], now: Date = new Date(), challenges: readonly ChallengeLike[] = []) {
   return evaluate(
     draftToGraph(draft, challenges),
     credited.map((mission_key) => ({ mission_key })),
@@ -264,7 +373,7 @@ type PublishRows = {
     choice_group?: string | null; fallback_group?: string | null; answer_hash?: string | null
   }[]
   /** One prerequisite group per stop after the first, plus the finish group. */
-  groups: { key: string; target_mission_key: string | null; target_finish: boolean; logic: 'all' | 'any'; members: string[] }[]
+  groups: { key: string; target_mission_key: string | null; target_finish: boolean; logic: 'all' | 'any' | 'count'; min_count?: number; members: string[] }[]
 }
 
 export function publishRows(draft: TrailDraft, challenges: readonly Challenge[] = []): PublishRows {
@@ -300,7 +409,9 @@ export function publishRows(draft: TrailDraft, challenges: readonly Challenge[] 
     }
   }
   for (const g of graph.finish.rule_groups) {
-    groups.push({ key: 'finish', target_mission_key: null, target_finish: true, logic: g.logic === 'any' ? 'any' : 'all', members: g.members })
+    // FH-030S: a Passport's finish is a count group; `min_count` is present only there, so a Trail's rows are unchanged.
+    const logic = g.logic === 'count' ? 'count' : g.logic === 'any' ? 'any' : 'all'
+    groups.push({ key: 'finish', target_mission_key: null, target_finish: true, logic, ...(logic === 'count' ? { min_count: g.min_count } : {}), members: g.members })
   }
   return { missions, groups }
 }
@@ -382,6 +493,8 @@ export function canonicalContent(draft: TrailDraft, challenges: readonly Challen
     ...(draft.stops.some((stop) => stop.holdForReview === true)
       ? { review_holds: draft.stops.flatMap((stop, i) => (stop.holdForReview === true ? [stopKey(i)] : [])) }
       : {}),
+    // FH-030S: a Passport's regions are content (switching one changes who can finish). None, no key.
+    ...(draftChapters(draft).length > 0 ? { chapters: draftChapters(draft) } : {}),
   })
 }
 
@@ -394,5 +507,9 @@ export function publishedPolicy(prior: Record<string, unknown> | null, draft: Tr
   const policy: Record<string, unknown> = { ...(prior ?? {}), trail: draft }
   if (draft.benefits?.length) policy.benefits = draft.benefits.map((b) => ({ code: b.code, label: b.label.trim() }))
   else delete policy.benefits
+  // FH-030S: the regions as `policy.chapters`, the key lib/hunts/run-store.ts reads for the player.
+  const chapters = draftChapters(draft)
+  if (chapters.length > 0) policy.chapters = chapters
+  else delete policy.chapters
   return policy
 }
