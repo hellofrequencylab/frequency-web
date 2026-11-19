@@ -128,7 +128,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Bookings',
     unit: 'bookings',
     period: 'month',
-    // Free 20 bookings / mo. Business and Collective: unlimited (ADR-1709).
+    // Free 15 bookings / mo (owner ruling 2026-11-18). Business and Collective: unlimited (ADR-1709).
     allowances: PLACEHOLDER_METER_LIMITS.space_bookings!,
   },
   space_journey: {
