@@ -12,7 +12,7 @@ keywords: [cost, how much, tiers, free plan, business plan, fees, upgrade, which
 status: published
 ---
 
-People join free. Hosting a Space is free. Crew is a separate personal membership for members who want to contribute and host more.
+People join free. A Space comes with Crew, the personal membership you fund at whatever amount you choose, and hosting it is free.
 
 The beta runs through January 31, 2027. Selling fees and available tools depend on your Space plan and the customer source. This page explains the plan ladder; the [pricing page](/pricing) reads prices and rates from the live catalog and shows current terms.
 

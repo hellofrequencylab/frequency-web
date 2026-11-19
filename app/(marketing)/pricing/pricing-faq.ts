@@ -92,7 +92,7 @@ export function pricingFaq(input: PricingGridInput): { q: string; a: string }[] 
     },
     {
       q: 'Do I need Crew to open a Space?',
-      a: `No. Crew is a personal membership, and a Space is separate. Hosting a Space is free. The beta runs through ${BETA_ENDS_DAY_LABEL}, 2027. Check /pricing for current tools, limits and selling fees. Founding Member recognition is free; Founding Year is a separate paid first-year offer.`,
+      a: `A Space comes with Crew, the personal membership you fund at whatever amount you choose. Hosting the Space itself is free. The beta runs through ${BETA_ENDS_DAY_LABEL}, 2027, and until it ends anyone can open a Space without Crew. Check /pricing for current tools, limits and selling fees. Founding Member recognition is free; Founding Year is a separate paid first-year offer.`,
     },
     {
       q: 'How do selling fees work?',
