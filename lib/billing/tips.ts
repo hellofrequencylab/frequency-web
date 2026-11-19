@@ -27,6 +27,7 @@ import { stripe, appUrl } from './stripe'
 import { sellerFeesNow } from './card-fee'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { getConnectStatus, payoutsLive } from './connect'
+import { profileCanTakeTips } from '@/lib/pricing/paying-accounts'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 import { notifyTipRecipient } from './tips-notify'
@@ -73,6 +74,10 @@ export async function createTipCheckout(opts: {
   if (!Number.isFinite(amount) || amount < TIP_MIN_CENTS) return { error: `Minimum tip is $${TIP_MIN_CENTS / 100}.` }
   if (amount > TIP_MAX_CENTS) return { error: `Maximum tip is $${TIP_MAX_CENTS / 100}.` }
   if (opts.fromProfileId === opts.toProfileId) return { error: 'You can’t tip yourself.' }
+
+  // ONLY A PAYING ACCOUNT TAKES TIPS (ADR-1978): the recipient pays for Crew, or owns a Space on a
+  // plan that takes payments. The tipper sees the same sentence as for a recipient with no payouts.
+  if (!(await profileCanTakeTips(opts.toProfileId))) return { error: 'This person isn’t set up to receive tips yet.' }
 
   // The recipient must be able to actually receive money.
   const status = await getConnectStatus(opts.toProfileId)

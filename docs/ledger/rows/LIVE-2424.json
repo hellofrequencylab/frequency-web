@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2424",
+  "title": "Only a paying account takes money: a free member takes no tips, and a free Space takes donations only when its owner pays for Crew",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/pricing/paying-accounts.ts",
+    "ref": "Owner 2026-11-18, 9:15 to 9:18 PM PT (project thread: Rethink our take rates): \"The only time you can process money, is if you are paying money.\" \"If a Crew member starts a free space, they can take donations.\" Decision card \"Choose who can take tips under the paying-only rule\": \"Paid Spaces and Crew members\". ADR-1978 item 4. Pin rewrites approved by the owner 2026-11-18 (\"Yes, all groups in the doc\")."
+  },
+  "detail": "Tips were open to every member with a payout account, whatever they paid, and a donation needed a Space on Business even when its owner paid for Crew. DONE 2026-11-19: lib/pricing/paying-accounts.ts is the one rule. A tip is refused (lib/billing/tips.ts) and its button hidden (the profile page and the Spotlight tip jar, lib/spotlight/data.ts) unless the recipient pays for Crew or owns a Space whose plan takes payments. A donation opens (lib/billing/space-donation-checkout.ts, both the checkout and the card that decides whether to show a button) on a paying plan, or on a free Space whose owner pays for Crew. Every other sale still goes through the payments gate at the Business floor, so a Crew owner's free Space sells nothing else. Paying for Crew is read from the billed column profiles.membership_tier, never the beta grant and never a Crew granted by a community membership. Like the payments gate, the rule does not wait for the beta window. The Space payments page and the upgrade panel no longer promise tips to a free Space. Known limit: only the first 12 Spaces a person owns are checked for a paying plan. Marketing and help copy that still says tips are open on every plan follows in the copy rows.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2424.mjs",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

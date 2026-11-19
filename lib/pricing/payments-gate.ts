@@ -1,7 +1,8 @@
 // THE PAYMENTS GATE (ADR-1709, LIVE-753). Selling is what Business is for: a Space takes money
 // (paid tickets, paid memberships, donations, shop checkout, booking deposits) from the Business
-// floor up, and no personal account takes money at all. Tips are the one exception and never come
-// through here (lib/billing/tips.ts, 0% on every tier).
+// floor up, and no personal account sells at all. Tips and donations follow the same sentence by
+// their own rule (./paying-accounts.ts, ADR-1978): a paying Crew member takes tips, and a paying Crew
+// member's free Space takes donations and nothing else.
 //
 // 🔴 THIS GATE DOES NOT WAIT FOR THE BETA GRACE WINDOW, the same posture as the paid-Journey gate
 // (lib/journeys/sell-gate.ts). featureAllowed grants everything while featureGatesLive() is false,

@@ -4,8 +4,9 @@ import { member } from './member-profile-modules.fixture'
 import { toMemberEntity, resolveMemberBlockData } from '@/lib/entity-blocks/member-adapter'
 import { TipBlock } from './tip'
 
-const mocks = vi.hoisted(() => ({ live: vi.fn(), status: vi.fn() }))
+const mocks = vi.hoisted(() => ({ live: vi.fn(), status: vi.fn(), paying: vi.fn() }))
 vi.mock('@/lib/billing/connect', () => ({ payoutsLive: mocks.live, getConnectStatus: mocks.status }))
+vi.mock('@/lib/pricing/paying-accounts', () => ({ profileCanTakeTips: mocks.paying }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({}) }))
 
@@ -31,6 +32,8 @@ describe('readCanTip', () => {
   beforeEach(() => {
     mocks.live.mockReset()
     mocks.status.mockReset()
+    mocks.paying.mockReset()
+    mocks.paying.mockResolvedValue(true)
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
