@@ -16,6 +16,7 @@ import { useMindless } from '@/components/on-air/mindless'
 import { useMovement } from '@/components/on-air/movement'
 import type { TimerKind } from '@/lib/practices'
 import type { MovementMode } from '@/lib/movement'
+import { Button } from '@/components/ui/button'
 
 export function PracticeTimerButton({
   practiceId,
@@ -23,6 +24,7 @@ export function PracticeTimerButton({
   movementMode,
   resumeFromSec,
   secondsTarget,
+  prominent,
 }: {
   practiceId: string
   /** Which timer to route to. Defaults to 'mindless' for back-compat with callers
@@ -36,6 +38,9 @@ export function PracticeTimerButton({
   resumeFromSec?: number
   /** The target length of the partial sit, in seconds (paired with resumeFromSec). */
   secondsTarget?: number
+  /** The page's one primary action (the Practice page's timer card, LIVE-2396). Without it the
+   *  button stays the quiet secondary it is in a row of other actions. */
+  prominent?: boolean
 }) {
   const mindless = useMindless()
   const movement = useMovement()
@@ -68,6 +73,13 @@ export function PracticeTimerButton({
   // A timed practice always leads with the timer icon + "Start Practice" (a resume reads
   // "Continue Practice"), so the affordance reads as timed at a glance — distinct from the
   // check-off a logged practice shows (LogPracticeButton).
+  if (prominent) {
+    return (
+      <Button type="button" size="lg" onClick={onClick} className="w-full sm:w-auto">
+        <Timer className="h-4 w-4 shrink-0" aria-hidden /> {isResume ? 'Continue Practice' : 'Start Practice'}
+      </Button>
+    )
+  }
   return (
     <button
       type="button"
