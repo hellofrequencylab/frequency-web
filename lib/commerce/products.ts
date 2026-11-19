@@ -9,6 +9,7 @@ import { ENTITY_ID } from '@/lib/finance/record'
 import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus, MarketGroup, ServiceConfig, ProductCondition } from './types'
 import { kindsForGroup } from './types'
 import { categoryFacetValues, priceBandBounds, sellerOwnerKind, type MarketFacets } from './market-facets'
+import { isAllowedSellingPrice, sellingPriceError } from '@/lib/billing/paid-price-floor'
 
 /** Drop undefined keys from a ServiceConfig so a partial edit never writes `undefined` into the JSON
  *  (and an all-undefined config collapses to null, meaning "no policy"). Copies only the KNOWN
@@ -161,6 +162,9 @@ export async function journeySlugForProduct(productId: string): Promise<string |
 export async function createProduct(input: ProductInput): Promise<CommerceProduct | null> {
   const title = input.title?.trim()
   if (!title || !Number.isFinite(input.priceCents) || input.priceCents < 0) return null
+  // THE $3 FLOOR (lib/billing/paid-price-floor.ts): a new paid product charges at least $3.
+  const floor = sellingPriceError(input.priceCents, 'item')
+  if (floor) throw new Error(floor)
   const { data, error } = await db()
     .from('commerce_products')
     .insert({
@@ -341,7 +345,15 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
   if (patch.title !== undefined) update.title = patch.title.trim().slice(0, 200) || 'Untitled'
   if (patch.description !== undefined) update.description = patch.description ?? null
   if (patch.priceCents !== undefined && Number.isFinite(patch.priceCents) && patch.priceCents >= 0) {
-    update.price_cents = Math.round(patch.priceCents)
+    const cents = Math.round(patch.priceCents)
+    // THE $3 FLOOR on a CHANGED price only: a product already priced under $3 keeps its price, and
+    // an edit that leaves it there is never refused (lib/billing/paid-price-floor.ts).
+    if (!isAllowedSellingPrice(cents)) {
+      const { data: current } = await db().from('commerce_products').select('price_cents').eq('id', id).maybeSingle()
+      const floor = sellingPriceError(cents, 'item', (current as { price_cents?: number | null } | null)?.price_cents ?? null)
+      if (floor) throw new Error(floor)
+    }
+    update.price_cents = cents
   }
   if (patch.category !== undefined) update.category = patch.category ?? null
   if (patch.stock !== undefined) update.stock = patch.stock ?? null

@@ -18,6 +18,7 @@ import {
   updateEventTicketTier,
   setEventTicketTierActive,
 } from '@/lib/events/ticket-tiers'
+import { isAllowedSellingPrice, sellingPriceError } from '@/lib/billing/paid-price-floor'
 
 // Operator curation: stamp (or clear) an event's featured marker. Gated on the platform
 // `admin.access` capability so only operators hand-pick the events that surface first.
@@ -174,6 +175,13 @@ export async function updateEvent(id: string, fd: FormData) {
   const priceRaw = (fd.get('price') as string)?.trim()
   const priceNum = priceRaw ? Number(priceRaw) : 0
   const priceCents = Number.isFinite(priceNum) && priceNum > 0 ? Math.round(priceNum * 100) : null
+  // THE $3 FLOOR (lib/billing/paid-price-floor.ts) on a changed price only: an event already priced
+  // under $3 keeps its price.
+  if (priceCents != null && !isAllowedSellingPrice(priceCents)) {
+    const { data: current } = await admin.from('events').select('price_cents').eq('id', id).maybeSingle()
+    const floor = sellingPriceError(priceCents, 'ticket', (current as { price_cents?: number | null } | null)?.price_cents ?? null)
+    if (floor) throw new Error(floor)
+  }
 
   const location = (fd.get('location') as string)?.trim() || null
 

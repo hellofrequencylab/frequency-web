@@ -7,6 +7,7 @@ import {
   resolveMembershipTicketGate,
 } from './ticket-space-access'
 import { resolveZone, zonedWallClockToInstant } from '@/lib/time/zone'
+import { PAID_PRICE_MIN_CENTS, sellingPriceError } from '@/lib/billing/paid-price-floor'
 
 // Shared ticket-tier logic (EVENTS-SYSTEM §2.2). Named tiers with richer pricing
 // modes + inventory, written ONLY through the service role (admin client). The
@@ -236,6 +237,42 @@ export function parseTicketTierInput(
   }
 }
 
+/** The pricing fields of a tier as stored, for the $3 floor's "unchanged price" rule. */
+type TierPriceFields = Pick<TicketTierCatalogFields, 'pricing_mode' | 'price_cents' | 'min_cents'>
+
+/**
+ * THE $3 FLOOR ON A PAID TICKET (owner ruling 2026-11-19, lib/billing/paid-price-floor.ts). PURE.
+ *
+ * A fixed tier charges at least $3. A buyer-chosen tier (pay what you can, sliding scale, donation)
+ * has a floor of at least $3: a blank floor on a new tier BECOMES $3, so a buyer can never be charged
+ * a dollar of which the card fee takes most. Free stays free. NEW PRICES ONLY: an edit that keeps the
+ * stored price (a grandfathered $2 tier, or an old buyer-chosen tier with no floor) passes untouched.
+ * Returns the fields to write, with the floor filled in where it was blank; throws the seller's
+ * sentence on a price under $3.
+ */
+export function applyTicketTierFloor<T extends TierPriceFields>(fields: T, prior: TierPriceFields | null = null): T {
+  if (fields.pricing_mode === 'free') return fields
+  if (fields.pricing_mode === 'fixed') {
+    const floor = sellingPriceError(
+      fields.price_cents,
+      'ticket',
+      prior?.pricing_mode === 'fixed' ? prior.price_cents : null,
+    )
+    if (floor) throw new Error(floor)
+    return fields
+  }
+  const min = fields.min_cents ?? 0
+  const priorBuyerChosen = prior != null && prior.pricing_mode !== 'free' && prior.pricing_mode !== 'fixed'
+  if (min <= 0) {
+    // An old buyer-chosen tier with no floor keeps it; any new one starts at $3.
+    if (priorBuyerChosen && (prior.min_cents ?? 0) <= 0) return fields
+    return { ...fields, min_cents: PAID_PRICE_MIN_CENTS }
+  }
+  const floor = sellingPriceError(min, 'ticket', priorBuyerChosen ? prior.min_cents : null)
+  if (floor) throw new Error(floor)
+  return fields
+}
+
 /**
  * Validate a tier's membership-access gate against the EVENT it will live on (ADR-823). No-op for
  * an ungated tier. For a gated one, requires (in order):
@@ -345,7 +382,7 @@ function ticketTypeWriter() {
 
 /** Create a ticket tier on an event. Authorization must already be checked. */
 export async function createEventTicketTier(eventId: string, fd: FormData): Promise<void> {
-  const fields = parseTicketTierInput(fd, { timeZone: await loadEventTimeZone(eventId) })
+  const fields = applyTicketTierFloor(parseTicketTierInput(fd, { timeZone: await loadEventTimeZone(eventId) }))
   await validateSpaceAccess(eventId, fields)
   await validatePayments(eventId, fields)
   // Untyped write (ADR-246 exception): the sales-window columns are newer than the generated
@@ -367,7 +404,16 @@ export async function updateEventTicketTier(
   eventId: string,
   fd: FormData,
 ): Promise<void> {
-  const fields = parseTicketTierInput(fd, { timeZone: await loadEventTimeZone(eventId) })
+  const { data: prior } = await createAdminClient()
+    .from('event_ticket_types')
+    .select('pricing_mode, price_cents, min_cents')
+    .eq('id', tierId)
+    .eq('event_id', eventId)
+    .maybeSingle()
+  const fields = applyTicketTierFloor(
+    parseTicketTierInput(fd, { timeZone: await loadEventTimeZone(eventId) }),
+    (prior as TierPriceFields | null) ?? null,
+  )
   await validateSpaceAccess(eventId, fields)
   await validatePayments(eventId, fields)
   const admin = ticketTypeWriter()
