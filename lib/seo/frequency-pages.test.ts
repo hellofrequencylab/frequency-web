@@ -24,6 +24,8 @@ const BODIES: Record<keyof typeof FREQUENCY_PAGE_SEO, string> = {
   designer: 'components/frequency/site/pages/themes/frequency-designer.tsx',
   freeSpotlight: 'components/frequency/site/pages/feature-builder/free-spotlight-studio.tsx',
   createSpace: 'components/frequency/site/pages/feature-builder/create-a-space-studio.tsx',
+  launchWebsite: 'components/frequency/site/pages/feature-builder/launch-your-website-studio.tsx',
+  emailMarketing: 'components/frequency/site/pages/feature-builder/email-marketing-studio.tsx',
   launchBusiness: 'components/frequency/site/pages/create-space/create-space-studio.tsx',
   network: 'components/frequency/site/pages/themes/frequency-network.tsx',
   temple: 'components/frequency/site/pages/themes/frequency-temple.tsx',
