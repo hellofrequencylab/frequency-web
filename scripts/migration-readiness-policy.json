@@ -4717,6 +4717,13 @@
           "headMode": "100644"
         },
         {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "ef1ba0811e40220d6b683908e4adcc7d7717a8295ced49e932c5536617d174a3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
           "file": "scripts/probes/SEC-026.mjs",
           "status": "added",
           "sha256": "6062b22c8c04dd66d2fb41e4e6f9a7094bab8ebafe8dd12614723a1012c0c0fc",
