@@ -28,7 +28,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, dirname } from 'node:path'
+import { join, dirname, resolve, sep } from 'node:path'
 import sharp from 'sharp'
 
 const BASE = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '')
@@ -52,6 +52,14 @@ const RESTORE = restoreAt >= 0 ? args[restoreAt + 1] : null
 
 const auth = { apikey: KEY, Authorization: `Bearer ${KEY}` }
 const kb = (n) => `${Math.round(n / 1024)} KB`
+
+/** A bucket and path come from database rows that members wrote, so they are checked before they become a
+ *  local file name: no `..`, no absolute path, and the result must stay inside the backup folder. */
+function safeLocal(root, bucket, path) {
+  if (!/^[a-z0-9_-]+$/i.test(bucket) || path.startsWith('/') || path.split('/').some((seg) => seg === '..' || seg === '')) return null
+  const full = resolve(root, bucket, path)
+  return full.startsWith(resolve(root) + sep) ? full : null
+}
 
 async function rest(path) {
   const rows = []
@@ -118,7 +126,12 @@ async function restore(dir) {
   const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'))
   let ok = 0
   for (const f of manifest.files.filter((x) => x.shrunk)) {
-    const buf = readFileSync(join(dir, f.bucket, f.path))
+    const local = safeLocal(dir, f.bucket, f.path)
+    if (!local) {
+      console.log(`skip  ${f.bucket}/${f.path}: not a safe path`)
+      continue
+    }
+    const buf = readFileSync(local)
     await upload(f.bucket, f.path, buf, f.contentType)
     ok++
     console.log(`restored ${f.bucket}/${f.path} (${kb(buf.length)})`)
@@ -147,6 +160,10 @@ async function main() {
   let count = 0
 
   for (const { bucket, path, maxDim } of refs.values()) {
+    if (!safeLocal(backupDir, bucket, path)) {
+      console.log(`skip  ${bucket}/${path}: not a safe path`)
+      continue
+    }
     if (!/\.(jpe?g|png|webp)$/i.test(path)) continue
     let buf
     try {
@@ -166,7 +183,7 @@ async function main() {
     if (!next) continue
     console.log(`${APPLY ? 'shrink' : 'would'} ${bucket}/${path}: ${kb(buf.length)} ${next.from} -> ${kb(next.buf.length)} ${next.to}`)
     if (APPLY) {
-      const local = join(backupDir, bucket, path)
+      const local = safeLocal(backupDir, bucket, path)
       mkdirSync(dirname(local), { recursive: true })
       writeFileSync(local, buf)
       if (!existsSync(local) || statSync(local).size !== buf.length) {
