@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  allInPriceCents,
   CARD_PROCESSING_BPS,
   CARD_PROCESSING_FIXED_CENTS,
   applicationFeePercent,
@@ -92,5 +93,23 @@ describe('applicationFeePercent (subscriptions cannot carry a fixed amount)', ()
     expect(applicationFeePercent(5000, sellerFeeBreakdown(5000, 0, { passThrough: false }))).toBe(0)
     expect(applicationFeePercent(20, sellerFeeBreakdown(20, 0))).toBe(100)
     expect(applicationFeePercent(0, sellerFeeBreakdown(0, 0))).toBe(0)
+  })
+})
+
+describe('allInPriceCents (guests cover the card fee, LIVE-2450)', () => {
+  it('is the smallest price that leaves the seller the net after card processing', () => {
+    for (const net of [100, 300, 1000, 1999, 2500, 5000, 12345, 100000]) {
+      const p = allInPriceCents(net)
+      expect(p - cardProcessingCents(p)).toBeGreaterThanOrEqual(net)
+      expect(p - 1 - cardProcessingCents(p - 1)).toBeLessThan(net)
+    }
+  })
+  it('prices a $20 ticket at $20.91', () => {
+    expect(allInPriceCents(2000)).toBe(2091)
+  })
+  it('is 0 for nothing to cover', () => {
+    expect(allInPriceCents(0)).toBe(0)
+    expect(allInPriceCents(-5)).toBe(0)
+    expect(allInPriceCents(Number.NaN)).toBe(0)
   })
 })
