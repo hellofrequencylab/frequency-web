@@ -1,0 +1,20 @@
+{
+  "id": "SEC-030",
+  "title": "The FlowWeb claim webhook refuses an oversized body instead of buffering it before the signature check",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "app/api/webhooks/flowweb-claim/route.ts",
+    "ref": "deepest site audit 2026-11-19 (second-opinion review)"
+  },
+  "detail": "The claim-link webhook read the whole request with req.text() before verifySignature, because the HMAC covers the body. With no cap, any unauthenticated caller could make the function buffer an arbitrarily large body. No webhook route had a body cap to reuse, so lib/net/capped-body.ts adds readCappedText: it refuses a declared Content-Length over the cap, then counts the bytes actually streamed and cancels the read once they pass it. The route reads through it with a 64 KiB cap (one claim item is a few hundred bytes) and answers 413 over it. The other FlowWeb and email webhooks still read req.text() uncapped; they can adopt the same helper.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SEC-030.mjs",
+    "note": "Fails on main: the route buffers req.text() with no cap. Passes when the capped read and the 413 come before the signature check."
+  },
+  "closed": "2026-11-19"
+}

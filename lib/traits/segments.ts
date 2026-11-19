@@ -9,6 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getTrait, isTagKey } from './registry'
 import { slugify } from '@/lib/utils'
+import { log } from '@/lib/log'
 
 export type Combinator = 'all' | 'any'
 export type TraitOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte'
@@ -147,22 +148,54 @@ function traitRowValue(row: { value_num: number | null; value_text: string | nul
   return null
 }
 
+/** PostgREST caps an unranged select at `max_rows` (1000), and member_traits alone is past that in
+ *  production, so every snapshot read goes a page at a time. */
+const SNAPSHOT_PAGE = 1000
+
+type PageResult<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+
+/** Every row a query matches, SNAPSHOT_PAGE at a time, until a page comes back short. The caller
+ *  orders by a unique key so a page boundary can neither skip nor repeat a row. A read error is
+ *  logged and THROWN: a partial snapshot would silently shrink a segment (and a campaign audience
+ *  resolved from it), so it must stop the caller instead. */
+async function readAllSnapshotRows<T>(table: string, page: (from: number, to: number) => PageResult<T>): Promise<T[]> {
+  const out: T[] = []
+  for (let from = 0; ; from += SNAPSHOT_PAGE) {
+    const { data, error } = await page(from, from + SNAPSHOT_PAGE - 1)
+    if (error) {
+      log.error('segments.snapshot_read_failed', { table, from, error: error.message })
+      throw new Error(`Could not read ${table} for segments: ${error.message}`)
+    }
+    const rows = data ?? []
+    out.push(...rows)
+    if (rows.length < SNAPSHOT_PAGE) return out
+  }
+}
+
 /** Load every real member's tags + computed traits into snapshots (one pass; reused
- *  across all segments). At current scale this is a handful of rows; the doc notes the
- *  compile-to-SQL path for scale. */
+ *  across all segments). Each table is read in full, a page at a time (readAllSnapshotRows);
+ *  the doc notes the compile-to-SQL path for scale. */
 export async function loadMemberSnapshots(): Promise<MemberSnapshot[]> {
   const client = db()
   const nowMs = Date.now()
-  const [{ data: tagRows }, { data: traitRows }, { data: realRows }] = await Promise.all([
-    client.from('member_tags').select('profile_id, tag_key, expires_at'),
-    client.from('member_traits').select('profile_id, trait_key, value_num, value_text, value_bool'),
+  const [tagRows, traitRows, realRows] = await Promise.all([
+    readAllSnapshotRows('member_tags', (from, to) =>
+      client.from('member_tags').select('id, profile_id, tag_key, expires_at').order('id').range(from, to)),
+    readAllSnapshotRows('member_traits', (from, to) =>
+      client
+        .from('member_traits')
+        .select('profile_id, trait_key, value_num, value_text, value_bool')
+        .order('profile_id')
+        .order('trait_key')
+        .range(from, to)),
     // Real members only — exclude demo + system profiles, the SAME filter loadMemberDirectory applies.
     // Without it, seeded demo/system profiles that carry tags/traits inflate segment counts and, via
     // resolveSegmentProfileIds, get targeted by activation + campaign sends. (ADR-069.)
-    client.from('profiles').select('id').eq('is_demo', false).eq('is_system', false),
+    readAllSnapshotRows('profiles', (from, to) =>
+      client.from('profiles').select('id').eq('is_demo', false).eq('is_system', false).order('id').range(from, to)),
   ])
 
-  const real = new Set((realRows ?? []).map((r) => (r as { id: string }).id))
+  const real = new Set(realRows.map((r) => (r as { id: string }).id))
 
   const snaps = new Map<string, MemberSnapshot>()
   const get = (id: string) => {
@@ -170,11 +203,11 @@ export async function loadMemberSnapshots(): Promise<MemberSnapshot[]> {
     if (!s) { s = { profileId: id, tags: new Set(), traits: new Map() }; snaps.set(id, s) }
     return s
   }
-  for (const r of (tagRows ?? []) as Array<{ profile_id: string; tag_key: string; expires_at: string | null }>) {
+  for (const r of tagRows as Array<{ profile_id: string; tag_key: string; expires_at: string | null }>) {
     if (!real.has(r.profile_id)) continue // skip demo/system
     if (!r.expires_at || Date.parse(r.expires_at) > nowMs) get(r.profile_id).tags.add(r.tag_key)
   }
-  for (const r of (traitRows ?? []) as Array<{ profile_id: string; trait_key: string; value_num: number | null; value_text: string | null; value_bool: boolean | null }>) {
+  for (const r of traitRows as Array<{ profile_id: string; trait_key: string; value_num: number | null; value_text: string | null; value_bool: boolean | null }>) {
     if (!real.has(r.profile_id)) continue // skip demo/system
     get(r.profile_id).traits.set(r.trait_key, traitRowValue(r))
   }
