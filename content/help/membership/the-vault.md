@@ -1,5 +1,5 @@
 ---
-title: Membership & the Vault
+title: What membership includes and how the Vault works
 description: What's free, what membership includes, and how the Vault works.
 category: membership
 order: 1
