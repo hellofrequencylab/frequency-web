@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1270",
+  "title": "A public course page, its markup, the catalog and the Week 1 email only name a session anyone can open",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/courses/course-context.ts",
+    "ref": "Owner 2026-11-19: \"Do a super sweep 5000 of the site... Make sure everything is complete, fully evolved and validated.\" Found by the end to end sweep."
+  },
+  "detail": "getCourseContext and the catalog's nextRuns read a course's linked events with the service-role client and no visibility filter, so an unlisted, circle_only or private session linked to a course by a Journey editor would show its title, day and link on an indexed page, in the Course JSON-LD and in the Week 1 email, as a seat a visitor cannot open. The course's .ics and lib/events/run-series.ts already filter on public. Production had no such session on 2026-11-19 (0 non-public upcoming events linked to a Journey). DONE 2026-11-19: both reads filter on visibility public.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1270.mjs",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
