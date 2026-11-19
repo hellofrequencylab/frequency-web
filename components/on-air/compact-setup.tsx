@@ -184,6 +184,7 @@ export function CompactSetup({
   prefs,
   journeyLegs = [],
   practicedToday = 0,
+  startOnLog = false,
   onStart,
   onClose,
 }: {
@@ -196,6 +197,8 @@ export function CompactSetup({
   prefs?: Partial<OnAirPrefs> | null
   journeyLegs?: { planId: string; title: string; week: number | null; weeks: number }[]
   practicedToday?: number
+  /** The Zap menu's "Log a practice" (LIVE-2423): open Be Still on the Free Practice with Just Log picked. */
+  startOnLog?: boolean
   onStart: (choice: SetupChoice) => void
   onClose: () => void
 }) {
@@ -206,8 +209,14 @@ export function CompactSetup({
   const { initial, save } = useTimerSettings(prefs)
   const [saved, setSaved] = useState<TimerSettings>(initial)
   const audio = useDoorAudio()
-  const [mode, setMode] = useState(initialMode)
-  const [states, setStates] = useState<Record<TimerMode, ModeState>>(() => ({ still: blank(initialMode === 'still' ? initialPracticeId : undefined), move: blank(initialMode === 'move' ? initialPracticeId : undefined) }))
+  const [mode, setMode] = useState<TimerMode>(startOnLog ? 'still' : initialMode)
+  const [states, setStates] = useState<Record<TimerMode, ModeState>>(() => {
+    if (startOnLog) {
+      const free = setupPractices(practices, 'still').find((p) => p.logsAs)
+      return { still: { ...blank(free?.id ?? initialPracticeId), stillPick: 'log' }, move: blank() }
+    }
+    return { still: blank(initialMode === 'still' ? initialPracticeId : undefined), move: blank(initialMode === 'move' ? initialPracticeId : undefined) }
+  })
   const cur = states[mode]
   const patch = (o: Partial<ModeState>) => setStates((s) => ({ ...s, [mode]: { ...s[mode], ...o } }))
   const set = (p: TimerSettingsPatch) => {

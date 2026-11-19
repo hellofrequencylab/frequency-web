@@ -9,6 +9,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dispatchDay } from '@/lib/on-air/dispatch-day'
 import { HOME_TZ, zoneOffsetMinutes } from '@/lib/time/zone'
+import { shortLinkUrl } from '@/lib/qr/links'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,13 +41,16 @@ export async function GET() {
     .eq('day', day)
     .maybeSingle()
   let line = (dispatch as { copy: string } | null)?.copy ?? null
+  // One profile read serves the streak line and the post box's avatar orb (LIVE-2423).
+  const { data: profRow } = await admin
+    .from('profiles')
+    .select('current_streak, display_name, avatar_url')
+    .eq('id', profileId)
+    .maybeSingle()
+  const prof = profRow as { current_streak: number | null; display_name: string | null; avatar_url: string | null } | null
+  const me = { name: prof?.display_name ?? '', avatar: prof?.avatar_url ?? null }
   if (!line) {
-    const { data: prof } = await admin
-      .from('profiles')
-      .select('current_streak')
-      .eq('id', profileId)
-      .maybeSingle()
-    const streak = Number((prof as { current_streak: number | null } | null)?.current_streak ?? 0)
+    const streak = Number(prof?.current_streak ?? 0)
     // The COMMUNITY's hour, not the server's. `getUTCHours()` put the "tonight" line on screen
     // from 5pm-midnight UTC — 9am to 4pm Pacific — i.e. it read "One log tonight" over lunch and
     // never once in the evening. Same 5pm-Pacific rollover as the day key above. Shifting the
@@ -86,5 +90,17 @@ export async function GET() {
     liveEvent = (done ?? []).length < live.length
   }
 
-  return NextResponse.json({ line, liveEvent })
+  // The member's own personal code (LIVE-2423): the Zap menu leads with it, so the QR is one tap
+  // from the button. Read only, scoped to the caller; onboarding provisions it, and a member
+  // without one yet gets null and the menu points at /codes instead.
+  const { data: own } = await admin
+    .from('qr_codes')
+    .select('id, slug')
+    .eq('owner_profile_id', profileId)
+    .eq('purpose', 'connect')
+    .maybeSingle()
+  const mine = own as { id: string; slug: string } | null
+  const code = mine ? { id: mine.id, url: shortLinkUrl(mine.slug) } : null
+
+  return NextResponse.json({ line, liveEvent, code, me })
 }

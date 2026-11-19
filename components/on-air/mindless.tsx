@@ -96,6 +96,9 @@ export interface MindlessOpenOpts {
    *  (2+ ids), the door opens the first and auto-advances to the next after each leg's reveal is
    *  dismissed. Overrides `practiceId`. Each leg logs independently through the usual path. */
   queue?: string[]
+  /** The Zap menu's "Log a practice" (LIVE-2423): open the door on the Free Practice with the Just
+   *  Log style picked, so one more tap logs it. */
+  justLog?: boolean
 }
 
 interface MindlessApi {
@@ -141,6 +144,8 @@ type LoadingState = {
   /** A sequenced run's ordered practice ids + this leg's index (P6). */
   queue?: string[]
   queueIndex?: number
+  /** Open the door on the Free Practice, Just Log (LIVE-2423). */
+  justLog?: boolean
 }
 
 type OverlayState =
@@ -177,6 +182,7 @@ type OverlayState =
       /** A sequenced run's ordered practice ids + this leg's index (P6). */
       queue?: string[]
       queueIndex?: number
+      justLog?: boolean
     }
   | { phase: 'error'; request: LoadingState }
 
@@ -298,6 +304,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
       warmupMessage: forceMode ? undefined : opts?.warmupMessage,
       queue: hasQueue ? queueIds : undefined,
       queueIndex: hasQueue ? 0 : undefined,
+      justLog: forceMode || hasQueue ? undefined : opts?.justLog,
     })
   }, [])
 
@@ -359,6 +366,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         warmupMessage: requestedWarmup,
         queue: requestedQueue,
         queueIndex: requestedQueueIndex,
+        justLog: state.justLog,
       })
     })()
     return () => {
@@ -472,7 +480,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
           </div>
         </MindlessShell>
       )}
-      {state.phase === 'ready' && state.setup && <CompactSetup practices={state.data.practices} initialMode={state.mode} initialPracticeId={state.practiceId ?? state.data.defaultPracticeId ?? undefined} prefs={state.data.prefs} explicitPracticeId={state.practiceId} journeyLegs={state.data.journeyLegs ?? []} practicedToday={state.data.practicedToday} onStart={configured} onClose={close} />}
+      {state.phase === 'ready' && state.setup && <CompactSetup practices={state.data.practices} initialMode={state.mode} initialPracticeId={state.practiceId ?? state.data.defaultPracticeId ?? undefined} prefs={state.data.prefs} explicitPracticeId={state.practiceId} journeyLegs={state.data.journeyLegs ?? []} practicedToday={state.data.practicedToday} startOnLog={state.justLog} onStart={configured} onClose={close} />}
       {state.phase === 'ready' && !state.setup &&
         (state.data.practices.length === 0 ? (
           <MindlessShell onClose={close}>
