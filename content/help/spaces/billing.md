@@ -5,7 +5,7 @@ category: spaces
 order: 17
 group: Money and plans
 published: 2026-07-27
-updated: 2026-11-18
+updated: 2026-11-19
 audience: member
 featureKeys: [billing]
 keywords: [change plan, cancel, upgrade, downgrade, invoice, receipt, update card, subscription]
@@ -35,8 +35,8 @@ Pick the plan you want on the billing page. The card fields open under the butto
 - Business, Collective and Non Profit plans start with a **14 day free trial**, and so does Network.
 - Yearly saves two months. A yearly plan costs ten months of the monthly price.
 - Moving up takes effect right away. Moving down takes effect at the end of what you have paid for, so you keep what you bought.
-- Your plan is what turns on selling. Paid tickets, paid memberships, donations, shop checkout and booking deposits open at Business. Tips are open on every plan. Everything else is an allowance: a free Space has every hosting tool with room to start, and Business and Collective raise the limits. When an allowance is full, only the next new thing waits. Nothing you made is hidden or locked.
-- Collective is Business for separate groups that partner: a hub linking partner Spaces, a shared calendar, cross-listing and a lower network fee, with each partner keeping its own Space. See [Collective](/help/spaces/collective). One organization with chapters takes [Network](/help/spaces/network) instead.
+- Your plan is what turns on selling. Paid tickets, paid memberships, donations, shop checkout and booking deposits open at Business. A free Space sells nothing, and it takes donations only when its owner is a Crew member. Everything else is an allowance: a free Space has every hosting tool with room to start, and Business and Collective raise the limits. When an allowance is full, only the next new thing waits. Nothing you made is hidden or locked.
+- Collective is Business for separate groups that partner: a hub linking partner Spaces, a shared calendar and cross-listing, with each partner keeping its own Space. See [Collective](/help/spaces/collective). One organization with chapters takes [Network](/help/spaces/network) instead.
 - Your plan is not the only switch. You can also turn a tool off for your own Space in **Manage**, then **Profile & Settings**, then **Page Tools**, and it stays off whether or not your plan includes it. So if billing says a tool is included and you still cannot find it, look there before you look at your plan.
 
 See [Plans and pricing](/help/spaces/plans-and-pricing) for what each plan includes, and the [pricing page](/pricing) for what each one costs.

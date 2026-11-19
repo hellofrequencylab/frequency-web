@@ -4,7 +4,7 @@ description: What Crew is, what it adds to your personal account, and how contri
 category: membership
 order: 2
 published: 2026-10-06
-updated: 2026-11-18
+updated: 2026-11-19
 audience: member
 featureKeys: [vault]
 keywords: [paid membership, upgrade, boost, supporter, pay what you want, subscription, cancel crew, host more]
@@ -24,7 +24,7 @@ Belonging on Frequency is free, and it stays free. Every Member can join Circles
 - **The Supporter mark** beside your name. It shows while Crew is active, whatever amount you picked, and fades 45 days after you stop.
 - **Listing what you author** in the public library.
 
-Crew is about hosting and backing the community. It does not sell. To charge for something, open a Space and take Business. See [Plans and pricing](/help/spaces/plans-and-pricing).
+Crew is about hosting and backing the community. It does not sell. A Crew member can take tips, with no platform fee, plus card processing. To charge for something, open a Space and take Business. See [Plans and pricing](/help/spaces/plans-and-pricing).
 
 ## Join Crew
 

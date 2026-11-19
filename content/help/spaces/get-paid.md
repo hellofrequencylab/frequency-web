@@ -1,18 +1,18 @@
 ---
 title: Get paid
-description: Where your Space's money lands, how the owner connects the payout account, which money paths can take payment, and what the network takes.
+description: Where your Space's money lands, how the owner connects the payout account, which money paths can take payment, and what Frequency takes.
 category: spaces
 order: 15
 group: Money and plans
 published: 2026-09-10
-updated: 2026-11-18
+updated: 2026-11-19
 audience: member
 featureKeys: [payouts]
-keywords: [payouts, stripe, bank account, connect bank, earnings, take payments, network fee, sell]
+keywords: [payouts, stripe, bank account, connect bank, earnings, take payments, finder's fee, fees, sell]
 status: published
 ---
 
-Everything your Space receives lives on one page, **Get paid**. That is where you connect the account your money lands in, see which of your money paths can take payment today, and read the rate the network takes.
+Everything your Space receives lives on one page, **Get paid**. That is where you connect the account your money lands in, see which of your money paths can take payment today, and read what Frequency takes.
 
 What your Space pays is a different page. See [Billing](/help/spaces/billing) for your plan, your card, and invoices. Setting up one does nothing to the other.
 
@@ -47,11 +47,11 @@ There are six ways a Space can take money, and Get paid lists all six under **Yo
 - **Memberships.** Paid tiers people join. Paid tiers open at Business; a free tier works on every plan.
 - **Bookings.** Paid time on your calendar, deposit included at checkout. Deposits open at Business.
 - **Orders.** Sales from your Shop. Checkout opens at Business.
-- **Donations.** Your fund and the amounts people can pick. Opens at Business.
+- **Donations.** Your fund and the amounts people can pick. Opens at Business. A free Space takes donations only when its owner is a Crew member.
 - **Tickets.** Paid tickets on an event your Space hosts. Opens at Business.
 - **Journeys.** A price on a Journey this Space sells.
 
-Three things have to be true for a path to take money: your Space is on a plan that sells (Business, Collective, Network, or Non Profit), the path has its own setup, and the payout account exists. Each path shows one of these:
+Three things have to be true for a path to take money: your Space is on a plan that sells (Business, Collective, Network, or Non Profit), the path has its own setup, and the payout account exists. A free Space sells nothing. The one exception is donations, which a free Space takes when its owner is a Crew member. Each path shows one of these:
 
 - **Live.** It can take money today.
 - **Ready once payouts are on.** Everything else about it is finished, and it is waiting on the owner's payout account.
@@ -61,18 +61,22 @@ Set each path up from the tool that owns it. Booking, memberships, donations and
 
 ## Read your rate
 
-Under **Your rate**, Get paid shows two numbers, and they are the whole story.
+Under **Your rate**, Get paid shows what Frequency takes. Two rules are the whole story.
 
-- **0% on your own people, always, on every plan.** Someone who already follows your Space, or who you brought here yourself, costs you nothing. Tips are 0% too, on every plan.
-- **The network fee, only when Frequency found the buyer.** Discovery, a referral, or the Market, and only once, at that customer's first purchase. The page shows the fee your plan is on. A free Space takes tips, which carry no fee.
+- **0% on your own people, always, on a paid Space plan, plus card processing.** A customer you brought here yourself costs you no Frequency fee. Card processing still applies, and the seller pays it.
+- **One finder's fee, only when Frequency introduced the customer.** It is charged once, with a cap, on that customer's first purchase. After that first purchase the customer is yours: 0%, plus card processing. On a membership, the finder's fee applies to the first payment only, not to renewals.
 
-If your Space is not connected to the network, it takes no network sales at all, so it pays **0% on everything**.
+The finder's fee is the same on Business, Collective and Network. Non Profit pays no finder's fee. A Founding Business keeps its locked rate.
 
-[Plans and pricing](/help/spaces/plans-and-pricing) explains how the fee works for each plan, and the [pricing page](/pricing) has the current rates.
+If your Space is not connected to the network, Frequency introduces no customers to it, so there is no finder's fee: **0% on everything, plus card processing**.
+
+Tips are separate from sales. They go to Crew members and to people who own a Space on a paid plan, with no platform fee, plus card processing.
+
+[Plans and pricing](/help/spaces/plans-and-pricing) explains what each plan turns on, and the [pricing page](/pricing) has the plan prices, the finder's fee rate and its cap.
 
 ## Know what you receive, and what you pay
 
-You receive every sale, membership, booking deposit, donation, ticket and Journey, minus the rate above and Stripe's processing fee. Stripe sends it to your bank on its own schedule.
+You receive every sale, membership, booking deposit, donation, ticket and Journey, minus any finder's fee and card processing. Stripe sends it to your bank on its own schedule.
 
 You pay Frequency for your plan. That is a separate charge, and it is the only one. See [Billing](/help/spaces/billing).
 
@@ -80,7 +84,11 @@ You pay Frequency for your plan. That is a separate charge, and it is the only o
 
 ### Do I need a plan to take money?
 
-For tips, no: tips are open on every plan, with no fee. For selling, yes. Paid tickets, paid memberships, donations, shop checkout, booking deposits and priced Journeys open at Business. Hosting stays free, so you can build everything on a free Space and pick Business on the day you start charging. Nothing you built is lost either way. A payout account is what actually starts the money.
+Yes. Only a paying account takes money. Paid tickets, paid memberships, shop checkout, booking deposits and priced Journeys open at Business. Donations open at Business too, with one exception: a free Space takes donations when its owner is a Crew member. Nothing else sells on a free Space. Hosting stays free, so you can build everything on a free Space and pick Business on the day you start charging. Nothing you built is lost either way. A payout account is what actually starts the money.
+
+### Who can take tips?
+
+Crew members, and people who own a Space on a paid plan. A free Member who is not Crew does not take tips. There is no platform fee on a tip, plus card processing.
 
 ### Get paid says payments are not turned on yet. Is something wrong?
 

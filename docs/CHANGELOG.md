@@ -49,6 +49,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **Fees are simpler: your own people cost 0%, and there is one finder's fee.** On a paid Space plan, a customer you brought yourself costs 0%, always, plus card processing. When Frequency introduces a customer, there is one finder's fee: 10%, never more than $20, charged once, on that customer's first purchase. After that they are yours. It is the same on Business, Collective and Network, and it replaces the old fee that changed by plan. Non Profit pays no finder's fee, and a Founding Business keeps its locked 3%. Only a paying account takes money, so selling starts at Business. A free Space takes donations only when its owner is a Crew member. Tips go to Crew members and to people who own a Space on a paid plan, with no platform fee, plus card processing.
+
 - **My Contacts uses the same words as the rest of Frequency.** The button reads Add a contact, the Network hub tabs read Members, Friends and My Contacts, and the Network sharing option says local Hosts can find the person. A Space's contact list is called Community Resonance, as it is everywhere else.
 
 - **A repeating event shows its best date when you sort by Nearest, Most going or Best match.** On Events, a weekly class ranks on the date the most people are going to, not just the next one. The map shows one pin for it and says how many more dates there are. When you pick an event to add to a Circle, its dates sit together under its name.
