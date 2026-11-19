@@ -60,7 +60,7 @@ export function funnelFrom(input: { campaign?: string | null; persona?: string |
 const CREW: NextStep = {
   label: 'Join Crew',
   href: '/upgrade',
-  body: 'Crew is how regulars keep the rooms going. Come to more of them.',
+  body: 'Crew is how regulars keep the groups going. Come to more of them.',
 }
 
 /**

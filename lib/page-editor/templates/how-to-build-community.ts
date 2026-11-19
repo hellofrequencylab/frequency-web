@@ -314,7 +314,7 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'Do I have to do this alone?',
-      a: 'No. On Frequency you host one Circle with the format and the first-night script handed to you, and someone who has done it before to call. You hold the room and bring the willingness to show up, and the structure carries the rest.',
+      a: 'No. On Frequency you host one Circle with the format and the first-night script handed to you, and someone who has done it before to call. You host and bring the willingness to show up, and the structure carries the rest.',
     },
     {
       q: 'How do I keep a community group going long-term?',
