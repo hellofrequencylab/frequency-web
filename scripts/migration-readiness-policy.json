@@ -4521,6 +4521,49 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5337,
+      "expiresAt": "2026-11-26T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346160000_home_states_finders_fee.sql",
+          "sha256": "051908b86f916fd7b9fed1c597cd2451eb3bd6e9759bcf47f51c6bf9eda59692"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/LIVE-2446.json",
+          "status": "added",
+          "sha256": "5ca6a4256f66ad2cfdee8dd38b2cb20515791177b3571e318d4b5c5ee8ed3406",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/LIVE-2446.mjs",
+          "status": "added",
+          "sha256": "d8ded4eb5bdb5450d6018d167686456ca12b8b0ddb7406e55153c9fd8754ca1f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346160000_home_states_finders_fee.sql",
+          "status": "added",
+          "sha256": "051908b86f916fd7b9fed1c597cd2451eb3bd6e9759bcf47f51c6bf9eda59692",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
