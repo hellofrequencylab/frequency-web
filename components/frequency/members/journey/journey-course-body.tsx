@@ -147,21 +147,21 @@ export function JourneyCourseBody({
   const kicker = empty ? 'Still being written' : tree.complete ? (cycle ? `Every ${unit} is done` : 'Journey finished') : waiting ? 'You are caught up' : nextTitle.kind ? `Up next · ${nextTitle.kind}` : 'Up next'
   const heroTitle = empty
     ? 'No lessons yet.'
-    : next
-    ? nextTitle.name
     : tree.complete
       ? cycle
         ? 'This Journey repeats each year.'
         : 'You finished this Journey.'
+    : next
+    ? nextTitle.name
       : waiting && nextLock
         ? `${unlockLine(nextLock.unlockAt)}.`
         : title
   const heroWhy = empty
     ? 'The path appears here as the guide writes it. You are enrolled, so it shows up for you the day it lands.'
-    : next
-    ? summary
     : tree.complete
       ? 'Every lesson is done. Revisit any of them below, any time.'
+    : next
+    ? summary
       : waiting
         ? 'Keep your daily practice going until then.'
         : summary

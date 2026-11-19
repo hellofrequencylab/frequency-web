@@ -554,9 +554,9 @@ export function LearnPlayer({
       ) : selectedLocked ? (
         <div className="panel mc-lesson flex flex-col items-center gap-2 py-10 text-center">
           <Lock className="h-6 w-6 text-subtle" />
-          <p className="text-body-sm font-semibold text-text">This phase is still locked</p>
+          <p className="text-body-sm font-semibold text-text">This {unit} is still locked</p>
           <p className="max-w-prose text-body-sm text-muted">
-            {unlockLabel(phaseLock.get(phaseOfLesson.get(selectedId!) ?? '')?.unlockAt ?? null)}. One phase opens at a time, so the whole Circle moves together. Catch up on the current phase while you wait.
+            {unlockLabel(phaseLock.get(phaseOfLesson.get(selectedId!) ?? '')?.unlockAt ?? null)}. One {unit} opens at a time. Finish what is open while you wait.
           </p>
         </div>
       ) : (
