@@ -37,19 +37,19 @@
 export const PLAN_STORY = {
   /** The whole spine in one breath. */
   spine:
-    'Frequency is where your local community happens. People join free. Hosting a Space is free. Crew is a separate personal membership. Selling fees depend on your plan and buyer source; see /pricing for current details.',
+    'Frequency is where your local community happens. People join free. Host free with Crew. You pay when you start charging. Selling fees depend on your plan and buyer source; see /pricing for current details.',
   /** The three lines on their own (CORE-MODEL §1), for a surface that already has its own first
    *  sentence: the site description, the llms.txt header. PROG-R8 (ADR-1499) added this so the
    *  <meta> description and the crawler corpus READ the lines rather than retype them; the spine
    *  above keeps them too, because the home document's hero is the spine verbatim. */
-  lines: 'People join free. Hosting a Space is free. Crew is a separate personal membership.',
+  lines: 'People join free. Host free with Crew. You pay when you start charging.',
   /** The ladder in one line: six tiers, one verb each (ADR-1709; Network added by the 2026-10-16 split). */
   ladder:
     'Six tiers, one verb each. Members join. Crew hosts. A Space runs. Business adds tools. Collective connects. Network unites.',
   /** WHY a plan, in the model's own terms: hosting is free, and paid plans add tools and selling
    *  options. Every surface interpolates this instead of arguing it again. */
   paid:
-    'Hosting a Space is free. Crew is a separate personal membership for members who want to contribute and host more. The pricing page shows which tools, limits, selling options and fees apply to each Space plan.',
+    'A Space comes with Crew, the personal membership you fund at whatever amount you choose, and hosting it is free. The pricing page shows which tools, limits, selling options and fees apply to each Space plan.',
   /** The selling line: plan and transaction details determine the current options and fees. */
   selling:
     'Selling options and fees depend on your Space plan and the transaction. See /pricing for current details.',
@@ -63,10 +63,10 @@ export const PLAN_STORY = {
   /** The Space and Crew upsell in one line, for any surface that opens a Space: the page, the doors, the
    *  emails. The requirement is ADR-810's creation gate, which bites when the beta ends. */
   crewSpace:
-    'A Space is separate from Crew. Hosting a Space is free. Crew is a personal membership, with its own member host benefits. See /pricing for current plan details and fees.',
+    'A Space comes with Crew, funded at whatever amount you choose. Hosting a Space is free, and a plan is only for when you charge. See /pricing for current plan details and fees.',
   /** Crew in one breath: support plus a host kit, in the canon's words (ADR-1084). */
   crew:
-    'Crew is how a member backs the community and hosts more. It is separate from a Space plan. Members contribute what they want for Crew and receive the same personal membership benefits.',
+    'Crew is how a member backs the community and hosts more. Your first Space comes with it, and a Space plan is only for when you charge. Members contribute what they want for Crew and receive the same personal membership benefits.',
   /** Collective in one breath: separate groups that partner (the 2026-10-16 split; Network is the
    *  one-owner-with-chapters plan). */
   collective:

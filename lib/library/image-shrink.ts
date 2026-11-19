@@ -31,6 +31,21 @@ export const SERVER_MAX_BYTES = Math.round(4.3 * 1024 * 1024)
 /** What the downscale AIMS to get under (leaves headroom below SERVER_MAX_BYTES for multipart overhead). */
 export const SHRINK_TARGET_BYTES = Math.round(3.5 * 1024 * 1024)
 
+/** PERF-012 (owner ruling 2026-11-19: shrink at upload, never the paid optimizer). A photo above this
+ *  size is re-encoded at WEB_MAX_DIM before it is stored, because the stored file is the file every
+ *  visitor downloads: a Space gallery of straight-from-the-phone photos weighed 9.7 MB. Anything at or
+ *  under it is left exactly as the owner made it (logos, icons, already-exported web images). */
+export const WEB_SIZE_BYTES = 600 * 1024
+/** Longest edge of a stored photo. Enough for a full-bleed header on a 2x phone and a desktop hero. */
+export const WEB_MAX_DIM = 2000
+const WEB_QUALITY = 0.82
+
+/** Whether an upload of this type and size gets the web-size pass. PURE, so the rule is testable
+ *  without a canvas. SVG and GIF never do (vector, animation), and HEIC is converted before this. */
+export function wantsWebSizing(type: string, size: number): boolean {
+  return /^image\/(jpeg|png|webp)$/i.test(type) && size > WEB_SIZE_BYTES
+}
+
 // Progressive (longest-edge, JPEG-quality) steps. 2560px is ample for a full-bleed header; each step down
 // trades a little resolution/quality to guarantee even a dense 12–50MP phone photo lands under the target.
 const SHRINK_STEPS: readonly [number, number][] = [
@@ -116,21 +131,25 @@ async function encodeAt(
 }
 
 /**
- * Best-effort browser-side downscale so a photo fits under the upload ceiling (and uploads faster). Only
- * touches raster formats this browser can decode (JPEG/PNG/WebP) that are actually over the target; SVG/
+ * Best-effort browser-side downscale so a stored photo is web-sized (PERF-012) and fits under the upload
+ * ceiling. Only touches raster formats this browser can decode (JPEG/PNG/WebP) over WEB_SIZE_BYTES; SVG/
  * GIF/HEIC and already-small files pass through untouched (HEIC can't be canvas-decoded in Chrome). Steps
  * DOWN through SHRINK_STEPS until the re-encoded JPEG is under SHRINK_TARGET_BYTES, keeping the smallest
  * result. Returns the ORIGINAL file on any failure or if re-encoding wouldn't help.
  */
 export async function shrinkImageForUpload(file: File): Promise<File> {
-  const decodable = /^image\/(jpeg|png|webp)$/i.test(file.type)
-  if (!decodable || file.size <= SHRINK_TARGET_BYTES) return file
+  if (!wantsWebSizing(file.type, file.size)) return file
   try {
     const bitmap = await createImageBitmap(file)
     // Choose the format BEFORE encoding: a source with any transparency must not become a JPEG.
     const type = pickEncodeType(bitmap)
-    let best: Blob | null = null
+    // The web-size pass first (PERF-012). It is kept only when it is smaller than the source, so an
+    // already-lean file is never made worse; the steps below only run for a photo still over the
+    // upload ceiling after it.
+    let best: Blob | null = await encodeAt(bitmap, WEB_MAX_DIM, WEB_QUALITY, type)
+    if (best && best.size === 0) best = null
     for (const [maxDim, quality] of SHRINK_STEPS) {
+      if (best && best.size <= SHRINK_TARGET_BYTES) break
       const blob = await encodeAt(bitmap, maxDim, quality, type)
       if (blob && blob.size > 0 && (!best || blob.size < best.size)) best = blob
       if (best && best.size <= SHRINK_TARGET_BYTES) break

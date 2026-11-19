@@ -4,9 +4,11 @@ import { PLAN_STORY } from './plan-story'
 describe('public plan story', () => {
   const copy = Object.values(PLAN_STORY).join(' ')
 
-  it('keeps Crew separate from free Space hosting', () => {
-    expect(copy).toContain('Crew is a separate personal membership')
-    expect(copy).not.toMatch(/host free with crew|a space comes with crew/i)
+  // Owner 2026-11-19: "You can start a free space with a Crew account." The Oct 22 ruling (ADR-1818) stands.
+  it('says a Space comes with Crew, and never that Crew is separate from hosting one', () => {
+    expect(copy).toContain('A Space comes with Crew')
+    expect(PLAN_STORY.lines).toBe('People join free. Host free with Crew. You pay when you start charging.')
+    expect(copy).not.toMatch(/separate personal membership|a space is separate from crew/i)
   })
 
   it('keeps selling terms neutral until the Free selling option is live', () => {
