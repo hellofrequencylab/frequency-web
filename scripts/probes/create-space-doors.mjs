@@ -14,7 +14,7 @@ const forDoors = read('lib/funnels/definitions.ts')
 const config = read('next.config.ts')
 
 // /spaces/new still sends signed-out operators to the wizard; signed-in members retain the launch destination.
-if (!/if \(!profileId\) redirect\(createSpaceDoorHref\(params\)\)/.test(page)) bad.push('a signed-out arrival at /spaces/new is not sent to /create-a-space')
+if (!/if \(!profileId\) redirect\(createSpaceDoorHref\(params\)\)/.test(page)) bad.push('a signed-out arrival at /spaces/new is not sent to /launch-your-business')
 if (/\/sign-in\?next=/.test(page)) bad.push('/spaces/new still bounces a visitor to /sign-in')
 if (!/launchHomeHref\(\{ signedIn: true \}\)/.test(page) || !/\/launch\/start/.test(page)) bad.push('a signed-in member no longer lands on the launch')
 
@@ -25,14 +25,14 @@ const doorSet = proxy.match(/CREATE_SPACE_DOORS = new Set\(\[([^\]]*)\]\)/)?.[1]
 for (const route of ['/spaces/new', '/launch']) if (!doorSet.includes(`'${route}'`)) bad.push(`proxy.ts does not send a signed-out ${route} to the wizard`)
 if (doorSet.includes("'/launch/start'")) bad.push('proxy.ts still hops the Free Spotlight buttons to the wizard (owner 2026-11-13: they open the Spotlight builder)')
 if (!/inFlowHref\('\/launch\/step\/spotlight'\)/.test(read('app/(main)/launch/start/route.ts'))) bad.push('a signed-out /launch/start does not open the Spotlight step')
-if (!/CREATE_SPACE_WIZARD = '\/create-a-space'/.test(proxy) || !/!user && CREATE_SPACE_DOORS\.has\(pathname\.replace\(/.test(proxy)) bad.push('proxy.ts does not make the signed-out hop to /create-a-space')
+if (!/CREATE_SPACE_WIZARD = '\/launch-your-business'/.test(proxy) || !/!user && CREATE_SPACE_DOORS\.has\(pathname\.replace\(/.test(proxy)) bad.push('proxy.ts does not make the signed-out hop to /launch-your-business')
 
 // Other operator doors still open the wizard, never the member sign-up.
 const spacesPage = read('components/frequency/site/pages/spaces/frequency-spaces.tsx')
 if (/SITE\.join/.test(spacesPage)) bad.push('the /spaces page still sends an operator to /join')
 if (!/href: ROUTES\.createSpace, label: 'Open your Space'/.test(read('lib/frequency/site-pages.ts'))) bad.push('the Spaces header CTA does not open the wizard')
 if (!/href: SITE\.createSpace, icon: 'space', title: 'Open your Space'/.test(read('components/frequency/site/pages/home/frequency-home.tsx'))) bad.push('the home Open your Space card does not open the wizard')
-if (!/if \(opts\.signedIn === false\) return WIZARD/.test(read('lib/launch/destination.ts')) || !/const WIZARD = '\/create-a-space'/.test(read('lib/launch/destination.ts'))) bad.push('launchHomeHref still sends a visitor to the Spotlight form')
+if (!/if \(opts\.signedIn === false\) return WIZARD/.test(read('lib/launch/destination.ts')) || !/const WIZARD = '\/launch-your-business'/.test(read('lib/launch/destination.ts'))) bad.push('launchHomeHref still sends a visitor to the Spotlight form')
 
 // The operator CTA and /for doors remain Create a Space entry points. The retired /go campaign doors use their closest survivors.
 if (!/OPERATOR_CTA_HREF = "\/spaces\/new"/.test(site)) bad.push('the operator CTA no longer opens /spaces/new')
@@ -40,10 +40,10 @@ if (!/return `\/spaces\/new\?mode=\$\{mode\.type\}:\$\{mode\.variant\}`/.test(fo
 for (const [source, destination] of [
   ['/go/calm-down-fast', '/mindless'],
   ['/go/find-your-people', '/events'],
-  ['/go/host-one-circle', '/create-a-space'],
-  ['/go/bring-your-practice', '/create-a-space'],
-  ['/go/run-it-together', '/create-a-space'],
-  ['/go/:path*', '/create-a-space'],
+  ['/go/host-one-circle', '/launch-your-business'],
+  ['/go/bring-your-practice', '/launch-your-business'],
+  ['/go/run-it-together', '/launch-your-business'],
+  ['/go/:path*', '/launch-your-business'],
 ]) {
   const entry = `{ source: '${source}', destination: '${destination}', permanent: true }`
   if (!config.includes(entry)) bad.push(`${source} must permanently redirect to ${destination}`)

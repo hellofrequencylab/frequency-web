@@ -12,6 +12,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **A host can price a ticket all-in.** Whether guests cover card processing is the seller's choice. Once card processing comes out of ticket sales, one tap in the ticket editor raises a fixed ticket just enough that the host keeps what they typed. Guests see that one price from the first screen, with nothing added at checkout.
+- **Every sale email says which fee rule applied**, the card fee once it applies, and what reaches the payout account.
+
 - **Bring your Spaces into a Collective.** Attach the Spaces you own from Plan and usage. Five are included, with room for more through extra-Space purchases. Member Spaces get Business tools while the Collective is active and keep all their content when detached.
 
 - **Every Space can download its QR code.** QR codes settings includes a stock PNG or SVG that opens the public Space page, including on the free plan.
@@ -48,6 +51,13 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 - **If you run a Space, Home now shows who started and finished your Journeys.** Enrolled, finished, still going, and the finish rate sit next to your profile views. Revenue was already on that same page. A person who starts again still counts as one.
 
 ### Changed
+
+- **Card processing moves to the seller on February 1, 2027.** Until then Frequency covers it on every sale. From that day a sale, membership, ticket, donation or tip carries the standard card fee on the seller's side, including each seller's share of a co-hosted ticket or a cart with more than one seller.
+- **Donations carry a 0% Frequency fee, always.** No finder's fee on a donation, even when Frequency introduced the donor. Card processing still applies.
+- **A new paid ticket, product or Journey costs at least $3.** Below that, most of the sale would go to card processing. Free stays free, a price set before the rule keeps selling, and tips and donations keep their $1 minimum.
+- **On a ticketed event, Going comes with a ticket.** There is no free seat on an event that sells tickets. Hosts and co-hosts can still mark themselves Going.
+- **A paid booking always goes through payment, and a paid membership tier is always joined through checkout.** Neither can be taken as a free confirmation once payments are on.
+- **The main button on a Spotlight profile shows the label you typed** for that link, not its web address.
 
 - **Fees are simpler: your own people cost 0%, and there is one finder's fee.** On a paid Space plan, a customer you brought yourself costs 0%, always, plus card processing. When Frequency introduces a customer, there is one finder's fee: 10%, never more than $20, charged once, on that customer's first purchase. After that they are yours. It is the same on Business, Collective and Network, and it replaces the old fee that changed by plan. Non Profit pays no finder's fee, and a Founding Business keeps its locked 3%. Only a paying account takes money, so selling starts at Business. A free Space takes donations only when its owner is a Crew member. Tips go to Crew members and to people who own a Space on a paid plan, with no platform fee, plus card processing.
 

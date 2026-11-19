@@ -38,3 +38,9 @@ export function fqPlaceholderArt(key: string): string {
   }
   return FQ_PLACEHOLDER_PHOTOS[(h >>> 0) % FQ_PLACEHOLDER_PHOTOS.length]
 }
+
+/** The same photo as `fqPlaceholderArt(key)`, from its 640px copy in photos/sm (30 to 85 KB against 200 to 430 KB),
+ *  for a card that is never wider than about 400px (PERF-017). A page-wide header keeps the full photo. */
+export function fqPlaceholderCardArt(key: string): string {
+  return fqPlaceholderArt(key).replace('/photos/', '/photos/sm/')
+}

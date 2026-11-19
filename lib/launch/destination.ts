@@ -8,7 +8,7 @@
 // makes the same hop for a cold /launch and /launch/start before the member layout runs.
 
 const LAUNCH_HOME = '/launch'
-const WIZARD = '/create-a-space'
+const WIZARD = '/launch-your-business'
 /** The marker a link INSIDE the flow carries, so the Spotlight step can tell "I was sent here by the launch page"
  *  from "I arrived at a step address cold" (which goes to /launch). */
 const IN_FLOW_PARAM = 'go'

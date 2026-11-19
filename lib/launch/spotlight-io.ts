@@ -25,7 +25,7 @@ const HANDLE_TRIES = 4
  *  createSpace ends by redirecting the owner to the Space's setup, which throws; that throw is the signal that it
  *  succeeded, so it is caught here and the Space read back by its handle and checked to be this person's. Any other
  *  throw is not ours to swallow. A returned value is createSpace's own failure line. */
-async function makeSpace(profileId: string, input: CreateSpaceInput): Promise<{ spaceId: string } | { error: string }> {
+export async function makeSpace(profileId: string, input: CreateSpaceInput): Promise<{ spaceId: string } | { error: string }> {
   try {
     const res = await createSpace(input)
     return { error: res && 'error' in res ? res.error : 'We could not make your Space. Try again.' }

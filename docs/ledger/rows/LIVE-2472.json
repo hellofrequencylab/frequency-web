@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2472",
+  "title": "A seller can let guests cover the card fee on sales other than tickets",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "lib/billing/processing-fee.ts",
+    "ref": "Owner 2026-11-19, pricing decision card: guest covers the card fee is the seller's choice (project thread: Rethink our take rates). Timing per owner via the coordinator 2026-11-19: after launch (January 1, 2027), before the card fee pass-through date (February 1, 2027). ADR-1978 item 6. LIVE-2450 shipped the ticket half."
+  },
+  "detail": "ADR-1978 item 6 says a seller may let the guest cover the card fee. Tickets do it with a price (LIVE-2450: allInPriceCents reprices a fixed tier, nothing added at checkout). Shop orders, Space memberships and donations have no way to do it, so from CARD_FEE_PASS_THROUGH_FROM every one of those sales nets the seller the price minus card processing. Work: a per-seller opt-in (unticked by default, the owner's 'else unticked box'), and when it is on each of those checkouts adds guestCoversCardFeeCents(price) from lib/billing/processing-fee.ts to what the buyer pays, shows it as its own line before payment, and leaves the seller the price. Off, or before the pass-through date, nothing changes. Timing: build after launch (January 1, 2027) and ship before February 1, 2027. Help (content/help/spaces/get-paid.md) says other sales do not have this yet; update it in the same PR.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2472.mjs",
+    "note": "Fails until processing-fee.ts exports guestCoversCardFeeCents and the shop, membership and donation checkouts call it."
+  }
+}

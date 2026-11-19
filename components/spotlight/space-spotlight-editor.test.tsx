@@ -37,7 +37,7 @@ afterEach(async () => { await act(async () => root.unmount()); container.remove(
 
 async function mount(seed: BuilderRailData, themes?: { options: { id: string; label: string }[]; current: string }) {
   await act(async () => {
-    root.render(<SpaceSpotlightEditor slug="acme" seed={seed} preview={<div />} initialPublished={false} readOnly={false} themes={themes} />)
+    root.render(<SpaceSpotlightEditor slug="acme" seed={seed} initialPublished={false} readOnly={false} themes={themes} />)
   })
 }
 

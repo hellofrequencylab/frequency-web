@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 const io = vi.hoisted(() => ({ email: vi.fn(), google: vi.fn(), signedIn: vi.fn() }))
-vi.mock('@/app/(marketing)/create-a-space/actions', () => ({ claimWithEmail: io.email, claimWithGoogle: io.google, continueSignedIn: io.signedIn }))
+vi.mock('@/app/(marketing)/launch-your-business/actions', () => ({ claimWithEmail: io.email, claimWithGoogle: io.google, continueSignedIn: io.signedIn }))
 vi.mock('@/lib/create-space/lead', async (original) => ({ ...(await original<object>()), browserZone: () => 'America/Los_Angeles' }))
 import { SaveCard } from './create-space-claim'
 import { DRAFT_KEY, emptyDraft } from '@/lib/create-space/builder'

@@ -50,7 +50,7 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
 
   // Set up before the launch knew their Space: take it, so the page shows what they have, ticked (LIVE-2392).
   launch = await withOwnedSpace(launch, profileId)
-  if (launch.resume?.phase === 'builder' && !launch.spaceId && !launch.cancelledAt && !launch.completedAt) redirect('/create-a-space?new=1')
+  if (launch.resume?.phase === 'builder' && !launch.spaceId && !launch.cancelledAt && !launch.completedAt) redirect('/launch-your-business?new=1')
   const view = resumeView(launch, new Date())
   const justPublished = published === '1'
   const spotlightRef = launch.steps.spotlight?.status === 'published' ? launch.steps.spotlight.ref : undefined
