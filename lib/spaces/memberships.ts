@@ -715,7 +715,7 @@ export async function joinTier(
   const tier = tiers.find((t) => t.id === tierId)
   if (!tier) return fail('That tier is no longer available. Pick another.')
 
-  // SEC-028: a PAID tier is never joined here while billing is live. This action takes no payment, so
+  // SEC-028: a PAID tier is never joined here while billing is live. No payment happens in this action, so
   // the only honest writer of a paid membership is checkout (startSpaceMembershipCheckout and its
   // webhook). The join card used to make that call in the browser alone, so calling this action
   // directly handed anyone a paid tier, its linked Circle and its member benefits for free. While
