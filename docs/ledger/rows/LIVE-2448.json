@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2448",
+  "title": "A new paid ticket or product charges at least $3",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/billing/paid-price-floor.ts",
+    "ref": "Owner 2026-11-19, pricing decision card: \"Yes, $3 minimum\" (project thread: Rethink our take rates). ADR-1978."
+  },
+  "detail": "Under $3 most of a sale is the card fee, and from the pass-through date that fee is the seller's. The floor is PAID_PRICE_MIN_CENTS (300, the same number as the paid membership floor) in lib/billing/paid-price-floor.ts. Every writer asks it: createProduct and updateProduct, upsertVariants, the ticket tier editor (applyTicketTierFloor: a fixed tier at least $3, a new buyer-chosen tier gets a $3 floor when left blank), the Journey sell action, and the admin event flat price. Free stays free; a price stored before the rule keeps selling; tips and donations keep their $1 minimum.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2448.mjs",
+    "note": "Fails unless the $3 floor is one number and every ticket and product price writer asks it."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

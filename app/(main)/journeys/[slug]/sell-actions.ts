@@ -21,6 +21,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createProduct } from '@/lib/commerce/products'
 import { checkJourneySell } from '@/lib/journeys/sell-gate'
 import { getJourneyOffer } from '@/lib/journeys/paid'
+import { sellingPriceError } from '@/lib/billing/paid-price-floor'
 
 /** The most a Journey may be priced at, in cents. A guard against a fat finger turning $444 into
  *  $44,400, not a policy about what a program is worth. */
@@ -62,6 +63,9 @@ export async function setJourneyPriceAction(input: {
   const cents = Math.round(input.priceCents)
   if (!Number.isFinite(cents) || cents <= 0) return fail('Set a price above zero, or take the Journey off sale.')
   if (cents > MAX_PRICE_CENTS) return fail('That price is higher than this platform sells. Check the amount.')
+  // THE $3 FLOOR, asked BEFORE the live offer is archived, so a refused price leaves the old one live.
+  const floor = sellingPriceError(cents, 'item')
+  if (floor) return fail(floor)
 
   const admin = createAdminClient()
   const { data: plan } = await admin
