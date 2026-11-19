@@ -1,0 +1,20 @@
+{
+  "id": "PERF-031",
+  "title": "Pricing, Spaces, The Community, Circles and the course page load every website theme block to draw none",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/page-editor/platform-config.tsx",
+    "ref": "Mega pass 2026-11-19 (backwards test: production script chunks traced to their import chain)"
+  },
+  "detail": "Mega pass 2026-11-19, the half PERF-030 left. The platform's block-rendered marketing pages render a document authored in the editor's marketing palette, which never offers a site-kit block, but rendered it with the whole library (lib/page-editor/config.tsx), so each shipped the 183 KB site-kit client chunk (Wildheart, Temple, Network, Midnight, Designer, Free Human, Mindless, New World, the website role blocks). Fix: lib/page-editor/platform-config.tsx is the same library assembled from the same fragments minus the site kits, the role blocks, and the Space/Spotlight profile and link sets; the shared root render moved to config-root.tsx unchanged so both configs share it; the isWellFormed shape check moved to templates/well-formed.ts (re-exported from templates/index.ts) so a page that needs only the check skips the config. Static import walk: /pricing goes from 49 client modules (327 KB source) to 15 (130 KB). platform-config.test.ts pins that the set draws every block the marketing palette offers and every block in every platform template, and that each block is the same object the full library uses. Measured on prod 2026-11-19: of the platform pages only home has a published document, and it uses only platform blocks. NOT covered: /about and the five seeker articles, whose route modules are loaded by scripts/probes/marketing-seo-current.mjs with a fixed dependency map ('@/lib/page-editor/config', '@/lib/page-editor/templates'), so switching them needs that probe's map extended (owner's call on probe edits).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-031.mjs",
+    "note": "Fails on main: all six pages reach lib/page-editor/config.tsx. Passes when none reaches it or a site-kit block and each renders with platformConfig."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
