@@ -5,10 +5,10 @@ category: spaces
 order: 1
 group: Get set up
 published: 2026-11-18
-updated: 2026-11-18
+updated: 2026-11-19
 audience: member
 featureKeys: [create-space]
-keywords: [open a space, start a business page, new space, set up a studio, space handle, private space, list my business]
+keywords: [open a space, start a business page, new space, space handle, list my business, launch your business, quick builder]
 status: published
 ---
 
@@ -18,7 +18,26 @@ A Space is the home your practice, business or group keeps on Frequency. Creatin
 
 - In the left rail, open **Spaces**, then choose **Create a Space** at the top of the directory.
 - If you already run a Space, **Your Spaces** in the left rail lists them, with **Create a Space** for the next one.
-- Not signed in yet? Start at [Create a Space](/create-a-space). You build first and make your account at the last step.
+- Not signed in yet? Start at [Create a Space](/create-a-space), the quick version below. You build first and make your account at the end.
+
+## Build one in five minutes
+
+[Create a Space](/create-a-space) is the short way in. It asks three things beside a live preview of your Space page: the Space's name and address, whether it is a business or a nonprofit or group, and one line about it. A five-minute clock runs while you build. It is a challenge, not a deadline: past five minutes it counts bonus time and you keep going.
+
+- **Signed in:** press finish and your Space is made right away.
+- **Not signed in:** continue with Google or ask for an email link. Your draft waits while you sign in, then your Space is made.
+
+A free Space comes with Crew. Taking payments needs Business; see [Plans and pricing](/help/spaces/plans-and-pricing).
+
+## Build the rest the same way
+
+Create a Space is one of four short builders. Each works on its own, each ends with a card offering the next one, and **I'm done for now** always sits beside it.
+
+- **[Free Spotlight](/free-spotlight)**, about three minutes: your name, one line and your main link, and your Spotlight goes live. See [Spotlight, your link page](/help/spaces/spotlight).
+- **[Launch Your Website](/launch-your-website)**, about five minutes: a name, a look and a headline. It goes on your newest Space, or a new Space in that look, and opens at your free address. See [Your website](/help/spaces/your-website).
+- **[Email Marketing](/email-marketing)**, about four minutes: who it is from, a subject and the message. It is saved as a draft in your Space's **Marketing** tab and nothing is sent until you send it.
+
+Want all of it in one sitting? **[Launch Your Business](/launch-your-business)** builds your Space, Spotlight, website and bookings in about twelve minutes.
 
 ## Walk the five steps
 

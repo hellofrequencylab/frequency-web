@@ -1,5 +1,6 @@
 import type { Data } from '@/lib/page-editor/types'
 import { config } from '@/lib/page-editor/config'
+import { isWellFormed } from './well-formed'
 import { data as home } from './home'
 import { data as about } from './about'
 import { data as spaces } from './spaces'
@@ -71,16 +72,8 @@ export function getTemplate(slug: string): Data | null {
 // The set of block keys the current config knows how to render.
 const KNOWN_BLOCKS = new Set(Object.keys(config.components))
 
-// A document is WELL-FORMED if it has content and every entry names a type. It says
-// NOTHING about whether those types are still known — that is the renderer's problem,
-// not the loader's. Use this anywhere discarding the document would lose an author's
-// work: <BlockRender> already skips an item it cannot resolve (block-render.tsx), so an
-// unknown block costs one section, never the page.
-export function isWellFormed(data: unknown): data is Data {
-  const content = (data as Data | null)?.content
-  if (!Array.isArray(content) || content.length === 0) return false
-  return content.every((b) => typeof b?.type === 'string')
-}
+// isWellFormed lives in ./well-formed (config-free, PERF-031) and is re-exported here unchanged.
+export { isWellFormed }
 
 // The types in a document that no longer resolve to a component. Used by isFullyKnown,
 // and intended for the doc-safety corpus in docs/EDITOR-GATES.md. NOTE: the editor's
