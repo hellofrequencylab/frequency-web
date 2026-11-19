@@ -20,6 +20,17 @@ const DISALLOW = [
   // the composer's own query forms (?circle=, ?space=, ?duplicate=) out of the index.
   "/events/new$",
   "/events/new?",
+  // THE FILTER COMBINATIONS (SCAN-1273). /events and /discover/spaces carry their filters in the
+  // query string, as plain links: category x date x energy x format x price x sort on one, subject x
+  // sort x page on the other. Every combination is the same listing re-sorted, canonical to the
+  // bare path, but a crawler has to FETCH each one to learn that. Measured on production
+  // 2026-11-19: of 3,000 URLs a link-following crawl reached, 958 were /events filter views and 68
+  // were /discover/spaces ones, a third of the crawl spent on pages that can never be indexed.
+  // The trailing `?` walls the query forms only. The bare listings stay crawlable, and so does
+  // everything beneath them (/events/<slug>, /discover/spaces/<type>): each event and Space is
+  // reached through app/sitemap.ts and the city and category hubs, not through a filter.
+  "/events?",
+  "/discover/spaces?",
   // App-shell TWINS of canonical /discover surfaces — these pages canonical to
   // /discover/journeys (and /partners to /discover/spaces), so keep crawlers off the twins to stop them cannibalizing
   // the canonicals. (/discover/* is NOT disallowed.) NOTE: the four marketplace indexes —
