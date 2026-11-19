@@ -46,9 +46,9 @@ const DOORS: Door[] = [
 ]
 
 const SESSIONS: Offering[] = [
-  { name: 'Breath for birth', minutes: 180, price: null, photo: 'light-honey-spoon' },
-  { name: 'Postpartum restoration', minutes: 90, price: null, photo: 'fq-boc-beach-yoga' },
-  { name: 'Floor play with littles', minutes: 60, price: null, photo: 'fq-boc-craft-table' },
+  { name: 'Name the workshop', minutes: 90, price: null, photo: 'light-honey-spoon' },
+  { name: 'Name the next one', minutes: 60, price: null, photo: 'fq-boc-beach-yoga' },
+  { name: 'Name one more', minutes: 60, price: null, photo: 'fq-boc-craft-table' },
 ]
 
 const DATES: DateRow[] = [
@@ -72,10 +72,12 @@ export function freeHumanSpotlightContent(profile: string, opts: { name?: string
     name: opts.name ?? 'Your Circle',
     descriptor: 'Movement · Ritual · The village',
     hero: {
-      eyebrow: 'A year-round practice',
-      title: 'Move like the woman who',
-      em: 'made a world.',
-      body: 'A practice for women who are creating life, birthing it, and raising it. Old wisdom, practiced in a modern body.',
+      // Coaching copy, the same line the Honey website Home opens on (owner 2026-11-18: "Make every Frequency theme FULLY generic
+      // with copy that coaches them what to write").
+      eyebrow: 'Name what is opening next',
+      title: 'Say what you help people',
+      em: 'feel or do.',
+      body: 'Name who this is for and the thing they are missing. Two sentences is plenty.',
       photo: opts.photo ?? freeHumanPhotoSrc('fq-boc-circle-sunset'),
       pos: '50% 20%',
     },
