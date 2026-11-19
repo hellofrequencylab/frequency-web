@@ -74,17 +74,46 @@ export async function suppress(email: string, reason: string, spaceId?: string):
   if (existing.error) throw new Error(existing.error.message)
   const rows = existing.data ?? []
   const wanted = spaceId ?? null
-  if (rows.some((r) => r.space_id === wanted)) return
+  if (rows.some((r) => r.space_id === wanted)) {
+    await markContactOptedOut(addr, reason, spaceId)
+    return
+  }
 
   const { error } = await db()
     .from('email_suppressions')
     .insert({ email: addr, reason, ...(spaceId ? { space_id: spaceId } : {}) })
-  if (!error) return
   // A unique-index race (23505: the row was inserted concurrently) is the one expected failure,
   // and the row we wanted now exists, so returning keeps suppress() idempotent. Anything else
   // (a connection blip, a permission error) means NO row landed and the caller must know.
-  if (error.code === '23505') return
-  throw new Error(error.message)
+  if (error && error.code !== '23505') throw new Error(error.message)
+  await markContactOptedOut(addr, reason, spaceId)
+}
+
+/** EMAIL-083: suppression reasons that mean the PERSON said no (not that the address is undeliverable). */
+export const OPT_OUT_REASONS: ReadonlySet<string> = new Set(['unsubscribe', 'complaint', 'flowweb_declined'])
+
+/**
+ * EMAIL-083: an unsubscribe, spam complaint or decline also marks the matching contact rows
+ * consent_state='unsubscribed', so audience counts are right and no path that reads only the contact record
+ * can mail them. Scoped like the suppression: a Space-scoped opt-out touches that Space's contacts, a global
+ * one touches every contact with the address. A bounce is undeliverable, not a refusal, so it does not change
+ * consent. BEST EFFORT: the suppression row (what every send checks) has already landed, so a failure here is
+ * logged and never fails the caller (the Resend webhook would otherwise redeliver forever).
+ */
+export async function markContactOptedOut(email: string, reason: string, spaceId?: string): Promise<void> {
+  if (!OPT_OUT_REASONS.has(reason)) return
+  try {
+    let q = db()
+      .from('contacts')
+      .update({ consent_state: 'unsubscribed' })
+      .eq('email', norm(email))
+      .neq('consent_state', 'unsubscribed')
+    if (spaceId) q = q.eq('space_id', spaceId)
+    const { error } = await q
+    if (error) console.error('[suppression] contact opt-out sync failed', error.message)
+  } catch (err) {
+    console.error('[suppression] contact opt-out sync failed', err instanceof Error ? err.message : String(err))
+  }
 }
 
 /**
