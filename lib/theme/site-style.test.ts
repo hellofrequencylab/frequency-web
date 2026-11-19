@@ -38,7 +38,7 @@ describe('the site style', () => {
     expect(prefs.siteStyle).toEqual({ theme: 'frequency', synced: true, spaceFonts: 'classic' })
   })
 
-  it('offers the ten themes New World, Designer, Bold, Wildheart, Network, Temple, Nocturne, Honey (Free Human), Services and CyberWitch, New World first and Designer second (owner 2026-11-04, Pin 9; Services and CyberWitch offered 2026-11-04; Free Human offered 2026-11-18, owner: "Make sure Free Human Movement is in the theme library as well as Mindless"; Mindless waits on its pictures; the Temple Theme Kit is the Temple), each with its own default fonts; Default is no longer offered (owner 2026-11-03)', () => {
+  it('offers the eleven themes New World, Designer, Bold, Wildheart, Network, Temple, Nocturne, Honey (Free Human), Services, CyberWitch and Mindless, New World first and Designer second (owner 2026-11-04, Pin 9; Services and CyberWitch offered 2026-11-04; Free Human offered 2026-11-18, owner: "Make sure Free Human Movement is in the theme library as well as Mindless"; Mindless offered 2026-11-19, owner: "use frequency pics in the mindless them."; the Temple Theme Kit is the Temple), each with its own default fonts; Default is no longer offered (owner 2026-11-03)', () => {
     expect(SITE_THEMES.map((t) => [t.id, t.label, t.defaultFonts])).toEqual([
       ['new-world', 'New World', 'modern'],
       ['designer', 'Designer', 'classic'],
@@ -50,6 +50,7 @@ describe('the site style', () => {
       ['free-human', 'Honey', 'classic'],
       ['services', 'Services', 'modern'],
       ['cyberwitch', 'CyberWitch', 'classic'],
+      ['mindless', 'Mindless', 'modern'],
     ])
     // The earlier network theme is worn by live sites but offered nowhere; it still resolves and renders.
     expect(SITE_THEMES.some((t) => t.id === 'network')).toBe(false)

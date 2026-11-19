@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2407",
+  "title": "Mindless is in the theme library and the pickers, wearing Frequency's own photos",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-19",
+  "source": {
+    "file": "docs/THEME-COHESION.md",
+    "ref": "Daniel 2026-11-19: \"use frequency pics in the mindless them.\" Earlier, 2026-11-18: \"Make sure Free Human Movement is in the theme library as well as Mindless.\""
+  },
+  "detail": "LIVE-2358 offered Honey and held Mindless back until the owner supplied Mindless pictures. The owner ruled the theme wears Frequency's photos instead, the way Honey does. Its library (public/sites/mindless/photos) is already sixteen Frequency gathering photos in the design's paint treatment (ink mono, plus the hero, circle and guide shots in Yellow, Pink and Blue), so no picture changes. This row takes Mindless out of RETIRED_FROM_PICKERS, adds its catalog entry and regenerates its manifest, so the site theme picker, the editor, the create-a-space look step and the theme library offer it. /themes/mindless leaves noindex and joins the sitemap. The four-parts guard (LIVE-2370) now holds Mindless to all four parts, and the theme-list pins are updated on the owner's words. Left for its own row: the Mindless starter kits still carry the Mindless brand's own words (the template scrub the other themes had), and the /themes showcase page has no Mindless or Honey section because that page is a port of the nine-kit design.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/themes/LIVE-2407.mjs"
+  },
+  "wave": "W7"
+}

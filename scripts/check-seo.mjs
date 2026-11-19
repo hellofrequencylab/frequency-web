@@ -94,8 +94,6 @@ export function siteName(src) {
 // A route that redirects from next.config never reaches this scanner at all, which is the point —
 // there is no page to hold metadata, so there is nothing to exclude.
 const INTENTIONALLY_EXCLUDED = new Map([
-  // HIDDEN THEME (LIVE-2311): Mindless is registered but not offered in the pickers yet, so its page is noindex. Moves to app/sitemap.ts when offered.
-  ['/themes/mindless', 'robots noindex while the Mindless theme is not offered in the pickers (LIVE-2311)'],
   ['/start/host', 'robots noindex (LIVE-2233): the host invite landing FlowWeb links to one to one, like /start/<flow>'],
   ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
   // LINK-ONLY partner pages (owner 2026-11-17, like /how): shared by link, never in search (lib/seo/link-only.ts).
