@@ -1,0 +1,20 @@
+{
+  "id": "SEC-029",
+  "title": "Stop the free booking action from skipping a service deposit",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "deepest site audit 2026-11-19 (money paths)"
+  },
+  "detail": "Deep audit 2026-11-19. createBooking (a public server action, the free confirm-only path) took any serviceTypeId and placed a CONFIRMED booking through validateAndPlaceBooking. The deposit path (startServiceDeposit: hold, then commerce checkout, then the settle webhook confirms) is chosen only by the booking widget in the browser, so a direct call with a paid service's id booked it with nothing paid once deposits go live. The guest door (createGuestBooking) already refused this; the member door did not. Fix: createBooking refuses a service with a linked product while bookingDepositsLive() is true. Free services and the dark period are unchanged. Live today: deposits are dark (bookingDepositsLive false), so no booking was taken this way; this closes it before payments turn on.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SEC-029.mjs",
+    "note": "Fails on main: createBooking places a booking with no deposit refusal. Passes when the refusal guards the placement."
+  },
+  "closed": "2026-11-19"
+}
