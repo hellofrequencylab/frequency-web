@@ -22,7 +22,7 @@ import type { UpgradeOffer, UpgradeTarget } from '@/lib/pricing/business-offer'
 //    (startSpaceLoadoutCheckout + CheckoutPanel), only for the Space's owner. A hosted fallback opens
 //    in a NEW TAB, so the form behind the panel is never navigated away from.
 //  - KEEP IT FREE, with equal weight: the same size and the same prominence as the trial, because it is
-//    a real answer (keep the Space free, with donations and tips while its owner has Crew), not a consolation link.
+//    a real answer (tips stay open at no fee on every plan), not a consolation link.
 //  - THE DRAFT IS NEVER LOST. The panel never submits, clears or navigates the host's form; it hands
 //    back `onKeepFree` (the form flips its price to free) and `onUpgraded` (the form may save again).
 //  - ONE GENERIC EVENT, `pricing.upgrade_moment`, with the surface and the choice only. Nothing about

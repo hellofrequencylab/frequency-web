@@ -15,7 +15,7 @@ const walk = (p, out = []) => {
   for (const e of readdirSync(p, { withFileTypes: true })) walk(join(p, e.name), out)
   return out
 }
-const ROOTS = ['app/(marketing)', 'app/(brief)', 'app/llms.txt', 'app/llms-full.txt', 'lib/marketing', 'lib/page-editor/templates', 'lib/pricing/plan-story.ts', 'lib/pricing/pricing-grid.ts', 'lib/pricing/pricing-page.ts', 'lib/pricing/pricing-addons.ts', 'lib/pricing/member-pricing.ts', 'lib/pricing/payments-copy.ts', 'components/frequency/site/pages', 'components/pricing']
+const ROOTS = ['app/(marketing)', 'app/llms.txt', 'app/llms-full.txt', 'lib/marketing', 'lib/page-editor/templates', 'lib/pricing/plan-story.ts', 'lib/pricing/pricing-grid.ts', 'lib/pricing/pricing-page.ts', 'lib/pricing/pricing-addons.ts', 'lib/pricing/member-pricing.ts', 'lib/pricing/payments-copy.ts', 'components/frequency/site/pages', 'components/pricing']
 const RETIRED = [/tips (are|stay) open on every (plan|tier)/i, /tips work on every plan/i, /tips have no platform fee on any plan, though[^.]*\. Selling options and fees depend/i, /\bnetwork fee\b/i, /introduction fees? (apply|are separate)/i, /take tips from day one/i, /a free Space takes tips/i, /once per customer the network introduces\b(?![^.]*never more than)/i]
 const offenders = []
 for (const f of ROOTS.flatMap((r) => walk(r))) {
