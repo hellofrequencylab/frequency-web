@@ -69,7 +69,7 @@ import { useSaveOnChange, useTimerSettings } from './use-timer-settings'
 import { takeUnlockedAudio } from '@/lib/on-air/timer-audio-unlock'
 import { createAmbient, type AmbientHandle } from '@/lib/on-air-ambient'
 import { liveDepthCue } from '@/lib/practices/tiers'
-import { LiveStage, type LiveState } from './live-stage'
+import { LiveStage, StageNotice, type LiveState } from './live-stage'
 import { Reveal } from './reveal'
 import { MindlessMasthead } from './mode-toggle'
 import type { TimerMode } from './mindless'
@@ -1372,7 +1372,7 @@ export function OnAirSession({
             <p className="mt-1 text-meta text-muted">Full sit, full reward. Nice work.</p>
           </div>
         )}
-        <Reveal payload={payload} onClose={closeReveal} onAction={onLeaveViaLink ?? onExit} />
+        <Reveal payload={payload} mode="still" onClose={closeReveal} onAction={onLeaveViaLink ?? onExit} />
       </Overlay>
     )
   }
@@ -1380,10 +1380,7 @@ export function OnAirSession({
   if (stage === 'saving') {
     return (
       <Overlay>
-      <CenterScreen>
-        <OnAirIcon className="h-8 w-8 animate-pulse text-primary" />
-        <p className="text-body-sm font-medium text-muted">Tuning back in. Counting it up…</p>
-      </CenterScreen>
+        <StageNotice mode="still" tone="working" title="Counting it up" body="Tuning back in." />
       </Overlay>
     )
   }
@@ -1391,21 +1388,22 @@ export function OnAirSession({
   if (stage === 'error') {
     return (
       <Overlay>
-      <CenterScreen>
-        <p className="text-body-sm font-medium text-text">That didn’t save. Your sit still happened.</p>
-        <Button
-          type="button"
-          onClick={() => {
-            // Replay the failed attempt's exact args (real seconds + started_at) so the timer-proof
-            // passes; fall back to a live recompute only if none was captured.
-            const a = lastFinishArgs.current
-            if (a) void finishWith(a.seconds, a.startedIso, a.practiceIdOverride, a.modeOverride, a.attended)
-            else void finishWith(Math.round((Date.now() - startedAt) / 1000), new Date(startedAt).toISOString())
+        <StageNotice
+          mode="still"
+          tone="problem"
+          title="That didn’t save."
+          body="Your sit still happened."
+          action={{
+            label: 'Try again',
+            onClick: () => {
+              // Replay the failed attempt's exact args (real seconds + started_at) so the timer-proof
+              // passes; fall back to a live recompute only if none was captured.
+              const a = lastFinishArgs.current
+              if (a) void finishWith(a.seconds, a.startedIso, a.practiceIdOverride, a.modeOverride, a.attended)
+              else void finishWith(Math.round((Date.now() - startedAt) / 1000), new Date(startedAt).toISOString())
+            },
           }}
-        >
-          Try again
-        </Button>
-      </CenterScreen>
+        />
       </Overlay>
     )
   }
@@ -2224,11 +2222,5 @@ function PhaseSlider({
         className="w-full accent-primary"
       />
     </label>
-  )
-}
-
-function CenterScreen({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">{children}</div>
   )
 }

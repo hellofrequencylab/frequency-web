@@ -54,6 +54,7 @@ import {
   type TimerSettingsPatch,
 } from '@/lib/on-air/timer-settings'
 import { useTimerSettings } from './use-timer-settings'
+import { RoomWash, useDoneBy } from './stage-room'
 import { Keycap, Segmented, Tiles } from './door/door-section'
 import { SoundAndFeel, useDoorAudio, type CueScope } from './door/cue-sections'
 import { BreathWebSection, NoteField, StillSections } from './door/still-sections'
@@ -436,6 +437,10 @@ export function CompactSetup({
   const tabOn: Record<TimerMode, string> = { still: 'bg-primary text-on-primary lift-2', move: 'bg-move text-on-move lift-2' }
   const orbFill = mode === 'move' ? 'radial-gradient(circle at 35% 30%, var(--color-surface) 0, var(--color-presence-bg) 34%, color-mix(in oklab, var(--color-move) 45%, var(--color-surface)) 100%)' : 'var(--design-practice-orb)'
 
+  // The same room as the running screen (LIVE-2395): the orb's light behind the door, and when this
+  // session would land if it started now, so "can I fit this in" is answered before Start.
+  const doneBy = useDoneBy(logOnly || openCount || invalid ? null : settings.cues.warmupSec + (continuing ? remainingMin * 60 : plan ? plan.total : (valid ? minutes : settings.still.minutes) * 60))
+
   const goButton = (size: 'sheet' | 'web') => (
     <button
       type="button"
@@ -479,6 +484,7 @@ export function CompactSetup({
   if (web) {
     return (
       <div className="fixed inset-0 z-50 overflow-y-auto bg-canvas">
+        <RoomWash fill={orbFill} />
         <div className="flex min-h-dvh items-center justify-center bg-surface-elevated/55 p-8">
           <div ref={panel} role="dialog" aria-modal="true" aria-label="Mindless timer setup" tabIndex={-1} className="flex h-[min(780px,calc(100dvh-64px))] w-full max-w-265 flex-col overflow-hidden rounded-[28px] bg-surface ring-1 ring-inset ring-border lift-3 outline-none">
             <header className="flex h-17 shrink-0 items-center gap-9 border-b border-border pl-7 pr-5">
@@ -593,7 +599,7 @@ export function CompactSetup({
               </main>
             </div>
             <footer className="flex shrink-0 items-center gap-4 border-t border-border bg-surface py-4 pl-7 pr-5">
-              <span className="min-w-0 flex-1 text-body-sm text-muted">{summary}</span>
+              <span className="min-w-0 flex-1 text-body-sm text-muted">{summary}{doneBy && <span className="tabular-nums"> Done by {doneBy}.</span>}</span>
               <button type="button" onClick={onClose} className="h-12 rounded-pill px-5 text-body-sm font-semibold text-text ring-1 ring-inset ring-border-strong">Cancel</button>
               {goButton('web')}
             </footer>
@@ -607,6 +613,7 @@ export function CompactSetup({
   const pickerField = (open: boolean) => `flex h-14 min-w-0 items-center gap-2 rounded-[16px] bg-surface pl-3.5 pr-3 text-left ${open ? 'ring-[1.5px] ring-inset ring-text' : 'ring-1 ring-inset ring-border lift-1'}`
   return (
     <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="fixed inset-0 z-50 overflow-y-auto bg-canvas outline-none">
+      <RoomWash fill={orbFill} />
       <div className="mx-auto flex min-h-dvh w-full max-w-120 flex-col px-5">
         <div className="flex items-center justify-between pt-[max(14px,env(safe-area-inset-top))]">
           <span id={titleId} className="eyebrow flex items-center gap-2.5 text-text">
@@ -641,6 +648,10 @@ export function CompactSetup({
             </button>
             <div className="relative flex h-41 w-41 items-center justify-center">
               <span className="fq-breathe absolute -inset-[8%] rounded-pill opacity-50 blur-[22px] motion-reduce:animate-none" aria-hidden style={{ background: orbFill }} />
+              {/* The clock face the running screen fills: the same thin ring, empty until Start. */}
+              <svg viewBox="0 0 200 200" className="absolute -inset-[7%] text-border" aria-hidden>
+                <circle cx="100" cy="100" r="98" fill="none" strokeWidth="1.5" className="stroke-current" />
+              </svg>
               <span className="fq-breathe absolute inset-0 rounded-pill ring-1 ring-inset ring-surface/70 motion-reduce:animate-none" aria-hidden style={{ background: orbFill }} />
               {/* The number sits on the pale orb in both day and night, so it reads in the fixed ink. */}
               <div className="relative flex flex-col items-center gap-1.5 text-ink">
@@ -664,6 +675,7 @@ export function CompactSetup({
               {orbLine.text}
             </p>
           )}
+          {doneBy && <p className="m-0 text-meta tabular-nums text-muted">Done by {doneBy}</p>}
           {mode === 'still' && stillMode === 'log' && <NoteField value={note} onChange={setNote} variant="sheet" />}
         </div>
 

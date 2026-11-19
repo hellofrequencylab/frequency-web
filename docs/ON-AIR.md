@@ -161,6 +161,12 @@ countdown (below).
   Get Moving) side by side. After six idle seconds of a RUNNING session the chrome dims so only
   the orb is lit; any pointer, key or focus restores it, and it never dims while paused. Space
   presses the primary unless the member is typing. Motion honours prefers-reduced-motion.
+- **One room (LIVE-2395).** The door, the save, a failed save and the reveal share the running
+  screen's light and orb. `components/on-air/stage-room.tsx` holds the shared pieces (`RoomWash`,
+  `useDoneBy`) and must not import `live-stage.tsx`: the door imports it. The save and a failed
+  save are `StageNotice` (the orb with a turning ring, or dimmed with Try again). The reveal takes
+  `mode` and follows that timer's accent; its one-screen budget is unchanged. The door says
+  "Done by 6:42 pm" for any timed session.
 - **Be Still always offers a Begin (ADR-567).** If the door resolves a **log-only** practice
   (`timer_kind = 'none'`), the Be Still setup still lets the member start a real sit: picking
   any timed mode runs the **Free Practice** fallback (`lib/on-air/free-sit.ts`
