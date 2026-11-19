@@ -311,3 +311,31 @@ Three things to know:
 All eight Checkout Session creators now route through the seam in §2. `LIVE-359`'s probe is the list to trust. The remaining risk is not a missing form, it is a renamed metadata key.
 
 Crew is the one creator that must emit **no** `kind`: the member-entitlement allowlist is `mode === 'subscription' && !metadata.kind` (SCAN-541). The Space plan and household bundle stamp `kind` on both the session and `subscription_data.metadata`, because `lib/billing/space-subscriptions.ts` and `lib/billing/bundle-seats.ts` read those keys to grant access. A dropped or reshaped key there does not fail a build. It silently stops granting access to someone who paid. The round-trip tests in `lib/billing/membership-metadata-roundtrip.test.ts` and `lib/billing/subscription-onpage.test.ts` are the gate.
+
+---
+
+## 9. The price and fee rules every creator follows
+
+These are owner rulings ([ADR-1978](DECISIONS.md), 2026-11-18 and 2026-11-19). Each lives in one
+module; a creator asks it and never restates the number.
+
+- **The $3 floor.** A new paid ticket tier, product, variant, Journey price or admin event price asks
+  `sellingPriceError()` in `lib/billing/paid-price-floor.ts` (`PAID_PRICE_MIN_CENTS`, LIVE-2448). Free
+  stays free, a price stored before the rule keeps selling, tips and donations keep their $1 minimum.
+- **The card fee.** Priced once in `lib/billing/processing-fee.ts` and switched on by an effective
+  date, `CARD_FEE_PASS_THROUGH_FROM`, read by `lib/billing/card-fee.ts` (`cardFeeCentsAt`,
+  `sellerFeesAt`). The application fee is Frequency's fee plus the card fee; `platform_fee_cents` stays
+  Frequency's fee alone. A split order carries each share's part in
+  `commerce_order_transfers.processing_fee_cents` (LIVE-2421). The owner's date is February 1, 2027;
+  the gate is in [RUNBOOKS](RUNBOOKS.md#card-fee-pass-through).
+- **Guest covers the card fee is the seller's choice.** For tickets it is a price, not a flag:
+  `allInPriceCents()` reprices a fixed tier so the host keeps what they typed, and checkout adds
+  nothing (LIVE-2450). There is no opt-in for other sales yet.
+- **Donations carry no finder's fee.** `DONATION_FINDERS_FEE_CENTS` is 0 whoever the donor is
+  (LIVE-2449); the card fee still passes through from the date.
+- **The server decides what is paid, never the browser.** The free door of a paid thing refuses on
+  its own: `createBooking` refuses a service with a linked product while `bookingDepositsLive()` is
+  true (SEC-029), `joinTier` refuses a paid membership tier while billing is live (SEC-028), and the
+  `trg_b_event_rsvps_ticket_seat` trigger refuses a member's own Going or waitlist row on a ticketed
+  event unless a ticket linked it or the member hosts (SEC-027). A new free door beside a paid one
+  needs the same server-side refusal.
