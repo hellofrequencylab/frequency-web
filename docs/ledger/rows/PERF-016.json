@@ -1,0 +1,20 @@
+{
+  "id": "PERF-016",
+  "title": "/themes is slow on a phone and its filter bar covers half the screen",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/site/pages/themes/kit-showcase/kit-showcase.tsx",
+    "ref": "Owner report 2026-11-19 (project thread: Speed up /themes on mobile): \"The /themes page loads super slow on mobile, and we need to minimize that menu on scroll for a fuller screen.\""
+  },
+  "detail": "On a phone /themes held its first paint on a third-party stylesheet naming 21 font families (rendered as a blocking <link precedence>), then pulled ten full-size screenshots (615 KB) for a device cloud about 350px wide, and every kit section below did the same. The sticky filter bar (look, register, ready, your site, kit chips) wraps to five rows under 900px, about half the screen, and the returning site header covered its top. Fix: half-width .sm.webp copies of every showcase picture (scripts/render/theme-showcase-small.mjs, #5352), served under 900px through st.ts and a CSS variable so desktop keeps the full files; the kit font sheet loads after hydration with preconnects; the bar folds to its kit row on scroll down and comes back on scroll up (use-kit-bar.ts, same 6px rule as the site header), sitting under the header via --fq-site-nav-h.\n\nDONE 2026-11-19: phone pictures (#5352), the kit font sheet loads after the page, and the filter bar folds to its kit row on scroll down and returns under the site header on scroll up. Checked locally at 390, 1280, 1440, 1920 and 2000.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-016.mjs",
+    "note": "Passes while phones get the .sm.webp copies, the kit font sheet does not block paint and the bar folds. Fails on main at 0504e3c6."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
