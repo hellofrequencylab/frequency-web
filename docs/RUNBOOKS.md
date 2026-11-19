@@ -1061,6 +1061,25 @@ Check: GA4 Admin, DebugView or Realtime shows `sign_up` after a fresh signup in 
 **Off:** blank the variable; held sends go out on their next run.
 
 
+## Card fee pass-through
+
+`CARD_FEE_PASS_THROUGH_FROM` (LIVE-2420, owner ruling 2026-11-18, [ADR-1978](DECISIONS.md)). Every seller checkout is a Stripe destination charge, so Stripe takes its card fee from Frequency's balance, not the seller's. Blank: the application fee is Frequency's fee alone, as before, and Frequency pays the card fee on every sale. Set to a full ISO timestamp with a zone (`2027-02-01T08:00:00Z`): from that instant tickets, shop orders, memberships, donations and tips add the standard card rate (2.9% + 30c, `lib/billing/processing-fee.ts`) to the application fee, and the sale and tip emails state the card fee and what reaches the seller. `platform_fee_cents` stays Frequency's fee only. Anything that is not a full timestamp with a zone (`1`, `true`, a bare date) reads as off.
+
+It is an effective date, not a switch, so a later reader can tell what a past sale carried from its amount and its time (`sellerFeesAt` in `lib/billing/card-fee.ts`) with no new column.
+
+**Gate before setting it:**
+1. The owner has named the date, and sellers were told ahead of it (the pricing and help copy already says card processing is the seller's).
+2. LIVE-2421 is done: a split order (a co-hosted ticket, a cart with more than one seller) still leaves the card fee with Frequency until the transfer ledger can carry it.
+3. LIVE-2422 is done: the earnings views subtract the card fee, so a seller's net on screen matches their payout.
+4. With the date set on a preview deployment and a Stripe test key, a $25 ticket to a 0% Space shows an application fee of $1.03 on the payment in Stripe, and the sale email reads "The card fee was $1.03, so $23.97 goes to your payout account."
+
+**Set it once.** Moving the date after a sale was made on the new terms makes that sale read as if it carried a different fee than Stripe collected. To stop the pass-through after it started, do not blank it: ask for a code change that adds an end date.
+
+**Watch:** in Stripe, a payment's application fee is Frequency's fee plus the card fee. A refund returns the whole application fee, so Frequency still absorbs the card fee on a refunded sale. The standard rate is what is charged; an international card or a pay-later method costs Frequency more than it collects.
+
+**Off (before any sale on the new terms):** blank the variable.
+
+
 ## Campaign broadcasts
 
 `EMAIL_BROADCASTS_ENABLED` (EMAIL-076, owner ruling 2026-11-18). The Resend team is on Transactional Free (100 emails a day) and Marketing Pro (unlimited broadcasts, 5,000 contacts). Off: an Email Studio campaign queues one outbox email per person and spends the daily allowance (EMAIL-060 parks it at the limit). On: `sendCampaignNow` runs the same send gate, then `sendCampaignAsBroadcast` (`lib/email-studio/broadcast.ts`) makes a Resend segment named `campaign:<id>`, imports the allowed people into it (CSV upsert, `manage_url` contact property), waits for the import and sends one broadcast. Conversation-mode campaigns and the quiet-member trigger stay on the outbox. A broadcast named for the campaign already existing means a re-run sends nothing new.

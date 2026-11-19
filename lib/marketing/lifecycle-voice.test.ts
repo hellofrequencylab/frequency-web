@@ -78,6 +78,10 @@ it('tip messages separate platform fees, processing and bank payout management, 
   for (const part of [plain(html), text]) { expect(part).toContain('$5.00'); expect(part).toContain('no platform fee on tips'); expect(part).toContain('Card processing still applies'); expect(part).toContain('Stripe manages payouts to your bank'); expect(part).not.toContain('The full amount goes') }
   expect(html).toContain('&lt;Sam&gt;'); expect(html).toContain('Ana &amp; Bo'); expect(text).toContain('<Sam>'); record('tip', html, text)
 })
+it('a tip that carried the card fee names the fee and what is left, in both renderings', () => {
+  const p = { recipientName: 'Ana', tipperName: 'Sam', amount: '$10.00', note: null, cardFee: '$0.59', net: '$9.41' }, html = tipEmailHtml(p), text = tipEmailText(p)
+  for (const part of [plain(html), text]) { expect(part).toContain('no platform fee on tips'); expect(part).toContain('The card fee on this one was $0.59, so $9.41 goes to your payout account'); expect(part).toContain('Stripe manages payouts to your bank'); expect(part).not.toContain('Card processing still applies') }
+})
 it('actual preference center says automatic without an instantaneous-save promise', () => {
   const html = renderToStaticMarkup(createElement(ManageEmailsForm, { profileId: 'fixture', token: 'fixture', tokenCategory: 'lifecycle', initial: [{ category: 'lifecycle', subscribed: true }] }))
   expect(plain(html)).toContain('Changes save automatically'); expect(plain(html)).not.toMatch(/instantly|right away/); expect(html).toContain('aria-label="Updates and messages"'); record('preferences', html, plain(html))

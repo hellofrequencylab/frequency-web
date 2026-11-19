@@ -141,6 +141,22 @@ describe('the sentences', () => {
     expect(payoutSentence({ feeLabel: '$0', feeIsZero: true })).toContain('Frequency took nothing on this sale')
   })
 
+  it('names the card fee and what is left once the pass-through is on', () => {
+    // Owner ruling 2026-11-18: the seller bears the card fee, and every sale email says so in
+    // figures. Frequency's fee and the card fee are stated apart, never added into one number.
+    const own = payoutSentence({ feeLabel: '$0', feeIsZero: true, cardFeeLabel: '$1.03', netLabel: '$23.97' })
+    expect(own).toBe(
+      'Frequency took nothing on this sale. The card fee was $1.03, so $23.97 goes to your payout account. Check the payment and payout status in your connected payout account.',
+    )
+    const introduced = payoutSentence({ feeLabel: '$2.50', feeIsZero: false, cardFeeLabel: '$1.03', netLabel: '$21.47' })
+    expect(introduced).toContain("Frequency's fee on this sale was $2.50. The card fee was $1.03, so $21.47 goes to your payout account.")
+    expect(introduced).not.toMatch(/Stripe|Connect/)
+    // A sale made before the pass-through carries no card fee and reads exactly as it always did.
+    expect(payoutSentence({ feeLabel: '$0', feeIsZero: true, cardFeeLabel: null, netLabel: null })).toBe(
+      payoutSentence({ feeLabel: '$0', feeIsZero: true }),
+    )
+  })
+
   it('states the overage with both numbers and something to do about it', () => {
     expect(overageLine({ over_capacity: false, tier_quantity: 12, tier_committed: 11, qty: 2 })).toBeNull()
     const line = overageLine({ over_capacity: true, tier_quantity: 12, tier_committed: 11, qty: 2 })

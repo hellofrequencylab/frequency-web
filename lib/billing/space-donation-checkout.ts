@@ -29,6 +29,7 @@ import { stripe, appUrl } from './stripe'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { getConnectStatus, payoutsLive } from './connect'
 import { spaceTakeRateCents } from './fees'
+import { sellerFeesNow } from './card-fee'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { spacePaymentsVerdict } from '@/lib/pricing/payments-gate'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
@@ -208,9 +209,11 @@ export async function createSpaceDonationCheckout(opts: {
           },
         },
       ],
-      // Connect destination charge: the fee stays with the platform, the rest transfers to the owner.
+      // Connect destination charge: the application fee stays with the platform, the rest transfers
+      // to the owner. It is Frequency's fee plus the card fee once the pass-through is on
+      // (./card-fee.ts); `platform_fee_cents` on the row stays Frequency's fee alone.
       payment_intent_data: {
-        application_fee_amount: fee,
+        application_fee_amount: sellerFeesNow(amount, fee).applicationFeeCents,
         transfer_data: { destination: ownerStatus.accountId },
         // Stripe's own receipt, as a backstop (LIVE-344). A SIGNED-OUT donor has no account address
         // to resolve, so the field is simply absent for them and Stripe's checkout-collected address

@@ -9,6 +9,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, emailShell, EMAIL_INK, EMAIL_MUTED, EMAIL_RULE, EMAIL_P } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { formatPriceCents } from '@/lib/commerce/types'
+import { sellerFeesAt } from './card-fee'
+import { sellerNetCents } from './processing-fee'
 
 /** The columns the succeed path selects back off the flipped row. Everything the notifier needs
  *  rides on the row itself, so a redelivered webhook cannot notify twice: the flip returns zero
@@ -86,11 +88,21 @@ export async function notifyTipRecipient(tip: SucceededTip): Promise<void> {
     const recipientName = profile.display_name ?? 'there'
     const subject = `${tipperName} sent you a ${amount} tip`
     const note = tip.message?.trim() || null
+    // The card fee this tip carried, if any (lib/billing/card-fee.ts). Frequency's own fee on a tip
+    // is always zero, so what is left is the tip less the card fee alone.
+    const fees = sellerFeesAt(tip.amount_cents, 0, new Date())
+    const cardFee =
+      fees.processingFeeCents > 0
+        ? {
+            cardFee: formatPriceCents(fees.processingFeeCents, tip.currency),
+            net: formatPriceCents(sellerNetCents(tip.amount_cents, fees), tip.currency),
+          }
+        : {}
     await enqueueEmail({
       to: user.email,
       subject,
-      html: tipEmailHtml({ recipientName, tipperName, amount, note }),
-      text: tipEmailText({ recipientName, tipperName, amount, note }),
+      html: tipEmailHtml({ recipientName, tipperName, amount, note, ...cardFee }),
+      text: tipEmailText({ recipientName, tipperName, amount, note, ...cardFee }),
     })
   } catch (err) {
     console.error('[tips] recipient email failed', { tipId: tip.id, err })
@@ -101,7 +113,24 @@ export async function notifyTipRecipient(tip: SucceededTip): Promise<void> {
 // imported from lib/email.ts. Only the BODY is composed here; `emailShell` supplies the doctype,
 // the head, the wordmark and the unsubscribe footer, exactly as it does for a ticket receipt.
 
-export function tipEmailHtml(p: { recipientName: string; tipperName: string; amount: string; note: string | null }): string {
+/** The money line under a tip. With a card fee it states the fee and what is left; without one
+ *  (a tip made before the pass-through) it is the sentence it always was. */
+function tipMoneySentence(p: { cardFee?: string | null; net?: string | null }): string {
+  return p.cardFee && p.net
+    ? `Frequency charges no platform fee on tips. The card fee on this one was ${p.cardFee}, so ${p.net} goes to your payout account. Stripe manages payouts to your bank.`
+    : 'Frequency charges no platform fee on tips. Card processing still applies. Stripe manages payouts to your bank.'
+}
+
+interface TipEmailParts {
+  recipientName: string
+  tipperName: string
+  amount: string
+  note: string | null
+  cardFee?: string | null
+  net?: string | null
+}
+
+export function tipEmailHtml(p: TipEmailParts): string {
   const noteBlock = p.note
     ? `<p data-fq="fq-muted" style="${EMAIL_P}color:${EMAIL_MUTED};border-left:3px solid ${EMAIL_RULE};padding-left:12px;">${escapeHtml(p.note)}</p>`
     : ''
@@ -109,21 +138,18 @@ export function tipEmailHtml(p: { recipientName: string; tipperName: string; amo
 <p data-fq="fq-p" style="${EMAIL_P}color:${EMAIL_INK};">Hi ${escapeHtml(p.recipientName)},</p>
 <p data-fq="fq-p" style="${EMAIL_P}color:${EMAIL_INK};"><strong>${escapeHtml(p.tipperName)}</strong> sent you a <strong>${escapeHtml(p.amount)}</strong> tip on Frequency.</p>
 ${noteBlock}
-<p data-fq="fq-muted" style="${EMAIL_P}color:${EMAIL_MUTED};">Frequency charges no platform fee on tips. Card processing still applies. Stripe manages payouts to your bank.</p>
+<p data-fq="fq-muted" style="${EMAIL_P}color:${EMAIL_MUTED};">${escapeHtml(tipMoneySentence(p))}</p>
 `)
 }
 
-export function tipEmailText(p: { recipientName: string; tipperName: string; amount: string; note: string | null }): string {
+export function tipEmailText(p: TipEmailParts): string {
   const lines = [
     `Hi ${p.recipientName},`,
     '',
     `${p.tipperName} sent you a ${p.amount} tip on Frequency.`,
   ]
   if (p.note) lines.push('', `"${p.note}"`)
-  lines.push(
-    '',
-    'Frequency charges no platform fee on tips. Card processing still applies. Stripe manages payouts to your bank.',
-  )
+  lines.push('', tipMoneySentence(p))
   return lines.join('\n')
 }
 

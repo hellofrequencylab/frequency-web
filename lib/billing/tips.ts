@@ -24,6 +24,7 @@ import 'server-only'
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
+import { sellerFeesNow } from './card-fee'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { getConnectStatus, payoutsLive } from './connect'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -118,9 +119,12 @@ export async function createTipCheckout(opts: {
         },
       },
     ],
-    // Destination charge: fee stays with the platform, the rest transfers out.
+    // Destination charge: the application fee stays with the platform, the rest transfers out.
+    // Frequency's own fee on a tip is 0 (above). The application fee is that plus the card fee once
+    // the pass-through is on (./card-fee.ts), because on a destination charge Stripe bills its
+    // processing to the platform: without it, every tip costs Frequency the card fee.
     payment_intent_data: {
-      application_fee_amount: fee,
+      application_fee_amount: sellerFeesNow(amount, fee).applicationFeeCents,
       transfer_data: { destination: status.accountId },
       ...(tipperReceiptEmail ? { receipt_email: tipperReceiptEmail } : {}),
       metadata: { kind: 'tip', from_profile_id: opts.fromProfileId, to_profile_id: opts.toProfileId },

@@ -80,6 +80,7 @@ import { resolveHostingSpaceId, resolveHostingSpaceIdFromRow } from '@/lib/event
 import { feeBearingSpaceId } from '@/lib/events/belonging'
 import { holdsSharedMembership } from '@/lib/collective/shared-membership'
 import { planTicketSplit, splitMetadata } from '@/lib/events/revenue-splits'
+import { sellerFeesNow } from './card-fee'
 import { loadTicketSplitPayees } from '@/lib/events/revenue-splits-store'
 import { settleSplitOrderTransfers } from '@/lib/commerce/transfers'
 import { reverseSplitRefundForPaymentIntent } from '@/lib/commerce/split-refund'
@@ -994,6 +995,13 @@ export async function createTicketCheckout(opts: {
         payees: splitPayees,
       })
     : []
+  // THE CARD FEE (lib/billing/card-fee.ts). Frequency's fee is priced above and is unchanged. Once
+  // the pass-through is on, the seller also bears the card fee Stripe bills the platform, carried in
+  // the destination charge's application fee. Off, the application fee is Frequency's fee alone.
+  // A SPLIT ticket is not covered yet: its shares are paid by transfer, and the transfer ledger has
+  // no column for a card fee, so readers that rebuild a share's gross from the row would be wrong.
+  // Frequency still bears the card fee on a split ticket until that column lands (LIVE-2421).
+  const sellerFees = sellerFeesNow(gross, fee)
   let splitOrderId: string | null = null
   if (splits.length > 1) {
     const { data: orderRow, error: orderErr } = await db()
@@ -1054,7 +1062,7 @@ export async function createTicketCheckout(opts: {
       // destination charge it always was.
       ...(splitOrderId
         ? { transfer_group: splitOrderId }
-        : { application_fee_amount: fee, transfer_data: { destination: status.accountId } }),
+        : { application_fee_amount: sellerFees.applicationFeeCents, transfer_data: { destination: status.accountId } }),
       // Stripe's OWN receipt, the backstop to ours. It lives here rather than at the top level
       // because a Checkout Session has no `receipt_email` of its own: the field belongs to the
       // PaymentIntent the session creates. Omitted rather than sent to a null.

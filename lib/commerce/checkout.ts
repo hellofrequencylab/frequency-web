@@ -18,6 +18,7 @@ import { stripe, appUrl } from '@/lib/billing/stripe'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from '@/lib/billing/checkout-ui'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { spaceTakeRateCents, memberTakeRateCents } from '@/lib/billing/fees'
+import { sellerFeesNow } from '@/lib/billing/card-fee'
 import { classifyOrderSource } from './order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import type { OrderSource } from '@/lib/billing/pricing-keys'
@@ -551,7 +552,10 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
         ...(head
           ? head.charge.sellerStripeAccountId
             ? {
-                application_fee_amount: head.charge.platformFeeCents,
+                // Frequency's fee, plus the card fee once the pass-through is on
+                // (lib/billing/card-fee.ts). The order row's platform_fee_cents stays Frequency's
+                // fee alone. A SPLIT order is not covered yet (LIVE-2421): see lib/billing/tickets.ts.
+                application_fee_amount: sellerFeesNow(gross, head.charge.platformFeeCents).applicationFeeCents,
                 transfer_data: { destination: head.charge.sellerStripeAccountId },
                 on_behalf_of: head.charge.sellerStripeAccountId,
               }

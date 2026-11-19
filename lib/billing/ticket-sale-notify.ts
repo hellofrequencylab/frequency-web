@@ -25,6 +25,8 @@ import { enqueueEmail, emailShell, EMAIL_INK, EMAIL_MUTED, EMAIL_RULE, EMAIL_P }
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { profileAccountEmail } from '@/lib/profiles/account-email'
 import { formatPriceCents } from '@/lib/commerce/types'
+import { sellerFeesAt } from './card-fee'
+import { sellerNetCents } from './processing-fee'
 
 /** What the settle path hands over: the row settle_ticket_atomic flipped, plus the gross off the
  *  Checkout Session Stripe signed. Everything needed to compose the notice rides on it, so a
@@ -217,6 +219,7 @@ export async function notifyTicketSaleHost(sale: SoldTicket): Promise<void> {
           : null,
       feeLabel: formatPriceCents(Math.max(0, sale.platform_fee_cents ?? 0), sale.currency),
       feeIsZero: (sale.platform_fee_cents ?? 0) <= 0,
+      ...cardFeeLabels(sale),
       overage,
       eventUrl: `${appUrl}/events/${ev.slug}`,
     }
@@ -232,6 +235,22 @@ export async function notifyTicketSaleHost(sale: SoldTicket): Promise<void> {
   }
 }
 
+/** The card fee a sale carried and what is left for the host, as labels, or nulls when the sale
+ *  carried none. Priced from the sale's own amount at the moment it settled, the same instant the
+ *  checkout priced it within minutes of, so the email states what Stripe actually held back. */
+function cardFeeLabels(sale: Pick<SoldTicket, 'amount_cents' | 'platform_fee_cents' | 'currency'>): {
+  cardFeeLabel: string | null
+  netLabel: string | null
+} {
+  const gross = typeof sale.amount_cents === 'number' && sale.amount_cents > 0 ? sale.amount_cents : 0
+  const fees = sellerFeesAt(gross, Math.max(0, sale.platform_fee_cents ?? 0), new Date())
+  if (fees.processingFeeCents <= 0) return { cardFeeLabel: null, netLabel: null }
+  return {
+    cardFeeLabel: formatPriceCents(fees.processingFeeCents, sale.currency),
+    netLabel: formatPriceCents(sellerNetCents(gross, fees), sale.currency),
+  }
+}
+
 // ── The message ────────────────────────────────────────────────────────────────────────────────
 
 interface SaleCopy {
@@ -243,6 +262,11 @@ interface SaleCopy {
   grossLabel: string | null
   feeLabel: string
   feeIsZero: boolean
+  /** The card fee this sale carried, or null when it carried none: a sale made before the
+   *  pass-through, or one with no amount to price (lib/billing/card-fee.ts). */
+  cardFeeLabel?: string | null
+  /** What reaches the host's payout account after both fees. Null with `cardFeeLabel`. */
+  netLabel?: string | null
   overage: string | null
   eventUrl: string
 }
@@ -256,7 +280,16 @@ export function saleSentence(c: Pick<SaleCopy, 'buyerName' | 'countLabel' | 'eve
 
 /** What happens to the money, in the plain words NAMING.md §"Money in" locks: payout account, never
  *  Stripe Connect, in anything a member or operator reads. */
-export function payoutSentence(c: Pick<SaleCopy, 'feeLabel' | 'feeIsZero'>): string {
+export function payoutSentence(
+  c: Pick<SaleCopy, 'feeLabel' | 'feeIsZero' | 'cardFeeLabel' | 'netLabel'>,
+): string {
+  // A sale that carried the card fee states BOTH figures and what is left, so the host never has to
+  // work out why the payout is smaller than the ticket price. The two are never added together:
+  // one is Frequency's, the other is the card company's.
+  if (c.cardFeeLabel && c.netLabel) {
+    const ours = c.feeIsZero ? 'Frequency took nothing on this sale.' : `Frequency's fee on this sale was ${c.feeLabel}.`
+    return `${ours} The card fee was ${c.cardFeeLabel}, so ${c.netLabel} goes to your payout account. Check the payment and payout status in your connected payout account.`
+  }
   return c.feeIsZero
     ? 'Frequency took nothing on this sale. Card processing still applies. Check the payment and payout status in your connected payout account.'
     : `Frequency's fee on this sale was ${c.feeLabel}. Card processing also applies. Check the payment and payout status in your connected payout account.`

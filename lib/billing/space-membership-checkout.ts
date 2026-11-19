@@ -20,6 +20,8 @@ import { asSpacePlan } from '@/lib/pricing/plans'
 import { spacePaymentsVerdict } from '@/lib/pricing/payments-gate'
 import { getConnectStatus } from './connect'
 import { spaceTakeRateCents } from './fees'
+import { cardFeePassesThrough, sellerFeesNow } from './card-fee'
+import { applicationFeePercent } from './processing-fee'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { receiptEmailFor } from './receipt-address'
@@ -181,7 +183,13 @@ export async function createSpaceMembershipCheckout(
       // transfers to the space owner's connected account on every invoice.
       subscription_data: {
         // `amount > 0` is guaranteed by the free_tier guard above, so divide directly.
-        application_fee_percent: round2((fee / amount) * 100),
+        // Frequency's fee as a percent, as before; once the card fee passes through (./card-fee.ts)
+        // the percent also carries it, on every invoice, because every renewal is a new card charge
+        // Stripe bills to the platform. A subscription cannot carry a fixed amount, so the 30 cents
+        // is folded into the percent, rounded up to the next hundredth.
+        application_fee_percent: cardFeePassesThrough()
+          ? applicationFeePercent(amount, sellerFeesNow(amount, fee))
+          : round2((fee / amount) * 100),
         transfer_data: { destination: ownerStatus.accountId },
         metadata,
       },
