@@ -32,6 +32,9 @@ export const THEME_SHARE_CARDS: readonly ThemeShareCard[] = [
   card('temple-kit', 'Temple', 'A lime-washed house. Warm and unhurried.', '/sites/temple-kit/photos/photo-01.jpg'),
   card('midnight', 'Nocturne', 'After dark. One violet light on true black.', '/sites/midnight/photos/nature-dunes.jpg'),
   card('designer', 'Designer', 'Limewash and daylight, with one ochre accent.', '/sites/designer/photos/dz-designer-kitchen-hero.webp'),
+  // Honey and Mindless wear Frequency's own photos (owner 2026-11-18 and 2026-11-19).
+  card('free-human', 'Honey', 'Limewash, honey light and a gilt arch.', '/brand/frequency/photos/boc-circle-sunset.jpg'),
+  card('mindless', 'Mindless', 'Warm ink, bone and one paint. Unwind your mind.', '/sites/mindless/photos/hero-pink.jpg'),
 ]
 
 /** The share image for a theme's page, or undefined when it has none (the page keeps the root card). */

@@ -313,6 +313,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           { url: `${SITE_URL}/themes/cyberwitch`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/mindless (LIVE-2407): the Mindless theme's feature page, public now that Mindless is offered in the pickers.
           { url: `${SITE_URL}/themes/mindless`, changeFrequency: "monthly", priority: 0.5 },
+          // /themes/free-human (LIVE-2408): the Honey theme's feature page.
+          { url: `${SITE_URL}/themes/free-human`, changeFrequency: "monthly", priority: 0.5 },
           // /themes/[theme] (LIVE-1514): the other six themes' kit pages.
           // /themes/network (LIVE-1751): the Network Theme Kit's feature page.
           { url: `${SITE_URL}/themes/network`, changeFrequency: "monthly", priority: 0.5 },

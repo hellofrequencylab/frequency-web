@@ -1,10 +1,10 @@
-// Data for the Nocturne-layout theme pages of Bold, Wildheart, Services, CyberWitch and Mindless (/themes/bold, /themes/wildheart, /themes/services, /themes/cyberwitch, /themes/mindless). Default is not a theme people
+// Data for the Nocturne-layout theme pages of Bold, Wildheart, Services, CyberWitch, Mindless and Honey (/themes/bold, /themes/wildheart, /themes/services, /themes/cyberwitch, /themes/mindless, /themes/free-human). Default is not a theme people
 // pick (New World is the default, owner ruling 2026-11-03), so it has no page here.
 // The pictures are renders of each theme's own surfaces, stored under public/brand/theme-pages/<id>: the Website through the real
 // site chrome and blocks, the Spotlight through the real shell on the theme's preset, the Space inside the real member shell and the
 // Email through the real campaign mail (scripts/render/theme-pages-shots.render.tsx). Copy follows docs/marketing/voice-and-language-guide.md.
 
-export type ThemeFeatureId = 'bold' | 'wildheart' | 'services' | 'cyberwitch' | 'mindless'
+export type ThemeFeatureId = 'bold' | 'wildheart' | 'services' | 'cyberwitch' | 'mindless' | 'free-human'
 export type ThemeFeatureSurface = 'site' | 'spotlight' | 'space' | 'email'
 
 export const THEME_FEATURE_SURFACES: readonly { id: ThemeFeatureSurface; label: string; qual?: string; shot: 'site' | 'spot' | 'spacedesk' | 'email'; width: number; height: number }[] = [
@@ -128,6 +128,26 @@ export const THEME_FEATURES: Record<ThemeFeatureId, ThemeFeatureCopy> = {
       ['What does it cost?', 'Free to start. Business when you charge.'],
     ],
   },
+  // Honey (code id `free-human`, owner 2026-11-18: "Change the theme name to honey"), on Frequency's own photos.
+  'free-human': {
+    id: 'free-human',
+    name: 'Honey',
+    accentVar: 'var(--fq-x-sun-neon)',
+    tagline: ['Limewash, honey light', 'and a gilt arch.'],
+    lead:
+      'Some work is slow on purpose, and the page should feel that way too. Honey is limewash and warm light, a gilt arch and one madder accent, ' +
+      'for movement, ritual, retreats and the people who gather around them. Your website, Spotlight, Space and emails wear it together, read from one profile.',
+    signature: 'Limewash and a candle-dark night, a gilt arch and one madder accent, with Cormorant, Marcellus and Hanken Grotesk.',
+    madeFor: 'movement, ritual, retreats and the village that gathers around them',
+    faq: [
+      ['Is Honey only for movement and ritual?', 'No. It has thirteen starter kits, from coaches and studios to hosts, venues and markets. Pick the closest one and change the words.'],
+      ['What is the arch?', 'A gilt arch frames your main photo on the website and the Spotlight. It is part of the look, and your own photo goes inside it.'],
+      ['Can I change it later?', 'Press Change theme in your editor. Your words, offers and photos stay saved. Honey is only the dress they wear.'],
+      ['Will my Space look exactly like my website?', 'Your Space keeps Frequency’s page frame, so people on the network always know where they are. It wears your name, fonts, accent and offers.'],
+      ['Who owns my contacts?', 'You do. Sign-ups, RSVPs and check-ins build your list, and your list stays yours.'],
+      ['What does it cost?', 'Free to start. Business when you charge.'],
+    ],
+  },
 }
 
-export const isThemeFeatureId = (id: string | null | undefined): id is ThemeFeatureId => id === 'bold' || id === 'wildheart' || id === 'services' || id === 'cyberwitch' || id === 'mindless'
+export const isThemeFeatureId = (id: string | null | undefined): id is ThemeFeatureId => id === 'bold' || id === 'wildheart' || id === 'services' || id === 'cyberwitch' || id === 'mindless' || id === 'free-human'

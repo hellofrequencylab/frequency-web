@@ -19,6 +19,7 @@ import { THEME_FEATURES, themeFeatureShot, type ThemeFeatureId, type ThemeFeatur
 import { NewWorldBrowser, NewWorldPhone } from './new-world-preview'
 import { ThemeFeatureMail, ThemeFeatureStage } from './theme-feature-preview'
 import { CyberWitchThemeFeature } from './cyberwitch-feature'
+import { FREE_HUMAN_PROFILE_KIT_INDEX } from '@/lib/sites/kits/free-human-profile-index'
 const PAGES: [string, string][] = [
   ['Home', 'What happens here, who it is for and a way to come along. The first thing people see.'],
   ['Services', 'Every offer with its length, price and a button. Free first visits are written as Free.'],
@@ -78,7 +79,7 @@ export function FrequencyThemeFeature({ theme }: { theme: ThemeFeatureId }) {
   const name = copy.name
   const START_HREF = createSpaceHref(theme)
   const editor = MEGA_THEMES.find((m) => m.id === theme)?.editor
-  const kits = [...KIT_INDEX, ...PROFILE_KIT_INDEX, ...SERVICES_KIT_INDEX, ...CYBERWITCH_KIT_INDEX, ...MINDLESS_KIT_INDEX].filter((k) => k.theme === editor)
+  const kits = [...KIT_INDEX, ...PROFILE_KIT_INDEX, ...SERVICES_KIT_INDEX, ...CYBERWITCH_KIT_INDEX, ...MINDLESS_KIT_INDEX, ...FREE_HUMAN_PROFILE_KIT_INDEX].filter((k) => k.theme === editor)
   const places: { n: string; name: string; qual?: string; surface: ThemeFeatureSurface; body: string; lives: string; wears: string; changes: string }[] = [
     {
       n: '01 · Day one',

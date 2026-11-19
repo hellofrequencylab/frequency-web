@@ -7,6 +7,7 @@ import { RememberKit } from '@/components/frequency/site/pages/themes/remember-k
 import { JsonLd } from '@/components/json-ld'
 import { frequencyPageJsonLd, frequencyPageMetadata, type FrequencyPageSeo } from '@/lib/seo/frequency-pages'
 import { FrequencyThemeFeature } from '@/components/frequency/site/pages/themes/frequency-theme-feature'
+import { themeShareImage } from '@/lib/themes/share-cards'
 
 export const revalidate = 3600
 
@@ -23,6 +24,7 @@ const SEO: FrequencyPageSeo = {
     { name: 'Themes', path: '/themes' },
     { name: 'Mindless', path: '/themes/mindless' },
   ],
+  shareImage: themeShareImage('mindless'),
 }
 
 export const metadata: Metadata = frequencyPageMetadata(SEO)
