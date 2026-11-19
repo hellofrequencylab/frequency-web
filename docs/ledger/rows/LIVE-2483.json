@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2483",
+  "title": "Launch Your Website and Email Marketing are their own builder pages",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/(marketing)/launch-your-website/page.tsx",
+    "ref": "Owner 2026-11-19 (project thread: Build four feature launch funnels): four builder pages, Free Spotlight, Create a Space, Launch Your Website and Email Marketing, each its own feature, wired to the real feature, each inviting the next without forcing it."
+  },
+  "detail": "/launch-your-website and /email-marketing join the shared feature builder (LIVE-2481). Website: a name, a look (the Theme Kits, previewed in the kit's own tokens) and a headline with a few words, 5 minutes on the clock; at the finish it goes on the person's newest Space, or a new Space made in that look, through the one website path (applyMegaTheme, publishStarterSite, publishWebsiteWords) and opens at the Space's free subdomain. Email: who it is from, a subject and the message, 4 minutes on the clock; at the finish it is saved as a DRAFT in the Space's Marketing tab (createSpaceEmailDraft, saveSpaceEmailDraft) and never sent. The finish card says 'ready' for a draft, 'live' for the rest. All four builders are now offered in the what's-next card and the builder row.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2483.mjs",
+    "note": "Fails while either page is missing, the website builder skips the website path, or the email builder could send."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

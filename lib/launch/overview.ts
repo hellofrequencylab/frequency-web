@@ -64,3 +64,15 @@ export function overviewProgress(sections: readonly InventorySection[]): Overvie
   const next = open.find((o) => !o.item.skipped) ?? open[0] ?? null
   return { done, total, ratio: total ? done / total : 0, sections: rows, next }
 }
+
+/** The four builders a launch already covers, read from its sections: the personal or Space Spotlight, the Space, the
+ *  website and the email list, each built when its section is all done (LIVE-2484). PURE. */
+export function builtFeatures(sections: readonly SectionProgress[]): ('spotlight' | 'space' | 'website' | 'email')[] {
+  const done = (id: InventorySection['id']) => sections.some((s) => s.id === id && s.state === 'done')
+  const out: ('spotlight' | 'space' | 'website' | 'email')[] = []
+  if (done('personal') || done('spotlight')) out.push('spotlight')
+  if (done('space')) out.push('space')
+  if (done('website')) out.push('website')
+  if (done('email')) out.push('email')
+  return out
+}

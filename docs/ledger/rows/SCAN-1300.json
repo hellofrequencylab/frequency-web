@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1300",
+  "title": "Space, person, product and listing structured data publish a kit logo as a relative address",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/jsonld.ts",
+    "ref": "Mega pass 2026-11-19 (backwards test from the production crawl: JSON-LD URL check)"
+  },
+  "detail": "Backwards test 2026-11-19: crawling production and reading every JSON-LD node found 20 Space pages (The Group chapters, Alli Rae, Free Human, Mindless and their tabs) whose LocalBusiness image was a root-relative path such as /brand/the-group/the-group-sd-logo.png. A structured-data URL must be absolute: the Rich Results test and answer engines drop or misread a relative one, so these Spaces published no logo of their own. Fix: absUrl() in lib/jsonld.ts makes any row-supplied image absolute on the site origin (or the Space website's own origin in siteEntitySchema) and leaves absolute URLs alone; spaceSchema, personSchema, siteEntitySchema, productSchema and housingListingSchema use it.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1300.mjs",
+    "note": "Fails on main: the five builders pass a row's image through raw. Passes when each goes through absUrl."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

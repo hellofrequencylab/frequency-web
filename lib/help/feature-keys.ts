@@ -141,7 +141,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   // that draws it is a source prefix. `support` is the member Help page and the launcher that opens it;
   // the public help center under /help is the articles themselves, so it is not a prefix here (every
   // help page edit would flag one article).
-  { key: 'create-space', label: 'Create a Space', area: 'operator', routes: ['/spaces/new', '/launch-your-business'], core: false },
+  { key: 'create-space', label: 'Create a Space', area: 'operator', routes: ['/spaces/new', '/create-a-space', '/launch-your-business'], core: false },
   { key: 'spotlight', label: 'Spotlight link page', area: 'account', routes: ['/settings/profile/spotlight', '/spaces/[slug]/manage/spotlight', '/spotlight/[handle]', '/spaces/[slug]/spotlight'], core: false },
   { key: 'themes', label: 'Themes', area: 'operator', routes: ['/themes'], sourcePrefixes: ['components/spaces/space-branding-form.tsx', 'lib/theme/site-style.ts'], core: false },
   { key: 'support', label: 'Help and support', area: 'account', routes: ['/support'], sourcePrefixes: ['components/vera/vera-launcher.tsx', 'components/support'], core: false },

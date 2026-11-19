@@ -182,12 +182,17 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
         continue
       }
     } else {
-      // Pure lead (no profile_id): the unified gate above is skipped, so it was gated ONLY by
+      // Pure lead (no profile_id): the unified gate above is skipped. Before EMAIL-080 it was gated ONLY by
       // consent_state != 'unsubscribed' above — suppression (hard bounce / complaint / manual, and any
       // per-Space opt-out) was NOT enforced. Check it here before enqueue so a nurture step never reaches
       // a suppressed address. A suppressed address is undeliverable, so END the sequence, mirroring the
       // member gate's 'suppressed' branch (isSuppressed fail-safes to true on a read blip, same as there).
       if (await isSuppressed(e.email)) { await cancel(e.id); cancelled++; continue }
+      // EMAIL-080: a lead with no account is mailable ONLY after an explicit opt-in (consent_state
+      // 'subscribed', e.g. the /subscribe double opt-in). 'unknown' (an import, an event RSVP, a scan
+      // invite) or a missing state never confirmed, so the sequence ENDS fail-closed. Not-unsubscribed
+      // is not permission (Resend AUP; Space campaigns already require 'subscribed' via canEmailContact).
+      if (contact.consent_state !== 'subscribed') { await cancel(e.id); cancelled++; continue }
     }
 
     // Atomic send-claim: lock THIS enrollment for THIS run by compare-and-swapping next_run_at on

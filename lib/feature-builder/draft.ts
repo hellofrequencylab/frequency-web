@@ -3,6 +3,9 @@
 // the three cannot disagree. Every field is a short string; anything unknown is dropped and anything long is cut.
 // PURE and client-safe.
 
+import { slugify } from '@/lib/utils'
+import { NEW_SPACE_THEME, type MegaThemeId } from '@/lib/theme/mega-theme'
+import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 import type { FeatureId } from './catalog'
 
 interface DraftField {
@@ -83,4 +86,22 @@ export function parseDraft(feature: FeatureId, text: unknown): FeatureDraft | nu
   }
   const draft = cleanDraft(feature, raw)
   return missingField(feature, draft) ? null : draft
+}
+
+/** A Space handle from what was typed (a handle, else the name): lowercase letters, numbers and single hyphens, 3 to
+ *  40 characters. The same shape createSpace accepts; a taken one is retried with a suffix at the finish. */
+export function handleFrom(typed: string, name: string): string {
+  const slug = (s: string) => slugify(s).slice(0, 40).replace(/-+$/g, '')
+  const base = slug(typed) || slug(name) || 'my-space'
+  return base.length < 3 ? `${base}-space` : base
+}
+
+/** The Space type a builder answer names: the two provisionable types. */
+export function spaceTypeFrom(v: string | undefined): 'business' | 'nonprofit' {
+  return v === 'nonprofit' ? 'nonprofit' : 'business'
+}
+
+/** The look a website builder answer names: one of the preview kits, else New World (the house default). */
+export function websiteKitFrom(v: string | undefined): MegaThemeId {
+  return v && (PREVIEW_KIT_ORDER as readonly string[]).includes(v) ? (v as MegaThemeId) : NEW_SPACE_THEME
 }
