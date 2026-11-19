@@ -8,7 +8,7 @@
 // member's personal paid offer clock (the 72-hour offer) is its own timer. Neither reads this file.
 
 /** The last day of the beta, as a calendar date. */
-const BETA_ENDS_ON = '2027-01-31'
+export const BETA_ENDS_ON = '2027-01-31'
 
 /** The official launch day, as a calendar date. */
 export const LAUNCH_ON = '2027-01-01'

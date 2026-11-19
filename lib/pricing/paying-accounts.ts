@@ -11,22 +11,37 @@
 //     Crew owner's free Space still sells nothing else.
 //
 // 🔴 "PAYS FOR CREW" IS THE BILLED RUNG, read straight off `profiles.membership_tier` through
-// `billedTier`. Never resolveCaller (BETA_OPEN_ACCESS reports 'crew' for everyone) and never the
+// `billedTier`. Never resolveCaller and never the
 // effective tier (a Crew granted by a paid community membership is access, not a subscription the
 // person pays Frequency for). Reading either would hand money features to an account that pays
 // nothing, which is the ruling reversed.
 //
-// 🔴 LIKE THE PAYMENTS GATE, THIS DOES NOT WAIT FOR THE BETA GRACE WINDOW. The window opens
-// allowances; it does not decide who may take money.
+// THE ONE BETA EXCEPTION (owner ruling 2026-11-18, decision card "Count beta Crew as paying"): while
+// the beta is open, the Crew every member is granted counts as paying, so tips and a free Space's
+// donations stay open through the beta's last day. It ends by itself at BETA_CREW_PAYS_UNTIL even if
+// nobody flips BETA_OPEN_ACCESS, and from then on only the billed rung counts. This never touches
+// the payments gate: a free Space sells nothing during the beta either.
 //
 // FAIL-CLOSED on every read: "we could not tell" never opens a money path.
 
+import { BETA_OPEN_ACCESS } from '@/lib/core/beta'
 import { billedTier, isPaid } from '@/lib/core/entitlement'
+import { BETA_ENDS_ON } from '@/lib/core/launch-dates'
 import { spacePaymentsVerdict } from './payments-gate'
 
-/** Does this profile pay Frequency for Crew? The billed rung only. FAIL-CLOSED. */
+/** The instant the beta exception ends: the end of the beta's last day (BETA_ENDS_ON), Pacific. */
+export const BETA_CREW_PAYS_UNTIL = new Date(`${BETA_ENDS_ON}T23:59:59-08:00`)
+
+/** Does the beta-granted Crew count as paying right now? PURE. */
+export function betaCrewCountsAsPaying(now: Date = new Date()): boolean {
+  return BETA_OPEN_ACCESS && now.getTime() <= BETA_CREW_PAYS_UNTIL.getTime()
+}
+
+/** Does this profile pay Frequency for Crew? The billed rung, or any member while the beta exception
+ *  holds. FAIL-CLOSED. */
 export async function profilePaysForCrew(profileId: string | null | undefined): Promise<boolean> {
   if (!profileId) return false
+  if (betaCrewCountsAsPaying()) return true
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const { data, error } = await createAdminClient()

@@ -46,9 +46,18 @@ vi.mock('./payments-gate', () => ({
   },
 }))
 
-import { profileCanTakeTips, profilePaysForCrew, spaceMayTakeDonations } from './paying-accounts'
+import {
+  BETA_CREW_PAYS_UNTIL,
+  betaCrewCountsAsPaying,
+  profileCanTakeTips,
+  profilePaysForCrew,
+  spaceMayTakeDonations,
+} from './paying-accounts'
 
+// Every rule below is the one that holds AFTER the beta: the clock sits past the exception's end.
 beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date(BETA_CREW_PAYS_UNTIL.getTime() + 1000))
   state.tiers = { free: 'free', crew: 'crew', blank: null, odd: 'supporter' }
   state.spaces = []
   state.fail = false
@@ -116,5 +125,20 @@ describe('spaceMayTakeDonations', () => {
   it('fails closed when the read fails', async () => {
     state.fail = true
     expect(await spaceMayTakeDonations('s9')).toBe(false)
+  })
+})
+
+describe('the beta exception', () => {
+  it('counts the beta-granted Crew as paying through the last day of the beta, and not a second longer', () => {
+    expect(betaCrewCountsAsPaying(new Date('2026-11-19T12:00:00Z'))).toBe(true)
+    expect(betaCrewCountsAsPaying(BETA_CREW_PAYS_UNTIL)).toBe(true)
+    expect(betaCrewCountsAsPaying(new Date(BETA_CREW_PAYS_UNTIL.getTime() + 1))).toBe(false)
+  })
+
+  it('opens tips and a free Space’s donations to a free member while it holds', async () => {
+    vi.setSystemTime(new Date('2026-11-19T12:00:00Z'))
+    expect(await profileCanTakeTips('free')).toBe(true)
+    expect(await spaceMayTakeDonations('s', { plan: 'free', ownerProfileId: 'free' })).toBe(true)
+    expect(await spaceMayTakeDonations('s', { plan: 'free', ownerProfileId: null })).toBe(false)
   })
 })
