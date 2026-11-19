@@ -1,37 +1,30 @@
-// /create-a-space: the marketing funnel's second step. A visitor builds their Space here, signed out, and watches
-// their website and Spotlight take shape; the account comes at the last step. Static: the kit arrives as ?kit= and
-// is read on the client. The markup lives in components/frequency/site/pages/create-space.
-import { redirect } from 'next/navigation'
-import { getMyProfileId } from '@/lib/auth'
-import { ownedWizardEntry } from '@/lib/launch/entry-io'
-import { getActiveLaunch } from '@/lib/launch/store'
-import { getOnboardingNicheChoices } from '@/lib/create-space/niche-choices.server'
+// /create-a-space (LIVE-2482): the Create a Space builder. A visitor names a Space, picks its kind and writes its line
+// signed out, then signs in at the end; a member makes it straight away. ?done=1 is the landing after the hand-over
+// (app/finish/[feature]) and shows the new Space with the next builders beside it. The 12-minute whole-business
+// builder that lived here is /launch-your-business (LIVE-2471). The body lives in
+// components/frequency/site/pages/feature-builder.
 import type { Metadata } from 'next'
 import { JsonLd } from '@/components/json-ld'
-import { CreateSpaceStudio } from '@/components/frequency/site/pages/create-space/create-space-studio'
-import { Closing, DayOne, FreeToOperate, Questions, SoundFamiliar } from '@/components/frequency/site/pages/create-space/create-space-sections'
+import { CreateASpacePage } from '@/components/frequency/site/pages/feature-builder/create-a-space'
+import { getMyProfileId } from '@/lib/auth'
+import { listOwnedSpaces } from '@/lib/launch/spaces-io'
 import { FREQUENCY_PAGE_SEO, frequencyPageJsonLd, frequencyPageMetadata } from '@/lib/seo/frequency-pages'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = frequencyPageMetadata(FREQUENCY_PAGE_SEO.createSpace)
 
-export default async function CreateASpacePage({ searchParams }: { searchParams: Promise<{ new?: string }> }) {
+export default async function CreateASpaceRoute({ searchParams }: { searchParams: Promise<{ done?: string; e?: string }> }) {
   const params = await searchParams
   const profileId = await getMyProfileId()
-  const entry = profileId ? await ownedWizardEntry(profileId, params.new === '1') : null
-  if (entry) redirect(entry)
-  const launch = profileId ? await getActiveLaunch(profileId) : null
-  if (launch?.resume?.phase === 'launch') redirect('/launch')
+  // The Space the finish just made is the owner's newest one.
+  const newest = profileId && params.done === '1' ? (await listOwnedSpaces(profileId)).at(-1) : undefined
+  const done = newest ? { liveHref: `/spaces/${newest.slug}` } : null
+  const error = params.e === 'save' || params.e === 'draft' ? params.e : null
   return (
     <>
       <JsonLd data={frequencyPageJsonLd(FREQUENCY_PAGE_SEO.createSpace)} />
-      <CreateSpaceStudio initialResume={launch?.resume ?? null} nicheChoices={getOnboardingNicheChoices()} />
-      <SoundFamiliar />
-      <DayOne />
-      <FreeToOperate />
-      <Questions />
-      <Closing />
+      <CreateASpacePage signedIn={!!profileId} done={done} error={error} />
     </>
   )
 }

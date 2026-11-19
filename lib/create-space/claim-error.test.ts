@@ -4,8 +4,8 @@ import { claimErrorHref, claimErrorLine } from './claim-error'
 // LIVE-2331: a refused Google claim carries a closed code back to the builder, which shows a plain line for it.
 describe('claim error codes', () => {
   it('sends each code back to the builder with the reason', () => {
-    expect(claimErrorHref('handle')).toBe('/create-a-space?claim_error=handle#get-started')
-    expect(claimErrorHref('draft')).toBe('/create-a-space?claim_error=draft#get-started')
+    expect(claimErrorHref('handle')).toBe('/launch-your-business?claim_error=handle#get-started')
+    expect(claimErrorHref('draft')).toBe('/launch-your-business?claim_error=draft#get-started')
   })
 
   it('turns each code into its own line, and anything else into the generic one', () => {

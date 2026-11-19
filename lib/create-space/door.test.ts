@@ -3,7 +3,7 @@ import { COLD_KIT, createSpaceDoorHref, doorArrival, goalsFromDoor } from './doo
 import { NICHE_FUNNEL_DESTINATIONS } from '@/lib/funnels/definitions'
 import { OPERATOR_CTA_HREF, operatorStartHref } from '@/lib/site'
 
-// LIVE-1969: a signed-out arrival at /spaces/new opens /create-a-space with what the door knew.
+// LIVE-1969: a signed-out arrival at /spaces/new opens /launch-your-business with what the door knew.
 
 const paramsOf = (href: string): Record<string, string> => Object.fromEntries(new URLSearchParams(href.split('?')[1] ?? ''))
 
@@ -42,17 +42,17 @@ describe('doorArrival', () => {
 
 describe('createSpaceDoorHref', () => {
   it('is the plain page when the door knew nothing', () => {
-    expect(createSpaceDoorHref({})).toBe('/create-a-space')
-    expect(createSpaceDoorHref({ plan: 'business', next: '/x' })).toBe('/create-a-space')
+    expect(createSpaceDoorHref({})).toBe('/launch-your-business')
+    expect(createSpaceDoorHref({ plan: 'business', next: '/x' })).toBe('/launch-your-business')
   })
   it('carries only the hints the builder reads, cleaned', () => {
     const href = createSpaceDoorHref({ theme: 'designer', mode: 'business:appointments', intents: 'events,nope', niche: 'studios', name: ' Limewell ' })
-    expect(href.startsWith('/create-a-space?')).toBe(true)
+    expect(href.startsWith('/launch-your-business?')).toBe(true)
     expect(paramsOf(href)).toEqual({ kit: 'designer', mode: 'business:appointments', intents: 'events', niche: 'studios', name: 'Limewell' })
   })
   it('drops a mode no goal starts, so the address cannot carry text', () => {
-    expect(createSpaceDoorHref({ mode: 'business:<script>' })).toBe('/create-a-space')
-    expect(createSpaceDoorHref({ mode: 'business:nothing' })).toBe('/create-a-space')
+    expect(createSpaceDoorHref({ mode: 'business:<script>' })).toBe('/launch-your-business')
+    expect(createSpaceDoorHref({ mode: 'business:nothing' })).toBe('/launch-your-business')
   })
   it('reads back exactly what it wrote', () => {
     const params = { kit: 'midnight', mode: 'nonprofit:donations', niche: 'nonprofits', name: 'Hearth' }
@@ -91,7 +91,7 @@ describe('the accent picked beside a Use button', () => {
   })
   it('rides through the signed-out door and back', () => {
     const href = createSpaceDoorHref({ kit: 'cyberwitch', accent: 'Absinthe' })
-    expect(href).toBe('/create-a-space?kit=cyberwitch&accent=absinthe')
+    expect(href).toBe('/launch-your-business?kit=cyberwitch&accent=absinthe')
     expect(doorArrival((k) => paramsOf(href)[k] ?? null).accentAt).toBe(1)
   })
 })
