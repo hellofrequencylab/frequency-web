@@ -4286,6 +4286,13 @@
           "headMode": "100644"
         },
         {
+          "file": "docs/ledger/rows/OWN-031.json",
+          "status": "added",
+          "sha256": "afcc32ae2f166dc9eb66ccce1443290992325be601e842fd5439507cf2bd08c4",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
           "file": "docs/ledger/rows/PROG-E0.json",
           "status": "modified",
           "sha256": "8f3fba0835deacffe9e142b9b8a91141b3ba47f3812cd1226620788948beffae",
