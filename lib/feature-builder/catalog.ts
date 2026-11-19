@@ -30,7 +30,7 @@ interface FeatureEntry {
 
 export const FEATURES: readonly FeatureEntry[] = [
   { id: 'spotlight', name: 'Free Spotlight', href: '/free-spotlight', minutes: 3, promise: 'One page for you: your name, one line and your links.', icon: 'user', made: 'Spotlight', open: true },
-  { id: 'space', name: 'Create a Space', href: '/create-a-space', minutes: 5, promise: 'A home for what you run, with its own page, people and tools.', icon: 'space', made: 'Space', open: false },
+  { id: 'space', name: 'Create a Space', href: '/create-a-space', minutes: 5, promise: 'A home for what you run, with its own page, people and tools.', icon: 'space', made: 'Space', open: true },
   { id: 'website', name: 'Launch Your Website', href: '/launch-your-website', minutes: 5, promise: 'A real website at your own address, in the look you pick.', icon: 'globe', made: 'website', open: false },
   { id: 'email', name: 'Email Marketing', href: '/email-marketing', minutes: 4, promise: 'Your list and your first email, written and ready to send.', icon: 'send', made: 'first email', open: false },
 ]

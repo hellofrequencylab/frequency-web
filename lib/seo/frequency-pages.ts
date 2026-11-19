@@ -126,6 +126,19 @@ export const FREQUENCY_PAGE_SEO = {
     lede: 'One link for your bio, your card and your QR code: your name, what you do and where to find you. Free, and yours to keep.',
     crumbs: [{ name: 'Free Spotlight', path: '/free-spotlight' }],
   },
+  createSpace: {
+    path: '/create-a-space',
+    title: 'Create a Space: a home for your group, business or cause',
+    description:
+      'Create a free Space on Frequency in about 5 minutes: its own page, events, circles and an email list for your people. Comes with Crew.',
+    shareTitle: 'Create a Space on Frequency',
+    headline: 'A home for what you run, live in 5 minutes.',
+    lede: 'A Space is where your people find you, join you and keep up: its own page, events, circles and email. Comes with Crew.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Create a Space', path: '/create-a-space' },
+    ],
+  },
   launchBusiness: {
     path: '/launch-your-business',
     title: 'Launch Your Business: website, Spotlight and Space in 12 minutes',
