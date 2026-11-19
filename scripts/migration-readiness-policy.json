@@ -4711,9 +4711,16 @@
       "reviewedChanges": [
         {
           "file": "docs/ledger/rows/SEC-026.json",
-          "status": "added",
+          "status": "modified",
           "sha256": "96bbccfef3b39797ccde871bb6b781fd2de35b5598e78febb1f9b8c230e44b75",
-          "baseMode": "000000",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "ef1ba0811e40220d6b683908e4adcc7d7717a8295ced49e932c5536617d174a3",
+          "baseMode": "100644",
           "headMode": "100644"
         },
         {
