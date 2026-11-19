@@ -567,9 +567,6 @@ const nextConfig: NextConfig = {
       // The Vera page drafter at /spaces/launch is retired: the wizard is the one builder.
       { source: '/spaces/launch', destination: '/launch-your-business', permanent: true },
       // The /free-spotlight landing is retired (same job as the Create a Space wizard); its link still works.
-      // The 12-minute business builder moved to /launch-your-business (Daniel, 2026-11-19). Until the Create a Space
-      // page takes this address back, it forwards there, query and all. Temporary, so no browser caches it.
-      { source: '/create-a-space', destination: '/launch-your-business', permanent: false },
       // Founder-pricing retirement: the founders marketing funnel is gone and the beta
       // price framing is "Opening Beta" on /pricing. Permanent — the routes are deleted
       // for good, so inbound links + old emails should transfer straight to /pricing.

@@ -26,13 +26,15 @@ interface FeatureEntry {
   made: string
   /** False until the builder's page ships; the cards only offer pages that exist. */
   open: boolean
+  /** The word for a finished build: "live", or "ready" for a draft that still waits on the owner (the first email). */
+  doneWord: 'live' | 'ready'
 }
 
 export const FEATURES: readonly FeatureEntry[] = [
-  { id: 'spotlight', name: 'Free Spotlight', href: '/free-spotlight', minutes: 3, promise: 'One page for you: your name, one line and your links.', icon: 'user', made: 'Spotlight', open: true },
-  { id: 'space', name: 'Create a Space', href: '/create-a-space', minutes: 5, promise: 'A home for what you run, with its own page, people and tools.', icon: 'space', made: 'Space', open: false },
-  { id: 'website', name: 'Launch Your Website', href: '/launch-your-website', minutes: 5, promise: 'A real website at your own address, in the look you pick.', icon: 'globe', made: 'website', open: false },
-  { id: 'email', name: 'Email Marketing', href: '/email-marketing', minutes: 4, promise: 'Your list and your first email, written and ready to send.', icon: 'send', made: 'first email', open: false },
+  { id: 'spotlight', name: 'Free Spotlight', href: '/free-spotlight', minutes: 3, promise: 'One page for you: your name, one line and your links.', icon: 'user', made: 'Spotlight', open: true, doneWord: 'live' },
+  { id: 'space', name: 'Create a Space', href: '/create-a-space', minutes: 5, promise: 'A home for what you run, with its own page, people and tools.', icon: 'space', made: 'Space', open: true, doneWord: 'live' },
+  { id: 'website', name: 'Launch Your Website', href: '/launch-your-website', minutes: 5, promise: 'A real website at your own address, in the look you pick.', icon: 'globe', made: 'website', open: true, doneWord: 'live' },
+  { id: 'email', name: 'Email Marketing', href: '/email-marketing', minutes: 4, promise: 'Your list and your first email, written and ready to send.', icon: 'send', made: 'first email', open: true, doneWord: 'ready' },
 ]
 
 /** The whole-business builder sits beside the four: it does all of them in one sitting. */

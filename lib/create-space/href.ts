@@ -6,8 +6,8 @@ import { ROUTES } from '@/lib/frequency/site-nav'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 
 export function createSpaceHref(kit?: string | null, accent?: string | null): string {
-  if (!kit || !(PREVIEW_KIT_ORDER as readonly string[]).includes(kit)) return ROUTES.createSpace
+  if (!kit || !(PREVIEW_KIT_ORDER as readonly string[]).includes(kit)) return ROUTES.launchBusiness
   // The accent picked beside the Use button rides along (lib/create-space/door.ts reads it); anything odd is left off.
   const a = accent && /^[a-z0-9#-]{1,40}$/i.test(accent) ? `&accent=${encodeURIComponent(accent.toLowerCase())}` : ''
-  return `${ROUTES.createSpace}?kit=${kit}${a}`
+  return `${ROUTES.launchBusiness}?kit=${kit}${a}`
 }
