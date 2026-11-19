@@ -42,7 +42,9 @@ export function inSpotlightPreview(): boolean {
 
 /** Is this request a published Spotlight render? */
 export function inSpotlightRender(): boolean {
-  return holder().spotlight
+  // The editor's preview frame draws the Spotlight too, but a press there is the owner's, never a visitor's
+  // click (LIVE-2453).
+  return holder().spotlight && !holder().preview
 }
 
 /** Stamp this request's website links (the hosted Spotlight route, once). */
