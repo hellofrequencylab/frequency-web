@@ -1,6 +1,6 @@
 // /themes/mindless (LIVE-2311): the feature page for the Mindless theme, on Nocturne's layout with a real render of every surface
-// (frequency-theme-feature.tsx). A Frequency-only route; a static segment wins over /themes/[theme]. Mindless is registered but not
-// offered in the pickers yet, so the page stays out of search and the sitemap until it is, the way /themes/cyberwitch did.
+// (frequency-theme-feature.tsx). A Frequency-only route; a static segment wins over /themes/[theme]. Mindless is offered in the
+// pickers (LIVE-2407), so the page is in search and the sitemap, the way /themes/cyberwitch is.
 // Its words come from THEME_FEATURES.mindless, so the SEO lives here, the way /themes/[theme] builds Bold's and Wildheart's.
 import type { Metadata } from 'next'
 import { RememberKit } from '@/components/frequency/site/pages/themes/remember-kit'
@@ -25,7 +25,7 @@ const SEO: FrequencyPageSeo = {
   ],
 }
 
-export const metadata: Metadata = { ...frequencyPageMetadata(SEO), robots: { index: false, follow: true } }
+export const metadata: Metadata = frequencyPageMetadata(SEO)
 
 export default function MindlessThemePage() {
   return (

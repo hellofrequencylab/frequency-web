@@ -23,6 +23,7 @@ const EMAIL_PREFIX: Partial<Record<SiteThemeId, string>> = {
   services: 'services-',
   'new-world': 'new-world-',
   cyberwitch: 'cyberwitch-',
+  mindless: 'mindless-',
 }
 
 const offered = SITE_THEMES.map((t) => t.id)

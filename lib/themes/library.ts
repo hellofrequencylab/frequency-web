@@ -147,6 +147,14 @@ export const THEME_LIBRARY: readonly ThemeLibraryEntry[] = [
     signature: 'Dark only, with blackletter headlines, riveted plates and one neon accent from five.',
     surfaces: surfaces('ready', 'ready'),
   },
+  {
+    // Offered 2026-11-19 (owner: "use frequency pics in the mindless them."): its pictures are Frequency's own, in the paint treatment.
+    id: 'mindless',
+    tagline: 'Warm ink, bone and one paint. Unwind your mind.',
+    madeFor: 'meditation circles, guides, programs, studios and anyone who teaches people to slow down',
+    signature: 'Night first with a Day register, a drip headline, paint-sticker buttons and one accent from three.',
+    surfaces: surfaces('ready', 'ready'),
+  },
 ]
 
 /** The path segment a theme's page lives at. Three ids are named differently from their address; each keeps its id,
