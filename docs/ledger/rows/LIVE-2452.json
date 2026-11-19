@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2452",
+  "title": "The Spotlight editor's preview shows the real page, in its own theme, after every edit",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/spotlight/space-spotlight-editor.tsx",
+    "ref": "Owner 2026-11-19 (project thread: Redesign the Spotlight editor): 'the display is way off. Color / transparency on the boxes are way off.' Plan: https://claude.ai/artifact/WX5fSWaGKNuKhe8iXbPSYf, phase 1."
+  },
+  "detail": "The preview was drawn inside the member console, so the member kit's glass card rule (members-ui.css, .fqm-center .rounded-card.border.bg-surface) and kit type painted over the Space's theme: grey see-through boxes on a dark page. A themed Spotlight also drew only its last saved copy, so edits never showed. The preview is now the real Spotlight page (app/spaces/[slug]/spotlight/preview, managers only, never indexed) in a phone-width iframe that stays in view, reloads after each save or theme change and keeps its scroll place. Link presses inside it do nothing and are never counted.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2452.mjs",
+    "note": "Fails while the editor draws the Spotlight inside the console instead of framing the real page."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

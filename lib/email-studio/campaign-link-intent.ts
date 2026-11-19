@@ -110,7 +110,7 @@ function target(href: string, siteUrl?: string): { intent: CampaignDestinationIn
     let path = url.pathname
     try { path = decodeURIComponent(path) } catch { return { intent: 'unsupported', path: '' } }
     path = path.replace(/\/+$/, '') || '/'
-    if (path === '/create-a-space' || path.startsWith('/create-a-space/') || path === '/launch' || path === '/launch/start') return { intent: 'hosting', path }
+    if (path === '/create-a-space' || path.startsWith('/create-a-space/') || path === '/launch-your-business' || path === '/launch' || path === '/launch/start') return { intent: 'hosting', path }
     if (path === '/events' || path.startsWith('/events/') || path === '/rsvp' || path.startsWith('/rsvp/')) return { intent: 'attendance', path: path.slice(0, 200) }
     if (path === '/' || path === '/discover' || path.startsWith('/discover/') || path === '/what-is-frequency') return { intent: 'preview', path: path.slice(0, 200) }
     return { intent: 'unknown', path: path.slice(0, 200) }

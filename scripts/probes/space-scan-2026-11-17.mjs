@@ -61,7 +61,7 @@ const PROBES = {
   },
   // Create a Space: the Google claim says why it stopped, as the email claim does.
   'LIVE-2331': () => {
-    const src = read('app/(marketing)/create-a-space/actions.ts')
+    const src = read('app/(marketing)/launch-your-business/actions.ts')
     return /redirect\('\/create-a-space#get-started'\)/.test(src)
       ? ['claimWithGoogle drops a refused hand-over (handle taken, draft lost) back on the form with no message']
       : []

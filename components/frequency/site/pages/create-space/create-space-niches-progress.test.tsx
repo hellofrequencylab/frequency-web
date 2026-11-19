@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, expect, it, vi } from 'vitest'
 const io = vi.hoisted(() => ({ progress: vi.fn(async () => ({ ok: true })) }))
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }))
-vi.mock('@/app/(marketing)/create-a-space/actions', () => ({ restoreDraft: async () => ({ draft: null }), saveBuilderProgress: io.progress, saveDraftLead: async () => ({ ok: false }), claimWithEmail: vi.fn(), claimWithGoogle: vi.fn(), continueSignedIn: vi.fn() }))
+vi.mock('@/app/(marketing)/launch-your-business/actions', () => ({ restoreDraft: async () => ({ draft: null }), saveBuilderProgress: io.progress, saveDraftLead: async () => ({ ok: false }), claimWithEmail: vi.fn(), claimWithGoogle: vi.fn(), continueSignedIn: vi.fn() }))
 import { CreateSpaceStudio } from './create-space-studio'
 import { getOnboardingNicheChoices } from '@/lib/create-space/niche-choices.server'
 import { DRAFT_KEY } from '@/lib/create-space/builder'

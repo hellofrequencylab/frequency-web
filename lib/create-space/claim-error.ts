@@ -1,4 +1,4 @@
-// Why "Save with Google" came back to /create-a-space instead of going on to Google (LIVE-2331). The Google claim is a
+// Why "Save with Google" came back to /launch-your-business instead of going on to Google (LIVE-2331). The Google claim is a
 // plain form action that ends in a redirect, so it cannot return a line the way the email claim does. It carries a
 // short code in the address instead (?claim_error=<code>), and the builder turns the code into a line. Closed set:
 // anything else in the address reads as the generic line, so nothing a visitor types into the URL is ever shown.
@@ -15,7 +15,7 @@ const LINES: Record<ClaimErrorCode, string> = {
 
 /** Where a refused Google claim goes: back to the builder, with the reason. */
 export function claimErrorHref(code: ClaimErrorCode): string {
-  return `/create-a-space?${CLAIM_ERROR_PARAM}=${code}#get-started`
+  return `/launch-your-business?${CLAIM_ERROR_PARAM}=${code}#get-started`
 }
 
 /** The line the builder shows for a ?claim_error= value, or null when there is none. */

@@ -34,7 +34,7 @@ describe('shared wizard entry', () => {
     expect(owned).not.toHaveBeenCalled()
   })
   it('resumes the actual builder cursor from launch and the header sheet', () => {
-    expect(resumeView(launch(), now)).toMatchObject({ kind: 'step', href: '/create-a-space?new=1' })
-    expect(boxView(launch(), now).resumeHref).toBe('/create-a-space?new=1')
+    expect(resumeView(launch(), now)).toMatchObject({ kind: 'step', href: '/launch-your-business?new=1' })
+    expect(boxView(launch(), now).resumeHref).toBe('/launch-your-business?new=1')
   })
 })

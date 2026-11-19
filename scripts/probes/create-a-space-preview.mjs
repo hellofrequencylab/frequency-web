@@ -6,9 +6,9 @@ const problems = []
 const need = (cond, msg) => { if (!cond) problems.push(msg) }
 const read = (f) => (existsSync(f) ? readFileSync(f, 'utf8') : '')
 
-need(existsSync('app/(marketing)/create-a-space/page.tsx'), 'no /create-a-space page')
-need(/createSpace:\s*'\/create-a-space'/.test(read('lib/frequency/site-nav.ts')), 'ROUTES has no createSpace')
-need(read('app/sitemap.ts').includes('/create-a-space'), 'sitemap omits /create-a-space')
+need(existsSync('app/(marketing)/launch-your-business/page.tsx'), 'no /launch-your-business page')
+need(/launchBusiness:\s*'\/launch-your-business'/.test(read('lib/frequency/site-nav.ts')), 'ROUTES has no createSpace')
+need(read('app/sitemap.ts').includes('/launch-your-business'), 'sitemap omits /launch-your-business')
 const preview = read('components/frequency/site/pages/create-space/space-preview.tsx') + read('components/frequency/site/pages/create-space/create-space.css')
 need(preview.includes('data-preview-theme'), 'the preview does not name its theme')
 need(!/var\(--fq-(?!bg-canvas|text-strong)/.test(read('components/frequency/site/pages/create-space/create-space.css').split('/* ---- Hero ---- */')[0]), 'the preview reads a page token other than the frame ones')
@@ -18,4 +18,4 @@ if (problems.length) {
   console.error(problems.join('; '))
   process.exit(1)
 }
-console.log('ok: /create-a-space has its live preview on the --pv contract')
+console.log('ok: /launch-your-business has its live preview on the --pv contract')

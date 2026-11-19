@@ -30,7 +30,7 @@ export function ConfirmDraftUnsubscribe({ token }: { token: string }) {
       <UnsubscribeFrame title="No more notes about your draft." description="We will not email you about it again.">
         <Body>Your draft stays saved and private. Open it any time from the link in your email, and change anything you like.</Body>
         <div className="pt-3">
-          <Link href={`/create-a-space?draft=${encodeURIComponent(token)}`} className={buttonClasses('primary', 'md')}>Open my draft</Link>
+          <Link href={`/launch-your-business?draft=${encodeURIComponent(token)}`} className={buttonClasses('primary', 'md')}>Open my draft</Link>
         </div>
       </UnsubscribeFrame>
     )

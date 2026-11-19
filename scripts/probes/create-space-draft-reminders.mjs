@@ -63,7 +63,7 @@ if (!/ConfirmDraftUnsubscribe/.test(page)) bad.push('the unsubscribe page has no
 if (/[—–]/.test(email)) bad.push('the email copy has a dash')
 if (!/private draft/.test(email)) bad.push('the emails do not say it is a private draft')
 if (/held for you|reserved/i.test(email)) bad.push('the day-3 email claims the handle is held')
-if (!/create-a-space\?kit=/.test(io)) bad.push('the button does not go back to /create-a-space')
+if (!/launch-your-business\?kit=/.test(io)) bad.push('the button does not go back to /launch-your-business')
 if (!/"path": "\/api\/cron\/create-space-draft-reminders"/.test(vercel)) bad.push('the cron is not scheduled')
 if (!/'create-space-draft-reminders'/.test(slos)) bad.push('the cron is not declared in the monitoring contract')
 if (/process\.env\.CREATE_SPACE_[A-Z_]* === /.test(route + io)) bad.push('a switch is read by hand')
