@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2471",
+  "title": "The 12-minute business builder is Launch Your Business, at its own address",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/(marketing)/launch-your-business/page.tsx",
+    "ref": "Owner 2026-11-19 (project thread: Build four feature launch funnels): \"The current create a space page needs to be Launch Your Business, and used for any funnels where people are interested in that.\" Probe pin rewrites approved on the card \"Yes, update all of them\" (20:28Z)."
+  },
+  "detail": "The signed-out builder that /create-a-space served (name, offer, contact, photos, 12-minute clock) builds a whole business, not a Space, so it moves to /launch-your-business with the title Launch Your Business. Every business door follows it: signed-out /spaces/new and /launch (proxy.ts, lib/create-space/door.ts), launchHomeHref, the builder's own resume, claim-error, draft-recovery and unsubscribe links, the retired /go doors and /spaces/launch. /create-a-space forwards there for now (a temporary redirect, so no browser caches it) and becomes the new Create a Space page in a later row. Pinned addresses in create-space-doors, create-a-space-preview, create-space-draft-reminders, launch-entry-routing and marketing-evolution-funnels move with the page, by the owner's approval.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2471.mjs",
+    "note": "Fails while the business builder is served at /create-a-space or a signed-out business door still lands there."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

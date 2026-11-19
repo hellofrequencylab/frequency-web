@@ -89,7 +89,7 @@ const SITE: IndexedPage[] = present([
   blocks('spaces', 'For spaces'),
   // Frequency-only routes (404 under DAWN): their rows show only on a Frequency build.
   FREQUENCY ? { label: 'Features', path: '/features', editor: 'coded' } : null,
-  { label: 'Create a Space', path: '/create-a-space', editor: 'coded', note: 'The live preview and the builder; ?kit= preselects a Theme Kit.' },
+  { label: 'Launch Your Business', path: '/launch-your-business', editor: 'coded', note: 'The 12-minute business builder with its live preview; ?kit= preselects a Theme Kit.' },
   blocks('pricing', 'Pricing', 'Prices come from the Pricing console.'),
   blocks('about', 'About'),
   blocks('circles', 'Circles'),

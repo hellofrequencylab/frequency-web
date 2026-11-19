@@ -40,7 +40,7 @@ export default async function NewSpacePage({
   searchParams: Promise<{ mode?: string | string[]; plan?: string | string[]; name?: string | string[]; intents?: string | string[]; niche?: string | string[]; theme?: string | string[] }>
 }) {
   // Gate: only an authenticated member may create a space (the action re-checks server-side).
-  // A signed-out operator opens the wizard that needs no account, /create-a-space, carrying what the door knew (its
+  // A signed-out operator opens the wizard that needs no account, /launch-your-business, carrying what the door knew (its
   // kit, mode, niche, name and picks; lib/create-space/door.ts). They build there and make the account at the end,
   // and its hand-over lands them on the launch like any member (LIVE-1969, ADR-1933). Until 2026-11-02 this bounced
   // them to /sign-in first, a form before the thing they asked for.
@@ -56,7 +56,7 @@ export default async function NewSpacePage({
   // /launch opens as the full-screen lightbox (lib/launch/destination.ts). With the launch off, the form below stays.
   if (launchSystemEnabled()) {
     const launch = await getActiveLaunch(profileId)
-    if (launch?.resume?.phase === 'builder') redirect('/create-a-space?new=1')
+    if (launch?.resume?.phase === 'builder') redirect('/launch-your-business?new=1')
     if (launch) redirect(launchHomeHref({ signedIn: true }))
     const niche = nicheFromHint(params.niche) ?? nicheFromHint((await cookies()).get('fq_beta_seq')?.value)
     const launchStart = '/launch/start'

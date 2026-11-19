@@ -23,7 +23,7 @@ if (!/fillSpaceBrandAccent\(spaceId, input\.accent\)/.test(provision)) bad.push(
 if (provision.indexOf('fillSpaceBrandAccent(spaceId, input.accent)') > provision.indexOf('applyMegaTheme(spaceId, input.theme)')) bad.push('the picked accent lands after the theme default would fill it')
 
 // 3. An abandoned claim keeps its reminders: converted is stamped at /launch/claim, never at Claim.
-const claimActions = read('app/(marketing)/create-a-space/actions.ts')
+const claimActions = read('app/(marketing)/launch-your-business/actions.ts')
 if (/markDraftConverted/.test(claimActions)) bad.push('Claim still stamps the draft converted before anyone signs in')
 const claimRoute = read('app/(main)/launch/claim/route.ts')
 if (!/markDraftConverted\(lead\)/.test(claimRoute)) bad.push('/launch/claim does not stamp the carried draft converted')

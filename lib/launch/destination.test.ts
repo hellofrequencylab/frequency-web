@@ -10,7 +10,7 @@ describe('launchHomeHref', () => {
     expect(launchHomeHref({ signedIn: true })).toBe('/launch')
   })
   it('sends a visitor with no account to the Spotlight form that holds their answers', () => {
-    expect(launchHomeHref({ signedIn: false })).toBe('/create-a-space')
+    expect(launchHomeHref({ signedIn: false })).toBe('/launch-your-business')
   })
   it('carries a launch id and nothing else', () => {
     expect(launchHomeHref({ signedIn: true, lid: LID })).toBe(`/launch?lid=${LID}`)

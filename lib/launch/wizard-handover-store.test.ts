@@ -33,7 +33,7 @@ vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ from: () 
     },
   }
 } }) }))
-import { continueSignedIn } from '@/app/(marketing)/create-a-space/actions'
+import { continueSignedIn } from '@/app/(marketing)/launch-your-business/actions'
 const draft = { ...emptyDraft('new-world', true), name: 'Latest browser draft', leadToken: 'handover-token-12345', startedAt: '2026-11-01T12:00:00Z' }
 const form = () => { const f = new FormData(); f.set('draft', serializeDraft(draft)); return f }
 beforeEach(() => {
