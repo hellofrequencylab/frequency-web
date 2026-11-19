@@ -45,6 +45,7 @@ import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-proj
 import { eventPayoutReadyOrUnknown } from '@/lib/events/payout-readiness'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { readEventCoverAspect } from '@/lib/events/cover-aspect'
+import { getEventHostSpace } from '@/lib/spaces/discovery'
 
 export type EventEnrichment = {
   /** The event's own IANA zone (`events.time_zone`, NOT NULL, default 'America/Los_Angeles').
@@ -116,6 +117,11 @@ export type EventEnrichment = {
   /** The cover's intrinsic width / height from events.theme.coverAspect (ADR-1248), so the public
    *  poster band takes the cover's own shape exactly as the in-app one does. Null when unmeasured. */
   cover_aspect?: number | null
+  /** The networked Space hosting this event, for the "Hosted by" link and the Event's `organizer`
+   *  (SCAN-1272). ABSENT when the event has no Space, or its Space is private or standalone.
+   *  Measured on production 2026-11-19: 212 of 256 public Event nodes named no organizer, because
+   *  only a Circle host was ever published and most events are hosted by a Space. */
+  host_space?: { slug: string; name: string }
 }
 
 export type EnrichedPublicEvent = PublicEvent & EventEnrichment
@@ -235,7 +241,13 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
     ? await eventPayoutReadyOrUnknown({ id: r.id, host_id: r.host_id, host_space_id: r.host_space_id })
     : null
 
+  // THE HOSTING SPACE (SCAN-1272). The explicit host wins, else the placement Space, the same order
+  // the member page attributes in (ADR-800/819). Only a networked Space is named.
+  // Read by event id on the service side, so this module's anon select stays exactly as it was.
+  const hostSpace = await getEventHostSpace(r.id)
+
   return {
+    ...(hostSpace ? { host_space: hostSpace } : {}),
     time_zone: r.time_zone,
     attendance_mode: normalizeMode(r.attendance_mode),
     is_cancelled: r.is_cancelled ?? false,

@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1275",
+  "title": "Owner ruling: a Space with no street address stays published as a local business",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/jsonld.ts",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "141 Space pages publish LocalBusiness with no address, and none of the 352 Space nodes carries geo or opening hours. Google ignores a LocalBusiness without an address, and answer engines read it as a place that cannot be found. Wanted: a business Space with no address is published as Organization, and LocalBusiness is kept for a Space that has one. A test (lib/jsonld.test.ts, the business Space case) pins business to LocalBusiness today, so the change needs the owner's own go-ahead for that pin. OWNER RULING 2026-11-19 (decision card): leave it as a local business. Retired as decided, not parked: nothing is to be built, and it is not to be raised again without a new ask from the owner.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-19",
+    "evidence": "Owner decision card answered 2026-11-19 04:21Z in the scan thread: option B, leave it as a local business. lib/jsonld.test.ts still pins a business Space to LocalBusiness, unchanged."
+  },
+  "wave": "W7",
+  "closed": "2026-11-19"
+}

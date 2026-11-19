@@ -1,0 +1,20 @@
+{
+  "id": "PERF-012",
+  "title": "A photo is web-sized in the browser before it is stored",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/library/image-shrink.ts",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "After PERF-010 the photos on a Space page load lazily, but each is still the file the owner uploaded (several are 1 to 2 MB). Routing them through the image optimizer, as PERF-011 does for one event cover, would cut most of that weight. It is an owner call because optimizer use is metered on the hosting plan and every Space photo would count: needs a cost ruling before any code. OWNER RULING 2026-11-19 (decision card): shrink photos at upload, do not use the paid optimizer. DONE the same day: lib/library/image-shrink.ts, the one prep step every image uploader already calls, used to touch only a file over 3.5 MB (the upload ceiling). It now re-encodes any JPEG, PNG or WebP over 600 KB at 2000 px on the longest edge (quality 0.82), and keeps the result only when it is smaller than the source. A source with any transparency becomes WebP, never JPEG, as before. SVG, GIF and small files pass through untouched. Checked in real Chromium: a 4000x3000 3.9 MB JPEG became 2000x1500 at 1.2 MB (a noise image, the worst case for compression), a 3000x2000 10.9 MB transparent PNG became a 1.2 MB WebP with its alpha, and an 800x600 342 KB JPEG was returned as the same file. Not done: photos already stored stay as they are (a one-off re-encode of existing Space photos would be its own row and needs the owner's ask).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-012.mjs",
+    "note": "Fails on main: the shrink starts at the 3.5 MB upload ceiling, so a 2 MB photo is stored as uploaded. Passes once a web-size pass runs from 600 KB and Space block photos stay off the optimizer."
+  },
+  "wave": "W7",
+  "closed": "2026-11-19"
+}

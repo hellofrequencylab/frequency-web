@@ -1,0 +1,19 @@
+{
+  "id": "PERF-015",
+  "title": "Hero photos on the home, North County and city pages are found late or served raw",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "components/frequency/site/pages/home/frequency-home.tsx",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "The home page serves six /brand/frequency/photos/sm/*.jpg files as plain img (195 to 247 KB could be saved with modern formats and right sizes) and carries one 36 KB image inlined as base64 in the document. /north-county-san-diego and /discover/cities/<city> draw their hero as a background with no preload, so the browser waits 1.2 to 1.7 s before asking for it. The first visit to a cold city or market page takes 2 to 5 s on the server and is fast afterwards.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-19",
+    "evidence": "Production, 2026-11-19: Lighthouse LCP breakdown on /north-county-san-diego and /discover/cities/* shows 1.2 to 1.7 s load delay on the hero; modern-image-formats on / lists the six photos; timed fetches showed 2 to 5 s on a cold city page and under 300 ms once cached."
+  },
+  "wave": "W7"
+}

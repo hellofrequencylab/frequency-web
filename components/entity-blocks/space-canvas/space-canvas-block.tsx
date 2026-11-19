@@ -406,6 +406,8 @@ function CardGridItemsCanvas({
           <img
             src={image}
             alt=""
+            loading="lazy"
+            decoding="async"
             className={imageLeft ? 'h-full w-1/3 shrink-0 object-cover' : 'aspect-[4/3] w-full object-cover'}
           />
         ) : icon ? (
@@ -586,7 +588,7 @@ function FeaturesItemsCanvas({
             <>
               {it.image ? (
                 // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
-                <img src={it.image} alt="" className="aspect-[4/3] w-full object-cover" />
+                <img src={it.image} alt="" loading="lazy" decoding="async" className="aspect-[4/3] w-full object-cover" />
               ) : it.icon ? (
                 <div className="flex h-14 items-center px-5 pt-5 text-primary-strong" aria-hidden>
                   <BlockIcon name={it.icon} size={30} />
