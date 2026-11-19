@@ -1000,7 +1000,7 @@ export async function createTicketCheckout(opts: {
   // the destination charge's application fee. Off, the application fee is Frequency's fee alone.
   // A SPLIT ticket is not covered yet: its shares are paid by transfer, and the transfer ledger has
   // no column for a card fee, so readers that rebuild a share's gross from the row would be wrong.
-  // Frequency still bears the card fee on a split ticket until that column lands (LIVE-2404).
+  // Frequency still bears the card fee on a split ticket until that column lands (LIVE-2421).
   const sellerFees = sellerFeesNow(gross, fee)
   let splitOrderId: string | null = null
   if (splits.length > 1) {

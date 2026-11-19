@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LIVE-2403: card processing passes through to the seller on every single-seller checkout, from one effective date.
+// LIVE-2420: card processing passes through to the seller on every single-seller checkout, from one effective date.
 // Stripe debits its card fee from the platform on a destination charge, so an application fee that carries only
 // Frequency's percentage leaves Frequency paying the card fee on every sale. Each checkout creator must price its
 // application fee through lib/billing/card-fee.ts, and the date that turns it on must be documented where a rollout
@@ -20,4 +20,4 @@ assert.ok(member.includes('applicationFeePercent(amount, sellerFeesNow(amount, f
 assert.ok(/^CARD_FEE_PASS_THROUGH_FROM=$/m.test(read('.env.example')), '.env.example lists the date blank')
 assert.ok(read('docs/RUNBOOKS.md').includes('## Card fee pass-through'), 'the gate to set the date is in docs/RUNBOOKS.md')
 assert.ok(read('lib/billing/ticket-sale-notify.ts').includes('sellerFeesAt(') && read('lib/billing/tips-notify.ts').includes('sellerFeesAt('), 'the sale and tip emails state the card fee')
-console.log('LIVE-2403: every single-seller checkout prices its application fee through the card fee module')
+console.log('LIVE-2420: every single-seller checkout prices its application fee through the card fee module')
