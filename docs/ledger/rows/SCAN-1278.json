@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1278",
+  "title": "A missing event, help or topic page says \"index, follow\", and a few member pages answer 200 to a crawler",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "app/not-found.tsx",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "The not-found page for an event, a help article and a topic answers 404 but its robots meta says index, follow (harmless to Google, confusing to simpler crawlers). /feed answers 200 and indexable to a signed-out request (robots keeps crawlers out, the page itself does not say noindex). /events/calendar is indexable and not in the sitemap. 686 /sign-in?next=... addresses were crawled; they are noindex and left crawlable on purpose. The site has no web app manifest and no security.txt (the apple-touch-icon is linked from /icons/ and works).",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-19",
+    "evidence": "Production crawl, 2026-11-19: 404 responses for /events/<missing>, /help/<missing> and /topics/<missing> carried robots \"index, follow\"; /feed returned 200 with no noindex; /manifest.webmanifest and /.well-known/security.txt returned 404."
+  },
+  "wave": "W7"
+}

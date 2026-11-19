@@ -117,7 +117,7 @@ function FeatureMedia({ item, variant }: { item: FeatureItem; variant: 'inline' 
           ? 'aspect-[4/3] w-full rounded-card object-cover'
           : 'h-12 w-12 shrink-0 rounded-xl object-cover'
     // eslint-disable-next-line @next/next/no-img-element -- operator/offering image URL (safeUrl-checked)
-    return <img src={item.image} alt="" className={cls} />
+    return <img src={item.image} alt="" loading="lazy" decoding="async" className={cls} />
   }
   if (item.icon) {
     return (
@@ -263,7 +263,7 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
             <>
               {it.image ? (
                 // eslint-disable-next-line @next/next/no-img-element -- operator/offering image URL (safeUrl-checked)
-                <img src={it.image} alt="" className="aspect-[4/3] w-full object-cover" />
+                <img src={it.image} alt="" loading="lazy" decoding="async" className="aspect-[4/3] w-full object-cover" />
               ) : it.icon ? (
                 <div className="flex h-14 items-center px-5 pt-5 text-primary-strong" aria-hidden>
                   <BlockIcon name={it.icon} size={30} />
@@ -493,9 +493,16 @@ export function ContentBlockView({
       // ONE image sink for every view: the src is already safeUrl-sanitized above, and funnelling all three
       // layouts through this single element keeps the operator-URL sink count to one (grid / masonry /
       // carousel only vary the per-tile className + the wrapper).
+      //
+      // LAZY, ALWAYS (PERF-010). These are the operator's own uploads at whatever size they were
+      // uploaded, and the browser used to fetch every one of them before the page had finished
+      // loading. Measured on production 2026-11-19: /spaces/royaltemple weighed 11.4 MB, 9.7 MB of
+      // it photos below the fold. `loading="lazy"` leaves a photo unrequested until it is near the
+      // viewport; one already in view still loads at once. The single Image and Callout blocks are
+      // left eager on purpose: either can be the first thing on a page.
       const tile = (src: string, i: number, className: string) => (
         // eslint-disable-next-line @next/next/no-img-element -- operator-supplied arbitrary URL (safeUrl-checked)
-        <img key={`${src}-${i}`} src={src} alt="" className={className} />
+        <img key={`${src}-${i}`} src={src} alt="" loading="lazy" decoding="async" className={className} />
       )
 
       if (view === 'carousel') {

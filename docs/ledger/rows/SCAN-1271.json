@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1271",
+  "title": "An empty Space tab says noindex, and every Space tab carries a share image",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/spaces/profile-metadata.ts",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "The crawl found 256 Space tab pages (book, calendar, community, circles, collaborators, reviews, memberships, contact, program) that were 200 and indexable with nothing on them, and 331 Space tabs with no og:image. The sitemap already leaves a tab out when it has nothing public (listNetworkedSpaceProfileTabs); the page metadata now asks the same reader and marks an unadvertised gated tab noindex, follow. A failed or empty read never marks a tab (fail open, the page stays indexable). The Program tab reports its own empty state from the same reads the page uses. Every tab now carries the root share image on Open Graph and the twitter card. Custom-domain Spaces and the root Space are not judged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1271.mjs",
+    "note": "Fails on main: the tab metadata has no empty signal, never consults the sitemap reader and sets no share image. Passes once a thin tab is noindex, follow and tabs carry the image."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

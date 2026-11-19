@@ -8,7 +8,10 @@ import { ListingSpark } from '../listing-spark'
 // The Spark brings its own centered column, progress cue, and heading, so this page mounts it
 // directly rather than wrapping it in a second shell. Deep-linkable by design (STUDIO.md §1).
 
-export const metadata = { title: 'Post a listing' }
+// A signed-out request is sent to sign-in below, but the shell has already streamed by then, so a
+// crawler gets a 200 with this title and no canonical (measured on production 2026-11-19, SCAN-1274).
+// The composer is nobody's search result: say so in the head.
+export const metadata = { title: 'Post a listing', robots: { index: false, follow: false } }
 
 export default async function NewListingPage() {
   const profileId = await getMyProfileId()
