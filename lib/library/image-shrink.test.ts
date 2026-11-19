@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { encodeTypeExtension, isHeicFile, prepareImageForUpload, shrinkImageForUpload, SHRINK_TARGET_BYTES } from './image-shrink'
+import {
+  encodeTypeExtension,
+  isHeicFile,
+  prepareImageForUpload,
+  shrinkImageForUpload,
+  SHRINK_TARGET_BYTES,
+  wantsWebSizing,
+  WEB_MAX_DIM,
+  WEB_SIZE_BYTES,
+} from './image-shrink'
 
 // Pure/branch coverage only: the decode/encode paths need a real browser (createImageBitmap, canvas,
 // heic2any's wasm), so they are exercised manually. What CAN be pinned here is the detection seam —
@@ -62,5 +71,30 @@ describe('shrinkImageForUpload — fail-safe', () => {
     const big = new File([new Uint8Array(SHRINK_TARGET_BYTES + 1024)], 'cutout.png', { type: 'image/png' })
     const res = await prepareImageForUpload(big)
     expect('file' in res && res.file.type).toBe('image/png')
+  })
+})
+
+// ── Web sizing at upload (PERF-012) ──────────────────────────────────────────────────────────────
+// The stored file is the file every visitor downloads, so a photo over WEB_SIZE_BYTES is re-encoded at
+// WEB_MAX_DIM in the browser before it is stored. The encode needs a real canvas; the RULE does not.
+
+describe('wantsWebSizing', () => {
+  it('sizes a photo over the web threshold, in every raster format the browser can decode', () => {
+    for (const type of ['image/jpeg', 'image/png', 'image/webp']) expect(wantsWebSizing(type, WEB_SIZE_BYTES + 1)).toBe(true)
+  })
+
+  it('leaves a file at or under the threshold exactly as the owner made it', () => {
+    expect(wantsWebSizing('image/jpeg', WEB_SIZE_BYTES)).toBe(false)
+    expect(wantsWebSizing('image/png', 12 * 1024)).toBe(false)
+  })
+
+  it('never touches a vector, an animation or a non-image', () => {
+    for (const type of ['image/svg+xml', 'image/gif', 'video/mp4', '']) expect(wantsWebSizing(type, 50 * 1024 * 1024)).toBe(false)
+  })
+
+  it('starts well under the upload ceiling and keeps enough pixels for a full-bleed header', () => {
+    expect(WEB_SIZE_BYTES).toBeLessThan(SHRINK_TARGET_BYTES)
+    expect(WEB_MAX_DIM).toBeGreaterThanOrEqual(1600)
+    expect(WEB_MAX_DIM).toBeLessThanOrEqual(2560)
   })
 })
