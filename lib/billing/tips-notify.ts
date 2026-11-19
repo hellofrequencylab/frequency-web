@@ -115,7 +115,7 @@ export async function notifyTipRecipient(tip: SucceededTip): Promise<void> {
 
 /** The money line under a tip. With a card fee it states the fee and what is left; without one
  *  (a tip made before the pass-through) it is the sentence it always was. */
-export function tipMoneySentence(p: { cardFee?: string | null; net?: string | null }): string {
+function tipMoneySentence(p: { cardFee?: string | null; net?: string | null }): string {
   return p.cardFee && p.net
     ? `Frequency charges no platform fee on tips. The card fee on this one was ${p.cardFee}, so ${p.net} goes to your payout account. Stripe manages payouts to your bank.`
     : 'Frequency charges no platform fee on tips. Card processing still applies. Stripe manages payouts to your bank.'
