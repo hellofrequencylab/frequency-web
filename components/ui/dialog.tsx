@@ -278,23 +278,27 @@ export function Dialog({
         tabIndex={-1}
         className={cn(
           'w-full outline-none motion-safe:animate-[slideUp_0.3s_ease-out]',
+          // Inside the member kit the portaled overlay carries `[data-kit="members"]`, whose unlayered
+          // `display:flex; flex-direction:column` beats the row this overlay's utilities assume:
+          // `items-*` turns sideways and `justify-*` turns vertical. Every panel class below therefore
+          // holds in BOTH directions (LIVE-2438, LIVE-2439):
+          //   · drawer   `self-end` keeps it on the right edge at its own max width (it opened full width);
+          //   · overlay  `flex-1` fills the frame (it sat at its natural height, centred);
+          //   · bottom   `mt-auto` pins it to the bottom edge, `sm:my-auto` centres the card at sm+;
+          //   · sheet    `flex-1` fills the phone;
+          //   · top      `mx-auto mb-auto` keeps it centred across and 6vh from the top (it sat
+          //              mid-screen, and a tall one clipped its own top under `justify-center`).
           align === 'drawer'
-            ? 'h-full min-h-0'
+            ? 'h-full min-h-0 self-end'
             : align === 'overlay'
-            ? 'min-h-0'
-            : // Inside the member kit the portaled overlay carries `[data-kit="members"]`, whose
-              // unlayered `display:flex; flex-direction:column` beats the row this overlay's utilities
-              // assume: `items-end` turns sideways and `justify-center` centres vertically, so a short
-              // bottom sheet floated mid-screen on a phone and a short `sheet` stopped filling it
-              // (LIVE-2438). These hold in BOTH directions: `mt-auto` pins a bottom sheet to the edge,
-              // `flex-1` lets a sheet fill the viewport, and `sm:my-auto` centres the card at sm+.
-              align === 'bottom'
+            ? 'min-h-0 flex-1'
+            : align === 'bottom'
             ? 'mt-auto sm:my-auto'
             : align === 'sheet'
             ? 'flex-1 sm:flex-none sm:my-auto'
             : align === 'center'
             ? 'my-auto'
-            : 'mt-[6vh]',
+            : 'mx-auto mb-auto mt-[6vh]',
           className,
         )}
       >
