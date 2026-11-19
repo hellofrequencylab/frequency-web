@@ -1,0 +1,124 @@
+/* The feature builders (LIVE-2481): /free-spotlight and its siblings. Tokens only. Every class starts fb- so nothing
+   here reaches another page; the step card, fields and buttons are the builder's own cs- classes (create-space.css),
+   so the five builders read as one family. The previews draw on --fq-* tokens: they show Frequency's own surfaces
+   (a Spotlight, an email), not a Space kit. */
+
+.fb-hero{min-height:auto}
+.fb-grid{position:relative;z-index:1;max-width:1480px;margin:0 auto;padding:clamp(28px,5vh,64px) clamp(16px,5vw,96px) clamp(40px,6vh,72px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,4vw,72px);align-items:start}
+.fb-col{display:flex;flex-direction:column;gap:18px;min-width:0;max-width:600px}
+.fb-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.fb-kicker{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 6px 0 12px;border-radius:999px;background:var(--fq-surface-glass);box-shadow:inset 0 0 0 1px var(--fq-border-hair);font:600 12px/1 var(--fq-font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fq-text-strong)}
+.fb-kicker b{height:22px;padding:0 9px;border-radius:999px;display:inline-flex;align-items:center;background:color-mix(in oklab,var(--fq-accent-2) 18%,transparent);color:var(--fq-text-strong);font-weight:700;letter-spacing:.08em}
+
+/* The clock: a ring and a number. Calm while it runs, warm in bonus time, bright when beaten. */
+.fb-clock{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:6px 14px 6px 6px;border-radius:999px;background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
+.fb-ring{grid-row:1/3;width:38px;height:38px;transform:rotate(-90deg)}
+.fb-ring circle{fill:none;stroke-width:3.2}
+.fb-ring-bg{stroke:var(--fq-border-hair)}
+.fb-ring-fg{stroke:var(--fq-accent-2);stroke-linecap:round;stroke-dasharray:97.4;transition:stroke-dashoffset .5s linear}
+.fb-clock-t{font:700 17px/1 var(--fq-font-display);letter-spacing:-.02em;color:var(--fq-text-strong);font-variant-numeric:tabular-nums}
+.fb-clock-k{font:500 11.5px/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
+.fb-clock-bonus .fb-ring-fg{stroke:var(--fq-text-muted)}
+.fb-clock-done{box-shadow:inset 0 0 0 1.5px var(--fq-accent-2),0 0 24px color-mix(in oklab,var(--fq-accent-2) 30%,transparent)}
+.fb-clock-done .fb-clock-k{color:var(--fq-accent-2);font-weight:600}
+
+.fb-h1{font-size:clamp(36px,min(4.2vw,7.6vh),72px)}
+.fb-sub{font-size:clamp(16px,1.2vw,18px)}
+
+/* The steps bar. */
+.fb-steps{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 14px}
+.fb-step{display:inline-flex;align-items:center;gap:8px;font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted);transition:color .3s}
+.fb-step-dot{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:600 11.5px/1 var(--fq-font-sans);box-shadow:inset 0 0 0 1px var(--fq-border-strong);color:var(--fq-text-muted);transition:background .3s,box-shadow .3s}
+.fb-step[data-state="now"]{color:var(--fq-text-strong)}
+.fb-step[data-state="now"] .fb-step-dot{box-shadow:inset 0 0 0 2px var(--fq-accent-2),0 0 12px color-mix(in oklab,var(--fq-accent-2) 40%,transparent);color:var(--fq-text-strong)}
+.fb-step[data-state="done"]{color:var(--fq-text-body)}
+.fb-step[data-state="done"] .fb-step-dot{background:var(--fq-pa);color:var(--fq-bg-canvas);box-shadow:none}
+
+.fb-card-slot{min-height:200px}
+.fb-card{gap:16px}
+.fb-field textarea{min-height:96px}
+.fb-chips{margin-top:2px}
+.fb-wide{width:100%;justify-content:center}
+.fb-or{display:flex;align-items:center;gap:12px;font:500 12.5px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+.fb-or::before,.fb-or::after{content:"";flex:1;height:1px;background:var(--fq-border-hair)}
+.fb-done{gap:20px}
+
+/* A choice field: a few big taps. */
+.fb-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px}
+.fb-choice{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:14px 16px;border:0;border-radius:14px;background:var(--fq-bg-canvas);box-shadow:inset 0 0 0 1px var(--fq-border-strong);color:var(--fq-text-strong);text-align:left;cursor:pointer;transition:box-shadow .2s,background .2s}
+.fb-choice b{font:600 15px/1.2 var(--fq-font-sans)}
+.fb-choice span{font:400 13px/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+.fb-choice:hover{background:color-mix(in oklab,var(--fq-text-strong) 4%,transparent)}
+.fb-choice[aria-checked="true"]{box-shadow:inset 0 0 0 2px var(--fq-accent-2),0 0 0 4px color-mix(in oklab,var(--fq-accent-2) 14%,transparent)}
+
+/* The preview column. */
+.fb-preview{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:8px}
+.fb-glow{position:absolute;inset:8% 6% 14%;border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,var(--fq-accent-2) 26%,transparent),transparent);filter:blur(40px);z-index:-1}
+.fb-draft-badge{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 14px;border-radius:999px;background:var(--fq-surface-glass);box-shadow:inset 0 0 0 1px var(--fq-border-hair);font:500 12.5px/1 var(--fq-font-sans);color:var(--fq-text-body)}
+.fb-draft-badge .cs-dot{width:8px;height:8px;border-radius:50%;background:var(--fq-accent-2)}
+
+/* The Spotlight preview: a phone with the page on it. */
+.fb-phone{width:min(330px,78vw);aspect-ratio:390/780;border-radius:44px;padding:10px;background:var(--fq-bg-canvas);box-shadow:0 50px 110px -50px color-mix(in oklab,var(--fq-bg-canvas) 85%,transparent),0 0 0 1px color-mix(in oklab,var(--fq-text-strong) 14%,transparent)}
+.fb-screen{position:relative;height:100%;border-radius:36px;overflow:hidden;background:var(--fq-surface-card);display:flex;flex-direction:column;align-items:center;gap:12px;padding:56px 22px 22px;text-align:center}
+.fb-island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:92px;height:24px;border-radius:999px;background:var(--fq-bg-canvas)}
+.fb-avatar{width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--fq-pa);color:var(--fq-bg-canvas);font:700 36px/1 var(--fq-font-display);box-shadow:0 0 0 4px var(--fq-surface-card),0 0 0 6px color-mix(in oklab,var(--fq-accent-2) 50%,transparent)}
+.fb-pname{margin:6px 0 0;font:700 24px/1.08 var(--fq-font-display);letter-spacing:-.02em;color:var(--fq-text-strong);overflow-wrap:anywhere}
+.fb-pline{margin:0;font:400 14.5px/1.45 var(--fq-font-sans);color:var(--fq-text-body);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.fb-links{width:100%;display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.fb-plink{height:46px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;background:var(--fq-bg-canvas);box-shadow:inset 0 0 0 1px var(--fq-border-strong);font:600 14px/1 var(--fq-font-sans);color:var(--fq-text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-plink-p{background:var(--fq-pa);color:var(--fq-bg-canvas);box-shadow:none}
+.fb-ghost{opacity:.45}
+.fb-paddr{margin-top:auto;font:500 12px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+
+/* The Space and website preview: a browser window with the page in it. */
+.fb-window{width:min(560px,100%);border-radius:18px;overflow:hidden;background:var(--fq-surface-card);box-shadow:0 50px 110px -50px color-mix(in oklab,var(--fq-bg-canvas) 85%,transparent),0 0 0 1px color-mix(in oklab,var(--fq-text-strong) 12%,transparent)}
+.fb-window-bar{height:38px;display:flex;align-items:center;gap:7px;padding:0 14px;background:var(--fq-bg-sunken)}
+.fb-window-bar i{width:9px;height:9px;border-radius:50%;background:var(--fq-border-strong)}
+.fb-window-url{margin-left:10px;flex:1;min-width:0;height:24px;border-radius:999px;background:var(--fq-surface-card);display:flex;align-items:center;padding:0 12px;font:500 12px/1 var(--fq-font-sans);color:var(--fq-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-space-cover{position:relative;height:120px;background:var(--fq-iridescent-sweep,var(--fq-pa))}
+.fb-space-logo{position:absolute;left:24px;bottom:-34px;width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--fq-pa);color:var(--fq-bg-canvas);font:700 30px/1 var(--fq-font-display);box-shadow:0 0 0 4px var(--fq-surface-card)}
+.fb-space-body{padding:46px 24px 24px;display:flex;flex-direction:column;gap:10px}
+.fb-space-kind{font:600 11px/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-accent-2)}
+.fb-space-name{margin:0;font:700 28px/1.05 var(--fq-font-display);letter-spacing:-.02em;color:var(--fq-text-strong);overflow-wrap:anywhere}
+.fb-space-line{margin:0;font:400 15px/1.45 var(--fq-font-sans);color:var(--fq-text-body);overflow-wrap:anywhere}
+.fb-space-acts{display:flex;gap:10px}
+.fb-space-acts .fb-plink{height:40px;padding:0 20px}
+.fb-space-tabs{display:flex;gap:18px;padding:10px 0 2px;border-bottom:1px solid var(--fq-border-hair);font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+.fb-space-tabs b{color:var(--fq-text-strong);font-weight:600;padding-bottom:10px;box-shadow:inset 0 -2px 0 var(--fq-accent-2)}
+.fb-space-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fb-space-cards span{height:64px;border-radius:14px;display:flex;align-items:center;gap:8px;padding:0 14px;background:var(--fq-bg-canvas);box-shadow:inset 0 0 0 1px var(--fq-border-hair);font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-body)}
+
+/* What's next. */
+.fb-next{display:flex;flex-direction:column;gap:12px}
+.fb-next-h{margin:0;font:600 18px/1.2 var(--fq-font-display);letter-spacing:-.02em;color:var(--fq-text-strong)}
+.fb-next-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.fb-next-row{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:var(--fq-radius-m);background:color-mix(in oklab,var(--fq-text-strong) 3%,transparent);box-shadow:inset 0 0 0 1px var(--fq-border-hair);text-decoration:none;color:inherit;transition:background .2s,box-shadow .2s}
+.fb-next-row:hover{background:color-mix(in oklab,var(--fq-accent-2) 8%,transparent);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-accent-2) 40%,transparent)}
+.fb-next-row .fq-icon-tile{width:40px;height:40px;border-radius:12px;flex:none}
+.fb-next-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.fb-next-text b{font:600 15px/1.2 var(--fq-font-sans);color:var(--fq-text-strong)}
+.fb-next-text span{font:400 13px/1.35 var(--fq-font-sans);color:var(--fq-text-muted)}
+.fb-next-min{flex:none;font:600 12px/1 var(--fq-font-sans);color:var(--fq-accent-2);white-space:nowrap}
+.fb-next-out{align-self:flex-start;font:600 14px/1 var(--fq-font-sans);color:var(--fq-text-body);text-decoration:underline;text-underline-offset:3px}
+.fb-next-out:hover{color:var(--fq-text-strong)}
+
+/* The four-builder row under the hero. */
+.fb-ladder{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px}
+.fb-ladder-card{display:flex;flex-direction:column;gap:10px;padding:20px;border-radius:var(--fq-radius-l);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);text-decoration:none;color:inherit;transition:box-shadow .2s,transform .2s}
+.fb-ladder-card:hover{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-accent-2) 50%,transparent);transform:translateY(-2px)}
+.fb-ladder-card[aria-current="page"]{box-shadow:inset 0 0 0 1.5px var(--fq-accent-2)}
+.fb-ladder-card b{font:600 17px/1.2 var(--fq-font-display);letter-spacing:-.02em;color:var(--fq-text-strong)}
+.fb-ladder-card span{font:400 14px/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
+.fb-ladder-card i{margin-top:auto;font:600 12.5px/1 var(--fq-font-sans);font-style:normal;color:var(--fq-accent-2)}
+
+.fb-hero a:focus-visible,.fb-hero button:focus-visible,.fb-ladder-card:focus-visible{outline:2px solid var(--fq-accent-2);outline-offset:3px}
+
+@media (max-width:900px){
+  .fb-grid{grid-template-columns:minmax(0,1fr)}
+  .fb-col{max-width:none}
+  .fb-preview{padding-top:0}
+  .fb-phone{width:min(260px,64vw)}
+}
+@media (prefers-reduced-motion:reduce){
+  .fb-ring-fg,.fb-ladder-card,.fb-step-dot{transition:none}
+}

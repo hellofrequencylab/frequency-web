@@ -116,6 +116,16 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'Theme Kits', path: '/themes' },
     ],
   },
+  freeSpotlight: {
+    path: '/free-spotlight',
+    title: 'Free Spotlight: your own page with all your links, in 3 minutes',
+    description:
+      'Make a free Spotlight: your name, one line about what you do and your links on one page. Share it in your bio, on a card or with a QR code.',
+    shareTitle: 'Make a free Spotlight on Frequency',
+    headline: 'Your own page, live in 3 minutes.',
+    lede: 'One link for your bio, your card and your QR code: your name, what you do and where to find you. Free, and yours to keep.',
+    crumbs: [{ name: 'Free Spotlight', path: '/free-spotlight' }],
+  },
   launchBusiness: {
     path: '/launch-your-business',
     title: 'Launch Your Business: website, Spotlight and Space in 12 minutes',

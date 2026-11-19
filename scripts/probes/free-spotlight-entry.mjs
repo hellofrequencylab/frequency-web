@@ -23,11 +23,11 @@ for (const [file, tag] of [
 if (!/spotlightHref/.test(read('components/frequency/site/pages/themes/frequency-midnight.tsx')) || !/freeSpotlightHref\('theme', 'nocturne'\)/.test(read('app/(marketing)/themes/nocturne/page.tsx'))) bad.push('the Nocturne page has no Get a Free Spotlight button')
 
 const config = read('next.config.ts')
-const retiredLanding = ['app', '(marketing)', 'free-spotlight', 'page.tsx'].join('/')
-if (existsSync(retiredLanding)) bad.push('the retired landing page still exists')
-if (!config.includes("{ source: '/free-spotlight', destination: '/create-a-space?utm_campaign=free-spotlight', permanent: true }")) {
-  bad.push('/free-spotlight must permanently redirect to /create-a-space with its campaign tag')
-}
+// /free-spotlight is the Free Spotlight builder again (LIVE-2481, owner 2026-11-19, pin rewrite approved on the card
+// "Yes, update all of them"): the page exists, renders the builder, and nothing redirects it away.
+const landing = ['app', '(marketing)', 'free-spotlight', 'page.tsx'].join('/')
+if (!existsSync(landing) || !/<FreeSpotlightPage/.test(read(landing))) bad.push('/free-spotlight is not the Free Spotlight builder')
+if (/source: '\/free-spotlight'/.test(config)) bad.push('/free-spotlight still redirects away from the builder')
 
 delete process.env.LAUNCH_SYSTEM_ENABLED
 delete process.env.LAUNCH_ENTRY_ENABLED
