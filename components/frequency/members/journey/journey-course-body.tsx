@@ -89,6 +89,7 @@ export function JourneyCourseBody({
   details,
   leave,
   coverImage,
+  coverFocus,
 }: {
   slug: string
   title: string
@@ -116,6 +117,8 @@ export function JourneyCourseBody({
   leave: React.ReactNode
   /** The Journey's cover photo, drawn as a band above the heading (as on /journeys/<slug>). */
   coverImage?: string | null
+  /** Where the cover sits in its band (a CSS position, "50% 20%"). Null centres it. */
+  coverFocus?: string | null
 }) {
   const lessons = tree.phases.flatMap((p) => p.modules.flatMap((m) => m.lessons))
   const numberOf = new Map(lessons.map((l, i) => [l.id, i + 1]))
@@ -174,7 +177,9 @@ export function JourneyCourseBody({
         <div
           className="ph"
           aria-hidden
-          style={{ height: 'clamp(160px, 22vw, 260px)', borderRadius: 28, marginBottom: 24, backgroundImage: `url("${encodeURI(coverImage)}")` }}
+          // The author's focal point (journey_plans.cover_focus), as on the sales page: without it the
+          // band always cropped to the centre and the Manage panel's focus picker moved nothing here.
+          style={{ height: 'clamp(160px, 22vw, 260px)', borderRadius: 28, marginBottom: 24, backgroundImage: `url("${encodeURI(coverImage)}")`, backgroundPosition: coverFocus ?? undefined }}
         />
       ) : null}
       <MemberHead
