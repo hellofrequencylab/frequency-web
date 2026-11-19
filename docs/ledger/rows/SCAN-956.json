@@ -1,0 +1,12 @@
+{
+  "id": "SCAN-956",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('lib/pricing/plans.ts','utf8');const k=fs.readFileSync('lib/billing/pricing-keys.ts','utf8');const bad=[];if(!/'network',\\s*\\] as const/.test(p))bad.push('network is not a plan id');if(!p.includes('baseCents: 29_900')||!p.includes('nonprofitBaseCents: 23_900'))bad.push('Network is not 299 base, 239 non profit');if(!p.includes('includedChapters: 3')||!p.includes('extraChapterCents: 5_900')||!p.includes('maxChapters: 25'))bad.push('no chapter allowance');if(!/quoteLabel: 'Talk to us'/.test(p))bad.push('Network has no quote fallback');if(!/network: FINDERS_FEE_BPS_DEFAULT,/.test(k))bad.push('Network does not pay the one finder fee (ADR-1978)');if(bad.length){console.error('SCAN-956: '+bad.join('; '));process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": " RE-RULED 2026-11-18 (ADR-1978, owner: \"make all the changes site wide to the new system\"; pin rewrite approved by the owner the same day): the Network plan's own 2% fee is retired with the rest of the 5 / 3 / 2 ladder. Network pays the one finder's fee (10%, never more than $20, once per customer Frequency introduces). The probe now requires the network rung to be that fee; the plan's prices and chapter allowance are pinned as before."
+  }
+}

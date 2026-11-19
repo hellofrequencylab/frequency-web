@@ -957,7 +957,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
 
       <FormSection
         title="Take-rate"
-        description="The share Frequency takes on a sale the network sourced, as a percent. A sale to the seller's own audience is always 0%, and tips carry no platform fee, only card processing. Crew member is the rate an individual seller pays; the rest are Space plans, and a plan buys the rate down. Independent Spaces are off the network, so their rate stays 0%."
+        description="The finder's fee: what Frequency takes, once, on the first purchase of a customer it introduced. One rate for every Space plan, held to a cap on each purchase. A sale to the seller's own people is always 0%, and tips carry no platform fee, only card processing. Non Profit has its own rate. The two member rates apply to an individual seller, who cannot take payments today."
       >
         <TakeRateRow rate={values.take_rate} />
       </FormSection>
@@ -1020,32 +1020,27 @@ function Field({
   )
 }
 
-/** The take-rate editor. These five fields are the ones that ACTUALLY CHARGE: `take_rate.network_bps` per
- *  Space RUNG (free / paid / collective / nonprofit, LIVE-754; what lib/billing/fees.ts spaceTakeRateCents applies
- *  after takeRateRungForPlan places the plan) plus the two individual seller rungs, `member_free_bps` and
- *  `member_bps`, which memberTakeRateCents picks between on the payee's real tier.
+/** The take-rate editor. These fields are the ones that ACTUALLY CHARGE (ADR-1978): `finder_bps`, the
+ *  one finder's fee every Space plan pays on a sale the network sourced, `finder_cap_cents`, the most
+ *  it can be on one purchase, and the Non Profit rate (`network_bps.nonprofit`), all read by
+ *  lib/billing/fees.ts spaceTakeRateCents through networkTakeRateFromStored. Beside them sit the two
+ *  individual seller rungs, `member_free_bps` and `member_bps`, which memberTakeRateCents picks between
+ *  on the payee's real tier.
  *
- *  🔴 The FREE MEMBER field is the reference rate the whole ladder descends from (ADR-914) and the single
- *  most-charged number in the product, since selling is free on every tier. It was absent from this
- *  console until the rung came back; an operator could move every rate except the one most sales use.
+ *  The retired per-plan rungs (`network_bps.free / paid / collective`, the 5 / 3 / 2 ladder) are NOT
+ *  edited here and are not read by any charging path: a field for them would be a number that never
+ *  reaches a charge. It also does not edit the legacy flat trio (free_bps / business_bps /
+ *  nonprofit_bps), for the same reason (ADR-913).
  *
- *  It deliberately does NOT edit the legacy flat trio (free_bps / business_bps / nonprofit_bps). That was
- *  the bug this row shipped with: the console wrote those four fields, no charging path read them, and the
- *  write dropped the stored network vector on the way past. An operator was editing numbers that never
- *  reached a charge (fixed ADR-913). Independent is not rendered either: a disconnected Space is off the
- *  network, so its network rate is 0 by definition, and the action preserves whatever is stored.
- *
- *  Percent in, basis points out (8 → 800). */
+ *  Percent in, basis points out (10 → 1000); the cap is dollars in, cents out. */
 function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
   const pct = (bps: number) => String(bps / 100)
   const bps = (v: string) => Math.round((Number(v) || 0) * 100)
   const [memberFree, setMemberFree] = useState(pct(rate.member_free_bps))
   const [crew, setCrew] = useState(pct(rate.member_bps))
-  // The Space ladder is four RUNGS (ADR-1709, LIVE-754): free (default-deny only), paid (Business and
-  // Independent), Collective, and Non Profit. There is no per-plan field to edit.
-  const [free, setFree] = useState(pct(rate.network_bps.free))
-  const [paid, setPaid] = useState(pct(rate.network_bps.paid))
-  const [collective, setCollective] = useState(pct(rate.network_bps.collective))
+  // One finder's fee for every Space plan, its cap, and Non Profit's own rate (ADR-1978).
+  const [finder, setFinder] = useState(pct(rate.finder_bps))
+  const [cap, setCap] = useState(String(rate.finder_cap_cents / 100))
   const [nonprofit, setNonprofit] = useState(pct(rate.network_bps.nonprofit))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1058,12 +1053,9 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
       const res = await saveTakeRate({
         member_free_bps: bps(memberFree),
         member_bps: bps(crew),
-        network_bps: {
-          free: bps(free),
-          paid: bps(paid),
-          collective: bps(collective),
-          nonprofit: bps(nonprofit),
-        },
+        finder_bps: bps(finder),
+        finder_cap_cents: bps(cap),
+        network_bps: { nonprofit: bps(nonprofit) },
       })
       if (isError(res)) setError(res.error)
       else {
@@ -1078,9 +1070,8 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
       <div className="flex flex-wrap items-end gap-3">
         <Field label="Free member %" value={memberFree} onChange={setMemberFree} />
         <Field label="Crew member %" value={crew} onChange={setCrew} />
-        <Field label="Free Space %" value={free} onChange={setFree} />
-        <Field label="Business Space %" value={paid} onChange={setPaid} />
-        <Field label="Collective %" value={collective} onChange={setCollective} />
+        <Field label="Finder's fee %" value={finder} onChange={setFinder} />
+        <Field label="Most per purchase $" value={cap} onChange={setCap} />
         <Field label="Non Profit %" value={nonprofit} onChange={setNonprofit} />
         <div className="flex items-center gap-2">
           <SaveCue pending={pending} saved={saved} />

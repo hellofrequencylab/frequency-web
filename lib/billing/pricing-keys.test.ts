@@ -206,10 +206,10 @@ describe('the TWO individual seller rungs — free Member 10%, Crew 8% (ADR-914)
     expect(NETWORK_TAKE_RATE_DEFAULT.memberFree).toBe(NETWORK_TAKE_RATE_DEFAULT.free)
   })
 
-  it('every paid rung is strictly cheaper than the free one (the upgrade is real at every step)', () => {
+  it('Crew beats the free Member, a Space pays the one finder’s fee, and Non Profit pays none (ADR-1978)', () => {
     const r = NETWORK_TAKE_RATE_DEFAULT
     expect(r.member).toBeLessThan(r.memberFree) // Crew beats free Member
-    expect(r.paid).toBeLessThan(r.member) // a paid Space beats Crew
+    expect(r.paid).toBe(r.free) // one finder's fee on every Space plan that pays
     expect(r.nonprofit).toBeLessThanOrEqual(r.paid)
   })
 
@@ -267,17 +267,16 @@ describe('founder-lock price-key selection', () => {
 
 // ── The differential (network-sourced) take-rate (Phase 2, ADR-811 §A) ───────────────────────────────
 describe('differential take-rate: 0% on own bookings, tier-declining on network-sourced sales', () => {
-  it('networkTakeRateBpsForPlan places every plan on one of four rungs; legacy/unknown → free (never under-collect)', () => {
-    // The ladder (ADR-1709, LIVE-754): Business 5%, Collective 3%, Non Profit 0. Free 10% is a
-    // default-deny value only: a free Space cannot take payments (LIVE-753).
+  it('networkTakeRateBpsForPlan gives every paying plan the one finder’s fee; legacy/unknown → free (never 0)', () => {
+    // ADR-1978: one finder's fee, 10%, on every plan but Non Profit (0).
     expect(networkTakeRateBpsForPlan('free')).toBe(1000)
-    expect(networkTakeRateBpsForPlan('business')).toBe(500)
-    expect(networkTakeRateBpsForPlan('collective')).toBe(300) // its own rung again
-    expect(networkTakeRateBpsForPlan('independent')).toBe(500) // a paid plan; disconnected → self upstream
+    expect(networkTakeRateBpsForPlan('business')).toBe(1000)
+    expect(networkTakeRateBpsForPlan('collective')).toBe(1000)
+    expect(networkTakeRateBpsForPlan('independent')).toBe(1000) // a paid plan; disconnected → self upstream
     expect(networkTakeRateBpsForPlan('nonprofit')).toBe(0)
     expect(networkTakeRateBpsForPlan('nonprofit_collective')).toBe(0)
     // legacy labels narrow forward (whitelabel -> independent -> paid); unknown/null -> free (higher rate)
-    expect(networkTakeRateBpsForPlan('whitelabel')).toBe(500)
+    expect(networkTakeRateBpsForPlan('whitelabel')).toBe(1000)
     expect(networkTakeRateBpsForPlan('nonsense')).toBe(1000)
     expect(networkTakeRateBpsForPlan(null)).toBe(1000)
   })
@@ -290,13 +289,14 @@ describe('differential take-rate: 0% on own bookings, tier-declining on network-
   })
 
   it('sourceAwareTakeRateCents charges the plan rung on a network sale', () => {
-    expect(sourceAwareTakeRateCents(10000, 'business', 'network')).toBe(500) // 5% of $100
-    expect(sourceAwareTakeRateCents(10000, 'collective', 'network')).toBe(300)
+    expect(sourceAwareTakeRateCents(10000, 'business', 'network')).toBe(1000) // 10% of $100
+    expect(sourceAwareTakeRateCents(10000, 'collective', 'network')).toBe(1000)
+    expect(sourceAwareTakeRateCents(100000, 'business', 'network')).toBe(2000) // never more than $20
     expect(sourceAwareTakeRateCents(10000, 'free', 'network')).toBe(1000)
     expect(sourceAwareTakeRateCents(10000, 'nonprofit', 'network')).toBe(0)
-    expect(sourceAwareTakeRateCents(10000, 'independent', 'network')).toBe(500)
+    expect(sourceAwareTakeRateCents(10000, 'independent', 'network')).toBe(1000)
     // floors fractional cents; invalid gross → 0
-    expect(sourceAwareTakeRateCents(333, 'business', 'network')).toBe(16) // floor(333*500/10000)
+    expect(sourceAwareTakeRateCents(333, 'business', 'network')).toBe(33) // floor(333*1000/10000)
     expect(sourceAwareTakeRateCents(0, 'business', 'network')).toBe(0)
     expect(sourceAwareTakeRateCents(-5, 'business', 'network')).toBe(0)
     expect(sourceAwareTakeRateCents(Number.NaN, 'business', 'network')).toBe(0)

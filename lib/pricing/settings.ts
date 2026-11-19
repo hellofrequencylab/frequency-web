@@ -115,6 +115,9 @@ function normaliseTakeRate(stored: unknown): PricingDefaults['take_rate'] {
     member_free_bps: vec.memberFree,
     member_bps: vec.member,
     network_bps: { free: vec.free, paid: vec.paid, collective: vec.collective, network: vec.network, nonprofit: vec.nonprofit },
+    // The one finder's fee and its cap (ADR-1978). Every rung above but Non Profit mirrors `finder_bps`.
+    finder_bps: vec.paid,
+    finder_cap_cents: vec.capCents,
   }
 }
 

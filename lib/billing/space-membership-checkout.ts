@@ -22,6 +22,7 @@ import { getConnectStatus } from './connect'
 import { spaceTakeRateCents } from './fees'
 import { cardFeePassesThrough, sellerFeesNow } from './card-fee'
 import { applicationFeePercent } from './processing-fee'
+import { FINDERS_FEE_MARK } from './membership-finders-fee'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { receiptEmailFor } from './receipt-address'
@@ -158,6 +159,9 @@ export async function createSpaceMembershipCheckout(
       tier_id: tierId,
       member_id: memberId,
       billing_interval: interval,
+      // A finder's fee is charged ONCE (ADR-1978): this mark tells the invoice webhook to drop it
+      // after the first payment (./membership-finders-fee.ts). Absent on an own-audience join.
+      ...(fee > 0 ? { [FINDERS_FEE_MARK]: '1' } : {}),
       ...(await checkoutGaMetadata()),
     }
     // STRIPE'S OWN RECEIPT, AS A BACKSTOP (LIVE-344). `receipt_email` is a payment-intent parameter

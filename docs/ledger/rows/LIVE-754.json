@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-754",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/LIVE-754.mjs",
+      "note": "Passes while every paying rung is the one finder's fee, capped, and the retired stored ladder is not read."
+    }
+  },
+  "append": {
+    "detail": " RE-RULED 2026-11-18 (ADR-1978, owner: \"make all the changes site wide to the new system\"; pin rewrite approved by the owner the same day): the 5 / 3 / 0 ladder this row built is retired. Every plan but Non Profit pays ONE finder's fee, 10% and never more than $20, once, on the first purchase of a customer Frequency introduced. The row migration 20270346005300 stored (paid 500, collective 300) is still in production and is no longer read: the charging rate is take_rate.finder_bps and finder_cap_cents, else the code default. The probe was rewritten to hold that."
+  }
+}

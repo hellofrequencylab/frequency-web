@@ -274,7 +274,8 @@ describe('one source: every published ladder moves when the config moves', () =>
     ...PRICING_DEFAULTS,
     take_rate: {
       ...PRICING_DEFAULTS.take_rate,
-      network_bps: { ...PRICING_DEFAULTS.take_rate.network_bps, paid: 777 },
+      // The one finder's fee (ADR-1978) is the number that charges; every paying rung mirrors it.
+      finder_bps: 777,
     },
   }
 

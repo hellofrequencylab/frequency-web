@@ -21,7 +21,7 @@ import {
   type SeatConfig,
   type PwywConfig,
 } from '@/lib/pricing/catalog-config'
-import { asCatalogItemKey, TAKE_RATE_RUNGS } from '@/lib/billing/pricing-keys'
+import { asCatalogItemKey } from '@/lib/billing/pricing-keys'
 import { ADDON_KEYS, asAddonKey } from '@/lib/pricing/plans'
 import { setFeatureGateOverride } from '@/lib/pricing/gates'
 import { billingEnabled } from '@/lib/billing/stripe'
@@ -155,44 +155,42 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
   }
 }
 
-/** The RUNGS the console may edit, as a TRUSTED constant (the ladder's own enumeration, LIVE-754: free /
- *  paid / collective / nonprofit). Every write target below comes from this list, never from a
- *  caller-supplied property name. Business and Independent stand on `paid`; Collective has its own rung. */
-const NETWORK_TIER_KEYS = TAKE_RATE_RUNGS
-
-/** Save the take-rate, in basis points (800 = 8%). Writes the fields that ACTUALLY CHARGE (ADR-914):
- *  `network_bps` (the per-Space-tier network-sourced vector `spaceTakeRateCents` reads) plus BOTH
- *  individual seller rungs, `member_free_bps` (free Member) and `member_bps` (Crew), which
- *  `memberTakeRateCents` picks between on the payee's real tier. A sale to the seller's own audience is
- *  0% by rule and is not a stored rate; tips carry no fee at all.
+/** Save the take-rate (ADR-1978). Writes the fields that ACTUALLY CHARGE: `finder_bps`, the one
+ *  finder's fee every Space plan pays on a sale the network sourced (basis points, 1000 = 10%),
+ *  `finder_cap_cents`, the most it can be on one purchase, the Non Profit rate
+ *  (`network_bps.nonprofit`), and BOTH individual seller rungs, `member_free_bps` (free Member) and
+ *  `member_bps` (Crew). The paying rungs of `network_bps` are written as a mirror of `finder_bps` so a
+ *  reader of the stored row sees one rate, never the retired 5 / 3 / 2 ladder. A sale to the seller's
+ *  own audience is 0% by rule and is not a stored rate; tips carry no fee at all.
+ *
+ *  A cap of zero or less is refused: "no cap" is not an offer the pricing page makes, and the fee math
+ *  would read it as the seeded cap anyway, so saving it would show one number and charge another.
  *
  *  READ-MODIFY-WRITE, and that is load-bearing: `setPricingSetting` REPLACES the whole `take_rate` jsonb
- *  value, so writing a bare object is a silent delete of every field omitted. The previous version of this
- *  action wrote only the four legacy flat fields, which (a) dropped the stored `network_bps` vector
- *  entirely and (b) meant an operator edited numbers that never reached a charge. Merging over the current
- *  values keeps the legacy flat trio and any tier this console does not render. */
+ *  value, so writing a bare object is a silent delete of every field omitted. Merging over the current
+ *  values keeps the legacy flat trio and anything this console does not render. */
 export async function saveTakeRate(rate: {
   member_free_bps: number
   member_bps: number
-  network_bps: Partial<PricingDefaults['take_rate']['network_bps']>
+  finder_bps: number
+  finder_cap_cents: number
+  network_bps: Pick<Partial<PricingDefaults['take_rate']['network_bps']>, 'nonprofit'>
 }): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   const clamp = (n: unknown) => Math.min(10000, Math.max(0, Math.round(Number(n) || 0)))
+  const capCents = Math.round(Number(rate.finder_cap_cents) || 0)
+  if (capCents <= 0) return fail('Set the most a finder\'s fee can be on one purchase, above $0.')
   try {
     const current = (await getPricingValues()).take_rate
-    // `current.network_bps` is the NORMALISED rung shape (getPricingValues rebuilds it per rung), so this
-    // write only ever stores `free / paid / collective / nonprofit`: a row still carrying the retired
-    // plan-named keys (`business / independent`, pre-LIVE-230) is rewritten in the rung shape on save.
-    const network = { ...current.network_bps }
-    for (const tier of NETWORK_TIER_KEYS) {
-      const next = rate.network_bps[tier]
-      if (next != null) network[tier] = clamp(next)
-    }
+    const finder = clamp(rate.finder_bps)
+    const nonprofit = rate.network_bps.nonprofit != null ? clamp(rate.network_bps.nonprofit) : current.network_bps.nonprofit
     const value: PricingDefaults['take_rate'] = {
       ...current,
       member_free_bps: clamp(rate.member_free_bps),
       member_bps: clamp(rate.member_bps),
-      network_bps: network,
+      finder_bps: finder,
+      finder_cap_cents: capCents,
+      network_bps: { free: finder, paid: finder, collective: finder, network: finder, nonprofit },
     }
     await setPricingSetting('take_rate', value, ctx.profileId)
     revalidatePricingSurfaces()

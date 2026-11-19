@@ -18,8 +18,8 @@ function query(table: string) {
     eq: (k: string, v: unknown) => ((f[`eq:${k}`] = v), q),
     in: (k: string, v: unknown) => ((f[`in:${k}`] = v), q),
     or: (v: string) => ((f.or = v), q),
-    not: () => q,
-    is: () => q,
+    not: (k: string, _op: string, v: unknown) => ((v === null ? (f[`notnull:${k}`] = true) : null), q),
+    is: (k: string, v: unknown) => ((v === null ? (f[`isnull:${k}`] = true) : null), q),
     then: (ok: (a: Answer) => unknown, bad?: (e: unknown) => unknown) => {
       reads.push({ table, f })
       return Promise.resolve(rows(table, f)).then(ok, bad)
@@ -242,6 +242,8 @@ describe("a Space's own audience includes its TIER members, not only its staff (
           const [op, col] = k.split(':') as [string, string]
           if (op === 'eq') return row[col] === v
           if (op === 'in') return (v as unknown[]).includes(row[col])
+          if (op === 'notnull') return row[col] != null
+          if (op === 'isnull') return row[col] == null
           return true
         }),
       )
@@ -264,6 +266,32 @@ describe("a Space's own audience includes its TIER members, not only its staff (
   it.each(['cancelled', 'waitlist'])('a %s tier membership is not a membership, so the sale stays network', async (status) => {
     rows = db({ space_memberships: [tier(status)] })
     const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
+  })
+
+  it('a member who PAID for a tier and then cancelled has bought before, so the finder’s fee is not charged twice (ADR-1978)', async () => {
+    rows = db({ space_memberships: [{ ...tier('cancelled'), stripe_subscription_id: 'sub_1' }] })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'prior_purchase', degraded: false })
+  })
+
+  it.each([
+    ['a paid shop order', { commerce_orders: [{ owner_space_id: SPACE, buyer_profile_id: BUYER, paid_at: '2026-11-01T00:00:00Z', refunded_at: null }] }],
+    ['a settled donation', { space_donations: [{ space_id: SPACE, donor_profile_id: BUYER, succeeded_at: '2026-11-01T00:00:00Z', refunded_at: null }] }],
+  ])('%s to this Space counts as bought before: the fee is charged once per customer (ADR-1978)', async (_label, tables) => {
+    rows = db(tables as never)
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: null, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'prior_purchase', degraded: false })
+  })
+
+  it.each([
+    ['an unpaid order', { commerce_orders: [{ owner_space_id: SPACE, buyer_profile_id: BUYER, paid_at: null, refunded_at: null }] }],
+    ['a refunded order', { commerce_orders: [{ owner_space_id: SPACE, buyer_profile_id: BUYER, paid_at: '2026-11-01T00:00:00Z', refunded_at: '2026-11-02T00:00:00Z' }] }],
+    ['a refunded donation', { space_donations: [{ space_id: SPACE, donor_profile_id: BUYER, succeeded_at: '2026-11-01T00:00:00Z', refunded_at: '2026-11-02T00:00:00Z' }] }],
+    ['an order from another Space', { commerce_orders: [{ owner_space_id: ELSEWHERE, buyer_profile_id: BUYER, paid_at: '2026-11-01T00:00:00Z', refunded_at: null }] }],
+  ])('%s is not a purchase, so the sale stays network', async (_label, tables) => {
+    rows = db(tables as never)
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: null, buyerProfileId: BUYER })
     expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
   })
 
