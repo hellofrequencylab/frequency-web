@@ -146,6 +146,7 @@ get_my_group_ids                     internal
 gift_gems_atomic                     internal
 guard_circle_draft_status            internal
 guard_event_rsvp_member_write        internal
+guard_event_rsvp_ticket_seat         internal
 handle_is_available                  public
 handle_new_auth_user                 internal
 housing_aspect_score                 internal
