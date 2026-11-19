@@ -330,7 +330,7 @@ module; a creator asks it and never restates the number.
   the gate is in [RUNBOOKS](RUNBOOKS.md#card-fee-pass-through).
 - **Guest covers the card fee is the seller's choice.** For tickets it is a price, not a flag:
   `allInPriceCents()` reprices a fixed tier so the host keeps what they typed, and checkout adds
-  nothing (LIVE-2450). There is no opt-in for other sales yet.
+  nothing (LIVE-2450). The opt-in for shop, membership and donation sales is LIVE-2472 (open).
 - **Donations carry no finder's fee.** `DONATION_FINDERS_FEE_CENTS` is 0 whoever the donor is
   (LIVE-2449); the card fee still passes through from the date.
 - **The server decides what is paid, never the browser.** The free door of a paid thing refuses on
