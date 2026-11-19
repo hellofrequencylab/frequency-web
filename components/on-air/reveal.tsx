@@ -21,6 +21,18 @@ import { IconButton } from '@/components/ui/icon-button'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { FunnelNextStep } from '@/components/funnels/next-step-link'
 import { capsLabel } from '@/components/ui/caps-label'
+import { orbFillFor } from './live-stage'
+import { RoomWash } from './stage-room'
+import type { TimerMode } from './mindless'
+
+// THE SAME ROOM (LIVE-2395): the reveal sits in the light of the orb the member just finished on, and
+// its accents follow the mode (the move blue after a walk, the practice tone after a sit), so the
+// four cards read as the end of that session and not as a different page.
+const TONE: Record<TimerMode, { icon: string; strong: string; dot: string }> = {
+  still: { icon: 'text-primary', strong: 'text-primary-strong', dot: 'bg-primary' },
+  move: { icon: 'text-move', strong: 'text-move-strong', dot: 'bg-move' },
+}
+type Tone = (typeof TONE)[TimerMode]
 
 const fmtMin = (sec: number) => {
   const m = Math.round(sec / 60)
@@ -193,10 +205,13 @@ function CelebrationBurst() {
 
 export function Reveal({
   payload,
+  mode = 'still',
   onClose,
   onAction,
 }: {
   payload: RevealPayload
+  /** Which timer just ended. Sets the room's light and the accent. */
+  mode?: TimerMode
   /** The feed exit: swiping off the last card, "Back to feed", or pulling down. */
   onClose?: () => void
   /** Overlay-only: drop the takeover AFTER the Dispatch card's contextual link
@@ -209,6 +224,7 @@ export function Reveal({
   const closed = useRef(false)
   const [dismissing, setDismissing] = useState(false)
   const touchStart = useRef<{ x: number; y: number } | null>(null)
+  const tone = TONE[mode]
 
   // Swiping past the last card lands on a ghost panel that closes the mode —
   // the card slides off the screen and On Air is done (P5).
@@ -291,20 +307,22 @@ export function Reveal({
       className={`flex h-full min-h-0 flex-1 flex-col transition-[transform,opacity] duration-300 ease-in motion-reduce:transition-none ${
         dismissing ? 'translate-y-[70vh] opacity-0' : ''
       }`}
+      data-reveal={mode}
     >
+      <RoomWash fill={orbFillFor(mode)} />
       <div
         ref={scroller}
         onScroll={onScroll}
         className="flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <Panel>
-          <RewardsPanel payload={payload} />
+          <RewardsPanel payload={payload} tone={tone} />
         </Panel>
         <Panel>
-          <StreakPanel payload={payload} />
+          <StreakPanel payload={payload} tone={tone} />
         </Panel>
         <Panel>
-          <StatsPanel payload={payload} onAction={onAction} />
+          <StatsPanel payload={payload} tone={tone} onAction={onAction} />
         </Panel>
         <Panel>
           <DispatchPanel payload={payload} onClose={onClose} onAction={onAction} />
@@ -329,7 +347,7 @@ export function Reveal({
             <span
               key={i}
               className={`h-1.5 rounded-pill transition-all ${
-                i === panel ? 'w-5 bg-primary' : 'w-1.5 bg-border'
+                i === panel ? `w-5 ${tone.dot}` : 'w-1.5 bg-border'
               }`}
             />
           ))}
@@ -358,7 +376,7 @@ function Panel({ children }: { children: React.ReactNode }) {
 }
 
 // ① Rewards — the zap number counts up, then the bonus cascade.
-function RewardsPanel({ payload }: { payload: RevealPayload }) {
+function RewardsPanel({ payload, tone }: { payload: RevealPayload; tone: Tone }) {
   const reduced = usePrefersReducedMotion()
   const zaps = useCountUp(payload.zapsAwarded, 700, reduced)
   const [shown, setShown] = useState(0)
@@ -377,9 +395,9 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
           <p className="mt-3 eyebrow text-subtle">
             {payload.practiceTitle} · logged
           </p>
-          <p className="relative mt-2 flex items-center justify-center gap-2 text-5xl font-bold tabular-nums text-text">
+          <p className="relative mt-2 flex items-center justify-center gap-2 font-display text-display-h2 font-medium tracking-[-0.04em] tabular-nums text-text">
             <CelebrationBurst />
-            <Zap className="h-9 w-9 text-primary" strokeWidth={2.5} />+{zaps}
+            <Zap className={`h-8 w-8 ${tone.icon}`} strokeWidth={2.25} />+{zaps}
           </p>
           {payload.welcomeBack && (
             <p className="mt-3 text-body-sm text-muted">Good to see you. One practice at a time.</p>
@@ -391,7 +409,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
                 className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
               >
                 <span className="font-medium text-text">{b.label}</span>
-                <span className="flex items-center gap-1 font-semibold tabular-nums text-primary-strong">
+                <span className={`flex items-center gap-1 font-semibold tabular-nums ${tone.strong}`}>
                   {b.kind === 'gems' ? <Gem className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />}
                   +{b.amount}
                 </span>
@@ -404,7 +422,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
           <p className="mt-3 eyebrow text-subtle">
             {payload.practiceTitle}
           </p>
-          <p className="mt-2 text-page-title font-bold text-text">Already counted today</p>
+          <p className="mt-2 font-display text-display-card font-medium tracking-tight text-text">Already counted today</p>
           <p className="mt-2 text-body-sm text-muted">
             The extra sit still banks airtime. The streak holds.
           </p>
@@ -417,7 +435,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
 // ② Streak — the number that ticks over: N-1 on mount, a beat, then N with a
 // small pulse. Only when this session actually logged (an "already counted"
 // sit never moved the streak, so nothing pretends to tick).
-function StreakPanel({ payload }: { payload: RevealPayload }) {
+function StreakPanel({ payload, tone }: { payload: RevealPayload; tone: Tone }) {
   const { streak } = payload
   const reduced = usePrefersReducedMotion()
   const animate = !reduced && payload.logged && streak.current > 0
@@ -443,8 +461,8 @@ function StreakPanel({ payload }: { payload: RevealPayload }) {
     <div className="w-full max-w-sm">
       <StreakArt className={ART} />
       <p className="mt-3 eyebrow text-subtle">Streak</p>
-      <p className="mt-2 flex items-center justify-center gap-2 text-6xl font-bold tabular-nums text-text">
-        <Flame className="h-10 w-10 text-primary" />
+      <p className="mt-2 flex items-center justify-center gap-2 font-display text-display-h1 font-medium tracking-[-0.05em] tabular-nums text-text">
+        <Flame className={`h-9 w-9 ${tone.icon}`} />
         <span
           className={`inline-block transition-transform duration-300 ${
             pulse ? 'scale-110' : 'scale-100'
@@ -477,7 +495,7 @@ function StreakPanel({ payload }: { payload: RevealPayload }) {
 }
 
 // ③ Stats — airtime + depth + Amplitude.
-function StatsPanel({ payload, onAction }: { payload: RevealPayload; onAction?: () => void }) {
+function StatsPanel({ payload, tone, onAction }: { payload: RevealPayload; tone: Tone; onAction?: () => void }) {
   const { stats } = payload
   // Only nudge a real, full timed sit: an "already counted" repeat or a partial
   // sit gets its own message on the Rewards card, never a depth ladder here.
@@ -516,7 +534,7 @@ function StatsPanel({ payload, onAction }: { payload: RevealPayload; onAction?: 
       {nudge && (
         <div className="mt-3 rounded-card border border-primary/40 bg-primary-bg/30 px-3 py-2 text-left">
           <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
-            <Zap className="h-3.5 w-3.5 text-primary" /> {nudge.reached}
+            <Zap className={`h-3.5 w-3.5 ${tone.icon}`} /> {nudge.reached}
           </p>
           {nudge.toNext ? (
             <p className="mt-0.5 text-meta text-muted">{nudge.toNext}</p>
@@ -526,12 +544,12 @@ function StatsPanel({ payload, onAction }: { payload: RevealPayload; onAction?: 
         </div>
       )}
       {depthFlavor && (
-        <p className="mt-2 flex items-center justify-center gap-1.5 text-meta font-medium text-primary-strong">
+        <p className={`mt-2 flex items-center justify-center gap-1.5 text-meta font-medium ${tone.strong}`}>
           <Flame className="h-3.5 w-3.5" aria-hidden /> {depthFlavor}
         </p>
       )}
       {/* Through onAction so the overlay drops after the link navigates (LIVE-2244), never a page under a takeover. */}
-      <Link href="/crew/leaderboard" onClick={() => onAction?.()} className="mt-3 inline-block text-meta font-semibold text-primary-strong hover:underline">
+      <Link href="/crew/leaderboard" onClick={() => onAction?.()} className={`mt-3 inline-block text-meta font-semibold hover:underline ${tone.strong}`}>
         Full stats →
       </Link>
     </div>

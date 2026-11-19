@@ -45,7 +45,7 @@ import { OnAirIcon } from './icons'
 import { IconButton } from '@/components/ui/icon-button'
 import { MovementArt } from '@/components/feed/zap-menu-art'
 import { Reveal } from './reveal'
-import { LiveStage, type LiveState } from './live-stage'
+import { LiveStage, StageNotice, type LiveState } from './live-stage'
 import { MindlessMasthead } from './mode-toggle'
 import type { TimerMode } from './mindless'
 import { completeSession } from '@/app/(main)/on-air/actions'
@@ -100,7 +100,6 @@ import {
 } from '@/lib/on-air/active-session'
 import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
 import { liveDepthCue } from '@/lib/practices/tiers'
-import { Button } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
 
 // What a saved Movement run carries beyond the shared record fields: the config the plan is
@@ -1038,7 +1037,7 @@ export function MovementSession({
             You finished it. The rest of the Zaps just landed.
           </div>
         )}
-        <Reveal payload={payload} onClose={closeReveal} onAction={onLeaveViaLink ?? onExit} />
+        <Reveal payload={payload} mode="move" onClose={closeReveal} onAction={onLeaveViaLink ?? onExit} />
       </Overlay>
     )
   }
@@ -1046,10 +1045,7 @@ export function MovementSession({
   if (stage === 'saving') {
     return (
       <Overlay>
-        <CenterScreen>
-          <MovementArt className="block h-10 animate-pulse" />
-          <p className="text-body-sm font-medium text-muted">Counting it up...</p>
-        </CenterScreen>
+        <StageNotice mode="move" tone="working" title="Counting it up" />
       </Overlay>
     )
   }
@@ -1057,11 +1053,14 @@ export function MovementSession({
   if (stage === 'error') {
     return (
       <Overlay>
-        <CenterScreen>
-          <p className="text-body-sm font-medium text-text">That did not save. Your movement still happened.</p>
-          <Button
-            type="button"
-            onClick={() => {
+        <StageNotice
+          mode="move"
+          tone="problem"
+          title="That did not save."
+          body="Your movement still happened."
+          action={{
+            label: 'Try again',
+            onClick: () => {
               const last = lastFinish.current
               if (last) {
                 void finishWith(last.seconds, last.opts)
@@ -1069,11 +1068,9 @@ export function MovementSession({
               }
               const bankedThis = Math.round((Date.now() - startedAt) / 1000)
               void finishWith(Math.max(0, movementFinishSeconds(plan, { resumeOffset, bankedThis, finishCap })))
-            }}
-          >
-            Try again
-          </Button>
-        </CenterScreen>
+            },
+          }}
+        />
       </Overlay>
     )
   }
@@ -1616,9 +1613,5 @@ function Tune({
       <Stepper label={value} onLess={onLess} onMore={onMore} />
     </div>
   )
-}
-
-function CenterScreen({ children }: { children: React.ReactNode }) {
-  return <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">{children}</div>
 }
 

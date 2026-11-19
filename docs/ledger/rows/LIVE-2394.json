@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2394",
+  "title": "The Terms and Community Guidelines promise a report review as soon as we can, matching the report form",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/terms/page.tsx",
+    "ref": "Help center audit 2026-11-18; owner ruling 2026-11-19 \"Soften to match\""
+  },
+  "detail": "The report form was softened to \"as soon as we can\" on 2026-11-18 (LIVE-2389), which left the Terms and the Community Guidelines promising a review \"within 24 hours\". Three surfaces made two different promises. The owner ruled on 2026-11-19 to soften the two pages to match.\n\nDONE 2026-11-19: app/terms/page.tsx and app/guidelines/page.tsx say \"as soon as we can\". The zero-tolerance clause, the removal and suspension language and the report and block paths are unchanged (LIVE-723).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2394.mjs",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

@@ -19,6 +19,14 @@ export interface TrophyMilestone {
   gems?: number
   /** Show the printable certificate (Journey finish only, when the plan enables it). */
   certificate?: boolean
+  /** What one phase is called on this Journey's cadence ("week" or "month"). Defaults to week. */
+  unit?: 'week' | 'month'
+  /** What opens next after a finished week ("Week 3 · The Gathering"), when there is one. */
+  next?: string | null
+  /** What the learner did, as short counts ("12 steps", "4 weeks"), shown on a Journey finish. */
+  stats?: string[]
+  /** Where the course home lives, for the way out of a finished Journey. */
+  homeHref?: string
 }
 
 function Burst() {
@@ -26,29 +34,33 @@ function Burst() {
   const sparks = Array.from({ length: 12 })
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {/* The spark's place (rotate, then out) sits on the outer span and the pop on the inner one:
+          on one element the pop's own transform replaced the place, and all twelve sat in a dot
+          at the centre of the card. `.mc-spark` (members-c.css) pops, then fades. */}
       {sparks.map((_, i) => (
         <span
           key={i}
-          className="absolute left-1/2 top-1/2 h-2 w-2 rounded-pill bg-primary motion-reduce:hidden"
-          style={{
-            transform: `rotate(${(360 / sparks.length) * i}deg) translateY(-120px)`,
-            opacity: 0.7,
-            animation: 'cue-pop 600ms cubic-bezier(0.34,1.56,0.64,1) both',
-            animationDelay: `${i * 35}ms`,
-          }}
-        />
+          className="absolute left-1/2 top-1/2 motion-reduce:hidden"
+          style={{ transform: `rotate(${(360 / sparks.length) * i}deg) translateY(-120px)` }}
+        >
+          <span className="mc-spark" style={{ animationDelay: `${i * 35}ms` }} />
+        </span>
       ))}
     </div>
   )
 }
 
 function Certificate({ title }: { title: string }) {
+  // The day it was earned is the day this card opens: the celebration only shows on the finishing tap.
+  const day = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
   return (
     <div className="mt-5 rounded-card border-2 border-rank-gold/40 bg-canvas p-5 text-center">
       <Award className="mx-auto h-7 w-7 text-rank-gold" strokeWidth={1.75} />
       <p className={capsLabel('mt-2 text-2xs font-bold text-rank-gold', 'widest')}>Certificate of completion</p>
       <p className="mt-2 text-body font-bold text-text">{title}</p>
-      <p className="mt-1 text-meta text-muted">Completed on Frequency</p>
+      <p className="mt-1 text-meta text-muted" suppressHydrationWarning>
+        Completed on Frequency, {day}
+      </p>
     </div>
   )
 }
@@ -75,11 +87,12 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
   }, [onDismiss])
 
   const isJourney = milestone.kind === 'journey'
-  const eyebrow = isJourney ? 'Journey complete' : 'Phase complete'
+  const unit = milestone.unit ?? 'week'
+  const eyebrow = isJourney ? 'Journey complete' : `${unit === 'month' ? 'Month' : 'Week'} complete`
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-canvas/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-canvas/80 p-4 backdrop-blur-sm print:bg-canvas print:backdrop-blur-none"
       role="dialog"
       aria-modal="true"
       aria-label={eyebrow}
@@ -102,7 +115,7 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
         <button
           onClick={onDismiss}
           aria-label="Dismiss"
-          className="absolute right-3 top-3 rounded-control p-1 text-subtle transition-colors hover:text-text"
+          className="absolute right-3 top-3 rounded-control p-1 text-subtle transition-colors hover:text-text print:hidden"
         >
           <X className="h-4 w-4" />
         </button>
@@ -116,8 +129,17 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
         </p>
         <h2 className="mt-1.5 text-balance text-lead font-bold text-text">{milestone.title}</h2>
         <p className="mx-auto mt-2 max-w-xs text-body-sm leading-relaxed text-muted">
-          {isJourney ? 'That is the whole program, start to finish.' : 'One phase down. The trophy is yours.'}
+          {isJourney ? 'That is the whole Journey, start to finish.' : `One ${unit} down. The trophy is yours.`}
         </p>
+
+        {isJourney && milestone.stats && milestone.stats.length > 0 && (
+          <p className="mt-3 text-body-sm font-medium tabular-nums text-text">{milestone.stats.join(' · ')}</p>
+        )}
+        {!isJourney && milestone.next && (
+          <p className="mt-3 text-body-sm text-muted">
+            Up next: <span className="font-medium text-text">{milestone.next}</span>
+          </p>
+        )}
 
         {milestone.gems != null && milestone.gems > 0 && (
           <div className="mt-5 inline-flex items-center gap-2 rounded-pill bg-signal-bg px-4 py-2 text-body-sm font-bold text-signal-strong">
@@ -127,7 +149,7 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
 
         {isJourney && milestone.certificate && <Certificate title={milestone.title} />}
 
-        <div className="mt-6 flex items-center gap-2">
+        <div className="mt-6 flex items-center gap-2 print:hidden">
           {isJourney && milestone.certificate && (
             <Button variant="secondary" size="lg" onClick={() => window.print()}>
               <Printer className="h-4 w-4" /> Print
@@ -137,6 +159,11 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
             {isJourney ? 'Done' : 'Keep going'}
           </Button>
         </div>
+        {isJourney && milestone.homeHref && (
+          <a href={milestone.homeHref} className="mt-3 inline-block text-body-sm font-medium text-primary-strong underline-offset-2 hover:underline print:hidden">
+            Back to the course home
+          </a>
+        )}
       </div>
     </div>
   )

@@ -1,0 +1,20 @@
+{
+  "id": "JRN-026",
+  "title": "Finishing a week or a Journey says so in the Journey's own words, names what opens next, and the confetti clears",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/journey/v2/trophy-celebration.tsx",
+    "ref": "Owner 2026-11-18: \"Go through every element of the journey system and bring it up to best practice, fully evolved modern design.\" Follows JRN-021, JRN-022, JRN-024 and JRN-025."
+  },
+  "detail": "The card a learner sees on finishing a week said \"Phase complete\" and \"One phase down\" where the course says Week, gave no hint of what comes next, and its twelve confetti sparks all landed in one dot at the centre of the card, over the words, and stayed there (the pop animation's transform replaced each spark's position). A finished Journey showed a certificate with no date and no way on. The card now says \"Week complete\" (or Month) over the week's full name, names the week that opens next, and the sparks burst on their ring and fade (hidden when motion is reduced). A finished Journey shows what was done (\"12 steps · 4 weeks\"), dates the certificate, links back to the course home, and prints without the buttons.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-026.mjs",
+    "note": "Fails on main: the card says Phase complete and the sparks animate on the element that places them."
+  },
+  "wave": "W7",
+  "closed": "2026-11-19"
+}

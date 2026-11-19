@@ -20,11 +20,14 @@
 // on the pale orb in day and night, so it reads in the fixed ink, like the door.
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Check, Pause, Play, X } from 'lucide-react'
+import { Check, Pause, Play, RotateCcw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { breathPositionAt, ringScaleAt, type BreathPattern } from '@/lib/on-air'
 import { LotusIcon } from './icons'
 import type { TimerMode } from './mindless'
+import { RoomWash, endsAtLabel } from './stage-room'
+
+export { endsAtLabel }
 
 /** The orb's fill for a mode: the design's practice orb for Be Still, the move accent for Get Moving.
  *  The same two fills the door paints its orb with (components/on-air/compact-setup.tsx). */
@@ -41,11 +44,6 @@ export const QUIET_AFTER_MS = 6000
 
 const RING_R = 96
 const RING_C = 2 * Math.PI * RING_R
-
-/** "6:42 pm" in the member's own clock and locale. */
-export function endsAtLabel(now: number, remainingSec: number): string {
-  return new Date(now + remainingSec * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase()
-}
 
 export interface LiveStageProps {
   mode: TimerMode
@@ -125,8 +123,7 @@ export function LiveStage({
 
   return (
     <div className="fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] overflow-y-auto bg-canvas" data-live-stage={mode} data-live-state={state} data-quiet={quiet ? 'true' : undefined}>
-      {/* The room: the orb's own colour, wide and soft, so the page is lit by the session. */}
-      <span aria-hidden className="pointer-events-none fixed left-1/2 top-[38%] h-[70dvh] w-[70dvh] max-w-none -translate-x-1/2 -translate-y-1/2 rounded-pill opacity-35 blur-3xl" style={{ background: fill }} />
+      <RoomWash fill={fill} />
       <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-xl flex-col px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
         <p className={`m-0 flex items-center justify-center gap-2 eyebrow text-muted ${chrome}`}>
           <LotusIcon className="h-4 w-4" aria-hidden /> Mindless
@@ -204,6 +201,50 @@ export function LiveStage({
         </div>
       </div>
       {flash && <div aria-hidden className={`animate-warmup-flash pointer-events-none fixed inset-0 z-[70] motion-reduce:hidden ${mode === 'move' ? 'bg-move/40' : 'bg-primary/40'}`} />}
+    </div>
+  )
+}
+
+/** The moments either side of the reveal (LIVE-2395): the save, and a save that failed. The same orb
+ *  the member just sat with, so finishing never drops them onto a bare page. Content only: the
+ *  engine's own takeover hosts it. */
+export function StageNotice({
+  mode, tone, title, body, action,
+}: {
+  mode: TimerMode
+  /** `working`: the ring turns and the orb breathes. `problem`: the orb dims and the action shows. */
+  tone: 'working' | 'problem'
+  title: string
+  body?: string
+  action?: { label: string; onClick: () => void }
+}) {
+  const fill = orbFillFor(mode)
+  const working = tone === 'working'
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 py-6 text-center" data-stage-notice={tone} role={working ? 'status' : 'alert'}>
+      <RoomWash fill={fill} />
+      <div className="relative aspect-square w-[min(52vw,30dvh,14rem)] shrink-0" aria-hidden>
+        <svg viewBox="0 0 200 200" className={`absolute inset-0 h-full w-full ${working ? 'animate-spin [animation-duration:2.4s] motion-reduce:animate-none' : ''}`}>
+          <circle cx="100" cy="100" r={RING_R} fill="none" strokeWidth="2" className="stroke-current text-border" />
+          {working && (
+            <circle cx="100" cy="100" r={RING_R} fill="none" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${RING_C * 0.22} ${RING_C}`} className={`stroke-current ${ACCENT[mode]}`} />
+          )}
+        </svg>
+        <span className={`absolute inset-[4%] rounded-pill blur-2xl ${working ? 'fq-breathe opacity-50 motion-reduce:animate-none' : 'opacity-25'}`} style={{ background: fill }} />
+        <span className={`absolute inset-[7%] rounded-pill ring-1 ring-inset ring-surface/70 ${working ? 'fq-breathe motion-reduce:animate-none' : 'opacity-55'}`} style={{ background: fill }} />
+        <span className="absolute inset-0 flex items-center justify-center text-ink">
+          {working ? <LotusIcon className="h-9 w-9" aria-hidden /> : <RotateCcw className="h-8 w-8" aria-hidden />}
+        </span>
+      </div>
+      <div className="flex max-w-xs flex-col items-center gap-1.5">
+        <p className="m-0 text-balance font-display text-display-card font-medium tracking-tight text-text">{title}</p>
+        {body && <p className="m-0 text-body-sm text-muted">{body}</p>}
+      </div>
+      {action && (
+        <Button type="button" onClick={action.onClick} size="lg" className="w-full max-w-xs" style={mode === 'move' ? { background: 'var(--color-move)', color: 'var(--color-text-on-move)' } : undefined}>
+          {action.label}
+        </Button>
+      )}
     </div>
   )
 }

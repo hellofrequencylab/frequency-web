@@ -360,4 +360,10 @@
   [data-design="frequency"] [data-kit="members"] .mc-wk-h .meta{flex-basis:100%;text-align:left;padding-left:54px;margin-top:-8px}
 }
 
+/* ── THE COMPLETION MOMENT (TrophyCelebration): each spark pops out on its ring, then fades, so
+   nothing is left sitting over the card's words. Hidden when motion is reduced. */
+@keyframes mc-spark{0%{opacity:0;transform:scale(.3)}30%{opacity:.75;transform:scale(1)}100%{opacity:0;transform:scale(.5)}}
+[data-design="frequency"] [data-kit="members"] .mc-spark{display:block;width:8px;height:8px;border-radius:var(--fq-radius-orb);background:var(--fq-pa);animation:mc-spark 1100ms var(--fq-ease-out) both}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .mc-spark{display:none;animation:none}}
+
 }
