@@ -4366,6 +4366,161 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5314,
+      "expiresAt": "2026-11-25T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346150000_market_shipping_profiles.sql",
+          "sha256": "6e9f6beadd31267ea57f3d3e2620c3b7cd8105b58351b51c368b165e4c12794c"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/cart/page.tsx",
+          "status": "modified",
+          "sha256": "1408dc5192ff938901addc7573b7323c4807bb7bc97a9abef05d52bfc7ae597a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/marketplace/cart-actions.ts",
+          "status": "modified",
+          "sha256": "5afadad129aa8f40d775e90b37267bb145c7a12267d388f6a43441bfd1fc9779",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/shop/catalog-tab.tsx",
+          "status": "modified",
+          "sha256": "dd304d9206505c0d30e67fb077b46fad97c57dce36e93725d650d37109ae58a2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/shop/shipping-profiles-section.tsx",
+          "status": "added",
+          "sha256": "dadb44c9b2d8420d09cde28340525bd1f45d0e49e9ed7fcfacaa39f166424226",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/shop/shop-actions.ts",
+          "status": "modified",
+          "sha256": "4b7a14288ae24afc3c73b60b01ebb091092d95aad8996adaf47d6f0127b3a611",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/marketplace/cart-sellers.tsx",
+          "status": "modified",
+          "sha256": "bb314d4f85162dd6a9293a7900d7ae1af3c200f5a85f2228ebdae04c544c910e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/DEF-ETSY.json",
+          "status": "modified",
+          "sha256": "35415de4aafa6854979d398240e146ef79ac175416685b8f44866e5ab18e1cf2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/cart-load.ts",
+          "status": "modified",
+          "sha256": "85536352abf235d8e3ce0a0822a6eed9660e827ad6580f4aef446b749f975512",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/cart-plan.ts",
+          "status": "modified",
+          "sha256": "6aa1cd59bfb68bfe7adb5f891b49f983471ddb0951efa547ee6cfebf575ffa8f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/cart-view.ts",
+          "status": "modified",
+          "sha256": "89ffb91be1adc02eb28cabeeef5abdf18e1b5fbd8516fed2191d3462f7eb923e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/shipping-profiles-store.ts",
+          "status": "added",
+          "sha256": "1b20285bb8bf6cd2f5c950801ff61a899a4dd5b443348f777dc395cfb98a64a8",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/shipping-profiles.test.ts",
+          "status": "added",
+          "sha256": "de832f2b1d8ba2e98b3ca67e307909f483af8c6a1f5bad8a766f51fe65074ec1",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/shipping-profiles.ts",
+          "status": "added",
+          "sha256": "768d1ede80f4e09580261c721a4410a619e382a7cc292255beb9ee2c593d5c7f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "37c01ad03f857b19a1f51c2ce178e12fb80500c5103c03e891a9d65ebbf9c38a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "1ad1fcee12f0c9c137c679dfff188fcc96ebcc88e67c98d9b09d09adcc700ebe",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "1428cc288fec596610daabc54248412262d8fc2ce0168a1f1c80f40cfb78b328",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "4561ba156970bf02e024d3f17a55151b3e20dd3adc45d35e5275e50b026291d3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346150000_market_shipping_profiles.sql",
+          "status": "added",
+          "sha256": "6e9f6beadd31267ea57f3d3e2620c3b7cd8105b58351b51c368b165e4c12794c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/commerce_shipping_profiles.test.sql",
+          "status": "added",
+          "sha256": "345e0561c1bb9152d99c9cc39f8f258233d5fe67eb0919106805f423f02924e9",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
