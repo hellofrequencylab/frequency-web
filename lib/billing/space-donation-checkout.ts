@@ -28,9 +28,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from './stripe'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { getConnectStatus, payoutsLive } from './connect'
-import { spaceTakeRateCents } from './fees'
 import { sellerFeesNow } from './card-fee'
-import { asSpacePlan } from '@/lib/pricing/plans'
 import { spaceMayTakeDonations } from '@/lib/pricing/paying-accounts'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
@@ -39,6 +37,9 @@ import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 import { receiptEmailFor } from './receipt-address'
 import { sendDonationReceipts } from './donation-receipt'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
+
+/** Frequency's fee on a donation: none, whoever the donor is (owner ruling 2026-11-19, LIVE-2449). */
+export const DONATION_FINDERS_FEE_CENTS = 0
 
 /** Gift bounds. The floor keeps a gift above the card fee that would eat it; the ceiling is the same
  *  sanity bound the ask editor already clamps a suggested amount to. */
@@ -165,10 +166,9 @@ export async function createSpaceDonationCheckout(opts: {
     const ask = (askData ?? null) as { id?: string; fund_label?: string | null; is_active?: boolean | null } | null
     if (!ask?.id || ask.is_active === false) return { error: 'This fund is not open right now.' }
 
-    // Differential take-rate (ADR-811 §A): a gift from the space's own people is 0% (the hard
-    // promise); one the collective sourced pays the plan's network rate. A SIGNED-OUT donor cannot be
-    // related to anyone, so classification degrades to 'self' and the fee is 0, which is the
-    // fail-safe direction (never bill a network rate we cannot justify).
+    // WHERE THE DONOR CAME FROM (ADR-811 §A) is still classified and stored on the row, so a Space can
+    // see which gifts the network brought. A SIGNED-OUT donor cannot be related to anyone, so
+    // classification degrades to 'self'.
     const { source } = opts.donorProfileId
       ? await classifyOrderSource({
           buyerProfileId: opts.donorProfileId,
@@ -179,7 +179,10 @@ export async function createSpaceDonationCheckout(opts: {
     // A standalone (disconnected) Space has left the graph, so it can have no network-sourced revenue
     // (ADR-811 §3) and the source collapses to self regardless of any referral signal.
     const effective = effectiveOrderSource(source, space.network_connected)
-    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan), effective, space.id)
+    // NO FINDER'S FEE ON A GIFT, EVER (owner ruling 2026-11-19, LIVE-2449): 0% on every donation,
+    // even from a donor Frequency introduced. The seller still bears the card fee once the
+    // pass-through is on (sellerFeesNow below), exactly as on any other sale.
+    const fee = DONATION_FINDERS_FEE_CENTS
 
     const fundLabel = (ask.fund_label ?? '').trim() || 'the fund'
     const spaceName = (space.brand_name ?? space.name ?? 'this space').trim()
