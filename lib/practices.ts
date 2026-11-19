@@ -1244,13 +1244,29 @@ export async function getRankedPractice(slugOrId: string): Promise<RankedPractic
     | (Practice & { adopters: number; logs_30d: number; logs_total: number; score: number })
     | null
   if (!p) return null
-  const [subById, tagsByPractice] = await Promise.all([subcategoryMap(), tagsForPractices([p.id])])
+  const [subById, tagsByPractice, timer] = await Promise.all([
+    subcategoryMap(),
+    tagsForPractices([p.id]),
+    practiceTimerColumns(p.id),
+  ])
   const sc = p.subcategory_id ? subById.get(p.subcategory_id) : null
   return {
-    ...normalizePractice(p),
+    ...normalizePractice({ ...p, ...timer }),
     subcategory: sc ? { slug: sc.slug, name: sc.name } : null,
     tags: tagsByPractice.get(p.id) ?? [],
   }
+}
+
+/** The timer columns the `practices_ranked` view does not expose (RANKED_COLS strips them).
+ *
+ *  The Practice page reads one practice through that view and then asked it for `timer_kind` and
+ *  `movement_config`, which were never there (LIVE-2396): every timed practice described itself as
+ *  "Log it", and a Get Moving practice's Start button had no mode to open. This one read by id
+ *  fills them in from the table. A failed read resolves to nothing, which is the old behaviour. */
+const TIMER_ONLY_COLS = 'timer_kind, movement_config, mindless_mode, duration_locked, warmup_message, warmup_sec, breath_pattern'
+async function practiceTimerColumns(id: string): Promise<Partial<Practice>> {
+  const { data } = await db().from('practices').select(TIMER_ONLY_COLS).eq('id', id).maybeSingle()
+  return (data ?? {}) as Partial<Practice>
 }
 
 // --- Backlinks: "Used in" (journeys + circles that reference this practice) ---

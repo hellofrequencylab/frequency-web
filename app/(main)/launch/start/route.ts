@@ -12,6 +12,7 @@ import { COLD_KIT } from '@/lib/create-space/door'
 import { resolveOnboardingNicheSeed } from '@/lib/create-space/niche-choices.server'
 import { parseWizardResume } from '@/lib/launch/wizard-resume'
 import { ownedWizardEntry } from '@/lib/launch/entry-io'
+import { listOwnedSpaces } from '@/lib/launch/spaces-io'
 import { resolvePicker } from '@/lib/spaces/space-picker'
 
 // /launch/start (VLS-07): where every "Get a Free Spotlight" button lands. The niche comes from `niche`, or from the
@@ -52,15 +53,26 @@ export async function GET(request: Request) {
   if (kitId || resume) await writePendingLaunch({ niche: niche ?? held?.niche ?? null, intents: held?.intents ?? seed?.goals ?? [], answers, ...(resume ? { resume } : {}) })
 
   const active = await getActiveLaunch(profileId)
-  if (active && !active.spaceId && resume) {
+  // An owner who asked for a NEW Space (`new=1`) is in the builder from the first step. Without that mark the launch
+  // names no Space, so /launch, the rail and the feed would attach the one they already own (lib/launch/adopt-io.ts)
+  // and the new Space could never be started. Someone with no Space yet keeps the usual first step.
+  const startsNew = q.get('new') === '1' && (await listOwnedSpaces(profileId)).length > 0
+  const base = resume ?? (startsNew ? parseWizardResume({
+    version: 1, phase: 'builder', cursor: 0, theme: kitId ?? COLD_KIT, accentAt: accentAt ?? 0,
+    niche, goals: seed?.goals ?? [], modeHint: seed?.mode, timedEntry: false, draft: null, leadToken: null,
+  }) : null)
+  const entryResume = base && startsNew ? { ...base, phase: 'builder' as const } : base
+  if (active && !active.spaceId && entryResume) {
     // Opting into the clock must not replace an existing builder cursor or its full draft.
-    const carried = active.resume ? { ...active.resume, timedEntry: active.resume.timedEntry || resume.timedEntry } : resume
+    const carried = active.resume
+      ? { ...active.resume, timedEntry: active.resume.timedEntry || entryResume.timedEntry, ...(startsNew ? { phase: 'builder' as const } : {}) }
+      : entryResume
     await saveWizardResume(active, carried)
   }
   if (!active) {
     const launch = await startLaunch(profileId, { niche, intents: seed?.goals ?? [] })
     if (launch) {
-      if (resume) await saveWizardResume(launch, resume)
+      if (entryResume) await saveWizardResume(launch, entryResume)
       await recordLaunchEvent(profileId, { type: 'launch_started', launchId: launch.id })
     }
   }

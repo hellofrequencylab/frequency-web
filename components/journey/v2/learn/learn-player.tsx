@@ -315,8 +315,22 @@ export function LearnPlayer({
         const j = ev.find((e) => e.kind === 'journey_complete')
         const ph = ev.find((e) => e.kind === 'phase_complete')
         const gems = res.data.granted.reduce((s, g) => s + g.gems, 0)
-        if (j) setMilestone({ kind: 'journey', title, gems, certificate: certificateEnabled })
-        else if (ph) setMilestone({ kind: 'phase', title: ph.phaseTitle ?? 'Phase complete', gems })
+        if (j) {
+          const steps = tree.lessonOrder.length
+          setMilestone({
+            kind: 'journey', title, gems, certificate: certificateEnabled, unit, homeHref: `/journeys/${slug}/learn`,
+            stats: [`${steps} ${steps === 1 ? 'step' : 'steps'}`, `${tree.phases.length} ${unit}${tree.phases.length === 1 ? '' : 's'}`],
+          })
+        } else if (ph) {
+          // The week just finished is the one this step is in; the one after it is what opens next.
+          const at = tree.phases.findIndex((p) => p.id === selectedPhaseId)
+          const after = at >= 0 ? tree.phases[at + 1] : undefined
+          setMilestone({
+            kind: 'phase', gems, unit,
+            title: at >= 0 ? phaseHeading(tree.phases[at].title, at, unit) : ph.phaseTitle ?? `${Unit} complete`,
+            next: after ? phaseHeading(after.title, at + 1, unit) : null,
+          })
+        }
         if (nextId && !lessonLocked(nextId)) goTo(nextId)
         router.refresh()
       }
@@ -540,9 +554,9 @@ export function LearnPlayer({
       ) : selectedLocked ? (
         <div className="panel mc-lesson flex flex-col items-center gap-2 py-10 text-center">
           <Lock className="h-6 w-6 text-subtle" />
-          <p className="text-body-sm font-semibold text-text">This phase is still locked</p>
+          <p className="text-body-sm font-semibold text-text">This {unit} is still locked</p>
           <p className="max-w-prose text-body-sm text-muted">
-            {unlockLabel(phaseLock.get(phaseOfLesson.get(selectedId!) ?? '')?.unlockAt ?? null)}. One phase opens at a time, so the whole Circle moves together. Catch up on the current phase while you wait.
+            {unlockLabel(phaseLock.get(phaseOfLesson.get(selectedId!) ?? '')?.unlockAt ?? null)}. One {unit} opens at a time. Finish what is open while you wait.
           </p>
         </div>
       ) : (

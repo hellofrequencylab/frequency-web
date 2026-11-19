@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getSpaceBySlug, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
@@ -22,7 +22,26 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return spaceProfileMetadata(slug, {
     segment: '-/program', label: 'Program',
     describe: (name) => `Explore public Programs, Journeys and Practices from ${name}.`,
+    empty: await nothingPublished(slug),
   })
+}
+
+/** Whether this Space's Program page would show a visitor its empty state (SCAN-1271): the same
+ *  first-page reads the page makes, so the head and the body agree. A Space that cannot be read, or
+ *  a list that could not load, is NOT called empty: only a clean zero is. */
+async function nothingPublished(slug: string): Promise<boolean> {
+  try {
+    const space = await getSpaceBySlug(slug)
+    if (!space) return false
+    const enabled = LEARNING_KINDS.filter((kind) => {
+      const def = spaceFunctionDef(FUNCTION[kind])
+      return !!def && spaceFunctionEnabled(space, def)
+    })
+    const groups = await Promise.all(enabled.map((kind) => readSpaceLearningPage(space.id, kind, 1)))
+    return groups.every((group) => !group.total && !group.unavailable)
+  } catch {
+    return false
+  }
 }
 
 export default async function SpaceLearningPage({ params, searchParams }: {

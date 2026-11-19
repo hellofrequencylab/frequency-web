@@ -23,6 +23,13 @@ export const metadata = { title: 'Your cart' }
 const money = (cents: number, currency: string) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
 
+/** Subtotal plus shipping, per currency (DEF-ETSY P3). */
+function addTotals(...lists: { currency: string; cents: number }[][]): { currency: string; cents: number }[] {
+  const by = new Map<string, number>()
+  for (const t of lists.flat()) by.set(t.currency.toLowerCase(), (by.get(t.currency.toLowerCase()) ?? 0) + t.cents)
+  return [...by].map(([currency, cents]) => ({ currency, cents }))
+}
+
 export default async function CartPage() {
   if (!cartEnabled()) notFound()
   const profileId = await getMyProfileId()
@@ -67,7 +74,25 @@ export default async function CartPage() {
                 <span className="text-body-sm font-semibold text-text">{money(t.cents, t.currency)}</span>
               </div>
             ))}
-            <p className="mt-2 text-body-sm text-subtle">Shipping and fees are added when you pay.</p>
+            {view.shipping.totals.map((t) => (
+              <div key={`ship-${t.currency}`} data-cart-shipping={t.cents} className="flex items-center justify-between">
+                <span className="text-body-sm text-muted">{view.shipping.estimate ? 'Estimated shipping' : 'Shipping'}</span>
+                <span className="text-body-sm text-muted">{money(t.cents, t.currency)}</span>
+              </div>
+            ))}
+            {view.shipping.totals.length > 0
+              ? addTotals(view.totals, view.shipping.totals).map((t) => (
+                  <div key={`total-${t.currency}`} className="mt-1 flex items-center justify-between border-t border-border pt-1">
+                    <span className="text-body-sm font-semibold text-text">{view.shipping.estimate ? 'Estimated total' : 'Total'}</span>
+                    <span className="text-body-sm font-semibold text-text">{money(t.cents, t.currency)}</span>
+                  </div>
+                ))
+              : null}
+            <p className="mt-2 text-body-sm text-subtle">
+              {view.shipping.totals.length > 0
+                ? "Shipping is estimated from each seller's rates until your address is known."
+                : 'Shipping and fees are added when you pay.'}
+            </p>
             {cartCheckoutEnabled() && !view.checkout.blocked ? (
               <div className="mt-4">
                 <CartCheckout priceLabel={view.totals.length === 1 ? money(view.totals[0].cents, view.totals[0].currency) : undefined} />

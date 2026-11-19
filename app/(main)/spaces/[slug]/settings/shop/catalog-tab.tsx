@@ -7,7 +7,9 @@ import { ProductCover } from '@/components/marketplace/product-cover'
 import { listSpaceCatalog } from '@/lib/commerce/products'
 import { listVariantsForProducts } from '@/lib/commerce/variants'
 import { marketGroupForKind, type CommerceProduct, type ServiceConfig } from '@/lib/commerce/types'
+import { cartEnabled } from '@/lib/commerce/cart-flag'
 import { ItemForm } from './item-form'
+import { ShippingProfilesSection } from './shipping-profiles-section'
 import {
   setSpaceProductStatusAction,
   deleteSpaceProductAction,
@@ -234,6 +236,9 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
           })}
         </div>
       )}
+
+      {/* Shipping profiles (DEF-ETSY P3): dark with the cart they price, and never on a staff preview. */}
+      {!readOnly && cartEnabled() ? <ShippingProfilesSection slug={slug} spaceId={spaceId} items={items} /> : null}
     </div>
   )
 }

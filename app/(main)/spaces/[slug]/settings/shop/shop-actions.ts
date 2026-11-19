@@ -15,8 +15,11 @@ import {
   duplicateProduct,
   productOwnerSpaceId,
   setProductMarketPublished,
+  listSpaceCatalog,
   type ProductPatch,
 } from '@/lib/commerce/products'
+import { cartEnabled } from '@/lib/commerce/cart-flag'
+import { saveSpaceShippingProfile } from '@/lib/commerce/shipping-profiles-store'
 import { upsertVariants } from '@/lib/commerce/variants'
 import { setOrderFulfillment } from '@/lib/commerce/fulfilment'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
@@ -408,4 +411,51 @@ export async function saveStorefrontSettingsAction(slug: string, formData: FormD
   if (Object.keys(patch).length > 0) await patchSpacePreferences(space.id, patch)
   revalidatePath(`/spaces/${slug}/settings/shop`)
   revalidatePath(`/spaces/${slug}/shop`)
+}
+
+/** A whole number of processing days from the form, 0 to 60, or the fallback. */
+function processingDays(raw: FormDataEntryValue | null, fallback: number): number {
+  const n = Number(raw)
+  return raw !== null && String(raw).trim() !== '' && Number.isFinite(n) ? Math.min(60, Math.max(0, Math.round(n))) : fallback
+}
+
+/** Dollars typed in the form to whole cents, or null for a blank or bad value. */
+function dollarsToCents(raw: FormDataEntryValue | undefined): number | null {
+  const s = String(raw ?? '').trim()
+  if (!s) return null
+  const n = Number(s)
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : null
+}
+
+/**
+ * Create (profileId null) or edit one of this Space's shipping profiles (DEF-ETSY P3) and choose which of its
+ * physical listings ship with it. Dark until COMMERCE_CART_ENABLED is set, like the cart that reads it, and
+ * gated like every Shop write (gateSpaceWrite). The rates arrive as parallel rows (region, first item, each
+ * extra item) and are re-parsed by the store; the listing ids are narrowed to this Space's own physical items
+ * here, and the store scopes every write to the Space again.
+ */
+export async function saveShippingProfileAction(slug: string, profileId: string | null, formData: FormData): Promise<void> {
+  if (!cartEnabled()) return
+  const gate = await gateSpaceWrite(slug)
+  if (!gate) return
+  const name = String(formData.get('name') ?? '').trim().slice(0, 80)
+  if (!name) return
+  const min = processingDays(formData.get('processingDaysMin'), 1)
+  const max = Math.max(min, processingDays(formData.get('processingDaysMax'), 3))
+  const regions = formData.getAll('rateRegion')
+  const firsts = formData.getAll('rateFirst')
+  const extras = formData.getAll('rateAdditional')
+  const rates = regions.flatMap((region, i) => {
+    const firstCents = dollarsToCents(firsts[i])
+    return firstCents == null ? [] : [{ region: String(region), firstCents, additionalCents: dollarsToCents(extras[i]) ?? 0 }]
+  })
+  const own = new Set((await listSpaceCatalog(gate.spaceId)).filter((p) => p.productKind === 'physical').map((p) => p.id))
+  const productIds = formData.getAll('productIds').map(String).filter((id) => own.has(id))
+  await saveSpaceShippingProfile(
+    gate.spaceId,
+    profileId,
+    { name, processingDaysMin: min, processingDaysMax: max, rates },
+    productIds,
+  )
+  revalidatePath(`/spaces/${slug}/settings/shop`)
 }

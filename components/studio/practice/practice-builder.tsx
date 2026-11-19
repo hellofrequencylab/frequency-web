@@ -10,11 +10,10 @@ import {
 } from 'lucide-react'
 import { StudioWindow } from '../studio-window'
 import { useStudioDraft } from '../kit/use-studio-draft'
-import { StudioField, StudioNote } from '../kit/studio-field'
+import { StudioField } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { IconButton } from '@/components/ui/icon-button'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { DangerModal } from '@/components/admin/danger-modal'
@@ -23,24 +22,18 @@ import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction, d
 import { submitPracticeForReviewAction } from '@/app/(main)/practices/create-actions'
 import type { PracticeEdit, WeightClass, FocusDetail, TimerKind, MindlessMode } from '@/lib/practices'
 import { isTierAllowed, clampTierToDuration, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
-import { AUTHORED_WARMUP_PRESETS, BREATH_PATTERNS, WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 // Practices share the Channel subject vocabulary (they are browsed under the same doors), so the
 // category select reads THE one source (lib/channels/categories.ts, the ADR-887 view onto
 // lib/taxonomy/subjects.ts) — never a hand-copied list. The old six-item copy here was missing
 // `activism` and rendered lowercase key-derived labels; a stored `activism` displayed as "None".
 import { CHANNEL_CATEGORIES, isChannelCategory } from '@/lib/channels/categories'
-import {
-  MOVEMENT_MODES, STRENGTH_PRESETS, YOGA_PRESETS,
-  WALK_DURATION_PRESETS, RUN_DURATION_PRESETS, STRETCH_DURATION_PRESETS,
-  WALK_INTERVAL_PRESETS, RUN_INTERVAL_PRESETS, STRETCH_INTERVAL_PRESETS,
-  clampSeconds, clampRounds, timerPreview,
-  type MovementConfig, type MovementMode, type StrengthPresetKind, type YogaPresetKind,
-} from '@/lib/movement'
+import type { MovementConfig } from '@/lib/movement'
 import { Button } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
-import { chipClasses } from '@/components/ui/chip'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { PRACTICE_SUPPORT_COPY } from '@/lib/practices/support-language'
+import { PracticeTimerSetup } from './practice-timer-setup'
+import type { SuggestTimer } from './timer-suggestions'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
 // fields, footer) against the existing practice actions; mirrors the old
@@ -59,17 +52,6 @@ const ICONS: { key: string; label: string; Icon: LucideIcon }[] = [
   { key: 'sun', label: 'Sun', Icon: Sun }, { key: 'moon', label: 'Moon', Icon: Moon },
 ]
 const ICON_BY_KEY = new Map(ICONS.map((i) => [i.key, i.Icon]))
-
-// The Be Still flavours a Mindless practice opens on (NAMING: Be Still sub-modes). Value =
-// practices.mindless_mode; leaving it unset lets the timer derive one from the Pillar.
-const BE_STILL_MODES: { value: MindlessMode; label: string; hint: string }[] = [
-  { value: 'meditate', label: 'Meditate', hint: 'A quiet timed sit; the clock counts down.' },
-  { value: 'breathe', label: 'Breathe', hint: 'A guided breathing pattern with rings to follow.' },
-  { value: 'stillness', label: 'Stillness', hint: 'A longer, quieter sit with no cues.' },
-  { value: 'ritual', label: 'Ritual', hint: 'The same set practice, same length each time.' },
-  { value: 'journal', label: 'Journal', hint: 'A timed sit with a notes field to write in.' },
-  { value: 'log', label: 'Just Log', hint: 'Skip the timer; mark it done, add a note.' },
-]
 
 // Weight class → its per-log Zap payout. These mirror ZAP_AMOUNTS (lib/zaps.ts:
 // practice_logged_light 8 / practice_logged 12 / practice_logged_heavy 15); kept as
@@ -134,6 +116,9 @@ export interface PracticeBuilderProps {
    *  the section is hidden (legacy mounts). */
   status?: string | null
   isPublic?: boolean
+  /** Vera's read-only timer recommendation (LIVE-2396), passed by the page so the builder still
+   *  composes standalone. Omitted = the offline suggested setups only. */
+  suggestTimer?: SuggestTimer
 }
 
 export function PracticeBuilder(props: PracticeBuilderProps) {
@@ -154,33 +139,6 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [cadence, setCadence] = useState(props.cadence ?? '')
   const [durationMin, setDurationMin] = useState(props.durationMin != null ? String(props.durationMin) : '')
   const [category, setCategory] = useState(props.category ?? '')
-  const [timerKind, setTimerKind] = useState<TimerKind>(props.timerKind ?? 'mindless')
-  // The Movement mode picked when timerKind = 'movement'. Seeds from the saved config.
-  const [movementMode, setMovementMode] = useState<MovementMode>(props.movementConfig?.mode ?? 'walk')
-  // The Be Still flavour when timerKind = 'mindless' (null = derive from the Pillar), and whether
-  // the length is locked. Full author control over every practice x timer combo (P7).
-  const [mindlessMode, setMindlessMode] = useState<MindlessMode | null>(props.mindlessMode ?? null)
-  // The creator-authored breath pattern for a Breathe practice (P4). Null = the member's own pref.
-  const [breathPattern, setBreathPattern] = useState<string | null>(props.breathPattern ?? null)
-  const [durationLocked, setDurationLocked] = useState<boolean>(props.durationLocked ?? false)
-  // Full per-mode tuning the CREATOR presets, so the timer opens ready (ADR-592, P2). Seeded
-  // from the saved movement_config; each mode reads only its own fields, mirroring the member
-  // setup in movement-session.tsx. Defaults match lib/movement's builders.
-  const mc = props.movementConfig
-  const [walkMinutes, setWalkMinutes] = useState<number>(mc?.walkMinutes ?? 20)
-  const [walkIntervalMin, setWalkIntervalMin] = useState<number>(mc?.walkIntervalMin ?? 0)
-  const [runMinutes, setRunMinutes] = useState<number>(mc?.runMinutes ?? 20)
-  const [runIntervalMin, setRunIntervalMin] = useState<number>(mc?.runIntervalMin ?? 0)
-  const [stretchMinutes, setStretchMinutes] = useState<number>(mc?.stretchMinutes ?? 10)
-  const [stretchIntervalMin, setStretchIntervalMin] = useState<number>(mc?.stretchIntervalMin ?? 0)
-  const [yogaKind, setYogaKind] = useState<YogaPresetKind>(mc?.yogaKind ?? 'gentle')
-  const [strengthKind, setStrengthKind] = useState<StrengthPresetKind>(mc?.strengthKind ?? mc?.workoutKind ?? 'tabata')
-  const [workSec, setWorkSec] = useState<number>(mc?.workSec ?? 20)
-  const [restSec, setRestSec] = useState<number>(mc?.restSec ?? 10)
-  const [rounds, setRounds] = useState<number>(mc?.rounds ?? 8)
-  // Creator-authored warm-up (ADR-592, P3): a message + length shown during the pre-roll.
-  const [warmupMessage, setWarmupMessage] = useState(props.warmupMessage ?? '')
-  const [warmupSec, setWarmupSec] = useState<number>(props.warmupSec ?? 0)
   const [icon, setIcon] = useState(props.icon ?? '')
   // Multi-Focus: focus_details is keyed by pillar id; the KEYS are the selected Focuses.
   // A legacy row may have a domain_id but no focus_details yet — seed that primary Pillar
@@ -266,50 +224,19 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
     void run(() => setPracticeTagsAction(props.id, labels))
   }
 
-  // Compose the full movement_config for a mode from the current tuning state (each mode
-  // reads only its own fields, mirroring movement-session.tsx). `overrides` carry a control's
-  // brand-new value so the save uses it before React state settles; `mode` lets a mode-switch
-  // compose the new mode's config directly. The server re-sanitizes on save (sanitizeMovementConfig).
-  const composeMovementConfig = (
-    overrides: Partial<MovementConfig> = {},
-    mode: MovementMode = movementMode,
-  ): MovementConfig => {
-    const base: MovementConfig =
-      mode === 'walk' ? { mode, walkMinutes, walkIntervalMin }
-      : mode === 'run' ? { mode, runMinutes, runIntervalMin }
-      : mode === 'yoga' ? { mode, yogaKind }
-      : mode === 'stretch' ? { mode, stretchMinutes, stretchIntervalMin }
-      : mode === 'play' ? { mode }
-      : { mode: 'strength', strengthKind, workSec, restSec, rounds }
-    return { ...base, ...overrides }
+  // Save a session length, with anything riding along, in ONE patch. If the length no longer earns
+  // the current Effort tier, the tier drops to what it does earn (time-vs-points, ADR-442).
+  const commitDuration = (minutes: number | null, extra: PracticeEdit = {}) => {
+    const d = minutes != null && Number.isFinite(minutes) && minutes > 0 ? minutes : null
+    setDurationMin(d != null ? String(d) : '')
+    const clamped = clampTierToDuration(weightClass, d)
+    if (clamped !== weightClass) {
+      setWeightClass(clamped)
+      queueSave({ ...extra, duration_min: d, weight_class: clamped })
+    } else {
+      queueSave({ ...extra, duration_min: d })
+    }
   }
-  const saveMovement = (overrides: Partial<MovementConfig> = {}, mode: MovementMode = movementMode) => {
-    queueSave({ timer_kind: 'movement', movement_config: composeMovementConfig(overrides, mode) })
-  }
-  // Picking a Strength shape seeds its default work/rest/rounds (the member can still tune each).
-  const pickStrength = (kind: StrengthPresetKind) => {
-    const p = STRENGTH_PRESETS.find((x) => x.kind === kind) ?? STRENGTH_PRESETS[0]
-    setStrengthKind(kind); setWorkSec(p.workSec); setRestSec(p.restSec); setRounds(p.rounds)
-    saveMovement({ strengthKind: kind, workSec: p.workSec, restSec: p.restSec, rounds: p.rounds })
-  }
-  // A single-length mode (Walk / Run / Stretch): its minutes + optional interval-cue state,
-  // presets, and save-on-change setters, resolved for the active mode. Null for other modes.
-  const durationTuner: {
-    minutes: number
-    setMinutes: (v: number) => void
-    minutePresets: readonly number[]
-    interval: number
-    setInterval: (v: number) => void
-    intervalPresets: readonly { value: number; label: string }[]
-    intervalHint: string
-  } | null =
-    movementMode === 'walk'
-      ? { minutes: walkMinutes, setMinutes: (v: number) => { setWalkMinutes(v); saveMovement({ walkMinutes: v }) }, minutePresets: WALK_DURATION_PRESETS, interval: walkIntervalMin, setInterval: (v: number) => { setWalkIntervalMin(v); saveMovement({ walkIntervalMin: v }) }, intervalPresets: WALK_INTERVAL_PRESETS, intervalHint: 'A gentle chime as you go, if you want one.' }
-      : movementMode === 'run'
-      ? { minutes: runMinutes, setMinutes: (v: number) => { setRunMinutes(v); saveMovement({ runMinutes: v }) }, minutePresets: RUN_DURATION_PRESETS, interval: runIntervalMin, setInterval: (v: number) => { setRunIntervalMin(v); saveMovement({ runIntervalMin: v }) }, intervalPresets: RUN_INTERVAL_PRESETS, intervalHint: 'Split cues on the minute, if you want them.' }
-      : movementMode === 'stretch'
-      ? { minutes: stretchMinutes, setMinutes: (v: number) => { setStretchMinutes(v); saveMovement({ stretchMinutes: v }) }, minutePresets: STRETCH_DURATION_PRESETS, interval: stretchIntervalMin, setInterval: (v: number) => { setStretchIntervalMin(v); saveMovement({ stretchIntervalMin: v }) }, intervalPresets: STRETCH_INTERVAL_PRESETS, intervalHint: 'A soft cue to switch sides, if you want one.' }
-      : null
 
   const footer = (
     <StudioFooter left={<SaveStatus state={saveState} error={error} />}>
@@ -410,6 +337,39 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           Build the whole Practice from a line, or tell Vera what to change. */}
       {props.veraComposer && <div className="mt-6">{props.veraComposer}</div>}
 
+      {/* The practice itself: the words a member reads. Written first, because the timer
+          suggestions below are matched to them. */}
+      <h2 className="mt-8 text-body font-bold text-text">The practice</h2>
+      <p className="mt-0.5 text-body-sm text-muted">What it is and how to do it, in your own words.</p>
+      {/* Description + full guide */}
+      <div className="mt-4 space-y-4">
+        <StudioField label="Short description">
+          <Textarea value={description} onChange={(e) => { setDescription(e.target.value); queueSave({ description: e.target.value }) }} rows={2} maxLength={280} />
+        </StudioField>
+        <StudioField label="Full guide (markdown)">
+          <Textarea value={body} onChange={(e) => { setBody(e.target.value); queueSave({ body: e.target.value }) }} rows={10} maxLength={8000} placeholder="How to do it, why it matters, tips…" className="font-mono" />
+        </StudioField>
+      </div>
+
+      {/* The Timer: everything about how the practice is timed, in one place (LIVE-2396). */}
+      <PracticeTimerSetup
+        timerKind={props.timerKind}
+        movementConfig={props.movementConfig}
+        mindlessMode={props.mindlessMode}
+        breathPattern={props.breathPattern ?? null}
+        durationLocked={props.durationLocked}
+        warmupMessage={props.warmupMessage}
+        warmupSec={props.warmupSec}
+        durationMin={durationMin}
+        onDurationInput={setDurationMin}
+        commitDuration={commitDuration}
+        queueSave={queueSave}
+        signals={{ title, summary, description, body }}
+        suggestTimer={props.suggestTimer}
+      />
+
+      <h2 className="mt-8 text-body font-bold text-text">What it supports</h2>
+      <p className="mt-0.5 text-body-sm text-muted">The areas of life this practice can help with.</p>
       {/* Focus — a practice can belong to MULTIPLE Focuses (Pillars). Toggle each on/off;
           the first selected is the primary (drives the card + Pillar filtering). */}
       <fieldset className="mt-6">
@@ -472,6 +432,8 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         </div>
       )}
 
+      <h2 className="mt-8 text-body font-bold text-text">Details</h2>
+      <p className="mt-0.5 text-body-sm text-muted">How often it is done, and where people find it.</p>
       {/* Taxonomy + cadence */}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <StudioField label="Cadence">
@@ -479,42 +441,6 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             {CADENCES.map((c) => <option key={c} value={c}>{c}</option>)}
           </Select>
         </StudioField>
-        <StudioField label="Time (minutes)">
-          <Input
-            type="number"
-            min={0}
-            max={1440}
-            value={durationMin}
-            onChange={(e) => setDurationMin(e.target.value)}
-            onBlur={() => {
-              // Persist the length and, if it no longer earns the current tier, drop the
-              // tier to what it does earn (time-vs-points, ADR-442). One save carries both.
-              const d = durationMin.trim() === '' ? null : Number(durationMin)
-              const clamped = clampTierToDuration(weightClass, d)
-              if (clamped !== weightClass) {
-                setWeightClass(clamped)
-                queueSave({ duration_min: d, weight_class: clamped })
-              } else {
-                queueSave({ duration_min: d })
-              }
-            }}
-            placeholder="e.g. 10"
-          />
-          <p className="mt-1 text-2xs text-muted">
-            Seeds the timer. On a timed practice the member earns the tier they reach:{' '}
-            {TIER_FLOOR_MIN.standard} min = Standard, {TIER_FLOOR_MIN.heavy} min = Heavy.
-          </p>
-        </StudioField>
-        {/* Lock the length: on a timed practice the member normally adjusts it; locking pins it.
-            A sibling of the Time field (not nested in its label), spanning the row. */}
-        {timerKind !== 'none' && (
-          <Checkbox
-            checked={durationLocked}
-            onChange={(e) => { setDurationLocked(e.target.checked); queueSave({ duration_locked: e.target.checked }) }}
-            label="Lock this length so members can’t change it at the timer"
-            wrapperClassName="sm:col-span-2"
-          />
-        )}
         <StudioField label="Category">
           <Select value={category} onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }} emptyLabel="None">
             {/* An off-list stored value (e.g. the retired `human-relating`) stays selectable and
@@ -537,6 +463,22 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         </StudioField>
       </div>
 
+      {/* Tags */}
+      <div className="mt-4">
+        <StudioField label="Tags">
+          <Input
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            onBlur={saveTags}
+            maxLength={240}
+            placeholder="morning, quick, outdoor"
+          />
+        </StudioField>
+        <p className="mt-1 text-meta text-subtle">Comma-separated. Helps people find this practice; new tags join the library.</p>
+      </div>
+
+      <h2 className="mt-8 text-body font-bold text-text">Rewards</h2>
+      <p className="mt-0.5 text-body-sm text-muted">What one log is worth.</p>
       {/* Effort (weight class) — the per-log Zap payout tier, GATED by required time
           (ADR-442): a tier is only earnable once the length meets its floor, so a short
           practice can never bank Heavy. Lower tiers stay open (under-claim is fine). */}
@@ -572,285 +514,9 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           })}
         </div>
         <p className="mt-1 text-meta text-subtle">
-          The per-log payout, earned by the practice&apos;s length: Standard needs {TIER_FLOOR_MIN.standard}+ min, Heavy {TIER_FLOOR_MIN.heavy}+ min. Set the time above. Light 8 · Standard 12 · Heavy 15 Zaps.
+          The per-log payout, earned by the practice&apos;s length: Standard needs {TIER_FLOOR_MIN.standard}+ min, Heavy {TIER_FLOOR_MIN.heavy}+ min. Set the length in the Timer section. Light 8 · Standard 12 · Heavy 15 Zaps.
         </p>
       </fieldset>
-
-      {/* How it's done — drives the single action a follower sees: Mindless opens the On Air
-          sit/breathe, Movement opens the Movement timer (walk, flow, play, or workout), and Log it
-          records in one tap. A Movement kind also picks the mode it opens on. */}
-      <fieldset className="mt-4">
-        <legend className={capsLabel('text-2xs font-semibold text-muted')}>How it&rsquo;s done</legend>
-        <StudioNote className="mt-1.5">
-          Pick how a member does this practice. <strong>Mindless</strong> opens the quiet timer
-          (Be Still) so they sit or breathe. <strong>Get Moving</strong> opens the moving timer
-          (a walk, run, yoga, stretch, play, or a full strength workout). <strong>Log it</strong>
-          is a one-tap check-off, no timer. Whatever you pick here, you can preset the rest below
-          so it opens ready to go.
-        </StudioNote>
-        <div role="radiogroup" aria-label="How it's done" className="mt-2 grid grid-cols-3 gap-2">
-          {([
-            { value: 'mindless', label: 'Mindless', hint: 'Opens Mindless to sit or breathe' },
-            { value: 'movement', label: 'Get Moving', hint: 'Opens Mindless in Get Moving mode' },
-            { value: 'none', label: 'Log it', hint: 'Records it in one tap' },
-          ] as { value: TimerKind; label: string; hint: string }[]).map((k) => {
-            const active = timerKind === k.value
-            return (
-              <button
-                key={k.value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => {
-                  setTimerKind(k.value)
-                  // Switching to Movement seeds its config from the current mode; Mindless carries
-                  // its Be Still flavour; anything else clears both (the server nulls the config /
-                  // flavour that no longer applies off a mismatched kind).
-                  if (k.value === 'movement') {
-                    saveMovement()
-                  } else if (k.value === 'mindless') {
-                    queueSave({ timer_kind: 'mindless', movement_config: null, mindless_mode: mindlessMode })
-                  } else {
-                    queueSave({ timer_kind: 'none', movement_config: null })
-                  }
-                }}
-                className={choiceTileClasses(
-                  active,
-                  `flex min-h-11 flex-col items-start justify-center rounded-control px-3 py-2 text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-muted'}`,
-                )}
-              >
-                <span>{k.label}</span>
-                <span className={`text-2xs font-normal ${active ? 'text-primary-strong' : 'text-muted'}`}>{k.hint}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {/* The Movement mode the timer opens on (only when this is a Movement practice). */}
-        {timerKind === 'movement' && (
-          <div className="mt-3">
-            <p className={capsLabel('text-2xs font-semibold text-muted')}>Movement mode</p>
-            <StudioNote className="mt-1.5">
-              Pick the kind of moving, then set it up below. <strong>Strength</strong> gives you a
-              full workout (Tabata, EMOM, AMRAP or a circuit, with the work, rest and rounds dialed
-              in); Walk, Run and Stretch take a length and optional cues; Yoga picks a flow. Whatever
-              you set here ships preset, so the member taps once and it&rsquo;s ready.
-            </StudioNote>
-            <div role="radiogroup" aria-label="Movement mode" className="mt-2 grid grid-cols-4 gap-2">
-              {MOVEMENT_MODES.map((m) => {
-                const active = movementMode === m.mode
-                return (
-                  <button
-                    key={m.mode}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    title={m.blurb}
-                    onClick={() => {
-                      setMovementMode(m.mode)
-                      saveMovement({}, m.mode)
-                    }}
-                    className={choiceTileClasses(active, `flex min-h-11 items-center justify-center rounded-control px-2 py-2 text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-muted'}`)}
-                  >
-                    {m.label}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Per-mode tuning the CREATOR presets, so the timer opens ready (ADR-592, P2). The
-                member can still adjust it at start; this is the preset it ships with. */}
-            <div className="mt-3 space-y-3">
-              {durationTuner && (
-                <>
-                  <div>
-                    <p className={capsLabel('text-2xs font-semibold text-muted')}>Length</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      {durationTuner.minutePresets.map((min) => (
-                        <MoveChip key={min} active={durationTuner.minutes === min} onClick={() => durationTuner.setMinutes(min)}>
-                          {min} min
-                        </MoveChip>
-                      ))}
-                      <MoveStepper
-                        label="min"
-                        value={durationTuner.minutes}
-                        onLess={() => durationTuner.setMinutes(Math.max(1, durationTuner.minutes - 5))}
-                        onMore={() => durationTuner.setMinutes(Math.min(600, durationTuner.minutes + 5))}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <p className={capsLabel('text-2xs font-semibold text-muted')}>Interval cue</p>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {durationTuner.intervalPresets.map((iv) => (
-                        <MoveChip key={iv.value} active={durationTuner.interval === iv.value} onClick={() => durationTuner.setInterval(iv.value)}>
-                          {iv.label}
-                        </MoveChip>
-                      ))}
-                    </div>
-                    <p className="mt-1 text-2xs text-muted">{durationTuner.intervalHint}</p>
-                  </div>
-                </>
-              )}
-
-              {movementMode === 'yoga' && (
-                <div>
-                  <p className={capsLabel('text-2xs font-semibold text-muted')}>Flow</p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {YOGA_PRESETS.map((y) => (
-                      <MoveChip key={y.kind} active={yogaKind === y.kind} title={y.blurb} onClick={() => { setYogaKind(y.kind); saveMovement({ yogaKind: y.kind }) }}>
-                        {y.label}
-                      </MoveChip>
-                    ))}
-                  </div>
-                  <p className="mt-1 text-2xs text-muted">{YOGA_PRESETS.find((y) => y.kind === yogaKind)?.blurb}</p>
-                </div>
-              )}
-
-              {movementMode === 'strength' && (
-                <div className="space-y-3">
-                  <div>
-                    <p className={capsLabel('text-2xs font-semibold text-muted')}>Shape</p>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {STRENGTH_PRESETS.map((w) => (
-                        <MoveChip key={w.kind} active={strengthKind === w.kind} title={w.blurb} onClick={() => pickStrength(w.kind)}>
-                          {w.label}
-                        </MoveChip>
-                      ))}
-                    </div>
-                    <p className="mt-1 text-2xs text-muted">{STRENGTH_PRESETS.find((w) => w.kind === strengthKind)?.blurb}</p>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <MoveStepper label="Work" value={`${workSec}s`} onLess={() => { const v = clampSeconds(workSec - 5); setWorkSec(v); saveMovement({ workSec: v }) }} onMore={() => { const v = clampSeconds(workSec + 5); setWorkSec(v); saveMovement({ workSec: v }) }} />
-                    <MoveStepper label="Rest" value={restSec === 0 ? 'none' : `${restSec}s`} onLess={() => { const v = Math.max(0, restSec - 5); setRestSec(v); saveMovement({ restSec: v }) }} onMore={() => { const v = Math.min(600, restSec + 5); setRestSec(v); saveMovement({ restSec: v }) }} />
-                    <MoveStepper label="Rounds" value={String(rounds)} onLess={() => { const v = clampRounds(rounds - 1); setRounds(v); saveMovement({ rounds: v }) }} onMore={() => { const v = clampRounds(rounds + 1); setRounds(v); saveMovement({ rounds: v }) }} />
-                  </div>
-                </div>
-              )}
-
-              {movementMode === 'play' && (
-                <p className="rounded-control border border-border bg-surface px-3 py-2 text-meta text-subtle">
-                  An open count-up. The member starts, moves, and stops when they are done. Nothing to preset.
-                </p>
-              )}
-
-              <p className="text-meta text-subtle">This is the preset it ships with. The member can still adjust it when they start.</p>
-            </div>
-          </div>
-        )}
-
-        {/* The Be Still flavour a Mindless practice opens on (P7). "Auto" leaves it to the Pillar. */}
-        {timerKind === 'mindless' && (
-          <div className="mt-3">
-            <p className={capsLabel('text-2xs font-semibold text-muted')}>Be Still mode</p>
-            <StudioNote className="mt-1.5">
-              How the quiet timer opens. <strong>Meditate</strong>, <strong>Stillness</strong> and
-              <strong> Ritual</strong> are quiet countdowns; <strong>Breathe</strong> guides a
-              breathing pattern; <strong>Journal</strong> adds a notes field; <strong>Just Log</strong>
-              skips the timer. Leave it on <strong>Auto</strong> to fit the practice&rsquo;s Pillar.
-            </StudioNote>
-            <div role="radiogroup" aria-label="Be Still mode" className="mt-2 flex flex-wrap gap-2">
-              <MoveChip active={mindlessMode === null} onClick={() => { setMindlessMode(null); queueSave({ mindless_mode: null }) }}>
-                Auto
-              </MoveChip>
-              {BE_STILL_MODES.map((m) => (
-                <MoveChip key={m.value} active={mindlessMode === m.value} title={m.hint} onClick={() => { setMindlessMode(m.value); queueSave({ mindless_mode: m.value }) }}>
-                  {m.label}
-                </MoveChip>
-              ))}
-            </div>
-            <p className="mt-1 text-2xs text-muted">
-              {mindlessMode ? BE_STILL_MODES.find((m) => m.value === mindlessMode)?.hint : 'Starts with a suggested mode. You can choose another.'}
-            </p>
-
-            {/* Breath pattern (P4): a Breathe practice can SHIP its pattern, so a Box-breathing
-                practice opens on Box. "Member's choice" (null) keeps their own saved pattern. */}
-            {mindlessMode === 'breathe' && (
-              <div className="mt-3">
-                <p className={capsLabel('text-2xs font-semibold text-muted')}>Breath pattern</p>
-                <StudioNote className="mt-1.5">
-                  The pattern this practice opens with. Pick one to make it part of the practice, or
-                  leave it on <strong>Member&rsquo;s choice</strong> to use each person&rsquo;s own saved pattern.
-                </StudioNote>
-                <div role="radiogroup" aria-label="Breath pattern" className="mt-2 flex flex-wrap gap-2">
-                  <MoveChip
-                    active={breathPattern === null}
-                    onClick={() => { setBreathPattern(null); queueSave({ breath_pattern: null }) }}
-                  >
-                    Member&rsquo;s choice
-                  </MoveChip>
-                  {BREATH_PATTERNS.map((p) => (
-                    <MoveChip
-                      key={p.slug}
-                      active={breathPattern === p.slug}
-                      title={p.blurb}
-                      onClick={() => { setBreathPattern(p.slug); queueSave({ breath_pattern: p.slug }) }}
-                    >
-                      {p.name}
-                    </MoveChip>
-                  ))}
-                </div>
-                <p className="mt-1 text-2xs text-muted">
-                  {breathPattern
-                    ? BREATH_PATTERNS.find((p) => p.slug === breathPattern)?.blurb
-                    : 'Each member breathes their own way.'}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        <p className="mt-1 text-meta text-subtle">On a Journey, a Mindless or Get Moving practice shows a Start Practice button; a Log it practice shows a Log it check-off.</p>
-
-        {/* LIVE LAUNCH PREVIEW (PRACTICE-TIMER-CONTINUITY P5): the exact summary line the member's
-            card + detail page render (the same pure timerPreview the cards call), recomputed live
-            as the creator edits. The creator sees what they are shipping, not an approximation. */}
-        <p className="mt-3 rounded-control bg-surface-elevated px-3 py-2 text-meta text-text">
-          <span className="font-semibold">Members will see:</span>{' '}
-          {timerPreview({
-            timerKind,
-            movementConfig: timerKind === 'movement' ? composeMovementConfig() : null,
-            durationMin: durationMin ? Number(durationMin) || null : null,
-          })}
-        </p>
-      </fieldset>
-
-      {/* Warm-up — a message + length shown during the timer pre-roll, before Start Practice
-          (ADR-592, P3). Only a timed practice has a pre-roll, so this is hidden for Log it. */}
-      {timerKind !== 'none' && (
-        <fieldset className="mt-4">
-          <legend className={capsLabel('text-2xs font-semibold text-muted')}>Warm-up</legend>
-          <StudioNote className="mt-1.5">
-            A short message shown on screen while the timer counts in, before Start Practice, so
-            the member can set up. Optional. Set a longer count-in below if the message needs a
-            moment to read; leave it on <strong>Member default</strong> to keep each person&rsquo;s
-            own 3, 5 or 10 second lead-in.
-          </StudioNote>
-          <div className="mt-2">
-            <Textarea
-              aria-label="Warm-up message"
-              value={warmupMessage}
-              onChange={(e) => setWarmupMessage(e.target.value)}
-              onBlur={() => queueSave({ warmup_message: warmupMessage })}
-              rows={2}
-              maxLength={WARMUP_MESSAGE_MAX}
-              placeholder="e.g. Roll your shoulders. Take a slow breath. We start easy."
-            />
-            <p className="mt-0.5 text-2xs text-muted">{warmupMessage.trim().length}/{WARMUP_MESSAGE_MAX}. Leave blank for a silent count-in.</p>
-          </div>
-          <div className="mt-2">
-            <p className={capsLabel('text-2xs font-semibold text-muted')}>Count-in length</p>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {AUTHORED_WARMUP_PRESETS.map((sec) => (
-                <MoveChip key={sec} active={warmupSec === sec} onClick={() => { setWarmupSec(sec); queueSave({ warmup_sec: sec === 0 ? null : sec }) }}>
-                  {sec === 0 ? 'Member default' : `${sec}s`}
-                </MoveChip>
-              ))}
-            </div>
-            <p className="mt-1 text-2xs text-muted">Member default keeps each person&rsquo;s own count-in (3, 5, or 10 seconds).</p>
-          </div>
-        </fieldset>
-      )}
 
       {/* Reward override — admin only. Overrides the weight-class payout + sets the card note. */}
       {props.isAdmin && (
@@ -881,30 +547,6 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           <p className="mt-1 text-meta text-subtle">Overrides the weight-class payout. Leave the Zap field blank to use the default.</p>
         </fieldset>
       )}
-
-      {/* Tags */}
-      <div className="mt-4">
-        <StudioField label="Tags">
-          <Input
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            onBlur={saveTags}
-            maxLength={240}
-            placeholder="morning, quick, outdoor"
-          />
-        </StudioField>
-        <p className="mt-1 text-meta text-subtle">Comma-separated. Helps people find this practice; new tags join the library.</p>
-      </div>
-
-      {/* Description + full guide */}
-      <div className="mt-4 space-y-4">
-        <StudioField label="Short description">
-          <Textarea value={description} onChange={(e) => { setDescription(e.target.value); queueSave({ description: e.target.value }) }} rows={2} maxLength={280} />
-        </StudioField>
-        <StudioField label="Full guide (markdown)">
-          <Textarea value={body} onChange={(e) => { setBody(e.target.value); queueSave({ body: e.target.value }) }} rows={10} maxLength={8000} placeholder="How to do it, why it matters, tips…" className="font-mono" />
-        </StudioField>
-      </div>
 
       <p className="mt-4 text-meta text-subtle">Changes apply everywhere this practice appears.</p>
 
@@ -989,35 +631,5 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         onConfirm={remove}
       />
     </StudioWindow>
-  )
-}
-
-// A small selectable pill for the movement-tuning controls (preset shapes, lengths, cues).
-function MoveChip({ active, onClick, title, children }: { active: boolean; onClick: () => void; title?: string; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={active}
-      title={title}
-      onClick={onClick}
-      className={chipClasses(Boolean(active))}
-    >
-      {children}
-    </button>
-  )
-}
-
-// A compact −/value/+ stepper for a single numeric setting (Work, Rest, Rounds, length).
-function MoveStepper({ label, value, onLess, onMore }: { label: string; value: string | number; onLess: () => void; onMore: () => void }) {
-  return (
-    <div className="rounded-control border border-border bg-surface px-2 py-1.5 text-center">
-      <p className={capsLabel('text-2xs font-semibold text-muted')}>{label}</p>
-      <div className="mt-0.5 flex items-center justify-between gap-1">
-        <button type="button" aria-label={`Less ${label}`} onClick={onLess} className="h-6 w-6 rounded-control border border-border text-muted transition-colors hover:bg-surface-elevated">−</button>
-        <span className="min-w-8 text-body-sm font-semibold tabular-nums text-text">{value}</span>
-        <button type="button" aria-label={`More ${label}`} onClick={onMore} className="h-6 w-6 rounded-control border border-border text-muted transition-colors hover:bg-surface-elevated">+</button>
-      </div>
-    </div>
   )
 }

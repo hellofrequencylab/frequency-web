@@ -6,6 +6,7 @@ import { getPillars } from '@/lib/pillars'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { PracticeBuilder } from '@/components/studio/practice/practice-builder'
 import { PracticeComposer } from '@/components/studio/practice/practice-composer'
+import { suggestPracticeTimerAction } from '../../timer-actions'
 
 export const metadata: Metadata = { title: 'Edit practice' }
 export const dynamic = 'force-dynamic'
@@ -63,6 +64,8 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
       rewardNote={practice.reward_note}
       status={practice.status}
       isPublic={practice.is_public}
+      // Vera's read-only timer recommendation (LIVE-2396): IDs from a closed catalog, never words.
+      suggestTimer={suggestPracticeTimerAction}
       // Vera composer (ADR-358): "Build with Vera" until the practice has a guide, then "Edit with
       // Vera". Empty = no body yet, so a freshly-created draft opens ready to build.
       veraComposer={<PracticeComposer id={practice.id} isEmpty={!practice.body?.trim()} />}

@@ -12,6 +12,10 @@ import { isError, type ActionResult } from '@/lib/action-result'
 
 export type SaveState = 'idle' | 'saving' | 'saved'
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 export function useStudioDraft<TPatch>(opts: {
   /** Persist a debounced field patch (e.g. (patch) => saveJourneyMeta(id, patch)). */
   save: (patch: TPatch) => Promise<ActionResult<unknown>>
@@ -23,6 +27,12 @@ export function useStudioDraft<TPatch>(opts: {
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [error, setError] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Everything queued since the last save, MERGED (LIVE-2396). Each queueSave used to replace the
+  // one before it, so a name typed and then a chip tapped inside the debounce window saved the chip
+  // and silently dropped the name, and closing the window inside it dropped the edit altogether.
+  const pending = useRef<TPatch | null>(null)
+  const latestSave = useRef(save)
+  useEffect(() => { latestSave.current = save }, [save])
 
   // Auto-revert the "Saved" badge to idle (no ref in the save path).
   useEffect(() => {
@@ -31,7 +41,13 @@ export function useStudioDraft<TPatch>(opts: {
     return () => clearTimeout(t)
   }, [saveState])
 
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
+  // Leaving with a save still queued sends it, rather than cancelling it.
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current)
+    const batch = pending.current
+    pending.current = null
+    if (batch !== null) void latestSave.current(batch)
+  }, [])
 
   const flagSaved = useCallback(() => setSaveState('saved'), [])
 
@@ -57,9 +73,15 @@ export function useStudioDraft<TPatch>(opts: {
   const queueSave = useCallback(
     (patch: TPatch) => {
       setSaveState('saving')
+      // A later edit to the same field wins; edits to different fields ride one save together.
+      pending.current = isRecord(pending.current) && isRecord(patch) ? { ...pending.current, ...patch } : patch
       if (timer.current) clearTimeout(timer.current)
       timer.current = setTimeout(async () => {
-        const res = await save(patch)
+        timer.current = null
+        const batch = pending.current
+        pending.current = null
+        if (batch === null) return
+        const res = await save(batch)
         if (isError(res)) { setError(res.error); setSaveState('idle') } else flagSaved()
       }, debounceMs)
     },

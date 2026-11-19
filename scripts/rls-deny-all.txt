@@ -219,6 +219,10 @@ hunt_sponsor_snapshots
 hunt_sponsor_settlements
 # DEF-ETSY P5 persistent cart: service role only; the cart server actions read the profile from the session.
 commerce_carts
+# PROG-E0 tasks 16+17 app_instances: service role only; written on publish by lib/apps/instances.ts.
+app_instances
+# DEF-ETSY P3 seller shipping profiles: service role only; the Shop console writes behind its Space manage gate, the cart reads after the session.
+commerce_shipping_profiles
 # FH-020S Hunt staff-proof nonces: service role only; spent by hunt_staff_nonce_consume.
 hunt_staff_nonces
 # FH-021 Frequency Hunts reward specs and grants: service role only; written by hunt_reward_grant.

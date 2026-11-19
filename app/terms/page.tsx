@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Service" updated="October 6, 2026">
+    <LegalPage title="Terms of Service" updated="November 19, 2026">
       <section>
         <div className="lg-note">
           <p>
@@ -85,7 +85,7 @@ export default function TermsPage() {
           <strong>Zero tolerance.</strong> There is no tolerance on
           Frequency for objectionable content or abusive members. Anyone can report a post, a
           comment, an event or a member from the menu on it, and anyone can block a member. We
-          review every report within 24 hours. Content that breaks these rules comes down, and
+          review every report as soon as we can. Content that breaks these rules comes down, and
           the account that posted it may be suspended or removed. Our{' '}
           <Link href="/guidelines">community guidelines</Link>{' '}
           say what that looks like in practice.

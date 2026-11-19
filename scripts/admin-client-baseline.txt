@@ -828,6 +828,7 @@ lib/analytics/outcomes.ts
 lib/analytics/practice.ts
 lib/analytics/server-google-policy.ts
 lib/analytics/showing-up.ts
+lib/apps/instances.ts
 lib/apps/overrides.ts
 lib/attribution/acquisition.ts
 lib/attribution/backfill.ts
@@ -906,6 +907,7 @@ lib/commerce/reports.ts
 lib/commerce/reviews.ts
 lib/commerce/seller-audience.ts
 lib/commerce/seller-verification.ts
+lib/commerce/shipping-profiles-store.ts
 lib/commerce/split-refund.ts
 lib/commerce/ticket-projection.ts
 lib/commerce/transfer-retry.ts
