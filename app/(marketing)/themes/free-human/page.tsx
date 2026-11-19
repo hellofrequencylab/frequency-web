@@ -1,4 +1,4 @@
-// /themes/free-human (LIVE-2408): the feature page for the Honey theme (code id `free-human`, owner 2026-11-18: "Change the theme name to
+// /themes/free-human (LIVE-2430): the feature page for the Honey theme (code id `free-human`, owner 2026-11-18: "Change the theme name to
 // honey"), on Nocturne's layout with a real render of every surface (frequency-theme-feature.tsx). A Frequency-only route; a static
 // segment wins over /themes/[theme]. Its words come from THEME_FEATURES['free-human'], so the SEO lives here, the way /themes/mindless does.
 import type { Metadata } from 'next'
