@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest'
 
 // Phase 5 (ADR-811 §A): spaceEarningsSummary splits settled earnings into the slice the NETWORK sourced
 // (source='network') vs the operator's own bookings. The contract that carries the promise: an order that
@@ -389,5 +389,47 @@ describe('complete consistent earnings windows', () => {
     rows = [{ currency: 'usd', amount_cents: 100, status: 'paid' }]
     await expect(spaceEarningsWindows('space-1', [30])).rejects.toThrow('timestamp')
     errors.mockRestore()
+  })
+})
+
+// LIVE-2422 (ADR-1978): from the pass-through date a sale also loses the card fee before it reaches the
+// seller. The net on screen is gross minus Frequency's fee AND the card fee each sale carried; feeCents
+// stays Frequency's fee alone, and a sale made before the date carries no card fee at all.
+describe('spaceEarningsSummary — card fee pass-through (LIVE-2422)', () => {
+  const FROM = '2027-02-01T08:00:00Z'
+  const restore = process.env.CARD_FEE_PASS_THROUGH_FROM
+  beforeEach(() => { process.env.CARD_FEE_PASS_THROUGH_FROM = FROM })
+  afterAll(() => {
+    if (restore === undefined) delete process.env.CARD_FEE_PASS_THROUGH_FROM
+    else process.env.CARD_FEE_PASS_THROUGH_FROM = restore
+  })
+
+  it('takes the card fee off the net for a sale on or after the date, and none before it', async () => {
+    rows = [
+      { amount_cents: 2500, platform_fee_cents: 0, status: 'paid', source: 'self', created_at: '2027-02-02T00:00:00Z' },
+      { amount_cents: 2500, platform_fee_cents: 0, status: 'paid', source: 'self', created_at: '2027-01-15T00:00:00Z' },
+    ]
+    const e = await spaceEarningsSummary('space-1')
+    expect(e.grossCents).toBe(5000)
+    expect(e.feeCents).toBe(0)
+    expect(e.cardFeeCents).toBe(103) // 2.9% of $25 + 30c, on the one sale after the date
+    expect(e.netCents).toBe(5000 - 103)
+  })
+
+  it('counts the card fee a ticket and a gift carried, by when each succeeded', async () => {
+    ticketRows = [{ amount_cents: 2500, platform_fee_cents: 250, status: 'succeeded', succeeded_at: '2027-03-01T00:00:00Z' }]
+    donationRows = [{ amount_cents: 2500, platform_fee_cents: 0, status: 'succeeded', source: 'self', succeeded_at: '2027-03-01T00:00:00Z' }]
+    const e = await spaceEarningsSummary('space-1')
+    expect(e.feeCents).toBe(250)
+    expect(e.cardFeeCents).toBe(206)
+    expect(e.netCents).toBe(5000 - 250 - 206)
+  })
+
+  it('reads exactly as before when the pass-through is off', async () => {
+    delete process.env.CARD_FEE_PASS_THROUGH_FROM
+    rows = [{ amount_cents: 2500, platform_fee_cents: 0, status: 'paid', source: 'self', created_at: '2027-02-02T00:00:00Z' }]
+    const e = await spaceEarningsSummary('space-1')
+    expect(e.cardFeeCents).toBe(0)
+    expect(e.netCents).toBe(2500)
   })
 })
