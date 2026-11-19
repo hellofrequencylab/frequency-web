@@ -150,6 +150,17 @@ countdown (below).
   member setting (3 / 5 / 10s, default 5) under **Sounds & Settings** on the Be Still setup,
   persisted to `profiles.meta.onAir.warmupSec` and read by every timer via the shared prefs.
   Just Log is an instant log (no countdown).
+- **One live stage (LIVE-2392).** Be Still and Get Moving run on the same screen,
+  `components/on-air/live-stage.tsx`, which is presentational: each engine keeps its own clock,
+  warm-up, run-over gate and bank, and hands the stage its read-outs. The door's orb is the clock
+  face, inside a ring that fills as the session runs (Be Still, and a single timed Get Moving
+  block) or as the current phase runs (a plan with rounds, which also shows its rounds as dots).
+  A Breathe session moves the orb with the breath and carries the cue on it. Under the orb: the
+  target, what is next, the tier cue and "Ends 6:42 pm" in the member's own clock. The dock holds
+  one primary pill (Begin now, Pause, Resume, Finish) with Cancel and Close & Log (Stop & Log on
+  Get Moving) side by side. After six idle seconds of a RUNNING session the chrome dims so only
+  the orb is lit; any pointer, key or focus restores it, and it never dims while paused. Space
+  presses the primary unless the member is typing. Motion honours prefers-reduced-motion.
 - **Be Still always offers a Begin (ADR-567).** If the door resolves a **log-only** practice
   (`timer_kind = 'none'`), the Be Still setup still lets the member start a real sit: picking
   any timed mode runs the **Free Practice** fallback (`lib/on-air/free-sit.ts`

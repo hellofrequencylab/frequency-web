@@ -45,6 +45,7 @@ import { OnAirIcon } from './icons'
 import { IconButton } from '@/components/ui/icon-button'
 import { MovementArt } from '@/components/feed/zap-menu-art'
 import { Reveal } from './reveal'
+import { LiveStage, type LiveState } from './live-stage'
 import { MindlessMasthead } from './mode-toggle'
 import type { TimerMode } from './mindless'
 import { completeSession } from '@/app/(main)/on-air/actions'
@@ -77,7 +78,6 @@ import {
   type MovementMode,
   type MovementConfig,
   type MovementPlan,
-  type PhaseKind,
   type StrengthPresetKind,
   type YogaPresetKind,
 } from '@/lib/movement'
@@ -138,19 +138,6 @@ function buzz(pulse: number | number[] = 15) {
     navigator.vibrate?.(pulse)
   } catch {
     // no vibration on this device
-  }
-}
-
-/** The phase color: work banks success, rest warns, the lead-in is neutral. The
- *  final-3s danger ring is layered on top in the live screen, not here. */
-function phaseTone(kind: PhaseKind): { text: string; ring: string; bg: string } {
-  switch (kind) {
-    case 'work':
-      return { text: 'text-success', ring: 'ring-success/40', bg: 'bg-success-bg/40' }
-    case 'rest':
-      return { text: 'text-warning', ring: 'ring-warning/40', bg: 'bg-warning-bg/40' }
-    default:
-      return { text: 'text-muted', ring: 'ring-border', bg: 'bg-surface-elevated' }
   }
 }
 
@@ -1095,7 +1082,6 @@ export function MovementSession({
     // Read the plan from the resume offset: a "Finish Practice" resume picks the plan
     // up where the earlier partial left off; a fresh sit reads from 0.
     const pos = phaseAt(plan, resumeOffset + elapsed)
-    const tone = phaseTone(pos.phase.kind)
     const paused = pausedAt !== null
     const ended = pos.done
     // Auto-continue (ADR-443, LIVE-674): past the target a Walk / Run / Stretch keeps counting,
@@ -1124,170 +1110,95 @@ export function MovementSession({
           ? 'Open session'
           : null
 
+    const liveState: LiveState = warming ? 'warmup' : ended ? 'ended' : paused ? 'paused' : 'running'
+    const warmupMessage = warmupMessageOverride ?? practice?.warmupMessage
+    const modeLabel = MOVEMENT_MODES.find((m) => m.mode === plan.mode)?.label ?? 'Move'
+    // The ring runs the PHASE for a plan with rounds (the thing about to change) and the whole
+    // session for a single timed block; open-ended Play draws no arc.
+    const phaseTotal = pos.remaining === null ? null : pos.phaseElapsed + pos.remaining
+    const progress = warming ? null : ended ? 1 : phaseTotal && phaseTotal > 0 ? pos.phaseElapsed / phaseTotal : null
+    const sessionLeft = planTotalSec !== null && planTotalSec > 0 && !ended ? Math.max(0, planTotalSec - (resumeOffset + elapsed)) : null
     return (
-      <Overlay flash={flash}>
-        {/* The clock block centers vertically; the action bar docks at the bottom and
-            stays visible (LAYOUT directive). Bottom padding keeps the last line clear of
-            the docked bar so nothing (e.g. "Next: ...") ever sits under the button. */}
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 pt-[max(3rem,env(safe-area-inset-top))] pb-6">
-          <p className="flex animate-pulse items-center gap-2.5 text-body-sm font-bold uppercase tracking-[0.3em] text-move [animation-duration:3s]">
-            <MovementArt className="block h-5" /> Get Moving
+      <LiveStage
+        mode="move"
+        state={liveState}
+        flash={flash}
+        eyebrow={`Get Moving · ${modeLabel}`}
+        title={practice?.title ?? 'Free Practice'}
+        // ONE countdown (ADR-566): during the shared warm-up the orb shows the pre-roll count and
+        // the plan's phase and clock are held back, so there is never a second competing number.
+        clock={warming ? String(preroll) : clockText}
+        clockLabel={warming ? 'Warm up' : continuing ? 'Going deeper' : ended ? 'Done' : pos.phase.label}
+        progress={progress}
+        // The final three seconds of a timed phase turn to the danger tone, so the shift is felt
+        // before it lands. Open-ended Play never does.
+        closing={!warming && closing}
+        accent={warming || ended ? null : pos.phase.kind === 'work' ? 'work' : pos.phase.kind === 'rest' ? 'rest' : null}
+        remainingSec={warming ? null : sessionLeft}
+        rounds={!warming && plan.rounds > 1 && pos.phase.kind !== 'prepare' ? { current: pos.round, total: plan.rounds } : null}
+        prompt={
+          // Run-over confirmation gate: once a run passes 150% of its target, a gentle, non-blocking
+          // card asks the member to confirm they are still moving. The clock keeps running; confirming
+          // banks the time to now and keeps logging. Left unanswered for a whole interval, the run
+          // auto-finalizes at the last confirmed point so an unattended run never inflates airtime.
+          !warming && runOverPrompt ? (
+            <div className="mx-auto mb-2 w-full max-w-sm rounded-card border border-move/50 bg-move-bg/30 px-4 py-3 text-center">
+              <p className="text-body-sm font-semibold text-text">Still moving?</p>
+              <p className="mt-0.5 text-meta text-muted">Confirm to keep logging.</p>
+              <button
+                type="button"
+                onClick={confirmRunOver}
+                className="mt-2.5 inline-flex items-center gap-1.5 rounded-control bg-move px-3.5 py-1.5 text-body-sm font-bold text-on-move transition-colors hover:bg-move-hover"
+              >
+                Still here
+              </button>
+            </div>
+          ) : null
+        }
+        primary={{
+          label: warming ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause',
+          onClick: () => {
+            if (warming) { begin(); return } // skip the warm-up, begin now
+            if (ended) { void finish(); return }
+            togglePause()
+          },
+        }}
+        finish={{ label: 'Stop & Log', onClick: () => void finish() }}
+        onCancel={leave}
+      >
+        {/* The warm-up message (ADR-592): a Journey step's override (P5) wins over the practice's
+            own message; shown as the timer counts in. */}
+        {warming && warmupMessage && <p className="m-0 text-balance text-body font-medium text-text/80">{warmupMessage}</p>}
+        {/* The full session length, shown through the warm-up and kept once the run begins. */}
+        {targetLabel && (
+          <p className="m-0 text-body-sm tabular-nums text-muted">
+            {warming ? `Settling into ${targetLabel.replace(' session', '')}` : targetLabel}
           </p>
-
-          {/* ONE countdown (ADR-566): during the shared warm-up the RING itself shows the
-              pre-roll count, with a "Warm up" label above it — the plan's phase/clock is
-              suppressed so there is never a second competing number. Once the run begins the
-              same ring runs the session (the phase chip + Next line return below). */}
-          {warming ? (
-            <>
-              <p
-                className="text-meta font-bold uppercase tracking-[0.3em] text-move"
-                aria-live="polite"
-              >
-                Warm up
-              </p>
-              {/* The target the member is settling into, shown below the label through warm-up. */}
-              {targetLabel && (
-                <p className="text-body-sm tabular-nums text-subtle">
-                  Settling into {targetLabel.replace(' session', '')}
-                </p>
-              )}
-              <div className="flex h-56 w-56 items-center justify-center rounded-pill ring-4 ring-move/40">
-                <p className="text-7xl font-semibold tabular-nums text-move">{preroll}</p>
-              </div>
-              {/* The warm-up message (ADR-592): a Journey step's override (P5) wins over the
-                  practice's own message; shown as the timer counts in. */}
-              {(warmupMessageOverride ?? practice?.warmupMessage) ? (
-                <p className="mt-1 max-w-sm text-balance text-body font-medium text-text/80">{warmupMessageOverride ?? practice?.warmupMessage}</p>
-              ) : (
-                // A fixed-height spacer matches the running screen's phase chip + Next lines so
-                // the ring does not jump when the run begins.
-                <div className="h-5" aria-hidden />
-              )}
-            </>
-          ) : (
-            <>
-              {/* The full session length, kept below the header once the run begins. */}
-              {targetLabel && (
-                <p className="text-body-sm tabular-nums text-subtle">{targetLabel}</p>
-              )}
-
-              {/* The phase chip — color-coded, with the round counter for Strength. */}
-              <span
-                className={capsLabel(`rounded-pill px-3 py-1 text-meta font-bold ${tone.bg} ${tone.text}`, 'widest')}
-              >
-                {pos.phase.label}
-                {plan.rounds > 1 && pos.phase.kind !== 'prepare' && (
-                  <span className="ml-2 tabular-nums opacity-80">
-                    Round {pos.round} of {plan.rounds}
-                  </span>
-                )}
-              </span>
-
-              {/* The big clock. A timed phase rings its ringed wash; the final 3s flips
-                  the ring to danger. Play counts up with no ring. */}
-              <div
-                className={`flex h-56 w-56 items-center justify-center rounded-pill ring-4 transition-colors ${
-                  closing ? 'ring-danger/60' : tone.ring
-                } ${ended && !continuing ? 'opacity-60' : ''}`}
-              >
-                <p className={`text-7xl font-semibold tabular-nums ${closing ? 'text-danger' : tone.text}`}>
-                  {clockText}
-                </p>
-              </div>
-
-              {/* Next up — the line that lets the member anticipate the change. */}
-              <p className="h-5 text-body-sm text-subtle">
-                {continuing
-                  ? 'Going deeper'
-                  : ended
-                    ? 'Done'
-                    : pos.nextLabel
-                      ? `Next: ${pos.nextLabel}`
-                      : plan.openEnded
-                        ? 'Stop when you are done'
-                        : ' '}
-              </p>
-              {/* The live "go deeper" cue: past the target, the tier earned so far and the minutes
-                  to the next one (the same line the Be Still sit shows). */}
-              {cue && (
-                <div className="flex max-w-xs flex-col items-center gap-0.5 text-center">
-                  <p className="text-body-sm font-semibold text-move">{cue.reached}</p>
-                  <p className="text-meta text-muted">{cue.toNext}</p>
-                </div>
-              )}
-              {resumeOffset > 0 && (
-                <p className="text-2xs text-muted">Picking up where you left off.</p>
-              )}
-            </>
-          )}
-          {/* After an automatic resume, a small non-blocking chip to re-arm sound (item #4). */}
-          {needRestore && (
-            <button
-              type="button"
-              onClick={restoreCues}
-              className="rounded-pill border border-move/50 bg-move-bg/40 px-3 py-1.5 text-meta font-medium text-move transition-colors hover:bg-move-bg/60"
-            >
-              Tap to restore sound
-            </button>
-          )}
-        </div>
-
-        {/* Run-over confirmation gate: once a run passes 150% of its target, a gentle, non-blocking
-            chip asks the member to confirm they are still moving. The clock keeps running; confirming
-            banks the time to now and keeps logging. Left unanswered for a whole interval, the run
-            auto-finalizes at the last confirmed point so an unattended run never inflates airtime.
-            Voice: plain, no narrated feelings, no em dashes. */}
-        {!warming && runOverPrompt && (
-          <div className="mx-auto mb-2 w-full max-w-sm rounded-card border border-move/50 bg-move-bg/30 px-4 py-3 text-center">
-            <p className="text-body-sm font-semibold text-text">Still moving?</p>
-            <p className="mt-0.5 text-meta text-muted">Confirm to keep logging.</p>
-            <button
-              type="button"
-              onClick={confirmRunOver}
-              className="mt-2.5 inline-flex items-center gap-1.5 rounded-control bg-move px-3.5 py-1.5 text-body-sm font-bold text-on-move transition-colors hover:bg-move-hover"
-            >
-              Still here
-            </button>
+        )}
+        {/* Next up: the line that lets the member anticipate the change. */}
+        {!warming && (pos.nextLabel || plan.openEnded) && !ended && (
+          <p className="m-0 text-body-sm font-medium text-text">{pos.nextLabel ? `Next: ${pos.nextLabel}` : 'Stop when you are done'}</p>
+        )}
+        {/* The live "go deeper" cue: past the target, the tier earned so far and the minutes to the
+            next one (the same line the Be Still sit shows). */}
+        {!warming && cue && (
+          <div className="flex flex-col items-center gap-0.5">
+            <p className="m-0 text-body-sm font-semibold text-move">{cue.reached}</p>
+            <p className="m-0 text-meta text-muted">{cue.toNext}</p>
           </div>
         )}
-        {/* Docked action bar — always visible, even as the screen scrolls. Opaque canvas so
-            the content above never shows through / overlaps it. */}
-        <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-canvas px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
-          <Button
-            type="button"
-            onClick={() => {
-              if (warming) { begin(); return } // skip the warm-up, begin now
-              if (ended) {
-                void finish()
-                return
-              }
-              togglePause()
-            }}
-            size="lg"
-            className="min-w-44"
-          >
-            {warming ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => void finish()}
-            variant="ghost"
-            size="sm"
-          >
-            Stop &amp; Log
-          </Button>
-          {/* Cancel: leave the run WITHOUT logging (item #3) — drops it, banks nothing. Subordinate
-              to Stop & Log so the default stays "log it". */}
+        {!warming && resumeOffset > 0 && <p className="m-0 text-2xs text-muted">Picking up where you left off.</p>}
+        {/* After an automatic resume, a small non-blocking chip to re-arm sound. */}
+        {needRestore && (
           <button
             type="button"
-            onClick={leave}
-            className="rounded-pill px-4 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger"
+            onClick={restoreCues}
+            className="rounded-pill border border-move/50 bg-move-bg/40 px-3 py-1.5 text-meta font-medium text-move transition-colors hover:bg-move-bg/60"
           >
-            Cancel · don&rsquo;t log
+            Tap to restore sound
           </button>
-        </div>
-      </Overlay>
+        )}
+      </LiveStage>
     )
   }
 
