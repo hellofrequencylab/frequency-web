@@ -336,4 +336,28 @@
   [data-design="frequency"] [data-kit="members"] .mc-fnext-acts{width:100%}
   [data-design="frequency"] [data-kit="members"] .mc-fnext-acts>.btn:last-child{flex:1 1 auto;justify-content:center}
 }
+/* The course home: each week one card, the week you are in raised, a week still to open dimmed. */
+[data-design="frequency"] [data-kit="members"] .mc-weeks{display:flex;flex-direction:column;gap:16px}
+[data-design="frequency"] [data-kit="members"] .panel.mc-wk{display:flex;flex-direction:column;gap:18px;padding:24px}
+[data-design="frequency"] [data-kit="members"] .panel.mc-wk-now{background:var(--fq-surface-raised);box-shadow:var(--fq-shadow-2),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .panel.mc-wk-locked{background:none;box-shadow:inset 0 0 0 1px var(--fq-border-hair);backdrop-filter:none;-webkit-backdrop-filter:none}
+[data-design="frequency"] [data-kit="members"] .mc-wk-locked>.list,[data-design="frequency"] [data-kit="members"] .mc-wk-locked .h2{opacity:.6}
+[data-design="frequency"] [data-kit="members"] .mc-wk-h{display:flex;align-items:center;gap:14px}
+[data-design="frequency"] [data-kit="members"] .mc-wk-h .meta{flex:none;text-align:right}
+[data-design="frequency"] [data-kit="members"] .mc-node.lg{width:40px;height:40px;font-size:16px}
+[data-design="frequency"] [data-kit="members"] .mc-node .fq-icon{width:14px;height:14px}
+[data-design="frequency"] [data-kit="members"] .mc-node.lg .fq-icon{width:20px;height:20px}
+[data-design="frequency"] [data-kit="members"] .mc-wk>.list>*{padding-block:12px}
+[data-design="frequency"] [data-kit="members"] .mc-wk>.list>*:first-child{padding-top:0}
+[data-design="frequency"] [data-kit="members"] .mc-wk>.list>*:last-child{padding-bottom:0}
+[data-design="frequency"] [data-kit="members"] .mc-wk>.list>a:first-child{padding-top:12px}
+[data-design="frequency"] [data-kit="members"] .mc-wk>.list>a:last-child{padding-bottom:12px}
+[data-design="frequency"] [data-kit="members"] .mc-wk .mc-node:not(.lg){width:28px;height:28px}
+[data-design="frequency"] [data-kit="members"] .mc-hero-segs{flex:none;width:100%;max-width:420px;padding:0}
+@media (max-width:560px){
+  [data-design="frequency"] [data-kit="members"] .panel.mc-wk{padding:18px;gap:14px}
+  [data-design="frequency"] [data-kit="members"] .mc-wk-h{flex-wrap:wrap}
+  [data-design="frequency"] [data-kit="members"] .mc-wk-h .meta{flex-basis:100%;text-align:left;padding-left:54px;margin-top:-8px}
+}
+
 }
