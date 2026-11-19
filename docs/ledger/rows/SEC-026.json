@@ -1,0 +1,19 @@
+{
+  "id": "SEC-026",
+  "title": "Stop members from making themselves staff, Crew or unsuspended by editing their own profile row",
+  "status": "open",
+  "priority": "P0",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/admin/guard.ts",
+    "ref": "deepest site audit 2026-11-19 (security, RLS column writes)"
+  },
+  "detail": "Deep audit 2026-11-19. The policy \"profiles: self update\" checks only that the row is yours, and the authenticated role holds UPDATE on every profiles column. Triggers froze community_role, the economy and cosmetic columns and meta.founder, but nothing else. Verified in a rolled-back transaction as an ordinary member: update profiles set web_role = 'admin' landed (row_count 1, read back 'admin'). Any member could therefore, from the browser console with the public key and their own session, become staff (web_role drives lib/admin/guard.ts and private.get_my_web_role()), give themselves Crew or Supporter, mark themselves Founding or verified, set stripe_account_id / stripe_charges_enabled, and clear a moderator's suspension. Production holds no forged value (one janitor, the owner; 78 none). Fix (PR #5342, migration main-first): trigger trg_a_profiles_privileged_column_guard (SECURITY INVOKER, exempts service_role / postgres / supabase_admin like SCAN-696) freezes those columns for caller roles. Every app writer of them already uses the admin client. pgTAP: supabase/tests/profiles_privileged_column_guard.test.sql.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SEC-026.mjs",
+    "note": "Fails on main: no migration attaches an update guard to profiles that freezes web_role, membership_tier, stripe_* and suspended_*. Passes with the guard."
+  }
+}
