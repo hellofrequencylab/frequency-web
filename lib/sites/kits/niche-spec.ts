@@ -94,7 +94,7 @@ export const NICHE_SPECS: Record<KitNiche, NicheSpec> = {
     description: 'A home for your gatherings: what is coming up, how to join and a list to stay in touch.',
     home: {
       seoTitle: 'Gatherings', seoDescription: 'What is coming up and how to join.',
-      eyebrow: 'Gatherings', title: 'Good nights need a good home.', accent: 'good home',
+      eyebrow: 'Gatherings', title: 'Our gatherings, all in one place.', accent: 'all in one place',
       lead: '{{tagline|Come to the next one, bring a friend, and tell us what you would like more of.}}',
       primary: { label: 'See what is coming up', href: '~/events' }, secondary: { label: 'Our story', href: '~/about' },
       stepsEyebrow: 'Join in', stepsTitle: 'Come along',

@@ -159,7 +159,7 @@ const VARIANTS: Record<CoreKitNiche, Omit<SiteKit, 'theme' | 'version' | 'niche'
         label: 'Home',
         seo: { title: 'Gatherings', description: 'What is coming up and how to join.' },
         blocks: [
-          hero({ eyebrow: 'Gatherings', title: 'Good nights need\n*a good home.*', lead: '{{tagline|Come to the next one, bring a friend, and tell us what you would like more of.}}', primaryLabel: 'See what is coming up', primaryHref: '~/events', secondaryLabel: 'Our story', secondaryHref: '~/about' }),
+          hero({ eyebrow: 'Gatherings', title: 'Our gatherings,\n*all in one place.*', lead: '{{tagline|Come to the next one, bring a friend, and tell us what you would like more of.}}', primaryLabel: 'See what is coming up', primaryHref: '~/events', secondaryLabel: 'Our story', secondaryHref: '~/about' }),
           gatherings('~/events', 'Coming *up*', 'New dates show up here as you add them.', [
             { month: 'Soon', day: '1', title: 'Your next gathering', meta: 'Add a time and place' },
             { month: 'Soon', day: '2', title: 'The one after', meta: 'Add a time and place' },

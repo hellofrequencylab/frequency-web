@@ -69,7 +69,7 @@ const PROBLEMS: { n: string; title: string; body: string; shot: Shot }[] = [
   {
     n: '03',
     title: 'The numbers don’t work',
-    body: 'Rent, supplies and hours add up. Without a break-even, a full room can still lose money.',
+    body: 'Rent, supplies and hours add up. Without a break-even, a busy event can still lose money.',
     shot: { src: p('craft-table'), alt: 'A long table of adults and kids making crafts in a studio' },
   },
 ]
@@ -325,7 +325,7 @@ export function FrequencyBusinessOfCommunity() {
               </>
             }
           >
-            Good intentions fill a room once. Keeping it going takes a few repeatable habits that nobody teaches: a planning
+            Good intentions get people there once. Keeping it going takes a few repeatable habits that nobody teaches: a planning
             rhythm, clear norms, a dependable format and a price that covers the costs.
           </Head>
           <div className="boc-probs">

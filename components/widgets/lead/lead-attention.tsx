@@ -165,7 +165,7 @@ export async function LeadAttention(): Promise<React.ReactElement | null> {
         text:
           going === 0
             ? `${e.title} is coming up with no RSVPs yet. Give it a nudge in the circle.`
-            : `${e.title} is coming up with ${going} going so far. A quick reminder can fill the room.`,
+            : `${e.title} is coming up with ${going} going so far. A quick reminder helps people show up.`,
         href: `/events/${e.slug}`,
         rank: 3,
       })

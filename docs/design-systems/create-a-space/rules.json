@@ -163,6 +163,14 @@
     "copy:Create a Space.dc.html#fb7bcc92",
     "copy:Create a Space.dc.html#7fd275a1"
    ]
+  },
+  {
+   "owner": "Daniel, 2026-11-19",
+   "phrase": "That lingo is super cheesy. Keep it a little more direct",
+   "reason": "Room-and-night imagery (full room, full nights, a great night) is banned (voice guide 9a, SCAN-1286); the hero pain line now reads 'People come once, then disappear.'",
+   "ids": [
+    "copy:Create a Space.dc.html#c31ffd68"
+   ]
   }
  ]
 }

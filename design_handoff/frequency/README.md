@@ -1,7 +1,7 @@
 # Frequency™ Design System · v4
 ### Community Collective
 
-Frequency is a network of communities and the people looking to fill them: Members, Spaces, Circles and Events, with Journeys, the Quest and Mindless as programs inside it. The north star is weekly active members who showed up, never screen time.
+Frequency is a network of communities and the people looking for one: Members, Spaces, Circles and Events, with Journeys, the Quest and Mindless as programs inside it. The north star is weekly active members who showed up, never screen time.
 
 Browse the product pages from the three area pages: `Frequency Front End.html`, `Frequency Member Site.html` and `Frequency Member Admin.html`. The build handoff is **`HANDOFF.md`**.
 

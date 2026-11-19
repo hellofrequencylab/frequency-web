@@ -6,7 +6,7 @@
 
 Frequency is a collective where people boldly create together in a meaningful space of love. We help community builders, coaches, guides, healers, teachers, yogis and mindful people gather, collaborate and build circles, not walls, toward a better world to live in together.
 
-It is not about filling a room. It is about meaningful connection.
+It is not about headcount. It is about people who know each other.
 
 Two lines, two jobs:
 
@@ -26,7 +26,7 @@ Lead every page with the reader's pain point, in their words. Then show the way 
 | Member | "It's hard to make friends as an adult." "I moved here and don't know anyone." "I have a hundred contacts and no real friends." "I'm always wired." |
 | Coach, healer, guide | "I'm good with people and buried in logistics." Six tools, chasing payments, losing touch. |
 | Studio, instructor | People come to class and drift. No way to know who is new, who stopped coming. |
-| Event host | A great night, then the crowd disappears. Starting over each time. |
+| Event host | People come once and you never see them again. Starting over each time. |
 | Venue | Many groups use the space; nobody knows who they are. |
 | Non Profit | Supporters care but go quiet between campaigns. |
 | Network leader | Chapters scattered, each doing its own thing. |
@@ -38,7 +38,7 @@ Lead every page with the reader's pain point, in their words. Then show the way 
 - **Pain first.** Name the real difficulty before offering anything. Never shame the reader for it; most people feel it (41% of US adults report loneliness, per Stanford's 2025 survey).
 - **Bold means a stance, not hype.** "Build circles, not walls." Not urgency, not superlatives.
 - **Inviting means permission.** "Come as you are." "Try one gathering."
-- **Specific over inspirational.** One real detail per block: a chair, a walk, a scheduled gathering. Do not invent a weekday to make a headline feel specific.
+- **Specific over inspirational.** One real detail per block: a chair, a walk, a scheduled gathering. A real detail is a fact (a time, a place, a price, a step), not a scene. Do not invent a weekday to make a headline feel specific, and never reach for crowd or night-out imagery as shorthand for success (§9a).
 - **Love, plainly.** The word is welcome ("a space of love"). Never decorated.
 - **Casual mechanics.** Contractions, short sentences, sentence case, no em dashes, almost no exclamation points.
 
@@ -86,8 +86,8 @@ Formula: **name the difficulty or the person, then the way through, in one line.
 | Home, hosting | Build circles, not walls. | Owner ruling 2026-10-26: retain the same headline; explain opening a Space and hosting gatherings in the supporting paragraph. |
 | Coaches and healers | Your practice without six logins | You're good with people. Keep the paperwork out of the way. |
 | Studios | Every class, every member, one place. | Class is where people meet. Give them a reason to know each other. |
-| Event hosts | Sell the tickets. Keep the room. | A great gathering deserves a way to remember the people in it. |
-| Venues | Fill the room, and know who filled it. | A home for every group that meets in your space. |
+| Event hosts | (retired: room imagery, §9a) | People come once and you never see them again. Keep in touch after the event. |
+| Venues | (retired: room imagery, §9a) | A home for every group that meets in your space. |
 | Non Profits | Raise more. We take no cut. | The people who believe in your work deserve to be known. We take no cut. |
 | Networks | (current) | Every chapter is its own circle. Keep them connected. |
 
@@ -110,7 +110,39 @@ Name a feature only inside the story of what someone gets to do. Product names (
 
 - **Own:** circle, gather, rhythm, season, together, belonging, practice, heart, regular, every Thursday, show up, come back, community (with a concrete partner).
 - **Plain verbs:** meet, sit, walk, make, share, host, invite, thank.
-- **Retire:** fill the room, full house, packed, software-for headlines, back office, logins, "one list" lines, and the hype list in §5.
+- **Retire:** software-for headlines, back office, logins, "one list" lines, the hype list in §5, and every room-and-night image in §9a.
+
+## 9a. Banned imagery: rooms and nights
+
+Owner ruling 2026-11-19 (Daniel): lines like "full room", "people who fill a room" and "full nights" are cheesy. Say what happens, plainly. Bold comes from the stance, not from a movie-trailer picture of a crowd.
+
+**Where it came from.** The messaging manifesto ("A network of rooms and the people who fill them. Nights that run late."), the brand one-liner ("the people looking to fill them") and the core-model shorthand "Event: when the room is open". Every writer, human or AI, who read those canons copied the picture into headlines, kits, nav and help. Those source lines are rewritten. This list keeps the picture from coming back.
+
+**Never write** (any tense, any surface, including AI output):
+
+- fill the room, fill a room, fill the seats, fill your calendar, a room that keeps filling itself, this room fills
+- full room, full rooms, full night, full nights, full house, packed room, half-full room
+- a room full of (people, strangers, regulars)
+- the people who fill a room, the people who fill them, the people looking to fill them, who'll fill the rooms
+- nights that run late, after a good night, a great night (as a stand-in for an event), good nights need a good home
+- keep the room, keep the room warm, when the room is open, a network of rooms
+- "the people in the room" as a stand-in for "your people"
+
+**Say the plain thing instead.**
+
+| Instead of | Say |
+|---|---|
+| A full room | More people at your events. People who come back. |
+| Fill the room | Get people to your event. Sell the tickets. |
+| The people who fill a room | Your regulars. The people who come. |
+| Tip after a good night | Tip after an event they enjoyed. |
+| Keep the room warm between meetings | Stay in touch between meetings. |
+| When the room is open | When the group meets. |
+| A network of rooms and the people who fill them | Groups that meet near you, and the people in them. |
+
+**Test:** would you say it to a friend over coffee? If it sounds like a trailer voice-over, cut it.
+
+A literal room is fine ("the back room at the cafe", a capacity field, "Room and seats"). The ban is on rooms and nights used as a metaphor for success or belonging. [`scripts/probes/room-imagery.mjs`](../../scripts/probes/room-imagery.mjs) (SCAN-1286) scans the copy surfaces for these phrases and fails when one comes back; the AI primer (`lib/ai/voice.ts`) carries the same list.
 
 ## 10. Where it lands (scope of the copy sweep)
 
@@ -119,7 +151,7 @@ Name a feature only inside the story of what someone gets to do. Product names (
 ## 11. Review checklist
 
 1. Does the first line name a person or a real difficulty, not a function?
-2. Is there one concrete image (a chair, a walk, a Thursday)?
+2. Is there one concrete fact (a time, a place, a price, a step), and no room-and-night imagery from §9a?
 3. Any hard claim, promise or invented number? Remove it.
 4. Could a yogi, an astrologer and a skeptic all read it aloud?
 5. Is "community" next to something real?

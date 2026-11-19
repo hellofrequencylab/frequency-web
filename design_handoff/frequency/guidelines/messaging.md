@@ -35,7 +35,7 @@ We don't sell yoga, and we don't sell raves. We sell the thing both are reaching
 >
 > Somewhere along the way, we lost our communities. The feed moved in. We got a hundred contacts and no one to call on a Tuesday.
 >
-> Frequency is how we get them back. A network of rooms and the people who fill them. Circles you can keep coming back to. Nights that run late. Mornings that start slow. Free to join, and built to get you off your phone.
+> Frequency is how we get them back. Groups that meet near you, and the people in them. Circles you can keep coming back to. Late dinners and slow mornings. Free to join, and built to get you off your phone.
 >
 > Sacred, not serious. Gather like it matters.
 
@@ -54,7 +54,7 @@ Copy patterns: "Build circles, not walls." · "Open the door." · "Bring someone
 | **Core belief** | **Build circles, not walls.** |
 | Lockup | Frequency · Community Collective |
 | Attitude | **Sacred, not serious.** (The rule for how everything feels.) |
-| One-sentence | Frequency is a network of communities and the people looking to fill them. |
+| One-sentence | Frequency is a network of local communities and the people looking for one. |
 | Proof rule | We measure success by who showed up this week. |
 
 **Pillars (what we say, and what we never say):**

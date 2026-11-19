@@ -23,8 +23,8 @@ An Outpost is not the top unit.
 |---|---|---|
 | **Member** | `profiles` | A person. Free to join. |
 | **Space** | `spaces` | A business's home on Frequency. |
-| **Circle** | `circles` | A room inside a Space, where a group meets. `type` is `in-person` (cap 50) or `online` (cap 100). Has location fields (city, neighborhood, lat/lng, timezone). Declares one topical Channel. |
-| **Event** | `events`, `event_rsvps` | When the room is open. |
+| **Circle** | `circles` | A group inside a Space that meets. `type` is `in-person` (cap 50) or `online` (cap 100). Has location fields (city, neighborhood, lat/lng, timezone). Declares one topical Channel. |
+| **Event** | `events`, `event_rsvps` | A set time when people meet. |
 | **Channel** | `topical_channels` | Global topics you tune into. Circles run them locally. **"Interests" is retired.** |
 
 Place scaffolding (not primary nav, not the top product unit). Member URLs fold into Space (LIVE-242 / ADR-1439); these tables remain because Circles still attach through `circles.hub_id`.

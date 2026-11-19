@@ -91,7 +91,7 @@ export const spec: ArticleSpec = {
         image: GATHER_IMAGE,
         alt: 'A circle of friends sitting together outdoors for a shared practice',
         eyebrow: 'A shared feed',
-        title: 'Keep the room warm between meetings.',
+        title: 'Stay in touch between meetings.',
         body: 'A community is not only the hour you are in the room. It is the days in between, and those need somewhere to live. Channels give your people topics to gather around, and Dispatch lets you send an update or a reminder that lands with everyone at once.\n\nThe point is not more notifications. It is that the group stays connected between gatherings, so nobody has to wonder whether it is still happening. A warm feed between meetings is what makes the next meeting easy to say yes to.',
         side: 'left',
       },
