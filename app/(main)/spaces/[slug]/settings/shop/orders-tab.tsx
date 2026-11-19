@@ -1,5 +1,5 @@
 import { formatDateMedium } from '@/lib/format-date'
-import { Receipt, Wallet, Landmark, RotateCcw } from 'lucide-react'
+import { Receipt, Wallet, Landmark, RotateCcw, CreditCard } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/ui/stat-card'
 import { listSpaceOrders, readCompleteSpaceEarnings } from '@/lib/commerce/orders'
@@ -55,9 +55,13 @@ export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: 
 
   return (
     <div className="mt-4 space-y-4">
-      <div className="grid grid-cols-3 gap-3">
+      {/* The card fee is its own line once it passes through (LIVE-2422, ADR-1978); before the date it is 0 and hidden. */}
+      <div className={`grid gap-3 ${earnings?.cardFeeCents ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
         <StatCard bordered size="sm" label="Net earned" value={earnings ? usd(earnings.netCents) : 'Unavailable'} icon={Wallet} />
-        <StatCard bordered size="sm" label="Platform fee" value={earnings ? usd(earnings.feeCents) : 'Unavailable'} icon={Landmark} />
+        <StatCard bordered size="sm" label="Finder’s fee" value={earnings ? usd(earnings.feeCents) : 'Unavailable'} icon={Landmark} />
+        {earnings?.cardFeeCents ? (
+          <StatCard bordered size="sm" label="Card fee" value={usd(earnings.cardFeeCents)} icon={CreditCard} />
+        ) : null}
         <StatCard bordered size="sm" label="Refunded" value={earnings ? usd(earnings.refundedCents) : 'Unavailable'} icon={RotateCcw} />
       </div>
 

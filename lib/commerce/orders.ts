@@ -18,6 +18,7 @@
 import { completeEarningsRead, assertUsdEarningsRows } from './complete-read'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { cardFeeCentsAt } from '@/lib/billing/card-fee'
 import type { OrderStatus, OwnerKind, OrderOwnerKind, FulfillmentStatus, FundsFlow } from './types'
 import type { TransferStatus } from './transfers'
 import {
@@ -450,6 +451,24 @@ export interface SpaceEarnings {
   networkGrossCents: number
   networkFeeCents: number
   networkOrderCount: number
+  // THE CARD FEE (LIVE-2422, ADR-1978). From the pass-through date a sale also loses the card fee before
+  // it reaches the seller, so it is its own figure: feeCents stays Frequency's fee alone, and netCents is
+  // gross minus both. Worked per sale from its amount and time (cardFeeCentsAt), so it is 0 for every
+  // sale before the date and the net reads exactly as it did. Optional so older shapes still type; absent = 0.
+  cardFeeCents?: number
+}
+
+/** The net a seller receives: gross less Frequency's fee and the card fee the sales carried. */
+function settleNet(out: SpaceEarnings): void {
+  out.netCents = out.grossCents - out.feeCents - (out.cardFeeCents ?? 0)
+}
+
+/** The card fee a settled sale still carries after a partial refund, pro rata to what stands, the same
+ *  share the platform fee is reversed by (the card fee rides in the application fee). */
+function standingCardFee(amountCents: number, refundedCents: number, at: string | null | undefined): number {
+  const card = cardFeeCentsAt(amountCents, at ?? null)
+  if (card <= 0 || amountCents <= 0) return 0
+  return card - Math.min(card, Math.round((card * refundedCents) / amountCents))
 }
 
 // One request-local, completeness-checked source read serves every report window.
@@ -551,6 +570,7 @@ async function ticketEarnings(spaceId: string, sinceDays?: number, strict = fals
     platform_fee_cents?: number | null
     status?: string | null
     refunded_at?: string | null
+    succeeded_at?: string | null
   }[]
 
   for (const r of rows) {
@@ -566,10 +586,11 @@ async function ticketEarnings(spaceId: string, sinceDays?: number, strict = fals
     } else if (r.status === 'succeeded') {
       out.grossCents += amt
       out.feeCents += fee
+      out.cardFeeCents = (out.cardFeeCents ?? 0) + standingCardFee(amt, 0, r.succeeded_at)
       out.orderCount += 1
     }
   }
-  out.netCents = out.grossCents - out.feeCents
+  settleNet(out)
   return out
 }
 
@@ -621,6 +642,7 @@ async function donationEarnings(spaceId: string, sinceDays?: number, strict = fa
     status?: string | null
     refunded_at?: string | null
     source?: string | null
+    succeeded_at?: string | null
   }[]
 
   for (const r of rows) {
@@ -632,6 +654,7 @@ async function donationEarnings(spaceId: string, sinceDays?: number, strict = fa
     } else if (r.status === 'succeeded') {
       out.grossCents += amt
       out.feeCents += fee
+      out.cardFeeCents = (out.cardFeeCents ?? 0) + standingCardFee(amt, 0, r.succeeded_at)
       out.orderCount += 1
       if (r.source === 'network') {
         out.networkGrossCents += amt
@@ -640,7 +663,7 @@ async function donationEarnings(spaceId: string, sinceDays?: number, strict = fa
       }
     }
   }
-  out.netCents = out.grossCents - out.feeCents
+  settleNet(out)
   return out
 }
 
@@ -701,7 +724,8 @@ async function splitShareEarnings(spaceId: string, sinceDays?: number, strict = 
       out.orderCount += 1
     }
   }
-  out.netCents = out.grossCents - out.feeCents
+  // No card fee on a share yet: the transfer ledger does not record which share bore it (LIVE-2421).
+  settleNet(out)
   return out
 }
 
@@ -750,6 +774,7 @@ async function summarizeSpaceEarnings(spaceId: string, sinceDays?: number, stric
       status?: string
       source?: string | null
       metadata?: unknown
+      created_at?: string | null
     }[]
     const out = { ...empty }
     for (const r of rows) {
@@ -770,6 +795,7 @@ async function summarizeSpaceEarnings(spaceId: string, sinceDays?: number, stric
         const feeRefunded = amt > 0 ? Math.min(fee, Math.round((fee * refunded) / amt)) : 0
         out.grossCents += amt - refunded
         out.feeCents += fee - feeRefunded
+        out.cardFeeCents = (out.cardFeeCents ?? 0) + standingCardFee(amt, refunded, r.created_at)
         out.refundedCents += refunded
         out.orderCount += 1
         // The network-sourced split: only orders the collective attributed as 'network' (default-safe to
@@ -781,7 +807,7 @@ async function summarizeSpaceEarnings(spaceId: string, sinceDays?: number, stric
         }
       }
     }
-    out.netCents = out.grossCents - out.feeCents
+    settleNet(out)
 
     // THE TICKET ARM, added rather than replacing (LIVE-375). Its own try/catch is INSIDE the
     // helper's caller here rather than around the pair, so a failure to read tickets returns the
@@ -797,10 +823,11 @@ async function summarizeSpaceEarnings(spaceId: string, sinceDays?: number, stric
     if (tickets) {
       out.grossCents += tickets.grossCents
       out.feeCents += tickets.feeCents
+      out.cardFeeCents = (out.cardFeeCents ?? 0) + (tickets.cardFeeCents ?? 0)
       out.refundedCents += tickets.refundedCents
       out.orderCount += tickets.orderCount
       // networkGross / networkFee / networkOrderCount are deliberately untouched; see ticketEarnings.
-      out.netCents = out.grossCents - out.feeCents
+      settleNet(out)
     }
 
     // THE DONATION ARM (LIVE-431). Own try/catch, same posture as tickets: a failure to read
@@ -815,12 +842,13 @@ async function summarizeSpaceEarnings(spaceId: string, sinceDays?: number, stric
     if (donations) {
       out.grossCents += donations.grossCents
       out.feeCents += donations.feeCents
+      out.cardFeeCents = (out.cardFeeCents ?? 0) + (donations.cardFeeCents ?? 0)
       out.refundedCents += donations.refundedCents
       out.orderCount += donations.orderCount
       out.networkGrossCents += donations.networkGrossCents
       out.networkFeeCents += donations.networkFeeCents
       out.networkOrderCount += donations.networkOrderCount
-      out.netCents = out.grossCents - out.feeCents
+      settleNet(out)
     }
 
     // THE SPLIT-SHARE ARM (LIVE-624). Own try/catch, same posture: an unreadable ledger returns the
@@ -835,9 +863,10 @@ async function summarizeSpaceEarnings(spaceId: string, sinceDays?: number, stric
     if (shares) {
       out.grossCents += shares.grossCents
       out.feeCents += shares.feeCents
+      out.cardFeeCents = (out.cardFeeCents ?? 0) + (shares.cardFeeCents ?? 0)
       out.refundedCents += shares.refundedCents
       out.orderCount += shares.orderCount
-      out.netCents = out.grossCents - out.feeCents
+      settleNet(out)
     }
     return out
   } catch (error) {
