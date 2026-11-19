@@ -74,7 +74,19 @@ export const SKIN: Record<string,(A:string,T:string,a:Any)=>Record<string,Any>>=
   emF:"'Cormorant',serif",emStyle:'italic',emW:'500',eyeF:"500 11px/1 'Jost',sans-serif",eyeTrack:'.22em',eyeColor:'#343736',markW:'28px',markH:'1px',markBg:'#5F625F',
   labelF:"500 10.5px/1.2 'Jost',sans-serif",labelTrack:'.18em',btnBg:'#2F302E',btnColor:'#F7F3EC',btnR:'6px',btnClip:'none',btnF:"500 14px/1 'Jost',sans-serif",btnTrack:'.18em',btnCase:'uppercase',btnShadow:'0 14px 28px -16px rgba(47,48,46,.6)',
   linkF:"500 13px/1 'Jost',sans-serif",linkTrack:'.18em',linkCase:'uppercase',swR:'999px',chipR:'4px',grain:.12,blend:'multiply',dev:'rgba(52,55,54,.45)',
-  bdL:'9%',bdT:'4%',bdW:'82%',bdH:'92%',bdBg:'#EFE8DC',bdR:'4px',bdShadow:'inset 0 0 0 1px #DAD0BF,inset 0 0 0 10px #F4EEE4,inset 0 0 0 11px #E3DACB'})
+  bdL:'9%',bdT:'4%',bdW:'82%',bdH:'92%',bdBg:'#EFE8DC',bdR:'4px',bdShadow:'inset 0 0 0 1px #DAD0BF,inset 0 0 0 10px #F4EEE4,inset 0 0 0 11px #E3DACB'}),
+ honey:(A:string,T:string)=>({bg:`radial-gradient(42% 52% at 80% 22%,rgba(245,196,81,.32),transparent 70%),radial-gradient(40% 50% at 8% 92%,${A}14,transparent 70%),linear-gradient(180deg,#FFF8EC,#F7ECDA)`,text:'#22130C',body:'#3B2216',muted:'#6A4127',hair:'#DDBF97',panel:'#FFF8EC',panelR:'6px',panelClip:'none',panelShadow:'0 18px 40px -30px rgba(59,34,22,.45)',
+  fd:"'Cormorant Garamond',serif",fdw:'500',fcase:'none',ftrack:'-0.01em',tsize:'clamp(54px,5.8vw,84px)',tlh:'.95',fv:"'Cormorant Garamond',serif",fvStyle:'italic',fvw:'500',tagSize:'26px',fb:"'Hanken Grotesk',sans-serif",numSize:'36px',
+  emF:"'Cormorant Garamond',serif",emStyle:'italic',emW:'500',eyeF:"600 11px/1 'Hanken Grotesk',sans-serif",eyeTrack:'.2em',eyeColor:T,markText:'☀︎',markW:'auto',markH:'auto',
+  labelF:"600 10.5px/1.2 'Hanken Grotesk',sans-serif",labelTrack:'.16em',btnBg:A,btnColor:'#FFF8EC',btnR:'999px',btnClip:'none',btnF:"600 14px/1 'Hanken Grotesk',sans-serif",btnTrack:'.04em',btnCase:'none',btnShadow:`0 14px 28px -16px ${A}AA`,
+  linkF:"600 13px/1 'Hanken Grotesk',sans-serif",linkTrack:'.16em',linkCase:'uppercase',swR:'999px',chipR:'999px',grain:.12,blend:'multiply',dev:'rgba(59,34,22,.45)',
+  bdL:'9%',bdT:'4%',bdW:'82%',bdH:'92%',bdBg:'#F4E6CE',bdR:'50% 50% 6px 6px / 22% 22% 6px 6px',bdShadow:'inset 0 0 0 1px #DDBF97,inset 0 0 0 10px #F9EEDB,inset 0 0 0 11px #E8CFA6'}),
+ mindless:(A:string,T:string)=>({bg:`radial-gradient(40% 50% at 78% 18%,${A}30,transparent 70%),radial-gradient(50% 45% at 10% 100%,${A}18,transparent 70%),#1A1415`,text:'#F4EDE4',body:'#D9CFC4',muted:'#A89C92',hair:'#3A2F31',panel:'#231B1D',panelR:'14px',panelClip:'none',
+  fd:"'Rubik Wet Paint',sans-serif",fdw:'400',fcase:'uppercase',ftrack:'0',tsize:'clamp(50px,5.4vw,78px)',tlh:'.95',fv:"'Archivo',sans-serif",fvStyle:'normal',fvw:'800',tagSize:'22px',fb:"'Archivo',sans-serif",numSize:'34px',
+  emF:"'Rubik Wet Paint',sans-serif",emStyle:'normal',eyeF:"800 11px/1 'Archivo',sans-serif",eyeTrack:'.2em',eyeColor:T,markText:'●',markW:'auto',markH:'auto',
+  labelF:"800 10.5px/1.2 'Archivo',sans-serif",labelTrack:'.16em',btnBg:A,btnColor:'#1A1415',btnR:'999px',btnClip:'none',btnF:"800 14px/1 'Archivo',sans-serif",btnTrack:'.12em',btnCase:'uppercase',btnShadow:'4px 4px 0 #000',
+  linkF:"800 12.5px/1 'Archivo',sans-serif",linkTrack:'.16em',linkCase:'uppercase',swR:'999px',chipR:'999px',grain:.16,dev:'#000',
+  bdL:'10%',bdT:'4%',bdW:'80%',bdH:'92%',bdBg:'#231B1D',bdR:'18px',bdShadow:`inset 0 0 0 1px #3A2F31,6px 6px 0 ${A}55`})
 };
 
 export const DOTS=(c:string,pts:number[][])=>pts.map(([x,y,r])=>`radial-gradient(circle at ${x}% ${y}%,${c} 0 ${r}px,transparent ${r+.6}px)`).join(',');
@@ -118,7 +130,15 @@ export const DECO: Record<string,(A:string,a:Any)=>Any>={
  designer:(A:string)=>({num:{c:'rgba(52,55,54,.045)',st:'0'},layers:[
   {s:'cloud',x:'6%',y:'-12%',w:'46%',h:'124%',bg:'repeating-linear-gradient(115deg,rgba(255,255,255,.4) 0 60px,transparent 60px 150px)',mask:'linear-gradient(180deg,#000,transparent 85%)',op:'.7'},
   {s:'full',x:'1.5%',y:'3%',w:'97%',h:'94%',bd:'1px solid #DAD0BF',sh:'inset 0 0 0 6px transparent,inset 0 0 0 7px #E6DDCD'},
-  {s:'cloud',x:'4%',y:'82%',w:'88px',ar:'1',rad:'999px',bd:`1px solid ${A}66`,sh:`inset 0 0 0 6px #F3EDE3,inset 0 0 0 7px ${A}33`}]})
+  {s:'cloud',x:'4%',y:'82%',w:'88px',ar:'1',rad:'999px',bd:`1px solid ${A}66`,sh:`inset 0 0 0 6px #F3EDE3,inset 0 0 0 7px ${A}33`}]}),
+ honey:(A:string)=>({num:{c:'rgba(176,122,10,.07)',st:'0'},layers:[
+  {s:'cloud',x:'4%',y:'-14%',w:'48%',h:'128%',bg:'repeating-conic-gradient(from 180deg at 50% 100%,rgba(245,196,81,.22) 0 4deg,transparent 4deg 12deg)',mask:'radial-gradient(60% 60% at 50% 100%,#000,transparent 80%)',op:'.8'},
+  {s:'full',x:'1.5%',y:'3%',w:'97%',h:'94%',bd:'1px solid #DDBF97',sh:'inset 0 0 0 6px transparent,inset 0 0 0 7px #EBD6B4'},
+  {s:'cloud',x:'5%',y:'80%',w:'72px',ar:'1',rad:'999px',bg:'radial-gradient(circle at 35% 30%,#F5C451,#B07A0A)',sh:`0 0 40px -6px ${A}66`,op:'.85'}]}),
+ mindless:(A:string)=>({num:{c:'transparent',st:'1px rgba(244,237,228,.08)'},layers:[
+  {s:'cloud',x:'2%',y:'-8%',w:'40%',h:'60%',bg:`radial-gradient(50% 50% at 50% 50%,${A}40,transparent 70%)`,rad:'42% 58% 63% 37% / 41% 44% 56% 59%',op:'.9'},
+  {s:'full',x:'2%',y:'4%',w:'96%',h:'92%',bd:'1px solid #2E2527',rad:'18px'},
+  {s:'cloud',x:'6%',y:'78%',w:'90px',ar:'1',rad:'52% 48% 39% 61% / 55% 42% 58% 45%',bg:A,op:'.55',tf:'rotate(-12deg)'}]})
 };
 export const resolveDeco=(id:string,A:string,a:Any,flip:boolean)=>{const D=DECO[id](A,a);const lay=D.layers.map((L: Any)=>{const fromLeft=L.s==='full'||(L.s==='text'&&!flip)||(L.s==='cloud'&&flip);const tf0=L.cen?(fromLeft?'translate(-50%,-50%)':'translate(50%,-50%)'):'';
   return {l:fromLeft?L.x:'auto',r:fromLeft?'auto':L.x,t:L.y,w:L.w,h:L.h||'auto',ar:L.ar||'auto',bg:L.bg||'none',bd:L.bd||'0 solid transparent',rad:L.rad||'0',sh:L.sh||'none',op:L.op||'1',tf:(tf0+' '+(L.tf||'')).trim()||'none',mask:L.mask||'none'}});
