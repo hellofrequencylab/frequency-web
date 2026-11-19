@@ -4,6 +4,7 @@ import { MembersBody, SerifTail } from '@/components/frequency/members/shared/me
 import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import { upNext, playHref, type OngoingCycle } from '@/components/journey/v2/learn/course-home'
 import { unlockLine, type PhaseLockState } from '@/lib/journeys/schedule'
+import { focusFacts, splitTitle } from '@/lib/journeys/lesson-markdown'
 import type { JourneyTree, Lesson, Phase } from '@/lib/journeys/tree'
 import { HOME_TZ } from '@/lib/time/zone'
 
@@ -47,10 +48,11 @@ function phaseHeading(p: Phase, i: number, u: Unit): string {
   return `${label} · ${own}`
 }
 
-function lessonSub(l: Lesson, done: boolean, pillar: string | undefined, anchor: boolean): string {
+function lessonSub(l: Lesson, done: boolean, pillar: string | undefined, anchor: boolean, kind: string | null): string {
   return [
+    // The author's own word for the step ("Overview", "Homework") when the title carries one, else its type.
+    kind ?? (TYPE_LABEL[l.type] && l.type !== 'lesson' ? TYPE_LABEL[l.type] : null),
     l.estMinutes && l.estMinutes > 0 ? `${l.estMinutes} min` : null,
-    TYPE_LABEL[l.type] && l.type !== 'lesson' ? TYPE_LABEL[l.type] : null,
     pillar ?? null,
     anchor ? 'Daily anchor' : null,
     l.required ? null : 'Optional',
@@ -89,6 +91,7 @@ export function JourneyCourseBody({
   details,
   leave,
   coverImage,
+  coverFocus,
 }: {
   slug: string
   title: string
@@ -116,6 +119,8 @@ export function JourneyCourseBody({
   leave: React.ReactNode
   /** The Journey's cover photo, drawn as a band above the heading (as on /journeys/<slug>). */
   coverImage?: string | null
+  /** Where the cover sits in its band (a CSS position, "50% 20%"). Null centres it. */
+  coverFocus?: string | null
 }) {
   const lessons = tree.phases.flatMap((p) => p.modules.flatMap((m) => m.lessons))
   const numberOf = new Map(lessons.map((l, i) => [l.id, i + 1]))
@@ -137,11 +142,13 @@ export function JourneyCourseBody({
   if (next && nextNumber) metaParts.push(`Step ${nextNumber} next`)
   // The headcount is NOT repeated here: the On this Journey panel beside it already says it (owner 2026-11-18).
 
-  const kicker = empty ? 'Still being written' : tree.complete ? (cycle ? `Every ${unit} is done` : 'Journey finished') : waiting ? 'You are caught up' : 'Up next'
+  // "Lesson · The weekly sit-down": the kind joins the kicker, the name is the headline.
+  const nextTitle = splitTitle(next ? next.lesson.title || `Step ${nextNumber ?? 1}` : '')
+  const kicker = empty ? 'Still being written' : tree.complete ? (cycle ? `Every ${unit} is done` : 'Journey finished') : waiting ? 'You are caught up' : nextTitle.kind ? `Up next · ${nextTitle.kind}` : 'Up next'
   const heroTitle = empty
     ? 'No lessons yet.'
     : next
-    ? next.lesson.title || `Step ${nextNumber ?? 1}`
+    ? nextTitle.name
     : tree.complete
       ? cycle
         ? 'This Journey repeats each year.'
@@ -152,7 +159,7 @@ export function JourneyCourseBody({
   const heroWhy = empty
     ? 'The path appears here as the guide writes it. You are enrolled, so it shows up for you the day it lands.'
     : next
-    ? phaseFocusById[tree.phases[next.phaseIndex]?.id ?? ''] || summary
+    ? summary
     : tree.complete
       ? 'Every lesson is done. Revisit any of them below, any time.'
       : waiting
@@ -174,7 +181,9 @@ export function JourneyCourseBody({
         <div
           className="ph"
           aria-hidden
-          style={{ height: 'clamp(160px, 22vw, 260px)', borderRadius: 28, marginBottom: 24, backgroundImage: `url("${encodeURI(coverImage)}")` }}
+          // The author's focal point (journey_plans.cover_focus), as on the sales page: without it the
+          // band always cropped to the centre and the Manage panel's focus picker moved nothing here.
+          style={{ height: 'clamp(160px, 22vw, 260px)', borderRadius: 28, marginBottom: 24, backgroundImage: `url("${encodeURI(coverImage)}")`, backgroundPosition: coverFocus ?? undefined }}
         />
       ) : null}
       <MemberHead
@@ -210,8 +219,18 @@ export function JourneyCourseBody({
           {tree.totalRequired > 0 && (
             <span className="t2">
               {tree.doneRequired} of {tree.totalRequired} steps done
-              {nextLock?.unlockAt && !waiting ? ` · Next ${unit} ${unlockLine(nextLock.unlockAt).toLowerCase()}` : ''}
+              {nextLock?.unlockAt && !waiting ? ` · Next ${unit} ${unlockLine(nextLock.unlockAt).replace(/^./, (c) => c.toLowerCase())}` : ''}
             </span>
+          )}
+          {/* The Journey week by week: one segment each, as wide as its share of the steps. */}
+          {tree.phases.length > 1 && !empty && (
+            <div className="mc-segs mc-hero-segs" aria-hidden>
+              {tree.phases.map((p, i) => (
+                <span key={p.id} className={i === currentIndex && !tree.complete ? 'mc-seg on' : 'mc-seg'} style={{ flexGrow: Math.max(1, p.modules.reduce((c, m) => c + m.lessons.length, 0)) }}>
+                  <i style={{ width: `${p.totalRequired ? p.percent : 0}%` }} />
+                </span>
+              ))}
+            </div>
           )}
         </div>
       </section>
@@ -248,69 +267,99 @@ export function JourneyCourseBody({
             </div>
           )}
 
-          {tree.phases.map((p, i) => {
-            const lock = locks[i] ?? { locked: false, unlockAt: null }
-            const phaseLessons = p.modules.flatMap((m) => m.lessons)
-            const ev = phaseEvents[p.id]
-            const meets = [ev?.meetup, ev?.gathering].filter((e): e is { slug: string; title: string; startsAt: string } => !!e)
-            return (
-              <div key={p.id}>
-                <div className={i === 0 ? 'sec-h' : 'sec-h sec'}>
-                  <span className="h2">{phaseHeading(p, i, unit)}</span>
-                  <span className="meta">
-                    {lock.locked
-                      ? unlockLine(lock.unlockAt)
-                      : phaseLessons.length === 0
-                        ? 'No lessons yet'
-                        : p.totalRequired === 0
-                          ? 'Optional'
-                          : `${p.doneRequired} of ${p.totalRequired} done`}
-                  </span>
-                </div>
-                {!lock.locked && phaseFocusById[p.id] && <p className="why mc-bottom-12">{phaseFocusById[p.id]}</p>}
-                <div className={lock.locked ? 'list mc-dim' : 'list'}>
-                  {phaseLessons.map((l) => {
-                    const isNext = next?.lesson.id === l.id
-                    const n = numberOf.get(l.id)
-                    const label = l.title || `Step ${n}`
-                    const sub = lessonSub(l, l.done, pillarByLesson[l.id], l.id === anchorLessonId)
-                    const inner = (
-                      <>
-                        <span className={l.done ? 'ic mc-done' : isNext ? 'ic mc-now' : 'ic'}>
-                          <FqIcon name={l.done ? 'checkin' : lock.locked ? 'clock' : 'breath'} />
+          {/* Each week is one card: its number (a check when done, a clock until it opens), what it
+              is for, and its steps. The week you are in is raised; a week still to open is dimmed. */}
+          <div className="mc-weeks">
+            {tree.phases.map((p, i) => {
+              const lock = locks[i] ?? { locked: false, unlockAt: null }
+              const phaseLessons = p.modules.flatMap((m) => m.lessons)
+              const minutes = phaseLessons.reduce((n, l) => n + (l.estMinutes ?? 0), 0)
+              const ev = phaseEvents[p.id]
+              const meets = [ev?.meetup, ev?.gathering].filter((e): e is { slug: string; title: string; startsAt: string } => !!e)
+              const isCurrent = !lock.locked && !p.complete && currentIndex === i
+              const facts = !lock.locked && phaseFocusById[p.id] ? focusFacts(phaseFocusById[p.id]) : []
+              return (
+                <section key={p.id} className={lock.locked ? 'panel mc-wk mc-wk-locked' : isCurrent ? 'panel mc-wk mc-wk-now' : 'panel mc-wk'}>
+                  <div className="mc-wk-h">
+                    <span className={p.complete ? 'mc-node lg done' : isCurrent ? 'mc-node lg now' : 'mc-node lg'} aria-hidden>
+                      {p.complete ? <FqIcon name="check" /> : lock.locked ? <FqIcon name="clock" /> : i + 1}
+                    </span>
+                    <span className="grow stack mc-gap-6">
+                      <span className="h2">{phaseHeading(p, i, unit)}</span>
+                      <span className="t2">
+                        {[
+                          phaseLessons.length > 0 ? `${phaseLessons.length} step${phaseLessons.length === 1 ? '' : 's'}` : null,
+                          minutes > 0 ? `${minutes} min` : null,
+                          isCurrent ? `This ${unit}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </span>
+                    <span className="meta">
+                      {lock.locked
+                        ? unlockLine(lock.unlockAt)
+                        : phaseLessons.length === 0
+                          ? 'No lessons yet'
+                          : p.totalRequired === 0
+                            ? 'Optional'
+                            : `${p.doneRequired} of ${p.totalRequired} done`}
+                    </span>
+                  </div>
+                  {facts.length > 0 && (
+                    <div className="mc-facts">
+                      {facts.map((f, fi) => (
+                        <div key={fi} className="mc-fact">
+                          <span className="k">{f.label ?? `This ${unit}`}</span>
+                          <span className="why">{f.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="list">
+                    {phaseLessons.map((l) => {
+                      const isNext = next?.lesson.id === l.id
+                      const n = numberOf.get(l.id)
+                      const t = splitTitle(l.title || `Step ${n}`)
+                      const sub = lessonSub(l, l.done, pillarByLesson[l.id], l.id === anchorLessonId, t.kind)
+                      const inner = (
+                        <>
+                          <span className={l.done ? 'mc-node done' : isNext ? 'mc-node now' : 'mc-node'} aria-hidden>
+                            {l.done ? <FqIcon name="check" /> : lock.locked ? <FqIcon name="clock" /> : n}
+                          </span>
+                          <span className="grow">
+                            <span className={l.done ? 't1 mc-block mc-faint' : 't1 mc-block'}>{t.name}</span>
+                            {sub && <span className="t2">{sub}</span>}
+                          </span>
+                          {isNext && <span className="btn sm pa">Start</span>}
+                        </>
+                      )
+                      return lock.locked ? (
+                        <div key={l.id} aria-disabled="true">
+                          {inner}
+                        </div>
+                      ) : (
+                        <Link key={l.id} href={playHref(slug, l.id)} aria-current={isNext ? 'step' : undefined}>
+                          {inner}
+                        </Link>
+                      )
+                    })}
+                    {meets.map((e) => (
+                      <Link key={e.slug} href={`/events/${e.slug}`}>
+                        <span className="ic">
+                          <FqIcon name="circle" />
                         </span>
                         <span className="grow">
-                          <span className={l.done ? 't1 mc-block mc-faint' : 't1 mc-block'}>{label}</span>
-                          {sub && <span className="t2">{sub}</span>}
+                          <span className="t1 mc-block">{e.title}</span>
+                          <span className="t2">In person · {when(e.startsAt)}</span>
                         </span>
-                        {isNext && <span className="btn sm pa">Start</span>}
-                      </>
-                    )
-                    return lock.locked ? (
-                      <div key={l.id} aria-disabled="true">
-                        {inner}
-                      </div>
-                    ) : (
-                      <Link key={l.id} href={playHref(slug, l.id)} aria-current={isNext ? 'step' : undefined}>
-                        {inner}
                       </Link>
-                    )
-                  })}
-                  {meets.map((e) => (
-                    <Link key={e.slug} href={`/events/${e.slug}`}>
-                      <span className="ic">
-                        <FqIcon name="circle" />
-                      </span>
-                      <span className="grow">
-                        <span className="t1 mc-block">{e.title}</span>
-                        <span className="t2">In person · {when(e.startsAt)}</span>
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )
-          })}
+                    ))}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
 
           {details && <div className="sec mc-stack-dawn">{details}</div>}
           {leave && <div className="sec">{leave}</div>}

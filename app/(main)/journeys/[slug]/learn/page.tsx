@@ -115,6 +115,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         slug={slug}
         title={plan.title}
         coverImage={plan.cover_image ?? null}
+        coverFocus={plan.cover_focus ?? null}
         summary={plan.summary ?? null}
         eyebrow={frequencyCourse ? 'Creator Lab · Course' : undefined}
         tree={tree}

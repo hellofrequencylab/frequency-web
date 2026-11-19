@@ -31,5 +31,8 @@ describe('shared owner onboarding resume', () => {
     expect(ownerEntryHref('my-space', false)).toBe('/spaces/my-space/manage/spotlight')
     expect(ownerEntryHref('my-space', true)).toBeNull()
     expect(ownerEntryHref(null, false)).toBeNull()
+    // LIVE-2392: nothing to set up on a Spotlight that is already live, so that owner lands on their Space's home.
+    expect(ownerEntryHref('my-space', false, true)).toBe('/spaces/my-space/manage')
+    expect(ownerEntryHref('my-space', true, true)).toBeNull()
   })
 })

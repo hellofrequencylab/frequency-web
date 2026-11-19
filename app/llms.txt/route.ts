@@ -29,8 +29,14 @@ import { listDensityCities } from '@/app/discover/cities/_data'
 import { quickAnswers, quickAnswerLines, localAnswers } from '@/lib/marketing/quick-answers'
 import { NORTH_COUNTY_PATH, NORTH_COUNTY_TOWNS } from '@/lib/marketing/north-county'
 import { SELECTABLE_SKINS } from '@/lib/theme/skins'
+import { SITE_THEMES } from '@/lib/theme/site-style'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { LEGAL_LINKS } from '@/lib/nav/legal-links'
+
+// The themes a Space website can wear, read from the list the pickers offer (lib/theme/site-style.ts)
+// so this line cannot go stale again: it said "Two themes, Default and Bold" long after Default was
+// retired and the library grew (LIVE-2388).
+const THEME_LIBRARY_LINE = `A library of ${SITE_THEMES.length} themes, led by ${SITE_THEMES[0].label}, plus global styles for corners, spacing, header and footer.`
 
 // NOT ONE FIGURE IN THIS FILE IS TYPED (Phase 5, ADR-916). Every price and every percentage below is
 // READ from lib/pricing/pricing-grid.ts, the same derived model /pricing renders, resolved against the
@@ -97,7 +103,7 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
   // /what-is-frequency merged into /about (SCAN-1017): one explainer, with the FAQ on it.
   { path: '/about', label: 'About', desc: `What ${SITE_NAME} is, how it works (Circles and Events, with The Lab planned for 2028), why it exists, and the people building it.` },
   { path: '/spaces', label: 'Spaces, for businesses and organizations', desc: 'How a venue, studio, practitioner or organization grows a Space on Frequency: host free, keep 100% of your own bookings after card processing, pay only on the business the network sends you. A Collective also gets a public partner page: the Spaces it partners with and one shared calendar of their events.' },
-  { path: '/help/spaces/your-website', label: 'Space websites', desc: 'Any Space can publish its pages as a standalone website on a free subdomain, or on its own domain with the custom domain add-on on Business and Non Profit (included with Collective). Two themes, Default and Bold, plus global styles for corners, spacing, header and footer. Guests book on the site without an account.' },
+  { path: '/help/spaces/your-website', label: 'Space websites', desc: 'Any Space can publish its pages as a standalone website on a free subdomain, or on its own domain with the custom domain add-on on Business and Non Profit (included with Collective). ' + THEME_LIBRARY_LINE + ' Guests book on the site without an account.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
   { path: NORTH_COUNTY_PATH, label: 'North County San Diego', desc: `Community groups and local events in the founding towns: ${FOUNDING_CITIES.join(', ')}. Each town links to its own page.` },
   { path: '/discover/cities', label: 'Cities', desc: 'The cities where Frequency is taking root, then every town with a Circle meeting or an event coming up.' },

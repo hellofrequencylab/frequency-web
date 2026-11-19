@@ -23,6 +23,12 @@ describe('shared wizard entry', () => {
     active.mockResolvedValue({ spaceId: 'foreign' })
     expect(await ownedWizardEntry('owner', false)).toBe('/launch/step/spotlight?go=1')
   })
+  it('opens the Space home, not Spotlight setup, for an owner whose Spotlight is already live (LIVE-2392)', async () => {
+    owned.mockResolvedValue([{ id: 'one', slug: 'one', name: 'One', spotlightLive: true }])
+    expect(await ownedWizardEntry('owner', false)).toBe('/spaces/one/manage')
+    owned.mockResolvedValue([{ id: 'one', slug: 'one', name: 'One', spotlightLive: false }])
+    expect(await ownedWizardEntry('owner', false)).toBe('/spaces/one/manage/spotlight')
+  })
   it('honors an explicit new Space request', async () => {
     expect(await ownedWizardEntry('owner', true)).toBeNull()
     expect(owned).not.toHaveBeenCalled()

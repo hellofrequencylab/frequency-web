@@ -119,7 +119,9 @@ describe('it publishes counts, and only counts', () => {
     expect(out).toContain('### Where is Frequency available?')
     expect(out).toContain('Tips only, with no platform fee, plus card processing')
     expect(out).toContain(`[What's happening](${SITE_URL}/discover/events)`)
-    expect(out).toContain('Two themes, Default and Bold')
+    // Owner approved rewriting this pin on 2026-11-18 (LIVE-2388): Default is retired and the library grew.
+    expect(out).toMatch(/A library of \d+ themes, led by New World/)
+    expect(out).not.toContain('Default and Bold')
     expect(out).not.toContain('Frequency and Bold')
     expect(out).not.toMatch(/every week|each week/i)
     expect(out).not.toContain('—')

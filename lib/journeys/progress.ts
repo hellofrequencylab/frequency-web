@@ -8,6 +8,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildJourneyTree, leafTitle, type BlockRow } from './tree'
+import { cadenceUnit } from './schedule'
 
 function db() {
   return createAdminClient()
@@ -36,6 +37,14 @@ export interface MemberJourneyProgress {
   coverImage: string | null
   /** Repeats each year (journey_plans.ongoing): never shown as finished. */
   ongoing: boolean
+  /** Where the cover crops from (journey_plans.cover_focus, a CSS position), or null. */
+  coverFocus: string | null
+  /** What one phase is called on this Journey's cadence: a week, or a month. */
+  unit: 'week' | 'month'
+  /** Each phase's completion (0-100) in order, for a phase-by-phase progress bar. */
+  phasePercents: number[]
+  /** Required lessons still to do. */
+  lessonsLeft: number
 }
 
 const BLOCK_COLS = 'id, parent_id, block_type, sort_order, title, required, est_minutes, practice_id'
@@ -61,6 +70,8 @@ interface PlanLite {
   accent: string | null
   cover_image: string | null
   ongoing: boolean | null
+  cover_focus: string | null
+  drip_interval_days: number | null
 }
 
 /** Distinct member ids with at least one active (not-yet-completed) Journey enrollment — the
@@ -102,7 +113,7 @@ export async function getMemberJourneyProgress(
 
   let enrollQuery = admin
     .from('journey_enrollments')
-    .select('plan_id, run_id, completed_at, started_at, plan:journey_plans(id, slug, title, emoji, accent, cover_image, ongoing)')
+    .select('plan_id, run_id, completed_at, started_at, plan:journey_plans(id, slug, title, emoji, accent, cover_image, ongoing, cover_focus, drip_interval_days)')
     .eq('profile_id', profileId)
     .order('started_at', { ascending: false })
   if (activeOnly) enrollQuery = enrollQuery.is('completed_at', null)
@@ -169,6 +180,10 @@ export async function getMemberJourneyProgress(
       inCohort: !!e.run_id,
       coverImage: plan.cover_image ?? null,
       ongoing: plan.ongoing === true,
+      coverFocus: plan.cover_focus?.trim() || null,
+      unit: cadenceUnit(plan.drip_interval_days ?? 7),
+      phasePercents: tree.phases.map((p) => p.percent),
+      lessonsLeft: Math.max(0, tree.totalRequired - tree.doneRequired),
     })
   }
   return out

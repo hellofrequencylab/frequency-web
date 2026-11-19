@@ -15,7 +15,7 @@ const SPACE_LIMITS: SpaceRow[] = [
   ['space_multi_pipeline', 1, 5, null],
   ['space_journey_publish', 1, 10, null],
   ['space_journey', 25, null, null],
-  ['space_bookings', 20, null, null],
+  ['space_bookings', 15, null, null],
   ['space_membership_tiers', 1, 5, null],
   ['space_team', 1, 2, 3], // Collective 3 seats (owner 2026-10-06)
   ['space_collaborators', 0, 3, null],

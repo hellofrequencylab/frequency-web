@@ -1,0 +1,20 @@
+{
+  "id": "JRN-022",
+  "title": "The course home shows each week as one card: where it stands, what it is for, and its steps",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/members/journey/journey-course-body.tsx",
+    "ref": "Owner 2026-11-18: \"Go through every element of the journey system and bring it up to best practice, fully evolved modern design.\" Follows JRN-021 (the lesson page)."
+  },
+  "detail": "On /journeys/<slug>/learn every week was a heading over a flat list, an open week looked the same as one still to open, each step led with an unlabelled tile, and the week's focus ran as one italic line. Each week is now one card with a state node (a check when done, its number when open, a clock until it opens), its step count and minutes, and its focus as two facts. The week you are in is raised and a week still to open is dimmed. A step row leads with the step's name and carries its kind and time under it. The hero names the next step's kind in its kicker, shows the Journey week by week under the count, and no longer lowercases the day the next week opens (\"tue, nov 24\").",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-022.mjs",
+    "note": "Fails on main: weeks are flat lists and the hero lowercases the opening day."
+  },
+  "wave": "W7",
+  "closed": "2026-11-19"
+}
