@@ -41,7 +41,7 @@ export async function GET() {
     .eq('day', day)
     .maybeSingle()
   let line = (dispatch as { copy: string } | null)?.copy ?? null
-  // One profile read serves the streak line and the post box's avatar orb (LIVE-2423).
+  // One profile read serves the streak line and the post box's avatar orb (LIVE-2425).
   const { data: profRow } = await admin
     .from('profiles')
     .select('current_streak, display_name, avatar_url')
@@ -90,7 +90,7 @@ export async function GET() {
     liveEvent = (done ?? []).length < live.length
   }
 
-  // The member's own personal code (LIVE-2423): the Zap menu leads with it, so the QR is one tap
+  // The member's own personal code (LIVE-2425): the Zap menu leads with it, so the QR is one tap
   // from the button. Read only, scoped to the caller; onboarding provisions it, and a member
   // without one yet gets null and the menu points at /codes instead.
   const { data: own } = await admin

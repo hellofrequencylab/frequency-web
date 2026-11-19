@@ -1,5 +1,5 @@
 {
-  "id": "LIVE-2423",
+  "id": "LIVE-2425",
   "title": "The Zap menu wears the Claude Design Zap menu: your code first, a one-line post box, the timer, Check in and Log a practice",
   "lane": "live",
   "priority": "P2",
@@ -12,7 +12,7 @@
   "detail": "The Zap menu was a full composer over a Mindless tile and a six-tile grid (Event, Contact, Connect, Check In, Ghost Node, Partners, three of them Soon). The Claude Design export of 2026-11-18 draws it as a quick in-person menu with six functions in four rows.\n\nDONE 2026-11-19: the menu leads with the member's own personal code (the avatar-centred SVG from /api/qr) with Share and Scan beside it; tapping the code holds it up as one big QR with Share my QR, Scan a QR and Back to menu. Under it a one-line post box (avatar, Create a post, photo, send) posts to the member's wall in place through createPost; the photo button or an empty send opens the full composer with a Back. Open the timer opens Mindless; Check in goes to /scan?hint=checkin and pulses when an event the member is going to is live; Log a practice opens the door on the Free Practice with Just Log picked (a new justLog open option, threaded to CompactSetup as startOnLog). /api/zap-prompt now also returns the caller's connect code and their name and avatar, read only and scoped to the caller. The Dialog shell, its label, z tier, scrim, safe areas and focus trap are unchanged and still pinned by capture-launcher.test.tsx. Snap a poster (/events/scan) and Snap a card (/connections/new) leave the menu and stay reachable from Events and Contacts; Ghost Node and Partners were Soon tiles. The Zap button in the tab bar is unchanged.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/LIVE-2423.mjs",
+    "cmd": "node scripts/probes/LIVE-2425.mjs",
     "note": "Passes while the consequence in the title holds."
   },
   "closed": "2026-11-19",

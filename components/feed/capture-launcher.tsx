@@ -29,7 +29,7 @@ type Prompt = {
 // Capture: the app-wide primary action (ADR-155/156a). Every Zap door (header, tab bar, drawer)
 // dispatches 'open-capture' and lands here; the modal is always mounted so any trigger opens it.
 //
-// THE ZAP MENU (LIVE-2423, the Claude Design handoff of 2026-11-18, frame 2a). A quick, in-person
+// THE ZAP MENU (LIVE-2425, the Claude Design handoff of 2026-11-18, frame 2a). A quick, in-person
 // menu with six functions in four rows: your code (Share my QR, Scan a QR), a one-line post box,
 // Open the timer, and two tiles (Check in, Log a practice). Tapping the code holds it up: the card
 // becomes one big QR with Share and Scan under it. The full composer (photo, poll, contact card)
@@ -179,7 +179,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
           <div className="relative flex flex-col items-center gap-3.5 py-2 text-center">
             <p className="text-lead font-normal text-text">Your code</p>
             <QrTile code={code} size="lg" label="Back to the menu" onClick={() => setView('menu')} />
-            <p className="serif text-[24px] leading-tight text-text">Hold it up and say hi.</p>
+            <p className="serif text-page-title leading-tight text-text">Hold it up and say hi.</p>
             {shareScan(true)}
             <Button variant="ghost" onClick={() => setView('menu')}>
               <ArrowLeft className="h-4 w-4" aria-hidden /> Back to menu
@@ -212,7 +212,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
               />
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <p className="text-body font-normal text-text">Your code</p>
-                <p className="serif text-[20px] leading-tight text-text">{code ? 'Tap to hold it up.' : 'Make yours on Codes.'}</p>
+                <p className="serif text-lead leading-tight text-text">{code ? 'Tap to hold it up.' : 'Make yours on Codes.'}</p>
                 {shareScan(false)}
               </div>
             </div>
@@ -237,7 +237,7 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                     setDraft(e.target.value)
                     if (posted) setPosted(null)
                   }}
-                  className="min-w-0 flex-1 bg-transparent text-[16px] text-text"
+                  className="min-w-0 flex-1 bg-transparent text-body text-text"
                 />
                 <IconButton label="Add a photo" size="lg" onClick={() => compose('photo')}>
                   <ImagePlus className="h-5 w-5" aria-hidden />

@@ -31,7 +31,7 @@ const code = menu.replace(/\/\/.*$/gm, '')
 if (/--fq-/.test(code) || /#[0-9a-fA-F]{3,8}\b/.test(code)) fails.push('the menu names a raw colour or a kit token')
 
 if (fails.length) {
-  console.log(`FAIL LIVE-2423\n- ${fails.slice(0, 12).join('\n- ')}`)
+  console.log(`FAIL LIVE-2425\n- ${fails.slice(0, 12).join('\n- ')}`)
   process.exit(1)
 }
-console.log('PASS LIVE-2423')
+console.log('PASS LIVE-2425')

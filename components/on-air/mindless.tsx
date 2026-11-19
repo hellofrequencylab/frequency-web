@@ -96,7 +96,7 @@ export interface MindlessOpenOpts {
    *  (2+ ids), the door opens the first and auto-advances to the next after each leg's reveal is
    *  dismissed. Overrides `practiceId`. Each leg logs independently through the usual path. */
   queue?: string[]
-  /** The Zap menu's "Log a practice" (LIVE-2423): open the door on the Free Practice with the Just
+  /** The Zap menu's "Log a practice" (LIVE-2425): open the door on the Free Practice with the Just
    *  Log style picked, so one more tap logs it. */
   justLog?: boolean
 }
@@ -144,7 +144,7 @@ type LoadingState = {
   /** A sequenced run's ordered practice ids + this leg's index (P6). */
   queue?: string[]
   queueIndex?: number
-  /** Open the door on the Free Practice, Just Log (LIVE-2423). */
+  /** Open the door on the Free Practice, Just Log (LIVE-2425). */
   justLog?: boolean
 }
 

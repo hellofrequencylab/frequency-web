@@ -197,7 +197,7 @@ export function CompactSetup({
   prefs?: Partial<OnAirPrefs> | null
   journeyLegs?: { planId: string; title: string; week: number | null; weeks: number }[]
   practicedToday?: number
-  /** The Zap menu's "Log a practice" (LIVE-2423): open Be Still on the Free Practice with Just Log picked. */
+  /** The Zap menu's "Log a practice" (LIVE-2425): open Be Still on the Free Practice with Just Log picked. */
   startOnLog?: boolean
   onStart: (choice: SetupChoice) => void
   onClose: () => void
