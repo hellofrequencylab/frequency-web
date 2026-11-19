@@ -22,7 +22,7 @@
 > 5% / 3% / 2% ladder: 10%, never more than $20, charged once, on the first purchase from a customer
 > Frequency introduced. After that first purchase that customer is the seller's: 0%. Same on Business,
 > Collective and Network. Non Profit pays no finder's fee. A Founding Business keeps its locked 3%.
-> Only a paying account takes money: a free Space sells nothing, and it takes donations only when its
+> Only a paying account takes money: a free Space cannot sell, and it takes donations only when its
 > owner is a Crew member. Tips go to Crew members and to people who own a Space on a paid plan, with no
 > platform fee, plus card processing; a free Member who is not Crew does not take tips.
 >
@@ -216,7 +216,7 @@ unwritten or unsold by the 2026-09-08 dead-surface sweep, so there are no judgem
 |---|---|---|---|---|
 | 3.1 | Merge `collective` → `business`; one paid tier at **$49** | `lib/pricing/plans.ts`, `pricing-keys.ts` (+ `RETIRED_CATALOG_ITEM_KEYS` for `collective_base`), 1 migration, `scripts/check-collective.mjs` | `SPACE_PLANS` = free/business/nonprofit/independent | `pricing.test.ts` |
 | 3.2 | Seats at **$12**: catalog amount, not a placeholder. A catalog sync mints the Stripe price; `catalog_operator_seat_active` still gates checkout | `pricing-keys.ts` `operator_seat` | Catalog is $12 and not a placeholder | `catalogItem('operator_seat')` |
-| 3.3 | Take-rate to two numbers: 10% free · 3% paid · 0% non-profit · 0% own audience. **Superseded by ADR-1978:** one finder's fee, 10%, never more than $20, once, on an introduced customer's first purchase; a free Space sells nothing | `NETWORK_TAKE_RATE_DEFAULT` + the seeded vector migration | Ladder has two rungs | `take-rate-ladder.test.ts` |
+| 3.3 | Take-rate to two numbers: 10% free · 3% paid · 0% non-profit · 0% own audience. **Superseded by ADR-1978:** one finder's fee, 10%, never more than $20, once, on an introduced customer's first purchase; a free Space cannot sell | `NETWORK_TAKE_RATE_DEFAULT` + the seeded vector migration | Ladder has two rungs | `take-rate-ladder.test.ts` |
 | 3.4 | Memberships stay paid-gated; make the **upsell honest at the point of tier creation** ("charging your members is part of Business") | `settings/memberships/section.tsx` | Superseded by [ADR-1415](DECISIONS.md) / LIVE-410: the wall moved to the free floor; Connect readiness is the door | copy review |
 | 3.5 | Pricing page, grid, FAQ, JSON-LD and llms.txt all derive from the catalog | `/admin/pricing` data edit; `pricing-grid.ts` | No `$`+digit or `N%` literal in marketing source | `marketing-figures.test.ts` |
 

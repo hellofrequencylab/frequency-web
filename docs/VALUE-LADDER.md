@@ -22,8 +22,8 @@ Three lines still carry the whole commercial law: people join free, businesses h
 when you start charging. What ADR-1709 changed is what "start charging" means: it means taking
 Business.
 
-**Only a paying account takes money ([ADR-1978](DECISIONS.md), 2026-11-18).** A free Space sells
-nothing: no paid tickets, bookings, shop or paid memberships. A Space on Business or higher takes
+**Only a paying account takes money ([ADR-1978](DECISIONS.md), 2026-11-18).** A free Space cannot
+sell anything: no paid tickets, bookings, shop or paid memberships. A Space on Business or higher takes
 donations; a free Space takes donations only when its owner is a Crew member, and nothing else sells
 on it. Tips go to Crew members and to people who own a Space on a paid plan; a free Member who is not
 Crew does not take tips. No platform fee on a tip, plus card processing. The beta's free Crew counts
