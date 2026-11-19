@@ -18,6 +18,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Footprints } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ProgressTrack, type ProgressTone } from '@/components/ui/progress-track'
 import { breathPositionAt, ringScaleAt, type BreathPattern } from '@/lib/on-air'
 import { LotusIcon } from './icons'
 import type { TimerMode } from './mindless'
@@ -74,13 +76,7 @@ export interface LiveStageProps {
   onCancel: () => void
 }
 
-const ACCENT: Record<'still' | 'move' | 'work' | 'rest' | 'closing', string> = {
-  still: 'text-primary-strong',
-  move: 'text-move',
-  work: 'text-success',
-  rest: 'text-warning',
-  closing: 'text-danger',
-}
+const BAR: Record<'still' | 'move' | 'work' | 'rest' | 'closing', ProgressTone> = { still: 'primary-strong', move: 'move', work: 'success', rest: 'warning', closing: 'danger' }
 
 export function LiveStage({
   mode, state, flash = false, eyebrow, title, clock, clockLabel, progress, closing = false, accent = null, remainingSec = null,
@@ -92,7 +88,6 @@ export function LiveStage({
   const discRef = useRef<HTMLSpanElement>(null)
   const cue = useBreath(breath, state === 'paused' || state === 'warmup', discRef)
   const fill = orbFillFor(mode)
-  const tone = ACCENT[closing ? 'closing' : (accent ?? mode)]
   const chrome = `transition-opacity duration-700 motion-reduce:transition-none ${quiet ? 'opacity-10' : 'opacity-100'}`
   const arc = progress === null ? null : Math.min(1, Math.max(0, progress))
   const primaryRef = useRef(primary.onClick)
@@ -157,8 +152,8 @@ export function LiveStage({
           <div className="flex flex-col items-center gap-3" role="timer" aria-label={`${clock} ${clockLabel}`}>
             <span className={`font-display font-medium leading-none tracking-[-0.04em] tabular-nums text-display-hero ${closing ? 'text-danger' : 'text-text'} ${state === 'paused' ? 'opacity-60' : ''}`}>{clock}</span>
             {arc !== null && (
-              <span className="block h-1.5 w-60 max-w-[70vw] overflow-hidden rounded-pill bg-border" data-live-bar>
-                <span className={`block h-full rounded-pill bg-current transition-[width,color] duration-1000 ease-linear motion-reduce:transition-none ${tone}`} style={{ width: `${arc * 100}%` }} />
+              <span className="block w-60 max-w-[70vw]" data-live-bar>
+                <ProgressTrack value={arc * 100} label="Session progress" tone={BAR[closing ? 'closing' : (accent ?? mode)]} track="border" animate />
               </span>
             )}
             {!accent && !showBreath && <span className={`text-body-sm font-medium text-text ${chrome}`}>{LABELS[clockLabel.toLowerCase()] ?? clockLabel}</span>}
@@ -175,9 +170,9 @@ export function LiveStage({
 
         <div className={`sticky bottom-0 -mx-5 flex flex-col items-center gap-1 px-5 pb-1 pt-3 ${chrome}`}>
           {/* The one action fill: the kit's practice gradient for Be Still, the move colour for Get Moving. */}
-          <button type="button" onClick={primary.onClick} className={`h-15 w-full rounded-pill text-body font-semibold ${mode === 'move' ? 'lift-2' : 'fq-pa bg-primary text-on-primary'}`} style={moveFill}>
+          <Button type="button" onClick={primary.onClick} size="lg" className={`h-15 w-full rounded-pill ${mode === 'move' ? '' : 'fq-pa'}`} style={moveFill}>
             {primary.label}
-          </button>
+          </Button>
           <div className="flex items-center justify-center gap-4">
             <button type="button" onClick={onCancel} className="h-11 px-3 text-body-sm font-medium text-muted hover:text-danger" aria-label="Cancel, don’t log">
               Cancel
@@ -223,9 +218,9 @@ export function StageNotice({
         {body && <p className="m-0 text-body-sm text-muted">{body}</p>}
       </div>
       {action && (
-        <button type="button" onClick={action.onClick} className={`h-14 w-full max-w-xs rounded-pill text-body font-semibold ${mode === 'move' ? 'lift-2' : 'fq-pa bg-primary text-on-primary'}`} style={mode === 'move' ? { background: 'var(--color-move)', color: 'var(--color-text-on-move)' } : undefined}>
+        <Button type="button" onClick={action.onClick} size="lg" className={`h-14 w-full max-w-xs rounded-pill ${mode === 'move' ? '' : 'fq-pa'}`} style={mode === 'move' ? { background: 'var(--color-move)', color: 'var(--color-text-on-move)' } : undefined}>
           {action.label}
-        </button>
+        </Button>
       )}
     </div>
   )

@@ -18,6 +18,7 @@ import type { RevealPayload } from '@/lib/on-air'
 import { achievedTier, TIER_LABELS, TIER_ORDER, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
 import { depthStreakLine } from '@/lib/practices/depth-streak'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { IconButton } from '@/components/ui/icon-button'
 import { FunnelNextStep } from '@/components/funnels/next-step-link'
 import { orbFillFor } from './live-stage'
 import { RoomWash } from './stage-room'
@@ -315,9 +316,9 @@ export function Reveal({
           ))}
         </div>
         {onClose && (
-          <button type="button" aria-label="Close" onClick={close} className="-mr-2.5 flex h-11 w-11 items-center justify-center rounded-pill text-muted hover:text-text">
+          <IconButton label="Close" onClick={close} className="-mr-2.5">
             <X className="h-4.5 w-4.5" aria-hidden />
-          </button>
+          </IconButton>
         )}
       </div>
       <div

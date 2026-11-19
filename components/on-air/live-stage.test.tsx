@@ -27,7 +27,7 @@ describe('the live stage (LIVE-2393)', () => {
     render()
     expect(host.querySelector('h1')!.textContent).toBe('Morning Sit · , Meditate')
     expect(host.querySelector('[role="timer"]')!.getAttribute('aria-label')).toBe('19:56 left')
-    expect(host.querySelector<HTMLElement>('[data-live-bar] span')!.style.width).toBe('25%')
+    expect(host.querySelector('[data-live-bar] [role="progressbar"]')!.getAttribute('aria-valuenow')).toBe('25')
   })
   it('draws no bar while warming up or open-ended, and says to get settled', () => {
     render({ state: 'warmup', progress: null, clock: '3', clockLabel: 'Warm up' })

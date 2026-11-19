@@ -13,7 +13,7 @@ const stage = read('components/on-air/live-stage.tsx')
 if (!/export function LiveStage\(/.test(stage)) fails.push('there is no shared live stage (components/on-air/live-stage.tsx)')
 // LIVE-2406 (owner approved, 2026-11-18): direction A of the Claude Design timer reads the time as a
 // number over a bar, so the pin is a bar that fills, not a ring.
-if (!/data-live-bar/.test(stage) || !/width: `\$\{arc \* 100\}%`/.test(stage)) fails.push('the stage has no bar that fills with the session')
+if (!/data-live-bar/.test(stage) || !/<ProgressTrack value=\{arc \* 100\}/.test(stage)) fails.push('the stage has no bar that fills with the session')
 if (!/Ends \{endsAt\}/.test(stage)) fails.push('the stage does not say when the session ends')
 if (!/QUIET_AFTER_MS/.test(stage) || !/data-quiet/.test(stage)) fails.push('the chrome never steps back during a running session')
 if (!/e\.code !== 'Space'/.test(stage)) fails.push('Space does not pause')
