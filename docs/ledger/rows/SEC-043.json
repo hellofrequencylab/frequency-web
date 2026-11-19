@@ -1,0 +1,20 @@
+{
+  "id": "SEC-043",
+  "title": "Signed-out visitors can spend members' daily Vera budget",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/ai/vera/agent-claude.ts",
+    "ref": "Mega pass 2026-11-19 (unknown-unknowns audit: abuse and cost blowups)"
+  },
+  "detail": "Mega pass 2026-11-19. Vera's live loop accepts a signed-out caller (keyed by IP for the per-actor window), but every turn was accounted on 'vera-chat', the same $5/day feature cap members use. Anyone rotating IPs could exhaust it, and every member then got the deterministic fallback for the rest of the day. Fix: a turn with no profile is admitted against and accounted on its own key, 'vera-chat-anon', capped at $1/day in FEATURE_DAILY_CAP_USD; member turns are unchanged. Both runToolLoop calls keep a literal accounting feature, so the accounting inventory test still reads them. lib/ai/vera/agent-claude-anon.test.ts drives the real turn with the model stubbed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SEC-043.mjs",
+    "note": "Fails on main (an anonymous turn is accounted on 'vera-chat'). Passes when it is admitted and accounted on 'vera-chat-anon' with a smaller cap, and members are untouched."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
