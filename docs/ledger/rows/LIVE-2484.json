@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2484",
+  "title": "The member launch leads with the four builders and folds its checklist into sections",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/launch/launch-overview.tsx",
+    "ref": "Owner 2026-11-19 (project thread: Build four feature launch funnels): \"That pop up creator needs a re design and to be broken into sections that they can come back to. Right now it's overwhelming.\""
+  },
+  "detail": "The /launch overview (the full-screen launch a member sees) now opens on a build hub: Free Spotlight, Create a Space, Launch Your Website and Email Marketing as four tiles in any order, each showing Built or its minutes and opening that feature's own short builder (a signed-in member saves straight away), with Launch Your Business under them for all of it in one go. The long checklist below folds into one section per area, with only the section holding the next item open. The 'Welcome back' state shows the same hub. builtFeatures (lib/launch/overview.ts) reads a builder as built only when its whole section is done.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2484.mjs",
+    "note": "Fails while the overview does not lead with the hub, the hub skips a builder, or the checklist is one flat list."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
