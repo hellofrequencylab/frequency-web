@@ -5,7 +5,7 @@ category: spaces
 order: 4
 group: Get set up
 published: 2026-11-18
-updated: 2026-11-18
+updated: 2026-11-19
 audience: member
 featureKeys: [spotlight]
 keywords: [link in bio, links page, bio link, share my links, link clicks, qr code, publish my page]
@@ -27,7 +27,7 @@ Once it is published, anyone with the link can see it. Your page lives at `/spot
 
 The editor has four sections, with a live preview beside them.
 
-- **Links.** Press **Add link**, then give it a title, a link and an icon. Use the arrows to reorder. **Highlight** makes one link stand out. The switch on each link shows or hides it without deleting it, and **Schedule** lets a link show from one date and hide after another.
+- **Links.** Press **Add link**, then give it a title, a link and an icon. The title is what the button on your page says. Use the arrows to reorder. **Highlight** makes one link stand out. The switch on each link shows or hides it without deleting it, and **Schedule** lets a link show from one date and hide after another.
 - **Profile.** Add the places people can find you online. Your name, photo and bio come from your profile.
 - **Look.** Your theme, fonts and background. Each choice saves as you make it.
 - **Frequency.** **Show Frequency features** adds your events, Circles and guestbook under your links. Turn it off for a clean link page. This is also where you turn the page on or off and publish it.

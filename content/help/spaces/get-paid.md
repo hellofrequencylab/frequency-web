@@ -8,7 +8,7 @@ published: 2026-09-10
 updated: 2026-11-19
 audience: member
 featureKeys: [payouts]
-keywords: [payouts, stripe, bank account, connect bank, earnings, take payments, finder's fee, fees, sell]
+keywords: [payouts, stripe, bank account, take payments, finder's fee, card fee, minimum price, all-in price]
 status: published
 ---
 
@@ -63,7 +63,7 @@ Set each path up from the tool that owns it. Booking, memberships, donations and
 
 Under **Your rate**, Get paid shows what Frequency takes. Two rules are the whole story.
 
-- **0% on your own people, always, on a paid Space plan, plus card processing.** A customer you brought here yourself costs you no Frequency fee. Card processing still applies, and the seller pays it.
+- **0% on your own people, always, on a paid Space plan, plus card processing.** A customer you brought here yourself costs you no Frequency fee. Card processing still applies, and from February 1, 2027 the seller pays it. Until then, Frequency covers it.
 - **One finder's fee, only when Frequency introduced the customer.** It is charged once, with a cap, on that customer's first purchase. After that first purchase the customer is yours: 0%, plus card processing. On a membership, the finder's fee applies to the first payment only, not to renewals.
 
 The finder's fee is the same on Business, Collective and Network. Non Profit pays no finder's fee. A Founding Business keeps its locked rate.
@@ -72,17 +72,17 @@ If your Space is not connected to the network, Frequency introduces no customers
 
 Tips are separate from sales. They go to Crew members and to people who own a Space on a paid plan, with no platform fee, plus card processing.
 
-Paid tickets and items have a small minimum price, and the form tells you what it is if you go under it. Below it, most of the sale would go to card processing. Free tickets stay free, a price you set before the minimum keeps working, and tips and donations have their own lower minimum.
+A new paid ticket, product or Journey has a small minimum price, and the form tells you what it is if you go under it. Below it, most of the sale would go to card processing. Free tickets stay free, a price you set before the minimum keeps working, and tips and donations have their own lower minimum.
 
-Donations never carry a finder's fee, even when Frequency introduced the donor. A donation pays card processing only.
+Donations carry a 0% Frequency fee, always. There is no finder's fee on a donation, even when Frequency introduced the donor. A donation pays card processing only.
 
-Once card processing comes out of your ticket sales, the ticket editor can price a ticket all-in for you, so guests cover it. One tap raises the price just enough that you keep what you typed, and guests see that one price from the start.
+Whether your guests cover card processing is your choice. Tickets are where you can make it today: once card processing comes out of your sales, the ticket editor can price a ticket all-in for you. One tap raises the price just enough that you keep what you typed, and guests see that one price from the start, with nothing added at checkout. Other sales do not have this option yet.
 
 [Plans and pricing](/help/spaces/plans-and-pricing) explains what each plan turns on, and the [pricing page](/pricing) has the plan prices, the finder's fee rate and its cap.
 
 ## Know what you receive, and what you pay
 
-You receive every sale, membership, booking deposit, donation, ticket and Journey, minus any finder's fee and card processing. Stripe sends it to your bank on its own schedule.
+You receive every sale, membership, booking deposit, donation, ticket and Journey, minus any finder's fee and, from February 1, 2027, card processing. Every sale email says which fee rule applied and what reaches your payout account. Stripe sends it to your bank on its own schedule.
 
 You pay Frequency for your plan. That is a separate charge, and it is the only one. See [Billing](/help/spaces/billing).
 

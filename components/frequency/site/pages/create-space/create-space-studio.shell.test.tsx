@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { renderToString } from 'react-dom/server'
 // The address is not readable yet: useSearchParams suspends, so the server HTML carries the Suspense fallback (SCAN-1264).
 vi.mock('next/navigation', () => ({ useSearchParams: () => { throw new Promise(() => {}) } }))
-vi.mock('@/app/(marketing)/create-a-space/actions', () => ({ restoreDraft: async () => ({ draft: null }), saveBuilderProgress: async () => ({ ok: true }), saveDraftLead: async () => ({ ok: false }), claimWithEmail: vi.fn(), claimWithGoogle: vi.fn(), continueSignedIn: vi.fn() }))
+vi.mock('@/app/(marketing)/launch-your-business/actions', () => ({ restoreDraft: async () => ({ draft: null }), saveBuilderProgress: async () => ({ ok: true }), saveDraftLead: async () => ({ ok: false }), claimWithEmail: vi.fn(), claimWithGoogle: vi.fn(), continueSignedIn: vi.fn() }))
 import { CreateSpaceStudio } from './create-space-studio'
 
 describe('Create a Space fallback shell', () => {
