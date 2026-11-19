@@ -4,15 +4,17 @@ import { FrequencyThemes, themeShowcaseLinks } from '@/components/frequency/site
 import { THEMES } from '@/components/frequency/site/pages/themes/kit-showcase/data'
 
 describe('the Theme Kits page', () => {
-  it('has one section per kit, nine in all', () => {
+  // Owner 2026-11-19: "Make Sure Mindless and Honey have their full theme kit with all designs. List Honey in the themes, so we have 10."
+  // The design's nine, plus Honey and Mindless.
+  it('has one section per kit, eleven in all', () => {
     expect(THEMES.map((t: { id: string }) => t.id)).toEqual([
-      'new-world', 'network', 'services', 'designer', 'bold', 'temple', 'cyberwitch', 'wildheart', 'nocturne',
+      'new-world', 'network', 'services', 'designer', 'bold', 'temple', 'cyberwitch', 'wildheart', 'nocturne', 'honey', 'mindless',
     ])
   })
 
   it('sends every main button to the launch or the builder, and See the full kit to the theme page', () => {
     const links = themeShowcaseLinks()
-    expect(Object.keys(links.kits)).toHaveLength(9)
+    expect(Object.keys(links.kits)).toHaveLength(11)
     // Every kit is offered in the builder now, so every Use link carries its kit (a kit the builder drops gets use: null).
     for (const k of Object.values(links.kits) as { use: string | null; kit: string | null; page: string | null }[]) {
       expect(k.kit).toBeTruthy()
@@ -22,13 +24,15 @@ describe('the Theme Kits page', () => {
     expect(links.kits.nocturne.page).toBe('/themes/nocturne')
     expect(links.kits.cyberwitch.page).toBe('/themes/cyberwitch')
     expect(links.kits.cyberwitch.use).toContain('kit=cyberwitch')
+    expect(links.kits.honey.page).toBe('/themes/free-human')
+    expect(links.kits.mindless.page).toBe('/themes/mindless')
     expect(links.plans).toBe('/pricing')
   })
 
-  it('draws every kit, nine See the full kit links, and no em dashes', () => {
+  it('draws every kit, eleven See the full kit links, and no em dashes', () => {
     const html = renderToStaticMarkup(<FrequencyThemes />)
-    expect((html.match(/class="ks-kit"/g) ?? []).length).toBe(9)
-    expect((html.match(/See the full kit/g) ?? []).length).toBe(9)
+    expect((html.match(/class="ks-kit"/g) ?? []).length).toBe(11)
+    expect((html.match(/See the full kit/g) ?? []).length).toBe(11)
     expect(html).not.toMatch(/—/)
   })
 })

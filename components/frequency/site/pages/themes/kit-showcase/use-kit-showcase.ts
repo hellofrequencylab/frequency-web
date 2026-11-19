@@ -23,7 +23,7 @@ export interface ShowcaseLinks {
 const SN: Record<string, string> = { website: 'Website', email: 'Email', spotlight: 'Spotlight', space: 'Space page' }
 const DEV: Record<string, string> = { website: 'laptop', email: 'tablet', spotlight: 'iPhone', space: 'iPad' }
 const RT: Record<string, number> = { isLap: 0.68, isPad: 0.65, isLivePad: 0.65, isTab: 1.3, isPhone: 2.13 }
-const WORDS = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+const WORDS = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve']
 
 const shot = (th: Any, a: Any, key: string) =>
   a.set ? `/themes-index/s/accent/${a.set}${key}.webp` : `/themes-index/s/themes/${th.dir}/shots/${a.id}-${key}.webp`

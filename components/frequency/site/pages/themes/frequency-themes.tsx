@@ -1,5 +1,5 @@
 // /themes: the Theme Kits page (LIVE-2188), rebuilt to Daniel's Theme Kits design (design_handoff_theme_kits). A device cloud
-// of the nine kits, a sticky look filter, and one full-bleed section per kit drawn in that kit's own design system, each with an
+// of the eleven kits, a sticky look filter, and one full-bleed section per kit drawn in that kit's own design system, each with an
 // accent picker and four surfaces (Website, Email, Spotlight, Space page) you can bring to the front or open full size.
 // Lead links: the main buttons start the 12 minute launch (the builder while the launch is off), "See the kit" opens that
 // kit's own /themes/<theme> page. The page markup and per-kit skins live in ./kit-showcase; Frequency's header and footer come
@@ -13,7 +13,7 @@ import { LastKitLink } from './last-kit-link'
 import { KitShowcase } from './kit-showcase/kit-showcase'
 import type { ShowcaseLinks } from './kit-showcase/use-kit-showcase'
 
-/** The design's nine kits, each against the theme id the product knows it by. Every kit has its own page now. */
+/** The design's nine kits plus Honey and Mindless, each against the theme id the product knows it by. Every kit has its own page now. */
 const KIT_THEMES: Record<string, { theme: string | null; slug: string }> = {
   'new-world': { theme: 'new-world', slug: 'new-world' },
   network: { theme: 'network-kit', slug: 'network' },
@@ -24,6 +24,8 @@ const KIT_THEMES: Record<string, { theme: string | null; slug: string }> = {
   cyberwitch: { theme: 'cyberwitch', slug: 'cyberwitch' },
   wildheart: { theme: 'wildheart', slug: 'wildheart' },
   nocturne: { theme: 'midnight', slug: 'nocturne' },
+  honey: { theme: 'free-human', slug: 'free-human' },
+  mindless: { theme: 'mindless', slug: 'mindless' },
 }
 
 export function themeShowcaseLinks(): ShowcaseLinks {
