@@ -321,9 +321,9 @@ const CYBERWITCH_BRAND: CyberWitchKitEmailBrand = {
   siteUrl: 'https://ashandember.example', siteLabel: 'ashandember.example', unsubscribeUrl: `${SITE}/unsubscribe/s`,
 }
 const MINDLESS_BRAND: MindlessKitEmailBrand = {
-  name: 'Mindless', descriptor: 'Meditation for loud lives', owner: 'Daniel Tyack', role: 'Founder', city: 'San Diego',
+  name: 'Your Space name', descriptor: 'What you do, in a few words', owner: 'Your name', role: 'Founder', city: 'Your city',
   accent: { fill: MINDLESS_SURFACE.accent.accent, text: MINDLESS_SURFACE.accent.text }, postalLine: PLATFORM_POSTAL_LINE,
-  siteUrl: 'https://mindless.one', siteLabel: 'mindless.one', unsubscribeUrl: `${SITE}/unsubscribe/s`,
+  siteUrl: 'https://yourspace.example', siteLabel: 'yourspace.example', unsubscribeUrl: `${SITE}/unsubscribe/s`,
 }
 const FREE_HUMAN_COVER = `${SITE}/brand/frequency/photos/boc-beach-sound-bath.jpg`
 const FREE_HUMAN_DATES = [
