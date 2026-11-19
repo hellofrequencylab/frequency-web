@@ -30,7 +30,16 @@ function asElement(target: EventTarget | null): Element | null {
   return target && typeof (target as Element).closest === 'function' ? (target as Element) : null
 }
 
-export function SpotlightPreviewFrame({ slug, version }: { slug: string; version: number }) {
+export function SpotlightPreviewFrame({
+  slug,
+  version,
+  onPick,
+}: {
+  slug: string
+  version: number
+  /** A press on the page picked something: the editor brings its Page tab (and, on a phone, its Edit view) forward. */
+  onPick?: () => void
+}) {
   const nodeStore = useNodeLayout()
   const legacyStore = useProfileLayout()
   const saving = !!(nodeStore?.saving || nodeStore?.dirty || legacyStore?.saving || legacyStore?.dirty)
@@ -42,10 +51,10 @@ export function SpotlightPreviewFrame({ slug, version }: { slug: string; version
   const lastVersion = useRef(version)
 
   // The freshest store, read from the frame's own listeners without re-binding them on every edit.
-  const live = useRef({ nodeStore, legacyStore })
+  const live = useRef({ nodeStore, legacyStore, onPick })
   useEffect(() => {
-    live.current = { nodeStore, legacyStore }
-  }, [nodeStore, legacyStore])
+    live.current = { nodeStore, legacyStore, onPick }
+  }, [nodeStore, legacyStore, onPick])
 
   // Draw the page again when a save has just finished, or a theme or look change has landed.
   useEffect(() => {
@@ -149,6 +158,7 @@ export function SpotlightPreviewFrame({ slug, version }: { slug: string; version
       } else {
         fromPage.current = false
       }
+      if (fromPage.current) live.current.onPick?.()
     }, true)
     // Hover outlines what a press would pick.
     d.addEventListener('mouseover', (e) => {
