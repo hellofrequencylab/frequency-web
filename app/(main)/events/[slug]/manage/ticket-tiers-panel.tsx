@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button'
 import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { isPaymentsRefusal } from '@/lib/pricing/payments-copy'
 import { allInPriceCents, cardProcessingCents } from '@/lib/billing/processing-fee'
+import { HOME_TZ } from '@/lib/time/home-zone'
 
 // Host-facing ticket-tier manager (audit finding #9). Create / edit / retire named
 // tiers with the full range of pricing modes right from the Manage dashboard, so a
@@ -512,7 +513,7 @@ function GuestsCoverCardFee({
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-    timeZone: 'America/Los_Angeles',
+    timeZone: HOME_TZ,
   })
   const allIn = allInPriceCents(priceCents)
   return (
