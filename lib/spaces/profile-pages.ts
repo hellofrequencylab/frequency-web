@@ -1,6 +1,7 @@
 import type { Data } from '@/lib/page-editor/types'
 import { slugify } from '@/lib/utils'
-import { isWellFormedSpaceDoc } from '@/lib/page-editor/templates/space'
+// The pure shape check, never templates/space (which imports every block in the editor, PERF-030).
+import { isWellFormedSpaceDoc } from '@/lib/page-editor/templates/space-doc'
 import { generateDefaultSpacePage } from '@/lib/page-editor/templates/space-default'
 
 // ─────────────────────────────────────────────────────────────────────────────
