@@ -37,7 +37,7 @@ export function isAllowedSellingPrice(
 }
 
 /** The seller's sentence for a price under the floor. Plain, says the number (docs/CONTENT-VOICE.md). */
-export function paidPriceFloorSentence(what: 'ticket' | 'item' = 'item'): string {
+function paidPriceFloorSentence(what: 'ticket' | 'item' = 'item'): string {
   const dollars = (PAID_PRICE_MIN_CENTS / 100).toFixed(2).replace(/\.00$/, '')
   return what === 'ticket'
     ? `A paid ticket starts at $${dollars}. Set it to free, or to $${dollars} or more.`
