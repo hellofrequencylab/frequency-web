@@ -401,7 +401,10 @@ export async function reverseSplitTransfers(
   // and so bears its part of the refund): the rows' gross, and the rest of the order as one share.
   const splits: RefundSplit[] = rows.map((r) => ({
     key: r.id,
-    grossCents: r.amountCents + r.platformFeeCents,
+    // The share's whole gross: the transfer, Frequency's fee and the card fee the share bore
+    // (LIVE-2421). The reversal stays the transfer's pro rata part, the same as a destination
+    // refund takes back the seller's net and leaves the platform its pro rata part of both fees.
+    grossCents: r.amountCents + r.platformFeeCents + r.processingFeeCents,
     transferCents: r.amountCents,
   }))
   const rest = order.amount_cents - splits.reduce((n, s) => n + s.grossCents, 0)

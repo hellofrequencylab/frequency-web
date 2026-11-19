@@ -26,7 +26,7 @@
 // ./revenue-splits-store.ts: it reads the service-role client and fails safe to "no split" (a
 // destination charge to the host, today's path) on any miss.
 
-import type { SellerSplit } from '@/lib/commerce/funds-flow'
+import { splitCardFeeField, type SellerSplit } from '@/lib/commerce/funds-flow'
 
 /** The home Space keeps at least this much: the platform's top network rung (ADR-1709 §4). */
 const HOME_SPACE_MIN_BPS = 500
@@ -121,6 +121,8 @@ export function splitMetadata(splits: readonly SellerSplit[]): Record<string, un
     stripe_account_id: s.stripeAccountId,
     gross_cents: s.grossCents,
     platform_fee_cents: s.platformFeeCents,
+    // The card fee this share bears (LIVE-2421); left out while the pass-through is off.
+    ...splitCardFeeField(s),
   }))
 }
 

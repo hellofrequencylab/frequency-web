@@ -11,7 +11,7 @@
 -- One transaction, rolled back: nothing persists. Fixture style follows commerce_orders_funds_flow.test.sql.
 
 begin;
-select plan(11);
+select plan(13);
 
 -- ── Fixture ──────────────────────────────────────────────────────────────────────────────────
 insert into auth.users (id, email) values
@@ -108,6 +108,16 @@ $$, '23514', null, 'more cannot be reversed than was sent');
 select throws_ok($$
   delete from public.commerce_orders where id = '00000000-0000-4000-f622-000000000001'
 $$, '23503', null, 'an order with a transfer row cannot be deleted out from under it');
+
+-- ── The card fee a share bore (20270346170000, LIVE-2421) ────────────────────────────────────
+select col_default_is('public', 'commerce_order_transfers', 'processing_fee_cents', '0',
+  'a share with no card fee written reads 0, the truth for every sale before the pass-through date');
+select throws_ok($$
+  insert into public.commerce_order_transfers
+    (order_id, seller_key, owner_kind, owner_space_id, stripe_account_id, amount_cents, platform_fee_cents, processing_fee_cents)
+  values ('00000000-0000-4000-f622-000000000001', 'space::card-fee', 'space',
+          '00000000-0000-4000-c622-000000000001', 'acct_card_fee', 100, 0, -1)
+$$, '23514', null, 'a share never bears a negative card fee');
 
 select * from finish();
 rollback;
