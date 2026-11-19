@@ -853,6 +853,45 @@ function spaceOffersContactTab(preferences: unknown): boolean {
 }
 
 /**
+ * The networked Space hosting an event (SCAN-1272): slug and display name, or null.
+ *
+ * The explicit host (`events.host_space_id`) wins, else the placement Space (`events.space_id`),
+ * the order the member event page attributes in (ADR-800/819). The Space must sit inside the
+ * discovery boundary (network visibility, connected, active), so a private or standalone Space is
+ * never named on a public event page or in its structured data. The root Space is allowed: its
+ * profile is public and it hosts real events. Service-role reads of ids, a slug and a name; nothing
+ * else leaves. FAIL-SOFT: any failure is null, which leaves the event page as it was.
+ */
+export async function getEventHostSpace(eventId: string): Promise<{ slug: string; name: string } | null> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (table: string) => {
+        select: (cols: string) => {
+          eq: (col: string, val: string) => {
+            maybeSingle: () => PromiseLike<{ data: { host_space_id?: string | null; space_id?: string | null } | null; error: unknown }>
+          }
+        }
+      }
+    }
+    const { data: ev, error: evError } = await db.from('events').select('host_space_id, space_id').eq('id', eventId).maybeSingle()
+    const spaceId = evError ? null : (ev?.host_space_id ?? ev?.space_id ?? null)
+    if (!spaceId) return null
+    const { data, error } = await spacesTable()
+      .select('id, slug, name, brand_name')
+      .eq('id', spaceId)
+      .eq('visibility', 'network')
+      .eq('network_connected', true)
+      .eq('status', 'active')
+      .limit(1)
+    const row = error ? null : data?.[0]
+    if (!row?.slug) return null
+    return { slug: row.slug, name: row.brand_name?.trim() || row.name }
+  } catch {
+    return null
+  }
+}
+
+/**
  * Every public profile TAB URL worth advertising, across the networked Spaces — the set the sitemap
  * emits at priority 0.5 beneath each profile's 0.6.
  *

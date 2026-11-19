@@ -177,7 +177,9 @@ export default async function PublicEventPage({
   const host =
     event.circle_name && event.circle_id
       ? { name: event.circle_name, href: `/discover/circles/${event.circle_id}` }
-      : null
+      : enrichment?.host_space
+        ? { name: enrichment.host_space.name, href: `/spaces/${enrichment.host_space.slug}` }
+        : null
   const mode = enrichment?.attendance_mode ?? 'in_person'
   const category = EVENT_CATEGORIES.find((c) => c.values.includes(enrichment?.category ?? 'gathering'))
   const kind = category ? category.nounSingular.charAt(0).toUpperCase() + category.nounSingular.slice(1) : 'Gathering'
