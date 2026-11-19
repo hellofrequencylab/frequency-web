@@ -1,4 +1,4 @@
-// FIXTURE RENDER: the Website, Spotlight, Space and Email pictures for the Bold, Wildheart and Services theme pages
+// FIXTURE RENDER: the Website, Spotlight, Space and Email pictures for the Bold, Wildheart, Services, CyberWitch, Honey and Mindless theme pages
 // (/themes/bold, /themes/wildheart, /themes/services), as bare HTML pages. Same four surfaces as /themes/new-world and
 // the same real components: the Website is the theme's starter kit Home through the real SiteChrome, blocks and skin; the
 // Spotlight is the real SpotlightShell on the theme's own preset; the Space is a Space page inside the real member shell
@@ -19,6 +19,11 @@ vi.mock('@/lib/theme/design', async (orig) => ({ ...(await orig<object>()), SITE
 
 import { SERVICES_ACCENTS } from '@/lib/theme/services'
 import { CYBERWITCH_ACCENTS } from '@/lib/theme/cyberwitch'
+import { FREE_HUMAN_PROFILES } from '@/lib/theme/free-human'
+import { MINDLESS_ACCENTS } from '@/lib/theme/mindless'
+
+const FH = (process.env.FH_PROFILE && process.env.FH_PROFILE in FREE_HUMAN_PROFILES ? process.env.FH_PROFILE : 'general') as keyof typeof FREE_HUMAN_PROFILES
+const ML = (process.env.ML_ACCENT && process.env.ML_ACCENT in MINDLESS_ACCENTS ? process.env.ML_ACCENT : 'yellow') as keyof typeof MINDLESS_ACCENTS
 
 const SERVICES_TIDE = SERVICES_ACCENTS.tide.accent
 // CW_ACCENT=<absinthe|ice|blood|venom> renders CyberWitch in that neon (its own photos, accent and email fill), for the theme
@@ -43,17 +48,29 @@ const WH_FACES =
   ttf('IM Fell English', 'IMFellEnglish-Regular.ttf', 'normal') + ttf('IM Fell English', 'IMFellEnglish-Italic.ttf', 'italic') +
   face('EB Garamond', 'eb-garamond/eb-garamond.woff2', 'normal', '400 800') + face('EB Garamond', 'eb-garamond/eb-garamond-italic.woff2', 'italic', '400 800') +
   face('Noto Sans Symbols', 'noto-sans-symbols/noto-sans-symbols.woff2') + face('Playfair Display', 'playfair-display/playfair-display.woff2', 'normal', '400 900')
+// Honey's faces (Cormorant Garamond, Marcellus, Hanken Grotesk): components/sites/free-human-fonts.ts sets these as --font-fh-* in the app.
+const FH_FACES =
+  face('Cormorant Garamond', 'free-human/cormorant-garamond.woff2', 'normal', '300 700') + face('Cormorant Garamond', 'free-human/cormorant-garamond-italic.woff2', 'italic', '300 700') +
+  face('Marcellus', 'temple/marcellus.woff2', 'normal', '400') + face('Hanken Grotesk', 'hanken-grotesk/hanken-grotesk.woff2', 'normal', '100 900')
+const ML_FACES = face('Rubik Wet Paint', 'rubik-wet-paint/rubik-wet-paint-400.woff2', 'normal', '400') + face('Archivo', 'archivo/archivo-400.woff2', 'normal', '400') + face('Archivo', 'archivo/archivo-800.woff2', 'normal', '800')
+const ML_VARS = '--font-ml-paint:"Rubik Wet Paint";--font-ml-archivo:Archivo;'
+const FH_VARS = '--font-fh-cormorant:"Cormorant Garamond";--font-fh-marcellus:Marcellus;--font-fh-hanken:"Hanken Grotesk";'
 const WH_VARS = '--font-wh-fell:"IM Fell English";--font-wh-garamond:"EB Garamond";--font-wh-hanken:"Hanken Grotesk";--font-wh-symbols:"Noto Sans Symbols";--font-playfair:"Playfair Display";'
 const pub = (html: string) => html.replace(/ loading="lazy"/g, '').replace(/(src|href)="\/(sites|brand|themes|create-a-space)\//g, `$1="file://${ROOT}/public/$2/`).replace(/url\(&quot;\/(sites|brand|themes)\//g, `url(&quot;file://${ROOT}/public/$1/`)
 
-type Skin = { theme: 'menswork' | 'wildheart' | 'services' | 'cyberwitch'; season: 'fall' } | null
-const THEMES: { ed: 'Menswork' | 'Wildheart' | 'Services' | 'CyberWitch'; id: string; mega: 'bold' | 'wildheart' | 'services' | 'cyberwitch'; kit: string; skin: Skin; photo: string; cover: string; accent: string }[] = [
+type Skin = { theme: 'menswork' | 'wildheart' | 'services' | 'cyberwitch' | 'free-human' | 'mindless'; season: 'fall' } | null
+const THEMES: { ed: 'Menswork' | 'Wildheart' | 'Services' | 'CyberWitch' | 'FreeHuman' | 'Mindless'; id: string; mega: 'bold' | 'wildheart' | 'services' | 'cyberwitch' | 'free-human' | 'mindless'; kit: string; skin: Skin; photo: string; cover: string; accent: string }[] = [
   { ed: 'Menswork', id: 'bold', mega: 'bold', kit: 'bold-coaches', skin: { theme: 'menswork', season: 'fall' }, photo: '/brand/frequency/photos/gathering-10.jpg', cover: '/brand/frequency/photos/gathering-12.jpg', accent: '#1F8A8A' },
   { ed: 'Wildheart', id: 'wildheart', mega: 'wildheart', kit: 'wildheart-coaches', skin: { theme: 'wildheart', season: 'fall' }, photo: '/brand/wildheart/photos/huddle.jpg', cover: '/brand/wildheart/photos/sisters-shore.jpg', accent: '#6E4D96' },
   // Services: the General kit on Night, in its Tide starting accent (SERVICES_ACCENTS.tide).
   { ed: 'Services', id: 'services', mega: 'services', kit: 'services-general', skin: { theme: 'services', season: 'fall' }, photo: '/sites/services/hero-squeegee.webp', cover: '/sites/services/hero-squeegee.webp', accent: SERVICES_TIDE },
   // CyberWitch: the General kit in its Hex starting accent (CYBERWITCH_ACCENTS.hex), dark only.
   { ed: 'CyberWitch', id: 'cyberwitch', mega: 'cyberwitch', kit: 'cyberwitch-general', skin: { theme: 'cyberwitch', season: 'fall' }, photo: `/sites/cyberwitch/photos/founder-${CW}.jpg`, cover: `/sites/cyberwitch/photos/hero-${CW}.jpg`, accent: CYBERWITCH_HEX },
+  // Honey (code id `free-human`): the General kit on Frequency's own photos (owner 2026-11-18: "Use photos from Frequency for Free Human Movement").
+  // FH_PROFILE=<coaches|creators|studios|hosts> renders Honey in that profile's accent (FREE_HUMAN_PROFILES), for the /themes showcase.
+  { ed: 'FreeHuman', id: 'free-human', mega: 'free-human', kit: `free-human-${FH}`, skin: { theme: 'free-human', season: 'fall' }, photo: '/brand/frequency/photos/boc-circle-sunset.jpg', cover: '/brand/frequency/photos/boc-circle-sunset.jpg', accent: FREE_HUMAN_PROFILES[FH].accent },
+  // Mindless: the General kit in Yellow; ML_ACCENT=<pink|blue> renders it in that paint (its own paint photos follow the accent).
+  { ed: 'Mindless', id: 'mindless', mega: 'mindless', kit: 'mindless-general', skin: { theme: 'mindless', season: 'fall' }, photo: `/sites/mindless/photos/hero-${ML}.jpg`, cover: `/sites/mindless/photos/hero-${ML}.jpg`, accent: MINDLESS_ACCENTS[ML].accent },
 ]
 
 async function html(el: unknown): Promise<string> {
@@ -63,7 +80,7 @@ async function html(el: unknown): Promise<string> {
   return Buffer.concat(chunks).toString()
 }
 const shellDoc = (body: string) =>
-  `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif;${BOLD_VARS}${WH_VARS}}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
+  `<!doctype html><html data-design="frequency" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="fonts.css"><style>:root{--font-lexend:Lexend,system-ui,sans-serif;${BOLD_VARS}${WH_VARS}${FH_VARS}${ML_VARS}}html{scrollbar-width:none}</style></head><body>${body}</body></html>`
 
 it('renders the Bold, Wildheart and Services surfaces', async () => {
   if (!out) throw new Error('set RENDER_OUT')
@@ -83,6 +100,10 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
   const { servicesAccentVars } = await import('@/lib/theme/services')
   const { CYBERWITCH_CSS } = await import('@/components/sites/cyberwitch-css')
   const { cyberwitchAccentVars } = await import('@/lib/theme/cyberwitch')
+  const { FREE_HUMAN_CSS } = await import('@/components/sites/free-human-css')
+  const { freeHumanAccentVars } = await import('@/lib/theme/free-human')
+  const { MINDLESS_CSS } = await import('@/components/sites/mindless-css')
+  const { mindlessAccentVars } = await import('@/lib/theme/mindless')
   const { SpotlightShell: Shell } = await import('@/components/spotlight/spotlight-shell')
   const { THEME_PRESETS } = await import('@/lib/spotlight/theme')
   const { FqSpaceChrome } = await import('@/components/frequency/members/space/space-chrome')
@@ -133,18 +154,18 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
         body,
       ),
     )
-    const vars = Object.entries(websiteThemeVars(t.ed as never, t.mega === 'cyberwitch' ? t.accent : null, new Date('2026-10-15'))).map(([k, v]) => `${k}:${v}`).join(';').replace(/"/g, "'")
-    const skinCss = t.skin === null ? FREQUENCY_PAGE_CSS : t.skin.theme === 'wildheart' ? FREQUENCY_PAGE_CSS + WILDHEART_CSS : t.skin.theme === 'services' ? FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS : t.skin.theme === 'cyberwitch' ? FREQUENCY_PAGE_CSS + CYBERWITCH_CSS : MENSWORK_CSS + MENSWORK_PAGE_CSS
+    const vars = Object.entries(websiteThemeVars(t.ed as never, t.mega === 'cyberwitch' || t.mega === 'free-human' || t.mega === 'mindless' ? t.accent : null, new Date('2026-10-15'))).map(([k, v]) => `${k}:${v}`).join(';').replace(/"/g, "'")
+    const skinCss = t.skin === null ? FREQUENCY_PAGE_CSS : t.skin.theme === 'wildheart' ? FREQUENCY_PAGE_CSS + WILDHEART_CSS : t.skin.theme === 'services' ? FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS : t.skin.theme === 'cyberwitch' ? FREQUENCY_PAGE_CSS + CYBERWITCH_CSS : t.skin.theme === 'free-human' ? FREQUENCY_PAGE_CSS + FREE_HUMAN_CSS : t.skin.theme === 'mindless' ? FREQUENCY_PAGE_CSS + MINDLESS_CSS : MENSWORK_CSS + MENSWORK_PAGE_CSS
     // Services draws the owner's accent from the accent scope above its skin, the way the live site does (AccentScope).
-    const accentVars = t.mega === 'services' ? Object.entries(servicesAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : t.mega === 'cyberwitch' ? Object.entries(cyberwitchAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : ''
-    writeFileSync(`${out}/${t.id}-site.html`, pub(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file://${out}/app.css"><style>${FACES}${BOLD_FACES}${WH_FACES}:root{${BOLD_VARS}${WH_VARS}}${HOUSE_CSS}${WEBSITE_TOKEN_CSS}${skinCss}*,*::before,*::after{box-sizing:border-box}html{scrollbar-width:none}body{margin:0}</style></head><body><div style="${accentVars}"><div data-website-theme="${t.ed}" data-house-site style="${vars}">${site}</div></div></body></html>`))
+    const accentVars = t.mega === 'services' ? Object.entries(servicesAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : t.mega === 'free-human' ? Object.entries(freeHumanAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : t.mega === 'mindless' ? Object.entries(mindlessAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : t.mega === 'cyberwitch' ? Object.entries(cyberwitchAccentVars(t.accent) ?? {}).map(([k, v]) => `${k}:${v}`).join(';') + ';' : ''
+    writeFileSync(`${out}/${t.id}-site.html`, pub(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="file://${out}/app.css"><style>${FACES}${BOLD_FACES}${WH_FACES}${FH_FACES}${ML_FACES}:root{${BOLD_VARS}${WH_VARS}${FH_VARS}${ML_VARS}}${HOUSE_CSS}${WEBSITE_TOKEN_CSS}${skinCss}*,*::before,*::after{box-sizing:border-box}html{scrollbar-width:none}body{margin:0}</style></head><body><div style="${accentVars}"><div data-website-theme="${t.ed}" data-house-site${t.mega === 'mindless' ? ` data-accent="${ML}"` : ''} style="${vars}">${site}</div></div></body></html>`))
 
     // ---- Spotlight: the real shell on the theme's own preset.
     const preset = THEME_PRESETS.find((p) => p.id === t.mega)!.theme
     const data = {
       profile: { display_name: 'Maya Torres', handle: 'maya', bio: 'I host small movement circles on the coast. Come as you are.', avatar_url: t.id === 'wildheart' ? '/brand/wildheart/photos/forest-witch.jpg' : t.id === 'cyberwitch' ? t.photo : null, header_image_url: t.cover, community_role: null, nexus_regions: { name: 'North County San Diego' }, profile_theme: null },
       hostedEvents: [], canTip: false, programs: { circles: [], journeys: [], spaces: [] }, layout: { blocks: [] },
-      background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }, theme: t.mega === 'cyberwitch' ? { ...preset, layout: 'cyberwitch-kit:stack', kit: 'general', accent: t.accent.toLowerCase() } : preset, totalZaps: 0, contributionCounts: { eventsHosted: 0, journeysFinished: 0 }, guestbook: [], grid: null,
+      background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 }, theme: t.mega === 'free-human' || t.mega === 'mindless' ? { ...preset, accent: t.accent.toLowerCase() } : t.mega === 'cyberwitch' ? { ...preset, layout: 'cyberwitch-kit:stack', kit: 'general', accent: t.accent.toLowerCase() } : preset, totalZaps: 0, contributionCounts: { eventsHosted: 0, journeysFinished: 0 }, guestbook: [], grid: null,
     }
     const linkCards = ['Join the Thursday circle', 'This month’s dates', 'Book a first visit'].map((l) => h('a', { key: l, href: '#', style: { display: 'block', marginTop: 12, padding: 16, fontWeight: 600, color: 'var(--color-text)', background: 'var(--color-surface-elevated)', border: '1px solid color-mix(in srgb, var(--color-text) 18%, transparent)', borderRadius: ({ none: 0, sm: 6, md: 12, lg: 18, xl: 28 } as Record<string, number>)[preset.card.radius] ?? 18, textDecoration: 'none' } }, l))
     const spot = await html(h(Shell as never, { data, showBio: true, sampleContent: true } as never, h('div', null, linkCards)))
@@ -196,6 +217,22 @@ it('renders the Bold, Wildheart and Services surfaces', async () => {
       const { CYBERWITCH_SURFACE } = await import('@/lib/theme/cyberwitch')
       const cw = cyberwitchKitEmail('welcome', { name: 'Ash & Ember', descriptor: 'Readings, ritual and spellwork', owner: 'Mara Quill', role: 'Reader', city: 'San Diego', accent: CW === 'hex' ? { fill: CYBERWITCH_SURFACE.accent.accent, text: CYBERWITCH_SURFACE.accent.text } : { fill: CYBERWITCH_ACCENTS[CW].accent, text: CYBERWITCH_ACCENTS[CW].text }, postalLine: 'Ash & Ember, San Diego', siteUrl: 'https://example.com', siteLabel: 'ashandember.example', unsubscribeUrl: 'https://example.com/unsubscribe' })
       writeFileSync(`${out}/${t.id}-email.html`, cw.html)
+      continue
+    }
+    if (t.mega === 'free-human') {
+      const { freeHumanWelcomeEmail } = await import('@/lib/theme/free-human-email')
+      const fh = freeHumanWelcomeEmail(
+        { profile: FH, spaceName: 'Table Nine', mastheadNote: 'Small groups, real people', postalLine: 'Table Nine, San Diego', siteUrl: 'https://example.com', siteLabel: 'tablenine.example', unsubscribeUrl: 'https://example.com/unsubscribe', manageUrl: 'https://example.com/manage' },
+        { coverUrl: 'https://frequencylocal.com/brand/frequency/photos/boc-beach-sound-bath.jpg', coverAlt: 'People resting on the sand at a sound bath', ctaLabel: 'See what is open', ctaUrl: 'https://example.com/calendar', steps: [{ title: 'Come to one thing', sub: 'Pick a date from the calendar and show up.' }, { title: 'See the next few dates', sub: 'Circles, suppers and walks, all on the calendar.' }, { title: 'Say hello', sub: 'Reply to this letter. It goes to a person.' }], quote: { text: 'I walked in carrying everything and walked out lighter.', who: 'A member', role: 'Came to a circle' } } as never,
+      )
+      writeFileSync(`${out}/${t.id}-email.html`, pub(fh.html).replace(/https:\/\/frequencylocal\.com\/(brand|sites)\//g, `file://${ROOT}/public/$1/`))
+      continue
+    }
+    if (t.mega === 'mindless') {
+      const { mindlessKitEmail } = await import('@/lib/theme/mindless-kit-email')
+      const a = MINDLESS_ACCENTS[ML]
+      const ml = mindlessKitEmail('welcome', { name: 'Table Nine', descriptor: 'Small groups, real people', owner: 'Maya Torres', role: 'Guide', city: 'San Diego', accent: { fill: a.accent, text: a.text }, postalLine: 'Table Nine, San Diego', siteUrl: 'https://example.com', siteLabel: 'tablenine.example', unsubscribeUrl: 'https://example.com/unsubscribe' })
+      writeFileSync(`${out}/${t.id}-email.html`, pub(ml.html).replace(/https:\/\/frequencylocal\.com\/(brand|sites)\//g, `file://${ROOT}/public/$1/`))
       continue
     }
     if (t.mega === 'services') {

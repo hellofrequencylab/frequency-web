@@ -1,260 +1,326 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useTransition, type ReactNode } from 'react'
 import Link from 'next/link'
-import { X, BookOpen, Zap, ChevronRight } from 'lucide-react'
+import { Share2, Camera, ImagePlus, Send, ChevronRight, CalendarCheck, NotebookPen, ArrowLeft, QrCode, X } from 'lucide-react'
 import { observe } from '@/lib/analytics/observe'
 import { useMindless } from '@/components/on-air/mindless'
+import { BreatheIcon } from '@/components/on-air/icons'
 import { Dialog } from '@/components/ui/dialog'
+import { Avatar } from '@/components/ui/avatar'
+import { Button, buttonClasses } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
+import { Input } from '@/components/ui/field'
+import { choiceTileClasses } from '@/components/ui/choice-tile'
+import { createPost } from '@/app/(main)/feed/actions'
+import { isError } from '@/lib/action-result'
 import { CaptureBox } from './capture-box'
-import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, MindlessArt } from './zap-menu-art'
-import { Badge } from '@/components/ui/badge'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
+/** menu: the six in-person functions. held: the code held up to someone. compose: the full composer. */
+type View = 'menu' | 'held' | 'compose'
+type Prompt = {
+  line: string | null
+  liveEvent: boolean
+  code: { id: string; url: string } | null
+  me: { name: string; avatar: string | null } | null
+}
 
-// Capture — the app-wide primary action (ADR-155/156a). Two triggers, one modal:
-//   • mobile  → the raised centre-nav button (MobileTabBar) dispatches 'open-capture'
-//     (contact-forward — you're out meeting people);
-//   • desktop → a floating FAB (the mobile tab bar isn't there).
-// The modal is always mounted so either trigger can open it from any page. Posts
-// default to the member's wall.
+// Capture: the app-wide primary action (ADR-155/156a). Every Zap door (header, tab bar, drawer)
+// dispatches 'open-capture' and lands here; the modal is always mounted so any trigger opens it.
 //
-// THE OVERLAY IS `Dialog align="bottom"` — a POP-UP, never a takeover: a bottom sheet that rises from
-// the edge on a phone (the page stays visible, dimmed, above it) and a centred card at sm+. It was
-// `align="sheet"` (LIVE-089, full-bleed on mobile) until Zap became this one surface; the second Zap
-// menu ("Make a moment") is gone, so every Zap door (header, tab bar, drawer) dispatches
-// 'open-capture' and lands here. No fullscreen request: a pop-up does not take the screen. It had a real ESC handler and a real
-// scroll lock, but it set aria-modal="true" with NO focus trap and no focus restore, so Tab left the
-// sheet while a screen reader was told the feed behind it was inert; and it did not portal, so
-// opening it from inside the sliding admin rail (which is `transform`ed, and `fixed` anchors to a
-// transformed ancestor) rendered the "full-screen" sheet as a narrow sidebar panel.
+// THE ZAP MENU (LIVE-2425, the Claude Design handoff of 2026-11-18, frame 2a). A quick, in-person
+// menu with six functions in four rows: your code (Share my QR, Scan a QR), a one-line post box,
+// Open the timer, and two tiles (Check in, Log a practice). Tapping the code holds it up: the card
+// becomes one big QR with Share and Scan under it. The full composer (photo, poll, contact card)
+// is one tap away, from the photo button or an empty send. Snap a poster and Snap a card left the
+// menu: they live on /events and /network/contacts.
 //
-// TWO DELIBERATE CHANGES:
-//   · tier z-[70] -> z-[80]. z-[70] is the mobile admin sheet's own tier and this component mounts
-//     from app/(main)/layout.tsx on every route beneath it, /admin included, so the two tied.
-//   · scrim bg-ink/70 -> bg-ink/60 (the primitive's), a ten-point lightening. Blur unchanged.
-// AND ONE REPAIR: the safe-area padding is now the primitive's. `Dialog`'s own comment names this
-// file as one of three that each re-solved notch padding by hand and each landed somewhere
-// different; `align="sheet"` pads the overlay top and bottom, so the panel's inline
-// `paddingBottom: max(1rem, inset)` and the header's `pt-[max(0px,inset)]` are removed as exact
-// duplicates rather than adjusted.
+// THE OVERLAY IS `Dialog align="bottom"`: a POP-UP, never a takeover. A bottom sheet on a phone (the
+// page stays visible, dimmed, above it) and a centred card at sm+. The primitive owns the focus
+// trap, focus restore, the portal (so the `transform`ed admin rail cannot trap it), the z-[80]
+// tier above the mobile admin sheet, the bg-ink/60 scrim and the top safe area; the panel owns its
+// bottom inset, because the sheet touches the bottom edge. `mt-auto` pins it there: inside the
+// member kit the portaled overlay inherits `[data-kit="members"]`, whose flex column turns
+// `items-end` sideways and would float a short sheet mid-screen on a phone.
 export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<Mode>('post')
-  // Vera's live line: a static fallback renders instantly; the cheap API
-  // (today's cached Dispatch, else a streak template) swaps in when it lands.
-  const [veraLine, setVeraLine] = useState<string | null>(null)
-  // A live event awaits check-in → the Check In tile pulses (ADR-237).
-  const [liveCheckIn, setLiveCheckIn] = useState(false)
-  // One-time education line on the very first open (per device).
-  const [showIntro, setShowIntro] = useState(false)
+  const [view, setView] = useState<View>('menu')
+  // The cheap prompt (no AI): Vera's line, a live event to check in to, the member's own code and
+  // their avatar. The menu paints at once from fallbacks and fills in when it lands.
+  const [prompt, setPrompt] = useState<Prompt | null>(null)
+  const [draft, setDraft] = useState('')
+  const [posted, setPosted] = useState<string | null>(null)
+  const [posting, startPost] = useTransition()
+  const [shared, setShared] = useState(false)
 
   const mindless = useMindless()
   const close = useCallback(() => {
     setOpen(false)
+    setView('menu')
   }, [])
-  const tapTile = useCallback(
-    (tile: string) => () => {
-      observe('zap_menu.tile_tap', { tile })
+  const tap = useCallback((tile: string) => observe('zap_menu.tile_tap', { tile }), [])
+
+  // Mindless is the ONE timer door. Open it first (its loading takeover paints instantly), then
+  // drop the pop-up so the page behind never flashes between the two.
+  const openTimer = useCallback(
+    (justLog: boolean) => () => {
+      tap(justLog ? 'log' : 'mindless')
+      mindless.open(justLog ? { justLog: true } : undefined)
       close()
     },
-    [close],
+    [mindless, close, tap],
   )
-  // Mindless is the ONE timer door now (Be Still + Get Moving in one overlay). It opens in
-  // place (its loading takeover paints instantly) instead of navigating to /on-air — so the Zap
-  // sheet hands straight off to the timer with no flash of the page behind while it loads.
-  const openMindless = useCallback(() => {
-    observe('zap_menu.tile_tap', { tile: 'mindless' })
-    // Open the timer first (its loading takeover paints instantly), then drop the pop-up so the
-    // page behind never flashes between the two.
-    mindless.open()
-    setOpen(false)
-  }, [mindless])
 
   useEffect(() => {
-    if (!open || veraLine) return
+    if (!open || prompt) return
     let on = true
     fetch('/api/zap-prompt')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!on) return
-        if (d?.line) setVeraLine(d.line)
-        if (typeof d?.liveEvent === 'boolean') setLiveCheckIn(d.liveEvent)
+        if (!on || !d) return
+        setPrompt({
+          line: typeof d.line === 'string' ? d.line : null,
+          liveEvent: d.liveEvent === true,
+          code: d.code && typeof d.code.id === 'string' ? d.code : null,
+          me: d.me ?? null,
+        })
       })
       .catch(() => {})
     return () => {
       on = false
     }
-  }, [open, veraLine])
+  }, [open, prompt])
 
-  // The centre-nav button (and anything else) opens the modal via a window event,
-  // optionally requesting a starting mode.
   useEffect(() => {
     const onOpen = (e: Event) => {
       const m = (e as CustomEvent).detail?.mode as Mode | undefined
       setMode(m ?? 'post')
+      // A door that asks for a specific composer mode (the contact card) opens straight on it.
+      setView(m && m !== 'post' ? 'compose' : 'menu')
+      setPosted(null)
       setOpen(true)
       observe('zap_menu.open')
-      try {
-        if (!localStorage.getItem('fq_zap_intro_seen')) {
-          setShowIntro(true)
-          localStorage.setItem('fq_zap_intro_seen', '1')
-        }
-      } catch {
-        // private mode: no intro persistence, no problem
-      }
     }
     window.addEventListener('open-capture', onOpen)
     return () => window.removeEventListener('open-capture', onOpen)
   }, [])
 
+  const compose = useCallback(
+    (m: Mode) => {
+      tap('composer')
+      setMode(m)
+      setView('compose')
+    },
+    [tap],
+  )
+
+  // Send with text posts in place; send while empty opens the full composer.
+  const send = () => {
+    const body = draft.trim()
+    if (!body) return compose('post')
+    startPost(async () => {
+      const fd = new FormData()
+      fd.set('body', body)
+      fd.set('scopeId', scopeId)
+      fd.set('visibility', 'public')
+      fd.set('post_type', 'feed')
+      const res = await createPost(fd)
+      if (res && isError(res)) {
+        setPosted(res.error)
+        return
+      }
+      observe('zap_menu.tile_tap', { tile: 'post' })
+      setDraft('')
+      setPosted('Posted to your wall.')
+    })
+  }
+
+  const code = prompt?.code ?? null
+  const share = async () => {
+    tap('share')
+    if (!code) return
+    const data = { title: 'My Frequency code', text: 'Say hi on Frequency', url: code.url }
+    try {
+      if (navigator.share) await navigator.share(data)
+      else {
+        await navigator.clipboard?.writeText(code.url)
+        setShared(true)
+        setTimeout(() => setShared(false), 1500)
+      }
+    } catch {
+      // the member dismissed the share sheet
+    }
+  }
+
+  const shareScan = (big: boolean) => (
+    <div className="grid w-full grid-cols-2 gap-1.5">
+      <Button variant="secondary" onClick={share} disabled={!code} className="min-w-0 rounded-pill bg-surface px-2 lift-1">
+        <Share2 className="h-4.5 w-4.5 shrink-0" aria-hidden />
+        {shared ? 'Copied' : big ? 'Share my QR' : 'Share'}
+      </Button>
+      <Link href="/scan" onClick={() => { tap('scan'); close() }} className={buttonClasses('secondary', 'md', 'min-w-0 rounded-pill bg-surface px-2 lift-1')}>
+        <Camera className="h-4.5 w-4.5 shrink-0" aria-hidden />
+        {big ? 'Scan a QR' : 'Scan'}
+      </Link>
+    </div>
+  )
+
   return (
-    <>
-      {/* No desktop button — Capture lives in the mobile centre-nav; on web the feed's
-          inline Capture box is the entry. This component only hosts the modal. */}
-      <Dialog open={open} onClose={close} ariaLabel="Capture a moment" align="bottom" className="sm:max-w-md">
-        {/* A bottom sheet on a phone, a centred card on desktop. The panel owns its bottom safe area. */}
-        <div className="relative flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-card border-x border-t border-border bg-canvas p-4 pb-[max(1rem,env(safe-area-inset-bottom))] lift-3 sm:max-h-[90dvh] sm:rounded-card sm:border">
-          {/* Header — the Zap menu: where the interactive energy starts.
-              Vera's live line reacts to the member's day (streak, next step);
-              it renders instantly from a fallback and swaps when the cheap
-              cached line arrives. */}
-          <div className="mb-4 flex shrink-0 items-start justify-between gap-2 px-1">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-primary-bg text-primary-strong">
-                <Zap className="h-5 w-5 fill-primary-strong/20" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="text-body font-bold text-text">Capture a moment</p>
-                <p className="text-meta leading-relaxed text-muted">
-                  {veraLine ?? 'Catch something real from the day.'}
-                </p>
+    <Dialog open={open} onClose={close} ariaLabel="Capture a moment" align="bottom" className="mt-auto sm:max-w-md">
+      <div
+        data-zap-view={view}
+        className="relative flex max-h-[92dvh] w-full flex-col gap-3.5 overflow-y-auto rounded-t-[36px] border-x border-t border-border bg-canvas p-4.5 pb-[max(1rem,env(safe-area-inset-bottom))] lift-3 sm:max-h-[90dvh] sm:rounded-[36px] sm:border"
+      >
+        <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] bg-primary-bg/40" />
+
+        {view === 'held' ? (
+          <div className="relative flex flex-col items-center gap-3.5 py-2 text-center">
+            <p className="text-lead font-normal text-text">Your code</p>
+            <QrTile code={code} size="lg" label="Back to the menu" onClick={() => setView('menu')} />
+            <p className="serif text-page-title leading-tight text-text">Hold it up and say hi.</p>
+            {shareScan(true)}
+            <Button variant="ghost" onClick={() => setView('menu')}>
+              <ArrowLeft className="h-4 w-4" aria-hidden /> Back to menu
+            </Button>
+          </div>
+        ) : view === 'compose' ? (
+          <div className="relative flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="sm" onClick={() => setView('menu')}>
+                <ArrowLeft className="h-4 w-4" aria-hidden /> Back
+              </Button>
+              <IconButton label="Close" onClick={close}>
+                <X className="h-5 w-5" aria-hidden />
+              </IconButton>
+            </div>
+            <CaptureBox key={mode} scopeId={scopeId} visibility="public" defaultMode={mode} compactTools placeholder="Share something real from your day…" />
+          </div>
+        ) : (
+          <>
+            {/* 1. Your code. */}
+            <div className="relative flex items-center gap-4">
+              <QrTile
+                code={code}
+                size="sm"
+                label="Hold up your code"
+                onClick={() => {
+                  tap('code')
+                  setView('held')
+                }}
+              />
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <p className="text-body font-normal text-text">Your code</p>
+                <p className="serif text-lead leading-tight text-text">{code ? 'Tap to hold it up.' : 'Make yours on Codes.'}</p>
+                {shareScan(false)}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={close}
-              aria-label="Close"
-              className="-mr-1 shrink-0 rounded-pill p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-            >
-              <X className="h-5 w-5" />
+
+            {/* 2. The post box: type in place; the photo button and an empty send open the full composer. */}
+            <div className="relative flex flex-col gap-1">
+              <form
+                className="flex items-center gap-1.5 rounded-pill bg-surface py-1.5 pl-2 pr-1.5 ring-1 ring-inset ring-border lift-1"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  send()
+                }}
+              >
+                <Avatar src={prompt?.me?.avatar} name={prompt?.me?.name || 'You'} size="sm" />
+                <Input
+                  variant="seamless"
+                  aria-label="Create a post"
+                  placeholder="Create a post"
+                  value={draft}
+                  maxLength={500}
+                  onChange={(e) => {
+                    setDraft(e.target.value)
+                    if (posted) setPosted(null)
+                  }}
+                  className="min-w-0 flex-1 bg-transparent text-body text-text"
+                />
+                <IconButton label="Add a photo" size="lg" onClick={() => compose('photo')}>
+                  <ImagePlus className="h-5 w-5" aria-hidden />
+                </IconButton>
+                <IconButton type="submit" label={draft.trim() ? 'Post it' : 'Open the full composer'} variant="filled" size="lg" loading={posting} className="fq-pa rounded-pill">
+                  <Send className="h-4.5 w-4.5" aria-hidden />
+                </IconButton>
+              </form>
+              {posted && (
+                <p role="status" className="px-3 text-meta text-muted">
+                  {posted}
+                </p>
+              )}
+            </div>
+
+            {/* 3. Open the timer. */}
+            <button type="button" onClick={openTimer(false)} className={choiceTileClasses(false, 'relative flex min-h-17 w-full items-center gap-3 rounded-[16px] px-3 py-3 text-left lift-1')}>
+              <span className="fq-pa flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary text-on-primary" aria-hidden>
+                <BreatheIcon className="h-5 w-5" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-body font-semibold text-text">Open the timer</span>
+                <span className="truncate text-body-sm font-medium text-muted">{prompt?.line ?? 'Be Still or Get Moving.'}</span>
+              </span>
+              <ChevronRight className="h-4.5 w-4.5 shrink-0 text-muted" aria-hidden />
             </button>
-          </div>
 
-          {showIntro && (
-            <p className="mb-3 shrink-0 rounded-card bg-primary-bg/50 px-3 py-2 text-meta leading-relaxed text-primary-strong">
-              First time? Everything in this menu earns. Tap a tile, do the real
-              thing, and the Zaps follow.
-            </p>
-          )}
-
-          {/* The prompt box — sharing stays the zero-tap action. */}
-          <CaptureBox
-            key={mode}
-            scopeId={scopeId}
-            visibility="public"
-            defaultMode={mode}
-            compactTools
-            placeholder="Share something real from your day…"
-          />
-
-          {/* Mindless — the daily ritual sits just BELOW the post box (owner). Be Still + Get
-              Moving in one overlay. */}
-          <button
-            type="button"
-            onClick={openMindless}
-            className="group mt-3 flex w-full shrink-0 items-center gap-3 overflow-hidden rounded-card border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 text-left lift-1 transition-all hover:border-primary active:scale-[0.99]"
-          >
-            <MindlessArt className="block h-12 shrink-0" />
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-2">
-                <span className="block text-body font-bold leading-tight text-text">Mindless</span>
-                <Badge size="sm" className="shrink-0">Daily timer</Badge>
-              </span>
-              <span className="mt-0.5 block truncate text-meta leading-snug text-muted">
-                Tune out.
-              </span>
-            </span>
-            <span className="flex h-8 shrink-0 items-center gap-0.5 rounded-pill bg-primary pl-3 pr-2 text-meta font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">
-              Start
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            </span>
-          </button>
-
-          {/* The tools — the live capture rows (every tile earns, ADR-236). */}
-          <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
-            <ZapTile href="/events/scan" onClick={tapTile('event')} label="Event" zaps="+20" art={<EventArt className="block h-12" />} sub="Snap a poster" />
-            <ZapTile href="/connections/new" onClick={tapTile('contact')} label="Contact" art={<ContactArt className="block h-12" />} sub="Snap a card" />
-            <ZapTile href="/codes" onClick={tapTile('connect')} label="Connect" art={<ConnectArt className="block h-12" />} sub="Share your code" />
-            <ZapTile href="/scan?hint=checkin" onClick={tapTile('checkin')} label="Check In" zaps="+25" art={<CheckInArt className="block h-12" />} sub={liveCheckIn ? 'Happening now' : 'Scan at the door'} soon />
-            <ZapTile href="/scan?hint=node" onClick={tapTile('node')} label="Ghost Node" zaps="+10" art={<GhostArt className="block h-12" />} sub="Out hunting" soon />
-            <ZapTile href="/partners" onClick={tapTile('partners')} label="Partners" art={<PartnersArt className="block h-12" />} sub="Local rewards" soon />
-          </div>
-
-          <Link
-            href="/journal"
-            onClick={tapTile('journal')}
-            className="mt-4 flex shrink-0 items-center justify-center gap-1.5 rounded-control px-3 py-2.5 text-meta font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            <BookOpen className="h-3.5 w-3.5" aria-hidden /> View your log
-          </Link>
-        </div>
-      </Dialog>
-    </>
+            {/* 4. Check in, Log a practice. */}
+            <div className="relative grid grid-cols-2 gap-2.5">
+              <Link href="/scan?hint=checkin" onClick={() => { tap('checkin'); close() }} className={choiceTileClasses(false, 'relative flex flex-col gap-2.5 rounded-[16px] p-3 lift-1')}>
+                {prompt?.liveEvent && <span aria-hidden className="absolute right-3 top-3 h-2 w-2 rounded-pill bg-primary motion-safe:animate-pulse" />}
+                <TileIcon>
+                  <CalendarCheck className="h-5 w-5" />
+                </TileIcon>
+                <span className="flex flex-col">
+                  <span className="text-body font-semibold text-text">Check in</span>
+                  <span className="text-body-sm font-medium text-muted">{prompt?.liveEvent ? 'Happening now' : 'Scan at the door'}</span>
+                </span>
+              </Link>
+              <button type="button" onClick={openTimer(true)} className={choiceTileClasses(false, 'relative flex flex-col gap-2.5 rounded-[16px] p-3 text-left lift-1')}>
+                <TileIcon>
+                  <NotebookPen className="h-5 w-5" />
+                </TileIcon>
+                <span className="flex flex-col">
+                  <span className="text-body font-semibold text-text">Log a practice</span>
+                  <span className="text-body-sm font-medium text-muted">No timer, one tap</span>
+                </span>
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </Dialog>
   )
 }
 
-// One tool tile: art over a clean label, a soft wash, a quiet zap chip when the
-// act pays. Big tap target, gentle press. `soon` renders the same shape inert.
-function ZapTile({
-  href,
-  onClick,
-  label,
-  sub,
-  zaps,
-  art,
-  soon = false,
-  alert = false,
-}: {
-  href?: string
-  onClick?: () => void
-  label: string
-  sub: string
-  zaps?: string
-  art: React.ReactNode
-  soon?: boolean
-  /** Something is happening RIGHT NOW behind this tile (ADR-237): a quiet
-   *  pulsing dot + a warmer border, never a takeover. */
-  alert?: boolean
-}) {
-  const inner = (
-    <>
-      {alert && (
-        <span aria-hidden className="absolute right-2.5 top-2.5 h-2 w-2 rounded-pill bg-primary motion-safe:animate-pulse" />
-      )}
-      <span className="flex h-12 w-full items-center justify-center">{art}</span>
-      <span className="mt-1.5 block text-body-sm font-bold text-text">{label}</span>
-      <span className="block text-2xs leading-snug text-muted">{soon ? 'Soon' : sub}</span>
-      {zaps && (
-        <Badge tone="primary" size="sm" className="mt-1" icon={<Zap className="h-2.5 w-2.5" aria-hidden />}>
-          {zaps}
-        </Badge>
-      )}
-    </>
+function TileIcon({ children }: { children: ReactNode }) {
+  return (
+    <span className="flex h-11 w-11 items-center justify-center rounded-pill bg-primary-bg text-primary-strong" aria-hidden>
+      {children}
+    </span>
   )
-  const cls =
-    'relative flex flex-col items-center rounded-card border p-3 text-center transition-all ' +
-    (soon
-      ? 'cursor-default border-dashed border-border bg-surface/50 opacity-60'
-      : alert
-        ? 'border-primary bg-primary-bg/60 hover:bg-primary-bg/80 active:scale-[0.97]'
-        : 'border-primary/30 bg-primary-bg/40 hover:border-primary/60 hover:bg-primary-bg/70 active:scale-[0.97]')
-  if (soon || !href) {
-    return <div className={cls}>{inner}</div>
+}
+
+/** The member's real code (the avatar-centred SVG from /api/qr). It is a button: the small tile
+ *  holds the code up, the big one puts it back. Without a code yet it links to /codes. */
+function QrTile({ code, size, label, onClick }: { code: { id: string } | null; size: 'sm' | 'lg'; label: string; onClick: () => void }) {
+  const box = size === 'lg' ? 'h-70 w-70 rounded-[24px] p-4.5 lift-2' : 'h-33 w-33 rounded-[16px] p-2.5 lift-1'
+  // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
+  const tile = `flex shrink-0 items-center justify-center bg-white ring-1 ring-inset ring-border ${box}`
+  if (!code) {
+    return (
+      <Link href="/codes" aria-label="Make your code" className={tile}>
+        <QrCode className="h-1/2 w-1/2 text-muted" aria-hidden />
+      </Link>
+    )
   }
   return (
-    <Link href={href} onClick={onClick} className={cls}>
-      {inner}
-    </Link>
+    <button type="button" aria-label={label} onClick={onClick} className="shrink-0 rounded-[16px] border-0 p-0">
+      <span className={tile}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- a same-origin SVG from /api/qr, behind sign-in; the optimizer cannot fetch it */}
+        <img src={`/api/qr?code=${encodeURIComponent(code.id)}`} alt="" className="h-full w-full" />
+      </span>
+    </button>
   )
 }

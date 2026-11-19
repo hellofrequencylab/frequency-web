@@ -187,7 +187,7 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
   {
     // THE MINDLESS THEME (id `mindless`, lib/theme/mindless.ts): meditation for loud lives. Warm ink and bone, one paint accent (Yellow, Pink
     // or Blue) and a small offset paint per section, the Rubik Wet Paint drip display over Archivo. Night first with a Day register.
-    // Hidden from every picker until its pages, emails, Spotlight and Space page ship, then it leaves RETIRED_FROM_PICKERS.
+    // Offered since 2026-11-19 (owner: "use frequency pics in the mindless them."): its photo library is Frequency's own photos in the paint treatment.
     id: 'mindless',
     label: 'Mindless',
     description: 'Warm ink and bone, one paint accent and a drip headline. Night first with a Day register, three accents, six starter kits.',
@@ -198,8 +198,8 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
 /** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
  *  `frequency` ("Default") left the pickers 2026-11-03: New World is the default (LIVE-2058); sites that saved it keep it.
  *  Free Human and Mindless joined the pickers and the theme library on the owner's word (2026-11-18: "Make sure Free Human
- *  Movement is in the theme library as well as Mindless"). */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple', 'mindless'])
+ *  Movement is in the theme library as well as Mindless"); Mindless followed 2026-11-19 on Frequency's own photos (LIVE-2407). */
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple'])
 /** New World is the default, so it leads every picker, and Designer comes second (owner 2026-11-04); the rest keep their
  *  definition order. The create-a-space look step follows this order. */
 const PICKER_LEAD: readonly SiteThemeId[] = ['new-world', 'designer']

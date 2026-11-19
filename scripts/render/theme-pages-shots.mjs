@@ -16,7 +16,7 @@ if (!dir) {
   process.exit(2)
 }
 // THEME_ONLY=<id> writes one theme's pictures and leaves the others as they are.
-const themes = ['bold', 'wildheart', 'services', 'cyberwitch'].filter((t) => !process.env.THEME_ONLY || t === process.env.THEME_ONLY)
+const themes = ['bold', 'wildheart', 'services', 'cyberwitch', 'free-human', 'mindless'].filter((t) => !process.env.THEME_ONLY || t === process.env.THEME_ONLY)
 const TYPES = { '.html': 'text/html', '.css': 'text/css', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' }
 const server = createServer((req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
@@ -47,7 +47,14 @@ const WH_CSS =
 const CW_CSS =
   '@font-face{font-family:UnifrakturCook;src:url(/fonts/unifrakturcook/unifrakturcook-700.woff2) format("woff2");font-weight:700}@font-face{font-family:"Permanent Marker";src:url(/fonts/permanent-marker/permanent-marker-400.woff2) format("woff2");font-weight:400}' +
   [400, 500, 600, 700].map((w) => `@font-face{font-family:Spectral;src:url(/fonts/spectral/spectral-${w}.woff2) format("woff2");font-weight:${w}}`).join('')
-writeFileSync(join(dir, 'fonts.css'), FONTS_CSS + BOLD_CSS + WH_CSS + CW_CSS)
+// Honey (Cormorant Garamond, Marcellus) and Mindless (Rubik Wet Paint, Archivo) faces, from app/fonts.
+const FH_ML_CSS =
+  '@font-face{font-family:"Cormorant Garamond";src:url(/fonts/free-human/cormorant-garamond.woff2) format("woff2");font-weight:300 700}' +
+  '@font-face{font-family:"Cormorant Garamond";src:url(/fonts/free-human/cormorant-garamond-italic.woff2) format("woff2");font-style:italic;font-weight:300 700}' +
+  '@font-face{font-family:Marcellus;src:url(/fonts/temple/marcellus.woff2) format("woff2");font-weight:400}' +
+  '@font-face{font-family:"Rubik Wet Paint";src:url(/fonts/rubik-wet-paint/rubik-wet-paint-400.woff2) format("woff2");font-weight:400}' +
+  '@font-face{font-family:Archivo;src:url(/fonts/archivo/archivo-400.woff2) format("woff2");font-weight:400}@font-face{font-family:Archivo;src:url(/fonts/archivo/archivo-800.woff2) format("woff2");font-weight:800}'
+writeFileSync(join(dir, 'fonts.css'), FONTS_CSS + BOLD_CSS + WH_CSS + CW_CSS + FH_ML_CSS)
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
 // CW_ACCENT (with THEME_ONLY=cyberwitch) writes that neon's pictures under public/brand/theme-pages/cyberwitch/<accent>/.
 const cwAccent = process.env.CW_ACCENT && process.env.CW_ACCENT !== 'hex' ? process.env.CW_ACCENT : null
