@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1274",
+  "title": "New World niche links keep their niche, the listing composer is noindex, and an empty list publishes no ItemList",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/json-ld.tsx",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "Three small crawl findings. (1) The 7 niche buttons on /themes/new-world linked to /create-a-space?kit=new-world?niche=<id>, so the niche was swallowed into the kit value; the link now joins with & when the base already has a query. (2) /classifieds/new answered 200 and indexable to an anonymous crawler; it is now noindex, nofollow. (3) 451 pages published an ItemList with no items (a city with no Circles, a filter with no matches), which validators flag; the JsonLd component now drops an ItemList whose itemListElement is empty and renders nothing when no node is left.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1274.mjs",
+    "note": "Fails on main on all three. Passes once the link is well formed, the composer is noindex and empty ItemLists are dropped."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

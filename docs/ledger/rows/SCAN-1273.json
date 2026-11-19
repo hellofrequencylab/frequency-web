@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1273",
+  "title": "Crawlers stay out of the /events and /discover/spaces filter combinations",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/robots.ts",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "A third of a 3,000 URL crawl was filter combinations: 958 /events?... URLs and 68 /discover/spaces?... URLs, each canonical to the plain page. They spend crawl budget that the 720 real pages need before launch. robots now disallows \"/events?\" and \"/discover/spaces?\"; the plain pages and every event page stay crawlable.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1273.mjs",
+    "note": "Fails on main: neither query rule is in robots. Passes once both are, and fails again if a rule ever hides the page itself."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

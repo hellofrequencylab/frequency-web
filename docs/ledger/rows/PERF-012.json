@@ -1,0 +1,19 @@
+{
+  "id": "PERF-012",
+  "title": "Operator photos on Space pages are served at full size",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "components/entity-blocks/content-block-view.tsx",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "After PERF-010 the photos on a Space page load lazily, but each is still the file the owner uploaded (several are 1 to 2 MB). Routing them through the image optimizer, as PERF-011 does for one event cover, would cut most of that weight. It is an owner call because optimizer use is metered on the hosting plan and every Space photo would count: needs a cost ruling before any code.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-19",
+    "evidence": "Production, 2026-11-19: /spaces/royaltemple transferred 11.4 MB, 9.7 MB of it offscreen photos served at upload size (Lighthouse offscreen-images and uses-responsive-images)."
+  },
+  "wave": "W7"
+}

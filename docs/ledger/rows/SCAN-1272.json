@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1272",
+  "title": "A public event hosted by a Space names that Space as its host and its Event organizer",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/jsonld.ts",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "212 of 256 Event nodes in the crawl had no organizer, which Google lists as a recommended Event property and which answer engines use to attribute an event. An event hosted by a Circle already named it; an event hosted by a Space named nobody. getEventHostSpace (lib/spaces/discovery.ts) reads the event's host Space by id on the service side and returns it only when that Space is networked, connected and active; any failure returns null. The Event schema falls back to that Space as an Organization organizer with its /spaces/<slug> address, and the page shows the same Space as the visible host link, so the markup matches what a visitor sees.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1272.mjs",
+    "note": "Fails on main: no host Space reader, no organizer fallback and no visible host link. Passes once all three exist."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

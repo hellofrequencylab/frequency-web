@@ -1,0 +1,19 @@
+{
+  "id": "PERF-014",
+  "title": "The /events page is 3.75 MB with 201 requests and paints a map tile last",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "app/(main)/events/page.tsx",
+    "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
+  },
+  "detail": "The public /events page loads every event banner at upload size, starts Google Maps at once, and its largest paint is a map tile (Lighthouse simulated phone LCP 14.8 s, performance 46). Its description arrives in streamed metadata, so Lighthouse reports no meta description in the first bytes, and it has no og:url. Wanted: right-sized, lazy banners; the map only when it is near the screen or asked for; the description and og:url in the first response. SCAN-303 pins the five /events settings reads to one Promise.all: keep that.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-11-19",
+    "evidence": "Production, 2026-11-19: Lighthouse on /events (phone, analytics blocked): 3.75 MB, 201 requests, LCP element a maps tile, meta-description audit failed; the crawl saw no og:url on /events."
+  },
+  "wave": "W7"
+}
