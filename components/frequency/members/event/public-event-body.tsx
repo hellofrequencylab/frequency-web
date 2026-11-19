@@ -21,6 +21,15 @@ import { PublicEventChat } from './public-event-chat'
 // privacy rule (the venue line, the map point only for a visible address, the hidden-address note). This
 // file only places it. The page sits outside the member shell, so it opens its own kit scope.
 
+/** The hosts next.config.ts lets the image optimizer fetch from: our own public storage, on the
+ *  project host and on the branded one. Anything else would be refused, so it passes through. */
+const OPTIMIZABLE_STORAGE = /^https:\/\/([a-z0-9-]+\.supabase\.co|api\.frequencylocal\.com)\/storage\/v1\/object\/public\//
+
+/** An event cover as a 1080 px optimizer rendition when it lives in our public storage, else as is. */
+function coverRendition(url: string): string {
+  return OPTIMIZABLE_STORAGE.test(url) ? `/_next/image?url=${encodeURIComponent(url)}&w=1080&q=75` : url
+}
+
 export function FqPublicEventBody({
   structuredData,
   heroUrl,
@@ -70,11 +79,19 @@ export function FqPublicEventBody({
   host: { name: string; href: string } | null
   upcomingDates: { href: string; label: string }[]
 }) {
-  const cover = heroUrl
-    ? { backgroundImage: `url('${heroUrl}')`, ...(heroFocus ? { backgroundPosition: heroFocus } : {}) }
+  // THE COVER, RIGHT-SIZED AND ASKED FOR FIRST (PERF-011). The poster and the backdrop are CSS
+  // backgrounds, so they used to download the host's upload exactly as it was uploaded, and the
+  // browser only found it after the stylesheets had loaded. Measured on production 2026-11-19: one
+  // event page weighed 2.2 MB, 1.24 MB of it a single PNG cover, painted at 12.8 s on a simulated
+  // phone. The optimizer serves a 1080 px rendition in a modern format, and the preload below
+  // (React hoists it into <head>) starts that download from the HTML itself.
+  const coverSrc = heroUrl ? coverRendition(heroUrl) : null
+  const cover = coverSrc
+    ? { backgroundImage: `url('${coverSrc}')`, ...(heroFocus ? { backgroundPosition: heroFocus } : {}) }
     : undefined
   return (
     <div data-kit="members" className="fqm-public fqm-pe">
+      {coverSrc ? <link rel="preload" as="image" href={coverSrc} fetchPriority="high" /> : null}
       {structuredData}
       <div className="fqm-pe-backdrop" style={cover} aria-hidden />
       <div className="wrap fqm-pe-wrap">
