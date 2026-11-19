@@ -1,5 +1,5 @@
 // The Designer Theme Kit token pass: every design-system token is declared in DESIGNER_TOKENS_CSS with the design's own value,
-// or named in rules.json as a deviation with its reason. Fails on main (76 known token gaps).
+// or named in rules.json as a deviation with its reason. Passes on main: the baseline holds no token gaps (it failed with 76 when the row was filed).
 import { readFileSync } from 'node:fs'
 
 let bad = 0

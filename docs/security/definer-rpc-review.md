@@ -8,6 +8,13 @@ Reviewed 2026-11-16 against production (Frequency Community, project `azsqfeonab
 rights, so each one must prove its own authorization inside the function. All 23 pin `search_path`, except the three
 `st_estimatedextent` overloads (PostGIS, extension-owned, one-line wrappers).
 
+**Re-checked 2026-11-19** (same read-only method, after a cohesion audit found the catalog ahead of this page). The
+live set is now 25: the 23 below, plus `public_circles_page` (shipped 2026-11-16 by migration `20270346066000`, after
+this review was written) and `fw_relay_ingest_delta` (not from this repository; see "Stray function"). 21 of the 25
+are created by this repository's migrations, 1 is the stray, 3 are PostGIS. Every first-party one pins `search_path`.
+`node scripts/probes/definer-review-covers-anon-rpcs.mjs` (SCAN-1279) now fails when a `public`-verdict definer function
+in `scripts/function-grants.txt` is missing from this page.
+
 ## Write-capable functions (7)
 
 | Function | Reads / writes | Checks it makes | Verdict |
@@ -20,9 +27,9 @@ rights, so each one must prove its own authorization inside the function. All 23
 | `release_guest_seat(token)` | sets the seat to not_going, zeroes plus-ones, clears the token hash | Same token gate | Sound |
 | `handle_is_available(check_handle)` | one `exists` over `profiles.handle` | None needed | Returns a boolean about a value that is public on `/people/<handle>`. Throttled app-side at `/api/check-handle`. Accept |
 
-## Public readers (13)
+## Public readers (14)
 
-`public_events`, `public_event_by_slug`, `public_circles`, `public_circle_by_id`, `public_circle_by_slug`,
+`public_events`, `public_event_by_slug`, `public_circles`, `public_circles_page`, `public_circle_by_id`, `public_circle_by_slug`,
 `public_posts`, `public_featured_posts`, `public_organizer_events`, `public_organizer_handles`,
 `public_member_count`, `public_active_circle_count`, `space_public_unavailable`, `space_wall_feed`.
 
@@ -32,6 +39,12 @@ rights, so each one must prove its own authorization inside the function. All 23
   tail to 180 days.
 - Circles: `public_circle_by_id`, `_by_slug` and `public_circles` gate through `private.can_see_circle(...)` (the
   `public_circles` body is 362 bytes and was read as the same shape; its gate was not read line by line).
+- `public_circles_page(_limit, _offset)` (added 2026-11-19 re-check; body read in full from migration `20270346066000`
+  and from `pg_get_functiondef` on production): a `language sql stable` reader with the same projection and the same
+  predicate as `public_circles` (status forming or active, not unlisted), at most 200 rows per call, offset clamped to
+  0..100000, ordered by member count, creation time and id. It takes no caller input beyond the two clamped integers,
+  writes nothing and returns only columns the public circles list already shows. `search_path = public`. Called by the
+  sitemap walk (`lib/discover.ts`, `walkPublicCirclesPast`). pgTAP: `supabase/tests/public_circles_page.test.sql`. Sound.
 - Posts: `public_posts` and `public_featured_posts` return only `visibility = 'public'`, top-level, not hidden
   posts, with author display name, handle and avatar. These are public by intent.
 - `space_wall_feed` requires `private.can_read_space_wall(space)` and `visibility = 'cluster'`. Its `reactions` column
@@ -45,6 +58,38 @@ rights, so each one must prove its own authorization inside the function. All 23
 
 `st_estimatedextent(text,text[,text[,boolean]])` are PostGIS statistics readers returning a bounding box. The
 advisor lists them on every PostGIS project. No data leaves beyond an extent; leave them.
+
+## Stray function (1)
+
+`fw_relay_ingest_delta(p_token text, p_keys text[], p_entries jsonb, p_report jsonb)` is in the production catalog and
+in no migration here, no row of `supabase_migrations.schema_migrations`, and not in `scripts/function-grants.txt`.
+Read on 2026-11-19:
+
+- It belongs to FlowWeb. FlowWeb's schema lives in the other Supabase project (`hook`, `qakbtenvporcfkznivdh`), which
+  holds `fw_runners`, `fw_mirror` and 34 `fw_*` functions including this one. Frequency Community holds this one
+  function and none of the `fw_*` tables, so it was most likely run in the wrong SQL editor.
+- It cannot run here. The body resolves a runner by `sha256(p_token)` in `public.fw_runners`, then replaces that
+  account's rows in `public.fw_mirror`. Neither table exists in this database (in any schema), so every call ends in
+  `42P01 relation "public.fw_runners" does not exist` before anything is read or written. `pg_stat_user_functions` has
+  no calls recorded for it.
+- Grants: `anon`, `authenticated` and `service_role` hold EXECUTE (the Supabase default privileges). Owner `postgres`,
+  `SECURITY DEFINER`, `search_path = ''`, every relation schema-qualified.
+- Risk: none today, because it fails closed. It would become a live anon write endpoint only if tables with those
+  names were ever created here, and nothing in this repository creates them.
+- Nothing in Frequency calls it: FlowWeb reaches Frequency through `/api/webhooks/flowweb-*` and
+  `/admin/growth/funnels`, not through this RPC.
+
+Owner ruling, 2026-11-19 05:39Z (Daniel, asked remove / lock to service role / leave): **leave it as is.** It stays in
+the catalog with its default grants and is recorded here as a known stray; do not drop or re-grant it without asking
+again. The static gates cannot see a function made by hand in the
+database, so this is the catalog read to repeat; it must return only functions named on this page:
+
+```sql
+select p.proname, pg_get_function_identity_arguments(p.oid)
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.prosecdef and has_function_privilege('anon', p.oid, 'execute')
+order by 1;
+```
 
 ## Revoking execute from anon
 
