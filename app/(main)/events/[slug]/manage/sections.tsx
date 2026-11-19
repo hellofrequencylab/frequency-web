@@ -1,5 +1,6 @@
 import { formatDateShort } from '@/lib/format-date'
 import Link from 'next/link'
+import { cardFeePassThroughFrom } from '@/lib/billing/card-fee'
 import {
   Check,
   Star,
@@ -535,6 +536,7 @@ export async function TicketTiersSection({ eventId, slug }: { eventId: string; s
       tiers={tiers}
       spaceAccess={spaceAccess}
       upgrade={upgrade ?? undefined}
+      cardFeeFrom={cardFeePassThroughFrom()?.toISOString() ?? null}
     />
   )
 }

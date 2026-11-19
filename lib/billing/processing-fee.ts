@@ -79,3 +79,18 @@ export function applicationFeePercent(amountCents: number, breakdown: SellerFeeB
   const pct = (breakdown.applicationFeeCents / Math.floor(amountCents)) * 100
   return Math.min(100, Math.ceil(pct * 100 - 1e-9) / 100)
 }
+
+/**
+ * The all-in price that leaves the seller `netCents` after card processing: the smallest charge P
+ * with P minus cardProcessingCents(P) at least `netCents`. A host who wants guests to cover the card
+ * fee prices the ticket at this (owner ruling 2026-11-19, LIVE-2450: tickets show one all-in price
+ * from the first screen, never a fee added at the end). 0 for a non-positive or non-finite net.
+ */
+export function allInPriceCents(netCents: number): number {
+  if (!Number.isFinite(netCents) || netCents <= 0) return 0
+  const net = Math.ceil(netCents)
+  // Start just under the closed form and step up: rounding can make the closed form a cent off.
+  let price = Math.max(net, Math.floor((net + CARD_PROCESSING_FIXED_CENTS) / (1 - CARD_PROCESSING_BPS / 10000)) - 2)
+  while (price - cardProcessingCents(price) < net) price += 1
+  return price
+}
