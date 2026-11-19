@@ -126,6 +126,26 @@ export const FREQUENCY_PAGE_SEO = {
     lede: 'One link for your bio, your card and your QR code: your name, what you do and where to find you. Free, and yours to keep.',
     crumbs: [{ name: 'Free Spotlight', path: '/free-spotlight' }],
   },
+  launchWebsite: {
+    path: '/launch-your-website',
+    title: 'Launch Your Website: a real site at your own address, in 5 minutes',
+    description:
+      'Launch a free website on Frequency: pick a look, write your headline and go live at your own frequencylocal.com address in about 5 minutes.',
+    shareTitle: 'Launch your website on Frequency',
+    headline: 'A real website, live in 5 minutes.',
+    lede: 'Pick a look, write your headline and your website goes live at its own free address. Change any of it later in the editor.',
+    crumbs: [{ name: 'Launch Your Website', path: '/launch-your-website' }],
+  },
+  emailMarketing: {
+    path: '/email-marketing',
+    title: 'Email Marketing: write your first email in 4 minutes',
+    description:
+      'Write your first email on Frequency in about 4 minutes. It waits as a draft with your list until you press Send. Free Spaces send 2 emails a month.',
+    shareTitle: 'Email your people with Frequency',
+    headline: 'Your first email, written in 4 minutes.',
+    lede: 'Write it here and it waits as a draft with your list. Nothing sends until you press Send. Free Spaces get 2 emails a month.',
+    crumbs: [{ name: 'Email Marketing', path: '/email-marketing' }],
+  },
   createSpace: {
     path: '/create-a-space',
     title: 'Create a Space: a home for your group, business or cause',

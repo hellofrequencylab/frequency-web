@@ -9,11 +9,17 @@ import { revalidatePath } from 'next/cache'
 import { setMySpotlightEnabled, setSpotlightPublished } from '@/app/(main)/settings/profile/actions'
 import { personalSpotlightHref } from '@/lib/launch/personal'
 import { loadStoredProfile, savePersonalSpotlight } from '@/lib/launch/personal-io'
+import { publishWebsiteWords } from '@/lib/launch/handoff-io'
+import { listOwnedSpaces } from '@/lib/launch/spaces-io'
 import { makeSpace } from '@/lib/launch/spotlight-io'
+import { starterRows } from '@/lib/entity-blocks/layout'
+import { siteSubdomainHost } from '@/lib/sites/host'
+import { createSpaceEmailDraft, saveSpaceEmailDraft } from '@/lib/spaces/email-drafts'
+import { publishStarterSite } from '@/lib/spaces/starter-site'
 import { getSpaceById, patchSpaceWords } from '@/lib/spaces/store'
 import type { Space } from '@/lib/spaces/types'
 import type { FeatureId } from './catalog'
-import { handleFrom, spaceTypeFrom, type FeatureDraft } from './draft'
+import { handleFrom, spaceTypeFrom, websiteKitFrom, type FeatureDraft } from './draft'
 
 export type ApplyResult = { ok: true; liveHref: string | null } | { ok: false; error: string }
 
@@ -66,9 +72,60 @@ async function applySpace(profileId: string, draft: FeatureDraft): Promise<Apply
   return { ok: true, liveHref: `/spaces/${space.slug}` }
 }
 
+/** The Space a website or an email goes on: the person's newest Space, or a new one named for it (with the look,
+ *  when the builder picked one). A website and an email list only exist on a Space, so one is made when there is none. */
+async function spaceFor(profileId: string, name: string, theme?: string): Promise<{ space: Space; made: boolean } | { error: string }> {
+  const newest = (await listOwnedSpaces(profileId)).at(-1)
+  const owned = newest ? await getSpaceById(newest.id) : null
+  if (owned) return { space: owned, made: false }
+  const made = await newSpace(profileId, { name, theme })
+  return 'error' in made ? made : { space: made, made: true }
+}
+
+async function applyWebsite(profileId: string, draft: FeatureDraft): Promise<ApplyResult> {
+  const kit = websiteKitFrom(draft.kit)
+  const found = await spaceFor(profileId, draft.name ?? '', kit)
+  if ('error' in found) return { ok: false, error: found.error }
+  let space = found.space
+  // A new Space was born in the picked look with its starter website (createSpace). An existing one takes the look
+  // through the one theme apply, and gets the starter website only when it has none (publishStarterSite never
+  // replaces a website: it writes against revision 0).
+  if (!found.made) {
+    const { applyMegaTheme } = await import('@/lib/theme/apply-mega-theme')
+    const themed = await applyMegaTheme(space.id, kit)
+    if (!themed.ok) return { ok: false, error: themed.error }
+    await publishStarterSite(space.id, kit)
+    space = (await getSpaceById(space.id)) ?? space
+  }
+  const words = await publishWebsiteWords(space, { headline: draft.headline ?? '', intro: draft.about ?? '' })
+  if ('error' in words) return { ok: false, error: words.error }
+  revalidatePath(`/spaces/${space.slug}`)
+  const host = siteSubdomainHost(space.slug)
+  return { ok: true, liveHref: host ? `https://${host}` : `/sites/${space.slug}` }
+}
+
+async function applyEmail(profileId: string, draft: FeatureDraft): Promise<ApplyResult> {
+  const found = await spaceFor(profileId, draft.from ?? '')
+  if ('error' in found) return { ok: false, error: found.error }
+  const { space } = found
+  const subject = draft.subject ?? ''
+  // A DRAFT, never a send: the owner opens it in Marketing, checks it and sends it to their list themselves.
+  const made = await createSpaceEmailDraft(space.id)
+  if ('error' in made) return { ok: false, error: 'We could not save your email. Try again.' }
+  const saved = await saveSpaceEmailDraft(space.id, made.data.id, {
+    subject,
+    layout: { rows: starterRows('email', 'minimal'), content: { heading: { text: subject }, text: { text: draft.body ?? '' } } },
+  })
+  if (saved.error) return { ok: false, error: 'We could not save your email. Try again.' }
+  revalidatePath(`/spaces/${space.slug}/marketing`)
+  return { ok: true, liveHref: `/spaces/${space.slug}/marketing` }
+}
+
 const APPLY: Partial<Record<FeatureId, (profileId: string, draft: FeatureDraft) => Promise<ApplyResult>>> = {
   spotlight: applySpotlight,
   space: applySpace,
+  website: applyWebsite,
+  email: applyEmail,
 }
 
 export async function applyFeature(profileId: string, feature: FeatureId, draft: FeatureDraft): Promise<ApplyResult> {

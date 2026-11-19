@@ -7,7 +7,7 @@ import { OPEN_FEATURES, LAUNCH_BUSINESS, feature as featureEntry, nextFeatures, 
 
 export function NextSteps({ done, built = [], outHref }: { done: FeatureId; built?: readonly FeatureId[]; outHref: string }) {
   const options = nextFeatures(done, built)
-  const made = featureEntry(done).made
+  const { made, doneWord } = featureEntry(done)
   return (
     <div className="fb-next">
       <h2 className="fb-next-h">Want to keep going?</h2>
@@ -29,7 +29,7 @@ export function NextSteps({ done, built = [], outHref }: { done: FeatureId; buil
           </Link>
         </li>
       </ul>
-      <Link href={outHref} className="fb-next-out">I&apos;m done for now. My {made} stays live.</Link>
+      <Link href={outHref} className="fb-next-out">I&apos;m done for now. My {made} {doneWord === 'live' ? 'stays live' : 'waits as a draft'}.</Link>
     </div>
   )
 }

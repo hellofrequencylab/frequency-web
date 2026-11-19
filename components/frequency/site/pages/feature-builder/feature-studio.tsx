@@ -203,11 +203,11 @@ export function FeatureStudio({ feature, steps, copy, signedIn, done, error, pre
           </div>
 
           <h1 id="fb-h1" className="cs-h1 fb-h1">
-            {phase === 'done' ? <>Your {entry.made} is <em className="fq-iri-text">live.</em></> : <>{copy.headline} <em className="fq-iri-text">in {entry.minutes} minutes.</em></>}
+            {phase === 'done' ? <>Your {entry.made} is <em className="fq-iri-text">{entry.doneWord}.</em></> : <>{copy.headline} <em className="fq-iri-text">in {entry.minutes} minutes.</em></>}
           </h1>
           <p className="cs-sub fb-sub">
             {phase === 'done'
-              ? under ? `Built in ${formatClock(elapsed)}. That beat the clock.` : elapsed > 0 ? `Built in ${formatClock(elapsed)}. Nicely done.` : 'Saved and live. Change anything, any time.'
+              ? under ? `Built in ${formatClock(elapsed)}. That beat the clock.` : elapsed > 0 ? `Built in ${formatClock(elapsed)}. Nicely done.` : entry.doneWord === 'live' ? 'Saved and live. Change anything, any time.' : 'Saved as a draft. Nothing sends until you press Send.'
               : copy.sub}
           </p>
 
@@ -220,7 +220,7 @@ export function FeatureStudio({ feature, steps, copy, signedIn, done, error, pre
             ))}
             <li className="fb-step" data-state={phase === 'done' ? 'done' : phase === 'build' ? 'off' : 'now'}>
               <span className="fb-step-dot">{phase === 'done' ? <FqIcon name="check" size={11} /> : steps.length + 1}</span>
-              <span className="fb-step-l">Go live</span>
+              <span className="fb-step-l">{entry.doneWord === 'live' ? 'Go live' : 'Save it'}</span>
             </li>
           </ol>
 
@@ -249,7 +249,7 @@ export function FeatureStudio({ feature, steps, copy, signedIn, done, error, pre
               <div className="cs-card fb-card">
                 <div className="cs-card-head">
                   <span className="cs-card-eyebrow">Step {steps.length + 1} of {steps.length + 1}</span>
-                  <h2 className="cs-card-h">{signedIn ? <>Ready? <em>Go live.</em></> : <>Save it and <em>go live.</em></>}</h2>
+                  <h2 className="cs-card-h">{entry.doneWord !== 'live' ? <>Ready? <em>Save it.</em></> : signedIn ? <>Ready? <em>Go live.</em></> : <>Save it and <em>go live.</em></>}</h2>
                   <p className="cs-fine">{signedIn ? 'It saves to your account right now. You can change anything later.' : copy.claimLine}</p>
                 </div>
                 {signedIn ? (
@@ -285,8 +285,8 @@ export function FeatureStudio({ feature, steps, copy, signedIn, done, error, pre
               <div className="cs-card fb-card" role="status">
                 <div className="cs-card-head">
                   <span className="cs-card-eyebrow">Check your inbox</span>
-                  <h2 className="cs-card-h">One tap and it&apos;s <em>live.</em></h2>
-                  <p className="cs-fine">We sent a link to <b>{email}</b>. Open it on any device and your {entry.made} goes live. The clock has stopped, so take your time.</p>
+                  <h2 className="cs-card-h">One tap and it&apos;s <em>{entry.doneWord === 'live' ? 'live' : 'saved'}.</em></h2>
+                  <p className="cs-fine">We sent a link to <b>{email}</b>. Open it on any device and your {entry.made} {entry.doneWord === 'live' ? 'goes live' : 'is saved'}. The clock has stopped, so take your time.</p>
                 </div>
                 <button type="button" className="cs-later" onClick={() => setPhase('claim')}>Use a different email</button>
               </div>

@@ -4,6 +4,8 @@
 // PURE and client-safe.
 
 import { slugify } from '@/lib/utils'
+import { NEW_SPACE_THEME, type MegaThemeId } from '@/lib/theme/mega-theme'
+import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 import type { FeatureId } from './catalog'
 
 interface DraftField {
@@ -97,4 +99,9 @@ export function handleFrom(typed: string, name: string): string {
 /** The Space type a builder answer names: the two provisionable types. */
 export function spaceTypeFrom(v: string | undefined): 'business' | 'nonprofit' {
   return v === 'nonprofit' ? 'nonprofit' : 'business'
+}
+
+/** The look a website builder answer names: one of the preview kits, else New World (the house default). */
+export function websiteKitFrom(v: string | undefined): MegaThemeId {
+  return v && (PREVIEW_KIT_ORDER as readonly string[]).includes(v) ? (v as MegaThemeId) : NEW_SPACE_THEME
 }
