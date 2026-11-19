@@ -2958,6 +2958,7 @@ export type Database = {
           owner_profile_id: string | null
           owner_space_id: string | null
           platform_fee_cents: number
+          processing_fee_cents: number
           refund_reversal_cents: number
           reversal_attempt_floor: number
           reversal_attempts: number
@@ -2987,6 +2988,7 @@ export type Database = {
           owner_profile_id?: string | null
           owner_space_id?: string | null
           platform_fee_cents?: number
+          processing_fee_cents?: number
           refund_reversal_cents?: number
           reversal_attempt_floor?: number
           reversal_attempts?: number
@@ -3016,6 +3018,7 @@ export type Database = {
           owner_profile_id?: string | null
           owner_space_id?: string | null
           platform_fee_cents?: number
+          processing_fee_cents?: number
           refund_reversal_cents?: number
           reversal_attempt_floor?: number
           reversal_attempts?: number

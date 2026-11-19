@@ -74,6 +74,9 @@ export interface SellerSplit {
   seller: FundsFlowSeller
   grossCents: number
   platformFeeCents: number
+  /** The card fee this share bears once the pass-through is on (LIVE-2421, lib/billing/card-fee.ts):
+   *  its part of the one card fee on the whole charge, set by withCardFeeShares. Absent = 0. */
+  processingFeeCents?: number
   stripeAccountId: string
 }
 
@@ -139,4 +142,49 @@ export function splitTotals(splits: readonly SellerSplit[]): { grossCents: numbe
     }),
     { grossCents: 0, platformFeeCents: 0 },
   )
+}
+
+/** The `processing_fee_cents` a share's metadata.split entry carries: present only when the share bore
+ *  a card fee, so every entry written while the pass-through is off is exactly what it always was. */
+export function splitCardFeeField(s: Pick<SellerSplit, 'processingFeeCents'>): { processing_fee_cents?: number } {
+  return s.processingFeeCents && s.processingFeeCents > 0 ? { processing_fee_cents: s.processingFeeCents } : {}
+}
+
+/**
+ * THE CARD FEE ON A SPLIT CHARGE (LIVE-2421). PURE.
+ *
+ * A split charge lands on the platform, which pays Stripe one card fee for the whole of it. Once the
+ * pass-through is on, the sellers bear that fee the way a destination seller does, so each share
+ * carries its part: floor(card x share gross / total gross), the remainder to the largest share (the
+ * first of equals). A share never bears more than is left of it after Frequency's fee, because
+ * Stripe refuses a transfer below one cent and lib/commerce/transfers.ts refuses a share whose fees
+ * pass its gross; what a share cannot hold moves to the shares that can, largest first, and any cent
+ * still left (only on a charge of a few cents) is the platform's, exactly as the destination path
+ * lets the card fee yield first (sellerFeeBreakdown).
+ *
+ * `cardFeeCents` 0 (the pass-through off, or before its date) returns the shares with 0 each, so the
+ * caller has one path either way.
+ */
+export function withCardFeeShares(splits: readonly SellerSplit[], cardFeeCents: number): SellerSplit[] {
+  const total = splits.reduce((n, s) => n + Math.max(0, s.grossCents), 0)
+  const card = Number.isFinite(cardFeeCents) ? Math.max(0, Math.floor(cardFeeCents)) : 0
+  const room = splits.map((s) => Math.max(0, s.grossCents - Math.max(0, s.platformFeeCents)))
+  const parts = splits.map(() => 0)
+  if (card > 0 && total > 0) {
+    let left = card
+    splits.forEach((s, i) => {
+      const part = Math.min(room[i], Math.floor((card * Math.max(0, s.grossCents)) / total))
+      parts[i] = part
+      left -= part
+    })
+    // Largest share first, first of equals first: the remainder, then whatever a full share could not hold.
+    const order = splits.map((_, i) => i).sort((a, b) => splits[b].grossCents - splits[a].grossCents || a - b)
+    for (const i of order) {
+      if (left <= 0) break
+      const take = Math.min(left, room[i] - parts[i])
+      parts[i] += take
+      left -= take
+    }
+  }
+  return splits.map((s, i) => ({ ...s, processingFeeCents: parts[i] }))
 }

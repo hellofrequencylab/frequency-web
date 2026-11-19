@@ -110,6 +110,9 @@ export interface OrderTransfer {
   stripeAccountId: string
   amountCents: number
   platformFeeCents: number
+  /** The card fee this share bore (LIVE-2421); 0 on every row before the pass-through date. The
+   *  share's gross is amountCents + platformFeeCents + processingFeeCents. */
+  processingFeeCents: number
   currency: string
   status: TransferStatus
   stripeTransferId: string | null
@@ -140,6 +143,7 @@ interface TransferRow {
   stripe_account_id: string
   amount_cents: number
   platform_fee_cents: number
+  processing_fee_cents?: number | null
   currency: string
   status: TransferStatus
   stripe_transfer_id: string | null
@@ -155,7 +159,7 @@ interface TransferRow {
 }
 
 const ROW_COLS =
-  'id, order_id, owner_kind, owner_profile_id, owner_space_id, stripe_account_id, amount_cents, platform_fee_cents, currency, status, stripe_transfer_id, reversed_cents, attempts, last_error, refund_reversal_cents, reversal_attempts, reversal_owed_cents, reversal_refusals, reversal_lease_until, reversal_attempts_since_target'
+  'id, order_id, owner_kind, owner_profile_id, owner_space_id, stripe_account_id, amount_cents, platform_fee_cents, processing_fee_cents, currency, status, stripe_transfer_id, reversed_cents, attempts, last_error, refund_reversal_cents, reversal_attempts, reversal_owed_cents, reversal_refusals, reversal_lease_until, reversal_attempts_since_target'
 
 /** A free lease: the column's default. */
 export const REVERSAL_LEASE_FREE = '1970-01-01T00:00:00.000Z'
@@ -170,6 +174,7 @@ function toTransfer(r: TransferRow): OrderTransfer {
     stripeAccountId: r.stripe_account_id,
     amountCents: r.amount_cents,
     platformFeeCents: r.platform_fee_cents,
+    processingFeeCents: r.processing_fee_cents ?? 0,
     currency: r.currency,
     status: r.status,
     stripeTransferId: r.stripe_transfer_id,
@@ -208,6 +213,8 @@ export interface TransferShare {
   stripeAccountId: string
   amountCents: number
   platformFeeCents: number
+  /** The card fee this share bears (LIVE-2421), taken from the transfer like the platform fee. */
+  processingFeeCents: number
 }
 
 /** Why an order owes no transfer rows. `destination` is the normal answer for every order that is
@@ -221,7 +228,11 @@ const str = (v: unknown): string | null => (typeof v === 'string' && v.length > 
  * The transfers a split order owes, one per seller share. PURE.
  *
  * INVARIANT: the shares' gross sums to the order amount and their fees sum to the order's platform
- * fee, so the planned amounts plus the platform fee equal what the buyer paid. An order whose shares
+ * fee, so the planned amounts plus the platform fee plus the card fee equal what the buyer paid.
+ * THE CARD FEE (LIVE-2421): a share written once the pass-through was on carries
+ * `processing_fee_cents`, its part of the card fee Stripe billed the platform for the charge, and its
+ * transfer is that much less. A share written before carries none and reads 0, so an older order
+ * plans exactly as it did. An order whose shares
  * do not add up is refused whole: a transfer is never made on arithmetic the charge does not back.
  * A share whose fee takes its whole gross owes nothing and gets no row (Stripe refuses a zero
  * transfer); its fee still counts toward the platform fee the order records.
@@ -240,8 +251,14 @@ export function planTransferShares(
     const kind = raw?.owner_kind
     const g = int(raw?.gross_cents)
     const f = int(raw?.platform_fee_cents)
+    const p = raw?.processing_fee_cents == null ? 0 : int(raw.processing_fee_cents)
     const account = str(raw?.stripe_account_id)
-    if ((kind !== 'profile' && kind !== 'space') || g == null || f == null || g <= 0 || f < 0 || f > g || !account) {
+    if (
+      (kind !== 'profile' && kind !== 'space') ||
+      g == null || f == null || p == null ||
+      g <= 0 || f < 0 || p < 0 || f + p > g ||
+      !account
+    ) {
       return { refused: 'bad_share' }
     }
     const seller: FundsFlowSeller = {
@@ -251,15 +268,16 @@ export function planTransferShares(
     }
     gross += g
     fee += f
-    if (g - f > 0) {
+    if (g - f - p > 0) {
       shares.push({
         sellerKey: sellerKey(seller),
         ownerKind: kind,
         ownerProfileId: seller.owner_profile_id,
         ownerSpaceId: seller.owner_space_id,
         stripeAccountId: account,
-        amountCents: g - f,
+        amountCents: g - f - p,
         platformFeeCents: f,
+        processingFeeCents: p,
       })
     }
   }
@@ -333,6 +351,7 @@ export async function planTransfersForOrder(orderId: string): Promise<PlanOutcom
         stripe_account_id: s.stripeAccountId,
         amount_cents: s.amountCents,
         platform_fee_cents: s.platformFeeCents,
+        processing_fee_cents: s.processingFeeCents,
         currency: order.currency,
       })),
       { onConflict: 'order_id,seller_key', ignoreDuplicates: true },

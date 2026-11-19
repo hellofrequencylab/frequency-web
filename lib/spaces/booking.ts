@@ -1622,6 +1622,16 @@ export async function createBooking(
   const space = await getSpaceById(spaceId)
   if (!space) return fail('Space not found.')
 
+  // SEC-029: a service that takes a deposit is booked ONLY through startServiceDeposit (hold, then pay)
+  // once deposits are live. Without this, posting the free confirm-only action with a paid service's id
+  // took the slot as confirmed with nothing paid. Mirrors the guest door's refusal below.
+  if (serviceTypeId) {
+    const service = await resolveService(space.id, serviceTypeId)
+    if (service?.productId && (await bookingDepositsLive(space.id))) {
+      return fail('This one takes a deposit. Use the Book button to pay and confirm your time.')
+    }
+  }
+
   const placed = await validateAndPlaceBooking({
     space,
     booker: { profileId },
