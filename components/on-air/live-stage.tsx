@@ -190,7 +190,7 @@ export function LiveStage({
 
         <div className={`sticky bottom-0 -mx-6 flex flex-col items-center gap-2 bg-canvas/80 px-6 pb-1 pt-3 backdrop-blur-md ${chrome}`}>
           {/* The one action fill: the kit's primary pill for Be Still, the move accent for Get Moving. */}
-          <Button type="button" onClick={primary.onClick} size="lg" className="w-full max-w-xs" style={mode === 'move' ? { background: 'var(--color-move)', color: 'var(--color-on-move)' } : undefined}>
+          <Button type="button" onClick={primary.onClick} size="lg" className="w-full max-w-xs" style={mode === 'move' ? { background: 'var(--color-move)', color: 'var(--color-text-on-move)' } : undefined}>
             <Icon className="h-4.5 w-4.5" aria-hidden /> {primary.label}
           </Button>
           <div className="flex w-full max-w-xs items-center justify-between gap-2">
