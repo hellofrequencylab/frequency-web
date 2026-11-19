@@ -4,6 +4,20 @@ import type { CSSProperties } from 'react'
 
 const cache = new Map<string, CSSProperties>()
 
+// Phone pictures (speed, 2026-11-19): every showcase picture under /themes-index has a half-width .sm.webp copy
+// (scripts/render/theme-showcase-small.mjs). A declaration naming one picture becomes `var(--ks-u, url(full))` plus
+// `--ks-sm: url(phone copy)`; kit-showcase.css sets --ks-u to --ks-sm under 900px, so a phone fetches only the small file and a
+// desktop only the full one. The full-size view (`/contain`) always keeps the full file.
+const PIC = /url\('(\/themes-index\/[^']+?)(?<!\.sm)\.webp'\)/g
+
+function phonePicture(style: Record<string, string>, value: string): string {
+  if (value.includes('/contain')) return value
+  const hits = [...value.matchAll(PIC)]
+  if (hits.length !== 1) return value
+  style['--ks-sm'] = `url('${hits[0][1]}.sm.webp')`
+  return value.replace(PIC, (m) => `var(--ks-u,${m})`)
+}
+
 function split(s: string): string[] {
   const out: string[] = []
   let depth = 0
@@ -43,7 +57,7 @@ export function st(css: string): CSSProperties {
     const name = decl.slice(0, i).trim()
     const value = decl.slice(i + 1).trim()
     if (!name || !value) continue
-    style[prop(name)] = value
+    style[prop(name)] = value.includes('/themes-index/') ? phonePicture(style, value) : value
   }
   cache.set(css, style)
   return style
