@@ -5,7 +5,7 @@
 // Space has no such page), and the closing call. The same function feeds the public page and the console preview, so
 // the two cannot drift (owner, 2026-11-06: the editor showed one page and the link another).
 
-import { safeUrl } from '@/lib/entity-blocks/block-content'
+import { asLinkStyle, safeUrl, type LinkStyle } from '@/lib/entity-blocks/block-content'
 
 /** The kit's site paths, as this Space's own pages (app/(main)/spaces/[slug]/(profile)): a door never leads off the Space. */
 const SPACE_PAGE: Record<string, string> = {
@@ -20,7 +20,7 @@ export interface SpaceSpotlightFacts {
   /** `https://host` on a website host, empty on the app. */
   appOrigin?: string
   /** The owner's Links block, as saved. */
-  links: { label: string; url: string }[]
+  links: { label: string; url: string; style?: LinkStyle }[]
   /** The owner's Button block, when it has a label and a safe address. */
   button: { label: string; href: string } | null
 }
@@ -32,9 +32,13 @@ export function spaceFactsFromGrid(
 ): SpaceSpotlightFacts {
   const bag = (id: string) => (content as Record<string, Record<string, unknown>> | undefined)?.[id]
   const raw = bag('links')?.items
+  // A link's own style rides along (LIVE-2454), so a theme can draw the owner's pick for the main button.
   const links = (Array.isArray(raw) ? raw : [])
-    .map((it: { label?: unknown; url?: unknown }) => ({ label: typeof it.label === 'string' ? it.label : '', url: safeUrl(it.url) }))
-    .filter((it): it is { label: string; url: string } => Boolean(it.url && it.label))
+    .map((it: { label?: unknown; url?: unknown; style?: unknown }) => {
+      const style = asLinkStyle(it.style)
+      return { label: typeof it.label === 'string' ? it.label : '', url: safeUrl(it.url), ...(style ? { style } : {}) }
+    })
+    .filter((it): it is { label: string; url: string; style?: LinkStyle } => Boolean(it.url && it.label))
   const btn = bag('button')
   const url = safeUrl(btn?.url)
   return { ...base, links, button: typeof btn?.label === 'string' && btn.label && url ? { label: btn.label, href: url } : null }

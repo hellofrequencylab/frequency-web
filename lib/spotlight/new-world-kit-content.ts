@@ -258,7 +258,7 @@ export function newWorldLinkPageContent(opts: {
 
 /** THE PROFILE LINK PAGE (a Space's Spotlight on New World, look `profile`): the design's Profile layout, the owner first.
  *  The Space's profile photo is the portrait, its header image washes the top, its tagline and About text sit under the
- *  name, the PRIMARY link (frequencylocal.com when the owner has it, else the first) is the big accent button and every
+ *  name, the PRIMARY link (the one the owner made the main button, else the first, LIVE-2454) is the big accent button and every
  *  other link is a door under it. Nothing is invented: no sample quote, price or review. */
 export function newWorldProfilePageContent(opts: {
   name: string
@@ -267,11 +267,12 @@ export function newWorldProfilePageContent(opts: {
   portrait: string | null
   cover: string | null
   accent?: string
-  links: { label: string; url: string }[]
+  links: { label: string; url: string; style?: string }[]
 }): NewWorldSpotlightContent {
   const link = newWorldLinkPageContent({ name: opts.name, tagline: opts.tagline, photo: opts.portrait, messageHref: null, links: opts.links, closing: null })
   const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, '') } catch { return '' } }
-  const primary = opts.links.find((l) => host(l.url) === 'frequencylocal.com') ?? opts.links[0] ?? null
+  // The owner picks the main button ("Make this the main button"); the first link stands in until they do (owner ruling 2026-11-19).
+  const primary = opts.links.find((l) => l.style === 'main') ?? opts.links[0] ?? null
   const rest = link.doors.filter((_, i) => opts.links[i] !== primary)
   const accent = opts.accent && opts.accent in NEW_WORLD_ACCENTS ? (opts.accent as NewWorldAccentId) : link.accent
   return {
