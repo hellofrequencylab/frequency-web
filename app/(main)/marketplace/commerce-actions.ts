@@ -50,7 +50,7 @@ export async function createMakerProductAction(formData: FormData): Promise<void
   // 🔴 SIGNED IN IS THE WHOLE GATE TO LIST. A personal listing stays open on every tier, but since
   // ADR-1709 (LIVE-753) it is an INQUIRY: personal selling is off, so canTakePayments('profile') is
   // false and the buyer messages the maker instead of checking out (lib/commerce/checkout.ts). Taking
-  // money for it is what a Business Space is for; tips stay open at 0%. A `redirect('/upgrade')` used
+  // money for it is what a Business Space is for; tips come with Crew (ADR-1978). A `redirect('/upgrade')` used
   // to stand here and must not come back: the listing is never lost behind a wall, and the sell page
   // offers the upgrade moment beside the price instead. Locked by ./free-seller.test.tsx.
   const profileId = profile.id

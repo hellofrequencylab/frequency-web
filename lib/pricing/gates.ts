@@ -208,7 +208,7 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // donations (lib/billing/space-donation-checkout.ts), shop checkout (lib/commerce/checkout.ts) and
   // booking deposits (lib/spaces/booking.ts), all through lib/pricing/payments-gate.ts, which reads
   // this floor and NEVER the grace window (like the paid-Journey gate). Personal selling is off on
-  // every personal tier, and tips stay open at 0% everywhere (lib/billing/tips.ts never asks).
+  // every personal tier; tips come with Crew (lib/pricing/paying-accounts.ts, ADR-1978).
   space_payments: { axis: 'plan', minEntitlement: 'business', enabled: true },
   // 🔴 `space_full_website` USED TO SIT HERE and is deliberately gone (HYG-079). It was the one row on
   // this map that was correct rather than owed, and that is exactly why it did not belong: it carried
