@@ -47,6 +47,8 @@ export async function getCourseContext(plan: { id: string; space_id: string | nu
         .select('slug, title, starts_at, ends_at, time_zone')
         .eq('journey_id', plan.id)
         .eq('status', 'published')
+        // A public page, its JSON-LD and the Week 1 email: only a session anyone can open (the .ics agrees).
+        .eq('visibility', 'public')
         .eq('is_cancelled', false)
         .gte('starts_at', today)
         .order('starts_at', { ascending: true })

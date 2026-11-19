@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2402",
+  "title": "Every help guide opens the product, the posting guide calls a Space wall Community, and llms.txt never doubles a full stop",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/help/site-links.ts",
+    "ref": "Owner 2026-11-19: \"Do a super sweep 5000 of the site... Make sure everything is complete, fully evolved and validated.\" Found by the end to end sweep."
+  },
+  "detail": "Dispatches was the one published guide of 88 with no door into the product (featureKeys broadcast had no entry), the posting guide called a Space's Community tab 'Discussion' and 'that Space's Circle' (both retired in docs/NAMING.md), and /llms.txt joined each /for door's hero line, which already ends in a full stop, with another ('out of the way.. For coaches'). DONE 2026-11-19: Dispatches opens Around You, the guide names the Community tab, and the llms.txt line trims a closing stop before it joins.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2402.mjs",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

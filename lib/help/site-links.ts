@@ -29,6 +29,7 @@ const LINKS: Record<string, HelpSiteLink[]> = {
   events: [{ href: '/events', label: 'Events' }],
   marketplace: [{ href: '/market', label: 'Market' }],
   feed: [FEED],
+  broadcast: [{ href: '/nearby', label: 'Around You' }],
   posts: [FEED],
   practices: [{ href: '/practices', label: 'Practices' }],
   messages: [{ href: '/messages', label: 'Messages' }],

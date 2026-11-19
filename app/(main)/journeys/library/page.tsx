@@ -141,7 +141,7 @@ export default async function JourneyLibraryPage({ searchParams }: { searchParam
                     <p className="eyebrow text-primary-strong">{[resume.percent > 0 ? 'Continue' : 'Start here', placeLine(resume)].filter(Boolean).join(' · ')}</p>
                     <h2 className="mt-1 text-card-title font-bold text-text">{resume.title}</h2>
                     <p className="mt-1 text-body-sm text-muted">
-                      {resume.nextLesson ? <NextStep title={resume.nextLesson.title} /> : `Your next ${resume.unit} opens soon.`}
+                      {resume.nextLesson ? <NextStep title={resume.nextLesson.title} /> : resume.ongoing && resume.complete ? `Every ${resume.unit} is done. It repeats each year.` : `Your next ${resume.unit} opens soon.`}
                     </p>
                     <div className="mt-3 flex items-center gap-2 text-meta text-muted">
                       <PhaseSegments j={resume} />

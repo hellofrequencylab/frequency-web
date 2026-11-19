@@ -60,6 +60,7 @@ async function nextRuns(planIds: string[]): Promise<Map<string, string>> {
       .select('journey_id, starts_at')
       .in('journey_id', planIds)
       .eq('status', 'published')
+      .eq('visibility', 'public')
       .eq('is_cancelled', false)
       .gte('starts_at', new Date().toISOString().slice(0, 10))
       .order('starts_at', { ascending: true })
