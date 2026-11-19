@@ -9,7 +9,7 @@ import { SHOW_STEP, type DirectoryParams, type DirectorySections } from '@/lib/s
 import { FqFacetMenu, FqFindField, FqClearLink, hrefWith, type Params } from '@/components/frequency/members/shared/kit-tools'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import { SystemNotice } from '@/components/frequency/members/shared/system-notice'
-import { fqPlaceholderArt } from '@/lib/frequency/placeholder-art'
+import { fqPlaceholderCardArt } from '@/lib/frequency/placeholder-art'
 import { FounderMark } from '@/components/frequency/members/space/founder-mark'
 import { BoostedBadge } from '@/components/crew/boosted-badge'
 
@@ -36,10 +36,13 @@ function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`
 }
 
+// The card photo is an <img loading="lazy"> rather than a CSS background (PERF-017): a background image is
+// fetched for every card on the page, so a phone pulled all twenty covers before it could settle, while a
+// lazy image waits until its card nears the screen. A Space with no cover gets the 640px brand photo.
 // `inFounding`: the tile sits under the Founding Businesses heading, which already says it, so the mark is not
 // repeated on every card (owner 2026-10-20: it read as loud).
 function SpaceTile({ s, inFounding = false }: { s: NetworkedSpace; inFounding?: boolean }) {
-  const art = s.coverUrl || fqPlaceholderArt(s.slug)
+  const art = s.coverUrl || fqPlaceholderCardArt(s.slug)
   const stats = [
     s.memberCount ? plural(s.memberCount, 'member', 'members') : null,
     s.upcomingEventCount ? plural(s.upcomingEventCount, 'event', 'events') : null,
@@ -49,7 +52,9 @@ function SpaceTile({ s, inFounding = false }: { s: NetworkedSpace; inFounding?: 
     .join(' · ')
   return (
     <Link className="card fqm-card" href={`/spaces/${s.slug}`}>
-      <span className="ph" style={{ backgroundImage: `url('${art}')` }}>
+      <span className="ph">
+        {/* eslint-disable-next-line @next/next/no-img-element -- stored photos are shrunk at upload, never through the paid optimizer */}
+        <img className="fqm-ph-img" src={art} alt="" loading="lazy" decoding="async" />
         <span className="tag glass fqm-corner">{s.kindLabel}</span>
         {s.isFoundingBusiness && !inFounding && (
           <span className="fqm-corner-b">

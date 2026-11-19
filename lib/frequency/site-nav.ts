@@ -35,7 +35,8 @@ export const ROUTES = {
   privacy: '/privacy',
   terms: '/terms',
   /** Build a Space before signing in (the marketing funnel's second step). Linked from the Theme Kit pages, /for and /pricing. */
-  createSpace: '/create-a-space',
+  // The business builder (LIVE-2471). Becomes /create-a-space again when the Create a Space page lands there.
+  createSpace: '/launch-your-business',
   /** The accessibility statement, a page of its own (app/accessibility). */
   accessibility: '/accessibility' as string | null,
   /** "What we believe" in the footer. */
