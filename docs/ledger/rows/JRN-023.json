@@ -1,0 +1,20 @@
+{
+  "id": "JRN-023",
+  "title": "The cover focus picker moves the course home's cover",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/members/journey/journey-course-body.tsx",
+    "ref": "Owner 2026-11-19, on /journeys/the-business-of-community-101/learn with the Manage panel open: \"Focus picker isn't working\"."
+  },
+  "detail": "The Manage panel's Cover image picker saves journey_plans.cover_focus, and the sales page (/journeys/<slug>) positions its cover with it. The course home drew the same photo with no position, so it always cropped to the centre: an author dragging the focus point on /journeys/<slug>/learn saw the preview move and the page stay still. The course home now passes the saved focal point to its cover band.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-023.mjs",
+    "note": "Fails on main: the course home never reads cover_focus."
+  },
+  "wave": "W7",
+  "closed": "2026-11-19"
+}
