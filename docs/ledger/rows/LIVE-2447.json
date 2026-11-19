@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2447",
+  "title": "Every sale email says which fee rule applied: the one-time finder's fee on a buyer Frequency introduced, or none",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/billing/ticket-sale-notify.ts",
+    "ref": "ADR-1978 item 7 (\"Every sale email says which rule applied\"), owner ruling 2026-11-18 (project thread: Rethink our take rates)."
+  },
+  "detail": "A host read \"Frequency's fee on this sale was $4\" on a ticket and \"Network fee: $1.20\" on a shop sale, with no reason, and a donation notice showed no fee at all. Under ADR-1978 a fee is charged on exactly one kind of sale, the first purchase from a customer Frequency introduced, so the fee itself says which rule applied. DONE 2026-11-19: the ticket sale email says \"Frequency introduced this buyer, so this sale carried the one-time finder's fee of $X. You will not pay it again for them.\" or \"Frequency took nothing on this sale: no finder's fee applied.\"; the split shop sale notice labels the row \"Finder's fee, once (Frequency introduced this buyer)\"; the donation notice shows the same row when the gift carried one. Known limit: the single-seller shop notice and the membership join notice show no fee rows at all, as before.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2447.mjs",
+    "note": "Passes while the three notices name the rule. Fails on main at a5684bf86."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

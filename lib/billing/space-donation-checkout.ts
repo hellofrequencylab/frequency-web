@@ -337,6 +337,7 @@ export async function recordSpaceDonationFromSession(session: Stripe.Checkout.Se
       askId: row.ask_id,
       donorProfileId: row.donor_profile_id,
       amountCents: row.amount_cents ?? 0,
+      platformFeeCents: row.platform_fee_cents ?? 0,
       currency: row.currency,
       message: row.message,
       // Giving needs no account, so for a signed-out donor this is the only address there is.

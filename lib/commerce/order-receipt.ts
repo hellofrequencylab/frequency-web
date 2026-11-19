@@ -513,7 +513,9 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
           lines: [
             { label: 'Order', value: summary ?? '' },
             { label: 'Your sale', value: gross ?? '' },
-            { label: 'Network fee', value: receiptAmount(t.platformFeeCents, t.currency) ?? '' },
+            // WHICH RULE APPLIED (ADR-1978 item 7): a fee here is the one-time finder's fee on a buyer
+            // Frequency introduced; a zero prints no row, because the buyer is the seller's own.
+            { label: 'Finder’s fee, once (Frequency introduced this buyer)', value: receiptAmount(t.platformFeeCents, t.currency) ?? '' },
             { label: 'You receive', value: receiptAmount(t.amountCents, t.currency) ?? '' },
             { label: 'Buyer', value: buyerName },
             { label: 'Date', value: when },
