@@ -3,6 +3,7 @@ import { FqIcon } from '@/components/frequency/icon'
 import { MembersBody, SerifTail } from '@/components/frequency/members/shared/members-body'
 import { MemberHead } from '@/components/frequency/members/shared/member-head'
 import type { JourneyTree, Lesson } from '@/lib/journeys/tree'
+import { phaseHeading, splitTitle } from '@/lib/journeys/lesson-markdown'
 import type { JourneyFriend } from '@/lib/journeys/friends-on-journey'
 import { OnThisJourneyPanel, MoreJourneysPanel, peopleLine, type MoreJourney } from './journey-side'
 
@@ -41,6 +42,14 @@ function minutesLine(lesson: Lesson): string | null {
   return lesson.estMinutes && lesson.estMinutes > 0 ? `${lesson.estMinutes} min` : null
 }
 
+/** A run of minutes as a reader says it: "45 min", "about 3 hours". */
+function timeLine(minutes: number): string | null {
+  if (minutes <= 0) return null
+  if (minutes < 90) return `${minutes} min`
+  const hours = Math.round(minutes / 30) / 2
+  return `about ${hours} ${hours === 1 ? 'hour' : 'hours'}`
+}
+
 export function JourneyBody({
   plan,
   tree,
@@ -54,6 +63,7 @@ export function JourneyBody({
   details,
   more,
   friends = [],
+  unit = 'week',
 }: {
   plan: JourneyBodyPlan
   /** The lesson tree, with the viewer's completion when they are on it. */
@@ -77,6 +87,8 @@ export function JourneyBody({
   more: MoreJourney[]
   /** The viewer's friends on this Journey (faces in the side panel). */
   friends?: JourneyFriend[]
+  /** What one phase is called on this Journey's cadence. */
+  unit?: 'week' | 'month'
 }) {
   const lessons = tree.phases.flatMap((p) => p.modules.flatMap((m) => m.lessons))
   const numberOf = new Map(lessons.map((l, i) => [l.id, i + 1]))
@@ -88,12 +100,16 @@ export function JourneyBody({
   // A Journey with no lessons yet says so: never "0 phases · 0 lessons", never a Start that opens
   // an empty player.
   const empty = lessons.length === 0
+  const totalMinutes = lessons.reduce((n, l) => n + (l.estMinutes ?? 0), 0)
+  const nextTitle = splitTitle(next?.title || `Step ${nextNumber ?? 1}`)
+  const currentIndex = tree.phases.findIndex((p) => !p.complete)
   const metaParts = empty
     ? ['No lessons yet']
     : [
-        `${tree.phases.length} ${tree.phases.length === 1 ? 'phase' : 'phases'}`,
-        `${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'}`,
-      ]
+        `${tree.phases.length} ${unit}${tree.phases.length === 1 ? '' : 's'}`,
+        `${lessons.length} ${lessons.length === 1 ? 'step' : 'steps'}`,
+        timeLine(totalMinutes),
+      ].filter((x): x is string => !!x)
   if (tracked && next && nextNumber) metaParts.push(`Step ${nextNumber} next`)
   metaParts.push(peopleLine(plan.adoptCount))
 
@@ -145,19 +161,26 @@ export function JourneyBody({
 
       <section className="panel mc-hero">
         <div className="fq-aura" aria-hidden />
-        <div
-          className="mc-ring"
-          style={{ '--p': percent } as React.CSSProperties}
-          role="img"
-          aria-label={`${percent}% complete`}
-        >
-          <span>{percent}%</span>
-        </div>
+        {/* The ring is the member's own progress, so a visitor (nothing tracked) sees none. */}
+        {tracked && (
+          <div
+            className="mc-ring"
+            style={{ '--p': percent } as React.CSSProperties}
+            role="img"
+            aria-label={`${percent}% complete`}
+          >
+            <span>{percent}%</span>
+          </div>
+        )}
         <div className="stack grow mc-gap-10">
-          <span className="k">{empty ? 'Still being written' : tree.complete && tracked ? 'Every step done' : 'Up next'}</span>
-          <span className="h2">
-            {next ? next.title || `Step ${nextNumber ?? 1}` : plan.title}
+          <span className="k">
+            {empty
+              ? 'Still being written'
+              : tree.complete && tracked
+                ? 'Every step done'
+                : [tracked ? 'Up next' : 'It starts with', next ? nextTitle.kind : null].filter(Boolean).join(' · ')}
           </span>
+          <span className="h2">{next ? nextTitle.name : plan.title}</span>
           {plan.summary ? (
             <span className="why">{plan.summary}</span>
           ) : empty ? (
@@ -167,6 +190,15 @@ export function JourneyBody({
             {primary}
             {next && minutesLine(next) && <span className="t2">{minutesLine(next)}</span>}
           </div>
+          {tracked && !empty && (
+            <span className="mc-segs mc-hero-segs" role="img" aria-label={`${tree.doneRequired} of ${tree.totalRequired} steps done`}>
+              {tree.phases.map((p, i) => (
+                <span key={p.id} className={i === currentIndex ? 'mc-seg on' : 'mc-seg'}>
+                  <i style={{ width: `${p.percent}%` }} />
+                </span>
+              ))}
+            </span>
+          )}
         </div>
       </section>
 
@@ -177,52 +209,66 @@ export function JourneyBody({
               <p className="why">No lessons yet. The path appears here as the author writes it.</p>
             </div>
           )}
-          {tree.phases.map((phase, i) => {
-            const phaseLessons = phase.modules.flatMap((m) => m.lessons)
-            return (
-              <div key={phase.id} id={i === 0 ? 'the-path' : undefined}>
-                <div className={i === 0 ? 'sec-h' : 'sec-h sec'}>
-                  <span className="h2">{phase.title?.trim() || `Phase ${i + 1}`}</span>
-                  <span className="meta">
-                    {phaseLessons.length === 0
-                      ? 'No lessons yet'
-                      : tracked && phase.totalRequired > 0
-                      ? `${phase.doneRequired} of ${phase.totalRequired} done`
-                      : `${phaseLessons.length} ${phaseLessons.length === 1 ? 'lesson' : 'lessons'}`}
-                  </span>
-                </div>
-                <div className="list">
-                  {phaseLessons.map((lesson) => {
-                    const done = tracked && lesson.done
-                    const isNext = !!next && lesson.id === next.id && tracked
-                    const n = numberOf.get(lesson.id)
-                    // The entry's own title, as its author wrote it (Overview, Lesson, Homework...).
-                    const label = lesson.title || `Step ${n}`
-                    const sub = [minutesLine(lesson), done ? 'Done' : null, lesson.required ? null : 'Optional']
-                      .filter(Boolean)
-                      .join(' · ')
-                    return (
-                      <div key={lesson.id}>
-                        <span className={done ? 'ic mc-done' : isNext ? 'ic mc-now' : 'ic'}>
-                          <FqIcon name={done ? 'checkin' : 'breath'} />
-                        </span>
-                        <span className="grow">
-                          <span className={done ? 't1 mc-block mc-faint' : 't1 mc-block'}>{label}</span>
-                          {sub && <span className="t2">{sub}</span>}
-                        </span>
-                        {isNext && inside && (
-                          <Link className="btn sm pa" href={learnHref}>
-                            <FqIcon name="breath" />
-                            Start
-                          </Link>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
+          {/* Each week is one card, as on the course home: its number (a check once done), what it
+              holds, and its steps by name with their kind and time beneath. */}
+          <div className="mc-weeks" id="the-path">
+            {tree.phases.map((phase, i) => {
+              const phaseLessons = phase.modules.flatMap((m) => m.lessons)
+              const minutes = phaseLessons.reduce((n, l) => n + (l.estMinutes ?? 0), 0)
+              const done = tracked && phase.complete
+              const isCurrent = tracked && !phase.complete && currentIndex === i
+              return (
+                <section key={phase.id} className={isCurrent ? 'panel mc-wk mc-wk-now' : 'panel mc-wk'}>
+                  <div className="mc-wk-h">
+                    <span className={done ? 'mc-node lg done' : isCurrent ? 'mc-node lg now' : 'mc-node lg'} aria-hidden>
+                      {done ? <FqIcon name="check" /> : i + 1}
+                    </span>
+                    <span className="grow stack mc-gap-6">
+                      <span className="h2">{phaseHeading(phase.title, i, unit)}</span>
+                      <span className="t2">
+                        {phaseLessons.length === 0
+                          ? 'No lessons yet'
+                          : [`${phaseLessons.length} step${phaseLessons.length === 1 ? '' : 's'}`, timeLine(minutes)].filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
+                    {tracked && phase.totalRequired > 0 && (
+                      <span className="meta">{`${phase.doneRequired} of ${phase.totalRequired} done`}</span>
+                    )}
+                  </div>
+                  <div className="list">
+                    {phaseLessons.map((lesson) => {
+                      const lessonDone = tracked && lesson.done
+                      const isNext = !!next && lesson.id === next.id && tracked
+                      const n = numberOf.get(lesson.id)
+                      // The entry's own title, as its author wrote it: its kind (Overview, Lesson,
+                      // Homework) moves under its name.
+                      const t = splitTitle(lesson.title || `Step ${n}`)
+                      const sub = [t.kind, minutesLine(lesson), lessonDone ? 'Done' : null, lesson.required ? null : 'Optional']
+                        .filter(Boolean)
+                        .join(' · ')
+                      return (
+                        <div key={lesson.id}>
+                          <span className={lessonDone ? 'mc-node done' : isNext ? 'mc-node now' : 'mc-node'} aria-hidden>
+                            {lessonDone ? <FqIcon name="check" /> : n}
+                          </span>
+                          <span className="grow">
+                            <span className={lessonDone ? 't1 mc-block mc-faint' : 't1 mc-block'}>{t.name}</span>
+                            {sub && <span className="t2">{sub}</span>}
+                          </span>
+                          {isNext && inside && (
+                            <Link className="btn sm pa" href={learnHref}>
+                              <FqIcon name="breath" />
+                              Start
+                            </Link>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
 
           {details && <div className="sec mc-stack-dawn">{details}</div>}
         </div>

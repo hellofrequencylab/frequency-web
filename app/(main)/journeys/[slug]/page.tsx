@@ -10,6 +10,7 @@ import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor, listJourneyCoHostSpaces, getCompletedLessonIds, listPublicJourneys } from '@/lib/journey-plans'
 import { listJourneyGuides } from '@/lib/journeys/guides'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
+import { cadenceUnit } from '@/lib/journeys/schedule'
 import { JourneyBody } from '@/components/frequency/members/journey/journey-body'
 import { listFriendsOnJourney } from '@/lib/journeys/friends-on-journey'
 import { buildJourneyTree } from '@/lib/journeys/tree'
@@ -276,6 +277,7 @@ export default async function JourneyPlanPage({
         <JourneyBody
           plan={{ slug: plan.slug, title: plan.title, summary: plan.summary, adoptCount: plan.adopt_count, coverImage: plan.cover_image, coverFocus: plan.cover_focus, overlayStyle: plan.header_overlay_style, overlayColor: plan.header_overlay_color, logoImage: plan.logo_image }}
           tree={tree}
+          unit={cadenceUnit(plan.drip_interval_days ?? 7)}
           tracked={docked}
           inside={adopted || isAuthor}
           offerLabel={offer?.priceLabel ?? null}
