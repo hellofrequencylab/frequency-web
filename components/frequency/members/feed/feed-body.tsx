@@ -124,10 +124,10 @@ export async function FrequencyFeed(p: FrequencyFeedProps) {
         <FqFindField action="/search" value={undefined} placeholder="Search the Feed" keep={{ tab: 'posts' }} />
       </div>
 
-      {/* Get started leads the right rail (README §3.1). Below 680px the rails are hidden, so the
-          Feed carries the same box inline there and nowhere else (.fqm-gs-inline). It sits above
-          Standing for the rail's own order (Get started, then Stats and streaks): on a phone,
-          Standing IS the stats box. The rail's other panels follow Up next (FrequencyPhonePanels). */}
+      {/* Get started leads the right rail (README §3.1). The Feed's inline copy (.fqm-gs-inline) is
+          hidden by members-shell.css at every width: the owner ruled no checklist in the Feed on a
+          phone (2026-11-19). It still renders so the rail and the Feed read the one list; the
+          rail's other panels follow Up next (FrequencyPhonePanels). */}
       <Suspense fallback={null}>
         <GetStartedInline profileId={p.profileId} steps={p.onboarding} />
       </Suspense>
