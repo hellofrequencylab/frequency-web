@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { getSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { readTagline } from '@/lib/spaces/tagline'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
-import { OG_SITE, SITE_NAME } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { profileCanonicalSite, resolveProfileSiteCanonical } from '@/lib/sites/profile-canonical'
 
@@ -56,6 +56,39 @@ interface SpaceProfileTabMeta {
   describe?: (brandName: string) => string
   /** Set for a tab that must never be indexed (a staff-only preview). */
   noindex?: boolean
+  /** Set by a tab that read its own content and found nothing to show a visitor (SCAN-1271). The
+   *  page still renders its honest empty state; it just stops asking to be indexed. */
+  empty?: boolean
+}
+
+// ── EMPTY TABS ARE NOT INDEXED (SCAN-1271) ──────────────────────────────────────────────────────
+//
+// The sitemap advertises a Space tab only when the Space actually has it (LIVE-184,
+// listNetworkedSpaceProfileTabs), but the tab pages themselves render an honest empty state rather
+// than a 404 and said `index, follow` either way. Measured on production 2026-11-19: 256 of 2,030
+// indexable pages were Space tabs the sitemap had declined to list, most of them a heading, the
+// shared chrome and "nothing here yet". That is thin content at scale under the Space's own name.
+//
+// So a tab the sitemap would not advertise says `noindex, follow`: one rule, read from the same
+// reader, and the two cannot disagree. The tab comes back by itself the day it has content.
+// Only the segments that reader gates per Space are judged; anything else keeps its own answer.
+const SITEMAP_GATED_SEGMENTS: ReadonlySet<string> = new Set([
+  'book', 'calendar', 'community', 'circles', 'collaborators', 'reviews', 'memberships', 'contact',
+])
+
+/** Whether the sitemap would advertise this tab: true or false when it could tell, null when it
+ *  could not (the read failed, or returned nothing at all), and null keeps the tab indexable. */
+async function tabIsAdvertised(slug: string, segment: string): Promise<boolean | null> {
+  try {
+    // Imported here, not at the top: the reader pulls the whole discovery module, which only this
+    // branch needs, and a failed import must cost the rule and nothing else.
+    const { listNetworkedSpaceProfileTabs } = await import('@/lib/spaces/discovery')
+    const tabs = await listNetworkedSpaceProfileTabs()
+    if (tabs.length === 0) return null
+    return tabs.some((t) => t.slug === slug && t.segment === segment)
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -103,9 +136,14 @@ export async function spaceProfileMetadata(
   const twinDescription = siteCanonical && !tab?.describe && tagline ? snippet(tagline) : null
   const pageDescription = twinDescription ?? description
 
+  // A tab has no share card of its own: the per-Space card is a file under the profile ROOT's
+  // segment, and declaring `openGraph` here drops the site card the root layout would have lent
+  // (SCAN-798). Measured 2026-11-19: 331 tab pages shipped no og:image at all. The root keeps
+  // `images` unset so its own card still attaches (LIVE-141).
+  const tabImages = tab ? { images: ROOT_OG_IMAGES } : {}
   const openGraph = siteCanonical
-    ? { ...OG_SITE, siteName: brandName, title, description: pageDescription, url: canonical, type: 'profile' as const }
-    : { ...OG_SITE, title: ogTitle, description, url: canonical, type: 'profile' as const }
+    ? { ...OG_SITE, siteName: brandName, title, description: pageDescription, url: canonical, type: 'profile' as const, ...tabImages }
+    : { ...OG_SITE, title: ogTitle, description, url: canonical, type: 'profile' as const, ...tabImages }
 
   // PRIVATE: never index or follow, and no OG card (unchanged contract, no leak). The canonical
   // now rides along because it names the URL the crawler already asked for, and because leaving it
@@ -126,11 +164,20 @@ export async function spaceProfileMetadata(
     }
   }
 
+  // SCAN-1271: an empty tab keeps its canonical and its card, and asks not to be indexed. `follow`
+  // stays on so a crawler still walks through it to the rest of the Space. The networked, active,
+  // non-root guard is the reader's own boundary: a Space outside it is not in the list for a
+  // different reason, and is left alone.
+  const judged =
+    !!tab && !siteCanonical && space.type !== 'root' && space.networkConnected && SITEMAP_GATED_SEGMENTS.has(tab.segment)
+  const thin = tab?.empty === true || (judged && (await tabIsAdvertised(space.slug, tab.segment)) === false)
+
   return {
     title,
     description: pageDescription,
     alternates: { canonical },
+    ...(thin ? { robots: { index: false, follow: true } } : {}),
     openGraph,
-    twitter: { card: 'summary_large_image', title: openGraph.title, description: pageDescription },
+    twitter: { card: 'summary_large_image', title: openGraph.title, description: pageDescription, ...tabImages },
   }
 }
