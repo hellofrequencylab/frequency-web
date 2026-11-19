@@ -27,6 +27,9 @@ export const LIFECYCLE_EMAILS: readonly LifecycleEmail[] = [
   { kind: 'made_it', label: 'Did you make it?', trigger: 'The day after a gathering', audience: 'guest', rank: 2, file: 'lib/events/dispatch.ts' },
   { kind: 'this_week', label: 'This week', trigger: 'Weekly', audience: 'member', rank: 3, file: 'lib/this-week.ts' },
   { kind: 'weekly_digest', label: 'Weekly digest', trigger: 'Weekly', audience: 'member', rank: 3, file: 'app/api/cron/weekly-digest/route.ts' },
+  // EMAIL-084 (owner, 2026-11-19): every Email Studio campaign or newsletter (one-shot and quiet-member) counts here,
+  // and at most one may reach a person per rolling 7 days (MARKETING_KINDS in cap.ts).
+  { kind: 'campaign', label: 'Email Studio campaign or newsletter', trigger: 'An approver sends or schedules it', audience: 'member', rank: 3, file: 'lib/email-studio/send.ts' },
 ]
 
 const BY_KIND: ReadonlyMap<string, LifecycleEmail> = new Map(LIFECYCLE_EMAILS.map((e) => [e.kind, e]))

@@ -28,3 +28,23 @@ describe('capDecision', () => {
     expect(capDecision(now, 'mystery', [{ kind: 'x', sentAt: 'nope' }, { kind: 'x', sentAt: ago(2) }]).allowed).toBe(false)
   })
 })
+
+// EMAIL-084 (Daniel, 2026-11-19): one marketing email (an Email Studio campaign or newsletter) per person per 7 days.
+describe('capDecision for marketing (EMAIL-084)', () => {
+  it('allows a first campaign after two days of quiet', () => {
+    expect(capDecision(now, 'campaign', [{ kind: 'nurture_step', sentAt: ago(48) }])).toEqual({ allowed: true })
+  })
+  it('holds a second campaign inside 7 days and says when', () => {
+    const d = capDecision(now, 'campaign', [{ kind: 'campaign', sentAt: ago(72) }])
+    expect(d).toEqual({ allowed: false, why: 'weekly_marketing', retryAfter: new Date(now.getTime() + (168 - 72) * 3_600_000).toISOString() })
+  })
+  it('allows the next campaign once 7 days have passed', () => {
+    expect(capDecision(now, 'campaign', [{ kind: 'campaign', sentAt: ago(169) }])).toEqual({ allowed: true })
+  })
+  it('a campaign does not hold a lifecycle email beyond the usual daily rule', () => {
+    expect(capDecision(now, 'nurture_step', [{ kind: 'campaign', sentAt: ago(30) }])).toEqual({ allowed: true })
+  })
+  it('a campaign still obeys the daily cap after any lifecycle email', () => {
+    expect(capDecision(now, 'campaign', [{ kind: 'nurture_step', sentAt: ago(2) }])).toMatchObject({ allowed: false, why: 'daily' })
+  })
+})
