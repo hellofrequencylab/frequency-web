@@ -15,8 +15,9 @@ import { TierChip } from '@/components/pricing/tier-chip'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
+import { ReportLink } from '@/components/report-link'
 import { hasBlocked, isBlockedBetween } from '@/lib/blocking'
-import { MessageSquare, Zap, Users, Trophy, Star, UserCog } from 'lucide-react'
+import { MessageSquare, Zap, Users, Trophy, Star, UserCog, Flag } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge, FoundingBadge } from '@/lib/community-roles'
 import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-capabilities'
@@ -390,6 +391,15 @@ export default async function ProfilePage({
   const secondaryControls = user && hasSecondary ? (
     <span className="flex items-center gap-3 max-sm:w-full max-sm:justify-end">
       {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} variant="link" />}
+      {/* Report this member (LIVE-2389): the post menu's dialog and action, worn as the Block link's twin. */}
+      {!isOwner && (
+        <ReportLink
+          targetType="member"
+          targetId={profileId}
+          icon={<Flag className="w-3 h-3" />}
+          className="inline-flex items-center gap-1 text-meta font-medium text-subtle transition-colors hover:text-text hover:underline"
+        />
+      )}
       {/* Janitor full control: become this member (session swap). The server action
           re-checks the real janitor web_role before swapping. */}
       {isJanitorViewer && (

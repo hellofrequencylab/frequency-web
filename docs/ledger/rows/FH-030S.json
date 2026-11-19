@@ -4,15 +4,16 @@
   "lane": "program",
   "priority": "P2",
   "size": "M",
-  "status": "open",
-  "wave": "W7",
+  "status": "done",
   "source": {
     "file": "docs/hunts/README.md",
     "ref": "Split from FH-030 (2026-11-16): the pure count rules, validation, evaluation and the read path shipped dark; authoring and live closure state move here."
   },
-  "detail": "Requires FH-030, FH-029. The engine (lib/hunts/graph/count-rules.ts) evaluates N-of-M groups, venue buckets, equivalent placements and regional chapters, but nothing can author them: publishRows in lib/hunts/draft.ts writes ALL groups only and no screen writes hunt_mission_placements.venue_space_id or hunt_versions.policy.chapters. Build the authoring surface through a lib/studio entity (a threshold per group, a venue per placement, a substitute placement, chapters with an on and off control), run validateGraph on the result before publish and before a placement binding is added to a live version, and pass live closures (a revoked placement, a withdrawn or suspended partner Space) as closed placements into that publish guard and into the player evaluation in lib/hunts/run-store.ts. Word the new blockers and a closed stop for the player per docs/NAMING.md. Done when: a resident-built Passport with a 3 of 5 threshold publishes, a planned closure that breaks a chapter is refused before it goes live, and a player sees a closed stop as closed. Owner role: Game systems. Hunts switches stay OFF.",
+  "detail": "Requires FH-030, FH-029. The engine (lib/hunts/graph/count-rules.ts) evaluates N-of-M groups, venue buckets, equivalent placements and regional chapters, but nothing can author them: publishRows in lib/hunts/draft.ts writes ALL groups only and no screen writes hunt_mission_placements.venue_space_id or hunt_versions.policy.chapters. Build the authoring surface through a lib/studio entity (a threshold per group, a venue per placement, a substitute placement, chapters with an on and off control), run validateGraph on the result before publish and before a placement binding is added to a live version, and pass live closures (a revoked placement, a withdrawn or suspended partner Space) as closed placements into that publish guard and into the player evaluation in lib/hunts/run-store.ts. Word the new blockers and a closed stop for the player per docs/NAMING.md. Done when: a resident-built Passport with a 3 of 5 threshold publishes, a planned closure that breaks a chapter is refused before it goes live, and a player sees a closed stop as closed. Owner role: Game systems. Hunts switches stay OFF.\n\n2026-11-18: code half built dark (HUNTS_* stay off). The Trail editor's Shape step (lib/studio HUNT manifest: finishCount, regions repeat; components/hunts/trail-shape.tsx) authors a Passport (any N of M stops, published as a count finish group with min_count) and regions (policy.chapters, on/off). Venue per stop is FH-020Y's TrailDraft.venues. validateGraph runs on the venue-aware route before publish, and again with today's closures (lib/hunts/closures.ts). Ending a live partner the live route needs is refused before it goes live (partner-store revokePartner: breaks_route / route_unchecked). The player page reads live closures (run-store loadPublishedTrail liveClosures: revoked placements, partners not in force) and shows a closed stop as closed. No SQL. Not built: a substitute placement (a second code at another venue for one stop: the FH-042S stand-in pair covers the player side), a guard on adding a binding to a live version (no code path adds one; bindings are written only by publish), and a Space-run Passport needs per-stop partner venues because every stop otherwise shares the Space's venue and counts once. Pilot acceptance (a real 3 of 5 publish, a refused closure, a player seeing a closed stop) not run.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"node:fs\");const d=fs.readFileSync(\"lib/hunts/draft.ts\",\"utf8\");const r=fs.readFileSync(\"lib/hunts/run-store.ts\",\"utf8\");process.exit(/min_count/.test(d)&&/closed: /.test(r)?0:1)'"
-  }
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
 }

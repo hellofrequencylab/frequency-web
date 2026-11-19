@@ -27,6 +27,8 @@ const ORGANISER_SAID: Record<OrganiserRefusal | 'invited' | 'ended', string> = {
   nothing_to_end: 'There is nothing to end for that Space.',
   changed: 'That changed while you were looking. Check the list and try again.',
   failed: 'The invite could not be saved. Try again.',
+  breaks_route: 'Ending this partnership now would leave players with no way to finish. Publish a version that does not need this venue first (lower the number of stops needed, or turn its region off), then end it.',
+  route_unchecked: 'We could not check the live Trail just now, so nothing changed. Try again in a moment.',
 }
 
 /** The organiser's list: who was invited, who answered, and the invite form. */

@@ -29,6 +29,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { decide, type HuntAction, type PartnerRow, type RoleGrant } from '@/lib/hunts/authz'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { partnerLive, publishVenueBlocks } from '@/lib/hunts/partners'
+import { closedVenues } from '@/lib/hunts/closures'
 import { challengeViews, parseChallenges, type Challenge, type ChallengeView } from '@/lib/hunts/challenges'
 import { slugify } from '@/lib/utils'
 import { generateSlug } from '@/lib/qr/codes'
@@ -497,12 +498,12 @@ export type PublishResult =
  * partner rows now, so a venue that withdrew a minute ago blocks. A read that fails throws: a publish
  * that cannot check its partners does not go out.
  */
-async function venuesBlockingPublish(client: SupabaseClient, hunt: HuntRow, versionId: string, named: readonly string[] = []): Promise<string[]> {
+async function venuesBlockingPublish(client: SupabaseClient, hunt: HuntRow, versionId: string, named: readonly string[] = []): Promise<{ blocked: string[]; closed: Set<string> }> {
   const bound = await client.from('hunt_mission_placements').select('venue_space_id').eq('hunt_id', hunt.id).eq('version_id', versionId)
   if (bound.error) throw new Error(bound.error.message)
   // FH-020Y: the partner venues the draft names count too, before a binding carries them.
   const venueSpaceIds = [...((bound.data ?? []) as { venue_space_id: string | null }[]).map((r) => r.venue_space_id), ...named]
-  if (!venueSpaceIds.some(Boolean)) return []
+  if (!venueSpaceIds.some(Boolean)) return { blocked: [], closed: new Set() }
   const rows = await client.from('hunt_partners').select('hunt_id, space_id, status, effective_at, revoked_at, permitted_roles').eq('hunt_id', hunt.id)
   if (rows.error) throw new Error(rows.error.message)
   const partners: PartnerRow[] = ((rows.data ?? []) as { hunt_id: string; space_id: string; status: PartnerRow['status']; effective_at: string | null; revoked_at: string | null; permitted_roles: string[] | null }[]).map((p) => ({
@@ -513,7 +514,9 @@ async function venuesBlockingPublish(client: SupabaseClient, hunt: HuntRow, vers
     revokedAt: p.revoked_at,
     permittedRoles: p.permitted_roles ?? [],
   }))
-  return publishVenueBlocks({ huntId: hunt.id, ownerSpaceId: hunt.owner_space_id, venueSpaceIds, partners, now: new Date().toISOString() })
+  const now = new Date().toISOString()
+  // FH-030S: the venues closed right now go to the route check too (lib/hunts/closures.ts).
+  return { blocked: publishVenueBlocks({ huntId: hunt.id, ownerSpaceId: hunt.owner_space_id, venueSpaceIds, partners, now }), closed: closedVenues(partners, now) }
 }
 
 /**
@@ -538,11 +541,19 @@ export async function publishTrail(
   if (!version || version.status !== 'draft') return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
   const draft: TrailDraft = { ...trailOf(version), permissionConfirmed }
   const challenges = challengesOf(version)
-  const checklist = publishChecklist(draft, hunt.revision, { venue: hunt.owner_space_id !== null, challenges })
+  // FH-030S: validateGraph runs on the route with each stop at its venue (so stops in one venue count
+  // once toward a Passport), the same check the editor shows.
+  const route = { ownerVenue: hunt.owner_space_id }
+  const checklist = publishChecklist(draft, hunt.revision, { venue: hunt.owner_space_id !== null, challenges, route })
   if (hunt.revision !== baseRevision) return { ok: false, reason: 'conflict', currentRevision: hunt.revision }
   if (!checklist.ok) return { ok: false, reason: 'checklist', items: checklist.items }
-  const blockedVenues = await venuesBlockingPublish(client, hunt, version.id, (draft.venues ?? []).map((v) => v.venueSpaceId))
-  if (blockedVenues.length > 0) return { ok: false, reason: 'partners', spaceIds: blockedVenues }
+  const venues = await venuesBlockingPublish(client, hunt, version.id, (draft.venues ?? []).map((v) => v.venueSpaceId))
+  if (venues.blocked.length > 0) return { ok: false, reason: 'partners', spaceIds: venues.blocked }
+  // ...and again with today's closures, so a route that only works through a closed venue never goes live.
+  if (venues.closed.size > 0) {
+    const live = publishChecklist(draft, hunt.revision, { venue: hunt.owner_space_id !== null, challenges, route: { ...route, closedVenues: venues.closed } })
+    if (!live.ok) return { ok: false, reason: 'checklist', items: live.items }
+  }
 
   const bumped = await bumpRevision(client, huntId, baseRevision)
   if (!bumped.applied) return { ok: false, reason: 'conflict', currentRevision: bumped.currentRevision }
@@ -576,7 +587,8 @@ export async function publishTrail(
   for (const g of rows.groups) {
     const { data, error } = await client
       .from('hunt_rule_groups')
-      .insert({ version_id: version.id, hunt_id: huntId, target_mission_key: g.target_mission_key, target_finish: g.target_finish, logic: g.logic, group_key: g.key })
+      // FH-030S: a Passport's finish carries its threshold; every other group writes no min_count, as before.
+      .insert({ version_id: version.id, hunt_id: huntId, target_mission_key: g.target_mission_key, target_finish: g.target_finish, logic: g.logic, ...(g.min_count !== undefined ? { min_count: g.min_count } : {}), group_key: g.key })
       .select('id')
       .single()
     if (error || !data) throw new Error(error?.message ?? 'rule group')
