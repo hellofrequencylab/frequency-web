@@ -23,6 +23,7 @@ import { wentLive } from '@/lib/launch/review'
 import { loadInventory } from '@/lib/launch/inventory-io'
 import { overviewProgress } from '@/lib/launch/overview'
 import { loadKnownProfile } from '@/lib/launch/known-io'
+import { withOwnedSpace } from '@/lib/launch/adopt-io'
 
 // /launch (VLS-10): the one home of the launch, and where every way in lands (lib/launch/destination.ts). With nothing
 // started yet it starts the launch. Then one of three things: where
@@ -47,6 +48,8 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
     if (!launch) redirect(inFlowHref(launchStepHref('spotlight')))
   }
 
+  // Set up before the launch knew their Space: take it, so the page shows what they have, ticked (LIVE-2392).
+  launch = await withOwnedSpace(launch, profileId)
   if (launch.resume?.phase === 'builder' && !launch.spaceId && !launch.cancelledAt && !launch.completedAt) redirect('/create-a-space?new=1')
   const view = resumeView(launch, new Date())
   const justPublished = published === '1'

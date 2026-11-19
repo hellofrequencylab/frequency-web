@@ -43,8 +43,10 @@ export function showWizardClock(resume: WizardResume | null | undefined, activeM
   return resume?.timedEntry === true && Number.isFinite(activeMs) && activeMs >= 0 && activeMs < 12 * 60_000
 }
 
-/** The caller supplies only a slug obtained from its own owner-scoped Space read. */
-export function ownerEntryHref(ownedSlug: string | null, explicitlyNew: boolean): string | null {
-  return !explicitlyNew && ownedSlug && /^[a-z0-9][a-z0-9-]{0,79}$/.test(ownedSlug)
-    ? `/spaces/${ownedSlug}/manage/spotlight` : null
+/** The caller supplies only a slug obtained from its own owner-scoped Space read. An owner whose Spotlight is not
+ *  live yet lands on its setup; one whose Spotlight is already live has nothing to set up there, so they land on
+ *  their Space's own home instead (LIVE-2392). */
+export function ownerEntryHref(ownedSlug: string | null, explicitlyNew: boolean, spotlightLive = false): string | null {
+  if (explicitlyNew || !ownedSlug || !/^[a-z0-9][a-z0-9-]{0,79}$/.test(ownedSlug)) return null
+  return spotlightLive ? `/spaces/${ownedSlug}/manage` : `/spaces/${ownedSlug}/manage/spotlight`
 }

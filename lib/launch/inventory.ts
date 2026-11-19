@@ -27,8 +27,10 @@ const text = (v: string | null | undefined) => (typeof v === 'string' ? v.trim()
 export function inventorySections(f: InventoryFacts): InventorySection[] {
   const { rows } = f
   const spot = readSpaceSpotlight(rows.preferences)
-  const words = text(answersFromLayout(spot.layout).line)
   const tagline = text(rows.tagline)
+  // The Spotlight's own line, or the tagline it wears under the name (components/spotlight/space-spotlight.tsx): a
+  // Spotlight arranged in the editor has no launch-form line, and it still says what they do (LIVE-2392).
+  const words = text(answersFromLayout(spot.layout).line) || (spot.published ? tagline : '')
   const about = text(rows.about)
   const skippedIf = (id: string, url: string | null) => !url && (f.skippedPhotos ?? []).includes(id)
   const prefs = rows.preferences && typeof rows.preferences === 'object' ? (rows.preferences as Record<string, unknown>) : {}
