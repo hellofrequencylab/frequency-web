@@ -34,6 +34,7 @@ import { FAN_OUT_CHUNK, FAN_OUT_CONCURRENCY, campaignDedupeKey, mapLimit, parseD
 import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { assertApproved } from '@/lib/outbound/approvals'
+import { releaseCampaignSends, reserveCampaignSend } from './campaign-cap'
 import { SITE_URL } from '@/lib/site'
 import { parseEmailRenderLayout, type EmailRenderDoc } from './render-layout'
 import { compileEmailDoc } from './shell'
@@ -839,6 +840,10 @@ export async function sendCampaignNow(
         campaignId,
       })
     }
+    // EMAIL-084 (Daniel, 2026-11-19, "One per 7 days"): a campaign or newsletter to an audience reserves each person's
+    // weekly marketing slot after the send gate allows them. A 1:1 conversation send and a one-person audience are
+    // personal mail, not marketing, so they do not count.
+    const capOn = !conversationMode && recipients.length > 1
     const pending: typeof recipients = []
     for (const r of recipients) {
       // Already queued by an earlier attempt at this campaign: skip. Matched on the contact id AND
@@ -871,6 +876,7 @@ export async function sendCampaignNow(
             if (await isSuppressed(r.email, rootSpaceId)) return null
             manageUrl = buildSpaceUnsubscribeUrl({ baseUrl: SITE_URL, spaceId: rootSpaceId, email: r.email })
           }
+          if (capOn && !(await reserveCampaignSend(db, { campaignId, email: r.email, profileId: r.profileId }))) return null
           const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
           return { r, contact: { email: r.email, firstName, lastName, manageUrl } }
         })
@@ -879,15 +885,21 @@ export async function sendCampaignNow(
       if (allowed.length > 0) {
         const fallbacks = { ...MERGE_TAG_DEFAULT_FALLBACKS, ...productVars }
         const compiled = compileEmailDoc(doc, { unsubscribeUrl: RESEND_UNSUBSCRIBE_PLACEHOLDER, manageUrl: MANAGE_URL_PLACEHOLDER })
-        await sendCampaignAsBroadcast({
-          campaignId,
-          from: fromHeader,
-          replyTo,
-          subject: resolveStaticMergeTags(subjectTemplate, fallbacks),
-          html: appendUtm(toResendMergeTags(compiled.html, fallbacks), { siteUrl: SITE_URL, campaignId }),
-          text: toResendMergeTags(compiled.text, fallbacks, { escape: false }),
-          recipients: allowed.map((a) => a.contact),
-        })
+        try {
+          await sendCampaignAsBroadcast({
+            campaignId,
+            from: fromHeader,
+            replyTo,
+            subject: resolveStaticMergeTags(subjectTemplate, fallbacks),
+            html: appendUtm(toResendMergeTags(compiled.html, fallbacks), { siteUrl: SITE_URL, campaignId }),
+            text: toResendMergeTags(compiled.text, fallbacks, { escape: false }),
+            recipients: allowed.map((a) => a.contact),
+          })
+        } catch (err) {
+          // EMAIL-084: nothing went out, so give the weekly slots back before the failure is recorded.
+          if (capOn) await releaseCampaignSends(db, campaignId, allowed.map((a) => a.r.email))
+          throw err
+        }
         count = allowed.length
         if (rootSpaceId) {
           await recordLedgerSends(
@@ -928,6 +940,8 @@ export async function sendCampaignNow(
           // unsubscribe from everything), so "Manage emails" points a profile-less lead at that same token page.
           manageUrl = unsubscribeUrl
         }
+        // EMAIL-084: the weekly marketing slot, reserved only once the gate has allowed this person.
+        if (capOn && !(await reserveCampaignSend(db, { campaignId, email: r.email, profileId: r.profileId }))) return null
         const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
         // Per-recipient contact vars, plus the shared product vars resolved above (a product is the same for
         // every recipient, so it rides the fallbacks bag).
@@ -1050,14 +1064,20 @@ export async function sendCampaignNow(
           // 2026-07-17 a 356-recipient campaign took the quota and two welcomes dead-lettered behind
           // it). `bulkRunAfter` staggers when each job becomes DUE so the fan-out cannot fill the
           // claim window either — the claim is ordered by run_after and knows nothing about lanes.
-          await enqueueEmailBatch(
-            built.map((b, k) => ({
-              payload: b.payload,
-              runAfter: bulkRunAfter(count + k, fanOutStartedAt),
-              dedupeKey: campaignDedupeKey(campaignId, b.r),
-            })),
-            { lane: 'bulk' },
-          )
+          try {
+            await enqueueEmailBatch(
+              built.map((b, k) => ({
+                payload: b.payload,
+                runAfter: bulkRunAfter(count + k, fanOutStartedAt),
+                dedupeKey: campaignDedupeKey(campaignId, b.r),
+              })),
+              { lane: 'bulk' },
+            )
+          } catch (err) {
+            // EMAIL-084: this chunk never queued, so its weekly slots go back before the failure is recorded.
+            if (capOn) await releaseCampaignSends(db, campaignId, built.map((b) => b.r.email))
+            throw err
+          }
           count += built.length
           // COMMITTED: the outbox has the jobs, so these recipients must never be enqueued again for this
           // campaign. Written after the enqueue and best-effort, the same order and posture as the Space
@@ -1174,11 +1194,14 @@ export async function sendQuietCampaign(campaignId: string, limit: number): Prom
   const replyTo = await loadCampaignReplyTo(campaignId)
   const names = await loadContactNames(batch.map((r) => r.contactId))
   const startedAt = new Date()
+  const capDb = createAdminClient()
   let queued = 0
   for (const r of batch) {
     const profileId = r.profileId as string
     const decision = await resolveSendGate(profileId, 'email', 'marketing', { email: r.email })
     if (!decision.allowed) continue
+    // EMAIL-084: one marketing email per person per 7 days. A capped member is not ledgered, so tomorrow's run tries again.
+    if (!(await reserveCampaignSend(capDb, { campaignId, email: r.email, profileId }))) continue
     const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId, category: 'lifecycle' })
     const manageUrl = buildManageEmailsUrl({ baseUrl: SITE_URL, profileId, category: 'lifecycle' })
     const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
@@ -1188,19 +1211,24 @@ export async function sendQuietCampaign(campaignId: string, limit: number): Prom
     const html = appendUtm(applyMergeTags(compiled.html, vars, { fallbacks }), { siteUrl: SITE_URL, campaignId })
     const text = applyMergeTags(compiled.text, vars, { fallbacks, escape: false })
     const subject = applyMergeTags(subjectTemplate, vars, { fallbacks, escape: false })
-    await enqueueEmail(
-      {
-        to: r.email,
-        from: fromHeader,
-        ...(replyTo ? { replyTo } : {}),
-        subject,
-        html,
-        text,
-        headers: { ...listUnsubscribeHeaders(unsubscribeUrl), 'X-Campaign-Id': campaignId },
-        tags: [{ name: 'campaign_id', value: campaignId }],
-      },
-      { lane: 'bulk', runAfter: bulkRunAfter(queued, startedAt), dedupeKey: quietDedupeKey(campaignId, r.contactId) },
-    )
+    try {
+      await enqueueEmail(
+        {
+          to: r.email,
+          from: fromHeader,
+          ...(replyTo ? { replyTo } : {}),
+          subject,
+          html,
+          text,
+          headers: { ...listUnsubscribeHeaders(unsubscribeUrl), 'X-Campaign-Id': campaignId },
+          tags: [{ name: 'campaign_id', value: campaignId }],
+        },
+        { lane: 'bulk', runAfter: bulkRunAfter(queued, startedAt), dedupeKey: quietDedupeKey(campaignId, r.contactId) },
+      )
+    } catch (err) {
+      await releaseCampaignSends(capDb, campaignId, [r.email])
+      throw err
+    }
     queued++
     await recordLedgerSend({ spaceId: rootSpaceId, campaignId, contactId: r.contactId || null, email: r.email })
   }
