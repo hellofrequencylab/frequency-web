@@ -47,12 +47,16 @@ export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
   // send time a profile-less contact is gated by the hard suppression list (global OR root-space) plus
   // the not-unsubscribed filter, and unsubscribes via a per-address space-scoped token. Use this for a
   // warm-up series to an owned list; keep `site_signups` for a blast that must EXCLUDE the import.
-  { key: 'all_contacts', label: 'Entire contact list (members + imported, not unsubscribed)' },
+  // EMAIL-082 (owner, 2026-11-19): the imported list is Daniel Tyack's personal list. A brand campaign to this
+  // audience reaches an imported contact only once they opted in (consent_state 'subscribed').
+  { key: 'all_contacts', label: 'Entire contact list (members, plus imported contacts who opted in)' },
   // Imported contact list ONLY — just the contacts uploaded from an outside list (source='import'),
   // the mirror image of `site_signups`. Reaches the owned imported list and NOTHING else (no members,
   // no site sign-ups), as opt-out subscribers (same owner directive as all_contacts). Use this to write
   // to just the people you brought over, separately from your on-site audience.
-  { key: 'imported_contacts', label: 'Imported contact list only (no members or sign-ups)' },
+  // EMAIL-082 (owner, 2026-11-19): this list came from Daniel Tyack's personal email list, so it only ever gets
+  // mail sent as him (lib/email-studio/personal-list.ts refuses any other From name at schedule and send).
+  { key: 'imported_contacts', label: "Daniel Tyack's personal list (sends as Daniel only)" },
   // Site sign-ups only — organic members, with the imported email list (source='import')
   // held out. This is the audience for a blast that should reach people who joined ON the
   // site but NOT contacts we uploaded from an outside list. The hold-out is by SOURCE, so it
@@ -274,8 +278,10 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
   if (parsed.slug === 'all_contacts') {
     const allq = platformContacts(db, rootId)
       .neq('consent_state', 'unsubscribed')
-      // (has an account) OR (is the owned imported list) — NEVER a profile-less capture lead.
-      .or('profile_id.not.is.null,source.eq.import')
+      // (has an account) OR (an imported contact who has since opted in). EMAIL-082 (owner, 2026-11-19): the
+      // imported list is Daniel's personal list; brand campaigns skip it until a person says yes. NEVER a
+      // profile-less capture lead.
+      .or('profile_id.not.is.null,and(source.eq.import,consent_state.eq.subscribed)')
     const data = await readContactRows(allq)
     return data
       .filter((c) => c.email)

@@ -1,8 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 
-// resolveSegment('all_contacts') — the "entire contact list" audience (owner directive: warm up an
-// owned, imported list as ordinary opt-out subscribers). Locks that this ONE built-in:
-//   • INCLUDES profile-less IMPORTED leads (source='import') — held out of every other built-in,
+// resolveSegment('all_contacts') — the "entire contact list" audience. EMAIL-082 (owner decision 2026-11-19,
+// replacing the earlier "imported list as opt-out subscribers" directive): the imported list is Daniel Tyack's
+// personal list, so a brand campaign reaches an imported contact only once they opted in. Locks that this built-in:
+//   • INCLUDES a profile-less IMPORTED lead only when consent_state='subscribed',
+//   • EXCLUDES a profile-less imported lead whose consent is 'unknown' (never opted in to Frequency),
 //   • EXCLUDES profile-less CAPTURE leads (source='event'/'scan_invite'/etc. at consent_state='unknown')
 //     that never confirmed an email — the ADR-154 consent invariant (they must not be blasted),
 //   • still drops unsubscribed contacts,
@@ -14,8 +16,10 @@ const ROOT = 'root-space'
 const contacts = [
   { id: 'k1', email: 'a@x.com', profile_id: 'p1', consent_state: 'subscribed', space_id: ROOT, source: 'signup' },
   { id: 'k2', email: 'b@x.com', profile_id: 'p2', consent_state: 'unknown', space_id: null, source: 'signup' },
-  // Imported, no account — the whole point: this one is INCLUDED here (held out of every other built-in).
-  { id: 'k3', email: 'c@x.com', profile_id: null, consent_state: 'unknown', space_id: ROOT, source: 'import' },
+  // Imported, no account, opted in since: INCLUDED.
+  { id: 'k3', email: 'c@x.com', profile_id: null, consent_state: 'subscribed', space_id: ROOT, source: 'import' },
+  // Imported, no account, never opted in (Daniel's personal list): EXCLUDED from brand campaigns (EMAIL-082).
+  { id: 'k8', email: 'h@x.com', profile_id: null, consent_state: 'unknown', space_id: ROOT, source: 'import' },
   // Unsubscribed — excluded everywhere.
   { id: 'k4', email: 'd@x.com', profile_id: 'p4', consent_state: 'unsubscribed', space_id: ROOT, source: 'signup' },
   // Another tenant Space's contact — must NOT leak into the root-space entire-list.
@@ -55,9 +59,11 @@ function contactsBuilder() {
       if (expr === `space_id.is.null,space_id.eq.${ROOT}`) {
         preds.push((c) => c.space_id == null || c.space_id === ROOT)
       }
-      // The consent guard: (has an account) OR (is the owned imported list).
-      if (expr === 'profile_id.not.is.null,source.eq.import') {
-        preds.push((c) => c.profile_id != null || c.source === 'import')
+      // The consent guard: (has an account) OR (an imported contact who opted in).
+      else if (expr === 'profile_id.not.is.null,and(source.eq.import,consent_state.eq.subscribed)') {
+        preds.push((c) => c.profile_id != null || (c.source === 'import' && c.consent_state === 'subscribed'))
+      } else if (expr !== `space_id.is.null,space_id.eq.${ROOT}`) {
+        throw new Error(`unexpected or() filter: ${expr}`)
       }
       return api
     },
@@ -94,11 +100,17 @@ import { resolveSegment } from './campaigns'
 const ids = (rs: { contactId: string }[]) => rs.map((r) => r.contactId).sort()
 
 describe("resolveSegment('all_contacts')", () => {
-  it('includes members + profile-less imported leads, drops unsubscribed, other tenants, and capture leads', async () => {
+  it('includes members + opted-in imported leads, drops unsubscribed, other tenants, capture leads and never-opted-in imports', async () => {
     const rs = await resolveSegment('all_contacts')
-    // k1 member, k2 null-space member, k3 imported/no-profile INCLUDED; k4 unsubscribed out; k5 other-space out;
+    // k1 member, k2 null-space member, k3 opted-in import INCLUDED; k8 never-opted-in import OUT (EMAIL-082);
+    // k4 unsubscribed out; k5 other-space out;
     // k6 scan_invite + k7 event captures OUT (profile-less, non-import, never confirmed — the consent invariant).
     expect(ids(rs)).toEqual(['k1', 'k2', 'k3'])
+  })
+
+  it('excludes an imported contact who never opted in (Daniel personal list, EMAIL-082)', async () => {
+    const rs = await resolveSegment('all_contacts')
+    expect(rs.find((r) => r.contactId === 'k8')).toBeUndefined()
   })
 
   it('excludes every profile-less capture lead (source != import) even in the root space', async () => {

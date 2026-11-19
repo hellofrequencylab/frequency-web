@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-082",
+  "title": "Daniel's personal list only gets email sent as Daniel, and brand campaigns skip it until people opt in",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/studio/campaigns.ts",
+    "ref": "Contact, funnel and tracking audit 2026-11-19 (project thread: Plan a permission-first contact system)"
+  },
+  "detail": "511 root-Space contacts (source=import, no profile, consent unknown; 25 already suppressed) came from Daniel Tyack's personal email list. The all_contacts and imported_contacts audiences treated them as opt-out subscribers, and brand campaigns reached them on 2026-11-12 (576 recipients) and 2026-11-17 (557). One spam complaint (2026-11-17, 1 of 396 delivered that day) puts the cohort above Resend's 0.08% AUP line, on the account that also carries sign-in and receipt mail. Space campaigns already require 'subscribed' (canEmailContact); the platform Email Studio did not.\n\nOWNER DECISION 2026-11-19 (decision card 'How should Frequency treat your personal Daniel Tyack list?', option 'Your emails only, ask once'): tagged as his list, only emails from him reach them, brand campaigns skip them, one email from him asks if they want Frequency updates. Supersedes the earlier 'treat them as normal email subscribers who haven't confirmed' directive.\n\nDONE 2026-11-19: all_contacts includes an imported contact only when consent_state is 'subscribed' (members unchanged). imported_contacts is labelled as Daniel's personal list, and scheduleCampaign and sendCampaignNow refuse it unless the From name is 'Daniel Tyack' (lib/email-studio/personal-list.ts), re-checked at send before the row is claimed. The weekly cap (one marketing email per 7 days, owner decision 2026-11-19) is EMAIL-084. The opt-in email itself is Daniel's to write and send.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/EMAIL-082.mjs",
+    "note": "Passes while all_contacts limits imports to opted-in contacts and the personal list is refused at schedule and send unless sent as Daniel Tyack."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
