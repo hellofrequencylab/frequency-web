@@ -11,6 +11,7 @@ import { resolvedNetworkRate, spaceNetworkBps } from '@/lib/billing/fees'
 import { isNetworkConnected } from '@/lib/pricing/network-world'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
 import { spaceMayTakeDonations } from '@/lib/pricing/paying-accounts'
+import { formatPriceCents } from '@/lib/commerce/types'
 import { PAYOUT_CHANNEL_WORDS, type PayoutChannel } from '@/lib/billing/payout-prompt'
 import { SpacePayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
 import type { Space } from '@/lib/spaces/types'
@@ -196,6 +197,7 @@ export async function RateBand({ space }: { space: Space }) {
   const bps = await spaceNetworkBps(space.plan, space.id, rate)
   const connected = isNetworkConnected(space.networkConnected)
   const pct = (bps / 100).toLocaleString(undefined, { maximumFractionDigits: 2 })
+  const cap = formatPriceCents(rate.capCents)
   // A Space below Business sells nothing (ADR-1709), so it has no fee to show. Asked through the
   // payments gate (LIVE-753), the same check every money path makes.
   const sells = await spaceCanTakePayments(space.id, { plan: space.plan ?? null })
@@ -225,7 +227,7 @@ export async function RateBand({ space }: { space: Space }) {
       </p>
       <p className="mt-2 text-body-sm leading-relaxed text-muted">
         {connected
-          ? `Someone who already follows you, or who you brought here yourself, costs you nothing, on every plan, always. The ${pct}% applies only when Frequency found the buyer, and only on their first purchase.`
+          ? `Someone who already follows you, or who you brought here yourself, costs you nothing, on every plan, always. The ${pct}% applies only when Frequency found the buyer, only on their first purchase, and is never more than ${cap}.`
           : 'This space takes no sales from the network, so the network takes no rate.'}
       </p>
     </div>

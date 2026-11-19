@@ -239,9 +239,9 @@ const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free' | 'network'>, CatalogI
  *  below, so a rewrite of this prose can never move a price and a price change can never leave this
  *  prose stale. The lines that used to carry rate literals ("5% on network-sourced sales") are gone. */
 const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
-  free: 'Every business tool with launch-sized limits: your page, Circles, Events, contacts, email, bookings, Journeys, a free membership tier, tips, and being a Collaborator on other Spaces’ events.',
+  free: 'Every business tool with launch-sized limits: your page, Circles, Events, contacts, email, bookings, Journeys, a free membership tier, donations and tips, and being a Collaborator on other Spaces’ events.',
   business:
-    'Selling opens: paid tickets, paid memberships, donations, shop checkout and booking deposits. The limits lift, and you get your own website, team seats, automations, Programs, and hosting Collaborator Spaces.',
+    'Selling opens: paid tickets, paid memberships, shop checkout and booking deposits. The limits lift, and you get your own website, team seats, automations, Programs, and hosting Collaborator Spaces.',
   collective:
     'Everything in Business for separate groups that partner: a hub linking partner Spaces, cross-listed Circles and Journeys, a shared calendar, more team seats, and Vera AI included. Each partner keeps its own members and payouts.',
   // "Everything in Business", not "in Collective": a Network has no partner hub or cross-listing
@@ -249,7 +249,7 @@ const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
   network:
     'Everything in Business for one organization with chapters: chapter leaders, central admins, one membership in every chapter, one network calendar and home, a roll-up report, and Vera AI included.',
   nonprofit:
-    'Everything in Business for verified nonprofits, with donations built in and no network fee. Flat, never per seat.',
+    'Everything in Business for verified nonprofits, with donations built in and no finder’s fee. Flat, never per seat.',
 }
 
 /** The CTA per tier. Copy + route only. */
@@ -508,7 +508,7 @@ const PAID_WALL_COPY: readonly Omit<PaidWall, 'plan'>[] = [
   {
     // THE SELLING LINE (ADR-1709, LIVE-753): one gate on every money path.
     gate: 'space_payments',
-    what: 'taking payments: paid tickets, paid memberships, donations, shop checkout and booking deposits',
+    what: 'taking payments: paid tickets, paid memberships, shop checkout and booking deposits',
     why: 'selling is what Business is for, and free hosting is the point of the free Space',
   },
   {

@@ -65,7 +65,7 @@ const GUIDES: { href: string; icon: FqIconName; title: string; body: string }[] 
 
 const QUESTIONS: [string, string][] = [
   ['Another tool?', 'Your Space brings together your calendar, guest list, contacts and invitations. Paid options include tickets and memberships.'],
-  ['What does it cost?', 'Hosting has free options within the published allowances. Selling starts at Business. Paid Space plans and introduction fees are separate. Your own bookings carry no network fee, plus card processing. Compare Collective for separate groups on the Pricing page. One organization with chapters takes Network.'],
+  ['What does it cost?', 'Hosting has free options within the published allowances. Selling starts at Business. Your own bookings carry no fee, plus card processing, and a customer the network introduces costs one capped finder’s fee, once. Compare Collective for separate groups on the Pricing page. One organization with chapters takes Network.'],
   ['Will you sell my members?', 'Never. Your contacts are yours.'],
   ['How do I rank higher?', 'Gather more often. Standing comes from how often you meet and who’s in the room, never from money.'],
 ]

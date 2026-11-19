@@ -117,7 +117,8 @@ describe('it publishes counts, and only counts', () => {
     expect(out).toContain('## Quick answers')
     expect(out).toContain('### What is Frequency?')
     expect(out).toContain('### Where is Frequency available?')
-    expect(out).toContain('Tips only, with no platform fee, plus card processing')
+    expect(out).toContain('Tips only, no platform fee (0%), plus card processing')
+    expect(out).toContain('Donations and tips only, with Crew')
     expect(out).toContain(`[What's happening](${SITE_URL}/discover/events)`)
     // Owner approved rewriting this pin on 2026-11-18 (LIVE-2388): Default is retired and the library grew.
     expect(out).toMatch(/A library of \d+ themes, led by New World/)

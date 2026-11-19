@@ -21,10 +21,10 @@ export function isPaymentsRefusal(message: string | null | undefined): boolean {
 /** What Business adds, as the upgrade moment lists it (LIVE-758). Capabilities only: the price is
  *  read from the catalog by the panel's server loader (lib/pricing/business-offer.ts), never typed. */
 export const BUSINESS_ADDS: readonly string[] = [
-  'Paid tickets, paid memberships, and donations',
+  'Paid tickets and paid memberships',
   'Shop checkout and booking deposits',
   'Higher limits on the tools you already use',
-  'Nothing taken on your own audience, and a small fee only when the network brings you a customer',
+  'Nothing taken on your own audience, and one capped finder’s fee, once, when the network brings you a customer',
 ]
 
 /** The equal choice beside the trial. A free Space takes no money (ADR-1978), so this line promises

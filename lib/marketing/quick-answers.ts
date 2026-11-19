@@ -47,11 +47,11 @@ export function quickAnswers(opts: {
     },
     {
       q: `Does ${SITE_NAME} take a cut of tips or my own bookings?`,
-      a: `Tips have no platform fee on any plan, though card processing still applies. Selling options and fees depend on your Space plan and the transaction. See ${abs('/pricing')} for current details.`,
+      a: `Tips have no platform fee on any plan, though card processing still applies. Tips come with Crew. On a paid Space plan your own people cost 0%, plus card processing, and ${SITE_NAME} earns one finder’s fee, charged once and capped, on the first purchase from a customer it introduces. See ${abs('/pricing')} for the current rate and cap.`,
     },
     {
       q: `How does ${SITE_NAME} work?`,
-      a: `Open What's happening (${abs('/discover/events')}), the calendar of public Events near you, or browse Circles (${abs('/discover/circles')}). Save your spot, show up, and check in at the door. Hosts start a Circle or open a Space for free, post Events, and take RSVPs and tips. Space plans show current selling options, tools and fees.${themes}`,
+      a: `Open What's happening (${abs('/discover/events')}), the calendar of public Events near you, or browse Circles (${abs('/discover/circles')}). Save your spot, show up, and check in at the door. Hosts start a Circle or open a Space for free, post Events, and take RSVPs. Selling starts at Business; a free Space takes donations and tips.${themes}`,
     },
     {
       q: `Where is ${SITE_NAME} available?`,

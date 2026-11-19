@@ -3,7 +3,6 @@
 // from lib/pricing/pricing-addons.ts and the Offering model; there is no typed money in this file.
 import Link from 'next/link'
 import { addOnHref, addOnLabel } from '@/lib/pricing/addon-links'
-import { formatBps } from '@/lib/pricing/display'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import type { AddOnGroups, AddOnRow } from '@/lib/pricing/pricing-addons'
 import type { Offering } from '@/lib/pricing/pricing-grid'
@@ -38,17 +37,18 @@ function AddOnCard({ row }: { row: AddOnRow }) {
   )
 }
 
-/** The rate each plan pays Frequency on a customer Frequency introduced. A zero always carries its caveat. */
-function feeText(bps: number): string {
-  return bps > 0
-    ? `${formatBps(bps)}, once, on a customer Frequency introduces`
-    : `${formatBps(bps)} on a customer Frequency introduces, ${PLAN_STORY.plusProcessing}`
+/** What each plan pays Frequency on a customer Frequency introduced: the one finder's fee with its cap
+ *  (ADR-1978), or 0% with its caveat on a plan that pays none. */
+function feeText(findersFee: string | null): string {
+  return findersFee
+    ? `${findersFee}, on a customer Frequency introduces`
+    : `0% on a customer Frequency introduces, ${PLAN_STORY.plusProcessing}`
 }
 
 export function PricingAddOns({ addOns, spaces }: { addOns: AddOnGroups; spaces: readonly Offering[] }) {
   const fees = ['business', 'collective', 'network', 'nonprofit'].flatMap((id) => {
     const o = spaces.find((s) => s.id === id)
-    return o && o.sells ? [{ id, label: o.label, bps: o.networkRateBps }] : []
+    return o && o.sells ? [{ id, label: o.label, fee: o.findersFee }] : []
   })
   return (
     <>
@@ -92,7 +92,7 @@ export function PricingAddOns({ addOns, spaces }: { addOns: AddOnGroups; spaces:
             {fees.map((f) => (
               <li key={f.id}>
                 <b>{f.label}</b>
-                <span>{feeText(f.bps)}</span>
+                <span>{feeText(f.fee)}</span>
               </li>
             ))}
           </ul>

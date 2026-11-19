@@ -93,6 +93,8 @@ function limit(feature: string, rung: string): number | null {
 const n = (value: number | null): string => (value === null ? 'unlimited' : value.toLocaleString('en-US'))
 const dollars = (cents: number): string => formatPriceCents(cents)
 const bpsLabel = (bps: number): string => `${Number((bps / 100).toFixed(2))}%`
+/** The finder's fee as a cell: the rate and the most it can ever be (ADR-1978). */
+const findersFee = (bps: number, capCents: number): string => `${bpsLabel(bps)}, up to ${formatPriceCents(capCents)}`
 
 /** The copy of the rungs, with every number read. Built once per request. */
 function copy(input: PricingBoxInput) {
@@ -107,8 +109,8 @@ function copy(input: PricingBoxInput) {
   const colQr = limit('space_qr', 'collective')
   const freeContacts = limit('space_crm', 'free')
   const freeEmail = limit('space_email', 'free')
-  const colRate = bpsLabel(input.takeRate.collective)
-  const netRate = bpsLabel(input.takeRate.network)
+  // ONE finder's fee on every selling plan (ADR-1978): the rate and its cap, read from the vector.
+  const finder = findersFee(input.takeRate.paid, input.takeRate.capCents)
 
   return {
     member: {
@@ -141,7 +143,7 @@ function copy(input: PricingBoxInput) {
         'Your page, Circles, Events, Practices and Journeys',
         `Up to ${n(freeContacts)} contacts and ${n(freeEmail)} emails a month`,
         'Bookings and one active automation',
-        `Tips with no platform fee, ${PLAN_STORY.plusProcessing}`,
+        `Donations and tips, 0% on your own people, ${PLAN_STORY.plusProcessing}`,
         'Limits sized for a launch. A full meter never removes what you built',
       ],
     },
@@ -149,7 +151,7 @@ function copy(input: PricingBoxInput) {
       verb: 'sells',
       fit: 'For the day people want to pay you for what you hold.',
       features: [
-        'Paid tickets, memberships and donations',
+        'Paid tickets and paid memberships',
         'Shop checkout, booking deposits and priced Journeys',
         'Your own multi-page website',
         'Higher limits on every tool',
@@ -164,7 +166,7 @@ function copy(input: PricingBoxInput) {
         'Shared calendar, cross-listed Circles and Journeys',
         'Vera AI and a custom domain included',
         `${n(colQr)} editable QR codes and higher limits`,
-        `A lower network fee, ${colRate}`,
+        `The same finder’s fee as Business, ${finder}`,
       ],
     },
     network: {
@@ -175,7 +177,7 @@ function copy(input: PricingBoxInput) {
         'One membership that works in every chapter',
         'Central admins and chapter leaders',
         'One network calendar, home and roll-up report',
-        `The lowest network fee, ${netRate}`,
+        `The same finder’s fee as Business, ${finder}`,
       ],
     },
   } as const
@@ -184,20 +186,23 @@ function copy(input: PricingBoxInput) {
 /** The comparison rows. A cell is a short word, a check or a dash. */
 function comparison(input: PricingBoxInput): PricingBoxData['comparison'] {
   const memberCircles = limit('circle_host', 'free')
-  const colRate = bpsLabel(input.takeRate.collective)
-  const bizRate = bpsLabel(input.takeRate.paid)
-  const netRate = bpsLabel(input.takeRate.network)
+  // One fee, three columns: each selling plan reads its own rung, and they agree (ADR-1978).
+  const cap = input.takeRate.capCents
+  const colRate = findersFee(input.takeRate.collective, cap)
+  const bizRate = findersFee(input.takeRate.paid, cap)
+  const netRate = findersFee(input.takeRate.network, cap)
   const rows: [string, string[]][] = [
     ['Host Circles and Events', [`${n(memberCircles)} Circle`, 'More', YES, YES, YES, YES]],
     ['Your page and website', [NONE, NONE, 'Page', 'Full site', 'Full site', 'Full site']],
     ['Contacts, email, bookings', [NONE, NONE, 'Launch', 'Higher', 'Higher', 'Higher']],
-    ['Tips, no platform fee, plus card processing', [NONE, NONE, YES, YES, YES, YES]],
+    ['Tips, no platform fee, plus card processing', [NONE, YES, YES, YES, YES, YES]],
+    ['Donations', [NONE, NONE, YES, YES, YES, YES]],
     ['Tickets, memberships, shop', [NONE, NONE, NONE, YES, YES, YES]],
     ['Vera AI', [NONE, NONE, NONE, 'Add-on', YES, YES]],
     ['Custom domain', [NONE, NONE, NONE, 'Add-on', YES, YES]],
     ['Partner Spaces', [NONE, NONE, NONE, NONE, YES, NONE]],
     ['Chapters', [NONE, NONE, NONE, NONE, NONE, `${NETWORK_PLAN.includedChapters} to ${NETWORK_PLAN.maxChapters}`]],
-    ['Network fee', [NONE, NONE, NONE, bizRate, colRate, netRate]],
+    ['Finder’s fee, once per customer we introduce', [NONE, NONE, NONE, bizRate, colRate, netRate]],
   ]
   return rows.map(([label, cells]) => ({ label, cells }))
 }

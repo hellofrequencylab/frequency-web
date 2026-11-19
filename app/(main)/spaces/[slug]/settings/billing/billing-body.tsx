@@ -191,7 +191,7 @@ export async function BillingBody({ slug }: { slug: string }) {
         {isPaid && !staffViewing && !manualAgreement && <ManageSubscriptionButton slug={space.slug} />}
 
         {/* Non Profit is the verified-501(c)(3) sibling plan (ADR-811): everything Business does, with
-            no network fee, at a flat monthly price, never per seat. The self-serve verification flow (ADR-552, AUDIT #6) lives
+            no finder’s fee, at a flat monthly price, never per seat. The self-serve verification flow (ADR-552, AUDIT #6) lives
             at settings/billing/verify: the owner submits their EIN + legal name, an operator reviews it,
             and approval unlocks the Non Profit checkout (LIVE-994). We show the current request status if one exists,
             otherwise the "get verified" invite. */}
@@ -201,8 +201,8 @@ export async function BillingBody({ slug }: { slug: string }) {
             <>
               <p className="mt-0.5 text-meta leading-relaxed text-muted">
                 {currentPlan === 'nonprofit'
-                  ? 'Verified 501(c)(3). This space is on the Non Profit plan: everything Business does, with no network fee, at one flat monthly price, never per seat.'
-                  : `Verified 501(c)(3). Switch on Verified nonprofit in the plans above to choose Non Profit pricing: everything Business does, with no network fee, at one flat monthly price, never per seat. Starts with a ${values.trial.days}-day free trial.`}
+                  ? 'Verified 501(c)(3). This space is on the Non Profit plan: everything Business does, with no finder’s fee, at one flat monthly price, never per seat.'
+                  : `Verified 501(c)(3). Switch on Verified nonprofit in the plans above to choose Non Profit pricing: everything Business does, with no finder’s fee, at one flat monthly price, never per seat. Starts with a ${values.trial.days}-day free trial.`}
               </p>
             </>
           ) : verification?.status === 'pending' ? (
@@ -215,7 +215,7 @@ export async function BillingBody({ slug }: { slug: string }) {
             </p>
           ) : (
             <p className="mt-0.5 text-meta leading-relaxed text-muted">
-              Verified 501(c)(3) organizations get everything Business does, with no network fee, at one
+              Verified 501(c)(3) organizations get everything Business does, with no finder’s fee, at one
               flat monthly price, never per seat.{' '}
               <a href={`/spaces/${space.slug}/settings/billing/verify`} className="font-semibold text-primary-strong underline">
                 {verification?.status === 'rejected' ? 'Submit a new request' : 'Get verified'}

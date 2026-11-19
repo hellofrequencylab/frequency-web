@@ -106,7 +106,7 @@ export function EventRevenueSplitField({ eventId, slug }: { eventId: string; slu
         <p className={`text-meta ${overCap ? 'text-danger' : 'text-subtle'}`}>
           {overCap
             ? `Shares can take at most ${MAX_TOTAL_PERCENT}% together.`
-            : `Your Space keeps ${100 - total}% of each ticket. The network fee comes out of every share, including yours.`}
+            : `Your Space keeps ${100 - total}% of each ticket. A finder’s fee, when one applies, comes out of every share, including yours.`}
         </p>
         <Button type="button" size="sm" variant="secondary" onClick={save} loading={pending} disabled={overCap}>
           Save shares

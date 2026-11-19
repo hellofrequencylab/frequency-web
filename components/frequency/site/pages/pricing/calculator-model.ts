@@ -158,7 +158,7 @@ export function calculatorModel(
       npTier: null,
       sub: 'free',
       idea: 'You give it a home.',
-      line: 'Your group gets a page, its own Circles and Events, and a way to stay in touch. Tips are open, with no platform fee beyond card processing.',
+      line: 'Your group gets a page, its own Circles and Events, and a way to stay in touch. It takes donations and tips, and sells nothing else.',
       who: ['Community groups', 'Clubs', 'New studios'],
       badge: 'Comes with Crew',
       price: { month: free('until you charge'), year: free('until you charge'), npMonth: null, npYear: null },

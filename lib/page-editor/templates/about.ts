@@ -150,7 +150,7 @@ export const data: Data = {
           {
             icon: 'wallet',
             title: 'One honest price',
-            body: "Hosting is free, and selling starts at Business. Zero percent on your own people, always, plus card processing. We earn a small fee only on a customer the network introduces, once. One price, no surprise invoices, and your data leaves with you any month you want.",
+            body: "Hosting is free, and selling starts at Business. Zero percent on your own people, always, plus card processing. We earn one capped finder’s fee only on a customer the network introduces, once. One price, no surprise invoices, and your data leaves with you any month you want.",
           },
           {
             icon: 'home',

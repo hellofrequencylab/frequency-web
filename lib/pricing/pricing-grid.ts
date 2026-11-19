@@ -147,8 +147,12 @@ export interface Offering {
    *  Carried alongside the sentence so a caller that needs the bare rate (an answer-engine line, a
    *  comparison, a JSON-LD field) reads it instead of parsing the prose back apart. */
   networkRateBps: number
+  /** The finder's fee in words, rate and cap together ("10% once, never more than $20"), or null on an
+   *  offering that pays none: one that does not sell, or Non Profit (ADR-1978). Read from the vector. */
+  findersFee: string | null
   /** Can this offering take payments (paid tickets, memberships, donations, shop checkout, booking
-   *  deposits)? False on Member, Crew and the free Space, which take tips only (ADR-1709). Read off the
+   *  deposits)? False on Member, Crew and the free Space (ADR-1709): Crew takes tips and a free Space takes
+   *  donations and tips (ADR-1978). Read off the
    *  payments gate, so the page's selling line and the gate the checkout asks cannot disagree. */
   sells: boolean
   /** True for the ONE recommended card on the page: Business, where selling opens. One crown, not a
@@ -169,7 +173,7 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   member: {
     tagline: 'Join everything, free.',
     forWho:
-      'Anyone who wants to find their people, go to things, and join Circles. You can host a Circle and a couple of free Events of your own, and take tips.',
+      'Anyone who wants to find their people, go to things, and join Circles. You can host a Circle and a couple of free Events of your own.',
   },
   crew: {
     // Crew is contribute what you want (ADR-1084), and that has to be SAID, not implied by a "from" in
@@ -181,7 +185,7 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   free: {
     tagline: 'Host free. The whole thing.',
     forWho:
-      'Anyone opening a Space. It comes with Crew, which you fund at whatever amount you choose. Every business tool, with limits sized for a launch, and tips with no platform fee, only card processing.',
+      'Anyone opening a Space. It comes with Crew, which you fund at whatever amount you choose. Every business tool, with limits sized for a launch. It takes donations and tips, and selling starts at Business.',
   },
   business: {
     tagline: 'Selling starts here.',
@@ -203,7 +207,7 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   nonprofit: {
     tagline: 'Business tools, verified.',
     forWho:
-      'Verified 501(c)(3) organizations: everything Business does, with donations built in and no network fee. A Non Profit Collective is there for a network of them.',
+      'Verified 501(c)(3) organizations: everything Business does, with donations built in and no finder’s fee. A Non Profit Collective is there for a network of them.',
   },
 }
 
@@ -227,13 +231,32 @@ function pricedOffering(
   }
 }
 
-/** The fee line on a column that takes tips only, in the owner's words: a tip carries no platform fee on
- *  any tier. */
+// ONLY A PAYING ACCOUNT TAKES MONEY (ADR-1978). Three columns do not sell, and each says its own truth:
+// the free membership takes no money at all, Crew takes tips, and a free Space (which comes with Crew)
+// takes donations and tips and sells nothing.
+
+/** The fee line on the free membership: it takes no money. */
+const NO_MONEY_LINE = `No payments. Tips come with Crew, at 0% ${PLAN_STORY.plusProcessing}`
+
+/** The fee line on Crew: tips, which carry no platform fee. */
 const TIPS_ONLY_LINE = `Tips only, no platform fee (0%), ${PLAN_STORY.plusProcessing}`
 
-/** The fee line on a column that sells: the promise first, then the introduction fee. */
-function sellingRateLine(bps: number): string {
-  return `0% on your own people ${PLAN_STORY.plusProcessing}, ${formatBps(bps)} once per customer the network introduces`
+/** The fee line on a free Space: donations and tips, because it comes with Crew, and no selling. */
+const DONATIONS_ONLY_LINE = `Donations and tips only, with Crew. 0% on your own people, ${PLAN_STORY.plusProcessing}`
+
+/** The finder's fee in words (ADR-1978): the rate, its cap, and that it is charged once. Both figures
+ *  are read from the operator vector, never typed. */
+function findersFeePhrase(bps: number, capCents: number): string {
+  return `${formatBps(bps)} once, never more than ${formatCents(capCents)}`
+}
+
+/** The fee line on a column that sells: the promise first, then the finder's fee. A plan with no
+ *  finder's fee (Non Profit) says so instead of quoting a 0% introduction. */
+function sellingRateLine(bps: number, capCents: number): string {
+  const own = `0% on your own people ${PLAN_STORY.plusProcessing}`
+  return bps > 0
+    ? `${own}, ${findersFeePhrase(bps, capCents)}, on a customer the network introduces`
+    : `${own}, and no finder's fee`
 }
 
 /** The two MEMBER offerings, in ladder order: Member (free) and Crew. PURE.
@@ -247,8 +270,8 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
   // priceRow() here is how this column came to quote "$4.99/mo" as though it were the price while the
   // tables beside it read "from $4.99" — one offer, two figures. One builder, one figure.
   const crew = memberTierRows(values)[0]!
-  // NEITHER MEMBER COLUMN SELLS (ADR-1709). Personal selling is off on every personal tier; tips stay
-  // open at 0%. The personal rungs (`member_free_bps`, `member_bps`) stay in the vector as default-deny
+  // NEITHER MEMBER COLUMN SELLS (ADR-1709). Personal selling is off on every personal tier. Tips come
+  // with Crew (ADR-1978), at 0%. The personal rungs (`member_free_bps`, `member_bps`) stay in the vector as default-deny
   // values only, so no column quotes them: the number a reader sees is the 0% a tip carries.
   return [
     {
@@ -264,8 +287,9 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       betaNote: null,
       trial: null,
       billing: 'Free forever. No card.',
-      takeRate: TIPS_ONLY_LINE,
+      takeRate: NO_MONEY_LINE,
       networkRateBps: 0,
+      findersFee: null,
       sells: false,
       featured: false,
       // BETA_CTA_HREF is the one front door (now /join, the Funnels induction, ADR-1090).
@@ -284,6 +308,7 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
       takeRate: TIPS_ONLY_LINE,
       networkRateBps: 0,
+      findersFee: null,
       sells: false,
       // One recommended card on the page, and it is Business (see the `featured` doc above).
       featured: false,
@@ -310,7 +335,10 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
   const ladder = networkTakeRateFromStored(values.take_rate)
   const rateBps = (plan: SpacePlan): number => networkTakeRateBpsForPlan(plan, ladder)
   const sells = (plan: SpacePlan): boolean => planTakesPayments(plan, input.gateOverrides)
-  const rate = (plan: SpacePlan): string => (sells(plan) ? sellingRateLine(rateBps(plan)) : TIPS_ONLY_LINE)
+  const rate = (plan: SpacePlan): string =>
+    sells(plan) ? sellingRateLine(rateBps(plan), ladder.capCents) : DONATIONS_ONLY_LINE
+  const fee = (plan: SpacePlan): string | null =>
+    sells(plan) && rateBps(plan) > 0 ? findersFeePhrase(rateBps(plan), ladder.capCents) : null
 
   const free: Offering = {
     id: 'free',
@@ -327,6 +355,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
     billing: 'Free forever. No card.',
     takeRate: rate('free'),
     networkRateBps: sells('free') ? rateBps('free') : 0,
+    findersFee: fee('free'),
     sells: sells('free'),
     featured: false,
     cta: { label: 'Start a free Space', href: operatorStartHref('free') },
@@ -347,6 +376,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
         takeRate: rate(plan),
         networkRateBps: sells(plan) ? rateBps(plan) : 0,
+        findersFee: fee(plan),
         sells: sells(plan),
         // The page's one recommended card (see the `featured` doc above): Business, where selling opens.
         featured: plan === 'business',
@@ -356,7 +386,7 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         },
       }
     }),
-    networkOffering(rate('network'), sells('network') ? rateBps('network') : 0, trial),
+    networkOffering(rate('network'), sells('network') ? rateBps('network') : 0, fee('network'), trial),
   ]
 }
 
@@ -369,7 +399,7 @@ function networkFoundingNote(): string | null {
   return first === null ? null : `Founding offer: pay for the year and get it for nine months, ${formatCents(first)} for the first year, then ${formatCents(yearlyFromMonthly(NETWORK_PLAN.monthlyCents))}. Ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}.`
 }
 
-function networkOffering(takeRate: string, networkRateBps: number, trial: string | null): Offering {
+function networkOffering(takeRate: string, networkRateBps: number, findersFee: string | null, trial: string | null): Offering {
   const from = formatCents(NETWORK_PLAN.monthlyCents)
   return {
     id: 'network',
@@ -386,6 +416,7 @@ function networkOffering(takeRate: string, networkRateBps: number, trial: string
     billing: `${formatCents(NETWORK_PLAN.baseCents)} a month plus ${formatCents(NETWORK_PLAN.chapterCents)} for each chapter, ${NETWORK_PLAN.includedChapters} chapters at the least and up to ${NETWORK_PLAN.maxChapters}, so a Network starts at ${formatCents(NETWORK_PLAN.monthlyCents)}. Verified non profits pay ${formatCents(NETWORK_PLAN.nonprofitBaseCents)} plus ${formatCents(NETWORK_PLAN.nonprofitChapterCents)} a chapter. The year is two months free, or take the yearly package: ${NETWORK_PLAN.packageChapters} chapters for the price of ${NETWORK_PLAN.packagePaidChapters}, ${formatCents(networkPackageYearCents())} a year, with an onboarding session and priority support.`,
     takeRate,
     networkRateBps,
+    findersFee,
     sells: true,
     featured: false,
     cta: networkCheckoutOpen()
@@ -449,10 +480,12 @@ type RowSource =
   | { from: 'gate'; feature: string }
   /** Reads the tier's rung on the feature's usage-meter ladder (the per-tier allowance). */
   | { from: 'meter'; feature: string }
-  /** Reads take_rate.network_bps: the rate charged on business the network sources. */
+  /** Reads take_rate.finder_bps and finder_cap_cents: the finder's fee on business the network sources. */
   | { from: 'takeRate' }
   /** Reads the payments gate: can this column take payments at all? */
   | { from: 'payments' }
+  /** Tips come with Crew: off on the free membership, on everywhere else. */
+  | { from: 'tips' }
   /** Reads ADDON_ENTITLEMENT_KEYS + the catalog amount: the metered add-on's availability and price. */
   | { from: 'addon'; addon: AddonKey }
   /** Reads trial.days: the free trial, on the tiers that are sold. */
@@ -546,22 +579,31 @@ function resolveCell(source: RowSource, column: GridColumn, input: PricingGridIn
     case 'meter':
       return meterCell(source.feature, column)
     case 'takeRate': {
-      // Only a column that takes payments has a network fee. Personal columns and the free Space take
-      // tips only, which carry no fee on any tier (ADR-1709).
-      if (column.axis !== 'plan' || !planTakesPayments(column.tier as SpacePlan, input.gateOverrides)) {
-        return { kind: 'value', text: TIPS_ONLY_LINE }
+      // Only a column that sells has a finder's fee (ADR-1709, ADR-1978). The free membership takes
+      // no money, Crew takes tips, and a free Space takes donations and tips.
+      if (column.axis !== 'plan') {
+        return column.tier === 'free' ? { kind: 'no', text: NO_MONEY_LINE } : { kind: 'value', text: TIPS_ONLY_LINE }
       }
-      return {
-        kind: 'value',
-        text: formatBps(networkTakeRateBpsForPlan(column.tier, networkTakeRateFromStored(input.values.take_rate))),
+      if (!planTakesPayments(column.tier as SpacePlan, input.gateOverrides)) {
+        return { kind: 'value', text: DONATIONS_ONLY_LINE }
       }
+      const vector = networkTakeRateFromStored(input.values.take_rate)
+      const bps = networkTakeRateBpsForPlan(column.tier, vector)
+      return { kind: 'value', text: bps > 0 ? findersFeePhrase(bps, vector.capCents) : 'No finder’s fee' }
     }
     case 'payments': {
-      if (column.axis !== 'plan') return { kind: 'no', text: 'Tips only' }
+      if (column.axis !== 'plan') {
+        return column.tier === 'free' ? { kind: 'no', text: 'No payments' } : { kind: 'no', text: 'Tips only' }
+      }
       return planTakesPayments(column.tier as SpacePlan, input.gateOverrides)
         ? YES
-        : { kind: 'no', text: 'Tips only' }
+        : { kind: 'no', text: 'Donations and tips only' }
     }
+    case 'tips':
+      // Tips come with Crew (ADR-1978). Every Space column takes them, because a Space comes with Crew.
+      return column.axis === 'tier' && column.tier === 'free'
+        ? { kind: 'no', text: 'Comes with Crew' }
+        : { kind: 'yes', text: `Included, no platform fee, ${PLAN_STORY.plusProcessing}` }
     case 'addon':
       return addonCell(source.addon, column, input)
     case 'trial': {
@@ -699,14 +741,14 @@ const SPACE_GROUPS: GroupDef[] = [
         // THE SELLING LINE (ADR-1709): paid tickets, paid memberships, donations, shop checkout and
         // booking deposits all ask one gate (`space_payments`, lib/pricing/payments-gate.ts). Read off
         // it, so the table and the checkout agree.
-        detail: 'Paid tickets, paid memberships, donations, shop checkout and booking deposits. Tips are open on every plan.',
+        detail: 'Paid tickets, paid memberships, shop checkout and booking deposits. A free Space takes donations and tips, because it comes with Crew, and sells nothing else.',
         source: { from: 'payments' },
       },
       {
         key: 'tips',
         label: 'Tips',
-        detail: 'Anyone can leave a tip, on every plan, and we take nothing from it.',
-        source: { from: 'always', text: `Included, no platform fee, ${PLAN_STORY.plusProcessing}` },
+        detail: 'People can tip a Crew member, and we take nothing from it.',
+        source: { from: 'tips' },
       },
       {
         key: 'space_shop_listings',
@@ -761,9 +803,9 @@ const SPACE_GROUPS: GroupDef[] = [
       },
       {
         key: 'take_rate',
-        label: 'Network fee',
+        label: 'Finder’s fee',
         detail:
-          `Charged once, on a customer the network introduced, at their first purchase. You keep 100% of the business you bring in yourself, ${PLAN_STORY.afterProcessing}, and 0% applies for good, ${PLAN_STORY.plusProcessing}, to anyone already in your world: a follower, one of your members, a contact, or someone who bought before.`,
+          `Charged once, on a customer the network introduced, at their first purchase, and never more than the cap shown. You keep 100% of the business you bring in yourself, ${PLAN_STORY.afterProcessing}, and 0% applies for good, ${PLAN_STORY.plusProcessing}, to anyone already in your world: a follower, one of your members, a contact, or someone who bought before.`,
         source: { from: 'takeRate' },
       },
     ],
@@ -986,8 +1028,8 @@ const MEMBER_GROUPS: GroupDef[] = [
       {
         key: 'tips',
         label: 'Tips',
-        detail: 'People can tip you for what you host, and we take nothing from it. Add a payout account once.',
-        source: { from: 'always', text: `Included, no platform fee, ${PLAN_STORY.plusProcessing}` },
+        detail: 'People can tip you for what you host, and we take nothing from it. Tips come with Crew. Add a payout account once.',
+        source: { from: 'tips' },
       },
       {
         key: 'payments',

@@ -10,20 +10,20 @@
 // NO em dashes, never "AI Engine" (the add-on is listed as Vera AI, 2026-07 overhaul; the Resonance Engine is the machinery, ADR-590), marketing email is
 // "Email + Automations" (never "Dispatch", a reserved broadcast term), the Space site is "Profile and
 // brand" / "your page", the CRM tool is "Contacts", the scheduler is "Bookings", the code tool is
-// "QR Studio". The free tier RUNS THE BUSINESS: it hosts, holds a contact list, and takes tips, on
+// "QR Studio". The free tier RUNS THE BUSINESS: it hosts, holds a contact list, and takes donations and tips, on
 // launch-sized limits. Selling starts at Business (ADR-1709, the five-tier ladder).
 //
 // 🔴 THE ARGUMENT FOR PAYING IS MONEY, NOT MORE (LIVE-255). Every door says the same sentence in its
 // own words: PEOPLE JOIN FREE, BUSINESSES HOST FREE, YOU PAY WHEN YOU START CHARGING. The one thing
 // that genuinely needs a plan is named plainly, because naming it is what makes the promise checkable:
 // taking payments (paid tickets, memberships, donations, shop checkout, booking deposits) opens at
-// Business, and tips stay open on every plan (ADR-1709). Do not reintroduce a "paid does more / lifts
+// Business, and tips come with Crew (ADR-1709, ADR-1978). Do not reintroduce a "paid does more / lifts
 // the caps / unlocks" beat here, and that includes a SECTION TITLE (LIVE-255). Do not reintroduce the
 // retired ADR-914 framing either (LIVE-911): six spark cards titled a plan as the reason for the
 // repeat, selling email, reminders and nudges as plan features, and a free Space runs them
 // (PLAN_STORY.paid). The spark cards now name
 // the repeat they serve with no plan attached, and every line that SELLS says Business beside it.
-// Every 0% or "nothing taken" promise carries "plus card processing": Frequency takes no network fee
+// Every 0% or "nothing taken" promise carries "plus card processing": Frequency takes no finder’s fee
 // on your own people, and the card processor still takes its own. Everything else is a meter, and
 // the caps are never typed here, they live in lib/pricing/feature-meters.ts (ADR-837) and the copy
 // stays qualitative.
@@ -33,7 +33,7 @@ import type { ArchetypeId } from '@/lib/audience/archetypes'
 import { NICHE_FUNNEL_DESTINATIONS, type FunnelDestination } from '@/lib/funnels/definitions'
 import { priceStringsFrom, defaultPricingInput } from '@/lib/pricing/pricing-page'
 import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
-import { formatBps } from '@/lib/pricing/display'
+import { formatBps, formatCents } from '@/lib/pricing/display'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
 
@@ -190,33 +190,34 @@ function buildFunnelConfigs(input: PricingGridInput): Record<string, FunnelConfi
 const P = priceStringsFrom(input.catalog)
 
 // Every RATE interpolates from the take-rate vector in the input (the operator's config over the code
-// defaults, resolved by the route). Only a plan that takes payments has a fee (ADR-1709): the free row
-// quotes tips at 0%, never the free rung, which stays in the vector as a default-deny value only.
+// defaults, resolved by the route). Only a plan that sells has a fee (ADR-1709), and it is ONE finder's fee
+// with a cap (ADR-1978): the rate and the cap are both read here, never typed.
 const rates = networkTakeRateFromStored(input.values.take_rate)
 const RATE = {
   business: formatBps(networkTakeRateBpsForPlan('business', rates)),
+  cap: formatCents(rates.capCents),
 }
-/** The free-tier row's honest descriptor: a free Space hosts, and takes tips with no platform fee, plus card processing. */
-const FREE_ROW_DETAIL = 'Host free, and tips carry no platform fee, plus card processing'
+/** The free-tier row's honest descriptor: a free Space hosts, and takes donations and tips (it comes with Crew). */
+const FREE_ROW_DETAIL = 'Host free, with donations and tips at no platform fee, plus card processing'
 /** The business row's descriptor: selling opens here, with the introduction fee beside it. */
 const NETWORK_ROW_DETAIL = 'One home for every chapter, each with its own page, calendar and leaders'
-const BUSINESS_ROW_DETAIL = `Selling starts here, ${RATE.business} once per introduced customer`
+const BUSINESS_ROW_DETAIL = `Selling starts here, ${RATE.business} once per introduced customer, never more than ${RATE.cap}`
 /** The break-even proof, stated once: the fee only ever applies to a NEW person the network brought. */
 function breakEvenCaption(keep: string): string {
-  return `No network fee on ${keep}, ever, only card processing. Introduction fees apply to eligible purchases the network introduces. Your plan subscription and card processing are separate.`
+  return `No fee on ${keep}, ever, only card processing. One finder’s fee, ${RATE.business} and never more than ${RATE.cap}, applies once, to the first purchase from a customer the network introduces. Your plan subscription and card processing are separate.`
 }
 
 /** The shared pricing-beat intro. It leads with the promise, not the plan: hosting is free, and that
  *  is the point; Business is what a Space takes when it starts charging (ADR-1709). The per-niche
  *  clause names the moment a door's reader would actually step up. */
 function pricingIntro(stepUp: string): string {
-  return `People join free, hosting is free with Crew, and you pay when you start charging. A free Space includes hosting tools within its allowances and tips with no platform fee, plus card processing. Selling starts at Business. ${stepUp} Paid Space plans and introduction fees are separate.`
+  return `People join free, hosting is free with Crew, and you pay when you start charging. A free Space includes hosting tools within its allowances, and takes donations and tips with no platform fee, plus card processing. Selling starts at Business. ${stepUp} The finder’s fee on a customer the network introduces is separate from your plan, charged once and capped.`
 }
 
-/** The shared what-does-it-cost FAQ answer, with the per-niche "no network fee on ..." clause and an
+/** The shared what-does-it-cost FAQ answer, with the per-niche "no finder’s fee on ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `${PLAN_STORY.crewSpace} You pay for Business when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings, donations and your shop. Frequency takes ${RATE.business} on a customer the network introduces, once, and 0% on the people already yours. There's no network fee on ${keep}, only card processing.${extra} A free Space runs your page, contacts, bookings and events, and takes tips with no platform fee, plus card processing. You always see the full number, nothing hidden.`
+  return `${PLAN_STORY.crewSpace} You pay for Business when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings and your shop. Frequency takes one finder’s fee, ${RATE.business} and never more than ${RATE.cap}, on the first purchase from a customer the network introduces, and 0% on the people already yours. There's no fee on ${keep}, only card processing.${extra} A free Space runs your page, contacts, bookings and events, and takes donations and tips with no platform fee, plus card processing. You always see the full number, nothing hidden.`
 }
 
 
@@ -290,7 +291,7 @@ const COACHES_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the bookings you bring in yourself'),
-    note: "Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
+    note: "Your plan subscription is separate from card processing and the finder’s fee. The finder’s fee applies once, to the first purchase from a customer the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
@@ -376,7 +377,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the memberships you sell yourself'),
-    note: 'Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.',
+    note: 'Your plan subscription is separate from card processing and the finder’s fee. The finder’s fee applies once, to the first purchase from a customer the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
@@ -462,7 +463,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the tickets you sell yourself'),
-    note: 'Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.',
+    note: 'Your plan subscription is separate from card processing and the finder’s fee. The finder’s fee applies once, to the first purchase from a customer the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
@@ -531,7 +532,7 @@ const VENUES_FUNNEL: FunnelConfig = {
       icon: "calendar",
       soft: true,
       title: "Offer paid tickets and passes.",
-      body: "On Business, sell tickets and passes for your venue. Guests who are already yours carry no network fee, only card processing.",
+      body: "On Business, sell tickets and passes for your venue. Guests who are already yours carry no fee, only card processing.",
     },
   ],
   loop: {
@@ -548,7 +549,7 @@ const VENUES_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the tickets and passes you sell yourself'),
-    note: 'Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.',
+    note: 'Your plan subscription is separate from card processing and the finder’s fee. The finder’s fee applies once, to the first purchase from a customer the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
@@ -577,9 +578,9 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
     h1: "The people who believe in your work deserve to be known. We take no cut.",
     seoTitle: "Donations and community programs for Non Profits",
     subhead:
-      "Give supporters a place to find your community programs and gatherings. Take donations on the Non Profit plan, with no network fee, plus card processing.",
+      "Give supporters a place to find your community programs and gatherings. Take donations on the Non Profit plan, with no finder’s fee, plus card processing.",
     microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
-    trustLine: 'No network fee on what you raise, plus card processing.',
+    trustLine: 'No finder’s fee on what you raise, plus card processing.',
   },
   metaDescription:
     "Build community through programs. Share dates and keep in touch with supporters on Frequency. For Non Profits. Start with your Space.",
@@ -601,7 +602,7 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
     {
       icon: "spark",
       title: "Offer one-time and recurring giving.",
-      body: "On the Non Profit plan, take donations and keep donor details with your supporter contacts. Verified 501(c)(3) organizations pay no network fee on donations, only card processing.",
+      body: "On the Non Profit plan, take donations and keep donor details with your supporter contacts. Verified 501(c)(3) organizations pay no finder’s fee on donations, only card processing.",
     },
     {
       icon: "calendar",
@@ -627,18 +628,18 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'Free to start. Nothing taken on what you raise.',
-    intro: 'Start free, and host free while you grow. Donations open on the Non Profit plan, flat and never per seat, for verified 501(c)(3) organizations, with no network fee on what you raise.',
+    intro: 'Start free, and host free while you grow. Donations open on the Non Profit plan, flat and never per seat, for verified 501(c)(3) organizations, with no finder’s fee on what you raise.',
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'nonprofit', name: 'Non Profit', detail: '0% on what you raise', featured: true },
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
-    breakEvenCaption: 'No network fee on what you raise, only card processing. Verified 501(c)(3) organizations pay no network take-rate on the Non Profit plan.',
+    breakEvenCaption: 'No finder’s fee on what you raise, only card processing. Verified 501(c)(3) organizations pay no finder’s fee on the Non Profit plan.',
     note: 'We never take a share of your donations. Your supporters export any time, so you are never locked in.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
-    { q: 'What does it actually cost?', a: `${PLAN_STORY.crewSpace} Taking donations is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no network fee on what you raise. You always see the full number, nothing hidden.` },
+    { q: 'What does it actually cost?', a: `${PLAN_STORY.crewSpace} Taking donations is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no finder’s fee on what you raise. You always see the full number, nothing hidden.` },
     { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. You can open your Space before then, free, and it is ready when the town opens.` },
     { q: 'Do you take a cut of donations?', a: 'No. We never take a share of a donation. Card processing is the only fee on a gift, and it goes to the card processor, not to us.' },
     { q: 'Can I take my supporters with me?', a: 'Yes, any time. Export your whole supporter list whenever you want.' },
@@ -808,7 +809,7 @@ const GENERAL_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the customers you bring in yourself'),
-    note: "Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
+    note: "Your plan subscription is separate from card processing and the finder’s fee. The finder’s fee applies once, to the first purchase from a customer the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and your hours. Add the rest when you’re ready." },
@@ -894,7 +895,7 @@ const CLUBS_FUNNEL: FunnelConfig = {
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
     breakEvenCaption: breakEvenCaption('the members you bring in yourself'),
-    note: "Your plan subscription is separate from card processing and introduction fees. Introduction fees apply to eligible purchases the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
+    note: "Your plan subscription is separate from card processing and the finder’s fee. The finder’s fee applies once, to the first purchase from a customer the network introduces. Review your plan and transaction fees before you confirm. You can export your contacts.",
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a meetup. Add the rest when you’re ready." },
@@ -922,9 +923,9 @@ const FAITH_FUNNEL: FunnelConfig = {
     h1: "Your people already gather. Give them one place to find each other.",
     seoTitle: "Gatherings, groups and giving for spiritual communities",
     subhead:
-      "Share your services and small groups, welcome newcomers and offer giving with no network fee, plus card processing.",
+      "Share your services and small groups, welcome newcomers and offer giving with no finder’s fee, plus card processing.",
     microcopy: 'No card. A Space comes with Crew, and you pay when you start charging.',
-    trustLine: 'No network fee on what you raise, plus card processing.',
+    trustLine: 'No finder’s fee on what you raise, plus card processing.',
   },
   metaDescription:
     "Build community through gatherings. Share services, small groups and giving on Frequency. For spiritual communities. Start with your Space.",
@@ -956,7 +957,7 @@ const FAITH_FUNNEL: FunnelConfig = {
     {
       icon: "spark",
       title: "Offer one-time and recurring giving.",
-      body: "On the Non Profit plan, take gifts from your page. Verified 501(c)(3) organizations pay no network fee on giving, only card processing.",
+      body: "On the Non Profit plan, take gifts from your page. Verified 501(c)(3) organizations pay no finder’s fee on giving, only card processing.",
     },
     {
       icon: "envelope",
@@ -972,18 +973,18 @@ const FAITH_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'Free to start. Nothing taken on what you raise.',
-    intro: 'Start free, and host free while you grow. Giving opens on the Non Profit plan, flat and never per seat, for verified 501(c)(3) organizations, with no network fee on what you raise.',
+    intro: 'Start free, and host free while you grow. Giving opens on the Non Profit plan, flat and never per seat, for verified 501(c)(3) organizations, with no finder’s fee on what you raise.',
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'nonprofit', name: 'Non Profit', detail: '0% on what you raise', featured: true },
       { kind: 'resonance', name: '+ Vera AI', detail: 'AI that works for you' },
     ],
-    breakEvenCaption: 'No network fee on what you raise, only card processing. Verified 501(c)(3) organizations pay no network take-rate on the Non Profit plan.',
+    breakEvenCaption: 'No finder’s fee on what you raise, only card processing. Verified 501(c)(3) organizations pay no finder’s fee on the Non Profit plan.',
     note: 'We never take a share of your giving. Your people export any time, so you are never locked in.',
   },
   faq: [
     { q: 'Do I need to be technical?', a: "No. Start with your name and a gathering. Add the rest when you’re ready." },
-    { q: 'What does it actually cost?', a: `${PLAN_STORY.crewSpace} Taking gifts is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no network fee on what you raise. You always see the full number, nothing hidden.` },
+    { q: 'What does it actually cost?', a: `${PLAN_STORY.crewSpace} Taking gifts is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no finder’s fee on what you raise. You always see the full number, nothing hidden.` },
     { q: 'Where is Frequency available?', a: `Frequency opens in ${FOUNDING_PLACE} on ${OPENING_DATE_LABEL}. You can open your Space before then, free, and it is ready when the town opens.` },
     { q: 'Do you take a cut of giving?', a: 'No. We never take a share of a gift. Card processing is the only fee, and it goes to the card processor, not to us.' },
     { q: 'Can I take my directory with me?', a: 'Yes, any time. Export your whole list whenever you want.' },

@@ -47,7 +47,7 @@ function tierLadderLines(offerings: Offering[]): string[] {
   return offerings.map((o) => {
     const anchor = o.listAnchor ? ` (list ${o.listAnchor})` : ''
     const yearly = o.yearly ? ` or ${o.yearly}` : ''
-    return `- ${offeringLadderLabel(o)}: ${o.monthly}${anchor}${yearly}. ${o.forWho} Take-rate: ${o.takeRate}.`
+    return `- ${offeringLadderLabel(o)}: ${o.monthly}${anchor}${yearly}. ${o.forWho} Fees: ${o.takeRate}.`
   })
 }
 
@@ -144,7 +144,7 @@ export async function GET() {
     // LIVE-253: "a paid plan buys a lower rate, not permission" got the second half right and the
     // first half backwards, and the paragraph then closed on "that rate drops as your plan rises",
     // so the corpus argued the fee ladder twice. Both halves are PLAN_STORY now.
-    `${PLAN_STORY.lines} ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} ${PLAN_STORY.rate} You keep 100% of your own bookings, ${PLAN_STORY.afterProcessing}, always, and tips carry no platform fee on any rung, only card processing. We earn only a small fee on a customer the network introduces, once, never on what you bring in yourself. Where each rung lands:`,
+    `${PLAN_STORY.lines} ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} ${PLAN_STORY.rate} You keep 100% of your own bookings, ${PLAN_STORY.afterProcessing}, always, and tips carry no platform fee, only card processing. We earn only one capped finder’s fee on a customer the network introduces, once, never on what you bring in yourself. Where each rung lands:`,
     ...takeRateLines(offerings),
     '',
     // The walls and the plan each opens at are READ off the gate map (paidWallsPhrase), the same

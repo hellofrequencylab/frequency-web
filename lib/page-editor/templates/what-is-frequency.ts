@@ -5,7 +5,7 @@ import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { COLLECTIVE_FOUNDING_ENDS_LABEL } from '@/lib/pricing/beta'
 import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
-import { ADVERTISED_SPACE_PLANS, formatBps } from '@/lib/pricing/display'
+import { ADVERTISED_SPACE_PLANS, formatBps, formatCents } from '@/lib/pricing/display'
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
 import { LAB_HREF, QUEST_HREF } from '@/lib/marketing/merged-routes'
 
@@ -115,11 +115,17 @@ const P = priceStringsFrom(input.catalog)
 // row quotes the free or personal rungs. The fee is never the reason to take a plan (PLAN_STORY.rate).
 const TAKE = input.values.take_rate
 /** A Space plan's rate, through the one plan-to-rung resolver (LIVE-230): free / paid / nonprofit. */
-const SPACE_RATE = (plan: string) => formatBps(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(TAKE)))
+const RATES = networkTakeRateFromStored(TAKE)
+/** A plan's finder's fee, rate and cap together (ADR-1978), or that it pays none. */
+const SPACE_RATE = (plan: string) => {
+  const bps = networkTakeRateBpsForPlan(plan, RATES)
+  return bps > 0 ? `${formatBps(bps)} once, never more than ${formatCents(RATES.capCents)}` : 'no finder’s fee'
+}
 const BUSINESS_RATE = SPACE_RATE('business')
-const NETWORK_RATES = `Business ${BUSINESS_RATE}, Collective ${SPACE_RATE('collective')}, Network ${SPACE_RATE('network')}, Non Profit ${SPACE_RATE('nonprofit')}`
-/** What a tier that takes no payments carries instead of a rate. */
+const NETWORK_RATES = `Business ${BUSINESS_RATE}; Collective ${SPACE_RATE('collective')}; Network ${SPACE_RATE('network')}; Non Profit ${SPACE_RATE('nonprofit')}`
+/** What a tier that takes no payments carries instead of a rate: Crew takes tips, the free membership takes none. */
 const TIPS_NOTE = 'Tips only, no platform fee, plus card processing'
+const NO_MONEY_NOTE = 'No payments. Tips come with Crew'
 /** The 0%-forever half of the model, stated the same way everywhere it appears. */
 const OWN_AUDIENCE_LINE =
   'It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.'
@@ -133,21 +139,21 @@ const SPACE_TIER_ROWS: Partial<Record<(typeof ADVERTISED_SPACE_PLANS)[number], A
   business: {
     name: SPACE_PLAN_LABEL.business,
     price: `${P.businessList}/mo`,
-    note: `${BUSINESS_RATE} network only`,
-    who: 'Selling starts here: paid tickets, memberships, donations, bookings and your shop, with the limits lifted.',
+    note: `${BUSINESS_RATE}, network only`,
+    who: 'Selling starts here: paid tickets, memberships, bookings and your shop, with the limits lifted.',
   },
   collective: {
     name: SPACE_PLAN_LABEL.collective,
     // The Founding intro under its list (ADR-1709 §7): the price a new Collective pays, named as such.
     price: `${P.collectiveFounding}/mo`,
-    note: `Founding price until ${COLLECTIVE_FOUNDING_ENDS_LABEL}, list ${P.collectiveList}/mo. ${SPACE_RATE('collective')} network only`,
+    note: `Founding price until ${COLLECTIVE_FOUNDING_ENDS_LABEL}, list ${P.collectiveList}/mo. ${SPACE_RATE('collective')}, network only`,
     who: 'Separate groups that partner: a hub linking partner Spaces, cross-listed Circles and Journeys, a shared calendar, and Vera AI included. Each partner keeps its own members and payouts.',
   },
   nonprofit: {
     name: SPACE_PLAN_LABEL.nonprofit,
     price: `${P.nonprofit}/mo`,
-    note: `${SPACE_RATE('nonprofit')} network only`,
-    who: 'Everything Business does, for a verified 501(c)(3), with no network fee.',
+    note: `0% on your own people, plus card processing, and ${SPACE_RATE('nonprofit')}`,
+    who: 'Everything Business does, for a verified 501(c)(3), with no finder’s fee.',
   },
 }
 const SPACE_TIERS: ArticleTier[] = ADVERTISED_SPACE_PLANS.flatMap((plan) => {
@@ -260,12 +266,12 @@ return {
       answer:
         'People who want to calm down fast with a few minutes on the breathing timer. People who just moved and want friends nearby, or would rather start with a run club or a supper club than small talk. The ones who already bring others together and want to host one Circle, and members who back Frequency with Crew. And the teachers, practitioners, studio owners and organizers who run the rooms.',
       body: 'That is the idea under the name. Hosts grow together instead of alone, share a Space and Events, and keep 100% of their own bookings, after card processing. We earn only on what the network sends them. People join free. Hosting a Space is free. You pay when you start charging: hosting is free, Business is what you take when you start selling, and a plan is never a bill for access to people. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
-      links: [{ label: 'See the plans and take-rates', href: '/pricing', variant: 'secondary' }],
+      links: [{ label: 'See the plans and fees', href: '/pricing', variant: 'secondary' }],
     },
     {
       question: 'How much does Frequency cost?',
       answer:
-        `Joining is free, forever, and so is hosting. ${PLAN_STORY.ladder} Tips are open on every plan with no platform fee, plus card processing, selling starts at Business, and every plan keeps 100% of the bookings you bring in yourself. ${PLAN_STORY.rate}`,
+        `Joining is free, forever, and so is hosting. ${PLAN_STORY.ladder} Donations and tips come with Crew, with no platform fee, plus card processing, selling starts at Business, and every plan keeps 100% of the bookings you bring in yourself. ${PLAN_STORY.rate}`,
       // The tier ladder, lifted for AIO so an answer engine can quote the whole shape
       // in one place. Take-rate shown is network-introduced only: anyone already yours
       // is 0% on every tier, for good. Prices and rates mirror /pricing and the FAQ, and
@@ -274,8 +280,8 @@ return {
         {
           name: 'Member',
           price: 'Free',
-          note: TIPS_NOTE,
-          who: 'Belong to everything, host a Circle and free Events, take RSVPs and tips. The full community, free forever.',
+          note: NO_MONEY_NOTE,
+          who: 'Belong to everything, host a Circle and free Events, and take RSVPs. The full community, free forever.',
         },
         {
           name: 'Crew',
@@ -360,11 +366,11 @@ return {
     },
     {
       q: 'How much does Frequency cost?',
-      a: `${PLAN_STORY.lines} Joining, Circles, and Events never cost anything, a business never pays for access to people, and hosting a Space is free. Selling starts at Business. Frequency keeps 0% of your own bookings, always; we make our money only on a sale the network introduced, at ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} ${PLAN_STORY.paid} Member is free, Crew is ${CREW_NOTE.fromLabel} a month and you pick the amount, and a Space plan is ${SPACE_LADDER}. See the full ladder at /pricing.`,
+      a: `${PLAN_STORY.lines} Joining, Circles, and Events never cost anything, a business never pays for access to people, and hosting a Space is free. Selling starts at Business. Frequency keeps 0% of your own bookings, always; we make our money only on the first sale to a customer the network introduced: ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} ${PLAN_STORY.paid} Member is free, Crew is ${CREW_NOTE.fromLabel} a month and you pick the amount, and a Space plan is ${SPACE_LADDER}. See the full ladder at /pricing.`,
     },
     {
       q: 'How does Frequency make money?',
-      a: `Only on the business the network introduces, never on the work you bring yourself. Your own bookings, clients, and classes are 0%, always, and so are tips. When the network sells your work to someone you would not have reached alone, we take a small slice: ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} The physical spaces are funded separately, through a community-owned vehicle, not skimmed off your margin.`,
+      a: `Only on the business the network introduces, never on the work you bring yourself. Your own bookings, clients, and classes are 0%, always, and so are tips. When the network sells your work to someone you would not have reached alone, we take one finder’s fee, once: ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} The physical spaces are funded separately, through a community-owned vehicle, not skimmed off your margin.`,
     },
     {
       q: 'What does Community Collective mean?',

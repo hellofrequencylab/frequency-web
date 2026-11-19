@@ -98,7 +98,7 @@ export const COMPARISONS: Comparison[] = [
     theyAreGoodAt:
       'Eventbrite is built to sell tickets to a real event. The listing, the payments, the door: all handled, and for a big paid one-off, it is the standard.',
     theDifference:
-      "Frequency is built for the room that keeps meeting, not the one-off. Here's the sharpest line between them, and it's about money: Eventbrite charges a fee on every ticket you sell. On Frequency, hosting a gathering is free and selling tickets starts at Business, where a ticket sold to someone already yours carries no network fee, only card processing. Frequency earns a small fee only on a customer the network introduces, once, never a cut of the business you bring yourself.",
+      "Frequency is built for the room that keeps meeting, not the one-off. Here's the sharpest line between them, and it's about money: Eventbrite charges a fee on every ticket you sell. On Frequency, hosting a gathering is free and selling tickets starts at Business, where a ticket sold to someone already yours carries no fee, only card processing. Frequency earns one capped finder’s fee only on a customer the network introduces, once, never a cut of the business you bring yourself.",
     contrast: [
       { dimension: 'What it is', them: 'A ticketed event, often one time.', us: 'A Circle or an event series that keeps meeting.' },
       { dimension: 'Getting in', them: 'You buy a ticket.', us: 'You find a Circle and show up.' },
