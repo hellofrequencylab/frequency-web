@@ -34,6 +34,7 @@ import { FAN_OUT_CHUNK, FAN_OUT_CONCURRENCY, campaignDedupeKey, mapLimit, parseD
 import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { assertApproved } from '@/lib/outbound/approvals'
+import { PERSONAL_LIST_SEGMENT, personalListSenderError } from './personal-list'
 import { SITE_URL } from '@/lib/site'
 import { parseEmailRenderLayout, type EmailRenderDoc } from './render-layout'
 import { compileEmailDoc } from './shell'
@@ -551,6 +552,10 @@ export async function scheduleCampaign(
   // Voice floor (voice-lint): scheduling ARMS a send, so the one hard rule is enforced here too.
   if (lintVoice(campaignAuthoredCopy(doc)).hasEmDash) return fail(VOICE_EM_DASH_ERROR)
 
+  // EMAIL-082: the personal list only gets mail sent as Daniel.
+  const personalError = input.segment === PERSONAL_LIST_SEGMENT ? personalListSenderError(input.segment, await loadCampaignFromName(campaignId)) : null
+  if (personalError) return fail(personalError)
+
   const audience = await countAudience(input.segment)
   if ('error' in audience) return audience
   if (audience.data.count === 0) return fail('This audience is empty. Pick a segment with recipients.')
@@ -739,6 +744,11 @@ export async function sendCampaignNow(
   // shippable as written", so the real send refuses BEFORE the row is claimed; the soft findings
   // (banned phrases, exclamations) are warnings the panel surfaces and never block.
   if (lintVoice(campaignAuthoredCopy(rawDoc)).hasEmDash) return fail(VOICE_EM_DASH_ERROR)
+
+  // EMAIL-082: the personal list only gets mail sent as Daniel (re-checked here, so a From name changed after
+  // scheduling cannot slip through).
+  const personalError = row.segment === PERSONAL_LIST_SEGMENT ? personalListSenderError(row.segment, await loadCampaignFromName(campaignId)) : null
+  if (personalError) return fail(personalError)
 
   // Resolve the data-bound Product card ONCE (before the recipient loop) so every recipient's email ships the
   // current catalog data, and expose its `{{product.*}}` tokens as merge fallbacks (Phase 4). The Event and
