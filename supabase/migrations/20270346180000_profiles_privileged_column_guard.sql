@@ -4,7 +4,7 @@
 -- THE GAP. "profiles: self update" lets a member UPDATE their own row (auth_user_id = auth.uid()),
 -- and the authenticated role holds UPDATE on every column. Only four columns families were frozen
 -- by triggers: community_role (prevent_role_self_escalation), the economy and cosmetic columns
--- (prevent_economy_self_edit) and meta.founder (prevent_founder_meta_self_edit). Everything else
+-- (prevent_economy_self_edit) and meta.founder (the SCAN-845 founder meta trigger). Everything else
 -- was writable from the browser console with the public anon key and the member's own session:
 --
 --   update profiles set web_role = 'admin' where auth_user_id = auth.uid()
