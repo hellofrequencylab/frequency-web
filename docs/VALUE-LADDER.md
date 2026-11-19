@@ -20,16 +20,32 @@ connects.** Hosting is free, and that is the point, not a teaser. Selling is wha
 
 Three lines still carry the whole commercial law: people join free, businesses host free, you pay
 when you start charging. What ADR-1709 changed is what "start charging" means: it means taking
-Business. Tips are the only money a free tier receives, and they are 0% on every tier.
+Business.
+
+**Only a paying account takes money ([ADR-1978](DECISIONS.md), 2026-11-18).** A free Space sells
+nothing: no paid tickets, bookings, shop or paid memberships. A Space on Business or higher takes
+donations; a free Space takes donations only when its owner is a Crew member, and nothing else sells
+on it. Tips go to Crew members and to people who own a Space on a paid plan; a free Member who is not
+Crew does not take tips. No platform fee on a tip, plus card processing. The beta's free Crew counts
+as paying through January 31, 2027, for tips and donations only.
+
+**One finder's fee replaces the 5% / 3% / 2% ladder:** 10%, never more than $20, charged once, on the
+first purchase from a customer Frequency introduced. After that first purchase that customer is the
+seller's: 0%. Same on Business, Collective and Network. Non Profit pays no finder's fee. A Founding
+Business keeps its locked 3%. Own people cost 0% on a paid Space plan, always, plus card processing,
+which the seller pays.
 
 | | Member | Crew | Space (free) | Business | Collective | Non Profit |
 |---|---|---|---|---|---|---|
 | **Price** | free | contribute what you want | free | catalog | catalog: list, with a Founding intro (`FOUNDING_OPEN_ITEMS`) | catalog |
 | **Hosts** | 1 Circle, 2 Events | host kit | every hosting tool, launch limits | higher limits | highest limits | Business limits |
-| **Tips** | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% |
-| **Sells** (tickets, memberships, donations, shop, deposits) | ⛔ | ⛔ | ⛔ | ✅ | ✅ | ✅ |
-| **Network fee, introduced customer, once** | n/a | n/a | n/a | 5% | 3% | 0% |
-| **Own audience** | 0% | 0% | 0% | 0% | 0% | 0% |
+| **Tips** (to the person; no platform fee, plus card processing) | ⛔ unless they own a Space on a paid plan | ✅ | owner only if Crew | ✅ owner | ✅ owner | ✅ owner |
+| **Sells** (tickets, memberships, shop, deposits) | ⛔ | ⛔ | ⛔ | ✅ | ✅ | ✅ |
+| **Donations** | ⛔ | ⛔ | only when the owner is a Crew member | ✅ | ✅ | ✅ |
+| **Finder's fee, introduced customer, first purchase only** | n/a | n/a | n/a | 10%, never more than $20 | 10%, never more than $20 | 0% |
+| **Own people** (plus card processing) | n/a | n/a | n/a | 0% | 0% | 0% |
+
+Network pays the same finder's fee as Business and Collective.
 
 Every limit is read from `PLACEHOLDER_METER_LIMITS` (`lib/pricing/meter-limits.ts`); the figures in
 this file are never a source.
@@ -48,7 +64,7 @@ the product honest rather than the direction that makes the number go up this qu
 | 4 | **Goal-gradient** — effort accelerates as the goal gets closer | Hull 1932; Kivetz et al. 2006 | Upsell tooltips appear at 80% of a meter, not at 100% | The prompt arrives while there is still time to decide calmly |
 | 5 | **Data gravity / IKEA effect** — you value what you built | Norton, Mochon & Ariely, 2012 | The CRM, the Journey, the member list | Export is always available. Gravity must be earned, not manufactured |
 | 6 | **Anchoring + the compromise effect** — a three-option set pulls choice to the middle | Simonson & Tversky, 1992 | Free / Business / Collective on the pricing grid | The middle option is genuinely the right one for most Spaces |
-| 7 | **Reciprocity** | Cialdini | 0% on your own audience, forever, on every tier | This is a real, permanent, unconditional give |
+| 7 | **Reciprocity** | Cialdini | 0% on your own people, always, on a paid Space plan, plus card processing | This is a real, permanent, unconditional give |
 | 8 | **Effort reduction beats feature count** | Fogg Behavior Model | Every paid rung is framed as "stop doing this by hand" | We sell the hour back, not the checkbox |
 | 9 | **Reverse trial** — full capability first, then the choice | Standard PLG practice | The beta grace window (`featureGatesLive`) | Everyone sees the ceiling before they are asked to buy it |
 
@@ -71,6 +87,11 @@ Member who wants to charge $10 a head for a house show, hits a paywall, and send
 That is a permanent loss, because the transaction never touched Frequency and neither did the
 contact.
 
+> 🔴 **Superseded by ADR-1709 and [ADR-1978](DECISIONS.md).** The paragraph below is the ADR-914
+> argument, kept as the record. Today only a paying account takes money: a free Member and a free Space
+> do not sell, selling starts at Business, and there is one finder's fee (10%, never more than $20,
+> once, on an introduced customer's first purchase), not a rate that falls by rung.
+
 So the wall moved. **Selling is free.** The rate is what differs, and the rate is beaten by having
 your own list, and the tools that build your own list are what you pay for. A free Member selling to
 strangers at 10% has a strictly better product than Venmo (a page, a checkout, a list that fills
@@ -84,8 +105,13 @@ the list-building that takes the rate to zero.
 ### The rule
 
 ```
-take_rate = buyerIsSellersAudience(buyer, seller) ? 0 : NETWORK_RATE[tier]
+fee = buyerIsSellersAudience(buyer, seller) ? 0
+    : isFirstPurchaseFromThisCustomer ? min(FINDER_RATE * sale, FINDER_CAP)   // 10%, never more than $20
+    : 0
 ```
+
+One finder's fee ([ADR-1978](DECISIONS.md)), charged once. After the first purchase the customer is the
+seller's own: 0%. On a membership it applies to the first payment only, never to a renewal.
 
 Audience is a **relationship, proven by a row with a timestamp** — a follow, an active membership, a
 CRM contact, a personal contact, or a prior settled purchase (`lib/commerce/seller-audience.ts`). A
@@ -94,28 +120,33 @@ they own (ADR-1584).
 Not a cookie. A cookie cannot survive a phone-to-laptop switch and cannot answer a host asking "why
 did you charge me for that sale?"
 
-### The network fee (ADR-1709)
+### The finder's fee (ADR-1978, replacing the ADR-1709 network fee ladder)
 
-| Seller | Fee on a customer the network introduced, once | Why this number |
+In code this is still the network take rate (`finder_bps` and `finder_cap_cents` on
+`pricing_settings.take_rate`, `lib/billing/pricing-keys.ts`). In member copy it is the finder's fee.
+
+| Seller | Finder's fee on a customer Frequency introduced, first purchase only | Why |
 |---|---|---|
-| Member, Crew, free Space | does not sell | Free hosting is the point; selling is the paid unlock. The free and personal rungs stay in code only as default-deny values |
-| Business | 5% | The rate a working small business can build on |
-| Collective | 3% | A group of groups brings volume; the rake is not the point |
-| Non Profit, Non Profit Collective | 0% | Verified 501(c)(3). We do not take money from donations to a nonprofit |
-| Independent | 5% in code, no network sales | White-label and off the network, so there is no introduced customer for a fee to apply to |
+| Member, Crew, free Space | does not sell | Only a paying account takes money. The free and personal rungs stay in code only as default-deny values |
+| Business | 10%, never more than $20 | One rate for every paying plan, above the cost of the card |
+| Collective | 10%, never more than $20 | Same fee as Business. A plan is never a lower fee |
+| Network | 10%, never more than $20 | Same fee as Business |
+| Non Profit, Non Profit Collective | 0% | Verified 501(c)(3). Non Profit pays no finder's fee |
+| Independent | the same rate in code, no network sales | White-label and off the network, so there is no introduced customer for a fee to apply to |
+| Founding Business | its locked 3% | The Founding rate lock is kept |
 
-The fee is charged once, at the introduced customer's first purchase; after that they are the Space's
-people. A paid tier is never framed as buying a rate down (ADR-1350).
+The fee is charged once, on the introduced customer's first purchase, and is never more than $20; after
+that they are the Space's people at 0%. A paid tier is never framed as buying a rate down (ADR-1350).
 
 ### What is never charged
 
 | Surface | Rate | Reasoning |
 |---|---|---|
-| **Tips** | 0%, all tiers, permanently | A tip is a gratuity between two people. The sender is by definition someone the recipient already earned, so charging it contradicts the promise the whole model rests on |
-| **Donations** | 0% platform fee on nonprofit Spaces; network rate applies elsewhere only on sourced traffic | Same logic as tickets |
-| **Anything to your own audience** | 0% | The promise |
+| **Tips** | No platform fee, plus card processing | A tip is a gratuity between two people. Tips go to Crew members and to people who own a Space on a paid plan; a free Member who is not Crew does not take tips (ADR-1978) |
+| **Donations** | No finder's fee on Non Profit Spaces; elsewhere the finder's fee applies only to an introduced donor's first gift | Same logic as tickets. A Space on Business or higher takes donations; a free Space only when its owner is a Crew member |
+| **Anything to your own people** | 0% on a paid Space plan, plus card processing | The promise |
 
-Stripe's own processing fee is always passed through and always disclosed. We never describe a rate
+Card processing is paid by the seller on every plan and is always disclosed. We never describe a rate
 as "0%" without the words "plus card processing" nearby in the same view.
 
 ---
@@ -130,9 +161,9 @@ Legend: ✅ full · ◐ metered/limited · ⛔ not on this tier
 |---|---|---|---|
 | Create + publish events | ✅ unlimited | ✅ | |
 | RSVPs | ✅ | ✅ | |
-| **Sell tickets** | ✅ at 10% | ✅ at 8% | "Same tools. Lower rate." |
-| **Take donations** | ✅ | ✅ | |
-| Receive tips | ✅ 0% | ✅ 0% | |
+| **Sell tickets** | ⛔ | ⛔ | Selling starts at Business (ADR-1709, ADR-1978) |
+| **Take donations** | ⛔ | ◐ on a free Space the Crew member owns | Nothing else sells on that Space |
+| Receive tips | ⛔ unless they own a Space on a paid plan | ✅ no platform fee, plus card processing | The beta's free Crew counts through January 31, 2027 |
 | Payout account (Stripe Connect) | ✅ opened at first sale | ✅ | ⚠️ Reverses `personal_payouts` gate |
 | Personal contact list | ◐ 200 | ✅ unlimited | "Your list is your discount" |
 | Host a Circle | ◐ 1 | ✅ unlimited | |
@@ -144,8 +175,8 @@ Legend: ✅ full · ◐ metered/limited · ⛔ not on this tier
 | Gems: spend / claim | ⛔ | ✅ | |
 | Full rewards loop (streaks, seasons) | ◐ earn-only | ✅ | |
 
-**Crew in one sentence:** *the rate goes down, the caps come off, and you get the tools that turn a
-crowd into a list.*
+**Crew in one sentence:** *the caps come off, tips open, and you get the tools that turn a crowd into
+a list.* Crew is never a lower fee.
 
 #### Crew is CONTRIBUTE WHAT YOU WANT (owner decision, 2026-07-30; renamed from "pay what you want" by ADR-1084)
 
@@ -184,6 +215,10 @@ Boost enters the standing score.
 
 #### ✅ CLOSED 2026-08-24: the Market is open on the free tier (owner ruling, OWN-032)
 
+> 🔴 **Superseded by ADR-1709 and [ADR-1978](DECISIONS.md).** Only a paying account takes money, and a
+> personal account does not sell. This section is the record of the 2026-08-24 ruling; its 10% and 8%
+> personal rungs are not a published rate.
+
 ~~**OPEN: two hard "you cannot sell" walls remain, and they contradict ADR-914.**~~ **Ruled and
 removed, 2026-08-24.** The owner ruled that ADR-914's principle governs the Market too: **open the
 Market to free members, leave the five Crew feature gates alone.** Three hand-rolled tier checks are
@@ -217,8 +252,9 @@ The counts are `PLACEHOLDER_METER_LIMITS` on 2026-10-06; that map wins over this
 | Capability | Free Space | Business | Collective | Non Profit | Independent |
 |---|---|---|---|---|---|
 | Public Space page, Events, RSVPs | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Tips** | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% |
-| **Paid tickets, memberships, donations, shop checkout, booking deposits** | ⛔ (`space_payments`) | ✅ | ✅ | ✅ | ✅ |
+| **Tips to the owner** (no platform fee, plus card processing) | only if the owner is Crew | ✅ | ✅ | ✅ | ✅ |
+| **Paid tickets, memberships, shop checkout, booking deposits** | ⛔ (`space_payments`) | ✅ | ✅ | ✅ | ✅ |
+| **Donations** | only when the owner is a Crew member (`lib/pricing/paying-accounts.ts`) | ✅ | ✅ | ✅ | ✅ |
 | Circles (`space_circles`) | ◐ 3 | ◐ 10 | ✅ | as Business | as Business |
 | Upcoming Events (`space_events`) | ◐ 5 | ✅ | ✅ | ✅ | ✅ |
 | Space CRM contacts (`space_crm`) | ◐ 250 | ◐ 5,000 | ◐ 25,000 | as Business | as Business |
@@ -240,8 +276,9 @@ Multi-pipeline and Space Entry Points stay off public comparisons until they are
 ### The one wall, and why it is a wall
 
 Everything else is a meter. **Selling is the one wall** (`space_payments`, Business floor). The owner
-chose free hosting as the point and selling as the paid unlock, with tips and the upgrade moment as the
-answer to the "they will just use Venmo" risk ADR-914 named. A refusal is never a dead end: it shows
+chose free hosting as the point and selling as the paid unlock, with the upgrade moment as the
+answer to the "they will just use Venmo" risk ADR-914 named. One narrow door stays open on a free
+Space (ADR-1978): it takes donations when its owner is a Crew member, and nothing else sells on it. A refusal is never a dead end: it shows
 what Business adds, offers the 14-day trial in place, and keeps "keep it free" as an equal choice. The
 gate does not wait for `beta_grace`.
 

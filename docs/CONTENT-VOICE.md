@@ -77,13 +77,31 @@ which re-exports it for existing callers but carries the whole pricing engine be
 🔴 **AMENDED again ([ADR-1709](DECISIONS.md), 2026-10-06): selling is what Business is for.** The three
 lines stand, and LIVE-253's rule stands with them: no tier is framed as buying down a rate, and **you pay
 when you start charging** is still the reason. What changed is which tier "starting to charge" means.
-ADR-914's "never gate the transaction" is superseded: hosting is free and that is the point, tips stay
-open at 0% on every tier, and paid tickets, paid memberships, donations, shop checkout and booking
-deposits open at Business. Write the ladder as five tiers, one verb each (members join, Crew hosts, a
+ADR-914's "never gate the transaction" is superseded: hosting is free and that is the point, and paid
+tickets, paid memberships, donations, shop checkout and booking deposits open at Business. Write the ladder as five tiers, one verb each (members join, Crew hosts, a
 Space runs, Business sells, Collective connects), from `PLAN_STORY.ladder`, `.paid` and `.selling`.
 Never say a free Space or a personal account sells. Crew is "contribute what you want" and sells a host
 kit and backing the community, never a lower fee. Collective is named in member copy as the plan for
 groups of groups.
+
+🔴 **AMENDED again ([ADR-1978](DECISIONS.md), 2026-11-18): yours stay yours.** Say it in these words and
+never invent another rule:
+
+- Your own people cost 0% on a paid Space plan, always, plus card processing. The seller pays card
+  processing.
+- There is one finder's fee, and member copy calls it that (never take rate, never network fee): 10%,
+  never more than $20, charged once, on the first purchase from a customer Frequency introduced. After
+  that first purchase the customer is yours: 0%. It is the same on Business, Collective and Network.
+  Non Profit pays no finder's fee. A Founding Business keeps its locked 3%. Never write a fee ladder
+  by plan, an uncapped "once per customer", or a fee on a membership renewal.
+- Only a paying account takes money. A free Space sells nothing. It takes donations only when its owner
+  is a Crew member, and nothing else sells on it.
+- Tips go to Crew members and to people who own a Space on a paid plan, with no platform fee, plus card
+  processing. A free Member who is not Crew does not take tips. Never write "tips are open on every
+  plan" or "a free Space takes tips". Crew is free during the beta, through January 31, 2027, so never
+  say taking tips costs money now.
+- Help articles state the rule without the figures and point at /pricing for the current rate and cap
+  (`lib/marketing/marketing-figures.test.ts`).
 
 ---
 

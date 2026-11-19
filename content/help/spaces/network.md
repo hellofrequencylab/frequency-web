@@ -5,7 +5,7 @@ category: spaces
 order: 20
 group: Money and plans
 published: 2026-10-16
-updated: 2026-11-18
+updated: 2026-11-19
 audience: member
 featureKeys: [billing, collective]
 keywords: [chapters, add a chapter, chapter leaders, central admins, multi location, franchise, partner network, independent network]
@@ -31,7 +31,7 @@ Everything Collective does except Partners, plus the chapter tools below. A Netw
 - **A roll-up report** of members, Events and revenue across every chapter.
 - **Central admins**, who see the whole network, and chapter leaders, who see their own chapter.
 - **Vera AI and a custom domain**, included.
-- **The lowest network fee** on customers the network introduces. Your own people and your tips stay at **0%**, as they are on every plan.
+- **0% on your own people, always, plus card processing.** The finder's fee is the same as on Business and Collective: charged once, with a cap, on the first purchase from a customer Frequency introduced. After that the customer is yours. See the [pricing page](/pricing) for the current rate and cap.
 
 ## Pick how you run it
 

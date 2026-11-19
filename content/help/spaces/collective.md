@@ -5,7 +5,7 @@ category: spaces
 order: 19
 group: Money and plans
 published: 2026-10-06
-updated: 2026-11-18
+updated: 2026-11-19
 audience: member
 featureKeys: [billing, collective]
 keywords: [partners, partner spaces, shared calendar, cross listing, member spaces, co-host split, group of spaces]
@@ -24,7 +24,7 @@ Everything Business does, plus:
 
 - **A partner hub.** Invite up to ten Spaces you do not own to partner with yours. Each keeps its own members, payouts and settings.
 - **Vera AI included**, with no separate add-on.
-- **A lower network fee** on customers the network introduces. Collective has no network fee on sales to your own audience, and tips have no platform fee. Card processing still applies. See the [pricing page](/pricing) for current rates.
+- **0% on your own people, always, plus card processing.** The finder's fee is the same as on Business and Network: charged once, with a cap, on the first purchase from a customer Frequency introduced. After that the customer is yours. See the [pricing page](/pricing) for the current rate and cap.
 - **Higher allowances** across the board, and five editable QR codes.
 - **A network page** with your member Spaces and one shared calendar of their events.
 - **A private Collective report** that adds up members, Events and revenue across the network.
@@ -109,7 +109,7 @@ A few rules keep the money honest:
 
 - Only the owner of the Space hosting the event can set shares.
 - A Space has to have payouts set up before it can take a share. A share for a Space that is still setting up is refused until it is ready.
-- The network fee comes out of every share in proportion, including yours. On Collective, sales to your own audience and tips have no network fee. Card processing still applies.
+- A finder's fee, when one applies, comes out of every share in proportion, including yours. Sales to your own people are 0%, plus card processing.
 - Shares apply to tickets sold after you save them. A refund takes each share back in the same proportion.
 
 Each Space sees its share in its own earnings. Revenue splits on Journeys are not here yet; a co-hosted Journey still pays the Space that sells it.
