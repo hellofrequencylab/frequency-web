@@ -21,6 +21,8 @@ Spotlight is the one link you hand out: a page with your links, in the order you
 3. Press **Edit your Spotlight** to build it.
 4. When it looks right, press **Publish**. Until then it is a draft only you can see.
 
+No Spotlight yet? [Free Spotlight](/free-spotlight) builds one in about three minutes: your name, one line and your main link, and it goes live when you finish.
+
 Once it is published, anyone with the link can see it. Your page lives at `/spotlight/your-handle`. Press **Unpublish** any time to take it back to a draft.
 
 ## Build it
