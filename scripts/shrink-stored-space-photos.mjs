@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// SHRINK THE SPACE PHOTOS AND LOGOS STORED BEFORE PERF-012 (PERF-018, owner ruling 2026-11-19:
+// SHRINK THE SPACE PHOTOS AND LOGOS STORED BEFORE PERF-012 (PERF-020, owner ruling 2026-11-19:
 // "Shrink them, keep a backup").
 //
 //   node --env-file=.env.local scripts/shrink-stored-space-photos.mjs            # dry run: lists what it would do
