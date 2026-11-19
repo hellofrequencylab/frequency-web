@@ -2,6 +2,7 @@
 
 import { duplicateCampaign } from '@/lib/email-studio/duplicate'
 import { parseTestRecipient } from '@/lib/email-studio/test-recipient'
+import { APPROVALS_RESET_ON_EDIT, EDITABLE_STATUSES, EDIT_CHANGED_ERROR, EDIT_LOCKED_ERROR, editLockFor, landed } from '@/lib/email-studio/edit-lock'
 import { legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 
 // EMAIL STUDIO — Phase 2 server actions (the two-pane Campaign Workspace).
@@ -454,11 +455,41 @@ export async function saveEmailCampaign(
     replyMode?: 'broadcast' | 'conversation'
     purpose?: CampaignPurpose
   },
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; unscheduled?: boolean }> {
   const gate = await writerGate()
   if (!gate.ok) return { error: gate.error }
 
   const db = createAdminClient()
+
+  // EMAIL-081: an approver's Schedule covers the email as it stood. Any edit to a scheduled email puts it back
+  // to draft (no send time, approval reset) BEFORE the edit lands, so the cron can never send content nobody
+  // re-approved. An email that is already going out (or went out) is locked: duplicate it to change it.
+  const { data: lifecycle, error: lifecycleError } = await db
+    .from('campaigns')
+    .select('status, approval_status, recipient_count')
+    .eq('id', id)
+    .maybeSingle()
+  if (lifecycleError) return { error: 'Could not read your email. Try again.' }
+  const lock = editLockFor(lifecycle as { status?: string | null; recipient_count?: number | null } | null)
+  if (lock === 'locked') return { error: EDIT_LOCKED_ERROR }
+  let unscheduled = false
+  if (lock === 'disarm') {
+    const approval = String((lifecycle as { approval_status?: string | null } | null)?.approval_status ?? 'draft')
+    const disarm: Record<string, unknown> = { status: 'draft', scheduled_for: null }
+    if (APPROVALS_RESET_ON_EDIT.has(approval)) disarm.approval_status = 'draft'
+    const { data: disarmed, error: disarmError } = await db
+      .from('campaigns')
+      .update(disarm as unknown as Database['public']['Tables']['campaigns']['Update'])
+      .eq('id', id)
+      .eq('status', 'scheduled')
+      .select('id')
+    if (disarmError) return { error: 'Could not take this email off the schedule, so the edit was not saved. Try again.' }
+    // The send cron claimed it between our read and this write: it is going out now, so the edit must not land.
+    if (!disarmed || (disarmed as unknown[]).length === 0) return { error: EDIT_LOCKED_ERROR }
+    log.info('email_studio.unscheduled_on_edit', { campaignId: id, approval })
+    unscheduled = true
+  }
+
   let prepared: EmailRenderLayout | null = null
   if (patch.layout) {
     const { data: stored, error: readError } = await db.from('campaigns').select('block_json').eq('id', id).maybeSingle()
@@ -482,22 +513,28 @@ export async function saveEmailCampaign(
   // reply mode that did not land. A patch that carries only one field still gets its own answer.
   if (typeof patch.fromName === 'string') {
     const clean = sanitizeFromName(patch.fromName)
-    const { error } = await db
+    const { data, error } = await db
       .from('campaigns')
       .update({ from_name: clean || null } as unknown as Database['public']['Tables']['campaigns']['Update'])
       .eq('id', id)
+      .in('status', EDITABLE_STATUSES)
+      .select('id')
     if (error) return { error: 'Could not save the From name. Try again.' }
+    if (!landed(data)) return { error: EDIT_LOCKED_ERROR }
   }
 
   // Reply mode (Broadcast vs Conversation) rides the same additive-column, best-effort write pattern: a
   // failure here must never block the subject / preheader / layout save.
   // 2026-09-05 (scan2 L5-11): see above, the write is checked and a refusal is returned.
   if (patch.replyMode === 'broadcast' || patch.replyMode === 'conversation') {
-    const { error } = await db
+    const { data, error } = await db
       .from('campaigns')
       .update({ reply_mode: patch.replyMode } as unknown as Database['public']['Tables']['campaigns']['Update'])
       .eq('id', id)
+      .in('status', EDITABLE_STATUSES)
+      .select('id')
     if (error) return { error: 'Could not save the reply setting. Try again.' }
+    if (!landed(data)) return { error: EDIT_LOCKED_ERROR }
   }
 
   // Purpose (promotion vs member newsletter) rides `audience_filter.purpose`; a refused write is returned.
@@ -528,17 +565,20 @@ export async function saveEmailCampaign(
     }
   }
 
-  if (Object.keys(update).length === 0) return {}
+  if (Object.keys(update).length === 0) return unscheduled ? { unscheduled } : {}
 
-  const { error } = await db.from('campaigns').update(update).eq('id', id)
+  // EMAIL-081: the write itself re-asserts an editable status, so an approver scheduling (or the cron sending)
+  // between the read above and this write can never pick up content nobody reviewed.
+  const { data: saved, error } = await db.from('campaigns').update(update).eq('id', id).in('status', EDITABLE_STATUSES).select('id')
   if (error) {
     log.error('email_studio.save_failed', { campaignId: id, fields: Object.keys(update), error: error.message })
     return { error: 'Could not save your email. Try again.' }
   }
+  if (!landed(saved)) return { error: EDIT_CHANGED_ERROR }
 
   // Intentionally no revalidatePath — see the note above: revalidating from this per-keystroke autosave would
   // force a seeded navigation that remounts / refocuses the open composer.
-  return {}
+  return unscheduled ? { unscheduled } : {}
 }
 
 /**

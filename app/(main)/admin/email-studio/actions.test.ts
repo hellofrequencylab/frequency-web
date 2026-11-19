@@ -32,6 +32,11 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 const updates: Array<Record<string, unknown>> = []
 const refuse = new Set<string>()
 let storedBlockJson: unknown = null
+let storedStatus: string | null = 'draft'
+let storedApproval = 'draft'
+let storedRecipients = 0
+/** EMAIL-081: a guarded update matches no row (the status moved under the save). */
+let noRowMatches = false
 
 function builder() {
   const api: Record<string, unknown> = {}
@@ -43,8 +48,13 @@ function builder() {
   }
   api.select = () => api
   api.eq = () => api
-  api.maybeSingle = async () => ({ data: { subject: 'On file', preheader: '', block_json: storedBlockJson }, error: null })
-  api.then = (resolve: (r: { error: unknown }) => unknown) => Promise.resolve(resolve({ error }))
+  api.in = () => api
+  api.maybeSingle = async () => ({
+    data: { subject: 'On file', preheader: '', block_json: storedBlockJson, status: storedStatus, approval_status: storedApproval, recipient_count: storedRecipients },
+    error: null,
+  })
+  api.then = (resolve: (r: { data: unknown; error: unknown }) => unknown) =>
+    Promise.resolve(resolve({ data: error || noRowMatches ? [] : [{ id: 'c1' }], error }))
   return api
 }
 
@@ -59,6 +69,10 @@ beforeEach(() => {
   updates.length = 0
   refuse.clear()
   storedBlockJson = null
+  storedStatus = 'draft'
+  storedApproval = 'draft'
+  storedRecipients = 0
+  noRowMatches = false
   vi.spyOn(console, 'error').mockImplementation(() => {})
   mocks.writerGate.mockResolvedValue({ ok: true, profileId: 'op-1' })
 })
@@ -114,5 +128,48 @@ describe('native email writer refusal', () => {
     expect(JSON.stringify(storedBlockJson)).toBe(before)
     expect(await saveEmailCampaign('c1', { subject: 'Revised subject' })).toEqual({})
     expect(updates).toEqual([{ subject: 'Revised subject' }])
+  })
+})
+
+// EMAIL-081: an approver's Schedule covers the email as it stood. An edit to a scheduled email takes it off the
+// schedule and resets approval BEFORE the edit lands; an email already going out cannot change at all.
+describe('editing after approval (EMAIL-081)', () => {
+  it('an edit to an approved, scheduled email puts it back to draft first, then saves', async () => {
+    storedStatus = 'scheduled'
+    storedApproval = 'approved'
+    expect(await saveEmailCampaign('c1', { subject: 'Changed after approval' })).toEqual({ unscheduled: true })
+    expect(updates).toEqual([
+      { status: 'draft', scheduled_for: null, approval_status: 'draft' },
+      { subject: 'Changed after approval' },
+    ])
+  })
+
+  it('a scheduled email the cron claims mid-edit refuses the edit (nothing lands)', async () => {
+    storedStatus = 'scheduled'
+    noRowMatches = true
+    const res = await saveEmailCampaign('c1', { subject: 'Too late' })
+    expect(res.error).toMatch(/already going out/)
+    expect(updates).toEqual([{ status: 'draft', scheduled_for: null }])
+  })
+
+  it.each(['sending', 'paused', 'sent'])('a %s email cannot be edited, and nothing is written', async (status) => {
+    storedStatus = status
+    const res = await saveEmailCampaign('c1', { subject: 'x', fromName: 'New', replyMode: 'conversation' })
+    expect(res.error).toMatch(/already going out/)
+    expect(updates).toEqual([])
+  })
+
+  it('a failed send that already queued people is locked; one that queued nobody stays editable', async () => {
+    storedStatus = 'failed'
+    storedRecipients = 12
+    expect((await saveEmailCampaign('c1', { subject: 'x' })).error).toMatch(/already going out/)
+    storedRecipients = 0
+    expect(await saveEmailCampaign('c1', { subject: 'Fixed' })).toEqual({})
+  })
+
+  it('a draft that gets scheduled between the read and the write does not take the edit', async () => {
+    noRowMatches = true
+    const res = await saveEmailCampaign('c1', { subject: 'Racing the approver' })
+    expect(res.error).toMatch(/just scheduled or started sending/)
   })
 })
