@@ -4705,7 +4705,7 @@
       "migrations": [
         {
           "file": "supabase/migrations/20270346180000_profiles_privileged_column_guard.sql",
-          "sha256": "f398c97c9cee0c13f050fc3045b1320174c6229a0cf37b1be7d53cc201a3c9bf"
+          "sha256": "a211747bd3bfc6025aa7a0c25b32a010a19ef0f86d0989c51e0efed9770d572e"
         }
       ],
       "reviewedChanges": [
@@ -4733,7 +4733,7 @@
         {
           "file": "supabase/migrations/20270346180000_profiles_privileged_column_guard.sql",
           "status": "added",
-          "sha256": "f398c97c9cee0c13f050fc3045b1320174c6229a0cf37b1be7d53cc201a3c9bf",
+          "sha256": "a211747bd3bfc6025aa7a0c25b32a010a19ef0f86d0989c51e0efed9770d572e",
           "baseMode": "000000",
           "headMode": "100644"
         },
