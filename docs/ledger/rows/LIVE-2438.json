@@ -1,5 +1,5 @@
 {
-  "id": "LIVE-2431",
+  "id": "LIVE-2438",
   "title": "Short bottom sheets sit at the bottom of a phone screen in the member app, not mid-screen",
   "lane": "live",
   "priority": "P2",
@@ -12,7 +12,7 @@
   "detail": "The shared Dialog portals its overlay to <body> and copies `data-kit=\"members\"` onto it so kit styles reach the panel. The member kit's unlayered `[data-design=\"frequency\"] [data-kit=\"members\"] { display:flex; flex-direction:column }` then beats the row the overlay's utilities assume: `items-end` aligns sideways and `justify-center` centres vertically, so any short `align=\"bottom\"` sheet floated mid-screen on a phone, and a short `align=\"sheet\"` panel stopped filling it.\n\nDONE 2026-11-19: the panel classes now hold in both flex directions. `bottom` gets `mt-auto sm:my-auto` (pinned to the bottom edge on a phone, centred card at sm+), `sheet` gets `flex-1 sm:flex-none sm:my-auto` (fills the phone, centred card at sm+). Rendered at 390 and 1280 for bottom, sheet, center, top and drawer: bottom and sheet are fixed, center is unchanged. The Zap menu's local `mt-auto` workaround is removed. Not changed here: `top` still centres vertically in the kit (its `mt-[6vh]` sits inside a centred column) and `drawer` still opens full width; both are the same root cause and would need the overlay's direction itself fixed.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/LIVE-2431.mjs",
+    "cmd": "node scripts/probes/LIVE-2438.mjs",
     "note": "Passes while the consequence in the title holds."
   },
   "closed": "2026-11-19",

@@ -286,7 +286,7 @@ export function Dialog({
               // unlayered `display:flex; flex-direction:column` beats the row this overlay's utilities
               // assume: `items-end` turns sideways and `justify-center` centres vertically, so a short
               // bottom sheet floated mid-screen on a phone and a short `sheet` stopped filling it
-              // (LIVE-2431). These hold in BOTH directions: `mt-auto` pins a bottom sheet to the edge,
+              // (LIVE-2438). These hold in BOTH directions: `mt-auto` pins a bottom sheet to the edge,
               // `flex-1` lets a sheet fill the viewport, and `sm:my-auto` centres the card at sm+.
               align === 'bottom'
             ? 'mt-auto sm:my-auto'

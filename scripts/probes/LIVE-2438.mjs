@@ -10,7 +10,7 @@ const fails = []
 if (!/align === 'bottom'\s*\?\s*'mt-auto sm:my-auto'/.test(src)) fails.push('a bottom sheet is not pinned to the bottom edge with mt-auto')
 if (!/align === 'sheet'\s*\?\s*'flex-1 sm:flex-none sm:my-auto'/.test(src)) fails.push('a sheet does not fill the phone in a column overlay')
 if (fails.length) {
-  console.log(`FAIL LIVE-2431\n- ${fails.join('\n- ')}`)
+  console.log(`FAIL LIVE-2438\n- ${fails.join('\n- ')}`)
   process.exit(1)
 }
-console.log('PASS LIVE-2431')
+console.log('PASS LIVE-2438')
