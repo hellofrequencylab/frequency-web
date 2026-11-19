@@ -1,0 +1,20 @@
+{
+  "id": "PERF-018",
+  "title": "Space photos and logos stored before PERF-012 are re-saved web-sized, with a backup",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "scripts/shrink-stored-space-photos.mjs",
+    "ref": "PERF-017 follow-up (Spaces directory slow on a phone, 2026-11-19)"
+  },
+  "detail": "PERF-012 web-sizes a photo at upload, but files stored before it are the size the phone made them: on the public Spaces directory one logo drawn at 28px is 1.37 MB and covers run 300 to 600 KB. OWNER RULING 2026-11-19 (decision card): \"Shrink them, keep a backup\". DONE: scripts/shrink-stored-space-photos.mjs reads every storage URL a `spaces` row or a Space's `pages` row points at, and re-saves each JPEG, PNG or WebP over 600 KB at most 2000px on its longest edge (a file used only as a Space logo: 800px), at the same path in the same format, so no link and no database row changes. A result must be at least 10% smaller or the file is left alone. Every original is written to ~/frequency-photo-backup-<date>/ and read back before its upload, with a manifest; --restore puts them all back. Dry run unless --apply. Never the paid optimizer. Checked against a mocked Storage: a 6 MB 3000x2400 JPEG became 662 KB at 2000x1600, a 22 MB transparent 2400px PNG logo became a 72 KB 800px PNG that keeps its alpha, a 10-byte file was skipped, and --restore put the original back byte for byte. The run itself is the owner's step on his Mac (it needs the service key in .env.local).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-018.mjs",
+    "note": "Fails on main: there is no script. Passes once the shrink script backs up before it uploads, keeps paths and formats, and changes nothing without --apply."
+  },
+  "wave": "W7",
+  "closed": "2026-11-19"
+}
