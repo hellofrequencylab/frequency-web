@@ -16,6 +16,7 @@
 import { getSpaceMembership } from '@/lib/spaces/membership'
 import { getSpaceById, getSpaceBySlug } from '@/lib/spaces/store'
 import type { PartnerRow } from './authz'
+import { closureBlockers } from './closures'
 import { db } from './commerce-store'
 import { parseTrailDraft } from './draft'
 import {
@@ -30,6 +31,7 @@ import {
   type StewardAction,
   type StewardRefusal,
 } from './partners'
+import { loadVersionGraph } from './run-store'
 import { authorizeHuntAction } from './store'
 
 type Row = {
@@ -117,7 +119,7 @@ export async function listPartners(huntId: string, actorId: string, now: string)
   }
 }
 
-export type OrganiserRefusal = 'forbidden' | 'not_a_steward' | 'own_space' | 'already_partner' | 'nothing_to_end' | 'changed' | 'failed'
+export type OrganiserRefusal = 'forbidden' | 'not_a_steward' | 'own_space' | 'already_partner' | 'nothing_to_end' | 'changed' | 'failed' | 'breaks_route' | 'route_unchecked'
 type InviteResult = { ok: true } | { ok: false; reason: OrganiserRefusal }
 
 /**
@@ -169,12 +171,23 @@ export async function invitePartner(huntId: string, actorId: string, input: { sp
   return { ok: true }
 }
 
-/** End a partner (suspended) or an unanswered invite (expired). New proof at that venue stops; credit stays. */
+/**
+ * End a partner (suspended) or an unanswered invite (expired). New proof at that venue stops; credit stays.
+ * FH-030S: ending a live partner is a planned closure, so it is refused when the live version would leave
+ * players no way to finish without that venue (a Passport threshold, or a region that needs it). A read
+ * that fails refuses too: an unchecked closure does not go out. A venue that withdraws on its own is
+ * never held here; its staff decide for their Space.
+ */
 export async function revokePartner(huntId: string, actorId: string, spaceId: string, now: string): Promise<InviteResult> {
   const hunt = await authorizeHuntAction(huntId, { profileId: actorId }, 'publish')
   if (!hunt) return { ok: false, reason: 'forbidden' }
   const target = revokeTarget(await loadRow(huntId, spaceId))
   if (!target) return { ok: false, reason: 'nothing_to_end' }
+  if (target.from === 'accepted' && hunt.currentVersionId) {
+    const graph = await loadVersionGraph(huntId, hunt.currentVersionId)
+    if (!graph) return { ok: false, reason: 'route_unchecked' }
+    if (closureBlockers(graph, spaceId).length > 0) return { ok: false, reason: 'breaks_route' }
+  }
   const { data, error } = await db()
     .from('hunt_partners')
     .update({ status: target.to, revoked_at: now })

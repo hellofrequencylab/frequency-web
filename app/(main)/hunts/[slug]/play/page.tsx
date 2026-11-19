@@ -13,6 +13,7 @@ import { VisitedStops } from '@/components/hunts/visited-stops'
 import { VisitedStopsMap } from '@/components/hunts/visited-stops-map'
 import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
+import { CLOSED_STOP_MESSAGE } from '@/lib/hunts/closures'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { projectForPlayer, visitedPins } from '@/lib/hunts/player'
 import { loadRallyFinale } from '@/lib/hunts/rally-finale-store'
@@ -30,6 +31,7 @@ export const dynamic = 'force-dynamic'
 // stops for the team's one run, so the solo confirm form steps aside while they are on a team.
 // The finale panel (FH-031S) shows a Trail's host Event from the Events tables: places left, the
 // player's own seat or why there is none, and a link to the Event. It never claims or holds a seat.
+// A stop whose place is closed right now (FH-030S: a revoked code, a venue that left) says so plainly.
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -41,7 +43,7 @@ export default async function PlayPage({ params, searchParams }: {
 }) {
   const { slug } = await params
   if (!huntSwitchOn('enabled')) notFound()
-  const trail = await loadPublishedTrail(slug)
+  const trail = await loadPublishedTrail(slug, { liveClosures: true })
   if (!trail) notFound()
   const profileId = await getMyProfileId()
   if (!profileId) redirect(`/sign-in?next=/hunts/${slug}/play`)
@@ -100,7 +102,7 @@ export default async function PlayPage({ params, searchParams }: {
                   {s.place ? `: ${s.place}` : ''}
                 </p>
                 {s.clue ? <p className="text-body-sm text-muted">{s.clue}</p> : null}
-                {!s.clue ? <p className="text-body-sm text-subtle">Locked for now.</p> : null}
+                {s.placeClosed ? <p className="text-body-sm text-subtle">{CLOSED_STOP_MESSAGE}</p> : !s.clue ? <p className="text-body-sm text-subtle">Locked for now.</p> : null}
                 {s.answerLocked ? <p className="mt-2 text-body-sm text-muted">Out of tries for this question. The stop that stands in for it still counts, so head there next.</p> : null}
                 {s.hint ? <p className="mt-2 break-words text-body-sm text-muted">Hint: {s.hint}</p> : null}
                 {s.canRevealHint && (

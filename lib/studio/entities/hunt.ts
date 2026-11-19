@@ -44,6 +44,7 @@ export const HUNT_MANIFEST: EntityManifest = {
   sections: [
     { key: 'identity', title: 'Name it', desc: 'The title, the one-line hook, the area and who it is for.' },
     { key: 'stops', title: 'Stops', desc: 'Three to ten stops in order. Each one has a place, a clue and a way to prove the visit.' },
+    { key: 'shape', title: 'Shape', desc: 'A Trail runs in order. A Passport lets players visit stops in any order and finish after a number of them.' },
     { key: 'challenges', title: 'Challenges', desc: 'Optional. A question to answer at a stop, a fork where players pick one stop, or two stops where either one counts.' },
     { key: 'publishing', title: 'Publish', desc: 'Where the trail can be found once it is live.' },
   ],
@@ -53,6 +54,9 @@ export const HUNT_MANIFEST: EntityManifest = {
     { path: 'area', label: 'Area', kind: 'text', section: 'identity', placement: 'spark', editPlane: 'rail' },
     { path: 'audience', label: 'Who it is for', kind: 'text', section: 'identity', placement: 'spark', editPlane: 'rail' },
     { path: 'visibility', label: 'Who can find it', kind: 'select', section: 'publishing', options: HUNT_PUBLISH_VISIBILITY, placement: 'rail' },
+    // FH-030S: a Passport's threshold (TrailDraft.finishCount), published as the finish group's
+    // min_count (lib/hunts/draft.ts publishRows). Stops at one venue count once toward it.
+    { path: 'finishCount', label: 'Players finish after this many stops', kind: 'number', section: 'shape', placement: 'rail' },
   ],
   repeats: [
     {
@@ -88,6 +92,21 @@ export const HUNT_MANIFEST: EntityManifest = {
       fields: [
         { path: 'stop', label: 'Stop', kind: 'select', required: true, optionsFrom: 'trail-stops' },
         { path: 'venueSpaceId', label: 'Partner venue whose staff confirm visits here', kind: 'select', optionsFrom: 'hunt-partner-venues' },
+      ],
+    },
+    // FH-030S: a Passport's regions (TrailDraft.regions), published as hunt_versions.policy.chapters. A
+    // region that is off takes no new visits; publish refuses one that would leave its players unable to
+    // finish (validateGraph, CHAPTER_INFEASIBLE), and so does ending a partner the live route still needs.
+    {
+      arrayPath: 'regions',
+      label: 'Regions',
+      over: 'array',
+      section: 'shape',
+      itemLabel: (item, index) => (typeof item.name === 'string' && item.name) || `Region ${index + 1}`,
+      fields: [
+        { path: 'name', label: 'Region name', kind: 'text', required: true },
+        { path: 'enabled', label: 'Open to players', kind: 'toggle' },
+        { path: 'stops', label: 'Stops in this region', kind: 'multiselect', optionsFrom: 'trail-stops' },
       ],
     },
     // FH-042S (ADR-1977): the challenges, their own list beside the stops, saved by their own action

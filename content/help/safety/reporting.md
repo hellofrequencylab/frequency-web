@@ -23,6 +23,16 @@ Frequency is meant to feel safe. If something's wrong, you have direct ways to a
 
 Your report goes to the moderation queue, where a person reviews it against the [community guidelines](/guidelines). It isn't decided by a bot. You won't see **Report** on your own posts.
 
+## Report a comment, a member or an event
+
+The same report form opens from three more places:
+
+- **A comment**: tap **Report** beside **Reply** on someone else's comment.
+- **A member**: open their profile and tap **Report**, next to **Block**.
+- **An event**: open the event and tap **Report**, beside **Share**.
+
+You need to be signed in, and you won't see **Report** on your own comment, your own profile or an event you run.
+
 ## Report a listing
 
 Market and Housing listings carry their own small **Report** link on the listing page. Tap it, pick a reason, and the team takes a look.

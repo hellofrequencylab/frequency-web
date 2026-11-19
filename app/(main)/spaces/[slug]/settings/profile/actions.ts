@@ -371,7 +371,7 @@ export async function reseedSpaceBlockCopy(
 
   // Never trust the wire: sanitize the current bag to the block's own schema before the model reads it.
   const safeCurrent = sanitizeBlockContent(blockId, current) ?? {}
-  const copy = await reseedBlockCopy(blockId, draft, safeCurrent, { profileId: caller?.id ?? null })
+  const copy = await reseedBlockCopy(blockId, draft, safeCurrent, { profileId: caller?.id ?? null, spaceId: space.id })
   if (!copy) return { error: 'Could not re-seed this block right now. Try again in a moment.' }
   return { questions: safeWritingQuestions(copy) }
 }

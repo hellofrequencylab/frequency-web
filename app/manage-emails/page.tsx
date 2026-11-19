@@ -3,9 +3,10 @@
 // authorisation. Unlike /unsubscribe (which opts you out on load, RFC 8058 no-click), this page shows the
 // per-category email toggles so a member can turn types off, back on, or leave the rest alone.
 //
-// Fail-closed: a bad or missing token shows a neutral "invalid or expired" state and never reveals whether
-// the profile exists. The tokenless case (the composer-preview footer fallback) lands here too and is routed
-// to settings, so the footer link is never dead.
+// Fail-closed: a link whose params do not verify shows a neutral "invalid or expired" state and never
+// reveals whether the profile exists. A link with NO params at all (EMAIL-079: a footer sent to someone we
+// hold no profile for, a preview or a test send) is not a broken link, so it reads as a plain way in:
+// signing in opens every email setting. Neither state reads the database.
 
 import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
@@ -43,6 +44,18 @@ export default async function ManageEmailsPage({
   searchParams: Promise<SP>
 }) {
   const { p, c, t } = await searchParams
+
+  // No params at all: a footer link that was never personal. Nothing failed, so nothing reads as an error.
+  if (!p && !c && !t) {
+    return (
+      <Layout
+        title="Manage your emails"
+        description="Sign in to open every email setting. You can turn each kind of email on or off there."
+      >
+        <SettingsLink />
+      </Layout>
+    )
+  }
 
   // Fail-closed: any missing part, an unknown category, or a token that does not verify shows the SAME
   // neutral state. Never leaks whether the profile exists.

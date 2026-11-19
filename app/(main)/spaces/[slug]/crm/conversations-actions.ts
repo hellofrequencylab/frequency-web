@@ -37,6 +37,7 @@ import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comm
 import { brandSignature } from '@/lib/comms/signature'
 import { startConversationMessage, resolveSpaceConversationSender, brandSenderUnavailable } from '@/lib/comms/conversation-compose'
 import { bodyToHtml, renderReplyEmail } from '@/lib/comms/email-template'
+import { conversationManageUrl } from '@/lib/comms/manage-emails-link'
 import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { withDisplayName } from '@/lib/comms/from-address'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
@@ -171,7 +172,7 @@ export async function sendSpaceConversationReplyAction(
     // A Space reply wears the Space's brand (owner ruling 2026-10-12, LIVE-898); the resolver is null
     // on a read fault, which renders the plain wrapper rather than refusing the reply.
     const brand = await resolveSpaceEmailBrand(gate.spaceId)
-    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature, brand)
+    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature, brand, null, conversationManageUrl(conv.memberProfileId))
     const messageId = newConversationMessageId(conv.ref)
     try {
       await enqueueEmail({

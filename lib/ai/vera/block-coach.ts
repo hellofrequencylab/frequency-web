@@ -52,8 +52,16 @@ export function blockCoachContext(input: BlockCoachInput): string {
   return JSON.stringify({ block: input.blockType, fields, ...(grounding ? { space: grounding } : {}) }).slice(0, 2400)
 }
 
+/** The canvas mount: dark behind EDITOR_CANVAS, then the shared coach below. */
 export async function coachNewBlock(input: BlockCoachInput): Promise<BlockCoaching | null> {
   if (!envFlag('EDITOR_CANVAS')) return null
+  return coachBlock(input)
+}
+
+/** The coach itself, with no rollout switch of its own (LIVE-890, approved 2026-11-18): the canvas reaches it through
+ *  coachNewBlock, and the live "rewrite this block" path (lib/importer/compose.ts reseedBlockCopy) calls it directly.
+ *  Same budget key, same AI-off, over-cap, rate-limit and parse fallbacks; null only for a block with no word fields. */
+export async function coachBlock(input: BlockCoachInput): Promise<BlockCoaching | null> {
   const tool = coachTool(input.blockType, input.fields)
   if (!tool) return null
   const fallback: BlockCoaching = { questions: fallbackBlockCoaching(input.fields), source: 'fallback', blockType: input.blockType }
