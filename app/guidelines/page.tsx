@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export default function GuidelinesPage() {
   return (
-    <LegalPage title="Community guidelines" updated="October 6, 2026">
+    <LegalPage title="Community guidelines" updated="November 19, 2026">
         <section>
           <p>
             Frequency works because people show up for each other, online and in the room. These
@@ -61,7 +61,7 @@ export default function GuidelinesPage() {
             they stop being able to message you, and you stop seeing each other.
           </p>
           <p>
-            A person on our team reviews every report within 24 hours. If it breaks these
+            A person on our team reviews every report as soon as we can. If it breaks these
             guidelines, the content comes down. Depending on how serious it is, the member gets a
             warning, a suspension, or loses their account. Reports are private: we never tell
             anyone who reported them.
