@@ -4564,6 +4564,140 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5340,
+      "expiresAt": "2026-11-21T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346170000_transfer_card_fee.sql",
+          "sha256": "6210dff62cfb0353f03ee8b0bd7f71cf7448e19637c7c820cd8bbe766a9539a9"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "components/marketplace/split-order-surfaces.test.tsx",
+          "status": "modified",
+          "sha256": "f5a8f52fc801e6dca2c157206f05487a4d85493466a489a0ac7167f2a406a26b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/RUNBOOKS.md",
+          "status": "modified",
+          "sha256": "f9b63a5ac94d7a56dad23986251e716f6feb39a53874e864990f4a03281ce1fc",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2421.json",
+          "status": "modified",
+          "sha256": "187a916c8a0989d8fe8dd8b000aba594c49d68e3ab24d59e780f358610b56fbc",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/billing/tickets.ts",
+          "status": "modified",
+          "sha256": "e40a901a3723592005170123054654b92174800c329ddd79b421a20df4c58611",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/checkout.ts",
+          "status": "modified",
+          "sha256": "7047ac1ef97caa39c907bd253bbfdb8e4279ab892f80948474f5988a0ed36c25",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/funds-flow.test.ts",
+          "status": "modified",
+          "sha256": "9e0287aaabffca1d060dcad52a1b52773fd5d68677ce84dfc711c4af03cb7a0c",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/funds-flow.ts",
+          "status": "modified",
+          "sha256": "95fc6f451baf2c94d9f4ae85f645ad09db5480637161be186b6f3394f08a8563",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/order-receipt.ts",
+          "status": "modified",
+          "sha256": "0aa624a19dde7b64bbd5437678d05b2ba024d509b5c54c2d0b1efe59183298f6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/orders.ts",
+          "status": "modified",
+          "sha256": "a10a72545c6261d72ad82d13447180bb267dfa83239ae23d3f9b76107e97bd11",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/split-refund.ts",
+          "status": "modified",
+          "sha256": "519797a92d8bb22cbeeebee11c4373ab6b50fafc91d6d98e0ab3254fccaeb2fc",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/transfers.test.ts",
+          "status": "modified",
+          "sha256": "e1c6862cefe73d72a1c8b33eae193023d255e1b5db938cd4f6ea288d4cb6e59a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/commerce/transfers.ts",
+          "status": "modified",
+          "sha256": "3bea3da9bc7c16a746d23a7752a8f71a14d1d6147362688e8750ec36c52062ea",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "0a01ea91d9ce47bc42db77e5a2c0e8ea02e7b3365af5db53fb7c4b8703985e99",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/events/revenue-splits.ts",
+          "status": "modified",
+          "sha256": "0dfa509dcd5a6fa178f44d7b71c35f7de3509f151c87dd5839881eeca1486d62",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346170000_transfer_card_fee.sql",
+          "status": "added",
+          "sha256": "6210dff62cfb0353f03ee8b0bd7f71cf7448e19637c7c820cd8bbe766a9539a9",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/commerce_order_transfers.test.sql",
+          "status": "modified",
+          "sha256": "35226bc0095a912a85f84d01c33de79e33e0dbafcce0700448a7cf3c302ce9e0",
+          "baseMode": "100644",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
