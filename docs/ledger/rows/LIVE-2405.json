@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2405",
+  "title": "A seller's earnings on screen match their payout once the card fee passes through",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/commerce/orders.ts",
+    "ref": "Owner 2026-11-18: \"is card processing taken into consideration?\" then \"make all the changes site wide to the new system\" (project thread: Rethink our take rates). ADR-1978."
+  },
+  "detail": "The earnings rollups in lib/commerce/orders.ts work a net as gross minus Frequency's fee in several places, and the order receipt and earnings screens show it. From the pass-through date a sale also loses the card fee before it reaches the seller, so every net on screen would read higher than the payout. Work: take the card fee each sale carried off the net (cardFeeCentsAt / sellerFeesAt in lib/billing/card-fee.ts, from the sale's amount and created time, zero before the date), show it as its own line next to Frequency's fee, and keep feeCents meaning Frequency's fee. This row is a gate on setting the date (docs/RUNBOOKS.md).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2405.mjs",
+    "note": "Fails until the earnings views subtract the card fee a sale carried."
+  },
+  "wave": "W7"
+}
