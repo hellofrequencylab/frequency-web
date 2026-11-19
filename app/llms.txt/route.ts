@@ -340,7 +340,9 @@ export async function GET() {
       const c = getFunnelConfig(slug, input)!
       // The door's own name leads, so an assistant can answer "which door am I"; the hero line follows.
       const label = NICHE_DESIGN[slug]?.short ?? c.hero.h1
-      return `- [${label}](${abs(`/for/${slug}`)}): ${c.hero.h1}. ${c.hero.eyebrow}. ${c.hero.subhead}`
+      // The hero line and the eyebrow may already end a sentence; never double the full stop.
+      const sentence = (s: string) => s.trim().replace(/[.!?]+$/, '')
+      return `- [${label}](${abs(`/for/${slug}`)}): ${sentence(c.hero.h1)}. ${sentence(c.hero.eyebrow)}. ${c.hero.subhead}`
     }),
     '',
     '## How it fits together',

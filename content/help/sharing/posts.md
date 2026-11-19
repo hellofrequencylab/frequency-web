@@ -35,7 +35,7 @@ Where a post lands depends on where you wrote it:
 
 - **From home.** It goes on your wall and the community feed.
 - **From inside a Circle.** It stays with that Circle, so you can be yourself with your group.
-- **From a Space.** A Space's [Discussion](/help/groups/talk-on-a-space) tab is that Space's Circle, so a post you write there stays with the people at that Space.
+- **From a Space.** A Space's [Community](/help/groups/talk-on-a-space) tab is its wall, so a post you write there stays with the people at that Space.
 
 Hosts can reach wider. See [Dispatches](/help/sharing/dispatches).
 
