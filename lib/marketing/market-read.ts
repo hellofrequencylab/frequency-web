@@ -123,7 +123,7 @@ function synthesize(signal: MarketSignal): PainPoint[] {
       : 'Baseline: the Wired Professional and the Transplant join hopeful, then stall at the threshold of a real room.',
     persona: 'Wired Professional, Transplant',
     ideas: [
-      { channel: 'Social', hook: 'You can be in a room full of people and still drive home alone on a Friday.',
+      { channel: 'Social', hook: 'You can know a hundred people and still drive home alone on a Friday.',
         body: 'Frequency isn’t another feed. It’s a few people, near you, who’d notice if you didn’t show up. Have a look at the Circles near you.' },
       { channel: 'Ad', hook: 'Connected to everything. Close to no one?',
         body: 'A standing place, a standing time, a handful of people who learn your name. Free to start. Leave anytime.' },

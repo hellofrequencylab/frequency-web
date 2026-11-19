@@ -100,7 +100,7 @@ Yes. Open the Circle's settings and change its Channels. The Circle keeps its Ho
 
 ### Can I start a Chapter if there's already one in my city?
 
-Nothing stops you. Check the **Chapters** tab first, though. Joining the one that exists is usually better for both of you than splitting six interested people across two half-full rooms. Circles are meant to stay small, and a full one can seed a new one nearby.
+Nothing stops you. Check the **Chapters** tab first, though. Joining the one that exists is usually better for both of you than splitting six interested people across two small groups. Circles are meant to stay small, and a full one can seed a new one nearby.
 
 ### How is this different from remixing a Starter Circle?
 

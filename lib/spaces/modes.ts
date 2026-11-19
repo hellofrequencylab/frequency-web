@@ -171,7 +171,7 @@ const COACHING_PACKAGES: ModeProfile = {
   variant: 'packages',
   modeLabel: 'Coach',
   focusLabel: 'Packages and scheduling',
-  tagline: 'Sell multi-session packages and fill your calendar with the right clients.',
+  tagline: 'Sell multi-session packages and book the right clients.',
   navEmphasis: ['availability', 'crm', 'members', 'email', 'qr'],
   defaultToggles: ['members', 'qr'],
   pipeline: [
@@ -185,7 +185,7 @@ const COACHING_PACKAGES: ModeProfile = {
   lexicon: { people: 'Clients', person: 'Client', offerings: 'Packages', offering: 'Package' },
   recommendedAddons: ['ai'],
   nextBestActions: [
-    { label: 'Fill your calendar', surface: 'space.offerings' },
+    { label: 'Book more sessions', surface: 'space.offerings' },
     { label: 'Renew a client', surface: 'space.crm' },
   ],
 }
@@ -269,7 +269,7 @@ const EVENT_TICKETED: ModeProfile = {
   variant: 'ticketed',
   modeLabel: 'Event space',
   focusLabel: 'Tickets and passes',
-  tagline: 'Sell tickets, check attendees in, and fill the room.',
+  tagline: 'Sell tickets, check people in, and know who came.',
   navEmphasis: ['tickets', 'checkin', 'members', 'qr'],
   defaultToggles: ['members', 'qr', 'tickets', 'checkin'],
   pipeline: [

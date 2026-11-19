@@ -165,7 +165,7 @@ export const data: Data = {
             icon: 'Coffee',
             image: '',
             title: 'Businesses',
-            body: "You own a studio, a cafe, or a room with a crowd of regulars. Turn them into people who belong somewhere, and fill the room between classes.",
+            body: "You own a studio, a cafe, or a room with a crowd of regulars. Turn them into people who belong somewhere, and give them a reason to come between classes.",
             href: '',
           },
           {

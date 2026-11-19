@@ -16,7 +16,7 @@ const PAINS = [
     alt: 'A small group talking in a bright room',
   },
   {
-    pain: 'A great night, then everyone disappears.',
+    pain: 'People come once, then disappear.',
     way: 'A Space keeps the guest list, so you can welcome people back by name.',
     src: '/create-a-space/photos/pain-2.jpg',
     alt: 'People gathered under string lights at night',

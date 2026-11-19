@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1286",
+  "title": "Copy stops using \"full room\" and \"full nights\" imagery, and the voice guide and AI primer ban it",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "docs/marketing/voice-and-language-guide.md",
+    "ref": "Owner ask 2026-11-19 (project thread: Cut the cheesy \"full room\" copy)"
+  },
+  "detail": "Owner ask 2026-11-19: phrases like \"full room\", \"people who fill a room\" and \"full nights\" read as cheesy; keep it direct and change the pattern at its source.\n\nCAUSE: the canons every writer and agent reads seeded the picture. The messaging manifesto said \"A network of rooms and the people who fill them. Nights that run late.\"; the brand one-liner said \"the people looking to fill them\"; CORE-MODEL and GLOSSARY defined an Event as \"When the room is open\"; brand-strategy said \"the only thing that can't be faked is a room full of people\". The voice guide's \"one concrete image\" rule then pushed writers toward scenes, and the guide only retired \"fill the room\", so \"full room\", \"room full of\", \"people who fill\" and \"after a good night\" kept getting through. The AI primer (lib/ai/voice.ts) had no rule on it at all.\n\nDONE 2026-11-19: the voice guide gains section 9a (banned room-and-night imagery, where it came from, plain replacements, a coffee test) and the concrete-detail rule now asks for a fact, not a scene. VOICE_PRIMER bans the same phrases for every AI drafting path. The seeding canon lines are rewritten (messaging, brand-strategy, community-model, brand book, README, wireframes, CORE-MODEL, GLOSSARY). Live copy rewritten plainly: page-editor templates, site kits (Midnight and niche \"Good nights need a good home\", New World, Mindless), nav, Space modes, features, the lead widget, create-a-space, the business course page, three help articles and the build briefs. scripts/probes/room-imagery.mjs holds both halves.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/room-imagery.mjs",
+    "note": "Fails if the voice guide or AI primer drops the ban, or if any copy surface uses the room-and-night imagery again."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

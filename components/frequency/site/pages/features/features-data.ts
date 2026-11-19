@@ -136,7 +136,7 @@ export const SPACES: Half = {
       features: [
         { id: 'f-tickets', icon: 'ticket', name: 'Tickets + refunds', line: 'Sell tickets on Business and manage your guest list.', tier: 'Business', steps: ['On Business, set a ticket price and a capacity.', 'Guests pay at checkout.', 'Review the order and refund controls if plans change.'], changes: 'No spreadsheet on the night.' },
         { id: 'f-memberships', icon: 'membership', name: 'Memberships', line: 'Recurring support with the benefits you set.', tier: 'Business', steps: ['Set a monthly price.', 'Link a Circle if you want the tier to include access, subject to capacity.', 'Manage payouts through your connected account.'], changes: 'Offer a recurring way to support your Space.' },
-        { id: 'f-tips', icon: 'gem', name: 'Tips', line: 'Thanks after a good night, with only card processing taken out.', tier: 'Free', steps: ['Guests tip after checking in.', 'Stripe manages payouts to your connected account.', 'No platform fee, only card processing.'], changes: 'Give guests a way to leave a tip.' },
+        { id: 'f-tips', icon: 'gem', name: 'Tips', line: 'Thanks after an event they enjoyed, with only card processing taken out.', tier: 'Free', steps: ['Guests tip after checking in.', 'Stripe manages payouts to your connected account.', 'No platform fee, only card processing.'], changes: 'Give guests a way to leave a tip.' },
       ],
     },
     {

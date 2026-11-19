@@ -53,8 +53,8 @@ That is the entire commercial model. Five sentences, no tier chart needed to exp
 |---|---|---|
 | **Member** | A person. Free, forever. | `profiles` |
 | **Space** | A business's home on Frequency. | `spaces` |
-| **Circle** | A room inside it, where a group actually meets. | `circles` (`space_id` → `spaces`) |
-| **Event** | When the room is open. | `events` (`space_id`, optional `scope_circle_id`) |
+| **Circle** | A group inside it that actually meets. | `circles` (`space_id` → `spaces`) |
+| **Event** | A set time when people meet. | `events` (`space_id`, optional `scope_circle_id`) |
 
 Everything else — practices, Journeys, the Quest, the marketplace, housing, airwaves — lives
 *inside* one of those four or is a side thing we all do together. **If a feature cannot be explained

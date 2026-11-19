@@ -85,12 +85,12 @@ Two separate settings in your Circle's settings, and they do different jobs. Mix
 
 **Who can join** decides whether people can come in:
 
-- **Anyone can join** is the default, and the right one while you are filling the room.
+- **Anyone can join** is the default, and the right one while you are still finding people.
 - **Members only** means you add people yourself. Nobody else sees inside.
 - **By invite only** means an invite link or a QR code is the only way in.
 - Circles a Space owns get three more: **Space team only**, **Space members only** for anyone with an active membership in the Space, and **Included with a membership**. A free Space can run a membership tier that is free to join. Charging for one starts at **Business**, with a payout account.
 
-The pairing most Hosts miss: leave the Circle listed and set who can join to **Members only**. Strangers find it by name, read what it is about, and ask to come. You keep the room shut until you say otherwise.
+The pairing most Hosts miss: leave the Circle listed and set who can join to **Members only**. Strangers find it by name, read what it is about, and ask to come. Nobody joins until you say yes.
 
 ## Put your Circle on the map
 

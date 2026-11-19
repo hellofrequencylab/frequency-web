@@ -195,7 +195,7 @@ const SPECS: Record<NewWorldKitNiche, Spec> = {
     hero: { eyebrow: 'Twelve groups · six neighbourhoods', title: 'Small groups', em: 'near you.', body: 'Walkers, readers, potluck cooks, new arrivals, early dads, bad sketchers. Each group is under twenty people and meets at the same time in the same place. Join one. Then another.' },
     story: ['Third Place is not a venue. It is twelve small groups meeting in borrowed rooms across the city, held together by hosts who were once the new person.', 'Each group stays under twenty. When one gets full, a member starts the next one with our backing.', 'Hosts get a format, a room and the kit. Members get people to call on a Tuesday.'], story2: ['Many groups,', 'overlapping.'], quote: 'Open doors, small rooms, familiar faces.',
     groups: [['Westside Walkers', 'Saturdays · 9am', 'An hour on foot. The route changes, the people do not.'], ['Book & Beer', 'Second Tuesday · 7pm', 'One book a month. Reading it is optional.'], ['Sunday Potluck', 'Sundays · 1pm', 'Everyone brings one thing. Nobody brings it twice.'], ['New in Town', 'Thursdays · 6:30pm', 'Your first group. Hosted by people who remember.'], ['Dads Early', 'Saturdays · 7am', 'Coffee before the day starts.'], ['Sketch Club', 'Wednesdays · 6pm', 'Draw badly together.']],
-    events: [['All-groups night', 'Twelve groups, one hall, one long table. RSVP.'], ['New in Town · first Thursday', 'A room full of people who just arrived.'], ['Host a group · info evening', 'You already organise. Here is backup.']],
+    events: [['All-groups night', 'Twelve groups, one hall, one long table. RSVP.'], ['New in Town · first Thursday', 'For people who just moved here.'], ['Host a group · info evening', 'You already organise. Here is backup.']],
     offers: [{ name: 'Join a group', meta: 'Any group, show up when you can', price: '', dur: 'Any week' }, { name: 'Host a group', meta: 'A format, a room, people who return', price: '', dur: 'Monthly check-in' }, { name: 'Six weeks in', meta: 'A small group for your first six weeks in the city', price: '', dur: '6 weeks' }],
     trust: [['Checked in at the door', 'Every group, one tap'], ['Groups in every neighbourhood', 'Find yours'], ['A shared calendar', 'Every group in one place'], ['Open to join', 'Supporters keep rooms booked']],
     reviewsAbout: ['Book & Beer', 'New in Town', 'Westside Walkers'],
@@ -436,7 +436,7 @@ function pages(s: Spec, niche: NewWorldKitNiche): KitPage[] {
         rows: [
           { icon: 'check', title: 'Open doors', body: 'Anyone can join. No velvet rope, nothing members-only.' },
           { icon: 'users', title: 'Same faces', body: 'Groups meet at the same time in the same place, so coming back is easy and someone notices when you do.' },
-          { icon: 'heart', title: 'Bring someone', body: 'A first visit with a friend is celebrated. Word of mouth is how this room fills.' },
+          { icon: 'heart', title: 'Bring someone', body: 'A first visit with a friend is celebrated. Most people here came because a friend asked.' },
         ],
         register: 'auto',
       },

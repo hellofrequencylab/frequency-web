@@ -162,7 +162,7 @@ export const data: Data = {
         items: [
           { icon: 'Heart', image: '', title: 'You carry all of it', body: 'Booking, texting, setup, the money, the hard conversations. It all runs through you, and you’re getting tired.', href: '' },
           { icon: 'MessageCircle', image: '', title: 'The loudest guest runs the room', body: 'Nobody said the rules out loud, so the person with the most opinions made them. Quieter people stop coming back.', href: '' },
-          { icon: 'Zap', image: '', title: 'A full room that doesn’t cover its costs', body: 'Rent, supplies, snacks, your drive, your hours. People loved it, and you still came home behind.', href: '' },
+          { icon: 'Zap', image: '', title: 'People came, and you still lost money', body: 'Rent, supplies, snacks, your drive, your hours. People loved it, and you still came home behind.', href: '' },
         ],
         tone: 'surface',
         width: 'default',
@@ -358,7 +358,7 @@ export const data: Data = {
       props: {
         id: 'boc-cta',
         eyebrow: 'Free. Four weeks. Live on Zoom.',
-        heading: 'Keep the room. Keep yourself.',
+        heading: 'Keep it going. Keep yourself going.',
         headingAccent: 'Keep yourself.',
         body: 'The launch Run starts January 7. Anything else, ask. A real person answers.',
         ctaPrimaryLabel: START,

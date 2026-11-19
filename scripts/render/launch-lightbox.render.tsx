@@ -30,7 +30,7 @@ async function page(inner: unknown, behind: string): Promise<string> {
 }
 
 // The page the person came from, dimmed behind the overlay (the Venues door).
-const BEHIND = '<main style="padding:24px"><p class="eyebrow">Venues and rooms</p><h1 class="h1" style="margin:10px 0 14px">Your room, your rules.</h1><div class="card" style="padding:20px"><p>Fill your calendar with people who love your space.</p><a class="btn pa">Open your Space</a></div></main>'
+const BEHIND = '<main style="padding:24px"><p class="eyebrow">Venues and rooms</p><h1 class="h1" style="margin:10px 0 14px">Your room, your rules.</h1><div class="card" style="padding:20px"><p>Every group that meets in your space, in one place.</p><a class="btn pa">Open your Space</a></div></main>'
 
 it('renders the launch lightbox', async () => {
   if (!out) throw new Error('set RENDER_OUT')

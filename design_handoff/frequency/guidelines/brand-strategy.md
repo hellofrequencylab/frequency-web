@@ -19,7 +19,7 @@ The numbers put a floor under the feeling:
 - They're losing trust in the screen. 40% of US consumers say heavy AI use would lower their trust in a brand they love, double the year before.
 
 ### Where they're heading (2027 to 2030)
-1. **The feed gets fake.** As more of the internet is generated, the only thing that can't be faked is a room full of people. Being physically there becomes the new status signal, and proof of presence (a check-in, a photo from the circle) becomes social currency.
+1. **The feed gets fake.** As more of the internet is generated, the only thing that can't be faked is showing up in person. Being physically there becomes the new status signal, and proof of presence (a check-in, a photo from the circle) becomes social currency.
 2. **The body becomes the interface.** This group already tracks sleep, HRV and steps. Next they want to *feel* the change, not just see a chart. They'll respond to a product that matches their state, not one that tells them what their state is.
 3. **Range beats calm.** Wellness spent a decade selling calm, and calm alone has gone a bit beige. The edge of the culture is now sober raves, ecstatic dance, sauna socials, breathwork that ends in a dance floor. People want to come *down* and come *alive*, ideally with the same people in the same week.
 4. **Belonging needs a ritual.** Generic community doesn't hold. Repeated rituals do: the same time, the same place, the same faces. "Thursday" matters more than "community."
@@ -153,7 +153,7 @@ Rules that follow:
 Canon: `guidelines/community-model.md` (the owner's words, verbatim). Design consequences:
 
 - **Energy is earned in the room.** The aura and energy states are already the brand's way of showing aliveness. The same visual language now carries **standing**: a Space or Circle that gathers often, with real people in the room, literally glows brighter. Standing is drawn as the Signal line and an aura intensity on directory cards. It's never a number you can buy, and there's no "promoted" or "sponsored" treatment anywhere in the system.
-- **Three shapes, learned once.** Space (the home), Circle (the room), Event (when the room is open). Every surface shows which one you're looking at and how they nest: "Thursday Run Club · a Circle at Cedar Studio."
+- **Three shapes, learned once.** Space (the home), Circle (the group), Event (when the group meets). Every surface shows which one you're looking at and how they nest: "Thursday Run Club · a Circle at Cedar Studio."
 - **The game pays for real-world acts, so the UI celebrates them.** Check-ins, finished practices and first-time friends get the bloom, the breath and the Zaps reveal. Scrolling gets nothing. There are no streak counters on feeds and no reward animations for online actions.
 - **Builder register.** Space owners hear the same plain voice, with proof over pitch: "14 people checked in Tuesday. 3 were new." It always lands on Captured, Booked or Returned, never revenue.
 - **Money stays quiet and fair.** When pricing appears, it's one sentence: "Your regulars: 0%. People we bring you: a small share. Non-profits: nothing." No discounts, no strike-throughs, no countdowns.

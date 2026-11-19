@@ -201,7 +201,7 @@ Tags: Free, Your account, From mid November, All six doors
 **Steps**
 
 1. Set the bio link on Instagram and TikTok to https://frequencylocal.com, and later swap it to the matching /for page in each post.
-2. Record six 30 to 60 second videos, one per door, each answering one question in the host's own words, such as "How do I fill the room on a slow night" for venues.
+2. Record six 30 to 60 second videos, one per door, each answering one question in the host's own words, such as "How do I get people in on a slow weeknight" for venues.
 3. Post each to YouTube with the door name and "North County San Diego" in the title and the /for link in the first line of the description. Then post the same clip to TikTok and Instagram Reels.
 4. Post two to three times a week. Keep to the voice guide: plain, no hype words.
 

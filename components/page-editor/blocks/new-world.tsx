@@ -1913,7 +1913,7 @@ export const newWorldBlocks: Record<string, ComponentConfig> = {
       rows: [
         { icon: "check", title: "Open doors", body: "Joining is free. No velvet rope, nothing members-only." },
         { icon: "users", title: "Same faces", body: "Groups meet at the same time in the same place, so coming back is easy and someone notices when you do." },
-        { icon: "heart", title: "Bring someone", body: "A first visit with a friend is celebrated. Word of mouth is how this room fills." },
+        { icon: "heart", title: "Bring someone", body: "A first visit with a friend is celebrated. Most people here came because a friend asked." },
       ],
       register: "auto",
     },
