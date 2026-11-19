@@ -1,6 +1,7 @@
 // FIXTURE RENDER: the Mindless Home (the Mindless block family inside the site chrome), drawn with the real SiteChrome, the real
 // skin CSS and the real faces, for the passes beside the design (the Mindless design system, ui_kits/website).
 // Writes $RENDER_OUT/ml-home.html.
+// ML_ACCENT=<yellow|pink|blue> draws it in that paint (accent vars and the paint photos follow), for the /themes showcase.
 // Run: RENDER_OUT=<dir> pnpm exec vitest run -c scripts/render/vitest.render.config.ts scripts/render/mindless-home.render.tsx
 import { createElement as h } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -23,10 +24,13 @@ it('renders the Mindless Home', async () => {
   const { SiteChrome } = await import('@/components/sites/site-chrome')
   const { MINDLESS_CSS } = await import('@/components/sites/mindless-css')
   const { HOUSE_CSS } = await import('@/components/sites/house-css')
-  const blocks: [string, Record<string, unknown>][] = (process.env.RENDER_BLOCKS ? JSON.parse(process.env.RENDER_BLOCKS) : null) ?? [
+  const { mindlessAccentVars, withMindlessAccentPhotos, MINDLESS_ACCENTS } = await import('@/lib/theme/mindless')
+  const ML = (process.env.ML_ACCENT && process.env.ML_ACCENT in MINDLESS_ACCENTS ? process.env.ML_ACCENT : 'yellow') as keyof typeof MINDLESS_ACCENTS
+  const raw: [string, Record<string, unknown>][] = (process.env.RENDER_BLOCKS ? JSON.parse(process.env.RENDER_BLOCKS) : null) ?? [
     ['MindlessHero', H.MINDLESS_HERO], ['MindlessSplit', H.MINDLESS_SPLIT], ['MindlessPillars', H.MINDLESS_PILLARS], ['MindlessCircles', H.MINDLESS_CIRCLES],
     ['MindlessPeople', H.MINDLESS_PEOPLE], ['MindlessCarry', H.MINDLESS_CARRY], ['MindlessOffers', H.MINDLESS_OFFERS], ['MindlessFaq', H.MINDLESS_FAQ], ['MindlessCta', H.MINDLESS_CTA],
   ]
+  const blocks = withMindlessAccentPhotos(raw, ML)
   const links = [{ label: 'Home', href: '/' }, { label: 'Services', href: '/services' }, { label: 'About', href: '/about' }, { label: 'Book', href: '/booking' }]
   const meta = { links: { origin: 'https://x.test', slug: 'mindless', siteBase: '', pages: ['home', 'services', 'about', 'booking', 'circles'], contactHref: '/contact', bookHref: null, email: null } }
   const body = renderToStaticMarkup(
@@ -39,6 +43,6 @@ it('renders the Mindless Home', async () => {
     h('div', { className: 'mw-page' }, ...blocks.map(([type, props], i) => { const c = mindlessBlocks[type]; return h('div', { key: i, className: `site-doc-section site-layout-${i}` }, h('div', null, h('div', { className: 'space-y-12 py-8' }, (c.render as (p: Record<string, unknown>) => never)({ ...c.defaultProps, ...props, puck: { metadata: meta } })))) }))),
   )
   const css = `${face('Rubik Wet Paint', 'rubik-wet-paint/rubik-wet-paint-400.woff2', '400')}${face('Archivo', 'archivo/archivo-400.woff2', '400')}${face('Archivo', 'archivo/archivo-800.woff2', '800')}`
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}${HOUSE_CSS}*,*::before,*::after{box-sizing:border-box}body{margin:0}[data-house-theme]{--font-ml-paint:"Rubik Wet Paint";--font-ml-archivo:"Archivo"}</style><style>${MINDLESS_CSS}</style></head><body>${body}</body></html>`
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}${HOUSE_CSS}*,*::before,*::after{box-sizing:border-box}body{margin:0}[data-house-theme]{--font-ml-paint:"Rubik Wet Paint";--font-ml-archivo:"Archivo"}</style><style>${MINDLESS_CSS}</style></head><body><div style="${Object.entries(mindlessAccentVars(MINDLESS_ACCENTS[ML].accent)).map(([k, v]) => `${k}:${v}`).join(';')}">${body}</div></body></html>`
   writeFileSync(`${out}/ml-home.html`, html.replace(/ loading="lazy"/g, '').replace(/url\(&quot;\/sites\//g, `url(&quot;file://${ROOT}/public/sites/`).replace(/url\("\/sites\//g, `url("file://${ROOT}/public/sites/`).replace(/(src|href)="\/(sites|brand)\//g, `$1="file://${ROOT}/public/$2/`))
 })
