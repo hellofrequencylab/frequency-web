@@ -15,6 +15,7 @@ import { ReactionBar, ReactionCounts, ReactionInlinePicker, usePostReactions, ty
 import type { CommentNode, CommentLeaf, CommentThread } from '@/lib/feed/comment-thread'
 import { Textarea } from '@/components/ui/field'
 import { IconButton } from '@/components/ui/icon-button'
+import { ReportLink } from '@/components/report-link'
 
 // ── The markdown body, loaded on demand ──────────────────────────────────────
 // `PostBody` pulls react-markdown and the remark pipeline behind it (~35-45 KB gz). THIS file is
@@ -137,6 +138,15 @@ function CommentRow({
               >
                 Reply
               </button>
+            )}
+            {/* Report (LIVE-2389): a signed-in member, on someone else's comment. The same dialog and
+                action the post menu opens; a comment row has no menu, so it sits beside Reply. */}
+            {myProfileId && author && author.id !== myProfileId && (
+              <ReportLink
+                targetType="comment"
+                targetId={comment.id}
+                className="rounded-control px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-muted"
+              />
             )}
           </div>
         </div>
