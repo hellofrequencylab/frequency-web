@@ -67,8 +67,25 @@ export const MINDLESS_PILLARS = {
   drillsTitle: 'Try one now.',
   drillsLead: 'Sixty seconds. Eyes open. Right where you are.',
   drills: [
-    { label: 'Drill · 1 min', title: 'One-minute breath', guide: '', length: '1:00', href: '~/services' },
-    { label: 'Drill · 5 min', title: 'The dish sit', guide: '', length: '5:00', href: '~/services' },
+    { label: 'Drill · 1 min', title: 'One-minute breath', guide: 'In for five. Out for five.', length: '1:00', href: '' },
+    { label: 'Drill · 5 min', title: 'The dish sit', guide: 'Warm water. One plate at a time.', length: '5:00', href: '' },
+  ],
+}
+
+/** The timer section (LIVE-2392): the design system's SessionPlayer and ChoiceGroup, running. Not on the Home; an owner adds it. */
+export const MINDLESS_TIMER = {
+  ground: '',
+  num: '',
+  label: 'The timer',
+  title: 'Pick a length. *Press play.*',
+  lead: 'No app. No account. Sit where you are and follow the breath until the bell.',
+  playerLabel: 'Mindless timer',
+  pacer: true,
+  rows: [
+    { title: 'One minute', meta: 'Between two things.', guide: 'Eyes open. Right where you are.', length: '1:00' },
+    { title: 'Five minutes', meta: 'Before the day gets loud.', guide: 'Sit down. Let the shoulders drop.', length: '5:00' },
+    { title: 'Ten minutes', meta: 'A real sit.', guide: 'Stay past the part where it gets boring.', length: '10:00' },
+    { title: 'Twenty minutes', meta: 'The long one.', guide: 'Nothing to fix. Just this.', length: '20:00' },
   ],
 }
 

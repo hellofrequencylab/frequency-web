@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2392",
+  "title": "On a Mindless website the timer runs: a drill plays in place and the timer section keeps time to the bell",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/page-editor/blocks/mindless.tsx",
+    "ref": "Owner ask 2026-11-18: build the timer using the design system"
+  },
+  "detail": "Found on the Mindless Home: the design system's SessionPlayer was drawn as a picture of a timer. Under \"Try one now. Sixty seconds.\" each drill's play button was a link to the Services page, the bar sat at 0:00 and nothing kept time. A visitor who pressed play left the page.\n\nDONE 2026-11-18: the SessionPlayer runs (components/sites/mindless-timer.tsx): play, pause, a bar that fills, a breath pacer on the guide line (in for five, out for five) and a soft double bell at the end. Nothing is saved or sent. A drill with no link plays in place; a drill an owner has linked stays a door, so stored sites do not change. The seeded drills carry no link. A new section, Mindless timer, pairs the design's ChoiceGroup (the lengths) with the player and a drip clock; an owner sets the lengths and can turn the pacer off. The few extra rules live in lib/theme/mindless-timer-css.ts, scoped to a Mindless site (ADR-1906) and drawn only from the design's tokens. Rendered inside the Mindless site chrome at 390, 1280, 1440, 1920 and 2000, ready and running, with no sideways scroll.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2392.mjs",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-18",
+  "wave": "W7"
+}

@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react'
 import { ArrowRight, CalendarDays, Coffee, Flame, Heart, MapPin, Moon, Orbit, Sparkles, Sun, Users, Utensils, Wind, type LucideIcon } from 'lucide-react'
 import { InlineText } from '@/components/sites/inline-text'
+import { MindlessPlayer, MindlessTimerPanel } from '@/components/sites/mindless-timer'
+import { parseLength } from '@/lib/sites/mindless-timer'
 import { LINK_HINT, area, arr, block, cls, hrefOf, image, img, rel, str, text, type Common, type Props } from './midnight'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 import {
   MINDLESS_CARRY, MINDLESS_CIRCLES, MINDLESS_CTA, MINDLESS_FAQ, MINDLESS_HERO, MINDLESS_OFFERS, MINDLESS_PAGE_HEAD, MINDLESS_PEOPLE,
-  MINDLESS_PILLARS, MINDLESS_SPLIT, MINDLESS_WEEKS,
+  MINDLESS_PILLARS, MINDLESS_SPLIT, MINDLESS_TIMER, MINDLESS_WEEKS,
 } from '@/lib/sites/mindless-home'
 
 // ── The Mindless block family (the Mindless design system, ui_kits/website, v13) ───────────────────────────────────
@@ -152,8 +154,12 @@ function Split({ p, pad, vis }: Common) {
 
 // ── What we teach: four pillars with icon stickers, then the drills ─────────────────────────────────────────────
 
+// A drill with a link is a door to wherever the owner points it. A drill with no link and a length that reads as one is the
+// design system's SessionPlayer running in place (LIVE-2392): press play and the bar fills.
 function Player({ d, i, metadata }: { d: Props; i: number; metadata?: Props }) {
   const to = hrefOf(str(d.href), metadata)
+  const seconds = to ? null : parseLength(str(d.length))
+  if (seconds) return <MindlessPlayer label={str(d.label)} title={str(d.title)} guide={str(d.guide)} seconds={seconds} tone={i === 0 ? 'yellow' : 'raised'} pace={5} />
   const play = <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" /></svg>
   return (
     <section className={`ml-player ml-player--${i === 0 ? 'yellow' : 'raised'}`}>
@@ -197,6 +203,18 @@ function Pillars({ p, metadata, pad, vis }: Common) {
           {drills.slice(0, 2).map((d, i) => <Player key={i} d={d} i={i} metadata={metadata} />)}
         </div>
       )}
+    </Sec>
+  )
+}
+
+// ── The timer: pick a length, press play ────────────────────────────────────────────────────────────────────────
+
+function Timer({ p, metadata, pad, vis }: Common) {
+  const choices = arr(p.rows).map((r) => ({ title: str(r.title), meta: str(r.meta), guide: str(r.guide), length: str(r.length) }))
+  return (
+    <Sec p={p} pad={pad} vis={vis}>
+      <SecHead p={p} metadata={metadata} />
+      <MindlessTimerPanel label={str(p.playerLabel)} choices={choices} pace={p.pacer === false ? 0 : 5} />
     </Sec>
   )
 }
@@ -429,8 +447,13 @@ export const mindlessBlocks: Record<string, ComponentConfig> = {
   MindlessPillars: block('Mindless what we teach', {
     ground: groundField, ...head, ...btn('action', 'Button beside the heading'), rows: row({ icon: iconField, title: text('Title'), body: area('Line') }),
     drillsTitle: text('Drills heading', VOICE), drillsLead: text('Drills line'),
-    drills: { ...row({ label: text('Small label'), title: text('Title'), guide: text('With'), length: text('Length', 'Like 1:00.'), href: text('Link', LINK_HINT) }), label: 'Drills' },
+    drills: { ...row({ label: text('Small label'), title: text('Title'), guide: text('With'), length: text('Length', 'Like 1:00.'), href: text('Link', `Leave empty and the drill runs right here as a timer. ${LINK_HINT}`) }), label: 'Drills' },
   }, MINDLESS_PILLARS, Pillars),
+  MindlessTimer: block('Mindless timer', {
+    ground: groundField, ...head, playerLabel: text('Small label on the timer'),
+    rows: { ...row({ title: text('Name'), meta: text('Line under the name'), guide: text('Line on the timer'), length: text('Length', 'Like 1:00, or 5 for five minutes.') }), label: 'Lengths' },
+    pacer: { type: 'radio', label: 'Breath pacer (in for five, out for five)', options: [{ label: 'On', value: true }, { label: 'Off', value: false }] },
+  }, MINDLESS_TIMER, Timer),
   MindlessWeeks: block('Mindless weeks', {
     ground: groundField, ...head, rows: row({ title: text('Title'), body: text('Line') }),
   }, MINDLESS_WEEKS, Weeks),
