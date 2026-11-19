@@ -2,7 +2,8 @@
 title: Community Resonance
 description: Community Resonance is your Space's CRM. Track the people you work with, and bring them over from My Contacts.
 category: spaces
-order: 1
+order: 12
+group: Run it day to day
 published: 2026-06-22
 updated: 2026-11-18
 audience: member

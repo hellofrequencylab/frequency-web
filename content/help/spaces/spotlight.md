@@ -2,7 +2,8 @@
 title: Spotlight, your link page
 description: One page to share that holds your links, in your order. You get a personal one, and each Space you run gets its own.
 category: spaces
-order: 12
+order: 4
+group: Get set up
 published: 2026-11-18
 updated: 2026-11-18
 audience: member

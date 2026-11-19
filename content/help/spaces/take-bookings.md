@@ -2,7 +2,8 @@
 title: Take bookings
 description: Set the services people can book, the weekly hours you offer them, and how a booking, a hold and payment at booking work.
 category: spaces
-order: 5
+order: 10
+group: Run it day to day
 published: 2026-10-26
 updated: 2026-11-18
 audience: host

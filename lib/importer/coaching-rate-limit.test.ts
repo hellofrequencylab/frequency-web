@@ -3,7 +3,7 @@ const state=vi.hoisted(()=>({limited:true,throttle:vi.fn(),complete:vi.fn()}))
 vi.mock('@/lib/ai/client',()=>({aiEnabled:()=>true}))
 vi.mock('@/lib/ai/usage',()=>({featureOverBudget:async()=>false}))
 vi.mock('@/lib/ai/rate-limit',()=>({aiRateLimited:async(feature:string,profileId?:string|null)=>{state.throttle(feature,profileId);return state.limited}}))
-vi.mock('@/lib/ai/complete',()=>({completeText:async(input:unknown)=>{state.complete(input);return{text:'{"questionIds":["detail"]}'}}}))
+vi.mock('@/lib/ai/complete',()=>({completeText:async(input:unknown)=>{state.complete(input);return{text:'{"questionIds":["detail"]}'}},completeRaw:async(input:unknown)=>{state.complete(input);return{content:[{type:'tool_use',id:'t',name:'coach_block',input:{questions:[{field:'text',questionId:'detail'}]}}]}}}))
 import { reseedBlockCopy } from './compose'
 import { coachBusinessWriting } from './reframe/run'
 import { WRITING_QUESTIONS } from '@/lib/ai/writing-questions'
@@ -14,6 +14,13 @@ it('both importer coaching paths throttle the actor at the shared seam and never
  expect(await coachBusinessWriting({verified:profile,profileId:'operator-a'})).toEqual({questions:WRITING_QUESTIONS})
  expect(state.throttle.mock.calls).toEqual([['seed-compose','operator-a'],['business-import-reframe','operator-a']])
  expect(state.complete).not.toHaveBeenCalled()
+})
+it('allowed block guidance goes through Vera\'s coach tool under the same attributed feature',async()=>{
+ state.limited=false
+ expect(await reseedBlockCopy('text',{name:'Human words',type:'business'},{text:'Human paragraph'},{profileId:'operator-a',spaceId:'space-a'})).toEqual({questions:['Which concrete details can you explain in your own words?']})
+ expect(state.throttle).toHaveBeenCalledExactlyOnceWith('seed-compose','operator-a')
+ expect(state.complete).toHaveBeenCalledOnce()
+ expect(state.complete.mock.calls[0][0]).toMatchObject({accounting:{feature:'seed-compose',profileId:'operator-a',spaceId:'space-a'},toolChoice:{type:'tool',name:'coach_block'}})
 })
 it('allowed guidance retains the same attributed features without a second actor throttle',async()=>{
  state.limited=false

@@ -38,6 +38,9 @@ export interface HelpArticle {
   title: string
   description: string
   order: number
+  /** Optional sub-heading this article sits under on its topic page (front matter `group`).
+   *  Articles sharing a group are listed together, in `order`. */
+  group?: string
   /** ISO date (YYYY-MM-DD) the article was FIRST published. Backfilled per article from
    *  `git log --follow --diff-filter=A` (the commit that added the file, followed through renames),
    *  which is the only record of it this repo has -- there is no CMS behind these files.
@@ -135,6 +138,9 @@ export interface HelpCategory {
   title: string
   description: string
   order: number
+  /** `hosts` marks a topic written for people who run a Circle or a Space (`_category.json`).
+   *  The help index lists those under their own label, after the member topics. */
+  audience?: 'hosts'
   articles: HelpArticle[]
 }
 
@@ -185,11 +191,16 @@ const arr = (v: string | string[] | undefined): string[] =>
 
 async function readCategoryMeta(
   slug: string
-): Promise<{ title: string; description: string; order: number }> {
+): Promise<{ title: string; description: string; order: number; audience?: 'hosts' }> {
   try {
     const raw = await fs.readFile(path.join(HELP_DIR, slug, '_category.json'), 'utf8')
-    const j = JSON.parse(raw) as { title?: string; description?: string; order?: number }
-    return { title: j.title ?? slug, description: j.description ?? '', order: j.order ?? 99 }
+    const j = JSON.parse(raw) as { title?: string; description?: string; order?: number; audience?: string }
+    return {
+      title: j.title ?? slug,
+      description: j.description ?? '',
+      order: j.order ?? 99,
+      audience: j.audience === 'hosts' ? 'hosts' : undefined,
+    }
   } catch {
     return { title: slug, description: '', order: 99 }
   }
@@ -204,6 +215,7 @@ async function readArticle(category: string, file: string): Promise<HelpArticle>
     title: str(data.title, file),
     description: str(data.description),
     order: Number(str(data.order, '99')) || 99,
+    group: str(data.group).trim() || undefined,
     published: str(data.published),
     updated: str(data.updated),
     audience: str(data.audience, 'member'),

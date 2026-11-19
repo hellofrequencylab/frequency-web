@@ -2,7 +2,8 @@
 title: Send Space email from your own domain
 description: Set up a sender on your own domain for your Space's conversations or campaigns, what DNS records to add, and what happens to replies.
 category: spaces
-order: 8
+order: 13
+group: Run it day to day
 published: 2026-10-12
 updated: 2026-11-18
 audience: member

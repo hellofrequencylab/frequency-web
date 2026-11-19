@@ -1,5 +1,6 @@
 {
   "title": "Running a Space",
   "description": "For owners: the tools a Space gives you, from your website, calendar and bookings to your people, getting paid and your plan.",
-  "order": 8
+  "order": 10,
+  "audience": "hosts"
 }

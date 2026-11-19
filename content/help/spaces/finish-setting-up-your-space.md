@@ -2,7 +2,8 @@
 title: How do I finish setting up my Space?
 description: Walk the five setup steps, check your Search readiness list, and pick the guided launch back up from the Finish setup button whenever you like.
 category: spaces
-order: 10
+order: 2
+group: Get set up
 published: 2026-10-30
 updated: 2026-11-18
 audience: member

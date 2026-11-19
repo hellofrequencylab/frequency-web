@@ -2,7 +2,8 @@
 title: Create a Space
 description: Open a Space for your practice, business or group in five short steps, and change anything later.
 category: spaces
-order: 11
+order: 1
+group: Get set up
 published: 2026-11-18
 updated: 2026-11-18
 audience: member
@@ -17,7 +18,7 @@ A Space is the home your practice, business or group keeps on Frequency. Creatin
 
 - In the left rail, open **Spaces**, then choose **Create a Space** at the top of the directory.
 - If you already run a Space, **Your Spaces** in the left rail lists them, with **Create a Space** for the next one.
-- Not signed in yet? Start at `/create-a-space`. You build first and make your account at the last step.
+- Not signed in yet? Start at [Create a Space](/create-a-space). You build first and make your account at the last step.
 
 ## Walk the five steps
 

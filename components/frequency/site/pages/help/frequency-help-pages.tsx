@@ -24,6 +24,7 @@ import Link from 'next/link'
 import '@/app/themes/active/site-pages-b'
 import { HelpMarkdown } from '@/components/help/help-markdown'
 import { getAllCategories, helpHref } from '@/lib/help/content'
+import { helpSiteLinks } from '@/lib/help/site-links'
 import { helpToc } from '@/lib/help/toc'
 import { HelpIndexSearch, type HelpIndexEntry } from './help-client'
 
@@ -41,6 +42,7 @@ type HelpPlace = { category: string; article?: string } | { changelog: true }
 interface IndexTopic {
   slug: string
   title: string
+  hosts: boolean
   articles: { slug: string; title: string; href: string }[]
 }
 
@@ -48,31 +50,42 @@ function TopicList({ topics, place }: { topics: IndexTopic[]; place: HelpPlace }
   const currentTopic = 'category' in place ? place.category : null
   const currentArticle = 'category' in place ? place.article : undefined
   const onChangelog = 'changelog' in place
+  // Member topics first, then the ones written for people who run a Circle or a Space, each under
+  // its own label so a reader can tell at a glance which half of the help center is theirs.
+  const sets = [
+    { label: 'Using Frequency', topics: topics.filter((t) => !t.hosts) },
+    { label: 'Hosting and running a Space', topics: topics.filter((t) => t.hosts) },
+  ].filter((g) => g.topics.length > 0)
   return (
     <>
-      <ul className="hc-cats">
-        {topics.map((t) => {
-          const open = t.slug === currentTopic
-          return (
-            <li key={t.slug} className={open ? 'is-open' : undefined}>
-              <Link href={`/help/${t.slug}`} aria-current={open && !currentArticle ? 'page' : undefined}>
-                {t.title}
-              </Link>
-              {open && t.articles.length > 0 && (
-                <ul className="hc-arts">
-                  {t.articles.map((a) => (
-                    <li key={a.slug}>
-                      <Link href={a.href} aria-current={a.slug === currentArticle ? 'page' : undefined}>
-                        {a.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          )
-        })}
-      </ul>
+      {sets.map((set) => (
+        <div key={set.label} className="hc-set">
+          {sets.length > 1 && <p className="hc-set-k">{set.label}</p>}
+          <ul className="hc-cats">
+            {set.topics.map((t) => {
+              const open = t.slug === currentTopic
+              return (
+                <li key={t.slug} className={open ? 'is-open' : undefined}>
+                  <Link href={`/help/${t.slug}`} aria-current={open && !currentArticle ? 'page' : undefined}>
+                    {t.title}
+                  </Link>
+                  {open && t.articles.length > 0 && (
+                    <ul className="hc-arts">
+                      {t.articles.map((a) => (
+                        <li key={a.slug}>
+                          <Link href={a.href} aria-current={a.slug === currentArticle ? 'page' : undefined}>
+                            {a.title}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ))}
       <ul className="hc-more">
         <li>
           <Link href="/help/changelog" aria-current={onChangelog ? 'page' : undefined}>
@@ -95,6 +108,7 @@ async function HelpCenterFrame({ place, children }: { place: HelpPlace; children
   const topics: IndexTopic[] = (await getAllCategories()).map((c) => ({
     slug: c.slug,
     title: c.title,
+    hosts: c.audience === 'hosts',
     articles: c.articles.map((a) => ({ slug: a.slug, title: a.title, href: helpHref(c.slug, a.slug) })),
   }))
   const entries: HelpIndexEntry[] = topics.flatMap((t) => t.articles.map((a) => ({ title: a.title, topic: t.title, href: a.href })))
@@ -163,6 +177,41 @@ export interface HelpArticleLink {
   title: string
   description: string
   href: string
+  /** The sub-heading this article is listed under on its topic page, when the topic uses them. */
+  group?: string
+}
+
+/** "2026-11-18" as "November 18, 2026". The date is a plain calendar day, so it is read as UTC. */
+function longDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
+}
+
+/** A topic's articles as runs that share a group, in the order the topic lists them. */
+function groupRuns(articles: HelpArticleLink[]): { group?: string; articles: HelpArticleLink[] }[] {
+  const runs: { group?: string; articles: HelpArticleLink[] }[] = []
+  for (const a of articles) {
+    const last = runs[runs.length - 1]
+    if (last && last.group === a.group) last.articles.push(a)
+    else runs.push({ group: a.group, articles: [a] })
+  }
+  return runs
+}
+
+function ArticleRow({ a }: { a: HelpArticleLink }) {
+  return (
+    <Link className="hp-a" href={a.href}>
+      <span>
+        <b>{a.title}</b>
+        {a.description && <small>{a.description}</small>}
+      </span>
+      <span className="ar" aria-hidden="true">
+        →
+      </span>
+    </Link>
+  )
 }
 
 /** /help/<category>: the topic's articles, in the help center. */
@@ -185,19 +234,16 @@ export function FrequencyHelpCategory({
         lead={description}
         meta={`${articles.length} ${articles.length === 1 ? 'article' : 'articles'}`}
       />
-      <div className="qa hc-list">
-        {articles.map((a) => (
-          <Link key={a.href} className="hp-a" href={a.href}>
-            <span>
-              <b>{a.title}</b>
-              {a.description && <small>{a.description}</small>}
-            </span>
-            <span className="ar" aria-hidden="true">
-              →
-            </span>
-          </Link>
-        ))}
-      </div>
+      {groupRuns(articles).map((run, i) => (
+        <section key={run.group ?? i} className="hc-run">
+          {run.group && <h2 className="hc-run-h">{run.group}</h2>}
+          <div className="qa hc-list">
+            {run.articles.map((a) => (
+              <ArticleRow key={a.href} a={a} />
+            ))}
+          </div>
+        </section>
+      ))}
       <StillStuckLine />
     </HelpCenterFrame>
   )
@@ -210,6 +256,7 @@ export function FrequencyHelpArticle({
   description,
   body,
   updated,
+  featureKeys,
   category,
   prev,
   next,
@@ -219,11 +266,14 @@ export function FrequencyHelpArticle({
   description: string
   body: string
   updated: string
+  featureKeys: string[]
   category: { slug: string; title: string }
   prev: { title: string; href: string } | null
   next: { title: string; href: string } | null
 }) {
-  const toc = helpToc(body)
+  // "Related" closes most articles and is not a section to jump to, so it stays out of the list.
+  const toc = helpToc(body).filter((h) => h.id !== 'related')
+  const doors = helpSiteLinks(featureKeys)
   return (
     <HelpCenterFrame place={{ category: category.slug, article: slug }}>
       <article className="hc-article">
@@ -234,11 +284,22 @@ export function FrequencyHelpArticle({
           meta={
             updated ? (
               <>
-                Updated <time dateTime={updated}>{updated}</time>
+                Updated <time dateTime={updated}>{longDate(updated)}</time>
               </>
             ) : undefined
           }
         />
+        {doors.length > 0 && (
+          <nav className="hc-doors" aria-label="Open in Frequency">
+            <span>Open in Frequency</span>
+            {doors.map((d) => (
+              <Link key={d.href} href={d.href}>
+                {d.label}
+                <i aria-hidden="true">→</i>
+              </Link>
+            ))}
+          </nav>
+        )}
         {toc.length >= 3 && (
           <nav className="hc-toc" aria-label="On this page">
             <p>On this page</p>

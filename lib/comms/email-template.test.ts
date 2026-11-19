@@ -140,3 +140,34 @@ describe('Space brand (owner ruling 2026-10-12)', () => {
     expect(wrapEmailHtml('<p>x</p>')).toContain(SITE_TAGLINE)
   })
 })
+
+// EMAIL-079: the footer's Manage emails link is the recipient's signed link when the sender has one.
+describe('Manage emails link (EMAIL-079)', () => {
+  const SIGNED = 'https://frequencylocal.com/manage-emails?p=abc&c=lifecycle&t=0123456789abcdef0123456789abcdef'
+  const HREF = `href="${SIGNED.replace(/&/g, '&amp;')}"`
+
+  it('renderReplyEmail carries the signed link in the html (escaped) and the text', () => {
+    const { html, text } = renderReplyEmail('Hello', 'Dana', null, null, SIGNED)
+    expect(html).toContain(HREF)
+    expect(html).not.toContain('href="https://frequencylocal.com/manage-emails"')
+    expect(text).toContain(`Manage emails: ${SIGNED}\n`)
+  })
+
+  it('renderCoalescedEmail carries it too', () => {
+    const { html, text } = renderCoalescedEmail('one', '<p>one</p>', null, null, null, SIGNED)
+    expect(html).toContain(HREF)
+    expect(text).toContain(`Manage emails: ${SIGNED}\n`)
+  })
+
+  it('wrapEmailHtml takes the link as its trailing argument', () => {
+    expect(wrapEmailHtml('<p>x</p>', null, null, SIGNED)).toContain(HREF)
+  })
+
+  it('no link, null or an empty string falls back to the public page', () => {
+    for (const manage of [undefined, null, '']) {
+      const { html, text } = renderReplyEmail('Hello', null, null, null, manage)
+      expect(html).toContain('href="https://frequencylocal.com/manage-emails"')
+      expect(text).toContain('Manage emails: https://frequencylocal.com/manage-emails\n')
+    }
+  })
+})

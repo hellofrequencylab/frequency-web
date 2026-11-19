@@ -2,7 +2,8 @@
 title: Subscribe to a Space calendar
 description: Add a Space's calendar to Google or Apple Calendar once, and its events stay current on their own.
 category: spaces
-order: 7
+order: 9
+group: Run it day to day
 published: 2026-10-26
 updated: 2026-11-18
 audience: member
