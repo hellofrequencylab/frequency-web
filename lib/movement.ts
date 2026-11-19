@@ -29,7 +29,7 @@ export const MOVEMENT_MODES: { mode: MovementMode; label: string; blurb: string 
 
 /** One stretch of the timeline. `kind` colors the live screen (prepare neutral,
  *  work success, rest warning). `seconds` 0 = an open count-up phase (Play). */
-export type PhaseKind = 'prepare' | 'work' | 'rest'
+type PhaseKind = 'prepare' | 'work' | 'rest'
 
 interface MovementPhase {
   kind: PhaseKind
