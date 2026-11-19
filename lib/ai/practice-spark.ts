@@ -29,21 +29,6 @@ export const CADENCE_LABEL: Record<PracticeCadenceHint, string> = {
   weekly: 'Weekly',
 }
 
-/** Manual Practice timer configuration. Existing server sanitizers validate every field
- * before storage; coaching never supplies timer settings. */
-export interface PracticeSparkTimer {
-  /** 'mindless' (Be Still), 'movement' (Get Moving), or 'none' (Just Log a real-world act). */
-  timerKind: 'mindless' | 'movement' | 'none'
-  /** The Be Still flavour, when timerKind is 'mindless'. */
-  mindlessMode: 'meditate' | 'breathe' | 'journal' | 'stillness' | 'ritual' | null
-  /** The breath pattern slug, when mindlessMode is 'breathe'. */
-  breathPattern: 'box' | 'cohere' | 'triangle' | '3x' | '478' | null
-  /** The Get Moving shape, when timerKind is 'movement'. */
-  movementMode: 'walk' | 'run' | 'yoga' | 'strength' | 'stretch' | null
-  /** A short creator warm-up line shown in the pre-roll (<= 140 chars), or null. */
-  warmupMessage: string | null
-}
-
 export type PracticeSpark = WritingCoaching
 export type PracticeSuggestion = WritingCoaching
 export const PRACTICE_SPARK = writingCoachingSpec('practice', 'practice-spark', 'sonnet')

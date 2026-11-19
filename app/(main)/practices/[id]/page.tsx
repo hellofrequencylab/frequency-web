@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
-import { Zap, Wand2, Pencil, Timer, Flame } from 'lucide-react'
+import { Zap, Wand2, Pencil, Flame } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import {
@@ -21,7 +21,7 @@ import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { PracticeTimerButton } from '@/components/practice/practice-timer-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { PillarBadge } from '@/components/practice/pillar-badge'
-import { timerPreview } from '@/lib/movement'
+import { PracticeTimerPanel } from '@/components/practice/practice-timer-panel'
 import { ClaimPractice } from '@/components/practice/claim-practice'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { PracticeAuthor } from '@/components/practice/practice-author'
@@ -134,6 +134,8 @@ export default async function PracticeDetailPage({ params }: Params) {
   }
 
   const summary = practice.summary ?? practice.description ?? null
+  // Who can do this practice from here: its author, or a member who has adopted it.
+  const canDo = !!profileId && (isOwner || state.adopted)
   const authorLine = creator?.handle ? <PracticeAuthor creator={creator} prefix="Created by" /> : null
 
   // Phase E upsell tease gate (ADR-466): when a practice was logged today (the habit just paid off),
@@ -159,11 +161,6 @@ export default async function PracticeDetailPage({ params }: Params) {
       badges={
         <>
           {pillarName && <PillarBadge name={pillarName} />}
-          {/* How it runs, at a glance (ADR-592, P4): the timer mode + shape, or "Log it". */}
-          <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-medium text-muted">
-            {practice.uses_timer && <Timer className="h-3 w-3" aria-hidden />}
-            {timerPreview({ timerKind: practice.timer_kind, movementConfig: practice.movement_config, durationMin: practice.duration_min })}
-          </span>
           {practice.subcategory && (
             <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-meta font-medium text-primary-strong">
               {practice.subcategory.name}
@@ -192,8 +189,49 @@ export default async function PracticeDetailPage({ params }: Params) {
           `resolveDetailHero` and rendered through the canonical PageHero — one cover grammar for
           entity and index alike (PROG-P5). */}
 
-      {/* Claim / adopt / log / edit — interactive + member-state dependent, so they stay fixed
-          (not a layout block). */}
+      {/* How it is done, and the one action that does it (LIVE-2396). The timer card says what
+          Start will open in plain words; the member who can do this practice (its author, or
+          anyone who has adopted it) gets the primary button inside it. */}
+      <PracticeTimerPanel
+        config={{
+          timerKind: practice.timer_kind ?? (practice.uses_timer ? 'mindless' : 'none'),
+          mindlessMode: practice.mindless_mode,
+          breathPattern: practice.breath_pattern,
+          movementConfig: practice.movement_config,
+          durationMin: practice.duration_min,
+          durationLocked: practice.duration_locked,
+          warmupSec: practice.warmup_sec,
+          warmupMessage: practice.warmup_message,
+        }}
+        setupHref={isOwner ? `/practices/${practice.id}/edit#timer` : null}
+        action={
+          canDo ? (
+            // A timed practice is logged from its timer (the server refuses a one-tap on it), so
+            // it shows ONLY the timer button; the one-tap log is for a practice with no timer. A
+            // partial today resumes ("Continue Practice") instead of starting from zero.
+            practice.uses_timer ? (
+              <PracticeTimerButton
+                prominent
+                practiceId={practice.id}
+                timerKind={practice.timer_kind}
+                movementMode={practice.movement_config?.mode ?? null}
+                resumeFromSec={state.partialToday?.bankedSec}
+                secondsTarget={state.partialToday?.targetSec}
+              />
+            ) : (
+              <LogPracticeButton
+                practiceId={practice.id}
+                initialLogged={state.loggedToday}
+                resumeFromSec={state.partialToday?.bankedSec}
+                secondsTarget={state.partialToday?.targetSec}
+              />
+            )
+          ) : undefined
+        }
+      />
+
+      {/* Claim / adopt / share / remix — interactive + member-state dependent, so they stay
+          fixed (not a layout block). */}
       <div className="mb-6 flex flex-wrap items-center gap-2">
         {!profileId ? (
           <Link
@@ -204,29 +242,6 @@ export default async function PracticeDetailPage({ params }: Params) {
           </Link>
         ) : isOwner ? (
           <>
-            {/* The plain one-tap log is ONLY for a non-timed practice. A timed practice must be
-                logged from its timer (the server refuses a one-tap on it), so it shows ONLY the
-                timer button below, never this one. */}
-            {!practice.uses_timer && (
-              <LogPracticeButton
-                practiceId={practice.id}
-                initialLogged={state.loggedToday}
-                resumeFromSec={state.partialToday?.bankedSec}
-                secondsTarget={state.partialToday?.targetSec}
-              />
-            )}
-            {/* A timed practice opens the On Air timer pre-set to this practice + its length
-                in place (C.4); a log-only practice has no timer. A partial today resumes it
-                ("Continue Practice") instead of starting from zero. */}
-            {practice.uses_timer && (
-                  <PracticeTimerButton
-                    practiceId={practice.id}
-                    timerKind={practice.timer_kind}
-                    movementMode={practice.movement_config?.mode ?? null}
-                    resumeFromSec={state.partialToday?.bankedSec}
-                    secondsTarget={state.partialToday?.targetSec}
-                  />
-                )}
             <ProposeToLibraryButton
               type="practice"
               id={practice.id}
@@ -237,58 +252,10 @@ export default async function PracticeDetailPage({ params }: Params) {
           <>
             <ClaimPractice templateId={practice.id} fallback={fallback} />
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
-            {state.adopted && (
-              <>
-                {/* The plain one-tap log is ONLY for a non-timed practice; a timed practice is
-                    logged from its timer (the server refuses a one-tap on it), so it shows ONLY
-                    the timer button below. */}
-                {!practice.uses_timer && (
-                  <LogPracticeButton
-                    practiceId={practice.id}
-                    initialLogged={state.loggedToday}
-                    resumeFromSec={state.partialToday?.bankedSec}
-                    secondsTarget={state.partialToday?.targetSec}
-                  />
-                )}
-                {practice.uses_timer && (
-                  <PracticeTimerButton
-                    practiceId={practice.id}
-                    timerKind={practice.timer_kind}
-                    movementMode={practice.movement_config?.mode ?? null}
-                    resumeFromSec={state.partialToday?.bankedSec}
-                    secondsTarget={state.partialToday?.targetSec}
-                  />
-                )}
-              </>
-            )}
           </>
         ) : (
           <>
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
-            {state.adopted && (
-              <>
-                {/* The plain one-tap log is ONLY for a non-timed practice; a timed practice is
-                    logged from its timer (the server refuses a one-tap on it), so it shows ONLY
-                    the timer button below. */}
-                {!practice.uses_timer && (
-                  <LogPracticeButton
-                    practiceId={practice.id}
-                    initialLogged={state.loggedToday}
-                    resumeFromSec={state.partialToday?.bankedSec}
-                    secondsTarget={state.partialToday?.targetSec}
-                  />
-                )}
-                {practice.uses_timer && (
-                  <PracticeTimerButton
-                    practiceId={practice.id}
-                    timerKind={practice.timer_kind}
-                    movementMode={practice.movement_config?.mode ?? null}
-                    resumeFromSec={state.partialToday?.bankedSec}
-                    secondsTarget={state.partialToday?.targetSec}
-                  />
-                )}
-              </>
-            )}
             {/* Remix = fork a copy you own (ADR-109). Gated behind a confirm dialog so the
                 member knows they're creating a NEW practice, not editing the original. */}
             <RemixPracticeButton practiceId={practice.id} />

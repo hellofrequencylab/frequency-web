@@ -30,6 +30,7 @@ import {
   type PracticeEdit,
 } from '@/lib/practices'
 import { pillarIdsBySlug } from '@/lib/journeys/compose'
+import { isTimerSetupId, timerSetupPatch } from '@/lib/practices/timer-setups'
 import {
   draftPracticeSpark,
   type PracticeSparkAnswers,
@@ -97,6 +98,10 @@ export async function createPracticeFromSparkAction(input: {
     movementMode?: string | null
     warmupMessage?: string | null
   } | null
+  /** The timer setup the author picked on the review step (LIVE-2396): an ID from the closed
+   *  catalog (lib/practices/timer-setups.ts) and an optional length. The catalog decides every
+   *  column; an unknown ID is ignored and the Practice keeps the plain default. */
+  timerSetup?: { id: string; minutes?: number | null } | null
   /**
    * A header image the author kept from Vera's draw on the review step (ADR-993). It is already a
    * real asset in their Loom (generateEntityCoverAction files it there), so this only records
@@ -183,6 +188,10 @@ export async function createPracticeFromSparkAction(input: {
       patch.warmup_message = t.warmupMessage.trim()
     }
   }
+  // The picked setup (LIVE-2396) decides the timer columns together, so they always agree with
+  // each other. updatePractice still re-validates every one of them.
+  const setup = input.timerSetup
+  if (setup && isTimerSetupId(setup.id)) Object.assign(patch, timerSetupPatch(setup.id, setup.minutes))
   if (input.pillars?.length) {
     const ids = await pillarIdsBySlug()
     const fd: Record<string, { instructions: string; timing: string }> = {}

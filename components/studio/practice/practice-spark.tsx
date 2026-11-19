@@ -45,7 +45,9 @@ import { sparkFields } from '@/lib/studio/kernel/review-kernel'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import { sparkPracticeAction, createPracticeFromSparkAction } from '@/app/(main)/practices/create-actions'
 import { createPracticeDraftAction } from '@/app/(main)/practices/actions'
-import type { PracticePace, PracticeCadenceHint, PracticeSparkTimer } from '@/lib/ai/practice-spark'
+import type { PracticePace, PracticeCadenceHint } from '@/lib/ai/practice-spark'
+import type { TimerSuggestion } from '@/lib/practices/timer-setups'
+import { TimerSuggestions, type SuggestTimer } from './timer-suggestions'
 import { chipClasses } from '@/components/ui/chip'
 
 // The Be Still sub-mode LABELS (naming canon: member copy never shows raw enum slugs).
@@ -128,7 +130,10 @@ const PLACEHOLDER: Record<string, string> = {
 /** What the review controls accept, matching what the server stores (lib/practices.ts). */
 const LIMIT = { title: 80, summary: 140, description: 280, body: 8000 } as const
 
-export function PracticeSpark() {
+/** The session length each pace answer stands for, in minutes. */
+const PACE_MINUTES: Record<PracticePace, number> = { light: 5, medium: 15 }
+
+export function PracticeSpark({ suggestTimer }: { suggestTimer?: SuggestTimer } = {}) {
   const router = useRouter()
   // 'doors' is screen one for every entity. The written path skips the questions entirely, which
   // is why the step count differs by path.
@@ -152,11 +157,13 @@ export function PracticeSpark() {
   const [body, setBody] = useState('')
   const [pillars, setPillars] = useState<Array<'mind' | 'body' | 'spirit' | 'expression'>>([])
   const [draftCadence, setDraftCadence] = useState('')
-  const [durationMin] = useState<number | null>(null)
-  // The timer half of Vera's draft (ADR-920 Phase 5): carried through to creation so the
-  // practice ships with its timer preset instead of the silent default sit. Shown read-only
-  // on the review step; the full tuning lives in the builder after create.
-  const [timer] = useState<PracticeSparkTimer | null>(null)
+  // THE TIMER (LIVE-2396). This flow used to carry a timer slot nothing filled, so every Practice
+  // it made shipped as a silent sit with no length. The review step now shows up to three setups
+  // matched to the author's words; the best fit is set unless they tap another. `timerFirst` is
+  // that best fit, `timerChoice` their own tap.
+  const [timerFirst, setTimerFirst] = useState<TimerSuggestion | null>(null)
+  const [timerChoice, setTimerChoice] = useState<TimerSuggestion | null>(null)
+  const timerSetup = timerChoice ?? timerFirst
   // The mood dial (kernel/moods.ts), shown on review so it costs no extra step.
   // A header image Vera drew, once the author has kept it. Held here because this Spark has no
   // draft object: the review step IS the state, and creation is deferred until they commit.
@@ -279,8 +286,8 @@ export function PracticeSpark() {
         body,
         pillars,
         cadence: draftCadence || null,
-        durationMin,
-        timer,
+        durationMin: timerSetup?.patch.duration_min ?? null,
+        timerSetup: timerSetup ? { id: timerSetup.id, minutes: timerSetup.patch.duration_min ?? null } : null,
         // Already a real asset in the author's Loom (ADR-987). Null when they never asked for one:
         // a Practice with no header image is a first-class outcome.
         headerImage: cover?.url ?? null,
@@ -427,6 +434,32 @@ export function PracticeSpark() {
             <p className="mt-1.5 text-2xs text-muted">
               Pick one or more Pillars. You can change them, the cadence, and everything else in the next step.
             </p>
+          </div>
+
+          {/* The timer this Practice opens with. Matched to the author's own words, and Vera
+              only ever picks from the same fixed list, so no word here is hers. */}
+          <div className="rounded-card border border-border p-4">
+            <p className="text-body-sm font-semibold text-text">Timer</p>
+            <p className="mt-0.5 text-body-sm text-muted">How a member does this Practice. It opens ready to go.</p>
+            <div className="mt-3">
+              <TimerSuggestions
+                signals={{
+                  title,
+                  // The act is the plainest statement of what a session is, so it ranks with the hook.
+                  summary: `${summary} ${act}`,
+                  description: `${description} ${who} ${outcome}`,
+                  body,
+                  durationMin: fromSource ? null : PACE_MINUTES[pace],
+                }}
+                appliedId={timerSetup?.id ?? null}
+                onApply={setTimerChoice}
+                onFirst={setTimerFirst}
+                suggest={suggestTimer}
+                autoAsk={!!suggestTimer}
+                disabled={pending}
+                hint="The first one is set unless you pick another. You can fine-tune it in the editor next."
+              />
+            </div>
           </div>
 
           {/* Both optional, both skippable: a header image Vera can draw, and a read before it
