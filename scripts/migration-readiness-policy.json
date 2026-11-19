@@ -4698,6 +4698,56 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5342,
+      "expiresAt": "2026-11-22T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346180000_profiles_privileged_column_guard.sql",
+          "sha256": "f398c97c9cee0c13f050fc3045b1320174c6229a0cf37b1be7d53cc201a3c9bf"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/SEC-026.json",
+          "status": "added",
+          "sha256": "96bbccfef3b39797ccde871bb6b781fd2de35b5598e78febb1f9b8c230e44b75",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/SEC-026.mjs",
+          "status": "added",
+          "sha256": "6062b22c8c04dd66d2fb41e4e6f9a7094bab8ebafe8dd12614723a1012c0c0fc",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346180000_profiles_privileged_column_guard.sql",
+          "status": "added",
+          "sha256": "f398c97c9cee0c13f050fc3045b1320174c6229a0cf37b1be7d53cc201a3c9bf",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/profiles_privileged_column_guard.test.sql",
+          "status": "added",
+          "sha256": "d8a4f70aeb2a08f7aeae3c95ef690438cf513bb3e24ac3d8a8942258a99882cf",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
