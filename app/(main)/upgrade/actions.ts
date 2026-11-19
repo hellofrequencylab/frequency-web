@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createMembershipCheckout, recordCrewCheckoutFromSessionId } from '@/lib/billing/checkout'
 import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
-import { billingLive } from '@/lib/pricing/settings'
+import { billingLive, billingLiveFlag } from '@/lib/pricing/settings'
 import { loadCatalogConfig, isValidPwywAmount } from '@/lib/pricing/catalog-config'
 import { formatCents } from '@/lib/pricing/display'
 import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
@@ -35,7 +35,10 @@ export async function toggleMembership(): Promise<ActionResult<{ tier: string }>
   //    tier it writes is what BOTH payout paths read to pick the take-rate rung
   //    (lib/billing/tickets.ts, lib/commerce/checkout.ts via memberNetworkTakeRateBps).
   //    Its sibling startSupporterContribution carried this same gate until LIVE-361 retired it.
-  if (await billingLive()) return fail('Manage your membership in billing.')
+  //    SEC-031 (owner ruling 2026-11-19, "Shut on the switch alone"): the operator's billing_live switch
+  //    closes the toggle BY ITSELF. billingLive() also needs the Stripe env keys, so a missing key would
+  //    otherwise reopen free Crew while the owner's switch says billing is on. Fail closed.
+  if ((await billingLiveFlag()) || (await billingLive())) return fail('Manage your membership in billing.')
 
   const admin = createAdminClient()
   const { data: profile } = await admin
