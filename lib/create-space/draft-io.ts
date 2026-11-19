@@ -1,7 +1,7 @@
 import 'server-only'
 // THE SERVER SIDE OF A CREATE A SPACE DRAFT (ADR-1933, LIVE-1967): where a signed-out visitor's draft goes once step 3
 // has an address, and where a resume link reads it back from. The doors sit behind the public action in
-// app/(marketing)/create-a-space/actions.ts, the beacon route in app/api/create-space/draft/route.ts and the reminder
+// app/(marketing)/launch-your-business/actions.ts, the beacon route in app/api/create-space/draft/route.ts and the reminder
 // cron (lib/create-space/draft-recovery-io.ts), which rate limit by IP and by mailbox and keep the honeypot.
 //
 //   saveDraft           the draft, its zone and step, upserted by the hash of a resume token. A token that opens no

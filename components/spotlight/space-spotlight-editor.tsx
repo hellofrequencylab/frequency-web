@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState, useTransition, type ReactNode } from 'react'
+import { useCallback, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, QrCode } from 'lucide-react'
@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { buttonClasses } from '@/components/ui/button'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
 import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
+import { SpotlightPreviewFrame } from '@/components/spotlight/spotlight-preview-frame'
 import { SPACE_SPOTLIGHT_BLOCK_IDS } from '@/lib/spaces/spotlight'
 import {
   connectSpotlightDomain,
@@ -25,17 +26,13 @@ import {
 // THE SPACE SPOTLIGHT EDITOR (LIVE-851). The SAME builder the member Spotlight, the Space page and the email
 // studio use (EntityPageBuilder over the shared EntityLayoutProvider), mounted here with the Space kind, the
 // Spotlight palette and one column, and an injected save that writes only `preferences.spotlight`. Beside it,
-// the server-built `preview` (a LiveProfileGrid in the Space's accent, see the console page) renders INSIDE
-// this provider, so a reorder or a text edit repaints it at once. The publish switch puts the page on the
-// network.
-//
-// The preview carries no Space slug, so it never turns on the Space page's inline editors or its publish
-// bar: block text is edited in the rail, like the member Spotlight. Voice canon: no em dashes.
+// the preview is the real Spotlight page in a phone-width frame (SpotlightPreviewFrame, LIVE-2452): it wears
+// only the Space's theme, never the console's, and draws again after every save. The publish switch puts the
+// page on the network. Block text is edited in the rail, like the member Spotlight. Voice canon: no em dashes.
 
 export function SpaceSpotlightEditor({
   slug,
   seed,
-  preview,
   initialPublished,
   readOnly,
   upgrade,
@@ -48,8 +45,6 @@ export function SpaceSpotlightEditor({
   /** The builder seed: the Spotlight layout plus the Space's locked blocks and picker data. Null when the
    *  viewer cannot edit (a staff previewer), which renders the builder as nothing (fail-safe). */
   seed: BuilderRailData | null
-  /** The live preview, server-built: it must render inside this provider to follow the edits. */
-  preview: ReactNode
   initialPublished: boolean
   readOnly: boolean
   /** Present when the Space's plan cannot take payments: product, Journey, event and membership cards are
@@ -84,6 +79,8 @@ export function SpaceSpotlightEditor({
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [domainState, setDomainState] = useState<'idle' | 'connected' | string>('idle')
   const [connecting, startConnect] = useTransition()
+  // Moves when a theme or look change lands, so the preview frame draws the page again.
+  const [previewVersion, setPreviewVersion] = useState(0)
 
   const onConnectDomain = () => {
     startConnect(async () => {
@@ -103,6 +100,7 @@ export function SpaceSpotlightEditor({
         setError(res.error)
         return
       }
+      setPreviewVersion((v) => v + 1)
       router.refresh()
     })
   }
@@ -118,6 +116,7 @@ export function SpaceSpotlightEditor({
         setError(res.error)
         return
       }
+      setPreviewVersion((v) => v + 1)
       router.refresh()
     })
   }
@@ -137,7 +136,7 @@ export function SpaceSpotlightEditor({
   const href = `/spaces/${slug}/spotlight`
 
   const body = (
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] lg:items-start">
         <div className="min-w-0 space-y-4">
           <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Publish">
             <div className="flex items-center justify-between gap-3">
@@ -328,9 +327,9 @@ export function SpaceSpotlightEditor({
           )}
         </div>
 
-        <section aria-label="Preview" className="min-w-0">
-          <p className="eyebrow mb-2 text-muted">Preview</p>
-          {preview}
+        <section aria-label="Preview" className="min-w-0 lg:sticky lg:top-24">
+          <p className="eyebrow mb-2 text-center text-muted">Preview</p>
+          <SpotlightPreviewFrame slug={slug} version={previewVersion} />
         </section>
       </div>
   )

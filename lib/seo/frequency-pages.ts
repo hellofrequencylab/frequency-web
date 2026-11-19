@@ -116,17 +116,60 @@ export const FREQUENCY_PAGE_SEO = {
       { name: 'Theme Kits', path: '/themes' },
     ],
   },
+  freeSpotlight: {
+    path: '/free-spotlight',
+    title: 'Free Spotlight: your own page with all your links, in 3 minutes',
+    description:
+      'Make a free Spotlight: your name, one line about what you do and your links on one page. Share it in your bio, on a card or with a QR code.',
+    shareTitle: 'Make a free Spotlight on Frequency',
+    headline: 'Your own page, live in 3 minutes.',
+    lede: 'One link for your bio, your card and your QR code: your name, what you do and where to find you. Free, and yours to keep.',
+    crumbs: [{ name: 'Free Spotlight', path: '/free-spotlight' }],
+  },
+  launchWebsite: {
+    path: '/launch-your-website',
+    title: 'Launch Your Website: a real site at your own address, in 5 minutes',
+    description:
+      'Launch a free website on Frequency: pick a look, write your headline and go live at your own frequencylocal.com address in about 5 minutes.',
+    shareTitle: 'Launch your website on Frequency',
+    headline: 'A real website, live in 5 minutes.',
+    lede: 'Pick a look, write your headline and your website goes live at its own free address. Change any of it later in the editor.',
+    crumbs: [{ name: 'Launch Your Website', path: '/launch-your-website' }],
+  },
+  emailMarketing: {
+    path: '/email-marketing',
+    title: 'Email Marketing: write your first email in 4 minutes',
+    description:
+      'Write your first email on Frequency in about 4 minutes. It waits as a draft with your list until you press Send. Free Spaces send 2 emails a month.',
+    shareTitle: 'Email your people with Frequency',
+    headline: 'Your first email, written in 4 minutes.',
+    lede: 'Write it here and it waits as a draft with your list. Nothing sends until you press Send. Free Spaces get 2 emails a month.',
+    crumbs: [{ name: 'Email Marketing', path: '/email-marketing' }],
+  },
   createSpace: {
     path: '/create-a-space',
-    title: 'Create a Space: build your website, Spotlight and Space page',
+    title: 'Create a Space: a home for your group, business or cause',
+    description:
+      'Create a free Space on Frequency in about 5 minutes: its own page, events, circles and an email list for your people. Comes with Crew.',
+    shareTitle: 'Create a Space on Frequency',
+    headline: 'A home for what you run, live in 5 minutes.',
+    lede: 'A Space is where your people find you, join you and keep up: its own page, events, circles and email. Comes with Crew.',
+    crumbs: [
+      { name: 'For Spaces', path: '/spaces' },
+      { name: 'Create a Space', path: '/create-a-space' },
+    ],
+  },
+  launchBusiness: {
+    path: '/launch-your-business',
+    title: 'Launch Your Business: website, Spotlight and Space in 12 minutes',
     description:
       'Build your website and Spotlight while you watch. Name it, say what you offer, add a few photos. Free, and a private draft until you activate it.',
-    shareTitle: 'Create a Space on Frequency',
+    shareTitle: 'Launch your business on Frequency',
     headline: 'Your whole business, live in 12 minutes.',
     lede: 'You have a practice, a studio, a gathering or a group, and the tools are scattered. Build one home for all of it: your website, Spotlight, bookings and people.',
     crumbs: [
       { name: 'For Spaces', path: '/spaces' },
-      { name: 'Create a Space', path: '/create-a-space' },
+      { name: 'Launch Your Business', path: '/launch-your-business' },
     ],
   },
   midnight: {

@@ -25,7 +25,7 @@ for (const [route, [file, markers]] of Object.entries(pages)) {
 
 const config = read('next.config.ts')
 for (const [source, destination] of [
-  ['/spaces/launch', '/create-a-space'],
+  ['/spaces/launch', '/launch-your-business'],
   ['/start/welcome', '/join'],
   ['/start/event', '/join'],
   ['/start/partner', '/start/host'],

@@ -613,6 +613,13 @@ describe('spaceSchema', () => {
     expect(result.url).toBe(`${SITE_URL}/spaces/river-yoga`)
   })
 
+  it('publishes a root-relative kit logo as an absolute URL (SCAN-1300)', () => {
+    const result = spaceSchema({ slug: 'mindless', type: 'business', name: 'Mindless', logoUrl: '/sites/mindless/avatar.png' })
+    expect(result.image[0]).toBe(`${SITE_URL}/sites/mindless/avatar.png`)
+    const remote = spaceSchema({ slug: 'r', type: 'business', name: 'R', logoUrl: 'https://cdn.example.com/l.png' })
+    expect(remote.image[0]).toBe('https://cdn.example.com/l.png')
+  })
+
   it('maps a nonprofit (and any unknown / host type) to Organization', () => {
     // After the ADR-552 collapse the two public types are business -> LocalBusiness and nonprofit ->
     // Organization; the hidden `root` host and any unknown value also fall back to Organization.

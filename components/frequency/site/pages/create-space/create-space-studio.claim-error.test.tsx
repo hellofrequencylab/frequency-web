@@ -3,7 +3,7 @@ import { renderToString } from 'react-dom/server'
 // LIVE-2331: "Save with Google" came back with ?claim_error=, so the builder says why instead of a silent bounce.
 const io = vi.hoisted(() => ({ query: '' }))
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams(io.query) }))
-vi.mock('@/app/(marketing)/create-a-space/actions', () => ({ restoreDraft: async () => ({ draft: null }), saveBuilderProgress: async () => ({ ok: true }), saveDraftLead: async () => ({ ok: false }), claimWithEmail: vi.fn(), claimWithGoogle: vi.fn(), continueSignedIn: vi.fn() }))
+vi.mock('@/app/(marketing)/launch-your-business/actions', () => ({ restoreDraft: async () => ({ draft: null }), saveBuilderProgress: async () => ({ ok: true }), saveDraftLead: async () => ({ ok: false }), claimWithEmail: vi.fn(), claimWithGoogle: vi.fn(), continueSignedIn: vi.fn() }))
 import { CreateSpaceStudio } from './create-space-studio'
 import { claimErrorLine } from '@/lib/create-space/claim-error'
 

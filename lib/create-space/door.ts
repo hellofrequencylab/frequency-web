@@ -1,7 +1,7 @@
 // THE SIGNED-OUT DOOR (LIVE-1969, ADR-1933). Every way into creating a Space already converges on one address,
 // /spaces/new (lib/site.ts OPERATOR_CTA_HREF, the pricing buttons, the /for doors' Start free, two /go doors, the
 // funnel completion). That page keeps its one job for a member: into the launch. For a visitor with no account it
-// used to bounce to /sign-in; now it opens /create-a-space, the wizard that needs no account, carrying what the door
+// used to bounce to /sign-in; now it opens /launch-your-business, the wizard that needs no account, carrying what the door
 // already knew so the builder starts primed. No door gets a second destination: the doors do not change, the page
 // behind them does.
 //
@@ -71,7 +71,7 @@ export function doorArrival(get: (key: string) => string | string[] | null | und
   }
 }
 
-/** The /create-a-space address a signed-out arrival at /spaces/new is sent to, carrying only the hints the builder
+/** The /launch-your-business address a signed-out arrival at /spaces/new is sent to, carrying only the hints the builder
  *  reads. The plain address when the door knew nothing. Total. */
 export function createSpaceDoorHref(params: Record<string, string | string[] | undefined>): string {
   const get = (k: string) => params[k]
@@ -86,5 +86,5 @@ export function createSpaceDoorHref(params: Record<string, string | string[] | u
   if (a.niche) q.set('niche', a.niche)
   if (a.name) q.set('name', a.name)
   const s = q.toString()
-  return s ? `/create-a-space?${s}` : '/create-a-space'
+  return s ? `/launch-your-business?${s}` : '/launch-your-business'
 }

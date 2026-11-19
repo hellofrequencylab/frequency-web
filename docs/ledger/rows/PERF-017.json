@@ -1,0 +1,20 @@
+{
+  "id": "PERF-017",
+  "title": "The Spaces directory is slow on a phone: every card photo loads at once, and a Space with no cover pulls a full-size brand photo",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/frequency/members/spaces/spaces-body.tsx",
+    "ref": "Owner report 2026-11-19 (project thread: Speed up Themes and Spaces on mobile): \"The Spaces page takes a long time to load on mobile\"."
+  },
+  "detail": "/spaces/directory (the Spaces menu item) draws up to twenty cards (featured, founding, results) and each card's photo was a CSS background, which the browser fetches for every card at once, offscreen or not. A Space with no cover fell back to one of 17 brand photos at 1086px, 200 to 430 KB each. Fix: the card photo is a lazy <img> with the same cover framing, and the fallback is the 640px copy in public/brand/frequency/photos/sm (30 to 85 KB). Still open beyond this row: covers and logos uploaded before PERF-012 (#5320) are stored at original size (one logo shown at 28px is 1.37 MB); those need a one-off shrink of the stored files, which is an owner call. DONE 2026-11-19: Space cards load lazily and the no-cover fallback is the 640px copy.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-017.mjs",
+    "note": "Passes while Space cards load lazily and every fallback photo has a 640px copy under 100 KB. Fails on main at 4ba501ac."
+  },
+  "wave": "W7",
+  "closed": "2026-11-19"
+}
