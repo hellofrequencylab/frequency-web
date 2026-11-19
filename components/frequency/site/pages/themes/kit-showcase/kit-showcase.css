@@ -48,3 +48,21 @@
   .ks-fonts, .ks-ready, .ks-note { display: none !important }
   .ks-title { font-size: clamp(40px, 12vw, 64px) !important }
 }
+
+/* Phone pictures (st.ts): under 900px every showcase picture swaps to its half-width .sm.webp copy. */
+@media (max-width: 899px) {
+  .ks-stage [style*="--ks-sm"] { --ks-u: var(--ks-sm) }
+}
+
+/* The kit bar sits under the site header while the header shows (the --fq-site-nav-h pattern in site-shell.css) instead of
+   behind it. The inline top:0 comes from the design port, hence !important. */
+#kits { top: var(--fq-site-nav-h, 0px) !important; transition: top var(--fq-dur-base) var(--fq-ease-out), transform var(--fq-dur-base) var(--fq-ease-out) }
+/* On a phone it folds (use-kit-bar.ts): the kit chips get their own last row, and scrolling down slides the filter rows up out of
+   view, leaving that row. */
+@media (max-width: 899px) {
+  #kits nav { flex: 1 1 100% }
+  #kits[data-min] { transform: translateY(var(--ks-bar-shift, 0px)) }
+}
+@media (prefers-reduced-motion: reduce) {
+  #kits { transition: none }
+}

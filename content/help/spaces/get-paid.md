@@ -72,6 +72,8 @@ If your Space is not connected to the network, Frequency introduces no customers
 
 Tips are separate from sales. They go to Crew members and to people who own a Space on a paid plan, with no platform fee, plus card processing.
 
+Paid tickets and items have a small minimum price, and the form tells you what it is if you go under it. Below it, most of the sale would go to card processing. Free tickets stay free, a price you set before the minimum keeps working, and tips and donations have their own lower minimum.
+
 [Plans and pricing](/help/spaces/plans-and-pricing) explains what each plan turns on, and the [pricing page](/pricing) has the plan prices, the finder's fee rate and its cap.
 
 ## Know what you receive, and what you pay

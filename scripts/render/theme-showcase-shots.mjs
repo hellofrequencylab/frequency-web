@@ -9,6 +9,7 @@ import { createServer } from 'node:http'
 import { extname, join, normalize } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import sharp from 'sharp'
+import { smallCopy } from './theme-showcase-small.mjs'
 
 const [dir, theme, showcase, accent] = process.argv.slice(2)
 if (!dir || !theme || !showcase || !accent) {
@@ -48,8 +49,10 @@ for (const [key, s] of Object.entries(shots).filter(([k]) => !only || only.inclu
   await page.evaluate(() => document.fonts.ready)
   const png = await page.screenshot({ clip: { x: 0, y: 0, width: s.width, height: s.height } })
   await sharp(png).resize(s.out[0], s.out[1], { fit: 'cover', position: 'top' }).webp({ quality: 78 }).toFile(`${out}/${accent}-${key}.webp`)
+  // The phone copy kit-showcase/st.ts serves under 900px.
+  await smallCopy(`${out}/${accent}-${key}.webp`)
   await page.close()
 }
 await browser.close()
 server.close()
-console.log(`wrote ${out}/${accent}-{site,spot,email}.webp`)
+console.log(`wrote ${out}/${accent}-{site,spot,email}.webp and their .sm.webp phone copies`)

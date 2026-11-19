@@ -10,6 +10,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { CommerceVariant, VariantInput } from './types'
+import { sellingPriceError } from '@/lib/billing/paid-price-floor'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -125,8 +126,19 @@ export async function upsertVariants(productId: string, inputs: VariantInput[]):
   const client = db()
 
   // Existing rows for this product, to compute deletions.
-  const { data: existingRows } = await client.from('commerce_variants').select('id').eq('product_id', productId)
-  const existingIds = new Set(((existingRows ?? []) as { id: string }[]).map((r) => r.id))
+  const { data: existingRows } = await client.from('commerce_variants').select('id, price_cents').eq('product_id', productId)
+  const existing = (existingRows ?? []) as { id: string; price_cents: number | null }[]
+  const existingIds = new Set(existing.map((r) => r.id))
+  const existingPrice = new Map(existing.map((r) => [r.id, r.price_cents]))
+
+  // THE $3 FLOOR (lib/billing/paid-price-floor.ts), checked for the whole set BEFORE any write so a
+  // refused price never leaves half the variants saved. A variant keeping the price it has is fine.
+  for (const input of inputs) {
+    if (!(input.name ?? '').trim()) continue
+    const prior = input.id && existingIds.has(input.id) ? existingPrice.get(input.id) ?? null : null
+    const floor = sellingPriceError(normPrice(input.priceCents), 'item', prior)
+    if (floor) throw new Error(floor)
+  }
 
   const keepIds = new Set<string>()
   const inserts: Record<string, unknown>[] = []
