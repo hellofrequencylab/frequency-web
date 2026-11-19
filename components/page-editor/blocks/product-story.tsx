@@ -876,7 +876,7 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
       body: 'The Lab is being built by the people who will use it. There is no investor playbook here, just a community putting the first room together in North County San Diego, then handing the blueprint to the next city.\n\nBack the build and you are not buying a membership. You are putting your name on the wall of the place this all begins.',
       tiers: [
         { amount: 'Founding', name: 'Member', blurb: 'Your name among the first. A seat saved for opening night.' },
-        { amount: 'Founding', name: 'Circle', blurb: 'Bring your Circle in together and help shape the room.' },
+        { amount: 'Founding', name: 'Circle', blurb: 'Bring your Circle in together and help shape what comes next.' },
         { amount: 'Founding', name: 'Patron', blurb: 'Hold the door open for the neighbors who come after you.' },
       ],
       ctaLabel: BETA_CTA_LABEL,

@@ -201,9 +201,9 @@ const SPECS: Record<NewWorldKitNiche, Spec> = {
     reviewsAbout: ['Book & Beer', 'New in Town', 'Westside Walkers'],
     team: [['Hollis Grant', 'Steward'], ['Pip Marlow', 'Host · New in Town'], ['Sunny Vale', 'Host · Potluck'], ['Lou Ferris', 'Host · Walkers']],
     posts: [['Guide', 'How to make friends in a new city, honestly'], ['Story', 'Twelve groups, one hall'], ['Note', 'Things to do alone on a weeknight that end with people'], ['Update', 'Two new groups this month']],
-    plans: [['Member', 'Every group, open'], ['Supporter', 'Keeps the rooms booked'], ['Host', 'Backup, a room, the kit']],
+    plans: [['Member', 'Every group, open'], ['Supporter', 'Keeps the groups going'], ['Host', 'Backup, a room, the kit']],
     firstVisit: [['Who is there', 'Twelve to eighteen people. A host who was new two years ago.'], ['How long', 'About ninety minutes.'], ['What to bring', 'Nothing. Potluck is the exception: one dish.'], ['At the door', 'Check in on your phone. The host introduces you to two people before you sit.']],
-    copy: { circles: { title: 'The', em: 'groups.', lede: 'Under twenty people each. Same time, same place.' }, events: { title: 'All', em: 'together.', lede: 'The nights every group comes to.' }, firstnight: { title: 'Your first', em: 'group.', lede: 'Start with New in Town if you are not sure.' }, reviews: { title: 'From the', em: 'members.' }, team: { title: 'The', em: 'hosts.' }, services: { title: 'Join, host,', em: 'or start.' }, plans: { title: 'Member, supporter,', em: 'host.', lede: 'Anyone can be a member. Supporters keep the rooms booked.' }, cta: { title: 'Pick one.', em: 'Then another.' } },
+    copy: { circles: { title: 'The', em: 'groups.', lede: 'Under twenty people each. Same time, same place.' }, events: { title: 'All', em: 'together.', lede: 'The events every group comes to.' }, firstnight: { title: 'Your first', em: 'group.', lede: 'Start with New in Town if you are not sure.' }, reviews: { title: 'From the', em: 'members.' }, team: { title: 'The', em: 'hosts.' }, services: { title: 'Join, host,', em: 'or start.' }, plans: { title: 'Member, supporter,', em: 'host.', lede: 'Anyone can be a member. Supporters keep the groups going.' }, cta: { title: 'Pick one.', em: 'Then another.' } },
   },
 }
 
@@ -320,7 +320,7 @@ function newWorldHomeAll(s: Spec, niche: NewWorldKitNiche): Block[] {
       : []),
     { type: 'NewWorldOpenings', props: { index: n(9), eyebrow: 'Save a spot', title: 'Open *this week.*', lede: 'Pick a time, see what it costs (often nothing) and get a reminder.', buttonLabel: s.cta, buttonHref: '~/booking', fullLabel: 'Waitlist', useEvents: true, rows: sessions.slice(0, 3), register: 'auto' } },
     { type: 'NewWorldGallery', props: { index: n(10), eyebrow: 'Gallery', title: 'Real *nights.*', lede: 'Photos from people who were there.', images: GALLERY.filter((g) => !PHOTOS[niche].includes(g)).slice(0, 5).map((g) => ({ image: pic(g), alt: PHOTO_ALT[g] ?? '' })), register: 'auto' } },
-    { type: 'NewWorldPosts', props: { index: n(11), eyebrow: 'Notes', title: 'Good to *read.*', lede: 'Notes from the room, written by the people in it.', buttonLabel: '', buttonHref: '', rows: s.posts.map(([kind, title]) => ({ kind, title, meta: '', href: '' })), register: 'auto' } },
+    { type: 'NewWorldPosts', props: { index: n(11), eyebrow: 'Notes', title: 'Good to *read.*', lede: 'Notes from our groups, written by the people in them.', buttonLabel: '', buttonHref: '', rows: s.posts.map(([kind, title]) => ({ kind, title, meta: '', href: '' })), register: 'auto' } },
     ...(s.products
       ? [{ type: 'NewWorldShop', props: { index: n(11), ...head(c('shop'), 'Shop'), buttonLabel: '', buttonHref: '', rows: s.products.map(([name, body], i) => ({ icon: ['tag', 'heart', 'sparkle'][i % 3], meta: 'Set your price', name, body, price: '', href: '' })), register: 'auto' } }]
       : []),

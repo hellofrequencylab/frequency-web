@@ -163,7 +163,7 @@ function synthesize(signal: MarketSignal): PainPoint[] {
         body: 'The first Circles meet in person, near you. Come to one and help decide what it becomes.' },
       { channel: 'Ad', hook: 'Run clubs. Bathhouses. Breathwork. People are paying real money to get off the feed and into a body.',
         body: 'Frequency is that: local, device-light, community-owned.' },
-      { channel: 'Hook', hook: 'Join the room, not the app.', body: '' },
+      { channel: 'Hook', hook: 'Join the group, not the app.', body: '' },
     ],
   }
 

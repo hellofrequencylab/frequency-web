@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1287",
+  "title": "Drop the room and night metaphors the first copy ban missed",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "scripts/probes/SCAN-1287.mjs",
+    "ref": "deepest site audit 2026-11-19 (copy voice)"
+  },
+  "detail": "Deep audit 2026-11-19. SCAN-1286 bans rooms and nights as a metaphor (voice guide 9a) but its probe matches fixed phrases, so verb variants survived on live surfaces: the /spaces hero \"You hold the room\", every /for comparison page \"Find the room that meets again\", the Crew next step \"keep the rooms going\", the New World kit \"Supporters keep the rooms booked\" and \"The nights every group comes to\", \"Notes from the room\", \"The room is built by the people who keep coming back\", \"help shape the room\" (Lab and product story), \"a night out\" on the home page, the Anchor rung \"You hold the room\", the market-read hook \"Join the room, not the app\", \"the people in the room\" in the community tools FAQ, and \"the new night out. The rooms are filling\" on /build/vision. Each now says the plain thing. Literal rooms (the back room, capacity) are untouched. Code templates and kits only: a page or kit already copied into a Space's stored blocks keeps its old words until the owner edits it.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1287.mjs",
+    "note": "Fails on main with 19 hits across lib, components and app. Passes when none of the variants is on a surface a person reads."
+  },
+  "closed": "2026-11-19"
+}
