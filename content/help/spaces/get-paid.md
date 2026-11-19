@@ -74,6 +74,10 @@ Tips are separate from sales. They go to Crew members and to people who own a Sp
 
 Paid tickets and items have a small minimum price, and the form tells you what it is if you go under it. Below it, most of the sale would go to card processing. Free tickets stay free, a price you set before the minimum keeps working, and tips and donations have their own lower minimum.
 
+Donations never carry a finder's fee, even when Frequency introduced the donor. A donation pays card processing only.
+
+Once card processing comes out of your ticket sales, the ticket editor can price a ticket all-in for you, so guests cover it. One tap raises the price just enough that you keep what you typed, and guests see that one price from the start.
+
 [Plans and pricing](/help/spaces/plans-and-pricing) explains what each plan turns on, and the [pricing page](/pricing) has the plan prices, the finder's fee rate and its cap.
 
 ## Know what you receive, and what you pay

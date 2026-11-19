@@ -25,6 +25,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { isPaymentsRefusal } from '@/lib/pricing/payments-copy'
+import { allInPriceCents, cardProcessingCents } from '@/lib/billing/processing-fee'
+import { HOME_TZ } from '@/lib/time/home-zone'
 
 // Host-facing ticket-tier manager (audit finding #9). Create / edit / retire named
 // tiers with the full range of pricing modes right from the Manage dashboard, so a
@@ -74,10 +76,14 @@ export function TicketTiersPanel({
   tiers,
   spaceAccess,
   upgrade,
+  cardFeeFrom = null,
 }: {
   eventId: string
   slug: string
   tiers: TicketTierRow[]
+  /** When card processing starts coming out of each sale (ISO), or null while it does not
+   *  (CARD_FEE_PASS_THROUGH_FROM unset). Shows the all-in "guests cover it" helper (LIVE-2450). */
+  cardFeeFrom?: string | null
   /** Hosting-space membership context (ADR-823); null = no hosting space, control hidden. */
   spaceAccess?: SpaceAccessContext | null
   /** Present when the event's host cannot take payments (LIVE-753): a priced tier the gate refuses
@@ -144,6 +150,7 @@ export function TicketTiersPanel({
                 key={t.id}
                 initial={t}
                 spaceAccess={spaceAccess}
+                cardFeeFrom={cardFeeFrom}
                 disabled={isPending}
                 onCancel={() => setEditingId(null)}
                 onSubmit={(fd) =>
@@ -217,6 +224,7 @@ export function TicketTiersPanel({
       {adding && (
         <TierForm
           spaceAccess={spaceAccess}
+          cardFeeFrom={cardFeeFrom}
           disabled={isPending}
           onCancel={() => setAdding(false)}
           onSubmit={(fd) => run(() => hostCreateTicketTier(eventId, slug, fd), () => setAdding(false))}
@@ -229,12 +237,14 @@ export function TicketTiersPanel({
 function TierForm({
   initial,
   spaceAccess,
+  cardFeeFrom,
   disabled,
   onSubmit,
   onCancel,
 }: {
   initial?: TicketTierRow
   spaceAccess?: SpaceAccessContext | null
+  cardFeeFrom: string | null
   disabled: boolean
   onSubmit: (fd: FormData) => void
   onCancel: () => void
@@ -313,6 +323,14 @@ function TierForm({
         modes={['fixed', 'choose', 'free']}
         allowPackages={false}
       />
+      {cardFeeFrom && offering.price.mode === 'fixed' && (offering.price.amountCents ?? 0) > 0 && (
+        <GuestsCoverCardFee
+          cardFeeFrom={cardFeeFrom}
+          priceCents={offering.price.amountCents ?? 0}
+          disabled={disabled}
+          onPrice={(amountCents) => setOffering((o) => ({ ...o, price: { mode: 'fixed', amountCents } }))}
+        />
+      )}
       {priceError && <p className="text-body-sm text-danger">{priceError}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -448,5 +466,74 @@ function TierForm({
         </button>
       </div>
     </form>
+  )
+}
+
+const money = (c: number) => `$${(c / 100).toFixed(2)}`
+
+/**
+ * GUESTS COVER THE CARD FEE, SELLER'S CHOICE (owner ruling 2026-11-19, LIVE-2450). A ticket shows one
+ * all-in price from the first screen (never a fee added at checkout), so the host's choice is the
+ * price itself: one tap reprices the ticket so they keep what they typed after card processing. No
+ * stored flag, and nothing changes for a host who leaves it alone.
+ */
+function GuestsCoverCardFee({
+  cardFeeFrom,
+  priceCents,
+  disabled,
+  onPrice,
+}: {
+  cardFeeFrom: string
+  priceCents: number
+  disabled: boolean
+  onPrice: (cents: number) => void
+}) {
+  // What the host wanted to keep, once they priced all-in. Retyping the price leaves this state.
+  const [keep, setKeep] = useState<number | null>(null)
+  if (keep != null && allInPriceCents(keep) === priceCents) {
+    return (
+      <p className="text-body-sm text-muted">
+        Guests pay {money(priceCents)}. Card processing is about {money(cardProcessingCents(priceCents))}, so you keep{' '}
+        {money(keep)} before any finder&apos;s fee.{' '}
+        <button
+          type="button"
+          className="underline"
+          disabled={disabled}
+          onClick={() => {
+            onPrice(keep)
+            setKeep(null)
+          }}
+        >
+          Undo
+        </button>
+      </p>
+    )
+  }
+  const when = new Date(cardFeeFrom).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: HOME_TZ,
+  })
+  const allIn = allInPriceCents(priceCents)
+  return (
+    <div className="space-y-1 text-body-sm text-muted">
+      <p>
+        Card processing (2.9% + 30¢) comes out of each paid ticket sold from {when}. To have guests cover it, price
+        the ticket all-in.
+      </p>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={disabled}
+        onClick={() => {
+          setKeep(priceCents)
+          onPrice(allIn)
+        }}
+      >
+        Price it at {money(allIn)} so you keep {money(priceCents)}
+      </Button>
+    </div>
   )
 }

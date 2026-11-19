@@ -212,3 +212,15 @@ describe('the pre-migration window', () => {
     ).rejects.toThrow(/refund flip failed/)
   })
 })
+
+// LIVE-2449 (owner ruling 2026-11-19): 0% Frequency fee on every donation, even from a donor the
+// network introduced. The checkout prices the fee from this constant and never from the take rate.
+describe('the finder’s fee on a donation', () => {
+  it('is zero, whoever the donor is', async () => {
+    const mod = await import('./space-donation-checkout')
+    expect(mod.DONATION_FINDERS_FEE_CENTS).toBe(0)
+    const { readFileSync } = await import('node:fs')
+    const src = readFileSync('lib/billing/space-donation-checkout.ts', 'utf8')
+    expect(src).not.toMatch(/spaceTakeRateCents\(/)
+  })
+})
