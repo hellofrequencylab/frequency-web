@@ -1,0 +1,20 @@
+{
+  "id": "JRN-024",
+  "title": "The Library shows each Journey week by week, in its own words, with the cover cropped where the owner set",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/journeys/library/page.tsx",
+    "ref": "Owner 2026-11-18: \"Go through every element of the journey system and bring it up to best practice, fully evolved modern design.\" Follows JRN-021 and JRN-022."
+  },
+  "detail": "On /journeys/library a card said \"Phase 2 of 6\" where the course itself says Week 2, drew the same percent twice (a ring and a bar), ran the next step's kind and name together (\"Up next: Lesson · Run a room\"), ignored the cover's saved focal point, and held to two narrow columns on a wide screen. A card now says \"Week 2 of 6 · 9 steps left\", shows the Journey as one segment per week (the same bar the lesson page and course home draw), sets the next step's kind apart from its name, crops the cover from the saved focal point, and the grid opens to three columns on a wide screen. The Continue card carries the same place line and bar.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-024.mjs",
+    "note": "Fails on main: cards say Phase and the reader carries no cadence, focal point or per-week completion."
+  },
+  "wave": "W7",
+  "closed": "2026-11-19"
+}

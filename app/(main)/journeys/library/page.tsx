@@ -8,13 +8,14 @@ import { getMemberJourneyProgress, type MemberJourneyProgress } from '@/lib/jour
 import { IndexTemplate } from '@/components/templates/index-template'
 import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { ProgressTrack } from '@/components/ui/progress-track'
 import { buttonClasses } from '@/components/ui/button'
 import { ProgressRing } from '@/components/journey/nav/progress-ring'
 import { JourneyDock } from '@/components/journey/nav/journey-dock'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
+import { splitTitle } from '@/lib/journeys/lesson-markdown'
+import '@/app/themes/active/members-c'
 
 export const metadata: Metadata = { title: 'Your Library', robots: { index: false } }
 export const dynamic = 'force-dynamic'
@@ -36,6 +37,41 @@ type FilterKey = (typeof FILTERS)[number]['key']
 // An ongoing Journey repeats each year, so it is never "Finished": it stays In progress.
 const stateOf = (j: MemberJourneyProgress): Exclude<FilterKey, 'all'> =>
   j.complete && !j.ongoing ? 'done' : j.percent > 0 ? 'active' : 'new'
+
+const unitWord = (j: MemberJourneyProgress) => (j.unit === 'month' ? 'Month' : 'Week')
+
+/** "Week 2 of 6": the phase the member is in, in the Journey's own cadence word. */
+const placeLine = (j: MemberJourneyProgress) =>
+  j.phasesTotal > 0 ? `${unitWord(j)} ${Math.min(j.phasesComplete + 1, j.phasesTotal)} of ${j.phasesTotal}` : null
+
+/** "3 lessons left", or null when nothing is left to count. */
+const leftLine = (j: MemberJourneyProgress) => (j.lessonsLeft > 0 ? `${j.lessonsLeft} ${j.lessonsLeft === 1 ? 'step' : 'steps'} left` : null)
+
+/** The Journey phase by phase: one segment per week, filled as far as that week is done, the week
+ *  the member is in standing taller. The same bar the Focus player and the course home draw. */
+function PhaseSegments({ j }: { j: MemberJourneyProgress }) {
+  if (j.phasePercents.length === 0) return null
+  const at = j.phasePercents.findIndex((p) => p < 100)
+  return (
+    <span className="mc-segs" role="img" aria-label={`${j.percent}% of ${j.title} done`}>
+      {j.phasePercents.map((p, i) => (
+        <span key={i} className={`mc-seg${i === at ? ' on' : ''}`}>
+          <i style={{ width: `${p}%` }} />
+        </span>
+      ))}
+    </span>
+  )
+}
+
+/** The next step, with its kind ("Lesson") set apart from its name. */
+function NextStep({ title }: { title: string }) {
+  const { kind, name } = splitTitle(title)
+  return (
+    <>
+      Up next{kind ? ` · ${kind}` : ''}: <span className="font-medium text-text">{name}</span>
+    </>
+  )
+}
 
 function JourneyMark({ j }: { j: MemberJourneyProgress }) {
   const Icon = JOURNEY_ICON_MAP[j.emoji ?? ''] ?? DefaultJourneyIcon
@@ -75,7 +111,7 @@ export default async function JourneyLibraryPage({ searchParams }: { searchParam
         </Link>
       }
     >
-      <div className="max-w-4xl space-y-6">
+      <div className="space-y-6">
         {all.length === 0 ? (
           <EmptyState
             icon={Compass}
@@ -93,7 +129,7 @@ export default async function JourneyLibraryPage({ searchParams }: { searchParam
               <section aria-label="Continue" className="overflow-hidden rounded-card border border-primary/30 bg-surface lift-1 sm:flex">
                 <div className="relative aspect-[16/7] w-full shrink-0 bg-surface-elevated sm:aspect-auto sm:w-72">
                   {resume.coverImage ? (
-                    <Image src={resume.coverImage} alt="" fill sizes="(min-width: 640px) 18rem, 100vw" className="object-cover" />
+                    <Image src={resume.coverImage} alt="" fill sizes="(min-width: 640px) 18rem, 100vw" className="object-cover" style={{ objectPosition: resume.coverFocus ?? undefined }} />
                   ) : (
                     <span className="flex h-full min-h-32 items-center justify-center">
                       <JourneyMark j={resume} />
@@ -102,17 +138,15 @@ export default async function JourneyLibraryPage({ searchParams }: { searchParam
                 </div>
                 <div className="flex flex-1 items-center gap-5 p-5">
                   <div className="min-w-0 flex-1">
-                    <p className="eyebrow text-primary-strong">Continue</p>
+                    <p className="eyebrow text-primary-strong">{[resume.percent > 0 ? 'Continue' : 'Start here', placeLine(resume)].filter(Boolean).join(' · ')}</p>
                     <h2 className="mt-1 text-card-title font-bold text-text">{resume.title}</h2>
                     <p className="mt-1 text-body-sm text-muted">
-                      {resume.nextLesson ? (
-                        <>
-                          Up next: <span className="font-medium text-text">{resume.nextLesson.title}</span>
-                        </>
-                      ) : (
-                        'Your next week opens soon.'
-                      )}
+                      {resume.nextLesson ? <NextStep title={resume.nextLesson.title} /> : `Your next ${resume.unit} opens soon.`}
                     </p>
+                    <div className="mt-3 flex items-center gap-2 text-meta text-muted">
+                      <PhaseSegments j={resume} />
+                      {leftLine(resume) && <span className="shrink-0 tabular-nums">{leftLine(resume)}</span>}
+                    </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Link href={resume.nextLesson?.href ?? `/journeys/${resume.slug}/play`} className={buttonClasses('primary', 'md')}>
                         <Play className="h-4 w-4" aria-hidden /> {resume.percent > 0 ? 'Continue' : 'Start'}
@@ -150,7 +184,7 @@ export default async function JourneyLibraryPage({ searchParams }: { searchParam
             {shown.length === 0 ? (
               <EmptyState icon={Compass} title="Nothing here yet" description="Switch the filter above to see your other Journeys." />
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
                 {shown.map((j) => {
                   const state = stateOf(j)
                   return (
@@ -160,7 +194,7 @@ export default async function JourneyLibraryPage({ searchParams }: { searchParam
                       coverAspect="short"
                       cover={
                         j.coverImage ? (
-                          <Image src={j.coverImage} alt="" fill sizes="(min-width: 640px) 28rem, 100vw" className="object-cover" />
+                          <Image src={j.coverImage} alt="" fill sizes="(min-width: 640px) 28rem, 100vw" className="object-cover" style={{ objectPosition: j.coverFocus ?? undefined }} />
                         ) : (
                           <span className="flex h-full items-center justify-center">
                             <JourneyMark j={j} />
@@ -176,31 +210,29 @@ export default async function JourneyLibraryPage({ searchParams }: { searchParam
                       context={
                         state === 'done'
                           ? 'Finished'
-                          : `Phase ${Math.min(j.phasesComplete + 1, j.phasesTotal)} of ${j.phasesTotal}${j.inCohort ? ' · with your Circle' : ''}`
+                          : [placeLine(j), leftLine(j), j.inCohort ? 'with your Circle' : null].filter(Boolean).join(' · ')
                       }
                       description={
                         j.nextLesson
-                          ? `Up next: ${j.nextLesson.title}`
+                          ? <NextStep title={j.nextLesson.title} />
                           : state === 'done'
                             ? 'Every lesson is done. Revisit any of them.'
                             : j.ongoing && j.complete
-                              ? 'Every phase is done. It repeats each year.'
+                              ? `Every ${j.unit} is done. It repeats each year.`
                               : undefined
                       }
                       meta={
                         <span className="flex w-full items-center gap-2">
-                          <ProgressTrack
-                            value={j.percent}
-                            minVisible={2}
-                            label={`${j.percent}% of ${j.title} done`}
-                            size="sm"
-                            tone={state === 'done' ? 'success' : 'primary'}
-                          />
+                          <PhaseSegments j={j} />
                           {j.inCohort && <Users className="h-3.5 w-3.5 shrink-0" aria-label="With your Circle" />}
                         </span>
                       }
                       footer={
-                        state === 'done' ? undefined : (
+                        state === 'done' ? (
+                          <Link href={`/journeys/${j.slug}/play`} className={`${buttonClasses('secondary', 'sm')} w-full justify-center`}>
+                            Revisit
+                          </Link>
+                        ) : (
                           <Link
                             href={j.nextLesson?.href ?? `/journeys/${j.slug}/play`}
                             className={`${buttonClasses('primarySoft', 'sm')} w-full justify-center`}

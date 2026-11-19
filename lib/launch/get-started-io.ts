@@ -9,11 +9,14 @@ import { getStartedView, isPublished } from './get-started'
 import { loadInventory } from './inventory-io'
 import type { InventorySection } from './overview'
 import { getLaunchForOwner } from './store'
+import { withOwnedSpace } from './adopt-io'
 
 export const loadPostPublishList = cache(async (profileId: string): Promise<InventorySection[] | null> => {
   if (!launchSystemEnabled()) return null
   try {
-    const launch = await getLaunchForOwner(profileId)
+    const found = await getLaunchForOwner(profileId)
+    // An owner who was set up before the launch knew their Space still gets their real list (LIVE-2392).
+    const launch = found ? await withOwnedSpace(found, profileId) : null
     if (!launch?.spaceId) return null
     const inv = await loadInventory(launch.spaceId, profileId, launch.skippedPhotos, true)
     return inv && isPublished(inv.sections) ? inv.sections : null

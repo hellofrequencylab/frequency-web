@@ -10,5 +10,5 @@ export async function ownedWizardEntry(profileId: string, explicitlyNew: boolean
   }
   const [owned, active] = await Promise.all([listOwnedSpaces(profileId), getActiveLaunch(profileId)])
   const chosen = owned.find((space) => space.id === active?.spaceId) ?? (owned.length === 1 ? owned[0] : null)
-  return ownerEntryHref(chosen?.slug ?? null, false) ?? (owned.length > 1 ? '/launch/step/spotlight?go=1' : null)
+  return ownerEntryHref(chosen?.slug ?? null, false, chosen?.spotlightLive === true) ?? (owned.length > 1 ? '/launch/step/spotlight?go=1' : null)
 }

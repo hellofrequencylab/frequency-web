@@ -33,3 +33,15 @@ export function parseSpaceChoice(raw: unknown, spaces: readonly OwnedSpace[]): O
   if (raw === NEW_SPACE) return NEW_SPACE
   return typeof raw === 'string' ? (spaces.find((s) => s.id === raw) ?? null) : null
 }
+
+/** The Space a launch with none attached should take as its own (LIVE-2392): the person's one Space, when the launch
+ *  is still running, names no Space, and is not the builder making a NEW one. Someone who made their Space, Spotlight
+ *  and website outside the launch then reads as set up, instead of as someone on step one. Two or more Spaces is a
+ *  choice only they can make ("Which Space is this for?"), so it is never guessed. PURE. */
+export function adoptableSpace(
+  launch: { spaceId: string | null; cancelledAt?: string | null; completedAt?: string | null; resume?: { phase: string } | null },
+  spaces: readonly OwnedSpace[],
+): OwnedSpace | null {
+  if (launch.spaceId || launch.cancelledAt || launch.completedAt || launch.resume?.phase === 'builder') return null
+  return spaces.length === 1 ? spaces[0] : null
+}

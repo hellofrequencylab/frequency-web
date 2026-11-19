@@ -69,7 +69,7 @@ import { useSaveOnChange, useTimerSettings } from './use-timer-settings'
 import { takeUnlockedAudio } from '@/lib/on-air/timer-audio-unlock'
 import { createAmbient, type AmbientHandle } from '@/lib/on-air-ambient'
 import { liveDepthCue } from '@/lib/practices/tiers'
-import { BreathVisualizer } from './visualizer'
+import { LiveStage, type LiveState } from './live-stage'
 import { Reveal } from './reveal'
 import { MindlessMasthead } from './mode-toggle'
 import type { TimerMode } from './mindless'
@@ -1431,158 +1431,109 @@ export function OnAirSession({
       resumeTarget.current > 0
         ? Math.max(1, Math.round(resumeTarget.current / 60))
         : minutes
+    const liveState: LiveState = preroll !== null ? 'warmup' : ended ? 'ended' : paused ? 'paused' : 'running'
+    const clockText = `${mm}:${String(ss).padStart(2, '0')}`
+    const warmupMessage = warmupMessageOverride ?? practice?.warmupMessage
     return (
-      <Overlay flash={flash}>
-        {/* The content scrolls if it has to; the controls below DOCK to the bottom and stay
-            tappable on a short screen (owner layout directive, item #5). */}
-        <div className="flex flex-1 flex-col items-center justify-center gap-5 pt-[max(3rem,env(safe-area-inset-top))] pb-6">
-          <p className="flex animate-pulse items-center gap-2.5 text-body-sm font-bold uppercase tracking-[0.3em] text-primary-strong [animation-duration:3s]">
-            <LotusIcon className="h-4.5 w-4.5" /> Mindless
-          </p>
-
-          <div className="flex w-full min-w-0 flex-col items-center gap-5">
-            {/* ONE countdown (ADR-566): during the shared warm-up the pre-roll IS the big timer —
-                the session clock / breath visualizer is suppressed so there is never a second
-                competing number. Once the run begins the same clock runs the session. */}
-            {preroll !== null ? (
-              <>
-                <p
-                  className="text-meta font-bold uppercase tracking-[0.3em] text-primary-strong"
-                  aria-live="polite"
-                >
-                  Warm up
-                </p>
-                <p className="text-8xl font-semibold tabular-nums text-primary-strong">{preroll}</p>
-                {/* The warm-up message (ADR-592): a Journey step's override (P5) wins over the
-                    practice's own creator-authored message; shown as the timer counts in. */}
-                {(warmupMessageOverride ?? practice?.warmupMessage) && (
-                  <p className="mt-3 max-w-sm text-balance text-body font-medium text-text/80">{warmupMessageOverride ?? practice?.warmupMessage}</p>
-                )}
-              </>
-            ) : (
-              <>
-                {showBreath ? (
-                  // The visualizer keeps breathing past the target (auto-continue) so the deeper
-                  // time still has its rhythm; only a real pause stops it.
-                  <BreathVisualizer pattern={pattern} startedAt={startedAt} paused={paused} showCount={settings.cues.showBreathCount} />
-                ) : (
-                  <p
-                    className={`text-8xl font-semibold tabular-nums ${ended ? 'text-primary-strong' : 'text-text/60'}`}
-                  >
-                    {ended ? overLabel : `${mm}:${String(ss).padStart(2, '0')}`}
-                  </p>
-                )}
-                {showBreath && (
-                  <p className="text-body tabular-nums text-subtle">
-                    {ended ? `Going deeper ${overLabel}` : `${mm}:${String(ss).padStart(2, '0')} left`}
-                  </p>
-                )}
-                {showBreath && (
-                  <div className="flex max-w-xs flex-col items-center gap-1.5 text-center">
-                    <p className="text-meta text-subtle">{pattern.blurb}</p>
-                    <button
-                      type="button"
-                      onClick={() => setShowInstructions(true)}
-                      aria-label={`How to do ${pattern.name}`}
-                      className="flex min-h-11 items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
-                    >
-                      <Info className="h-3.5 w-3.5" aria-hidden /> Details
-                    </button>
-                  </div>
-                )}
-                {/* The live "go deeper" cue: once past the target, name the tier earned so far and the
-                    minutes to the next one. The quiet pull deeper each day (ADR-443). */}
-                {cue && (
-                  <div className="flex max-w-xs flex-col items-center gap-0.5 text-center">
-                    <p className="text-body-sm font-semibold text-primary-strong">{cue.reached}</p>
-                    <p className="text-meta text-muted">{cue.toNext}</p>
-                  </div>
-                )}
-                {/* Journal: the note field lives here so the member writes while they sit. Optional. */}
-                {modeHasNote(liveMode) && (
-                  <Textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    rows={3}
-                    maxLength={2000}
-                    placeholder="Jot a line or two. Or do not. Up to you."
-                    aria-label="Session note"
-                    className="max-w-xs resize-none"
-                  />
-                )}
-              </>
-            )}
-            {/* The target the member is about to do (item #5): shown below the timer through the
-                warm-up countdown and KEPT once the run begins (it does not vanish on start). */}
-            <p className="text-body-sm tabular-nums text-subtle">
-              {preroll !== null ? `Settling into ${targetMin} min` : `${targetMin} min session`}
-            </p>
-            {/* After an automatic resume, a small non-blocking chip to re-arm sound (item #4). The
-                clock is already running; this is optional. */}
-            {needRestore && (
-              <Button
-                type="button"
-                onClick={restoreCues}
-                variant="primarySoft" size="sm"
-              >
-                Tap to restore sound
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Run-over confirmation gate: once a sit runs past 150% of its target, a gentle,
-            non-blocking chip asks the member to confirm they are still practicing. The clock keeps
-            running; confirming banks the time to now and keeps logging. Left unanswered for a whole
-            interval, the sit auto-finalizes at the last confirmed point so an unattended run never
-            inflates airtime. Voice: plain, no narrated feelings, no em dashes. */}
-        {preroll === null && runOverPrompt && (
-          <div className="mx-auto mb-2 w-full max-w-sm rounded-card border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
-            <p className="text-body-sm font-semibold text-text">Still practicing?</p>
-            <p className="mt-0.5 text-meta text-muted">Confirm to keep logging.</p>
-            <Button type="button" onClick={confirmRunOver} className="mt-2.5">
-              Still here
-            </Button>
-          </div>
-        )}
-        {/* Docked controls (P10 + item #5): Pause ⇄ Resume while running, Finish once the
-            clock lands. Finish and Close BOTH log and move on — ending early is never punished.
-            Pinned to the bottom and always visible even when the content above scrolls. */}
-        <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-canvas px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
-          <Button
-            type="button"
-            onClick={() => {
+      <>
+        <LiveStage
+          mode="still"
+          state={liveState}
+          flash={flash}
+          eyebrow={`Be Still · ${SESSION_MODE_META[liveMode].label}`}
+          title={practice?.title ?? 'Free Practice'}
+          // ONE countdown (ADR-566): during the shared warm-up the pre-roll IS the big number; the
+          // session clock and the breath are held back so there is never a second competing one.
+          clock={preroll !== null ? String(preroll) : ended ? overLabel : clockText}
+          clockLabel={preroll !== null ? 'Warm up' : ended ? 'Going deeper' : 'left'}
+          progress={preroll !== null ? null : ended ? 1 : 1 - remaining / Math.max(1, minutes * 60)}
+          remainingSec={preroll !== null || ended ? null : remaining}
+          // The orb keeps breathing past the target (auto-continue) so the deeper time still has
+          // its rhythm; only a real pause stops it.
+          breath={showBreath ? { pattern, startedAt } : null}
+          showCount={settings.cues.showBreathCount}
+          prompt={
+            // Run-over confirmation gate: once a sit runs past 150% of its target, a gentle,
+            // non-blocking card asks the member to confirm they are still practicing. The clock keeps
+            // running; confirming banks the time to now and keeps logging. Left unanswered for a whole
+            // interval, the sit auto-finalizes at the last confirmed point so an unattended run never
+            // inflates airtime. Voice: plain, no narrated feelings, no em dashes.
+            preroll === null && runOverPrompt ? (
+              <div className="mx-auto mb-2 w-full max-w-sm rounded-card border border-primary/50 bg-primary-bg/30 px-4 py-3 text-center">
+                <p className="text-body-sm font-semibold text-text">Still practicing?</p>
+                <p className="mt-0.5 text-meta text-muted">Confirm to keep logging.</p>
+                <Button type="button" onClick={confirmRunOver} className="mt-2.5">
+                  Still here
+                </Button>
+              </div>
+            ) : null
+          }
+          // Pause ⇄ Resume while running, Finish once the clock lands. Finish and Close BOTH log and
+          // move on: ending early is never punished. Cancel leaves WITHOUT logging and banks nothing.
+          primary={{
+            label: preroll !== null ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause',
+            onClick: () => {
               if (preroll !== null) { begin(); return } // override the countdown, begin now
               if (ended) { void finish(false); return }
               togglePause()
-            }}
-            size="lg"
-            className="min-w-44"
-          >
-            {preroll !== null ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => void finish(!ended)}
-            variant="ghost"
-            size="sm"
-          >
-            Close &amp; Log Session
-          </Button>
-          {/* Cancel: leave the sit WITHOUT logging (item #3) — drops the run, banks nothing.
-              Kept visually subordinate to Close & Log so the default stays "log it". */}
-          <button
-            type="button"
-            onClick={leave}
-            className="rounded-pill px-4 py-1 text-2xs font-medium text-muted transition-colors hover:text-danger"
-          >
-            Cancel · don&rsquo;t log
-          </button>
-        </div>
+            },
+          }}
+          finish={{ label: 'Close & Log', onClick: () => void finish(!ended) }}
+          onCancel={leave}
+        >
+          {/* The warm-up message (ADR-592): a Journey step's override (P5) wins over the practice's
+              own creator-authored message; shown as the timer counts in. */}
+          {preroll !== null && warmupMessage && <p className="m-0 text-balance text-body font-medium text-text/80">{warmupMessage}</p>}
+          {/* The target the member is about to do: shown through the warm-up and KEPT once the run
+              begins (it does not vanish on start). */}
+          <p className="m-0 text-body-sm tabular-nums text-muted">
+            {preroll !== null ? `Settling into ${targetMin} min` : `${targetMin} min session`}
+          </p>
+          {preroll === null && showBreath && (
+            <div className="flex flex-col items-center gap-0.5">
+              <p className="m-0 text-meta text-muted">{pattern.blurb}</p>
+              <button
+                type="button"
+                onClick={() => setShowInstructions(true)}
+                aria-label={`How to do ${pattern.name}`}
+                className="flex min-h-11 items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-medium text-muted transition-colors hover:text-text"
+              >
+                <Info className="h-3.5 w-3.5" aria-hidden /> Details
+              </button>
+            </div>
+          )}
+          {/* The live "go deeper" cue: once past the target, name the tier earned so far and the
+              minutes to the next one. The quiet pull deeper each day (ADR-443). */}
+          {preroll === null && cue && (
+            <div className="flex flex-col items-center gap-0.5">
+              <p className="m-0 text-body-sm font-semibold text-primary-strong">{cue.reached}</p>
+              <p className="m-0 text-meta text-muted">{cue.toNext}</p>
+            </div>
+          )}
+          {/* Journal: the note field lives here so the member writes while they sit. Optional. */}
+          {preroll === null && modeHasNote(liveMode) && (
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              maxLength={2000}
+              placeholder="Jot a line or two. Or do not. Up to you."
+              aria-label="Session note"
+              className="w-full resize-none"
+            />
+          )}
+          {/* After an automatic resume, a small non-blocking chip to re-arm sound. The clock is
+              already running; this is optional. */}
+          {needRestore && (
+            <Button type="button" onClick={restoreCues} variant="primarySoft" size="sm">
+              Tap to restore sound
+            </Button>
+          )}
+        </LiveStage>
         {showInstructions && (
           <InstructionsPopup pattern={pattern} onClose={() => setShowInstructions(false)} />
         )}
-      </Overlay>
+      </>
     )
   }
 

@@ -35,6 +35,9 @@ describe('getStartedView', () => {
       }),
     )
     expect(v.found.find((i) => i.id === 'ci-first')?.found).toBe('2 open')
-    expect(v.todo.map((i) => i.id)).toEqual(['sp-words'])
+    // Owner ruling 2026-11-19 (LIVE-2392): a live Spotlight's tagline counts as its "say what you do" line.
+    expect(v.todo.map((i) => i.id)).toEqual([])
+    expect(v.complete).toBe(true)
+    expect(v.found.find((i) => i.id === 'sp-words')?.found).toBe('"Emotional Alchemy"')
   })
 })
