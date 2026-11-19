@@ -206,3 +206,134 @@
 }
 
 [data-design="frequency"] [data-kit="members"] .mc-cover-logo{position:absolute;left:var(--fq-space-5);bottom:var(--fq-space-5);z-index:1;max-width:96px;max-height:64px;object-fit:contain}
+
+/* ── THE LESSON (the Focus player, /journeys/<slug>/play) ─────────────────────────────────────────
+   Two things live here. `.mc-prose` is a lesson body's reading surface (components/journey/v2/learn/
+   lesson-prose.tsx): a measure, a lede, real lists, a pull quote, and the shapes the structure pass
+   names (lib/journeys/lesson-markdown.ts). `.mc-f*` is the player around it (learn-player.tsx): the
+   bar, the lesson's own heading, the week's steps, the foot. The member Frequency look only: no
+   Space or site theme reaches this page. */
+@layer components {
+[data-design="frequency"] [data-kit="members"] .mc-prose{font:400 18px/1.7 var(--fq-font-sans);color:var(--fq-text-body);overflow-wrap:break-word}
+[data-design="frequency"] [data-kit="members"] .mc-prose :where(p,ul,ol,blockquote,h2,h3,h4,pre,hr,section){margin:0}
+[data-design="frequency"] [data-kit="members"] .mc-prose>*+*{margin-top:1.25em}
+[data-design="frequency"] [data-kit="members"] .mc-prose p{text-wrap:pretty}
+[data-design="frequency"] [data-kit="members"] .mc-prose li>p+p{margin-top:.6em}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-lede{font-size:22px;line-height:1.45;letter-spacing:-.012em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-leadin+*{margin-top:.7em}
+[data-design="frequency"] [data-kit="members"] .mc-prose strong{font-weight:600;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-runin{display:block;margin-bottom:.35em;font:500 18px/1.25 var(--fq-font-display);letter-spacing:-.025em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mc-prose a{color:var(--fq-text-link);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+[data-design="frequency"] [data-kit="members"] .mc-prose a:hover{color:var(--fq-text-link-hover)}
+[data-design="frequency"] [data-kit="members"] .mc-prose h2{font:500 24px/1.15 var(--fq-font-display);letter-spacing:-.035em;color:var(--fq-text-strong);text-wrap:balance}
+[data-design="frequency"] [data-kit="members"] .mc-prose h3,[data-design="frequency"] [data-kit="members"] .mc-prose h4{font:500 18px/1.25 var(--fq-font-display);letter-spacing:-.025em;color:var(--fq-text-strong);text-wrap:balance}
+[data-design="frequency"] [data-kit="members"] .mc-prose>:is(h2,h3,h4):not(:first-child){margin-top:2em}
+[data-design="frequency"] [data-kit="members"] .mc-prose>:is(h2,h3,h4)+*{margin-top:.6em}
+/* Lists: the kit's accent as the marker, a counted orb for steps. */
+[data-design="frequency"] [data-kit="members"] .mc-prose :is(ul,ol){list-style:none;padding:0;display:flex;flex-direction:column;gap:.6em}
+[data-design="frequency"] [data-kit="members"] .mc-prose li{position:relative;padding-left:1.7em}
+[data-design="frequency"] [data-kit="members"] .mc-prose ul>li::before{content:"";position:absolute;left:.3em;top:.62em;width:8px;height:8px;border-radius:50%;background:var(--fq-pa);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-text-strong) 14%,transparent)}
+[data-design="frequency"] [data-kit="members"] .mc-prose ol{counter-reset:mc-n}
+[data-design="frequency"] [data-kit="members"] .mc-prose ol>li{counter-increment:mc-n;padding-left:2.3em}
+[data-design="frequency"] [data-kit="members"] .mc-prose ol>li::before{content:counter(mc-n);position:absolute;left:0;top:.1em;width:1.6em;height:1.6em;border-radius:50%;background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fq-border-hair);display:flex;align-items:center;justify-content:center;font:600 13px/1 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mc-prose li :is(ul,ol){margin-top:.6em}
+/* A timed run of show: "Presence, 3 minutes. ..." as numbered beats on one line. */
+[data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-beats{counter-reset:mc-n;gap:0}
+[data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-beats>li{counter-increment:mc-n;padding:0 0 1.3em 3em}
+[data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-beats>li:last-child{padding-bottom:0}
+[data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-beats>li::before{content:counter(mc-n);left:0;top:0;width:32px;height:32px;background:var(--fq-pa);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px var(--fqm-white-60);display:flex;align-items:center;justify-content:center;font:600 14px/1 var(--fq-font-sans);color:var(--fq-ink)}
+[data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-beats>li:not(:last-child)::after{content:"";position:absolute;left:15.5px;top:38px;bottom:6px;width:1px;background:var(--fq-border-strong);opacity:.5}
+[data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-beats strong{font:500 17px/32px var(--fq-font-display);letter-spacing:-.025em}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-time{display:inline-flex;align-items:center;height:22px;margin-left:10px;padding:0 9px;border-radius:var(--fq-radius-orb);background:var(--fq-track);font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted);vertical-align:3px;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-beat-body{display:block;margin-top:2px}
+/* A short "…:" line and its list: one titled card, its lines as things to tick off. */
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-group{padding:20px 22px;border-radius:var(--fq-radius-m);background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fqm-white-60)}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-group-k{font:500 11px/1.3 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-group>*+*{margin-top:14px}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-group :is(ul,ol){font-size:16px;line-height:1.6}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-group ul:not(.mc-fill,.mc-beats)>li::before{left:.1em;top:.36em;width:15px;height:15px;background:var(--fq-surface-raised);box-shadow:inset 0 0 0 1.5px var(--fq-border-strong)}
+/* Prompts to fill in: a page of ruled lines. */
+[data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-fill{gap:0;padding:6px 22px;border-radius:var(--fq-radius-m);background:var(--fq-surface-raised);box-shadow:inset 0 0 0 1px var(--fq-border-hair),var(--fq-shadow-1)}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-group ul.mc-fill{padding-inline:18px}
+[data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-fill>li{padding:14px 0 30px;font:500 15px/1.4 var(--fq-font-sans);color:var(--fq-text-strong);border-bottom:1px dashed var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-fill>li:last-child{border-bottom:none}
+[data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-fill>li::before{display:none}
+/* A blockquote is the lesson's pull quote. */
+[data-design="frequency"] [data-kit="members"] .mc-prose blockquote{position:relative;padding:4px 0 4px 26px;font:400 italic 27px/1.3 var(--fq-font-serif);letter-spacing:-.005em;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mc-prose>blockquote{margin-block:1.6em}
+[data-design="frequency"] [data-kit="members"] .mc-prose blockquote::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:var(--fq-radius-orb);background:var(--fq-pa)}
+[data-design="frequency"] [data-kit="members"] .mc-prose blockquote>*+*{margin-top:.5em}
+[data-design="frequency"] [data-kit="members"] .mc-prose hr{width:72px;height:4px;border:none;border-radius:var(--fq-radius-orb);background:var(--fq-pa);margin-block:2.2em;margin-inline:0}
+[data-design="frequency"] [data-kit="members"] .mc-prose code{padding:2px 6px;border-radius:6px;background:var(--fq-track);font-size:.9em}
+[data-design="frequency"] [data-kit="members"] .mc-prose pre{padding:16px;border-radius:var(--fq-radius-s);background:var(--fq-track);overflow-x:auto;font-size:14px;line-height:1.5}
+[data-design="frequency"] [data-kit="members"] .mc-prose pre code{padding:0;background:none}
+[data-design="frequency"] [data-kit="members"] .mc-prose img{max-width:100%;height:auto;border-radius:var(--fq-radius-m)}
+[data-design="frequency"] [data-kit="members"] .mc-prose .mc-table{overflow-x:auto}
+[data-design="frequency"] [data-kit="members"] .mc-prose table{width:100%;border-collapse:collapse;font-size:15px;line-height:1.45}
+[data-design="frequency"] [data-kit="members"] .mc-prose :is(th,td){padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .mc-prose th{font-weight:600;color:var(--fq-text-strong)}
+
+/* The player's bar: back, the outline, the Journey week by week, and step to step. */
+[data-design="frequency"] [data-kit="members"] .mc-fbar{position:sticky;top:8px;z-index:20;display:flex;align-items:center;gap:4px;padding:6px;border-radius:var(--fq-radius-orb);background:color-mix(in oklab,var(--fq-surface-raised) 86%,transparent);backdrop-filter:blur(var(--fq-blur-glass,16px)) saturate(1.3);-webkit-backdrop-filter:blur(var(--fq-blur-glass,16px)) saturate(1.3);box-shadow:var(--fq-shadow-1),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .mc-fbar-title{flex:0 1 auto;min-width:0;max-width:26ch;padding:0 10px 0 6px;font:500 14px/1 var(--fq-font-sans);color:var(--fq-text-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-design="frequency"] [data-kit="members"] .mc-fbar-count{flex:none;padding:0 8px;font:500 13px/1 var(--fq-font-sans);font-variant-numeric:tabular-nums;color:var(--fq-text-muted);white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .mc-fbar-count b{font-weight:600;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mc-segs{flex:1 1 0;min-width:48px;display:flex;align-items:center;gap:4px;padding:0 6px}
+[data-design="frequency"] [data-kit="members"] .mc-seg{flex:1 1 0;min-width:0;height:6px;border-radius:var(--fq-radius-orb);background:color-mix(in oklab,var(--fq-text-strong) 11%,transparent);overflow:hidden;transition:height var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .mc-seg>i{display:block;height:100%;border-radius:inherit;background:var(--fq-pa);transition:width var(--fq-dur-slow) var(--fq-ease-out)}
+[data-design="frequency"] [data-kit="members"] .mc-seg.on{height:10px;box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fq-text-strong) 16%,transparent)}
+@media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .mc-seg,[data-design="frequency"] [data-kit="members"] .mc-seg>i{transition:none}}
+
+/* The lesson's own heading: the week above it, what kind of step it is and how long under it. */
+[data-design="frequency"] [data-kit="members"] .mc-fhead{margin:36px 0 24px;display:flex;flex-direction:column;gap:14px}
+[data-design="frequency"] [data-kit="members"] .h1.mc-ftitle{font-size:clamp(30px,4.4vw,44px);line-height:1.04;overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .mc-fmeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+[data-design="frequency"] [data-kit="members"] .mc-fmeta .tag{height:28px;padding:0 12px;font-size:13px}
+[data-design="frequency"] [data-kit="members"] .mc-fmeta .tag.mc-kind{background:var(--fq-pa);box-shadow:inset 0 0 0 1px var(--fqm-white-60);color:var(--fq-ink)}
+[data-design="frequency"] [data-kit="members"] .mc-fmeta .tag svg{width:14px;height:14px;flex:none}
+[data-design="frequency"] [data-kit="members"] .mc-fnote{font:400 15px/1.45 var(--fq-font-sans);color:var(--fq-text-muted);max-width:var(--fq-measure)}
+
+/* This week: the one idea, then every step of the week as a place you can go. */
+[data-design="frequency"] [data-kit="members"] .mc-week{margin-bottom:20px;display:flex;flex-direction:column;gap:16px}
+[data-design="frequency"] [data-kit="members"] .mc-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+[data-design="frequency"] [data-kit="members"] .mc-fact{display:flex;flex-direction:column;gap:8px;padding:18px 20px;border-radius:var(--fq-radius-m);background:var(--fq-pa-soft);box-shadow:inset 0 0 0 1px var(--fqm-white-60)}
+[data-design="frequency"] [data-kit="members"] .mc-fact .why{font-size:19px;line-height:1.3;color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .mc-wsteps{display:flex;gap:8px;margin:0;padding:0;list-style:none;overflow-x:auto;scrollbar-width:none}
+[data-design="frequency"] [data-kit="members"] .mc-wsteps>li{flex:1 1 0;min-width:112px}
+[data-design="frequency"] [data-kit="members"] .mc-wstep{width:100%;height:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border:none;border-radius:16px;background:var(--fq-track);text-align:left;cursor:pointer;color:var(--fq-text-muted);font:500 14px/1.2 var(--fq-font-sans);transition:background var(--fq-dur-fast),color var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .mc-wstep:hover{color:var(--fq-text-strong);background:color-mix(in oklab,var(--fq-text-strong) 9%,transparent)}
+[data-design="frequency"] [data-kit="members"] .mc-wstep:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
+[data-design="frequency"] [data-kit="members"] .mc-wstep[aria-current]{background:var(--fq-surface-raised);color:var(--fq-text-strong);box-shadow:var(--fq-shadow-1),inset 0 0 0 1px var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .mc-wstep:disabled{cursor:default;opacity:.55}
+[data-design="frequency"] [data-kit="members"] .mc-wstep>span:last-child{min-width:0;display:flex;flex-direction:column;gap:3px}
+[data-design="frequency"] [data-kit="members"] .mc-wstep .t2{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-design="frequency"] [data-kit="members"] .mc-wstep b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-design="frequency"] [data-kit="members"] .mc-node{flex:none;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 13px/1 var(--fq-font-sans);font-variant-numeric:tabular-nums;color:var(--fq-text-muted);box-shadow:inset 0 0 0 1.5px var(--fq-border-strong)}
+[data-design="frequency"] [data-kit="members"] .mc-node svg{width:13px;height:13px}
+[data-design="frequency"] [data-kit="members"] .mc-node.done{background:var(--fq-text-strong);color:var(--fq-surface-raised);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .mc-node.now{background:var(--fq-pa);color:var(--fq-ink);box-shadow:var(--fq-pa-glow),inset 0 0 0 1px var(--fqm-white-60)}
+
+/* The lesson itself, and its foot: what comes next, and the one action. */
+[data-design="frequency"] [data-kit="members"] .panel.mc-lesson{padding:clamp(20px,5vw,48px)}
+[data-design="frequency"] [data-kit="members"] .mc-lesson>*{max-width:680px;margin-inline:auto}
+[data-design="frequency"] [data-kit="members"] .mc-lesson>*+*{margin-top:28px}
+[data-design="frequency"] [data-kit="members"] .mc-fnext{display:flex;align-items:center;justify-content:space-between;gap:16px 24px;flex-wrap:wrap;padding-top:28px;border-top:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .mc-fnext-up{min-width:0;flex:1 1 220px;display:flex;flex-direction:column;gap:6px}
+[data-design="frequency"] [data-kit="members"] .mc-fnext-up .t1{font-size:16px}
+[data-design="frequency"] [data-kit="members"] .mc-fnext-acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+@media (max-width:560px){
+  [data-design="frequency"] [data-kit="members"] .mc-prose{font-size:17px}
+  [data-design="frequency"] [data-kit="members"] .mc-prose .mc-lede{font-size:20px}
+  [data-design="frequency"] [data-kit="members"] .mc-prose blockquote{font-size:23px;padding-left:20px}
+  [data-design="frequency"] [data-kit="members"] .mc-prose ul.mc-beats>li{padding-left:2.75em}
+  [data-design="frequency"] [data-kit="members"] .mc-fbar-title{display:none}
+  [data-design="frequency"] [data-kit="members"] .mc-wsteps{gap:6px}
+  [data-design="frequency"] [data-kit="members"] .mc-wsteps>li{min-width:96px}
+  [data-design="frequency"] [data-kit="members"] .mc-wstep{gap:7px;padding:9px 8px;font-size:13px}
+  [data-design="frequency"] [data-kit="members"] .mc-wstep .t2{display:none}
+  [data-design="frequency"] [data-kit="members"] .mc-node{width:22px;height:22px}
+  [data-design="frequency"] [data-kit="members"] .mc-fhead{margin:28px 0 20px}
+  [data-design="frequency"] [data-kit="members"] .mc-fnext-acts{width:100%}
+  [data-design="frequency"] [data-kit="members"] .mc-fnext-acts>.btn:last-child{flex:1 1 auto;justify-content:center}
+}
+}

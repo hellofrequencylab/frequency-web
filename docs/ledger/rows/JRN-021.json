@@ -1,0 +1,20 @@
+{
+  "id": "JRN-021",
+  "title": "A lesson reads as a lesson: real lists and headings, the lesson's own title, the week as steps",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "components/journey/v2/learn/learn-player.tsx",
+    "ref": "Owner 2026-11-18, on /journeys/the-business-of-community-101/play: \"The internal course pages are super weak. Go through every element of the journey system and bring it up to best practice, fully evolved modern design.\""
+  },
+  "detail": "The Focus player printed a lesson body as one pre-wrapped string, so a Markdown list showed as lines that start with a dash and every paragraph weighed the same. The page's h1 was the course title on every step, the progress was one thin bar, and the week's focus was a grey box repeated on every lesson. Now the body renders on the server as Markdown (LessonProse) through a structure pass that names what authors already write: a lede, a lead-in kept to its list, a short lead-in and its list as a titled card, \"Label: text\" lines, a timed run of show, prompts to fill in, a run-in heading. The lesson's title is the h1 with its week above it and its kind, time and step under it; the week's steps (Overview, Lesson, Homework) are a row you can tap; the bar shows the Journey one segment per week; the foot names what comes next. A week that has not opened no longer sends its lesson bodies to the browser.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-021.mjs",
+    "note": "Fails on main: the body is a pre-wrapped string and there is no LessonProse."
+  },
+  "wave": "W7",
+  "closed": "2026-11-18"
+}

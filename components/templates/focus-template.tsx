@@ -33,7 +33,9 @@ export function FocusTemplate({
   children,
 }: {
   eyebrow?: React.ReactNode
-  title: React.ReactNode
+  /** Omit when the child draws its own h1 (the lesson player: the heading is the lesson, and it
+   *  changes as the member steps through, so the page cannot own it). */
+  title?: React.ReactNode
   description?: React.ReactNode
   actions?: React.ReactNode
   /** Back-link to the parent surface (e.g. "Settings"). */
@@ -46,15 +48,17 @@ export function FocusTemplate({
 }) {
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
-      <PageHeading
-        eyebrow={eyebrow}
-        title={title}
-        description={description}
-        actions={actions}
-        back={back}
-        divider={divider}
-        adminBar={adminBar}
-      />
+      {title != null && (
+        <PageHeading
+          eyebrow={eyebrow}
+          title={title}
+          description={description}
+          actions={actions}
+          back={back}
+          divider={divider}
+          adminBar={adminBar}
+        />
+      )}
       {children}
     </div>
   )
