@@ -25,7 +25,7 @@ for (const [file, name] of [['components/on-air/session.tsx', 'Be Still'], ['com
 }
 
 if (fails.length) {
-  console.log(`FAIL LIVE-2392\n- ${fails.slice(0, 12).join('\n- ')}`)
+  console.log(`FAIL LIVE-2393\n- ${fails.slice(0, 12).join('\n- ')}`)
   process.exit(1)
 }
-console.log('PASS LIVE-2392')
+console.log('PASS LIVE-2393')

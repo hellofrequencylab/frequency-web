@@ -22,7 +22,7 @@ const stage = () => host.querySelector<HTMLElement>('[data-live-stage]')!
 const button = (name: string) => [...host.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent ?? '').trim().startsWith(name))!
 afterEach(() => { act(() => root?.unmount()); host?.remove(); vi.clearAllMocks(); vi.useRealTimers() })
 
-describe('the live stage (LIVE-2392)', () => {
+describe('the live stage (LIVE-2393)', () => {
   it('names the practice, reads the clock on the orb and fills the ring by the progress', () => {
     render()
     expect(host.querySelector('h1')!.textContent).toBe('Morning Sit')

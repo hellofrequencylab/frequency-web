@@ -1,6 +1,6 @@
 'use client'
 
-// THE LIVE STAGE (LIVE-2392): the one running screen for Be Still and Get Moving. The door was
+// THE LIVE STAGE (LIVE-2393): the one running screen for Be Still and Get Moving. The door was
 // redesigned on the Frequency member design system (LIVE-2245); the screen a member actually sits
 // with was not: a grey clock on a white page for a sit, a green ring for a walk, two layouts that
 // shared nothing with the door. This is the door's orb, carried through:

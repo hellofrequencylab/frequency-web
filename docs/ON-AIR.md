@@ -150,7 +150,7 @@ countdown (below).
   member setting (3 / 5 / 10s, default 5) under **Sounds & Settings** on the Be Still setup,
   persisted to `profiles.meta.onAir.warmupSec` and read by every timer via the shared prefs.
   Just Log is an instant log (no countdown).
-- **One live stage (LIVE-2392).** Be Still and Get Moving run on the same screen,
+- **One live stage (LIVE-2393).** Be Still and Get Moving run on the same screen,
   `components/on-air/live-stage.tsx`, which is presentational: each engine keeps its own clock,
   warm-up, run-over gate and bank, and hands the stage its read-outs. The door's orb is the clock
   face, inside a ring that fills as the session runs (Be Still, and a single timed Get Moving

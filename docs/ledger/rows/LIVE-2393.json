@@ -1,5 +1,5 @@
 {
-  "id": "LIVE-2392",
+  "id": "LIVE-2393",
   "title": "Be Still and Get Moving run on one live stage built from the door's orb, with a progress ring, the end time and a quiet mode",
   "lane": "live",
   "priority": "P2",
@@ -12,7 +12,7 @@
   "detail": "Found on the rendered timer: the setup door was rebuilt on the Frequency member design system (LIVE-2245), but the screen a member sits with was not. A sit ran as a grey clock on a white page, a walk as a green ringed circle, each with its own layout, neither using the door's orb, neither showing how far through the session the member was, and a strength plan showed its rounds only as text.\n\nDONE 2026-11-18: one presentational live stage (components/on-air/live-stage.tsx) that both engines hand their read-outs to; no engine rule changed (clock, warm-up, run-over gate, bank). The door's orb is the clock face inside a ring that fills with the session, or with the phase on a plan with rounds, which also shows its rounds as dots. A Breathe session moves the orb with the breath and carries the cue and count on it. The practice is named, and a running session says when it ends in the member's own clock. One dock: the primary pill (Begin now, Pause, Resume, Finish) in the mode's accent, with Cancel and Close & Log side by side. After six idle seconds of a running session the chrome dims so only the orb is lit, and any pointer, key or focus restores it; it never dims while paused. Space presses the primary unless the member is typing. Reduced motion is honoured. Rendered at 390, 1280, 1440, 1920 and 2000 for a sit, a Breathe session, a walk and a strength plan, warm-up, running, quiet, paused and night.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/LIVE-2392.mjs",
+    "cmd": "node scripts/probes/LIVE-2393.mjs",
     "note": "Passes while the consequence in the title holds."
   },
   "closed": "2026-11-18",
