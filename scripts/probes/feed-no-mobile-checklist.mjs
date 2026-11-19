@@ -1,4 +1,4 @@
-// SCAN-1279: the Feed shows no Get started checklist on a phone (owner, 2026-11-19), and the
+// SCAN-1285: the Feed shows no Get started checklist on a phone (owner, 2026-11-19), and the
 // desktop right rail still carries the box. Reads the shipped CSS and the rail source.
 import { readFileSync } from 'node:fs'
 
