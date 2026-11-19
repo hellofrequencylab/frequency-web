@@ -27,15 +27,15 @@ const type = (el: HTMLInputElement | HTMLTextAreaElement, value: string) => act(
   Object.getOwnPropertyDescriptor(el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value')!.set!.call(el, value)
   el.dispatchEvent(new Event('input', { bubbles: true }))
 })
-const openHow = () => act(() => buttons().find((b) => b.getAttribute('aria-expanded') !== null && b.textContent?.startsWith('How'))!.click())
 const styles = () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Style"] button')]
-const row = (name: string) => buttons().find((b) => b.getAttribute('aria-expanded') !== null && b.textContent?.startsWith(name))!
+const chip = (group: string, text: string) => [...host.querySelectorAll<HTMLButtonElement>(`[aria-label="${group}"] button`)].find((b) => b.textContent === text)!
+const more = () => buttons().find((b) => b.getAttribute('aria-expanded') !== null)!
 afterEach(() => { act(() => root?.unmount()); host?.remove(); start.mockClear(); saveOnAirPrefs.mockClear(); window.localStorage.clear(); vi.unstubAllGlobals() })
-describe('the Mindless door (LIVE-2245)', () => {
+describe('the Mindless door (LIVE-2245, phone sheet redrawn under LIVE-2406)', () => {
   it('offers one free practice for the current mode, retaining the real adopted entry', () => {
     expect(setupPractices([...practices, { ...practices[1], id: 'duplicate' }], 'still').map((p) => p.id)).toEqual(['sit', 'free'])
   })
-  it('opens on the adopted practice with its authored length in the orb and starts it from Go', () => {
+  it('opens on the adopted practice with its authored length as the big number and starts it from Go', () => {
     render()
     expect(minutesField()!.value).toBe('17')
     expect(host.textContent).toContain('Logs as Reflect · already counted today, this one is extra')
@@ -44,12 +44,12 @@ describe('the Mindless door (LIVE-2245)', () => {
   })
   it('custom still duration is validated and forwarded without resuming/logging', () => {
     render('still', 'free')
-    type(minutesField()!, '0'); expect(go().disabled).toBe(true); expect(host.textContent).toContain('Choose 1 to 120 minutes.')
+    type(minutesField()!, '0'); expect(go().disabled).toBe(true); expect(host.textContent).toContain('Pick a length from 1 to 120 minutes.')
     type(minutesField()!, '13'); expect(go().disabled).toBe(false)
     act(() => go().click())
     expect(start).toHaveBeenCalledWith({ practiceId: 'free', mode: 'still', minutesOverride: 13, stillMode: 'timer', patternSlug: 'box' })
   })
-  it('the minus and plus beside the orb step the length by one, and a preset sets it', () => {
+  it('the minus and plus beside the number step the length by one, and a preset sets it', () => {
     render('still', 'free')
     act(() => buttons().find((b) => b.textContent === 'One minute more')!.click())
     expect(minutesField()!.value).toBe('11')
@@ -65,22 +65,18 @@ describe('the Mindless door (LIVE-2245)', () => {
     expect(start).toHaveBeenCalledWith({ practiceId: 'free-move', mode: 'move', moveConfig: expect.objectContaining({ mode: 'walk', walkMinutes: 13 }) })
     expect(JSON.parse(window.localStorage.getItem('fq_timer_settings')!)).toMatchObject({ move: { mode: 'walk', walkMinutes: 13 } })
   })
-  it('offers every Get Moving style in the How picker with its Plan and Cues rows, no second screen (LIVE-2242)', () => {
+  it('offers every Get Moving style as a chip with its plan and cue under it, no second screen (LIVE-2242)', () => {
     render('move', 'free-move')
-    openHow()
     expect(styles().map((b) => b.textContent)).toEqual(['Walk', 'Run', 'Yoga', 'Strength', 'Stretch', 'Play'])
     act(() => styles().find((b) => b.textContent === 'Strength')!.click())
     expect(host.textContent).toContain('Tabata, 8 rounds, 4:00')
     expect(minutesField()).toBeNull()
-    act(() => row('Plan').click())
-    expect(row('Plan').getAttribute('aria-expanded')).toBe('true')
+    expect(chip('Plan', 'Tabata').getAttribute('aria-pressed')).toBe('true')
     act(() => buttons().find((b) => b.getAttribute('aria-label') === 'Rounds up')!.click())
     expect(host.textContent).toContain('Tabata, 9 rounds')
-    openHow()
     act(() => styles().find((b) => b.textContent === 'Walk')!.click())
-    act(() => row('Cues').click())
-    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Reminder"] button:nth-child(2)')!.click())
-    expect(row('Cues').textContent).toContain('Reminder every 5 min')
+    act(() => chip('Reminder', 'Every 5 min').click())
+    expect(chip('Reminder', 'Every 5 min').getAttribute('aria-pressed')).toBe('true')
     act(() => go().click())
     expect(start).toHaveBeenCalledWith(expect.objectContaining({ mode: 'move', moveConfig: expect.objectContaining({ mode: 'walk', walkIntervalMin: 5 }) }))
     expect(host.textContent).not.toContain('More settings')
@@ -94,15 +90,13 @@ describe('the Mindless door (LIVE-2245)', () => {
     expect(start).toHaveBeenCalledWith({ practiceId: 'sit', mode: 'still', stillMode: 'timer', patternSlug: 'box' })
     practices[0].durationLocked = false
   })
-  it('offers every Be Still style and the Breath row, and forwards the pick with its settings (LIVE-2241)', () => {
+  it('offers every Be Still style and the breath patterns, and forwards the pick with its settings (LIVE-2241)', () => {
     render('still', 'free')
-    openHow()
     expect(styles().map((b) => b.textContent)).toEqual(['Meditate', 'Breathe', 'Journal', 'Stillness', 'Ritual', 'Just Log'])
     act(() => styles().find((b) => b.textContent === 'Breathe')!.click())
     expect(minutesField()!.value).toBe('5')
-    act(() => row('Breath').click())
-    act(() => buttons().find((b) => b.textContent === 'Coherence')!.click())
-    expect(row('Breath').textContent).toContain('Coherence 5-5')
+    act(() => chip('Breath pattern', 'Coherence').click())
+    expect(chip('Breath pattern', 'Coherence').getAttribute('aria-pressed')).toBe('true')
     act(() => go().click())
     expect(start).toHaveBeenCalledWith(expect.objectContaining({ practiceId: 'free', mode: 'still', stillMode: 'breath', patternSlug: 'cohere' }))
     expect(JSON.parse(window.localStorage.getItem('fq_timer_settings')!)).toMatchObject({ pattern: 'cohere' })
@@ -110,10 +104,10 @@ describe('the Mindless door (LIVE-2245)', () => {
   })
   it('Just Log takes the note on the door and logs it from the one button', () => {
     render('still', 'free')
-    openHow()
     act(() => styles().find((b) => b.textContent === 'Just Log')!.click())
     expect(minutesField()).toBeNull()
-    type(host.querySelector<HTMLTextAreaElement>('[aria-label="Session note"]')!, 'Felt good')
+    expect(host.textContent).toContain('No timer. Logs at once.')
+    type(host.querySelector<HTMLInputElement>('[aria-label="Session note"]')!, 'Felt good')
     expect(go().textContent).toBe('Log it')
     act(() => go().click())
     expect(start).toHaveBeenCalledWith({ practiceId: 'free', mode: 'still', stillMode: 'log', patternSlug: 'box', note: 'Felt good' })
@@ -123,10 +117,11 @@ describe('the Mindless door (LIVE-2245)', () => {
     render()
     expect(go().textContent).toBe('Continue, 12 min left')
     expect(minutesField()).toBeNull()
-    expect(host.textContent).toContain('5 of 17 min banked today')
+    expect(host.textContent).toContain('12 min left of 17. 5 min banked today.')
+    expect(chip('Continue or start fresh', 'Continue').getAttribute('aria-pressed')).toBe('true')
     act(() => go().click())
     expect(start).toHaveBeenLastCalledWith({ practiceId: 'sit', mode: 'still', stillMode: 'timer', patternSlug: 'box' })
-    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Continue or start fresh"] button')!.click())
+    act(() => chip('Continue or start fresh', 'Start fresh').click())
     type(minutesField()!, '9')
     expect(go().textContent).toBe('Start timer')
     act(() => go().click())
@@ -138,9 +133,13 @@ describe('the Mindless door (LIVE-2245)', () => {
     const moving = buttons().find((b) => b.getAttribute('role') === 'tab' && b.textContent?.includes('Get Moving'))!
     act(() => moving.click())
     expect(moving.getAttribute('aria-selected')).toBe('true')
-    act(() => buttons().find((b) => b.getAttribute('aria-expanded') !== null && b.textContent?.startsWith('Practice'))!.click())
+    expect(host.querySelector('[aria-label="Your practices"]')).toBeNull()
+    expect(more().textContent).toBe('Practice, sound and options')
+    act(() => more().click())
+    expect(more().textContent).toBe('Fewer options')
     const rows = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Your practices"] button')]
-    expect(rows.map((b) => b.textContent)).toEqual(['WalkWalk, 22 min', 'Free PracticeAny style, any length'])
+    expect(rows.map((b) => b.textContent)).toEqual(['Walk · 22 min', 'Free Practice'])
+    expect(chip('Countdown', '5 sec').getAttribute('aria-pressed')).toBe('true')
     act(() => rows[0].click())
     expect(minutesField()!.value).toBe('22')
   })

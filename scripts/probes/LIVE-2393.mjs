@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Be Still and Get Moving run on one live stage built from the door's orb.
 // Fails while: there is no shared live stage, either engine still draws its own running screen
-// (the grey clock, the ringed circle), the stage has no progress ring, no end time, no quiet
+// (the grey clock, the ringed circle), the stage has no progress bar, no end time, no quiet
 // mode or no pause key.
 import { readFileSync, existsSync } from 'node:fs'
 
@@ -11,7 +11,9 @@ const fails = []
 
 const stage = read('components/on-air/live-stage.tsx')
 if (!/export function LiveStage\(/.test(stage)) fails.push('there is no shared live stage (components/on-air/live-stage.tsx)')
-if (!/strokeDashoffset/.test(stage)) fails.push('the stage has no ring that fills with the session')
+// LIVE-2406 (owner approved, 2026-11-18): direction A of the Claude Design timer reads the time as a
+// number over a bar, so the pin is a bar that fills, not a ring.
+if (!/data-live-bar/.test(stage) || !/width: `\$\{arc \* 100\}%`/.test(stage)) fails.push('the stage has no bar that fills with the session')
 if (!/Ends \{endsAt\}/.test(stage)) fails.push('the stage does not say when the session ends')
 if (!/QUIET_AFTER_MS/.test(stage) || !/data-quiet/.test(stage)) fails.push('the chrome never steps back during a running session')
 if (!/e\.code !== 'Space'/.test(stage)) fails.push('Space does not pause')

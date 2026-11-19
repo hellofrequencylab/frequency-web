@@ -4,23 +4,21 @@
 // Streak → Stats → Dispatch from Vera. The streak increment and the bonus
 // cascade are staged HERE, inside the flow (the Duolingo lesson: the state
 // change is the payoff of the session, never a badge discovered later).
-// Horizontal scroll-snap; each panel wears its own spot scene (reveal-art).
+// Horizontal scroll-snap. Redrawn under LIVE-2406 from the Claude Design timer of 2026-11-18: no
+// spot art, one big number per card, a serif line under it, position pills and a close at the top,
+// Back and Next at the bottom.
 // P4 motion: the zap number counts up, the streak ticks N-1 → N with a pulse,
 // and a one-shot dot burst fires behind the zaps. All of it bows out under
 // prefers-reduced-motion (final values render immediately).
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Zap, Gem, Flame, Shield, Radio, ChevronLeft, ChevronRight } from 'lucide-react'
-import { RewardsArt, StreakArt, StatsArt, DispatchArt } from './reveal-art'
+import { Zap, Gem, X } from 'lucide-react'
 import type { RevealPayload } from '@/lib/on-air'
 import { achievedTier, TIER_LABELS, TIER_ORDER, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
 import { depthStreakLine } from '@/lib/practices/depth-streak'
 import { ProgressTrack } from '@/components/ui/progress-track'
-import { IconButton } from '@/components/ui/icon-button'
-import { Button, buttonClasses } from '@/components/ui/button'
 import { FunnelNextStep } from '@/components/funnels/next-step-link'
-import { capsLabel } from '@/components/ui/caps-label'
 import { orbFillFor } from './live-stage'
 import { RoomWash } from './stage-room'
 import type { TimerMode } from './mindless'
@@ -28,9 +26,9 @@ import type { TimerMode } from './mindless'
 // THE SAME ROOM (LIVE-2395): the reveal sits in the light of the orb the member just finished on, and
 // its accents follow the mode (the move blue after a walk, the practice tone after a sit), so the
 // four cards read as the end of that session and not as a different page.
-const TONE: Record<TimerMode, { icon: string; strong: string; dot: string }> = {
-  still: { icon: 'text-primary', strong: 'text-primary-strong', dot: 'bg-primary' },
-  move: { icon: 'text-move', strong: 'text-move-strong', dot: 'bg-move' },
+const TONE: Record<TimerMode, { icon: string; strong: string }> = {
+  still: { icon: 'text-primary', strong: 'text-primary-strong' },
+  move: { icon: 'text-move', strong: 'text-move-strong' },
 }
 type Tone = (typeof TONE)[TimerMode]
 
@@ -53,11 +51,8 @@ const fmtMin = (sec: number) => {
 // session.tsx / movement-session.tsx), the rail is pinned, and everything above it lives inside
 // the leftover space. Two things give way inside that space, in this order:
 //
-//   1. THE SPOT ART, because it is the only element on these cards carrying no information. It is
-//      capped against `svh` — the SMALL viewport height, i.e. the measure with the mobile URL bar
-//      OUT — so the cards do not resize under the member when Safari's chrome slides away
-//      mid-read. `dvh` would do exactly that, and a layout that moves while you look at it reads
-//      as a glitch even when every number on it is right.
+//   1. THE SPOT ART used to give way first. LIVE-2406 removed it: the cards carry one number and
+//      a line, so there is nothing decorative left to squeeze.
 //   2. THE PANEL BODY, which scrolls INSIDE its own box as a last resort. That is a fail-safe, not
 //      the design. It exists because the alternative is amputation — the shell root carries
 //      `overflow-x-clip` and this overlay now carries `overflow-hidden`, so content that does not
@@ -84,7 +79,10 @@ const fmtMin = (sec: number) => {
 // readable stats for a scrollbar nobody sees. Note that `100dvh` on a phone is the viewport with
 // the browser chrome SHOWING (~700 on an iPhone 14, not 844), because a takeover that does not
 // scroll never gives the URL bar a reason to collapse. That is the row to read.
-const ART = 'mx-auto h-24 max-h-[9svh] w-auto'
+const TILE = 'fq-panel flex flex-col gap-1 rounded-[18px] bg-surface-elevated/60 px-4 py-3 text-left'
+const EYEBROW = 'm-0 eyebrow text-muted'
+const SERIF = 'serif m-0 text-balance text-display-card leading-snug text-text'
+const ACTION: Record<TimerMode, string> = { still: 'fq-pa bg-primary text-on-primary', move: 'bg-move text-on-move lift-2' }
 
 // The depth nudge (ADR-443): from the real engaged time, name the tier the sit
 // EARNED and, if there's a deeper one, the minutes that would reach it next time.
@@ -310,6 +308,18 @@ export function Reveal({
       data-reveal={mode}
     >
       <RoomWash fill={orbFillFor(mode)} />
+      <div className="flex h-11 shrink-0 items-center justify-between">
+        <div className="flex items-center gap-1.5" role="img" aria-label={`Card ${panel + 1} of 4`}>
+          {[0, 1, 2, 3].map((i) => (
+            <span key={i} className={`h-1.5 rounded-pill transition-all motion-reduce:transition-none ${i === panel ? 'w-5 bg-text' : 'w-1.5 bg-border-strong'}`} />
+          ))}
+        </div>
+        {onClose && (
+          <button type="button" aria-label="Close" onClick={close} className="-mr-2.5 flex h-11 w-11 items-center justify-center rounded-pill text-muted hover:text-text">
+            <X className="h-4.5 w-4.5" aria-hidden />
+          </button>
+        )}
+      </div>
       <div
         ref={scroller}
         onScroll={onScroll}
@@ -319,13 +329,13 @@ export function Reveal({
           <RewardsPanel payload={payload} tone={tone} />
         </Panel>
         <Panel>
-          <StreakPanel payload={payload} tone={tone} />
+          <StreakPanel payload={payload} />
         </Panel>
         <Panel>
           <StatsPanel payload={payload} tone={tone} onAction={onAction} />
         </Panel>
         <Panel>
-          <DispatchPanel payload={payload} onClose={onClose} onAction={onAction} />
+          <DispatchPanel payload={payload} mode={mode} onClose={onClose} onAction={onAction} />
         </Panel>
         {/* The ghost panel: swiping the last card off the edge closes the mode. */}
         {onClose && (
@@ -333,28 +343,17 @@ export function Reveal({
         )}
       </div>
 
-      {/* Swipe rail: chevrons flank the dots; the right one walks the cards and,
-          from the last card, swipes it off and closes the mode.
-          `shrink-0` is load-bearing now that the overlay is exactly one viewport: this row is the
-          only way through the four panels for anyone not swiping, so it is the last thing allowed
-          to give ground. It was the first thing to go off the bottom before. */}
+      {/* The rail: Back and the one primary, which walks the cards and, from the last card, swipes
+          it off and closes the mode. `shrink-0` is load-bearing now that the overlay is exactly one
+          viewport: this row is the only way through the four panels for anyone not swiping, so it
+          is the last thing allowed to give ground. */}
       <div className="flex shrink-0 items-center justify-center gap-5 py-3">
-        <IconButton variant="bordered" label="Previous card" onClick={prev} disabled={panel === 0}>
-          <ChevronLeft className="h-4 w-4" />
-        </IconButton>
-        <div className="flex items-center gap-1.5">
-          {[0, 1, 2, 3].map((i) => (
-            <span
-              key={i}
-              className={`h-1.5 rounded-pill transition-all ${
-                i === panel ? `w-5 ${tone.dot}` : 'w-1.5 bg-border'
-              }`}
-            />
-          ))}
-        </div>
-        <IconButton variant="bordered" label={panel >= 3 ? 'Tune back in' : 'Next card'} onClick={next}>
-          <ChevronRight className="h-4 w-4" />
-        </IconButton>
+        <button type="button" aria-label="Previous card" onClick={prev} disabled={panel === 0} className="h-14 px-3 text-body-sm font-medium text-muted hover:text-text disabled:opacity-0">
+          Back
+        </button>
+        <button type="button" aria-label={panel >= 3 ? 'Tune back in' : 'Next card'} onClick={next} className={`h-14 flex-1 rounded-pill text-body font-semibold ${ACTION[mode]}`}>
+          {panel >= 3 ? 'Tune back in' : 'Next'}
+        </button>
       </div>
     </div>
   )
@@ -387,47 +386,34 @@ function RewardsPanel({ payload, tone }: { payload: RevealPayload; tone: Tone })
     return () => clearTimeout(t)
   }, [shown, payload.bonuses.length])
 
+  if (!payload.logged) {
+    return (
+      <div className="flex w-full max-w-sm flex-col items-center gap-3">
+        <p className={EYEBROW}>{payload.practiceTitle} logged</p>
+        <p className={SERIF}>Already counted today. Your streak is intact and the time is on your record.</p>
+      </div>
+    )
+  }
   return (
-    <div className="w-full max-w-sm">
-      <RewardsArt className={ART} />
-      {payload.logged ? (
-        <>
-          <p className="mt-3 eyebrow text-subtle">
-            {payload.practiceTitle} · logged
-          </p>
-          <p className="relative mt-2 flex items-center justify-center gap-2 font-display text-display-h2 font-medium tracking-[-0.04em] tabular-nums text-text">
-            <CelebrationBurst />
-            <Zap className={`h-8 w-8 ${tone.icon}`} strokeWidth={2.25} />+{zaps}
-          </p>
-          {payload.welcomeBack && (
-            <p className="mt-3 text-body-sm text-muted">Good to see you. One practice at a time.</p>
-          )}
-          <div className="mt-4 space-y-1.5">
-            {payload.bonuses.slice(0, shown).map((b, i) => (
-              <div
-                key={`${b.label}-${i}`}
-                className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
-              >
-                <span className="font-medium text-text">{b.label}</span>
-                <span className={`flex items-center gap-1 font-semibold tabular-nums ${tone.strong}`}>
-                  {b.kind === 'gems' ? <Gem className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />}
-                  +{b.amount}
-                </span>
-              </div>
-            ))}
+    <div className="flex w-full max-w-sm flex-col items-center">
+      <p className={EYEBROW}>{payload.practiceTitle} logged</p>
+      {payload.welcomeBack && <span className="mt-2.5 flex h-7 items-center rounded-pill bg-signal-bg px-3 text-meta font-semibold text-signal-strong">Welcome back</span>}
+      <p className="relative m-0 mt-3 flex items-center justify-center gap-2.5 font-display text-display-hero font-medium leading-none tracking-[-0.04em] tabular-nums text-text">
+        <CelebrationBurst />
+        <Zap className={`h-8 w-8 ${tone.icon}`} strokeWidth={2.25} aria-hidden />+{zaps}
+      </p>
+      <p className="m-0 mt-2 text-body-sm font-medium text-text">{payload.zapsAwarded === 1 ? 'Zap' : 'Zaps'}</p>
+      <p className={`${SERIF} mt-2`}>{payload.partial ? 'The rest are waiting when you finish.' : `${fmtMin(payload.stats.sessionSeconds)}, done.`}</p>
+      <div className="mt-4 w-full">
+        {payload.bonuses.slice(0, shown).map((b, i) => (
+          <div key={`${b.label}-${i}`} className="flex h-12 items-center justify-between border-t border-border text-body-sm first:border-t-0">
+            <span className="font-medium text-text">{b.label}</span>
+            <span className={`flex items-center gap-1 font-semibold tabular-nums ${tone.strong}`}>
+              {b.kind === 'gems' && <Gem className="h-3.5 w-3.5" aria-hidden />}+{b.amount}
+            </span>
           </div>
-        </>
-      ) : (
-        <>
-          <p className="mt-3 eyebrow text-subtle">
-            {payload.practiceTitle}
-          </p>
-          <p className="mt-2 font-display text-display-card font-medium tracking-tight text-text">Already counted today</p>
-          <p className="mt-2 text-body-sm text-muted">
-            The extra sit still banks airtime. The streak holds.
-          </p>
-        </>
-      )}
+        ))}
+      </div>
     </div>
   )
 }
@@ -435,7 +421,7 @@ function RewardsPanel({ payload, tone }: { payload: RevealPayload; tone: Tone })
 // ② Streak — the number that ticks over: N-1 on mount, a beat, then N with a
 // small pulse. Only when this session actually logged (an "already counted"
 // sit never moved the streak, so nothing pretends to tick).
-function StreakPanel({ payload, tone }: { payload: RevealPayload; tone: Tone }) {
+function StreakPanel({ payload }: { payload: RevealPayload }) {
   const { streak } = payload
   const reduced = usePrefersReducedMotion()
   const animate = !reduced && payload.logged && streak.current > 0
@@ -458,38 +444,30 @@ function StreakPanel({ payload, tone }: { payload: RevealPayload; tone: Tone }) 
     ? Math.min(100, Math.round((streak.current / streak.nextMilestone.day) * 100))
     : 100
   return (
-    <div className="w-full max-w-sm">
-      <StreakArt className={ART} />
-      <p className="mt-3 eyebrow text-subtle">Streak</p>
-      <p className="mt-2 flex items-center justify-center gap-2 font-display text-display-h1 font-medium tracking-[-0.05em] tabular-nums text-text">
-        <Flame className={`h-9 w-9 ${tone.icon}`} />
-        <span
-          className={`inline-block transition-transform duration-300 ${
-            pulse ? 'scale-110' : 'scale-100'
-          }`}
-        >
-          {shownStreak}
-        </span>
-      </p>
-      <p className="mt-1 text-body-sm text-muted">
-        {streak.current === 1 ? 'day. Every run starts here.' : `days in a row. Best ever: ${streak.longest}.`}
-      </p>
+    <div className="flex w-full max-w-sm flex-col items-center">
+      <p className={EYEBROW}>Streak</p>
+      <p className={`m-0 mt-3 font-display text-display-hero font-medium leading-none tracking-[-0.05em] tabular-nums text-text transition-transform duration-300 motion-reduce:transition-none ${pulse ? 'scale-110' : 'scale-100'}`}>{shownStreak}</p>
+      <p className="m-0 mt-2 text-body-sm font-medium text-text">{streak.current === 1 ? 'day' : 'days in a row'}</p>
+      <p className={`${SERIF} mt-2`}>{streak.current === 1 ? 'Every run starts here.' : payload.logged ? 'Up one from yesterday.' : 'The streak holds.'}</p>
       {streak.nextMilestone && (
-        <div className="mt-5">
-          <ProgressTrack value={pct} label="Progress to the next streak milestone" size="lg" track="border" animate />
-          <p className="mt-2 text-meta text-subtle">
-            {streak.toNext} {streak.toNext === 1 ? 'day' : 'days'} to {streak.nextMilestone.label}
+        <div className="mt-5 w-full">
+          <p className="m-0 mb-2 flex justify-between text-meta text-muted">
+            <span>Next: {streak.nextMilestone.label}</span>
+            <span className="tabular-nums">{streak.toNext} {streak.toNext === 1 ? 'day' : 'days'} to go</span>
           </p>
+          <ProgressTrack value={pct} label="Progress to the next streak milestone" size="lg" track="border" animate />
         </div>
       )}
-      {streak.freezeTokens > 0 && (
-        <p className="mt-4 flex items-center justify-center gap-1.5 text-meta font-medium text-muted">
-          {Array.from({ length: streak.freezeTokens }).map((_, i) => (
-            <Shield key={i} className="h-3.5 w-3.5 text-signal" />
-          ))}
-          {streak.freezeTokens === 1 ? '1 freeze banked' : `${streak.freezeTokens} freezes banked`}
-        </p>
-      )}
+      <div className="mt-4 grid w-full grid-cols-2 gap-2">
+        <div className={TILE}>
+          <span className="text-body font-semibold tabular-nums text-text">{streak.longest} {streak.longest === 1 ? 'day' : 'days'}</span>
+          <span className="text-meta text-muted">Longest streak</span>
+        </div>
+        <div className={TILE}>
+          <span className="text-body font-semibold tabular-nums text-text">{streak.freezeTokens}</span>
+          <span className="text-meta text-muted">Freeze tokens</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -503,54 +481,30 @@ function StatsPanel({ payload, tone, onAction }: { payload: RevealPayload; tone:
   // The per-practice depth streak (PD6-2): consecutive days at Standard+ / the personal target.
   // Flavor only, shown when this session actually logged and the run is worth naming (>= 2 days).
   const depthFlavor = payload.logged ? depthStreakLine(stats.depthStreak ?? 0) : null
-  const rows: [string, string][] = [
-    // Named after what was actually done (ADR-443): "This walk" / "This sit", never crossed.
-    [stats.sessionLabel, fmtMin(stats.sessionSeconds)],
-    ['Airtime today', fmtMin(stats.todaySeconds)],
-    ['Airtime, all time', fmtMin(stats.totalSeconds)],
-    [
-      payload.practiceTitle,
-      stats.nextDepthMark
-        ? `${stats.lifetimeLogs} logs · ${stats.nextDepthMark} next`
-        : `${stats.lifetimeLogs} logs`,
-    ],
-    ['Amplitude', `Level ${stats.amplitudeLevel} · ${stats.amplitude.toLocaleString()}`],
+  const line = depthFlavor ?? (nudge ? `${nudge.reached} ${nudge.toNext ?? 'Top of the dial. Hold it here.'}` : null)
+  const tiles: [string, string][] = [
+    [fmtMin(stats.todaySeconds), 'Airtime today'],
+    [fmtMin(stats.totalSeconds), 'Airtime, all time'],
+    [stats.lifetimeLogs.toLocaleString(), stats.nextDepthMark ? `${payload.practiceTitle} logs. Next mark at ${stats.nextDepthMark}` : `${payload.practiceTitle} logs`],
+    [stats.amplitude.toLocaleString(), `Amplitude · Level ${stats.amplitudeLevel}`],
   ]
   return (
-    <div className="w-full max-w-sm">
-      <StatsArt className={ART} />
-      <p className="mt-2 eyebrow text-subtle">Stats</p>
-      <div className="mt-3 space-y-1.5 text-left">
-        {rows.map(([k, v]) => (
-          <div
-            key={k}
-            className="flex items-center justify-between rounded-card border border-border bg-surface-elevated/60 px-3 py-1.5 text-body-sm"
-          >
-            <span className="truncate text-muted">{k}</span>
-            <span className="ml-3 shrink-0 font-semibold tabular-nums text-text">{v}</span>
+    <div className="flex w-full max-w-sm flex-col items-center">
+      {/* Named after what was actually done (ADR-443): "This walk" / "This sit", never crossed. */}
+      <p className={EYEBROW}>{stats.sessionLabel}</p>
+      <p className="m-0 mt-3 font-display text-display-h1 font-medium leading-none tracking-[-0.04em] tabular-nums text-text">{fmtMin(stats.sessionSeconds)}</p>
+      {line && <p className={`${SERIF} mt-3`}>{line}</p>}
+      <div className="mt-5 grid w-full grid-cols-2 gap-2">
+        {tiles.map(([v, k]) => (
+          <div key={k} className={TILE}>
+            <span className="text-body font-semibold tabular-nums text-text">{v}</span>
+            <span className="text-meta text-muted">{k}</span>
           </div>
         ))}
       </div>
-      {nudge && (
-        <div className="mt-3 rounded-card border border-primary/40 bg-primary-bg/30 px-3 py-2 text-left">
-          <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
-            <Zap className={`h-3.5 w-3.5 ${tone.icon}`} /> {nudge.reached}
-          </p>
-          {nudge.toNext ? (
-            <p className="mt-0.5 text-meta text-muted">{nudge.toNext}</p>
-          ) : (
-            <p className="mt-0.5 text-meta text-muted">Top of the dial. Hold it here.</p>
-          )}
-        </div>
-      )}
-      {depthFlavor && (
-        <p className={`mt-2 flex items-center justify-center gap-1.5 text-meta font-medium ${tone.strong}`}>
-          <Flame className="h-3.5 w-3.5" aria-hidden /> {depthFlavor}
-        </p>
-      )}
       {/* Through onAction so the overlay drops after the link navigates (LIVE-2244), never a page under a takeover. */}
-      <Link href="/crew/leaderboard" onClick={() => onAction?.()} className={`mt-3 inline-block text-meta font-semibold hover:underline ${tone.strong}`}>
-        Full stats →
+      <Link href="/crew/leaderboard" onClick={() => onAction?.()} className={`mt-3 inline-flex h-11 items-center text-meta font-semibold hover:underline ${tone.strong}`}>
+        Full stats
       </Link>
     </div>
   )
@@ -562,10 +516,12 @@ function StatsPanel({ payload, tone, onAction }: { payload: RevealPayload; tone:
 // (and swiping the card off) always lands the member on the feed (tasks #9/#10).
 function DispatchPanel({
   payload,
+  mode,
   onClose,
   onAction,
 }: {
   payload: RevealPayload
+  mode: TimerMode
   onClose?: () => void
   onAction?: () => void
 }) {
@@ -582,44 +538,37 @@ function DispatchPanel({
   // overlay mode, pushes the feed on the route) instead of a hard navigation that
   // leaves the overlay mounted.
   const actionIsFeed = dispatch.actionHref === '/feed'
+  const outline = 'mt-5 inline-flex h-12 items-center justify-center rounded-pill px-6 text-body-sm font-semibold text-text ring-1 ring-inset ring-border-strong hover:bg-surface-elevated'
 
   return (
-    <div className="w-full max-w-sm">
-      <DispatchArt className={`${ART} mb-4`} />
-      <div className="rounded-card border border-primary/50 bg-primary-bg/30 p-5 text-left lift-1">
-        <p className={capsLabel('flex items-center gap-1.5 text-2xs font-bold text-primary-strong', 'widest')}>
-          <Radio className="h-3.5 w-3.5" /> Incoming · Dispatch from Vera
-        </p>
-        <p className="mt-3 min-h-[3.5rem] text-body font-medium leading-relaxed text-text">
-          {dispatch.copy.slice(0, chars)}
-          {chars < dispatch.copy.length && <span className="animate-pulse">▍</span>}
-        </p>
-        {dispatch.actionHref &&
-          (actionIsFeed && onClose ? (
-            // "Back to feed" through the close path: in overlay mode this drops the
-            // takeover over the feed; on the /on-air route it pushes the feed.
-            <Button type="button" onClick={onClose} className="mt-4">
-              {dispatch.actionLabel} <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          ) : (
-            // A contextual deep-link (Practices, an event). Navigate there AND, in
-            // overlay mode, drop the takeover so it doesn't sit over the new page.
-            // On the route, onAction is undefined and the link navigation unmounts
-            // the surface on its own (no extra push to the feed).
-            <Link
-              href={dispatch.actionHref}
-              onClick={() => onAction?.()}
-              className={buttonClasses('primary', 'md', 'mt-4')}
-            >
-              {dispatch.actionLabel} <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          ))}
-      </div>
+    <div className="flex w-full max-w-sm flex-col items-center">
+      <span aria-hidden className="h-16 w-16 rounded-pill ring-1 ring-inset ring-surface/70" style={{ background: orbFillFor(mode) }} />
+      <p className={`${EYEBROW} mt-4`}>Dispatch from Vera</p>
+      <p className={`${SERIF} mt-3 min-h-[3.5rem]`}>
+        {dispatch.copy.slice(0, chars)}
+        {chars < dispatch.copy.length && <span className="animate-pulse motion-reduce:animate-none">▍</span>}
+      </p>
+      {dispatch.actionHref &&
+        (actionIsFeed && onClose ? (
+          // "Back to feed" through the close path: in overlay mode this drops the
+          // takeover over the feed; on the /on-air route it pushes the feed.
+          <button type="button" onClick={onClose} className={outline}>
+            {dispatch.actionLabel}
+          </button>
+        ) : (
+          // A contextual deep-link (Practices, an event). Navigate there AND, in
+          // overlay mode, drop the takeover so it doesn't sit over the new page.
+          // On the route, onAction is undefined and the link navigation unmounts
+          // the surface on its own (no extra push to the feed).
+          <Link href={dispatch.actionHref} onClick={() => onAction?.()} className={outline}>
+            {dispatch.actionLabel}
+          </Link>
+        ))}
       {/* One next step toward a room with other people, picked by the funnel this person came
           in through (LIVE-801). Clicking it drops the overlay like the CTA above. */}
-      <FunnelNextStep moment="mindless" onNavigate={onAction} className="mt-4 rounded-card border border-border bg-surface px-4 py-3 text-left" />
-      <div className="mt-5 flex items-center justify-center gap-4">
-        <Link href="/on-air/dispatches" onClick={() => onAction?.()} className="text-meta font-semibold text-subtle hover:text-text">
+      <FunnelNextStep moment="mindless" onNavigate={onAction} className="mt-4 w-full rounded-[18px] border border-border bg-surface px-4 py-3 text-left" />
+      <div className="mt-3 flex items-center justify-center gap-4">
+        <Link href="/on-air/dispatches" onClick={() => onAction?.()} className="inline-flex h-11 items-center text-meta font-semibold text-muted hover:text-text">
           Past Dispatches
         </Link>
         {/* A feed exit alongside the contextual CTA. Skipped when the CTA itself
@@ -629,15 +578,11 @@ function DispatchPanel({
             a hard nav that leaves the takeover stacked over the page. */}
         {!actionIsFeed &&
           (onClose ? (
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-meta font-semibold text-subtle hover:text-text"
-            >
+            <button type="button" onClick={onClose} className="h-11 text-meta font-semibold text-muted hover:text-text">
               Back to feed
             </button>
           ) : (
-            <Link href="/feed" className="text-meta font-semibold text-subtle hover:text-text">
+            <Link href="/feed" className="inline-flex h-11 items-center text-meta font-semibold text-muted hover:text-text">
               Back to feed
             </Link>
           ))}

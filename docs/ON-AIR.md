@@ -167,6 +167,17 @@ countdown (below).
   save are `StageNotice` (the orb with a turning ring, or dimmed with Try again). The reveal takes
   `mode` and follows that timer's accent; its one-screen budget is unchanged. The door says
   "Done by 6:42 pm" for any timed session.
+- **The Claude Design timer (LIVE-2406).** The phone door, the running screen, the save and the
+  reveal were redrawn from the owner's Claude Design export of 2026-11-18, direction A. Where this
+  note and the two above disagree, this one wins. The phone door (under 840px) is the practice
+  name, the length with minus and plus, "Done by", Style and Length chips, the chosen style's own
+  controls and one "Practice, sound and options" link; its controls live in
+  `components/on-air/door/sheet-controls.tsx` and write the same settings model. The dialog from
+  840px is unchanged. The running screen reads the time as one number over a bar that fills (no
+  ring); a Get Moving phase is a pill with "Round 3 of 8"; Breathe keeps the moving orb. The save
+  and a failed save are the orb alone. The reveal has position pills and a close at the top, Back
+  and Next at the bottom and no spot art. Be Still acts on the member kit's practice gradient, Get
+  Moving on the move colour. Engines, timing, sound, saving and rewards are untouched.
 - **Be Still always offers a Begin (ADR-567).** If the door resolves a **log-only** practice
   (`timer_kind = 'none'`), the Be Still setup still lets the member start a real sit: picking
   any timed mode runs the **Free Practice** fallback (`lib/on-air/free-sit.ts`
@@ -250,7 +261,7 @@ archive page's Today/Yesterday labels — so the key is minted in exactly one pl
   touches the shared (main) layout while parallel admin-chrome work is active;
   pick it up once that settles.
 - ~~P4: beauty pass~~ ✅ shipped: four reveal spot scenes in the welcome-art
-  language (components/on-air/reveal-art.tsx), the zap count-up (700ms ease-out),
+  language (removed with the LIVE-2406 redesign), the zap count-up (700ms ease-out),
   the streak N−1 → N tick with pulse (skipped on "already counted" sits), a
   one-shot celebration dot burst, and luminosity-breathing holds on the
   visualizer. Everything bows out under prefers-reduced-motion. Optional ambient

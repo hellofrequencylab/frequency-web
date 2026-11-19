@@ -3,10 +3,10 @@
 // THE MINDLESS DOOR (LIVE-2241, LIVE-2242, LIVE-2243; redesigned under LIVE-2245 from the Claude
 // Design handoff of 2026-11-10). One door, two layouts on the same props and the same choice:
 //
-//   • under 840px, a full-screen sheet: the Be Still | Get Moving pill, the breathing orb that IS
-//     the length field (minus / plus beside it, presets under it), the Practice and How pickers,
-//     the settings rows (Breath, Plan, Cues, Note, Sound, Ambient, Feel; one open at a time) and a
-//     docked Go with the "Logs as" line;
+//   • under 840px, a full-screen sheet (LIVE-2406, the Claude Design timer of 2026-11-18, direction
+//     A): the Be Still | Get Moving track, the practice name over the length (minus / plus beside
+//     the typed minutes) and "Done by", Style and Length chips, the chosen style's own controls,
+//     one "Practice, sound and options" link for everything else, and a docked Start;
 //   • from 840px, a dialog: a Today rail of practices on the left, the main column (title, Style
 //     tiles, Length, Breath pattern / Plan / Note, Sound and feel) and a footer with the summary,
 //     Cancel and Go. Esc closes, Enter starts, the arrows change the minutes.
@@ -16,7 +16,7 @@
 // (docs/THEME.md); the one action fill is Go.
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { BookOpen, Check, ChevronDown, Dumbbell, Flower2, Footprints, Lock, Minus, Moon, Plus, Rabbit, Sparkles, StretchHorizontal, Volleyball, X } from 'lucide-react'
+import { BookOpen, Check, Dumbbell, Flower2, Footprints, Lock, Minus, Moon, Plus, Rabbit, Sparkles, SlidersHorizontal, StretchHorizontal, Volleyball, X } from 'lucide-react'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { Input } from '@/components/ui/field'
 import { BoltIcon, BreatheIcon, DialIcon, LotusIcon } from '@/components/on-air/icons'
@@ -57,8 +57,9 @@ import { useTimerSettings } from './use-timer-settings'
 import { RoomWash, useDoneBy } from './stage-room'
 import { Keycap, Segmented, Tiles } from './door/door-section'
 import { SoundAndFeel, useDoorAudio, type CueScope } from './door/cue-sections'
-import { BreathWebSection, NoteField, StillSections } from './door/still-sections'
-import { MoveSections, PlanWebSection, clock, describePlan, moveCue } from './door/move-sections'
+import { BreathWebSection, NoteField } from './door/still-sections'
+import { PlanWebSection, clock, describePlan, moveCue } from './door/move-sections'
+import { ChipGroup, MoreOptions, StyleControls } from './door/sheet-controls'
 import { MINDLESS_TAGLINE } from './mode-toggle'
 import type { TimerMode } from './mindless'
 import type { OnAirPractice } from './session'
@@ -172,7 +173,7 @@ interface ModeState {
 const blank = (pickedId?: string): ModeState => ({ pickedId, stillPick: null, movePick: null, custom: null, typed: null, freshFor: null, patternPick: null })
 
 const MINUTES_LABEL = `Minutes, 1 to ${MINUTE_MAX}`
-const INVALID_LINE = `Choose 1 to ${MINUTE_MAX} minutes.`
+const INVALID_LINE = `Pick a length from 1 to ${MINUTE_MAX} minutes.`
 
 /** Shared route/overlay setup. The existing engines own running, recovery, sound and logging. */
 export function CompactSetup({
@@ -215,17 +216,8 @@ export function CompactSetup({
     if (p.still?.patternSlug) patch({ patternPick: p.still.patternSlug })
   }
   const [note, setNote] = useState('')
-  // The mobile pickers and settings rows: one thing open at a time.
-  const [picker, setPicker] = useState<'practice' | 'how' | null>(null)
-  const [openRow, setOpenRow] = useState<string | null>(null)
-  const togglePicker = (k: 'practice' | 'how') => {
-    setPicker((p) => (p === k ? null : k))
-    setOpenRow(null)
-  }
-  const toggleRow = (id: string) => {
-    setOpenRow((r) => (r === id ? null : id))
-    setPicker(null)
-  }
+  // The phone door opens on length and Start; practice, sound and the rest sit behind one link.
+  const [more, setMore] = useState(false)
 
   const available = setupPractices(practices, mode)
   const practice = available.find((p) => p.id === cur.pickedId) ?? available.find((p) => p.logsAs) ?? available[0]
@@ -305,22 +297,17 @@ export function CompactSetup({
 
   const pickPractice = (p: OnAirPractice) => {
     patch({ ...blank(p.id) })
-    if (!web) setPicker(null)
   }
   const pickStill = (m: SessionMode) => {
     // A style on a practice with no length of its own seeds that style's default minutes.
     patch({ stillPick: m, typed: null, custom: configuredStill == null && m !== 'log' ? SESSION_MODE_META[m].defaultMin : null })
-    if (!web) setPicker(null)
   }
   const pickMove = (m: MovementMode) => {
     patch({ custom: null, typed: null })
     setMoveConfig(defaultMoveConfig(m, settings.move))
-    if (!web) setPicker(null)
   }
   const switchMode = (next: TimerMode) => {
     setMode(next)
-    setPicker(null)
-    setOpenRow(null)
   }
 
   const choice = (): SetupChoice =>
@@ -344,6 +331,7 @@ export function CompactSetup({
   const goLabel = logOnly ? 'Log it' : continuing ? `Continue, ${remainingMin} min left` : 'Start timer'
   const goIcon = logOnly ? <BoltIcon className="h-4.5 w-4.5" /> : <DialIcon className="h-4.5 w-4.5" />
   const startFresh = () => patch({ freshFor: practice?.id ?? null, custom: null, typed: null })
+  const keepGoing = () => patch({ freshFor: null, custom: null, typed: null })
 
   // Keyboard: Esc closes; on the web Enter starts (unless a field or button has focus) and the arrows
   // change the minutes while they are editable.
@@ -375,7 +363,6 @@ export function CompactSetup({
 
   // --- The words -----------------------------------------------------------------------------
   const styleLabel = mode === 'move' ? (MOVEMENT_MODES.find((m) => m.mode === moveConfig.mode)?.label ?? 'Walk') : SESSION_MODE_META[stillMode].label
-  const styleIcon = mode === 'move' ? MOVE_ICON[moveConfig.mode] : STILL_ICON[stillMode]
   const styleNote = mode === 'move' ? (lockedByAuthor ? 'Set by your practice.' : (MOVEMENT_MODES.find((m) => m.mode === moveConfig.mode)?.blurb ?? '')) : SESSION_MODE_META[stillMode].subline
   const styleLocked = lockedByAuthor
   const logsAs = practice?.logsAs ? (practices.find((p) => p.id === practice.logsAs)?.title ?? practice.title) : practice?.title ?? ''
@@ -400,20 +387,6 @@ export function CompactSetup({
     ambient: mode === 'still',
     cue: mode === 'move' && !lockedByAuthor ? moveCue(moveConfig, setMoveConfig) : undefined,
   }
-  const orbLine: { text: string; role: 'alert' | 'note'; lock?: boolean; live?: boolean } | null = invalid
-    ? { text: INVALID_LINE, role: 'alert', live: true }
-    : continuing
-      ? { text: `${bankedMin} of ${targetMin} min banked today`, role: 'note' }
-      : authored
-        ? { text: `Fixed length, set by ${practice?.title}`, role: 'note', lock: true }
-        : plan
-          ? { text: plan.short, role: 'note' }
-          : openCount
-            ? { text: 'Stop whenever you are done.', role: 'note' }
-            : null
-  const orbValue = editable ? raw : continuing ? String(remainingMin) : plan ? clock(plan.total) : openCount ? 'Open' : logOnly ? 'Log' : String(minutes)
-  const orbUnit = continuing ? 'min left' : plan ? 'total' : openCount ? 'counts up' : logOnly ? 'no timer' : 'min'
-  const orbSize = openCount || logOnly ? 'text-display-h3' : plan ? 'text-display-h2' : 'text-display-h1'
   const readout = !editable && (continuing || authored || openCount)
   const readoutText = continuing ? `${remainingMin} min left of ${targetMin}. ${bankedMin} min banked today.` : authored ? `${minutes} min, set by ${practice?.title}` : 'Open. It counts up until you stop.'
   const readoutIcon = continuing ? <DialIcon className="h-4.25 w-4.25" /> : openCount ? <Volleyball className="h-4.25 w-4.25" aria-hidden /> : <Lock className="h-4.25 w-4.25" aria-hidden />
@@ -427,14 +400,14 @@ export function CompactSetup({
     const length = p.logsAs ? null : mode === 'move' ? (style && describePlan(style)?.short) || (p.durationMin ? `${p.durationMin} min` : null) : p.durationMin ? `${p.durationMin} min` : null
     const meta = p.logsAs ? 'Any style, any length' : [styleName, length, p.durationLocked ? 'fixed' : null].filter(Boolean).join(', ')
     const tag = left ? { text: `${left} min left`, look: 'bg-primary-bg text-text' } : p.loggedToday ? { text: 'Done', look: 'bg-presence-bg text-presence', done: true } : on && journeyLabel ? { text: journeyLabel, look: 'bg-primary-bg text-primary-strong' } : p.durationLocked && !p.logsAs ? { text: 'Fixed', look: 'bg-surface-elevated text-text' } : null
-    const sheetMeta = left ? `${left} min left` : p.loggedToday ? `Done today · ${meta}` : meta
-    return { p, on, meta, sheetMeta, tag, icon: p.logsAs ? <Sparkles className="h-4.25 w-4.25" aria-hidden /> : mode === 'move' ? MOVE_ICON[style!.mode] : STILL_ICON[stillModeFor(p, p.id === explicitPracticeId)] }
+    const chip = p.logsAs ? p.title : `${p.title} · ${left ? `${left} min left` : p.loggedToday ? 'Done' : length ?? styleName}`
+    return { p, on, meta, chip, tag, icon: p.logsAs ? <Sparkles className="h-4.25 w-4.25" aria-hidden /> : mode === 'move' ? MOVE_ICON[style!.mode] : STILL_ICON[stillModeFor(p, p.id === explicitPracticeId)] }
   })
 
   const stillTiles = SESSION_MODE_ORDER.map((m) => ({ value: m, label: SESSION_MODE_META[m].label, icon: STILL_ICON[m], disabled: (practice?.timerKind === 'none' && m !== 'log') || (styleLocked && m !== stillMode) }))
   const moveTiles = MOVEMENT_MODES.map((m) => ({ value: m.mode, label: m.label, icon: MOVE_ICON[m.mode], disabled: styleLocked && m.mode !== moveConfig.mode }))
-  const accentBtn = mode === 'move' ? 'bg-move text-on-move' : 'bg-primary text-on-primary'
-  const tabOn: Record<TimerMode, string> = { still: 'bg-primary text-on-primary lift-2', move: 'bg-move text-on-move lift-2' }
+  // Be Still starts on the member kit's practice gradient; Get Moving has its own colour.
+  const accentBtn = mode === 'move' ? 'bg-move text-on-move lift-2' : 'fq-pa bg-primary text-on-primary'
   const orbFill = mode === 'move' ? 'radial-gradient(circle at 35% 30%, var(--color-surface) 0, var(--color-presence-bg) 34%, color-mix(in oklab, var(--color-move) 45%, var(--color-surface)) 100%)' : 'var(--design-practice-orb)'
 
   // The same room as the running screen (LIVE-2395): the orb's light behind the door, and when this
@@ -446,9 +419,9 @@ export function CompactSetup({
       type="button"
       onClick={go}
       disabled={goDisabled}
-      className={`flex items-center justify-center gap-2.5 rounded-pill font-semibold lift-2 transition-opacity disabled:opacity-40 ${accentBtn} ${size === 'sheet' ? 'h-14 w-full text-body' : 'h-12 min-w-55 px-5.5 text-body-sm'}`}
+      className={`flex items-center justify-center gap-2.5 rounded-pill font-semibold transition-opacity disabled:opacity-40 ${accentBtn} ${size === 'sheet' ? 'h-14 w-full text-body' : 'h-12 min-w-55 px-5.5 text-body-sm'}`}
     >
-      {goIcon}
+      {size === 'web' && goIcon}
       {goLabel}
       {size === 'web' && <Keycap className="ml-1 opacity-55">Enter</Keycap>}
     </button>
@@ -610,136 +583,108 @@ export function CompactSetup({
   }
 
   // --- The sheet (under 840px) ---------------------------------------------------------------
-  const pickerField = (open: boolean) => `flex h-14 min-w-0 items-center gap-2 rounded-[16px] bg-surface pl-3.5 pr-3 text-left ${open ? 'ring-[1.5px] ring-inset ring-text' : 'ring-1 ring-inset ring-border lift-1'}`
+  const hero = continuing ? `${remainingMin} min` : plan ? (plan.total % 60 ? clock(plan.total) : `${plan.total / 60} min`) : openCount ? 'Open' : logOnly ? 'Log' : `${minutes} min`
+  const heroLine = invalid ? INVALID_LINE : logOnly ? 'No timer. Logs at once.' : openCount ? 'Counts up until you stop.' : null
+  const stepBtn = 'flex h-12 w-12 shrink-0 items-center justify-center rounded-pill text-text ring-1 ring-inset ring-border-strong disabled:opacity-30'
+  const lockNote = styleLocked ? (
+    <span className="flex items-center gap-1.5 text-meta font-medium text-muted">
+      <Lock className="h-3 w-3" aria-hidden /> Set by your practice
+    </span>
+  ) : undefined
   return (
     <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="fixed inset-0 z-50 overflow-y-auto bg-canvas outline-none">
       <RoomWash fill={orbFill} />
-      <div className="mx-auto flex min-h-dvh w-full max-w-120 flex-col px-5">
+      <div className="mx-auto flex min-h-dvh w-full max-w-107.5 flex-col px-5">
         <div className="flex items-center justify-between pt-[max(14px,env(safe-area-inset-top))]">
-          <span id={titleId} className="eyebrow flex items-center gap-2.5 text-text">
-            <LotusIcon className="h-5.5 w-5.5" /> Mindless
+          <span id={titleId} className="flex items-center gap-2.5 text-body-sm font-medium text-text">
+            {mode === 'move' ? <Footprints className="h-4.5 w-4.5" aria-hidden /> : <LotusIcon className="h-4.5 w-4.5" />}
+            {mode === 'move' ? 'Get Moving' : 'Mindless'}
           </span>
           <button type="button" onClick={onClose} className="-mr-2.5 flex h-11 w-11 items-center justify-center rounded-pill text-muted hover:text-text">
             <X className="h-4.5 w-4.5" aria-hidden />
             <span className="sr-only">Close</span>
           </button>
         </div>
-        <div role="tablist" aria-label="Timer mode" className="mb-5.5 mt-2 grid grid-cols-2 gap-1 rounded-pill bg-surface-elevated p-1">
+        <div role="tablist" aria-label="Timer mode" className="mt-2 grid grid-cols-2 gap-1 rounded-pill bg-surface-elevated p-1">
           {(['still', 'move'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              role="tab"
-              aria-selected={mode === m}
-              onClick={() => switchMode(m)}
-              className={`flex h-11 items-center justify-center gap-1.75 rounded-pill text-body-sm font-semibold transition-colors ${mode === m ? tabOn[m] : 'text-muted'}`}
-            >
-              {m === 'still' ? <LotusIcon className="h-4 w-4" /> : <Footprints className="h-4 w-4" aria-hidden />}
+            <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => switchMode(m)} className={`h-11 rounded-pill text-body-sm font-semibold transition-colors ${mode === m ? 'bg-surface text-text lift-1' : 'text-muted'}`}>
               {m === 'still' ? 'Be Still' : 'Get Moving'}
             </button>
           ))}
         </div>
 
-        <div className="flex flex-col items-center gap-4">
-          <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center">
-            <button type="button" disabled={!editable} onClick={() => stepLength(-1)} className="flex h-12 w-12 items-center justify-center justify-self-center rounded-pill bg-surface text-text ring-1 ring-inset ring-border lift-1 disabled:opacity-30">
-              <Minus className="h-4.5 w-4.5" aria-hidden />
-              <span className="sr-only">One minute less</span>
-            </button>
-            <div className="relative flex h-41 w-41 items-center justify-center">
-              <span className="fq-breathe absolute -inset-[8%] rounded-pill opacity-50 blur-[22px] motion-reduce:animate-none" aria-hidden style={{ background: orbFill }} />
-              {/* The clock face the running screen fills: the same thin ring, empty until Start. */}
-              <svg viewBox="0 0 200 200" className="absolute -inset-[7%] text-border" aria-hidden>
-                <circle cx="100" cy="100" r="98" fill="none" strokeWidth="1.5" className="stroke-current" />
-              </svg>
-              <span className="fq-breathe absolute inset-0 rounded-pill ring-1 ring-inset ring-surface/70 motion-reduce:animate-none" aria-hidden style={{ background: orbFill }} />
-              {/* The number sits on the pale orb in both day and night, so it reads in the fixed ink. */}
-              <div className="relative flex flex-col items-center gap-1.5 text-ink">
-                {editable ? (
-                  minutesInput(`w-27.5 border-0 p-0 text-center font-display font-medium leading-none tracking-[-0.05em] ${orbSize} ${invalid ? 'text-danger' : 'text-ink'}`)
-                ) : (
-                  <span className={`font-display font-medium leading-none tracking-[-0.05em] tabular-nums ${orbSize}`}>{orbValue}</span>
-                )}
-                <span className="eyebrow opacity-70">{orbUnit}</span>
-              </div>
+        <div className="flex flex-col items-center pb-7 pt-9 text-center">
+          <h2 className="m-0 font-display text-display-card font-medium leading-tight tracking-[-0.03em] text-text">{practice?.title}</h2>
+          <p className="m-0 mt-1.5 text-body-sm text-muted">{sessionLine}</p>
+          {editable ? (
+            <div className="mt-4 flex items-center gap-7">
+              <button type="button" onClick={() => stepLength(-1)} className={stepBtn}>
+                <Minus className="h-4 w-4" aria-hidden />
+                <span className="sr-only">One minute less</span>
+              </button>
+              <span className="flex items-baseline gap-1.5">
+                {minutesInput(`w-24 border-0 p-0 text-right font-display text-display-h1 font-medium leading-none tracking-[-0.05em] ${invalid ? 'text-danger' : 'text-text'}`)}
+                <span className="text-body-sm font-medium text-muted">min</span>
+              </span>
+              <button type="button" onClick={() => stepLength(1)} className={stepBtn}>
+                <Plus className="h-4 w-4" aria-hidden />
+                <span className="sr-only">One minute more</span>
+              </button>
             </div>
-            <button type="button" disabled={!editable} onClick={() => stepLength(1)} className="flex h-12 w-12 items-center justify-center justify-self-center rounded-pill bg-surface text-text ring-1 ring-inset ring-border lift-1 disabled:opacity-30">
-              <Plus className="h-4.5 w-4.5" aria-hidden />
-              <span className="sr-only">One minute more</span>
-            </button>
-          </div>
-          {editable && <Segmented label="Length presets in minutes" size="lg" className="w-full" value={minutes} options={presets.map((m) => ({ value: m, label: String(m), aria: `${m} minutes` }))} onChange={pickLength} />}
-          {orbLine && (
-            <p role={orbLine.role} className={`m-0 flex items-center gap-1.5 text-center text-body-sm font-medium ${orbLine.live ? 'text-danger' : 'text-muted'}`}>
-              {orbLine.lock && <Lock className="h-3.25 w-3.25" aria-hidden />}
-              {orbLine.text}
+          ) : (
+            <span className="mt-4 font-display text-display-h2 font-medium leading-none tracking-[-0.04em] tabular-nums text-text">{hero}</span>
+          )}
+          {heroLine ? (
+            <p role={invalid ? 'alert' : 'note'} className={`m-0 mt-3 text-body-sm font-medium ${invalid ? 'text-danger' : 'text-muted'}`}>{heroLine}</p>
+          ) : (
+            doneBy && <p className="m-0 mt-3 text-body-sm font-medium tabular-nums text-muted">Done by {doneBy}</p>
+          )}
+          {authored && !continuing && (
+            <p role="note" className="m-0 mt-1.5 flex items-center gap-1.5 text-meta text-muted">
+              <Lock className="h-3 w-3" aria-hidden /> Fixed length, set by {practice?.title}
             </p>
           )}
-          {doneBy && <p className="m-0 text-meta tabular-nums text-muted">Done by {doneBy}</p>}
-          {mode === 'still' && stillMode === 'log' && <NoteField value={note} onChange={setNote} variant="sheet" />}
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <button type="button" aria-expanded={picker === 'practice'} onClick={() => togglePicker('practice')} className={pickerField(picker === 'practice')}>
-            <span className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className="text-2xs font-medium text-muted">Practice</span>
-              <span className="truncate text-body font-semibold text-text">{practice?.title}</span>
-            </span>
-            <ChevronDown className={`h-3.75 w-3.75 shrink-0 text-muted transition-transform ${picker === 'practice' ? 'rotate-180' : ''}`} aria-hidden />
-          </button>
-          <button type="button" aria-expanded={picker === 'how'} onClick={() => togglePicker('how')} className={pickerField(picker === 'how')}>
-            <span className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className="flex items-center gap-1 text-2xs font-medium text-muted">
-                How {styleLocked && <Lock className="h-2.75 w-2.75" aria-hidden />}
-              </span>
-              <span className="flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-body font-semibold text-text">
-                <span className="[&>svg]:h-3.75 [&>svg]:w-3.75">{styleIcon}</span>
-                {styleLabel}
-              </span>
-            </span>
-            <ChevronDown className={`h-3.75 w-3.75 shrink-0 text-muted transition-transform ${picker === 'how' ? 'rotate-180' : ''}`} aria-hidden />
-          </button>
-        </div>
-        {picker === 'practice' && (
-          <div role="group" aria-label="Your practices" className="mt-2 flex flex-col gap-0.5 rounded-[20px] bg-surface p-1.5 ring-1 ring-inset ring-border lift-2">
-            {practiceRows.map(({ p, on, sheetMeta }) => (
-              <button key={p.id} type="button" aria-pressed={on} onClick={() => pickPractice(p)} className={`flex min-h-13 items-center gap-3 rounded-control px-3 py-2 text-left ${on ? 'bg-surface-elevated' : ''}`}>
-                <span className="flex min-w-0 flex-1 flex-col gap-0.75">
-                  <span className="text-body font-semibold text-text">{p.title}</span>
-                  <span className="text-meta text-muted">{sheetMeta}</span>
-                </span>
-                {on && <Check className="h-4.5 w-4.5 text-text" aria-hidden />}
-              </button>
-            ))}
-          </div>
-        )}
-        {picker === 'how' && (
-          <div className="mt-2 flex flex-col gap-2 rounded-[20px] bg-surface p-2 ring-1 ring-inset ring-border lift-2">
-            {styleTiles}
-            <span className="px-1.5 pb-1 pt-0.5 text-body-sm text-muted">{styleNote}</span>
-          </div>
-        )}
-
-        <div className="mt-3">
-          {mode === 'still' ? (
-            <StillSections settings={settings} set={set} audio={audio} scope={scope} breathMode={stillMode === 'breath'} journal={stillMode === 'journal'} note={note} onNote={setNote} openRow={openRow} onToggleRow={toggleRow} />
-          ) : (
-            !logOnly && <MoveSections config={moveConfig} onConfig={setMoveConfig} settings={settings} set={set} audio={audio} scope={scope} locked={lockedByAuthor} openRow={openRow} onToggleRow={toggleRow} />
+        <div className="flex flex-col gap-5 pb-6">
+          {hasPartial && (
+            <div role="group" aria-label="Continue or start fresh" className="fq-panel flex flex-col gap-3 rounded-[20px] bg-surface p-4 ring-1 ring-inset ring-border">
+              <span className="text-body-sm font-medium text-text">{remainingMin} min left of {targetMin}. {bankedMin} min banked today.</span>
+              <div className="flex gap-2">
+                {([['Continue', continuing, keepGoing], ['Start fresh', fresh, startFresh]] as const).map(([label, on, act]) => (
+                  <button key={label} type="button" aria-pressed={on} onClick={act} className={`h-11 rounded-pill px-4 text-body-sm font-medium ${on ? 'bg-text text-surface' : 'text-text ring-1 ring-inset ring-border-strong'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
+          {mode === 'move' ? (
+            <ChipGroup scroll={!styleLocked} label="Style" aside={lockNote} value={moveConfig.mode} options={moveTiles.filter((t) => !t.disabled)} onChange={pickMove} />
+          ) : (
+            <ChipGroup scroll={!styleLocked} label="Style" aside={lockNote} value={stillMode} options={stillTiles.filter((t) => !styleLocked || !t.disabled)} onChange={pickStill} />
+          )}
+          {editable && <ChipGroup caption="Length" label="Length presets in minutes" value={minutes} options={presets.map((m) => ({ value: m, label: `${m} min`, aria: `${m} minutes` }))} onChange={pickLength} />}
+          <StyleControls
+            settings={settings}
+            set={set}
+            breath={mode === 'still' && stillMode === 'breath'}
+            note={mode === 'still' && modeHasNote(stillMode) ? note : null}
+            onNote={setNote}
+            config={mode === 'move' && !logOnly ? moveConfig : null}
+            onConfig={setMoveConfig}
+            cue={mode === 'move' && !logOnly ? moveCue(moveConfig, setMoveConfig) : undefined}
+            locked={lockedByAuthor}
+          />
+          <button type="button" aria-expanded={more} onClick={() => setMore((v) => !v)} className="mx-auto flex h-11 items-center gap-2 px-3 text-body-sm font-medium text-muted hover:text-text">
+            <SlidersHorizontal className="h-4 w-4" aria-hidden />
+            {more ? 'Fewer options' : 'Practice, sound and options'}
+          </button>
+          {more && <MoreOptions practices={practiceRows.map(({ p, on, chip }) => ({ id: p.id, label: chip, on, pick: () => pickPractice(p) }))} settings={settings} set={set} audio={audio} scope={scope} />}
         </div>
 
-        <div className="min-h-4 flex-1" />
-        <div className="sticky bottom-0 z-[2] flex flex-col gap-1.5 bg-gradient-to-t from-canvas from-72% to-transparent pb-[max(12px,env(safe-area-inset-bottom))] pt-2.5">
-          {goButton('sheet')}
-          <div role={continuing ? 'group' : undefined} aria-label={continuing ? 'Continue or start fresh' : undefined} className="flex min-h-5.5 items-center justify-center gap-2.5 text-center text-body-sm text-muted">
-            <span>{sessionLine}</span>
-            {continuing && (
-              <button type="button" onClick={startFresh} className="h-8 px-1 text-body-sm font-semibold text-text underline underline-offset-[3px]">
-                Start fresh
-              </button>
-            )}
-          </div>
-        </div>
+        <div className="min-h-2 flex-1" />
+        <div className="sticky bottom-0 z-[2] -mx-5 border-t border-border bg-canvas/90 px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl">{goButton('sheet')}</div>
       </div>
     </div>
   )

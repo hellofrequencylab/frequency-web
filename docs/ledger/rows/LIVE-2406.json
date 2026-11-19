@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2406",
+  "title": "The member timer wears the Claude Design timer: a bare phone door, a number clock and reveal cards without art",
+  "lane": "live",
+  "priority": "P2",
+  "size": "L",
+  "status": "done",
+  "source": {
+    "file": "components/on-air/compact-setup.tsx",
+    "ref": "Owner 2026-11-18: \"Here's a design for the timer.\" (Claude Design export, direction A picked on a decision card) after \"This needs to be a super easy, daily timer\""
+  },
+  "detail": "The owner had the member timer redesigned in Claude Design from the functions and architecture handoff and picked direction A: a bare door and a number clock. The app still showed the LIVE-2245 phone door (an orb length field, two pickers and disclosure rows), the LIVE-2393 ring clock and reveal cards with spot art.\n\nDONE 2026-11-19: the phone door (under 840px) opens on the practice name, the length with minus and plus, Done by, Style chips and Length chips, then the chosen style's own controls (breath pattern, plan with stepping tiles, reminder, note) and one \"Practice, sound and options\" link for practice, bell, ambient, countdown and vibration (components/on-air/door/sheet-controls.tsx). A partial today shows Continue and Start fresh side by side. The running screen reads the time as one number over a bar that fills, names a Get Moving phase in a pill with its round, and keeps the orb only for Breathe. Saving and a failed save are the orb alone. The reveal has position pills and a close at the top, Back and Next at the bottom, one number and a serif line per card and no spot art (reveal-art.tsx removed). Be Still starts on the member kit's practice gradient and Get Moving on its own move colour. No engine, timing, sound, saving or rewards rule changed; every control writes the same settings model. Owner approved rewriting three pins on a decision card (2026-11-18): the reveal art test, the ring probe (LIVE-2393 now pins a bar) and the door and running render tests. The dialog from 840px keeps its layout (the design has no desktop door); the running, saving and reveal screens centre the phone column. The Zap menu in the same export is a separate surface and is not in this row.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2406.mjs",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
