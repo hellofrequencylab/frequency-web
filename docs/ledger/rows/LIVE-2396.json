@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2396",
+  "title": "An owner who asks for a new Space gets a new Space, not the launch of the one they already have",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/launch/start/route.ts",
+    "ref": "Owner 2026-11-19: \"Do a super sweep 5000 of the site... Make sure everything is complete, fully evolved and validated.\" Found by the end to end sweep."
+  },
+  "detail": "LIVE-2392 made a running launch with no Space take the person's one Space, on /launch and wherever the rail and the feed read the setup list. /spaces/new sends new=1 to /launch/start, which started a launch with no Space and no mark, so the next read attached the owner's existing Space and marked its Spotlight published: an owner of exactly one Space could never start a second, and the 'Which Space is this for? A new one' choice never showed. DONE 2026-11-19: /launch/start, for someone who already owns a Space and asked for a new one, saves the launch as the builder's (resume phase builder), the one mark the adopt rule leaves alone; /launch then opens /create-a-space?new=1 as it already did for a builder launch. A first Space is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2396.mjs",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}
