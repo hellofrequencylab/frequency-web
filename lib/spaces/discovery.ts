@@ -1,3 +1,4 @@
+import { resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 // Spaces DIRECTORY discovery reads (ENTITY-SPACES-BUILD §A/§B, Phase 1 / Epic 1.8). The one
 // query the in-app directory at /spaces calls to list the NETWORKED entity Spaces a member can
@@ -858,8 +859,9 @@ function spaceOffersContactTab(preferences: unknown): boolean {
  * The explicit host (`events.host_space_id`) wins, else the placement Space (`events.space_id`),
  * the order the member event page attributes in (ADR-800/819). The Space must sit inside the
  * discovery boundary (network visibility, connected, active), so a private or standalone Space is
- * never named on a public event page or in its structured data. The root Space is allowed: its
- * profile is public and it hosts real events. Service-role reads of ids, a slug and a name; nothing
+ * never named on a public event page or in its structured data. The root Space is NOT a host
+ * (LIVE-075): every event inherits it on insert, so naming it would put the platform's brand on a
+ * member's personal event. The one resolver (lib/events/host-space.ts) decides. Service-role reads of ids, a slug and a name; nothing
  * else leaves. FAIL-SOFT: any failure is null, which leaves the event page as it was.
  */
 export async function getEventHostSpace(eventId: string): Promise<{ slug: string; name: string } | null> {
@@ -874,7 +876,7 @@ export async function getEventHostSpace(eventId: string): Promise<{ slug: string
       }
     }
     const { data: ev, error: evError } = await db.from('events').select('host_space_id, space_id').eq('id', eventId).maybeSingle()
-    const spaceId = evError ? null : (ev?.host_space_id ?? ev?.space_id ?? null)
+    const spaceId = evError || !ev ? null : await resolveHostingSpaceIdFromRow({ space_id: ev.space_id ?? null, host_space_id: ev.host_space_id })
     if (!spaceId) return null
     const { data, error } = await spacesTable()
       .select('id, slug, name, brand_name')
