@@ -29,7 +29,7 @@ Not sure which section holds something? Type it into **Search settings** at the 
 - **Privacy.** Who can find you and how much they see. Details below.
 - **Location.** Your home base, and whether nearby shows where you are right now.
 - **Feed.** How far your feed reaches, and whether posts carry a short reason for showing up.
-- **Membership.** Your Frequency plan and payment, then the Spaces you belong to, where you can open one or leave it. See [Membership & the Vault](/help/membership/the-vault) and [Your Space memberships](/help/membership/your-space-memberships).
+- **Membership.** Your Frequency plan and payment, then the Spaces you belong to, where you can open one or leave it. See [What membership includes and how the Vault works](/help/membership/the-vault) and [Your Space memberships](/help/membership/your-space-memberships).
 - **Appearance.** **Light**, **Dark**, or **System**, which follows your device. If more than one palette is on offer, you pick that here too. The menu under your photo has the same switches under **Look**.
 - **Install the app.** Put Frequency on your home screen. See [Install the app](/help/getting-started/install-the-app).
 

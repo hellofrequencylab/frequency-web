@@ -73,7 +73,7 @@ export async function generateMetadata({
       ...OG_SITE,
       title: ogTitle,
       description,
-      url: `/discover/journeys/${plan.slug}`,
+      url: canonical,
       type: 'article',
     },
     twitter: { card: 'summary_large_image', title: ogTitle, description },
