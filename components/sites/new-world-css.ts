@@ -1,4 +1,4 @@
-import { NEW_WORLD_BLOCKS_CSS } from '@/components/sites/new-world-blocks-css'
+import { NEW_WORLD_BLOCKS_CSS, NEW_WORLD_PHONE_HERO_CSS } from '@/components/sites/new-world-blocks-css'
 import { NEW_WORLD_SECTIONS_CSS } from '@/components/sites/new-world-sections-css'
 import { NEW_WORLD_DAY_CSS, NEW_WORLD_DETAIL_CSS, NEW_WORLD_TOKENS_CSS } from '@/lib/theme/new-world'
 
@@ -80,5 +80,5 @@ ${N} .hs-footer-col a:hover{color:var(--nw-chrome-50)}
 ${N} .sv-foot-icon{display:inline-flex;color:var(--color-primary-strong)}
 ${N} .sv-foot-mark{position:relative;max-width:var(--nw-frame);margin:0 auto;padding:0 var(--nw-gutter);font-family:var(--nw-font-display);font-stretch:var(--nw-stretch-display);font-weight:var(--nw-fw-display);text-transform:uppercase;line-height:.8;letter-spacing:-.01em;font-size:clamp(44px,9vw,150px);text-align:center;color:var(--nw-chrome-50);opacity:.07;user-select:none;overflow:hidden;white-space:nowrap}
 ${N} .hs-footer{max-width:var(--nw-frame);margin:0 auto;padding:24px var(--nw-gutter);${LABEL};font-size:10.5px;letter-spacing:.12em;color:var(--nw-text-muted);border-top:0;background:none}
-@media (prefers-reduced-motion:reduce){${N} *{transition:none!important;animation:none!important}}
+${NEW_WORLD_PHONE_HERO_CSS}@media (prefers-reduced-motion:reduce){${N} *{transition:none!important;animation:none!important}}
 `
