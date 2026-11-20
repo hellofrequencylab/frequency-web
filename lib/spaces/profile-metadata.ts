@@ -122,8 +122,13 @@ export async function spaceProfileMetadata(
   // The root title names the place: "Yoga Loft, a studio in Encinitas". Sub-tabs keep the short
   // form, because the tab label already fills the title.
   const rootTitle = city ? `${brandName}, ${typePhrase(space.type)}${where}` : brandName
-  const title = tab ? `${tab.label} · ${brandName}` : rootTitle
-  const ogTitle = tab ? `${tab.label} · ${brandName} · ${SITE_NAME}` : `${rootTitle} · ${SITE_NAME}`
+  const tabTitle = tab ? `${tab.label} · ${brandName}` : rootTitle
+  // A Space whose brand IS the site name (the platform's own root Space, /spaces/hq) must not get the
+  // site suffix a second time: the root layout's `%s · Frequency` template made it "Frequency ·
+  // Frequency" (SCAN-1302, measured on production 2026-11-19). Such a title is absolute.
+  const brandIsSite = brandName.toLowerCase() === SITE_NAME.toLowerCase()
+  const title: Metadata['title'] = brandIsSite ? { absolute: tabTitle } : tabTitle
+  const ogTitle = brandIsSite ? tabTitle : `${tabTitle} · ${SITE_NAME}`
   const ownCanonical = tab ? `/spaces/${space.slug}/${tab.segment}` : `/spaces/${space.slug}`
   // THE SITE TWIN (PROG-E10 phase 4, LIVE-783). When the Space has published its website on its own
   // domain, the profile root and each of its pages are the same content as that site, so their
@@ -142,7 +147,7 @@ export async function spaceProfileMetadata(
   // `images` unset so its own card still attaches (LIVE-141).
   const tabImages = tab ? { images: ROOT_OG_IMAGES } : {}
   const openGraph = siteCanonical
-    ? { ...OG_SITE, siteName: brandName, title, description: pageDescription, url: canonical, type: 'profile' as const, ...tabImages }
+    ? { ...OG_SITE, siteName: brandName, title: tabTitle, description: pageDescription, url: canonical, type: 'profile' as const, ...tabImages }
     : { ...OG_SITE, title: ogTitle, description, url: canonical, type: 'profile' as const, ...tabImages }
 
   // PRIVATE: never index or follow, and no OG card (unchanged contract, no leak). The canonical
