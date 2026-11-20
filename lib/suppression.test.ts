@@ -12,10 +12,24 @@ const state: {
 } = { rows: [], readError: null, insertError: null }
 const eqSpy = vi.fn()
 const insertSpy = vi.fn()
+// EMAIL-083: the contacts opt-out sync. Records each update payload with its filters.
+const contactUpdates: { payload: unknown; filters: [string, string, unknown][] }[] = []
+let contactUpdateError: { message: string } | null = null
+
+function contactsUpdate(payload: unknown) {
+  const entry = { payload, filters: [] as [string, string, unknown][] }
+  contactUpdates.push(entry)
+  const chain = {
+    eq: (col: string, val: unknown) => (entry.filters.push(['eq', col, val]), chain),
+    neq: (col: string, val: unknown) => (entry.filters.push(['neq', col, val]), chain),
+    then: (resolve: (r: { error: unknown }) => unknown) => Promise.resolve(resolve({ error: contactUpdateError })),
+  }
+  return chain
+}
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
-    from: () => ({
+    from: (table: string) => table === 'contacts' ? { update: contactsUpdate } : ({
       select: () => ({
         eq: (col: string, val: unknown) => {
           eqSpy(col, val)
@@ -166,5 +180,55 @@ describe('bounce classification (EMAIL-052)', async () => {
     expect(bounceSuppressionReason('transient', 0)).toBeNull()
     expect(bounceSuppressionReason('transient', SOFT_BOUNCE_LIMIT - 2)).toBeNull()
     expect(bounceSuppressionReason('transient', SOFT_BOUNCE_LIMIT - 1)).toBe('soft_bounce_repeat')
+  })
+})
+
+describe('suppress marks the contact unsubscribed on a real opt-out (EMAIL-083)', () => {
+  beforeEach(() => {
+    state.rows = []
+    state.readError = null
+    state.insertError = null
+    contactUpdates.length = 0
+    contactUpdateError = null
+  })
+
+  it('an unsubscribe for a Space marks that Space\'s contact rows unsubscribed', async () => {
+    await suppress(' A@B.com ', 'unsubscribe', 'space-A')
+    expect(contactUpdates).toEqual([
+      {
+        payload: { consent_state: 'unsubscribed' },
+        filters: [['eq', 'email', 'a@b.com'], ['neq', 'consent_state', 'unsubscribed'], ['eq', 'space_id', 'space-A']],
+      },
+    ])
+  })
+
+  it('a global complaint marks every contact row with the address', async () => {
+    await suppress('a@b.com', 'complaint')
+    expect(contactUpdates).toHaveLength(1)
+    expect(contactUpdates[0].filters).toEqual([['eq', 'email', 'a@b.com'], ['neq', 'consent_state', 'unsubscribed']])
+  })
+
+  it('an already-suppressed address still gets its stale contact record fixed', async () => {
+    state.rows = [{ space_id: 'space-A' }]
+    await suppress('a@b.com', 'unsubscribe', 'space-A')
+    expect(contactUpdates).toHaveLength(1)
+  })
+
+  it('a hard bounce does not change consent (undeliverable is not a refusal)', async () => {
+    await suppress('a@b.com', 'hard_bounce')
+    expect(contactUpdates).toEqual([])
+  })
+
+  it('a failed contact sync never fails the suppression (the row every send checks already landed)', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    contactUpdateError = { message: 'boom' }
+    await expect(suppress('a@b.com', 'unsubscribe')).resolves.toBeUndefined()
+    expect(insertSpy).toHaveBeenCalled()
+  })
+
+  it('a failed suppression insert throws before any contact change', async () => {
+    state.insertError = { code: '08006', message: 'connection lost' }
+    await expect(suppress('a@b.com', 'unsubscribe')).rejects.toThrow('connection lost')
+    expect(contactUpdates).toEqual([])
   })
 })

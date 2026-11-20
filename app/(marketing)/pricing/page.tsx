@@ -15,9 +15,9 @@ import {
 } from '@/lib/pricing/pricing-grid'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
-import { config } from '@/lib/page-editor/config'
+import { platformConfig } from '@/lib/page-editor/platform-config'
 import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
-import { isWellFormed } from '@/lib/page-editor/templates'
+import { isWellFormed } from '@/lib/page-editor/templates/well-formed'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
@@ -193,7 +193,7 @@ export default async function PricingPage() {
           published={PUBLISHED}
           updated={latestDay(PUBLISHED, page?.published_at)}
         />
-        <BlockRender config={config} data={published} metadata={live ? { live } : {}} />
+        <BlockRender config={platformConfig} data={published} metadata={live ? { live } : {}} />
       </>
     )
   }

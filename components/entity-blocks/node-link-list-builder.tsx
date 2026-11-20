@@ -79,6 +79,14 @@ export function NodeLinkListBuilder({
   const [grabbed, setGrabbed] = useState<string | null>(null)
   const [announce, setAnnounce] = useState('')
   const dragNid = useRef<string | null>(null)
+  // The list, so a pick made on the preview (LIVE-2453) brings its row into view here too.
+  const listRef = useRef<HTMLOListElement | null>(null)
+  const selectedForScroll = store?.selectedNid ?? null
+  useEffect(() => {
+    if (!selectedForScroll) return
+    const row = [...(listRef.current?.querySelectorAll('[data-nid]') ?? [])].find((el) => el.getAttribute('data-nid') === selectedForScroll)
+    row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selectedForScroll])
 
   useEffect(() => {
     let active = true
@@ -221,9 +229,9 @@ export function NodeLinkListBuilder({
           No blocks on your page yet. Add one below.
         </p>
       ) : (
-        <ol className="space-y-2">
+        <ol ref={listRef} className="space-y-2">
           {placed.map(({ node }, index) => (
-            <li key={node.nid} onDragOver={(e) => dragNid.current && e.preventDefault()} onDrop={() => onDropOn(node)}>
+            <li key={node.nid} data-nid={node.nid} className="scroll-mt-24" onDragOver={(e) => dragNid.current && e.preventDefault()} onDrop={() => onDropOn(node)}>
               <BlockPill
                 id={node.nid}
                 type={node.type}

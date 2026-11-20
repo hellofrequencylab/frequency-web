@@ -7,8 +7,9 @@
 import type { Metadata } from 'next'
 import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
-import { config } from '@/lib/page-editor/config'
-import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
+import { platformConfig } from '@/lib/page-editor/platform-config'
+import { data as theLab } from '@/lib/page-editor/templates/the-lab'
+import { isWellFormed } from '@/lib/page-editor/templates/well-formed'
 import { LINK_ONLY_ROBOTS } from '@/lib/seo/link-only'
 import { PrivatePageTracker } from '@/components/frequency/site/shell/private-page-tracker'
 
@@ -28,11 +29,10 @@ export const metadata: Metadata = {
 const EMPTY: Data = { content: [], root: {} }
 
 export default function LabPage() {
-  const template = getTemplate('the-lab')
-  const data: Data = isWellFormed(template) ? template : EMPTY
+  const data: Data = isWellFormed(theLab) ? theLab : EMPTY
   return (
     <>
-      <BlockRender config={config} data={data} metadata={{}} />
+      <BlockRender config={platformConfig} data={data} metadata={{}} />
       <PrivatePageTracker page="/build/lab" />
     </>
   )

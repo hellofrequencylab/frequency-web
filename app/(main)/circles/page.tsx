@@ -1,7 +1,7 @@
 import { BlockRender } from '@/lib/page-editor/block-render'
-import { config } from '@/lib/page-editor/config'
+import { platformConfig } from '@/lib/page-editor/platform-config'
 import { getPublishedData } from '@/lib/page-editor/data'
-import { isWellFormed } from '@/lib/page-editor/templates'
+import { isWellFormed } from '@/lib/page-editor/templates/well-formed'
 import { pageContentMetadata } from '@/lib/page-content'
 import { getCirclesIndexData, CONTENT_FALLBACK } from '@/lib/circles/index-data'
 import { FqCirclesBody } from '@/components/frequency/members/circles/circles-body'
@@ -28,7 +28,7 @@ export default async function CirclesPage({
   const sp = await searchParams
   const circlesIndex = await getCirclesIndexData(sp)
   const published = await getPublishedData('circles')
-  if (isWellFormed(published)) return <BlockRender config={config} data={published} metadata={{ circlesIndex }} />
+  if (isWellFormed(published)) return <BlockRender config={platformConfig} data={published} metadata={{ circlesIndex }} />
   const [nextMeetups, profile, spacesPage] = await Promise.all([
     loadNextMeetups(circlesIndex.myCircleIds),
     getCachedViewerProfile(),

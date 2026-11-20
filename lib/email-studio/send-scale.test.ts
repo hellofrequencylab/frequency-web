@@ -192,6 +192,19 @@ vi.mock('./broadcast', async (importOriginal) => {
   }
 })
 
+// EMAIL-084: the weekly marketing slot. Every person gets a slot unless a test marks them as already mailed this week.
+const capState = vi.hoisted(() => ({ cappedEmails: new Set<string>(), reserved: [] as string[], released: [] as string[] }))
+vi.mock('./campaign-cap', () => ({
+  reserveCampaignSend: async (_db: unknown, input: { email: string }) => {
+    if (capState.cappedEmails.has(input.email)) return false
+    capState.reserved.push(input.email)
+    return true
+  },
+  releaseCampaignSends: async (_db: unknown, _id: string, emails: string[]) => {
+    capState.released.push(...emails)
+  },
+}))
+
 import { sendCampaignNow } from './send'
 import { FAN_OUT_CHUNK } from './fan-out'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
@@ -230,6 +243,9 @@ beforeEach(() => {
   broadcastCalls.length = 0
   broadcastFails.value = false
   delete process.env.EMAIL_BROADCASTS_ENABLED
+  capState.cappedEmails.clear()
+  capState.reserved.length = 0
+  capState.released.length = 0
   vi.spyOn(console, 'error').mockImplementation(() => {})
   vi.spyOn(console, 'info').mockImplementation(() => {})
 })
@@ -367,5 +383,38 @@ describe('EMAIL-076: sent as one Resend broadcast when EMAIL_BROADCASTS_ENABLED 
     expect(res).toEqual({ data: { recipientCount: 450 } })
     expect(broadcastCalls).toEqual([])
     expect(queued).toHaveLength(450)
+  })
+})
+
+// EMAIL-084 (Daniel, 2026-11-19, "One per 7 days"): one marketing email per person per rolling week.
+describe('the weekly marketing limit (EMAIL-084)', () => {
+  it('skips everyone who already had a campaign this week and sends to the rest', async () => {
+    for (let i = 0; i < 450; i += 3) capState.cappedEmails.add(`person${i}@example.test`)
+    const res = await sendCampaignNow('camp-1')
+    expect(res).toEqual({ data: { recipientCount: 300 } })
+    expect(queued.some((q) => capState.cappedEmails.has(q.to))).toBe(false)
+    expect(capState.reserved).toHaveLength(300)
+  })
+
+  it('a chunk that fails to queue gives its weekly slots back', async () => {
+    const email = await import('@/lib/email')
+    vi.spyOn(email, 'enqueueEmailBatch').mockRejectedValueOnce(new Error('outbox down'))
+    await sendCampaignNow('camp-1')
+    expect(capState.released).toHaveLength(FAN_OUT_CHUNK)
+  })
+
+  it('the broadcast path skips capped people too, and a refused broadcast gives every slot back', async () => {
+    process.env.EMAIL_BROADCASTS_ENABLED = '1'
+    capState.cappedEmails.add('person0@example.test')
+    await sendCampaignNow('camp-1')
+    expect(broadcastCalls[0].recipients.some((r) => r.email === 'person0@example.test')).toBe(false)
+    expect(broadcastCalls[0].recipients).toHaveLength(449)
+
+    row = freshRow()
+    ledger = []
+    capState.reserved.length = 0
+    broadcastFails.value = true
+    await sendCampaignNow('camp-1')
+    expect(capState.released.sort()).toEqual([...capState.reserved].sort())
   })
 })

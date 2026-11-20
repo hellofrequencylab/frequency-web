@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-080",
+  "title": "A nurture email never reaches a lead without an account who has not opted in",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/nurture/runner.ts",
+    "ref": "Contact, funnel and tracking audit 2026-11-19 (project thread: Plan a permission-first contact system)"
+  },
+  "detail": "A lead with no profile_id skipped resolveSendGate in the nurture runner and was cancelled only when consent_state was 'unsubscribed' or the address was suppressed. A lead whose consent was 'unknown' (an imported contact, an event RSVP, a scan invite) could therefore receive nurture steps. Every current enrollment path only enrolls confirmed subscribers or members (/subscribe confirm, /start when subscribed, /join with a profile) and production had 0 enrollments on 2026-11-19, so the hole was dormant. Resend's Acceptable Use Policy requires an explicit opt-in, and Space campaigns already require 'subscribed' via canEmailContact.\n\nDONE 2026-11-19: the profile-less branch cancels the enrollment unless consent_state is 'subscribed' (fail closed; a missing or unknown state ends the series). Members keep the lifecycle send gate. Two runner tests: an unknown-consent lead is cancelled without a send, an unknown-consent member still goes through the gate.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/EMAIL-080.mjs",
+    "note": "Passes while the profile-less branch cancels any lead that is not 'subscribed' before the send claim."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

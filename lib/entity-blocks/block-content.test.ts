@@ -114,7 +114,8 @@ describe('resolveDataHeader (eyebrow/title override the block header)', () => {
 describe('fieldsForBlock', () => {
   it('gives content blocks their schema and data blocks the eyebrow/title header fields', () => {
     expect(fieldsForBlock('heading').map((f) => f.key)).toEqual(['text'])
-    expect(fieldsForBlock('links').map((f) => f.type)).toEqual(['links'])
+    // Links also carries its block-wide link style (LIVE-2454, owner 2026-11-19: "display different text link vs button styles").
+    expect(fieldsForBlock('links').map((f) => f.type)).toEqual(['links', 'segmented'])
     // Every data block edits its REAL eyebrow + title (item 3); About/Story add a body (ADR-542); a
     // function-backed block adds a data-source picker (ADR-573 item 5).
     expect(fieldsForBlock('contact').map((f) => f.key)).toEqual(['eyebrow', 'title'])
