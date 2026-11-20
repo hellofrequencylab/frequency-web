@@ -1,6 +1,7 @@
 import { SearchConnectionNotice } from '@/components/spaces/search-connection-notice'
 import { Suspense } from 'react'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import {
   Building2,
   Users,
@@ -19,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EntityCard } from '@/components/cards/entity-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listOperatedSpaces, type OperatedSpace } from '@/lib/spaces/operated'
+import { resolveSpaceConversationHref } from '@/lib/comms/reply-bell'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 
 // "Spaces you run" — the operator's FRONT DOOR to the Spaces they own or admin (the hub the
@@ -194,10 +196,24 @@ async function OperatedGrid({ profileId }: { profileId: string | null }) {
   )
 }
 
-export default async function SpacesOperatingPage({ searchParams }: { searchParams?: Promise<{ search?: string | string[] }> }) {
-  const outcome = (await searchParams)?.search
+export default async function SpacesOperatingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ search?: string | string[]; conversation?: string | string[] }>
+}) {
+  const sp = await searchParams
+  const outcome = sp?.search
   // Gate: signed in. The list is naturally scoped to the Spaces the caller operates.
   const profileId = await getMyProfileId()
+
+  // EMAIL-074: a reply bell on a Space-lane thread carries only the thread id, so it lands here and is
+  // sent on to that Space's own conversations. Only the thread's owner or assignee is sent on; anyone
+  // else (or a miss) just sees the hub.
+  const conversation = typeof sp?.conversation === 'string' ? sp.conversation : null
+  if (conversation) {
+    const href = await resolveSpaceConversationHref(conversation, profileId)
+    if (href) redirect(href)
+  }
 
   // A list of the Spaces you run needs no photo band (owner, 2026-10-14, SCAN-878): the plain title, the
   // one-line meta and Create a space.
