@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-087",
+  "title": "The first-touch cookie keeps only the referring site and a clean landing path, on a Secure cookie",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/attribution/first-touch.ts",
+    "ref": "Contact, funnel and tracking audit 2026-11-19 (project thread: Plan a permission-first contact system, report https://claude.ai/artifact/3sCikNdCHC9khmwCJbubfk)"
+  },
+  "detail": "Wave 3 of the permission-first contact plan (finding 6). buildFirstTouch stores up to 300 characters of the full referrer URL, query string included, for 90 days, and proxy.ts sets the cookie without Secure. Work: keep only the referrer's hostname, keep the landing path without its query string, set secure: true. HttpOnly is a second step: the cookie banner clears it in the browser today, so the server has to clear it on a 'no' first. Code only. Filed 2026-11-20 by the verification sweep: the plan named this id but no row existed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/EMAIL-087.mjs",
+    "note": "Fails until buildFirstTouch keeps only the referrer hostname and proxy.ts sets the cookie Secure."
+  },
+  "wave": "W7"
+}

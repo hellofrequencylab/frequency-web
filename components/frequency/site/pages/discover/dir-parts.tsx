@@ -156,8 +156,11 @@ export function DirCard({
   title,
   body,
   meta,
+  rel,
 }: {
   href: string
+  /** `nofollow` on a card whose page a signed-out reader cannot open (SCAN-1276). */
+  rel?: string
   icon: FqIconName
   image?: string | null
   kicker?: string | null
@@ -170,7 +173,7 @@ export function DirCard({
   const m = (meta ?? []).filter(Boolean) as string[]
   return (
     <li>
-      <Link className="pc dd-card" href={href}>
+      <Link className="pc dd-card" href={href} rel={rel}>
         {image && (
           <span className="ph">
             {/* eslint-disable-next-line @next/next/no-img-element -- an owner-uploaded URL; the kit sizes .pc .ph img */}

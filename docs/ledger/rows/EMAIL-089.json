@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-089",
+  "title": "Measure the acquisition funnel with our own events: landing, cookie choice, sign-up, first useful action, return",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/attribution/first-touch.ts",
+    "ref": "Contact, funnel and tracking audit 2026-11-19 (project thread: Plan a permission-first contact system, report https://claude.ai/artifact/3sCikNdCHC9khmwCJbubfk)"
+  },
+  "detail": "Wave 3 of the permission-first contact plan (finding 7). UTM breakdowns in Vercel need a paid plan the owner will not buy (MONEY rule: no paid upgrades). Work: one module in lib/analytics names the steps (FUNNEL_STEPS: landing, cookie_choice, signup, first_action, return) with fixed names and no personal data; the cookie banner, sign-up and first-action paths emit them through the existing first-party event pipe; the admin growth funnel reads them. Never send persona or wellness data to pixels. Filed 2026-11-20 by the verification sweep: the plan named this id but no row existed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/EMAIL-089.mjs",
+    "note": "Fails until a lib/analytics module names FUNNEL_STEPS including cookie_choice and first_action."
+  },
+  "wave": "W7"
+}

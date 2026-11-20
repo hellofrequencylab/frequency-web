@@ -9,13 +9,13 @@
 // network. It is not a Postgres race: what it shows is the order of reads and writes the shipped
 // code issues, which is what decides the outcome on any database without a lock or a constraint.
 //
-// `--require-cap-held` flips the scarcity expectation to the one a fix must meet (one winner, one
-// refusal, one capture, one award). That is FH-002S's probe: it fails until the legacy cap is atomic
-// or retired. When that lands, make the held expectation the default here.
+// The scarcity expectation is the one FH-002S fixed: one winner, one refusal, one capture, one award.
+// lib/engagement/capture.ts now takes a numbered place on the ledger's unique key before writing, so
+// the held cap is the default. `--require-cap-held` (FH-002S's probe) is still accepted and changes
+// nothing. The oversell this file used to pin is gone with the race.
 import assert from 'node:assert/strict'
 import { fixtureProof, nodeId, resetLegacyFixture } from './legacy-seams-fixture.mjs'
 
-const requireCapHeld = process.argv.includes('--require-cap-held')
 const source = (path) => new URL(`../../../${path}`, import.meta.url).href
 
 // The first five scenarios. The import runs them and rejects on the first wrong record.
@@ -53,22 +53,16 @@ assert.equal(captures.length, accepted, 'an accepted scan must leave exactly one
 assert.equal(ledger, accepted, 'an accepted scan must leave exactly one ledger row')
 assert.deepEqual(awards, captures, 'each captured member is paid once and nobody else is paid')
 
-if (requireCapHeld) {
-  assert.equal(accepted, 1, `the cap of 1 admitted ${accepted} members`)
-  assert.deepEqual(outcomes.filter((o) => !o.ok).map((o) => o.reason), ['capacity_reached'])
-} else {
-  // Pinned observation: verifyCapture counts, captureNode inserts later, nothing holds the node between
-  // them and the two members have different ledger keys. Both pass the count and both are written.
-  assert.deepEqual(captures, ['fixture-a', 'fixture-b'], 'the legacy last-unit race no longer oversells: update this pin')
-  // A third member arriving after the race is refused, so the cap only fails inside the window.
-  const late = await captureNode({ nodeId, actorProfileId: 'fixture-c', presentedSecret: fixtureProof })
-  assert.deepEqual(late, { ok: false, reason: 'capacity_reached' })
-  assert.equal(state.captures.length, 2)
-}
+assert.equal(accepted, 1, `the cap of 1 admitted ${accepted} members`)
+assert.deepEqual(outcomes.filter((o) => !o.ok).map((o) => o.reason), ['capacity_reached'])
+// A third member arriving after the race is refused too.
+const late = await captureNode({ nodeId, actorProfileId: 'fixture-c', presentedSecret: fixtureProof })
+assert.deepEqual(late, { ok: false, reason: 'capacity_reached' })
+assert.equal(state.captures.length, 1)
 console.log(
   `FH-002 scarcity race (legacy, last unit of 1): ${accepted} accepted, ${captures.length} capture rows, ` +
   `${awards.length} Zap awards. ${accepted > 1 ? 'OVERSOLD by ' + (accepted - 1) : 'cap held'}. ` +
-  'Boundary: lib/engagement/verify.ts counts, lib/engagement/capture.ts inserts, no lock between them.',
+  'Boundary: the numbered place in lib/engagement/capture.ts (ledger unique key node_slot:<node>:<n>).',
 )
 
 // Seam 3, adapter side. The Hunt path does not count then insert: hunt_reward_grant takes the reward
@@ -95,4 +89,4 @@ console.log(
   'Boundary: public.hunt_reward_grant (reward row lock plus the stock check constraint). ' +
   'Sequential proof: supabase/tests/hunt_rewards.test.sql. Two live sessions: not run here.',
 )
-console.log(`FH-002: all five seams ${requireCapHeld ? 'hold and the legacy cap held' : 'match their pinned records'}`)
+console.log('FH-002: all five seams hold and the legacy cap held')
