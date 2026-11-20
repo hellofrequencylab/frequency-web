@@ -53,12 +53,15 @@ vi.mock('@/lib/spaces/email', () => ({ handleSpaceSendWebhook: async () => false
 vi.mock('@/lib/spaces/email-tracking', () => ({ recordSpaceSendEventFromResend: async () => {}, spaceEventKindForResend: () => null }))
 vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: async () => 'root-space' }))
 vi.mock('@/lib/email-studio/broadcast-attribution', () => ({
-  findBroadcastSend: async (broadcastId: string, email: string) => {
+  // The route hands in its own service-role client; the module never opens one.
+  findBroadcastSend: async (db: unknown, broadcastId: string, email: string) => {
+    if (!db || typeof (db as { from?: unknown }).from !== 'function') throw new Error('no db client passed')
     if (H.lookupThrows) throw new Error('broadcast send lookup failed: db down')
     H.lookups.push({ broadcastId, email })
     return H.send
   },
-  recordBroadcastSendOutcome: async (send: { id: string }, type: string) => {
+  recordBroadcastSendOutcome: async (db: unknown, send: { id: string }, type: string) => {
+    if (!db || typeof (db as { from?: unknown }).from !== 'function') throw new Error('no db client passed')
     H.outcomes.push({ id: send.id, type })
     return true
   },

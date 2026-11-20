@@ -17,7 +17,12 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { bounceSuppressionReason, classifyBounce, priorTransientBounces, recordEmailEvent, suppress } from '@/lib/suppression'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
-import { findBroadcastSend, recordBroadcastSendOutcome, type BroadcastSend } from '@/lib/email-studio/broadcast-attribution'
+import {
+  findBroadcastSend,
+  recordBroadcastSendOutcome,
+  type BroadcastAttributionDb,
+  type BroadcastSend,
+} from '@/lib/email-studio/broadcast-attribution'
 import { handleSpaceSendWebhook, handleSpaceSendEngagement } from '@/lib/spaces/email'
 import { recordSpaceSendEventFromResend, spaceEventKindForResend } from '@/lib/spaces/email-tracking'
 import { mapResendEventToInteraction, type ResendTimelineEventType } from '@/lib/spaces/email-timeline'
@@ -168,8 +173,9 @@ export async function POST(req: Request) {
   const broadcastId = typeof event.data?.broadcast_id === 'string' ? event.data.broadcast_id : null
   if (broadcastId) {
     try {
-      broadcastSend = await findBroadcastSend(broadcastId, to)
-      if (broadcastSend) await recordBroadcastSendOutcome(broadcastSend, type)
+      const attributionDb = createAdminClient() as unknown as BroadcastAttributionDb
+      broadcastSend = await findBroadcastSend(attributionDb, broadcastId, to)
+      if (broadcastSend) await recordBroadcastSendOutcome(attributionDb, broadcastSend, type)
     } catch (err) {
       errors.push(`broadcastSend: ${err instanceof Error ? err.message : String(err)}`)
     }

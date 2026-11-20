@@ -7,7 +7,30 @@
 // outreach_sends.resend_id (lib/email-studio/send.ts), and Resend echoes it on every event as
 // data.broadcast_id. This module maps that id plus the recipient address back to the row.
 
-import { createAdminClient } from '@/lib/supabase/admin'
+type DbError = { message: string } | null
+
+/**
+ * The database this module reads and writes, typed to the two calls it makes on outreach_sends. The
+ * caller passes its own client (the Resend webhook's service-role client); this module never opens
+ * one itself, so the RLS-bypassing client stays at the route that already holds it.
+ */
+export interface BroadcastAttributionDb {
+  from: (table: 'outreach_sends') => {
+    select: (cols: string) => {
+      eq: (col: string, v: string) => {
+        in: (col: string, v: string[]) => {
+          limit: (n: number) => PromiseLike<{
+            data: { id: string; campaign_id: string | null; status: string }[] | null
+            error: DbError
+          }>
+        }
+      }
+    }
+    update: (patch: Record<string, unknown>) => {
+      eq: (col: string, v: string) => PromiseLike<{ error: DbError }>
+    }
+  }
+}
 
 export interface BroadcastSend {
   id: string
@@ -25,10 +48,13 @@ const FINAL = new Set(['bounced', 'complained'])
  * database error, so the webhook answers 503 and Resend redelivers rather than recording the event
  * without its campaign for good.
  */
-export async function findBroadcastSend(broadcastId: string, email: string): Promise<BroadcastSend | null> {
+export async function findBroadcastSend(
+  db: BroadcastAttributionDb,
+  broadcastId: string,
+  email: string,
+): Promise<BroadcastSend | null> {
   if (!broadcastId || !email) return null
   const address = email.trim()
-  const db = createAdminClient()
   const { data, error } = await db
     .from('outreach_sends')
     .select('id, campaign_id, status')
@@ -50,11 +76,14 @@ export function broadcastStatusFor(eventType: string): 'delivered' | 'bounced' |
  * Move a broadcast send's row to the provider outcome. A delivered event never overwrites a bounce or
  * complaint that arrived first. Throws on a database error (the webhook's 503 path).
  */
-export async function recordBroadcastSendOutcome(send: BroadcastSend, eventType: string): Promise<boolean> {
+export async function recordBroadcastSendOutcome(
+  db: BroadcastAttributionDb,
+  send: BroadcastSend,
+  eventType: string,
+): Promise<boolean> {
   const status = broadcastStatusFor(eventType)
   if (!status || status === send.status) return false
   if (status === 'delivered' && FINAL.has(send.status)) return false
-  const db = createAdminClient()
   const { error } = await db
     .from('outreach_sends')
     .update({ status, updated_at: new Date().toISOString() })
