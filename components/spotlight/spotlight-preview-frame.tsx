@@ -175,6 +175,7 @@ export function SpotlightPreviewFrame({
     // theme fills a visitor's screen, so the phone never shows a pale band under the page.
     const fill = [...d.querySelectorAll('.spotlight-root, .nws')]
       .map((el) => win.getComputedStyle(el).backgroundColor)
+      // token-ok: reads the page's computed colour; the literal is how a browser spells "no background".
       .find((c) => c && c !== 'transparent' && c !== 'rgba(0, 0, 0, 0)')
     if (fill) {
       d.documentElement.style.background = fill
