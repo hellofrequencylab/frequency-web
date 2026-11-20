@@ -7,7 +7,10 @@ import { readFileSync } from 'node:fs'
 
 const shell = readFileSync('components/frequency/members/circle/circle-shell.tsx', 'utf8')
 const css = readFileSync('app/themes/frequency/members-circle.css', 'utf8')
-const rule = (sel) => (css.match(new RegExp(`\\] ${sel.replace(/[.[\]]/g, '\\$&')}\\{([^}]*)\\}`)) || [])[1] ?? ''
+const rule = (sel) => {
+  const at = css.indexOf(`] ${sel}{`)
+  return at < 0 ? '' : css.slice(at, css.indexOf('}', at))
+}
 const bad = []
 if (!/className="fqc-cover-top"/.test(shell)) bad.push('the badge row is gone from the cover')
 if (!/className="fqc-cover-art"/.test(shell)) bad.push('the cover art is not its own layer')
