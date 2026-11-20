@@ -4,15 +4,16 @@
   "lane": "program",
   "priority": "P2",
   "size": "S",
-  "status": "open",
-  "wave": "W7",
+  "status": "done",
   "source": {
     "file": "docs/hunts/EVIDENCE.md",
     "ref": "Split from FH-002 (2026-11-16): the last-unit scarcity race was reproduced; the legacy cap is not atomic."
   },
-  "detail": "A node with max_claims set (first N win, ADR-112) is enforced by a count in lib/engagement/verify.ts and a later insert in lib/engagement/capture.ts. Nothing holds the node between the two and each member has a different ledger key, so two members who scan together at the last unit both pass the count: two capture rows, two ledger rows, two Zap awards against a cap of one. A member arriving after them is refused, so the cap only fails inside the window. scripts/probes/hunts/legacy-seams.mjs reproduces it with the shipped orchestrators against the in-memory fixture (no database was raced). Owed, by Engagement with the owner's call on which: make the cap atomic (one database function that locks the node, counts and inserts, or a constraint the insert can fail on) or retire max_claims in favour of Hunt reward stock (hunt_reward_grant already serialises on the reward row). Still unproven anywhere in CI: two live Postgres sessions racing hunt_reward_grant; supabase/tests/hunt_rewards.test.sql covers the sequential last unit and records a by-hand two-session check. Done when: two members competing for the last unit leave one capture and one award, and the probe passes. Requires: FH-002. Owner role: Engagement.",
+  "detail": "A node with max_claims set (first N win, ADR-112) is enforced by a count in lib/engagement/verify.ts and a later insert in lib/engagement/capture.ts. Nothing holds the node between the two and each member has a different ledger key, so two members who scan together at the last unit both pass the count: two capture rows, two ledger rows, two Zap awards against a cap of one. A member arriving after them is refused, so the cap only fails inside the window. scripts/probes/hunts/legacy-seams.mjs reproduces it with the shipped orchestrators against the in-memory fixture (no database was raced). Owed, by Engagement with the owner's call on which: make the cap atomic (one database function that locks the node, counts and inserts, or a constraint the insert can fail on) or retire max_claims in favour of Hunt reward stock (hunt_reward_grant already serialises on the reward row). Still unproven anywhere in CI: two live Postgres sessions racing hunt_reward_grant; supabase/tests/hunt_rewards.test.sql covers the sequential last unit and records a by-hand two-session check. Done when: two members competing for the last unit leave one capture and one award, and the probe passes. Requires: FH-002. Owner role: Engagement.\n\nClosed 2026-11-20: a capped code (max_claims, first N win) now takes a numbered place before anything is written. lib/engagement/capture.ts claimCapPlace writes a ledger row keyed node_slot:<node>:<n> for n from the node's verified captures + 1 up to the cap; the engagement_events unique idempotency key is the constraint the insert fails on, so two members racing for the last place cannot both take it and the loser is refused with capacity_reached. A same-member double tap gives its place back. No migration: the constraint already existed. scripts/probes/hunts/legacy-seams.mjs now holds the cap by default (one capture, one ledger row, one award, one refusal); --require-cap-held passes. Still not run anywhere: two live Postgres sessions racing (the unique index is the guarantee).",
   "verify": {
     "kind": "cmd",
     "cmd": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/probes/hunts/legacy-seams.mjs --require-cap-held"
-  }
+  },
+  "closed": "2026-11-20",
+  "wave": "W7"
 }

@@ -72,6 +72,46 @@ export function captureWindowKey(
   return captureRule === 'repeatable' && day ? `${base}:${day}` : base
 }
 
+type AdminClient = ReturnType<typeof createAdminClient>
+
+/**
+ * Take one numbered place on a capped node, or null when every place is gone (FH-002S).
+ *
+ * A place is a ledger row keyed `node_slot:<node>:<n>` for n in 1..maxClaims. The ledger's unique
+ * idempotency key is the constraint the insert can fail on: two members racing for place n cannot
+ * both write it, so the loser moves to n + 1 and, past the cap, is refused. Counting first and
+ * inserting later (the old path) let both through. The search starts after the verified captures
+ * already on the node, so codes capped before places existed keep their remaining count. A place row
+ * carries no actor profile (it is bookkeeping, not member activity, so it stays off timelines and
+ * fires no automation); the member who took it is in its context.
+ */
+async function claimCapPlace(db: AdminClient, nodeId: string, actorProfileId: string, maxClaims: number): Promise<string | null> {
+  const { count } = await db
+    .from('captures')
+    .select('id', { count: 'exact', head: true })
+    .eq('node_id', nodeId)
+    .eq('verified', true)
+  for (let place = (count ?? 0) + 1; place <= maxClaims; place++) {
+    const { data, error } = await db
+      .from('engagement_events')
+      .upsert(
+        {
+          idempotency_key: `node_slot:${nodeId}:${place}`,
+          source: 'system',
+          event_type: 'node_capture_slot',
+          actor_profile_id: null,
+          context: { nodeId, place, actorProfileId },
+        },
+        { onConflict: 'idempotency_key', ignoreDuplicates: true },
+      )
+      .select('id')
+    if (error) throw error
+    const id = (data?.[0]?.id as string | undefined) ?? null
+    if (id) return id
+  }
+  return null
+}
+
 /**
  * Verify and (if valid + first time in the node's window) record a capture, then
  * award the node's zaps. Idempotent per (node, actor) for once-per-user /
@@ -86,10 +126,17 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
 
   const { data: node } = await db
     .from('nodes')
-    .select('type, zaps_value, partner_id, kind, space_id, capture_rule')
+    .select('type, zaps_value, partner_id, kind, space_id, capture_rule, max_claims')
     .eq('id', attempt.nodeId)
     .maybeSingle()
   if (!node) return { ok: false, reason: 'unknown_node' }
+
+  // 1b) A capped code ("first N win", ADR-112) takes a numbered place before anything is written
+  //     (FH-002S). verifyCapture's count is only a fast refusal: two members scanning together at
+  //     the last unit both pass it. The place is the atomic part.
+  const maxClaims = typeof node.max_claims === 'number' && node.max_claims > 0 ? node.max_claims : null
+  const placeId = maxClaims ? await claimCapPlace(db, attempt.nodeId, attempt.actorProfileId, maxClaims) : null
+  if (maxClaims && !placeId) return { ok: false, reason: 'capacity_reached' }
 
   // The node's idempotency window: a repeatable node credits once per member day (LIVE-654).
   const captureRule = node.capture_rule as string | null | undefined
@@ -111,7 +158,11 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     context: { nodeId: attempt.nodeId, medium, spaceId: (node.space_id as string | null) ?? null },
     verifiedAt: new Date(),
   })
-  if (!recorded) return { ok: false, reason: 'already_captured' }
+  if (!recorded) {
+    // A double tap by the same member: the first tap keeps its place, this one gives its place back.
+    if (placeId) await db.from('engagement_events').delete().eq('id', placeId)
+    return { ok: false, reason: 'already_captured' }
+  }
 
   // 3) Audit row.
   await db.from('captures').insert({
