@@ -77,7 +77,7 @@ describe('validateEmbedRef — read-side authority', () => {
 
 describe('buildEmbedSrc — reconstructed from validated parts', () => {
   it('builds known-safe embed URLs', () => {
-    expect(buildEmbedSrc('youtube', 'dQw4w9WgXcQ')).toBe('https://www.youtube.com/embed/dQw4w9WgXcQ')
+    expect(buildEmbedSrc('youtube', 'dQw4w9WgXcQ')).toBe('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ')
     expect(buildEmbedSrc('vimeo', '123456789')).toBe('https://player.vimeo.com/video/123456789')
     expect(buildEmbedSrc('spotify', 'track/abc')).toBe('https://open.spotify.com/embed/track/abc')
     expect(buildEmbedSrc('soundcloud', 'https://soundcloud.com/a/b')).toContain('w.soundcloud.com/player/?url=')
@@ -85,7 +85,7 @@ describe('buildEmbedSrc — reconstructed from validated parts', () => {
 
   it('builds a YouTube playlist via the videoseries player', () => {
     expect(buildEmbedSrc('youtube', 'list/PLabc123DEF456'))
-      .toBe('https://www.youtube.com/embed/videoseries?list=PLabc123DEF456')
+      .toBe('https://www.youtube-nocookie.com/embed/videoseries?list=PLabc123DEF456')
   })
 })
 

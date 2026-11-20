@@ -13,19 +13,19 @@ describe('parseVideoEmbed', () => {
     expect(v).toEqual({
       provider: 'youtube',
       url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      src: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      src: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
     })
   })
 
   it('parses youtu.be, embed, and shorts forms', () => {
-    expect(parseVideoEmbed('https://youtu.be/abc123')?.src).toBe('https://www.youtube.com/embed/abc123')
-    expect(parseVideoEmbed('https://www.youtube.com/embed/abc123')?.src).toBe('https://www.youtube.com/embed/abc123')
-    expect(parseVideoEmbed('https://youtube.com/shorts/abc123')?.src).toBe('https://www.youtube.com/embed/abc123')
+    expect(parseVideoEmbed('https://youtu.be/abc123')?.src).toBe('https://www.youtube-nocookie.com/embed/abc123')
+    expect(parseVideoEmbed('https://www.youtube.com/embed/abc123')?.src).toBe('https://www.youtube-nocookie.com/embed/abc123')
+    expect(parseVideoEmbed('https://youtube.com/shorts/abc123')?.src).toBe('https://www.youtube-nocookie.com/embed/abc123')
   })
 
   it('keeps the v param even with extra query params', () => {
     expect(parseVideoEmbed('https://www.youtube.com/watch?v=xyz789&t=42s&list=PL1')?.src).toBe(
-      'https://www.youtube.com/embed/xyz789',
+      'https://www.youtube-nocookie.com/embed/xyz789',
     )
   })
 
@@ -48,7 +48,7 @@ describe('parseVideoEmbed', () => {
 
   it('finds the link inside surrounding prose and trims trailing punctuation', () => {
     const v = parseVideoEmbed('Watch this first: https://youtu.be/abc123. Then journal.')
-    expect(v?.src).toBe('https://www.youtube.com/embed/abc123')
+    expect(v?.src).toBe('https://www.youtube-nocookie.com/embed/abc123')
     expect(v?.url).toBe('https://youtu.be/abc123')
   })
 
