@@ -21,7 +21,7 @@ import { handleSpaceSendWebhook, handleSpaceSendEngagement } from '@/lib/spaces/
 import { recordSpaceSendEventFromResend, spaceEventKindForResend } from '@/lib/spaces/email-tracking'
 import { mapResendEventToInteraction, type ResendTimelineEventType } from '@/lib/spaces/email-timeline'
 import { loadRootSpaceId } from '@/lib/spaces/store'
-import { failedForDailyQuota, requeueQuotaFailedEmail } from '@/lib/comms/quota-requeue'
+import { failedForDailyQuota, requeueQuotaFailedEmail, type QuotaRequeueDb } from '@/lib/comms/quota-requeue'
 
 export const dynamic = 'force-dynamic'
 
@@ -147,7 +147,10 @@ export async function POST(req: Request) {
   // and the enqueue's dedupe key (the original queue job) makes that redelivery queue nothing twice.
   if (type === 'failed' && failedForDailyQuota(event.data) && event.data?.email_id) {
     try {
-      const outcome = await requeueQuotaFailedEmail(event.data.email_id)
+      const outcome = await requeueQuotaFailedEmail(
+        createAdminClient() as unknown as QuotaRequeueDb,
+        event.data.email_id,
+      )
       if (outcome !== 'requeued' && outcome !== 'duplicate') {
         console.warn('[resend-webhook] daily-quota failure not requeued', { outcome })
       }

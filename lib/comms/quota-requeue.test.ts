@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // EMAIL-070: a transactional email Resend accepted and then dropped for the daily limit goes back on
-// the outbox for the next UTC day, once. Network-free: the admin client and enqueue are fakes.
+// the outbox for the next UTC day, once. Network-free: the injected db client and enqueue are fakes.
 
 const H = vi.hoisted(() => ({
   attempt: null as { queue_job_id: string; frozen_payload: unknown } | null,
@@ -11,21 +11,20 @@ const H = vi.hoisted(() => ({
   keys: new Set<string>(),
 }))
 
-vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({
-    from: (table: string) => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: async () => {
-            if (table === 'email_provider_attempts') return { data: H.attempt, error: H.attemptError }
-            if (table === 'notification_queue') return { data: H.job, error: null }
-            throw new Error(`unexpected table ${table}`)
-          },
-        }),
+// The db the webhook passes in. The requeue never opens a service-role client of its own.
+const db = {
+  from: (table: string) => ({
+    select: () => ({
+      eq: () => ({
+        maybeSingle: async () => {
+          if (table === 'email_provider_attempts') return { data: H.attempt, error: H.attemptError }
+          if (table === 'notification_queue') return { data: H.job, error: null }
+          throw new Error(`unexpected table ${table}`)
+        },
       }),
     }),
   }),
-}))
+}
 
 vi.mock('@/lib/queue/outbox', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/lib/queue/outbox')>()
@@ -89,7 +88,7 @@ describe('requeuePayloadFrom', () => {
 
 describe('requeueQuotaFailedEmail', () => {
   it('requeues a transactional send for the next UTC midnight, keyed on the original job', async () => {
-    expect(await requeueQuotaFailedEmail('re_1', NOW)).toBe('requeued')
+    expect(await requeueQuotaFailedEmail(db, 're_1', NOW)).toBe('requeued')
     expect(H.enqueued).toHaveLength(1)
     const [{ kind, payload, opts }] = H.enqueued
     expect(kind).toBe('email')
@@ -99,43 +98,43 @@ describe('requeueQuotaFailedEmail', () => {
   })
 
   it('never queues the same message twice when the webhook is delivered again', async () => {
-    expect(await requeueQuotaFailedEmail('re_1', NOW)).toBe('requeued')
-    expect(await requeueQuotaFailedEmail('re_1', NOW)).toBe('duplicate')
+    expect(await requeueQuotaFailedEmail(db, 're_1', NOW)).toBe('requeued')
+    expect(await requeueQuotaFailedEmail(db, 're_1', NOW)).toBe('duplicate')
     expect(H.enqueued).toHaveLength(1)
   })
 
   it('requeues once only: a requeued send that hits the limit again stays dropped', async () => {
     H.job = { kind: 'email', payload: { to: 'r@x.com', subject: 's', [REQUEUE_OF_KEY]: 'job-0' } }
-    expect(await requeueQuotaFailedEmail('re_1', NOW)).toBe('already-requeued')
+    expect(await requeueQuotaFailedEmail(db, 're_1', NOW)).toBe('already-requeued')
     expect(H.enqueued).toHaveLength(0)
   })
 
   it('leaves bulk sends dropped', async () => {
     H.job = { kind: 'email', payload: { to: 'r@x.com', subject: 's', __lane: 'bulk' } }
-    expect(await requeueQuotaFailedEmail('re_1', NOW)).toBe('bulk')
+    expect(await requeueQuotaFailedEmail(db, 're_1', NOW)).toBe('bulk')
     H.job = { kind: 'space-campaign-email', payload: { to: 'r@x.com', subject: 's' } }
-    expect(await requeueQuotaFailedEmail('re_1', NOW)).toBe('bulk')
+    expect(await requeueQuotaFailedEmail(db, 're_1', NOW)).toBe('bulk')
     // The queue row was cleaned up: the frozen campaign tag still marks it bulk.
     H.job = null
     H.attempt = { queue_job_id: 'job-1', frozen_payload: { ...frozen, tags: [{ name: 'campaign_id', value: 'c1' }] } }
-    expect(await requeueQuotaFailedEmail('re_1', NOW)).toBe('bulk')
+    expect(await requeueQuotaFailedEmail(db, 're_1', NOW)).toBe('bulk')
     expect(H.enqueued).toHaveLength(0)
   })
 
   it('still requeues from the frozen payload when the queue row was cleaned up', async () => {
     H.job = null
-    expect(await requeueQuotaFailedEmail('re_1', NOW)).toBe('requeued')
+    expect(await requeueQuotaFailedEmail(db, 're_1', NOW)).toBe('requeued')
     expect(H.enqueued[0].payload).not.toHaveProperty('deliveryContext')
   })
 
   it('does nothing for a send the acceptance ledger never saw', async () => {
     H.attempt = null
-    expect(await requeueQuotaFailedEmail('re_1', NOW)).toBe('no-attempt')
+    expect(await requeueQuotaFailedEmail(db, 're_1', NOW)).toBe('no-attempt')
     expect(H.enqueued).toHaveLength(0)
   })
 
   it('throws on a lookup error so the webhook asks Resend to redeliver', async () => {
     H.attemptError = { message: 'db down' }
-    await expect(requeueQuotaFailedEmail('re_1', NOW)).rejects.toThrow(/attempt lookup failed/)
+    await expect(requeueQuotaFailedEmail(db, 're_1', NOW)).rejects.toThrow(/attempt lookup failed/)
   })
 })

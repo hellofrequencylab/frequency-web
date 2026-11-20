@@ -78,7 +78,9 @@ vi.mock('@/lib/comms/quota-requeue', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/lib/comms/quota-requeue')>()
   return {
     failedForDailyQuota: real.failedForDailyQuota,
-    requeueQuotaFailedEmail: async (providerId: string) => {
+    requeueQuotaFailedEmail: async (db: unknown, providerId: string) => {
+      // The route hands in its own service-role client; the requeue never opens one.
+      if (!db || typeof (db as { from?: unknown }).from !== 'function') throw new Error('no db client passed')
       if (H.requeueThrows) throw new Error('attempt lookup failed')
       H.requeued.push(providerId)
       return 'requeued'

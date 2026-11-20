@@ -15,7 +15,6 @@
 //     requeued again. The enqueue is keyed on the ORIGINAL queue job, so a redelivered webhook (or a
 //     retry after a 503) can never queue the same message twice.
 
-import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueue, laneFor, msUntilNextUtcMidnight } from '@/lib/queue/outbox'
 
 /** The email.failed reason Resend reports for a send it accepted over the daily limit. */
@@ -72,27 +71,50 @@ export type QuotaRequeueOutcome =
   | 'already-requeued'  // this send was itself a requeue: once only
   | 'unsendable'        // the frozen payload is not one email to one person
 
+/** One row lookup: `.from(t).select(cols).eq(col, v).maybeSingle()`. */
+type RowLookup = {
+  select: (cols: string) => {
+    eq: (col: string, v: string) => {
+      maybeSingle: () => PromiseLike<{ data: unknown; error: { message: string } | null }>
+    }
+  }
+}
+
+/**
+ * The database the requeue reads, typed to the two lookups it makes. The caller passes its own
+ * client (the Resend webhook's service-role client); this module never opens one itself, so the
+ * RLS-bypassing client stays at the route that already holds it.
+ */
+export interface QuotaRequeueDb {
+  from: (table: 'email_provider_attempts' | 'notification_queue') => RowLookup
+}
+
 /**
  * Requeue the transactional email behind `providerId` for the next UTC day. Throws on a database
  * error so the webhook answers 503 and Resend redelivers; the dedupe key makes that retry safe.
  */
-export async function requeueQuotaFailedEmail(providerId: string, now: Date = new Date()): Promise<QuotaRequeueOutcome> {
-  const client = createAdminClient()
-  const { data: attempt, error } = await client
+export async function requeueQuotaFailedEmail(
+  client: QuotaRequeueDb,
+  providerId: string,
+  now: Date = new Date(),
+): Promise<QuotaRequeueOutcome> {
+  const { data: attemptRow, error } = await client
     .from('email_provider_attempts')
     .select('queue_job_id, frozen_payload')
     .eq('provider_id', providerId)
     .maybeSingle()
   if (error) throw new Error(`quota requeue: attempt lookup failed: ${error.message}`)
+  const attempt = attemptRow as { queue_job_id: string; frozen_payload: unknown } | null
   if (!attempt) return 'no-attempt'
 
   const queueJobId = attempt.queue_job_id
-  const { data: job, error: jobError } = await client
+  const { data: jobRow, error: jobError } = await client
     .from('notification_queue')
     .select('kind, payload')
     .eq('id', queueJobId)
     .maybeSingle()
   if (jobError) throw new Error(`quota requeue: queue job lookup failed: ${jobError.message}`)
+  const job = jobRow as { kind: string; payload: unknown } | null
 
   const jobPayload = job?.payload && typeof job.payload === 'object' && !Array.isArray(job.payload)
     ? (job.payload as Record<string, unknown>)
