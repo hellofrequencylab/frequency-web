@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
-import { config } from '@/lib/page-editor/config'
+import { platformConfig } from '@/lib/page-editor/platform-config'
 import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
-import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
+import { data as templateDoc } from '@/lib/page-editor/templates/about'
+import { isWellFormed } from '@/lib/page-editor/templates/well-formed'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
@@ -76,7 +77,7 @@ const UPDATED = '2026-09-21'
 export default async function AboutPage() {
   const page = await getPublishedPage('about')
   const published = page?.doc ?? null
-  const template = getTemplate('about')
+  const template = templateDoc
   const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
   const live = await getLiveData(createAdminClient()).catch(() => null)
   return (
@@ -92,7 +93,7 @@ export default async function AboutPage() {
         published={PUBLISHED}
         updated={latestDay(UPDATED, page?.published_at)}
       />
-      <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
+      <BlockRender config={platformConfig} data={data} metadata={live ? { live } : {}} />
     </>
   )
 }

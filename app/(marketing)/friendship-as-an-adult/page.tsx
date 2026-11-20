@@ -11,9 +11,10 @@ import type { Metadata } from 'next'
 import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
-import { config } from '@/lib/page-editor/config'
+import { platformConfig } from '@/lib/page-editor/platform-config'
 import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
-import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
+import { data as templateDoc } from '@/lib/page-editor/templates/friendship-as-an-adult'
+import { isWellFormed } from '@/lib/page-editor/templates/well-formed'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE } from '@/lib/site'
@@ -112,7 +113,7 @@ const EMPTY: Data = { content: [], root: {} }
 export default async function FriendshipPage() {
   const page = await getPublishedPage(SLUG)
   const published = page?.doc ?? null
-  const template = getTemplate(SLUG)
+  const template = templateDoc
   const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
   return (
     <>
@@ -126,7 +127,7 @@ export default async function FriendshipPage() {
         updated={latestDay(UPDATED, page?.published_at)}
         image={IMAGES}
       />
-      <BlockRender config={config} data={data} />
+      <BlockRender config={platformConfig} data={data} />
     </>
   )
 }

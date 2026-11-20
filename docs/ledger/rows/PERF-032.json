@@ -1,0 +1,20 @@
+{
+  "id": "PERF-032",
+  "title": "/about and the five seeker articles load every website theme block to draw none",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/page-editor/platform-config.tsx",
+    "ref": "Mega pass 2026-11-19, the half PERF-031 left (owner chose 'Yes, update the probe' 2026-11-20)"
+  },
+  "detail": "PERF-031 moved the platform marketing pages onto lib/page-editor/platform-config.tsx but left /about, /how-to-start-a-circle, /how-to-build-community, /loneliness, /friendship-as-an-adult and /how-to-be-more-social on the full library because scripts/probes/marketing-seo-current.mjs loads those route modules with a fixed dependency map. The owner approved the probe edit on 2026-11-20. Fix: each page renders with platformConfig, imports its own template module (templates/<slug>.ts) instead of getTemplate from templates/index.ts (which imports the whole config), and takes isWellFormed from templates/well-formed.ts. The probe's map gains the three new specifiers, mapped to the same stand-ins as before; every assertion is unchanged and all three modes pass. platform-config.test.ts already pins that the platform set draws every block in these six templates.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-032.mjs",
+    "note": "Fails on main: all six pages reach lib/page-editor/config.tsx. Passes when none reaches it or a site-kit block and each renders with platformConfig."
+  },
+  "closed": "2026-11-20",
+  "wave": "W7"
+}
