@@ -1,19 +1,20 @@
 {
   "id": "LIVE-2485",
-  "title": "/for is a zig-zag, one row per door with its own matching photo",
+  "title": "On a phone, the console's Frequency mark goes back to the Feed",
   "lane": "live",
   "priority": "P2",
-  "size": "S",
+  "size": "XS",
   "status": "done",
-  "closed": "2026-11-20",
   "source": {
-    "file": "docs/PAGE-FRAMEWORK.md",
-    "ref": "Daniel 2026-11-20: \"The /for page is pretty template like and crowded. I want to break the page up with a Zig Zag layout for each of the 9 paths. Try to find images that match each section.\""
+    "file": "components/frequency/admin/admin-shell.tsx",
+    "ref": "Owner 2026-11-20 (project thread: Make the admin logo go to the feed on mobile): \"In the admin sections on the mobile app, the logo needs to go back to the feed.\""
   },
-  "detail": "The /for index drew its nine doors as a three-up grid of tall photo tiles with the words on glass over the picture, and most tiles reused the same beach-gathering look. Each door is now its own row: a photo picked for that kind of work on seven of twelve columns, the door's eyebrow, headline, line and See your door button on a glass panel that overlaps it by one column, sides swapping row by row. A row of jump links under the heading names every door. On a phone the photo sits on top and the panel tucks under it. The photos are Frequency's own (repo library, no new files): sound healer for coaches, a lawn class for studios, string lights for event hosts, the event hall for venues, the community dinner for Non Profits, the big group for networks, the storefront for local businesses, hula hoops for clubs and the rooftop circle for spiritual community. The door pages keep their own photos. Checked at 390, 1280, 1440, 1920 and 2000 with no sideways scroll.",
+  "detail": "Under 960px the console sidebar (and its wordmark, which already went to /feed) is hidden, so the phone top bar had no Frequency mark at all: the top-left tap was the Space's own avatar and name, which opens the console home. The phone top bar now opens with the Frequency roundel linking to /feed (named 'Frequency, back to the Feed'), the same as the member header, ahead of the Space identity, which still opens console home. One shell (AdminShell) draws both /admin and every /spaces/<slug>/manage console, so this covers all of them. Wide screens are unchanged.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/LIVE-2485.mjs"
+    "cmd": "node scripts/probes/LIVE-2485.mjs",
+    "note": "Fails while the phone console top bar has no /feed Frequency mark, the mark is hidden at phone width, or the mask sits on the link and clips its focus ring."
   },
+  "closed": "2026-11-20",
   "wave": "W7"
 }
