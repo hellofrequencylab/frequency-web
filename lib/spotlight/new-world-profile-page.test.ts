@@ -25,4 +25,20 @@ describe('newWorldProfilePageContent', () => {
     const c = newWorldProfilePageContent({ name: 'Dan', tagline: null, about: null, portrait: null, cover: null, links: [{ label: ' ', url: 'https://www.example.com/a' }] })
     expect(c.cta.label).toBe('example.com')
   })
+  it('keeps a link the owner drew as a text link out of the main button, and carries each style to its door (LIVE-2486)', () => {
+    const c = newWorldProfilePageContent({
+      name: 'Dan', tagline: null, about: null, portrait: null, cover: null,
+      links: [{ label: 'Launch', url: 'https://a.example/l', style: 'text' }, { label: 'Beta', url: 'https://a.example/b' }, { label: 'Site', url: 'https://b.example', style: 'button' }],
+    })
+    expect(c.cta.href).toBe('https://a.example/b')
+    expect(c.doors.map((d) => [d.title, d.style])).toEqual([['Launch', 'text'], ['Site', 'button']])
+  })
+  it('draws every link in the block default when the link has none of its own', () => {
+    const c = newWorldProfilePageContent({
+      name: 'Dan', tagline: null, about: null, portrait: null, cover: null, linkStyle: 'text',
+      links: [{ label: 'Main', url: 'https://a.example', style: 'main' }, { label: 'Beta', url: 'https://b.example' }, { label: 'Card', url: 'https://c.example', style: 'card' }],
+    })
+    expect(c.cta.label).toBe('Main')
+    expect(c.doors.map((d) => d.style)).toEqual(['text', 'card'])
+  })
 })

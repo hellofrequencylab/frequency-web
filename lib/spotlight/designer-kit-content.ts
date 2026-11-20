@@ -10,6 +10,7 @@
 //   3. the layout it starts on, and which of the six it can use: Calendar first needs events, Shop front needs
 //      consultations to book; the other four always work.
 
+import type { DoorStyle } from '@/lib/spotlight/door-style'
 import kitData from '@/lib/themes/designer-kits.json' with { type: 'json' }
 import type { DesignerKitLayoutId } from '@/lib/spotlight/layouts'
 
@@ -19,7 +20,7 @@ type ProfileId = (typeof DESIGNER_KIT_SPOTLIGHT_PROFILES)[number]
 type Tool = 'publish' | 'book' | 'gather' | 'learn' | 'belong' | 'sell'
 type LayoutKey = DesignerKitLayoutId extends `designer-kit:${infer L}` ? L : never
 
-interface Door { key: Tool; title: string; meta: string; href: string }
+interface Door { key: Tool; title: string; meta: string; href: string; /** How the owner drew this link (LIVE-2487): a card when unset. */ style?: DoorStyle }
 interface DateRow { mon: string; day: number; title: string; time: string; where: string; seatsLeft?: number }
 interface Pair { title: string; em: string }
 interface Accent { base: string; hover: string; text: string; deep: string; soft: string; bg: string; on: string }

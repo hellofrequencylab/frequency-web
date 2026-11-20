@@ -54,7 +54,7 @@ async function findHost(topic?: unknown): Promise<string> {
   const rows = (data ?? []) as Array<{ name: string; profiles: { display_name: string } | { display_name: string }[] | null }>
   const row = rows[0]
   const host = Array.isArray(row?.profiles) ? row.profiles[0] : row?.profiles
-  if (!host?.display_name) return 'No host found for that yet — a janitor can connect them.'
+  if (!host?.display_name) return 'No host found for that yet. Our team can connect them.'
   return `${host.display_name} runs ${row.name}.`
 }
 

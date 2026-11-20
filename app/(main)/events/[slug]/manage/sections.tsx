@@ -500,7 +500,7 @@ export async function InvitedGuestsSection({ eventId }: { eventId: string }) {
               <tr key={g.id} className="align-top">
                 <td className="px-4 py-2.5">
                   <p className="font-medium text-text">{g.displayName || 'A guest'}</p>
-                  {g.email && <p className="text-meta text-subtle">{g.email}</p>}
+                  {g.email && <p className="text-meta text-subtle break-all">{g.email}</p>}
                 </td>
                 <td className="px-4 py-2.5">
                   <GuestRsvpChip status={g.rsvpStatus} />

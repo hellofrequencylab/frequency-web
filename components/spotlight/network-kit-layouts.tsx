@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { DoorExtras, cardDoors } from '@/components/spotlight/door-runs'
 import { Input } from '@/components/ui/field'
 import { ArrowUpRight, BookOpen, CalendarDays, Handshake, Camera, Mail, Play, Route, ShoppingBag, Users, type LucideIcon } from 'lucide-react'
 import { NETWORK_KIT_SCHEMES, NETWORK_KIT_TOKENS_CSS } from '@/lib/theme/network-kit'
@@ -72,9 +73,10 @@ function Stack({ c }: { c: C }) {
     <>
       <Hero c={c} height={380} />
       <div className="nks-stack-list">
-        {c.doors.slice(0, 4).map((d) => (
+        {cardDoors(c.doors).slice(0, 4).map((d) => (
           <Link key={d.key} href={d.href} className="nks-door"><Seal icon={DOOR_ICON[d.key]} size={36} /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowUpRight size={14} className="nks-subtle" aria-hidden /></Link>
         ))}
+        <DoorExtras doors={c.doors} button={(d) => <div key={d.href} className="col-span-full grid"><Btn href={d.href} size="lg" tone="secondary">{d.title}</Btn></div>} />
       </div>
       {c.letter && <div className="nks-pad" style={{ paddingTop: 14 }}><Letter c={c} compact /></div>}
       <Foot />
@@ -93,9 +95,10 @@ function CardWall({ c }: { c: C }) {
           <div><b className="nks-d">{f.title}</b><small>{f.meta}</small></div>
           <div><Btn href={f.href} size="sm" tone="inverse">{f.cta}</Btn></div>
         </div>
-        {c.doors.slice(0, 4).map((d) => (
+        {cardDoors(c.doors).slice(0, 4).map((d) => (
           <Link key={d.key} href={d.href} className="nks-card"><Seal icon={DOOR_ICON[d.key]} size={36} /><div><b>{d.title}</b><small>{d.meta}</small></div></Link>
         ))}
+        <DoorExtras doors={c.doors} button={(d) => <div key={d.href} className="col-span-full grid"><Btn href={d.href} size="lg" tone="secondary">{d.title}</Btn></div>} />
         {c.letter && <div className="nks-card nks-card--auto" style={{ padding: 0, background: 'transparent', boxShadow: 'none' }}><Letter c={c} compact /></div>}
       </div>
       <Foot />
@@ -114,7 +117,7 @@ function Story({ c }: { c: C }) {
       <div className="nks-story-body">
         <p>{c.hero.body}</p>
         <div style={{ marginTop: 18 }}><Btn href={c.cta.href} size="lg">{c.cta.label}</Btn></div>
-        <div className="nks-links">{c.doors.slice(1, 4).map((d) => <Link key={d.key} href={d.href}>{d.title}</Link>)}</div>
+        <div className="nks-links">{c.doors.filter((d) => d.href !== c.cta.href).slice(0, 3).map((d) => <Link key={d.key} href={d.href}>{d.title}</Link>)}</div>
       </div>
       <Quote c={c} />
       <Foot />
@@ -185,8 +188,9 @@ function Profile({ c }: { c: C }) {
       <div className="nks-pad" style={{ paddingTop: 22 }}>
         <Eyebrow>Where to start</Eyebrow>
         <div className="nks-list">
-          {c.doors.slice(0, 3).map((d) => { const I = DOOR_ICON[d.key]; return <Link key={d.key} href={d.href}><I size={18} aria-hidden /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowUpRight size={14} className="nks-subtle" aria-hidden /></Link> })}
+          {cardDoors(c.doors).slice(0, 3).map((d) => { const I = DOOR_ICON[d.key]; return <Link key={d.key} href={d.href}><I size={18} aria-hidden /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowUpRight size={14} className="nks-subtle" aria-hidden /></Link> })}
         </div>
+        <DoorExtras doors={c.doors} button={(d) => <div key={d.href} className="col-span-full grid"><Btn href={d.href} size="lg" tone="secondary">{d.title}</Btn></div>} />
       </div>
       <div style={{ marginTop: 22 }}><Quote c={c} /></div>
       <Foot />
