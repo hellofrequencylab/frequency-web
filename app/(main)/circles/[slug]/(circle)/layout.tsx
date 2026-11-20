@@ -225,7 +225,13 @@ export default async function CircleDetailLayout({
   // Round 2. Independent reads in one batch. `user` gates the signed-in-only banners, caps drives the
   // manager rules, and the content facts decide which tabs exist at all. Joining a Circle is free
   // (owner, 2026-10-14): Crew is for hosting one, so Join no longer asks whether the viewer pays.
-  const coverArt = circleCoverArt(circle.image_url, circle.space)
+  // A Space's Circle wears its Space's page header behind its logo (SCAN-898, LIVE-2489). The root is not a Space.
+  const coverArt = circleCoverArt(
+    circle.image_url,
+    circle.space
+      ? { type: circle.space.type, cover_image_url: circle.space.cover_image_url ?? null, brand_logo_url: circle.space.brand_logo_url ?? null }
+      : null,
+  )
   const [user, caps, content, hero, pageFacts, insightAccess] = await Promise.all([
     getCachedUser(),
     // Request-memoized, so the tab page under `children` asking the same question is a memo hit

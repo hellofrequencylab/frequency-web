@@ -18,7 +18,7 @@ const bad = []
 if (!/className="fqc-cover-top"/.test(shell)) bad.push('the badge row is gone from the cover')
 if (!/className="fqc-cover-art"/.test(shell)) bad.push('the cover art is not its own band')
 if (!/className="fqc-cover-logo"/.test(shell)) bad.push('the Space logo is not drawn over the cover')
-if (!/circleCoverArt\(circle\.image_url, circle\.space\)/.test(layout) || !/coverLogo=\{coverArt\.logo/.test(layout)) bad.push('the Circle layout does not pass the Space logo and its background')
+if (!/circleCoverArt\(\s*circle\.image_url,/.test(layout) || !/coverLogo=\{coverArt\.logo/.test(layout)) bad.push('the Circle layout does not pass the Space logo and its background')
 if (rules('.fqc-badge').some((r) => r.includes('position:absolute')) || rules('.fqc-space-pill').some((r) => r.includes('position:absolute'))) bad.push('a badge is absolutely placed over the title again')
 if (!/position:relative[^}]*aspect-ratio/.test(last('.fqc-cover-art'))) bad.push('the art no longer sits in its own band')
 if (!last('.fqc-cover-logo').includes('object-fit:contain')) bad.push('the logo can be cropped')
