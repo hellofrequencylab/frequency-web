@@ -260,6 +260,8 @@ export function FrequencySpacesDirectory({
               <DirCard
                 key={p.id}
                 href={`/partners/${p.slug}`}
+                // A member page: signed out it goes home, so a crawler is not sent to follow it (SCAN-1276).
+                rel="nofollow"
                 icon="tag"
                 kicker={cap(p.category)}
                 title={p.name}

@@ -85,8 +85,20 @@ export async function FqAroundYou({ data, mapItems }: { data: EventsIndexData; m
             className="ay-spot-cover"
             tabIndex={-1}
             aria-hidden="true"
-            style={spot.cover ? { backgroundImage: `url('${spot.cover}')`, backgroundPosition: spot.coverFocus ?? undefined } : undefined}
           >
+            {/* The spotlight is the first photo on /events, so it is an eager, high-priority <img> the
+                browser finds in the HTML, not a background it finds after the CSS (PERF-014). */}
+            {spot.cover && (
+              // eslint-disable-next-line @next/next/no-img-element -- a stored upload at its own size, never the paid optimizer
+              <img
+                className="ev-ph"
+                src={spot.cover}
+                alt=""
+                fetchPriority="high"
+                decoding="async"
+                style={spot.coverFocus ? { objectPosition: spot.coverFocus } : undefined}
+              />
+            )}
             {spotRow && (
               <span className="ev-date">
                 <b>{Number(spotRow.starts_at.slice(8, 10))}</b>
@@ -174,10 +186,19 @@ export async function FqAroundYou({ data, mapItems }: { data: EventsIndexData; m
 function AyCard({ item, tag }: { item: AyItem; tag: AyTag }) {
   return (
     <Link href={`/events/${item.slug}`} className="ay-card">
-      <span
-        className="ay-card-cover"
-        style={item.cover ? { backgroundImage: `url('${item.cover}')`, backgroundPosition: item.coverFocus ?? undefined } : undefined}
-      >
+      <span className="ay-card-cover">
+        {/* Lazy, so a card further along the row is fetched only as it nears the screen (PERF-014). */}
+        {item.cover && (
+          // eslint-disable-next-line @next/next/no-img-element -- a stored upload at its own size, never the paid optimizer
+          <img
+            className="ev-ph"
+            src={item.cover}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            style={item.coverFocus ? { objectPosition: item.coverFocus } : undefined}
+          />
+        )}
         <span className={tag === 'Going' ? 'ev-badge feat' : tag === 'Filling up' ? 'ev-badge warm' : 'ev-badge'}>{tag}</span>
       </span>
       <span className="ay-card-b">

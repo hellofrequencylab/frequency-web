@@ -78,6 +78,7 @@
 [data-design="frequency"] [data-kit="members"] .ev-card:hover,[data-design="frequency"] [data-kit="members"] .ev-card:focus-within{transform:translateY(-3px);box-shadow:0 1px 2px var(--fqm-ink-4),0 30px 60px -34px color-mix(in oklab,var(--fq-ink) 60%,transparent),inset 0 0 0 1.5px color-mix(in oklab,var(--fq-x-sky-neon) 85%,transparent)}
 [data-design="frequency"] [data-kit="members"] .ev-card.off{opacity:.7}
 [data-design="frequency"] [data-kit="members"] .ev-cover{position:relative;display:block;aspect-ratio:16/10;background:var(--fq-bg-sunken) center/cover}
+[data-design="frequency"] [data-kit="members"] :is(.ev-cover,.ay-spot-cover,.ay-card-cover)>.ev-ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
 [data-design="frequency"] [data-kit="members"] .ev-date{position:absolute;left:12px;top:12px;width:48px;padding:7px 0 6px;border-radius:14px;background:color-mix(in oklab,var(--fq-surface-raised) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 8px 18px -10px color-mix(in oklab,var(--fq-th-void) 40%,transparent)}
 [data-design="frequency"] [data-kit="members"] .ev-date b{font:500 20px/1 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .ev-date i{font:600 11px/1 var(--fq-font-sans);font-style:normal;text-transform:uppercase;letter-spacing:.08em;color:var(--fq-text-muted)}
