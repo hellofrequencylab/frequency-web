@@ -1,0 +1,20 @@
+{
+  "id": "SEC-044",
+  "title": "YouTube players set tracking cookies before cookie consent",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/video-embed.ts",
+    "ref": "Mega pass 2026-11-19 (owner chose 'Yes, switch to nocookie' 2026-11-20)"
+  },
+  "detail": "Course lesson videos (lib/video-embed.ts) and Spotlight media embeds (lib/spotlight/embeds.ts) built www.youtube.com/embed iframe srcs, which set YouTube cookies on page load, before a visitor answers the cookie banner. Fix: both build www.youtube-nocookie.com/embed srcs (YouTube's privacy-enhanced player, same player, no cookie until play), and both CSP frame-src lists (next.config.ts, lib/security/csp-nonce.ts) allow the host; www.youtube.com stays allowed. The test pins in lib/video-embed.test.ts, lib/spotlight/embeds.test.ts and lib/entity-blocks/spotlight.golden.test.tsx were rewritten to the new src with the owner's approval (2026-11-20); parser inputs on www.youtube.com stay covered.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SEC-044.mjs",
+    "note": "Fails on main: both modules build www.youtube.com/embed srcs and neither CSP allows youtube-nocookie. Passes when both build nocookie srcs, both CSPs allow it, and the embed tests pass."
+  },
+  "closed": "2026-11-20",
+  "wave": "W7"
+}
