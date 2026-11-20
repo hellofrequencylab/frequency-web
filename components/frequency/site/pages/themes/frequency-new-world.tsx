@@ -84,7 +84,7 @@ const CARRY: { row: string; cells: (string | true)[] }[] = [
 ]
 
 const FAQ: [string, string][] = [
-  ['Can I start with only a Spotlight?', 'Yes. Most people do. Your Space and website use the same profile, so they are ready when you are, with nothing to rewrite.'],
+  ['Can I start with only a Spotlight?', 'Yes. Your Space and website use the same profile, so they are ready when you are, with nothing to rewrite.'],
   ['Will my Space look exactly like my website?', 'Your Space keeps Frequency’s page frame, so people on the network always know where they are. It wears your name, fonts, accent and offers, so it reads as you.'],
   ['Does it work for my kind of Space?', 'If people gather at your place, yes. The kits cover coaches, studios, hosts, venues, non-profits and networks, and Your place fits anything in between.'],
   ['Is there a light version?', 'Yes. Night is where it starts and Day is one switch away. Both use the same blocks, accent and words.'],

@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-1320",
+  "title": "Clean up the small copy slips: invented claims, 1 seats left, hidden em dashes, a dead theme card",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "components/frequency/members/circle/members-pane.tsx",
+    "ref": "deepest site audit 2026-11-19 (copy and states)"
+  },
+  "detail": "Deep audit 2026-11-19, copy findings re-checked on main 2026-11-20. Fixed: (1) invented claims, \"Yes. Most people do.\" on five theme FAQs and circle meetups, and \"pick one before it fills\" urgency in four kit emails; (2) counts that did not pluralise: \"Search 1 members\", \"1 seats left\" / \"0 seats left\" (now \"This circle is full\"), \"1 seats open\", enrolment \"1 seats left\", channel \"1 members\", \"made 1 of the last 1 gatherings\"; (3) em dashes and jargon in the QR destination copy shown in the Space loyalty console, and check-canon COPY_KEYS now reads value, detail and lede (two admin-only files classified operator, \"gems\" capitalised); (4) the Nocturne demo metadata said Midnight; (5) a dead \"Woman, Coming soon\" theme card removed from Space branding; (6) Vera tool text named the janitor role; (7) long emails on sign-in and in the host guest list now wrap at 390px. Left as is: \"About 12 minutes\" on /create-a-space rests on the measured LIVE-1970 median; \"1 Journeys open\" in the Midnight block is pinned by midnight.test.tsx and needs the owner's phrase to change.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1320.mjs",
+    "note": "Fails on main: the claims, unpluralised counts, dashes, Midnight name and Woman card are all present. Passes once each is fixed."
+  },
+  "closed": "2026-11-20"
+}

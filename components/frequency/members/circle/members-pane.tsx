@@ -76,8 +76,8 @@ export function FqMembersPane({
                 type="search"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder={`Search ${people.length} members`}
-                aria-label={`Search ${people.length} members`}
+                placeholder={`Search ${people.length} ${people.length === 1 ? 'member' : 'members'}`}
+                aria-label={`Search ${people.length} ${people.length === 1 ? 'member' : 'members'}`}
               />
             </label>
             <div className="fqc-chips" role="group" aria-label="Filter members">

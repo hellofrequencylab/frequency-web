@@ -159,7 +159,7 @@ function JourneyDetails({ status, visibility, details }: { status: string; visib
     { icon: Layers, label: 'Phases', value: String(details.phases) },
     { icon: ListChecks, label: 'Steps', value: String(details.steps) },
     { icon: Clock, label: 'Daily time', value: details.dailyMinutes ? `${details.dailyMinutes} min` : 'Not set' },
-    { icon: Gem, label: 'Completion', value: `${details.completionGems} gems` },
+    { icon: Gem, label: 'Completion', value: `${details.completionGems} Gems` },
     { icon: BarChart3, label: 'Difficulty', value: details.difficulty ? details.difficulty[0].toUpperCase() + details.difficulty.slice(1) : 'Not set' },
   ]
   return (

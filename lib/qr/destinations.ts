@@ -19,33 +19,33 @@ interface SiteDestination {
 
 export const SITE_DESTINATIONS: SiteDestination[] = [
   // ── Acquisition (public, no login) — best for ads, flyers, cold traffic ──────
-  { group: 'Acquisition', label: 'Sign in or join', path: '/sign-in', value: 'The conversion path — turn a scan into a new member. Best end point for any outreach funnel.' },
+  { group: 'Acquisition', label: 'Sign in or join', path: '/sign-in', value: 'Where a scan becomes a new member. The best place to send any flyer or ad.' },
   { group: 'Acquisition', label: 'Discover (nearby)', path: '/discover', value: 'Public landing showing everything happening nearby. Great for cold traffic that doesn’t know Frequency yet.' },
   { group: 'Acquisition', label: 'Discover · Circles', path: '/discover/circles', value: 'Public circle browser. Point a poster here so people can find a group before signing up.' },
-  { group: 'Acquisition', label: 'Discover · Events', path: '/discover/events', value: 'Public events list — drive RSVPs straight from a flyer or table tent.' },
+  { group: 'Acquisition', label: 'Discover · Events', path: '/discover/events', value: 'Every public event, so a flyer or table card turns straight into RSVPs.' },
   { group: 'Acquisition', label: 'Discover · Channels', path: '/discover/topics', value: 'Public Channels browser, so people can self-select what they’re into.' },
 
   // ── Community (members) ─────────────────────────────────────────────────────
-  { group: 'Community', label: 'Feed', path: '/feed', value: 'A member’s home — circle activity, posts, events. Good default for an existing-member code.' },
+  { group: 'Community', label: 'Feed', path: '/feed', value: 'A member’s home: circle news, posts and events. A good pick for a code aimed at members.' },
   { group: 'Community', label: 'Circles', path: '/circles', value: 'Browse and join circles. The core "find your people" action.' },
   { group: 'Community', label: 'Events', path: '/events', value: 'Upcoming gatherings to RSVP to. Use at a venue to boost the next event.' },
   { group: 'Community', label: 'Channels', path: '/channels', value: 'Topic and event Channels to follow.' },
-  { group: 'Community', label: 'Practices', path: '/practices', value: 'Weekly rituals members keep together — the retention loop.' },
+  { group: 'Community', label: 'Practices', path: '/practices', value: 'Weekly habits members keep together, the thing that brings people back.' },
 
   // ── Network ─────────────────────────────────────────────────────────────────
   { group: 'Network', label: 'Member directory', path: '/people', value: 'Find members by interest and place.' },
-  { group: 'Network', label: 'Partners', path: '/partners', value: 'Local partner offers — send people to redeem.' },
+  { group: 'Network', label: 'Partners', path: '/partners', value: 'Local partner offers people can redeem.' },
 
   // ── The Quest ───────────────────────────────────────────────────────────────
   { group: 'The Quest', label: 'My Quest', path: '/crew', value: 'The gamified progress hub: rank, standing, and this season’s Journeys.' },
   { group: 'The Quest', label: "This season's Quest", path: '/crew', value: "The season's official Quest and its Journeys: drive participation in a campaign." },
-  { group: 'The Quest', label: 'Store', path: '/crew/store', value: 'Where members spend gems.' },
+  { group: 'The Quest', label: 'Store', path: '/crew/store', value: 'Where members spend Gems.' },
 
   // ── Membership / story ──────────────────────────────────────────────────────
   { group: 'Membership', label: 'Upgrade', path: '/upgrade', value: 'The membership upgrade path.' },
-  { group: 'Membership', label: 'The Lab (vision)', path: LAB_HREF, value: 'The physical-space story — for partners and curious visitors.' },
+  { group: 'Membership', label: 'The Lab (vision)', path: LAB_HREF, value: 'The story of the physical space, for partners and curious visitors.' },
   { group: 'Membership', label: 'The Community', path: '/the-community', value: 'The community story / pitch.' },
-  { group: 'Membership', label: 'The Quest (story)', path: QUEST_HREF, value: 'Explains the game — good for the curious.' },
+  { group: 'Membership', label: 'The Quest (story)', path: QUEST_HREF, value: 'How the game works, for anyone curious.' },
 ]
 
 const PATHS = new Set(SITE_DESTINATIONS.map((d) => d.path))
