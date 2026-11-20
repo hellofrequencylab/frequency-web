@@ -6,6 +6,7 @@
 // open times, reviews, the quote) is sample content: a live page passes `sample: false` and gets none of it, so no
 // invented price, time or testimonial ships. The kit holds words and rows only; colour and type are the theme's.
 
+import type { DoorStyle } from '@/lib/spotlight/door-style'
 import { CYBERWITCH_ACCENTS, type CyberWitchAccentId } from '@/lib/theme/cyberwitch'
 import { CYBERWITCH_KIT_SPECS } from '@/lib/sites/kits/cyberwitch-variants'
 
@@ -14,7 +15,7 @@ type Has = 'events' | 'products' | 'plans' | 'posts' | 'team' | 'groups'
 /** The design's icon names; the layouts map each to a lucide icon. */
 type IconName = 'message' | 'sparkle' | 'calendar' | 'shield' | 'star' | 'award' | 'wrench' | 'home' | 'clock' | 'leaf' | 'heart' | 'chart' | 'briefcase' | 'tag' | 'bolt' | 'car' | 'droplet' | 'users' | 'sun' | 'user' | 'mail' | 'eye' | 'pin' | 'check'
 
-interface CyberWitchDoor { id: string; key: Tool; icon: IconName; title: string; meta: string; href: string }
+interface CyberWitchDoor { id: string; key: Tool; icon: IconName; title: string; meta: string; href: string; /** How the owner drew this link (LIVE-2487): a card when unset. */ style?: DoorStyle }
 interface CyberWitchOffer { name: string; price: string; dur: string; icon: IconName }
 interface CyberWitchOpening { mon: string; day: string; title: string; time: string; where: string; left: number }
 interface CyberWitchReview { q: string; who: string; what: string }

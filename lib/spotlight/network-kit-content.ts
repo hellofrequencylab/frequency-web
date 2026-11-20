@@ -8,6 +8,7 @@
 //   3. the layout it starts on, and which of the six it can use: Calendar first needs meetups, Shop front needs
 //      one-to-ones or a shop; the other four always work.
 
+import type { DoorStyle } from '@/lib/spotlight/door-style'
 import { NETWORK_KIT_PROFILES, networkKitProfileScheme } from '@/lib/theme/network-kit'
 import type { NetworkKitLayoutId } from '@/lib/spotlight/layouts'
 
@@ -16,7 +17,7 @@ type Tool = 'publish' | 'gather' | 'belong' | 'book' | 'learn' | 'sell'
 type DoorKey = 'gather' | 'belong' | 'book' | 'learn' | 'sell' | 'publish'
 type LayoutKey = NetworkKitLayoutId extends `network-kit:${infer L}` ? L : never
 
-interface Door { key: DoorKey; title: string; meta: string; href: string }
+interface Door { key: DoorKey; title: string; meta: string; href: string; /** How the owner drew this link (LIVE-2487): a card when unset. */ style?: DoorStyle }
 interface DateRow { mon: string; day: number; title: string; time: string; where: string; seatsLeft?: number }
 interface Offering { name: string; minutes: number; price: number; photo: string }
 interface Pair { title: string; em: string }
