@@ -15,6 +15,7 @@ import { sendLaunchedWelcome } from '@/lib/launch/launched-io'
 import { launchStepHref } from '@/lib/launch/steps'
 import Link from 'next/link'
 import { LaunchOverview } from '@/components/launch/launch-overview'
+import { BuildHub } from '@/components/launch/build-hub'
 import { LaunchClockSlot } from '@/components/launch/launch-clock-slot'
 import { LaunchIntent } from '@/components/launch/launch-intent'
 import { showIntent } from '@/lib/launch/intent'
@@ -50,7 +51,7 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
 
   // Set up before the launch knew their Space: take it, so the page shows what they have, ticked (LIVE-2392).
   launch = await withOwnedSpace(launch, profileId)
-  if (launch.resume?.phase === 'builder' && !launch.spaceId && !launch.cancelledAt && !launch.completedAt) redirect('/create-a-space?new=1')
+  if (launch.resume?.phase === 'builder' && !launch.spaceId && !launch.cancelledAt && !launch.completedAt) redirect('/launch-your-business?new=1')
   const view = resumeView(launch, new Date())
   const justPublished = published === '1'
   const spotlightRef = launch.steps.spotlight?.status === 'published' ? launch.steps.spotlight.ref : undefined
@@ -111,6 +112,7 @@ export default async function LaunchPage({ searchParams }: { searchParams: Promi
     >
       <div className="flex flex-col gap-4">
         <LaunchClockSlot launchId={launch.id} ownerId={profileId} stages={stages.map((s) => s.label)} stagesDone={stagesDone} done={stagesDone} total={stages.length} />
+        <BuildHub built={[]} />
         {view.made.length > 0 && (
           <p className="t2">What you have made so far: {view.made.join(', ')}.</p>
         )}

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2455",
+  "title": "The Spotlight editor opens on your page, with Look and Share on their own tabs",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "components/spotlight/space-spotlight-editor.tsx",
+    "ref": "Owner 2026-11-19 (project thread: Redesign the Spotlight editor): 'The page layout is bad.' Plan: https://claude.ai/artifact/WX5fSWaGKNuKhe8iXbPSYf, phase 4."
+  },
+  "detail": "Six cards (Publish, Theme, Look, Your own links, Clicks, Upgrade) stacked above Your page, so the blocks were six cards down. The Live switch stays on top; under it three tabs: Page (the blocks, opened first), Look (theme and layout) and Share and stats (own links, custom domain, clicks). On a phone the editor and the preview take turns behind an Edit or Preview switch, and a press on the preview brings Edit and the Page tab forward.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2455.mjs",
+    "note": "Fails while the settings cards stack above the page or a phone has no Edit or Preview switch."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

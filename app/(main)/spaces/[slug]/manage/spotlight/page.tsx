@@ -5,12 +5,9 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
-import { loadSpaceAuthoredContent } from '@/lib/spaces/page-doc'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
-import { readTagline } from '@/lib/spaces/tagline'
 import { readSpaceSpotlight, spaceSpotlightGrid, spaceSpotlightNodes } from '@/lib/spaces/spotlight'
 import { renderPathEnabled } from '@/lib/platform-flags'
-import { LiveNodeGrid } from '@/components/entity-blocks/live-node-grid'
 import { resolveNodeRows } from '@/lib/entity-blocks/node-ops'
 import { resolveRows } from '@/lib/entity-blocks/layout'
 import { fillDataNodes } from '@/lib/entity-blocks/node-seed'
@@ -18,10 +15,7 @@ import { withEffectiveDataContent } from '@/lib/spaces/effective-block-content'
 import type { BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
 import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
-import { renderSpaceBlockNodes } from '@/components/widgets/space-profile/space-profile-modules'
-import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
-import { SpotlightAccent, SpotlightHeader } from '@/components/spotlight/space-spotlight'
-import { spotlightLookOf, spotlightWearsTheme, ThemedSpaceSpotlight } from '@/components/spotlight/themed-space-spotlight'
+import { spotlightLookOf, spotlightWearsTheme } from '@/components/spotlight/themed-space-spotlight'
 import { HOUSE_KIT_OPT_IN, spaceLooksFor } from '@/lib/spotlight/layouts'
 import { PREVIEW_KITS } from '@/lib/create-space/preview-site'
 import { readSiteStyle } from '@/lib/theme/site-style'
@@ -33,7 +27,6 @@ import type { UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { siteSubdomainHost } from '@/lib/sites/host'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { DEFAULT_WWW_CNAME } from '@/lib/sites/vercel-domains'
-import { markSpotlightPreview } from '@/lib/spaces/spotlight-site'
 import { readSpotlightClicks } from '@/lib/spaces/spotlight-clicks'
 import { spotlightLinkLabels } from '@/lib/spaces/spotlight-link-target'
 import { blockDataList } from '@/lib/entity-blocks/block-data-sources'
@@ -43,7 +36,7 @@ import { consoleBack } from '@/lib/spaces/console-back'
 // Space must be visible and the caller a manager (a staff previewer sees it read-only, and every write
 // re-gates in its action). Seeds the shared builder with the Spotlight's own one-column layout
 // (preferences.spotlight, lib/spaces/spotlight.ts) plus the Space page builder's locked blocks and picker
-// data, and builds the live preview from the SAME block nodes the public Spotlight renders.
+// data. The preview is the real Spotlight page in a frame (app/spaces/[slug]/spotlight/preview, LIVE-2452).
 
 export const metadata: Metadata = {
   title: 'Spotlight',
@@ -60,7 +53,6 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
   const { canManage, staffViewing } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage && !staffViewing) notFound()
 
-  markSpotlightPreview()
   const spotlight = readSpaceSpotlight(space.preferences)
   // render_path_spotlight (ADR-1855): switched on, the editor and its preview run on nodes. Off, or on any
   // read error (fail-closed), the type-keyed path below is untouched.
@@ -75,7 +67,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
   const rows = nodes ? [] : resolveRows(grid, 'space')
   const context = toProfileContext(space)
 
-  const [data, authored, tagline, pageRail, canSell, domain, counts, cards] = await Promise.all([
+  const [data, pageRail, canSell, domain, counts, cards] = await Promise.all([
     getSpaceContentData(context.id, {
       name: context.brandName,
       type: context.type,
@@ -86,8 +78,6 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
       slug: context.slug,
       profile: context.profile,
     }),
-    loadSpaceAuthoredContent(context.preferences, context.brandName),
-    readTagline(space.id),
     // The Space page builder's own seed (null for a non-manager): only its locked blocks and picker data are
     // used here, so a Spotlight offers exactly the function-backed blocks the Space page does.
     canManage ? getSpaceLayoutRailData(slug) : Promise.resolve(null),
@@ -141,34 +131,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
       }
     : null
 
-  // A Space on a theme with whole-page layouts previews the SAME page the public link draws (its saved state), not the
-  // generic card page, so the editor and the link cannot disagree.
   const themed = spotlightWearsTheme(space)
-  const preview = themed ? (
-    <SpotlightAccent space={space}>
-      <div className="mx-auto max-w-xl overflow-hidden rounded-card border border-border bg-canvas">
-        <ThemedSpaceSpotlight space={space} tagline={tagline} saved={spaceSpotlightGrid(spotlight)} />
-      </div>
-    </SpotlightAccent>
-  ) : (
-    <SpotlightAccent space={space}>
-      <div className="mx-auto max-w-xl rounded-card border border-border bg-canvas px-4 pb-10">
-        <SpotlightHeader space={space} tagline={tagline} />
-        <div className="@container/profile mt-8">
-          {nodes ? (
-            <LiveNodeGrid nodes={renderSpaceBlockNodes(context, data, authored, grid)} initialLayout={seedNodes ?? nodes} />
-          ) : (
-            <LiveProfileGrid
-              nodes={renderSpaceBlockNodes(context, data, authored, grid)}
-              initialRows={rows}
-              initialContent={seedContent}
-              initialStyle={grid.style ?? {}}
-            />
-          )}
-        </div>
-      </div>
-    </SpotlightAccent>
-  )
 
   const brandName = space.brandName?.trim() || space.name
   return (
@@ -187,7 +150,6 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
       <SpaceSpotlightEditor
         slug={space.slug}
         seed={seed}
-        preview={preview}
         initialPublished={spotlight.published}
         readOnly={!canManage}
         upgrade={upgrade}

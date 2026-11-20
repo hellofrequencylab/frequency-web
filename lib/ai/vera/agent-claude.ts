@@ -40,6 +40,9 @@ import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { ProposedToolCall } from './concierge'
 
 const FEATURE = 'vera-chat'
+// A signed-out visitor's turn is accounted and capped on its OWN key (SEC-043), so traffic nobody is
+// signed in for can never spend members' daily Vera budget down to the deterministic fallback.
+const ANON_FEATURE = 'vera-chat-anon'
 const MAX_ROUNDS = 3
 const MAX_TOKENS = 800
 const MAX_CHIPS = 3
@@ -291,7 +294,7 @@ export async function runVeraClaudeTurn(input: {
 
   try {
     // Operator kill switch + per-feature daily cap — degrade to deterministic.
-    if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
+    if (!(await aiAvailable()) || (await featureOverBudget(input.profileId ? FEATURE : ANON_FEATURE))) return null
 
     // Per-member window (lib/ai/rate-limit.ts, LIVE-195). A live loop is the fastest door in the
     // app to drive; over the window degrades to the deterministic concierge, EXACTLY like the
@@ -347,8 +350,7 @@ export async function runVeraClaudeTurn(input: {
     // tools run server-side and feed back; WRITE tools are captured as proposals and
     // stubbed (never executed here, ADR-028). Identical contract to the prior loop, and
     // the stable half of the prompt carries the cache marker (cacheSystem).
-    const result = await runToolLoop({
-      accounting: { feature: FEATURE, profileId: input.profileId ?? null },
+    const loop: Omit<Parameters<typeof runToolLoop>[0], 'accounting'> = {
       tier: cfg.tier,
       maxTokens: MAX_TOKENS,
       maxRounds: MAX_ROUNDS,
@@ -358,7 +360,10 @@ export async function runVeraClaudeTurn(input: {
       messages,
       onText,
       onToolCalls: (toolCalls) => handleModelToolCalls(toolCalls, proposals, undefined, spaceSwitches),
-    })
+    }
+    const result = input.profileId
+      ? await runToolLoop({ accounting: { feature: FEATURE, profileId: input.profileId }, ...loop })
+      : await runToolLoop({ accounting: { feature: ANON_FEATURE, profileId: null }, ...loop })
 
     // Release any prose the chips filter was still holding when the last round ended.
     filter.flush()

@@ -80,7 +80,7 @@ When the code and a doc disagree, **the code wins**, and the doc is fixed in the
 
 **Wizards.** Edit `lib/studio/entities/*.ts` and register it. Kernel change → every wizard. The kernel stays entity-blind. Placement (`spark` / `inline` / `rail`) is the create/edit seam; rails derive from `*-rail-plan.ts`.
 
-**Checkout.** Route both halves through `lib/billing/checkout-ui.ts` and render `components/billing/checkout-panel.tsx`. `!session.url` is true for every on-page session. A fallback must pass `forceHosted`. Status values are per-table; read the live constraint.
+**Checkout.** Route both halves through `lib/billing/checkout-ui.ts` and render `components/billing/checkout-panel.tsx`. `!session.url` is true for every on-page session. A fallback must pass `forceHosted`. Status values are per-table; read the live constraint. Prices and fees follow [`docs/CHECKOUT.md`](docs/CHECKOUT.md) §9: the $3 floor, the card fee date and the donation fee each live in one module, and a free door beside a paid one refuses on the server.
 
 **Rollout switches.** An on/off env switch reads `envFlag` (`lib/env/string.ts`: `1` / `true` / `on`), is listed in `.env.example` blank with a one-line gate, and its activation gate lives in `docs/RUNBOOKS.md`. Never read `process.env.X === 'true'` by hand.
 

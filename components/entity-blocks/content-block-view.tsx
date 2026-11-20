@@ -10,8 +10,10 @@ import {
   safeUrl,
   textByRoleClass,
   textStyleClass,
+  asLinkStyle,
   type BlockStyle,
   type FeatureLayout,
+  type LinkStyle,
 } from '@/lib/entity-blocks/block-content'
 import {
   parseEmbedUrl,
@@ -337,6 +339,22 @@ export interface LinkPressBeacon {
 const LINK_ROW_CLASS =
   'flex items-center justify-between rounded-control border border-border bg-surface px-4 py-3 text-body-sm font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong'
 
+/** The four link looks (LIVE-2454), in the page's own tokens so every Space theme colours them. */
+const LINK_STYLE_CLASS: Record<LinkStyle, string> = {
+  main: 'flex items-center justify-center rounded-pill bg-primary px-5 py-3.5 text-center text-body font-bold text-on-primary transition-opacity hover:opacity-90',
+  button: LINK_ROW_CLASS,
+  card: 'flex items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3 text-body-sm font-semibold text-text transition-colors hover:border-primary',
+  text: 'text-body-sm font-semibold text-primary-strong underline underline-offset-4 hover:no-underline',
+}
+
+function linkHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
 /** Render ONE authored content block by id from its sanitized props. Returns null when it has no content,
  *  so an empty block leaves no gap. `counted` is set only by a published Spotlight render, so a Links block
  *  there counts each press; everywhere else (the Space page, the editor, the palette) its links are plain. */
@@ -436,31 +454,63 @@ export function ContentBlockView({
       ) : null
     }
     case 'links': {
-      const items = Array.isArray(props.items) ? (props.items as Array<{ label?: unknown; url?: unknown }>) : []
+      // Each link wears its own style, else the block's (LIVE-2454): a filled main button, a button row, a card
+      // with the address under the title, or a plain text link. Text links sit together on one wrapping line.
+      const items = Array.isArray(props.items) ? (props.items as Array<{ label?: unknown; url?: unknown; style?: unknown }>) : []
+      const fallback = asLinkStyle(props.linkStyle) ?? 'button'
       const links = items
-        .map((it) => ({ label: typeof it.label === 'string' ? it.label : '', url: safeUrl(it.url) }))
+        .map((it) => ({ label: typeof it.label === 'string' ? it.label : '', url: safeUrl(it.url), style: asLinkStyle(it.style) ?? fallback }))
         .filter((it) => it.url)
       if (!links.length) return null
+      const draw = (it: (typeof links)[number], i: number) => {
+        const cls = LINK_STYLE_CLASS[it.style]
+        const body =
+          it.style === 'card' ? (
+            <>
+              <span className="min-w-0">
+                <span className="block truncate">{it.label || it.url}</span>
+                <span className="block truncate text-meta font-normal text-muted">{linkHost(it.url)}</span>
+              </span>
+              <ExternalLink className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+            </>
+          ) : (
+            it.label || it.url
+          )
+        return counted ? (
+          // A published Spotlight counts each press by a hash of the address (LIVE-2327), like a Link card.
+          <CountedCardLink
+            key={`${it.url}-${i}`}
+            href={it.url}
+            beacon={{ url: counted.url, space: counted.space, target: spotlightLinkTarget(it.url) }}
+            className={cls}
+          >
+            {body}
+          </CountedCardLink>
+        ) : (
+          <a key={`${it.url}-${i}`} href={it.url} className={cls}>
+            {body}
+          </a>
+        )
+      }
+      // Runs of text links share a line; every other style takes its own full-width row.
+      const groups: Array<{ text: boolean; items: Array<[(typeof links)[number], number]> }> = []
+      links.forEach((it, i) => {
+        const text = it.style === 'text'
+        const last = groups[groups.length - 1]
+        if (last && last.text && text) last.items.push([it, i])
+        else groups.push({ text, items: [[it, i]] })
+      })
       return (
         <ul className="flex flex-col gap-2">
-          {links.map((it, i) => (
-            <li key={`${it.url}-${i}`}>
-              {counted ? (
-                // A published Spotlight counts each press by a hash of the address (LIVE-2327), like a Link card.
-                <CountedCardLink
-                  href={it.url}
-                  beacon={{ url: counted.url, space: counted.space, target: spotlightLinkTarget(it.url) }}
-                  className={LINK_ROW_CLASS}
-                >
-                  {it.label || it.url}
-                </CountedCardLink>
-              ) : (
-                <a href={it.url} className={LINK_ROW_CLASS}>
-                  {it.label || it.url}
-                </a>
-              )}
-            </li>
-          ))}
+          {groups.map((g, gi) =>
+            g.text ? (
+              <li key={`t-${gi}`} className="flex flex-wrap justify-center gap-x-4 gap-y-1 py-1">
+                {g.items.map(([it, i]) => draw(it, i))}
+              </li>
+            ) : (
+              g.items.map(([it, i]) => <li key={`${it.url}-${i}`}>{draw(it, i)}</li>)
+            ),
+          )}
         </ul>
       )
     }

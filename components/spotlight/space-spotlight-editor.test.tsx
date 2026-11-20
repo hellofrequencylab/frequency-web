@@ -37,7 +37,7 @@ afterEach(async () => { await act(async () => root.unmount()); container.remove(
 
 async function mount(seed: BuilderRailData, themes?: { options: { id: string; label: string }[]; current: string }) {
   await act(async () => {
-    root.render(<SpaceSpotlightEditor slug="acme" seed={seed} preview={<div />} initialPublished={false} readOnly={false} themes={themes} />)
+    root.render(<SpaceSpotlightEditor slug="acme" seed={seed} initialPublished={false} readOnly={false} themes={themes} />)
   })
 }
 
@@ -57,6 +57,9 @@ describe('SpaceSpotlightEditor', () => {
   // LIVE-2274: a Spotlight-only Space (no website, on the default theme, so no looks) still gets the theme row.
   it('offers a theme row without a website, and presses the current theme', async () => {
     await mount(legacySeed, { options: [{ id: 'new-world', label: 'New World' }, { id: 'designer', label: 'Designer' }], current: 'new-world' })
+    // The theme lives on the Look tab (LIVE-2455).
+    const lookTab = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Look')
+    await act(async () => lookTab!.click())
     const row = container.querySelector('section[aria-label="Theme"]')
     expect(row).not.toBeNull()
     const pressed = [...row!.querySelectorAll('button')].filter((b) => b.getAttribute('aria-pressed') === 'true')

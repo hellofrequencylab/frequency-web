@@ -35,6 +35,15 @@ seller's: 0%. Same on Business, Collective and Network. Non Profit pays no finde
 Business keeps its locked 3%. Own people cost 0% on a paid Space plan, always, plus card processing,
 which the seller pays.
 
+**Card processing, donations and the price floor (owner rulings 2026-11-19).** Card processing passes to
+the seller from February 1, 2027 (`CARD_FEE_PASS_THROUGH_FROM` = `2027-02-01T08:00:00Z` once its gate passes;
+until then Frequency absorbs it; gate in [RUNBOOKS](RUNBOOKS.md#card-fee-pass-through)). Whether the guest
+covers it is the seller's choice: a ticket can be priced all-in today (`allInPriceCents`, LIVE-2450); an
+opt-in for other sales is LIVE-2472, due after launch and before February 1, 2027. Donations carry a 0% Frequency fee, always, with no finder's fee
+(`DONATION_FINDERS_FEE_CENTS`, LIVE-2449). A new paid ticket, product or Journey costs at least $3
+(`PAID_PRICE_MIN_CENTS` in `lib/billing/paid-price-floor.ts`, LIVE-2448); tips and donations keep their
+$1 minimum.
+
 | | Member | Crew | Space (free) | Business | Collective | Non Profit |
 |---|---|---|---|---|---|---|
 | **Price** | free | contribute what you want | free | catalog | catalog: list, with a Founding intro (`FOUNDING_OPEN_ITEMS`) | catalog |

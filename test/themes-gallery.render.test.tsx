@@ -18,7 +18,7 @@ describe('the Theme Kits page', () => {
     // Every kit is offered in the builder now, so every Use link carries its kit (a kit the builder drops gets use: null).
     for (const k of Object.values(links.kits) as { use: string | null; kit: string | null; page: string | null }[]) {
       expect(k.kit).toBeTruthy()
-      expect(k.use).toMatch(/^\/(launch\/start|create-a-space)/)
+      expect(k.use).toMatch(/^\/(launch\/start|create-a-space|launch-your-business)/)
       expect(k.use).toContain(`kit=${k.kit}`)
     }
     expect(links.kits.nocturne.page).toBe('/themes/nocturne')
