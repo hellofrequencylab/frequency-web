@@ -19,6 +19,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import { reserveLifecycleSend, releaseLifecycleSend } from '@/lib/lifecycle/cap-io'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { log } from '@/lib/log'
 import { isValidTimeZone } from '@/lib/time/zone'
@@ -127,6 +128,20 @@ export async function runLaunchComebacks(opts: ComebackRunOptions): Promise<Come
       }
       const skipReason = !owner.email ? 'skipped:no_email' : gate && !gate.allowed ? `skipped:${gate.reason}` : null
 
+      // The cross-email cap (EMAIL-064, EMAIL-047): one lifecycle email a day, three a week per person. Reserved BEFORE
+      // the log claim, so a 'capped' or 'error' answer leaves this kind due for a later run; 'duplicate' means a run
+      // already reserved and sent it, so the kind is claimed (the sequence advances) without a second send.
+      const dedupeKey = `launch_comeback:${snap.id}:${kind}`
+      let alreadySent = false
+      if (!skipReason && owner.email) {
+        const reservation = await reserveLifecycleSend(admin, { recipient: owner.email, profileId: snap.ownerId, kind: 'launch_comeback', dedupeKey })
+        if (reservation === 'capped' || reservation === 'error') {
+          hold(reservation === 'capped' ? 'capped' : 'cap_error')
+          continue
+        }
+        alreadySent = reservation === 'duplicate'
+      }
+
       // The claim: a unique (launch, kind) row. A skipped kind is claimed too, so it is never asked again.
       const { error: claimError } = await admin.from('launch_email_log').insert({ launch_id: snap.id, trigger_kind: kind, message_ref: skipReason })
       if (claimError) {
@@ -134,11 +149,17 @@ export async function runLaunchComebacks(opts: ComebackRunOptions): Promise<Come
         else {
           result.failed++
           log.error('cron.launch_reminders.claim_failed', { launch_id: snap.id, kind, error: claimError.message })
+          // Nothing was sent: give the reservation back so the next run can send it.
+          if (!skipReason && !alreadySent) await releaseLifecycleSend(admin, dedupeKey)
         }
         continue
       }
       if (skipReason || !owner.email) {
         result.skipped++
+        continue
+      }
+      if (alreadySent) {
+        result.lost++
         continue
       }
 
@@ -155,7 +176,14 @@ export async function runLaunchComebacks(opts: ComebackRunOptions): Promise<Come
         launchId: snap.id,
         unsubscribeUrl,
       })
-      await enqueueEmail({ ...payload, headers: listUnsubscribeHeaders(unsubscribeUrl) }, { dedupeKey: `launch_comeback:${snap.id}:${kind}` })
+      try {
+        await enqueueEmail({ ...payload, headers: listUnsubscribeHeaders(unsubscribeUrl) }, { dedupeKey })
+      } catch (e) {
+        // EMAIL-061: a reservation outlives a send only when the enqueue succeeded. The log claim stays (a missed
+        // reminder costs less than a double), but the person's cap is not spent on an email that never left.
+        await releaseLifecycleSend(admin, dedupeKey)
+        throw e
+      }
       result.sent++
     } catch (e) {
       result.failed++

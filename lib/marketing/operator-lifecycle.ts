@@ -7,6 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import { reserveLifecycleSend, releaseLifecycleSend } from '@/lib/lifecycle/cap-io'
 import { buildOperatorEmail, operatorFocus, OPERATOR_DAYS, type OperatorDay } from '@/lib/marketing/operator-emails'
 import { loadInventory } from '@/lib/launch/inventory-io'
 import { nextBestStep, type NextBestStep } from '@/lib/launch/next-best-step'
@@ -87,10 +88,22 @@ export async function sendOperatorEmailForSpace(
     next,
     baseUrl,
   })
-  await enqueueEmail(
-    { ...message, headers: listUnsubscribeHeaders(unsubscribeUrl) },
-    { dedupeKey: `operator_lifecycle:${space.id}:${day}` },
-  )
+  // The cross-email cap (EMAIL-064, EMAIL-047): one lifecycle email a day, three a week per person, reserved right before
+  // the enqueue. Nothing is claimed here but the outbox key, so 'capped' or 'error' leaves the day due for a later run
+  // inside its window; 'duplicate' means this Space's day already went out.
+  const dedupeKey = `operator_lifecycle:${space.id}:${day}`
+  const reservation = await reserveLifecycleSend(admin, { recipient: email, profileId: space.owner_profile_id, kind: 'operator_lifecycle', dedupeKey })
+  if (reservation !== 'reserved') {
+    if (reservation !== 'duplicate') log.info('operator_lifecycle.held', { space_id: space.id, day, reservation })
+    return 'skipped'
+  }
+  try {
+    await enqueueEmail({ ...message, headers: listUnsubscribeHeaders(unsubscribeUrl) }, { dedupeKey })
+  } catch (e) {
+    // EMAIL-061: give the reservation back so the cap is not spent on an email that never left.
+    await releaseLifecycleSend(admin, dedupeKey)
+    throw e
+  }
   return 'sent'
 }
 

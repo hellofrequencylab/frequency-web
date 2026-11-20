@@ -31,6 +31,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { isSuppressed } from '@/lib/suppression'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import { reserveLifecycleSend, releaseLifecycleSend } from '@/lib/lifecycle/cap-io'
 import { log } from '@/lib/log'
 import { isSpaceSlugTaken } from '@/lib/spaces/store'
 import { WIZARD_THEMES } from '@/lib/spaces/create-wizard'
@@ -157,13 +158,31 @@ export async function runDraftReminders(opts: DraftReminderRunOptions): Promise<
         if (again.kind === null) skipReason = 'skipped:handle_taken'
         else kind = again.kind
       }
+      let profileId: string | null = null
       if (!skipReason) {
         const verdict = await personVerdict(admin, group.address)
         if (verdict === 'error') {
           hold('person_error')
           continue
         }
-        skipReason = verdict
+        skipReason = verdict.skip
+        profileId = verdict.profileId
+      }
+      const draft = parseDraft(JSON.stringify(row.draft), null)
+      if (!skipReason && !draft) skipReason = 'skipped:unreadable'
+
+      // The cross-email cap (EMAIL-064, EMAIL-047): one lifecycle email a day, three a week per person. Reserved BEFORE
+      // the log claim, so a 'capped' or 'error' answer leaves this kind due for a later run; 'duplicate' means a run
+      // already reserved and sent it, so the kind is claimed (the sequence advances) without a second send.
+      const dedupeKey = `create_space_draft:${row.id}:${kind}`
+      let alreadySent = false
+      if (!skipReason) {
+        const reservation = await reserveLifecycleSend(admin, { recipient: group.address, profileId, kind: 'create_space_draft', dedupeKey })
+        if (reservation === 'capped' || reservation === 'error') {
+          hold(reservation === 'capped' ? 'capped' : 'cap_error')
+          continue
+        }
+        alreadySent = reservation === 'duplicate'
       }
 
       // The claim: a unique (draft, kind) row. A skipped kind is claimed too, so it is never asked again.
@@ -173,19 +192,20 @@ export async function runDraftReminders(opts: DraftReminderRunOptions): Promise<
         else {
           result.failed++
           log.error('cron.create_space_draft_reminders.claim_failed', { draft_id: row.id, kind, error: claimError.message })
+          // Nothing was sent: give the reservation back so the next run can send it.
+          if (!skipReason && !alreadySent) await releaseLifecycleSend(admin, dedupeKey)
         }
         continue
       }
-      if (skipReason) {
+      if (skipReason || !draft) {
         result.skipped++
+        continue
+      }
+      if (alreadySent) {
+        result.lost++
         continue
       }
 
-      const draft = parseDraft(JSON.stringify(row.draft), null)
-      if (!draft) {
-        result.skipped++
-        continue
-      }
       const link = draftLinkToken(row.id)
       const unsubscribeUrl = `${baseUrl}/unsubscribe?d=${link}`
       const payload = buildDraftReminderEmail({
@@ -200,7 +220,14 @@ export async function runDraftReminders(opts: DraftReminderRunOptions): Promise<
         resumeUrl: `${baseUrl}/launch-your-business?kit=${encodeURIComponent(draft.kit)}&draft=${link}`,
         unsubscribeUrl,
       })
-      await enqueueEmail({ ...payload, headers: listUnsubscribeHeaders(unsubscribeUrl) }, { dedupeKey: `create_space_draft:${row.id}:${kind}` })
+      try {
+        await enqueueEmail({ ...payload, headers: listUnsubscribeHeaders(unsubscribeUrl) }, { dedupeKey })
+      } catch (e) {
+        // EMAIL-061: the log claim stays (a missed reminder costs less than a double), but the person's cap is not
+        // spent on an email that never left.
+        await releaseLifecycleSend(admin, dedupeKey)
+        throw e
+      }
       result.sent++
     } catch (e) {
       result.failed++
@@ -240,12 +267,15 @@ export function groupDraftsPerAddress(rows: readonly DraftRow[]): DraftGroup[] {
 }
 
 /**
- * May this address get a finish-your-Space reminder? null means yes; a 'skipped:*' reason means no, and it is claimed
- * so it is not asked again; 'error' means a read failed and the address is held for the next run. The person behind
- * the address is found through the signup lead their sign-in converted and the CRM contact (both unique per lowercased
- * address); a profile carries no address of its own.
+ * May this address get a finish-your-Space reminder? skip null means yes; a 'skipped:*' reason means no, and it is
+ * claimed so it is not asked again; 'error' means a read failed and the address is held for the next run. The person
+ * behind the address is found through the signup lead their sign-in converted and the CRM contact (both unique per
+ * lowercased address); a profile carries no address of its own. profileId is that person, when there is one.
  */
-async function personVerdict(admin: ReturnType<typeof createAdminClient>, address: string): Promise<string | null> {
+async function personVerdict(
+  admin: ReturnType<typeof createAdminClient>,
+  address: string,
+): Promise<{ skip: string | null; profileId: string | null } | 'error'> {
   const [lead, contact] = await Promise.all([
     admin.from('signup_leads').select('converted_profile_id').eq('email', address).not('converted_profile_id', 'is', null).limit(1),
     admin.from('contacts').select('profile_id').eq('email', address).not('profile_id', 'is', null).limit(1),
@@ -256,7 +286,8 @@ async function personVerdict(admin: ReturnType<typeof createAdminClient>, addres
   }
   const ids = [...(lead.data ?? []).map((r) => r.converted_profile_id), ...(contact.data ?? []).map((r) => r.profile_id)]
   const profileIds = [...new Set(ids.filter((id): id is string => typeof id === 'string' && id.length > 0))]
-  if (profileIds.length === 0) return (await isSuppressed(address)) ? 'skipped:suppressed' : null
+  if (profileIds.length === 0) return { skip: (await isSuppressed(address)) ? 'skipped:suppressed' : null, profileId: null }
+  const profileId = profileIds[0]
 
   // They finished on another device or through /spaces/new: a Space of their own ends the reminders.
   const { data: owned, error: ownedError } = await admin.from('spaces').select('id').in('owner_profile_id', profileIds).limit(1)
@@ -264,13 +295,13 @@ async function personVerdict(admin: ReturnType<typeof createAdminClient>, addres
     log.error('cron.create_space_draft_reminders.space_read_failed', { error: ownedError.message })
     return 'error'
   }
-  if ((owned ?? []).length > 0) return 'skipped:has_space'
+  if ((owned ?? []).length > 0) return { skip: 'skipped:has_space', profileId }
 
   // Their own lifecycle email switch (email_lifecycle), consent and suppression, in the one send gate.
-  for (const profileId of profileIds) {
-    const gate = await resolveSendGate(profileId, 'email', 'lifecycle', { email: address })
+  for (const id of profileIds) {
+    const gate = await resolveSendGate(id, 'email', 'lifecycle', { email: address })
     if (gate.allowed) continue
-    return gate.reason === 'error' ? 'error' : `skipped:${gate.reason}`
+    return gate.reason === 'error' ? 'error' : { skip: `skipped:${gate.reason}`, profileId }
   }
-  return null
+  return { skip: null, profileId }
 }
