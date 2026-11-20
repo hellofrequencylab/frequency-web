@@ -24,7 +24,8 @@ import { huntSwitchOn } from './flags'
 import { evaluate, validateGraph } from './graph'
 import { judgeAnswer, MAX_ANSWER_ATTEMPTS } from './mystery'
 import { issueClaimToken } from './placement'
-import { isPublishedTrailVersion, loadPublishedTrail, loadRunProgressSnapshot } from './run-store'
+import { editionGraceEndsAt } from './editions'
+import { isPublishedTrailVersion, loadEditionTrail, loadPublishedTrail, loadRunProgressSnapshot } from './run-store'
 import { huntRpc, loadUniquePlacementMission } from './staff-store'
 
 // eslint-disable-next-line no-restricted-syntax -- the FH-005 hunt tables are not in the generated types yet (ADR-246 exception)
@@ -65,6 +66,16 @@ type ScanScope = {
   missionKey: string
   runId: string
   placementId: string
+  /** The run is on an edition a release replaced and is inside its grace (FH-044S). */
+  inGrace: boolean
+}
+
+/** Whether a replaced edition still takes credit at `now` (epoch ms). A failed read is no grace. */
+async function inEditionGrace(client: SupabaseClient, huntId: string, versionId: string, now: number): Promise<boolean> {
+  const { data, error } = await client.from('hunt_versions').select('id, version_no, status, published_at').eq('hunt_id', huntId).in('status', ['published', 'superseded'])
+  if (error || !Array.isArray(data)) return false
+  const endsAt = editionGraceEndsAt(versionId, data as Parameters<typeof editionGraceEndsAt>[1])
+  return endsAt !== null && now < endsAt
 }
 
 /**
@@ -74,7 +85,7 @@ type ScanScope = {
  * longer the Hunt's current one is refused here, before a token is issued or a mission is resolved, so
  * a placement rebound in a newer version can never pick a mission for an older run.
  */
-async function loadScope(actorId: string, placementId: string): Promise<ScanScope | ScopeRefusal> {
+async function loadScope(actorId: string, placementId: string, now: number): Promise<ScanScope | ScopeRefusal> {
   const client = db()
   const { data: placement, error: placementError } = await client
     .from('hunt_placements')
@@ -96,10 +107,19 @@ async function loadScope(actorId: string, placementId: string): Promise<ScanScop
   const h = hunt as { slug: string; current_version_id: string | null } | null
   if (huntError || !h?.current_version_id) return { ok: false, reason: 'placement_not_found' }
 
+  type RunRow = { id: string; hunt_id: string; version_id?: unknown; subject_profile_id: string; state: string }
   const run = await client.from('hunt_runs').select('id, hunt_id, version_id, subject_profile_id, state')
     .eq('hunt_id', p.hunt_id).eq('version_id', h.current_version_id).eq('subject_profile_id', actorId)
     .order('attempt_no', { ascending: false }).limit(1).maybeSingle()
-  const r = run.error ? null : run.data as { id: string; hunt_id: string; version_id?: unknown; subject_profile_id: string; state: string } | null
+  let r = run.error ? null : run.data as RunRow | null
+  // FH-044S: no run on the current edition. A run still active on an edition a release replaced may
+  // finish on its own edition inside the grace; the newest such run is the one the scan is for.
+  if (!r && !run.error) {
+    const older = await client.from('hunt_runs').select('id, hunt_id, version_id, subject_profile_id, state')
+      .eq('hunt_id', p.hunt_id).eq('subject_profile_id', actorId).eq('state', 'active')
+      .order('started_at', { ascending: false }).limit(1).maybeSingle()
+    r = older.error ? null : older.data as RunRow | null
+  }
   const facts: ScopeFacts = {
     placement: { id: p.id, huntId: p.hunt_id, revokedAt: p.revoked_at },
     run: r ? { id: r.id, huntId: r.hunt_id, subjectProfileId: r.subject_profile_id, state: r.state } : null,
@@ -108,22 +128,26 @@ async function loadScope(actorId: string, placementId: string): Promise<ScanScop
   if (!scope.ok) return scope
   // The run row is the authority for the version. A row without one, or pinned elsewhere, fails closed.
   const versionId = typeof r?.version_id === 'string' ? r.version_id : null
-  if (!versionId || versionId !== h.current_version_id) return { ok: false, reason: 'version_superseded' }
+  if (!versionId) return { ok: false, reason: 'version_superseded' }
+  // FH-044S: a run on a replaced edition is read against its own edition until its grace ends. The
+  // claim command checks the same window under the run lock; this read only finds the run.
+  const inGrace = versionId !== h.current_version_id
+  if (inGrace && !(await inEditionGrace(client, p.hunt_id, versionId, now))) return { ok: false, reason: 'version_superseded' }
 
   const [missionKey, published] = await Promise.all([
     loadUniquePlacementMission(p.hunt_id, versionId, p.id),
-    isPublishedTrailVersion(p.hunt_id, versionId),
+    inGrace ? true : isPublishedTrailVersion(p.hunt_id, versionId),
   ])
   if (!published) return { ok: false, reason: 'placement_not_found' }
   if (!missionKey) return { ok: false, reason: 'mission_binding_unavailable' }
 
-  return { ...scope, facts, huntId: p.hunt_id, huntSlug: h.slug, versionId, missionKey }
+  return { ...scope, facts, huntId: p.hunt_id, huntSlug: h.slug, versionId, missionKey, inGrace }
 }
 
 /** The signed-in landing: finds the actor's run and hands back a short-lived claim token bound to it. */
 export async function openClaim(actorId: string, placementId: string, nowEpoch: number): Promise<{ ok: true; runId: string; token: string } | ScopeRefusal | { ok: false; reason: 'disabled' }> {
   if (!huntSwitchOn('claims')) return { ok: false, reason: 'disabled' }
-  const scope = await loadScope(actorId, placementId)
+  const scope = await loadScope(actorId, placementId, nowEpoch * 1000)
   if (!scope.ok) return scope
   return { ok: true, runId: scope.runId, token: issueClaimToken({ secret: secret(), scope: { runId: scope.runId, placementId: scope.placementId }, now: nowEpoch }) }
 }
@@ -177,14 +201,14 @@ export async function claimAsPlayer(
   input: { placementId: string; missionKey?: string; token: string; idempotencyKey: string; nowEpoch: number; /** A Mystery guess. Ignored for any other mission. */ answer?: string },
 ): Promise<{ ok: true } & Awaited<ReturnType<typeof applyClaim>> | ScopeRefusal | AnswerRefusal | { ok: false; reason: 'disabled' | 'eligibility_unavailable' | 'mission_not_eligible' }> {
   if (!huntSwitchOn('claims')) return { ok: false, reason: 'disabled' }
-  const scope = await loadScope(actorId, input.placementId)
+  const scope = await loadScope(actorId, input.placementId, input.nowEpoch * 1000)
   if (!scope.ok) return scope
   // Only the binding can select the mission, including for callers that still pass a mission key.
   const decision = authorizeClaim({ actorId, facts: scope.facts, token: input.token, secret: secret(), nowEpoch: input.nowEpoch, missionKey: scope.missionKey, idempotencyKey: input.idempotencyKey })
   if (!decision.ok) return decision
 
   const [trail, first] = await Promise.all([
-    loadPublishedTrail(scope.huntSlug),
+    scope.inGrace ? loadEditionTrail(scope.huntId, scope.versionId) : loadPublishedTrail(scope.huntSlug),
     loadRunProgressSnapshot(scope.runId, actorId),
   ])
   if (!trail || trail.huntId !== scope.huntId || trail.versionId !== scope.versionId || trail.huntState !== 'published'

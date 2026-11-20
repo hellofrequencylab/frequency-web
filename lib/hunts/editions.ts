@@ -87,10 +87,36 @@ export function carryBindings(bindings: readonly Binding[], crosswalk: Record<st
 /**
  * What a run may do once editions have moved on. A run on the current edition plays. A run on an
  * earlier edition is a record: it keeps the rules and credits of the edition it started on, takes no
- * new credit (the claim command answers version_superseded) and is never moved to the new rules.
+ * new credit once its grace is over (the claim command answers version_superseded, see
+ * `editionGraceEndsAt`) and is never moved to the new rules.
  */
 export function runStanding(run: { versionId: string; state: string }, hunt: { currentVersionId: string | null }): 'playing' | 'record' {
   return run.versionId === hunt.currentVersionId && run.state === 'active' ? 'playing' : 'record'
+}
+
+/**
+ * The grace a run in flight gets when its edition is replaced (FH-044S, owner ruling 2026-11-16: "7-day
+ * grace to finish"). The same number is in the claim command (hunt_claim_apply,
+ * 20270346250000_hunt_edition_grace.sql); this copy only finds the run, the database decides the credit.
+ */
+export const EDITION_GRACE_DAYS = 7
+
+type EditionRow = { id: string; version_no: number; status: string; published_at: string | null }
+
+/**
+ * When a replaced edition stops taking credit, in epoch ms, or null when it takes none: the first later
+ * edition's publish time plus the grace. Null for an edition that is not superseded, or when no later
+ * edition carries a publish time. A second release inside the week does not restart the clock.
+ */
+export function editionGraceEndsAt(versionId: string, versions: readonly EditionRow[]): number | null {
+  const own = versions.find((v) => v.id === versionId)
+  if (!own || own.status !== 'superseded') return null
+  const later = versions
+    .filter((v) => v.version_no > own.version_no && typeof v.published_at === 'string')
+    .map((v) => Date.parse(v.published_at as string))
+    .filter((t) => Number.isFinite(t))
+  if (later.length === 0) return null
+  return Math.min(...later) + EDITION_GRACE_DAYS * 24 * 3600 * 1000
 }
 
 // ── Imports from the two legacy formats ──────────────────────────────────────────────────────────

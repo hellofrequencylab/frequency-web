@@ -11,7 +11,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import type { ChecklistItem } from '@/lib/hunts/draft'
-import { createImportedDraft, loadQrCampaignImport, loadRegularsImport, releaseEdition } from '@/lib/hunts/edition-store'
+import { createImportedDraft, loadQrCampaignImport, loadRegularsImport, previewRelease, releaseEdition, type ReleasePreview } from '@/lib/hunts/edition-store'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 
 const OFF = 'Trails are not open yet.'
@@ -48,6 +48,18 @@ export async function releaseEditionAction(input: { huntId: string; baseRevision
     return fail('Only the trail owner or an admin can release an edition.')
   } catch {
     return fail('The edition could not be released. Try again.')
+  }
+}
+
+/** What a release would do, for the publish step to show before the tap (FH-044S). Writes nothing. */
+export async function previewReleaseAction(input: { huntId: string }): Promise<ActionResult<ReleasePreview | null>> {
+  const gate = await authorizeAuthoring()
+  if ('error' in gate) return fail(gate.error)
+  if (typeof input.huntId !== 'string' || !UUID.test(input.huntId)) return fail('That trail could not be found.')
+  try {
+    return ok(await previewRelease(input.huntId, { profileId: gate.profileId }))
+  } catch {
+    return fail('The printed codes could not be read. Try again.')
   }
 }
 

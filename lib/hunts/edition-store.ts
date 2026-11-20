@@ -21,7 +21,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listHuntsForSpace } from '@/lib/loyalty/hunt-store'
-import { parseTrailDraft } from './draft'
+import { parseTrailDraft, stopKey as stopKeyOf } from './draft'
 import {
   buildCrosswalk, carryBindings, importQrCampaign, importRegularsHunt, parseEditionNote, parseImportNote, runStanding, sortOldGrants,
   type Binding, type EditionNote, type OldGrant,
@@ -122,6 +122,65 @@ export async function releaseEdition(
     return { ok: true, versionNo: latest.version_no, ...(await finishRelease(client, huntId, outgoing, latest, note)) }
   }
   return { ok: false, reason: 'nothing_to_release' }
+}
+
+/** What a release would do, read before the tap (FH-044S). Nothing is written. */
+export type ReleasePreview = {
+  versionNo: number
+  /** Each outgoing stop's place and the place it maps to in the new edition, or null when dropped. */
+  crosswalk: { from: string; to: string | null }[]
+  /** Printed codes that follow their place into the new edition. */
+  carried: number
+  /** Printed codes whose place was dropped, by the code printed on them. */
+  retired: string[]
+  /** Active runs left on the outgoing edition. They get EDITION_GRACE_DAYS to finish on it. */
+  pinnedRuns: number
+}
+
+/** The release preview for the editor's publish step, or null when there is no live edition and open draft. */
+export async function previewRelease(huntId: string, actor: Actor): Promise<ReleasePreview | null> {
+  if (!huntSwitchOn('authoring')) return null
+  const hunt = await authorizeHuntAction(huntId, actor, 'publish')
+  if (!hunt?.currentVersionId) return null
+  const client = db()
+  const { data, error } = await client.from('hunt_versions').select('id, version_no, status, policy').eq('hunt_id', huntId).order('version_no', { ascending: false }).limit(100)
+  if (error) throw new Error(error.message)
+  const versions = (data ?? []) as VersionRow[]
+  const latest = versions[0]
+  const outgoing = versions.find((v) => v.id === hunt.currentVersionId && v.status === 'published')
+  if (!latest || latest.status !== 'draft' || !outgoing) return null
+
+  const oldStops = parseTrailDraft(outgoing.policy?.trail).stops
+  const newStops = parseTrailDraft(latest.policy?.trail).stops
+  const crosswalk = buildCrosswalk(oldStops, newStops)
+  const [bound, runs] = await Promise.all([
+    client.from('hunt_mission_placements').select('mission_key, placement_id, venue_space_id, evidence_policy', { count: 'exact' }).eq('version_id', outgoing.id).eq('hunt_id', huntId),
+    client.from('hunt_runs').select('id', { count: 'exact', head: true }).eq('version_id', outgoing.id).eq('hunt_id', huntId).eq('state', 'active'),
+  ])
+  const rows = bound.data as { mission_key: string; placement_id: string; venue_space_id: string | null; evidence_policy: Record<string, unknown> | null }[] | null
+  if (bound.error || !rows || bound.count !== rows.length || runs.error) throw new Error('The printed codes could not be read.')
+  const { carried, retired } = carryBindings(
+    rows.map((r) => ({ missionKey: r.mission_key, placementId: r.placement_id, venueSpaceId: r.venue_space_id, evidencePolicy: r.evidence_policy ?? {} })),
+    crosswalk,
+  )
+  let retiredCodes: string[] = []
+  if (retired.length > 0) {
+    const codes = await client.from('hunt_placements').select('id, slug').in('id', retired)
+    if (codes.error) throw new Error(codes.error.message)
+    const slugOf = new Map(((codes.data ?? []) as { id: string; slug: string | null }[]).map((c) => [c.id, c.slug]))
+    retiredCodes = retired.map((id) => slugOf.get(id) ?? id)
+  }
+  const placeOf = (stops: typeof oldStops, key: string | null) => {
+    const i = key ? Number(key.replace('stop-', '')) - 1 : -1
+    return i >= 0 ? stops[i]?.place.trim() || key : null
+  }
+  return {
+    versionNo: latest.version_no,
+    crosswalk: oldStops.map((s, i) => ({ from: s.place.trim() || `Stop ${i + 1}`, to: placeOf(newStops, crosswalk[stopKeyOf(i)] ?? null) })),
+    carried: carried.length,
+    retired: retiredCodes,
+    pinnedRuns: runs.count ?? 0,
+  }
 }
 
 // ── A run against its own edition ────────────────────────────────────────────────────────────────
