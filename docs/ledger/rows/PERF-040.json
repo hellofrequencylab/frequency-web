@@ -1,0 +1,20 @@
+{
+  "id": "PERF-040",
+  "title": "Make the city density read and the event calendar feeds stop scanning every time zone name",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "supabase/migrations/20270346062000_public_events_zone_lookup_table.sql",
+    "ref": "deepest site audit 2026-11-19 (database speed)"
+  },
+  "detail": "Deep audit 2026-11-19. SCAN-1210 moved public_events off a materialized CTE of ~509 zone names (joined by nested loop, events x zones comparisons per call) onto the keyed table public.tz_zone_lookup, but five functions kept the CTE: density_by_city, public_organizer_events, public_calendar_feed, space_public_calendar_feed and event_calendar_feed. pg_stat_statements had density_by_city at ~444 ms mean over 10,203 calls. Measured on production in a rolled-back transaction, same rows: density_by_city 295 ms to 21 ms, public_organizer_events 15 to 3 ms, the calendar feeds 10-11 ms to 7 ms. Fix: migration 20270346220000 re-creates each live body with the CTE removed by an exact string replace (all five carry identical CTE text, read on production) and the join pointed at tz_zone_lookup, refusing if any body still names zones. Dry-run of the replace on production: all five change, none keeps zones. Proved by supabase/tests/event_feeds_zone_lookup.test.sql.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-040.mjs",
+    "note": "Fails on main: no migration moves the five reads onto tz_zone_lookup. Passes when the migration and its pgTAP proof are in the tree."
+  },
+  "closed": "2026-11-20"
+}
