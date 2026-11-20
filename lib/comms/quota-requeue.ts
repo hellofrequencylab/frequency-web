@@ -18,7 +18,7 @@
 import { enqueue, laneFor, msUntilNextUtcMidnight } from '@/lib/queue/outbox'
 
 /** The email.failed reason Resend reports for a send it accepted over the daily limit. */
-export const DAILY_QUOTA_REASON = 'reached_daily_quota'
+const DAILY_QUOTA_REASON = 'reached_daily_quota'
 
 /** Stamped on the requeued job's payload: the queue job it replaces. The email handler ignores it. */
 export const REQUEUE_OF_KEY = '__quotaRequeueOf'
@@ -63,7 +63,7 @@ export function requeuePayloadFrom(
   return out
 }
 
-export type QuotaRequeueOutcome =
+type QuotaRequeueOutcome =
   | 'requeued'          // back on the outbox for the next UTC day
   | 'duplicate'         // an earlier delivery of this webhook already requeued it
   | 'no-attempt'        // no acceptance-ledger row for this provider id (legacy send)
