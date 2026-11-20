@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isCodeLive } from '@/lib/qr/codes'
 import { track } from '@/lib/analytics/track'
+import { requestGoogleAllowed } from '@/lib/analytics/server-google-policy'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import {
   CHANNEL_COOKIE,
@@ -127,7 +128,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     })
     .then(() => {}, () => {})
   // First-party + GA4 funnel event (covers dynamic links, member + marketing codes).
-  void track('qr.scanned', { purpose: code.purpose ?? 'none', destination: code.destination_type, medium }, profileId)
+  // Google gets a copy only when this browser (and, signed in, this account) allows analytics
+  // (SEC-042). The first-party scan count lands either way.
+  void requestGoogleAllowed()
+    .catch(() => false)
+    .then((mirrorGa) => track('qr.scanned', { purpose: code.purpose ?? 'none', destination: code.destination_type, medium }, profileId, { mirrorGa }))
 
   // Drive QR campaign challenges (scavenger hunts). Idempotent per (code, member),
   // so progress counts distinct codes; the rules engine advances any challenge whose

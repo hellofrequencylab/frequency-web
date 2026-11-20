@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { track } from '@/lib/analytics/track'
 import { parseSignalBody, signalKey } from '@/lib/create-space/signal'
 import { rateLimitOk } from '@/lib/rate-limit'
+import { requestGoogleAllowed } from '@/lib/analytics/server-google-policy'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,10 @@ export async function POST(req: NextRequest) {
   try { raw = JSON.parse(text) } catch { return ok() }
   const body = parseSignalBody(raw)
   if (!body) return ok()
-  await track(body.event, body.props, null, { idempotencyKey: signalKey(body.v, body.event, body.props) })
+  // The first-party count always lands. Google gets a copy only when this browser allows analytics
+  // (SEC-042): an anonymous track() call skips the account consent read, so a visitor who declined
+  // cookies still had all nine builder steps mirrored to GA4, each under a made-up client id.
+  const mirrorGa = await requestGoogleAllowed()
+  await track(body.event, body.props, null, { idempotencyKey: signalKey(body.v, body.event, body.props), mirrorGa })
   return ok()
 }
