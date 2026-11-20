@@ -4976,6 +4976,63 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5407,
+      "expiresAt": "2026-11-24T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346240000_pin_database_time_zone_utc.sql",
+          "sha256": "593bb414499a3b4b8d7ec0c1175205c483eec29f62f815320c36e19c45dddd4d"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/robots.ts",
+          "status": "modified",
+          "sha256": "d7ad73f1fab15078d87891676d6c4dd443e236ac1f7e3a83ef491edbf860607d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/HYG-250.json",
+          "status": "added",
+          "sha256": "a14694287a2f40a145b194ac909165548919d38d94b7df74b3001b04de5fc1be",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/SEC-POSTGIS-PUBLIC.json",
+          "status": "modified",
+          "sha256": "b9cd60152cc6df173d3e7c2962f903cb50281f3578b5f2cf4d9249a8b8160bff",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/HYG-250.mjs",
+          "status": "added",
+          "sha256": "f968be42b9f8656969519aa3c64ff185e08ef87ab5f143fe0302f4b3fd99933f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346240000_pin_database_time_zone_utc.sql",
+          "status": "added",
+          "sha256": "593bb414499a3b4b8d7ec0c1175205c483eec29f62f815320c36e19c45dddd4d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }

@@ -122,7 +122,7 @@
 [data-design="frequency"] [data-kit="site"] .phero .dd-facts{display:flex;flex-wrap:wrap;gap:6px 18px;margin:18px 0 0;font-size:var(--fq-text-body-size)}
 [data-design="frequency"] [data-kit="site"] .dd-facts span{display:inline-flex;align-items:center;gap:8px}
 [data-design="frequency"] [data-kit="site"] .dd-facts .fq-icon{width:18px;height:18px}
-[data-design="frequency"] [data-kit="site"] .dd-facts a{text-decoration:underline;text-underline-offset:3px}
+[data-design="frequency"] [data-kit="site"] .dd-facts a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 
 /* Sections run tighter than a persuasion page's .sec: a directory is read, not scrolled through. */
 [data-design="frequency"] [data-kit="site"] .sec.dd-sec{padding:clamp(48px,7vw,88px) 0}

@@ -145,6 +145,9 @@ export default function robots(): MetadataRoute.Robots {
       })),
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
+    // No `host` line (HYG-250). `Host:` is not part of the robots standard (RFC 9309): Google and Bing
+    // ignore it and Search Console lists it as an unknown directive, and Yandex, the one engine that read
+    // it, expected a bare host name, not the full URL this printed. The canonical host is already said
+    // by every page's canonical link and by the sitemap's absolute URLs.
   };
 }
