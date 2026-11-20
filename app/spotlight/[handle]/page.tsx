@@ -16,6 +16,7 @@ import { JsonLd } from '@/components/json-ld'
 import { personSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { avatarSrc } from '@/lib/images/avatar-focus'
 import { OG_SITE } from '@/lib/site'
+import { isThinSpotlightText } from '@/lib/seo/thin-spotlight'
 import { publicSpotlightGrid, frequencyExtrasGrid } from '@/lib/spotlight/public-grid'
 import { LinkInBioPage } from '@/components/spotlight/link-in-bio'
 import { LINK_IN_BIO_OWNED_BLOCKS } from '@/lib/spotlight/link-in-bio'
@@ -46,12 +47,18 @@ export async function generateMetadata({
   const name = data.profile.display_name || `@${data.profile.handle}`
   const description = data.profile.bio ?? `${name} on Frequency`
   const path = `/spotlight/${data.profile.handle}`
+  // The person's handle rides in the title (SCAN-1277): a member and the Space they run often share a
+  // name, and /spotlight/<handle> and /spaces/<slug>/spotlight carried the identical title tag.
+  const title = data.profile.display_name ? `${data.profile.display_name} (@${data.profile.handle})` : name
   return {
     // No ` · Frequency` suffix here: app/layout.tsx sets `title.template: '%s · Frequency'`, so
     // adding it produced "Name · Frequency · Frequency" on every Spotlight.
-    title: name,
+    title,
     description,
     alternates: { canonical: path },
+    // A Spotlight with almost no bio opens for anyone with the link but is not a search result
+    // (SCAN-1277); the sitemap leaves it out on the same rule.
+    ...(isThinSpotlightText(data.profile.bio) ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       ...OG_SITE,
       type: 'profile',

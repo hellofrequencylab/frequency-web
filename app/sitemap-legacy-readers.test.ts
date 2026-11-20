@@ -105,7 +105,7 @@ it('retains the public/publish gates and deliberate limits in actual reader quer
   expect(calls('events', 'is')).toContainEqual(['removed_at', null])
   expect(calls('journey_plans', 'eq')).toContainEqual(['visibility', 'public'])
   expect(calls('journey_plans', 'neq')).toContainEqual(['status', 'rejected'])
-  expect(calls('profiles', 'select')).toEqual([['handle']])
+  expect(calls('profiles', 'select')).toEqual([['handle, bio']])
   expect(calls('profiles', 'eq')).toEqual([['is_active', true], ['is_system', false]])
   expect(calls('profiles', 'filter')).toEqual([['meta->spotlight->>published', 'eq', 'true']])
   expect(calls('profiles', 'limit')).toEqual([[1000]])
@@ -118,8 +118,11 @@ it('still emits a healthy one-off through the actual event fold and sitemap mapp
 })
 
 it('still emits published handles and ignores null or empty handles', async () => {
+  // SCAN-1277 (owner approved the test change 2026-11-20): a Spotlight needs a bio of 12 words or more
+  // to be advertised, so each fixture row carries one; the thin row proves the cut.
+  const bio = 'Runs a Sunday beach sit in Encinitas and teaches slow flow yoga to anyone who wants to come.'
   sdk.state.target = 'profiles'
-  sdk.state.answer = { data: [{ handle: 'published-host' }, { handle: null }, { handle: '' }], error: null, status: 200 }
+  sdk.state.answer = { data: [{ handle: 'published-host', bio }, { handle: null, bio }, { handle: '', bio }, { handle: 'thin-host', bio: 'Hi there.' }], error: null, status: 200 }
   const entries = await sitemap()
   expect(entries.filter(entry => entry.url.includes('/spotlight/')).map(entry => entry.url.split('/').at(-1))).toEqual(['published-host'])
 })
