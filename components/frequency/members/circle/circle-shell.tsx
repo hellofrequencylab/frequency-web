@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { richParagraphs } from '@/lib/page-editor/richtext'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import '@/app/themes/active/members-b'
 import '@/app/themes/active/members-community'
 import '@/app/themes/active/members-circle'
@@ -55,6 +55,7 @@ export function FqCircleShell({
   meetLine = null,
   hostPanel = null,
   spaceLink = null,
+  coverLogo = null,
   children,
 }: {
   notices: ReactNode
@@ -96,6 +97,8 @@ export function FqCircleShell({
   meetLine?: string | null
   /** Host-only side panels (health). */
   hostPanel?: ReactNode
+  /** The owning Space's logo, shown whole over the cover picture (lib/circles/cover-art.ts). */
+  coverLogo?: { src: string; alt: string } | null
   /** The Space that owns this Circle: a small "Part of" pill over the cover, linking to the Space. */
   spaceLink?: { href: string; name: string } | null
   children: ReactNode
@@ -115,9 +118,17 @@ export function FqCircleShell({
           column and becomes its own band above the text on a phone (members-circle.css, the narrow
           container rules), so a logo or a busy photo never sits under the title, the facts or the buttons.
           The status badge and the Space pill ride in their own row, in flow, so they can never cover the title. */}
-      <section className="fqm-cl-hero fqc-cover" data-art={coverImage ? '' : undefined}>
-        {coverImage && (
-          <div className="fqc-cover-art" style={{ backgroundImage: `url('${coverImage}')` }} aria-hidden />
+      <section className="fqm-cl-hero fqc-cover" data-art={coverImage || coverLogo ? '' : undefined}>
+        {(coverImage || coverLogo) && (
+          <div
+            className="fqc-cover-art"
+            style={coverImage ? ({ '--fqc-art': `url('${coverImage}')` } as CSSProperties) : undefined}
+          >
+            {coverLogo && (
+              // eslint-disable-next-line @next/next/no-img-element -- a Space's own logo at its own size, shown whole
+              <img className="fqc-cover-logo" src={coverLogo.src} alt={coverLogo.alt} />
+            )}
+          </div>
         )}
         {(badge || spaceLink) && (
           <div className="fqc-cover-top">

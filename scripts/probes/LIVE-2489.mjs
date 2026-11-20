@@ -1,27 +1,31 @@
 #!/usr/bin/env node
-// LIVE-2489: the Circle header reads cleanly on a phone. The status badge and the "Part of <Space>" pill sit in
-// their own row in flow (never absolutely over the title), and under 520px of column the cover art becomes its
-// own band above the name, facts and buttons, with one primary action spanning the row. Fails when the badges
-// go back to absolute positions over the cover, or when the phone rules stop stacking the art above the text.
+// LIVE-2489: the Circle header reads cleanly on a phone and shows the Space logo whole. The status badge and the
+// "Part of <Space>" pill sit in their own row (never absolutely over the title); the art is its own band above the
+// name, facts and buttons; the owning Space's logo sits over the picture uncropped (object-fit: contain); a Circle
+// whose image is its Space logo gets the Space header behind it. Fails when any of those slips back.
 import { readFileSync } from 'node:fs'
 
 const shell = readFileSync('components/frequency/members/circle/circle-shell.tsx', 'utf8')
+const layout = readFileSync('app/(main)/circles/[slug]/(circle)/layout.tsx', 'utf8')
 const css = readFileSync('app/themes/frequency/members-circle.css', 'utf8')
-const rule = (sel) => {
-  const at = css.indexOf(`] ${sel}{`)
-  return at < 0 ? '' : css.slice(at, css.indexOf('}', at))
+const rules = (sel) => {
+  const out = []
+  for (let at = css.indexOf(`] ${sel}{`); at >= 0; at = css.indexOf(`] ${sel}{`, at + 1)) out.push(css.slice(at, css.indexOf('}', at)))
+  return out
 }
+const last = (sel) => rules(sel).at(-1) ?? ''
 const bad = []
 if (!/className="fqc-cover-top"/.test(shell)) bad.push('the badge row is gone from the cover')
-if (!/className="fqc-cover-art"/.test(shell)) bad.push('the cover art is not its own layer')
-if (/position:absolute/.test(rule('.fqc-badge')) || /position:absolute/.test(rule('.fqc-space-pill'))) bad.push('a badge is absolutely placed over the title again')
-const phone = css.split('@container (max-width:520px){')[1]?.split('\n}\n')[0] ?? ''
-if (!phone) bad.push('no phone rules for the Circle cover')
-if (!/\.fqc-cover-art\{position:relative[^}]*aspect-ratio/.test(phone)) bad.push('the phone cover no longer puts the art in its own band')
-if (!/\.fqc-cover \.h1\{color:var\(--fq-text-strong\)/.test(phone)) bad.push('the phone title is not on the panel in the kit ink')
-if (!/\.fqc-act-main\{order:-1/.test(phone)) bad.push('the primary action does not lead on a phone')
+if (!/className="fqc-cover-art"/.test(shell)) bad.push('the cover art is not its own band')
+if (!/className="fqc-cover-logo"/.test(shell)) bad.push('the Space logo is not drawn over the cover')
+if (!/circleCoverArt\(circle\.image_url, circle\.space\)/.test(layout) || !/coverLogo=\{coverArt\.logo/.test(layout)) bad.push('the Circle layout does not pass the Space logo and its background')
+if (rules('.fqc-badge').some((r) => r.includes('position:absolute')) || rules('.fqc-space-pill').some((r) => r.includes('position:absolute'))) bad.push('a badge is absolutely placed over the title again')
+if (!/position:relative[^}]*aspect-ratio/.test(last('.fqc-cover-art'))) bad.push('the art no longer sits in its own band')
+if (!last('.fqc-cover-logo').includes('object-fit:contain')) bad.push('the logo can be cropped')
+if (!last('.fqc-cover .h1').includes('color:var(--fq-text-strong)')) bad.push('the title is not on the panel in the kit ink')
+if (!last('.fqc-act-main').includes('order:-1') && !rules('.fqc-act-main').some((r) => r.includes('order:-1'))) bad.push('the primary action does not lead')
 if (bad.length) {
   console.error('LIVE-2489: ' + bad.join('; '))
   process.exit(1)
 }
-console.log('LIVE-2489 circle phone header: ok')
+console.log('LIVE-2489 circle header: ok')

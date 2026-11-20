@@ -96,21 +96,23 @@
  rail 288 + 192 of gutters come off 1280, and the right rail is on every member page), so the narrow rules key on that viewport
  range, not on a phone. The design's own 720px rules, moved up to where the column really is. */
 @media (max-width:1447px){[data-design="frequency"] [data-kit="members"] .fqc-cover{min-height:260px}[data-design="frequency"] [data-kit="members"] .fqc-cover::before,[data-design="frequency"] [data-kit="members"] .fqc-cover-art::after{background:linear-gradient(180deg,transparent 0%,color-mix(in oklab,var(--fq-ink) 45%,transparent) 35%,color-mix(in oklab,var(--fq-ink) 82%,transparent) 100%)}[data-design="frequency"] [data-kit="members"] .fqc-cover .h1{font-size:clamp(26px,2.4vw,34px)}[data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in{padding:20px 18px}[data-design="frequency"] [data-kit="members"] .fqc-tab{padding:0 14px;height:48px;font-size:var(--fq-text-body-s)}[data-design="frequency"] [data-kit="members"] .fqc-tab .fq-icon{display:none}[data-design="frequency"] [data-kit="members"] .fqc-meet{padding:16px}[data-design="frequency"] [data-kit="members"] .fqc-detail-act{flex-basis:100%}}
-/* PHONE COVER (owner, 2026-11-20: "make these circle headers actually look good in mobile"): under 520px of
-   column the cover stops laying text over art. The art becomes a 2:1 band with the badge and the Space pill
-   on it, and the name, facts and buttons sit below on the kit's glass panel in the kit's ink, so a Space logo
-   or a busy photo never fights the words. One primary action spans the row; QR, Edit and Manage share the next. */
-@container (max-width:520px){
+/* THE COVER, EVERY WIDTH (owner, 2026-11-20: "make these circle headers actually look good in mobile", then
+   "Needs the mindless background with the logo over it fully in screen"). The art is its own band: the picture
+   fills it and the owning Space's logo sits over it whole (contain, never cropped). The badge and the Space pill
+   ride on the band. The name, facts and buttons sit below on the kit's glass panel in the kit's ink, so no
+   picture or logo ever sits under the words. One primary action leads; QR, Edit and Manage share a row. */
 [data-design="frequency"] [data-kit="members"] .fqc-cover{min-height:0;justify-content:flex-start;margin-top:12px;border-radius:24px;background:var(--fq-glass-panel);box-shadow:var(--fq-glass-panel-shadow)}
 [data-design="frequency"] [data-kit="members"] .fqc-cover::before{display:none}
-[data-design="frequency"] [data-kit="members"] .fqc-cover-art{position:relative;inset:auto;flex:none;aspect-ratio:2/1;background-color:var(--fq-bg-sunken)}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-art{position:relative;inset:auto;flex:none;aspect-ratio:16/9;max-height:280px;width:100%;background-color:var(--fq-bg-sunken);background-image:linear-gradient(135deg,var(--fq-pa-soft),var(--fq-bg-sunken))}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-art[style]{background-image:var(--fqc-art)}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-logo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:block;width:auto;height:56%;max-width:72%;object-fit:contain;border-radius:18px;box-shadow:0 12px 32px -12px color-mix(in oklab,var(--fq-ink) 55%,transparent)}
 [data-design="frequency"] [data-kit="members"] .fqc-cover-art::after{display:none}
 [data-design="frequency"] [data-kit="members"] .fqc-cover[data-art] .fqc-cover-top{position:absolute;top:0;left:0;right:0;padding:12px}
 [data-design="frequency"] [data-kit="members"] .fqc-cover-top{padding:16px 16px 0;margin-bottom:0}
 [data-design="frequency"] [data-kit="members"] .fqc-badge,[data-design="frequency"] [data-kit="members"] .fqc-space-pill{box-shadow:0 2px 10px -4px color-mix(in oklab,var(--fq-ink) 35%,transparent)}
 [data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:18px;padding:16px 16px 18px}
 [data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in>.stack{gap:10px}
-[data-design="frequency"] [data-kit="members"] .fqc-cover .h1{color:var(--fq-text-strong);font-size:26px;line-height:1.1;letter-spacing:-.035em;text-shadow:none}
+[data-design="frequency"] [data-kit="members"] .fqc-cover .h1{color:var(--fq-text-strong);font-size:clamp(26px,3cqi,34px);line-height:1.1;letter-spacing:-.035em;text-shadow:none}
 [data-design="frequency"] [data-kit="members"] .fqc-tags li{background:color-mix(in oklab,var(--fq-ink) 5%,transparent);border-color:transparent;color:var(--fq-text-body);backdrop-filter:none;-webkit-backdrop-filter:none}
 [data-design="frequency"] [data-kit="members"] .fqc-facts{flex-direction:column;row-gap:4px;font:400 14px/1.4 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fqc-facts .fqc-rhythm-line{margin-bottom:4px;font:400 15px/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
@@ -124,6 +126,13 @@
 [data-design="frequency"] [data-kit="members"] .fqc-actions>.btn,[data-design="frequency"] [data-kit="members"] .fqc-act-admin>.btn{flex:1 1 0;min-width:0;padding:0 14px}
 [data-design="frequency"] [data-kit="members"] .fqc-cover .fqc-actions .btn:not(.pa){height:44px;background:color-mix(in oklab,var(--fq-ink) 5%,transparent);border:0;box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fq-text-strong);backdrop-filter:none;-webkit-backdrop-filter:none}
 [data-design="frequency"] [data-kit="members"] .fqc-cover .fqc-actions .btn.pa{height:44px}
+/* A wide column keeps the buttons on one row at their own widths, the primary first. */
+@container (min-width:521px){
+[data-design="frequency"] [data-kit="members"] .fqc-actions:has(.fqc-act-admin) .fqc-act-main,[data-design="frequency"] [data-kit="members"] .fqc-act-main{flex:0 0 auto}
+[data-design="frequency"] [data-kit="members"] .fqc-act-main .btn{width:auto}
+[data-design="frequency"] [data-kit="members"] .fqc-actions>.btn,[data-design="frequency"] [data-kit="members"] .fqc-act-admin>.btn{flex:0 0 auto;padding:0 18px}
+}
+@container (max-width:520px){
 [data-design="frequency"] [data-kit="members"] .fqc-tabs{margin-top:20px;padding:4px}
 [data-design="frequency"] [data-kit="members"] .fqc-tab{flex:0 0 auto;height:40px;padding:0 14px;font-size:14px;gap:6px}
 [data-design="frequency"] [data-kit="members"] .fqc-tab-n{min-width:20px;height:20px;padding:0 6px}
