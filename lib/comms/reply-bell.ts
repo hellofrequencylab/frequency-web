@@ -15,7 +15,7 @@
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export type ReplyBellReferenceType = 'leader_conversation' | 'space_conversation' | 'conversation'
+type ReplyBellReferenceType = 'leader_conversation' | 'space_conversation' | 'conversation'
 
 /** The reference_type a reply bell row carries, from the thread's lane. PURE. */
 export function replyBellReferenceType(conv: { kind: string | null; spaceId: string | null }): ReplyBellReferenceType {
