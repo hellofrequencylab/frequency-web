@@ -19,11 +19,15 @@ import { resolveIndexHero } from '@/lib/layout/index-hero'
 // edit needed. The grid + feed share ONE authoritative read (listPublicCalendarEvents ->
 // public_calendar_feed) so they can never drift.
 
-export function generateMetadata() {
-  return pageContentMetadata('/events/calendar', {
+// The same upcoming events /events lists, laid out as a month grid (SCAN-1278). /events is the listing
+// search should show, and the calendar is not in the sitemap, so the grid says noindex, follow: a
+// crawler still reaches every event through it, and the two pages do not compete for one query.
+export async function generateMetadata() {
+  const meta = await pageContentMetadata('/events/calendar', {
     title: 'Events calendar',
     description: 'Every upcoming public event across Frequency, on one calendar you can subscribe to.',
   })
+  return { ...meta, robots: { index: false, follow: true } }
 }
 
 export default async function EventsCalendarPage() {

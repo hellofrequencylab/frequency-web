@@ -220,6 +220,12 @@
       "checked": "2026-10-06",
       "digest": "3efd98b440ddef56"
     },
+    "app/.well-known/security.txt/route.ts": {
+      "verdict": "public",
+      "reason": "RFC 9116 security contact (SCAN-1278). Static text built from CONTACT_EMAIL and SITE_URL in lib/site.ts, identical for every caller, reads no data and no caller identity.",
+      "checked": "2026-11-20",
+      "digest": "cc1e0423e00681c5"
+    },
     "app/.well-known/assetlinks.json/route.ts": {
       "verdict": "public",
       "reason": "The Android App Links statement list (LIVE-714). Fetched by Google with no credential; built from ANDROID_SHA256_FINGERPRINTS, identical for every caller, reads no data.",

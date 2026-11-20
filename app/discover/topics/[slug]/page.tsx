@@ -8,6 +8,7 @@ import {
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
+import { missingPageMetadata } from '@/lib/seo/not-found-metadata'
 import { circleListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { FrequencyTopic } from '@/components/frequency/site/pages/discover/topics'
 
@@ -31,7 +32,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params
   const channel = await getTopicalChannelBySlug(slug)
-  if (!channel) return { title: 'Topic not found' }
+  if (!channel) return missingPageMetadata('Topic not found')
 
   const description =
     channel.description ??
