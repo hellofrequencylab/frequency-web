@@ -41,6 +41,7 @@ import { bodyToHtml, renderReplyEmail } from '@/lib/comms/email-template'
 import { conversationManageUrl } from '@/lib/comms/manage-emails-link'
 import { resolveEmailOrigin, resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { envFlag } from '@/lib/env/string'
+import { replyBellReferenceType } from '@/lib/comms/reply-bell'
 import { buildSpaceConversationReplyAddress, resolveTenantReplyAlias, quarantineTenantReplyAlias } from './tenant-reply-alias'
 import { quarantineSpaceInboxMessage, recordSpaceInboxMessage, resolveSpaceInboxRoute } from './space-inbox-address'
 
@@ -471,7 +472,7 @@ export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<I
     await reopenConversationIfClosed(conv.id, conv.status)
 
     // Notify the agent a reply is owed (assignee first, else the sender-trail owner). Best-effort.
-    await notifyConversationReply(conv.assignedTo ?? conv.ownerProfileId, conv.id, conv.ref, conv.subject)
+    await notifyConversationReply(conv.assignedTo ?? conv.ownerProfileId, conv)
 
     // EMAIL BRIDGE: forward the reply to the agent's real inbox so they can answer from their mail app.
     // Best-effort, and only on FIRST receipt (we are past the duplicate check), so a redelivery never
@@ -678,14 +679,16 @@ async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInbo
   return { status: 'recorded_outbound', conversationId: conv.id, ref: conv.ref }
 }
 
-/** Ping the agent that a conversation has a new inbound reply. Best-effort; never throws. */
+/** Ping the agent that a conversation has a new inbound reply. Best-effort; never throws.
+ *  EMAIL-074: the row's reference_type names the thread's lane, so the bell opens an inbox this
+ *  recipient can actually reach: a leader's thread opens /lead/inbox, a Space-lane thread that Space's
+ *  conversations, and only a platform thread the staff workspace (lib/comms/reply-bell.ts). */
 async function notifyConversationReply(
   recipientId: string | null,
-  conversationId: string,
-  ref: string,
-  subject: string | null,
+  conv: Pick<ConversationRow, 'id' | 'ref' | 'subject' | 'kind' | 'spaceId'>,
 ): Promise<void> {
   if (!recipientId) return
+  const { id: conversationId, ref, subject } = conv
   try {
     const admin = createAdminClient() as unknown as {
       from: (t: string) => { insert: (row: Record<string, unknown>) => Promise<{ error: unknown }> }
@@ -693,7 +696,7 @@ async function notifyConversationReply(
     await admin.from('notifications').insert({
       recipient_id: recipientId,
       type: 'conversation_reply',
-      reference_type: 'conversation',
+      reference_type: replyBellReferenceType(conv),
       reference_id: conversationId,
       body: `replied to conversation #${ref}${subject ? `: ${subject.slice(0, 80)}` : ''}`,
     })

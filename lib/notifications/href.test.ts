@@ -106,6 +106,28 @@ describe('notificationHref', () => {
       .toBe('/admin/crm/conversations?id=a%20b%26c')
   })
 
+  // EMAIL-074. notifyConversationReply rings a leader for a leader's thread and a Space owner or
+  // agent for a Space-lane thread. Neither is staff, so neither bell may land under /admin.
+  it("opens a leader's reply bell in their own inbox on that thread", () => {
+    expect(notificationHref(notif({ type: 'conversation_reply', reference_type: 'leader_conversation', reference_id: UUID })))
+      .toBe(`/lead/inbox?id=${UUID}`)
+    expect(notificationHref(notif({ reference_type: 'leader_conversation', reference_id: null }))).toBe('/lead/inbox')
+  })
+
+  it("sends a Space-lane reply bell through the Spaces-you-run hub, which forwards to that Space's conversations", () => {
+    expect(notificationHref(notif({ type: 'conversation_reply', reference_type: 'space_conversation', reference_id: UUID })))
+      .toBe(`/spaces/operating?conversation=${UUID}`)
+    expect(notificationHref(notif({ reference_type: 'space_conversation', reference_id: null }))).toBe('/spaces/operating')
+  })
+
+  it('never lands a leader or Space owner reply bell anywhere under /admin', () => {
+    for (const reference_type of ['leader_conversation', 'space_conversation']) {
+      for (const reference_id of [null, UUID]) {
+        expect(notificationHref(notif({ type: 'conversation_reply', reference_type, reference_id })).startsWith('/admin')).toBe(false)
+      }
+    }
+  })
+
   // LIVE-505. Both writers of a `contact` row (lib/crm/lead-notify, lib/crm/inbox) set
   // recipient_id to the Space OWNER, an ordinary member, so the staff roster bounced every
   // recipient this row has. Both writers get a case here, which is what this file's
