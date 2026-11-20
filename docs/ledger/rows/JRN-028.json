@@ -1,0 +1,19 @@
+{
+  "id": "JRN-028",
+  "title": "The Business of Community Journey link opens its sales page, not the course preview",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-20",
+  "source": {
+    "file": "lib/courses/tracks.ts",
+    "ref": "Daniel 2026-11-20: \"This is NOT the page we designed is it? Didn't we have a full sales page design for this page? This is the course preview.\""
+  },
+  "detail": "The designed sales page for The Business of Community 101 has lived at /courses/business-of-community since 2026-11-17, but /discover/journeys/the-business-of-community-101 still drew the generic Journey preview, and that is the address Discover cards, share links, QR codes and the signed-out /journeys/<slug> twin all land on. The public Journey page now sends any Journey with a hand-built sales page (COURSE_SALES_PAGES) to it with a permanent redirect, the same rule /courses/<slug> already follows. Also fixed: the hero's 'By Frequency' link took the kit's dark link colour on the dark photo and was near invisible; it now keeps the hero's ink, for every public Journey. The doubled hero, story and call to action in the owner's screenshot came from the full-page capture stitching, not the page: the preview markup renders each section once.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/JRN-028.mjs"
+  },
+  "wave": "W7"
+}

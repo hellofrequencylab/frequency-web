@@ -4,13 +4,13 @@
 // public page's first-load JS. It is the floating button and nothing else. The panel
 // (./support-chat-widget.tsx) reaches @supabase/supabase-js through its auth probe, the Broadcast
 // hook and the typing indicator (~57 KB gzip, the weight components/layout/marketing-header.tsx
-// records removing from every marketing page), so it is mounted through next/dynamic: fetched when
-// the browser is idle after paint, mounted on the first tap, never parsed before the page is
+// records removing from every marketing page), so it is mounted through next/dynamic: fetched when a
+// visitor reaches for the button (PERF-013), mounted on the first tap, never parsed before the page is
 // interactive. OWN-052 found the widget in the RSC payload of /what-is-frequency; this is the seam
 // that keeps it out. The three public layouts ((marketing), (help), discover) render THIS and never
 // the widget directly; the SCAN-674 probe reads those three imports.
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import { MessageCircle, X, Loader2 } from 'lucide-react'
 
@@ -28,17 +28,13 @@ const SupportChatPanel = dynamic(() => loadPanel().then((m) => m.SupportChatPane
 export function SupportChatLauncher() {
   const [open, setOpen] = useState(false)
 
-  // Warm the chunk once the page is idle so the first tap opens without a spinner. A prefetch is
-  // not a mount: nothing in the panel runs (no auth probe, no channel) until the visitor opens it.
-  useEffect(() => {
-    const w = window as Window & { requestIdleCallback?: (cb: () => void) => number; cancelIdleCallback?: (id: number) => void }
-    if (typeof w.requestIdleCallback === 'function') {
-      const id = w.requestIdleCallback(() => void loadPanel().catch(() => {}))
-      return () => w.cancelIdleCallback?.(id)
-    }
-    const id = window.setTimeout(() => void loadPanel().catch(() => {}), 2500)
-    return () => window.clearTimeout(id)
-  }, [])
+  // Warm the panel chunk on INTENT, not on idle (PERF-013). The panel pulls @supabase/supabase-js
+  // (about 63 KB on the wire) through its Broadcast hook. Warming it whenever the page went idle
+  // downloaded that on every marketing, help and discover visit, and almost nobody opens the chat,
+  // so Lighthouse measured the chunk 94 to 96% unused on every public template. A pointer arriving
+  // over the button, a keyboard focus or the start of a touch is early enough that the first tap
+  // usually opens without a spinner, and a visitor who never reaches for it never pays for it.
+  const warm = () => void loadPanel().catch(() => {})
 
   return (
     // `data-visual-mask`: the visual suite paints over this box (test/e2e/surfaces.ts,
@@ -53,6 +49,9 @@ export function SupportChatLauncher() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        onPointerEnter={warm}
+        onFocus={warm}
+        onTouchStart={warm}
         aria-label={open ? 'Close contact panel' : 'Contact us'}
         className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary text-on-primary shadow-pop transition-transform hover:scale-105"
       >
