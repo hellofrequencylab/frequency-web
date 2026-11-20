@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "app/llms-full.txt/route.ts",
     "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
   },
-  "detail": "llms-full.txt links to member-only addresses that redirect a signed-out reader to sign in (/founder, /journal, /rewards, /upgrade, /on-air, /circles), so an answer engine following them lands on the sign-in page. content/help/spaces/network.md links to /networks, which redirects to /for/networks. Event pages link a Circle by its id (/discover/circles/<uuid>, a redirect to the named address), and /discover/spaces carries links to /support and /partners/<slug> that redirect to the home page. Wanted: public links only in the AI files, and links that point at the final address.",
+  "detail": "llms-full.txt links to member-only addresses that redirect a signed-out reader to sign in (/founder, /journal, /rewards, /upgrade, /on-air, /circles), so an answer engine following them lands on the sign-in page. content/help/spaces/network.md links to /networks, which redirects to /for/networks. Event pages link a Circle by its id (/discover/circles/<uuid>, a redirect to the named address), and /discover/spaces carries links to /support and /partners/<slug> that redirect to the home page. Wanted: public links only in the AI files, and links that point at the final address.\n\nllms-full.txt drops the link from member-only addresses and points /circles at /discover/circles (lib/seo/corpus-links.ts); the Networks help article links /for/networks; an event links its Circle by slug and not at all when the Circle is unlisted; partner cards on /discover/spaces carry rel=nofollow. robots.txt walls /support (exact and subtree), the member page the nav links from the public listing.",
   "verify": {
-    "kind": "manual",
-    "checked": "2026-11-19",
-    "evidence": "Production crawl, 2026-11-19: each of the listed addresses answered 307 or 308 to an anonymous request; llms-full.txt (396 KB) contained all six member paths."
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SCAN-1276.mjs",
+    "note": "Fails on main: the corpus quotes member-only links, the Networks article links /networks, the event page links its Circle by id, partner cards and /support invite a crawl. Passes once each points at an address a signed-out reader can open."
   },
+  "closed": "2026-11-20",
   "wave": "W7"
 }

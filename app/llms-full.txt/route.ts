@@ -16,6 +16,7 @@ import { WHO_FREQUENCY_IS_FOR, WHO_FREQUENCY_IS_FOR_HEADING } from '@/lib/market
 import { quickAnswers, localAnswers } from '@/lib/marketing/quick-answers'
 import { NORTH_COUNTY_PATH, NORTH_COUNTY_TOWNS } from '@/lib/marketing/north-county'
 import { SELECTABLE_SKINS } from '@/lib/theme/skins'
+import { publicCorpusLinks } from '@/lib/seo/corpus-links'
 
 // /llms-full.txt — the comprehensive, self-maintaining companion to the curated /llms.txt route
 // (AIO, docs/CONTENT-VOICE §8). Where llms.txt is a hand-written brand summary, this dumps the
@@ -188,15 +189,14 @@ export async function GET() {
       if (a.updated) out.push(`Updated: ${a.updated}`)
       if (a.description) out.push(a.description)
       // The body as the corpus carries it (SCAN-806). Root-relative markdown links become absolute,
-      // so an engine can resolve and cite them, and every heading is demoted three levels so a body
+      // so an engine can resolve and cite them; a member-only link keeps its words and loses the
+      // link, and /circles points at its public listing (SCAN-1276, lib/seo/corpus-links.ts), and every heading is demoted three levels so a body
       // `##` sits under the `####` article title instead of outranking it (`##` -> `#####`,
       // `###` -> `######`; +3 keeps the two apart where +4 would flatten both to `######`). The
       // heading regex also matches inside a fenced code block; no help body carries a `#` fence.
       out.push(
         '',
-        a.body
-          .trim()
-          .replace(/\]\(\/(?!\/)/g, `](${SITE_URL}/`)
+        publicCorpusLinks(a.body.trim(), SITE_URL)
           .replace(/^(#{1,6})[ \t]/gm, (_m, h: string) => '#'.repeat(Math.min(h.length + 3, 6)) + ' '),
       )
     }
