@@ -1,0 +1,18 @@
+{
+  "id": "FH-044T",
+  "title": "Hunts FH-044T: Import doors, a player's earlier-edition record, and one pilot release walk",
+  "lane": "program",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "wave": "W7",
+  "source": {
+    "file": "docs/hunts/README.md",
+    "ref": "Split from FH-044S (2026-11-20): the grace rule and the editor release shipped; the screens below and the operator walk remain."
+  },
+  "detail": "Owed after FH-044S. (1) Web: the import doors. A Regulars hunt from its host Space's hunts screen, and a QR campaign from /admin/qr, call importRegularsHuntAction / importQrCampaignAction in app/(main)/hunts/edition-actions.ts and show the notices; today nothing calls them. (2) Web: on the Trail page, show a player their run on an earlier edition (loadRunRecord) and their old rewards (readOldGrants). runStanding in lib/hunts/editions.ts still calls an in-grace run a record; pass it editionGraceEndsAt so a run inside its 7 days reads as playing. (3) Operator: walk one pilot Trail through a release with real printed codes and confirm each old code opens the right stop, and that a run started before the release can still finish for 7 days. Done when: both import doors call their actions and the Trail page reads loadRunRecord. Requires: FH-044S. Owner role: Web.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const f=require(\"fs\");const read=(d)=>f.readdirSync(d,{recursive:true}).filter(x=>/\\.tsx?$/.test(String(x))&&!/\\.test\\./.test(String(x))).map(x=>f.readFileSync(d+\"/\"+x,\"utf8\")).join(\"\");const app=read(\"app\")+read(\"components\");process.exit(app.includes(\"importRegularsHuntAction({\")&&app.includes(\"importQrCampaignAction({\")&&/loadRunRecord\\(/.test(read(\"app/(main)/hunts/[slug]\"))?0:1)'"
+  }
+}

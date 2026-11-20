@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { MAX_STOPS, parseTrailDraft, publishChecklist } from './draft'
 import {
-  buildCrosswalk, carryBindings, importQrCampaign, importRegularsHunt, parseEditionNote, parseImportNote, runStanding, sortOldGrants,
+  EDITION_GRACE_DAYS, buildCrosswalk, carryBindings, editionGraceEndsAt, importQrCampaign, importRegularsHunt, parseEditionNote, parseImportNote, runStanding, sortOldGrants,
   type Binding, type OldGrant,
 } from './editions'
 
@@ -49,6 +49,39 @@ describe('printed codes follow their place', () => {
     const held: Binding = { missionKey: 'stop-1', placementId: 'sign-a', venueSpaceId: 'space-1', evidencePolicy: { hold_for_review: true } }
     const out = carryBindings([held, binding('stop-2', 'sign-a')], { 'stop-1': 'stop-3', 'stop-2': null })
     expect(out).toEqual({ carried: [{ ...held, missionKey: 'stop-3' }], retired: [] })
+  })
+})
+
+describe('a run in flight gets a grace to finish (FH-044S)', () => {
+  const DAY = 24 * 3600 * 1000
+  const v = (id: string, version_no: number, status: string, published_at: string | null) => ({ id, version_no, status, published_at })
+  const versions = [
+    v('v1', 1, 'superseded', '2026-11-01T00:00:00Z'),
+    v('v2', 2, 'superseded', '2026-11-10T00:00:00Z'),
+    v('v3', 3, 'published', '2026-11-12T00:00:00Z'),
+    v('v4', 4, 'draft', null),
+  ]
+
+  it('is the owner ruling: seven days', () => {
+    expect(EDITION_GRACE_DAYS).toBe(7)
+  })
+
+  it('runs from the first later release, so a second release inside the week does not restart it', () => {
+    expect(editionGraceEndsAt('v1', versions)).toBe(Date.parse('2026-11-10T00:00:00Z') + 7 * DAY)
+    expect(editionGraceEndsAt('v2', versions)).toBe(Date.parse('2026-11-12T00:00:00Z') + 7 * DAY)
+  })
+
+  it('is none for the current edition, a draft, or an edition nobody replaced', () => {
+    expect(editionGraceEndsAt('v3', versions)).toBeNull()
+    expect(editionGraceEndsAt('v4', versions)).toBeNull()
+    expect(editionGraceEndsAt('missing', versions)).toBeNull()
+    expect(editionGraceEndsAt('v1', [v('v1', 1, 'superseded', '2026-11-01T00:00:00Z')])).toBeNull()
+  })
+
+  it('the claim command carries the same seven days', () => {
+    const sql = readFileSync(join(process.cwd(), 'supabase/migrations/20270346250000_hunt_edition_grace.sql'), 'utf8')
+    expect(sql).toContain("now() >= replaced_at + interval '7 days'")
+    expect(sql).toContain("return jsonb_build_object('result', 'version_superseded')")
   })
 })
 

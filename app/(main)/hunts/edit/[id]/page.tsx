@@ -4,6 +4,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { huntSwitchOn } from '@/lib/hunts/flags'
 import { loadTrail } from '@/lib/hunts/store'
 import { TrailEditor } from '@/components/hunts/trail-editor'
+import { previewReleaseAction, releaseEditionAction } from '../../edition-actions'
 
 // THE TRAIL EDITOR (FH-013, docs/hunts/CREATOR-FLOW.md steps 2 to 5): add stops, choose the shape,
 // preview as a player, publish. The draft and its revision come from the store under the owner gate
@@ -26,5 +27,8 @@ export default async function EditTrailPage({ params }: { params: Promise<{ id: 
   const manage = state.published && huntSwitchOn('claims')
     ? { health: `/hunts/${encodeURIComponent(state.slug)}/health`, report: `/hunts/${encodeURIComponent(state.slug)}/report` }
     : null
-  return <TrailEditor initial={state} manage={manage} />
+  // FH-044S: a Trail with a live edition releases its open draft as the next edition, so the publish
+  // step carries the printed codes forward and shows who is left on the old one before the tap.
+  const edition = state.releasesEdition ? { release: releaseEditionAction, preview: previewReleaseAction } : null
+  return <TrailEditor initial={state} manage={manage} edition={edition} />
 }

@@ -140,6 +140,20 @@ describe('claim adapter', () => {
     expect(rpc).not.toHaveBeenCalled()
   })
 
+  it('opens a claim for a run on a replaced edition inside its 7-day grace, and refuses it after (FH-044S)', async () => {
+    scanFacts()
+    rows.hunt_runs = { id: 'run-1', hunt_id: 'h-1', version_id: 'v-0', subject_profile_id: 'me', state: 'active' }
+    const released = new Date((NOW - 2 * 24 * 3600) * 1000).toISOString()
+    rows.hunt_versions = [
+      { id: 'v-0', version_no: 1, status: 'superseded', published_at: '2026-01-01T00:00:00Z' },
+      { id: 'v-1', version_no: 2, status: 'published', published_at: released },
+    ]
+    expect(await openClaim('me', 'pl-1', NOW)).toMatchObject({ ok: true, runId: 'run-1' })
+    expect(filters).toHaveBeenCalledWith('hunt_mission_placements', 'eq', 'version_id', 'v-0')
+    expect(await openClaim('me', 'pl-1', NOW + 6 * 24 * 3600)).toEqual({ ok: false, reason: 'version_superseded' })
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
   it('resolves the mission on the version the run row carries (FH-016T)', async () => {
     scanFacts()
     expect(await openClaim('me', 'pl-1', NOW)).toMatchObject({ ok: true, runId: 'run-1' })

@@ -99,6 +99,12 @@ export type TrailEditorState = {
   challenges: ChallengeView[]
   /** FH-020Y: the Spaces with a live partner row on this Hunt, the only venues a stop may name. */
   partnerVenues: { spaceId: string; name: string }[]
+  /**
+   * FH-044S: an earlier edition is live and the latest version is an open draft, so the publish step
+   * releases the draft as the next edition (lib/hunts/edition-store.ts `releaseEdition`) instead of a
+   * first publish.
+   */
+  releasesEdition: boolean
 }
 
 export type Actor = { profileId: string }
@@ -232,6 +238,7 @@ export async function loadTrail(huntId: string, actor: Actor): Promise<TrailEdit
     draft: trailOf(version),
     challenges: challengeViews(challengesOf(version)),
     partnerVenues: await livePartnerVenues(client, hunt.id),
+    releasesEdition: version?.status === 'draft' && (hunt.current_version_id ?? null) !== null,
   }
 }
 

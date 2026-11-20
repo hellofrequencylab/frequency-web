@@ -192,6 +192,35 @@ export async function loadPublishedTrail(slug: string, opts: { liveClosures?: bo
 }
 
 /**
+ * FH-044S: the Trail of one replaced edition, for a run finishing on it inside its grace. Same shape as
+ * `loadPublishedTrail`, read by version id instead of the Hunt's current pointer, and only for an
+ * edition that was published (published or superseded) on a live Hunt. Closures are left off, as on
+ * the claim path: hunt_claim_apply refuses a closed placement on its own. Null when any read failed.
+ */
+export async function loadEditionTrail(huntId: string, versionId: string): Promise<PublishedTrail | null> {
+  const client = db()
+  const [hunt, version] = await Promise.all([
+    client.from('hunts').select('id, slug, status, revision').eq('id', huntId).eq('status', 'live').maybeSingle(),
+    client.from('hunt_versions').select('id, trail_title:policy->trail->>title').eq('id', versionId).eq('hunt_id', huntId).in('status', ['published', 'superseded']).maybeSingle(),
+  ])
+  const h = hunt.error ? null : hunt.data as { id: string; slug: string; status: string; revision: number } | null
+  const v = version.error ? null : version.data as { id: string; trail_title: string | null } | null
+  if (!h || !v) return null
+  const read = await readVersionGraph(client, huntId, versionId, false)
+  if (!read) return null
+  return {
+    huntId: h.id,
+    slug: h.slug,
+    versionId: v.id,
+    revision: h.revision,
+    title: (typeof v.trail_title === 'string' && v.trail_title.trim()) || h.slug,
+    huntState: 'published',
+    graph: read.graph,
+    content: read.content,
+  }
+}
+
+/**
  * FH-030S: the graph of one version of a Hunt with today's closures, for a guard that must know whether a
  * planned closure leaves players a way to finish (lib/hunts/partner-store.ts `revokePartner`). Null when
  * any read failed, so the caller refuses instead of guessing.

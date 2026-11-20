@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowDown, ArrowUp, Check, Lock, Map, Trash2 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
 import { FieldControl, SparkShell, StudioField, StudioNote } from '@/components/studio/spark'
 import { HUNT_MANIFEST } from '@/lib/studio/entities/hunt'
@@ -41,6 +41,9 @@ import {
 import type { TrailEditorState } from '@/lib/hunts/store'
 import { publishTrailAction, routeTestedAction, saveTrailAction } from '@/app/(main)/hunts/actions'
 import { saveChallengesAction } from '@/app/(main)/hunts/challenge-actions'
+import type { previewReleaseAction, releaseEditionAction } from '@/app/(main)/hunts/edition-actions'
+import type { ReleasePreview } from '@/lib/hunts/edition-store'
+import { EDITION_GRACE_DAYS } from '@/lib/hunts/editions'
 import { remapChallenges } from '@/lib/hunts/challenges'
 import { TrailChallenges, type EditableChallenge } from './trail-challenges'
 import { TrailShape } from './trail-shape'
@@ -86,7 +89,10 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 /** The live Trail's other screens (FH-032S): route health for organisers, the venue report for venue staff. */
 type ManageLinks = { health: string; report: string }
 
-export function TrailEditor({ initial, manage = null }: { initial: TrailEditorState; manage?: ManageLinks | null }) {
+/** FH-044S: the edition actions the page hands in, for a Trail that already has a live edition. */
+export type EditionActions = { release: typeof releaseEditionAction; preview: typeof previewReleaseAction }
+
+export function TrailEditor({ initial, manage = null, edition = null }: { initial: TrailEditorState; manage?: ManageLinks | null; edition?: EditionActions | null }) {
   const router = useRouter()
   const [draft, setDraft] = useState<TrailDraft>(initial.draft)
   const [revision, setRevision] = useState(initial.revision)
@@ -102,6 +108,10 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
   const [challenges, setChallenges] = useState<EditableChallenge[]>(initial.challenges)
   const [challengesDirty, setChallengesDirty] = useState(false)
   const [savingChallenges, setSavingChallenges] = useState(false)
+  // FH-044S: a Trail with a live edition releases its open draft as the next edition.
+  const releasing = initial.releasesEdition && edition !== null
+  const [editionLabel, setEditionLabel] = useState('')
+  const [releasePreview, setReleasePreview] = useState<ReleasePreview | null>(null)
 
   // ── Autosave, revision-checked ───────────────────────────────────────────────────────────
   // The latest draft and revision live in refs the effects keep current, so a save that fires from
@@ -309,7 +319,46 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
     [draft, permission, revision, initial.hasVenue, challenges],
   )
 
+  // FH-044S: before the release tap, show where each printed code goes and who is left on the old edition.
+  // Read from the saved draft, so it waits for the autosave and reads again after each saved revision.
+  useEffect(() => {
+    if (!releasing || !edition || published || step !== 'publish' || !settled) return
+    let live = true
+    void edition.preview({ huntId: initial.huntId }).then((res) => {
+      if (live) setReleasePreview('data' in res ? res.data : null)
+    })
+    return () => {
+      live = false
+    }
+  }, [releasing, edition, published, step, settled, revision, initial.huntId])
+
+  const release = async () => {
+    if (!edition) return
+    setPublishing(true)
+    setError(null)
+    const res = await edition.release({ huntId: initial.huntId, baseRevision: revision, label: editionLabel, visibility, permissionConfirmed: permission })
+    setPublishing(false)
+    if ('error' in res) {
+      setError(res.error)
+      return
+    }
+    if ('conflict' in res.data) {
+      frozen.current = true
+      setConflict(res.data.currentRevision)
+      return
+    }
+    if ('blocked' in res.data) {
+      setError(res.data.items.find((i) => !i.ok)?.message ?? 'Something on the checklist is still open.')
+      return
+    }
+    setPublished(true)
+    setJustPublished(visibility === 'public' ? 'public' : 'unlisted')
+    // The release bound codes on the server. Reload so the next edit starts from them.
+    router.refresh()
+  }
+
   const publish = async () => {
+    if (releasing) return release()
     setPublishing(true)
     setError(null)
     const res = await publishTrailAction({ huntId: initial.huntId, baseRevision: revision, visibility, permissionConfirmed: permission })
@@ -376,7 +425,7 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
           Back
         </Button>
         <Button size="lg" className="flex-1" onClick={publish} disabled={!checklist.ok || published || conflict !== null || !settled || challengesDirty} loading={publishing}>
-          {published ? 'Published' : 'Publish'}
+          {published ? 'Published' : releasing ? `Release edition ${releasePreview?.versionNo ?? initial.versionNo}` : 'Publish'}
         </Button>
       </div>
     ) : undefined
@@ -575,6 +624,39 @@ export function TrailEditor({ initial, manage = null }: { initial: TrailEditorSt
               <Link href={manage.health} prefetch={false} className={buttonClasses('secondary', 'md')}>Route health</Link>
               <Link href={manage.report} prefetch={false} className={buttonClasses('secondary', 'md')}>Venue report</Link>
             </div>
+          )}
+          {releasing && !published && (
+            <section className="space-y-3 rounded-card border border-border bg-surface p-4" aria-label="This release">
+              <p className="text-body font-semibold text-text">This is a new edition</p>
+              <p className="text-body-sm text-muted">
+                The live edition keeps running until you release this one. Players already partway through keep their edition and have {EDITION_GRACE_DAYS} days to finish it.
+              </p>
+              {releasePreview ? (
+                <>
+                  <ul className="space-y-1 text-body-sm">
+                    {releasePreview.crosswalk.map((row, i) => (
+                      <li key={i} className="text-text">
+                        {row.to ? `${row.from}: its code moves to ${row.to}.` : `${row.from}: dropped. Its code stops counting for new players.`}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-body-sm text-text">
+                    {releasePreview.carried === 1 ? '1 printed code moves with its stop.' : `${releasePreview.carried} printed codes move with their stops.`}
+                    {releasePreview.retired.length > 0 && ` Retired: ${releasePreview.retired.join(', ')}. Take those down after ${EDITION_GRACE_DAYS} days.`}
+                  </p>
+                  <p className="text-body-sm text-text">
+                    {releasePreview.pinnedRuns === 0
+                      ? 'Nobody is partway through right now.'
+                      : `${releasePreview.pinnedRuns === 1 ? '1 player is' : `${releasePreview.pinnedRuns} players are`} partway through. They finish on the current edition.`}
+                  </p>
+                </>
+              ) : (
+                <p className="text-body-sm text-subtle">Reading where each printed code goes.</p>
+              )}
+              <StudioField label="Edition name (optional)">
+                <Input aria-label="Edition name" value={editionLabel} maxLength={80} placeholder={`Edition ${initial.versionNo}`} onChange={(e) => setEditionLabel(e.target.value)} disabled={conflict !== null} />
+              </StudioField>
+            </section>
           )}
           <ul className="space-y-2">
             {checklist.items.map((item, i) => (
