@@ -111,9 +111,9 @@ export function ThemedSpaceSpotlight({ space, tagline, saved, appOrigin }: { spa
     const nwAccent = presetForAccent(NEW_WORLD_ACCENTS, accent) ?? undefined
     let c
     if (look === 'profile') {
-      c = newWorldProfilePageContent({ name, tagline, about: null, portrait: portrait ?? null, cover: cover ?? null, accent: nwAccent, links: facts.links })
+      c = newWorldProfilePageContent({ name, tagline, about: null, portrait: portrait ?? null, cover: cover ?? null, accent: nwAccent, links: facts.links, linkStyle: facts.linkStyle })
     } else if (facts.links.length) {
-      c = newWorldLinkPageContent({ name, tagline, photo: photo ?? null, messageHref: typeof email === 'string' && email.includes('@') ? `mailto:${email.trim()}` : null, links: facts.links, closing: facts.button })
+      c = newWorldLinkPageContent({ name, tagline, photo: photo ?? null, messageHref: typeof email === 'string' && email.includes('@') ? `mailto:${email.trim()}` : null, links: facts.links, linkStyle: facts.linkStyle, closing: facts.button })
       if (facts.button) drop = new Set(['links', 'button'])
     } else {
       c = overlaySpaceOnKit(newWorldKitSpotlightContent('general', { name, sample: false, accent: nwAccent, photo }), facts)

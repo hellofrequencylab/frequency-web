@@ -79,9 +79,11 @@ export function FqMeetups({
     view === 'new'
       ? hostFirstName ? `Your first one. ${hostFirstName} will say hello.` : 'Your first one. Someone will say hello.'
       : view === 'visitor'
-        ? 'You can come once before you join. Most people do.'
+        ? 'You can come once before you join.'
         : attendance
-          ? `You've made ${attendance.made} of the last ${attendance.of} gatherings.`
+          ? attendance.of === 1
+            ? (attendance.made === 1 ? "You've made the last gathering." : "You missed the last gathering.")
+            : `You've made ${attendance.made} of the last ${attendance.of} gatherings.`
           : null
   const note = [pick.location, pick.note].filter(Boolean).join(' · ')
 

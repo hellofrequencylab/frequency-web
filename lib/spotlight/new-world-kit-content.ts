@@ -15,7 +15,9 @@ type Has = NewWorldHas
 /** The design's icon names; the layouts map each to a lucide icon. */
 type IconName = 'message' | 'sparkle' | 'calendar' | 'shield' | 'star' | 'award' | 'wrench' | 'home' | 'clock' | 'leaf' | 'heart' | 'chart' | 'briefcase' | 'tag' | 'bolt' | 'car' | 'droplet' | 'users' | 'sun' | 'user' | 'mail' | 'eye' | 'pin' | 'check'
 
-interface NewWorldDoor { id: string; key: Tool; icon: IconName; title: string; meta: string; href: string }
+/** `style` is the owner's pick for how the link is drawn (LIVE-2486); absent, the layout draws its own card. */
+type NewWorldDoorStyle = 'button' | 'card' | 'text'
+interface NewWorldDoor { id: string; key: Tool; icon: IconName; title: string; meta: string; href: string; style?: NewWorldDoorStyle }
 interface NewWorldOffer { name: string; price: string; dur: string; icon: IconName }
 interface NewWorldOpening { mon: string; day: string; title: string; time: string; where: string; left: number }
 interface NewWorldReview { q: string; who: string; what: string }
@@ -225,6 +227,10 @@ function linkIcon(host: string): IconName {
   return 'user'
 }
 
+function doorStyle(v: string | undefined): NewWorldDoorStyle | undefined {
+  return v === 'button' || v === 'card' || v === 'text' ? v : undefined
+}
+
 /** THE LINK PAGE (a Space's Spotlight on New World): the design's Stack layout fed by the owner's own links, one door
  *  each, a "message me" button in the hero and one closing call. Nothing is invented: no sample time, price or quote. */
 export function newWorldLinkPageContent(opts: {
@@ -232,7 +238,9 @@ export function newWorldLinkPageContent(opts: {
   tagline: string | null
   photo?: string | null
   messageHref: string | null
-  links: { label: string; url: string }[]
+  links: { label: string; url: string; style?: string }[]
+  /** The Links block's default style; a link's own style beats it. */
+  linkStyle?: string
   closing: { label: string; href: string } | null
 }): NewWorldSpotlightContent {
   const base = newWorldKitSpotlightContent('general', { name: opts.name, sample: false, photo: opts.photo ?? undefined })
@@ -240,7 +248,8 @@ export function newWorldLinkPageContent(opts: {
     let meta = l.url
     let host = ''
     try { const u = new URL(l.url); host = u.hostname; meta = `${u.hostname.replace(/^www\./, '')}${u.pathname === '/' ? '' : u.pathname}` } catch { /* keep the raw url */ }
-    return { id: `link-${i}`, key: 'publish', icon: linkIcon(host), title: l.label, meta, href: l.url }
+    const style = doorStyle(l.style) ?? doorStyle(opts.linkStyle)
+    return { id: `link-${i}`, key: 'publish', icon: linkIcon(host), title: l.label, meta, href: l.url, ...(style ? { style } : {}) }
   })
   return {
     ...base,
@@ -258,8 +267,8 @@ export function newWorldLinkPageContent(opts: {
 
 /** THE PROFILE LINK PAGE (a Space's Spotlight on New World, look `profile`): the design's Profile layout, the owner first.
  *  The Space's profile photo is the portrait, its header image washes the top, its tagline and About text sit under the
- *  name, the PRIMARY link (the one the owner made the main button, else the first, LIVE-2454) is the big accent button and every
- *  other link is a door under it. Nothing is invented: no sample quote, price or review. */
+ *  name, the PRIMARY link (the one the owner made the main button, else the first not drawn as a card or text link, LIVE-2454,
+ *  LIVE-2486) is the big accent button and every other link is a door under it, in its own style. Nothing is invented: no sample quote, price or review. */
 export function newWorldProfilePageContent(opts: {
   name: string
   tagline: string | null
@@ -268,11 +277,13 @@ export function newWorldProfilePageContent(opts: {
   cover: string | null
   accent?: string
   links: { label: string; url: string; style?: string }[]
+  linkStyle?: string
 }): NewWorldSpotlightContent {
-  const link = newWorldLinkPageContent({ name: opts.name, tagline: opts.tagline, photo: opts.portrait, messageHref: null, links: opts.links, closing: null })
+  const link = newWorldLinkPageContent({ name: opts.name, tagline: opts.tagline, photo: opts.portrait, messageHref: null, links: opts.links, linkStyle: opts.linkStyle, closing: null })
   const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, '') } catch { return '' } }
-  // The owner picks the main button ("Make this the main button"); the first link stands in until they do (owner ruling 2026-11-19).
-  const primary = opts.links.find((l) => l.style === 'main') ?? opts.links[0] ?? null
+  // The owner picks the main button ("Make this the main button"); the first link stands in until they do (owner ruling 2026-11-19),
+  // unless the owner drew that link as a card or a text link: their own style wins over the stand-in (LIVE-2486).
+  const primary = opts.links.find((l) => l.style === 'main') ?? opts.links.find((l) => l.style !== 'text' && l.style !== 'card') ?? null
   const rest = link.doors.filter((_, i) => opts.links[i] !== primary)
   const accent = opts.accent && opts.accent in NEW_WORLD_ACCENTS ? (opts.accent as NewWorldAccentId) : link.accent
   return {

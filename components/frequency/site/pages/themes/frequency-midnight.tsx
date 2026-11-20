@@ -248,7 +248,7 @@ const BUILT: { n: string; title: string; body: string }[] = [
 const FAQ: [string, string][] = [
   [
     'Can I start with only a Spotlight?',
-    'Yes. Most people do. Your Space and website use the same profile, so they are ready when you are, with nothing to rewrite.',
+    'Yes. Your Space and website use the same profile, so they are ready when you are, with nothing to rewrite.',
   ],
   [
     'Will my Space look exactly like my website?',

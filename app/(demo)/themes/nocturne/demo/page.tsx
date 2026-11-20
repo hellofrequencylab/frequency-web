@@ -7,8 +7,8 @@ import { MidnightDemo } from '@/components/sites/midnight-demo'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Midnight demo site',
-  description: 'A sample Midnight website with placeholder content.',
+  title: 'Nocturne demo site',
+  description: 'A sample Nocturne website with placeholder content.',
   robots: { index: false, follow: false },
 }
 

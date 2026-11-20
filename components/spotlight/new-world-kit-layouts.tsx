@@ -105,6 +105,25 @@ function Hero({ c, height }: { c: C; height: number }) {
     </section>
   )
 }
+type D = C['doors'][number]
+/** The owner's links in runs of one style (LIVE-2486): a run of text links shares a line, a button is a full-width
+ *  button, and a card (or a link with no style) keeps the layout's own card. */
+function doorRuns(doors: readonly D[]): { kind: 'text' | 'button' | 'card'; doors: D[] }[] {
+  const runs: { kind: 'text' | 'button' | 'card'; doors: D[] }[] = []
+  for (const d of doors) {
+    const kind = d.style ?? 'card'
+    const last = runs[runs.length - 1]
+    if (last && last.kind === kind) last.doors.push(d)
+    else runs.push({ kind, doors: [d] })
+  }
+  return runs
+}
+function TextLinks({ doors }: { doors: D[] }) {
+  return <div className="nws-textlinks">{doors.map((d) => <Link key={d.id} href={d.href}>{d.title}</Link>)}</div>
+}
+function ButtonLinks({ doors }: { doors: D[] }) {
+  return <div className="nws-btnlinks">{doors.map((d) => <Btn key={d.id} href={d.href} tone="secondary">{d.title}<ArrowRight size={14} aria-hidden /></Btn>)}</div>
+}
 function Door({ d }: { d: C['doors'][number] }) {
   return <Link href={d.href} className="nws-card nws-door"><Tile icon={d.icon} /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowRight size={12} className="nws-sub" aria-hidden /></Link>
 }
@@ -113,7 +132,11 @@ function Stack({ c }: { c: C }) {
   return (
     <>
       <Hero c={c} height={380} />
-      <div className="nws-stack-list">{c.doors.map((d) => <Door key={d.id} d={d} />)}</div>
+      <div className="nws-stack-list">
+        {doorRuns(c.doors).map((r) =>
+          r.kind === 'text' ? <TextLinks key={r.doors[0]!.id} doors={r.doors} /> : r.kind === 'button' ? <ButtonLinks key={r.doors[0]!.id} doors={r.doors} /> : r.doors.map((d) => <Door key={d.id} d={d} />),
+        )}
+      </div>
       {c.footerCta && <div className="nws-pad nws-closing" style={{ paddingTop: 20 }}><Btn href={c.footerCta.href}>{c.footerCta.label}<ArrowRight size={14} aria-hidden /></Btn></div>}
       {c.letter && <div className="nws-pad" style={{ paddingTop: 12 }}><Letter c={c} compact /></div>}
       <Foot />
@@ -234,11 +257,15 @@ function Profile({ c }: { c: C }) {
       {doors.length > 0 && (
         <div className="nws-pad" style={{ paddingTop: 22 }}>
           {!page && <Eyebrow>Where to start</Eyebrow>}
-          <div className="nws-card nws-list">
-            {doors.map((d) => (
-              <Link key={d.id} href={d.href}><Tile icon={d.icon} size={32} /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowRight size={12} className="nws-sub" aria-hidden /></Link>
-            ))}
-          </div>
+          {doorRuns(doors).map((r) =>
+            r.kind === 'text' ? <TextLinks key={r.doors[0]!.id} doors={r.doors} /> : r.kind === 'button' ? <ButtonLinks key={r.doors[0]!.id} doors={r.doors} /> : (
+              <div key={r.doors[0]!.id} className="nws-card nws-list">
+                {r.doors.map((d) => (
+                  <Link key={d.id} href={d.href}><Tile icon={d.icon} size={32} /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowRight size={12} className="nws-sub" aria-hidden /></Link>
+                ))}
+              </div>
+            ),
+          )}
         </div>
       )}
       {!page && <Foot />}

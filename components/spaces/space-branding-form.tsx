@@ -15,7 +15,7 @@ import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
-import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, type SiteLookKey, type SiteStyle } from '@/lib/theme/site-style'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { suggestTaglineAction } from '@/app/(main)/spaces/copilot-actions'
 import type { CoverScrim, LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
@@ -663,8 +663,6 @@ export function SpaceBrandingForm({
             <StyleChoiceCards
               choices={[
                 ...SITE_THEMES.map((t) => ({ id: t.id, label: t.label, detail: t.description, preview: t.defaultFonts })),
-                // Held back for now: the Woman theme is not pickable yet.
-                { id: 'woman' as SiteThemeId, label: 'Woman', detail: 'Coming soon.', preview: SITE_THEMES[0].defaultFonts, soon: true },
               ]}
               value={style.theme}
               disabled={readOnly || pending}

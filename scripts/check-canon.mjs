@@ -313,7 +313,7 @@ export const COPY_KEYS = new Set([
   'emptyTitle', 'emptyDescription', 'blurb', 'tagline', 'headline', 'subhead', 'eyebrow',
   'summary', 'body', 'message', 'note', 'cta', 'ctaLabel', 'confirmLabel', 'cancelLabel',
   'submitLabel', 'actionLabel', 'buttonLabel', 'shortLabel', 'sublabel',
-  'question', 'answer', 'name', 'text', 'copy',
+  'question', 'answer', 'name', 'text', 'copy', 'value', 'detail', 'lede',
 ])
 
 /**
@@ -333,6 +333,8 @@ export const SURFACES = new Map([
   ['components/widgets/', { kind: 'operator', why: 'the operator dashboard widgets (rendered only inside /admin consoles)' }],
   ['lib/widgets/modules.ts', { kind: 'operator', why: 'the operator dashboard widget catalog that components/widgets/ renders' }],
   ['lib/traits/registry.ts', { kind: 'operator', why: 'the CRM trait catalog rendered in /admin/crm; NAMING.md licenses "cohort" precisely here, as research framing' }],
+  ['lib/analytics/user-flow.ts', { kind: 'operator', why: 'the user-flow funnel model rendered only by components/admin/insights/user-flow-panel.tsx; "cohort" is research framing there, as in lib/traits/registry.ts' }],
+  ['lib/email-studio/campaign-learning-evidence.ts', { kind: 'operator', why: 'the campaign evidence notes rendered only in the /admin/email-studio learning panel; "cohort" is research framing there' }],
   ['lib/nav/studio.ts', { kind: 'operator', why: 'THE operator destination catalog (ADR-848; check-menu.mjs names it as such)' }],
   ['lib/funnels/styles.ts', { kind: 'operator', why: 'the funnel-style catalog for the /pages/sequences operator console' }],
   ['lib/studio/recommendations.ts', { kind: 'operator', why: 'the AI Intelligence Studio recommendation feed (ADR-167); Admin/Janitor only' }],
