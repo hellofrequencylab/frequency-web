@@ -17,6 +17,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { bounceSuppressionReason, classifyBounce, priorTransientBounces, recordEmailEvent, suppress } from '@/lib/suppression'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
+import { findBroadcastSend, recordBroadcastSendOutcome, type BroadcastSend } from '@/lib/email-studio/broadcast-attribution'
 import { handleSpaceSendWebhook, handleSpaceSendEngagement } from '@/lib/spaces/email'
 import { recordSpaceSendEventFromResend, spaceEventKindForResend } from '@/lib/spaces/email-tracking'
 import { mapResendEventToInteraction, type ResendTimelineEventType } from '@/lib/spaces/email-timeline'
@@ -64,6 +65,7 @@ export async function POST(req: Request) {
       tags?: unknown
       email?: string
       unsubscribed?: boolean
+      broadcast_id?: string
     }
   }
   try {
@@ -156,6 +158,23 @@ export async function POST(req: Request) {
     }
   }
 
+  // A CAMPAIGN BROADCAST (EMAIL-077). A campaign sent as one Resend broadcast (EMAIL-076) carries no
+  // campaign header or tag of ours, so Resend's data.broadcast_id plus the recipient is what maps the
+  // event back: the send wrote the broadcast id into each recipient's outreach_sends.resend_id. The
+  // row moves to delivered / bounced / complained, and the email_events row below gets the campaign.
+  // A failed lookup or write joins `errors`, so Resend redelivers instead of the event landing with no
+  // campaign for good.
+  let broadcastSend: BroadcastSend | null = null
+  const broadcastId = typeof event.data?.broadcast_id === 'string' ? event.data.broadcast_id : null
+  if (broadcastId) {
+    try {
+      broadcastSend = await findBroadcastSend(broadcastId, to)
+      if (broadcastSend) await recordBroadcastSendOutcome(broadcastSend, type)
+    } catch (err) {
+      errors.push(`broadcastSend: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
   // PER-SPACE EVENT LOG (LIVE-236): one space_email_events row per provider event on a Space send, so
   // an operator has a per-send record of what actually happened and not just a rolled-up status. A
   // pure platform email writes nothing (no outreach_sends row owns its id). Deliberately NOT pushed
@@ -186,7 +205,7 @@ export async function POST(req: Request) {
       eventType: type,
       providerId: event.data?.email_id ?? null,
       payload: event as Record<string, unknown>,
-      campaignId,
+      campaignId: campaignId ?? broadcastSend?.campaignId ?? null,
     })
   } catch (err) {
     console.error('[resend-webhook] recordEmailEvent failed', { type, error: err instanceof Error ? err.message : String(err) })
