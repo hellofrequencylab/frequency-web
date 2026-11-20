@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getAllArticles, getArticle, helpHref } from '@/lib/help/content'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
+import { missingPageMetadata } from '@/lib/seo/not-found-metadata'
 import { helpArticleJsonLd } from '@/lib/help/article-jsonld'
 import { OG_SITE } from '@/lib/site'
 import { FrequencyHelpArticle } from '@/components/frequency/site/pages/help/frequency-help-pages'
@@ -18,7 +19,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { category, slug } = await params
   const found = await getArticle(category, slug)
-  if (!found) return {}
+  if (!found) return missingPageMetadata('Article not found')
   const { article } = found
   // A twin of a marketing guide names the guide in its `canonical:` key (SCAN-673), so the guide is
   // the one URL that ranks for the query; every other article stays self-canonical.
