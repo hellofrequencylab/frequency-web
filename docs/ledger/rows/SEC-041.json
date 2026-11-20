@@ -1,0 +1,20 @@
+{
+  "id": "SEC-041",
+  "title": "A QR or NFC tag holding /\\evil.com, or a join link with ?return_to=/\\evil.com, sends a member off the site",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/scan/resolve.ts",
+    "ref": "Mega pass 2026-11-19 (unknown-unknowns audit: redirects that take a user-supplied path)"
+  },
+  "detail": "Mega pass 2026-11-19. Two navigations took a path from outside and checked it only for a leading single slash. lib/scan/resolve.ts returned any bare path a scanned code or NFC tag held, and components/scan/scanner.tsx pushed it; components/spaces/membership-join-card.tsx honoured ?return_to= after a join. A browser reads `/\\evil.com` as `//evil.com` (and strips a tab from `/<tab>/evil.com`), so both left the site, the scanner without the foreign-host warning it exists to show. Fix: both use safeNextPath from lib/auth/safe-next.ts, the one rule sign-in already uses (no `//`, no backslash, no control or space characters). Owner-set link fields with the same starts-with check (admin/spaces actions, profile-settings, page-settings/seo, qr-splash-form) are links an owner chooses on their own page and are not changed here.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SEC-041.mjs",
+    "note": "Fails on main: both files use their own starts-with check. Passes when both use safeNextPath."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

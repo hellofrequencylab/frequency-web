@@ -153,6 +153,19 @@ describe('runDueNurture', () => {
     expect(await runDueNurture()).toMatchObject({ sent: 0, cancelled: 1 })
   })
 
+  it('cancels a pure lead whose consent is unknown (EMAIL-080: never opted in)', async () => {
+    seed({ consent: 'unknown' })
+    const r = await runDueNurture()
+    expect(r).toMatchObject({ sent: 0, cancelled: 1 })
+    expect(enqueued).toHaveLength(0)
+    expect(enr('due').status).toBe('cancelled')
+  })
+
+  it('still sends to a member with unknown marketing consent (the lifecycle gate decides for members)', async () => {
+    seed({ consent: 'unknown', profile: 'p1' })
+    expect(await runDueNurture()).toMatchObject({ sent: 1 })
+  })
+
   it('defers a transient gate refusal by 15 minutes instead of cancelling', async () => {
     seed({ profile: 'p1' })
     gateResult = { allowed: false, reason: 'error' }

@@ -9,12 +9,17 @@ const DAILY_CAP = 1
 const WEEKLY_CAP = 3
 const DAY_MS = 86_400_000
 
+/** EMAIL-084 (Daniel, 2026-11-19, "One per 7 days"): kinds that are marketing. At most MARKETING_WEEKLY_CAP of them reach
+ *  one person per rolling 7 days, on top of the daily and weekly lifecycle caps above. */
+export const MARKETING_KINDS: ReadonlySet<string> = new Set(['campaign'])
+const MARKETING_WEEKLY_CAP = 1
+
 interface RecentSend {
   kind: string
   sentAt: string
 }
 
-type CapDecision = { allowed: true } | { allowed: false; why: 'daily' | 'weekly'; retryAfter: string }
+type CapDecision = { allowed: true } | { allowed: false; why: 'daily' | 'weekly' | 'weekly_marketing'; retryAfter: string }
 
 const ms = (iso: string): number => Date.parse(iso)
 
@@ -26,6 +31,17 @@ export function capDecision(now: Date, kind: string, recent: readonly RecentSend
   if (inWeek.length >= WEEKLY_CAP) {
     const oldest = inWeek[inWeek.length - WEEKLY_CAP]
     return { allowed: false, why: 'weekly', retryAfter: new Date(oldest + 7 * DAY_MS).toISOString() }
+  }
+  if (MARKETING_KINDS.has(kind)) {
+    const marketing = recent
+      .filter((r) => MARKETING_KINDS.has(r.kind))
+      .map((r) => ms(r.sentAt))
+      .filter((x) => Number.isFinite(x) && x <= t && t - x < 7 * DAY_MS)
+      .sort((a, b) => a - b)
+    if (marketing.length >= MARKETING_WEEKLY_CAP) {
+      const oldest = marketing[marketing.length - MARKETING_WEEKLY_CAP]
+      return { allowed: false, why: 'weekly_marketing', retryAfter: new Date(oldest + 7 * DAY_MS).toISOString() }
+    }
   }
   const inDay = times.filter((x) => t - x < DAY_MS)
   if (inDay.length >= DAILY_CAP && lifecycleRank(kind) > 1) {

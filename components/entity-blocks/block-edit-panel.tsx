@@ -59,6 +59,7 @@ function imageValue(raw: unknown): AssetValue {
 }
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { useEditorBinding } from './editor-binding'
+import { LinksEditor } from './controls/links-editor'
 import { capsLabel } from '@/components/ui/caps-label'
 
 // THE INLINE BLOCK EDIT PANEL — redesigned control surface (ADR-528 → ADR-569). Expands under a block in the
@@ -1228,65 +1229,6 @@ function CardsEditor({
         className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
       >
         <Plus className="h-3.5 w-3.5" aria-hidden /> Add card
-      </button>
-    </div>
-  )
-}
-
-/** The link-list editor: a row of {label, url} pairs with add / remove. */
-function LinksEditor({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: unknown
-  onChange: (v: unknown) => void
-}) {
-  const items: Array<{ label: string; url: string }> = Array.isArray(value)
-    ? (value as Array<Record<string, unknown>>).map((it) => ({
-        label: typeof it.label === 'string' ? it.label : '',
-        url: typeof it.url === 'string' ? it.url : '',
-      }))
-    : []
-  // Keep blank rows while editing so "+ Add link" opens a row to type into (pruning here swallowed the new
-  // row); the server sanitizer drops links with no safe url on save.
-  const update = (next: Array<{ label: string; url: string }>) => onChange(next)
-  return (
-    <div className="space-y-1.5">
-      <span className={labelCls}>{label}</span>
-      {items.map((it, i) => (
-        <div key={i} className="flex items-center gap-1.5">
-          <Input
-            value={it.label}
-            aria-label={`Link ${i + 1} label`}
-            placeholder="Label"
-            onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
-            className={`${compactField} w-1/3`}
-          />
-          <Input
-            value={it.url}
-            aria-label={`Link ${i + 1} web address`}
-            placeholder="https://"
-            onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))}
-            className={compactField}
-          />
-          <button
-            type="button"
-            aria-label={`Remove link ${i + 1}`}
-            onClick={() => update(items.filter((_, j) => j !== i))}
-            className="shrink-0 rounded p-1 text-subtle hover:bg-danger-bg hover:text-danger"
-          >
-            <X className="h-3.5 w-3.5" aria-hidden />
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => update([...items, { label: '', url: '' }])}
-        className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
-      >
-        <Plus className="h-3.5 w-3.5" aria-hidden /> Add link
       </button>
     </div>
   )
