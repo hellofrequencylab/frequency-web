@@ -106,7 +106,7 @@ export async function EnrollMember({
           {seatsLeft != null && (
             <li className="flex items-start gap-2">
               <Users className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
-              <span>{seatsLeft === 0 ? 'No seats left' : `${seatsLeft} seats left`}</span>
+              <span>{seatsLeft === 0 ? 'No seats left' : `${seatsLeft} ${seatsLeft === 1 ? 'seat' : 'seats'} left`}</span>
             </li>
           )}
         </ul>

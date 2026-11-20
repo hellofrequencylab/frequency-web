@@ -97,11 +97,14 @@ export default async function CircleMembersPage({
             label="Copy invite link"
             className="btn ink"
             path={`/circles/${circle.slug}`}
-            done={`Invite link copied. ${Math.max(0, circle.member_cap - members.length)} seats left.`}
+            done={(() => {
+              const left = Math.max(0, circle.member_cap - members.length)
+              return left === 0 ? 'Invite link copied. This circle is full.' : `Invite link copied. ${left} ${left === 1 ? 'seat' : 'seats'} left.`
+            })()}
           />
         ) : null
       }
-      seatsLine={circle.member_cap - members.length > 0 ? `${circle.member_cap - members.length} seats open` : 'Full'}
+      seatsLine={circle.member_cap - members.length > 0 ? `${circle.member_cap - members.length} ${circle.member_cap - members.length === 1 ? 'seat' : 'seats'} open` : 'Full'}
       empty={
         aloneHere ? (
           <div className="empty stack">

@@ -38,7 +38,7 @@ export function FrequencySignIn({
         title="No account for that email yet"
         lead={
           <>
-            We could not find a Frequency account for <b>{newAccountEmail}</b>.
+            We could not find a Frequency account for <b style={{ overflowWrap: 'anywhere' }}>{newAccountEmail}</b>.
           </>
         }
       >
