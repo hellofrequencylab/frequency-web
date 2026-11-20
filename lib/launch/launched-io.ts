@@ -8,6 +8,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import { reserveLifecycleSend, releaseLifecycleSend } from '@/lib/lifecycle/cap-io'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { log } from '@/lib/log'
 import { readOwner } from './comeback-io'
@@ -29,10 +30,22 @@ export async function sendLaunchedWelcome(launch: LaunchSnapshot, space: { slug:
     if (gate && !gate.allowed && gate.reason === 'error') return 'failed'
     const skipReason = !owner.email ? 'skipped:no_email' : gate && !gate.allowed ? `skipped:${gate.reason}` : null
 
+    // The cross-email cap (EMAIL-064, EMAIL-047). The welcome is rank 1, so the daily cap never holds it, but it counts
+    // toward the person's three a week. Reserved before the claim: 'capped' or 'error' leaves the welcome unclaimed, so
+    // nothing records it as sent; 'duplicate' means it already went out.
+    const dedupeKey = `launch_welcome:${launch.id}`
+    if (!skipReason && owner.email) {
+      const reservation = await reserveLifecycleSend(admin, { recipient: owner.email, profileId: launch.ownerId, kind: 'launched_welcome', dedupeKey })
+      if (reservation === 'capped') return 'skipped'
+      if (reservation === 'error') return 'failed'
+      if (reservation === 'duplicate') return 'already'
+    }
+
     const { error: claimError } = await admin.from('launch_email_log').insert({ launch_id: launch.id, trigger_kind: LAUNCHED_KIND, message_ref: skipReason })
     if (claimError) {
       if (claimError.code === UNIQUE_VIOLATION) return 'already'
       log.error('launch.launched_welcome.claim_failed', { launch_id: launch.id, error: claimError.message })
+      if (!skipReason) await releaseLifecycleSend(admin, dedupeKey)
       return 'failed'
     }
     if (skipReason || !owner.email) return 'skipped'
@@ -42,7 +55,13 @@ export async function sendLaunchedWelcome(launch: LaunchSnapshot, space: { slug:
     const inventory = await loadInventory(launch.spaceId, launch.ownerId, launch.skippedPhotos, true, { client: admin, personal: false })
     const next = inventory ? nextBestStep(inventory.sections, { niche: launch.niche, intents: launch.intents }) : null
     const payload = buildLaunchedEmail({ to: owner.email, firstName: owner.firstName, spaceName: space.name, slug: space.slug, baseUrl, unsubscribeUrl, next })
-    await enqueueEmail({ ...payload, headers: listUnsubscribeHeaders(unsubscribeUrl) }, { dedupeKey: `launch_welcome:${launch.id}` })
+    try {
+      await enqueueEmail({ ...payload, headers: listUnsubscribeHeaders(unsubscribeUrl) }, { dedupeKey })
+    } catch (e) {
+      // EMAIL-061: the cap is not spent on an email that never left.
+      await releaseLifecycleSend(admin, dedupeKey)
+      throw e
+    }
     return 'sent'
   } catch (e) {
     log.error('launch.launched_welcome.failed', { launch_id: launch.id, error: e instanceof Error ? e.message : String(e) })

@@ -58,6 +58,18 @@ vi.mock('@/lib/email', () => ({
 vi.mock('@/lib/comms/send-gate', () => ({ resolveSendGate: () => Promise.resolve(state.gate) }))
 vi.mock('@/lib/unsubscribe-tokens', () => ({ buildUnsubscribeUrl: () => 'https://frequencylocal.com/unsubscribe?x=1' }))
 vi.mock('@/lib/log', () => ({ log: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } }))
+// EMAIL-064: the cross-email cap. 'reserved' unless a test says otherwise (what the real module answers with the cap off).
+const cap = vi.hoisted(() => ({ answer: 'reserved' as string, reserved: [] as Record<string, unknown>[], released: [] as string[] }))
+vi.mock('@/lib/lifecycle/cap-io', () => ({
+  reserveLifecycleSend: (_admin: unknown, input: Record<string, unknown>) => {
+    cap.reserved.push(input)
+    return Promise.resolve(cap.answer)
+  },
+  releaseLifecycleSend: (_admin: unknown, key: string) => {
+    cap.released.push(key)
+    return Promise.resolve()
+  },
+}))
 
 import { runLaunchComebacks } from './comeback-io'
 
@@ -78,6 +90,9 @@ beforeEach(() => {
   state.claimCode = null
   state.inserts = []
   state.enqueued = []
+  cap.answer = 'reserved'
+  cap.reserved = []
+  cap.released = []
 })
 
 const run = () => runLaunchComebacks({ limit: 200, now: NOW, baseUrl: 'https://frequencylocal.com' })
@@ -160,6 +175,42 @@ describe('runLaunchComebacks', () => {
     const r = await run()
     expect(r).toMatchObject({ sent: 0, skipped: 1 })
     expect(state.inserts[0]).toMatchObject({ message_ref: 'skipped:no_email' })
+  })
+
+  it('reserves through the lifecycle cap with the registry kind and the outbox key before it sends (EMAIL-064)', async () => {
+    expect((await run()).sent).toBe(1)
+    expect(cap.reserved).toEqual([{ recipient: 'sam@example.com', profileId: 'p1', kind: 'launch_comeback', dedupeKey: 'launch_comeback:l1:comeback_1h' }])
+  })
+
+  it('leaves a capped or errored come-back due for a later run: no log claim, no send (EMAIL-064)', async () => {
+    for (const answer of ['capped', 'error']) {
+      cap.answer = answer
+      const r = await run()
+      expect(r.sent).toBe(0)
+      expect(r.held[answer === 'capped' ? 'capped' : 'cap_error']).toBe(1)
+    }
+    expect(state.inserts).toHaveLength(0)
+    expect(state.enqueued).toHaveLength(0)
+  })
+
+  it('claims the kind without a second send when the cap says it already went out (EMAIL-064)', async () => {
+    cap.answer = 'duplicate'
+    const r = await run()
+    expect(r).toMatchObject({ sent: 0, lost: 1 })
+    expect(state.inserts).toEqual([{ launch_id: 'l1', trigger_kind: 'comeback_1h', message_ref: null }])
+    expect(state.enqueued).toHaveLength(0)
+  })
+
+  it('gives the reservation back when the claim fails for a reason other than a race (EMAIL-064)', async () => {
+    state.claimCode = '42501'
+    await run()
+    expect(cap.released).toEqual(['launch_comeback:l1:comeback_1h'])
+  })
+
+  it('does not spend the cap on an opt-out (EMAIL-064)', async () => {
+    state.gate = { allowed: false, reason: 'pref_off' }
+    await run()
+    expect(cap.reserved).toHaveLength(0)
   })
 
   it('stops early and reports what it left when the clock runs out', async () => {
