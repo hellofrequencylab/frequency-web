@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2499",
+  "title": "/for is a zig-zag, one row per door with its own matching photo",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-20",
+  "source": {
+    "file": "docs/PAGE-FRAMEWORK.md",
+    "ref": "Daniel 2026-11-20: \"The /for page is pretty template like and crowded. I want to break the page up with a Zig Zag layout for each of the 9 paths. Try to find images that match each section.\""
+  },
+  "detail": "The /for index drew its nine doors as a three-up grid of tall photo tiles with the words on glass over the picture, and most tiles reused the same beach-gathering look. Each door is now its own row: a photo picked for that kind of work on seven of twelve columns, the door's eyebrow, headline, line and See your door button on a glass panel that overlaps it by one column, sides swapping row by row. A row of jump links under the heading names every door. On a phone the photo sits on top and the panel tucks under it. The photos are Frequency's own (repo library, no new files): sound healer for coaches, a lawn class for studios, string lights for event hosts, the event hall for venues, the community dinner for Non Profits, the big group for networks, the storefront for local businesses, hula hoops for clubs and the rooftop circle for spiritual community. The door pages keep their own photos. Checked at 390, 1280, 1440, 1920 and 2000 with no sideways scroll.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2499.mjs"
+  },
+  "wave": "W7"
+}

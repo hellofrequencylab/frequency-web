@@ -3,8 +3,10 @@
 // registry and photo table as the doors themselves, so a door's headline and picture never drift here.
 //
 // Layout (site-funnel.css, fo-): an audience chooser. The hero sets the question beside a collage of three
-// gatherings; the doors below are persona tiles, each a full photo with the door's own words on a glass
-// panel, the first one large. On a phone a tile is a row: the photo beside the words.
+// gatherings. Below it, a row of jump links names every door, then each door gets its own zig-zag row: a
+// photo picked for that kind of work, and the door's own words on a glass panel that overlaps it, sides
+// swapping row by row (owner ask, 2026-11-20: the old three-up tile grid read crowded and template-like).
+// On a phone the photo sits on top and the panel tucks under it.
 import Link from 'next/link'
 import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
 import '@/app/themes/active/site-pages-b'
@@ -25,20 +27,31 @@ const COLLAGE = [
   { src: `${NICHE_PHOTO_DIR}/gathering-14.jpg`, alt: 'A small group sitting on the sand around a sound bath' },
 ] as const
 
-/** When two doors share a photo in the registry, the second one here takes a different real gathering. */
-const SPARE = ['/images/site/meditation-circle-outdoor.jpg', '/images/site/song-circle.jpg', '/images/site/community-1.jpg']
+/**
+ * One photo per door, picked to show that kind of work (the door pages' own photos repeat the same beach
+ * gathering, so the index chooses its own). None repeats the hero collage. A door added to the registry
+ * without a row here falls back to its NICHE_DESIGN photo.
+ */
+const DOOR_PHOTO: Record<string, { src: string; alt: string }> = {
+  'coaches-and-healers': { src: '/images/site/sound-healing.jpg', alt: 'A sound healer smiling behind a ring of crystal bowls on the sand' },
+  studios: { src: `${NICHE_PHOTO_DIR}/gathering-04.jpg`, alt: 'An instructor leading a class seated on mats on a lawn' },
+  'event-hosts': { src: `${NICHE_PHOTO_DIR}/night-string-lights-web.jpg`, alt: 'A crowd under string lights at a night event' },
+  venues: { src: '/images/site/lab-concept.jpg', alt: 'An open event hall with a lit stage and a wide wooden floor' },
+  nonprofits: { src: '/images/site/community-dinner.jpg', alt: 'A long community dinner under string lights and patio heaters' },
+  networks: { src: `${NICHE_PHOTO_DIR}/boc-group-blue-sky.jpg`, alt: 'A big group standing together by the ocean' },
+  'local-businesses': { src: '/images/site/lab-storefront.jpg', alt: 'A corner shop with tall windows and warm lights inside' },
+  'clubs-and-groups': { src: '/images/site/hula-hoop-party.jpg', alt: 'Friends hula hooping together on a grassy hill' },
+  'spiritual-community': { src: '/images/site/meditation-circle.jpg', alt: 'A circle of people meditating together on a rooftop' },
+}
 
-const TILE_SIZES = '(max-width: 640px) 128px, (max-width: 1100px) 50vw, 34vw'
+const DOOR_SIZES = '(max-width: 860px) 100vw, 58vw'
 
 export function FrequencyForIndex({ doors }: { doors: FunnelConfig[] }) {
-  const used = new Set<string>()
-  let spare = 0
-  const tiles = doors.map((c) => {
+  const rows = doors.map((c) => {
     const design = NICHE_DESIGN[c.slug]
-    let src = design ? `${NICHE_PHOTO_DIR}/${design.photo}` : null
-    if (src && used.has(src)) src = SPARE[spare++ % SPARE.length]
-    if (src) used.add(src)
-    return { c, src }
+    const picked = DOOR_PHOTO[c.slug]
+    const photo = picked ?? (design ? { src: `${NICHE_PHOTO_DIR}/${design.photo}`, alt: '' } : null)
+    return { c, photo, short: design?.short ?? c.hero.eyebrow }
   })
   return (
     <>
@@ -81,23 +94,34 @@ export function FrequencyForIndex({ doors }: { doors: FunnelConfig[] }) {
             </div>
             <h2 className="h-l">Start where you are.</h2>
           </div>
+          <nav className="fo-jump" aria-label="Jump to your door">
+            {rows.map(({ c, short }) => (
+              <a key={c.slug} href={`#${c.slug}`}>
+                {short}
+              </a>
+            ))}
+          </nav>
           <div className="fo-doors">
-            {tiles.map(({ c, src }) => (
-              <Link key={c.slug} href={`/for/${c.slug}`} className="fo-door">
-                {src && (
-                  <span className="fo-door-ph">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes the tile img itself */}
-                    <img loading="lazy" decoding="async" {...photoImg(src, TILE_SIZES)} alt="" />
+            {rows.map(({ c, photo }, i) => (
+              <article key={c.slug} id={c.slug} className="fo-door">
+                {photo && (
+                  <div className="fo-door-ph fq-iri-rim">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes the row img itself */}
+                    <img loading="lazy" decoding="async" {...photoImg(photo.src, DOOR_SIZES)} alt={photo.alt} />
                     <span className="fq-grain" aria-hidden="true" />
-                  </span>
+                  </div>
                 )}
-                <span className="fo-door-tx fq-glass">
-                  <span className="fo-door-k">{c.hero.eyebrow}</span>
+                <div className="fo-door-tx fq-glass">
+                  <span className="fo-door-k">
+                    {String(i + 1).padStart(2, '0')} · {c.hero.eyebrow}
+                  </span>
                   <h3>{c.hero.h1}</h3>
                   <p>{c.hero.subhead}</p>
-                  <span className="fo-door-go">See your door →</span>
-                </span>
-              </Link>
+                  <Link className="btn fq-iri-btn fo-door-go" href={`/for/${c.slug}`} aria-label={`See your door: ${c.hero.eyebrow}`}>
+                    See your door →
+                  </Link>
+                </div>
+              </article>
             ))}
           </div>
         </div>
