@@ -277,6 +277,31 @@ ${S}[data-motion="off"] .sv-orb,${S}[data-motion="off"] .sv-ticker-track{animati
 @media (max-width:600px){${S} .sv-trust-item{border-left:0;padding-left:0}${S} .sv-row{grid-template-columns:48px 1fr}${S} .sv-row>:last-child{grid-column:2}}
 `;
 
+/* THE PHONE HERO (a phone of 600px or less; desktop and tablet keep the kit's full-bleed hero untouched). On a phone the full-bleed
+ * photo hero put the headline at the foot of a full-height picture under a dark wash, and the header squeezed the owner's name to
+ * one letter beside a second copy of the hero's button. Here the header keeps the name and the menu, and the button moves into the
+ * menu panel. The photo sits on top at most 60% of the screen with only a short shade under the header and a fade at its foot, and
+ * the headline, line and a full-width button rise onto that fade, so the picture reads clearly and the button shows without a
+ * scroll. Shared by the Services and New World skins (components/sites/new-world-blocks-css.ts derives New World's copy); the other
+ * kits that borrow the Services blocks draw their own phone hero. */
+export const SERVICES_PHONE_HERO_CSS = `
+@media (max-width:600px){
+${S} .hs-header-actions>.hs-btn{display:none}
+${S} .hs-brand-name{font-size:17px}
+${S} .hs-menu-panel a[data-cta]{display:flex;align-items:center;justify-content:center;margin-top:8px;min-height:52px;border-radius:var(--sv-radius-pill);background:var(--sv-accent);color:var(--sv-accent-text);font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-bold);font-size:12px;letter-spacing:var(--sv-ls-button);text-transform:uppercase}
+${S} .sv-hero--photo{min-height:0}
+${S} .sv-hero--photo .sv-hero-bg--photo{position:relative;inset:auto;flex:none;height:min(60svh,480px);background-position:50% 30%}
+${S} .sv-hero--photo .sv-hero-bg--photo::before{background:linear-gradient(180deg,color-mix(in oklab,var(--sv-ink-950) 55%,transparent) 0%,transparent 28%)}
+${S} .sv-hero--photo .sv-hero-bg--photo::after{background:linear-gradient(180deg,transparent 50%,color-mix(in oklab,var(--sv-ink-950) 72%,transparent) 80%,var(--sv-ink-950) 100%)}
+${S} .sv-hero--photo .sv-hero-in{margin-top:-88px;padding:0 var(--sv-gutter) 56px;gap:28px}
+${S} .sv-hero--photo .sv-hero-copy{gap:18px}
+${S} .sv-hero--photo .sv-hero-copy .sv-display{font-size:clamp(38px,12.5vw,60px)}
+${S} .sv-hero--photo .sv-hero-lead{font-size:17px;line-height:1.5}
+${S} .sv-hero--photo .sv-actions{width:100%}
+${S} .sv-hero--photo .sv-actions .sv-btn{flex:1 1 100%;padding:0 20px}
+}
+`;
+
 /* THE SITE SHEET (LIVE-2040, the integration the skin above waited on): what components/sites/site-chrome.tsx and site-page.tsx emit on a
  * Services website. The token block (Night, then the Day register), the faces the site root's font class sets, the skin above, then the
  * house chrome (header bar, nav, buttons, footer) re-pointed at the tokens so a Services site draws the design's glass header, mono
@@ -349,5 +374,5 @@ ${S} .hs-footer-col a,${S} .sv-foot-line{display:inline-flex;align-items:center;
 ${S} .sv-foot-icon{display:inline-flex;color:var(--sv-flare-300)}
 ${S} .sv-foot-mark{position:relative;max-width:var(--sv-container-max);margin:0 auto;padding:0 var(--sv-gutter);font-family:var(--sv-font-display);font-stretch:var(--sv-stretch-display);font-weight:var(--sv-fw-heavy);text-transform:uppercase;line-height:.8;letter-spacing:-.01em;font-size:clamp(96px,22vw,320px);text-align:center;color:var(--sv-chrome-50);opacity:.07;user-select:none;overflow:hidden;white-space:nowrap}
 ${S} .hs-footer{max-width:var(--sv-container-max);margin:0 auto;padding:24px var(--sv-gutter);font-family:var(--sv-font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--sv-text-muted);border-top:0;background:none}
-@media (prefers-reduced-motion:reduce){${S} *{transition:none!important;animation:none!important}}
+${SERVICES_PHONE_HERO_CSS}@media (prefers-reduced-motion:reduce){${S} *{transition:none!important;animation:none!important}}
 `;

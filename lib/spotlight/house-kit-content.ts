@@ -5,6 +5,8 @@
 // rows those layouts show. Everything a kit invents (prices, open times, the quote, the sample photos) is sample content: a
 // live page passes `sample: false` and gets none of it, so no invented price, time or testimonial ships.
 
+import type { DoorStyle } from '@/lib/spotlight/door-style'
+
 export type HouseKitTheme = 'bold' | 'wildheart' | 'midnight'
 export type HouseKitLayoutKey = 'stack' | 'card-wall' | 'story' | 'calendar-first' | 'shop-front' | 'profile'
 export const HOUSE_KIT_LAYOUT_KEYS: readonly HouseKitLayoutKey[] = ['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile']
@@ -18,7 +20,7 @@ export const HOUSE_KIT_PREFIX: Record<HouseKitTheme, 'bold-kit' | 'wildheart-kit
 
 type IconName = 'calendar' | 'star' | 'users' | 'mail' | 'pin' | 'message' | 'heart' | 'tag' | 'sparkle'
 
-interface HouseKitDoor { id: string; icon: IconName; title: string; meta: string; href: string }
+interface HouseKitDoor { id: string; icon: IconName; title: string; meta: string; href: string; /** How the owner drew this link (LIVE-2487): a card when unset. */ style?: DoorStyle }
 interface HouseKitOffer { name: string; price: string; dur: string }
 interface HouseKitOpening { mon: string; day: string; title: string; time: string; left: number }
 

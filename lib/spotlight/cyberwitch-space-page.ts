@@ -3,6 +3,7 @@
 // content out.
 import type { Space } from '@/lib/spaces/types'
 import { safeUrl } from '@/lib/entity-blocks/block-content'
+import { linkDoorStyle, markedMainLink } from '@/lib/spotlight/door-style'
 import { readSiteStyle } from '@/lib/theme/site-style'
 import { cyberwitchKitSpotlightContent, type CyberWitchSpotlightContent } from '@/lib/spotlight/cyberwitch-kit-content'
 
@@ -24,12 +25,21 @@ export function cyberwitchSpacePage(space: Pick<Space, 'slug' | 'name' | 'brandN
   const bag = (id: string) => (content as Record<string, Record<string, unknown>> | undefined)?.[id]
   const raw = bag('links')?.items
   const links = (Array.isArray(raw) ? raw : [])
-    .map((it: { label?: unknown; url?: unknown }) => ({ label: typeof it.label === 'string' ? it.label : '', url: safeUrl(it.url) }))
-    .filter((it): it is { label: string; url: string } => Boolean(it.url && it.label))
+    .map((it: { label?: unknown; url?: unknown; style?: unknown }) => ({ label: typeof it.label === 'string' ? it.label : '', url: safeUrl(it.url), style: it.style }))
+    .filter((it): it is { label: string; url: string; style: unknown } => Boolean(it.url && it.label))
   const btn = bag('button')
   const btnUrl = safeUrl(btn?.url)
+  const button = typeof btn?.label === 'string' && btn.label && btnUrl ? { label: btn.label, href: btnUrl } : null
+  // Each link in the style the owner picked, and the link they marked main is the button when there is no Button block
+  // (LIVE-2487). Unmarked, the theme's own sticker button stays, so a text link never turns into it.
+  const blockStyle = bag('links')?.linkStyle
+  const marked = button ? null : markedMainLink(links)
   const doors = links.length
-    ? links.map((l, i) => ({ id: `link-${i}`, key: 'publish' as const, icon: 'bolt' as const, title: l.label, meta: l.url.replace(/^https?:\/\//, '').replace(/\/$/, ''), href: l.url }))
+    ? links.flatMap((l, i) => {
+      if (l === marked) return []
+      const style = linkDoorStyle(l, blockStyle)
+      return [{ id: `link-${i}`, key: 'publish' as const, icon: 'bolt' as const, title: l.label, meta: l.url.replace(/^https?:\/\//, '').replace(/\/$/, ''), href: l.url, ...(style ? { style } : {}) }]
+    })
     // Only the doors this Space has a page for, one door per page: no placeholder door leads nowhere.
     : c.doors.filter((d, i, all) => CYBERWITCH_SPACE_PAGE[d.href] && CYBERWITCH_SPACE_PAGE[d.href] !== 'book' && all.findIndex((x) => CYBERWITCH_SPACE_PAGE[x.href] === CYBERWITCH_SPACE_PAGE[d.href]) === i)
       .map((d) => ({ ...d, href: page(d.href) }))
@@ -37,7 +47,7 @@ export function cyberwitchSpacePage(space: Pick<Space, 'slug' | 'name' | 'brandN
     ...c,
     descriptor: '',
     pain: tagline ?? '',
-    cta: typeof btn?.label === 'string' && btn.label && btnUrl ? { label: btn.label, href: btnUrl } : { label: c.cta.label, href: page(c.cta.href) },
+    cta: button ?? (marked ? { label: marked.label, href: marked.url } : { label: c.cta.label, href: page(c.cta.href) }),
     featured: { ...c.featured, href: page(c.featured.href) },
     doors,
   }

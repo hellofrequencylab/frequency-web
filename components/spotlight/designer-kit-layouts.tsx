@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { DoorExtras, cardDoors } from '@/components/spotlight/door-runs'
 import { Input } from '@/components/ui/field'
 import { ArrowUpRight, Camera, Mail, Play, ShoppingBag } from 'lucide-react'
 import { DESIGNER_TOKENS_CSS } from '@/lib/theme/designer'
@@ -109,9 +110,10 @@ function Stack({ c }: { c: C }) {
     <>
       <Hero c={c} height={380} />
       <div className="dzs-stack-list">
-        {c.doors.slice(0, 4).map((d) => (
+        {cardDoors(c.doors).slice(0, 4).map((d) => (
           <Link key={d.key} href={d.href} className="dzs-door"><Seal k={d.key} size={36} /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowUpRight size={14} className="dzs-subtle" aria-hidden /></Link>
         ))}
+        <DoorExtras doors={c.doors} button={(d) => <div key={d.href} className="col-span-full grid"><Btn href={d.href} size="lg" tone="secondary">{d.title}</Btn></div>} />
       </div>
       {c.letter && <div className="dzs-pad" style={{ paddingTop: 14 }}><Letter c={c} compact /></div>}
       <Foot />
@@ -130,9 +132,10 @@ function CardWall({ c }: { c: C }) {
           <div><b>{f.title}</b><small>{f.meta}</small></div>
           <Btn href={f.href} size="sm" tone="ink">{f.cta}</Btn>
         </div>
-        {c.doors.slice(0, 4).map((d) => (
+        {cardDoors(c.doors).slice(0, 4).map((d) => (
           <Link key={d.key} href={d.href} className="dzs-card"><Seal k={d.key} size={36} /><div><b>{d.title}</b><small>{d.meta}</small></div></Link>
         ))}
+        <DoorExtras doors={c.doors} button={(d) => <div key={d.href} className="col-span-full grid"><Btn href={d.href} size="lg" tone="secondary">{d.title}</Btn></div>} />
         {c.letter && <div className="dzs-card dzs-card--auto"><Display title={c.letter.title} em={c.letter.em} /><form action={c.letter.action} method="get"><div className="dzs-field"><label htmlFor="dzs-email">Email</label><Input variant="seamless" id="dzs-email" className="dzs-input placeholder:text-current/50!" type="email" name="email" placeholder="you@email.com" required /></div><button className="dzs-btn dzs-btn--sm" type="submit">Join</button></form></div>}
       </div>
       <Foot />
@@ -225,8 +228,9 @@ function Profile({ c }: { c: C }) {
       <div className="dzs-pad" style={{ paddingTop: 22 }}>
         <Eyebrow>Where to start</Eyebrow>
         <div className="dzs-list">
-          {c.doors.slice(0, 3).map((d) => <Link key={d.key} href={d.href}><DoorGlyph k={d.key} size={18} /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowUpRight size={14} className="dzs-subtle" aria-hidden /></Link>)}
+          {cardDoors(c.doors).slice(0, 3).map((d) => <Link key={d.key} href={d.href}><DoorGlyph k={d.key} size={18} /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowUpRight size={14} className="dzs-subtle" aria-hidden /></Link>)}
         </div>
+        <DoorExtras doors={c.doors} button={(d) => <div key={d.href} className="col-span-full grid"><Btn href={d.href} size="lg" tone="secondary">{d.title}</Btn></div>} />
       </div>
       <div style={{ marginTop: 22 }}><Quote c={c} /></div>
       <Foot />

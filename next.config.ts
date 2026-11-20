@@ -66,7 +66,7 @@ const csp = [
   // 2026-09-08 (PROG-SPOT, ADR-1279).
   // The two Stripe hosts are NOT media embeds and are not in that sync rule: js.stripe.com mounts
   // every Element, hooks.stripe.com carries the 3DS / redirect authentication frame (ADR-1369).
-  "frame-src 'self' https://vercel.live https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com https://bandcamp.com https://embed.music.apple.com https://player.twitch.tv https://clips.twitch.tv https://js.stripe.com https://hooks.stripe.com",
+  "frame-src 'self' https://vercel.live https://*.vercel.live https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com https://bandcamp.com https://embed.music.apple.com https://player.twitch.tv https://clips.twitch.tv https://js.stripe.com https://hooks.stripe.com",
   "media-src 'self' blob: https:",
   "worker-src 'self' blob:",
   'report-uri /api/csp-report', // keep reporting even while enforcing — catch any miss

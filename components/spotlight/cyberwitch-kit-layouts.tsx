@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { DoorRuns } from '@/components/spotlight/door-runs'
 import {
   ArrowRight, Award, Check, Briefcase, CalendarDays, Car, ChartColumn, Clock, Droplet, Eye, Heart, House, Leaf, Mail, MapPin, MessageCircle,
   ShieldCheck, Sparkles, Star, Sun, Tag, User, Users, Wrench, Zap, type LucideIcon,
@@ -93,7 +94,7 @@ function Stack({ c }: { c: C }) {
       <Top c={c} big />
       <div className="cws-col">
         <Btn href={c.cta.href} full>{c.cta.label}</Btn>
-        {c.doors.map((d) => <Door key={d.id} d={d} />)}
+        <DoorRuns doors={c.doors} card={(d) => <Door key={d.id} d={d} />} button={(d) => <Btn key={d.id} href={d.href} tone="secondary" full>{d.title}</Btn>} />
         {c.footerCta && <Btn href={c.footerCta.href} tone="secondary" full>{c.footerCta.label}</Btn>}
       </div>
       <Foot />
@@ -107,9 +108,11 @@ function CardWall({ c }: { c: C }) {
       <Top c={c} />
       <div className="cws-grid">
         <div className="cws-span"><Btn href={c.featured.href} full>{c.featured.cta}</Btn></div>
-        {c.doors.map((d) => (
-          <Link key={d.id} href={d.href} className="cws-plate cws-sq"><Glyph icon={d.icon} size={24} /><b>{d.title}</b></Link>
-        ))}
+        <DoorRuns
+          doors={c.doors}
+          card={(d) => <Link key={d.id} href={d.href} className="cws-plate cws-sq"><Glyph icon={d.icon} size={24} /><b>{d.title}</b></Link>}
+          button={(d) => <div key={d.id} className="cws-span"><Btn href={d.href} tone="secondary" full>{d.title}</Btn></div>}
+        />
       </div>
       <Foot />
     </>

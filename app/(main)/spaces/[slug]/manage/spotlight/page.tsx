@@ -141,6 +141,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
       title="Spotlight"
       description="One link for your bio or business card. Pick what it shows; bookings, sales and messages still land in your console."
       width="wide"
+      consoleMeasure="full"
     >
       {staffViewing && !canManage && (
         <div className="mb-6">

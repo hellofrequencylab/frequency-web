@@ -245,7 +245,7 @@ export async function CirclesSection({
               {assignable.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
-                  {c.city ? ` (${c.city})` : ''} · {c.memberCount} members
+                  {c.city ? ` (${c.city})` : ''} · {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}
                 </option>
               ))}
             </Select>
@@ -458,7 +458,7 @@ export async function ProgramSection({
                 {data.liveCircles.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
-                    {c.city ? ` (${c.city})` : ''} · {c.memberCount} members
+                    {c.city ? ` (${c.city})` : ''} · {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}
                   </option>
                 ))}
               </Select>
@@ -556,7 +556,7 @@ export async function ProgramSection({
               {data.liveCircles.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
-                  {c.city ? ` (${c.city})` : ''} · {c.memberCount} members
+                  {c.city ? ` (${c.city})` : ''} · {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}
                 </option>
               ))}
             </Select>

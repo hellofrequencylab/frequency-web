@@ -37,13 +37,13 @@ export function parseVideoEmbed(text: string | null | undefined): VideoEmbed | n
   // ── YouTube ──
   if (host === 'youtu.be') {
     const id = segments[0]
-    if (id) return { provider: 'youtube', url, src: `https://www.youtube.com/embed/${id}` }
+    if (id) return { provider: 'youtube', url, src: `https://www.youtube-nocookie.com/embed/${id}` }
   }
   if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
     const id =
       u.searchParams.get('v') ??
       (segments[0] === 'embed' || segments[0] === 'shorts' ? segments[1] : null)
-    if (id) return { provider: 'youtube', url, src: `https://www.youtube.com/embed/${id}` }
+    if (id) return { provider: 'youtube', url, src: `https://www.youtube-nocookie.com/embed/${id}` }
   }
 
   // ── Vimeo ── (vimeo.com/123, player.vimeo.com/video/123)

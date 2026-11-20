@@ -1,19 +1,20 @@
 {
   "id": "LIVE-2486",
-  "title": "/for is a zig-zag, one row per door with its own matching photo",
+  "title": "The Spotlight preview is a real phone, and each link shows in the style you pick",
   "lane": "live",
-  "priority": "P2",
+  "priority": "P1",
   "size": "S",
   "status": "done",
-  "closed": "2026-11-20",
   "source": {
-    "file": "docs/PAGE-FRAMEWORK.md",
-    "ref": "Daniel 2026-11-20: \"The /for page is pretty template like and crowded. I want to break the page up with a Zig Zag layout for each of the 9 paths. Try to find images that match each section.\""
+    "file": "components/spotlight/spotlight-preview-frame.tsx",
+    "ref": "Owner 2026-11-20 (project thread: Redesign the Spotlight editor): 'This preview is goofy AF' and 'The style changed does nothing'."
   },
-  "detail": "The /for index drew its nine doors as a three-up grid of tall photo tiles with the words on glass over the picture, and most tiles reused the same beach-gathering look. Each door is now its own row: a photo picked for that kind of work on seven of twelve columns, the door's eyebrow, headline, line and See your door button on a glass panel that overlaps it by one column, sides swapping row by row. A row of jump links under the heading names every door. On a phone the photo sits on top and the panel tucks under it. The photos are Frequency's own (repo library, no new files): sound healer for coaches, a lawn class for studios, string lights for event hosts, the event hall for venues, the community dinner for Non Profits, the big group for networks, the storefront for local businesses, hula hoops for clubs and the rooftop circle for spiritual community. The door pages keep their own photos. Checked at 390, 1280, 1440, 1920 and 2000 with no sideways scroll.",
+  "detail": "The editor sat in the 760px focus column, so the preview frame was squeezed narrower than a phone: titles wrapped and the main button spilled out of its pill. The editor now uses the whole console width and the preview is drawn at a real phone's 390 by 844, scaled to fit the column and the window, with the page's own colour filling the screen below a short page. Link styles: New World drew every link as a card and always made the first link the big main button, so picking Text link did nothing. The Links block default style now reaches the theme, each link carries its own style, text links draw as underlined links, buttons as secondary buttons, cards as cards, and the main button is the link marked main, else the first link that is not a text link or card.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/LIVE-2486.mjs"
+    "cmd": "node scripts/probes/LIVE-2486.mjs",
+    "note": "Fails while the preview is not a scaled 390 phone, the editor sits in the narrow column, or New World ignores link styles."
   },
+  "closed": "2026-11-20",
   "wave": "W7"
 }
