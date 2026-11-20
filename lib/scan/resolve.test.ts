@@ -35,6 +35,12 @@ describe('resolveScannedText', () => {
     expect(resolveScannedText('//evil.com/x', HOST)).toEqual({ ok: false, reason: 'unreadable' })
   })
 
+  it('never follows a bare path a browser would read as another host (SEC-041)', () => {
+    // A browser reads `/\\host` as `//host`, and strips a tab from a navigation target.
+    expect(resolveScannedText('/\\evil.com/login', HOST)).toEqual({ ok: false, reason: 'unreadable' })
+    expect(resolveScannedText('/\t/evil.com', HOST)).toEqual({ ok: false, reason: 'unreadable' })
+  })
+
   it('reports foreign QR codes without following them', () => {
     expect(resolveScannedText('https://example.com/menu', HOST)).toEqual({
       ok: false,

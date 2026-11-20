@@ -12,6 +12,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Four short builders, each on its own page.** [Free Spotlight](/free-spotlight) (about three minutes), [Create a Space](/create-a-space) (five), [Launch Your Website](/launch-your-website) (five) and [Email Marketing](/email-marketing) (four) each ask a few things beside a live preview, with a clock that is a challenge, not a deadline. Sign in at the end, or finish straight away if you already are. Each ends with a card offering the next one and an "I'm done for now" beside it. The first email is saved as a draft and never sent on its own.
+- **The 12-minute business builder is Launch Your Business**, at [/launch-your-business](/launch-your-business). It builds a Space, Spotlight, website and bookings in one sitting.
+
 - **A host can price a ticket all-in.** Whether guests cover card processing is the seller's choice. Once card processing comes out of ticket sales, one tap in the ticket editor raises a fixed ticket just enough that the host keeps what they typed. Guests see that one price from the first screen, with nothing added at checkout.
 - **Every sale email says which fee rule applied**, the card fee once it applies, and what reaches the payout account.
 

@@ -4,6 +4,8 @@
 // /people/<handle> connect codes), and those existing flows do all paying and
 // cookie-setting. A foreign QR is reported, never followed.
 
+import { safeNextPath } from '@/lib/auth/safe-next'
+
 type ScanResolution =
   | { ok: true; path: string }
   | { ok: false; reason: 'foreign'; host: string }
@@ -17,9 +19,12 @@ export function resolveScannedText(raw: string, currentHost: string): ScanResolu
   const text = (raw ?? '').trim()
   if (!text) return { ok: false, reason: 'unreadable' }
 
-  // Bare same-site path (some NFC tags encode just the path).
-  if (text.startsWith('/') && !text.startsWith('//')) {
-    return { ok: true, path: text }
+  // Bare same-site path (some NFC tags encode just the path). One rule for "same-origin path"
+  // (lib/auth/safe-next.ts): a browser reads `/\host` as `//host`, so a tag holding `/\evil.com`
+  // passed the old starts-with check and left the site with no foreign-host warning (SEC-041).
+  if (text.startsWith('/')) {
+    const path = safeNextPath(text)
+    return path ? { ok: true, path } : { ok: false, reason: 'unreadable' }
   }
 
   let url: URL

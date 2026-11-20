@@ -1,0 +1,20 @@
+{
+  "id": "EMAIL-084",
+  "title": "One marketing email per person per week, across every Email Studio campaign and newsletter",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/email-studio/send.ts",
+    "ref": "Contact, funnel and tracking audit 2026-11-19 (project thread: Plan a permission-first contact system)"
+  },
+  "detail": "Email Studio sends called resolveSendGate with no frequency object (an uncapped window), and campaign dedupe only stops one campaign repeating a person. Two campaigns, or a campaign plus a quiet-member email, could reach one person the same day. The lifecycle cap (EMAIL-047: 1 a day, 3 a week, LIFECYCLE_CAP_ENABLED on in production since 2026-11-17) covered only the nurture runner.\n\nOWNER DECISION 2026-11-19 (decision card 'How many marketing emails may one person get per week?', option 'One per 7 days'): at most one campaign or newsletter per person a week, plus the existing 1 a day, 3 a week cap on automatic emails; receipts and sign-in mail never count. This also answers EMAIL-064's open question: newsletters count toward the week.\n\nDONE 2026-11-19: lib/lifecycle/cap.ts adds MARKETING_KINDS ('campaign', registered in lib/lifecycle/registry.ts) limited to one per rolling 7 days, on top of the daily and weekly lifecycle rules. lib/email-studio/campaign-cap.ts reserves the slot (one key per campaign and address); anything but a fresh reservation skips the person (capped, error fails closed, duplicate never repeats). sendCampaignNow reserves after the send gate on both the outbox and the Resend broadcast paths, and gives the slots back when a chunk or a broadcast fails to queue; a 1:1 conversation send or a one-person audience is personal mail and does not count. sendQuietCampaign reserves too; a capped member is not ledgered, so the next daily run tries again. Dark with LIFECYCLE_CAP_ENABLED off. Tests: cap.test.ts (5), campaign-cap.test.ts (5), send-scale.test.ts (3 over the real sender).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/EMAIL-084.mjs",
+    "note": "Passes while the cap limits the campaign kind to one per 7 days and every Email Studio send path reserves the slot after the gate and releases it on a failed queue."
+  },
+  "closed": "2026-11-19",
+  "wave": "W7"
+}

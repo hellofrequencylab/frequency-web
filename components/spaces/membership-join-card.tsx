@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import CheckoutPanel from '@/components/billing/checkout-panel'
 import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 import { isError } from '@/lib/action-result'
+import { safeNextPath } from '@/lib/auth/safe-next'
 import { formatPriceCents } from '@/lib/commerce/types'
 import {
   joinTier,
@@ -124,7 +125,9 @@ export function MembershipJoinCard({
   // for. SAFETY: only a same-origin absolute path is honored (a leading single slash) — anything
   // else (full URLs, protocol-relative "//host") is dropped, so the param can never redirect off-site.
   const rawReturn = searchParams.get('return_to')
-  const returnTo = rawReturn && /^\/(?!\/)/.test(rawReturn) ? rawReturn : null
+  // One rule (lib/auth/safe-next.ts): `/\evil.com` passed the old single-slash test and a browser
+  // reads it as `//evil.com`, so a joined member could be sent off-site (SEC-041).
+  const returnTo = safeNextPath(rawReturn) || null
 
   // The session, but only while it still matches what the button now charges. A cadence change makes
   // this null on the very same render that changes the price, so there is no window in which the two

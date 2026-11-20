@@ -1,10 +1,13 @@
+import { FqIcon } from '@/components/frequency/icon'
 import { PhotoActions } from './photo-actions'
-import { overviewProgress, type InventorySection } from '@/lib/launch/overview'
+import { BuildHub } from './build-hub'
+import { builtFeatures, overviewProgress, type InventorySection } from '@/lib/launch/overview'
 
 // THE LAUNCH OVERVIEW (the face). One page every way in lands on: what the account already has, shown as done, what is
 // next, and the progress as a ring overall and a bar per section. Frequency style: tokens only, graph in inline SVG,
 // words in HTML. Photos are inspiring, never pressure, with a plain Skip. Presentational; the data comes from the
-// inventory.
+// inventory. The four builders lead (BuildHub); the full checklist follows as sections that fold, the one with the next
+// item open, so the page reads as a few pieces to come back to rather than one long list (LIVE-2484).
 
 function Ring({ ratio, size, stroke }: { ratio: number; size: number; stroke: number }) {
   const r = (size - stroke) / 2
@@ -40,6 +43,7 @@ export function LaunchOverview({ sections, who, nextHref, space }: { sections: r
   const pct = Math.round(p.ratio * 100)
   return (
     <div style={{ display: 'grid', gap: 20 }}>
+      <BuildHub built={builtFeatures(p.sections)} />
       <section className="panel" style={{ display: 'grid', gap: 20 }}>
         <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', width: 120, height: 120, flex: 'none' }}>
@@ -80,12 +84,15 @@ export function LaunchOverview({ sections, who, nextHref, space }: { sections: r
       {sections.map((s) => {
         const sp = p.sections.find((x) => x.id === s.id)
         return (
-          <section key={s.id} className="panel" style={{ display: 'grid', gap: 12 }} aria-label={s.title}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+          <details key={s.id} className="panel" style={{ display: 'grid', gap: 12 }} aria-label={s.title} open={p.next?.section === s.id}>
+            <summary style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, cursor: 'pointer', listStyle: 'none' }}>
               <h2 className="h2">{s.title}</h2>
-              <span className="t2">{sp?.state === 'done' ? 'All set' : `${sp?.done ?? 0} of ${sp?.total ?? 0}`}</span>
-            </div>
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 12 }}>
+              <span className="t2" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {sp?.state === 'done' ? 'All set' : `${sp?.done ?? 0} of ${sp?.total ?? 0}`}
+                <FqIcon name="chevron" size={14} />
+              </span>
+            </summary>
+            <ul style={{ listStyle: 'none', margin: '12px 0 0', padding: 0, display: 'grid', gap: 12 }}>
               {s.items.map((i) => (
                 <li key={i.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <Tick done={i.state === 'done'} />
@@ -102,7 +109,7 @@ export function LaunchOverview({ sections, who, nextHref, space }: { sections: r
                 </li>
               ))}
             </ul>
-          </section>
+          </details>
         )
       })}
     </div>

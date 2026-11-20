@@ -12,6 +12,7 @@ import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { Switch } from '@/components/ui/switch'
 import { buttonClasses } from '@/components/ui/button'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { SpotlightPreviewFrame } from '@/components/spotlight/spotlight-preview-frame'
 import { SPACE_SPOTLIGHT_BLOCK_IDS } from '@/lib/spaces/spotlight'
@@ -81,6 +82,10 @@ export function SpaceSpotlightEditor({
   const [connecting, startConnect] = useTransition()
   // Moves when a theme or look change lands, so the preview frame draws the page again.
   const [previewVersion, setPreviewVersion] = useState(0)
+  // The editor's three tabs (LIVE-2455): the page itself first, then its look, then sharing and stats.
+  const [tab, setTab] = useState<'page' | 'look' | 'share'>('page')
+  // On a phone the editor and the preview take turns; from 1024px both show side by side.
+  const [phoneView, setPhoneView] = useState<'edit' | 'preview'>('edit')
 
   const onConnectDomain = () => {
     startConnect(async () => {
@@ -137,7 +142,17 @@ export function SpaceSpotlightEditor({
 
   const body = (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] lg:items-start">
-        <div className="min-w-0 space-y-4">
+        <SegmentedControl
+          label="Edit or preview"
+          value={phoneView}
+          onChange={setPhoneView}
+          segments={[
+            { value: 'edit', label: 'Edit' },
+            { value: 'preview', label: 'Preview' },
+          ]}
+          className="justify-self-center lg:hidden"
+        />
+        <div className={`min-w-0 space-y-4 ${phoneView === 'preview' ? 'hidden lg:block' : ''}`}>
           <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Publish">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -145,7 +160,7 @@ export function SpaceSpotlightEditor({
                   {published ? 'Your Spotlight is live' : 'Your Spotlight is hidden'}
                 </p>
                 <p className="text-meta text-muted">
-                  {published ? 'Anyone with the link can see it.' : 'Turn it on to get a link you can open and share. The preview below shows how it looks.'}
+                  {published ? 'Anyone with the link can see it.' : 'Turn it on to get a link you can open and share. The preview shows how it looks.'}
                 </p>
               </div>
               <Switch
@@ -178,7 +193,18 @@ export function SpaceSpotlightEditor({
             )}
           </section>
 
-          {themes && themes.options.length > 0 && (
+          <SegmentedControl
+            label="Spotlight editor sections"
+            value={tab}
+            onChange={setTab}
+            segments={[
+              { value: 'page', label: 'Page' },
+              { value: 'look', label: 'Look' },
+              { value: 'share', label: 'Share and stats' },
+            ]}
+          />
+
+          {tab === 'look' && themes && themes.options.length > 0 && (
             <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Theme">
               <p className="text-body-sm font-bold text-text">Theme</p>
               <p className="text-meta text-muted">One theme for your Spotlight, Space and website. You do not need a website to pick one.</p>
@@ -199,7 +225,7 @@ export function SpaceSpotlightEditor({
             </section>
           )}
 
-          {looks && looks.options.length > 0 && (
+          {tab === 'look' && looks && looks.options.length > 0 && (
             <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Look">
               <p className="text-body-sm font-bold text-text">Look</p>
               <p className="text-meta text-muted">How your theme lays out this page. The preview shows the one you pick.</p>
@@ -221,7 +247,13 @@ export function SpaceSpotlightEditor({
             </section>
           )}
 
-          {published && ownLinks && (ownLinks.paid || ownLinks.domain) && (
+          {tab === 'share' && !published && (
+            <p className="rounded-card border border-dashed border-border px-3 py-6 text-center text-meta text-muted">
+              Turn your Spotlight on to get your links, QR code and click counts.
+            </p>
+          )}
+
+          {tab === 'share' && published && ownLinks && (ownLinks.paid || ownLinks.domain) && (
             <section className="space-y-3 rounded-card border border-border bg-surface p-4" aria-label="Your own links">
               <p className="text-body-sm font-bold text-text">Your own links</p>
               {ownLinks.paid && (
@@ -270,7 +302,7 @@ export function SpaceSpotlightEditor({
             </section>
           )}
 
-          {published && clicks && (
+          {tab === 'share' && published && clicks && (
             <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Clicks">
               <p className="text-body-sm font-bold text-text">Clicks in the last 30 days</p>
               {clicks.length === 0 ? (
@@ -288,7 +320,7 @@ export function SpaceSpotlightEditor({
             </section>
           )}
 
-          {upgrade && !readOnly && (
+          {tab === 'page' && upgrade && !readOnly && (
             <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Selling cards">
               <p className="text-body-sm text-text">
                 Product, Journey, event and membership cards come with Business. Book, Contact and Links are free.
@@ -312,10 +344,10 @@ export function SpaceSpotlightEditor({
             </section>
           )}
 
-          {seed && nodePath && (
+          {tab === 'page' && seed && nodePath && (
             <NodeLinkListBuilder pageId={slug} loadRailData={loadRailData} seed={seed} paletteBlockIds={SPACE_SPOTLIGHT_BLOCK_IDS} />
           )}
-          {seed && !nodePath && (
+          {tab === 'page' && seed && !nodePath && (
             <EntityPageBuilder
               pageId={slug}
               kind="space"
@@ -327,9 +359,15 @@ export function SpaceSpotlightEditor({
           )}
         </div>
 
-        <section aria-label="Preview" className="min-w-0 lg:sticky lg:top-24">
+        <section aria-label="Preview" className={`min-w-0 lg:sticky lg:top-24 ${phoneView === 'edit' ? 'hidden lg:block' : ''}`}>
           <p className="eyebrow mb-2 text-center text-muted">Preview</p>
-          <SpotlightPreviewFrame slug={slug} version={previewVersion} />
+          <SpotlightPreviewFrame slug={slug}
+            version={previewVersion}
+            onPick={() => {
+              setTab('page')
+              setPhoneView('edit')
+            }}
+          />
         </section>
       </div>
   )

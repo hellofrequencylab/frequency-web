@@ -5,7 +5,7 @@ category: spaces
 order: 5
 group: Get set up
 published: 2026-10-12
-updated: 2026-11-18
+updated: 2026-11-19
 audience: member
 featureKeys: [website, pages]
 keywords: [site builder, custom domain, themes, publish my site, web address, dns, landing page, fonts]
@@ -14,6 +14,8 @@ status: published
 
 Your website is your Space's pages turned into a site of its own, with your brand and none of the
 Frequency menus. It shows the same blocks as your Space page, so you edit once and both stay in step.
+
+Starting from nothing? [Launch Your Website](/launch-your-website) builds one in about five minutes: a name, a look and a headline. It goes on your newest Space, or a new Space in that look, and opens at your free address.
 
 Where to find it: open your Space, then **Manage**, then **Profile & Settings**. The **Your website**
 card leads the tab.
