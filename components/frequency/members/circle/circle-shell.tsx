@@ -111,17 +111,23 @@ export function FqCircleShell({
       </Link>
       <div className="fqm-notices">{notices}</div>
 
-      <section
-        className="fqm-cl-hero fqc-cover"
-        style={coverImage ? { backgroundImage: `url('${coverImage}')` } : undefined}
-      >
-        {badge && (
-          <span className={badge.live ? 'fqc-badge live' : 'fqc-badge'}>{badge.text}</span>
+      {/* The cover: the art (the Circle's photo, or its Space's header) sits behind the text on a wide
+          column and becomes its own band above the text on a phone (members-circle.css, the narrow
+          container rules), so a logo or a busy photo never sits under the title, the facts or the buttons.
+          The status badge and the Space pill ride in their own row, in flow, so they can never cover the title. */}
+      <section className="fqm-cl-hero fqc-cover" data-art={coverImage ? '' : undefined}>
+        {coverImage && (
+          <div className="fqc-cover-art" style={{ backgroundImage: `url('${coverImage}')` }} aria-hidden />
         )}
-        {spaceLink && (
-          <Link className="fqc-space-pill" href={spaceLink.href}>
-            Part of {spaceLink.name}
-          </Link>
+        {(badge || spaceLink) && (
+          <div className="fqc-cover-top">
+            {badge && <span className={badge.live ? 'fqc-badge live' : 'fqc-badge'}>{badge.text}</span>}
+            {spaceLink && (
+              <Link className="fqc-space-pill" href={spaceLink.href}>
+                Part of {spaceLink.name}
+              </Link>
+            )}
+          </div>
         )}
         <div className="fqm-cl-in">
           <div className="stack">
@@ -134,15 +140,15 @@ export function FqCircleShell({
             )}
             <h1 className="h1">{title}</h1>
             <div className="fqc-facts">
-              {rhythm && <span>{rhythm}</span>}
+              {rhythm && <span className="fqc-rhythm-line">{rhythm}</span>}
               {subline && <span className="fqm-cl-sub">{subline}</span>}
               {hostedBy && <span>{hostedBy}</span>}
             </div>
           </div>
           <div className="row wrap fqc-actions">
             {invite}
-            {primary}
-            {admin}
+            <span className="fqc-act-main">{primary}</span>
+            {admin && <span className="fqc-act-admin">{admin}</span>}
           </div>
         </div>
       </section>
