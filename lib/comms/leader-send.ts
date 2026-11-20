@@ -12,7 +12,11 @@ import { bodyToHtml } from '@/lib/comms/email-template'
 import { getLedCircles } from '@/app/(main)/lead/load-led-circles'
 import { resolveSegment, type Recipient } from '@/lib/studio/campaigns'
 import { resolveSendGate } from '@/lib/comms/send-gate'
-import { enqueueEmail } from '@/lib/email'
+import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { bulkRunAfter } from '@/lib/queue/outbox'
+import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
+import { isBlockedBetween } from '@/lib/blocking'
+import { palette } from '@/lib/theme/palette'
 import { buildConversationReplyAddress, conversationSigningAvailable } from '@/lib/comms/reply-address'
 import { openOrGetConversation, appendConversationMessage, newConversationMessageId } from '@/lib/comms/conversations'
 import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
@@ -73,13 +77,31 @@ async function profileDisplayName(profileId: string): Promise<string | null> {
 
 // bodyToHtml comes from lib/comms/email-template.ts (EMAIL-023): one copy, palette ink.
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
+
+/** EMAIL-072: the per-recipient footer on a leader's note to their Circles. The note goes to a whole
+ *  list, so it carries a visible way out (the same lifecycle unsubscribe the List-Unsubscribe header
+ *  points at). Exported for the focused test. */
+export function leaderSendFooter(unsubscribeUrl: string): { html: string; text: string } {
+  const href = unsubscribeUrl.replace(/"/g, '%22')
+  return {
+    html: `<p style="font-size:12px;color:${palette.textMuted};margin:32px 0 0;">You get this because you are in a Circle they lead. <a href="${href}" style="color:${palette.textMuted};">Unsubscribe from these emails</a></p>`,
+    text: `You get this because you are in a Circle they lead. Unsubscribe from these emails: ${unsubscribeUrl}`,
+  }
+}
+
 /**
  * Send a message from a leader to their whole downline, AS THEMSELVES, fanning out into one tracked
  * conversation per recipient. Each recipient is consent-gated (member lifecycle mail); a blocked or
  * un-openable recipient is skipped, never failed. Every send: open/get the leader-owned conversation,
- * enqueue the email with the per-conversation Reply-To + Message-ID (no List-Unsubscribe: this is
- * relationship mail from their leader, replyable 1:1), and append the outbound message (mirrored to the
- * CRM timeline). Returns the tallies for the confirmation UI.
+ * enqueue the email with the per-conversation Reply-To + Message-ID, and append the outbound message
+ * (mirrored to the CRM timeline). Returns the tallies for the confirmation UI.
+ *
+ * EMAIL-072: this is a LIST fan-out, so each email carries the RFC 8058 one-click List-Unsubscribe
+ * headers plus a footer link (lifecycle category, the same consent the gate checks), rides the bulk lane
+ * with the outbox drip, and skips any member who blocked the leader or whom the leader blocked (parity
+ * with lib/comms/bulk-dm.ts). A recipient with no profile cannot get a profile unsubscribe token or a
+ * block check, so it is skipped (the circle audience always carries a profile).
  *
  * AUTHORIZATION: resolve the audience ONLY via segmentForLeaderDownline(leaderProfileId) — it is keyed to
  * the leader's own stewardship, so this can never reach outside their group. The caller still gates entry
@@ -105,16 +127,30 @@ export async function sendLeaderMessageToDownline(
   const from = leaderFrom(senderName)
   const html = bodyToHtml(body)
 
+  const startedAt = new Date()
   let sent = 0
   let skipped = 0
   for (const r of recipients) {
-    // Consent gate: a leader-to-member note is opt-out member mail → the lifecycle category.
-    if (r.profileId) {
-      const gate = await resolveSendGate(r.profileId, 'email', 'lifecycle', { email: r.email })
-      if (!gate.allowed) {
+    if (!r.profileId) {
+      skipped++
+      continue
+    }
+    // Block gate, both directions, per recipient (parity with sendBulkDm). Fail-closed: a check that
+    // throws skips the recipient rather than mailing someone who may have blocked the leader.
+    try {
+      if (await isBlockedBetween(leaderId, r.profileId)) {
         skipped++
         continue
       }
+    } catch {
+      skipped++
+      continue
+    }
+    // Consent gate: a leader-to-member note is opt-out member mail → the lifecycle category.
+    const gate = await resolveSendGate(r.profileId, 'email', 'lifecycle', { email: r.email })
+    if (!gate.allowed) {
+      skipped++
+      continue
     }
 
     const conv = await openOrGetConversation({
@@ -132,6 +168,8 @@ export async function sendLeaderMessageToDownline(
     }
 
     const messageId = newConversationMessageId(conv.ref)
+    const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: BASE_URL, profileId: r.profileId, category: 'lifecycle' })
+    const footer = leaderSendFooter(unsubscribeUrl)
     try {
       await enqueueEmail({
         to: r.email,
@@ -139,10 +177,10 @@ export async function sendLeaderMessageToDownline(
         // The leader's display name masks the signed reply address (owner ruling 2026-10-12).
         replyTo: withDisplayName(from, buildConversationReplyAddress(conv.ref)),
         subject,
-        html,
-        text: body,
-        headers: { 'Message-ID': messageId },
-      })
+        html: html + footer.html,
+        text: `${body}\n\n${footer.text}`,
+        headers: { 'Message-ID': messageId, ...listUnsubscribeHeaders(unsubscribeUrl) },
+      }, { lane: 'bulk', runAfter: bulkRunAfter(sent, startedAt) })
     } catch {
       skipped++
       continue
