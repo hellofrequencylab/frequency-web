@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Json, Tables, TablesUpdate } from '@/lib/database.types'
 import { envString } from '@/lib/env/string'
+import { resolveSpaceConversationHref, type ReplyBellDb } from '@/lib/comms/reply-bell'
 import {
   recordContactInteraction,
   normalizeInteractionScope,
@@ -39,6 +40,24 @@ export function newConversationMessageId(ref: string | number): string {
  *  (ADR-246 closed), so every read/write below flows through the typed `.from()` overloads. */
 function admin() {
   return createAdminClient()
+}
+
+/**
+ * Where a Space-lane reply bell sends this viewer (EMAIL-074): the reply-bell resolver run on the
+ * service-role client, which it needs because comms_conversations' select policy does not admit the
+ * Space owner. The resolver keeps the owner/assignee check, so nobody else learns the Space.
+ * FAIL-SAFE: null on any miss or error.
+ */
+export function spaceConversationHrefForViewer(
+  conversationId: string | null | undefined,
+  viewerProfileId: string | null | undefined,
+): Promise<string | null> {
+  if (!viewerProfileId) return Promise.resolve(null)
+  try {
+    return resolveSpaceConversationHref(admin() as unknown as ReplyBellDb, conversationId, viewerProfileId)
+  } catch {
+    return Promise.resolve(null)
+  }
 }
 
 export interface OpenConversationInput {

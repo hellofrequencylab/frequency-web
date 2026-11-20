@@ -20,7 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EntityCard } from '@/components/cards/entity-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listOperatedSpaces, type OperatedSpace } from '@/lib/spaces/operated'
-import { resolveSpaceConversationHref } from '@/lib/comms/reply-bell'
+import { spaceConversationHrefForViewer } from '@/lib/comms/conversations'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 
 // "Spaces you run" — the operator's FRONT DOOR to the Spaces they own or admin (the hub the
@@ -211,7 +211,7 @@ export default async function SpacesOperatingPage({
   // else (or a miss) just sees the hub.
   const conversation = typeof sp?.conversation === 'string' ? sp.conversation : null
   if (conversation) {
-    const href = await resolveSpaceConversationHref(conversation, profileId)
+    const href = await spaceConversationHrefForViewer(conversation, profileId)
     if (href) redirect(href)
   }
 
