@@ -21,7 +21,7 @@ export type CircleDetail = {
   city: string | null
   host: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   /** The owning Space, for the "Part of <Space>" pill. Null on a personal (root) Circle. */
-  space?: { slug: string; name: string; brand_name: string | null; type: string; cover_image_url?: string | null } | null
+  space?: { slug: string; name: string; brand_name: string | null; type: string; cover_image_url?: string | null; brand_logo_url?: string | null } | null
   /** `circles.space_id` (ADR-857). Already selected by `loadCircleShell`. Root on a personal Circle. */
   space_id?: string | null
   hub: {
