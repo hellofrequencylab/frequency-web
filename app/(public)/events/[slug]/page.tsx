@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { cache } from 'react'
 import { localSearchTitle, searchDescription } from '@/lib/discover-search-copy'
 import { loadSeriesDates } from '@/lib/events/series-dates'
-import { getPublicEventBySlug, getPublicEvents, formatEventDateTime, hasEventEnded } from '@/lib/discover'
+import { getPublicEventBySlug, getPublicEvents, getPublicCircleById, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment, EVENT_CATEGORIES } from '@/app/discover/events/_data'
 import { getPublicEventVenue } from '@/lib/events/public-venue'
 import { publicPageWhere } from '@/lib/events/visible-location'
@@ -97,11 +97,15 @@ export default async function PublicEventPage({
   // The join door (lib/events/public-join-door.ts): guest RSVP or guest ticket, decided with the
   // member page's own signed-out rules from cookie-free reads. Null when it could not be read, which
   // keeps the plain sign-up card below.
-  const [enrichment, venue, joined, seo] = await Promise.all([
+  // The host Circle's public row (SCAN-1276): linked by its slug, the address a reader lands on,
+  // and not linked at all when the Circle is unlisted (public_circle_by_id returns nothing for it,
+  // and /discover/circles/<id> would 404). A read error is the same as no row.
+  const [enrichment, venue, joined, seo, hostCircle] = await Promise.all([
     getEventEnrichment(slug),
     readPublicVenue(event.slug),
     loadPublicJoinDoor(event.id),
     readShareSeo(event.slug),
+    event.circle_id ? getPublicCircleById(event.circle_id).catch(() => null) : Promise.resolve(null),
   ])
   const seriesDates = seo.visibility === 'public' && seo.series
     ? await loadSeriesDates({ ...seo.series, publicOnly: true })
@@ -175,8 +179,8 @@ export default async function PublicEventPage({
     />
   )
   const host =
-    event.circle_name && event.circle_id
-      ? { name: event.circle_name, href: `/discover/circles/${event.circle_id}` }
+    event.circle_name && hostCircle?.slug
+      ? { name: event.circle_name, href: `/discover/circles/${hostCircle.slug}` }
       : enrichment?.host_space
         ? { name: enrichment.host_space.name, href: `/spaces/${enrichment.host_space.slug}` }
         : null

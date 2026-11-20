@@ -140,7 +140,9 @@ export async function pageContentMetadata(
     // (root layout) resolves the relative path; harmless on the noindex in-app pages that also use
     // this helper.
     alternates: { canonical: route },
-    openGraph: { ...OG_SITE, title, description, images: ogImage ? [{ url: ogImage }] : ROOT_OG_IMAGES },
+    // og:url names the same clean path as the canonical (PERF-014: the 2026-11-19 crawl found /events
+    // with no og:url), so a share of a filtered view still credits the one page.
+    openGraph: { ...OG_SITE, title, description, url: route, images: ogImage ? [{ url: ogImage }] : ROOT_OG_IMAGES },
     // twitter.images inherits openGraph.images (postProcessMetadata), so only the card type is set.
     twitter: { card: 'summary_large_image', title, description },
   }
