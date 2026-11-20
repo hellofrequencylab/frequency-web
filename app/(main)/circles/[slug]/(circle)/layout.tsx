@@ -31,6 +31,7 @@ import { circleEventInsider, loadCircleContentFacts, loadCircleUpcomingEvents } 
 import { sisterCircleOffer } from '@/lib/circles/sister'
 import { SisterCirclePrompt } from '@/components/circles/sister-circle-prompt'
 import { FqCircleShell } from '@/components/frequency/members/circle/circle-shell'
+import { circleCoverArt } from '@/lib/circles/cover-art'
 import { FqMeetups, type MeetupView } from '@/components/frequency/members/circle/circle-meetups'
 import { FqCircleHealthPanel } from '@/components/frequency/members/circle/circle-health-panel'
 import { loadAttendanceLine, loadCirclePageFacts, loadMeetupPicks } from '@/lib/circles/page-facts'
@@ -224,6 +225,13 @@ export default async function CircleDetailLayout({
   // Round 2. Independent reads in one batch. `user` gates the signed-in-only banners, caps drives the
   // manager rules, and the content facts decide which tabs exist at all. Joining a Circle is free
   // (owner, 2026-10-14): Crew is for hosting one, so Join no longer asks whether the viewer pays.
+  // A Space's Circle wears its Space's page header behind its logo (SCAN-898, LIVE-2489). The root is not a Space.
+  const coverArt = circleCoverArt(
+    circle.image_url,
+    circle.space
+      ? { type: circle.space.type, cover_image_url: circle.space.cover_image_url ?? null, brand_logo_url: circle.space.brand_logo_url ?? null }
+      : null,
+  )
   const [user, caps, content, hero, pageFacts, insightAccess] = await Promise.all([
     getCachedUser(),
     // Request-memoized, so the tab page under `children` asking the same question is a memo hit
@@ -241,8 +249,9 @@ export default async function CircleDetailLayout({
     // Circle admin rail 2026-08-12) ride in as entity values, so both keep beating the element.
     resolveIdentityHero(`/circles/${slug}`, {
       // A Space's Circle with no cover of its own wears its Space's page header (owner, 2026-10-14, SCAN-898),
-      // not the generic /circles image. The platform root is not a Space with a header to lend.
-      entityImage: circle.image_url ?? (circle.space && circle.space.type !== 'root' ? (circle.space.cover_image_url ?? null) : null),
+      // not the generic /circles image. The platform root is not a Space with a header to lend. A Circle whose
+      // image is its Space's logo wears the header too, with the logo shown whole on top (lib/circles/cover-art.ts).
+      entityImage: coverArt.background,
       entityFocus: readCircleCoverFocus(theme),
       entitySize: hasCircleHeroHeight(theme) ? readCircleHeroHeight(theme) : null,
       entityOverlayStyle: circleHeroOverlayStyle(theme),
@@ -364,6 +373,7 @@ export default async function CircleDetailLayout({
         </>
       }
       coverImage={hero.coverImage}
+      coverLogo={coverArt.logo ? { src: coverArt.logo, alt: spaceDisplayName ?? '' } : null}
       name={circle.name}
       subline={[
         `${circle.member_count} ${circle.member_count === 1 ? 'member' : 'members'}`,

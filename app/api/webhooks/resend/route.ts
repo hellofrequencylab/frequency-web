@@ -27,6 +27,7 @@ import { handleSpaceSendWebhook, handleSpaceSendEngagement } from '@/lib/spaces/
 import { recordSpaceSendEventFromResend, spaceEventKindForResend } from '@/lib/spaces/email-tracking'
 import { mapResendEventToInteraction, type ResendTimelineEventType } from '@/lib/spaces/email-timeline'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { failedForDailyQuota, requeueQuotaFailedEmail, type QuotaRequeueDb } from '@/lib/comms/quota-requeue'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
       to?: string | string[]
       email_id?: string
       bounce?: { type?: string }
+      failed?: { reason?: string }
       headers?: unknown
       tags?: unknown
       email?: string
@@ -142,6 +144,25 @@ export async function POST(req: Request) {
       if (suppressReason) await suppress(to, suppressReason)
     } catch (err) {
       errors.push(`suppress: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  // DROPPED FOR THE DAILY LIMIT (EMAIL-070). Resend accepted the send, then reported email.failed with
+  // reason reached_daily_quota. The outbox already settled it as accepted, so put a TRANSACTIONAL
+  // email back on the outbox for the next UTC day, once (lib/comms/quota-requeue.ts). Bulk stays
+  // dropped. A lookup or enqueue failure joins `errors`: the claim is released and Resend redelivers,
+  // and the enqueue's dedupe key (the original queue job) makes that redelivery queue nothing twice.
+  if (type === 'failed' && failedForDailyQuota(event.data) && event.data?.email_id) {
+    try {
+      const outcome = await requeueQuotaFailedEmail(
+        createAdminClient() as unknown as QuotaRequeueDb,
+        event.data.email_id,
+      )
+      if (outcome !== 'requeued' && outcome !== 'duplicate') {
+        console.warn('[resend-webhook] daily-quota failure not requeued', { outcome })
+      }
+    } catch (err) {
+      errors.push(`quotaRequeue: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
