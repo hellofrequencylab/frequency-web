@@ -3,7 +3,7 @@
 // first useful action, return) under fixed names and with no personal data, since UTM breakdowns in Vercel need a paid
 // plan the owner will not buy. Contact audit 2026-11-19 (Wave 3, finding 7). Passes when one module names those steps
 // and the cookie choice and sign-up paths emit them.
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -11,10 +11,10 @@ const root = fileURLToPath(new URL('../../', import.meta.url))
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 const walk = (d, out = []) => {
   if (!existsSync(d)) return out
-  for (const f of readdirSync(d)) {
-    const p = join(d, f)
-    if (statSync(p).isDirectory()) walk(p, out)
-    else if (/\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f)) out.push(p)
+  for (const e of readdirSync(d, { withFileTypes: true })) {
+    const p = join(d, e.name)
+    if (e.isDirectory()) walk(p, out)
+    else if (/\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name)) out.push(p)
   }
   return out
 }
