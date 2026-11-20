@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { getPublicJourney, listPublicJourneys } from '@/lib/journey-plans'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { readJourneyGuarantee } from '@/lib/journeys/guarantee'
@@ -11,7 +11,7 @@ import { OG_SITE, SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { journeyCourseSchema, breadcrumbSchema, journeyOfferSchema } from '@/lib/jsonld'
 import { isFrequencyCourse } from '@/lib/courses/library'
-import { courseHref } from '@/lib/courses/tracks'
+import { courseHref, salesPageFor } from '@/lib/courses/tracks'
 import { courseRun, getCourseContext } from '@/lib/courses/course-context'
 
 import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
@@ -86,6 +86,11 @@ export default async function DiscoverJourneyPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
+  // A Journey with a hand-built sales page (The Business of Community 101 -> /courses/business-of-community)
+  // sends every visitor there. This generic preview was what shares, QR codes, Discover cards and the
+  // signed-out /journeys/<slug> twin landed on, so the designed page went unseen (JRN-028, Daniel 2026-11-20).
+  const sales = salesPageFor(slug)
+  if (sales) permanentRedirect(sales)
   const found = await getPublicJourney(slug)
   if (!found) notFound()
   const { plan, items } = found
