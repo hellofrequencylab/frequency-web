@@ -13,7 +13,7 @@ import { publicIndexTwin } from '@/lib/nav/public-twin'
 
 /** First path segments a signed-out reader cannot open: proxy.ts sends them to sign-in, or the
  *  (main) layout sends them home. /events is left out on purpose (its detail pages are public). */
-export const MEMBER_ONLY_CORPUS_PREFIXES: readonly string[] = [
+const MEMBER_ONLY_CORPUS_PREFIXES: readonly string[] = [
   '/admin',
   '/channels',
   '/crew',
@@ -37,22 +37,22 @@ export const MEMBER_ONLY_CORPUS_PREFIXES: readonly string[] = [
 ]
 
 /** True when a root-relative path is one a signed-out reader cannot open. */
-export function isMemberOnlyPath(path: string): boolean {
+function isMemberOnlyPath(path: string): boolean {
   const bare = path.split(/[?#]/)[0].replace(/\/$/, '') || '/'
   return MEMBER_ONLY_CORPUS_PREFIXES.some((p) => bare === p || bare.startsWith(`${p}/`))
 }
 
 /**
- * A help body as the corpus carries it: every root-relative markdown link made absolute against
- * `siteUrl`, a member index pointed at its public listing, and a member-only link reduced to its
- * words. External links and anchors are left alone.
+ * A help body with every root-relative link a signed-out reader can open: a member index pointed at
+ * its public listing, and a member-only link reduced to its words. Links stay root-relative (the
+ * route makes them absolute, SCAN-806); external links and anchors are left alone.
  */
-export function publicCorpusLinks(body: string, siteUrl: string): string {
+export function publicCorpusLinks(body: string): string {
   return body.replace(/\[([^\]]*)\]\((\/(?!\/)[^)\s]*)\)/g, (_m, text: string, path: string) => {
     const bare = path.split(/[?#]/)[0]
     const twin = publicIndexTwin(bare)
-    if (twin) return `[${text}](${siteUrl}${twin}${path.slice(bare.length)})`
+    if (twin) return `[${text}](${twin}${path.slice(bare.length)})`
     if (isMemberOnlyPath(path)) return text
-    return `[${text}](${siteUrl}${path})`
+    return `[${text}](${path})`
   })
 }

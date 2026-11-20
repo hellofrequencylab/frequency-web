@@ -194,9 +194,11 @@ export async function GET() {
       // `##` sits under the `####` article title instead of outranking it (`##` -> `#####`,
       // `###` -> `######`; +3 keeps the two apart where +4 would flatten both to `######`). The
       // heading regex also matches inside a fenced code block; no help body carries a `#` fence.
+      const body = a.body.trim()
       out.push(
         '',
-        publicCorpusLinks(a.body.trim(), SITE_URL)
+        publicCorpusLinks(body)
+          .replace(/\]\(\/(?!\/)/g, `](${SITE_URL}/`)
           .replace(/^(#{1,6})[ \t]/gm, (_m, h: string) => '#'.repeat(Math.min(h.length + 3, 6)) + ' '),
       )
     }

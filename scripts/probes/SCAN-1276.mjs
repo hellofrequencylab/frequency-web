@@ -18,7 +18,7 @@ walk('content/help')
 for (const f of helpFiles) if (/\]\(\/networks[)#?]/.test(read(f))) bad.push(`${f} links /networks, which redirects to /for/networks`)
 
 const route = read('app/llms-full.txt/route.ts')
-if (!/publicCorpusLinks\(a\.body/.test(route)) bad.push('llms-full.txt does not pass help bodies through publicCorpusLinks')
+if (!/publicCorpusLinks\((?:a\.)?body/.test(route)) bad.push('llms-full.txt does not pass help bodies through publicCorpusLinks')
 let links = ''
 try {
   links = read('lib/seo/corpus-links.ts')
