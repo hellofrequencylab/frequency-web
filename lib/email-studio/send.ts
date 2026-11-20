@@ -634,6 +634,9 @@ async function recordLedgerSends(
   spaceId: string,
   campaignId: string,
   recipients: { contactId: string | null; email: string }[],
+  /** A broadcast send (EMAIL-077): the rows land 'sent' carrying the Resend broadcast id in resend_id,
+   *  so the webhook can map data.broadcast_id plus the recipient back to this campaign and row. */
+  broadcast?: { broadcastId: string },
 ): Promise<void> {
   if (recipients.length === 0) return
   const rows = recipients.map((r) => ({
@@ -641,7 +644,8 @@ async function recordLedgerSends(
     campaign_id: campaignId,
     contact_id: r.contactId,
     email: r.email,
-    status: 'queued',
+    status: broadcast ? 'sent' : 'queued',
+    ...(broadcast ? { resend_id: broadcast.broadcastId } : {}),
   }))
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
@@ -895,8 +899,11 @@ export async function sendCampaignNow(
       if (allowed.length > 0) {
         const fallbacks = { ...MERGE_TAG_DEFAULT_FALLBACKS, ...productVars }
         const compiled = compileEmailDoc(doc, { unsubscribeUrl: RESEND_UNSUBSCRIBE_PLACEHOLDER, manageUrl: MANAGE_URL_PLACEHOLDER })
+        // EMAIL-077: keep the broadcast id. Resend reports each recipient's delivery, open and click with
+        // data.broadcast_id, and the ledger rows below carry it so the webhook can attribute them.
+        let broadcastId: string
         try {
-          await sendCampaignAsBroadcast({
+          const sent = await sendCampaignAsBroadcast({
             campaignId,
             from: fromHeader,
             replyTo,
@@ -905,6 +912,7 @@ export async function sendCampaignNow(
             text: toResendMergeTags(compiled.text, fallbacks, { escape: false }),
             recipients: allowed.map((a) => a.contact),
           })
+          broadcastId = sent.broadcastId
         } catch (err) {
           // EMAIL-084: nothing went out, so give the weekly slots back before the failure is recorded.
           if (capOn) await releaseCampaignSends(db, campaignId, allowed.map((a) => a.r.email))
@@ -916,6 +924,7 @@ export async function sendCampaignNow(
             rootSpaceId,
             campaignId,
             allowed.map((a) => ({ contactId: a.r.contactId || null, email: a.r.email })),
+            { broadcastId },
           )
         }
       }

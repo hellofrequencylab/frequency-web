@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/email-studio/send.ts",
     "ref": "Email and messaging check 2026-11-18, live broadcast test (campaign a9f3e906, Resend broadcast a7b061d3)"
   },
-  "detail": "EMAIL-076 sends a platform campaign as one Resend broadcast. The live one-person test on 2026-11-18 was delivered, opened and clicked (unsubscribe round trip wrote the root-Space suppression in 2 s), but the bookkeeping never closes: the outreach_sends row stays 'queued' with resend_id null, and every email_events row for the broadcast has campaign_id null, because the broadcast branch never stores the broadcast id and the webhook never reads data.broadcast_id. Campaign stats (delivered, opens, clicks) therefore read zero for every broadcast campaign. Work: store the Resend broadcast id on the campaign (or on its outreach_sends rows) when sendCampaignAsBroadcast returns, and in app/api/webhooks/resend/route.ts map data.broadcast_id plus the recipient address back to the campaign and its outreach_sends row (status delivered/bounced/complained, campaign_id on email_events).",
+  "detail": "EMAIL-076 sends a platform campaign as one Resend broadcast. The live one-person test on 2026-11-18 was delivered, opened and clicked (unsubscribe round trip wrote the root-Space suppression in 2 s), but the bookkeeping never closes: the outreach_sends row stays 'queued' with resend_id null, and every email_events row for the broadcast has campaign_id null, because the broadcast branch never stores the broadcast id and the webhook never reads data.broadcast_id. Campaign stats (delivered, opens, clicks) therefore read zero for every broadcast campaign. Work: store the Resend broadcast id on the campaign (or on its outreach_sends rows) when sendCampaignAsBroadcast returns, and in app/api/webhooks/resend/route.ts map data.broadcast_id plus the recipient address back to the campaign and its outreach_sends row (status delivered/bounced/complained, campaign_id on email_events).\n\nA broadcast campaign send now writes the Resend broadcast id into each recipient's outreach_sends.resend_id (status sent; no new column). The Resend webhook reads data.broadcast_id, finds that row by broadcast id plus recipient (lib/email-studio/broadcast-attribution.ts), moves it to delivered, bounced or complained (a late delivery never overwrites a bounce or complaint), and writes the campaign id on the email_events row. Covered by lib/email-studio/broadcast-attribution.test.ts, app/api/webhooks/resend/route.broadcast.test.ts and lib/email-studio/send-scale.test.ts.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/EMAIL-077.mjs",
-    "note": "Fails until the broadcast send stores its broadcast id and the Resend webhook attributes broadcast events by broadcast_id."
+    "note": "Passes once the broadcast send stores its broadcast id and the Resend webhook attributes broadcast events by broadcast_id."
   },
+  "closed": "2026-11-20",
   "wave": "W7"
 }

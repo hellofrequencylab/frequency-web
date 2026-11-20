@@ -14,7 +14,7 @@ let row: CampaignRow
 /** Every update patch applied to the campaigns row, in order. */
 let updates: CampaignRow[]
 /** The outreach_sends ledger: one row per recipient this campaign has been queued to (LIVE-172). */
-let ledger: { campaign_id: string; contact_id: string | null; email: string; status: string }[]
+let ledger: { campaign_id: string; contact_id: string | null; email: string; status: string; resend_id?: string | null }[]
 /** Make the ledger READ fail, so the fail-closed re-send path can be driven. */
 let failLedgerRead: boolean
 
@@ -82,6 +82,7 @@ function from(table: string) {
                 contact_id: (r.contact_id as string) ?? null,
                 email: String(r.email),
                 status: String(r.status),
+                resend_id: (r.resend_id as string | undefined) ?? null,
               })
             }
             return Promise.resolve({ data: null, error: null }).then(resolve)
@@ -366,6 +367,8 @@ describe('EMAIL-076: sent as one Resend broadcast when EMAIL_BROADCASTS_ENABLED 
     expect(broadcastCalls[0].subject).toBe('Hello there')
     expect(row.status).toBe('sent')
     expect(ledger).toHaveLength(450)
+    // EMAIL-077: every ledger row carries the broadcast id, so the webhook can attribute its events.
+    expect(ledger.every((l) => l.resend_id === 'bc_1' && l.status === 'sent')).toBe(true)
   })
 
   it('a provider refusal records the campaign failed (re-sendable), never sent', async () => {
