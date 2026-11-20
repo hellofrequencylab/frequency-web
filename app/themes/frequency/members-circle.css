@@ -4,14 +4,20 @@
    (token-ok). The member area wears the Frequency kit and nothing from a Space's website theme. */
 @layer components {
 [data-design="frequency"] [data-kit="members"] .fqc{display:block;container-type:inline-size}
-[data-design="frequency"] [data-kit="members"] .fqc-cover{position:relative;margin-top:20px;border-radius:28px;overflow:hidden;min-height:clamp(200px,26vw,280px);display:flex;align-items:flex-end;background-color:var(--fq-bg-sunken);background-size:cover;background-position:center 32%;margin-bottom:16px}
+[data-design="frequency"] [data-kit="members"] .fqc-cover{position:relative;margin-top:20px;border-radius:28px;overflow:hidden;min-height:clamp(200px,26vw,280px);display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;background-color:var(--fq-bg-sunken);margin-bottom:16px;max-width:100%}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-art{position:absolute;inset:0;background-size:cover;background-position:center 32%;background-repeat:no-repeat}
+[data-design="frequency"] [data-kit="members"] .fqc-cover[data-art]::before{display:none}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-art::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 25%,color-mix(in oklab,var(--fq-ink) 45%,transparent) 55%,color-mix(in oklab,var(--fq-ink) 82%,transparent) 100%)}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-top{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:16px 16px 0;margin-bottom:auto}
 [data-design="frequency"] [data-kit="members"] .fqc-cover::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 25%,color-mix(in oklab,var(--fq-ink) 45%,transparent) 55%,color-mix(in oklab,var(--fq-ink) 82%,transparent) 100%)}
 [data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in{position:relative;width:100%;padding:24px clamp(18px,3vw,32px);align-items:flex-end;justify-content:space-between;gap:16px}
 [data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in>.stack{gap:12px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqc-cover .h1{overflow-wrap:anywhere}
+[data-design="frequency"] [data-kit="members"] .fqc-act-main,[data-design="frequency"] [data-kit="members"] .fqc-act-admin{display:contents}
 [data-design="frequency"] [data-kit="members"] .fqc-cover .h1{color:var(--fq-text-on-accent);font:500 clamp(28px,3.6vw,44px)/1.04 var(--fq-font-display);letter-spacing:-.05em;text-shadow:0 2px 18px color-mix(in oklab,var(--fq-ink) 25%,transparent)}
 [data-design="frequency"] [data-kit="members"] .fqc-cover .h1 .serif{font-family:var(--fq-font-serif);font-style:italic;font-weight:400;letter-spacing:-.01em;font-size:1em}
-[data-design="frequency"] [data-kit="members"] .fqc-badge{position:absolute;top:16px;left:16px;z-index:1;display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:999px;background:color-mix(in oklab,var(--fq-surface-raised) 88%,transparent);color:var(--fq-text-strong);font:600 var(--fq-text-meta)/1 var(--fq-font-sans)}
-[data-design="frequency"] [data-kit="members"] .fqc-space-pill{position:absolute;top:16px;right:16px;z-index:1;display:inline-flex;align-items:center;max-width:calc(50% - 16px);height:28px;padding:0 12px;border-radius:999px;background:color-mix(in oklab,var(--fq-surface-raised) 88%,transparent);color:var(--fq-text-strong);font:600 var(--fq-text-meta)/1 var(--fq-font-sans);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-design="frequency"] [data-kit="members"] .fqc-badge{flex:none;display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:999px;background:color-mix(in oklab,var(--fq-surface-raised) 88%,transparent);color:var(--fq-text-strong);font:600 var(--fq-text-meta)/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqc-space-pill{margin-left:auto;min-width:0;display:inline-flex;align-items:center;max-width:60%;height:28px;padding:0 12px;border-radius:999px;background:color-mix(in oklab,var(--fq-surface-raised) 88%,transparent);color:var(--fq-text-strong);font:600 var(--fq-text-meta)/1 var(--fq-font-sans);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-design="frequency"] [data-kit="members"] .fqc-badge.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--fq-live);animation:fqc-breathe 3.2s var(--fq-ease-breath) infinite}
 @keyframes fqc-breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .fqc-badge.live::before{animation:none}}
@@ -89,7 +95,48 @@
 /* NARROW: the shell's rails leave the page a column of 420 to 720px for every viewport under 1448px (the left rail 248 + the right
  rail 288 + 192 of gutters come off 1280, and the right rail is on every member page), so the narrow rules key on that viewport
  range, not on a phone. The design's own 720px rules, moved up to where the column really is. */
-@media (max-width:1447px){[data-design="frequency"] [data-kit="members"] .fqc-cover{min-height:260px}[data-design="frequency"] [data-kit="members"] .fqc-cover::before{background:linear-gradient(180deg,transparent 0%,color-mix(in oklab,var(--fq-ink) 45%,transparent) 35%,color-mix(in oklab,var(--fq-ink) 82%,transparent) 100%)}[data-design="frequency"] [data-kit="members"] .fqc-cover .h1{font-size:clamp(26px,2.4vw,34px)}[data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in{padding:20px 18px}[data-design="frequency"] [data-kit="members"] .fqc-tab{padding:0 14px;height:48px;font-size:var(--fq-text-body-s)}[data-design="frequency"] [data-kit="members"] .fqc-tab .fq-icon{display:none}[data-design="frequency"] [data-kit="members"] .fqc-meet{padding:16px}[data-design="frequency"] [data-kit="members"] .fqc-detail-act{flex-basis:100%}}
+@media (max-width:1447px){[data-design="frequency"] [data-kit="members"] .fqc-cover{min-height:260px}[data-design="frequency"] [data-kit="members"] .fqc-cover::before,[data-design="frequency"] [data-kit="members"] .fqc-cover-art::after{background:linear-gradient(180deg,transparent 0%,color-mix(in oklab,var(--fq-ink) 45%,transparent) 35%,color-mix(in oklab,var(--fq-ink) 82%,transparent) 100%)}[data-design="frequency"] [data-kit="members"] .fqc-cover .h1{font-size:clamp(26px,2.4vw,34px)}[data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in{padding:20px 18px}[data-design="frequency"] [data-kit="members"] .fqc-tab{padding:0 14px;height:48px;font-size:var(--fq-text-body-s)}[data-design="frequency"] [data-kit="members"] .fqc-tab .fq-icon{display:none}[data-design="frequency"] [data-kit="members"] .fqc-meet{padding:16px}[data-design="frequency"] [data-kit="members"] .fqc-detail-act{flex-basis:100%}}
+/* THE COVER, EVERY WIDTH (owner, 2026-11-20: "make these circle headers actually look good in mobile", then
+   "Needs the mindless background with the logo over it fully in screen"). The art is its own band: the picture
+   fills it and the owning Space's logo sits over it whole (contain, never cropped). The badge and the Space pill
+   ride on the band. The name, facts and buttons sit below on the kit's glass panel in the kit's ink, so no
+   picture or logo ever sits under the words. One primary action leads; QR, Edit and Manage share a row. */
+[data-design="frequency"] [data-kit="members"] .fqc-cover{min-height:0;justify-content:flex-start;margin-top:12px;border-radius:24px;background:var(--fq-glass-panel);box-shadow:var(--fq-glass-panel-shadow)}
+[data-design="frequency"] [data-kit="members"] .fqc-cover::before{display:none}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-art{position:relative;inset:auto;flex:none;aspect-ratio:16/9;max-height:280px;width:100%;background-color:var(--fq-bg-sunken);background-image:linear-gradient(135deg,var(--fq-pa-soft),var(--fq-bg-sunken))}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-art[style]{background-image:var(--fqc-art)}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-logo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:block;width:auto;height:56%;max-width:72%;object-fit:contain;border-radius:18px;box-shadow:0 12px 32px -12px color-mix(in oklab,var(--fq-ink) 55%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-art::after{display:none}
+[data-design="frequency"] [data-kit="members"] .fqc-cover[data-art] .fqc-cover-top{position:absolute;top:0;left:0;right:0;padding:12px}
+[data-design="frequency"] [data-kit="members"] .fqc-cover-top{padding:16px 16px 0;margin-bottom:0}
+[data-design="frequency"] [data-kit="members"] .fqc-badge,[data-design="frequency"] [data-kit="members"] .fqc-space-pill{box-shadow:0 2px 10px -4px color-mix(in oklab,var(--fq-ink) 35%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:18px;padding:16px 16px 18px}
+[data-design="frequency"] [data-kit="members"] .fqc-cover .fqm-cl-in>.stack{gap:10px}
+[data-design="frequency"] [data-kit="members"] .fqc-cover .h1{color:var(--fq-text-strong);font-size:clamp(26px,3cqi,34px);line-height:1.1;letter-spacing:-.035em;text-shadow:none}
+[data-design="frequency"] [data-kit="members"] .fqc-tags li{background:color-mix(in oklab,var(--fq-ink) 5%,transparent);border-color:transparent;color:var(--fq-text-body);backdrop-filter:none;-webkit-backdrop-filter:none}
+[data-design="frequency"] [data-kit="members"] .fqc-facts{flex-direction:column;row-gap:4px;font:400 14px/1.4 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqc-facts .fqc-rhythm-line{margin-bottom:4px;font:400 15px/1.45 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqc-facts a{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqc-actions{display:flex;flex-wrap:wrap;gap:8px}
+[data-design="frequency"] [data-kit="members"] .fqc-act-main{order:-1;flex:1 1 auto;display:flex;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqc-act-main:empty{display:none}
+[data-design="frequency"] [data-kit="members"] .fqc-actions:has(.fqc-act-admin) .fqc-act-main{flex-basis:100%}
+[data-design="frequency"] [data-kit="members"] .fqc-act-main>*{flex:1;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqc-act-main .btn{width:100%}
+[data-design="frequency"] [data-kit="members"] .fqc-actions>.btn,[data-design="frequency"] [data-kit="members"] .fqc-act-admin>.btn{flex:1 1 0;min-width:0;padding:0 14px}
+[data-design="frequency"] [data-kit="members"] .fqc-cover .fqc-actions .btn:not(.pa){height:44px;background:color-mix(in oklab,var(--fq-ink) 5%,transparent);border:0;box-shadow:inset 0 0 0 1px var(--fq-border-hair);color:var(--fq-text-strong);backdrop-filter:none;-webkit-backdrop-filter:none}
+[data-design="frequency"] [data-kit="members"] .fqc-cover .fqc-actions .btn.pa{height:44px}
+/* A wide column keeps the buttons on one row at their own widths, the primary first. */
+@container (min-width:521px){
+[data-design="frequency"] [data-kit="members"] .fqc-actions:has(.fqc-act-admin) .fqc-act-main,[data-design="frequency"] [data-kit="members"] .fqc-act-main{flex:0 0 auto}
+[data-design="frequency"] [data-kit="members"] .fqc-act-main .btn{width:auto}
+[data-design="frequency"] [data-kit="members"] .fqc-actions>.btn,[data-design="frequency"] [data-kit="members"] .fqc-act-admin>.btn{flex:0 0 auto;padding:0 18px}
+}
+@container (max-width:520px){
+[data-design="frequency"] [data-kit="members"] .fqc-tabs{margin-top:20px;padding:4px}
+[data-design="frequency"] [data-kit="members"] .fqc-tab{flex:0 0 auto;height:40px;padding:0 14px;font-size:14px;gap:6px}
+[data-design="frequency"] [data-kit="members"] .fqc-tab-n{min-width:20px;height:20px;padding:0 6px}
+}
 }
 @layer components {
 [data-design="frequency"] [data-kit="members"] .fqc-health{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}

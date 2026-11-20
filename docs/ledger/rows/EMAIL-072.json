@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
-  "wave": "W7",
+  "status": "done",
   "source": {
     "file": "lib/comms/leader-send.ts",
     "ref": "Email and messaging check 2026-11-18 (thread: Check every email and message system)"
   },
-  "detail": "2026-11-18: leader-send emails every member of every Circle a leader runs with only a Message-ID header, no unsubscribe link or List-Unsubscribe header, on the transactional lane, and without isBlockedBetween (lib/comms/bulk-dm.ts does check it). A list fan-out with no one-click opt-out breaks the Gmail and Yahoo bulk rules and CAN-SPAM, and a member who blocked the leader still gets mail. Done when the send carries listUnsubscribeHeaders with a footer link, rides the bulk lane, and skips blocked pairs.",
+  "detail": "2026-11-18: leader-send emails every member of every Circle a leader runs with only a Message-ID header, no unsubscribe link or List-Unsubscribe header, on the transactional lane, and without isBlockedBetween (lib/comms/bulk-dm.ts does check it). A list fan-out with no one-click opt-out breaks the Gmail and Yahoo bulk rules and CAN-SPAM, and a member who blocked the leader still gets mail. Done when the send carries listUnsubscribeHeaders with a footer link, rides the bulk lane, and skips blocked pairs.\n\nlib/comms/leader-send.ts now sends each Circle member a lifecycle List-Unsubscribe (RFC 8058 one-click) plus a footer link, enqueues on the bulk lane with the outbox drip, and skips any member in a block pair with the leader (isBlockedBetween, fail closed). Focused tests in lib/comms/leader-send.test.ts.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/email-scan-2026-11-18.mjs leader-send-unsubscribe",
-    "note": "Fails on main today; passes once the fix lands."
-  }
+    "note": "Passes once a leader note to their Circles carries List-Unsubscribe and checks isBlockedBetween."
+  },
+  "closed": "2026-11-20",
+  "wave": "W7"
 }
