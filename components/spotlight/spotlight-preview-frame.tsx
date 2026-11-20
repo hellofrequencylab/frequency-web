@@ -30,6 +30,18 @@ function asElement(target: EventTarget | null): Element | null {
   return target && typeof (target as Element).closest === 'function' ? (target as Element) : null
 }
 
+// THE DEVICE (LIVE-2486). The page is drawn at a real phone's width (390 by 844, the common iPhone size) so it lays out
+// exactly as a visitor's phone does, then the whole device is scaled down to fit the column and the window. Drawing it
+// narrower than a phone squeezed the page (titles wrapped, the main button spilled out of its pill).
+const DEVICE_W = 390
+const DEVICE_H = 844
+const BEZEL = 10
+/** The bezel's padding (p-2.5) and its 1px border, so the screen inside is exactly DEVICE_W by DEVICE_H. */
+const OUTER_W = DEVICE_W + (BEZEL + 1) * 2
+const OUTER_H = DEVICE_H + (BEZEL + 1) * 2
+/** Room the sticky column keeps above and below the device: the header offset, the label and the hint line. */
+const CHROME_H = 176
+
 export function SpotlightPreviewFrame({
   slug,
   version,
@@ -44,6 +56,28 @@ export function SpotlightPreviewFrame({
   const legacyStore = useProfileLayout()
   const saving = !!(nodeStore?.saving || nodeStore?.dirty || legacyStore?.saving || legacyStore?.dirty)
   const frame = useRef<HTMLIFrameElement | null>(null)
+  const stage = useRef<HTMLDivElement | null>(null)
+  const [scale, setScale] = useState(0.8)
+  // Fit the device to the column's width and the window's height, never larger than life.
+  useEffect(() => {
+    const el = stage.current
+    if (!el) return
+    const fit = () => {
+      const byWidth = el.clientWidth / OUTER_W
+      const byHeight = (window.innerHeight - CHROME_H) / OUTER_H
+      const next = Math.max(0.5, Math.min(1, byWidth || 1, byHeight))
+      setScale((s) => (Math.abs(s - next) < 0.005 ? s : next))
+    }
+    fit()
+    // Window resizes alone still refit where ResizeObserver is missing (an older browser).
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit)
+    ro?.observe(el)
+    window.addEventListener('resize', fit)
+    return () => {
+      ro?.disconnect()
+      window.removeEventListener('resize', fit)
+    }
+  }, [])
   const scrollY = useRef(0)
   const [loading, setLoading] = useState(true)
   const [loads, setLoads] = useState(0)
@@ -137,6 +171,16 @@ export function SpotlightPreviewFrame({
     const style = d.createElement('style')
     style.textContent = OUTLINE_CSS
     d.head.appendChild(style)
+    // A short page stops partway down the phone. Paint the rest of the screen in the page's own colour, the way the
+    // theme fills a visitor's screen, so the phone never shows a pale band under the page.
+    const fill = [...d.querySelectorAll('.spotlight-root, .nws')]
+      .map((el) => win.getComputedStyle(el).backgroundColor)
+      // token-ok: reads the page's computed colour; the literal is how a browser spells "no background".
+      .find((c) => c && c !== 'transparent' && c !== 'rgba(0, 0, 0, 0)')
+    if (fill) {
+      d.documentElement.style.background = fill
+      d.body.style.background = fill
+    }
 
     // A press on the page picks what was pressed in the editor. On the window, capturing, so it runs before the
     // page's own guard (SpotlightPreviewBridge) swallows the press.
@@ -170,18 +214,25 @@ export function SpotlightPreviewFrame({
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-sm">
-      <div className="overflow-hidden rounded-card border border-border bg-canvas lift-1">
-        <iframe
-          ref={frame}
-          src={`/spaces/${slug}/spotlight/preview`}
-          title="Preview of your Spotlight"
-          onLoad={onLoad}
-          className="block h-[calc(100dvh-9rem)] max-h-[48rem] w-full"
-        />
+    <div ref={stage} className="relative w-full">
+      <div className="mx-auto" style={{ width: OUTER_W * scale, height: OUTER_H * scale }}>
+        <div
+          className="origin-top-left rounded-[2.75rem] border border-border-strong bg-surface-elevated p-2.5 lift-2"
+          style={{ width: OUTER_W, height: OUTER_H, transform: `scale(${scale})` }}
+        >
+          <div className="h-full w-full overflow-hidden rounded-[2.25rem] bg-canvas">
+            <iframe
+              ref={frame}
+              src={`/spaces/${slug}/spotlight/preview`}
+              title="Preview of your Spotlight"
+              onLoad={onLoad}
+              className="block h-full w-full"
+            />
+          </div>
+        </div>
       </div>
       {(loading || saving) && (
-        <span className="absolute right-3 top-3 flex items-center gap-1 rounded-pill bg-surface px-2 py-1 text-2xs text-muted lift-1" role="status" aria-live="polite">
+        <span className="absolute left-1/2 top-4 flex -translate-x-1/2 items-center gap-1 rounded-pill bg-surface px-2 py-1 text-2xs text-muted lift-1" role="status" aria-live="polite">
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Updating
         </span>
       )}
