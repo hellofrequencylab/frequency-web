@@ -22,6 +22,8 @@ const H = vi.hoisted(() => ({
   priorTransient: 0,
   rootSpaceId: 'root-space' as string | null,
   scoped: [] as { email: string; reason: string; spaceId?: string }[],
+  requeued: [] as string[],
+  requeueThrows: false,
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -70,6 +72,22 @@ vi.mock('@/lib/spaces/email', () => ({
   },
 }))
 
+// EMAIL-070: the requeue's own lookups and enqueue are covered in lib/comms/quota-requeue.test.ts.
+// Here the reason check is the real one and the requeue records which provider id it was asked for.
+vi.mock('@/lib/comms/quota-requeue', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/comms/quota-requeue')>()
+  return {
+    failedForDailyQuota: real.failedForDailyQuota,
+    requeueQuotaFailedEmail: async (db: unknown, providerId: string) => {
+      // The route hands in its own service-role client; the requeue never opens one.
+      if (!db || typeof (db as { from?: unknown }).from !== 'function') throw new Error('no db client passed')
+      if (H.requeueThrows) throw new Error('attempt lookup failed')
+      H.requeued.push(providerId)
+      return 'requeued'
+    },
+  }
+})
+
 vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: async () => H.rootSpaceId }))
 
 import { POST } from './route'
@@ -109,6 +127,8 @@ beforeEach(() => {
   H.priorTransient = 0
   H.rootSpaceId = 'root-space'
   H.scoped.length = 0
+  H.requeued.length = 0
+  H.requeueThrows = false
   vi.spyOn(console, 'error').mockImplementation(() => {})
   vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
@@ -231,6 +251,40 @@ describe('POST /api/webhooks/resend', () => {
       const res = await POST(signedRequest('msg_c4', optOut))
       expect(res.status).toBe(200)
       expect(H.scoped).toEqual([])
+    })
+  })
+
+  // EMAIL-070: Resend accepted the send, then dropped it for the daily limit.
+  describe('email.failed for the daily quota', () => {
+    const quotaFailed = { type: 'email.failed', data: { to: ['r@x.com'], email_id: 're_q1', failed: { reason: 'reached_daily_quota' } } }
+
+    it('requeues the send behind that provider id and still records the event', async () => {
+      const res = await POST(signedRequest('msg_q1', quotaFailed))
+      expect(res.status).toBe(200)
+      expect(H.requeued).toEqual(['re_q1'])
+      expect(H.recorded).toEqual([{ email: 'r@x.com', eventType: 'failed' }])
+    })
+
+    it('does not requeue a failure for any other reason', async () => {
+      const other = { type: 'email.failed', data: { to: 'r@x.com', email_id: 're_q2', failed: { reason: 'invalid_recipient' } } }
+      const res = await POST(signedRequest('msg_q2', other))
+      expect(res.status).toBe(200)
+      expect(H.requeued).toEqual([])
+    })
+
+    it('a redelivered webhook does not requeue twice', async () => {
+      await POST(signedRequest('msg_q3', quotaFailed))
+      const again = await POST(signedRequest('msg_q3', quotaFailed))
+      expect(await again.json()).toMatchObject({ duplicate: true })
+      expect(H.requeued).toEqual(['re_q1'])
+    })
+
+    it('503s and releases the claim when the requeue cannot be written, appending nothing', async () => {
+      H.requeueThrows = true
+      const res = await POST(signedRequest('msg_q4', quotaFailed))
+      expect(res.status).toBe(503)
+      expect(H.released).toEqual(['msg_q4'])
+      expect(H.recorded).toEqual([])
     })
   })
 })

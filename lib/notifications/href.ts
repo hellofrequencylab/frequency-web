@@ -93,9 +93,22 @@ export function notificationHref(n: NotificationItem): string {
     case 'direct_message':
       return id ? `/messages/${id}` : '/messages'
 
-    // An inbound reply on the comms spine: the Conversation workspace opens the thread by id.
+    // An inbound reply on the comms spine, by the thread's lane (EMAIL-074, lib/comms/reply-bell.ts).
+    // A platform thread is staff work: the Conversation workspace opens it by id.
     case 'conversation':
       return id ? `/admin/crm/conversations?id=${encodeURIComponent(id)}` : '/admin/crm/conversations'
+
+    // A leader's thread rings the leader, an ordinary member, so it opens their own inbox (the page
+    // shows a thread only to its owner or assignee).
+    case 'leader_conversation':
+      return id ? `/lead/inbox?id=${encodeURIComponent(id)}` : '/lead/inbox'
+
+    // A Space-lane thread rings that Space's owner or agent. Its inbox is addressed by Space SLUG and
+    // the row carries only the thread UUID, so "Spaces you run" resolves the slug on arrival and sends
+    // the owner on to /spaces/<slug>/crm/conversations?id=<thread>; a miss leaves them on the hub,
+    // which still opens every Space console they run.
+    case 'space_conversation':
+      return id ? `/spaces/operating?conversation=${encodeURIComponent(id)}` : '/spaces/operating'
 
     // A contact-form lead (`crm_contact_form`) and an inbound CRM reply (`crm_inbound_reply`).
     // BOTH writers set recipient_id to the SPACE OWNER (lib/crm/lead-notify, lib/crm/inbox), never

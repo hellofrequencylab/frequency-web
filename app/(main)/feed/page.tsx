@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { HOME_TZ } from '@/lib/time/home-zone'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -33,6 +34,14 @@ import { FrequencyFeed } from '@/components/frequency/members/feed/feed-body'
 import { FrequencyAnonFeed } from '@/components/frequency/members/feed/anon-feed-body'
 
 type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'janitor'
+
+// A signed-out visitor (and so a crawler) gets the real Feed shell on /feed with public reads (SCAN-889).
+// robots.ts keeps crawlers off it, but the page itself said nothing, so a crawler that fetched it anyway
+// saw an indexable 200 (SCAN-1278). It is a member's stream, never a search result.
+export const metadata: Metadata = {
+  title: 'Feed',
+  robots: { index: false, follow: true },
+}
 
 export default async function FeedPage({
   searchParams,

@@ -28,3 +28,17 @@ export const NOT_FOUND_METADATA: Metadata = {
   title: 'Page not found',
   robots: null,
 }
+
+/**
+ * What a detail page's `generateMetadata` returns when its row is missing (SCAN-1278).
+ *
+ * The production crawl of 2026-11-19 measured a missing event, help article and topic answering 404
+ * with robots "index, follow" in the head: on that path the page's own metadata (a bare title, or
+ * nothing) was resolved over the root layout's default, and the not-found module's `robots: null`
+ * did not reach it. Saying noindex here is the one place that runs whichever way Next resolves the
+ * error path. If Next's own noindex is also present, the head says the same thing twice, which is
+ * harmless; what it can no longer do is ask a crawler to index a 404.
+ */
+export function missingPageMetadata(title: string): Metadata {
+  return { title, robots: { index: false, follow: true } }
+}

@@ -14,6 +14,7 @@ import { FqPublicEventBody } from '@/components/frequency/members/event/public-e
 import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { formatEventDate, eventDateBadge } from '@/lib/utils'
 import { JsonLd } from '@/components/json-ld'
+import { missingPageMetadata } from '@/lib/seo/not-found-metadata'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { publicEventIndexPlan, shareEventSeo } from '@/lib/events/series-seo'
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
@@ -41,7 +42,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params
   const event = await getPublicEventBySlug(slug)
-  if (!event) return { title: 'Event not found' }
+  if (!event) return missingPageMetadata('Event not found')
 
   const [seo, { indexedOccurrences }, venue] = await Promise.all([
     readShareSeo(event.slug),

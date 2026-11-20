@@ -62,6 +62,7 @@
 [data-design="frequency"] [data-kit="site"] .pa-home .fold-stage{position:sticky;top:0;width:100%;height:100vh;overflow:hidden;pointer-events:none}
 [data-design="frequency"] [data-kit="site"] .pa-home .fl-ph{pointer-events:none;position:absolute;border-radius:var(--fq-radius-l);overflow:hidden;box-shadow:0 30px 80px -30px color-mix(in oklab,var(--fq-uv-void) 90%,transparent);will-change:transform,opacity}
 [data-design="frequency"] [data-kit="site"] .pa-home .fl-ph img{width:100%;height:100%;object-fit:cover;display:block}
+[data-design="frequency"] [data-kit="site"] .pa-home .fl-ph picture{display:contents}
 [data-design="frequency"] [data-kit="site"] .pa-home .fl-shade{position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 50%,color-mix(in oklab,var(--fq-uv-void) 82%,transparent),color-mix(in oklab,var(--fq-uv-void) 35%,transparent) 75%,color-mix(in oklab,var(--fq-uv-void) 10%,transparent));pointer-events:none}
 [data-design="frequency"] [data-kit="site"] .pa-home .fl-txt, [data-design="frequency"] [data-kit="site"] .pa-home .fl-fork{position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 clamp(20px,5vw,64px);text-align:center;opacity:0;pointer-events:none;will-change:transform,opacity}
 [data-design="frequency"] [data-kit="site"] .pa-home .fl-big{margin:22px 0 0;font:600 clamp(32px,4.6vw,68px)/1.04 var(--fq-font-display);letter-spacing:-0.045em;color:var(--fq-text-strong);max-width:17ch;text-wrap:balance}
