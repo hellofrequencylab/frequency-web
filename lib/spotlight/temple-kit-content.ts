@@ -5,13 +5,14 @@
 // The thirteen profiles share ONE type system and ONE set of words and differ by accent only (the design's kits.css), so
 // the profile decides a single thing here: which accent the page wears. Every layout works for every profile.
 
+import type { DoorStyle } from '@/lib/spotlight/door-style'
 import { TEMPLE_KIT_PROFILES } from '@/lib/theme/temple-kit'
 import { TEMPLE_KIT_HERO, templeKitPhoto } from '@/lib/sites/temple-kit-home'
 
 type ProfileId = keyof typeof TEMPLE_KIT_PROFILES
 type DoorKey = 'book' | 'learn' | 'gather' | 'belong' | 'sell' | 'publish'
 
-interface Door { key: DoorKey; title: string; meta: string; href: string }
+interface Door { key: DoorKey; title: string; meta: string; href: string; /** How the owner drew this link (LIVE-2487): a card when unset. */ style?: DoorStyle }
 interface DateRow { mon: string; day: number; title: string; time: string; where: string; seatsLeft?: number }
 interface Offering { name: string; minutes: number; /** Null: priced on request, shown as "Ask". */ price: number | null; photo: string }
 interface Pair { title: string; em: string }

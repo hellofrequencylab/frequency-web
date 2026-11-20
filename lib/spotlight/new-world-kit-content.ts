@@ -8,6 +8,7 @@
 // invented price, time or testimonial ships. The kit holds words and rows only; colour and type are the theme's.
 
 import { NEW_WORLD_ACCENTS, type NewWorldAccentId } from '@/lib/theme/new-world'
+import { linkDoorStyle, type DoorStyle } from '@/lib/spotlight/door-style'
 import { newWorldFunctionsFor, type NewWorldHas, type NewWorldTool } from '@/lib/sites/new-world-functions'
 
 type Tool = NewWorldTool
@@ -16,7 +17,7 @@ type Has = NewWorldHas
 type IconName = 'message' | 'sparkle' | 'calendar' | 'shield' | 'star' | 'award' | 'wrench' | 'home' | 'clock' | 'leaf' | 'heart' | 'chart' | 'briefcase' | 'tag' | 'bolt' | 'car' | 'droplet' | 'users' | 'sun' | 'user' | 'mail' | 'eye' | 'pin' | 'check'
 
 /** `style` is the owner's pick for how the link is drawn (LIVE-2486); absent, the layout draws its own card. */
-type NewWorldDoorStyle = 'button' | 'card' | 'text'
+type NewWorldDoorStyle = DoorStyle
 interface NewWorldDoor { id: string; key: Tool; icon: IconName; title: string; meta: string; href: string; style?: NewWorldDoorStyle }
 interface NewWorldOffer { name: string; price: string; dur: string; icon: IconName }
 interface NewWorldOpening { mon: string; day: string; title: string; time: string; where: string; left: number }
@@ -227,10 +228,6 @@ function linkIcon(host: string): IconName {
   return 'user'
 }
 
-function doorStyle(v: string | undefined): NewWorldDoorStyle | undefined {
-  return v === 'button' || v === 'card' || v === 'text' ? v : undefined
-}
-
 /** THE LINK PAGE (a Space's Spotlight on New World): the design's Stack layout fed by the owner's own links, one door
  *  each, a "message me" button in the hero and one closing call. Nothing is invented: no sample time, price or quote. */
 export function newWorldLinkPageContent(opts: {
@@ -248,7 +245,7 @@ export function newWorldLinkPageContent(opts: {
     let meta = l.url
     let host = ''
     try { const u = new URL(l.url); host = u.hostname; meta = `${u.hostname.replace(/^www\./, '')}${u.pathname === '/' ? '' : u.pathname}` } catch { /* keep the raw url */ }
-    const style = doorStyle(l.style) ?? doorStyle(opts.linkStyle)
+    const style = linkDoorStyle(l, opts.linkStyle)
     return { id: `link-${i}`, key: 'publish', icon: linkIcon(host), title: l.label, meta, href: l.url, ...(style ? { style } : {}) }
   })
   return {
@@ -283,7 +280,10 @@ export function newWorldProfilePageContent(opts: {
   const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, '') } catch { return '' } }
   // The owner picks the main button ("Make this the main button"); the first link stands in until they do (owner ruling 2026-11-19),
   // unless the owner drew that link as a card or a text link: their own style wins over the stand-in (LIVE-2486).
-  const primary = opts.links.find((l) => l.style === 'main') ?? opts.links.find((l) => l.style !== 'text' && l.style !== 'card') ?? null
+  // The Links block default counts as each unstyled link's style (LIVE-2487), the same rule every other theme reads (lib/spotlight/door-style.ts).
+  const styled = opts.links.map((l) => ({ ...l, style: l.style ?? opts.linkStyle }))
+  const pick = styled.find((l) => l.style === 'main') ?? styled.find((l) => l.style !== 'text' && l.style !== 'card') ?? null
+  const primary = pick ? opts.links[styled.indexOf(pick)] : null
   const rest = link.doors.filter((_, i) => opts.links[i] !== primary)
   const accent = opts.accent && opts.accent in NEW_WORLD_ACCENTS ? (opts.accent as NewWorldAccentId) : link.accent
   return {

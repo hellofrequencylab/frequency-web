@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { DoorRuns } from '@/components/spotlight/door-runs'
 import { ArrowRight, CalendarDays, Heart, Mail, MapPin, MessageCircle, Sparkles, Star, Tag, Users, type LucideIcon } from 'lucide-react'
 import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
 import { contrastRatio } from '@/lib/spaces/accent'
@@ -73,7 +74,7 @@ function Stack({ c }: { c: C }) {
       <Top c={c} big />
       <div className="hks-col">
         <Btn href={c.cta.href}>{c.cta.label}</Btn>
-        {c.doors.map((d) => <Door key={d.id} d={d} />)}
+        <DoorRuns doors={c.doors} card={(d) => <Door key={d.id} d={d} />} button={(d) => <Btn key={d.id} href={d.href} ghost>{d.title}</Btn>} />
       </div>
       <Foot c={c} />
     </>
@@ -86,9 +87,11 @@ function CardWall({ c }: { c: C }) {
       <Top c={c} />
       <div className="hks-grid">
         <div className="hks-span"><Btn href={c.featured.href}>{c.featured.cta}</Btn></div>
-        {c.doors.map((d) => (
-          <Link key={d.id} href={d.href} className="hks-card hks-sq"><Glyph icon={d.icon} size={24} /><b>{d.title}</b></Link>
-        ))}
+        <DoorRuns
+          doors={c.doors}
+          card={(d) => <Link key={d.id} href={d.href} className="hks-card hks-sq"><Glyph icon={d.icon} size={24} /><b>{d.title}</b></Link>}
+          button={(d) => <div key={d.id} className="hks-span"><Btn href={d.href} ghost>{d.title}</Btn></div>}
+        />
       </div>
       <Foot c={c} />
     </>

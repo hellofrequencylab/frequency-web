@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { DoorRuns, DoorExtras, cardDoors } from '@/components/spotlight/door-runs'
 import { Input } from '@/components/ui/field'
 import {
   ArrowRight, Award, Check, Briefcase, CalendarDays, Car, ChartColumn, Clock, Droplet, Eye, Heart, House, Leaf, Mail, MapPin, MessageCircle,
@@ -106,7 +107,7 @@ function Stack({ c }: { c: C }) {
   return (
     <>
       <Hero c={c} height={380} />
-      <div className="svs-stack-list">{c.doors.map((d) => <Door key={d.id} d={d} />)}</div>
+      <div className="svs-stack-list"><DoorRuns doors={c.doors} card={(d) => <Door key={d.id} d={d} />} button={(d) => <Btn key={d.id} href={d.href} tone="secondary">{d.title}</Btn>} /></div>
       {c.letter && <div className="svs-pad" style={{ paddingTop: 12 }}><Letter c={c} compact /></div>}
       <Foot />
     </>
@@ -124,9 +125,10 @@ function CardWall({ c }: { c: C }) {
           <div><div className="svs-d">{f.title}</div><small>{f.meta}</small></div>
           <div><Btn href={f.href} size="sm">{f.cta}</Btn></div>
         </div>
-        {c.doors.slice(0, 4).map((d) => (
+        {cardDoors(c.doors).slice(0, 4).map((d) => (
           <Link key={d.id} href={d.href} className="svs-card svs-sq"><Tile icon={d.icon} size={34} /><div><b>{d.title}</b><small>{d.meta}</small></div></Link>
         ))}
+        <DoorExtras doors={c.doors} button={(d) => <div key={d.href} className="col-span-full grid"><Btn href={d.href} tone="secondary">{d.title}</Btn></div>} />
         {c.letter && <div className="svs-span"><Letter c={c} compact /></div>}
       </div>
       <Foot />
@@ -221,9 +223,10 @@ function Profile({ c }: { c: C }) {
       <div className="svs-pad" style={{ paddingTop: 22 }}>
         <Eyebrow>Where to start</Eyebrow>
         <div className="svs-card svs-list">
-          {c.doors.slice(0, 3).map((d) => (
+          {cardDoors(c.doors).slice(0, 3).map((d) => (
             <Link key={d.id} href={d.href}><Tile icon={d.icon} size={32} /><span><b>{d.title}</b><small>{d.meta}</small></span><ArrowRight size={12} className="svs-sub" aria-hidden /></Link>
           ))}
+          <DoorExtras doors={c.doors} button={(d) => <div key={d.href} className="col-span-full grid"><Btn href={d.href} tone="secondary">{d.title}</Btn></div>} />
         </div>
       </div>
       <Foot />

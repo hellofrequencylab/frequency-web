@@ -93,8 +93,8 @@ export function buildEmbedSrc(provider: EmbedProvider, ref: string): string {
     case 'youtube':
       // A `list/<id>` ref embeds the whole playlist (or a channel's uploads) via the videoseries player.
       return ref.startsWith('list/')
-        ? `https://www.youtube.com/embed/videoseries?list=${ref.slice(5)}`
-        : `https://www.youtube.com/embed/${ref}`
+        ? `https://www.youtube-nocookie.com/embed/videoseries?list=${ref.slice(5)}`
+        : `https://www.youtube-nocookie.com/embed/${ref}`
     case 'vimeo': return `https://player.vimeo.com/video/${ref}`
     case 'spotify': return `https://open.spotify.com/embed/${ref}`
     case 'soundcloud':
