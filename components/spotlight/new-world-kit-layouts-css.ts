@@ -31,7 +31,10 @@ export const NEW_WORLD_KIT_LAYOUTS_CSS = `
 .nws-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:0 24px;border:0;border-radius:var(--nw-radius-pill);background:var(--nw-action-primary);color:var(--nw-action-primary-text);font:var(--nw-fw-bold) 12px/1 var(--nw-font-mono);letter-spacing:var(--nw-ls-button);text-transform:uppercase;white-space:nowrap;cursor:pointer}
 .nws-btn--accent{background:var(--nw-accent);color:var(--nw-accent-text);box-shadow:var(--nw-shadow-glow)}
 .nws-btn--secondary{background:transparent;color:var(--nw-text-primary);box-shadow:inset 0 0 0 1px var(--nw-border-default)}
-.nws-btn--lg{width:100%;min-height:52px;font-size:13px}
+.nws-btn--lg{width:100%;height:auto;min-height:52px;padding-block:14px;font-size:13px;white-space:normal;text-align:center;line-height:1.25}
+.nws-textlinks{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;margin-top:14px;font-size:15px;font-weight:var(--nw-fw-bold)}
+.nws-textlinks a{color:var(--nw-text-primary);text-decoration:underline;text-decoration-color:var(--nw-accent);text-underline-offset:4px}
+.nws-btnlinks{display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .nws-btn--sm{min-height:34px;padding:0 16px;font-size:11px}
 .nws-tile{display:inline-flex;align-items:center;justify-content:center;flex:none;border-radius:var(--nw-radius-md);background:var(--nw-accent-tint);color:var(--nw-flare-400);box-shadow:inset 0 0 0 1px var(--nw-border-subtle)}
 .nws-badge{display:inline-flex;align-items:center;min-height:24px;padding:0 10px;border-radius:var(--nw-radius-pill);background:var(--nw-accent-tint);color:var(--nw-flare-400);font-family:var(--nw-font-mono);font-size:10px;letter-spacing:var(--nw-ls-mono);text-transform:uppercase;white-space:nowrap}
