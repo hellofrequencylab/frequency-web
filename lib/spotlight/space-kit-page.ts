@@ -6,6 +6,7 @@
 // the two cannot drift (owner, 2026-11-06: the editor showed one page and the link another).
 
 import { asLinkStyle, safeUrl, type LinkStyle } from '@/lib/entity-blocks/block-content'
+import { linkDoorStyle, mainLink, type DoorStyle } from '@/lib/spotlight/door-style'
 
 /** The kit's site paths, as this Space's own pages (app/(main)/spaces/[slug]/(profile)): a door never leads off the Space. */
 const SPACE_PAGE: Record<string, string> = {
@@ -47,7 +48,7 @@ export function spaceFactsFromGrid(
   return { ...base, links, ...(linkStyle && linkStyle !== 'main' ? { linkStyle } : {}), button: typeof btn?.label === 'string' && btn.label && url ? { label: btn.label, href: url } : null }
 }
 
-interface KitDoor { title: string; meta: string; href: string }
+interface KitDoor { title: string; meta: string; href: string; style?: DoorStyle }
 interface KitContentShape {
   name: string
   descriptor: string
@@ -75,7 +76,14 @@ function linkMeta(url: string): string {
 /** Lay a Space's facts over a kit's sample-free content. The kit keeps its colour, type and layout; only words and
  *  addresses change. Generic over each kit's own content type, which all carry these five fields. */
 export function overlaySpaceOnKit<C extends KitContentShape>(content: C, facts: SpaceSpotlightFacts): C {
-  const own = facts.links.map((l, i) => ({ ...(content.doors[0] ?? {}), id: `link-${i}`, title: l.label, meta: linkMeta(l.url), href: l.url }))
+  // The main button: the Button block, else the link the owner marked main, else the first link not drawn as a text link
+  // or a card (LIVE-2487). The link that is the button is not drawn again as a door.
+  const main = facts.button ? null : mainLink(facts.links, facts.linkStyle)
+  const own = facts.links.flatMap((l, i) => {
+    if (l === main) return []
+    const style = linkDoorStyle(l, facts.linkStyle)
+    return [{ ...(content.doors[0] ?? {}), id: `link-${i}`, title: l.label, meta: linkMeta(l.url), href: l.url, ...(style ? { style } : {}) }]
+  })
   const seen = new Set<string>()
   const kitDoors = content.doors.flatMap((d) => {
     const href = spacePage(facts, d.href)
@@ -83,9 +91,8 @@ export function overlaySpaceOnKit<C extends KitContentShape>(content: C, facts: 
     seen.add(href)
     return [{ ...d, href }]
   })
-  const doors = (own.length ? own : kitDoors) as C['doors']
-  const first = facts.links[0]
-  const cta = facts.button ?? (first ? { label: first.label, href: first.url } : { label: content.cta.label, href: spacePage(facts, content.cta.href) ?? `${facts.appOrigin ?? ''}/spaces/${facts.slug}` })
+  const doors = (own.length || facts.links.length ? own : kitDoors) as C['doors']
+  const cta = facts.button ?? (main ? { label: main.label, href: main.url } : { label: content.cta.label, href: spacePage(facts, content.cta.href) ?? `${facts.appOrigin ?? ''}/spaces/${facts.slug}` })
   const featuredHref = spacePage(facts, content.featured.href)
   return {
     ...content,

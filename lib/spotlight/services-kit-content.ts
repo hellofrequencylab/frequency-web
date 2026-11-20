@@ -6,6 +6,7 @@
 // score, the quote) is sample content: a live page passes `sample: false` and gets none of it, so no invented price, time or
 // testimonial ships. The kit holds words and rows only; colour and type are the theme's.
 
+import type { DoorStyle } from '@/lib/spotlight/door-style'
 import { SERVICES_ACCENTS, type ServicesAccentId } from '@/lib/theme/services'
 
 type Tool = 'publish' | 'gather' | 'belong' | 'book' | 'learn' | 'sell'
@@ -13,7 +14,7 @@ type Has = 'events' | 'products' | 'plans' | 'posts' | 'team'
 /** The design's icon names; the layouts map each to a lucide icon. */
 type IconName = 'message' | 'sparkle' | 'calendar' | 'shield' | 'star' | 'award' | 'wrench' | 'home' | 'clock' | 'leaf' | 'heart' | 'chart' | 'briefcase' | 'tag' | 'bolt' | 'car' | 'droplet' | 'users' | 'sun' | 'user' | 'mail' | 'eye' | 'pin' | 'check'
 
-interface ServicesDoor { id: string; key: Tool; icon: IconName; title: string; meta: string; href: string }
+interface ServicesDoor { id: string; key: Tool; icon: IconName; title: string; meta: string; href: string; /** How the owner drew this link (LIVE-2487): a card when unset. */ style?: DoorStyle }
 interface ServicesOffer { name: string; price: string; dur: string; icon: IconName }
 interface ServicesOpening { mon: string; day: string; title: string; time: string; where: string; left: number }
 interface ServicesReview { q: string; who: string; what: string }
