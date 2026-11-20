@@ -1,4 +1,4 @@
-// LIVE-2485: on a phone the Services and New World photo hero shows the picture, the headline and the button on the first
+// LIVE-2487: on a phone the Services and New World photo hero shows the picture, the headline and the button on the first
 // screen, and the header keeps the owner's name. Measures the consequences on the sheets that ship:
 //   1. at 600px and under the header's copy of the hero button is hidden and the menu panel carries it instead;
 //   2. the photo stops being a full-height backdrop: it sits in flow, capped below the screen height, and the copy rises onto
@@ -32,4 +32,4 @@ for (const [name, sheet, scope] of [
 const body = SERVICES_PHONE_HERO_CSS.trim()
 assert.ok(body.startsWith('@media (max-width:600px){') && body.endsWith('}'), 'one phone query wraps the whole block')
 assert.equal((body.match(/@media/g) || []).length, 1, 'no second query')
-console.log('LIVE-2485 phone photo hero: ok')
+console.log('LIVE-2487 phone photo hero: ok')

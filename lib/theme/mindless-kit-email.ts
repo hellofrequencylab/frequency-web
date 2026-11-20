@@ -140,7 +140,7 @@ function spec(type: MindlessEmailType, b: MindlessKitEmailBrand, f: MindlessKitE
     case 'member':
       return { quote: true, subject: `Welcome to ${plan.name}`, title: "You're", em: 'in.', lead: `Your ${plan.name} plan starts today. ${plan.meta}.`, ctaLabel: ctaOr('Save your first spot'), kicker: 'Your plan', featureTitle: plan.name, rows: [{ lead: 'Includes', title: plan.meta, sub: '' }, { lead: 'Price', title: plan.price, sub: 'Pause or change any time' }, { lead: 'Next', title: 'Book your first visit', sub: 'Member times are held for you' }], featureCtaLabel: 'Manage plan' }
     case 'letter':
-      return { ...base, subject: `Open this month at ${b.name}`, title: 'Open this', em: 'month.', lead: `A few open times from ${first}, so you can pick one before it fills.`, ctaLabel: ctaOr('Save a spot'), kicker: 'Open this month', featureTitle: 'Next open times', rows, featureCtaLabel: 'See all times' }
+      return { ...base, subject: `Open this month at ${b.name}`, title: 'Open this', em: 'month.', lead: `A few open times from ${first}, so you can pick one that suits you.`, ctaLabel: ctaOr('Save a spot'), kicker: 'Open this month', featureTitle: 'Next open times', rows, featureCtaLabel: 'See all times' }
     case 'inquiry':
       return { ...base, subject: 'We got your message', title: 'Got', em: 'it.', lead: `Thanks for writing. ${first} reads every message and replies.`, ctaLabel: ctaOr('Book instead'), kicker: 'Meanwhile', featureTitle: 'Good to know', rows: steps, featureCtaLabel: 'All questions' }
   }

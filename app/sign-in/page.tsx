@@ -115,7 +115,7 @@ export default async function SignInPage({
             <div>
               <h2 className="text-lead font-bold text-text">No account for that email yet</h2>
               <p className="mt-1 text-body-sm text-muted">
-                We could not find a Frequency account for <span className="font-semibold text-text">{newAccountEmail}</span>.
+                We could not find a Frequency account for <span className="font-semibold text-text [overflow-wrap:anywhere]">{newAccountEmail}</span>.
               </p>
             </div>
             <p className="rounded-control bg-surface-elevated px-3 py-2 text-body-sm text-text">

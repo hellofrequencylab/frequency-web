@@ -24,6 +24,10 @@ const dependencies = {
   '@/lib/page-editor/config': { config: {} }, '@/components/json-ld': { JsonLd }, '@/lib/jsonld': schemas,
   '@/lib/page-editor/data': { getPublishedPage: async () => ({ doc: document, published_at: publishedAt }), latestDay: loadPureProbeExport('lib/page-editor/data.ts', 'latestDay') },
   '@/lib/page-editor/templates': { getTemplate: () => document, isWellFormed: value => Boolean(value?.content) },
+  // PERF-032: these routes import their own template and the platform block set directly.
+  '@/lib/page-editor/platform-config': { platformConfig: {} },
+  '@/lib/page-editor/templates/well-formed': { isWellFormed: value => Boolean(value?.content) },
+  ...Object.fromEntries(['about', 'how-to-start-a-circle', 'how-to-build-community', 'loneliness', 'friendship-as-an-adult', 'how-to-be-more-social'].map(slug => [`@/lib/page-editor/templates/${slug}`, { data: document }])),
   '@/lib/supabase/admin': { createAdminClient: () => ({}) }, '@/lib/page-editor/live-data': { getLiveData: async () => null },
 }
 function findNode(node, type) {

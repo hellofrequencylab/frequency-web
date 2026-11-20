@@ -169,7 +169,12 @@ export function AdminShell({ homeHref, crumbRoot, navLabel, space, items, search
           </aside>
           <div>
             <header className="ad-top" style={{ viewTransitionName: 'ad-top' }}>
-              {/* Phone only (CSS): who this console is, one tap to its home. The wordmark and the switcher are in the sidebar on a wide screen and in the More sheet on a phone. */}
+              {/* Phone only (CSS): the Frequency mark goes back to the Feed, the same as the sidebar wordmark on a wide
+                  screen and the member header everywhere (owner, 2026-11-20). */}
+              <Link href="/feed" className="ad-top-logo" aria-label="Frequency, back to the Feed">
+                <span aria-hidden />
+              </Link>
+              {/* Phone only (CSS): who this console is, one tap to its home. The switcher is in the sidebar on a wide screen and in the More sheet on a phone. */}
               <Link href={homeHref} className="ad-top-id">
                 <span className="av" style={bg(space.avatarUrl)} aria-hidden />
                 <span className="grow"><b>{space.name}</b><small>{space.role}</small></span>

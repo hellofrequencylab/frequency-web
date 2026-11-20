@@ -141,7 +141,7 @@ export function SpaceSpotlightEditor({
   const href = `/spaces/${slug}/spotlight`
 
   const body = (
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,34rem)_minmax(0,1fr)] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,38rem)_minmax(0,1fr)]">
         <SegmentedControl
           label="Edit or preview"
           value={phoneView}

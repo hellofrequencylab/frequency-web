@@ -214,6 +214,7 @@ html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top
    section's pages stay the sideways strip, now under the top bar. Wide screens are untouched: the phone
    pieces are display:none there. */
 @layer components {
+[data-design="frequency"] [data-kit="admin"] .ad-top-logo,
 [data-design="frequency"] [data-kit="admin"] .ad-top-id,
 [data-design="frequency"] [data-kit="admin"] .ad-tabbar{display:none}
 @media (max-width:960px){
@@ -224,6 +225,9 @@ html[data-design="frequency"]:has([data-kit="admin"] .ad-top){scroll-padding-top
   [data-design="frequency"] [data-kit="admin"] .ad-top .crumb,
   [data-design="frequency"] [data-kit="admin"] .ad-top .ad-links,
   [data-design="frequency"] [data-kit="admin"] .ad-top .ad-more{display:none}
+  [data-design="frequency"] [data-kit="admin"] .ad-top-logo{display:flex;flex:none;align-items:center;justify-content:center;width:44px;height:44px;margin-left:-4px;border-radius:50%}
+  [data-design="frequency"] [data-kit="admin"] .ad-top-logo span{width:34px;height:34px;background:var(--fq-text-strong);-webkit-mask:url('/brand/frequency/logo/frequency-icon-round.png') no-repeat center/contain;mask:url('/brand/frequency/logo/frequency-icon-round.png') no-repeat center/contain}
+  [data-design="frequency"] [data-kit="admin"] .ad-top-logo:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:0}
   [data-design="frequency"] [data-kit="admin"] .ad-top-id{display:flex;align-items:center;gap:10px;min-width:0;min-height:44px;color:var(--fq-text-strong)}
   [data-design="frequency"] [data-kit="admin"] .ad-top-id .av{width:38px;height:38px;border-radius:50%;flex:none;background-size:cover;background-position:center;background-color:var(--fq-track)}
   [data-design="frequency"] [data-kit="admin"] .ad-top-id .grow{display:flex;flex-direction:column;min-width:0}

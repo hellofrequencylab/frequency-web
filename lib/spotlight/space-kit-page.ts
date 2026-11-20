@@ -21,6 +21,8 @@ export interface SpaceSpotlightFacts {
   appOrigin?: string
   /** The owner's Links block, as saved. */
   links: { label: string; url: string; style?: LinkStyle }[]
+  /** The Links block's own default style, when the owner set one (LIVE-2486). A link's own style beats it. */
+  linkStyle?: LinkStyle
   /** The owner's Button block, when it has a label and a safe address. */
   button: { label: string; href: string } | null
 }
@@ -41,7 +43,8 @@ export function spaceFactsFromGrid(
     .filter((it): it is { label: string; url: string; style?: LinkStyle } => Boolean(it.url && it.label))
   const btn = bag('button')
   const url = safeUrl(btn?.url)
-  return { ...base, links, button: typeof btn?.label === 'string' && btn.label && url ? { label: btn.label, href: url } : null }
+  const linkStyle = asLinkStyle(bag('links')?.linkStyle)
+  return { ...base, links, ...(linkStyle && linkStyle !== 'main' ? { linkStyle } : {}), button: typeof btn?.label === 'string' && btn.label && url ? { label: btn.label, href: url } : null }
 }
 
 interface KitDoor { title: string; meta: string; href: string }
