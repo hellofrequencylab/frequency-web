@@ -8,14 +8,17 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 
 const bad = []
+// Compare parsed hostnames, never substrings: every https URL literal in the module, as a URL.
+const urlsIn = (src) => [...src.matchAll(/https:\/\/[\w.-]+\/embed\/[^`'"\s]*/g)].map((m) => { try { return new URL(m[0].replace(/\$\{.*$/, 'x')) } catch { return null } }).filter(Boolean)
 for (const f of ['lib/video-embed.ts', 'lib/spotlight/embeds.ts']) {
-  const src = fs.readFileSync(f, 'utf8')
-  if (/https:\/\/www\.youtube\.com\/embed/.test(src)) bad.push(`${f} still builds a www.youtube.com/embed src`)
-  if (!/https:\/\/www\.youtube-nocookie\.com\/embed/.test(src)) bad.push(`${f} builds no youtube-nocookie src`)
+  const hosts = urlsIn(fs.readFileSync(f, 'utf8')).map((u) => u.hostname)
+  if (hosts.some((h) => h === 'www.youtube.com')) bad.push(`${f} still builds a www.youtube.com/embed src`)
+  if (!hosts.some((h) => h === 'www.youtube-nocookie.com')) bad.push(`${f} builds no youtube-nocookie src`)
 }
 for (const f of ['next.config.ts', 'lib/security/csp-nonce.ts']) {
   const frame = fs.readFileSync(f, 'utf8').match(/"frame-src ([^"]+)"/)?.[1] ?? ''
-  if (!frame.split(/\s+/).includes('https://www.youtube-nocookie.com')) bad.push(`${f} frame-src does not allow https://www.youtube-nocookie.com`)
+  const hosts = frame.split(/\s+/).map((t) => { try { return new URL(t).hostname } catch { return null } })
+  if (!hosts.some((h) => h === 'www.youtube-nocookie.com')) bad.push(`${f} frame-src does not allow www.youtube-nocookie.com`)
 }
 if (bad.length) { console.error('SEC-044 FAIL:\n  ' + bad.join('\n  ')); process.exit(1) }
 const r = spawnSync('pnpm', ['-s', 'vitest', 'run', 'lib/video-embed.test.ts', 'lib/spotlight/embeds.test.ts'], { stdio: 'inherit' })
