@@ -16,7 +16,7 @@ type Has = NewWorldHas
 type IconName = 'message' | 'sparkle' | 'calendar' | 'shield' | 'star' | 'award' | 'wrench' | 'home' | 'clock' | 'leaf' | 'heart' | 'chart' | 'briefcase' | 'tag' | 'bolt' | 'car' | 'droplet' | 'users' | 'sun' | 'user' | 'mail' | 'eye' | 'pin' | 'check'
 
 /** `style` is the owner's pick for how the link is drawn (LIVE-2486); absent, the layout draws its own card. */
-export type NewWorldDoorStyle = 'button' | 'card' | 'text'
+type NewWorldDoorStyle = 'button' | 'card' | 'text'
 interface NewWorldDoor { id: string; key: Tool; icon: IconName; title: string; meta: string; href: string; style?: NewWorldDoorStyle }
 interface NewWorldOffer { name: string; price: string; dur: string; icon: IconName }
 interface NewWorldOpening { mon: string; day: string; title: string; time: string; where: string; left: number }
