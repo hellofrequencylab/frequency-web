@@ -31,3 +31,13 @@ describe('visible console identity names', () => {
     expect(doc.querySelector('a.ad-top-id .sr-only')?.textContent).toBe('Console home')
   })
 })
+
+describe('the phone Frequency mark goes to the Feed (owner, 2026-11-20)', () => {
+  it('renders a named /feed link before the console identity in the top bar', () => {
+    const doc = documentFor(<AdminShell {...props}><h1>Console</h1></AdminShell>)
+    const logo = doc.querySelector('header.ad-top a.ad-top-logo')!
+    expect(logo.getAttribute('href')).toBe('/feed')
+    expect(logo.getAttribute('aria-label')).toBe('Frequency, back to the Feed')
+    expect(doc.querySelector('header.ad-top')!.firstElementChild).toBe(logo)
+  })
+})
