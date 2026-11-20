@@ -654,7 +654,7 @@ export function TrailEditor({ initial, manage = null, edition = null }: { initia
                 <p className="text-body-sm text-subtle">Reading where each printed code goes.</p>
               )}
               <StudioField label="Edition name (optional)">
-                <Input value={editionLabel} maxLength={80} placeholder={`Edition ${initial.versionNo}`} onChange={(e) => setEditionLabel(e.target.value)} disabled={conflict !== null} />
+                <Input aria-label="Edition name" value={editionLabel} maxLength={80} placeholder={`Edition ${initial.versionNo}`} onChange={(e) => setEditionLabel(e.target.value)} disabled={conflict !== null} />
               </StudioField>
             </section>
           )}
