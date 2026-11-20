@@ -1,0 +1,20 @@
+{
+  "id": "SEC-040",
+  "title": "Let members delete their account when they follow, joined or booked a Space",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/account.ts",
+    "ref": "mega pass 2026-11-19 (account deletion)"
+  },
+  "detail": "Mega pass 2026-11-19, read on production (pg_constraint confdeltype 'a'). Twenty-four foreign keys to profiles(id) had no ON DELETE rule, so the profile delete that auth.admin.deleteUser cascades into was refused for any member with one row in space_follows, space_memberships, space_enrollments, space_ticket_rsvps, space_benefit_redemptions, space_bookings or one of the Space request and record tables. space_follows is bulk-filled from every Space Circle roster, so this hit most members, and deleteMyAccount had already erased their files and Stripe customer (ADR-1581 erase-first) before the delete failed. Fix: migration 20270346210000 cascades the member's own standing rows, sets null on the records a Space keeps (six actor columns lose NOT NULL), moves the space_bookings booker CHECK to an insert/edit trigger so a member booking can outlive the member, and sets null on conversations.migrated_to_room_id (rooms cascade from their creator). hunts.owner_profile_id stays RESTRICT (one-owner check; no profile owns a Hunt; Hunts are off). Proved by supabase/tests/profile_delete_unblock_fks.test.sql.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/SEC-040.mjs",
+    "note": "Fails on main: no migration gives the 24 profile foreign keys a delete rule. Passes when the migration and its pgTAP proof are in the tree."
+  },
+  "closed": "2026-11-19"
+}

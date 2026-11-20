@@ -1,0 +1,20 @@
+{
+  "id": "PERF-018",
+  "title": "Make the ticket tier read policy check one event instead of every event",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "supabase/migrations/20260610010000_event_ticket_types.sql",
+    "ref": "deepest site audit 2026-11-19 (database speed)"
+  },
+  "detail": "Deep audit 2026-11-19. The event_ticket_types read policy was `event_id in (select events.id from public.events)`. Under a caller role that runs every events policy over every event to build the list, then checks one id, so each tier read grows with the event count: 18.7 ms per read at 531 events. It was the busiest statement in pg_stat_statements (558,482 calls, 32.9 ms mean, about five hours of database time). Fix: migration 20270346200000 recreates it as a correlated EXISTS on the one event by primary key (18.19 ms to 0.63 ms as anon on a copy, same rows). Visibility unchanged: both forms read events under the caller's RLS. Proved by supabase/tests/event_ticket_types_read_policy.test.sql. Follow-up not in this row: density_by_city and four calendar feeds still join a materialized time zone CTE (the SCAN-1210 swap to public.tz_zone_lookup), measured 295 ms to 21 ms for density_by_city.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-018.mjs",
+    "note": "Fails on main: the last migration defines the policy as an IN over every event. Passes when the EXISTS form is the latest definition."
+  },
+  "closed": "2026-11-19"
+}
