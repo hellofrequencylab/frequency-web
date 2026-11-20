@@ -197,15 +197,25 @@ export async function FrequencyHome() {
               {/* A fold photo is never wider than 300px, so it is served from photos/sm (640px, ~50KB) and the
                   1600px original only to a screen that asks for more. Six full-size decodes were what made
                   the pinned stage stutter and arrive late on a phone. */}
-              {/* eslint-disable-next-line @next/next/no-img-element -- decorative, sized by .fl-ph img */}
-              <img
-                loading="lazy"
-                decoding="async"
-                src={photo(`sm/${file}`)}
-                srcSet={`${photo(`sm/${file}`)} 640w, ${photo(file)} 1600w`}
-                sizes="(max-width:760px) 180px, 300px"
-                alt=""
-              />
+              {/* PERF-015: a phone's 180px slot at 2x takes a 360px WebP (about 17KB, 103KB for all six
+                  against 264KB at 640px). The <source> only adds that smaller candidate; the <img> keeps the
+                  same JPEG set for anything that skips it. Static files cut with sharp, never the paid
+                  optimizer. */}
+              <picture>
+                <source
+                  type="image/webp"
+                  srcSet={`${photo(`sm/${file.replace(/\.jpg$/, '-360.webp')}`)} 360w, ${photo(`sm/${file}`)} 640w, ${photo(file)} 1600w`}
+                  sizes="(max-width:760px) 180px, 300px"
+                />
+                <img
+                  loading="lazy"
+                  decoding="async"
+                  src={photo(`sm/${file}`)}
+                  srcSet={`${photo(`sm/${file}`)} 640w, ${photo(file)} 1600w`}
+                  sizes="(max-width:760px) 180px, 300px"
+                  alt=""
+                />
+              </picture>
             </div>
           ))}
           <div className="fl-shade" />

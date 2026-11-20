@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "components/frequency/site/pages/home/frequency-home.tsx",
     "ref": "SEO, GEO and speed deep scan 2026-11-19 (production crawl of 3,000 URLs, all 720 sitemap pages, 8 crawler user agents, Lighthouse on 14 templates)"
   },
-  "detail": "The home page serves six /brand/frequency/photos/sm/*.jpg files as plain img (195 to 247 KB could be saved with modern formats and right sizes) and carries one 36 KB image inlined as base64 in the document. /north-county-san-diego and /discover/cities/<city> draw their hero as a background with no preload, so the browser waits 1.2 to 1.7 s before asking for it. The first visit to a cold city or market page takes 2 to 5 s on the server and is fast afterwards.",
+  "detail": "The home page serves six /brand/frequency/photos/sm/*.jpg files as plain img (195 to 247 KB could be saved with modern formats and right sizes) and carries one 36 KB image inlined as base64 in the document. /north-county-san-diego and /discover/cities/<city> draw their hero as a background with no preload, so the browser waits 1.2 to 1.7 s before asking for it. The first visit to a cold city or market page takes 2 to 5 s on the server and is fast afterwards.\n\nRe-tested 2026-11-20. Heroes: DxHero (North County, every city page) already preloads its still from the HTML through PhotoBgPreload (SCAN-1265), at the rendition and breakpoint the CSS background picks. Inlined image: production / fetched 2026-11-20 holds no data: URI at all (292,878 characters, 0 base64), so that item is gone. Cold city render: the city pages are ISR (revalidate 3600, dense cities prebuilt), and PERF-040 (merged 2026-11-20) moved the density read off the time-zone scan that made a cold render slow. Fix here: the home fold photos offer a 360px WebP through <picture><source> (a phone 180px slot at 2x), 103 KB for all six against 264 KB at the 640px JPEG; the <img> keeps its JPEG set (home-fold-phone probe unchanged). Static files cut with sharp, never the paid optimizer.",
   "verify": {
-    "kind": "manual",
-    "checked": "2026-11-19",
-    "evidence": "Production, 2026-11-19: Lighthouse LCP breakdown on /north-county-san-diego and /discover/cities/* shows 1.2 to 1.7 s load delay on the hero; modern-image-formats on / lists the six photos; timed fetches showed 2 to 5 s on a cold city page and under 300 ms once cached."
+    "kind": "cmd",
+    "cmd": "node scripts/probes/PERF-015.mjs",
+    "note": "Fails on main: no 360px WebP for the fold photos. Passes when the fold offers it through <picture>, each file exists under 30 KB, and North County and city heroes go through the preloading DxHero."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-20"
 }
