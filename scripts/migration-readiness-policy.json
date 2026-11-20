@@ -5129,6 +5129,13 @@
           "headMode": "100644"
         },
         {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "ee6eda187869224c046e3c7af51c9207fcdcdb07f8767a3993c65ab0268ad2df",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
           "file": "supabase/migrations/20270346250000_hunt_edition_grace.sql",
           "status": "added",
           "sha256": "8adf565cad7a3c00e590bacf010cd5f7d103e0d57b81329e776e4b2363727398",
