@@ -76,8 +76,22 @@ export function FqEventCard({
         className="ev-cover"
         tabIndex={-1}
         aria-hidden="true"
-        style={cover ? { backgroundImage: `url('${cover}')`, backgroundPosition: coverFocus[e.id] } : undefined}
       >
+        {/* A LAZY <img>, NOT A CSS BACKGROUND (PERF-014). A background on every card is fetched for every
+            card in the DOM, so /events pulled up to sixty upload-size banners before the visitor scrolled
+            (3.75 MB, 201 requests on 2026-11-19). The browser defers a lazy img until it nears the
+            screen; object-position keeps the host's focal point, the same crop as before. */}
+        {cover && (
+          // eslint-disable-next-line @next/next/no-img-element -- a stored upload at its own size, never the paid optimizer
+          <img
+            className="ev-ph"
+            src={cover}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            style={coverFocus[e.id] ? { objectPosition: coverFocus[e.id] } : undefined}
+          />
+        )}
         <span className="ev-date">
           <b>{day}</b>
           <i>{mon}</i>

@@ -43,6 +43,11 @@ const DISALLOW = [
   // pages are discovered through app/sitemap.ts and the Space shop pages (SCAN-786).
   "/partners",
   "/journeys",
+  // Support tickets are a member page: signed out, /support goes home. The member nav that lists it can
+  // render on a public listing, so keep crawlers from spending a fetch on the bounce (SCAN-1276). Exact
+  // path plus subtree, never a bare prefix, which would also wall the public /support-chat.
+  "/support$",
+  "/support/",
   // /spaces/directory is the app-shell twin of the canonical /discover/spaces (it canonicals there),
   // so keep crawlers off it. NOT a blanket "/spaces" rule: the /spaces/<slug> Space profile pages are
   // self-canonical + indexable (LocalBusiness/Organization schema), which a "/spaces" rule would deindex.

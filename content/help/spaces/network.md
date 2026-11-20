@@ -36,7 +36,7 @@ Everything Collective does except Partners, plus the chapter tools below. A Netw
 ## Pick how you run it
 
 - **Partner Network** keeps your chapters in the Frequency community. Your network and every chapter wear the Frequency Partner badge, your events show on the Frequency calendar, and tickets and memberships run through Frequency checkout. You are listed in discovery. You start it yourself, with a 14 day trial. Paying for the year is two months free, and there is a yearly package: ten chapters for the price of eight, with a live onboarding session, priority support and a yearly network health review.
-- **Independent Network** is your own community, fully separate from Frequency: your brand, your domain, your members and your data, with no Partner badge and no listing. It starts with a call and includes setup and onboarding. It is a yearly agreement with a one-time setup fee; the [Networks page](/networks) has the figures and the way to reach us.
+- **Independent Network** is your own community, fully separate from Frequency: your brand, your domain, your members and your data, with no Partner badge and no listing. It starts with a call and includes setup and onboarding. It is a yearly agreement with a one-time setup fee; the [Networks page](/for/networks) has the figures and the way to reach us.
 
 If you remove the Partner badge or disconnect your chapters from Frequency, your plan moves to Independent pricing at your next renewal. Talk to us before you do.
 
@@ -46,7 +46,7 @@ If you remove the Partner badge or disconnect your chapters from Frequency, your
 2. Open **Manage**, then **Profile & Settings**, then **Plan and billing**, and choose Network. The [pricing page](/pricing) has the current price and the same starting point.
 3. Add your chapters, as below.
 
-Running more than 25 chapters, or wanting an Independent Network, is a call. Start from the [Networks page](/networks) and tell us how many chapters you run.
+Running more than 25 chapters, or wanting an Independent Network, is a call. Start from the [Networks page](/for/networks) and tell us how many chapters you run.
 
 ## Add a chapter
 
