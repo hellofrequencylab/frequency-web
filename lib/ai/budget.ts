@@ -84,6 +84,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'connection-assist': 1,      // text-only Vera assist on manual entry (Haiku)
   'room-search': 1,            // semantic search over room history (free embeddings; cap is a safety net)
   'vera-chat': 5,              // Vera's live companion loop (Haiku, high-volume member-facing)
+  'vera-chat-anon': 1,         // the same loop for a signed-out visitor, on its own key so it cannot drain members' (SEC-043)
   'journey-review': 3,         // Vera's rank quality gate on member-built Journeys (Opus; low-volume, fail-closed)
   // ── Shared Studio surfaces (ADR-993): one key per generalized capability, not one per entity ──
   'entity-review': 4,          // the pre-publish quality read ANY entity opts into (Sonnet; ~$0.02/read, so ~200 reads/day)
