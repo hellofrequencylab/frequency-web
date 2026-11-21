@@ -39,7 +39,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { checkSpaceBookingMeter, checkSpaceServicesMeter } from '@/lib/spaces/counted-meters'
 import { blockingRange, type EntryRow } from '@/lib/calendar/entries'
 import { expandPencilSeries, seriesRule } from '@/lib/calendar/pencil-series'
-import { eventInstant } from '@/lib/time/zone'
+import { eventInstant, isValidTimeZone, HOME_TZ } from '@/lib/time/zone'
 
 /** SCAN-715: how long a hold-first Checkout stays open. Stripe's minimum (30 minutes), the same
  *  window the ticket rail holds a seat; an abandoned session frees its slot through the
@@ -252,6 +252,17 @@ export function zonedTimeToUtc(
   const offset2 = zoneOffsetMinutes(new Date(corrected), timezone)
   const finalMs = offset2 === offset1 ? corrected : guess - offset2 * 60000
   return new Date(finalMs)
+}
+
+/** The zone a booking surface actually runs in (BOOK-001). A stored zone the runtime cannot resolve
+ *  ("Pacific", "Los Angeles", a typo) made every slot builder skip every day, so the Space showed no open
+ *  times at all and took no bookings. An unusable value falls back to the Space's own calendar zone
+ *  (spaces.time_zone), then to the house zone, never to UTC. Pure. */
+export function resolveBookingZone(raw: unknown, spaceZone?: string | null): string {
+  const tz = typeof raw === 'string' ? raw.trim() : ''
+  if (isValidTimeZone(tz)) return tz
+  const fallback = typeof spaceZone === 'string' ? spaceZone.trim() : ''
+  return isValidTimeZone(fallback) ? fallback : HOME_TZ
 }
 
 // ── PURE: window normalization plus slot generation (no IO, the most-tested function) ───────────
@@ -662,17 +673,42 @@ async function readWindows(spaceId: string): Promise<AvailabilityWindow[]> {
     })
   try {
     const ext = await availabilityTable().select(AVAILABILITY_COLS_P1).eq('space_id', spaceId)
-    if (!ext.error && ext.data) return mapMany(ext.data)
+    if (!ext.error && ext.data) return repairWindowZones(spaceId, mapMany(ext.data))
   } catch {
     /* pre-migration column missing: fall through to the base read */
   }
   try {
     const { data, error } = await availabilityTable().select(AVAILABILITY_COLS).eq('space_id', spaceId)
     if (error || !data) return []
-    return mapMany(data)
+    return repairWindowZones(spaceId, mapMany(data))
   } catch {
     return []
   }
+}
+
+/** The Space's own calendar zone (spaces.time_zone, LIVE-471), or null. Service-role; FAIL-SAFE. */
+async function readSpaceZone(spaceId: string): Promise<string | null> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { time_zone: string | null } | null }> }
+        }
+      }
+    }
+    const { data } = await db.from('spaces').select('time_zone').eq('id', spaceId).maybeSingle()
+    return data?.time_zone ?? null
+  } catch {
+    return null
+  }
+}
+
+/** BOOK-001: give every window a zone the slot builder can use. A window saved with free text the
+ *  runtime cannot resolve takes the Space's calendar zone (one read, only when a window needs it). */
+async function repairWindowZones(spaceId: string, windows: AvailabilityWindow[]): Promise<AvailabilityWindow[]> {
+  if (windows.every((w) => isValidTimeZone(w.timezone))) return windows
+  const zone = resolveBookingZone(null, await readSpaceZone(spaceId))
+  return windows.map((w) => (isValidTimeZone(w.timezone) ? w : { ...w, timezone: zone }))
 }
 
 /** The windows that offer `serviceTypeId` (pure). A window with a null service_type_id offers EVERY
@@ -806,7 +842,8 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
 function mapScheduleRow(r: ScheduleRow): ScheduleSettings {
   return {
     id: r.id,
-    timezone: typeof r.timezone === 'string' && r.timezone.trim() ? r.timezone.trim() : null,
+    // BOOK-001: a zone the runtime cannot resolve is no zone, so the (repaired) windows decide.
+    timezone: typeof r.timezone === 'string' && isValidTimeZone(r.timezone.trim()) ? r.timezone.trim() : null,
     bufferBeforeMinutes: clampInt(r.buffer_before_minutes, 0, 480, 0),
     bufferAfterMinutes: clampInt(r.buffer_after_minutes, 0, 480, 0),
     minNoticeMinutes: clampInt(r.min_notice_minutes, 0, 43200, 0),
@@ -1132,6 +1169,11 @@ export async function setSpaceAvailability(
   if (!spaceFunctionAccess(space, 'availability', caps.role))
     return fail('Availability is not turned on for this space, or your role cannot use it.')
 
+  // BOOK-001: refuse a zone the runtime cannot resolve rather than store one that hides every slot.
+  const rawWindows = Array.isArray(windows) ? windows : []
+  if (rawWindows.some((w) => typeof w?.timezone === 'string' && w.timezone.trim() && !isValidTimeZone(w.timezone.trim())))
+    return fail('Pick your time zone from the list so members see the right times.')
+
   // Normalize + drop anything invalid. An empty result is a valid "no availability" state.
   const clean = (Array.isArray(windows) ? windows : []).slice(0, MAX_WINDOWS).flatMap((w) => {
     const n = normalizeWindow(w)
@@ -1173,6 +1215,16 @@ export async function setSpaceAvailability(
     }
   } catch {
     return fail('Could not save your availability. Try again.')
+  }
+  // BOOK-001: the schedule's zone outranks the windows' (buildSlotContext), so a zone changed here must
+  // reach the schedule too, or the change silently does nothing. Fail-soft: no schedule row, no write.
+  const savedZone = clean[0]?.timezone
+  if (savedZone && isValidTimeZone(savedZone)) {
+    try {
+      await schedulesTable().update({ timezone: savedZone }).eq('space_id', spaceId)
+    } catch {
+      /* fail-soft: readSchedule drops an unusable zone, and the windows carry this one */
+    }
   }
   // The website's Book page reads services and windows (LIVE-835): refresh the cached site.
   await refreshSiteSoft(space.slug)
@@ -1568,6 +1620,8 @@ export async function setSpaceSchedule(spaceId: string, input: ScheduleInput): P
     booking_window_days: clampInt(input.bookingWindowDays, 1, 365, HORIZON_DAYS),
     active: true,
   }
+  if (timezone && !isValidTimeZone(timezone))
+    return fail('Pick your time zone from the list so members see the right times.')
   if (timezone) patch.timezone = timezone
 
   try {

@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-008",
+  "title": "Calendar invites update and cancel in the booker's calendar when a booking moves or is cancelled",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21: buildBookingIcsBase64 sends METHOD:PUBLISH with no ORGANIZER, ATTENDEE, LOCATION or SEQUENCE. A cancellation mails no .ics, and a reschedule creates a new booking id, so the new invite has a new UID and the old event stays in the booker's calendar next to the new one. Fix: METHOD:REQUEST with a stable UID across a reschedule (carry the first booking id), SEQUENCE bumps, and a METHOD:CANCEL attachment on cancel.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-008",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

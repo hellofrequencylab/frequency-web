@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-013",
+  "title": "A link can open one service directly, and the time picker leads with a month calendar and the first open day",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21: /spaces/<slug>/book takes no search params, so an owner cannot share 'book my 60 minute session' the way Calendly shares an event-type link, and Spotlight Link cards cannot deep-link a service. The picker prints every open slot of every day in the window as buttons (a 60 day window of 30 minute slots is hundreds of buttons on a phone). Fix: ?service=<id> preselects; the picker shows a month grid with open days marked, then that day's times.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-013",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

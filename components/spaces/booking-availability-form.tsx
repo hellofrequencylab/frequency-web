@@ -9,6 +9,7 @@ import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { setSpaceAvailability } from '@/lib/spaces/booking-actions'
 import type { AvailabilityWindow } from '@/lib/spaces/booking'
+import { ZONE_CHOICES, zoneWords } from '@/lib/time/zone-words'
 import { IconButton } from '@/components/ui/icon-button'
 
 // OWNER AVAILABILITY EDITOR (client). The Practitioner sets one or more weekly windows (weekday,
@@ -84,6 +85,13 @@ export function BookingAvailabilityForm({
       : [{ weekday: 1, start: '09:00', end: '17:00', slotMinutes: 30 }],
   )
   const [timezone, setTimezone] = useState(initialTimezone)
+  // The stored zone stays a choice even when the named list does not carry it (the zone-field rule).
+  const zoneOptions = [
+    ...(initialTimezone && !ZONE_CHOICES.some((c) => c.value === initialTimezone)
+      ? [{ value: initialTimezone, label: zoneWords(initialTimezone) }]
+      : []),
+    ...ZONE_CHOICES,
+  ]
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, startSave] = useTransition()
@@ -106,7 +114,7 @@ export function BookingAvailabilityForm({
   function save() {
     setError(null)
     setSaved(false)
-    const tz = timezone.trim() || 'UTC'
+    const tz = timezone.trim() || initialTimezone
 
     // Convert + client-validate. The server is authoritative, but a clear inline message helps.
     const windows: AvailabilityWindow[] = []
@@ -147,15 +155,20 @@ export function BookingAvailabilityForm({
         <Label htmlFor="booking-timezone" className="font-semibold">
           Timezone
         </Label>
-        <Input
+        {/* BOOK-001: a menu, not a text box. Typed values like "Pacific" are not zones the slot builder
+            can read, and every Space that typed one showed no open times at all. */}
+        <Select
           id="booking-timezone"
           value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          placeholder="America/New_York"
+          options={zoneOptions}
+          onChange={(e) => {
+            setTimezone(e.target.value)
+            setSaved(false)
+          }}
           className="mt-1"
         />
         <p className="mt-1 text-meta text-subtle">
-          An IANA name like America/New_York or Europe/London. Members see your times in this zone.
+          Your weekly times are in {zoneWords(timezone)}. Members see them in their own time.
         </p>
       </div>
 

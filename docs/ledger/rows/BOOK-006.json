@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-006",
+  "title": "A paid booking follows the same slot rules as a free one, sends a confirmation and a reminder, and a failed checkout frees its slot",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21 in code (dark until deposits are live, and on the LIVE-234 money-proof path). holdSlotForBooking calls slotLengthAt(windows, startsAt, now) with no options: it ignores the service's duration (ends_at uses the window's slot_minutes), buffers, minimum notice, days off and override hours, calendar blocks, the schedule's zone, the service-to-window binding, overlap with other bookings, and any booking window past 14 days (a paid booking 15+ days out is refused). It also drops the note, answers and service_type_id. On settle, confirmBookingByOrder only flips status: no booking confirmation, no .ics, no reminder, no timeline entry. The Market door (app/(main)/(marketplace)/market/service-actions.ts) releases a failed hold with cancelBooking, which returns ok() for any non-confirmed row, so the pending hold keeps the slot for good (startServiceDeposit already uses releasePendingHold for exactly this reason). Fix: place the hold through validateAndPlaceBooking with a paid-hold mode, call afterBookingPlaced on settle, and use releasePendingHold on the Market door.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-006",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

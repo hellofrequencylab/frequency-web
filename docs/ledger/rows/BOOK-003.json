@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-003",
+  "title": "A signed-out visitor sees a booking Space's real open times and can book, instead of being told none are posted",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21 in code: BookingMember calls listOpenSlots and listBookableServices, both of which return [] when getMyProfileId() is null, so an anonymous viewer of a booking-Focus Space falls to the EmptyState 'No open times yet. This practitioner has not posted availability.' That is false, and most traffic arrives signed out (Spotlight, Instagram). The guest door already exists for Space websites (listGuestOpenSlotsAction, createGuestBookingAction, SCAN-834 email confirm), so the fix reuses it on /spaces/<slug>/book for a public Space, with a confirm link that resolves on frequencylocal.com when the Space has no website. Calendly never asks an invitee to sign up.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-003",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
