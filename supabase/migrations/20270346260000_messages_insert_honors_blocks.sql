@@ -44,7 +44,6 @@ as $$
   )
 $$;
 
-revoke all on function private.is_blocked_between_me_and_conversation(uuid) from public;
 grant execute on function private.is_blocked_between_me_and_conversation(uuid) to anon, authenticated, service_role;
 
 drop policy if exists "participants_send_messages" on public.messages;
