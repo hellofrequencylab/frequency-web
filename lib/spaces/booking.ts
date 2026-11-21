@@ -802,7 +802,7 @@ async function resolveServiceDuration(
 }
 
 /** Resolve the full active service (name + duration + questions) for a chosen id, or null. FAIL-SAFE. */
-async function resolveService(
+export async function resolveService(
   spaceId: string,
   serviceTypeId: string | null | undefined,
 ): Promise<ServiceType | null> {
@@ -854,7 +854,7 @@ function mapScheduleRow(r: ScheduleRow): ScheduleSettings {
 
 /** The Space's single active schedule (service-role; FAIL-SAFE to the neutral DEFAULT_SCHEDULE, so a
  *  missing table pre-migration or an unconfigured Space simply uses booking v1 behavior). */
-async function readSchedule(spaceId: string): Promise<ScheduleSettings> {
+export async function readSchedule(spaceId: string): Promise<ScheduleSettings> {
   try {
     const { data, error } = await schedulesTable()
       .select('id, space_id, timezone, buffer_before_minutes, buffer_after_minutes, min_notice_minutes, booking_window_days, active')
@@ -1722,7 +1722,7 @@ export async function createBooking(
 // anything but the Space id.
 
 /** Who holds a booking: a member profile, or a guest who booked on the Space's website (LIVE-835). */
-type Booker = { profileId: string } | { guestName: string; guestEmail: string }
+export type Booker = { profileId: string } | { guestName: string; guestEmail: string }
 
 /** The booker columns a space_bookings row is written with. Pure. Exactly one side is set, which is the
  *  space_bookings_booker_check constraint. */
@@ -1963,7 +1963,7 @@ export async function confirmGuestBooking(rawToken: unknown, expectedSpaceId?: s
 }
 
 /** The result of a successful placement (used by the confirmation + reminder side effects). */
-interface PlacedBooking {
+export interface PlacedBooking {
   ok: true
   bookingId: string
   booker: Booker
@@ -1980,7 +1980,7 @@ interface PlacedBooking {
  * race guard. Captures the service's booking questions into `answers` (required ones
  * must be filled). Fail-soft on the P3 columns (answers / rescheduled_from) when unapplied.
  */
-async function validateAndPlaceBooking(params: {
+export async function validateAndPlaceBooking(params: {
   space: { id: string; slug: string }
   booker: Booker
   startsAtISO: string
@@ -2160,7 +2160,7 @@ export function parseAnswers(raw: unknown): BookingAnswer[] {
 
 /** Fire the confirmation email (booker + owner, with .ics) and schedule the reminder. Best-effort. A
  *  guest booker (LIVE-835) is mailed at the address they gave, and has no member timeline to log onto. */
-async function afterBookingPlaced(
+export async function afterBookingPlaced(
   space: {
     id: string
     slug: string
@@ -2181,7 +2181,8 @@ async function afterBookingPlaced(
     ownerProfileId: space.ownerProfileId,
     memberProfileId: 'profileId' in booker ? booker.profileId : null,
     memberName: 'profileId' in booker ? null : booker.guestName,
-    guest: 'profileId' in booker ? null : await guestRecipient(space, booker),
+    // BOOK-007: a guest's mail opens their own manage page (cancel or move), keyed by the booking's secret.
+    guest: 'profileId' in booker ? null : await guestManageRecipient(space, placed.bookingId, booker),
     startsAt: placed.startsAt,
     endsAt: placed.endsAt,
     serviceName: placed.serviceName,
@@ -2211,6 +2212,34 @@ async function guestRecipient(
 ): Promise<{ name: string; email: string; manageUrl: string }> {
   const { siteBookUrl } = await import('@/lib/sites/site-booking')
   return { name: booker.guestName, email: booker.guestEmail, manageUrl: await siteBookUrl(space) }
+}
+
+/** BOOK-007: the guest recipient whose link opens their manage page (lib/spaces/booking-guest-manage.ts),
+ *  falling back to the Book page when the booking carries no secret. */
+async function guestManageRecipient(
+  space: { id: string; slug: string; domain?: string | null },
+  bookingId: string,
+  booker: { guestName: string; guestEmail: string },
+): Promise<{ name: string; email: string; manageUrl: string }> {
+  try {
+    const { guestManageUrlForBooking } = await import('@/lib/spaces/booking-guest-manage')
+    const manageUrl = await guestManageUrlForBooking(space, bookingId)
+    if (manageUrl) return { name: booker.guestName, email: booker.guestEmail, manageUrl }
+  } catch {
+    /* fall back to the Book page */
+  }
+  return guestRecipient(space, booker)
+}
+
+/** BOOK-007: a website guest cancels their own booking from the link in their email. The token is the
+ *  booking's guest secret; the work lives in lib/spaces/booking-guest-manage.ts. */
+export async function cancelGuestBooking(
+  token: unknown,
+  expectedSpaceId: string,
+  reason?: string | null,
+): Promise<ActionResult> {
+  const { cancelGuestBookingByToken } = await import('@/lib/spaces/booking-guest-manage')
+  return cancelGuestBookingByToken(token, expectedSpaceId, reason)
 }
 
 /**

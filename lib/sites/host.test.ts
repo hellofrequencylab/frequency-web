@@ -312,7 +312,7 @@ describe('subdomainSiteRedirect (SCAN-896)', () => {
   })
 
   it("keeps the owner's editor, API routes, crawler files and one-time links on the subdomain", () => {
-    for (const path of ['/admin', '/admin/', '/admin/editor', '/admin/enter', '/api/anything', '/robots.txt', '/sitemap.xml', '/llms.txt', '/spotlight-click', '/confirm-booking', '/opengraph-image']) {
+    for (const path of ['/admin', '/admin/', '/admin/editor', '/admin/enter', '/api/anything', '/robots.txt', '/sitemap.xml', '/llms.txt', '/spotlight-click', '/confirm-booking', '/manage-booking', '/opengraph-image']) {
       expect(subdomainSiteRedirect(sub, path, '?token=t', 'danieltyack.com')).toBeNull()
     }
   })

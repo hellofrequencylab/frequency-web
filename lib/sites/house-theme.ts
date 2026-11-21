@@ -141,6 +141,10 @@ export const SITE_ACCOUNT_SLUG = 'account'
  *  app/hosted/[host]/confirm-booking, a static sibling of the `[page]` route, so no site page may take
  *  this slug. */
 export const SITE_CONFIRM_BOOKING_SLUG = 'confirm-booking'
+/** BOOK-007: the page a website guest's booking emails link to (`/manage-booking?token=...`), where they cancel
+ *  or move their booking. Served by app/hosted/[host]/manage-booking, a static sibling of the `[page]` route,
+ *  so no site page may take this slug. */
+export const SITE_MANAGE_BOOKING_SLUG = 'manage-booking'
 
 /** The website's Book page (`/book`) is offered once the Space takes bookings: at least one weekly
  *  availability window (a service with no hours has no times to pick, and booking refuses it). Without one

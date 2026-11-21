@@ -21,7 +21,7 @@ const isRecord = (v: unknown): v is Prefs => !!v && typeof v === 'object' && !Ar
 const readPageDocs = (prefs: unknown): Prefs | null => (isRecord(prefs) && isRecord(prefs.pageDocs) ? prefs.pageDocs : null)
 
 /** Pages that are the chapter's own door and never come down from the Network. */
-const OWN_PAGES: ReadonlySet<string> = new Set([HOME_SLUG, 'contact', 'book', 'confirm-booking', 'calendar'])
+const OWN_PAGES: ReadonlySet<string> = new Set([HOME_SLUG, 'contact', 'book', 'confirm-booking', 'manage-booking', 'calendar'])
 
 function inheritedPages(chapter: Prefs | null, network: Prefs | null): { pages: unknown[]; docs: Prefs } | null {
   const have = readProfilePages(chapter)
