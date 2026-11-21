@@ -1279,6 +1279,7 @@ lib/spaces/audience-readiness.ts
 lib/spaces/audiences.ts
 lib/spaces/automation.ts
 lib/spaces/benefits-store.ts
+lib/spaces/booking-guest-manage.ts
 lib/spaces/booking-notify.ts
 lib/spaces/booking.ts
 lib/spaces/broadcast-audience.ts
