@@ -439,6 +439,7 @@ import {
   cleanGuestBooker,
   bookerColumns,
   bookerFromRow,
+  resolveBookingZone,
   type AvailabilityWindow,
 } from './booking'
 
@@ -1587,5 +1588,31 @@ describe('createBooking never skips a deposit (SEC-029)', () => {
   it('keeps the confirm-only path for a deposit service while deposits are dark', async () => {
     const r = await createBooking('space-1', '2026-06-30T10:00:00.000Z', undefined, 'svc-paid')
     expect('error' in r).toBe(false)
+  })
+})
+
+// BOOK-001: every Space that typed its zone ("Pacific", "Los Angeles", "Los Angelas") showed no times.
+describe('resolveBookingZone (BOOK-001)', () => {
+  it('keeps a real IANA zone', () => {
+    expect(resolveBookingZone('America/New_York', 'America/Los_Angeles')).toBe('America/New_York')
+  })
+  it('falls back to the Space calendar zone for typed text the runtime cannot read', () => {
+    for (const typed of ['Pacific', 'Los Angeles', 'Los Angelas', '', null]) {
+      expect(resolveBookingZone(typed, 'America/Denver')).toBe('America/Denver')
+    }
+  })
+  it('falls back to the house zone, never UTC, when the Space has none either', () => {
+    expect(resolveBookingZone('Pacific', null)).toBe('America/Los_Angeles')
+    expect(resolveBookingZone('Pacific', 'nonsense')).toBe('America/Los_Angeles')
+  })
+  it('a typed zone yields no slots, the resolved one yields the week', () => {
+    const now = new Date('2026-11-23T08:00:00Z') // a Monday
+    const typed: AvailabilityWindow[] = [
+      { weekday: 2, startMinute: 540, endMinute: 600, slotMinutes: 30, timezone: 'Pacific', serviceTypeId: null },
+    ]
+    expect(generateOpenSlots(typed, new Set(), now, 7)).toHaveLength(0)
+    const fixed = typed.map((w) => ({ ...w, timezone: resolveBookingZone(w.timezone, 'America/Los_Angeles') }))
+    const slots = generateOpenSlots(fixed, new Set(), now, 7)
+    expect(slots.map((s) => s.startsAt)).toEqual(['2026-11-24T17:00:00.000Z', '2026-11-24T17:30:00.000Z'])
   })
 })

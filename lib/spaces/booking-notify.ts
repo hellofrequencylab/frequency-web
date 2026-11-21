@@ -176,8 +176,26 @@ function buildBookingIcsBase64(params: {
   return Buffer.from(body, 'utf-8').toString('base64')
 }
 
-/** The Space's booking timezone label source: the schedule tz, else the first window tz, else UTC. */
+/** True when the runtime can format in `tz`. Local on purpose: this module is loaded by a sandboxed
+ *  copy probe (scripts/probes/lifecycle-copy.mjs) whose reviewed-import list it must not grow. */
+function usableZone(tz: string | null | undefined): tz is string {
+  if (!tz || !/^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+){0,2}$/.test(tz)) return false
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** The house zone a booking falls back to (lib/time/zone.ts HOME_TZ), never UTC. */
+const HOUSE_ZONE = 'America/Los_Angeles'
+
+/** The Space's booking timezone label source: the schedule tz, else the first window tz, else the
+ *  Space's calendar zone, else the house zone. BOOK-001: a stored value the runtime cannot resolve
+ *  ("Pacific") is skipped, so a confirmation never prints a time in UTC by accident. */
 async function bookingTimezone(admin: Admin, spaceId: string): Promise<string> {
+  const candidates: Array<string | null | undefined> = []
   try {
     const { data: sched } = await looseFrom(admin, 'space_availability_schedules')
       .select('timezone')
@@ -185,8 +203,7 @@ async function bookingTimezone(admin: Admin, spaceId: string): Promise<string> {
       .eq('active', true)
       .limit(1)
       .maybeSingle()
-    const tz = (sched as { timezone?: string } | null)?.timezone
-    if (tz) return tz
+    candidates.push((sched as { timezone?: string } | null)?.timezone)
   } catch {
     /* fall through */
   }
@@ -196,9 +213,17 @@ async function bookingTimezone(admin: Admin, spaceId: string): Promise<string> {
       .eq('space_id', spaceId)
       .limit(1)
       .maybeSingle()
-    return (win as { timezone?: string } | null)?.timezone || 'UTC'
+    candidates.push((win as { timezone?: string } | null)?.timezone)
   } catch {
-    return 'UTC'
+    /* fall through */
+  }
+  for (const tz of candidates) if (tz && usableZone(tz.trim())) return tz.trim()
+  try {
+    const { data: space } = await looseFrom(admin, 'spaces').select('time_zone').eq('id', spaceId).maybeSingle()
+    const zone = (space as { time_zone?: string | null } | null)?.time_zone?.trim()
+    return usableZone(zone) ? zone : HOUSE_ZONE
+  } catch {
+    return HOUSE_ZONE
   }
 }
 

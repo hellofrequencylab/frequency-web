@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
-import { listSpaceAvailability, listSpaceServiceTypes, getSpaceSchedule } from '@/lib/spaces/booking'
+import { listSpaceAvailability, listSpaceServiceTypes, getSpaceSchedule, resolveBookingZone } from '@/lib/spaces/booking'
 import { BookingAvailabilityForm } from '@/modules/booking'
 import { BookingAvailabilitySummary } from '@/modules/booking'
 import { BookingServiceTypesForm } from '@/modules/booking'
@@ -60,7 +60,12 @@ export async function AvailabilitySection({
     getSpaceSchedule(space.id),
   ])
   // Seed the timezone from the schedule (P2) or the saved windows, else a sensible default.
-  const initialTimezone = schedule.settings.timezone ?? windows[0]?.timezone ?? 'UTC'
+  // BOOK-001: never seed UTC or a value the runtime cannot read. The Space's own calendar zone is the
+  // honest default for an owner who has not picked one here yet.
+  const initialTimezone = resolveBookingZone(
+    schedule.settings.timezone ?? windows[0]?.timezone ?? null,
+    space.timeZone,
+  )
 
   return (
     <div className="space-y-8">
