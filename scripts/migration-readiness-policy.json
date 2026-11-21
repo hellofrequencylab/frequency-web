@@ -5167,7 +5167,7 @@
       "migrations": [
         {
           "file": "supabase/migrations/20270346260000_messages_insert_honors_blocks.sql",
-          "sha256": "240dd4fe521596938c7fa9ddd8898c383cb7363256aa823fdc2012e10354c376"
+          "sha256": "686a81e77090a30a3862eeb278a92991deba10ab2f015eb68edf54091e6adcc9"
         }
       ],
       "reviewedChanges": [
@@ -5181,7 +5181,7 @@
         {
           "file": "supabase/migrations/20270346260000_messages_insert_honors_blocks.sql",
           "status": "added",
-          "sha256": "240dd4fe521596938c7fa9ddd8898c383cb7363256aa823fdc2012e10354c376",
+          "sha256": "686a81e77090a30a3862eeb278a92991deba10ab2f015eb68edf54091e6adcc9",
           "baseMode": "000000",
           "headMode": "100644"
         },
