@@ -5203,6 +5203,112 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5427,
+      "expiresAt": "2026-11-28T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346270000_space_service_location.sql",
+          "sha256": "2992acaa1850717bd233a5769d0e2514eb13713bd6e5624d7dbe9d677efffbe9"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "components/spaces/booking-service-member.tsx",
+          "status": "modified",
+          "sha256": "39a8bf300a8d0ca1b87ce9767bc76cbd99766496954ca4ce103d417ce9fd3106",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/spaces/booking-service-types-form.tsx",
+          "status": "modified",
+          "sha256": "b25e4e9870765d3699203b63eeb429e710b0771a923a7e9192776ec4f50ba5c9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/BOOK-010.json",
+          "status": "modified",
+          "sha256": "d1b3570e0e0dc8e201036c82bc9bab067bd6fe1f56c7b6a2d47ad47b866c6f1d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/email.ts",
+          "status": "modified",
+          "sha256": "abf5d839cc288fef14fc50d69dfc1cf9d0b34baeda7803b2fc5ad7260085ef19",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/booking-format.ts",
+          "status": "modified",
+          "sha256": "0c8d5378f8b708f0ea4c0574f1eff540a5d7330dc60bc44dea656eed37429f46",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/booking-notify.test.ts",
+          "status": "modified",
+          "sha256": "d33ae70d170183a43fed33de00b7bb4339015052b0b0f4195e0bc3a5aabda90a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/booking-notify.ts",
+          "status": "modified",
+          "sha256": "340408b696ae5abcc2df7855aa17afc7344531ea95c0e7a4d885b435d801e177",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/booking.test.ts",
+          "status": "modified",
+          "sha256": "0f0bd96c6e4e165c4782c93330f2b0ca8c0919378d58cc5c15f546eb1e4331e3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/booking.ts",
+          "status": "modified",
+          "sha256": "abacdb82b6c802922bec2590c4df4be26effa237903a224c8e28f09f27b75d56",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "7481bf321d645a207406951f7581dbc0158c55ca2a2ca94fd1afa351c55103c6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346270000_space_service_location.sql",
+          "status": "added",
+          "sha256": "2992acaa1850717bd233a5769d0e2514eb13713bd6e5624d7dbe9d677efffbe9",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/space_service_location.test.sql",
+          "status": "added",
+          "sha256": "5ccfe79ec7805e602912138af786e8bb5bf30dfc56d9879ef3ac68873d6e283a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
