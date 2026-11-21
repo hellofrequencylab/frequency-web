@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, Clock, Loader2, MapPin } from 'lucide-react'
 import { listGuestOpenSlotsAction, listOpenSlotsForService } from '@/lib/spaces/booking-actions'
 import type { OpenSlot, ServiceType } from '@/lib/spaces/booking'
@@ -19,6 +19,10 @@ import { CalendarDays } from 'lucide-react'
 // visitor with no account. Times load through the anonymous listGuestOpenSlotsAction and the picker books
 // through the guest door; no deposit path.
 //
+// SERVICE LINK (BOOK-013): `initialServiceId` (from `?service=<id>` on the Book page) opens straight on that
+// service's times, the way a Calendly event link does. It only matches a service in `services`, which
+// holds active bookable services only, so an unknown or retired id falls back to the list silently.
+//
 // COPY: plain camp-counselor voice, no narrated feelings, no em/en dashes (CONTENT-VOICE §10). Tokens
 // only, no hex.
 
@@ -28,6 +32,7 @@ export function BookingServiceMember({
   timezone,
   depositsLive = false,
   guest = null,
+  initialServiceId = null,
 }: {
   spaceId: string
   services: ServiceType[]
@@ -37,25 +42,44 @@ export function BookingServiceMember({
   depositsLive?: boolean
   /** LIVE-835: list and book as a guest on the Space's website. Null keeps the member flow. */
   guest?: { slug: string } | null
+  /** BOOK-013: preselect this service (a shared service link). Ignored when it is not in `services`. */
+  initialServiceId?: string | null
 }) {
-  const [selected, setSelected] = useState<ServiceType | null>(null)
-  const [slots, setSlots] = useState<OpenSlot[] | null>(null)
-  const [loading, startLoad] = useTransition()
+  // Undefined until the visitor picks or goes back, so a link's service (which can arrive after
+  // hydration on the website) still applies; null is the list.
+  const [chosenId, setChosenId] = useState<string | null | undefined>(undefined)
+  const selectedId = chosenId === undefined ? initialServiceId : chosenId
+  const selected = services.find((s) => s.id === selectedId) ?? null
+  const [loaded, setLoaded] = useState<{ id: string; slots: OpenSlot[] } | null>(null)
+  const slots = selected && loaded?.id === selected.id ? loaded.slots : null
+  const guestSlug = guest?.slug ?? null
+  const selectedKey = selected?.id ?? null
+
+  useEffect(() => {
+    if (!selectedKey) return
+    let live = true
+    const load = guestSlug
+      ? listGuestOpenSlotsAction(guestSlug, selectedKey)
+      : listOpenSlotsForService(spaceId, selectedKey)
+    load
+      .then((open) => {
+        if (live) setLoaded({ id: selectedKey, slots: open })
+      })
+      .catch(() => {
+        if (live) setLoaded({ id: selectedKey, slots: [] })
+      })
+    return () => {
+      live = false
+    }
+  }, [selectedKey, guestSlug, spaceId])
 
   function pick(service: ServiceType) {
-    setSelected(service)
-    setSlots(null)
-    startLoad(async () => {
-      const open = guest
-        ? await listGuestOpenSlotsAction(guest.slug, service.id)
-        : await listOpenSlotsForService(spaceId, service.id)
-      setSlots(open)
-    })
+    setChosenId(service.id)
   }
 
   function back() {
-    setSelected(null)
-    setSlots(null)
+    setChosenId(null)
+    setLoaded(null)
   }
 
   // Step 2: a service is chosen. Show its times (or a calm empty state), plus a way back.
@@ -85,7 +109,7 @@ export function BookingServiceMember({
           ) : null}
         </div>
 
-        {loading || slots === null ? (
+        {slots === null ? (
           <div className="flex items-center gap-2 px-1 text-body-sm text-muted">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading times
           </div>

@@ -27,8 +27,22 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   })
 }
 
-export default async function SpaceActionPage({ params }: { params: Promise<{ slug: string }> }) {
+/** BOOK-013: `?service=<id>` is a shareable link to one service. Only a plain id-shaped value passes; the
+ *  booking surface then ignores any id that is not one of the Space's active services. */
+function serviceParam(raw: string | string[] | undefined): string | null {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  return value && /^[0-9a-zA-Z-]{1,64}$/.test(value) ? value : null
+}
+
+export default async function SpaceActionPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ service?: string | string[] }>
+}) {
   const { slug } = await params
+  const serviceId = serviceParam((await searchParams).service)
   const viewerProfileId = await getMyProfileId()
   const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
   if (!space) notFound()
@@ -37,7 +51,7 @@ export default async function SpaceActionPage({ params }: { params: Promise<{ sl
   return (
     <>
       <Suspense fallback={<ProfileBodySkeleton />}>
-        <EntityCta />
+        <EntityCta serviceId={serviceId} />
       </Suspense>
       {/* The quiet mark that lets a customer find Frequency (LIVE-804). */}
       <p className="mt-8 text-center text-2xs text-muted">

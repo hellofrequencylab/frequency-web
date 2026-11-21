@@ -75,7 +75,8 @@ import { createSpaceCtaClickToken } from '@/lib/spaces/cta-click-token'
 // upcoming-sessions list below. BOOK-002: a BOOKABLE Space (an active service and a weekly window,
 // `hasBookableServices`) leads with booking whatever its Focus says (`bookPageKind`), on both sides.
 
-export async function EntityCta() {
+/** `serviceId` (BOOK-013) is the Book page's `?service=<id>`, handed to the booking surface to preselect. */
+export async function EntityCta({ serviceId = null }: { serviceId?: string | null } = {}) {
   const space = getActiveSpace()
   if (!space) return null
   const ctaLabel = defaultPrimaryCtaLabel(space.type)
@@ -98,7 +99,12 @@ export async function EntityCta() {
     return (
       <ModuleCard title="Book a session" tile>
         <Suspense fallback={<BookingSkeleton />}>
-          <BookingMember spaceId={space.id} slug={space.slug} ownerProfileId={space.ownerProfileId} />
+          <BookingMember
+            spaceId={space.id}
+            slug={space.slug}
+            ownerProfileId={space.ownerProfileId}
+            serviceId={serviceId}
+          />
         </Suspense>
       </ModuleCard>
     )
