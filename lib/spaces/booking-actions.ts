@@ -103,13 +103,15 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
 }
 
 /** Open deposit checkout for a paid Space service type (P4, DARK: double-gated off, no-ops until
- *  payments are turned on). Returns a checkout URL to redirect to, or an error. */
+ *  payments are turned on). Returns a checkout URL to redirect to, or an error. The note and answers
+ *  ride the hold like a free booking's (BOOK-006); a required question must be answered. */
 export async function startServiceDeposit(
   spaceId: string,
   serviceTypeId: string,
   startsAtISO: string,
+  details?: { note?: string | null; answers?: Record<string, string> | null },
 ): Promise<{ url?: string; error?: string }> {
-  return startServiceDepositImpl(spaceId, serviceTypeId, startsAtISO)
+  return startServiceDepositImpl(spaceId, serviceTypeId, startsAtISO, details)
 }
 
 // ── LIVE-835: the guest door, for a Space website's Book page ────────────────────────────────────

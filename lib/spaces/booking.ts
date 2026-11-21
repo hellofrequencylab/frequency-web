@@ -1975,8 +1975,9 @@ interface PlacedBooking {
 /**
  * The shared validate-then-insert core for createBooking AND rescheduleBooking. Re-derives the Space's
  * published slots under the full P1/P2 context (service duration, buffers, notice, overrides, window),
- * enforces the exact-instant + buffer conflict, then inserts a CONFIRMED booking. The partial unique
- * index is the final race guard. Captures the service's booking questions into `answers` (required ones
+ * enforces the exact-instant + buffer conflict, then inserts a CONFIRMED booking (or a 'pending' hold:
+ * a website guest's, SCAN-834, or a paid deposit hold, BOOK-006). The partial unique index is the final
+ * race guard. Captures the service's booking questions into `answers` (required ones
  * must be filled). Fail-soft on the P3 columns (answers / rescheduled_from) when unapplied.
  */
 async function validateAndPlaceBooking(params: {
@@ -1990,9 +1991,14 @@ async function validateAndPlaceBooking(params: {
   /** SCAN-834: place a website guest's HOLD (status pending, with its confirm token and expiry) instead
    *  of a confirmed booking. Null for every member path. */
   guestHold?: { token: string; expiresAt: string; optIn: boolean } | null
+  /** BOOK-006: place a member's PAID hold (status pending, stamped with the commerce product the deposit
+   *  checkout sells) instead of a confirmed booking. The settle webhook confirms it (confirmBookingByOrder).
+   *  Never together with guestHold. */
+  paidHold?: { productId: string } | null
 }): Promise<PlacedBooking | { ok: false; error: string }> {
   const { space, booker, startsAtISO, serviceTypeId, rescheduledFrom } = params
   const guestHold = params.guestHold ?? null
+  const paidHold = guestHold ? null : (params.paidHold ?? null)
   const spaceId = space.id
 
   const startsAt = new Date(startsAtISO)
@@ -2055,8 +2061,10 @@ async function validateAndPlaceBooking(params: {
     ...('profileId' in booker ? {} : { guest_name: bookerCols.guest_name, guest_email: bookerCols.guest_email }),
     starts_at: startsAt.toISOString(),
     ends_at: endsAt.toISOString(),
-    status: guestHold ? 'pending' : 'confirmed',
+    status: guestHold || paidHold ? 'pending' : 'confirmed',
     note: cleanNote ? cleanNote : null,
+    // BOOK-006: the paid hold's product rides the base row too, like the guest hold's columns.
+    ...(paidHold ? { product_id: paidHold.productId } : {}),
     // SCAN-834: a guest hold's columns ride the base row too, so a hold can never degrade into a confirmed
     // booking on a database without the 20270346008300 migration: the insert fails instead.
     ...(guestHold
@@ -2484,6 +2492,7 @@ export async function startServiceDeposit(
   spaceId: string,
   serviceTypeId: string,
   startsAtISO: string,
+  details?: { note?: string | null; answers?: Record<string, string> | null },
 ): Promise<{ url?: string; error?: string }> {
   const profileId = await getMyProfileId()
   if (!profileId) return { error: 'Sign in to book.' }
@@ -2501,8 +2510,14 @@ export async function startServiceDeposit(
   }
 
   // HOLD-FIRST: reserve the slot (a 'pending' booking), then take the deposit via commerce checkout.
-  const hold = await holdSlotForBooking(spaceId, profileId, startsAtISO, service.productId)
-  if (!hold) return { error: 'That time is no longer available. Pick another.' }
+  // BOOK-006: the hold is placed by the same core as a free booking, so the service's own length, buffers,
+  // notice, days off, calendar blocks and booking window all apply, and the note and answers are kept.
+  const hold = await holdSlotForBooking(spaceId, profileId, startsAtISO, service.productId, {
+    serviceTypeId: service.id,
+    note: details?.note ?? null,
+    answers: details?.answers ?? null,
+  })
+  if ('error' in hold) return { error: hold.error }
 
   try {
     // Dynamic import to avoid a static import cycle (checkout imports confirm/cancelBookingByOrder here).
@@ -2533,7 +2548,7 @@ export async function startServiceDeposit(
  * pending row lingers and readBlockingBookings (which counts 'confirmed' + 'pending') dead-locks the
  * slot for every future booker. FAIL-SOFT.
  */
-async function releasePendingHold(bookingId: string): Promise<void> {
+export async function releasePendingHold(bookingId: string): Promise<void> {
   try {
     await bookingsTable().update({ status: 'cancelled' }).eq('id', bookingId).eq('status', 'pending')
   } catch {
@@ -2549,47 +2564,46 @@ async function releasePendingHold(bookingId: string): Promise<void> {
 
 /**
  * Place a HOLD (a 'pending' booking) on an open slot for a paid service, before its deposit settles.
- * Re-validates the slot server-side (same rules as createBooking) and inserts status='pending' stamped
- * with the service product_id. The widened unique index (confirmed OR pending) blocks a second
- * hold/confirm on the same slot. Returns the new booking id + its end instant, or null on any miss.
+ * BOOK-006: the hold goes through the SAME validateAndPlaceBooking core as a free booking (paid-hold mode:
+ * status 'pending', stamped with the product, no guest token), so the service's duration, buffers,
+ * minimum notice, days off and override hours, calendar blocks, the schedule's zone, the service-to-window
+ * binding and the booking window all apply, and the note, answers and service_type_id are kept. The month
+ * meter is checked once, inside the core. Two callers: startServiceDeposit knows the service type; the
+ * Market door passes only the commerce product, so the active service type selling that product is
+ * resolved here, and with none the hold is validated on the window grid under the same schedule rules.
+ * The widened unique index (confirmed OR pending) blocks a second hold/confirm on the same slot. Returns
+ * the new booking id + its end instant, or the reason it could not be held.
  */
 export async function holdSlotForBooking(
   spaceId: string,
   memberProfileId: string,
   startsAtISO: string,
   productId: string,
-): Promise<{ bookingId: string; endsAt: string } | null> {
-  const startsAt = new Date(startsAtISO)
-  if (Number.isNaN(startsAt.getTime())) return null
-  const now = new Date()
-  if (startsAt.getTime() <= now.getTime()) return null
-  const windows = await readWindows(spaceId)
-  if (windows.length === 0) return null
-  const slotMinutes = slotLengthAt(windows, startsAt.getTime(), now)
-  if (slotMinutes == null) return null
-  const endsAt = new Date(startsAt.getTime() + slotMinutes * 60000)
-  // A deposit hold is a booking for the month meter too (it holds the slot and counts as pending).
-  if (!(await checkSpaceBookingMeter(spaceId)).ok) return null
-  try {
-    const { data, error } = await bookingsTable()
-      .insert([
-        {
-          space_id: spaceId,
-          member_profile_id: memberProfileId,
-          starts_at: startsAt.toISOString(),
-          ends_at: endsAt.toISOString(),
-          status: 'pending',
-          product_id: productId,
-          note: null,
-        },
-      ])
-      .select(BOOKING_COLS)
-      .maybeSingle()
-    if (error || !data) return null
-    return { bookingId: data.id, endsAt: endsAt.toISOString() }
-  } catch {
-    return null
+  details?: {
+    serviceTypeId?: string | null
+    note?: string | null
+    answers?: Record<string, string> | null
+  },
+): Promise<{ bookingId: string; endsAt: string } | { error: string }> {
+  const space = await getSpaceById(spaceId)
+  if (!space) return { error: 'This space is not taking bookings right now.' }
+  let serviceTypeId = details?.serviceTypeId ?? null
+  if (!serviceTypeId) {
+    const services = await readServiceTypes(space.id, { activeOnly: true })
+    serviceTypeId = services.find((s) => s.productId === productId)?.id ?? null
   }
+  const placed = await validateAndPlaceBooking({
+    space,
+    booker: { profileId: memberProfileId },
+    startsAtISO,
+    note: details?.note ?? null,
+    serviceTypeId,
+    answers: details?.answers ?? null,
+    rescheduledFrom: null,
+    paidHold: { productId },
+  })
+  if (!placed.ok) return { error: placed.error }
+  return { bookingId: placed.bookingId, endsAt: placed.endsAt }
 }
 
 /** Stamp the commerce order that will pay for a held booking onto it (after checkout creates the
@@ -2602,10 +2616,65 @@ export async function linkBookingToOrder(bookingId: string, orderId: string): Pr
   }
 }
 
+/** The paid holds an order is waiting to confirm (service-role; FAIL-SAFE to []). Read before the flip so
+ *  confirmBookingByOrder announces only the rows it moved from pending to confirmed itself. */
+async function readPendingHoldsByOrder(orderId: string): Promise<BookingRow[]> {
+  for (const cols of [BOOKING_COLS_GUEST, BOOKING_COLS]) {
+    try {
+      const { data, error } = await bookingsTable()
+        .select(cols)
+        .eq('order_id', orderId)
+        .eq('status', 'pending')
+        .order('starts_at', { ascending: true })
+      if (!error && data) return data
+    } catch {
+      /* a newer column missing, or no booking columns at all: try the next read */
+    }
+  }
+  return []
+}
+
+/** Of the holds read before the flip, the ones that are confirmed now (service-role; FAIL-SAFE to []). */
+async function readNowConfirmed(holds: BookingRow[]): Promise<BookingRow[]> {
+  if (holds.length === 0) return []
+  try {
+    const { data, error } = await bookingsTable()
+      .select(BOOKING_COLS)
+      .in('id', holds.map((h) => h.id))
+      .order('starts_at', { ascending: true })
+    if (error || !data) return []
+    const confirmed = new Set(data.filter((r) => r.status === 'confirmed').map((r) => r.id))
+    return holds.filter((h) => confirmed.has(h.id))
+  } catch {
+    return []
+  }
+}
+
+/** A confirmed paid hold as afterBookingPlaced takes it: the Space, the booker, and the service name. */
+async function placedFromRow(row: BookingRow): Promise<{
+  space: NonNullable<Awaited<ReturnType<typeof getSpaceById>>>
+  placed: PlacedBooking
+} | null> {
+  const booker = bookerFromRow(row)
+  const space = await getSpaceById(row.space_id)
+  if (!booker || !space) return null
+  const services = row.service_type_id ? await readServiceTypes(space.id, { activeOnly: false }) : []
+  const serviceName = services.find((s) => s.id === row.service_type_id)?.name ?? null
+  return {
+    space,
+    placed: { ok: true, bookingId: row.id, booker, startsAt: row.starts_at, endsAt: row.ends_at, serviceName },
+  }
+}
+
 /** Confirm a pending paid hold. Strict recovery uses the order-locked authority RPC;
- * default/noncommerce callers retain their existing fail-soft behavior. */
+ * default/noncommerce callers retain their existing fail-soft behavior.
+ *
+ * BOOK-006: a settled paid booking is announced like a free one, exactly once. The holds waiting on this
+ * order are read BEFORE the flip; after it, only those now confirmed are announced. A retried settle finds
+ * nothing pending, so it sends nothing again. The announcement is best-effort and never fails the settle. */
 export async function confirmBookingByOrder(orderId: string, opts?: { strict?: boolean }): Promise<void> {
   if (!orderId) return
+  const waiting = await readPendingHoldsByOrder(orderId)
   try {
     if (opts?.strict) {
       // Narrow local adapter until approved073 is applied and public schema types are regenerated.
@@ -2615,12 +2684,23 @@ export async function confirmBookingByOrder(orderId: string, opts?: { strict?: b
       const { data, error } = await db.rpc('confirm_paid_commerce_booking', { _order: orderId })
       if (error) throw error
       if (data !== true) throw new Error('[booking] paid order refused confirmation')
-      return
+    } else {
+      await bookingsTable().update({ status: 'confirmed' }).eq('order_id', orderId).eq('status', 'pending')
     }
-    await bookingsTable().update({ status: 'confirmed' }).eq('order_id', orderId).eq('status', 'pending')
   } catch (error) {
     if (opts?.strict) throw error
     /* pre-migration / no linked booking: no-op */
+    return
+  }
+  // The booker and the owner hear about it the way a free booking does: afterBookingPlaced sends
+  // notifyBookingConfirmed (with the .ics), schedules the reminder, and logs the member's timeline.
+  for (const row of await readNowConfirmed(waiting)) {
+    try {
+      const announce = await placedFromRow(row)
+      if (announce) await afterBookingPlaced(announce.space, announce.placed)
+    } catch (err) {
+      console.error('[booking] paid booking confirmation notice failed', err)
+    }
   }
 }
 
