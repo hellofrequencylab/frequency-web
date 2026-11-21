@@ -5,7 +5,7 @@ import { getProduct } from '@/lib/commerce/products'
 import { getSpaceById } from '@/lib/spaces/store'
 import { createCommerceCheckout } from '@/lib/commerce/checkout'
 import { BOOKING_CHECKOUT_SECONDS } from '@/lib/spaces/booking'
-import { createBooking, holdSlotForBooking, linkBookingToOrder, cancelBooking } from '@/lib/spaces/booking'
+import { createBooking, holdSlotForBooking, linkBookingToOrder, releasePendingHold } from '@/lib/spaces/booking'
 import { payoutsLive } from '@/lib/billing/connect'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isBlockedBetween } from '@/lib/blocking'
@@ -65,23 +65,33 @@ export async function bookServiceAction(
   if (!(await rateLimitOk('service_book', buyerProfileId, 5, '1 h'))) {
     return { error: 'You have started a lot of bookings. Try again in a little while.' }
   }
-  const hold = await holdSlotForBooking(product.bookingSpaceId, buyerProfileId, startsAtISO, product.id)
-  if (!hold) return { error: 'That time is no longer available. Pick another.' }
-
-  const checkout = await createCommerceCheckout({
-    buyerProfileId,
-    items: [{ productId: product.id, qty: 1 }],
-    expiresInSeconds: BOOKING_CHECKOUT_SECONDS,
+  // BOOK-006: the hold follows the same slot rules as a free booking (service length, buffers, notice,
+  // days off, calendar blocks, booking window) and keeps the buyer's note.
+  const hold = await holdSlotForBooking(product.bookingSpaceId, buyerProfileId, startsAtISO, product.id, {
+    note: note ?? null,
   })
+  if ('error' in hold) return { error: hold.error }
+
   // A missing url OR a missing orderId is a failure: without the order the settle webhook can never
   // confirm the hold and a refund can never release it (both key on order_id), so keeping the hold + the
-  // payment coupled means we must release the hold and stop rather than send the buyer to pay.
-  if (checkout.error || !checkout.url || !checkout.orderId) {
-    await cancelBooking(hold.bookingId)
-    return { error: checkout.error ?? 'Could not start checkout.' }
+  // payment coupled means we must release the hold and stop rather than send the buyer to pay. The
+  // release is the pending-hold flip (BOOK-006): it frees the slot without the member cancel rules.
+  try {
+    const checkout = await createCommerceCheckout({
+      buyerProfileId,
+      items: [{ productId: product.id, qty: 1 }],
+      expiresInSeconds: BOOKING_CHECKOUT_SECONDS,
+    })
+    if (checkout.error || !checkout.url || !checkout.orderId) {
+      await releasePendingHold(hold.bookingId)
+      return { error: checkout.error ?? 'Could not start checkout.' }
+    }
+    await linkBookingToOrder(hold.bookingId, checkout.orderId)
+    return { url: checkout.url }
+  } catch {
+    await releasePendingHold(hold.bookingId)
+    return { error: 'Could not start checkout.' }
   }
-  await linkBookingToOrder(hold.bookingId, checkout.orderId)
-  return { url: checkout.url }
 }
 
 export interface ServiceEnquiryResult {

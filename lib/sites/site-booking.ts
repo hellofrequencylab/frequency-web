@@ -1,6 +1,6 @@
 import 'server-only'
 import { readPublicBookingSetup, type ServiceType } from '@/lib/spaces/booking'
-import { SITE_BOOK_SLUG, SITE_CONFIRM_BOOKING_SLUG, siteTakesBookings } from '@/lib/sites/house-theme'
+import { SITE_BOOK_SLUG, SITE_CONFIRM_BOOKING_SLUG, SITE_MANAGE_BOOKING_SLUG, siteTakesBookings } from '@/lib/sites/house-theme'
 import { appOrigin } from '@/lib/sites/host'
 import { guestBookingPageUrl, siteBaseUrl } from '@/lib/sites/seo'
 import { getSiteSpace } from '@/lib/sites/site-cache'
@@ -63,4 +63,10 @@ export async function siteBookUrl(space: GuestLinkSpace): Promise<string> {
  *  Frequency (BOOK-003), so a Space with no website still gets a link that works. */
 export async function siteConfirmBookingUrl(space: GuestLinkSpace, token: string): Promise<string> {
   return `${await guestBookingUrl(space, SITE_CONFIRM_BOOKING_SLUG)}?token=${encodeURIComponent(token)}`
+}
+
+/** BOOK-007: the link in a guest's booking emails that opens their manage page, where they cancel or move
+ *  the booking. It carries the booking's guest secret, on the same origin rules as the confirm link. */
+export async function siteManageBookingUrl(space: GuestLinkSpace, token: string): Promise<string> {
+  return `${await guestBookingUrl(space, SITE_MANAGE_BOOKING_SLUG)}?token=${encodeURIComponent(token)}`
 }

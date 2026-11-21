@@ -75,6 +75,9 @@ type BookRow = {
   guest_confirm_expires_at?: string | null
   guest_confirmed_at?: string | null
   guest_opt_in?: boolean | null
+  // Phase 4 / BOOK-006: the paid hold columns.
+  product_id?: string | null
+  order_id?: string | null
 }
 type ServiceTypeRow = {
   id: string
@@ -137,6 +140,8 @@ function bookingsBuilder() {
     status?: string
     statusIn?: string[]
     id?: string
+    ids?: string[]
+    orderId?: string
     gte?: string
     gtEnds?: string
     token?: string
@@ -149,6 +154,8 @@ function bookingsBuilder() {
     (filters.status === undefined || b.status === filters.status) &&
     (filters.statusIn === undefined || filters.statusIn.includes(b.status)) &&
     (filters.id === undefined || b.id === filters.id) &&
+    (filters.ids === undefined || filters.ids.includes(b.id)) &&
+    (filters.orderId === undefined || b.order_id === filters.orderId) &&
     (filters.token === undefined || b.guest_confirm_token === filters.token) &&
     (filters.gte === undefined || b.starts_at >= filters.gte) &&
     (filters.gtEnds === undefined || b.ends_at > filters.gtEnds) &&
@@ -161,6 +168,7 @@ function bookingsBuilder() {
     in(col: string, vals: string[]) {
       // readBlockingBookings uses .in('status', ['confirmed','pending']) to exclude held + confirmed slots.
       if (col === 'status') filters.statusIn = vals
+      if (col === 'id') filters.ids = vals
       return api
     },
     eq(col: string, val: string) {
@@ -168,6 +176,7 @@ function bookingsBuilder() {
       if (col === 'status') filters.status = val
       if (col === 'id') filters.id = val
       if (col === 'guest_confirm_token') filters.token = val
+      if (col === 'order_id') filters.orderId = val
       // an eq('id') after update() is the terminal write (the legacy single-row flip)
       if (pendingUpdate && col === 'id') {
         const row = db.bookings.find((b) => b.id === val)
@@ -405,8 +414,25 @@ vi.mock('@/lib/sites/site-booking', () => ({
   siteBookUrl: async () => 'https://river-yoga.test/book',
 }))
 
+// BOOK-006: the settle path announces a paid booking through the same notify calls as a free one.
+const notifySpies = vi.hoisted(() => ({
+  confirmed: vi.fn(async (_ctx: unknown) => undefined),
+  reminder: vi.fn(async (_id: string, _startsAt: string) => undefined),
+}))
+vi.mock('@/lib/spaces/booking-notify', async (orig) => ({
+  ...(await orig<typeof import('@/lib/spaces/booking-notify')>()),
+  notifyBookingConfirmed: notifySpies.confirmed,
+  scheduleBookingReminder: notifySpies.reminder,
+}))
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
+    // The paid-order authority (confirm_paid_commerce_booking): flips the order's pending holds.
+    async rpc(name: string, args: { _order: string }) {
+      if (name !== 'confirm_paid_commerce_booking') throw new Error(`unexpected rpc ${name}`)
+      for (const b of db.bookings) if (b.order_id === args._order && b.status === 'pending') b.status = 'confirmed'
+      return { data: true, error: null }
+    },
     from(table: string) {
       if (table === 'space_availability') return availabilityBuilder()
       if (table === 'space_bookings') return bookingsBuilder()
@@ -447,6 +473,9 @@ import {
   bookerColumns,
   bookerFromRow,
   resolveBookingZone,
+  holdSlotForBooking,
+  confirmBookingByOrder,
+  releasePendingHold,
   type AvailabilityWindow,
 } from './booking'
 
@@ -467,6 +496,8 @@ beforeEach(() => {
   calendarDb.schedules = []
   captureLeadSpy.mockClear()
   holdEmailSpy.mockClear()
+  notifySpies.confirmed.mockClear()
+  notifySpies.reminder.mockClear()
 })
 
 // A reference "now": a fixed Tuesday so weekday math is deterministic.
@@ -1781,6 +1812,133 @@ describe('cancelBooking drops a pending hold (BOOK-018)', () => {
     db.bookings.push(hold({ status: 'cancelled' }))
     const r = await cancelBooking('h1')
     expect('error' in r).toBe(false)
+    expect(db.bookings[0]!.status).toBe('cancelled')
+  })
+})
+
+// BOOK-006: a paid hold follows the free booking's slot rules, and a settled one is announced once.
+describe('a paid hold uses the free booking rules and is announced on settle (BOOK-006)', () => {
+  const buyer = 'member-0000-4000-a000-0000000membr'
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-29T08:00:00.000Z'))
+    db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+    db.serviceTypes = [
+      {
+        id: 'svc-paid',
+        space_id: 'space-1',
+        product_id: 'prod-1',
+        name: 'Deep session',
+        duration_minutes: 60,
+        active: true,
+        sort_order: 0,
+        questions: [{ id: 'q1', label: 'Your goal', type: 'short', required: true }],
+      },
+    ]
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it("holds the service's own length as a pending row with the product, service, note and answers", async () => {
+    const hold = await holdSlotForBooking('space-1', buyer, '2026-06-30T10:00:00.000Z', 'prod-1', {
+      serviceTypeId: 'svc-paid',
+      note: ' See you ',
+      answers: { q1: 'Sleep better' },
+    })
+    expect('error' in hold).toBe(false)
+    const row = db.bookings[0]!
+    expect(row.status).toBe('pending')
+    expect(row.product_id).toBe('prod-1')
+    expect(row.service_type_id).toBe('svc-paid')
+    expect(row.note).toBe('See you')
+    expect(row.answers).toEqual([{ id: 'q1', label: 'Your goal', value: 'Sleep better' }])
+    expect(row.ends_at).toBe('2026-06-30T11:00:00.000Z') // the service's 60 minutes, not the window's 30
+    expect(row.guest_confirm_token).toBeUndefined()
+  })
+
+  it('the Market door, which knows only the product, finds the service selling it', async () => {
+    const hold = await holdSlotForBooking('space-1', buyer, '2026-06-30T10:00:00.000Z', 'prod-1', {
+      answers: { q1: 'Focus' },
+    })
+    expect('error' in hold).toBe(false)
+    expect(db.bookings[0]!.service_type_id).toBe('svc-paid')
+    expect(db.bookings[0]!.ends_at).toBe('2026-06-30T11:00:00.000Z')
+  })
+
+  it('refuses a time that overlaps another booking, and a required question left blank', async () => {
+    db.bookings.push({
+      id: 'b-other',
+      space_id: 'space-1',
+      member_profile_id: 'someone',
+      starts_at: '2026-06-30T10:30:00.000Z',
+      ends_at: '2026-06-30T11:00:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+    const overlap = await holdSlotForBooking('space-1', buyer, '2026-06-30T10:00:00.000Z', 'prod-1', {
+      serviceTypeId: 'svc-paid',
+      answers: { q1: 'x' },
+    })
+    expect('error' in overlap).toBe(true)
+    db.bookings = []
+    const blank = await holdSlotForBooking('space-1', buyer, '2026-06-30T10:00:00.000Z', 'prod-1', { serviceTypeId: 'svc-paid' })
+    expect('error' in blank).toBe(true)
+    if ('error' in blank) expect(blank.error).toMatch(/required questions/i)
+    expect(db.bookings).toHaveLength(0)
+  })
+
+  it('honors a booking window longer than 14 days', async () => {
+    calendarDb.schedules.push({
+      id: 'sch-1',
+      space_id: 'space-1',
+      timezone: 'UTC',
+      buffer_before_minutes: 0,
+      buffer_after_minutes: 0,
+      min_notice_minutes: 0,
+      booking_window_days: 30,
+      active: true,
+    })
+    const hold = await holdSlotForBooking('space-1', buyer, '2026-07-21T10:00:00.000Z', 'prod-1', {
+      serviceTypeId: 'svc-paid',
+      answers: { q1: 'x' },
+    })
+    expect('error' in hold).toBe(false)
+  })
+
+  it('settle confirms the hold and sends the confirmation and reminder exactly once, even on a retry', async () => {
+    const hold = await holdSlotForBooking('space-1', buyer, '2026-06-30T10:00:00.000Z', 'prod-1', {
+      serviceTypeId: 'svc-paid',
+      answers: { q1: 'x' },
+    })
+    if ('error' in hold) throw new Error(hold.error)
+    db.bookings[0]!.order_id = 'order-1'
+    await confirmBookingByOrder('order-1', { strict: true })
+    expect(db.bookings[0]!.status).toBe('confirmed')
+    expect(notifySpies.confirmed).toHaveBeenCalledTimes(1)
+    expect(notifySpies.confirmed.mock.calls[0]![0]).toMatchObject({
+      bookingId: hold.bookingId,
+      memberProfileId: buyer,
+      serviceName: 'Deep session',
+      startsAt: '2026-06-30T10:00:00.000Z',
+    })
+    expect(notifySpies.reminder).toHaveBeenCalledWith(hold.bookingId, '2026-06-30T10:00:00.000Z')
+    await confirmBookingByOrder('order-1', { strict: true }) // a retried settle
+    expect(notifySpies.confirmed).toHaveBeenCalledTimes(1)
+    expect(notifySpies.reminder).toHaveBeenCalledTimes(1)
+  })
+
+  it('an order with no booking announces nothing', async () => {
+    await confirmBookingByOrder('order-goods', { strict: true })
+    await confirmBookingByOrder('order-goods')
+    expect(notifySpies.confirmed).not.toHaveBeenCalled()
+  })
+
+  it('releasePendingHold frees a failed checkout hold', async () => {
+    const hold = await holdSlotForBooking('space-1', buyer, '2026-06-30T10:00:00.000Z', 'prod-1', {
+      serviceTypeId: 'svc-paid',
+      answers: { q1: 'x' },
+    })
+    if ('error' in hold) throw new Error(hold.error)
+    await releasePendingHold(hold.bookingId)
     expect(db.bookings[0]!.status).toBe('cancelled')
   })
 })

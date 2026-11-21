@@ -68,6 +68,9 @@ export const RESERVED_PAGE_SLUGS: ReadonlySet<string> = new Set([
   // A website guest's confirm page on Frequency (BOOK-003, app/(main)/spaces/[slug]/confirm-booking), for a
   // Space with no published website. Reserved in the same change that added the route.
   'confirm-booking',
+  // A website guest's manage page on Frequency (BOOK-007, app/(main)/spaces/[slug]/manage-booking), where they
+  // cancel or move a booking. Reserved in the same change that added the route.
+  'manage-booking',
   // The Space Spotlight link page (app/spaces/[slug]/spotlight, lib/spaces/spotlight.ts), reserved in the
   // same change that added the route for the reason `events` gives above.
   'spotlight',

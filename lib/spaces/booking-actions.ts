@@ -11,6 +11,7 @@
 //   booking-cancel-button.tsx     -> cancelBooking
 //   the website's Book page       -> listGuestOpenSlotsAction / createGuestBookingAction (LIVE-835)
 //   the website's confirm page    -> confirmGuestBookingFormAction (SCAN-834, SCAN-858)
+//   the guest's manage page       -> list/cancel/rescheduleGuestBooking*Action (BOOK-007)
 //
 // SERVER components (booking-member, booking-owner-list, the pages) import the READ actions
 // (listOpenSlots / listSpaceBookings / listSpaceAvailability / getSpaceBookingTimezone) directly
@@ -20,6 +21,11 @@
 import { headers } from 'next/headers'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { rateLimitOk } from '@/lib/rate-limit'
+import {
+  cancelGuestBookingByToken,
+  listGuestRescheduleSlots,
+  rescheduleGuestBookingByToken,
+} from '@/lib/spaces/booking-guest-manage'
 import {
   setSpaceAvailability as setSpaceAvailabilityImpl,
   setSpaceServiceTypes as setSpaceServiceTypesImpl,
@@ -103,13 +109,15 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
 }
 
 /** Open deposit checkout for a paid Space service type (P4, DARK: double-gated off, no-ops until
- *  payments are turned on). Returns a checkout URL to redirect to, or an error. */
+ *  payments are turned on). Returns a checkout URL to redirect to, or an error. The note and answers
+ *  ride the hold like a free booking's (BOOK-006); a required question must be answered. */
 export async function startServiceDeposit(
   spaceId: string,
   serviceTypeId: string,
   startsAtISO: string,
+  details?: { note?: string | null; answers?: Record<string, string> | null },
 ): Promise<{ url?: string; error?: string }> {
-  return startServiceDepositImpl(spaceId, serviceTypeId, startsAtISO)
+  return startServiceDepositImpl(spaceId, serviceTypeId, startsAtISO, details)
 }
 
 // ── LIVE-835: the guest door, for a Space website's Book page ────────────────────────────────────
@@ -203,4 +211,39 @@ export async function confirmGuestBookingFormAction(
     timeZoneName: 'short',
   }).format(new Date(outcome.startsAt))
   return { outcome, when }
+}
+
+// ── BOOK-007: a website guest cancels or moves their own booking ─────────────────────────────────
+// The manage page's buttons post here; opening its link writes nothing (SCAN-858). Each action carries the
+// guest's secret from the link and the Space id of the page that rendered it, and the work refuses a secret
+// minted for another Space. The two writes share one per-IP limit, like the guest booking door.
+//
+// authz-ok: anonymous by design. The booking is the one the guest's secret names, bound to the page's Space;
+// the notice window and the slot rules are re-checked server-side (lib/spaces/booking-guest-manage.ts).
+
+async function guestManageAllowed(): Promise<boolean> {
+  const h = await headers()
+  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'unknown'
+  return rateLimitOk('booking_guest_manage', ip, 10, '10 m')
+}
+
+/** The open times a guest may move their booking to (the same service's). FAIL-SAFE to []. */
+export async function listGuestRescheduleSlotsAction(token: string, spaceId: string): Promise<OpenSlot[]> {
+  return listGuestRescheduleSlots(token, typeof spaceId === 'string' ? spaceId : '')
+}
+
+/** Cancel a guest's booking from their manage page, with an optional reason. */
+export async function cancelGuestBookingAction(token: string, spaceId: string, reason?: string | null): Promise<ActionResult> {
+  if (!(await guestManageAllowed())) return fail('Too many changes just now. Please try again in a few minutes.')
+  return cancelGuestBookingByToken(token, typeof spaceId === 'string' ? spaceId : '', reason ?? null)
+}
+
+/** Move a guest's booking to another open time of the same service. */
+export async function rescheduleGuestBookingAction(
+  token: string,
+  spaceId: string,
+  startsAtISO: string,
+): Promise<ActionResult<{ startsAt: string }>> {
+  if (!(await guestManageAllowed())) return fail('Too many changes just now. Please try again in a few minutes.')
+  return rescheduleGuestBookingByToken(token, typeof spaceId === 'string' ? spaceId : '', startsAtISO)
 }

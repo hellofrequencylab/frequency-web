@@ -24,9 +24,14 @@ import {
   enqueueEmail,
 } from '@/lib/email'
 import { madeWithUrl } from '@/lib/marketing/made-with'
+import { envString } from '@/lib/env/string'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 const REMINDER_LEAD_MS = 24 * 60 * 60 * 1000 // 24h before the session
+// BOOK-014: a booking made inside 24 hours gets one short reminder an hour out instead, and only when that
+// hour mark is still at least half an hour away (otherwise the confirmation is the reminder).
+const SHORT_REMINDER_LEAD_MS = 60 * 60 * 1000
+const SHORT_REMINDER_MIN_GAP_MS = 30 * 60 * 1000
 export const BOOKING_REMINDER_KIND = 'booking_reminder'
 
 // A loose query surface for the not-yet-typed booking tables (ADR-246, mirroring lib/spaces/booking.ts):
@@ -36,6 +41,7 @@ type LooseQuery = {
   select: (cols: string) => LooseQuery
   eq: (col: string, val: unknown) => LooseQuery
   limit: (n: number) => LooseQuery
+  order: (col: string, opts: { ascending: boolean }) => LooseQuery
   maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: unknown }>
 }
 function looseFrom(admin: Admin, table: string): LooseQuery {
@@ -59,6 +65,10 @@ interface BookingNotifyContext {
   startsAt: string
   endsAt: string
   serviceName: string | null
+  /** BOOK-008: the calendar identity of this booking's invite. Omitted, it is read from the booking: the
+   *  first booking of its rescheduled_from chain is the UID, and the chain's depth the SEQUENCE, so a moved
+   *  booking updates the one calendar event instead of adding a second. */
+  invite?: { uid: string; sequence: number } | null
 }
 
 /** A guest booker (LIVE-835): where their mail goes and the website link it carries. */
@@ -148,32 +158,88 @@ function icsEscape(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
 }
 
-/** A single-event VCALENDAR for a booking, as a base64 string ready to attach. Pure. */
-function buildBookingIcsBase64(params: {
+/** The address a booking invite names as its ORGANIZER: the no-reply sender every booking email already
+ *  comes from (lib/email.ts EMAIL_FROM), so a calendar never offers to write to a person's own inbox. */
+function organizerAddress(): string {
+  const from = envString('EMAIL_FROM', 'Frequency <noreply@send.frequencylocal.com>')
+  const inside = /<([^<>\s]+@[^<>\s]+)>/.exec(from)?.[1] ?? (/^[^\s<>]+@[^\s<>]+$/.test(from.trim()) ? from.trim() : null)
+  return inside ?? 'noreply@send.frequencylocal.com'
+}
+
+/** A CN parameter value: quoted, with the characters a quoted parameter cannot hold removed. */
+function icsParam(s: string): string {
+  return `"${s.replace(/["\r\n\\]/g, '').trim() || 'Frequency'}"`
+}
+
+/** Fold a content line at 75 octets (RFC 5545 3.1): CRLF plus one space before each continuation. */
+function icsFold(line: string): string {
+  if (Buffer.byteLength(line, 'utf-8') <= 75) return line
+  const out: string[] = []
+  let cur = ''
+  for (const ch of line) {
+    const limit = out.length === 0 ? 75 : 74
+    if (Buffer.byteLength(cur + ch, 'utf-8') > limit) {
+      out.push(cur)
+      cur = ch
+    } else cur += ch
+  }
+  if (cur) out.push(cur)
+  return out.join('\r\n ')
+}
+
+/** What a booking invite says. `method` REQUEST adds or updates the event in the booker's calendar; CANCEL
+ *  removes it. The UID must stay the same across a reschedule, and SEQUENCE must grow with every change. */
+interface BookingIcsParams {
+  method: 'REQUEST' | 'CANCEL'
   uid: string
+  sequence: number
   startsAt: string
   endsAt: string
   summary: string
   url: string
-}): string {
+  /** The Space, named as the organizer (the address is the no-reply sender). */
+  organizerName: string
+  /** The booker. Omitted when unknown. */
+  attendee?: { name: string; email: string } | null
+  /** Where it happens. Omitted when the service names no place yet (BOOK-010 adds one). */
+  location?: string | null
+}
+
+/** A single-event VCALENDAR for a booking, as text. Pure. */
+export function buildBookingIcs(params: BookingIcsParams): string {
+  const cancel = params.method === 'CANCEL'
+  const location = params.location?.trim()
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Frequency//Booking//EN',
     'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
+    cancel ? 'METHOD:CANCEL' : 'METHOD:REQUEST',
     'BEGIN:VEVENT',
     `UID:${params.uid}@frequency`,
+    `SEQUENCE:${Math.max(0, Math.floor(params.sequence))}`,
     `DTSTAMP:${icsStamp(new Date())}`,
     `DTSTART:${icsStamp(new Date(params.startsAt))}`,
     `DTEND:${icsStamp(new Date(params.endsAt))}`,
     `SUMMARY:${icsEscape(params.summary)}`,
+    `ORGANIZER;CN=${icsParam(params.organizerName)}:mailto:${organizerAddress()}`,
+    ...(params.attendee
+      ? [
+          `ATTENDEE;CN=${icsParam(params.attendee.name)};ROLE=REQ-PARTICIPANT;PARTSTAT=${cancel ? 'DECLINED' : 'ACCEPTED'};RSVP=FALSE:mailto:${params.attendee.email.replace(/[\s<>"]/g, '')}`,
+        ]
+      : []),
+    ...(location ? [`LOCATION:${icsEscape(location)}`] : []),
     `URL:${icsEscape(params.url)}`,
+    `STATUS:${cancel ? 'CANCELLED' : 'CONFIRMED'}`,
     'END:VEVENT',
     'END:VCALENDAR',
   ]
-  const body = lines.join('\r\n') + '\r\n'
-  return Buffer.from(body, 'utf-8').toString('base64')
+  return lines.map(icsFold).join('\r\n') + '\r\n'
+}
+
+/** The same invite as a base64 string ready to attach. Pure. */
+function buildBookingIcsBase64(params: BookingIcsParams): string {
+  return Buffer.from(buildBookingIcs(params), 'utf-8').toString('base64')
 }
 
 /** True when the runtime can format in `tz`. Local on purpose: this module is loaded by a sandboxed
@@ -224,6 +290,64 @@ async function bookingTimezone(admin: Admin, spaceId: string): Promise<string> {
   }
 }
 
+// ── BOOK-008 / BOOK-014: what a booking's mail needs that its caller may not hold ─────────────────
+
+/** The calendar identity of a booking's invite: the first booking of its rescheduled_from chain is the UID,
+ *  and how many moves led here is the SEQUENCE. A database without the column (or any read miss) gives the
+ *  booking's own id at SEQUENCE 0, which is what every invite said before. */
+async function inviteIdentity(admin: Admin, bookingId: string): Promise<{ uid: string; sequence: number }> {
+  let uid = bookingId
+  let sequence = 0
+  const seen = new Set([bookingId])
+  try {
+    for (let hop = 0; hop < 25; hop++) {
+      const { data, error } = await looseFrom(admin, 'space_bookings').select('id, rescheduled_from').eq('id', uid).maybeSingle()
+      const prev = !error && typeof data?.rescheduled_from === 'string' ? data.rescheduled_from : null
+      if (!prev || seen.has(prev)) break
+      seen.add(prev)
+      uid = prev
+      sequence++
+    }
+  } catch {
+    /* keep what was read so far */
+  }
+  return { uid, sequence }
+}
+
+/** A service's name by id, active or not. Null when there is none to name. */
+async function serviceNameOf(admin: Admin, serviceTypeId: unknown): Promise<string | null> {
+  if (typeof serviceTypeId !== 'string' || !serviceTypeId) return null
+  try {
+    const { data } = await looseFrom(admin, 'space_service_types').select('name').eq('id', serviceTypeId).maybeSingle()
+    const name = data?.name
+    return typeof name === 'string' && name.trim() ? name.trim() : null
+  } catch {
+    return null
+  }
+}
+
+/** The cancelled booking a notice is about, when the caller did not name it: the newest cancelled booking of
+ *  this booker at this start on this Space. Null on any miss (the notice then goes without a calendar file). */
+async function findCancelledBooking(
+  admin: Admin,
+  ctx: { spaceId: string; startsAt: string; memberProfileId: string | null; guest?: GuestRecipient | null },
+): Promise<Record<string, unknown> | null> {
+  try {
+    let q = looseFrom(admin, 'space_bookings')
+      .select('id, ends_at, service_type_id')
+      .eq('space_id', ctx.spaceId)
+      .eq('starts_at', ctx.startsAt)
+      .eq('status', 'cancelled')
+    if (ctx.memberProfileId) q = q.eq('member_profile_id', ctx.memberProfileId)
+    else if (ctx.guest) q = q.eq('guest_email', ctx.guest.email)
+    else return null
+    const { data, error } = await q.order('cancelled_at', { ascending: false }).limit(1).maybeSingle()
+    return error ? null : data
+  } catch {
+    return null
+  }
+}
+
 // ── public: confirmation, reminder scheduling, cancellation ─────────────────────────────────────
 
 /** Send the confirmation email to the member (with .ics) and the owner. Best-effort; never throws. */
@@ -234,15 +358,21 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
     const whenAbsolute = formatWhen(ctx.startsAt, tz)
     const mins = durationMinutes(ctx.startsAt, ctx.endsAt)
     const manageUrl = `${APP_URL}/spaces/${ctx.spaceSlug}/book`
-    const icsBase64 = buildBookingIcsBase64({
-      uid: ctx.bookingId,
+    const member = await bookerRecipient(admin, ctx)
+    // BOOK-008: an invite, not a published copy. Same UID across a move, a higher SEQUENCE each time.
+    const invite = ctx.invite ?? (await inviteIdentity(admin, ctx.bookingId))
+    const inviteBase = {
+      method: 'REQUEST' as const,
+      uid: invite.uid,
+      sequence: invite.sequence,
       startsAt: ctx.startsAt,
       endsAt: ctx.endsAt,
       summary: ctx.serviceName ?? `Session with ${ctx.spaceName}`,
-      url: manageUrl,
-    })
-
-    const member = await bookerRecipient(admin, ctx)
+      organizerName: ctx.spaceName,
+      attendee: member,
+      location: null,
+    }
+    const icsBase64 = buildBookingIcsBase64({ ...inviteBase, url: manageUrl })
     if (member) {
       await sendBookingConfirmationEmail({
         to: member.email,
@@ -257,13 +387,7 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
         manageUrl: ctx.guest?.manageUrl ?? manageUrl,
         // A guest's calendar entry links back to the website, like their email.
         icsBase64: ctx.guest
-          ? buildBookingIcsBase64({
-              uid: ctx.bookingId,
-              startsAt: ctx.startsAt,
-              endsAt: ctx.endsAt,
-              summary: ctx.serviceName ?? `Session with ${ctx.spaceName}`,
-              url: ctx.guest.manageUrl,
-            })
+          ? buildBookingIcsBase64({ ...inviteBase, url: ctx.guest.manageUrl })
           : icsBase64,
         // The customer's copy carries the mark (LIVE-804); the owner's is a work notice and does not.
         madeWith: { label: 'Made with Frequency', url: madeWithUrl('booking-email', APP_URL) },
@@ -329,9 +453,18 @@ export async function notifyGuestBookingHold(ctx: {
  *  the booking status). Best-effort; never throws back into the booking flow. */
 export async function scheduleBookingReminder(bookingId: string, startsAt: string): Promise<void> {
   try {
-    const fireMs = new Date(startsAt).getTime() - REMINDER_LEAD_MS
-    const runAfter = new Date(Math.max(Date.now(), fireMs))
-    await enqueue(BOOKING_REMINDER_KIND, { bookingId }, { runAfter })
+    const startMs = new Date(startsAt).getTime()
+    if (!Number.isFinite(startMs)) return
+    const fireMs = startMs - REMINDER_LEAD_MS
+    // BOOK-014: booked inside 24 hours, the confirmation that just went out already says when. A reminder
+    // now would only repeat it, so send one an hour out instead, if that is still a while away.
+    if (fireMs <= Date.now()) {
+      const shortMs = startMs - SHORT_REMINDER_LEAD_MS
+      if (shortMs - Date.now() < SHORT_REMINDER_MIN_GAP_MS) return
+      await enqueue(BOOKING_REMINDER_KIND, { bookingId }, { runAfter: new Date(shortMs) })
+      return
+    }
+    await enqueue(BOOKING_REMINDER_KIND, { bookingId }, { runAfter: new Date(fireMs) })
   } catch (err) {
     console.error('[booking-notify] schedule reminder failed', err)
   }
@@ -350,7 +483,12 @@ export async function notifyBookingCancelled(
     | 'guest'
     | 'startsAt'
     | 'serviceName'
-  >,
+  > & {
+    /** BOOK-008: the cancelled booking and its end, for the calendar file that removes it. Omitted, the
+     *  booking is looked up by who booked it and when. */
+    bookingId?: string | null
+    endsAt?: string | null
+  },
   reason: string | null,
 ): Promise<void> {
   try {
@@ -359,7 +497,31 @@ export async function notifyBookingCancelled(
     const whenAbsolute = formatWhen(ctx.startsAt, tz)
     const bookUrl = `${APP_URL}/spaces/${ctx.spaceSlug}/book`
 
+    // BOOK-008 / BOOK-014: name the service and remove the calendar event, even when the caller named neither.
+    const found =
+      ctx.bookingId && ctx.endsAt && ctx.serviceName ? null : await findCancelledBooking(admin, ctx)
+    const bookingId = ctx.bookingId ?? (typeof found?.id === 'string' ? found.id : null)
+    const endsAt = ctx.endsAt ?? (typeof found?.ends_at === 'string' ? found.ends_at : null)
+    const serviceName = ctx.serviceName ?? (await serviceNameOf(admin, found?.service_type_id))
+
     const member = await bookerRecipient(admin, ctx)
+    let icsBase64: string | null = null
+    if (bookingId) {
+      const invite = await inviteIdentity(admin, bookingId)
+      icsBase64 = buildBookingIcsBase64({
+        method: 'CANCEL',
+        uid: invite.uid,
+        // One past the invite it replaces, so the calendar takes the cancel over the last update.
+        sequence: invite.sequence + 1,
+        startsAt: ctx.startsAt,
+        endsAt: endsAt ?? ctx.startsAt,
+        summary: serviceName ?? `Session with ${ctx.spaceName}`,
+        url: bookUrl,
+        organizerName: ctx.spaceName,
+        attendee: member,
+        location: null,
+      })
+    }
     if (member) {
       await sendBookingCancelledEmail({
         to: member.email,
@@ -367,10 +529,11 @@ export async function notifyBookingCancelled(
         audience: 'member',
         recipientIsGuest: !!ctx.guest,
         spaceName: ctx.spaceName,
-        serviceName: ctx.serviceName,
+        serviceName,
         whenAbsolute,
         reason,
         bookUrl: ctx.guest?.manageUrl ?? bookUrl,
+        icsBase64,
       })
     }
     if (ctx.ownerProfileId && ctx.ownerProfileId !== ctx.memberProfileId) {
@@ -381,10 +544,11 @@ export async function notifyBookingCancelled(
           recipientName: owner.name,
           audience: 'owner',
           spaceName: ctx.spaceName,
-          serviceName: ctx.serviceName,
+          serviceName,
           whenAbsolute,
           reason,
           bookUrl,
+          icsBase64,
         })
       }
     }
@@ -403,11 +567,17 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
   const admin = createAdminClient()
 
   // LIVE-835: read the guest columns too; a database without them falls back to the member-only read.
+  // BOOK-014 / BOOK-007: the service (to name it) and the guest's secret (for their manage link) ride first.
   const baseCols = 'id, space_id, member_profile_id, starts_at, ends_at, status'
   let read = await looseFrom(admin, 'space_bookings')
-    .select(`${baseCols}, guest_name, guest_email`)
+    .select(`${baseCols}, service_type_id, guest_name, guest_email, guest_confirm_token`)
     .eq('id', bookingId)
     .maybeSingle()
+  if (read.error)
+    read = await looseFrom(admin, 'space_bookings')
+      .select(`${baseCols}, guest_name, guest_email`)
+      .eq('id', bookingId)
+      .maybeSingle()
   if (read.error) read = await looseFrom(admin, 'space_bookings').select(baseCols).eq('id', bookingId).maybeSingle()
   const booking = read.data as {
     id: string
@@ -415,6 +585,8 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
     member_profile_id: string | null
     guest_name?: string | null
     guest_email?: string | null
+    guest_confirm_token?: string | null
+    service_type_id?: string | null
     starts_at: string
     ends_at: string
     status: string
@@ -432,21 +604,25 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
   const spaceName = space.brand_name?.trim() || space.name
 
   const tz = await bookingTimezone(admin, booking.space_id)
+  const serviceName = await serviceNameOf(admin, booking.service_type_id)
 
   // A guest booker (LIVE-835) has no profile for the notification router's gate: the reminder is the
   // same transactional email, enqueued straight onto the outbox (sendRawEmail still honours global
   // suppression), and its link opens the Space website's Book page.
   if (!booking.member_profile_id) {
     if (!booking.guest_name || !booking.guest_email) return
-    const { siteBookUrl } = await import('@/lib/sites/site-booking')
+    // BOOK-007: the link opens the guest's manage page (cancel or move), else the Book page.
+    const { siteBookUrl, siteManageBookingUrl } = await import('@/lib/sites/site-booking')
+    const site = { id: booking.space_id, slug: space.slug, domain: space.domain }
+    const token = booking.guest_confirm_token
     await enqueueEmail(
       buildBookingReminderEmail({
         to: booking.guest_email,
         recipientName: booking.guest_name,
         spaceName,
-        serviceName: null,
+        serviceName,
         whenAbsolute: formatWhen(booking.starts_at, tz),
-        manageUrl: await siteBookUrl({ id: booking.space_id, slug: space.slug, domain: space.domain }),
+        manageUrl: token ? await siteManageBookingUrl(site, token) : await siteBookUrl(site),
       }),
     )
     return
@@ -467,7 +643,7 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
         to: member.email,
         recipientName: member.name,
         spaceName,
-        serviceName: null,
+        serviceName,
         whenAbsolute: formatWhen(booking.starts_at, tz),
         manageUrl: `${APP_URL}/spaces/${space.slug}/book`,
       }),

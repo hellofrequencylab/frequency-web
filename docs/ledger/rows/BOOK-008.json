@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/spaces/booking.ts",
     "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
   },
-  "detail": "FOUND 2026-11-21: buildBookingIcsBase64 sends METHOD:PUBLISH with no ORGANIZER, ATTENDEE, LOCATION or SEQUENCE. A cancellation mails no .ics, and a reschedule creates a new booking id, so the new invite has a new UID and the old event stays in the booker's calendar next to the new one. Fix: METHOD:REQUEST with a stable UID across a reschedule (carry the first booking id), SEQUENCE bumps, and a METHOD:CANCEL attachment on cancel.",
+  "detail": "FOUND 2026-11-21: buildBookingIcsBase64 sends METHOD:PUBLISH with no ORGANIZER, ATTENDEE, LOCATION or SEQUENCE. A cancellation mails no .ics, and a reschedule creates a new booking id, so the new invite has a new UID and the old event stays in the booker's calendar next to the new one. Fix: METHOD:REQUEST with a stable UID across a reschedule (carry the first booking id), SEQUENCE bumps, and a METHOD:CANCEL attachment on cancel.\n\nDONE 2026-11-21: booking invites are METHOD:REQUEST with ORGANIZER (the Space name, mailto the EMAIL_FROM no-reply address), ATTENDEE (the booker), SEQUENCE, STATUS and an optional LOCATION (omitted until BOOK-010 gives a service a place), with lines folded at 75 octets. The UID is the first booking of the rescheduled_from chain and SEQUENCE its depth, so a move updates the one event. Cancellation emails attach a METHOD:CANCEL booking.ics with the same UID and SEQUENCE + 1; when the caller does not name the booking (the member cancelBooking path) the notice finds the newest cancelled booking of that booker at that start. sendBookingCancelledEmail takes an optional icsBase64.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/booking-audit.mjs BOOK-008",
     "note": "Fails today; passes once the consequence in the title holds."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-21"
 }

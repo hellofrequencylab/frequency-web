@@ -293,7 +293,7 @@ export function sitePathForSpacePath(segments: string[]): string | null {
 function subdomainKeepsPath(pathname: string): boolean {
   const first = pathname.split('/').filter(Boolean)[0] ?? ''
   if (first === SITE_ADMIN_SEGMENT || first === 'api') return true
-  if (first === 'confirm-booking' || first === 'opengraph-image') return true
+  if (first === 'confirm-booking' || first === 'manage-booking' || first === 'opengraph-image') return true
   return pathname === SPOTLIGHT_CLICK_PATH || SITE_CRAWLER_FILES.has(pathname)
 }
 

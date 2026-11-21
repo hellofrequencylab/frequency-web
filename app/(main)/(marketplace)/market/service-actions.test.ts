@@ -25,7 +25,8 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: () =>
 // Cut the checkout/booking import chain (Stripe et al.) — not exercised by the enquiry path.
 vi.mock('@/lib/commerce/checkout', () => ({ createCommerceCheckout: vi.fn() }))
 vi.mock('@/lib/spaces/booking', () => ({
-  createBooking: vi.fn(), holdSlotForBooking: vi.fn(), linkBookingToOrder: vi.fn(), cancelBooking: vi.fn(),
+  createBooking: vi.fn(), holdSlotForBooking: vi.fn(), linkBookingToOrder: vi.fn(), releasePendingHold: vi.fn(),
+  BOOKING_CHECKOUT_SECONDS: 1800,
 }))
 vi.mock('@/lib/billing/connect', () => ({ payoutsLive: vi.fn() }))
 
@@ -94,5 +95,35 @@ describe('sendServiceEnquiry — guards', () => {
     expect(adminInsert).toHaveBeenCalledWith(
       expect.objectContaining({ conversation_id: 'conv-1', sender_id: 'buyer-1', body: expect.stringContaining('Deep tissue massage') }),
     )
+  })
+})
+
+// BOOK-006: a paid Market booking whose checkout fails frees its slot with the pending-hold release.
+describe('bookServiceAction — a failed checkout frees the hold', () => {
+  it('releases the pending hold (never cancelBooking, which left the slot held)', async () => {
+    const booking = await import('@/lib/spaces/booking')
+    const checkout = await import('@/lib/commerce/checkout')
+    const connect = await import('@/lib/billing/connect')
+    const { bookServiceAction } = await import('./service-actions')
+    vi.clearAllMocks()
+    getMyProfileId.mockResolvedValue('buyer-1')
+    rateLimitOk.mockResolvedValue(true)
+    getProduct.mockResolvedValue({
+      id: 'prod-1',
+      productKind: 'service',
+      status: 'active',
+      priceCents: 5000,
+      bookingSpaceId: 'space-1',
+      metadata: { service: { priceModel: 'fixed' } },
+    })
+    vi.mocked(connect.payoutsLive).mockResolvedValue(true)
+    vi.mocked(booking.holdSlotForBooking).mockResolvedValue({ bookingId: 'hold-1', endsAt: '2099-01-01T11:00:00.000Z' })
+    vi.mocked(checkout.createCommerceCheckout).mockResolvedValue({ error: 'Stripe is down' } as never)
+
+    const res = await bookServiceAction('prod-1', '2099-01-01T10:00:00.000Z', 'Hi')
+    expect(res.error).toBe('Stripe is down')
+    expect(booking.holdSlotForBooking).toHaveBeenCalledWith('space-1', 'buyer-1', '2099-01-01T10:00:00.000Z', 'prod-1', { note: 'Hi' })
+    expect(booking.releasePendingHold).toHaveBeenCalledWith('hold-1')
+    expect(booking.linkBookingToOrder).not.toHaveBeenCalled()
   })
 })
