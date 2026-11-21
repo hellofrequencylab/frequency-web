@@ -5160,6 +5160,49 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5421,
+      "expiresAt": "2026-11-28T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346260000_messages_insert_honors_blocks.sql",
+          "sha256": "240dd4fe521596938c7fa9ddd8898c383cb7363256aa823fdc2012e10354c376"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/EMAIL-071.json",
+          "status": "modified",
+          "sha256": "0fd87dd093ab67b834539b1c87ac18ce37296c936d252ba15e6d5af6aa73b8c2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346260000_messages_insert_honors_blocks.sql",
+          "status": "added",
+          "sha256": "240dd4fe521596938c7fa9ddd8898c383cb7363256aa823fdc2012e10354c376",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/messages_insert_honors_blocks.test.sql",
+          "status": "added",
+          "sha256": "83342b527fba8beba1b3267767394924268d07b94c8935c8b0576034b6b31141",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
