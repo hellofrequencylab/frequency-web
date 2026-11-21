@@ -48,6 +48,7 @@ import { spaceFunctionDef, spaceFunctionEnabled } from './functions'
 // The Book page's widget rule, shared with components/widgets/entity/entity-cta.tsx so the sitemap
 // advertises /book on the same Focus the page renders on (SCAN-787).
 import { ctaKindFor } from './cta-kind'
+import { isThinSpotlightText } from '@/lib/seo/thin-spotlight'
 // The circle statuses a public list may show, from the circles module's own definition rather than
 // retyped here — a second copy of ['forming','active'] is a drift waiting to happen.
 import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
@@ -783,7 +784,7 @@ interface SpaceProfileTabRoute {
 // widget the Book page leads with) and `updated_at`. It deliberately does NOT reuse COLS — the
 // directory pays for a card's worth of columns on every /spaces render, and this pays for a gate's
 // worth once an hour behind the sitemap's revalidate.
-const TAB_COLS = 'id, slug, type, mode_variant, updated_at, preferences, entitlements, time_zone'
+const TAB_COLS = 'id, slug, type, mode_variant, updated_at, preferences, entitlements, time_zone, about'
 
 type SpaceTabRow = {
   time_zone?: string | null
@@ -794,6 +795,8 @@ type SpaceTabRow = {
   updated_at: string | null
   preferences: unknown
   entitlements: unknown
+  /** The Space's About text, which decides whether its Spotlight is worth a search result (SCAN-1277). */
+  about?: string | null
 }
 
 /** A loose builder for the grouped presence reads below (`.in()` / `.is()` / `.gte()` are not on the
@@ -1103,7 +1106,9 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
       }
       // SPOTLIGHT (LIVE-853). The Space's link page, advertised only once its owner has published it:
       // the page 404s until then (app/spaces/[slug]/spotlight). Read from preferences, no extra trip.
-      if (readSpaceSpotlight(r.preferences).published) push('spotlight')
+      // A Spotlight whose Space has written almost nothing About itself stays out (SCAN-1277): the
+      // page says noindex on the same rule (lib/seo/thin-spotlight.ts).
+      if (!isThinSpotlightText(r.about) && readSpaceSpotlight(r.preferences).published) push('spotlight')
       for (const pageSlug of declaredPageSlugs(r.preferences)) push(pageSlug)
     }
     return out

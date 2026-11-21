@@ -6,6 +6,7 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { readTagline } from '@/lib/spaces/tagline'
 import { readSpaceSpotlight } from '@/lib/spaces/spotlight'
 import { OG_SITE } from '@/lib/site'
+import { isThinSpotlightText } from '@/lib/seo/thin-spotlight'
 import { SpaceSpotlight } from '@/components/spotlight/space-spotlight'
 
 // A SPACE'S SPOTLIGHT, its shareable link page at /spaces/<slug>/spotlight (lib/spaces/spotlight.ts). Public
@@ -40,6 +41,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: name,
     description,
     alternates: { canonical: url },
+    // Almost nothing About the Space: still a working link page, not a search result (SCAN-1277). The
+    // sitemap reader (lib/spaces/discovery.ts) leaves it out on the same rule.
+    ...(isThinSpotlightText(space.about) ? { robots: { index: false, follow: true } } : {}),
     openGraph: { ...OG_SITE, type: 'website', title: name, description, url },
     twitter: { card: 'summary_large_image', title: name, description },
   }

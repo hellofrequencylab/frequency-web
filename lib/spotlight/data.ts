@@ -97,21 +97,27 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
 }
 
 /** Published Spotlight handles for sitemap + generateStaticParams (SCAN-642).
- *  Same publish gate as getPublishedSpotlight: is_active, not system, meta.spotlight.published. */
+ *  Same publish gate as getPublishedSpotlight: is_active, not system, meta.spotlight.published.
+ *  Only the indexable ones: a bio under 12 words is a thin page (SCAN-1277). */
 export async function listPublishedSpotlightHandles(limit = 1000, opts: { failClosed?: boolean } = {}): Promise<string[]> {
   const admin = createAdminClient()
   const query = () => admin
     .from('profiles')
-    .select('handle')
+    .select('handle, bio')
     .eq('is_active', true)
     .eq('is_system', false)
     .filter('meta->spotlight->>published', 'eq', 'true')
     .limit(limit)
   const data = opts.failClosed
-    ? await listReadFailClosed<{ handle: string | null }>('sitemap.profiles', query)
+    ? await listReadFailClosed<{ handle: string | null; bio?: string | null }>('sitemap.profiles', query)
     : (await query()).data
   if (!Array.isArray(data)) return []
-  return (data as { handle: string | null }[])
+  // A Spotlight whose bio is under 12 words stays out of the sitemap and the prebuilt set (SCAN-1277).
+  // The page still renders on request and says noindex on the same rule (lib/seo/thin-spotlight.ts).
+  // Written inline, not imported, because scripts/probes/sitemap-legacy-readers.mjs runs this body on
+  // its own; lib/seo/thin-spotlight.test.ts pins the two to the same number of words.
+  return (data as { handle: string | null; bio?: string | null }[])
+    .filter((p) => (p.bio ?? '').trim().split(/\s+/).filter(Boolean).length >= 12)
     .map((p) => p.handle)
     .filter((h): h is string => typeof h === 'string' && h.length > 0)
 }
