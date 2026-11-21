@@ -189,7 +189,7 @@ function icsFold(line: string): string {
 
 /** What a booking invite says. `method` REQUEST adds or updates the event in the booker's calendar; CANCEL
  *  removes it. The UID must stay the same across a reschedule, and SEQUENCE must grow with every change. */
-export interface BookingIcsParams {
+interface BookingIcsParams {
   method: 'REQUEST' | 'CANCEL'
   uid: string
   sequence: number

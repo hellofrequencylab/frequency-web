@@ -802,7 +802,7 @@ async function resolveServiceDuration(
 }
 
 /** Resolve the full active service (name + duration + questions) for a chosen id, or null. FAIL-SAFE. */
-export async function resolveService(
+async function resolveService(
   spaceId: string,
   serviceTypeId: string | null | undefined,
 ): Promise<ServiceType | null> {
@@ -1722,7 +1722,7 @@ export async function createBooking(
 // anything but the Space id.
 
 /** Who holds a booking: a member profile, or a guest who booked on the Space's website (LIVE-835). */
-export type Booker = { profileId: string } | { guestName: string; guestEmail: string }
+type Booker = { profileId: string } | { guestName: string; guestEmail: string }
 
 /** The booker columns a space_bookings row is written with. Pure. Exactly one side is set, which is the
  *  space_bookings_booker_check constraint. */
@@ -1963,7 +1963,7 @@ export async function confirmGuestBooking(rawToken: unknown, expectedSpaceId?: s
 }
 
 /** The result of a successful placement (used by the confirmation + reminder side effects). */
-export interface PlacedBooking {
+interface PlacedBooking {
   ok: true
   bookingId: string
   booker: Booker
