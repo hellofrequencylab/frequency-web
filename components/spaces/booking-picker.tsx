@@ -158,7 +158,10 @@ export function BookingPicker({
       // P4 (dark): a paid service with deposits live opens deposit checkout (redirect on success);
       // otherwise the free confirm-only / reschedule path. depositProductId is null until payments are on.
       if (depositProductId && !isReschedule) {
-        const dep = await startServiceDeposit(spaceId, serviceTypeId!, target.startsAt)
+        const dep = await startServiceDeposit(spaceId, serviceTypeId!, target.startsAt, {
+          note: note.trim() || null,
+          answers,
+        })
         if (dep.error || !dep.url) {
           setError(dep.error ?? 'Could not start checkout.')
           return
