@@ -4,7 +4,7 @@
 // absolute UTC; every label here is computed in a caller-supplied timezone (the Space tz, or in P2
 // the invitee's browser tz). No em / en dashes in any copy (CONTENT-VOICE §10).
 
-import type { OpenSlot } from '@/lib/spaces/booking'
+import type { OpenSlot, ServiceLocation } from '@/lib/spaces/booking'
 
 /** A day group of open slots (the local calendar date label + its slots). */
 export interface SlotDay {
@@ -71,4 +71,12 @@ export function timezoneLabel(timezone: string): string {
 /** A plain-language duration label for a service, e.g. "30 min" (member-facing, no em/en dashes). */
 export function durationLabel(minutes: number): string {
   return `${minutes} min`
+}
+
+/** BOOK-010: where a service happens, for the booking page. A video link is not shown before booking:
+ *  it goes out in the confirmation, as Calendly does. */
+export function whereLabel(location: ServiceLocation): string {
+  if (location.kind === 'video') return 'Video call. The link comes with your confirmation.'
+  if (location.kind === 'phone') return `Phone call: ${location.value}`
+  return location.value
 }

@@ -97,6 +97,24 @@ export interface ServiceType {
   /** P4 (dark): linked commerce service product. When set AND deposits are live, booking this service
    *  opens deposit checkout; otherwise the free P0 confirm-only path is used. Null = free. */
   productId: string | null
+  /** BOOK-010: where the service happens (an address, a phone number or a meeting link). Null = not set. */
+  location: ServiceLocation | null
+}
+
+/** BOOK-010: where a service happens. `value` is the address, the phone number or the meeting link. */
+export interface ServiceLocation {
+  kind: 'in_person' | 'phone' | 'video'
+  value: string
+}
+
+/** Coerce a stored or typed location to a clean one, or null (fail-closed: an unknown kind or a blank
+ *  value is no location). A video value must be an http(s) link. Pure. */
+export function cleanServiceLocation(kind: unknown, value: unknown): ServiceLocation | null {
+  if (kind !== 'in_person' && kind !== 'phone' && kind !== 'video') return null
+  const v = typeof value === 'string' ? value.trim().slice(0, 500) : ''
+  if (!v) return null
+  if (kind === 'video' && !/^https?:\/\/\S+$/i.test(v)) return null
+  return { kind, value: v }
 }
 
 /** One open slot offered to a member: the absolute UTC instant it starts, plus its length so the
@@ -522,6 +540,8 @@ type ServiceTypeRow = {
   sort_order: number
   product_id?: string | null
   questions?: unknown
+  location_kind?: string | null
+  location_value?: string | null
 }
 type BookingRow = {
   id: string
@@ -650,6 +670,9 @@ const BOOKING_COLS_GUEST = `${BOOKING_COLS_P3}, guest_name, guest_email`
 const BOOKING_COLS_HOLD = `${BOOKING_COLS_GUEST}, guest_confirm_token, guest_confirm_expires_at, guest_confirmed_at, guest_opt_in`
 const SERVICE_TYPE_COLS = 'id, space_id, name, description, duration_minutes, price_cents, active, sort_order, product_id'
 const SERVICE_TYPE_COLS_P3 = `${SERVICE_TYPE_COLS}, questions`
+// BOOK-010: the location columns. Read first, with the P3 and base reads as fallbacks, so a database
+// without the 20270346270000 migration keeps reading exactly as before.
+const SERVICE_TYPE_COLS_LOC = `${SERVICE_TYPE_COLS_P3}, location_kind, location_value`
 
 /** Map a raw availability row to a clean window (drops malformed rows, fail-closed). */
 function mapAvailabilityRow(r: AvailabilityRow): AvailabilityWindow | null {
@@ -754,6 +777,7 @@ function mapServiceTypeRow(r: ServiceTypeRow): ServiceType {
     sortOrder: Number.isInteger(r.sort_order) ? r.sort_order : 0,
     questions: parseQuestions(r.questions),
     productId: typeof r.product_id === 'string' && r.product_id ? r.product_id : null,
+    location: cleanServiceLocation(r.location_kind, r.location_value),
   }
 }
 
@@ -768,14 +792,16 @@ async function readServiceTypes(
     const mapped = data.map(mapServiceTypeRow)
     return opts.activeOnly ? mapped.filter((s) => s.active) : mapped
   }
-  try {
-    const ext = await serviceTypesTable()
-      .select(SERVICE_TYPE_COLS_P3)
-      .eq('space_id', spaceId)
-      .order('sort_order', { ascending: true })
-    if (!ext.error && ext.data) return finish(ext.data)
-  } catch {
-    /* pre-P3 column missing: fall through */
+  for (const cols of [SERVICE_TYPE_COLS_LOC, SERVICE_TYPE_COLS_P3]) {
+    try {
+      const ext = await serviceTypesTable()
+        .select(cols)
+        .eq('space_id', spaceId)
+        .order('sort_order', { ascending: true })
+      if (!ext.error && ext.data) return finish(ext.data)
+    } catch {
+      /* a newer column missing (pre-migration): try the older read */
+    }
   }
   try {
     const { data, error } = await serviceTypesTable()
@@ -1353,7 +1379,13 @@ export async function getSpaceBookingTimezone(spaceId: string): Promise<string> 
 export async function listBookableServices(spaceId: string): Promise<ServiceType[]> {
   const profileId = await getMyProfileId()
   if (!profileId) return []
-  return readServiceTypes(spaceId, { activeOnly: true })
+  return (await readServiceTypes(spaceId, { activeOnly: true })).map(publicService)
+}
+
+/** BOOK-010: a service as a booker sees it before booking. A meeting link stays out of the page and goes
+ *  out in the confirmation, so it reaches only people who booked. Pure. */
+function publicService(s: ServiceType): ServiceType {
+  return s.location?.kind === 'video' ? { ...s, location: { kind: 'video', value: '' } } : s
 }
 
 /** What a Space website's Book page needs (LIVE-835), read with NO caller check: the Space's active
@@ -1370,7 +1402,7 @@ export async function readPublicBookingSetup(
       readWindows(spaceId),
     ])
     return {
-      services,
+      services: services.map(publicService),
       timezone: schedule.timezone ?? windows[0]?.timezone ?? 'UTC',
       windowCount: windows.length,
     }
@@ -1402,6 +1434,8 @@ export interface ServiceTypeInput {
   sortOrder?: number
   /** P3 booking questions asked at booking (ordered). */
   questions?: BookingQuestion[]
+  /** BOOK-010: where it happens. Null or omitted clears it. */
+  location?: { kind: string; value: string } | null
 }
 
 /** Coerce raw booking questions to a clean, stable list (each gets an id; blank labels dropped). */
@@ -1429,6 +1463,7 @@ function cleanServiceInput(raw: ServiceTypeInput, index: number): {
   active: boolean
   sort_order: number
   questions: BookingQuestion[]
+  location: ServiceLocation | null
 } | null {
   const name = typeof raw.name === 'string' ? raw.name.trim().slice(0, 120) : ''
   if (!name) return null
@@ -1452,6 +1487,7 @@ function cleanServiceInput(raw: ServiceTypeInput, index: number): {
     active: raw.active !== false,
     sort_order: Number.isInteger(raw.sortOrder) ? (raw.sortOrder as number) : index,
     questions: cleanQuestions(raw.questions),
+    location: raw.location ? cleanServiceLocation(raw.location.kind, raw.location.value) : null,
   }
 }
 
@@ -1509,24 +1545,33 @@ export async function setSpaceServiceTypes(
       // Include the P3 questions column when possible; if it is absent pre-migration the write errors,
       // so retry without questions (fail-soft: the service saves, just without its questions).
       const withQuestions = { ...base, questions: row.questions }
+      // BOOK-010: the location columns, newest first; each older shape is the fallback before its migration.
+      const withLocation = {
+        ...withQuestions,
+        location_kind: row.location?.kind ?? null,
+        location_value: row.location?.value ?? null,
+      }
+      const shapes = [withLocation, withQuestions, base]
+      let saved = false
       if (row.id && existingIds.has(row.id)) {
         keptIds.add(row.id)
-        const first = (await serviceTypesTable().update(withQuestions).eq('id', row.id)) as unknown as {
-          error?: unknown
-        }
-        if (first.error) {
-          const retry = (await serviceTypesTable().update(base).eq('id', row.id)) as unknown as {
-            error?: unknown
+        for (const shape of shapes) {
+          const res = (await serviceTypesTable().update(shape).eq('id', row.id)) as unknown as { error?: unknown }
+          if (!res.error) {
+            saved = true
+            break
           }
-          if (retry.error) return fail('Could not save your services. Try again.')
         }
       } else {
-        const first = await serviceTypesTable().insert([{ space_id: spaceId, ...withQuestions }])
-        if (first.error) {
-          const retry = await serviceTypesTable().insert([{ space_id: spaceId, ...base }])
-          if (retry.error) return fail('Could not save your services. Try again.')
+        for (const shape of shapes) {
+          const res = await serviceTypesTable().insert([{ space_id: spaceId, ...shape }])
+          if (!res.error) {
+            saved = true
+            break
+          }
         }
       }
+      if (!saved) return fail('Could not save your services. Try again.')
     }
 
     // Delete the rows the owner removed (present before, absent now).

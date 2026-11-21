@@ -33,6 +33,22 @@ interface ServiceDraft {
   description: string
   durationMinutes: number
   questions: BookingQuestion[]
+  /** BOOK-010: where it happens. '' = not set. */
+  locationKind: '' | 'in_person' | 'phone' | 'video'
+  locationValue: string
+}
+
+// BOOK-010: the three places a session can happen, and what the owner types for each.
+const LOCATION_KINDS = [
+  { value: '', label: 'Not set' },
+  { value: 'in_person', label: 'In person' },
+  { value: 'phone', label: 'Phone call' },
+  { value: 'video', label: 'Video call' },
+] as const
+const LOCATION_PLACEHOLDER: Record<'in_person' | 'phone' | 'video', string> = {
+  in_person: 'The address people come to',
+  phone: 'The number you call from, or ask them to call',
+  video: 'Your meeting link, starting https://',
 }
 
 function toDrafts(services: ServiceType[]): ServiceDraft[] {
@@ -42,6 +58,8 @@ function toDrafts(services: ServiceType[]): ServiceDraft[] {
     description: s.description ?? '',
     durationMinutes: s.durationMinutes,
     questions: s.questions,
+    locationKind: s.location?.kind ?? '',
+    locationValue: s.location?.value ?? '',
   }))
 }
 
@@ -70,7 +88,15 @@ export function BookingServiceTypesForm({
   }
 
   function addRow() {
-    setRows((prev) => [...prev, { id: null, name: '', description: '', durationMinutes: 30, questions: [] }])
+    setRows((prev) => [...prev, {
+        id: null,
+        name: '',
+        description: '',
+        durationMinutes: 30,
+        questions: [],
+        locationKind: '',
+        locationValue: '',
+      }])
     setSaved(false)
   }
 
@@ -118,6 +144,10 @@ export function BookingServiceTypesForm({
         setError('Give every service a name, or remove the empty one.')
         return
       }
+      if (r.locationKind === 'video' && !/^https?:\/\/\S+$/i.test(r.locationValue.trim())) {
+        setError(`Add the meeting link for ${r.name.trim()}, starting https://`)
+        return
+      }
       services.push({
         id: r.id,
         name: r.name.trim(),
@@ -128,6 +158,10 @@ export function BookingServiceTypesForm({
         questions: r.questions
           .map((q) => ({ ...q, label: q.label.trim() }))
           .filter((q) => q.label),
+        location:
+          r.locationKind && r.locationValue.trim()
+            ? { kind: r.locationKind, value: r.locationValue.trim() }
+            : null,
       })
     }
 
@@ -218,6 +252,37 @@ export function BookingServiceTypesForm({
                 ) : null}
               </span>
             </label>
+
+            {/* BOOK-010: where it happens. Sent in the confirmation, the reminder and the calendar invite. */}
+            <div className="grid gap-2 sm:grid-cols-[12rem_1fr]">
+              <label className="flex flex-col gap-1">
+                <span className="text-meta font-medium text-muted">Where</span>
+                <Select
+                  value={r.locationKind}
+                  onChange={(e) => update(i, { locationKind: e.target.value as ServiceDraft['locationKind'] })}
+                >
+                  {LOCATION_KINDS.map((k) => (
+                    <option key={k.value} value={k.value}>
+                      {k.label}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              {r.locationKind ? (
+                <label className="flex flex-col gap-1">
+                  <span className="text-meta font-medium text-muted">
+                    {r.locationKind === 'in_person' ? 'Address' : r.locationKind === 'phone' ? 'Phone number' : 'Meeting link'}
+                  </span>
+                  <Input
+                    value={r.locationValue}
+                    onChange={(e) => update(i, { locationValue: e.target.value })}
+                    placeholder={LOCATION_PLACEHOLDER[r.locationKind]}
+                    maxLength={500}
+                    inputMode={r.locationKind === 'phone' ? 'tel' : r.locationKind === 'video' ? 'url' : undefined}
+                  />
+                </label>
+              ) : null}
+            </div>
 
             {/* Booking questions (P3): asked when a member books this service. */}
             <div className="space-y-2 rounded-card border border-dashed border-border p-3">

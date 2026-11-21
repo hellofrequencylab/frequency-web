@@ -22,6 +22,7 @@ import {
   buildBookingReminderEmail,
   sendBookingCancelledEmail,
   enqueueEmail,
+  type BookingWhere,
 } from '@/lib/email'
 import { madeWithUrl } from '@/lib/marketing/made-with'
 import { envString } from '@/lib/env/string'
@@ -326,6 +327,35 @@ async function serviceNameOf(admin: Admin, serviceTypeId: unknown): Promise<stri
   }
 }
 
+/** BOOK-010: where a service happens, by id. Null when none is set, or before the location columns exist. */
+async function serviceWhereOf(admin: Admin, serviceTypeId: unknown): Promise<BookingWhere | null> {
+  if (typeof serviceTypeId !== 'string' || !serviceTypeId) return null
+  try {
+    const { data, error } = await looseFrom(admin, 'space_service_types')
+      .select('location_kind, location_value')
+      .eq('id', serviceTypeId)
+      .maybeSingle()
+    if (error || !data) return null
+    const kind = data.location_kind
+    const value = typeof data.location_value === 'string' ? data.location_value.trim() : ''
+    if ((kind !== 'in_person' && kind !== 'phone' && kind !== 'video') || !value) return null
+    return { kind, value }
+  } catch {
+    return null
+  }
+}
+
+/** The service a booking is for, by booking id. Null on any miss. */
+async function bookingServiceId(admin: Admin, bookingId: string | null | undefined): Promise<string | null> {
+  if (!bookingId) return null
+  try {
+    const { data } = await looseFrom(admin, 'space_bookings').select('service_type_id').eq('id', bookingId).maybeSingle()
+    return typeof data?.service_type_id === 'string' ? data.service_type_id : null
+  } catch {
+    return null
+  }
+}
+
 /** The cancelled booking a notice is about, when the caller did not name it: the newest cancelled booking of
  *  this booker at this start on this Space. Null on any miss (the notice then goes without a calendar file). */
 async function findCancelledBooking(
@@ -361,6 +391,8 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
     const member = await bookerRecipient(admin, ctx)
     // BOOK-008: an invite, not a published copy. Same UID across a move, a higher SEQUENCE each time.
     const invite = ctx.invite ?? (await inviteIdentity(admin, ctx.bookingId))
+    // BOOK-010: where it happens, in the email and as the invite's LOCATION.
+    const where = await serviceWhereOf(admin, await bookingServiceId(admin, ctx.bookingId))
     const inviteBase = {
       method: 'REQUEST' as const,
       uid: invite.uid,
@@ -370,7 +402,7 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
       summary: ctx.serviceName ?? `Session with ${ctx.spaceName}`,
       organizerName: ctx.spaceName,
       attendee: member,
-      location: null,
+      location: where?.value ?? null,
     }
     const icsBase64 = buildBookingIcsBase64({ ...inviteBase, url: manageUrl })
     if (member) {
@@ -381,6 +413,7 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
         recipientIsGuest: !!ctx.guest,
         spaceName: ctx.spaceName,
         serviceName: ctx.serviceName,
+        where,
         whenAbsolute,
         durationMinutes: mins,
         otherPartyName: ctx.spaceName,
@@ -402,6 +435,7 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
           audience: 'owner',
           spaceName: ctx.spaceName,
           serviceName: ctx.serviceName,
+          where,
           whenAbsolute,
           durationMinutes: mins,
           // A guest is named with the address they gave, so the owner can write back.
@@ -605,6 +639,7 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
 
   const tz = await bookingTimezone(admin, booking.space_id)
   const serviceName = await serviceNameOf(admin, booking.service_type_id)
+  const where = await serviceWhereOf(admin, booking.service_type_id)
 
   // A guest booker (LIVE-835) has no profile for the notification router's gate: the reminder is the
   // same transactional email, enqueued straight onto the outbox (sendRawEmail still honours global
@@ -621,6 +656,7 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
         recipientName: booking.guest_name,
         spaceName,
         serviceName,
+        where,
         whenAbsolute: formatWhen(booking.starts_at, tz),
         manageUrl: token ? await siteManageBookingUrl(site, token) : await siteBookUrl(site),
       }),
@@ -644,6 +680,7 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
         recipientName: member.name,
         spaceName,
         serviceName,
+        where,
         whenAbsolute: formatWhen(booking.starts_at, tz),
         manageUrl: `${APP_URL}/spaces/${space.slug}/book`,
       }),

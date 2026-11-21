@@ -446,6 +446,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 
 import {
+  cleanServiceLocation,
   normalizeWindow,
   generateOpenSlots,
   slotLengthAt,
@@ -1940,5 +1941,22 @@ describe('a paid hold uses the free booking rules and is announced on settle (BO
     if ('error' in hold) throw new Error(hold.error)
     await releasePendingHold(hold.bookingId)
     expect(db.bookings[0]!.status).toBe('cancelled')
+  })
+})
+
+describe('cleanServiceLocation (BOOK-010)', () => {
+  it('keeps an address, a phone number and a meeting link', () => {
+    expect(cleanServiceLocation('in_person', ' 12 Main St, Encinitas ')).toEqual({ kind: 'in_person', value: '12 Main St, Encinitas' })
+    expect(cleanServiceLocation('phone', '760 555 0100')).toEqual({ kind: 'phone', value: '760 555 0100' })
+    expect(cleanServiceLocation('video', 'https://meet.example.com/abc')).toEqual({ kind: 'video', value: 'https://meet.example.com/abc' })
+  })
+  it('drops an unknown kind, a blank value and a video value that is not a link', () => {
+    expect(cleanServiceLocation('carrier_pigeon', 'roof')).toBeNull()
+    expect(cleanServiceLocation('in_person', '   ')).toBeNull()
+    expect(cleanServiceLocation('video', 'my zoom')).toBeNull()
+    expect(cleanServiceLocation(null, null)).toBeNull()
+  })
+  it('caps a value at 500 characters', () => {
+    expect(cleanServiceLocation('in_person', 'x'.repeat(600))?.value.length).toBe(500)
   })
 })
