@@ -115,7 +115,7 @@ export async function AvailabilitySection({
       </section>
 
       <section>
-        <SectionHeader title="Upcoming bookings" />
+        <SectionHeader title="Bookings" />
         <Suspense fallback={<BookingsSkeleton />}>
           <BookingOwnerList spaceId={space.id} />
         </Suspense>

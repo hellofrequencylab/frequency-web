@@ -194,7 +194,16 @@ export interface SpaceBooking {
   answers: BookingAnswer[]
   /** SCAN-834: a website guest's hold that still waits for the click on their confirmation email. */
   awaitingGuestConfirmation: boolean
+  /** BOOK-012: the service booked (null = a flat booking, or a service since deleted). */
+  serviceName: string | null
+  /** BOOK-012: the session already started (the owner's Past group, last PAST_BOOKING_DAYS days). */
+  past: boolean
+  /** BOOK-012: the owner marked this past booking as a no-show. */
+  noShow: boolean
 }
+
+/** BOOK-012: how far back the owner's list shows past sessions. */
+const PAST_BOOKING_DAYS = 30
 
 // How far ahead a member may book. v1 offers a rolling two-week window of open slots.
 const HORIZON_DAYS = 14
@@ -1164,6 +1173,40 @@ async function readMemberNames(ids: string[]): Promise<Map<string, string>> {
     for (const p of data ?? []) out.set(p.id, p.display_name?.trim() || 'A member')
   } catch {
     // fall through to the empty map (callers default to 'A member')
+  }
+  return out
+}
+
+/** BOOK-012: the CRM timeline key of a no-show mark, so a booking is marked at most once. */
+const noShowKey = (bookingId: string) => `booking_no_show:${bookingId}`
+
+/** Which of these bookings the owner marked as a no-show (their timeline entries, keyed per booking).
+ *  Service-role; FAIL-SAFE to an empty set. */
+async function readNoShowMarks(spaceId: string, bookingIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>()
+  if (bookingIds.length === 0) return out
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (
+            col: string,
+            val: string,
+          ) => {
+            in: (col: string, vals: string[]) => Promise<{ data: { idempotency_key: string | null }[] | null }>
+          }
+        }
+      }
+    }
+    const keys = bookingIds.map(noShowKey)
+    const { data } = await db.from('contact_interactions').select('idempotency_key').eq('space_id', spaceId).in('idempotency_key', keys)
+    const byKey = new Map(bookingIds.map((id) => [noShowKey(id), id]))
+    for (const r of data ?? []) {
+      const id = r.idempotency_key ? byKey.get(r.idempotency_key) : undefined
+      if (id) out.add(id)
+    }
+  } catch {
+    /* fail-safe: nothing shows as marked */
   }
   return out
 }
@@ -2494,6 +2537,39 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
   return ok()
 }
 
+/**
+ * BOOK-012: the owner marks a past booking as a no-show. Space admins only (the owner is always one), the
+ * same gate as cancelBooking's admin path. The booking row stays confirmed (its status check has no
+ * no_show); the mark is a timeline entry on the member's Space record (kind booking_no_show), keyed per
+ * booking so it lands once. It is the signal contact-risk's recentNoShow is meant to read. A website guest
+ * has no member record, so only a member's booking can be marked.
+ */
+export async function markBookingNoShow(bookingId: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to mark a no-show.')
+
+  const row = await readBookingById(bookingId)
+  if (!row || row.status !== 'confirmed') return fail('Booking not found.')
+  const space = await getSpaceById(row.space_id)
+  if (!space) return fail('Booking not found.')
+  const caps = await getSpaceCapabilities(space, profileId)
+  if (!caps.isAdmin) return fail('You do not have permission to mark this booking.')
+  if (new Date(row.starts_at).getTime() > Date.now()) return fail('This booking has not started yet.')
+  if (!row.member_profile_id) return fail('A website guest booking cannot be marked as a no-show yet.')
+
+  await recordSpaceMemberActivity({
+    spaceId: space.id,
+    spaceOwnerProfileId: space.ownerProfileId,
+    memberProfileId: row.member_profile_id,
+    channel: 'event',
+    summary: 'Missed a booking',
+    idempotencyKey: noShowKey(bookingId),
+    metadata: { kind: 'booking_no_show', bookingId, startsAt: row.starts_at },
+    scope: { kind: 'booking', id: bookingId },
+  })
+  return ok()
+}
+
 /** One of the member's OWN upcoming bookings, for the self-serve list (P3). */
 export interface MyBooking {
   id: string
@@ -2794,9 +2870,10 @@ export async function cancelBookingByOrder(orderId: string, opts?: { strict?: bo
 }
 
 /**
- * The owner's UPCOMING confirmed bookings (member name + time). Gated on canEditProfile (owner /
- * admin / editor). Reads the confirmed rows from now forward, then resolves member display names in
- * one batched lookup. FAIL-SAFE to [] for an anonymous / unauthorized caller or any error.
+ * The owner's confirmed bookings (member name + service + time): upcoming ones, and BOOK-012 the past
+ * PAST_BOOKING_DAYS days (marked `past`, with any no-show mark). Gated on canEditProfile (owner / admin /
+ * editor). Resolves member display names and service names in batched lookups. FAIL-SAFE to [] for an
+ * anonymous / unauthorized caller or any error.
  */
 export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]> {
   const caller = await getCallerProfile()
@@ -2806,9 +2883,11 @@ export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]
   if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
 
   try {
-    const nowISO = new Date().toISOString()
+    const nowMs = Date.now()
+    const nowISO = new Date(nowMs).toISOString()
+    const pastFromISO = new Date(nowMs - PAST_BOOKING_DAYS * 86_400_000).toISOString()
     const [confirmed, awaiting] = await Promise.all([
-      readConfirmedBookings(spaceId, nowISO),
+      readConfirmedBookings(spaceId, pastFromISO),
       // SCAN-834: a website guest's live hold shows too, marked as waiting on their click.
       readAwaitingGuestHolds(spaceId, nowISO),
     ])
@@ -2819,7 +2898,13 @@ export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]
     // Batch-resolve member display names (one query for all member bookers). A guest booking from the
     // website (LIVE-835) has no profile: it shows the name and email the guest gave.
     const ids = [...new Set(rows.flatMap((r) => (r.member_profile_id ? [r.member_profile_id] : [])))]
-    const names = await readMemberNames(ids)
+    const pastIds = rows.filter((r) => r.starts_at < nowISO).map((r) => r.id)
+    const [names, services, noShows] = await Promise.all([
+      readMemberNames(ids),
+      rows.some((r) => r.service_type_id) ? readServiceTypes(spaceId, { activeOnly: false }) : Promise.resolve([]),
+      readNoShowMarks(spaceId, pastIds),
+    ])
+    const serviceNames = new Map(services.map((s) => [s.id, s.name]))
 
     return rows.map((r) => ({
       id: r.id,
@@ -2834,6 +2919,9 @@ export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]
       note: r.note,
       answers: parseAnswers(r.answers),
       awaitingGuestConfirmation: awaitingIds.has(r.id),
+      serviceName: r.service_type_id ? (serviceNames.get(r.service_type_id) ?? null) : null,
+      past: r.starts_at < nowISO,
+      noShow: noShows.has(r.id),
     }))
   } catch {
     return []

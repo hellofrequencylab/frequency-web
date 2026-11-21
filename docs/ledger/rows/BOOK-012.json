@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/spaces/booking.ts",
     "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
   },
-  "detail": "FOUND 2026-11-21: BookingOwnerList shows name, time, note and answers, but not which service was booked (listSpaceBookings never maps service_type_id), only upcoming rows, and Cancel is the only action. rescheduleBooking already allows an admin; there is no control for it, no way to add a booking taken by phone, and no no-show mark to feed the CRM risk flags (lib/spaces/contact-risk.ts already scores no_show).",
+  "detail": "FOUND 2026-11-21: BookingOwnerList shows name, time, note and answers, but not which service was booked (listSpaceBookings never maps service_type_id), only upcoming rows, and Cancel is the only action. rescheduleBooking already allows an admin; there is no control for it, no way to add a booking taken by phone, and no no-show mark to feed the CRM risk flags (lib/spaces/contact-risk.ts already scores no_show).\n\nDONE 2026-11-21: the owner's booking list names the service booked (service_type_id resolved against every service, active or not), adds a Past 30 days group newest first, and a member's past booking carries a No-show button. space_bookings_status_check allows only confirmed, cancelled and pending, so there is no migration: markBookingNoShow (Space admins, the cancelBooking admin gate; only a started, confirmed member booking) writes a Missed a booking entry to the member's Space timeline through recordSpaceMemberActivity, kind booking_no_show, idempotency key booking_no_show:<id>, and the list reads those keys back to show the mark. The booking row stays confirmed. Skipped: adding a booking by phone, an owner reschedule control, a no-show for a website guest (no member record), and feeding the mark into scoreContactRisk's recentNoShow (crm-funnel's at-risk read is keyed on contacts, not profiles).",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/booking-audit.mjs BOOK-012",
     "note": "Fails today; passes once the consequence in the title holds."
   },
+  "closed": "2026-11-21",
   "wave": "W7"
 }
