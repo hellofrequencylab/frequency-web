@@ -33,6 +33,22 @@ export function sitePageUrl(base: string, pageSlug: string = SITE_HOME_SLUG): st
   return `${base}/${pageSlug}`
 }
 
+/** Where a guest booker's links open (BOOK-003): the Book page and the confirm page their emails carry.
+ *  A PUBLISHED website on a host of its own (its bound domain or free subdomain, a bare origin) keeps
+ *  them, because the website stands alone (LIVE-835). Anything else uses the Space page on Frequency,
+ *  where both pages exist: an unpublished site serves neither (a deep link 404s behind Coming soon), and
+ *  the `/sites/<slug>` fallback forwards to the Space page and drops the token on the way. */
+export function guestBookingPageUrl(
+  siteBase: string,
+  published: boolean,
+  appOrigin: string,
+  slug: string,
+  pageSlug: string,
+): string {
+  if (published && /^https?:\/\/[^/]+$/.test(siteBase)) return `${siteBase}/${pageSlug}`
+  return `${appOrigin.replace(/\/$/, '')}/spaces/${encodeURIComponent(slug)}/${pageSlug}`
+}
+
 /** robots.txt for a site host. A published site invites crawlers and names its own sitemap; anything
  *  else (an unbound host, an unpublished or private site) asks them to stay out. */
 export function siteRobotsTxt(origin: string, published: boolean): string {

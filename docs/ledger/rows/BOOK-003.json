@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/spaces/booking.ts",
     "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
   },
-  "detail": "FOUND 2026-11-21 in code: BookingMember calls listOpenSlots and listBookableServices, both of which return [] when getMyProfileId() is null, so an anonymous viewer of a booking-Focus Space falls to the EmptyState 'No open times yet. This practitioner has not posted availability.' That is false, and most traffic arrives signed out (Spotlight, Instagram). The guest door already exists for Space websites (listGuestOpenSlotsAction, createGuestBookingAction, SCAN-834 email confirm), so the fix reuses it on /spaces/<slug>/book for a public Space, with a confirm link that resolves on frequencylocal.com when the Space has no website. Calendly never asks an invitee to sign up.",
+  "detail": "FOUND 2026-11-21 in code: BookingMember calls listOpenSlots and listBookableServices, both of which return [] when getMyProfileId() is null, so an anonymous viewer of a booking-Focus Space falls to the EmptyState 'No open times yet. This practitioner has not posted availability.' That is false, and most traffic arrives signed out (Spotlight, Instagram). The guest door already exists for Space websites (listGuestOpenSlotsAction, createGuestBookingAction, SCAN-834 email confirm), so the fix reuses it on /spaces/<slug>/book for a public Space, with a confirm link that resolves on frequencylocal.com when the Space has no website. Calendly never asks an invitee to sign up.\n\nDONE 2026-11-21: BookingMember (components/spaces/booking-member.tsx) now gives a signed-out visitor the guest door on /spaces/<slug>/book: when the Space resolves for an anonymous viewer (getVisibleSpaceBySlug(slug, null), the same test listGuestOpenSlotsAction and createGuestBookingAction apply, so a Private Space is refused on both sides), it reads readPublicBookingSetup and listPublicOpenSlots and renders BookingServiceMember or BookingPicker with guest={{ slug }}, so the visitor books with a name and an email into the SCAN-834 30 minute hold. The hold email's links were checked: siteConfirmBookingUrl used the site's origin even when the website was unpublished, and an unpublished site 404s its /book page, while a slug that cannot be a subdomain fell back to /sites/<slug>/confirm-booking, which forwards to the Space page and drops the token. lib/sites/site-booking.ts now uses the website's origin only while the website is published on a host of its own (pure rule guestBookingPageUrl in lib/sites/seo.ts, tested in seo.test.ts) and otherwise links to /spaces/<slug>/book and the new /spaces/<slug>/confirm-booking on Frequency (app/(main)/spaces/[slug]/confirm-booking/page.tsx: the same SCAN-858 Confirm button, no write on GET, token checked against the Space id, noindex). The confirm form moved to components/spaces/guest-booking-confirm-form.tsx for both pages, the hosted page's Pick a time door opens the Space's Book page when the site is unpublished, and confirm-booking is a reserved page slug.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/booking-audit.mjs BOOK-003",
     "note": "Fails today; passes once the consequence in the title holds."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-21"
 }

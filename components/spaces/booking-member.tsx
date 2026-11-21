@@ -2,9 +2,13 @@ import { CalendarDays } from 'lucide-react'
 import {
   listOpenSlots,
   listBookableServices,
+  listPublicOpenSlots,
+  readPublicBookingSetup,
   getSpaceBookingTimezone,
   bookingDepositsLive,
 } from '@/lib/spaces/booking'
+import { getMyProfileId } from '@/lib/auth'
+import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
 import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
@@ -22,6 +26,14 @@ import { BookingMine } from '@/components/spaces/booking-mine'
 // setup prompt; a member sees the calm "no open times" empty state. When windows exist but NO service
 // is defined yet, the operator sees an "add your first service" nudge (the P0.5 prompt, P1 variant).
 //
+// SIGNED OUT (BOOK-003): listOpenSlots and listBookableServices answer [] without a profile, so a visitor
+// used to read "No open times yet" on a Space with a full week of hours. A signed-out visitor now gets the
+// GUEST DOOR the Space website uses (LIVE-835): the same pickers with `guest={{ slug }}`, fed by the public
+// reads (readPublicBookingSetup, listPublicOpenSlots), booking with a name and an email through
+// createGuestBookingAction (honeypot, per-IP rate limit, a 30 minute hold confirmed from the email,
+// SCAN-834). It is offered only when the Space resolves for an anonymous visitor, the exact test the
+// door's own actions apply, so a Private Space never shows it (and the actions refuse it anyway).
+//
 // COPY: plain camp-counselor voice, no narrated feelings, no em/en dashes (CONTENT-VOICE §10).
 // TIMEZONE: v1 displays every slot in the Space's configured IANA timezone, LABELED.
 
@@ -38,6 +50,8 @@ export async function BookingMember({
   slug: string
   ownerProfileId: string | null
 }) {
+  if (!(await getMyProfileId())) return <GuestBooking spaceId={spaceId} slug={slug} />
+
   const [slots, services] = await Promise.all([
     listOpenSlots(spaceId),
     listBookableServices(spaceId),
@@ -119,4 +133,37 @@ export async function BookingMember({
       <BookingPicker spaceId={spaceId} slots={slots} spaceTimezone={timezone} />
     </>
   )
+}
+
+/** The signed-out half (BOOK-003): the guest door on the Space's own Book page. Public reads only, and only
+ *  for a Space an anonymous visitor may see; anything else asks the visitor to sign in. */
+async function GuestBooking({ spaceId, slug }: { spaceId: string; slug: string }) {
+  const visible = await getVisibleSpaceBySlug(slug, null)
+  if (!visible || visible.id !== spaceId) {
+    return (
+      <EmptyState
+        icon={CalendarDays}
+        title="Sign in to book."
+        description="This space takes bookings from its members."
+      />
+    )
+  }
+
+  const guest = { slug: visible.slug }
+  const setup = await readPublicBookingSetup(spaceId)
+  if (setup.services.length > 0) {
+    return <BookingServiceMember spaceId={spaceId} services={setup.services} timezone={setup.timezone} guest={guest} />
+  }
+
+  const slots = setup.windowCount > 0 ? await listPublicOpenSlots(spaceId) : []
+  if (slots.length === 0) {
+    return (
+      <EmptyState
+        icon={CalendarDays}
+        title="No open times yet."
+        description="This practitioner has not posted availability. Check back soon for new times."
+      />
+    )
+  }
+  return <BookingPicker spaceId={spaceId} slots={slots} spaceTimezone={setup.timezone} guest={guest} />
 }

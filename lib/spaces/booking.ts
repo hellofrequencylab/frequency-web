@@ -557,6 +557,7 @@ type BookingQuery = {
   eq: (col: string, val: string) => BookingQuery
   in: (col: string, vals: string[]) => BookingQuery
   gte: (col: string, val: string) => BookingQuery
+  gt: (col: string, val: string) => BookingQuery
   lte: (col: string, val: string) => BookingQuery
   order: (col: string, opts: { ascending: boolean }) => BookingQuery
   update: (patch: Record<string, unknown>) => BookingQuery
@@ -1040,12 +1041,22 @@ async function readConfirmedBookings(spaceId: string, fromISO: string): Promise<
   }
 }
 
-/** The bookings that BLOCK a slot at/after `fromISO`: confirmed AND pending holds (Phase 4). The open-slot
+/** The longest after-buffer a schedule can carry (mapScheduleRow clamps buffer_after_minutes to it). */
+const MAX_BUFFER_MINUTES = 480
+
+/** The bookings that BLOCK a slot as of `nowISO`: confirmed AND pending holds (Phase 4). The open-slot
  *  read must exclude both, matching the widened unique index `status in (confirmed, pending)` — otherwise a
  *  held-but-unpaid slot still renders as available and every booker bounces off it. Pending rows only exist
  *  once the bookable-services migration is applied, so pre-migration this reads exactly like confirmed.
+ *
+ *  BOOK-005: a booking already in progress still blocks. The read keys on ends_at, not starts_at, and
+ *  reaches back by the longest possible after-buffer, so a session that started a minute ago (or ended
+ *  inside its buffer) still reserves its tail and buffer. bufferConflict does the exact math; a row whose
+ *  reserved span is fully past blocks nothing, because no candidate slot starts in the past.
  *  Service-role; FAIL-SAFE to []. */
-async function readBlockingBookings(spaceId: string, fromISO: string): Promise<BookingRow[]> {
+async function readBlockingBookings(spaceId: string, nowISO: string): Promise<BookingRow[]> {
+  const nowMs = new Date(nowISO).getTime()
+  const fromISO = new Date((Number.isFinite(nowMs) ? nowMs : Date.now()) - MAX_BUFFER_MINUTES * 60000).toISOString()
   // SCAN-834: a website guest's hold blocks its slot only until it expires. Read the hold columns first
   // so an expired, not-yet-released hold drops out here; pre-migration the base read blocks as before.
   for (const cols of [BOOKING_COLS_HOLD, BOOKING_COLS]) {
@@ -1054,7 +1065,7 @@ async function readBlockingBookings(spaceId: string, fromISO: string): Promise<B
         .select(cols)
         .eq('space_id', spaceId)
         .in('status', ['confirmed', 'pending'])
-        .gte('starts_at', fromISO)
+        .gt('ends_at', fromISO)
         .order('starts_at', { ascending: true })
       if (error || !data) continue
       return data.filter((row) => !guestHoldExpired(row))
@@ -2004,10 +2015,13 @@ async function validateAndPlaceBooking(params: {
   // SCAN-834: a lapsed guest hold must not keep its slot through the unique index, so release them first.
   await releaseExpiredGuestHolds(spaceId, now)
   const context = await readScheduleContext(spaceId)
-  const [booked, calendarBlocks] = await Promise.all([
+  const [blocking, calendarBlocks] = await Promise.all([
     readBlockingBookings(spaceId, now.toISOString()),
     readCalendarBlocks(spaceId, now.toISOString()),
   ])
+  // BOOK-017: a reschedule never conflicts with the booking it replaces (that row is cancelled once the
+  // new one lands). The unique index still refuses moving to the identical start, which is no move anyway.
+  const booked = rescheduledFrom ? blocking.filter((b) => b.id !== rescheduledFrom) : blocking
   const bookedRanges = [
     ...booked.map((b) => ({
       startMs: new Date(b.starts_at).getTime(),
@@ -2299,6 +2313,12 @@ async function readBookingById(bookingId: string): Promise<BookingRow | null> {
  * Cancel a booking. Allowed for the BOOKER (the member who made it) OR a space admin. Reads the row
  * (admin client), checks ownership / admin, then flips status to 'cancelled' (which releases the
  * slot via the partial unique index, so it can be re-booked). Fail-closed on permission.
+ *
+ * BOOK-018: a 'pending' HOLD cancels too. An admin may drop any hold (a paid one waiting on checkout, or
+ * a website guest's waiting on their click), and a member may drop their own paid hold. Only a member's
+ * row can be a paid hold (a guest has no profile), so `isBooker` on a pending row means exactly that. A
+ * hold was never confirmed, so no notice window applies and no cancellation notice or timeline entry is
+ * sent. Anything already cancelled stays an idempotent ok().
  */
 export async function cancelBooking(bookingId: string, reason?: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
@@ -2306,7 +2326,8 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
 
   const row = await readBookingById(bookingId)
   if (!row) return fail('Booking not found.')
-  if (row.status !== 'confirmed') return ok() // already cancelled: idempotent no-op
+  const isHold = row.status === 'pending'
+  if (!isHold && row.status !== 'confirmed') return ok() // already cancelled: idempotent no-op
 
   // The booker may cancel their own (within the policy window); an admin always may.
   const space = await getSpaceById(row.space_id)
@@ -2317,7 +2338,7 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
     isAdmin = caps.isAdmin
   }
   if (!isBooker && !isAdmin) return fail('You do not have permission to cancel this booking.')
-  if (isBooker && !isAdmin) {
+  if (isBooker && !isAdmin && !isHold) {
     const schedule = await readSchedule(row.space_id)
     if (!withinModifyWindow(row.starts_at, schedule.minNoticeMinutes)) {
       return fail('This booking is too close to its start time to cancel.')
@@ -2329,18 +2350,23 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
   try {
     // Stamp cancelled_at + cancel_reason (P3); fall back to a plain status flip when those columns are
     // absent pre-migration (fail-soft).
+    // Compare-and-set on the status read above, so a hold that settled in the meantime is not dropped.
     let res = (await bookingsTable()
       .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancel_reason: cleanReason })
+      .eq('status', row.status)
       .eq('id', bookingId)) as unknown as { error?: unknown }
     if (res.error) {
-      res = (await bookingsTable().update({ status: 'cancelled' }).eq('id', bookingId)) as unknown as {
-        error?: unknown
-      }
+      res = (await bookingsTable()
+        .update({ status: 'cancelled' })
+        .eq('status', row.status)
+        .eq('id', bookingId)) as unknown as { error?: unknown }
       if (res.error) return fail('Could not cancel the booking. Try again.')
     }
   } catch {
     return fail('Could not cancel the booking. Try again.')
   }
+  // A hold was never confirmed: there is no confirmation to take back and nothing on a timeline.
+  if (isHold) return ok()
 
   // Best-effort cancellation notice (never blocks the cancel).
   if (space) {

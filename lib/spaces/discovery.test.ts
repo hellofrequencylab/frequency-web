@@ -79,6 +79,9 @@ const store: {
   donationAsks: PresenceRow[]
   /** `crew_boosts` rows (LIVE-756): a Space Boost is a mark, never a lift in the directory order. */
   boosts: PresenceRow[]
+  /** `space_service_types` + `space_availability` rows: a bookable Space's Book page leads with booking (BOOK-002). */
+  serviceTypes: PresenceRow[]
+  availability: PresenceRow[]
 } = {
   spaces: [],
   counts: {},
@@ -93,6 +96,8 @@ const store: {
   membershipTiers: [],
   donationAsks: [],
   boosts: [],
+  serviceTypes: [],
+  availability: [],
 }
 
 /** The stored SUBJECT for a row (preferences.profileData.subject), or null when unset — mirrors the
@@ -291,6 +296,8 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table === 'space_membership_tiers') return presenceBuilder(store.membershipTiers)
       if (table === 'space_donation_asks') return presenceBuilder(store.donationAsks)
       if (table === 'crew_boosts') return presenceBuilder(store.boosts)
+      if (table === 'space_service_types') return presenceBuilder(store.serviceTypes)
+      if (table === 'space_availability') return presenceBuilder(store.availability)
       return spacesBuilder()
     },
   }),
@@ -327,6 +334,8 @@ beforeEach(() => {
   store.membershipTiers = []
   store.donationAsks = []
   store.boosts = []
+  store.serviceTypes = []
+  store.availability = []
   store.spaces = [
     // s1 is a PRE-MIGRATION row: kind stored on the LEGACY `category` key, plus a subject. s2 stores
     // the CANONICAL `kind` key + a subject. s3 has NEITHER (kind reads as 'business', no subject).
@@ -719,6 +728,17 @@ describe('listNetworkedSpaceProfileTabs (the sitemap tab gates)', () => {
     // A hidden ask (is_active=false) is the member empty state again.
     store.donationAsks = [{ space_id: 's3', is_active: false }]
     expect(await segmentsFor('forest-org')).not.toContain('book')
+  })
+
+  it('advertises book for a bookable Space (an active service AND a window) whatever its Focus (BOOK-002)', async () => {
+    // sound-co is on the membership Focus with no tiers: its Book page leads with booking once it is bookable.
+    store.serviceTypes = [{ space_id: 's2', active: true }]
+    expect(await segmentsFor('sound-co')).not.toContain('book') // a service with no hours is not bookable
+    store.availability = [{ space_id: 's2' }]
+    expect(await segmentsFor('sound-co')).toContain('book')
+    // A retired service does not count.
+    store.serviceTypes = [{ space_id: 's2', active: false }]
+    expect(await segmentsFor('sound-co')).not.toContain('book')
   })
 
   it('keeps book advertised for the Focuses with no presence read yet (booking, enroll, tickets)', async () => {

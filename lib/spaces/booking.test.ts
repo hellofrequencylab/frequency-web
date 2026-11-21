@@ -138,6 +138,7 @@ function bookingsBuilder() {
     statusIn?: string[]
     id?: string
     gte?: string
+    gtEnds?: string
     token?: string
     lteExpires?: string
   } = {}
@@ -150,6 +151,7 @@ function bookingsBuilder() {
     (filters.id === undefined || b.id === filters.id) &&
     (filters.token === undefined || b.guest_confirm_token === filters.token) &&
     (filters.gte === undefined || b.starts_at >= filters.gte) &&
+    (filters.gtEnds === undefined || b.ends_at > filters.gtEnds) &&
     (filters.lteExpires === undefined ||
       (typeof b.guest_confirm_expires_at === 'string' && b.guest_confirm_expires_at <= filters.lteExpires))
   const api = {
@@ -176,6 +178,11 @@ function bookingsBuilder() {
     },
     gte(col: string, val: string) {
       if (col === 'starts_at') filters.gte = val
+      return api
+    },
+    gt(col: string, val: string) {
+      // BOOK-005: readBlockingBookings keys on ends_at, so an in-progress booking still blocks.
+      if (col === 'ends_at') filters.gtEnds = val
       return api
     },
     lte(col: string, val: string) {
@@ -1614,5 +1621,166 @@ describe('resolveBookingZone (BOOK-001)', () => {
     const fixed = typed.map((w) => ({ ...w, timezone: resolveBookingZone(w.timezone, 'America/Los_Angeles') }))
     const slots = generateOpenSlots(fixed, new Set(), now, 7)
     expect(slots.map((s) => s.startsAt)).toEqual(['2026-11-24T17:00:00.000Z', '2026-11-24T17:30:00.000Z'])
+  })
+})
+
+// BOOK-005: a booking already under way still reserves its tail and its after-buffer.
+describe('an in-progress booking still blocks (BOOK-005)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('a 60 minute session that started 15 minutes ago keeps its remaining half hour', async () => {
+    vi.setSystemTime(new Date('2026-06-30T10:15:00.000Z'))
+    db.bookings.push({
+      id: 'b-live',
+      space_id: 'space-1',
+      member_profile_id: 'someone',
+      starts_at: '2026-06-30T10:00:00.000Z',
+      ends_at: '2026-06-30T11:00:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+    const open = (await listOpenSlots('space-1')).map((s) => s.startsAt)
+    expect(open).not.toContain('2026-06-30T10:30:00.000Z')
+    expect(open).toContain('2026-06-30T11:00:00.000Z')
+    const r = await createBooking('space-1', '2026-06-30T10:30:00.000Z')
+    expect('error' in r).toBe(true)
+    expect(db.bookings).toHaveLength(1)
+  })
+
+  it('a session that just ended still holds its after-buffer', async () => {
+    vi.setSystemTime(new Date('2026-06-30T10:05:00.000Z'))
+    calendarDb.schedules.push({
+      id: 'sch-1',
+      space_id: 'space-1',
+      timezone: 'UTC',
+      buffer_before_minutes: 0,
+      buffer_after_minutes: 45,
+      min_notice_minutes: 0,
+      booking_window_days: 14,
+      active: true,
+    })
+    db.bookings.push({
+      id: 'b-done',
+      space_id: 'space-1',
+      member_profile_id: 'someone',
+      starts_at: '2026-06-30T09:00:00.000Z',
+      ends_at: '2026-06-30T10:00:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+    const open = (await listOpenSlots('space-1')).map((s) => s.startsAt)
+    expect(open).not.toContain('2026-06-30T10:30:00.000Z') // inside the 45 minute buffer after 10:00
+    expect(open).toContain('2026-06-30T11:00:00.000Z')
+  })
+})
+
+// BOOK-017: moving a booking to a time that overlaps its own old time is a move, not a conflict.
+describe('a reschedule ignores the booking it replaces (BOOK-017)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-29T08:00:00.000Z'))
+    db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+    db.bookings.push({
+      id: 'b1',
+      space_id: 'space-1',
+      member_profile_id: 'member-0000-4000-a000-0000000membr',
+      starts_at: '2026-06-30T10:00:00.000Z',
+      ends_at: '2026-06-30T11:00:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('moves a 60 minute booking 30 minutes later', async () => {
+    const r = await rescheduleBooking('b1', '2026-06-30T10:30:00.000Z')
+    expect('error' in r).toBe(false)
+    expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('cancelled')
+    expect(db.bookings.some((b) => b.status === 'confirmed' && b.starts_at === '2026-06-30T10:30:00.000Z')).toBe(true)
+  })
+
+  it('still refuses a time that overlaps somebody else', async () => {
+    db.bookings.push({
+      id: 'b2',
+      space_id: 'space-1',
+      member_profile_id: 'someone-else',
+      starts_at: '2026-06-30T11:00:00.000Z',
+      ends_at: '2026-06-30T12:00:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+    const r = await rescheduleBooking('b1', '2026-06-30T11:30:00.000Z')
+    expect('error' in r).toBe(true)
+    expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('confirmed')
+  })
+})
+
+// BOOK-018: a hold still waiting for payment or the guest's click can be cancelled for real.
+describe('cancelBooking drops a pending hold (BOOK-018)', () => {
+  const hold = (over: Partial<BookRow> = {}): BookRow => ({
+    id: 'h1',
+    space_id: 'space-1',
+    member_profile_id: 'member-0000-4000-a000-0000000membr',
+    starts_at: '2099-06-30T10:00:00.000Z',
+    ends_at: '2099-06-30T10:30:00.000Z',
+    status: 'pending',
+    note: null,
+    ...over,
+  })
+
+  it('an admin cancels a paid hold, which frees its slot', async () => {
+    db.bookings.push(hold())
+    currentProfileId = 'admin-0000-4000-a000-00000000admn'
+    const r = await cancelBooking('h1')
+    expect('error' in r).toBe(false)
+    expect(db.bookings[0]!.status).toBe('cancelled')
+  })
+
+  it("an admin cancels a website guest's hold", async () => {
+    db.bookings.push(hold({ member_profile_id: null, guest_name: 'Sam', guest_email: 'sam@example.com', guest_confirm_token: 't' }))
+    currentProfileId = 'admin-0000-4000-a000-00000000admn'
+    const r = await cancelBooking('h1')
+    expect('error' in r).toBe(false)
+    expect(db.bookings[0]!.status).toBe('cancelled')
+  })
+
+  it('the booker cancels their own paid hold, even inside the notice window', async () => {
+    calendarDb.schedules.push({
+      id: 'sch-1',
+      space_id: 'space-1',
+      timezone: 'UTC',
+      buffer_before_minutes: 0,
+      buffer_after_minutes: 0,
+      min_notice_minutes: 43200,
+      booking_window_days: 14,
+      active: true,
+    })
+    db.bookings.push(hold({ starts_at: new Date(Date.now() + 3600000).toISOString() }))
+    canEdit = false
+    isAdmin = false
+    const r = await cancelBooking('h1')
+    expect('error' in r).toBe(false)
+    expect(db.bookings[0]!.status).toBe('cancelled')
+  })
+
+  it("someone else cannot cancel another member's hold", async () => {
+    db.bookings.push(hold())
+    currentProfileId = 'other-0000-4000-a000-00000000othr'
+    canEdit = false
+    isAdmin = false
+    const r = await cancelBooking('h1')
+    expect('error' in r).toBe(true)
+    expect(db.bookings[0]!.status).toBe('pending')
+  })
+
+  it('an already cancelled row stays an idempotent ok', async () => {
+    db.bookings.push(hold({ status: 'cancelled' }))
+    const r = await cancelBooking('h1')
+    expect('error' in r).toBe(false)
+    expect(db.bookings[0]!.status).toBe('cancelled')
   })
 })
