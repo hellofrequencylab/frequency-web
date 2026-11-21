@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
-  "wave": "W7",
+  "status": "done",
   "source": {
     "file": "supabase/migrations/20240103000000_direct_messages.sql",
     "ref": "Email and messaging check 2026-11-18 (thread: Check every email and message system)"
   },
-  "detail": "2026-11-18: the live INSERT policy participants_send_messages on public.messages checks only am_participant(conversation_id) and sender = own profile. sendMessage checks isBlockedBetween, but a member in a thread that existed before the block can insert straight through PostgREST with their own session. Done when an additive, idempotent migration replaces the policy with one that also requires not private/public is_blocked_between(sender, other participant), applied per docs/DATABASE.md.",
+  "detail": "2026-11-18: the live INSERT policy participants_send_messages on public.messages checks only am_participant(conversation_id) and sender = own profile. sendMessage checks isBlockedBetween, but a member in a thread that existed before the block can insert straight through PostgREST with their own session. Done when an additive, idempotent migration replaces the policy with one that also requires not private/public is_blocked_between(sender, other participant), applied per docs/DATABASE.md.\n\nMigration 20270346260000 replaces participants_send_messages so a send is refused when either person blocked the other (SECURITY DEFINER helper, because blocked_users RLS hides a block the sender did not make). pgTAP supabase/tests/messages_insert_honors_blocks.test.sql.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/email-scan-2026-11-18.mjs dm-rls-block",
-    "note": "Fails on main today; passes once the fix lands."
-  }
+    "note": "Passes: migration 20270346260000 adds NOT private.is_blocked_between_me_and_conversation(conversation_id) to the messages INSERT policy."
+  },
+  "closed": "2026-11-21",
+  "wave": "W7"
 }
