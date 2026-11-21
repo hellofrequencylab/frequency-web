@@ -2313,6 +2313,12 @@ async function readBookingById(bookingId: string): Promise<BookingRow | null> {
  * Cancel a booking. Allowed for the BOOKER (the member who made it) OR a space admin. Reads the row
  * (admin client), checks ownership / admin, then flips status to 'cancelled' (which releases the
  * slot via the partial unique index, so it can be re-booked). Fail-closed on permission.
+ *
+ * BOOK-018: a 'pending' HOLD cancels too. An admin may drop any hold (a paid one waiting on checkout, or
+ * a website guest's waiting on their click), and a member may drop their own paid hold. Only a member's
+ * row can be a paid hold (a guest has no profile), so `isBooker` on a pending row means exactly that. A
+ * hold was never confirmed, so no notice window applies and no cancellation notice or timeline entry is
+ * sent. Anything already cancelled stays an idempotent ok().
  */
 export async function cancelBooking(bookingId: string, reason?: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
@@ -2320,7 +2326,8 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
 
   const row = await readBookingById(bookingId)
   if (!row) return fail('Booking not found.')
-  if (row.status !== 'confirmed') return ok() // already cancelled: idempotent no-op
+  const isHold = row.status === 'pending'
+  if (!isHold && row.status !== 'confirmed') return ok() // already cancelled: idempotent no-op
 
   // The booker may cancel their own (within the policy window); an admin always may.
   const space = await getSpaceById(row.space_id)
@@ -2331,7 +2338,7 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
     isAdmin = caps.isAdmin
   }
   if (!isBooker && !isAdmin) return fail('You do not have permission to cancel this booking.')
-  if (isBooker && !isAdmin) {
+  if (isBooker && !isAdmin && !isHold) {
     const schedule = await readSchedule(row.space_id)
     if (!withinModifyWindow(row.starts_at, schedule.minNoticeMinutes)) {
       return fail('This booking is too close to its start time to cancel.')
@@ -2343,18 +2350,23 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
   try {
     // Stamp cancelled_at + cancel_reason (P3); fall back to a plain status flip when those columns are
     // absent pre-migration (fail-soft).
+    // Compare-and-set on the status read above, so a hold that settled in the meantime is not dropped.
     let res = (await bookingsTable()
       .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancel_reason: cleanReason })
+      .eq('status', row.status)
       .eq('id', bookingId)) as unknown as { error?: unknown }
     if (res.error) {
-      res = (await bookingsTable().update({ status: 'cancelled' }).eq('id', bookingId)) as unknown as {
-        error?: unknown
-      }
+      res = (await bookingsTable()
+        .update({ status: 'cancelled' })
+        .eq('status', row.status)
+        .eq('id', bookingId)) as unknown as { error?: unknown }
       if (res.error) return fail('Could not cancel the booking. Try again.')
     }
   } catch {
     return fail('Could not cancel the booking. Try again.')
   }
+  // A hold was never confirmed: there is no confirmation to take back and nothing on a timeline.
+  if (isHold) return ok()
 
   // Best-effort cancellation notice (never blocks the cancel).
   if (space) {

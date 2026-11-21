@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/spaces/booking.ts",
     "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
   },
-  "detail": "FOUND 2026-11-21: cancelBooking returns ok() for any row that is not confirmed, so cancelling a pending hold reports success and changes nothing. The owner list hides the button for guest holds, but a paid hold has no way out until its checkout expires.",
+  "detail": "FOUND 2026-11-21: cancelBooking returns ok() for any row that is not confirmed, so cancelling a pending hold reports success and changes nothing. The owner list hides the button for guest holds, but a paid hold has no way out until its checkout expires.\n\nDONE 2026-11-21: cancelBooking now treats a 'pending' hold as cancellable: an admin may drop any hold (paid, or a website guest's), and a member may drop their own paid hold with no notice window. The flip is compare-and-set on the status it read and stamps cancelled_at; a hold sends no cancellation notice or timeline entry because it was never confirmed. Already-cancelled rows stay an idempotent ok(). Tests in lib/spaces/booking.test.ts (cancelBooking drops a pending hold). Open edge: an admin who cancels a paid hold while its checkout is still open does not expire that Stripe session, so a buyer who pays afterwards settles an order whose booking stays cancelled.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/booking-audit.mjs BOOK-018",
     "note": "Fails today; passes once the consequence in the title holds."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-21"
 }

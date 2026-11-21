@@ -1718,3 +1718,69 @@ describe('a reschedule ignores the booking it replaces (BOOK-017)', () => {
     expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('confirmed')
   })
 })
+
+// BOOK-018: a hold still waiting for payment or the guest's click can be cancelled for real.
+describe('cancelBooking drops a pending hold (BOOK-018)', () => {
+  const hold = (over: Partial<BookRow> = {}): BookRow => ({
+    id: 'h1',
+    space_id: 'space-1',
+    member_profile_id: 'member-0000-4000-a000-0000000membr',
+    starts_at: '2099-06-30T10:00:00.000Z',
+    ends_at: '2099-06-30T10:30:00.000Z',
+    status: 'pending',
+    note: null,
+    ...over,
+  })
+
+  it('an admin cancels a paid hold, which frees its slot', async () => {
+    db.bookings.push(hold())
+    currentProfileId = 'admin-0000-4000-a000-00000000admn'
+    const r = await cancelBooking('h1')
+    expect('error' in r).toBe(false)
+    expect(db.bookings[0]!.status).toBe('cancelled')
+  })
+
+  it("an admin cancels a website guest's hold", async () => {
+    db.bookings.push(hold({ member_profile_id: null, guest_name: 'Sam', guest_email: 'sam@example.com', guest_confirm_token: 't' }))
+    currentProfileId = 'admin-0000-4000-a000-00000000admn'
+    const r = await cancelBooking('h1')
+    expect('error' in r).toBe(false)
+    expect(db.bookings[0]!.status).toBe('cancelled')
+  })
+
+  it('the booker cancels their own paid hold, even inside the notice window', async () => {
+    calendarDb.schedules.push({
+      id: 'sch-1',
+      space_id: 'space-1',
+      timezone: 'UTC',
+      buffer_before_minutes: 0,
+      buffer_after_minutes: 0,
+      min_notice_minutes: 43200,
+      booking_window_days: 14,
+      active: true,
+    })
+    db.bookings.push(hold({ starts_at: new Date(Date.now() + 3600000).toISOString() }))
+    canEdit = false
+    isAdmin = false
+    const r = await cancelBooking('h1')
+    expect('error' in r).toBe(false)
+    expect(db.bookings[0]!.status).toBe('cancelled')
+  })
+
+  it("someone else cannot cancel another member's hold", async () => {
+    db.bookings.push(hold())
+    currentProfileId = 'other-0000-4000-a000-00000000othr'
+    canEdit = false
+    isAdmin = false
+    const r = await cancelBooking('h1')
+    expect('error' in r).toBe(true)
+    expect(db.bookings[0]!.status).toBe('pending')
+  })
+
+  it('an already cancelled row stays an idempotent ok', async () => {
+    db.bookings.push(hold({ status: 'cancelled' }))
+    const r = await cancelBooking('h1')
+    expect('error' in r).toBe(false)
+    expect(db.bookings[0]!.status).toBe('cancelled')
+  })
+})
