@@ -68,6 +68,9 @@ export const RESERVED_PAGE_SLUGS: ReadonlySet<string> = new Set([
   // The Space Spotlight link page (app/spaces/[slug]/spotlight, lib/spaces/spotlight.ts), reserved in the
   // same change that added the route for the reason `events` gives above.
   'spotlight',
+  // A website guest's confirm page on Frequency (BOOK-003, app/(main)/spaces/[slug]/confirm-booking), for a
+  // Space with no published website. Reserved in the same change that added the route.
+  'confirm-booking',
 ])
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/

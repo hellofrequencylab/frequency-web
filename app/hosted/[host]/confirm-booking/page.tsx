@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { resolveHostedSpace } from '@/lib/sites/hosted'
 import { SITE_BOOK_SLUG } from '@/lib/sites/house-theme'
-import { ConfirmBookingForm } from './confirm-form'
+import { appOrigin } from '@/lib/sites/host'
+import { readWebsitePublished } from '@/lib/spaces/website'
+import { ConfirmBookingForm } from '@/components/spaces/guest-booking-confirm-form'
 
 // THE WEBSITE'S CONFIRM-BOOKING PAGE (SCAN-834, owner ruling 2026-10-12). The link in a guest's "Confirm
 // your booking" email opens `/confirm-booking?token=...` on the Space website's own host (the website stands
@@ -18,7 +20,8 @@ import { ConfirmBookingForm } from './confirm-form'
 //
 // Never cached: it reads a one-time token from the query string. A static sibling of the `[page]` route, so
 // no site page can take this slug (SITE_CONFIRM_BOOKING_SLUG). A host that is not a site, or a link with no
-// token at all, is not found. The token is never echoed into visible text.
+// token at all, is not found. The token is never echoed into visible text. A Space with no published website
+// gets the same form at app/(main)/spaces/[slug]/confirm-booking on Frequency (BOOK-003).
 //
 // COPY: camp-counselor voice, no em dashes, no hex, no word about Frequency (the website is the owner's).
 export const dynamic = 'force-dynamic'
@@ -43,7 +46,17 @@ export default async function ConfirmBookingPage({
       title="Confirm your booking"
       description="One tap and your time is set. We will email the details with a calendar file."
     >
-      <ConfirmBookingForm token={token} spaceId={space.id} bookHref={`/${SITE_BOOK_SLUG}`} />
+      {/* An unpublished site serves no /book page, so its Pick a time door opens the Space's Book page on
+          Frequency instead (BOOK-003). New links for such a Space already point there (siteConfirmBookingUrl). */}
+      <ConfirmBookingForm
+        token={token}
+        spaceId={space.id}
+        bookHref={
+          readWebsitePublished(space.preferences)
+            ? `/${SITE_BOOK_SLUG}`
+            : `${appOrigin()}/spaces/${encodeURIComponent(space.slug)}/${SITE_BOOK_SLUG}`
+        }
+      />
     </FocusTemplate>
   )
 }

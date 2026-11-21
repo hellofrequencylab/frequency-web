@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { HOME_SLUG } from '@/lib/spaces/profile-pages'
-import { SITE_HOME_SLUG, siteBaseUrl, sitePageUrl, siteRobotsTxt, siteSitemapXml, siteLlmsTxt } from './seo'
+import { SITE_HOME_SLUG, guestBookingPageUrl, siteBaseUrl, sitePageUrl, siteRobotsTxt, siteSitemapXml, siteLlmsTxt } from './seo'
 
 describe('site URLs (LIVE-783)', () => {
   it('keeps its home slug equal to the profile pages one', () => {
@@ -75,5 +75,25 @@ describe('siteLlmsTxt', () => {
       '# Daniel Tyack\n\n> Coaching for people who feel stuck.\n\n## Pages\n\n- [Home](https://danieltyack.com/)\n- [Contact](https://danieltyack.com/contact)\n',
     )
     expect(txt).not.toContain('frequencylocal')
+  })
+})
+
+// BOOK-003: a guest booker's emailed links open a page that exists.
+describe('guestBookingPageUrl', () => {
+  const app = 'https://frequencylocal.com'
+  it('keeps a published website on its own host', () => {
+    expect(guestBookingPageUrl('https://river.example', true, app, 'river', 'confirm-booking')).toBe('https://river.example/confirm-booking')
+    expect(guestBookingPageUrl('https://river.frequencylocal.com', true, app, 'river', 'book')).toBe('https://river.frequencylocal.com/book')
+  })
+  it('sends a Space with no published website to its Space page on Frequency', () => {
+    expect(guestBookingPageUrl('https://river.frequencylocal.com', false, app, 'river', 'confirm-booking')).toBe(
+      'https://frequencylocal.com/spaces/river/confirm-booking',
+    )
+    expect(guestBookingPageUrl('https://river.example', false, `${app}/`, 'river', 'book')).toBe('https://frequencylocal.com/spaces/river/book')
+  })
+  it('never uses the /sites fallback, which forwards and drops the token', () => {
+    expect(guestBookingPageUrl(`${app}/sites/support`, true, app, 'support', 'confirm-booking')).toBe(
+      'https://frequencylocal.com/spaces/support/confirm-booking',
+    )
   })
 })
