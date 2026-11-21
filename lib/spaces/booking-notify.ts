@@ -28,6 +28,10 @@ import { envString } from '@/lib/env/string'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 const REMINDER_LEAD_MS = 24 * 60 * 60 * 1000 // 24h before the session
+// BOOK-014: a booking made inside 24 hours gets one short reminder an hour out instead, and only when that
+// hour mark is still at least half an hour away (otherwise the confirmation is the reminder).
+const SHORT_REMINDER_LEAD_MS = 60 * 60 * 1000
+const SHORT_REMINDER_MIN_GAP_MS = 30 * 60 * 1000
 export const BOOKING_REMINDER_KIND = 'booking_reminder'
 
 // A loose query surface for the not-yet-typed booking tables (ADR-246, mirroring lib/spaces/booking.ts):
@@ -449,9 +453,18 @@ export async function notifyGuestBookingHold(ctx: {
  *  the booking status). Best-effort; never throws back into the booking flow. */
 export async function scheduleBookingReminder(bookingId: string, startsAt: string): Promise<void> {
   try {
-    const fireMs = new Date(startsAt).getTime() - REMINDER_LEAD_MS
-    const runAfter = new Date(Math.max(Date.now(), fireMs))
-    await enqueue(BOOKING_REMINDER_KIND, { bookingId }, { runAfter })
+    const startMs = new Date(startsAt).getTime()
+    if (!Number.isFinite(startMs)) return
+    const fireMs = startMs - REMINDER_LEAD_MS
+    // BOOK-014: booked inside 24 hours, the confirmation that just went out already says when. A reminder
+    // now would only repeat it, so send one an hour out instead, if that is still a while away.
+    if (fireMs <= Date.now()) {
+      const shortMs = startMs - SHORT_REMINDER_LEAD_MS
+      if (shortMs - Date.now() < SHORT_REMINDER_MIN_GAP_MS) return
+      await enqueue(BOOKING_REMINDER_KIND, { bookingId }, { runAfter: new Date(shortMs) })
+      return
+    }
+    await enqueue(BOOKING_REMINDER_KIND, { bookingId }, { runAfter: new Date(fireMs) })
   } catch (err) {
     console.error('[booking-notify] schedule reminder failed', err)
   }
@@ -554,11 +567,17 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
   const admin = createAdminClient()
 
   // LIVE-835: read the guest columns too; a database without them falls back to the member-only read.
+  // BOOK-014 / BOOK-007: the service (to name it) and the guest's secret (for their manage link) ride first.
   const baseCols = 'id, space_id, member_profile_id, starts_at, ends_at, status'
   let read = await looseFrom(admin, 'space_bookings')
-    .select(`${baseCols}, guest_name, guest_email`)
+    .select(`${baseCols}, service_type_id, guest_name, guest_email, guest_confirm_token`)
     .eq('id', bookingId)
     .maybeSingle()
+  if (read.error)
+    read = await looseFrom(admin, 'space_bookings')
+      .select(`${baseCols}, guest_name, guest_email`)
+      .eq('id', bookingId)
+      .maybeSingle()
   if (read.error) read = await looseFrom(admin, 'space_bookings').select(baseCols).eq('id', bookingId).maybeSingle()
   const booking = read.data as {
     id: string
@@ -566,6 +585,8 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
     member_profile_id: string | null
     guest_name?: string | null
     guest_email?: string | null
+    guest_confirm_token?: string | null
+    service_type_id?: string | null
     starts_at: string
     ends_at: string
     status: string
@@ -583,21 +604,25 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
   const spaceName = space.brand_name?.trim() || space.name
 
   const tz = await bookingTimezone(admin, booking.space_id)
+  const serviceName = await serviceNameOf(admin, booking.service_type_id)
 
   // A guest booker (LIVE-835) has no profile for the notification router's gate: the reminder is the
   // same transactional email, enqueued straight onto the outbox (sendRawEmail still honours global
   // suppression), and its link opens the Space website's Book page.
   if (!booking.member_profile_id) {
     if (!booking.guest_name || !booking.guest_email) return
-    const { siteBookUrl } = await import('@/lib/sites/site-booking')
+    // BOOK-007: the link opens the guest's manage page (cancel or move), else the Book page.
+    const { siteBookUrl, siteManageBookingUrl } = await import('@/lib/sites/site-booking')
+    const site = { id: booking.space_id, slug: space.slug, domain: space.domain }
+    const token = booking.guest_confirm_token
     await enqueueEmail(
       buildBookingReminderEmail({
         to: booking.guest_email,
         recipientName: booking.guest_name,
         spaceName,
-        serviceName: null,
+        serviceName,
         whenAbsolute: formatWhen(booking.starts_at, tz),
-        manageUrl: await siteBookUrl({ id: booking.space_id, slug: space.slug, domain: space.domain }),
+        manageUrl: token ? await siteManageBookingUrl(site, token) : await siteBookUrl(site),
       }),
     )
     return
@@ -618,7 +643,7 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
         to: member.email,
         recipientName: member.name,
         spaceName,
-        serviceName: null,
+        serviceName,
         whenAbsolute: formatWhen(booking.starts_at, tz),
         manageUrl: `${APP_URL}/spaces/${space.slug}/book`,
       }),
