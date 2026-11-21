@@ -188,11 +188,8 @@ function usableZone(tz: string | null | undefined): tz is string {
   }
 }
 
-/** The house zone a booking falls back to (lib/time/zone.ts HOME_TZ), never UTC. */
-const HOUSE_ZONE = 'America/Los_Angeles'
-
 /** The Space's booking timezone label source: the schedule tz, else the first window tz, else the
- *  Space's calendar zone, else the house zone. BOOK-001: a stored value the runtime cannot resolve
+ *  Space's calendar zone (every Space carries one since LIVE-471's backfill), else UTC. BOOK-001: a stored value the runtime cannot resolve
  *  ("Pacific") is skipped, so a confirmation never prints a time in UTC by accident. */
 async function bookingTimezone(admin: Admin, spaceId: string): Promise<string> {
   const candidates: Array<string | null | undefined> = []
@@ -221,9 +218,9 @@ async function bookingTimezone(admin: Admin, spaceId: string): Promise<string> {
   try {
     const { data: space } = await looseFrom(admin, 'spaces').select('time_zone').eq('id', spaceId).maybeSingle()
     const zone = (space as { time_zone?: string | null } | null)?.time_zone?.trim()
-    return usableZone(zone) ? zone : HOUSE_ZONE
+    return usableZone(zone) ? zone : 'UTC'
   } catch {
-    return HOUSE_ZONE
+    return 'UTC'
   }
 }
 
