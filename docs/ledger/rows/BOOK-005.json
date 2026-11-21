@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/spaces/booking.ts",
     "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
   },
-  "detail": "FOUND 2026-11-21: readBlockingBookings reads .gte('starts_at', now), so a booking that started a minute ago is not a booked range any more. With mixed service lengths or a buffer after, the slot right after it (or inside it) is offered and accepted. Fix: read rows whose ends_at plus the after-buffer is still ahead of now.",
+  "detail": "FOUND 2026-11-21: readBlockingBookings reads .gte('starts_at', now), so a booking that started a minute ago is not a booked range any more. With mixed service lengths or a buffer after, the slot right after it (or inside it) is offered and accepted. Fix: read rows whose ends_at plus the after-buffer is still ahead of now.\n\nDONE 2026-11-21: readBlockingBookings now reads confirmed and pending rows whose ends_at is after now minus the longest after-buffer (480 minutes), instead of starts_at >= now, so a session under way keeps its remaining time and its buffer; bufferConflict does the exact math. Tests in lib/spaces/booking.test.ts (an in-progress booking still blocks) cover a live 60 minute session and a just-ended one inside its after-buffer.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/booking-audit.mjs BOOK-005",
     "note": "Fails today; passes once the consequence in the title holds."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-21"
 }

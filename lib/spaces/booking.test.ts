@@ -138,6 +138,7 @@ function bookingsBuilder() {
     statusIn?: string[]
     id?: string
     gte?: string
+    gtEnds?: string
     token?: string
     lteExpires?: string
   } = {}
@@ -150,6 +151,7 @@ function bookingsBuilder() {
     (filters.id === undefined || b.id === filters.id) &&
     (filters.token === undefined || b.guest_confirm_token === filters.token) &&
     (filters.gte === undefined || b.starts_at >= filters.gte) &&
+    (filters.gtEnds === undefined || b.ends_at > filters.gtEnds) &&
     (filters.lteExpires === undefined ||
       (typeof b.guest_confirm_expires_at === 'string' && b.guest_confirm_expires_at <= filters.lteExpires))
   const api = {
@@ -176,6 +178,11 @@ function bookingsBuilder() {
     },
     gte(col: string, val: string) {
       if (col === 'starts_at') filters.gte = val
+      return api
+    },
+    gt(col: string, val: string) {
+      // BOOK-005: readBlockingBookings keys on ends_at, so an in-progress booking still blocks.
+      if (col === 'ends_at') filters.gtEnds = val
       return api
     },
     lte(col: string, val: string) {
@@ -1614,5 +1621,59 @@ describe('resolveBookingZone (BOOK-001)', () => {
     const fixed = typed.map((w) => ({ ...w, timezone: resolveBookingZone(w.timezone, 'America/Los_Angeles') }))
     const slots = generateOpenSlots(fixed, new Set(), now, 7)
     expect(slots.map((s) => s.startsAt)).toEqual(['2026-11-24T17:00:00.000Z', '2026-11-24T17:30:00.000Z'])
+  })
+})
+
+// BOOK-005: a booking already under way still reserves its tail and its after-buffer.
+describe('an in-progress booking still blocks (BOOK-005)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('a 60 minute session that started 15 minutes ago keeps its remaining half hour', async () => {
+    vi.setSystemTime(new Date('2026-06-30T10:15:00.000Z'))
+    db.bookings.push({
+      id: 'b-live',
+      space_id: 'space-1',
+      member_profile_id: 'someone',
+      starts_at: '2026-06-30T10:00:00.000Z',
+      ends_at: '2026-06-30T11:00:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+    const open = (await listOpenSlots('space-1')).map((s) => s.startsAt)
+    expect(open).not.toContain('2026-06-30T10:30:00.000Z')
+    expect(open).toContain('2026-06-30T11:00:00.000Z')
+    const r = await createBooking('space-1', '2026-06-30T10:30:00.000Z')
+    expect('error' in r).toBe(true)
+    expect(db.bookings).toHaveLength(1)
+  })
+
+  it('a session that just ended still holds its after-buffer', async () => {
+    vi.setSystemTime(new Date('2026-06-30T10:05:00.000Z'))
+    calendarDb.schedules.push({
+      id: 'sch-1',
+      space_id: 'space-1',
+      timezone: 'UTC',
+      buffer_before_minutes: 0,
+      buffer_after_minutes: 45,
+      min_notice_minutes: 0,
+      booking_window_days: 14,
+      active: true,
+    })
+    db.bookings.push({
+      id: 'b-done',
+      space_id: 'space-1',
+      member_profile_id: 'someone',
+      starts_at: '2026-06-30T09:00:00.000Z',
+      ends_at: '2026-06-30T10:00:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+    const open = (await listOpenSlots('space-1')).map((s) => s.startsAt)
+    expect(open).not.toContain('2026-06-30T10:30:00.000Z') // inside the 45 minute buffer after 10:00
+    expect(open).toContain('2026-06-30T11:00:00.000Z')
   })
 })

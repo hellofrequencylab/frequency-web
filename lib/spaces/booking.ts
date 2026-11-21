@@ -557,6 +557,7 @@ type BookingQuery = {
   eq: (col: string, val: string) => BookingQuery
   in: (col: string, vals: string[]) => BookingQuery
   gte: (col: string, val: string) => BookingQuery
+  gt: (col: string, val: string) => BookingQuery
   lte: (col: string, val: string) => BookingQuery
   order: (col: string, opts: { ascending: boolean }) => BookingQuery
   update: (patch: Record<string, unknown>) => BookingQuery
@@ -1040,12 +1041,22 @@ async function readConfirmedBookings(spaceId: string, fromISO: string): Promise<
   }
 }
 
-/** The bookings that BLOCK a slot at/after `fromISO`: confirmed AND pending holds (Phase 4). The open-slot
+/** The longest after-buffer a schedule can carry (mapScheduleRow clamps buffer_after_minutes to it). */
+const MAX_BUFFER_MINUTES = 480
+
+/** The bookings that BLOCK a slot as of `nowISO`: confirmed AND pending holds (Phase 4). The open-slot
  *  read must exclude both, matching the widened unique index `status in (confirmed, pending)` — otherwise a
  *  held-but-unpaid slot still renders as available and every booker bounces off it. Pending rows only exist
  *  once the bookable-services migration is applied, so pre-migration this reads exactly like confirmed.
+ *
+ *  BOOK-005: a booking already in progress still blocks. The read keys on ends_at, not starts_at, and
+ *  reaches back by the longest possible after-buffer, so a session that started a minute ago (or ended
+ *  inside its buffer) still reserves its tail and buffer. bufferConflict does the exact math; a row whose
+ *  reserved span is fully past blocks nothing, because no candidate slot starts in the past.
  *  Service-role; FAIL-SAFE to []. */
-async function readBlockingBookings(spaceId: string, fromISO: string): Promise<BookingRow[]> {
+async function readBlockingBookings(spaceId: string, nowISO: string): Promise<BookingRow[]> {
+  const nowMs = new Date(nowISO).getTime()
+  const fromISO = new Date((Number.isFinite(nowMs) ? nowMs : Date.now()) - MAX_BUFFER_MINUTES * 60000).toISOString()
   // SCAN-834: a website guest's hold blocks its slot only until it expires. Read the hold columns first
   // so an expired, not-yet-released hold drops out here; pre-migration the base read blocks as before.
   for (const cols of [BOOKING_COLS_HOLD, BOOKING_COLS]) {
@@ -1054,7 +1065,7 @@ async function readBlockingBookings(spaceId: string, fromISO: string): Promise<B
         .select(cols)
         .eq('space_id', spaceId)
         .in('status', ['confirmed', 'pending'])
-        .gte('starts_at', fromISO)
+        .gt('ends_at', fromISO)
         .order('starts_at', { ascending: true })
       if (error || !data) continue
       return data.filter((row) => !guestHoldExpired(row))
