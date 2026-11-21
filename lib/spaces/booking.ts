@@ -2015,10 +2015,13 @@ async function validateAndPlaceBooking(params: {
   // SCAN-834: a lapsed guest hold must not keep its slot through the unique index, so release them first.
   await releaseExpiredGuestHolds(spaceId, now)
   const context = await readScheduleContext(spaceId)
-  const [booked, calendarBlocks] = await Promise.all([
+  const [blocking, calendarBlocks] = await Promise.all([
     readBlockingBookings(spaceId, now.toISOString()),
     readCalendarBlocks(spaceId, now.toISOString()),
   ])
+  // BOOK-017: a reschedule never conflicts with the booking it replaces (that row is cancelled once the
+  // new one lands). The unique index still refuses moving to the identical start, which is no move anyway.
+  const booked = rescheduledFrom ? blocking.filter((b) => b.id !== rescheduledFrom) : blocking
   const bookedRanges = [
     ...booked.map((b) => ({
       startMs: new Date(b.starts_at).getTime(),

@@ -1677,3 +1677,44 @@ describe('an in-progress booking still blocks (BOOK-005)', () => {
     expect(open).toContain('2026-06-30T11:00:00.000Z')
   })
 })
+
+// BOOK-017: moving a booking to a time that overlaps its own old time is a move, not a conflict.
+describe('a reschedule ignores the booking it replaces (BOOK-017)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-29T08:00:00.000Z'))
+    db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+    db.bookings.push({
+      id: 'b1',
+      space_id: 'space-1',
+      member_profile_id: 'member-0000-4000-a000-0000000membr',
+      starts_at: '2026-06-30T10:00:00.000Z',
+      ends_at: '2026-06-30T11:00:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('moves a 60 minute booking 30 minutes later', async () => {
+    const r = await rescheduleBooking('b1', '2026-06-30T10:30:00.000Z')
+    expect('error' in r).toBe(false)
+    expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('cancelled')
+    expect(db.bookings.some((b) => b.status === 'confirmed' && b.starts_at === '2026-06-30T10:30:00.000Z')).toBe(true)
+  })
+
+  it('still refuses a time that overlaps somebody else', async () => {
+    db.bookings.push({
+      id: 'b2',
+      space_id: 'space-1',
+      member_profile_id: 'someone-else',
+      starts_at: '2026-06-30T11:00:00.000Z',
+      ends_at: '2026-06-30T12:00:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+    const r = await rescheduleBooking('b1', '2026-06-30T11:30:00.000Z')
+    expect('error' in r).toBe(true)
+    expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('confirmed')
+  })
+})
