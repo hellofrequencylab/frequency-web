@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-009",
+  "title": "Booking emails state the time in the booker's own time zone",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21: the picker shows times in the viewer's zone, but every email formats in the Space's zone (bookingTimezone). A booker in New York reads 'Tue 9:00 AM PST'. Fix: store the zone the browser reported at booking (space_bookings.booker_time_zone, additive) and use it for the booker's mails; the owner's mails keep the Space zone.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-009",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-021",
+  "title": "Vera sets up and tunes a Space's booking hours from plain words",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21: setup is three forms (hours, services, rules), and BOOK-001 shows what happens when an owner has to type a technical value. Vera has no tool for setSpaceAvailability or setSpaceSchedule. Fix: 'I see clients Tuesday to Thursday 10 to 4, hour sessions, nothing before noon on Fridays' becomes windows, services and rules shown back for one tap to save. Later: Vera suggests changes from what gets booked (the Reclaim and SavvyCal idea of protecting focus time and clustering sessions).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-021",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

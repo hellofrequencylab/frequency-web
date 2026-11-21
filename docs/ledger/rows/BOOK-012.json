@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-012",
+  "title": "The owner's booking list names the service, shows past sessions, and can mark a no-show, reschedule or add a booking",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21: BookingOwnerList shows name, time, note and answers, but not which service was booked (listSpaceBookings never maps service_type_id), only upcoming rows, and Cancel is the only action. rescheduleBooking already allows an admin; there is no control for it, no way to add a booking taken by phone, and no no-show mark to feed the CRM risk flags (lib/spaces/contact-risk.ts already scores no_show).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-012",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

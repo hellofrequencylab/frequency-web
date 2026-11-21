@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-020",
+  "title": "A finished session triggers a follow-up: thanks, a rebook link and a review ask",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21: nothing runs after ends_at. Calendly Workflows and every practitioner tool send a follow-up, and Frequency already has the parts Calendly lacks: the CRM timeline (recordSpaceMemberActivity), reviews, Journeys and the coach email caps. Fix: a booking_follow_up outbox job at ends_at plus a delay, owner-editable copy, inside the existing email caps, and a 'book again' link that opens the same service.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-020",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

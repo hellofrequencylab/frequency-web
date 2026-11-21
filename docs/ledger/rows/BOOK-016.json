@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-016",
+  "title": "Owners can set start-time steps, a daily cap, and notice and window per service",
+  "lane": "live",
+  "priority": "P3",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21: slots start every duration from the window start (a 45 minute service starts at 9:00, 9:45, 10:30), with no 'start every 15 or 30 minutes' choice, no maximum bookings per day, and notice and window are per Space, not per service. All three are standard Calendly event-type limits.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-016",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

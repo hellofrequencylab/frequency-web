@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-017",
+  "title": "Moving a booking to a time that overlaps its old time is allowed",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21: rescheduleBooking places the new booking before cancelling the old, and validateAndPlaceBooking counts the old row as a booked range, so moving a 60 minute session 30 minutes later fails with 'too close to another booking'. Fix: drop the row named by rescheduledFrom from the conflict ranges (the unique-start guard still holds).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-017",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

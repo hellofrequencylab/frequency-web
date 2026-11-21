@@ -1,0 +1,19 @@
+{
+  "id": "BOOK-004",
+  "title": "The database refuses two live bookings whose times overlap, not only two that start at the same instant",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
+  },
+  "detail": "FOUND 2026-11-21: the race guard is a unique index on (space_id, starts_at) where status in (confirmed, pending). Overlap with different starts is checked only in application code after a read, so two bookers racing (a 60 minute service at 10:00 and a 30 minute one at 10:30, or any buffered pair) both pass and both insert. Fix: btree_gist plus an exclusion constraint on (space_id with =, tstzrange(starts_at, ends_at) with &&) for live statuses, with the insert error mapped to the existing 'just taken' message. Buffers stay an app rule.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/booking-audit.mjs BOOK-004",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
