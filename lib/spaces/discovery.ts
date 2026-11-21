@@ -47,7 +47,7 @@ import { isReservedSlug } from './profile-pages'
 import { spaceFunctionDef, spaceFunctionEnabled } from './functions'
 // The Book page's widget rule, shared with components/widgets/entity/entity-cta.tsx so the sitemap
 // advertises /book on the same Focus the page renders on (SCAN-787).
-import { ctaKindFor } from './cta-kind'
+import { bookPageKind, ctaKindFor } from './cta-kind'
 import { isThinSpotlightText } from '@/lib/seo/thin-spotlight'
 // The circle statuses a public list may show, from the circles module's own definition rather than
 // retyped here — a second copy of ['forming','active'] is a drift waiting to happen.
@@ -979,7 +979,7 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
       )
     )).then(groups => new Set(groups.flatMap(group => [...group])))
 
-    const [withEvents, withCircles, withReviews, withTiers, withAsks, collabHost, collabPartner, withWallPosts, membersOnlyWalls] = await Promise.all([
+    const [withEvents, withCircles, withReviews, withTiers, withAsks, collabHost, collabPartner, withWallPosts, membersOnlyWalls, withServices, withWindows] = await Promise.all([
       eventPresence,
       presenceIds(
         // AXIS 1 in SQL, exactly as listPublicSpaceCircles spells it: `unlisted` is nullable and a
@@ -1045,6 +1045,20 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
         'space_id',
         (r) => (typeof r.space_id === 'string' ? r.space_id : null),
       ),
+      // BOOKABLE (BOOK-002). An active service and a weekly window make the Book page lead with
+      // booking whatever the Focus says (cta-kind.ts bookPageKind), so the sitemap reads both too.
+      presenceIds(
+        (q) => q.eq('active', true).in('space_id', ids),
+        'space_service_types',
+        'space_id',
+        (r) => (typeof r.space_id === 'string' ? r.space_id : null),
+      ),
+      presenceIds(
+        (q) => q.in('space_id', ids),
+        'space_availability',
+        'space_id',
+        (r) => (typeof r.space_id === 'string' ? r.space_id : null),
+      ),
     ])
 
     const shopDef = spaceFunctionDef('shop')
@@ -1075,7 +1089,7 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
       // the Space's Focus leads with must have something to show. A membership surface at zero
       // tiers and a donate surface with no published ask are the two default-Focus empty states,
       // the LIVE-184 defect (an empty tab with a URL) that every other gate here prevents.
-      const ctaKind = ctaKindFor(type, r.mode_variant)
+      const ctaKind = bookPageKind(ctaKindFor(type, r.mode_variant), withServices.has(r.id) && withWindows.has(r.id))
       const bookShowsSomething =
         ctaKind === 'membership'
           ? withTiers.has(r.id) // MembershipJoin lists tiers whatever the function switch says

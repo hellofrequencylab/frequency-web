@@ -33,3 +33,17 @@ export function ctaKindFor(type: SpaceType | null | undefined, variant?: string 
   const mode = resolveMode(type, variant)
   return mode ? CTA_KIND_BY_VARIANT[mode.variant] : undefined
 }
+
+/** BOOK-002: a Space is BOOKABLE when it publishes at least one active service AND at least one weekly
+ *  availability window, so a visitor has something to pick and a time to pick it at. PURE; the counts
+ *  come from readPublicBookingSetup (the page) or the sitemap's presence reads. */
+export function hasBookableServices(setup: { serviceCount: number; windowCount: number }): boolean {
+  return setup.serviceCount > 0 && setup.windowCount > 0
+}
+
+/** BOOK-002: the widget the Book page leads with. A bookable Space leads with booking whatever its Focus
+ *  says (a membership Focus with services and hours used to open "Become a member"); otherwise the Focus
+ *  picks, exactly as ctaKindFor does. Shared by EntityCta and the sitemap tab reader (SCAN-787). */
+export function bookPageKind(focusKind: CtaKind | undefined, bookable: boolean): CtaKind | undefined {
+  return bookable ? 'booking' : focusKind
+}

@@ -3,7 +3,8 @@ import { Suspense } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
-import { ctaKindFor } from '@/lib/spaces/cta-kind'
+import { bookPageKind, ctaKindFor, hasBookableServices } from '@/lib/spaces/cta-kind'
+import { readPublicBookingSetup } from '@/lib/spaces/booking'
 import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { listEventsForSpace } from '@/lib/events/store'
 import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
@@ -71,7 +72,8 @@ import { createSpaceCtaClickToken } from '@/lib/spaces/cta-click-token'
 // The transactional widget a Focus (mode_variant) leads with lives in lib/spaces/cta-kind.ts
 // (`ctaKindFor`), shared with the sitemap tab reader so the Book URL is advertised on the same rule
 // this renders on (SCAN-787). A Focus not listed (or a Space with no Mode) falls through to the
-// upcoming-sessions list below.
+// upcoming-sessions list below. BOOK-002: a BOOKABLE Space (an active service and a weekly window,
+// `hasBookableServices`) leads with booking whatever its Focus says (`bookPageKind`), on both sides.
 
 export async function EntityCta() {
   const space = getActiveSpace()
@@ -80,7 +82,16 @@ export async function EntityCta() {
 
   // Pick the transactional widget from the resolved FOCUS (mode_variant), not the type. A null Mode
   // (the `root` host) has no Focus, so it falls through to the sessions list below.
-  const ctaKind = ctaKindFor(space.type, space.modeVariant)
+  const focusKind = ctaKindFor(space.type, space.modeVariant)
+  // BOOK-002: a Space with an active service AND a weekly window leads with booking whatever its Focus
+  // says, so Book now never opens an empty membership page on a Space that takes bookings. One read
+  // (readPublicBookingSetup), skipped when the Focus already leads with booking. The Space is already
+  // resolved as visible to this viewer, and only the two counts are used here.
+  const setup = focusKind === 'booking' ? null : await readPublicBookingSetup(space.id)
+  const ctaKind = bookPageKind(
+    focusKind,
+    setup !== null && hasBookableServices({ serviceCount: setup.services.length, windowCount: setup.windowCount }),
+  )
 
   // The appointments Focus leads with real 1:1 booking (the "Book" CTA).
   if (ctaKind === 'booking') {
