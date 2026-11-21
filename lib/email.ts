@@ -1678,6 +1678,8 @@ export async function sendBookingCancelledEmail(params: {
   whenAbsolute: string
   reason: string | null
   bookUrl: string
+  /** BOOK-008: a METHOD:CANCEL calendar file that removes the event from the recipient's calendar. */
+  icsBase64?: string | null
 }) {
   const reasonLine = params.reason
     ? `<p data-fq="fq-p" style="${pStyle}">Reason given: ${escapeHtml(params.reason)}</p>`
@@ -1701,6 +1703,7 @@ When: ${params.whenAbsolute}
 ${params.reason ? `Reason given: ${params.reason}\n` : ''}
 Book another time: ${params.bookUrl}
 `,
+    ...(params.icsBase64 ? { attachments: [{ filename: 'booking.ics', content: params.icsBase64 }] } : {}),
   })
 }
 
