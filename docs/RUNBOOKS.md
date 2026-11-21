@@ -1052,7 +1052,7 @@ Check: GA4 Admin, DebugView or Realtime shows `sign_up` after a fresh signup in 
 
 ## Lifecycle cap
 
-`LIFECYCLE_CAP_ENABLED` (EMAIL-047). Off by default: every lifecycle sender behaves as before and nothing is read or written. On: `reserveLifecycleSend` (`lib/lifecycle/cap-io.ts`) holds a lifecycle email when the address already got one in the last day (rank 1 emails are exempt from the daily cap) or three in the last week, and claims a row in `lifecycle_send_log` unique by dedupe key. Today the nurture runner calls it; other senders join as their PRs land.
+`LIFECYCLE_CAP_ENABLED` (EMAIL-047). Off by default: every lifecycle sender behaves as before and nothing is read or written. On: `reserveLifecycleSend` (`lib/lifecycle/cap-io.ts`) holds a lifecycle email when the address already got one in the last day (rank 1 emails are exempt from the daily cap) or three in the last week, and claims a row in `lifecycle_send_log` unique by dedupe key. The nurture runner, the launch come-back, the launched welcome, the Create a Space draft reminders and the operator day 0, 1, 3 and 7 emails call it right before they enqueue (EMAIL-064); a capped or errored answer leaves the email due for a later run without claiming its own log row.
 
 **Gate before turning it on:** migration `20270346045000_lifecycle_send_log.sql` is applied in Frequency Community and its ledger row recorded. A read or write error answers `error`, the sender skips and retries next run, so flipping it on without the table pauses nurture rather than sending unmetered.
 

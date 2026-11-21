@@ -17,6 +17,17 @@ vi.mock('@/lib/email', async (orig) => ({
 vi.mock('@/lib/comms/send-gate', () => ({ resolveSendGate: async () => ({ allowed: state.allowed }) }))
 vi.mock('@/lib/launch/inventory-io', () => ({ loadInventory: async () => (state.inventory ? { sections: state.inventory, space: { id: 'x', slug: 'x', name: 'x' } } : null) }))
 vi.mock('@/lib/log', () => ({ log: { info: () => {}, warn: () => {}, error: () => {} } }))
+// EMAIL-064: the cross-email cap. 'reserved' unless a test says otherwise (what the real module answers with the cap off).
+const cap = vi.hoisted(() => ({ answer: 'reserved' as string, reserved: [] as Record<string, unknown>[], released: [] as string[] }))
+vi.mock('@/lib/lifecycle/cap-io', () => ({
+  reserveLifecycleSend: async (_admin: unknown, input: Record<string, unknown>) => {
+    cap.reserved.push(input)
+    return cap.answer
+  },
+  releaseLifecycleSend: async (_admin: unknown, key: string) => {
+    cap.released.push(key)
+  },
+}))
 
 import { operatorDayDue, sendOperatorLifecycle } from './operator-lifecycle'
 
@@ -47,6 +58,9 @@ beforeEach(() => {
   state.enqueued = []
   state.allowed = true
   state.inventory = undefined
+  cap.answer = 'reserved'
+  cap.reserved = []
+  cap.released = []
 })
 
 describe('operatorDayDue', () => {
@@ -77,6 +91,29 @@ describe('sendOperatorLifecycle', () => {
     const r = await sendOperatorLifecycle(admin([space('a', 1.1)]), { limit: 50, now: NOW })
     expect(r).toEqual({ sent: 0, skipped: 1, failed: 0 })
     expect(state.enqueued).toEqual([])
+  })
+})
+
+describe('the cross-email cap (EMAIL-064)', () => {
+  it('reserves with the registry kind and the outbox key right before the send', async () => {
+    await sendOperatorLifecycle(admin([space('a', 1.1)]), { limit: 50, now: NOW })
+    expect(cap.reserved).toEqual([{ recipient: 'sam@example.com', profileId: 'p1', kind: 'operator_lifecycle', dedupeKey: 'operator_lifecycle:a:1' }])
+    expect(state.enqueued).toHaveLength(1)
+  })
+
+  it('sends nothing when the cap holds it, cannot be read, or says the day already went out', async () => {
+    for (const answer of ['capped', 'error', 'duplicate']) {
+      cap.answer = answer
+      const r = await sendOperatorLifecycle(admin([space('a', 1.1)]), { limit: 50, now: NOW })
+      expect(r).toEqual({ sent: 0, skipped: 1, failed: 0 })
+    }
+    expect(state.enqueued).toEqual([])
+  })
+
+  it('does not spend the cap when the send gate says no', async () => {
+    state.allowed = false
+    await sendOperatorLifecycle(admin([space('a', 1.1)]), { limit: 50, now: NOW })
+    expect(cap.reserved).toEqual([])
   })
 })
 

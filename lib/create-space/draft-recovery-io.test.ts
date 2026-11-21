@@ -81,6 +81,17 @@ vi.mock('@/lib/comms/send-gate', () => ({
   },
 }))
 vi.mock('@/lib/log', () => ({ log: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } }))
+vi.mock('@/lib/lifecycle/cap-io', () => ({
+  reserveLifecycleSend: (_admin: unknown, input: Record<string, unknown>) => {
+    cap.reserved.push(input)
+    return Promise.resolve(cap.answer)
+  },
+  releaseLifecycleSend: (_admin: unknown, key: string) => {
+    cap.released.push(key)
+    return Promise.resolve()
+  },
+}))
+const cap = vi.hoisted(() => ({ answer: 'reserved' as string, reserved: [] as Record<string, unknown>[], released: [] as string[] }))
 
 import { groupDraftsPerAddress, runDraftReminders } from './draft-recovery-io'
 
@@ -103,6 +114,9 @@ beforeEach(() => {
   state.inserts = []
   state.enqueued = []
   state.gateCalls = []
+  cap.answer = 'reserved'
+  cap.reserved = []
+  cap.released = []
 })
 
 const run = () => runDraftReminders({ limit: 200, now: NOW, baseUrl: 'https://frequencylocal.com' })
@@ -196,6 +210,38 @@ describe('runDraftReminders', () => {
     expect(r).toMatchObject({ sent: 0, skipped: 1 })
     expect(state.inserts[0]).toMatchObject({ message_ref: 'skipped:suppressed' })
     expect(state.gateCalls).toHaveLength(0)
+  })
+
+  // EMAIL-064: the reminder counts toward the one a day, three a week cap.
+  it('reserves through the lifecycle cap with the registry kind and a stable key before it sends', async () => {
+    state.leadProfile = 'p1'
+    expect((await run()).sent).toBe(1)
+    expect(cap.reserved).toEqual([{ recipient: 'sam@example.com', profileId: 'p1', kind: 'create_space_draft', dedupeKey: 'create_space_draft:d1:draft_1h' }])
+  })
+
+  it('leaves a capped or errored reminder due for a later run: no log claim, no send', async () => {
+    for (const answer of ['capped', 'error']) {
+      cap.answer = answer
+      const r = await run()
+      expect(r.sent).toBe(0)
+      expect(r.held[answer === 'capped' ? 'capped' : 'cap_error']).toBe(1)
+    }
+    expect(state.inserts).toHaveLength(0)
+    expect(state.enqueued).toHaveLength(0)
+  })
+
+  it('claims the kind without a second send when the cap says it already went out', async () => {
+    cap.answer = 'duplicate'
+    const r = await run()
+    expect(r).toMatchObject({ sent: 0, lost: 1 })
+    expect(state.inserts).toEqual([{ draft_id: 'd1', trigger_kind: 'draft_1h', message_ref: null }])
+    expect(state.enqueued).toHaveLength(0)
+  })
+
+  it('does not spend the cap on a skipped kind', async () => {
+    state.suppressed = true
+    await run()
+    expect(cap.reserved).toHaveLength(0)
   })
 
   it('still holds a due email outside 8am to 8pm in the browser zone', async () => {
