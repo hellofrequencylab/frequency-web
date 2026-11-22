@@ -195,11 +195,46 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
   },
 ]
 
-/** Themes a person can pick (gallery, editor, wizard). The earlier `network` and `temple` themes are worn by live sites and no longer offered.
- *  `frequency` ("Default") left the pickers 2026-11-03: New World is the default (LIVE-2058); sites that saved it keep it.
- *  Free Human and Mindless joined the pickers and the theme library on the owner's word (2026-11-18: "Make sure Free Human
- *  Movement is in the theme library as well as Mindless"); Mindless followed 2026-11-19 on Frequency's own photos (LIVE-2407). */
+/** PRIVATE THEMES (owner ask 2026-11-22: "a private / custom theme feature... themes for different sites, that won't go in the
+ *  public system"). A private theme is a full theme that never appears on any public surface (/themes, a kit page, the sitemap,
+ *  llms.txt, the create-a-space look step, a share card) and is offered in the editor only to the Spaces named here, plus any
+ *  Space that already wears it. Every theme not named here is public. The set and map below are the ONE place a theme's audience is set:
+ *  SITE_THEMES and every public list read from it, themesForSpace feeds the editor, and mayWearTheme is checked on every save
+ *  (applyMegaTheme, the Identity and branding form, a page's own theme). lib/theme/private-themes.test.ts fails if a private id
+ *  reaches a public surface.
+ *
+ *  The private ids are the set below (its name is older than this feature: probes and tests read it). Each is worn by the
+ *  sites it was drawn for, listed in PRIVATE_THEME_SITES:
+ *   · `frequency` ("Default", retired 2026-11-03: New World is the default, LIVE-2058). No site is assigned, so no picker
+ *     offers it; it is the read fallback of every Space that never picked a theme, so a save may still return to it.
+ *   · `network`, the Network theme The Group's site and its chapters wear (the Network Theme Kit took the name 2026-10-28).
+ *   · `temple`, the Temple theme Royal Temple wears (the Temple Theme Kit took the name 2026-10-28).
+ *  Free Human and Mindless joined the public pickers on the owner's word (2026-11-18, 2026-11-19). A new private theme adds its
+ *  id to the set and its sites to the map, in the same change. */
 const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple'])
+
+/** The Spaces (by slug) each private theme is offered to. Every private id has an entry, even an empty one. */
+export const PRIVATE_THEME_SITES: Readonly<Partial<Record<SiteThemeId, readonly string[]>>> = {
+  frequency: [],
+  network: ['the-group', 'the-group-encinitas', 'the-group-la-jolla', 'the-group-north-county', 'the-group-north-park', 'the-group-oceanside', 'the-group-veterans'],
+  temple: ['royaltemple'],
+}
+
+/** Whether a theme is private: offered only to its own sites, never shown publicly. */
+export function isPrivateTheme(id: string): boolean {
+  return RETIRED_FROM_PICKERS.has(id as SiteThemeId)
+}
+
+/** Whether the Space `slug`, which wears `current` today, may wear `theme`: any public theme, the theme it already wears, or a
+ *  private theme assigned to it. An unknown id never may. */
+export function mayWearTheme(theme: string, slug: string | null | undefined, current?: string | null): boolean {
+  if (!isSiteThemeId(theme)) return false
+  // Default is the read fallback every Space without a saved theme already wears (DEFAULT_SITE_THEME), so a save may always
+  // return to it; it is still never offered in a picker (themesForSpace).
+  if (!isPrivateTheme(theme) || theme === current || theme === 'frequency') return true
+  return !!slug && (PRIVATE_THEME_SITES[theme] ?? []).includes(slug)
+}
+
 /** New World is the default, so it leads every picker, and Designer comes second (owner 2026-11-04); the rest keep their
  *  definition order. The create-a-space look step follows this order. */
 const PICKER_LEAD: readonly SiteThemeId[] = ['new-world', 'designer']
@@ -207,9 +242,18 @@ function pickerRank(id: SiteThemeId): number {
   const at = PICKER_LEAD.indexOf(id)
   return at < 0 ? PICKER_LEAD.length : at
 }
-export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !RETIRED_FROM_PICKERS.has(t.id))
-  .slice()
-  .sort((a, b) => pickerRank(a.id) - pickerRank(b.id))
+const byPicker = (a: SiteThemeDef, b: SiteThemeDef) => pickerRank(a.id) - pickerRank(b.id)
+
+/** The PUBLIC themes: every gallery, kit page, sitemap entry and wizard reads this, so a private theme never shows. */
+export const SITE_THEMES: readonly SiteThemeDef[] = SITE_THEME_DEFS.filter((t) => !isPrivateTheme(t.id)).slice().sort(byPicker)
+
+/** The themes the editor offers one Space: the public ones, then the private ones assigned to it, so a site can always switch
+ *  back to its own. Default (`frequency`) is assigned to no one, so it is never offered (owner 2026-11-03: New World is the
+ *  default); a Space that wears it still keeps it, because mayWearTheme allows the theme a Space already wears. */
+export function themesForSpace(slug: string | null | undefined): readonly SiteThemeDef[] {
+  const own = slug ? SITE_THEME_DEFS.filter((t) => isPrivateTheme(t.id) && (PRIVATE_THEME_SITES[t.id] ?? []).includes(slug)) : []
+  return own.length ? [...SITE_THEMES, ...own] : SITE_THEMES
+}
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
 

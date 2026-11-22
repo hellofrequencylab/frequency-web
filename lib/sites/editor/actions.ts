@@ -215,7 +215,7 @@ export async function loadWebsiteFeatureSource(host: string, source: string): Pr
  *  branding edits, live at once like it. The editor autosaves its draft into the same preferences row, so
  *  the write only lands while the draft revision it read is still current, and retries on a fresh read. */
 export async function saveWebsiteStyle(host: string, patch: { theme?: string; look?: Partial<Record<string, string | null>>; pages?: Record<string, string | null> }): Promise<{ ok: true; style: import('@/lib/theme/site-style').SiteStyle } | { ok: false; error: string }> {
-  const { isSiteThemeId, isSiteLookValue, readSiteStyle, withSiteStyle, withSitePageTheme, SITE_LOOK_OPTIONS, SITE_THEME_DEFS } = await import('@/lib/theme/site-style')
+  const { isSiteThemeId, isSiteLookValue, mayWearTheme, readSiteStyle, withSiteStyle, withSitePageTheme, SITE_LOOK_OPTIONS, SITE_THEME_DEFS } = await import('@/lib/theme/site-style')
   if (!patch || typeof patch !== 'object' || (patch.theme !== undefined && !isSiteThemeId(patch.theme))) return { ok: false, error: 'Choose Frequency or Bold.' }
   const lookKeys = Object.keys(SITE_LOOK_OPTIONS) as (keyof typeof SITE_LOOK_OPTIONS)[]
   for (const [key, value] of Object.entries(patch.look ?? {})) {
@@ -228,6 +228,8 @@ export async function saveWebsiteStyle(host: string, patch: { theme?: string; lo
   if (!auth) return { ok: false, error: 'Your editing session ended. Reopen the builder to sign in.' }
   const prefs = auth.preferences && typeof auth.preferences === 'object' && !Array.isArray(auth.preferences) ? (auth.preferences as Record<string, unknown>) : {}
   const current = readSiteStyle(prefs)
+  // PRIVATE THEMES: a page may wear a private theme only on a Space it is assigned to, or one the page already wears.
+  if (pageThemes.some(([slug, value]) => value !== null && !mayWearTheme(value, auth.space.slug, current.pages?.[slug] ?? current.theme))) return { ok: false, error: 'Choose one of the themes for the page.' }
   const theme = patch.theme !== undefined && isSiteThemeId(patch.theme) ? patch.theme : current.theme
   const look = { ...current.look, ...(patch.look as Partial<typeof current.look>) }
   let base: unknown = prefs

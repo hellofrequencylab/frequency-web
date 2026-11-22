@@ -37,7 +37,7 @@ import { duplicateWebsiteSection } from '@/lib/sites/editor/duplicate'
 import { FqIcon, type FqEditorIconName, type FqIconName } from '@/components/frequency/icon'
 import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsiteSnapshot, resolveWebsiteBrand, updateSectionDisplay, setSectionVisibility, sectionVisibility, patchSectionBase, type WebsiteSnapshot, type WebsiteTheme, type WebsiteEditorState, type Device, type WebsitePresence, type SectionDisplay } from '@/lib/sites/editor/state'
 import type { MwLive } from '@/lib/sites/menswork-data'
-import { SITE_LOOK_OPTIONS, SITE_THEMES, SITE_THEME_DEFS, THEME_LOOK, servicesDials, siteDials, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { SITE_LOOK_OPTIONS, SITE_THEME_DEFS, themesForSpace, THEME_LOOK, servicesDials, siteDials, siteLook, siteLookOverrides, sitePageStyle, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { ThemeControls } from './theme-controls'
 import { TokenRequestPanel, type TokenRequestSend } from './token-request-panel'
 import { themeAccents, themeEditor } from '@/lib/themes/editor-dials'
@@ -95,6 +95,8 @@ export interface WebsiteEditorShellProps {
   onLayout?: (request: string, outline: WebsiteVeraSection[], styleMenu?: WebsiteVeraStyleMenu, facts?: WebsiteVeraFacts) => Promise<{ ok: true; changes: WebsiteVeraChange[]; refused: string[]; note: string } | { ok: false; error: string }>
   /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
   siteStyle?: SiteStyle
+  /** The Space's slug: the editor offers the public themes plus the private ones assigned to it (PRIVATE_THEME_SITES). */
+  spaceSlug?: string | null
   /** The website has never been saved or published: open on Pick your look (LIVE-2043). */
   firstOpen?: boolean
   /** The token-request path (PROG-E10, D-1): present only while it is open; the panel is not drawn without it. */
@@ -168,7 +170,10 @@ function Icon({ label, hint, children, className = '', ...props }: { label: stri
   return <button type="button" className={k(`we-icon ${className}`)} aria-label={label} title={hint ?? label} {...props}>{children}</button>
 }
 
-export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onLayout, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain, firstOpen = false, onTokenRequest }: WebsiteEditorShellProps) {
+export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onLayout, onPresence, siteStyle, defaultAccent, onStyle, fontClass, domain, firstOpen = false, onTokenRequest, spaceSlug }: WebsiteEditorShellProps) {
+  // PRIVATE THEMES: the shared catalog's public themes, plus this Space's own private ones (lib/theme/site-style.ts). Named as
+  // the catalog list it stands in for, so every picker below still reads the one shared list.
+  const SITE_THEMES = themesForSpace(spaceSlug)
   const [people, setPeople] = useState<WebsitePresence[]>([])
   const cursor = useRef<WebsitePresence['cursor']>(null)
   useEffect(() => {
@@ -519,7 +524,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   /** Apply a starter kit to the draft as ONE undoable step. The kit loads on demand, so its pages never ride in the
    *  editor's first load. A theme change saves the site style the way the Theme tab does. */
   /** Switch the website theme: one undo step, positions reset to the new layout, style saved at once. */
-  function pickTheme(t: (typeof SITE_THEMES)[number]) {
+  function pickTheme(t: (typeof SITE_THEME_DEFS)[number]) {
     const theme = EDITOR_THEME[t.id]
     if (theme === draft.theme) return
     // DRAFT ONLY: the live site keeps its theme until this draft is published.
@@ -808,7 +813,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const bodyFont = String(canvasVars['--th-body' as keyof React.CSSProperties] ?? '').split(',')[0].replaceAll("'", '')
   const spaceAccent = brandAccent && /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(brandAccent) ? brandAccent : null
   const changeThemeButton = <button type="button" className={k('we-row')} onClick={() => setModal('theme')}><span>Change theme<small>Now wearing {WEBSITE_THEME_LABEL[draft.theme]}. See every theme and its starter kits.</small></span></button>
-  const draftsPanel = <ThemeDraftsPanel drafts={draftList} activeId={activeDraftId} liveId={liveDraftId} editorTheme={(id) => EDITOR_THEME[id]} error={draftError}
+  const draftsPanel = <ThemeDraftsPanel themes={SITE_THEMES} drafts={draftList} activeId={activeDraftId} liveId={liveDraftId} editorTheme={(id) => EDITOR_THEME[id]} error={draftError}
     onSwitch={(id) => changeDrafts(switchThemeDraft(draft, id), 'Theme draft', 'Showing this theme draft')}
     onAdd={(theme, label, from) => changeDrafts(addThemeDraft(draft, theme, label, from), 'New theme draft', 'Theme draft added')}
     onRename={(id, label) => changeDrafts(renameThemeDraft(draft, id, label), 'Theme draft name', 'Draft renamed')}
@@ -1026,7 +1031,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         {modal === 'publish' && <span className="eyebrow">{draft.chrome?.name || brandName} · {page.label}</span>}
         <h2>{modal === 'publish' ? 'Ready to publish?' : modalTitle}</h2>
         {modal === 'menu' && <SiteMenuEditor slug={links.slug} />}
-        {modal === 'theme' && <ThemeChanger current={draft.theme} pages={pageDocs} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onTry={(id) => { setTryId(id); setModal(null) }} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
+        {modal === 'theme' && <ThemeChanger themes={SITE_THEMES} current={draft.theme} pages={pageDocs} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onTry={(id) => { setTryId(id); setModal(null) }} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
         {modal === 'layouts' && <UpdateLayouts doc={page.doc} pageLabel={page.label} onClose={() => setModal(null)} onApply={(next) => { commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, doc: next } : p) }, { label: 'Updated to new layouts' }); setModal(null) }} />}
         {modal === 'insert' && <div className="modal-body">{palette}</div>}
         {modal === 'delete-page' && deletePageBody}
@@ -1050,7 +1055,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // THE SITE EDITOR (design_handoff_site_editor, the Frequency design system): the chrome wears the system's own
   // Commons tokens and faces whatever theme the site wears; only the canvas frame wears the site's theme.
   return <div data-editor-root className={`we-shell ${fontClass ?? ''}`} data-left-folded={!left} data-right-folded={!right} data-preview={preview} onKeyDown={keys}>
-    {trying && <TryItOnBar label={SITE_THEMES.find((t) => t.id === trying)?.label ?? 'this theme'} legacyCount={legacyBlocksOn(pageDocs, trying).count} onKeep={() => { const t = SITE_THEMES.find((x) => x.id === trying); setTryId(null); if (t) pickTheme(t) }} onLeave={() => setTryId(null)} />}
+    {trying && <TryItOnBar label={SITE_THEME_DEFS.find((t) => t.id === trying)?.label ?? 'this theme'} legacyCount={legacyBlocksOn(pageDocs, trying).count} onKeep={() => { const t = SITE_THEMES.find((x) => x.id === trying); setTryId(null); if (t) pickTheme(t) }} onLeave={() => setTryId(null)} />}
     <link rel="stylesheet" href={DS_FACES} precedence="default" />
     <header className="we-top">
       <a className="we-icon" aria-label="Back to website" title="Back to website" href={websitePageUrl(host, persisted.published?.pages.some((p) => p.slug === page.slug) ? page.slug : 'home')}><ChevronLeft size={18} aria-hidden /></a>
@@ -1109,7 +1114,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     {modal && <div className="we-overlay" onClick={() => setModal(null)}><Dialog label={modalLabel}>
       <div className="we-modal-head"><h2>{modalTitle}</h2><Icon label="Close dialog" onClick={() => setModal(null)}><X size={18} /></Icon></div>
       {modal === 'menu' && <SiteMenuEditor slug={links.slug} />}
-      {modal === 'theme' && <ThemeChanger current={draft.theme} pages={pageDocs} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onTry={(id) => { setTryId(id); setModal(null) }} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
+      {modal === 'theme' && <ThemeChanger themes={SITE_THEMES} current={draft.theme} pages={pageDocs} labels={WEBSITE_THEME_LABEL} editorTheme={(id) => EDITOR_THEME[id]} onPick={pickTheme} onTry={(id) => { setTryId(id); setModal(null) }} onApplyKit={applyKitChoice} onPreviewKit={previewKitChoice} suggestedNiche={metadata?.niche as KitNiche | null | undefined} />}
       {modal === 'layouts' && <UpdateLayouts doc={page.doc} pageLabel={page.label} onClose={() => setModal(null)} onApply={(next) => { commit({ ...draft, pages: draft.pages.map((p) => p.slug === page.slug ? { ...p, doc: next } : p) }, { label: 'Updated to new layouts' }); setModal(null) }} />}
       {modal === 'insert' && palette}
       {modal === 'delete-page' && deletePageBody}

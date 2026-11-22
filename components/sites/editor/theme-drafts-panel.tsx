@@ -10,7 +10,9 @@ import { THEME_DRAFT_NAME } from '@/lib/sites/editor/theme-drafts'
 
 /** THEME DRAFTS (the Theme tab's top section): the owner's saved ways the same website could look. Picking one shows
  *  it on the canvas; only Publish makes it the live site. Pure view: the shell owns the draft and its undo. */
-export function ThemeDraftsPanel({ drafts, activeId, liveId, editorTheme, error, onSwitch, onAdd, onRename, onRemove }: {
+export function ThemeDraftsPanel({ themes = SITE_THEMES, drafts, activeId, liveId, editorTheme, error, onSwitch, onAdd, onRename, onRemove }: {
+  /** The themes a new draft may start in: the public ones plus this Space's own private ones (themesForSpace). */
+  themes?: readonly (typeof SITE_THEMES)[number][]
   drafts: WebsiteThemeDraft[]
   activeId: string
   liveId: string | null
@@ -46,7 +48,7 @@ export function ThemeDraftsPanel({ drafts, activeId, liveId, editorTheme, error,
       </div>}
     {adding && <div className={k('we-field')}>
       <label className={k('we-field')}>{FQ_EDITOR ? <span className="l">Theme</span> : 'Theme'}
-        <Select value={theme} onChange={(e) => setTheme(e.target.value as WebsiteTheme)}>{SITE_THEMES.map((t) => { const id = editorTheme(t.id); return <option key={t.id} value={id}>{THEME_DRAFT_NAME[id]}</option> })}</Select>
+        <Select value={theme} onChange={(e) => setTheme(e.target.value as WebsiteTheme)}>{themes.map((t) => { const id = editorTheme(t.id); return <option key={t.id} value={id}>{THEME_DRAFT_NAME[id]}</option> })}</Select>
       </label>
       <label className={k('we-field')}>{FQ_EDITOR ? <span className="l">Name</span> : 'Name'}<Input variant="seamless" className={inputClass} value={label} maxLength={60} placeholder={THEME_DRAFT_NAME[theme]} onChange={(e) => setLabel(e.target.value)} /></label>
       {active.theme === theme && <label className={k('we-note')}><input type="checkbox" checked={fromActive} onChange={(e) => setFromActive(e.target.checked)} /> Start from {active.label}&rsquo;s accent and styles</label>}
