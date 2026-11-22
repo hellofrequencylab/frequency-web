@@ -15,7 +15,9 @@ type SiteThemeDef = (typeof SITE_THEMES)[number]
 /** The Change theme dialog (ADR-1881 piece: the editor's switcher). Every theme as a card, then the starter
  *  kits for the theme the draft now wears. It calls the same handlers as the Theme tab, so a pick is one undo
  *  step and nothing reaches the live site until the owner publishes. */
-export function ThemeChanger({ current, pages, labels, editorTheme, onPick, onTry, onApplyKit, onPreviewKit, suggestedNiche }: {
+export function ThemeChanger({ themes = SITE_THEMES, current, pages, labels, editorTheme, onPick, onTry, onApplyKit, onPreviewKit, suggestedNiche }: {
+  /** The themes to offer: the public ones plus this Space's own private ones (themesForSpace). */
+  themes?: readonly SiteThemeDef[]
   current: WebsiteTheme
   /** The draft's page documents, read for blocks drawn for another theme. */
   pages: unknown
@@ -30,7 +32,7 @@ export function ThemeChanger({ current, pages, labels, editorTheme, onPick, onTr
 }) {
   return <>
     <p className={k('we-note')}>Pick a look for your whole website. Your words and photos stay. Blocks keep their shape and take on the new colors and type, and undo takes the change back.</p>
-    {SITE_THEMES.map((t) => {
+    {themes.map((t) => {
       const theme = editorTheme(t.id)
       const on = current === theme
       const foreign = foreignBlocksFor(pages, t.id).reduce((n, f) => n + f.count, 0)

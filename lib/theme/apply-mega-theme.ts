@@ -19,7 +19,7 @@
 import { mergeProfileMetaPath } from '@/lib/profiles/meta'
 import { THEME_PRESETS } from '@/lib/spotlight/theme'
 import { withMegaTheme, isMegaThemeId, MEGA_THEMES, type MegaThemeId } from '@/lib/theme/mega-theme'
-import { SITE_THEME_DEFS, spacePageDefaultAccent, withSiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { SITE_THEME_DEFS, mayWearTheme, siteTheme, spacePageDefaultAccent, withSiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { emailSurface } from '@/lib/theme/surface'
 import type { SpaceThemeId } from '@/lib/theme/space-themes'
 
@@ -80,6 +80,8 @@ export async function applyMegaTheme(
   if (!space) return { ok: false, error: 'Could not find that space.' }
 
   const surfaces = megaThemeSurfaces(theme)
+  // PRIVATE THEMES: a private theme dresses only the Spaces it is assigned to (PRIVATE_THEME_SITES), or one that already wears it.
+  if (!mayWearTheme(surfaces.website, space.slug, siteTheme(space.preferences))) return { ok: false, error: 'Choose one of the themes.' }
   const next = planMegaTheme(space.preferences, theme)
   // KEY-SCOPED (SCAN-833): only the three keys this owns, so an editor autosave is never reverted.
   const landed = await patchSpacePreferences(spaceId, { megaTheme: next.megaTheme ?? null, theme: next.theme ?? null, siteStyle: next.siteStyle ?? null })

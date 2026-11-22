@@ -15,7 +15,7 @@ import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
-import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, type SiteLookKey, type SiteStyle } from '@/lib/theme/site-style'
+import { SITE_LOOK_OPTIONS, THEME_LOOK, themesForSpace, siteLook, type SiteLookKey, type SiteStyle } from '@/lib/theme/site-style'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { suggestTaglineAction } from '@/app/(main)/spaces/copilot-actions'
 import type { CoverScrim, LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
@@ -662,12 +662,12 @@ export function SpaceBrandingForm({
             <p className={labelClasses}>Theme</p>
             <StyleChoiceCards
               choices={[
-                ...SITE_THEMES.map((t) => ({ id: t.id, label: t.label, detail: t.description, preview: t.defaultFonts })),
+                ...themesForSpace(slug).map((t) => ({ id: t.id, label: t.label, detail: t.description, preview: t.defaultFonts })),
               ]}
               value={style.theme}
               disabled={readOnly || pending}
               onPick={(id) => {
-                const t = SITE_THEMES.find((x) => x.id === id)!
+                const t = themesForSpace(slug).find((x) => x.id === id)!
                 // A theme brings its own fonts; the owner can pick other fonts after.
                 setStyle({ ...style, theme: t.id })
                 setTheme(t.defaultFonts)
