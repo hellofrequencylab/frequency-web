@@ -27,6 +27,7 @@ const PRODUCTS = [
   ['belt-tan-brass-buckle', 'A tan leather belt with a brass buckle'],
   ['cuff-tan-brass-stud', 'A tan leather cuff with a brass stud'],
   ['bracelet-double-wrap-tan', 'A tan leather bracelet wrapped twice'],
+  // KEEP -black: a photo's file name (the cuff is black leather), not a colour utility.
   ['cuff-black-leather-harbor', 'A black leather cuff'],
 ] as const
 
