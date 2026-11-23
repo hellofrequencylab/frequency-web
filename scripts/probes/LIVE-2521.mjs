@@ -15,9 +15,15 @@ const clips = files.filter((f) => /\.(mp4|webm)$/.test(f)).length
 console.log(`LIVE-2521: ${files.length - reached.length} of ${files.length} site and theme files (${clips} clips) skip the proxy: ${reached.length ? 'RED' : 'ok'}`)
 for (const p of reached.slice(0, 20)) console.error('  reaches the proxy: ' + p)
 if (!files.length || !clips || reached.length) process.exit(1)
-// The second half: the site kit shows Aiden himself, never the design file's stand-in riders (Daniel, 16:25Z: "show the right person").
+// The second half: a photo that names Aiden shows Aiden, never one of the design file's stand-in riders (Daniel, 16:25Z: "show the
+// right person"). The home hero keeps the design's rider, unnamed (Daniel, 17:08Z: "Use the guy on the motorcycle not Aiden. The
+// Scooter pic was for the about page.").
 const kit = readFileSync('lib/sites/kits/aiden-tyack-site.ts', 'utf8')
-const standIns = ['rider-portrait', 'motorcycles-at-sunset', 'rider-on-beach', 'friends-at-sunset', 'riders-on-coast-road'].filter((p) => kit.includes(`'${p}'`))
+const STAND_INS = ['rider-portrait', 'motorcycles-at-sunset', 'rider-on-beach', 'friends-at-sunset', 'riders-on-coast-road']
+const shots = [...kit.matchAll(/image: PHOTO\('([a-z0-9-]+)'\), alt: '([^']*)'/g)].map((m) => ({ photo: m[1], alt: m[2] }))
+const misnamed = shots.filter((s) => STAND_INS.includes(s.photo) && /aiden/i.test(s.alt))
 const own = ['aiden-hammering-a-strap', 'aiden-on-his-scooter', 'blue-studded-bracelet-on-wrist'].filter((p) => !kit.includes(`'${p}'`))
-console.log(`LIVE-2521 photos: ${standIns.length} stand-in photos in the aidentyack.com kit, ${3 - own.length} of 3 of Aiden's own in place: ${standIns.length || own.length ? 'RED' : 'ok'}`)
-if (standIns.length || own.length) process.exit(1)
+const makerAt = kit.indexOf('const makerStory = ')
+const scooterOnMaker = makerAt >= 0 && kit.slice(makerAt, kit.indexOf('\n  const ', makerAt + 1)).includes("PHOTO('aiden-on-his-scooter')")
+console.log(`LIVE-2521 photos: ${misnamed.length} stand-in photos named as Aiden, ${3 - own.length} of 3 of Aiden's own in place, scooter on The Maker: ${scooterOnMaker}: ${misnamed.length || own.length || !scooterOnMaker ? 'RED' : 'ok'}`)
+if (misnamed.length || own.length || !scooterOnMaker) process.exit(1)
