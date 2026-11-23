@@ -1,10 +1,11 @@
 import type { PresentationDefaults } from './index'
 
-// Default role layouts for Aiden Tyack (LIVE-2514), from the handoff's theme.manifest.json: each section's default version, drawn in
-// the nearest shared layout. forest hero = full (the silhouette behind the words), quote statement = pull, numbered steps = grid,
-// maker = founder, quotes = wall, stitched FAQ = stack, band gallery = carousel. A layout the owner picked always wins.
+// Default role layouts for Aiden Tyack (LIVE-2514, LIVE-2517), from the handoff's theme.manifest.json: each section's default version,
+// drawn in the nearest shared layout and dressed by the skin (components/sites/aiden-tyack-css.ts). forest hero = split on the band (the
+// skin lays the redwood silhouette behind it), quote statement = pull, numbered steps = grid, maker = founder, quotes = wall, stitched
+// FAQ = split (heading beside the questions), band gallery = carousel (the skin sets it edge to edge). A layout the owner picked wins.
 export default {
-  hero: 'full',
+  hero: 'split',
   statement: 'pull',
   steps: 'grid',
   stats: 'row',
@@ -16,7 +17,7 @@ export default {
   gallery: 'carousel',
   library: 'grid',
   shop: 'grid',
-  faq: 'stack',
+  faq: 'split',
   letter: 'band',
   contact: 'split',
   cta: 'band',

@@ -10,6 +10,7 @@ import { storedWallClock } from '@/lib/sites/site-events'
 import { InlineText } from '@/components/sites/inline-text'
 import { ROLES, roleVariant as pickVariant, type RoleId } from '@/lib/blocks/roles/roles'
 import { presentationDefault } from '@/components/sites/presentation'
+import { RoleContactForm, RoleLetterForm } from './role-forms'
 
 // ── The seventeen role blocks (docs/THEME-COHESION.md section 2, ADR-1923, LIVE-1858 and LIVE-1859) ─────────────────────────────────
 // Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ and CTA (LIVE-1858), then Statement, Letter, Contact, Stats,
@@ -481,7 +482,7 @@ function LetterBlock({ p, metadata }: Ctx) {
           {str(p.lead) && <p data-part="lead">{str(p.lead)}</p>}
         </div>
         <div data-part="side">
-          <Actions p={p} metadata={metadata} b="none" />
+          {p.form === true ? <RoleLetterForm slug={slugOf(metadata)} label={str(p.field)} buttonLabel={str(p.primaryLabel)} /> : <Actions p={p} metadata={metadata} b="none" />}
           {str(p.note) && <p data-part="note">{str(p.note)}</p>}
         </div>
       </div>
@@ -492,27 +493,48 @@ function LetterBlock({ p, metadata }: Ctx) {
 // ── Contact ────────────────────────────────────────────────────────────────────────────────
 // Details and a way in, never a form of its own: the message section writes the lead and emails the owner.
 
+/** The Space's slug for a form's lead door; null on the editor canvas, where the form is inert. */
+const slugOf = (metadata: Props | undefined) => (isLiveRender(metadata) ? (metadata?.links as SiteLinkMap | undefined)?.slug ?? null : null)
+
+function ContactRows({ rows, metadata }: { rows: Props[]; metadata?: Props }) {
+  return (
+    <ul data-part="list">
+      {rows.map((r, i) => {
+        const to = str(r.href) ? hrefOf(str(r.href), metadata) : null
+        return (
+          <li key={i} data-part="item">
+            <span data-part="meta">{str(r.label)}</span>
+            <span data-part="value">{to ? <a href={to} {...rel(to)}>{str(r.value)}</a> : str(r.value)}</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 function ContactBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('contact', p.variant, metadata)
   const rows = arr(p.items).filter((r) => str(r.label) && str(r.value))
+  // With the form on (LIVE-2517) the details sit under the heading and the form takes the side: the message goes straight to the
+  // Space's lead door instead of through a button to another page.
+  if (p.form === true) {
+    return (
+      <Frame role="contact" p={p} variant={variant}>
+        <div data-part="copy">
+          <Heading p={p} />
+          {rows.length > 0 && <ContactRows rows={rows} metadata={metadata} />}
+          {str(p.note) && <p data-part="note">{str(p.note)}</p>}
+        </div>
+        <div data-part="side" data-card=""><RoleContactForm slug={slugOf(metadata)} buttonLabel={str(p.primaryLabel)} /></div>
+      </Frame>
+    )
+  }
   return (
     <Frame role="contact" p={p} variant={variant}>
       <Heading p={p}><Actions p={p} metadata={metadata} /></Heading>
       {(rows.length > 0 || str(p.note)) && (
         <div data-part="side" data-card={variant === 'card' ? '' : undefined}>
-          {rows.length > 0 && (
-            <ul data-part="list">
-              {rows.map((r, i) => {
-                const to = str(r.href) ? hrefOf(str(r.href), metadata) : null
-                return (
-                  <li key={i} data-part="item">
-                    <span data-part="meta">{str(r.label)}</span>
-                    <span data-part="value">{to ? <a href={to} {...rel(to)}>{str(r.value)}</a> : str(r.value)}</span>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
+          {rows.length > 0 && <ContactRows rows={rows} metadata={metadata} />}
           {str(p.note) && <p data-part="note">{str(p.note)}</p>}
         </div>
       )}
@@ -868,6 +890,8 @@ export const rolesComponents: Record<string, ComponentConfig> = {
   [ROLES.letter.type]: role('letter', {
     eyebrow: text('Small label'), title: area('Heading', VOICE_HINT), lead: area('Line under the heading'),
     primaryLabel: text('Button'), primaryHref: text('Button: where it goes', LINK_HINT),
+    form: yesNo('Take the email right here (a sign-up form in place of the button link)'),
+    field: text('Label over the email box (form only)'),
     note: text('Small print under the button'),
   }, LetterBlock),
   [ROLES.contact.type]: role('contact', {
@@ -875,6 +899,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     items: { type: 'array', label: 'Details', hint: 'An email address in a link goes through the site\'s own contact page when it has one.', arrayFields: { label: text('Label'), value: text('Detail'), href: text('Link', LINK_HINT) } },
     primaryLabel: text('Main button'), primaryHref: text('Main button: where it goes', LINK_HINT),
     secondaryLabel: text('Second button'), secondaryHref: text('Second button: where it goes', LINK_HINT),
+    form: yesNo('Take messages right here (a contact form; the main button names its send button)'),
     note: text('Small print'),
   }, ContactBlock),
   [ROLES.stats.type]: role('stats', {

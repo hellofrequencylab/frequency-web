@@ -266,6 +266,22 @@ const CONTACT = `
 [data-role="contact"][data-variant="card"] [data-part="side"]{padding:calc(var(--sp-gap) * 1.75)}
 @container (min-width:56rem){[data-role="contact"][data-variant="card"] [data-part="inner"]{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center}}
 [data-role="contact"][data-variant="center"] [data-part="side"]{max-width:36rem;width:100%;margin-inline:auto;text-align:center}
+/* The forms (LIVE-2517): the Letter and Contact roles with their form switch on. */
+[data-role] [data-part="form"]{display:grid;gap:var(--sp-gap);min-width:0;width:100%}
+[data-role] [data-part="form"][data-form="letter"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));align-items:end}
+@container (min-width:36rem){[data-role] [data-part="form"][data-form="contact"]{grid-template-columns:repeat(2,minmax(0,1fr))}}
+[data-role] [data-part="form"] [data-wide]{grid-column:1/-1}
+[data-role] [data-part="field"]{display:grid;gap:.5rem;min-width:0;text-align:start}
+[data-role] [data-part="field"] [data-part="label"]{font-family:var(--f-label);font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:inherit}
+[data-role] [data-part="input"]{width:100%;min-height:3rem;padding:.75rem 1rem;border:1px solid var(--c-line-strong);border-radius:var(--r-control);background:var(--c-raised);color:var(--c-text);font:inherit;font-size:1rem}
+[data-role] textarea[data-part="input"]{resize:vertical;min-height:7rem}
+[data-role] [data-part="input"]:focus-visible{outline:2px solid var(--c-focus);outline-offset:2px}
+[data-role] [data-part="hp"]{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+[data-role] button[data-part="cta"]:disabled{opacity:.7;cursor:default}
+[data-role] [data-part="error"]{margin:0;color:var(--c-accent-text)}
+[data-role] [data-part="done"]{margin:0;font-family:var(--f-label);font-weight:600}
+[data-role="contact"] [data-part="copy"]{display:grid;gap:calc(var(--sp-gap) * 1.25);align-content:start;min-width:0}
+[data-role="contact"] [data-part="side"][data-card]{padding:calc(var(--sp-gap) * 1.25)}
 `
 
 const STATS = `
