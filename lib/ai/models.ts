@@ -11,8 +11,9 @@ export const MODELS: Record<ModelTier, string> = {
 }
 
 /** The shortest prefix the provider will write to its prompt cache, in tokens, per tier. A marked
- *  prefix under this is sent and billed in full every time, with no error. Read from the provider's
- *  prompt caching page on 2026-11-23; like MODEL_PRICES, it moves whenever a tier is re-pointed. */
+ *  prefix under this is sent and billed in full every time, with no error. Taken from the provider's
+ *  API reference as bundled with our tooling on 2026-11-23, not re-read from the live page; like
+ *  MODEL_PRICES, it moves whenever a tier is re-pointed. */
 export const CACHE_MIN_TOKENS: Record<ModelTier, number> = {
   haiku: 4096,
   sonnet: 1024,
