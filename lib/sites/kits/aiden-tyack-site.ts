@@ -7,7 +7,7 @@ import type { KitPage, SiteKit } from './types'
 // template; this is the finished site. PRIVATE like its theme: no index lists it, so only aidentyack.com is ever given it, by id.
 //
 // Every page is built from the shared role blocks, so the owner edits every word and photo in the editor. The design's parts map to them:
-//   · the forest hero: the split hero on the band, the rider portrait with the pinned Brass Stud Cuff print and the turning seal;
+//   · the forest hero: the split hero on the band, Aiden on his scooter with the pinned Brass Stud Cuff print and the turning seal;
 //   · the shop: the Shop block with its filters switch (tabs, count, price sort) and each product's material line and edition label;
 //   · the photo bands: a one-photo Gallery band (home) or the full hero (The Maker, Custom), so each page keeps one h1;
 //   · How it's made: stitched step cards on parchment; the custom work split: the Story block with the photo on the left;
@@ -41,7 +41,7 @@ function pages(): KitPage[] {
   const hero = role('RoleHero', {
     variant: 'split', tone: 'band', eyebrow: 'Batch No. 014 · Now open', title: 'Built to Outlast You',
     lead: 'Studded belts and bracelets, made by hand from vegetable-tanned hide and solid hardware.',
-    image: PHOTO('rider-portrait'), alt: 'A rider wearing a chestnut cuff', focus: '50% 35%',
+    image: PHOTO('aiden-on-his-scooter'), alt: 'Aiden riding his scooter', focus: '90% 35%',
     primaryLabel: 'Shop the Collection', primaryHref: '~/shop', secondaryLabel: 'Order Custom', secondaryHref: '~/custom',
     cardImage: PHOTO('cuff-tan-brass-stud'), cardLabel: 'Brass Stud Cuff', cardPrice: '$85', cardHref: '~/shop',
     seal: 'HANDMADE IN SAN DIEGO · NUMBERED & SIGNED · ',
@@ -87,7 +87,7 @@ function pages(): KitPage[] {
   // THE MAKER: the portrait band, the story beside Aiden at his bench, then how a piece is made on parchment.
   const makerBand = role('RoleHero', {
     variant: 'full', eyebrow: 'The maker', title: 'One Bench, One Pair of Hands', lead: '',
-    image: PHOTO('rider-portrait'), alt: 'Aiden on his motorcycle', focus: '50% 30%',
+    image: PHOTO('aiden-hammering-a-strap'), alt: 'Aiden at his workbench, hammering a strap', focus: '30% 35%',
     primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '',
   })
   const makerStory = role('RoleStory', {
@@ -108,11 +108,11 @@ function pages(): KitPage[] {
     ],
   })
 
-  // CUSTOM: the bikes band, the three steps of an order, then the brief (the contact form with the order types).
+  // CUSTOM: the bracelet band, the three steps of an order, then the brief (the contact form with the order types).
   const customBand = role('RoleHero', {
     variant: 'full', eyebrow: 'Custom orders', title: 'Made to Your Measure',
     lead: 'Your hide, width, hardware and stud pattern. Cut and set by hand for one person.',
-    image: PHOTO('motorcycles-at-sunset'), alt: 'Motorcycles parked at sunset', focus: '50% 45%',
+    image: PHOTO('blue-studded-bracelet-on-wrist'), alt: 'A blue studded bracelet on a wrist at the workbench', focus: '65% 66%',
     primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '',
   })
   const customSteps = role('RoleSteps', {
