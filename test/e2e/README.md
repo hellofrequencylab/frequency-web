@@ -16,6 +16,7 @@ always pass.
 | `@overflow` | `overflow.spec.ts` | Nothing runs off the side of a phone, at **320 / 360 / 390** | ✅ |
 | `@visual` | `visual.spec.ts` | Pixel baselines across four render states × two full-matrix viewports, plus a narrow (320) column over the shell + header band | ⚠️ opt-in |
 | `@field` | `field-measure.spec.ts` | A reading, not a gate: Core Web Vitals, bytes over the wire and console errors (React #418 included) for ten public pages on a clean signed-out profile, phone and desktop | Only on a `workflow_dispatch` (`e2e (manual)`), or with `PW_FIELD_MEASURE=1`; skipped on PRs |
+| `@smoke` (dispatch only) | `csp-nonce.spec.ts` | A diagnostic for SCAN-1243: one signed-in document request each to `/feed`, `/lead` and the Space, comparing the nonce in the response's script policy with the nonce on every script tag; fails with the tally when they disagree | Only on a `workflow_dispatch` with `capture_shell` on (it needs the member session), or with `PW_CSP_NONCE=1`; skipped on PRs until the mismatch is fixed |
 
 `@overflow` exists because neither of the other two could see ADR-1035, where a re-cropped wordmark
 pushed the marketing menu button to x=404 on a 360px screen — off the viewport, on every phone.
