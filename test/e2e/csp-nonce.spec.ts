@@ -71,14 +71,17 @@ test.describe('@smoke nonce policy matches the document', () => {
       test.skip(testInfo.project.name !== 'desktop', 'one document request per page is enough')
       const response = await context.request.get(path, {
         headers: { accept: 'text/html,application/xhtml+xml' },
-        maxRedirects: 0,
       })
       const headers = response.headers()
       const routing = ['x-matched-path', 'x-vercel-cache', 'x-nextjs-prerender', 'x-nextjs-postponed', 'cache-control', 'age', 'location']
         .map((name) => `${name}=${headers[name] ?? '-'}`)
         .join(' ')
       console.log(`[csp-nonce] ${path} status=${response.status()} ${routing}`)
+      // Redirects are followed: a protected preview answers the first request with a 307 to the same
+      // path that sets its bypass cookie. A redirect anywhere else means the session did not hold.
+      const landed = new URL(response.url()).pathname
       expect(response.status(), `${path} did not render for the member session (${routing})`).toBe(200)
+      expect(landed, `${path} was redirected to ${landed}, so this is not the member page`).toBe(path)
 
       const reportOnly = headers['content-security-policy-report-only']
       const enforced = headers['content-security-policy']
