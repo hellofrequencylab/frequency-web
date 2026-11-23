@@ -275,7 +275,7 @@ ${A} [data-role="hero"][data-variant="split"] [data-part="inner"]{grid-template-
 ${A} [data-role="hero"][data-variant="split"][data-flip] [data-part="copy"]{order:2}
 ${A} [data-role="hero"] [data-part="copy"]{max-width:680px;gap:24px}
 ${A} [data-role="hero"] [data-part="title"]{font-size:clamp(48px,7.6vw,128px)}
-${A} [data-role="hero"][data-tone="band"] [data-part="title"]{text-shadow:0 2px 0 rgba(8,10,5,.38),0 10px 28px rgba(8,10,5,.45)}
+${A} [data-role="hero"][data-tone="band"] [data-part="title"]{text-shadow:0 2px 0 color-mix(in srgb,var(--at-photo-shade) 38%,transparent),0 10px 28px color-mix(in srgb,var(--at-photo-shade) 45%,transparent)}
 ${A} [data-role="hero"] [data-part="lead"]{font-size:19px}
 ${A} [data-role="hero"][data-variant="split"] [data-part="media"]{width:100%;max-width:500px;justify-self:end;--rb-ratio:4/5}
 ${A} [data-role="hero"][data-variant="split"] [data-part="media"] img{aspect-ratio:4/5}
@@ -367,7 +367,7 @@ ${A} [data-role="contact"] [data-part="side"][data-card]{padding:32px}
 /* THE FORMS: labels in small caps, a raised well with a hairline, the stitch 7px outside it, the accent button. */
 ${A} [data-role] [data-part="field"]{gap:8px}
 ${A} [data-role] [data-part="field"] [data-part="label"]{${LABEL};font-size:11.5px;color:var(--at-text)}
-${A} [data-role] [data-part="input"]{width:calc(100% - 14px);margin-inline:7px;min-height:52px;padding:0 16px;border:1px solid var(--at-line-strong);border-radius:var(--at-r-control);background:var(--at-raised);color:var(--at-text);font-family:var(--at-font-body);font-size:16px;box-shadow:inset 0 1px 2px rgba(0,0,0,.08);outline:var(--at-frame) var(--at-stitch);outline-offset:6px}
+${A} [data-role] [data-part="input"]{width:calc(100% - 14px);margin-inline:7px;min-height:52px;padding:0 16px;border:1px solid var(--at-line-strong);border-radius:var(--at-r-control);background:var(--at-raised);color:var(--at-text);font-family:var(--at-font-body);font-size:16px;box-shadow:inset 0 1px 2px color-mix(in srgb,var(--at-photo-shade) 8%,transparent);outline:var(--at-frame) var(--at-stitch);outline-offset:6px}
 ${A} [data-role] textarea[data-part="input"]{padding:14px 16px;min-height:120px}
 ${A} [data-role] [data-part="input"]:focus-visible{outline:var(--at-frame) var(--at-accent-text);outline-offset:6px}
 ${A} [data-role] [data-part="form"] [data-part="cta"]{cursor:pointer}
