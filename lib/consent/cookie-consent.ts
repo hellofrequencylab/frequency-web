@@ -30,7 +30,7 @@
 // same law across the full matrix, so a copy that drifts fails the build (the method
 // lib/theme/mode.test.ts established for the pre-paint bootstrap).
 
-import { PIXEL_PATH_PREFIXES, REDACTED_PAGE_TITLE, pixelSafeAttributionQuery } from '@/lib/analytics/sanitize'
+import { PIXEL_PATH_PREFIXES, PIXEL_SAFE_ATTRIBUTION_QUERY_BROWSER_SOURCE, REDACTED_PAGE_TITLE } from '@/lib/analytics/sanitize'
 
 /* ── Storage ──────────────────────────────────────────────────────────────── */
 
@@ -129,6 +129,15 @@ export function shouldAskForConsent(state: ConsentState): boolean {
 
 /* ── The head script ──────────────────────────────────────────────────────── */
 
+// The two rules above as BROWSER SOURCE, for the head script below. Literals, never a function's
+// `toString()`: the proxy hashes the head script for the nonce-based script policy (SCAN-1243,
+// lib/security/csp-nonce.ts) in a different bundle than the one the page renders it from, and each
+// bundle prints a function its own way, so a printed function made a hash that never matched.
+// Change a rule and its twin together; cookie-consent.test.ts runs both over one table.
+export const PARSE_CONSENT_CHOICE_BROWSER_SOURCE = "function(raw){return raw==='granted'||raw==='denied'?raw:null;}"
+export const ANALYTICS_ALLOWED_BROWSER_SOURCE =
+  "function(state){if(state.choice==='granted')return true;if(state.choice==='denied')return false;return !state.priorConsentRegion;}"
+
 /**
  * The GA4 loader, as a synchronous `<head>` script.
  *
@@ -208,7 +217,7 @@ if(choice==='granted'||(choice!=='denied'&&!ask))window.__fqGa();
 `
   return `(function(){try{
 var ID=${id},GOOGLE=${JSON.stringify(loadGoogle)},started=false,P=${prefixes},G=${generic};
-var law=(${analyticsAllowed.toString()}),parse=(${parseConsentChoice.toString()}),query=(${pixelSafeAttributionQuery.toString()});
+var law=(${ANALYTICS_ALLOWED_BROWSER_SOURCE}),parse=(${PARSE_CONSENT_CHOICE_BROWSER_SOURCE}),query=(${PIXEL_SAFE_ATTRIBUTION_QUERY_BROWSER_SOURCE});
 function read(name){var match=new RegExp('(?:^|;\\\\s*)'+name+'=([^;]*)').exec(document.cookie);return match?match[1]:'';}
 function browser(){try{return law({choice:parse(read(${JSON.stringify(CONSENT_COOKIE)})),priorConsentRegion:read(${JSON.stringify(CONSENT_REGION_COOKIE)})==='1'})&&read(${JSON.stringify(ANALYTICS_OPTOUT_COOKIE)})!=='1'&&localStorage.getItem('freq-ga-optout')!=='1';}catch(e){return false;}}
 function title(path){return safe(path)===path?document.title:G;}

@@ -242,3 +242,15 @@ export function pixelSafeAttributionQuery(search: string): string {
   const encoded = output.toString()
   return encoded ? `?${encoded}` : ''
 }
+
+/**
+ * `pixelSafeAttributionQuery` as BROWSER SOURCE, for the analytics head script
+ * (lib/consent/cookie-consent.ts `gaBootstrapScript`).
+ *
+ * A literal, never the function's `toString()`: the proxy hashes that script for the nonce-based
+ * script policy (SCAN-1243, lib/security/csp-nonce.ts) from a different bundle than the one the page
+ * renders it from, and each bundle prints a function its own way, so a printed function made a hash
+ * that never matched. Change the rule above and this together; cookie-consent.test.ts runs both over
+ * one table and fails when they disagree.
+ */
+export const PIXEL_SAFE_ATTRIBUTION_QUERY_BROWSER_SOURCE = String.raw`function(search){var input=new URLSearchParams(search),output=new URLSearchParams(),pairs=['email/email','qr_scan/qr','partner/referral','google/cpc','instagram/social','facebook/social','frequency/email'],source=(input.get('utm_source')||'').toLowerCase(),medium=(input.get('utm_medium')||'').toLowerCase();if(pairs.indexOf(source+'/'+medium)>=0){output.set('utm_source',source);output.set('utm_medium',medium);}['utm_campaign','utm_id'].forEach(function(key){var value=input.get(key)||'',legacyEmail=key==='utm_campaign'&&source==='frequency'&&medium==='email'&&/^email-[0-9a-f]{8}$/i.test(value);if(/^(?:[0-9]{1,32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.test(value)||legacyEmail)output.set(key,value);});['gclid','dclid','gbraid','wbraid'].forEach(function(key){var value=input.get(key)||'';if(/^[A-Za-z0-9_-]{20,200}$/.test(value))output.set(key,value);});var encoded=output.toString();return encoded?'?'+encoded:'';}`
