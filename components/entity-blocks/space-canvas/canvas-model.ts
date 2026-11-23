@@ -14,7 +14,7 @@ import {
   type BuilderLayout,
   type RowSplit,
 } from '@/lib/entity-blocks/rows-ops'
-import { addNode, canPlaceType, nudgeNode, removeNode } from '@/lib/entity-blocks/node-ops'
+import { addNode, canPlaceType, columnMoveTarget, moveNodeAcross, nudgeNode, removeNode } from '@/lib/entity-blocks/node-ops'
 import {
   addNodeRow,
   moveNodeRow,
@@ -64,6 +64,11 @@ export interface CanvasModel {
   place: (type: string, rowId: string, col: number) => string | null
   remove: (key: string) => void
   nudge: (key: string, delta: -1 | 1) => void
+  /** The column index a block lands in when it moves one column over inside its section (-1 left, +1
+   *  right), or null when there is nowhere to go (one column, already at that edge, the column is full). */
+  acrossTarget: (key: string, direction: -1 | 1) => number | null
+  /** Move a block one column over, to the end of that column. A no-op where `acrossTarget` is null. */
+  across: (key: string, direction: -1 | 1) => void
   setField: (key: string, field: string, value: unknown) => void
 }
 
@@ -99,6 +104,11 @@ export function useLegacyCanvasModel(): CanvasModel | null {
     },
     remove: (key) => mutate(removeBlock(layout, key)),
     nudge: (key, delta) => mutate(nudgeBox(layout, key, delta)),
+    acrossTarget: (key, direction) => columnMoveTarget(layout.rows, key, direction)?.col ?? null,
+    across: (key, direction) => {
+      const target = columnMoveTarget(layout.rows, key, direction)
+      if (target) mutate(placeBlock(layout, key, target.rowId, target.col, target.index))
+    },
     // patchContent folds over the freshest bag, so two writes in one tick both land.
     setField: (key, field, value) => store.patchContent(key, { [field]: value }),
   }
@@ -142,6 +152,9 @@ export function useNodeCanvasModel(): CanvasModel | null {
     },
     remove: (key) => edit((l) => removeNode(l, key)),
     nudge: (key, delta) => edit((l) => nudgeNode(l, key, delta)),
+    acrossTarget: (key, direction) =>
+      columnMoveTarget((layout?.rows ?? []).map((row) => ({ id: row.id, cells: row.cells.map((stack) => stack.map((n) => n.nid)) })), key, direction)?.col ?? null,
+    across: (key, direction) => edit((l) => moveNodeAcross(l, key, direction)),
     setField: (key, field, value) =>
       edit((l) => {
         const bag = { ...(findBag(l, key) ?? {}) }
