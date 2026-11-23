@@ -1,13 +1,16 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { MEGA_THEMES } from '@/lib/theme/mega-theme'
+import { isPrivateTheme } from '@/lib/theme/site-style'
 import { THEME_ASSET_SLOTS, THEME_LIBRARY, themeAssetPath, themeCatalogFacts, themeIdFromSlug, themePagePath } from './library'
 import { THEME_ASSETS_READY } from './library-assets'
 
 describe('theme library', () => {
   it('has one entry per Mega Theme that is offered, in the same order (the earlier network and temple themes are not)', () => {
     // Free Human, Services, New World and CyberWitch joined 2026-11-18 (Mindless followed 2026-11-19, owner: "use frequency pics in the mindless them.") (owner: "Every theme should have a full, standardized design system").
-    expect(THEME_LIBRARY.map((t) => t.id)).toEqual(MEGA_THEMES.map((t) => t.id).filter((id) => id !== 'frequency' && id !== 'network' && id !== 'temple'))
+    // Private themes are never in the library (owner 2026-11-22: "themes for different sites, that won't go in the public system"): the
+    // three it always left out (Default, Network, Temple) are private, and so is every theme added to PRIVATE_THEME_SITES since.
+    expect(THEME_LIBRARY.map((t) => t.id)).toEqual(MEGA_THEMES.map((t) => t.id).filter((id) => !isPrivateTheme(id)))
   })
   it('keeps every tagline to 70 characters and every surface listed once', () => {
     for (const t of THEME_LIBRARY) {

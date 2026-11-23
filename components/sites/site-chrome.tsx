@@ -21,6 +21,7 @@ import { FREE_HUMAN_CSS } from './free-human-css'
 import { NEW_WORLD_CSS } from './new-world-css'
 import { CYBERWITCH_CSS } from './cyberwitch-css'
 import { MINDLESS_CSS } from './mindless-css'
+import { AIDEN_TYACK_CSS } from './aiden-tyack-css'
 import { NEW_WORLD_DIALS_CSS } from './new-world-dials-css'
 import { SERVICES_SITE_CSS } from './services-css'
 import { Clock, Mail, MapPin, Phone } from 'lucide-react'
@@ -101,12 +102,14 @@ export type SiteLink = HouseHeaderLink
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'new-world' | 'services' | 'cyberwitch' | 'mindless'
+  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'new-world' | 'services' | 'cyberwitch' | 'mindless' | 'aiden-tyack'
   season: MensworkSeason
   /** Network and Network Theme Kit: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
   /** New World: the register the owner's Register dial picked (Night by default). */
   register?: 'night' | 'day'
+  /** Aiden Tyack: the accent family the owner's accent is (lib/theme/aiden-tyack.ts aidenTyackScheme), written as data-scheme. */
+  family?: string
   /** New World and Services: the Type voice, Motion and Images dials (LIVE-1997 schema 2), written as data-type, data-motion and data-image. */
   dials?: { type: string; motion: string; image: string }
 }
@@ -127,6 +130,7 @@ export function skinCss(skin: SiteSkin | null, look = ''): string {
   if (skin.theme === 'new-world') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS
   if (skin.theme === 'cyberwitch') return HOUSE_CSS + FREQUENCY_PAGE_CSS + CYBERWITCH_CSS
   if (skin.theme === 'mindless') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MINDLESS_CSS
+  if (skin.theme === 'aiden-tyack') return HOUSE_CSS + FREQUENCY_PAGE_CSS + AIDEN_TYACK_CSS
   if (skin.theme === 'services') return HOUSE_CSS + FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
@@ -291,12 +295,12 @@ export function SiteChrome({
       data-house-site=""
       data-house-fonts={themeFonts ? 'theme' : 'house'}
       data-house-theme={skin?.theme}
-      data-th={skin?.theme === 'new-world' || skin?.theme === 'services' || skin?.theme === 'mindless' ? skin.register ?? 'night' : undefined}
+      data-th={skin?.theme === 'new-world' || skin?.theme === 'services' || skin?.theme === 'mindless' ? skin.register ?? 'night' : skin?.theme === 'aiden-tyack' ? skin.register ?? 'day' : undefined}
       data-type={skin?.dials?.type}
       data-motion={skin?.dials?.motion}
       data-image={skin?.dials?.image}
       data-season={net || nk ? undefined : skin?.season}
-      data-scheme={net || nk ? skin?.scheme : undefined}
+      data-scheme={net || nk ? skin?.scheme : skin?.theme === 'aiden-tyack' ? skin.family : undefined}
       data-sign={skin?.theme === 'wildheart' ? sky(new Date()).sign : undefined}
       data-site-corners={look.corners}
       data-site-spacing={look.spacing}

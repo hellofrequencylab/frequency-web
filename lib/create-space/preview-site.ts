@@ -15,6 +15,7 @@ import { SERVICES_ACCENTS } from '@/lib/theme/services'
 import { NEW_WORLD_ACCENTS } from '@/lib/theme/new-world'
 import { CYBERWITCH_ACCENTS } from '@/lib/theme/cyberwitch'
 import { MINDLESS_ACCENTS } from '@/lib/theme/mindless'
+import { AIDEN_TYACK_ACCENTS } from '@/lib/theme/aiden-tyack'
 import { WILDHEART_PALETTE } from '@/lib/theme/wildheart'
 import { PREVIEW_KIT_ORDER } from '@/lib/theme/preview-tokens'
 
@@ -72,6 +73,7 @@ const NOCTURNE_PHOTO = (name: string) => `/sites/midnight/photos/${name}.jpg`
 const NEW_WORLD_PHOTO = (name: string) => `/sites/new-world/photos/${name}.webp`
 const CYBERWITCH_PHOTO = (name: string) => `/sites/cyberwitch/photos/${name}.jpg`
 const MINDLESS_PHOTO = (name: string) => `/sites/mindless/photos/${name}.jpg`
+const AIDEN_TYACK_PHOTO = (name: string) => `/sites/aiden-tyack/photos/${name}.webp`
 const FREE_HUMAN_PHOTO = (name: string) => freeHumanPhotoSrc(name)
 const WILDHEART_PHOTO = (name: string) => `/brand/wildheart/photos/${name}.jpg`
 
@@ -121,6 +123,13 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
     strip: [MINDLESS_PHOTO('circle-mono'), MINDLESS_PHOTO('firepit-mono'), MINDLESS_PHOTO('rooftop-mono')], nav1: 'Circles', cta2: 'Start the program',
     covers: [MINDLESS_PHOTO('hero-yellow'), MINDLESS_PHOTO('circle-mono'), MINDLESS_PHOTO('sunset-mono'), MINDLESS_PHOTO('beach-mono')],
     portraits: [MINDLESS_PHOTO('guide-mono'), MINDLESS_PHOTO('small-mono')],
+  },
+  // Aiden Tyack's stand-ins (the handoff's assets/photos), private to aidentyack.com: never on the public builder (PREVIEW_KIT_ORDER).
+  'aiden-tyack': {
+    hero: '/sites/aiden-tyack/redwood-forest-silhouette.webp', heroPos: 'center 60%', portrait: AIDEN_TYACK_PHOTO('rider-portrait'), portraitPos: 'center 25%',
+    strip: [AIDEN_TYACK_PHOTO('rider-portrait'), '/sites/aiden-tyack/redwood-forest-silhouette.webp', AIDEN_TYACK_PHOTO('rider-portrait')], nav1: 'Shop', cta2: 'See the work',
+    covers: [AIDEN_TYACK_PHOTO('rider-portrait'), '/sites/aiden-tyack/redwood-forest-silhouette.webp'],
+    portraits: [AIDEN_TYACK_PHOTO('rider-portrait')],
   },
   designer: {
     hero: DESIGNER_PHOTO('dz-designer-kitchen-hero'), heroPos: '38% center',
@@ -269,6 +278,8 @@ const KIT_ACCENTS: Record<MegaThemeId, readonly PreviewAccent[]> = {
   cyberwitch: (Object.keys(CYBERWITCH_ACCENTS) as (keyof typeof CYBERWITCH_ACCENTS)[]).map((id) => ({ name: CYBERWITCH_ACCENTS[id].label, fill: CYBERWITCH_ACCENTS[id].accent, text: null })),
   // Mindless's three presets (lib/theme/mindless.ts), Yellow first. Night first: the fill reads as text on ink.
   mindless: (Object.keys(MINDLESS_ACCENTS) as (keyof typeof MINDLESS_ACCENTS)[]).map((id) => ({ name: MINDLESS_ACCENTS[id].label, fill: MINDLESS_ACCENTS[id].accent, text: null })),
+  // Aiden Tyack's five families (lib/theme/aiden-tyack.ts), Walnut first, on the Day register.
+  'aiden-tyack': (Object.keys(AIDEN_TYACK_ACCENTS) as (keyof typeof AIDEN_TYACK_ACCENTS)[]).map((id) => ({ name: AIDEN_TYACK_ACCENTS[id].label, fill: AIDEN_TYACK_ACCENTS[id].day.accent, text: AIDEN_TYACK_ACCENTS[id].day.text === AIDEN_TYACK_ACCENTS[id].day.accent ? null : AIDEN_TYACK_ACCENTS[id].day.text })),
   bold: [
     { name: 'Volt', fill: '#D4FF3D', text: null }, { name: 'Flare', fill: '#FF5A36', text: null },
     { name: 'Ice', fill: '#3DD9FF', text: null }, { name: 'Gold', fill: '#FFD23D', text: null },

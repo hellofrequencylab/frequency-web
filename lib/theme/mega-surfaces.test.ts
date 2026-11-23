@@ -22,7 +22,8 @@ describe('mega theme surfaces', () => {
   })
 
   it('gives each theme a Spotlight preset that survives validation and matches its ground', () => {
-    for (const { id } of MEGA_THEMES.filter((t) => t.id !== 'network' && t.id !== 'temple')) {
+    // Aiden Tyack is private: its Spotlight arrives with its own layouts, offered only to its own Space, never on the shared preset list.
+    for (const { id } of MEGA_THEMES.filter((t) => t.id !== 'network' && t.id !== 'temple' && t.id !== 'aiden-tyack')) {
       const preset = THEME_PRESETS.find((p) => p.id === id)
       expect(preset, id).toBeDefined()
       if (id !== 'midnight') expect(validateSpotlightTheme(preset!.theme)).toEqual(preset!.theme)

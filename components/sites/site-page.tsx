@@ -41,6 +41,9 @@ import { CYBERWITCH_CSS } from '@/components/sites/cyberwitch-css'
 import { CYBERWITCH_FONT_CLASS } from '@/components/sites/cyberwitch-fonts'
 import { MINDLESS_CSS } from '@/components/sites/mindless-css'
 import { MINDLESS_FONT_CLASS } from '@/components/sites/mindless-fonts'
+import { AIDEN_TYACK_CSS } from '@/components/sites/aiden-tyack-css'
+import { AIDEN_TYACK_FONT_CLASS } from '@/components/sites/aiden-tyack-fonts'
+import { aidenTyackScheme } from '@/lib/theme/aiden-tyack'
 import { SERVICES_SITE_CSS } from '@/components/sites/services-css'
 import { SERVICES_FONT_CLASS } from '@/components/sites/services-fonts'
 import { NETWORK_BLOCK_CSS, NETWORK_CSS, docHasNetworkBlocks } from '@/components/sites/network-css'
@@ -237,6 +240,9 @@ export async function SitePage({
   const cyberwitchSite = siteStyle.theme === 'cyberwitch'
   // Mindless (lib/theme/mindless.ts): warm ink and bone, one paint accent, night first with a Day register. Its faces ride the website root.
   const mindlessSite = siteStyle.theme === 'mindless'
+  // Aiden Tyack (lib/theme/aiden-tyack.ts): PRIVATE to aidentyack.com. Bone, pine and walnut, the hand stitch, Day first with a Night
+  // register. Its faces ride the website root, and the root names the accent family so each register wears that family's own values.
+  const aidenTyackSite = siteStyle.theme === 'aiden-tyack'
   // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
   const theme = render.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
@@ -266,10 +272,12 @@ export async function SitePage({
                     ? { theme: 'cyberwitch' as const, season: mensworkSeason(new Date()) }
                   : mindlessSite
                     ? { theme: 'mindless' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle, themeEditor('mindless').own).register === 'day' ? ('day' as const) : ('night' as const), dials: siteRootDials(siteDials(siteStyle, themeEditor('mindless').own)) }
+                  : aidenTyackSite
+                    ? { theme: 'aiden-tyack' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle, themeEditor('aiden-tyack').own).register === 'night' ? ('night' as const) : ('day' as const), family: aidenTyackScheme(websiteBrand.accent), dials: siteRootDials(siteDials(siteStyle, themeEditor('aiden-tyack').own)) }
                   : servicesSite
                     ? { theme: 'services' as const, season: mensworkSeason(new Date()), register: siteDials(siteStyle).register === 'day' ? ('day' as const) : ('night' as const), dials: servicesDials(siteDials(siteStyle, themeEditor('services').own)) }
                     : null
-  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : newWorldSite ? NEW_WORLD_FONT_CLASS : servicesSite ? SERVICES_FONT_CLASS : cyberwitchSite ? CYBERWITCH_FONT_CLASS : mindlessSite ? MINDLESS_FONT_CLASS : undefined
+  const siteFontClass = wildSite ? WILDHEART_FONT_CLASS : netSite ? NETWORK_FONT_CLASS : networkKitSite ? NETWORK_KIT_FONT_CLASS : templeSite || templeKitSite ? TEMPLE_FONT_CLASS : midnightSite ? MIDNIGHT_FONT_CLASS : designerSite ? DESIGNER_FONT_CLASS : freeHumanSite ? FREE_HUMAN_FONT_CLASS : newWorldSite ? NEW_WORLD_FONT_CLASS : servicesSite ? SERVICES_FONT_CLASS : cyberwitchSite ? CYBERWITCH_FONT_CLASS : mindlessSite ? MINDLESS_FONT_CLASS : aidenTyackSite ? AIDEN_TYACK_FONT_CLASS : undefined
   // The owner's global styles over the theme the site actually wears (ADR-1728).
   const lookOverrides = siteLookOverrides(render.lookStyle)
   const fullFooter = siteLook(render.lookStyle).footer === 'full'
@@ -286,8 +294,8 @@ export async function SitePage({
     return (
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
-          <div data-house-theme={skin.theme} data-th={skin.theme === 'new-world' || skin.theme === 'services' || skin.theme === 'mindless' ? skin.register ?? 'night' : undefined} data-type={skin.dials?.type} data-motion={skin.dials?.motion} data-image={skin.dials?.image} data-season={skin.season} data-scheme={skin.scheme} className={siteFontClass}>
-            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : newWorldSite ? NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS : cyberwitchSite ? CYBERWITCH_CSS : mindlessSite ? MINDLESS_CSS : servicesSite ? SERVICES_SITE_CSS : MENSWORK_CSS}</style>
+          <div data-house-theme={skin.theme} data-th={skin.theme === 'new-world' || skin.theme === 'services' || skin.theme === 'mindless' ? skin.register ?? 'night' : skin.theme === 'aiden-tyack' ? skin.register ?? 'day' : undefined} data-type={skin.dials?.type} data-motion={skin.dials?.motion} data-image={skin.dials?.image} data-season={skin.season} data-scheme={skin.theme === 'aiden-tyack' ? skin.family : skin.scheme} className={siteFontClass}>
+            <style>{wildSite ? WILDHEART_CSS : netSite ? NETWORK_CSS : networkKitSite ? NETWORK_KIT_CSS : templeSite ? TEMPLE_CSS : templeKitSite ? TEMPLE_KIT_CSS : midnightSite ? MIDNIGHT_CSS : designerSite ? DESIGNER_CSS : freeHumanSite ? FREE_HUMAN_CSS : newWorldSite ? NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS : cyberwitchSite ? CYBERWITCH_CSS : mindlessSite ? MINDLESS_CSS : aidenTyackSite ? AIDEN_TYACK_CSS : servicesSite ? SERVICES_SITE_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (

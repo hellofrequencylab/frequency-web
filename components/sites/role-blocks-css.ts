@@ -447,7 +447,7 @@ export const ROLE_CSS_CHUNKS: Readonly<Record<string, string>> = { base: BASE, h
 
 /** Editor theme id to the contract theme whose mapping it wears. */
 const CONTRACT_OF: Partial<Record<WebsiteTheme, ContractThemeId>> = {
-  DAWN: 'frequency', Menswork: 'bold', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Midnight: 'midnight', Designer: 'designer', FreeHuman: 'free-human', Services: 'services', NewWorld: 'new-world', CyberWitch: 'cyberwitch', Mindless: 'mindless',
+  DAWN: 'frequency', Menswork: 'bold', Wildheart: 'wildheart', Network: 'network', NetworkKit: 'network-kit', Temple: 'temple', TempleKit: 'temple-kit', Midnight: 'midnight', Designer: 'designer', FreeHuman: 'free-human', Services: 'services', NewWorld: 'new-world', CyberWitch: 'cyberwitch', Mindless: 'mindless', AidenTyack: 'aiden-tyack',
 }
 
 // Services applies its type voice to shared headings as well as its own blocks.

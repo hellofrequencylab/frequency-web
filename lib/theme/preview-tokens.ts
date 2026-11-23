@@ -78,6 +78,13 @@ const SHAPE: Record<MegaThemeId, Shape> = {
     weight: '400', textCase: 'uppercase', track: '0', label: '.1em',
     btn: '999px', card: '16px', inner: '6px', photo: '16px', mat: '0', shadow: hairline, rule: '0', ring: '0',
   },
+  // Aiden Tyack (lib/theme/aiden-tyack.ts, private): Grenze Gotisch in Title Case over Archivo, nearly square corners, warm shadow.
+  'aiden-tyack': {
+    display: "'Grenze Gotisch', 'UnifrakturCook', serif", body: "'Archivo', 'Helvetica Neue', sans-serif",
+    weight: '700', textCase: 'none', track: '0', label: '.12em',
+    btn: '2px', card: '2px', inner: '2px', photo: '2px', mat: '0', shadow: hairline, rule: '0', ring: '0',
+    emFont: "'Cormorant Garamond', Garamond, serif",
+  },
   services: {
     display: "'Bricolage Grotesque', system-ui, sans-serif", body: "'Bricolage Grotesque', system-ui, sans-serif",
     weight: '700', textCase: 'none', track: '-0.03em', label: '.08em',
