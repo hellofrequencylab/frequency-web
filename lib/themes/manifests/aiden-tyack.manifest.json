@@ -1,0 +1,49 @@
+{
+  "schema": 2,
+  "id": "aiden-tyack",
+  "legacyIds": {
+    "editor": "AidenTyack",
+    "site": "aiden-tyack"
+  },
+  "offered": false,
+  "site": {
+    "label": "Aiden Tyack",
+    "description": "Workshop leather under redwood shade, stitched by hand. Day first with a Night register, five accents.",
+    "defaultFonts": "classic"
+  },
+  "library": null,
+  "editor": {
+    "tokens": {
+      "source": "lib/sites/editor/theme-contract.json",
+      "path": [
+        "themes",
+        "AidenTyack"
+      ]
+    },
+    "dials": {
+      "register": {
+        "supported": true,
+        "default": "day"
+      },
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "type": "fixed",
+      "motion": "fixed",
+      "image": "fixed",
+      "hero": "fixed",
+      "accent": "fixed"
+    }
+  },
+  "core": {
+    "names": {
+      "source": "lib/theme/block-contract-map.json",
+      "path": [
+        "themes",
+        "aiden-tyack",
+        "names"
+      ]
+    }
+  }
+}

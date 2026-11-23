@@ -60,7 +60,7 @@ import { SITE_DIAL_KEYS, isDialAccent, isSiteDialValue, type SiteDialKey } from 
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
-export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'services' | 'new-world' | 'cyberwitch' | 'mindless'
+export type SiteThemeId = 'frequency' | 'bold' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'services' | 'new-world' | 'cyberwitch' | 'mindless' | 'aiden-tyack'
 
 interface SiteThemeDef {
   id: SiteThemeId
@@ -193,6 +193,15 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
     description: 'Warm ink and bone, one paint accent and a drip headline. Night first with a Day register, three accents, six starter kits.',
     defaultFonts: 'modern',
   },
+  {
+    // THE AIDEN TYACK THEME (id `aiden-tyack`, lib/theme/aiden-tyack.ts): PRIVATE, drawn for aidentyack.com (the Claude Design handoff
+    // "Aiden Tyack Design System", owner 2026-11-22). Workshop leather under redwood shade: bone and pine grounds, a walnut accent, the
+    // hand stitch on every edge, Grenze Gotisch headings in Title Case over Archivo. Day first with a Night register, five accents.
+    id: 'aiden-tyack',
+    label: 'Aiden Tyack',
+    description: 'Workshop leather under redwood shade, stitched by hand. Day first with a Night register, five accents.',
+    defaultFonts: 'classic',
+  },
 ]
 
 /** PRIVATE THEMES (owner ask 2026-11-22: "a private / custom theme feature... themes for different sites, that won't go in the
@@ -209,15 +218,17 @@ export const SITE_THEME_DEFS: readonly SiteThemeDef[] = [
  *     offers it; it is the read fallback of every Space that never picked a theme, so a save may still return to it.
  *   · `network`, the Network theme The Group's site and its chapters wear (the Network Theme Kit took the name 2026-10-28).
  *   · `temple`, the Temple theme Royal Temple wears (the Temple Theme Kit took the name 2026-10-28).
+ *   · `aiden-tyack`, drawn for aidentyack.com (owner 2026-11-22: "@aidentyack will own Vanta and Aidentyack.com").
  *  Free Human and Mindless joined the public pickers on the owner's word (2026-11-18, 2026-11-19). A new private theme adds its
  *  id to the set and its sites to the map, in the same change. */
-const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple'])
+const RETIRED_FROM_PICKERS: ReadonlySet<SiteThemeId> = new Set(['frequency', 'network', 'temple', 'aiden-tyack'])
 
 /** The Spaces (by slug) each private theme is offered to. Every private id has an entry, even an empty one. */
 export const PRIVATE_THEME_SITES: Readonly<Partial<Record<SiteThemeId, readonly string[]>>> = {
   frequency: [],
   network: ['the-group', 'the-group-encinitas', 'the-group-la-jolla', 'the-group-north-county', 'the-group-north-park', 'the-group-oceanside', 'the-group-veterans'],
   temple: ['royaltemple'],
+  'aiden-tyack': ['aidentyack'],
 }
 
 /** Whether a theme is private: offered only to its own sites, never shown publicly. */
@@ -303,6 +314,7 @@ export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
   'new-world': { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   cyberwitch: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
   mindless: { corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' },
+  'aiden-tyack': { corners: 'square', spacing: 'airy', header: 'bar', footer: 'full' },
 }
 
 export interface SiteLook {
@@ -343,7 +355,7 @@ const MAX_PAGE_THEMES = 30
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
 export function isSiteThemeId(v: unknown): v is SiteThemeId {
-  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human' || v === 'services' || v === 'new-world' || v === 'cyberwitch' || v === 'mindless'
+  return v === 'frequency' || v === 'bold' || v === 'wildheart' || v === 'network' || v === 'network-kit' || v === 'temple' || v === 'temple-kit' || v === 'midnight' || v === 'designer' || v === 'free-human' || v === 'services' || v === 'new-world' || v === 'cyberwitch' || v === 'mindless' || v === 'aiden-tyack'
 }
 
 export function readSiteStyle(preferences: unknown): SiteStyle {

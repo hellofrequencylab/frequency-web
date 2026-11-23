@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2513",
+  "title": "Aiden Tyack: a private theme for aidentyack.com, from its Claude Design handoff",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-11-22",
+  "source": {
+    "file": "docs/THEME-PROTOCOL.md",
+    "ref": "Daniel 2026-11-22 uploaded \"Aiden Tyack Design System.zip\" (theme id aiden-tyack, status private, site aidentyack.com), then: \"Create the space.\" and \"@aidentyack will own Vanta and Aidentyack.com\"."
+  },
+  "detail": "The first private theme loaded from a handoff, on the LIVE-2512 catalog. lib/theme/aiden-tyack.ts carries the design's tokens (Day first with a Night register, five accent families each measured for both registers, grain, warm shadows, the stitch), components/sites/aiden-tyack-css.ts the skin (Grenze Gotisch Title Case headings over Archivo, Cormorant Garamond for the voice, the 1.5px dashed stitch inside buttons, cards and photos, nearly square corners, one band per stretch, the redwood silhouette behind the forest hero at 40%) over the Services block family, and components/sites/aiden-tyack-fonts.ts the three faces, loaded only on its website. The site root names the accent family (data-scheme) so Night wears each family's own values. One starter kit, aiden-tyack-general, in no index, from starter-copy.json (coaching copy, stats as 00). It is a Mega Theme (website, email surface, Space page fonts and accent) in PRIVATE_THEME_SITES for the aidentyack Space only, on no public list (private-themes.test.ts). Its Spotlight layouts and kit emails are the next two PRs; until then it has no Spotlight preset. Three of the handoff's stand-in photos ship (public/sites/aiden-tyack); the owner swaps in his own. The aidentyack Space was created 2026-11-22, owned by Aiden's account like Vanta.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2513.mjs"
+  },
+  "wave": "W7"
+}

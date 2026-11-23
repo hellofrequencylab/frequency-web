@@ -1,4 +1,18 @@
 {
+  "aiden-tyack": {
+    "dials": {
+      "register": { "supported": true, "default": "day" },
+      "corners": "supported",
+      "spacing": "supported",
+      "header": "supported",
+      "footer": "supported",
+      "type": "fixed",
+      "motion": "fixed",
+      "image": "fixed",
+      "hero": "fixed",
+      "accent": "fixed"
+    }
+  },
   "mindless": {
     "dials": {
       "register": { "supported": true, "default": "night" },

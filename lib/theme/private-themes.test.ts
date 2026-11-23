@@ -44,6 +44,9 @@ describe('private themes', () => {
     expect(mayWearTheme('temple', 'royaltemple', 'new-world')).toBe(true)
     expect(mayWearTheme('network', 'someone-else', 'new-world')).toBe(false)
     expect(mayWearTheme('temple', null, 'new-world')).toBe(false)
+    // Aiden Tyack (owner 2026-11-22: "@aidentyack will own Vanta and Aidentyack.com") is drawn for aidentyack.com alone.
+    expect(mayWearTheme('aiden-tyack', 'aidentyack', 'frequency')).toBe(true)
+    expect(mayWearTheme('aiden-tyack', 'vanta', 'services')).toBe(false)
     // Default is every unpicked Space's read fallback, so a save may return to it; no picker offers it (below).
     expect(mayWearTheme('frequency', 'someone-else', 'new-world')).toBe(true)
     // Public themes are open to every Space; an unknown id to none.
@@ -56,6 +59,7 @@ describe('private themes', () => {
     expect(themesForSpace(null)).toEqual(SITE_THEMES)
     expect(themesForSpace('the-group').map((t) => t.id)).toEqual([...SITE_THEMES.map((t) => t.id), 'network'])
     expect(themesForSpace('royaltemple').map((t) => t.id)).toEqual([...SITE_THEMES.map((t) => t.id), 'temple'])
+    expect(themesForSpace('aidentyack').map((t) => t.id)).toEqual([...SITE_THEMES.map((t) => t.id), 'aiden-tyack'])
     for (const slug of ['someone-else', 'the-group', 'royaltemple']) expect(themesForSpace(slug).some((t) => t.id === 'frequency'), slug).toBe(false)
   })
 })

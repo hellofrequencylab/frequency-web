@@ -61,6 +61,8 @@ export const MEGA_THEMES: readonly MegaThemeDef[] = [
   { id: 'new-world', editor: 'NewWorld', site: 'new-world' },
   { id: 'cyberwitch', editor: 'CyberWitch', site: 'cyberwitch' },
   { id: 'mindless', editor: 'Mindless', site: 'mindless' },
+  // PRIVATE (PRIVATE_THEME_SITES): drawn for aidentyack.com. One id for its website, email and Space page, never on a public list.
+  { id: 'aiden-tyack', editor: 'AidenTyack', site: 'aiden-tyack' },
 ]
 
 /** THE THEME EVERY NEW SPACE STARTS IN (LIVE-2058, owner 2026-11-03: "New World is the new mega template"). A Space created

@@ -13,6 +13,7 @@ import { freeHumanAccentVars } from '@/lib/theme/free-human'
 import { newWorldAccentVars } from '@/lib/theme/new-world'
 import { cyberwitchAccentVars } from '@/lib/theme/cyberwitch'
 import { mindlessAccentVars } from '@/lib/theme/mindless'
+import { aidenTyackAccentVars } from '@/lib/theme/aiden-tyack'
 import { servicesAccentVars } from '@/lib/theme/services'
 import type { WebsiteTheme } from './state'
 
@@ -36,6 +37,7 @@ export const WEBSITE_THEME_FONT_VARS: Record<WebsiteTheme, [display: string, bod
   NewWorld: ['nw-unbounded', 'nw-hanken', 'nw-hanken'],
   CyberWitch: ['cw-gothic', 'cw-spectral', 'cw-spectral'],
   Mindless: ['ml-paint', 'ml-archivo', 'ml-archivo'],
+  AidenTyack: ['at-display', 'at-body', 'at-body'],
 }
 
 export function websiteThemeVars(theme: WebsiteTheme, brandAccent?: string | null, date = new Date()): CSSProperties {
@@ -49,7 +51,7 @@ export function websiteThemeVars(theme: WebsiteTheme, brandAccent?: string | nul
   }
   const hexAccent = typeof brandAccent === 'string' && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(brandAccent)
   // Each skinned theme measures the owner's accent with its own rules; the house themes only take a hex.
-  const accent = theme === 'Wildheart' ? wildheartAccentVars(brandAccent) : theme === 'Network' ? networkAccentVars(brandAccent) : theme === 'NetworkKit' ? networkKitAccentVars(brandAccent) : theme === 'Temple' ? templeAccentVars(brandAccent) : theme === 'TempleKit' ? templeKitAccentVars(brandAccent) : theme === 'Midnight' ? midnightAccentVars(brandAccent) : theme === 'Designer' ? designerAccentVars(brandAccent) : theme === 'FreeHuman' ? freeHumanAccentVars(brandAccent) : theme === 'CyberWitch' ? cyberwitchAccentVars(brandAccent) : theme === 'Mindless' ? mindlessAccentVars(brandAccent) : theme === 'NewWorld' ? newWorldAccentVars(brandAccent) : theme === 'Services' ? servicesAccentVars(brandAccent) : theme === 'Menswork' || hexAccent ? mensworkAccentVars(brandAccent) : null
+  const accent = theme === 'Wildheart' ? wildheartAccentVars(brandAccent) : theme === 'Network' ? networkAccentVars(brandAccent) : theme === 'NetworkKit' ? networkKitAccentVars(brandAccent) : theme === 'Temple' ? templeAccentVars(brandAccent) : theme === 'TempleKit' ? templeKitAccentVars(brandAccent) : theme === 'Midnight' ? midnightAccentVars(brandAccent) : theme === 'Designer' ? designerAccentVars(brandAccent) : theme === 'FreeHuman' ? freeHumanAccentVars(brandAccent) : theme === 'CyberWitch' ? cyberwitchAccentVars(brandAccent) : theme === 'Mindless' ? mindlessAccentVars(brandAccent) : theme === 'AidenTyack' ? aidenTyackAccentVars(brandAccent) : theme === 'NewWorld' ? newWorldAccentVars(brandAccent) : theme === 'Services' ? servicesAccentVars(brandAccent) : theme === 'Menswork' || hexAccent ? mensworkAccentVars(brandAccent) : null
   if (accent) {
     tokens['--th-accent'] = accent['--color-primary']!
     tokens['--th-accent-text'] = accent['--color-primary-strong']!
