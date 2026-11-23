@@ -196,7 +196,7 @@ export async function createGuestBookingAction(input: GuestBookingActionInput): 
     serviceTypeId: input.serviceTypeId ?? null,
     answers: input.answers ?? null,
     optIn: input.optIn === true,
-    timeZone: typeof input.timeZone === 'string' ? input.timeZone : null,
+    ...(typeof input.timeZone === 'string' ? { timeZone: input.timeZone } : {}),
   })
 }
 
