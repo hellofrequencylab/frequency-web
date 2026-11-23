@@ -49,6 +49,8 @@ type NonceCspMode = 'off' | 'report-only' | 'enforce'
 
 /** Which step of the rollout this deployment is on. Enforce wins when both are set. */
 function nonceCspMode(): NonceCspMode {
+  // DIAGNOSTIC, NEVER MERGED: this branch's preview behaves as if the enforce switch were on.
+  if (process.env.VERCEL_GIT_COMMIT_REF === 'claude/project-thread-x1yh6b-noncecheck') return 'enforce'
   if (envFlag(CSP_NONCE_ENFORCE_FLAG)) return 'enforce'
   if (envFlag(CSP_NONCE_REPORT_ONLY_FLAG)) return 'report-only'
   return 'off'
