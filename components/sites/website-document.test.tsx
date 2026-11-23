@@ -165,3 +165,10 @@ describe('shared Space content slots', () => {
     expect(render(slotDoc('My own words.'), false, { space: { profile: { about: 'Saved story' } } })).toContain('My own words.')
   })
 })
+
+describe('a section whose block draws nothing', () => {
+  it('carries the rule that hides its empty padded wrapper, so the live page shows no blank gap (LIVE-2516)', () => {
+    const html = render(faqDoc())
+    expect(html).toContain('.site-doc-section:has(>.mw-wrap>div:empty:only-child){display:none!important}')
+  })
+})

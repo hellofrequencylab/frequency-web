@@ -50,8 +50,10 @@ function pages(): KitPage[] {
     lead: 'Say who makes the work and what goes into each piece. Two sentences is plenty.',
     image: PHOTO('rider-portrait'), alt: 'A rider in a leather jacket', primaryLabel: 'Ask a question', primaryHref: '~/visit', secondaryLabel: '', secondaryHref: '',
   })
+  // `live: false`: a new Space's own counts ("1 member") are no figure to lead with, so the live page shows this band only once
+  // the owner writes real numbers.
   const stats = role('RoleStats', {
-    eyebrow: 'In numbers', title: '', lead: '',
+    eyebrow: 'In numbers', title: '', lead: '', live: false,
     items: rows([['00', 'A number you can stand behind'], ['00', 'Another fact a customer can check'], ['00', 'Keep it honest and specific']] as const, ([value, label]) => ({ value, label, note: '' })),
   })
   const offerings = role('RoleOfferings', {

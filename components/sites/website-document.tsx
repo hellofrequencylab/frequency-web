@@ -118,6 +118,8 @@ export function WebsiteDocument({ doc, theme, config, metadata, live, links, ori
     return wrapSection ? wrapSection(section, indexes) : section
   }
   return <>
+    {/* A section whose block draws nothing on the live page (a sample-only role block with no real rows, LIVE-2516) keeps
+        no empty padded wrapper: the last rule in the sheet below hides it, so the page shows no blank gap. */}
     {/* Role blocks (LIVE-1858) bring their own sheet and the active theme's token mapping, only on a page that has one. */}
     {docHasRoleBlocks(doc) && <style>{roleBlocksCss(theme)}</style>}
     <style>{`.site-doc-section{display:var(--site-display-desktop);padding-block:var(--site-pad-desktop)}
@@ -125,7 +127,8 @@ export function WebsiteDocument({ doc, theme, config, metadata, live, links, ori
       @media(max-width:600px){.site-doc-section{display:var(--site-display-phone);padding-block:var(--site-pad-phone)}}
       @supports(animation-timeline:view()){.site-doc-section{animation-duration:1s;animation-timing-function:linear;animation-fill-mode:both;animation-timeline:view();animation-range:entry 0% entry 100%}}
       @keyframes site-fade{from{opacity:0}to{opacity:1}}@keyframes site-rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-      @media(prefers-reduced-motion:reduce){.site-doc-section[data-site-animation]{animation:none!important}}`}</style>
+      @media(prefers-reduced-motion:reduce){.site-doc-section[data-site-animation]{animation:none!important}}
+      .site-doc-section:has(>.mw-wrap>div:empty:only-child){display:none!important}`}</style>
     {/* Every theme draws the page through the same site page sections (ADR-1727); the theme is only the
         stylesheet the page around it carries (Bold: MENSWORK_PAGE_CSS, Frequency: FREQUENCY_PAGE_CSS). */}
     <MensworkPage blocks={blocks} plan={planMensworkPage(blocks)} live={live} links={links} origin={origin} pageTitle={title}
