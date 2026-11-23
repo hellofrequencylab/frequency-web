@@ -14,19 +14,15 @@ import type { KitPage, SiteKit } from './types'
 
 type Block = KitPage['blocks'][number]
 
-/** The handoff's stand-in photos (assets/photos), each named for what it shows. The owner swaps them for his own. */
+/** The handoff's stand-in photo (assets/photos), named for what it shows. The owner swaps it for his own. */
 const PHOTO = (name: string) => `/sites/aiden-tyack/photos/${name}.webp`
 /** The redwood silhouette sits only behind the forest hero (rules.md), where the skin keeps it at 40%. Decorative, so no alt. */
 const AIDEN_TYACK_SILHOUETTE = '/sites/aiden-tyack/redwood-forest-silhouette.webp'
 
 const slot = (key: string, sample: string) => `{{${key}|${sample}}}`
 
-/** Three pieces, one stand-in photo each (the handoff ships more; these three are enough to show the grid until his own arrive). */
-const PRODUCTS = [
-  ['Product name', 'Material · detail', 'belt-tan-brass-buckle', 'A tan leather belt with a brass buckle'],
-  ['Product name', 'Material · detail', 'cuff-tan-brass-stud', 'A tan leather cuff with a brass stud'],
-  ['Product name', 'Material · detail', 'rider-portrait', 'A rider in a leather jacket'],
-] as const
+/** Three pieces, no photos yet: the owner adds a photo of each of his own pieces. */
+const PRODUCTS = [0, 1, 2]
 
 function pages(): KitPage[] {
   const hero: Block = {
@@ -60,7 +56,7 @@ function pages(): KitPage[] {
     type: 'ServicesShop',
     props: {
       eyebrow: 'The shop', title: 'Name Your *Collection*', lede: '', buttonLabel: 'View all', buttonHref: '~/shop',
-      rows: PRODUCTS.map(([title, body, photo, alt]) => ({ meta: '', title, body, price: 'Set your price', href: '', image: PHOTO(photo), alt })),
+      rows: PRODUCTS.map(() => ({ meta: '', title: 'Product name', body: 'Material · detail', price: 'Set your price', href: '', image: '', alt: '' })),
     },
   }
   const proof: Block = {
