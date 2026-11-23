@@ -215,9 +215,12 @@ ${A} .hs-header .hs-brand{padding-left:0}
 ${A} .at-logo{display:inline-flex;align-items:center;gap:10px;color:var(--at-text)}
 ${A} .at-mark{display:block;flex:none;width:42px;height:42px;background:currentColor;-webkit-mask:url(/sites/aiden-tyack/logo/logo-mark.svg) center/contain no-repeat;mask:url(/sites/aiden-tyack/logo/logo-mark.svg) center/contain no-repeat}
 ${A} .at-mark--img{background:none;-webkit-mask:none;mask:none;object-fit:contain}
-${A} .at-logo-text{display:flex;flex-direction:column;line-height:1}
+${A} .at-logo-text{display:inline-grid;justify-items:stretch;line-height:1}
+/* The tag takes the name's width and never sets it (width 0, min-width 100%), and its letters spread edge to edge across it. */
+${A} .at-logo-tag{display:flex;justify-content:space-between;width:0;min-width:100%}
+${A} .at-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 ${A} .at-logo-name{font-family:var(--at-font-display);font-weight:700;font-size:30px;line-height:1;color:var(--at-text);white-space:nowrap}
-${A} .at-logo-tag{margin-top:4px;font-family:var(--at-font-body);font-weight:600;font-size:9.5px;letter-spacing:.34em;text-transform:uppercase;color:var(--at-accent-text)}
+${A} .at-logo-tag{margin-top:4px;font-family:var(--at-font-body);font-weight:600;font-size:9.5px;letter-spacing:0;text-transform:uppercase;color:var(--at-accent-text)}
 @media (max-width:759px){${A} .hs-header .at-mark{width:32px;height:32px}${A} .hs-header .at-logo-name{font-size:22px}${A} .hs-header .at-logo-tag{font-size:8px}}
 ${A} .hs-menu-panel,${A} .hs-mega-panel{background:var(--at-surface) var(--at-grain);border:1px solid var(--at-line);border-radius:var(--at-r-panel);box-shadow:var(--at-shadow-lift)}
 /* THE FOOTER (handoff Footer): the pine band with grain, the mark over the name and the line, the link columns, a stitch, then the
@@ -266,11 +269,11 @@ ${A} [data-role] [data-part="media"]:has(img)::after{content:"";position:absolut
 ${A} [data-role] [data-part="media"] img{border-radius:var(--at-r-media);filter:saturate(.85);outline:0}
 /* Buttons: the accent fill with the hide grain and the stitch 4px inside; the second is a text link. Outlines where the design asks. */
 /* The role sheet is emitted after this skin (website-document.tsx), so a rule that must beat one of its own names the role twice. */
-${A} [data-role][data-role] [data-part="cta"]{position:relative;min-height:52px;padding:0 26px;border:0;border-radius:var(--at-r-control);background:var(--at-accent) var(--at-grain-hide);color:var(--at-on-accent);${LABEL};font-size:13px;box-shadow:var(--at-shadow-card);outline:var(--at-frame) color-mix(in srgb,var(--at-on-accent) 55%,transparent);outline-offset:-4px}
+${A} [data-role][data-role] [data-part="cta"]{position:relative;min-height:52px;padding:0 24px;border:0;border-radius:var(--at-r-control);background:var(--at-accent) var(--at-grain-hide);color:var(--at-on-accent);${LABEL};font-size:13px;box-shadow:var(--at-shadow-card);outline:var(--at-frame) color-mix(in srgb,var(--at-on-accent) 55%,transparent);outline-offset:-4px}
 ${A} [data-role][data-role] [data-part="cta"]:hover{background-color:var(--at-accent-hover);border:0;transform:translateY(-2px);box-shadow:var(--at-shadow-lift)}
 ${A} [data-role][data-role] [data-part="cta"][data-kind="secondary"]{background:transparent;color:var(--at-text);box-shadow:none;outline:0;padding:0 8px}
 ${A} [data-role][data-role] [data-part="cta"][data-kind="secondary"]:hover{background:transparent;transform:none;text-decoration:underline;text-underline-offset:6px}
-${A} [data-role][data-role] [data-part="actions"] [data-part="cta"][data-kind="secondary"]:only-child,${A} [data-role="cta"][data-role] [data-part="cta"]{background:transparent;color:var(--at-text);border:1px solid var(--at-line-strong);box-shadow:none;outline:0;padding:0 26px}
+${A} [data-role][data-role] [data-part="actions"] [data-part="cta"][data-kind="secondary"]:only-child,${A} [data-role="cta"][data-role] [data-part="cta"]{background:transparent;color:var(--at-text);border:1px solid var(--at-line-strong);box-shadow:none;outline:0;padding:0 24px}
 ${A} [data-role][data-role] [data-part="actions"] [data-part="cta"][data-kind="secondary"]:only-child:hover{background:var(--at-accent-bg);transform:none;text-decoration:none}
 /* HERO. Forest (split on the band): the redwood silhouette behind it at 40%, the words on the left, a product photo on the right. */
 ${A} [data-role="hero"]{overflow:hidden}
@@ -372,9 +375,9 @@ ${A} [data-role="contact"] [data-part="side"][data-card]{padding:32px}
 /* THE FORMS: labels in small caps, a raised well with a hairline, the stitch 7px outside it, the accent button. */
 ${A} [data-role] [data-part="field"]{gap:8px}
 ${A} [data-role] [data-part="field"] [data-part="label"]{${LABEL};font-size:11.5px;color:var(--at-text)}
-${A} [data-role] [data-part="input"]{width:calc(100% - 14px);margin-inline:7px;min-height:52px;padding:0 16px;border:1px solid var(--at-line-strong);border-radius:var(--at-r-control);background:var(--at-raised);color:var(--at-text);font-family:var(--at-font-body);font-size:16px;box-shadow:inset 0 1px 2px color-mix(in srgb,var(--at-photo-shade) 8%,transparent);outline:var(--at-frame) var(--at-stitch);outline-offset:6px}
+${A} [data-role] [data-part="input"]{width:calc(100% - 12px);margin-inline:6px;min-height:50px;padding:0 16px;border:1px solid var(--at-line-strong);border-radius:var(--at-r-control);background:var(--at-raised);color:var(--at-text);font-family:var(--at-font-body);font-size:16px;box-shadow:inset 0 1px 2px color-mix(in srgb,var(--at-photo-shade) 8%,transparent);outline:2px dashed var(--at-khaki);outline-offset:5px}
 ${A} [data-role] textarea[data-part="input"]{padding:14px 16px;min-height:120px}
-${A} [data-role] [data-part="input"]:focus-visible{outline:var(--at-frame) var(--at-accent-text);outline-offset:6px}
+${A} [data-role] [data-part="input"]:focus-visible{outline:2px dashed var(--at-accent-text);outline-offset:5px}
 ${A} [data-role] [data-part="form"] [data-part="cta"]{cursor:pointer}
 /* PEOPLE (founder, the maker): the sunken ground, the portrait on the left, the heading and the line in the voice on the right. */
 @container (min-width:44rem){${A} [data-role="people"][data-variant="founder"] [data-part="inner"]{grid-template-columns:repeat(2,minmax(0,1fr));align-items:center}${A} [data-role="people"][data-variant="founder"] [data-part="list"]{grid-column:1;grid-row:1}${A} [data-role="people"][data-variant="founder"] [data-part="heading"]{grid-column:2;grid-row:1}}
@@ -397,12 +400,15 @@ ${A} [data-role="stats"] [data-part="value"]{font-family:var(--at-font-display);
 ${roleItems(['list', 'rows', 'stack', 'timeline'], '+[data-part="item"]')}{border-top:var(--at-frame) var(--at-stitch)}
 /* THE DESIGNED SITE (LIVE-2517, Daniel's Claude Design file "Aiden Tyack Website.html"). These rules come last and win: the page the
    owner designed, section by section, over the starter look above. Sizes and spacing are the file's own; colours are the token names. */
-${A}{--at-wrap:calc(1320px + 2 * var(--at-gutter));--at-font-numeral:var(--font-at-numeral,'Anton'),Impact,sans-serif;--at-tan:color-mix(in srgb,var(--at-accent-text) 60%,var(--at-accent-soft));--at-display-2:clamp(40px,5.5vw,80px);--at-shadow-deep:0 30px 60px -20px color-mix(in srgb,var(--at-photo-shade) 55%,transparent),0 60px 120px -40px color-mix(in srgb,var(--at-photo-shade) 50%,transparent)}
+${A}{--at-wrap:calc(1320px + 2 * var(--at-gutter));--at-font-numeral:var(--font-at-numeral,'Anton'),Impact,sans-serif;--at-tan:var(--at-focus);--at-display-2:clamp(40px,5.5vw,80px);--at-shadow-deep:0 30px 60px -20px color-mix(in srgb,var(--at-photo-shade) 55%,transparent),0 60px 120px -40px color-mix(in srgb,var(--at-photo-shade) 50%,transparent)}
 ${A} [data-role] [data-part="title"]{font-size:var(--at-display-2)}
 ${A} [data-role] [data-part="eyebrow"]{font-size:11.5px}
 /* Header: the announce band and the bar stay at the top together; the bar is bone glass with a hairline and a soft shadow under it. */
 ${A} .at-top{position:sticky;top:0;z-index:40}
-${A} .at-bar-line{font-weight:400;font-size:11px;color:color-mix(in srgb,var(--at-on-band) 82%,var(--at-band))}
+/* A jump to a section on the page lands below the sticky bar and header, not under them. */
+${A} [id]{scroll-margin-top:128px}
+${A} .at-bar{display:flex;align-items:center;justify-content:center;min-height:30px;padding:6px 16px}
+${A} .at-bar-line{font-weight:400;font-size:11px;line-height:1.5;letter-spacing:.18em;color:var(--at-sage-light)}
 ${A} .hs-pill{padding-block:14px;background:color-mix(in srgb,var(--at-canvas) 90%,transparent);-webkit-backdrop-filter:blur(10px) saturate(1.1);backdrop-filter:blur(10px) saturate(1.1);box-shadow:0 10px 24px -18px color-mix(in srgb,var(--at-photo-shade) 45%,transparent)}
 ${A} .hs-nav-track{gap:clamp(14px,2.2vw,28px)}
 ${A} .hs-nav a,${A} .at-nav-right a{${LABEL};position:relative;padding:6px 0;color:var(--at-text);text-decoration:none}
@@ -424,9 +430,10 @@ ${A} [data-role="hero"] [data-part="copy"]{gap:0}
 ${A} [data-role="hero"] [data-part="eyebrow"]{font-size:13px}
 ${A} [data-role="hero"][data-role] [data-part="title"]{margin:22px 0 28px;font-size:clamp(58px,7.8vw,132px);line-height:.92;text-shadow:none}
 ${A} [data-role="hero"] [data-part="lead"]{margin:0 0 40px;max-width:520px;font-size:20px;line-height:1.6}
+${A} [data-role="hero"][data-tone="band"] [data-part="lead"]{color:var(--at-sage-light)}
 ${A} [data-role="hero"] [data-part="actions"]{gap:16px}
-${A} [data-role="hero"][data-role] [data-part="cta"]{min-height:56px;padding:0 30px}
-${A} [data-role="hero"][data-tone="band"][data-role] [data-part="cta"][data-kind="secondary"]{padding:0 30px;background:transparent;border:1px solid color-mix(in srgb,var(--at-on-band) 70%,transparent);color:var(--at-on-band);outline:var(--at-frame) color-mix(in srgb,var(--at-on-band) 50%,transparent);outline-offset:-5px}
+${A} [data-role="hero"][data-role] [data-part="cta"],${A} [data-role="contact"][data-space-top="none"][data-role] [data-part="cta"]{min-height:60px;padding:0 32px;font-size:14px}
+${A} [data-role="hero"][data-tone="band"][data-role] [data-part="cta"][data-kind="secondary"]{padding:0 32px;background:transparent;border:1px solid color-mix(in srgb,var(--at-on-band) 70%,transparent);color:var(--at-photo-text);outline:var(--at-frame) color-mix(in srgb,var(--at-on-band) 50%,transparent);outline-offset:-5px}
 ${A} [data-role="hero"][data-tone="band"][data-role] [data-part="cta"][data-kind="secondary"]:hover{background:color-mix(in srgb,var(--at-on-band) 10%,transparent);text-decoration:none}
 ${A} [data-role="hero"] [data-part="stage"]{width:100%;max-width:560px;justify-self:end;padding:0 0 40px 40px}
 ${A} [data-role="hero"] [data-part="stage"] [data-part="media"]{max-width:none;box-shadow:var(--at-shadow-deep);border:1px solid color-mix(in srgb,var(--at-photo-shade) 30%,transparent)}
@@ -440,7 +447,7 @@ ${A} [data-role="hero"] [data-part="seal"]{top:-30px;right:clamp(-28px,-2vw,-8px
 ${A} [data-role="hero"] [data-part="seal"] text{font-family:var(--at-font-body)}
 ${A} [data-role="hero"] [data-part="seal"]::before{content:"";position:absolute;inset:22px;border-radius:50%;border:1px dashed color-mix(in srgb,var(--at-on-accent) 45%,transparent)}
 ${A} [data-role="hero"] [data-part="seal"]::after{content:"";position:absolute;inset:33%;background:var(--at-on-accent);-webkit-mask:url(/sites/aiden-tyack/logo/logo-mark.svg) center/contain no-repeat;mask:url(/sites/aiden-tyack/logo/logo-mark.svg) center/contain no-repeat}
-@media (max-width:599px){${A} [data-role="hero"] [data-part="seal"]{width:96px;top:-20px;right:-4px}${A} [data-role="hero"] [data-part="stage"]{padding:0 0 32px 24px}}
+@media (max-width:599px){${A} [data-role="hero"] [data-part="seal"]{width:112px;top:-24px;right:-8px}${A} [data-role="hero"] [data-part="stage"]{padding:0 0 32px}${A} [data-role="hero"] [data-part="pin"]{width:164px}}
 /* Shop: the heading with the italic aside on its right, the tabs over a hairline, the count and the sort, then 4:5 framed photos with
    the edition label on the photo, the name in blackletter, the material under it and the price in the condensed face. */
 ${A} [data-role="shop"] [data-part="heading"]{row-gap:12px}
@@ -448,10 +455,10 @@ ${A} [data-role="shop"] [data-part="heading"]>[data-part="lead"]{margin:0;max-wi
 @container (min-width:40rem){${A} [data-role="shop"] [data-part="heading"]>[data-part="lead"]{grid-column:2;grid-row:1/span 2;align-self:end;justify-self:end}}
 ${A} [data-role="shop"] [data-part="toolbar"]{gap:24px}
 ${A} [data-role="shop"] [data-part="tabs"]{flex:1 1 320px;min-width:0;gap:28px;border-bottom:1px solid var(--at-line)}
-${A} [data-role="shop"][data-role] [data-part="tab"]{min-height:40px;margin-bottom:-1px;${LABEL};color:var(--at-text-subtle);border-bottom:2px solid transparent}
+${A} [data-role="shop"][data-role] [data-part="tab"]{min-height:48px;margin-bottom:-1px;${LABEL};color:var(--at-moss);border-bottom:2px solid transparent}
 ${A} [data-role="shop"][data-role] [data-part="tab"][aria-pressed="true"]{color:var(--at-text);border-bottom-color:var(--at-accent-text)}
 ${A} [data-role="shop"] [data-part="count"]{font-size:13px;color:var(--at-text-subtle)}
-${A} [data-role="shop"][data-role] [data-part="sorter"] [data-part="input"]{width:206px;min-height:48px;appearance:auto}
+${A} [data-role="shop"][data-role] [data-part="sorter"] [data-part="input"]{width:204px;min-height:50px}
 ${A} [data-role="shop"][data-variant="grid"] [data-part="list"]{grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:40px 24px}
 ${A} [data-role="shop"] [data-part="item"],${A} [data-role="shop"] [data-part="item"][data-card]{position:relative;gap:16px 12px}
 ${A} [data-role="shop"] [data-part="item"]:hover{transform:none}
@@ -461,7 +468,7 @@ ${A} [data-role="shop"] [data-part="item"] [data-part="media"] img{filter:satura
 ${A} [data-role="shop"][data-variant] [data-part="text"]{gap:6px}
 ${A} [data-role="shop"] [data-part="name"]{font-size:26px;line-height:1}
 ${A} [data-role="shop"] [data-part="meta"]{font-size:13px;line-height:1.4;color:var(--at-text-subtle)}
-${A} [data-role="shop"][data-role] [data-part="badge"]{position:absolute;top:18px;right:18px;z-index:2;order:0;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--at-canvas);border-radius:var(--at-r-control);font-family:var(--at-font-body);font-weight:600;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--at-text)}
+${A} [data-role="shop"][data-role] [data-part="badge"]{position:absolute;top:18px;right:18px;z-index:2;order:0;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:var(--at-canvas);border-radius:var(--at-r-control);font-family:var(--at-font-body);font-weight:600;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--at-text)}
 ${A} [data-role="shop"][data-role] [data-part="badge"]::before{content:"";width:4px;height:4px;border-radius:50%;background:currentColor}
 ${A} [data-role="shop"][data-variant][data-role] [data-part="price"]{font-family:var(--at-font-numeral);font-weight:400;font-size:20px;color:var(--at-accent)}
 /* The photo band: one photo edge to edge under a dark fall, the heading low on the left in light ink. */
@@ -470,8 +477,9 @@ ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="list"]{position:absolute;inset:0;display:block}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="item"],${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"]{height:100%;aspect-ratio:auto}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"] img{height:100%;aspect-ratio:auto;object-fit:cover;filter:saturate(.82) contrast(1.04)}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"] [data-part="video"]{filter:saturate(.82) contrast(1.04)}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"]::after{display:block;inset:0;border:0;border-radius:0;background:linear-gradient(180deg,transparent 30%,color-mix(in srgb,var(--at-photo-shade) 55%,transparent) 62%,color-mix(in srgb,var(--at-photo-shade) 82%,transparent) 100%),linear-gradient(90deg,color-mix(in srgb,var(--at-photo-shade) 35%,transparent),transparent 60%)}
-${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="heading"]{position:relative;z-index:2;width:100%;max-width:var(--at-wrap);margin-inline:auto;padding:0 var(--at-gutter) clamp(64px,9vw,128px);background:none;gap:14px;${ON_PHOTO}}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="heading"]{position:relative;z-index:2;width:100%;max-width:1320px;margin-inline:auto;padding:0 var(--at-gutter) clamp(64px,9vw,128px);background:none;gap:14px;${ON_PHOTO}}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="heading"]>*{max-width:640px}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="eyebrow"]{color:var(--at-photo-muted)}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="title"]{color:var(--at-photo-text)}
@@ -501,29 +509,33 @@ ${A} [data-role="contact"][data-role] [data-part="item"]{display:grid;grid-templ
 ${A} [data-role="contact"] [data-part="meta"]{font-size:11px;color:var(--at-text-subtle)}
 ${A} [data-role="contact"] [data-part="value"]{font-size:15px}
 ${A} [data-role="contact"][data-role] [data-part="side"][data-card]{padding:32px;outline:0;box-shadow:var(--at-shadow-lift)}
-${A} [data-role] select[data-part="input"]{appearance:auto}
+${A} [data-role="contact"][data-role] [data-part="form"]{gap:28px 24px}
+${A} [data-role="contact"][data-role] textarea[data-part="input"]{min-height:148px}
+${A} [data-role="contact"][data-space-top="none"][data-role] textarea[data-part="input"]{min-height:172px}
+${A} [data-role] .mu-select>svg{inset-inline-end:24px;color:var(--at-accent-text);opacity:1}
+${A} [data-role] select[data-part="input"]{padding-inline-end:44px}
 /* Footer: the lockup and three link columns, a stitch, then the two small lines (the copyright line and the footer line). */
 ${A} .at-footer-ground{box-shadow:inset 0 24px 40px -24px color-mix(in srgb,var(--at-photo-shade) 45%,transparent)}
 ${A} .at-footer-ground .hs-footer-top{grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr))}
 ${A} .at-footer-ground .at-logo-name{font-size:36px}
-${A} .at-footer-ground .at-logo-tag{font-size:11px;letter-spacing:.32em;margin-top:8px;color:color-mix(in srgb,var(--at-on-band) 72%,var(--at-band))}
-${A} .at-footer-ground .hs-footer-col-title{margin-bottom:14px;font-size:11.5px;color:color-mix(in srgb,var(--at-on-band) 72%,var(--at-band))}
+${A} .at-footer-ground .at-logo-tag{font-size:11px;margin-top:8px;color:color-mix(in srgb,var(--at-on-band) 72%,var(--at-band))}
+${A} .at-footer-ground .hs-footer-col-title{margin-bottom:14px;font-size:11.5px;color:var(--at-khaki)}
 ${A} .at-footer-ground .hs-footer-col a,${A} .at-footer-ground .hs-footer-links a{min-height:24px;line-height:24px;margin-bottom:10px;font-size:14px}
-${A} .at-footer-ground .hs-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;margin-top:48px;padding-top:20px;${LABEL};font-size:11.5px;color:color-mix(in srgb,var(--at-on-band) 72%,var(--at-band))}
+${A} .at-footer-ground .hs-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;margin-top:48px;padding-top:20px;${LABEL};font-size:11.5px;color:var(--at-khaki)}
 ${A} .at-footer-ground .hs-footer>*{font:inherit;letter-spacing:inherit;color:inherit}
 /* The photo stitch in the design's own dash (7 on, 5 off, 1.5px), drawn as four dashed edges 9px inside the photo. */
 ${A} [data-role] [data-part="media"]:has(img)::after{border:0;background:${dashBox('color-mix(in srgb,var(--at-photo-text) 55%,transparent)')}}
 /* Buttons carry the same stitch 4px inside, in their own ink at half strength (the outline it replaces drew the short browser dash). */
 ${A} [data-role][data-role] [data-part="cta"]{outline:0}
 ${A} [data-role][data-role] [data-part="cta"]::after{content:"";position:absolute;inset:4px;pointer-events:none;background:${dashBox('color-mix(in srgb,currentColor 50%,transparent)')}}
-${A} [data-role="steps"][data-variant="strip"] [data-part="list"]{border-bottom:0;background:${dashLine('var(--at-stitch)', '90deg', '0 100%', '100% 1.5px')}}
+${A} [data-role="steps"][data-variant="strip"] [data-part="list"]{border-top:0;border-bottom:0;background:${dashLine('var(--at-stitch)', '90deg', '0 100%', '100% 1.5px')}}
 ${A} .at-footer-ground .hs-footer{border-top:0;background:${dashRule('color-mix(in srgb,var(--at-on-band) 40%,transparent)')}}
 /* A section set to sit flush under the one before it (the page intros run straight into their content). */
 ${A} [data-role][data-space-top="none"]{padding-block-start:0}
 ${A} [data-role][data-space-bottom="none"]{padding-block-end:0}
 /* Page intros (a hero with no photo on the page ground): the label, the big heading and the line, left, then straight into the page. */
 ${A} [data-role="hero"]:not([data-media]):not([data-tone="band"]){padding-block:clamp(56px,8vw,112px) clamp(32px,4vw,48px)}
-${A} [data-role="hero"]:not([data-media]):not([data-tone="band"])[data-role] [data-part="title"]{margin:14px 0 0;font-size:clamp(56px,9.4vw,136px)}
+${A} [data-role="hero"]:not([data-media]):not([data-tone="band"])[data-role] [data-part="title"]{margin:14px 0 0;font-size:clamp(56px,8.5vw,136px)}
 ${A} [data-role="hero"]:not([data-media]):not([data-tone="band"]) [data-part="lead"]{margin:22px 0 0;max-width:560px;font-size:19px;color:var(--at-text)}
 ${A} [data-role="hero"]:not([data-media]):not([data-tone="band"]) [data-part="copy"]{max-width:900px}
 /* Photo bands (the full hero on The Maker and Custom): the photo edge to edge under a dark fall, the heading low on the left. */
@@ -577,6 +589,7 @@ ${A} [data-role="contact"] [data-part="note"]{margin:18px 0 0;font-size:14px;col
 /* Care cards (offerings with no heading): plain chalk cards, no stitch, the name in blackletter and the line under it. */
 ${A} [data-role="offerings"][data-variant="cards"] [data-part="list"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:24px}
 ${A} [data-role="offerings"][data-variant][data-role] [data-part="item"][data-card]{padding:28px;gap:0;outline:0}
+${A} [data-role="offerings"][data-variant="cards"] [data-part="item"] [data-part="text"]{padding:0}
 ${A} [data-role="offerings"] [data-part="name"]{margin:0;font-size:28px;line-height:1}
 ${A} [data-role="offerings"] [data-part="body"]{margin:12px 0 0;font-size:16px;line-height:1.6;color:var(--at-text)}
 /* Repairs (questions on the band, every answer showing): the heading, line and outline button on the left, the answers on the right. */
@@ -594,4 +607,18 @@ ${A} [data-role="faq"] details[open] [data-part="answer"]{margin:10px 0 0;paddin
 /* Motion: colour changes and lifts only, and everything stops under reduced motion. */
 ${A} .sv-ticker-track{animation:none}
 @media (prefers-reduced-motion:reduce){${A} *{transition:none!important;animation:none!important}}
+/* The polish pass (11-23, measured against the design file at 390, 1280 and 1440). On the pine band the small labels are khaki, the
+   lines under the headings are light sage, and a light button's words are the photo white; a page intro's label is the small size. */
+${A} [data-role][data-tone="band"][data-role] [data-part="eyebrow"],${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child)[data-role] [data-part="eyebrow"]{color:var(--at-khaki)}
+${A} [data-role][data-tone="band"][data-role] [data-part="lead"],${A} [data-role="faq"][data-tone="band"][data-role] [data-part="answer"]{color:var(--at-sage-light)}
+${A} [data-role][data-tone="band"][data-role] [data-part="actions"] [data-part="cta"][data-kind="secondary"],${A} [data-role="faq"][data-tone="band"][data-role] [data-part="actions"] [data-part="cta"]{color:var(--at-photo-text)}
+${A} [data-role="hero"]:not([data-media]):not([data-tone="band"])[data-role] [data-part="eyebrow"]{font-size:11.5px}
+${A} [data-role="hero"][data-variant="full"][data-role] [data-part="inner"]{max-width:1320px}
+${A} [data-role="hero"][data-variant="full"][data-role] [data-part="lead"]{color:var(--at-sage-light)}
+${A} .at-top .at-bar{min-height:30px;padding:5px 16px}
+${A} .at-top .at-bar-line{line-height:1.4}
+/* The step cards carry the design's long stitch 7px inside (the browser's dashed outline read as a grey line). */
+${A} [data-role="steps"][data-variant="grid"][data-role] [data-part="item"][data-card]{position:relative;outline:0}
+${A} [data-role="steps"][data-variant="grid"][data-role] [data-part="item"][data-card]::after{content:"";position:absolute;inset:7px;pointer-events:none;background:${dashBox('var(--at-stitch)')}}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child)[data-role] [data-part="lead"]{margin:6px 0 0;max-width:520px;font-size:18px;line-height:1.6;color:var(--at-photo-muted)}
 `

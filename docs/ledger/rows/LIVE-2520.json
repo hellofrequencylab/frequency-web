@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2520",
+  "title": "aidentyack.com polish pass against the design file",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-23",
+  "source": {
+    "file": "docs/THEME-PROTOCOL.md",
+    "ref": "Daniel 2026-11-23 15:02Z: \"Give it a full polish pass and be sure it's fully designed to spec.\" 15:07Z: \"center LEATHERSMITH under aiden tyack and make it the same length.\" 15:30Z: \"create a background B roll video to play on the site. Put it in the Made for the long way home section, and change it around so it features the handmade craftsmanship.\""
+  },
+  "detail": "The shared Select is a span.mu-select around the select and an unsized chevron svg; hosted sites can render it without the member sheet that sizes it, so the chevron could draw at the width of its box (Daniel's screenshot of the contact form). role-blocks-css's base chunk now sizes and pins it for every theme and turns off the browser arrow that drew beside it. The Aiden Tyack lockup spreads the line under the name letter by letter to the name's exact width (one screen-reader word). Measured against the design file at 390, 1280 and 1440 and fixed: hero and page-form buttons 60px with 14px words, other buttons 24px side padding, the 30px announce bar in light sage, khaki labels and light sage lines on the pine band, photo bands on the design's 1320px box, 48px shop tabs in moss, 10.5px badges, care cards with no inner inset, 172px message box, 28px form spacing and a firmer stitch round the fields, page-intro titles at 8.5vw, footer labels in khaki, the step numbers in the design's tan, and section jumps that land below the sticky header. The theme gains the design's khaki, moss and light sage. The message placeholder reads \"How can we help?\" as in the design. Aiden's two workbench photos replace stand-ins in the home custom story and The Maker story. The home photo band (Made for the Long Way Home) now features the handwork: a 10-second silent loop of Aiden dyeing a strap (public/sites/aiden-tyack/video, H.264 MP4 1.6 MB and VP9 WebM 1.1 MB, 1280 wide, no sound or metadata) over a still, through a new optional background video on gallery photos (components/page-editor/blocks/role-video.tsx): nothing downloads until the section nears the screen, it pauses off screen, and with motion turned off only the still shows.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2520.mjs"
+  },
+  "wave": "W7"
+}

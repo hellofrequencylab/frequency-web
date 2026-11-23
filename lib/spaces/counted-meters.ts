@@ -90,12 +90,21 @@ async function countMonthBookings(spaceId: string): Promise<number> {
   )
 }
 
-/** May this Space take one more booking this month? */
+/** May this Space take one more booking this month? BOOK-015: a refusal tells the owner, once a month. */
 export async function checkSpaceBookingMeter(spaceId: string): Promise<MeterCheck> {
   try {
     if (!(await gatesLive())) return OK
     const verdict = await spaceAllowanceVerdict(spaceId, 'space_bookings', await countMonthBookings(spaceId))
-    return verdict.allowed ? OK : { ok: false, error: BOOKINGS_FULL_MESSAGE }
+    if (verdict.allowed) return OK
+    // Loaded on refusal only, so the meter stays light on every booking that fits. Its own catch: a
+    // failed notice must never fall into the grant below.
+    try {
+      const { notifyBookingCapReached } = await import('@/lib/spaces/booking-cap-notify')
+      await notifyBookingCapReached(spaceId, verdict)
+    } catch {
+      /* best-effort */
+    }
+    return { ok: false, error: BOOKINGS_FULL_MESSAGE }
   } catch {
     return OK
   }

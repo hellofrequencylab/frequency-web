@@ -4,7 +4,7 @@
 // absolute UTC; every label here is computed in a caller-supplied timezone (the Space tz, or in P2
 // the invitee's browser tz). No em / en dashes in any copy (CONTENT-VOICE §10).
 
-import type { OpenSlot } from '@/lib/spaces/booking'
+import type { OpenSlot, ServiceLocation } from '@/lib/spaces/booking'
 
 /** A day group of open slots (the local calendar date label + its slots). */
 export interface SlotDay {
@@ -71,4 +71,42 @@ export function timezoneLabel(timezone: string): string {
 /** A plain-language duration label for a service, e.g. "30 min" (member-facing, no em/en dashes). */
 export function durationLabel(minutes: number): string {
   return `${minutes} min`
+}
+
+/** BOOK-010: where a service happens, for the booking page. A video link is not shown before booking:
+ *  it goes out in the confirmation, as Calendly does. */
+export function whereLabel(location: ServiceLocation): string {
+  if (location.kind === 'video') return 'Video call. The link comes with your confirmation.'
+  if (location.kind === 'phone') return `Phone call: ${location.value}`
+  return location.value
+}
+
+/** The months (YYYY-MM, ascending) the open days fall in, from the first open month to the last, with
+ *  any empty month between kept so month-to-month paging never skips one. The slots already stop at the
+ *  booking window, so this range IS the window as the month grid pages it. Day keys are local dates. */
+export function openMonthRange(days: SlotDay[]): string[] {
+  if (days.length === 0) return []
+  const keys = days.map((d) => d.key).sort()
+  const [fy, fm] = keys[0].split('-').map(Number)
+  const [ly, lm] = keys[keys.length - 1].split('-').map(Number)
+  const months: string[] = []
+  for (let i = fy * 12 + fm - 1; i <= ly * 12 + lm - 1; i++) {
+    months.push(`${Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, '0')}`)
+  }
+  return months
+}
+
+/** The weeks of one month (YYYY-MM) as a calendar grid, Sunday first: each cell is that day's local
+ *  YYYY-MM-DD key, or null for the padding before the 1st and after the last day. Pure date arithmetic
+ *  on the calendar date, so it never depends on the machine's timezone. */
+export function monthWeeks(monthKey: string): (string | null)[][] {
+  const [y, m] = monthKey.split('-').map(Number)
+  const lead = new Date(Date.UTC(y, m - 1, 1)).getUTCDay()
+  const length = new Date(Date.UTC(y, m, 0)).getUTCDate()
+  const cells: (string | null)[] = Array.from({ length: lead }, () => null)
+  for (let d = 1; d <= length; d++) cells.push(`${monthKey}-${String(d).padStart(2, '0')}`)
+  while (cells.length % 7 !== 0) cells.push(null)
+  const weeks: (string | null)[][] = []
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+  return weeks
 }

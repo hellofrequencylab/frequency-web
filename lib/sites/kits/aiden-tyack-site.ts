@@ -51,8 +51,12 @@ function pages(): KitPage[] {
     items: PRODUCTS.map(([name, category, price, detail, badge, photo, focus, alt]) => ({ name, category, price, detail, badge, image: PHOTO(photo), focus, alt, href: '' })),
   })
   const band = role('RoleGallery', {
-    variant: 'carousel', eyebrow: 'Worn hard', title: 'Made for the Long Way Home', lead: '', actionLabel: '', actionHref: '',
-    items: [{ image: PHOTO('friends-at-sunset'), alt: 'Friends with their motorcycles at sunset', focus: '50% 6%', caption: '' }],
+    variant: 'carousel', eyebrow: 'At the bench', title: 'Made for the Long Way Home',
+    lead: 'Every strap is cut, dyed, punched and set by hand at one bench in San Diego, one piece at a time.', actionLabel: '', actionHref: '',
+    items: [{
+      image: PHOTO('at-the-bench-still'), alt: 'Aiden dyeing a studded strap at his workbench', focus: '50% 40%', caption: '',
+      video: '/sites/aiden-tyack/video/at-the-bench.mp4', videoWebm: '/sites/aiden-tyack/video/at-the-bench.webm',
+    }],
   })
   const made = role('RoleSteps', {
     variant: 'grid', tone: 'surface', eyebrow: "How it's made", title: 'One Pair of Hands', lead: '',
@@ -65,7 +69,7 @@ function pages(): KitPage[] {
   const custom = role('RoleStory', {
     variant: 'split', flip: true, eyebrow: 'Custom work', title: 'Yours, Down to the Last Stud',
     lead: 'Pick the hide, width, hardware and stud pattern. Every custom piece starts with a conversation at the bench.',
-    items: [], quote: '', image: PHOTO('rider-on-beach'), alt: 'A rider with his motorcycle at the beach', focus: '65% 50%',
+    items: [], quote: '', image: PHOTO('aiden-at-the-bench'), alt: 'Aiden at his workbench, dyeing a blue strap', focus: '40% 45%',
     primaryLabel: 'Start a Custom Order', primaryHref: '~/custom', secondaryLabel: '', secondaryHref: '',
   })
   const talk = role('RoleContact', {
@@ -80,10 +84,10 @@ function pages(): KitPage[] {
     primaryLabel: 'Send Message', primaryHref: '', secondaryLabel: '', secondaryHref: '', note: '',
   })
 
-  // THE MAKER: the portrait band, the story beside the coiled belt, then how a piece is made on parchment.
+  // THE MAKER: the portrait band, the story beside Aiden at his bench, then how a piece is made on parchment.
   const makerBand = role('RoleHero', {
     variant: 'full', eyebrow: 'The maker', title: 'One Bench, One Pair of Hands', lead: '',
-    image: PHOTO('rider-portrait'), alt: 'Aiden on his motorcycle', focus: '50% 30%',
+    image: PHOTO('aiden-hammering-a-strap'), alt: 'Aiden at his workbench, hammering a strap', focus: '30% 35%',
     primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '',
   })
   const makerStory = role('RoleStory', {
@@ -92,7 +96,7 @@ function pages(): KitPage[] {
       { text: 'The leather is full-grain vegetable-tanned hide. The hardware is solid brass, nickel or blackened steel. Nothing is outsourced, and nothing is made in batches.' },
       { text: 'Every piece is numbered and signed, and repairs are free for life.' },
     ],
-    quote: '', image: PHOTO('belt-tan-coiled-studs'), alt: 'A coiled tan belt on the workbench', focus: '',
+    quote: '', image: PHOTO('aiden-on-his-scooter'), alt: 'Aiden riding his scooter', focus: '90% 35%',
     primaryLabel: 'Shop the Collection', primaryHref: '~/shop', secondaryLabel: 'Order Custom', secondaryHref: '~/custom',
   })
   const process = role('RoleSteps', {
@@ -104,11 +108,11 @@ function pages(): KitPage[] {
     ],
   })
 
-  // CUSTOM: the bikes band, the three steps of an order, then the brief (the contact form with the order types).
+  // CUSTOM: the bracelet band, the three steps of an order, then the brief (the contact form with the order types).
   const customBand = role('RoleHero', {
     variant: 'full', eyebrow: 'Custom orders', title: 'Made to Your Measure',
     lead: 'Your hide, width, hardware and stud pattern. Cut and set by hand for one person.',
-    image: PHOTO('motorcycles-at-sunset'), alt: 'Motorcycles parked at sunset', focus: '50% 45%',
+    image: PHOTO('blue-studded-bracelet-on-wrist'), alt: 'A blue studded bracelet on a wrist at the workbench', focus: '65% 66%',
     primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '',
   })
   const customSteps = role('RoleSteps', {

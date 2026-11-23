@@ -81,7 +81,7 @@ export async function AvailabilitySection({
           Name what members can book and how long each one runs. Members pick a service, then a time.
         </p>
         <fieldset disabled={staffViewing} className="contents">
-          <BookingServiceTypesForm spaceId={space.id} initialServices={services} />
+          <BookingServiceTypesForm spaceId={space.id} slug={space.slug} initialServices={services} />
         </fieldset>
       </section>
 
@@ -115,7 +115,7 @@ export async function AvailabilitySection({
       </section>
 
       <section>
-        <SectionHeader title="Upcoming bookings" />
+        <SectionHeader title="Bookings" />
         <Suspense fallback={<BookingsSkeleton />}>
           <BookingOwnerList spaceId={space.id} />
         </Suspense>

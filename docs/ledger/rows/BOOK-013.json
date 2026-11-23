@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/spaces/booking.ts",
     "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
   },
-  "detail": "FOUND 2026-11-21: /spaces/<slug>/book takes no search params, so an owner cannot share 'book my 60 minute session' the way Calendly shares an event-type link, and Spotlight Link cards cannot deep-link a service. The picker prints every open slot of every day in the window as buttons (a 60 day window of 30 minute slots is hundreds of buttons on a phone). Fix: ?service=<id> preselects; the picker shows a month grid with open days marked, then that day's times.",
+  "detail": "FOUND 2026-11-21: /spaces/<slug>/book takes no search params, so an owner cannot share 'book my 60 minute session' the way Calendly shares an event-type link, and Spotlight Link cards cannot deep-link a service. The picker prints every open slot of every day in the window as buttons (a 60 day window of 30 minute slots is hundreds of buttons on a phone). Fix: ?service=<id> preselects; the picker shows a month grid with open days marked, then that day's times.\n\nDONE 2026-11-21: /spaces/<slug>/book?service=<id> opens straight on that service's times (page.tsx reads the awaited searchParams, EntityCta and BookingMember pass it to BookingServiceMember as initialServiceId, member and guest sides alike). Only an id that matches an active bookable service applies; anything else falls back to the service list silently. The website Book page accepts the same param, read in the browser after hydration so the cached page stays cached (components/sites/site-booking.tsx). Each saved service in Settings > Availability has a Copy link control. The picker now leads with a month grid (components/spaces/booking-month-grid.tsx): open days are marked and tappable, the first open day is chosen, only that day's times show, and previous / next month page from the first open month to the last (the booking window). Times stay in the viewer's zone. Pure helpers openMonthRange and monthWeeks in lib/spaces/booking-format.ts, tested in lib/spaces/booking-format.test.ts.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/booking-audit.mjs BOOK-013",
     "note": "Fails today; passes once the consequence in the title holds."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-21"
 }

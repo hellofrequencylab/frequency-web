@@ -9,6 +9,7 @@
 //   booking-availability-form.tsx -> setSpaceAvailability
 //   booking-picker.tsx            -> createBooking
 //   booking-cancel-button.tsx     -> cancelBooking
+//   booking-no-show-button.tsx    -> markBookingNoShow (BOOK-012)
 //   the website's Book page       -> listGuestOpenSlotsAction / createGuestBookingAction (LIVE-835)
 //   the website's confirm page    -> confirmGuestBookingFormAction (SCAN-834, SCAN-858)
 //   the guest's manage page       -> list/cancel/rescheduleGuestBooking*Action (BOOK-007)
@@ -34,6 +35,7 @@ import {
   createBooking as createBookingImpl,
   rescheduleBooking as rescheduleBookingImpl,
   cancelBooking as cancelBookingImpl,
+  markBookingNoShow as markBookingNoShowImpl,
   startServiceDeposit as startServiceDepositImpl,
   listPublicOpenSlots,
   createGuestBooking as createGuestBookingImpl,
@@ -106,6 +108,11 @@ export async function rescheduleBooking(
  *  implementation). `reason` (P3) is an optional member/owner-facing note. */
 export async function cancelBooking(bookingId: string, reason?: string): Promise<ActionResult> {
   return cancelBookingImpl(bookingId, reason)
+}
+
+/** Mark a past member booking as a no-show (BOOK-012). Space admins only (gated in the implementation). */
+export async function markBookingNoShow(bookingId: string): Promise<ActionResult> {
+  return markBookingNoShowImpl(bookingId)
 }
 
 /** Open deposit checkout for a paid Space service type (P4, DARK: double-gated off, no-ops until

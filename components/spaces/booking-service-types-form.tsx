@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Check, Link2, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -17,6 +17,9 @@ import { IconButton } from '@/components/ui/icon-button'
 // optional description. Saved through the canEditProfile-gated setSpaceServiceTypes action, which
 // preserves existing ids so any window bound to a service keeps its binding. The server re-validates
 // and normalizes, so this form is convenience, not the gate.
+//
+// BOOK-013: a saved service carries a "Copy link" control: /spaces/<slug>/book?service=<id> opens the
+// Book page straight on that service, for a bio link, an email or a Spotlight Link card.
 //
 // COPY: plain labels, no narrated feelings, no em/en dashes (CONTENT-VOICE §10). Tokens only.
 
@@ -33,6 +36,22 @@ interface ServiceDraft {
   description: string
   durationMinutes: number
   questions: BookingQuestion[]
+  /** BOOK-010: where it happens. '' = not set. */
+  locationKind: '' | 'in_person' | 'phone' | 'video'
+  locationValue: string
+}
+
+// BOOK-010: the three places a session can happen, and what the owner types for each.
+const LOCATION_KINDS = [
+  { value: '', label: 'Not set' },
+  { value: 'in_person', label: 'In person' },
+  { value: 'phone', label: 'Phone call' },
+  { value: 'video', label: 'Video call' },
+] as const
+const LOCATION_PLACEHOLDER: Record<'in_person' | 'phone' | 'video', string> = {
+  in_person: 'The address people come to',
+  phone: 'The number you call from, or ask them to call',
+  video: 'Your meeting link, starting https://',
 }
 
 function toDrafts(services: ServiceType[]): ServiceDraft[] {
@@ -42,6 +61,8 @@ function toDrafts(services: ServiceType[]): ServiceDraft[] {
     description: s.description ?? '',
     durationMinutes: s.durationMinutes,
     questions: s.questions,
+    locationKind: s.location?.kind ?? '',
+    locationValue: s.location?.value ?? '',
   }))
 }
 
@@ -53,9 +74,12 @@ function newQuestionId(): string {
 
 export function BookingServiceTypesForm({
   spaceId,
+  slug,
   initialServices,
 }: {
   spaceId: string
+  /** The Space slug, for each saved service's shareable Book link (BOOK-013). */
+  slug: string
   initialServices: ServiceType[]
 }) {
   const router = useRouter()
@@ -63,6 +87,16 @@ export function BookingServiceTypesForm({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, startSave] = useTransition()
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  async function copyLink(id: string) {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/spaces/${slug}/book?service=${encodeURIComponent(id)}`)
+      setCopiedId(id)
+    } catch {
+      setError('Could not copy the link. Open the Book page and copy it from the address bar.')
+    }
+  }
 
   function update(index: number, patch: Partial<ServiceDraft>) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)))
@@ -70,7 +104,15 @@ export function BookingServiceTypesForm({
   }
 
   function addRow() {
-    setRows((prev) => [...prev, { id: null, name: '', description: '', durationMinutes: 30, questions: [] }])
+    setRows((prev) => [...prev, {
+        id: null,
+        name: '',
+        description: '',
+        durationMinutes: 30,
+        questions: [],
+        locationKind: '',
+        locationValue: '',
+      }])
     setSaved(false)
   }
 
@@ -118,6 +160,10 @@ export function BookingServiceTypesForm({
         setError('Give every service a name, or remove the empty one.')
         return
       }
+      if (r.locationKind === 'video' && !/^https?:\/\/\S+$/i.test(r.locationValue.trim())) {
+        setError(`Add the meeting link for ${r.name.trim()}, starting https://`)
+        return
+      }
       services.push({
         id: r.id,
         name: r.name.trim(),
@@ -128,6 +174,10 @@ export function BookingServiceTypesForm({
         questions: r.questions
           .map((q) => ({ ...q, label: q.label.trim() }))
           .filter((q) => q.label),
+        location:
+          r.locationKind && r.locationValue.trim()
+            ? { kind: r.locationKind, value: r.locationValue.trim() }
+            : null,
       })
     }
 
@@ -187,6 +237,16 @@ export function BookingServiceTypesForm({
                   ))}
                 </Select>
               </label>
+              {r.id && (
+                <IconButton
+                  variant="bordered"
+                  label={copiedId === r.id ? 'Link copied' : 'Copy a link to book this service'}
+                  onClick={() => copyLink(r.id!)}
+                  className="mb-1"
+                >
+                  {copiedId === r.id ? <Check className="h-4 w-4" aria-hidden /> : <Link2 className="h-4 w-4" aria-hidden />}
+                </IconButton>
+              )}
               <IconButton
                 variant="bordered"
                 tone="danger"
@@ -218,6 +278,37 @@ export function BookingServiceTypesForm({
                 ) : null}
               </span>
             </label>
+
+            {/* BOOK-010: where it happens. Sent in the confirmation, the reminder and the calendar invite. */}
+            <div className="grid gap-2 sm:grid-cols-[12rem_1fr]">
+              <label className="flex flex-col gap-1">
+                <span className="text-meta font-medium text-muted">Where</span>
+                <Select
+                  value={r.locationKind}
+                  onChange={(e) => update(i, { locationKind: e.target.value as ServiceDraft['locationKind'] })}
+                >
+                  {LOCATION_KINDS.map((k) => (
+                    <option key={k.value} value={k.value}>
+                      {k.label}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              {r.locationKind ? (
+                <label className="flex flex-col gap-1">
+                  <span className="text-meta font-medium text-muted">
+                    {r.locationKind === 'in_person' ? 'Address' : r.locationKind === 'phone' ? 'Phone number' : 'Meeting link'}
+                  </span>
+                  <Input
+                    value={r.locationValue}
+                    onChange={(e) => update(i, { locationValue: e.target.value })}
+                    placeholder={LOCATION_PLACEHOLDER[r.locationKind]}
+                    maxLength={500}
+                    inputMode={r.locationKind === 'phone' ? 'tel' : r.locationKind === 'video' ? 'url' : undefined}
+                  />
+                </label>
+              ) : null}
+            </div>
 
             {/* Booking questions (P3): asked when a member books this service. */}
             <div className="space-y-2 rounded-card border border-dashed border-border p-3">

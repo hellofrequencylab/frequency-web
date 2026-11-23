@@ -97,6 +97,24 @@ export interface ServiceType {
   /** P4 (dark): linked commerce service product. When set AND deposits are live, booking this service
    *  opens deposit checkout; otherwise the free P0 confirm-only path is used. Null = free. */
   productId: string | null
+  /** BOOK-010: where the service happens (an address, a phone number or a meeting link). Null = not set. */
+  location: ServiceLocation | null
+}
+
+/** BOOK-010: where a service happens. `value` is the address, the phone number or the meeting link. */
+export interface ServiceLocation {
+  kind: 'in_person' | 'phone' | 'video'
+  value: string
+}
+
+/** Coerce a stored or typed location to a clean one, or null (fail-closed: an unknown kind or a blank
+ *  value is no location). A video value must be an http(s) link. Pure. */
+export function cleanServiceLocation(kind: unknown, value: unknown): ServiceLocation | null {
+  if (kind !== 'in_person' && kind !== 'phone' && kind !== 'video') return null
+  const v = typeof value === 'string' ? value.trim().slice(0, 500) : ''
+  if (!v) return null
+  if (kind === 'video' && !/^https?:\/\/\S+$/i.test(v)) return null
+  return { kind, value: v }
 }
 
 /** One open slot offered to a member: the absolute UTC instant it starts, plus its length so the
@@ -176,7 +194,16 @@ export interface SpaceBooking {
   answers: BookingAnswer[]
   /** SCAN-834: a website guest's hold that still waits for the click on their confirmation email. */
   awaitingGuestConfirmation: boolean
+  /** BOOK-012: the service booked (null = a flat booking, or a service since deleted). */
+  serviceName: string | null
+  /** BOOK-012: the session already started (the owner's Past group, last PAST_BOOKING_DAYS days). */
+  past: boolean
+  /** BOOK-012: the owner marked this past booking as a no-show. */
+  noShow: boolean
 }
+
+/** BOOK-012: how far back the owner's list shows past sessions. */
+const PAST_BOOKING_DAYS = 30
 
 // How far ahead a member may book. v1 offers a rolling two-week window of open slots.
 const HORIZON_DAYS = 14
@@ -522,6 +549,8 @@ type ServiceTypeRow = {
   sort_order: number
   product_id?: string | null
   questions?: unknown
+  location_kind?: string | null
+  location_value?: string | null
 }
 type BookingRow = {
   id: string
@@ -650,6 +679,9 @@ const BOOKING_COLS_GUEST = `${BOOKING_COLS_P3}, guest_name, guest_email`
 const BOOKING_COLS_HOLD = `${BOOKING_COLS_GUEST}, guest_confirm_token, guest_confirm_expires_at, guest_confirmed_at, guest_opt_in`
 const SERVICE_TYPE_COLS = 'id, space_id, name, description, duration_minutes, price_cents, active, sort_order, product_id'
 const SERVICE_TYPE_COLS_P3 = `${SERVICE_TYPE_COLS}, questions`
+// BOOK-010: the location columns. Read first, with the P3 and base reads as fallbacks, so a database
+// without the 20270346270000 migration keeps reading exactly as before.
+const SERVICE_TYPE_COLS_LOC = `${SERVICE_TYPE_COLS_P3}, location_kind, location_value`
 
 /** Map a raw availability row to a clean window (drops malformed rows, fail-closed). */
 function mapAvailabilityRow(r: AvailabilityRow): AvailabilityWindow | null {
@@ -754,6 +786,7 @@ function mapServiceTypeRow(r: ServiceTypeRow): ServiceType {
     sortOrder: Number.isInteger(r.sort_order) ? r.sort_order : 0,
     questions: parseQuestions(r.questions),
     productId: typeof r.product_id === 'string' && r.product_id ? r.product_id : null,
+    location: cleanServiceLocation(r.location_kind, r.location_value),
   }
 }
 
@@ -768,14 +801,16 @@ async function readServiceTypes(
     const mapped = data.map(mapServiceTypeRow)
     return opts.activeOnly ? mapped.filter((s) => s.active) : mapped
   }
-  try {
-    const ext = await serviceTypesTable()
-      .select(SERVICE_TYPE_COLS_P3)
-      .eq('space_id', spaceId)
-      .order('sort_order', { ascending: true })
-    if (!ext.error && ext.data) return finish(ext.data)
-  } catch {
-    /* pre-P3 column missing: fall through */
+  for (const cols of [SERVICE_TYPE_COLS_LOC, SERVICE_TYPE_COLS_P3]) {
+    try {
+      const ext = await serviceTypesTable()
+        .select(cols)
+        .eq('space_id', spaceId)
+        .order('sort_order', { ascending: true })
+      if (!ext.error && ext.data) return finish(ext.data)
+    } catch {
+      /* a newer column missing (pre-migration): try the older read */
+    }
   }
   try {
     const { data, error } = await serviceTypesTable()
@@ -1142,6 +1177,40 @@ async function readMemberNames(ids: string[]): Promise<Map<string, string>> {
   return out
 }
 
+/** BOOK-012: the CRM timeline key of a no-show mark, so a booking is marked at most once. */
+const noShowKey = (bookingId: string) => `booking_no_show:${bookingId}`
+
+/** Which of these bookings the owner marked as a no-show (their timeline entries, keyed per booking).
+ *  Service-role; FAIL-SAFE to an empty set. */
+async function readNoShowMarks(spaceId: string, bookingIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>()
+  if (bookingIds.length === 0) return out
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (
+            col: string,
+            val: string,
+          ) => {
+            in: (col: string, vals: string[]) => Promise<{ data: { idempotency_key: string | null }[] | null }>
+          }
+        }
+      }
+    }
+    const keys = bookingIds.map(noShowKey)
+    const { data } = await db.from('contact_interactions').select('idempotency_key').eq('space_id', spaceId).in('idempotency_key', keys)
+    const byKey = new Map(bookingIds.map((id) => [noShowKey(id), id]))
+    for (const r of data ?? []) {
+      const id = r.idempotency_key ? byKey.get(r.idempotency_key) : undefined
+      if (id) out.add(id)
+    }
+  } catch {
+    /* fail-safe: nothing shows as marked */
+  }
+  return out
+}
+
 /** Expire a Space website's cached pages after a booking-setup save, so its Book page (LIVE-835) shows
  *  the new services and times. Best-effort: a cache miss never fails the owner's save. */
 async function refreshSiteSoft(slug: string): Promise<void> {
@@ -1353,7 +1422,13 @@ export async function getSpaceBookingTimezone(spaceId: string): Promise<string> 
 export async function listBookableServices(spaceId: string): Promise<ServiceType[]> {
   const profileId = await getMyProfileId()
   if (!profileId) return []
-  return readServiceTypes(spaceId, { activeOnly: true })
+  return (await readServiceTypes(spaceId, { activeOnly: true })).map(publicService)
+}
+
+/** BOOK-010: a service as a booker sees it before booking. A meeting link stays out of the page and goes
+ *  out in the confirmation, so it reaches only people who booked. Pure. */
+function publicService(s: ServiceType): ServiceType {
+  return s.location?.kind === 'video' ? { ...s, location: { kind: 'video', value: '' } } : s
 }
 
 /** What a Space website's Book page needs (LIVE-835), read with NO caller check: the Space's active
@@ -1370,7 +1445,7 @@ export async function readPublicBookingSetup(
       readWindows(spaceId),
     ])
     return {
-      services,
+      services: services.map(publicService),
       timezone: schedule.timezone ?? windows[0]?.timezone ?? 'UTC',
       windowCount: windows.length,
     }
@@ -1402,6 +1477,8 @@ export interface ServiceTypeInput {
   sortOrder?: number
   /** P3 booking questions asked at booking (ordered). */
   questions?: BookingQuestion[]
+  /** BOOK-010: where it happens. Null or omitted clears it. */
+  location?: { kind: string; value: string } | null
 }
 
 /** Coerce raw booking questions to a clean, stable list (each gets an id; blank labels dropped). */
@@ -1429,6 +1506,7 @@ function cleanServiceInput(raw: ServiceTypeInput, index: number): {
   active: boolean
   sort_order: number
   questions: BookingQuestion[]
+  location: ServiceLocation | null
 } | null {
   const name = typeof raw.name === 'string' ? raw.name.trim().slice(0, 120) : ''
   if (!name) return null
@@ -1452,6 +1530,7 @@ function cleanServiceInput(raw: ServiceTypeInput, index: number): {
     active: raw.active !== false,
     sort_order: Number.isInteger(raw.sortOrder) ? (raw.sortOrder as number) : index,
     questions: cleanQuestions(raw.questions),
+    location: raw.location ? cleanServiceLocation(raw.location.kind, raw.location.value) : null,
   }
 }
 
@@ -1509,24 +1588,33 @@ export async function setSpaceServiceTypes(
       // Include the P3 questions column when possible; if it is absent pre-migration the write errors,
       // so retry without questions (fail-soft: the service saves, just without its questions).
       const withQuestions = { ...base, questions: row.questions }
+      // BOOK-010: the location columns, newest first; each older shape is the fallback before its migration.
+      const withLocation = {
+        ...withQuestions,
+        location_kind: row.location?.kind ?? null,
+        location_value: row.location?.value ?? null,
+      }
+      const shapes = [withLocation, withQuestions, base]
+      let saved = false
       if (row.id && existingIds.has(row.id)) {
         keptIds.add(row.id)
-        const first = (await serviceTypesTable().update(withQuestions).eq('id', row.id)) as unknown as {
-          error?: unknown
-        }
-        if (first.error) {
-          const retry = (await serviceTypesTable().update(base).eq('id', row.id)) as unknown as {
-            error?: unknown
+        for (const shape of shapes) {
+          const res = (await serviceTypesTable().update(shape).eq('id', row.id)) as unknown as { error?: unknown }
+          if (!res.error) {
+            saved = true
+            break
           }
-          if (retry.error) return fail('Could not save your services. Try again.')
         }
       } else {
-        const first = await serviceTypesTable().insert([{ space_id: spaceId, ...withQuestions }])
-        if (first.error) {
-          const retry = await serviceTypesTable().insert([{ space_id: spaceId, ...base }])
-          if (retry.error) return fail('Could not save your services. Try again.')
+        for (const shape of shapes) {
+          const res = await serviceTypesTable().insert([{ space_id: spaceId, ...shape }])
+          if (!res.error) {
+            saved = true
+            break
+          }
         }
       }
+      if (!saved) return fail('Could not save your services. Try again.')
     }
 
     // Delete the rows the owner removed (present before, absent now).
@@ -2449,6 +2537,39 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
   return ok()
 }
 
+/**
+ * BOOK-012: the owner marks a past booking as a no-show. Space admins only (the owner is always one), the
+ * same gate as cancelBooking's admin path. The booking row stays confirmed (its status check has no
+ * no_show); the mark is a timeline entry on the member's Space record (kind booking_no_show), keyed per
+ * booking so it lands once. It is the signal contact-risk's recentNoShow is meant to read. A website guest
+ * has no member record, so only a member's booking can be marked.
+ */
+export async function markBookingNoShow(bookingId: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to mark a no-show.')
+
+  const row = await readBookingById(bookingId)
+  if (!row || row.status !== 'confirmed') return fail('Booking not found.')
+  const space = await getSpaceById(row.space_id)
+  if (!space) return fail('Booking not found.')
+  const caps = await getSpaceCapabilities(space, profileId)
+  if (!caps.isAdmin) return fail('You do not have permission to mark this booking.')
+  if (new Date(row.starts_at).getTime() > Date.now()) return fail('This booking has not started yet.')
+  if (!row.member_profile_id) return fail('A website guest booking cannot be marked as a no-show yet.')
+
+  await recordSpaceMemberActivity({
+    spaceId: space.id,
+    spaceOwnerProfileId: space.ownerProfileId,
+    memberProfileId: row.member_profile_id,
+    channel: 'event',
+    summary: 'Missed a booking',
+    idempotencyKey: noShowKey(bookingId),
+    metadata: { kind: 'booking_no_show', bookingId, startsAt: row.starts_at },
+    scope: { kind: 'booking', id: bookingId },
+  })
+  return ok()
+}
+
 /** One of the member's OWN upcoming bookings, for the self-serve list (P3). */
 export interface MyBooking {
   id: string
@@ -2749,9 +2870,10 @@ export async function cancelBookingByOrder(orderId: string, opts?: { strict?: bo
 }
 
 /**
- * The owner's UPCOMING confirmed bookings (member name + time). Gated on canEditProfile (owner /
- * admin / editor). Reads the confirmed rows from now forward, then resolves member display names in
- * one batched lookup. FAIL-SAFE to [] for an anonymous / unauthorized caller or any error.
+ * The owner's confirmed bookings (member name + service + time): upcoming ones, and BOOK-012 the past
+ * PAST_BOOKING_DAYS days (marked `past`, with any no-show mark). Gated on canEditProfile (owner / admin /
+ * editor). Resolves member display names and service names in batched lookups. FAIL-SAFE to [] for an
+ * anonymous / unauthorized caller or any error.
  */
 export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]> {
   const caller = await getCallerProfile()
@@ -2761,9 +2883,11 @@ export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]
   if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
 
   try {
-    const nowISO = new Date().toISOString()
+    const nowMs = Date.now()
+    const nowISO = new Date(nowMs).toISOString()
+    const pastFromISO = new Date(nowMs - PAST_BOOKING_DAYS * 86_400_000).toISOString()
     const [confirmed, awaiting] = await Promise.all([
-      readConfirmedBookings(spaceId, nowISO),
+      readConfirmedBookings(spaceId, pastFromISO),
       // SCAN-834: a website guest's live hold shows too, marked as waiting on their click.
       readAwaitingGuestHolds(spaceId, nowISO),
     ])
@@ -2774,7 +2898,13 @@ export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]
     // Batch-resolve member display names (one query for all member bookers). A guest booking from the
     // website (LIVE-835) has no profile: it shows the name and email the guest gave.
     const ids = [...new Set(rows.flatMap((r) => (r.member_profile_id ? [r.member_profile_id] : [])))]
-    const names = await readMemberNames(ids)
+    const pastIds = rows.filter((r) => r.starts_at < nowISO).map((r) => r.id)
+    const [names, services, noShows] = await Promise.all([
+      readMemberNames(ids),
+      rows.some((r) => r.service_type_id) ? readServiceTypes(spaceId, { activeOnly: false }) : Promise.resolve([]),
+      readNoShowMarks(spaceId, pastIds),
+    ])
+    const serviceNames = new Map(services.map((s) => [s.id, s.name]))
 
     return rows.map((r) => ({
       id: r.id,
@@ -2789,6 +2919,9 @@ export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]
       note: r.note,
       answers: parseAnswers(r.answers),
       awaitingGuestConfirmation: awaitingIds.has(r.id),
+      serviceName: r.service_type_id ? (serviceNames.get(r.service_type_id) ?? null) : null,
+      past: r.starts_at < nowISO,
+      noShow: noShows.has(r.id),
     }))
   } catch {
     return []
