@@ -5359,6 +5359,98 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5461,
+      "expiresAt": "2026-11-30T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346290000_space_bookings_booker_time_zone.sql",
+          "sha256": "ee1140c40c80ef3d0319ea2817d0a6f12cd044f6b6539ae19960f5002ddd835c"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "components/spaces/booking-picker.tsx",
+          "status": "modified",
+          "sha256": "f01714bcabe633664546fa95553c5e73c6f6115820f56e7188e980acbf3c2e24",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/BOOK-009.json",
+          "status": "modified",
+          "sha256": "a89432ec9e37c1d9d73be0dedde7b50e49212fa6561def73d40d83aced32281b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/booking-actions.ts",
+          "status": "modified",
+          "sha256": "5775766cca28e7cbab65d53a313a3698b80d661f7caaa6cff0f3d3e7aa07e6df",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/booking-notify.test.ts",
+          "status": "modified",
+          "sha256": "d82923cc26c69b2233a560d1a230b1f8b395a4b4fed76f199f420b0f453e7a39",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/booking-notify.ts",
+          "status": "modified",
+          "sha256": "8d88b0706267a3283d0143874f1830917dd8311c3936928ec8c7b1f97711ab39",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/booking.test.ts",
+          "status": "modified",
+          "sha256": "7df27384a8c99406847e3752dbc65eed4c5aef250387bdf4c5ddb378e5e957cd",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/booking.ts",
+          "status": "modified",
+          "sha256": "6a08a3841d3fbc2158fce58661962349d17c475eeaf06d122ba0fdf1c68f76fc",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "b595acc7b1c90904a66f43aeee40aeaff3e34773f1d921228043a426108950b8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346290000_space_bookings_booker_time_zone.sql",
+          "status": "added",
+          "sha256": "ee1140c40c80ef3d0319ea2817d0a6f12cd044f6b6539ae19960f5002ddd835c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/space_bookings_booker_time_zone.test.sql",
+          "status": "added",
+          "sha256": "a5dc1d857475e544f9c3f12925d43e5b0bd0290ad013883e25d55f97ce1af7b6",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
