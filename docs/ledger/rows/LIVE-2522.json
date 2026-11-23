@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2522",
+  "title": "aidentyack.com buttons draw one stitch, not two",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-23",
+  "source": {
+    "file": "docs/THEME-PROTOCOL.md",
+    "ref": "Daniel 2026-11-23 17:30Z: \"The Order Custom button has double stitch. Double check all site styrles.\""
+  },
+  "detail": "Every Aiden Tyack button draws its stitch as a ::after dash box, and the skin turns the old dashed outline off. Three later rules with higher specificity (the band hero's secondary button, a secondary button in a row of actions, the band FAQ button) brought the outline back, so Order Custom (home, The Maker) and Start a Repair (Care) drew two stitches. They now set outline:0. A computed-style audit of all six live pages at 390 and 1440 (any element with two stitches, or a stitch sitting just inside another) found these three and nothing else, and finds none after the fix.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2522.mjs"
+  },
+  "wave": "W7"
+}
