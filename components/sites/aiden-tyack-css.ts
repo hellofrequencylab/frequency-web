@@ -509,7 +509,8 @@ ${A} [data-role="contact"] [data-part="meta"]{font-size:11px;color:var(--at-text
 ${A} [data-role="contact"] [data-part="value"]{font-size:15px}
 ${A} [data-role="contact"][data-role] [data-part="side"][data-card]{padding:32px;outline:0;box-shadow:var(--at-shadow-lift)}
 ${A} [data-role="contact"][data-role] [data-part="form"]{gap:28px 24px}
-${A} [data-role="contact"][data-role] textarea[data-part="input"]{min-height:172px}
+${A} [data-role="contact"][data-role] textarea[data-part="input"]{min-height:148px}
+${A} [data-role="contact"][data-space-top="none"][data-role] textarea[data-part="input"]{min-height:172px}
 ${A} [data-role] .mu-select>svg{inset-inline-end:24px;color:var(--at-accent-text);opacity:1}
 ${A} [data-role] select[data-part="input"]{padding-inline-end:44px}
 /* Footer: the lockup and three link columns, a stitch, then the two small lines (the copyright line and the footer line). */
@@ -615,4 +616,7 @@ ${A} [data-role="hero"][data-variant="full"][data-role] [data-part="inner"]{max-
 ${A} [data-role="hero"][data-variant="full"][data-role] [data-part="lead"]{color:var(--at-sage-light)}
 ${A} .at-top .at-bar{min-height:30px;padding:5px 16px}
 ${A} .at-top .at-bar-line{line-height:1.4}
+/* The step cards carry the design's long stitch 7px inside (the browser's dashed outline read as a grey line). */
+${A} [data-role="steps"][data-variant="grid"][data-role] [data-part="item"][data-card]{position:relative;outline:0}
+${A} [data-role="steps"][data-variant="grid"][data-role] [data-part="item"][data-card]::after{content:"";position:absolute;inset:7px;pointer-events:none;background:${dashBox('var(--at-stitch)')}}
 `
