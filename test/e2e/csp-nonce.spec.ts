@@ -91,6 +91,7 @@ test.describe('@smoke nonce policy matches the document', () => {
 
       const html = await response.text()
       const tally = readScripts(html, nonce, policy!)
+      console.log(`[csp-nonce] ${path} render saw: ${/name="fq-csp-debug" content="([^"]*)"/.exec(html)?.[1] ?? 'no debug meta'}`)
       const distinct = new Set([...html.matchAll(/<script\b[^>]*\bnonce="([^"]*)"/g)].map((m) => m[1]))
       console.log(
         `[csp-nonce] ${path} mode=${reportOnly === policy ? 'report-only' : 'enforce'} scripts=${tally.total} nonced=${tally.nonced} hashed=${tally.hashed} data=${tally.data} wrongNonce=${tally.wrongNonce} bare=${tally.bare.length} distinctNoncesInMarkup=${distinct.size} headerNonceInMarkup=${distinct.has(nonce)}`,

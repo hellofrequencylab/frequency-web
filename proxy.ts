@@ -161,7 +161,11 @@ export async function proxy(request: NextRequest) {
       // On the platform, 2026-11-23, `x-nonce` reached the render and the first header did not: every
       // one of Next's own scripts came out with no nonce (test/e2e/csp-nonce.spec.ts read it on
       // /feed and /lead, 1 of 117 scripts nonced). The second name is the other door Next offers.
-      headers.set('Content-Security-Policy-Report-Only', csp.policy)
+      // DIAGNOSTIC BRANCH ONLY, NEVER MERGED: which of these reach the render?
+      const shortPolicy = `script-src 'nonce-${csp.nonce}'`
+      headers.set('Content-Security-Policy-Report-Only', shortPolicy)
+      headers.set('x-fq-probe-long', csp.policy)
+      headers.set('x-fq-probe-short', shortPolicy)
     } else {
       // Only the proxy names a nonce. A caller's own `x-nonce` never reaches the layout.
       headers.delete('x-nonce')

@@ -661,6 +661,14 @@ export default async function MainLayout({
 
           `balanced` is an explicit no-op preset, so a default install renders byte-identically;
           only a member or Space that actually chose a preset sees anything change. */}
+      {reqHeaders.get('x-nonce') ? (
+        <meta
+          name="fq-csp-debug"
+          content={['content-security-policy', 'content-security-policy-report-only', 'x-fq-probe-long', 'x-fq-probe-short', 'x-nonce']
+            .map((name) => `${name}=${reqHeaders.get(name)?.length ?? 'absent'}`)
+            .join(' ')}
+        />
+      ) : null}
       <script
         // The injected value is a server-resolved id from a closed registry (lib/theme/generations,
         // passed through `resolveGeneration`'s guard) and JSON-encoded on the way in, so no member
