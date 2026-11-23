@@ -11,6 +11,7 @@ import { MINDLESS_FONT_CLASS } from '@/components/sites/mindless-fonts'
 import { FREE_HUMAN_FONT_CLASS } from '@/components/sites/free-human-fonts'
 import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
 import { MIDNIGHT_FONT_CLASS } from '@/components/sites/midnight-fonts'
+import { AIDEN_TYACK_FONT_CLASS } from '@/components/sites/aiden-tyack-fonts'
 import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
 import { JsonLd } from '@/components/json-ld'
 import { personSchema, breadcrumbSchema } from '@/lib/jsonld'
@@ -136,7 +137,7 @@ export default async function SpotlightRoute({
         ]}
       />
       {/* The Temple kit's four faces ride a wrapper here, not the shell: next/font needs Next's compiler, and the shell is rendered by the suite. */}
-      <div className={data.theme.layout && isTempleKitLayout(data.theme.layout) ? TEMPLE_FONT_CLASS : data.theme.layout && isFreeHumanLayout(data.theme.layout) ? FREE_HUMAN_FONT_CLASS : data.theme.layout && isNewWorldKitLayout(data.theme.layout) ? NEW_WORLD_FONT_CLASS : data.theme.layout && isServicesKitLayout(data.theme.layout) ? SERVICES_FONT_CLASS : data.theme.layout && isCyberWitchKitLayout(data.theme.layout) ? CYBERWITCH_FONT_CLASS : data.theme.layout && isMindlessKitLayout(data.theme.layout) ? MINDLESS_FONT_CLASS : data.theme.layout && isHouseKitLayout(data.theme.layout) ? (data.theme.layout.startsWith('wildheart-kit:') ? WILDHEART_FONT_CLASS : data.theme.layout.startsWith('nocturne-kit:') ? MIDNIGHT_FONT_CLASS : undefined) : undefined}>
+      <div className={data.theme.layout && isTempleKitLayout(data.theme.layout) ? TEMPLE_FONT_CLASS : data.theme.layout && isFreeHumanLayout(data.theme.layout) ? FREE_HUMAN_FONT_CLASS : data.theme.layout && isNewWorldKitLayout(data.theme.layout) ? NEW_WORLD_FONT_CLASS : data.theme.layout && isServicesKitLayout(data.theme.layout) ? SERVICES_FONT_CLASS : data.theme.layout && isCyberWitchKitLayout(data.theme.layout) ? CYBERWITCH_FONT_CLASS : data.theme.layout && isMindlessKitLayout(data.theme.layout) ? MINDLESS_FONT_CLASS : data.theme.layout && isHouseKitLayout(data.theme.layout) ? (data.theme.layout.startsWith('wildheart-kit:') ? WILDHEART_FONT_CLASS : data.theme.layout.startsWith('nocturne-kit:') ? MIDNIGHT_FONT_CLASS : data.theme.layout.startsWith('aiden-tyack-kit:') ? AIDEN_TYACK_FONT_CLASS : undefined) : undefined}>
         <SpotlightShell data={data} showJoinCta showBio={false}>
           <MemberProfileModules member={data} grid={publicSpotlightGrid(data.grid, data.layout.blocks)} />
         </SpotlightShell>

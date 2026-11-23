@@ -1,4 +1,4 @@
-// THE HOUSE KIT EMAILS (LIVE-2359): the note, the welcome, the dates and the receipt for Bold and Wildheart. One letter frame,
+// THE HOUSE KIT EMAILS (LIVE-2359): the note, the welcome, the dates and the receipt for Bold, Wildheart and (private) Aiden Tyack. One letter frame,
 // worn in each theme's own flat token set (lib/theme/mega-surfaces.ts, the literals its Spotlight and preset already wear) and a
 // small presentation (faces, case, corners), the same split as the house Spotlight layouts (components/spotlight/house-kit-layouts.tsx).
 // PURE: no React, no Supabase, no Next, so the stock catalog (lib/email-samples/catalog.ts), a test and a render script read it alike.
@@ -14,10 +14,10 @@
 import { contrastRatio } from '@/lib/spaces/accent'
 import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
 
-export type HouseKitEmailTheme = 'bold' | 'wildheart'
+export type HouseKitEmailTheme = 'bold' | 'wildheart' | 'aiden-tyack'
 
 /** Each theme's presentation: the faces it loads, the case its headline wears and its corners. */
-const LOOK: Record<HouseKitEmailTheme, { sheet: string; display: string; body: string; label: string; upper: boolean; weight: number; italicEm: boolean; btnR: number; cardR: number }> = {
+const LOOK: Record<HouseKitEmailTheme, { sheet: string; display: string; body: string; label: string; /** The quote's face, when not the display. */ voice?: string; upper: boolean; weight: number; italicEm: boolean; btnR: number; cardR: number }> = {
   bold: {
     sheet: 'https://fonts.googleapis.com/css2?family=Sofia+Sans+Extra+Condensed:wght@800&family=Barlow:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap',
     display: "'Sofia Sans Extra Condensed', 'Arial Narrow', Impact, sans-serif",
@@ -31,6 +31,15 @@ const LOOK: Record<HouseKitEmailTheme, { sheet: string; display: string; body: s
     body: "'EB Garamond', Georgia, 'Times New Roman', serif",
     label: "'Hanken Grotesk', Helvetica, Arial, sans-serif",
     upper: false, weight: 400, italicEm: true, btnR: 999, cardR: 18,
+  },
+  // PRIVATE (LIVE-2515): the Aiden Tyack theme's letters, for the aidentyack Space's own mail. Grenze Gotisch is never set in caps.
+  'aiden-tyack': {
+    sheet: 'https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@700&family=Archivo:wght@400;600&family=Cormorant+Garamond:ital,wght@1,500&display=swap',
+    display: "'Grenze Gotisch', Georgia, 'Times New Roman', serif",
+    body: "Archivo, 'Helvetica Neue', Arial, sans-serif",
+    label: "Archivo, 'Helvetica Neue', Arial, sans-serif",
+    voice: "'Cormorant Garamond', Georgia, 'Times New Roman', serif",
+    upper: false, weight: 700, italicEm: false, btnR: 3, cardR: 3,
   },
 }
 
@@ -126,7 +135,7 @@ function renderFrame(input: HouseKitEmailInput): HouseKitEmail {
     ? `<tr><td style="padding:0 32px"><img src="${href(input.coverUrl)}" width="536" alt="${esc(input.coverAlt ?? '')}" style="display:block;width:100%;max-width:536px;height:220px;object-fit:cover;border-radius:${L.cardR}px;border:0"></td></tr>${spacer(28)}`
     : ''
   const quote = input.quote
-    ? `<tr><td style="padding:0 32px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${C.card}" style="background:${C.card};border-left:3px solid ${C.accent};border-radius:${L.cardR}px"><tr><td style="padding:24px 26px">${kicker('A word from someone')}<div style="font:400 20px/1.4 ${L.display};font-style:italic;color:${C.ink};margin-top:12px">&ldquo;${esc(input.quote.text)}&rdquo;</div><div style="font:500 12px/1 ${L.label};letter-spacing:.14em;text-transform:uppercase;color:${C.muted};margin-top:14px">${esc(input.quote.who)} &middot; ${esc(input.quote.role)}</div></td></tr></table></td></tr>${spacer(36)}`
+    ? `<tr><td style="padding:0 32px"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${C.card}" style="background:${C.card};border-left:3px solid ${C.accent};border-radius:${L.cardR}px"><tr><td style="padding:24px 26px">${kicker('A word from someone')}<div style="font:400 20px/1.4 ${L.voice ?? L.display};font-style:italic;color:${C.ink};margin-top:12px">&ldquo;${esc(input.quote.text)}&rdquo;</div><div style="font:500 12px/1 ${L.label};letter-spacing:.14em;text-transform:uppercase;color:${C.muted};margin-top:14px">${esc(input.quote.who)} &middot; ${esc(input.quote.role)}</div></td></tr></table></td></tr>${spacer(36)}`
     : ''
   const preheader = `${input.subject} · ${input.lead.slice(0, 70)}`
   const title = input.em ? `${esc(input.title)} <span style="${EM}">${esc(input.em)}</span>` : esc(input.title)

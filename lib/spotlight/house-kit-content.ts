@@ -7,15 +7,17 @@
 
 import type { DoorStyle } from '@/lib/spotlight/door-style'
 
-export type HouseKitTheme = 'bold' | 'wildheart' | 'midnight'
+export type HouseKitTheme = 'bold' | 'wildheart' | 'midnight' | 'aiden-tyack'
 export type HouseKitLayoutKey = 'stack' | 'card-wall' | 'story' | 'calendar-first' | 'shop-front' | 'profile'
 export const HOUSE_KIT_LAYOUT_KEYS: readonly HouseKitLayoutKey[] = ['stack', 'card-wall', 'story', 'calendar-first', 'shop-front', 'profile']
 
 /** The stored id prefix of each theme's layouts (`bold-kit:stack`). Nocturne is the Midnight theme's name (code id midnight). */
-export const HOUSE_KIT_PREFIX: Record<HouseKitTheme, 'bold-kit' | 'wildheart-kit' | 'nocturne-kit'> = {
+export const HOUSE_KIT_PREFIX: Record<HouseKitTheme, 'bold-kit' | 'wildheart-kit' | 'nocturne-kit' | 'aiden-tyack-kit'> = {
   bold: 'bold-kit',
   wildheart: 'wildheart-kit',
   midnight: 'nocturne-kit',
+  // PRIVATE (LIVE-2515): the Aiden Tyack theme is worn by the aidentyack Space alone, so its layouts reach no other Spotlight.
+  'aiden-tyack': 'aiden-tyack-kit',
 }
 
 type IconName = 'calendar' | 'star' | 'users' | 'mail' | 'pin' | 'message' | 'heart' | 'tag' | 'sparkle'
@@ -59,7 +61,7 @@ interface Words {
 
 // The sample words COACH the owner (owner 2026-11-18: "Make every Frequency theme FULLY generic with copy that coaches them what
 // to write"): every line says what belongs there, pain point first, with no names, brands, invented prices or testimonials.
-// Each theme keeps its own register in the coaching (Bold direct, Wildheart seasonal, Nocturne quiet).
+// Each theme keeps its own register in the coaching (Bold direct, Wildheart seasonal, Nocturne quiet, Aiden Tyack the workshop).
 const COMMON = {
   name: 'Your name here', owner: 'Your name', role: 'What you do, in three words',
   offers: [['Your first offer', 'Your price', 'How long'], ['Your main offer', 'Your price', 'How long'], ['Your membership', 'Your price', 'How often']] as [string, string, string][],
@@ -93,6 +95,17 @@ const WORDS: Record<HouseKitTheme, Words> = {
     sessions: ['Your evening session', 'Your monthly gathering', 'Your private session'],
     photo: '/sites/midnight/photos/nature-grain.jpg', portrait: '/sites/midnight/photos/nature-fern.jpg',
   },
+  // Aiden Tyack (the handoff's ui_kits/spotlight): a workshop's words. Title Case display lines, as the blackletter is never set in caps.
+  'aiden-tyack': {
+    ...COMMON, descriptor: 'What you make, in three words',
+    offers: [['Your first piece', 'Your price', 'How long it takes'], ['Your main piece', 'Your price', 'How long it takes'], ['A custom order', 'Your price', 'How long it takes']],
+    pain: 'Say what your customer needs to last, in one line. Then say what you make for it.',
+    story: 'Who makes the work, what goes into each piece, and how someone orders one. Plain words, nothing made up.',
+    hero: { eyebrow: 'The workshop · Your city', title: 'Made by Hand,', em: 'Built to Last' },
+    cta: 'Ask for a custom piece',
+    sessions: ['Your next open day', 'Your next market', 'Your next workshop'],
+    photo: '/sites/aiden-tyack/photos/riders-on-coast-road.webp', portrait: '/sites/aiden-tyack/photos/rider-portrait.webp',
+  },
 }
 
 const SAMPLE_OPENINGS = [{ mon: 'Nov', day: '06', time: '7:00 PM', left: 4 }, { mon: 'Nov', day: '13', time: '7:00 PM', left: 0 }, { mon: 'Nov', day: '20', time: '6:30 PM', left: 2 }]
@@ -100,7 +113,7 @@ const HEX6 = /^#[0-9a-f]{6}$/i
 
 /** True for a theme that wears the house kit. */
 export function isHouseKitTheme(v: unknown): v is HouseKitTheme {
-  return v === 'bold' || v === 'wildheart' || v === 'midnight'
+  return v === 'bold' || v === 'wildheart' || v === 'midnight' || v === 'aiden-tyack'
 }
 
 /** Everything a house kit layout shows. `sample` fills the prices, open times, quote and the theme's sample photos; a live
