@@ -11,6 +11,7 @@ import { InlineText } from '@/components/sites/inline-text'
 import { ROLES, roleVariant as pickVariant, type RoleId } from '@/lib/blocks/roles/roles'
 import { presentationDefault } from '@/components/sites/presentation'
 import { RoleContactForm, RoleLetterForm } from './role-forms'
+import { RoleShopGrid, type RoleShopItem } from './role-shop'
 
 // ── The seventeen role blocks (docs/THEME-COHESION.md section 2, ADR-1923, LIVE-1858 and LIVE-1859) ─────────────────────────────────
 // Hero, Steps, Offerings, Gatherings, Membership, Proof, FAQ and CTA (LIVE-1858), then Statement, Letter, Contact, Stats,
@@ -96,9 +97,12 @@ function Actions({ p, metadata, a = 'primary', b = 'secondary' }: Ctx & { a?: st
   return first || second ? <div data-part="actions">{first}{second}</div> : null
 }
 
-function Media({ src, alt }: { src: string | null; alt?: string }) {
+/** Where a photo's crop sits ("50% 30%"): two percentages, or nothing (centred). Anything else is dropped. */
+const focusOf = (v: unknown) => (/^\d{1,3}% \d{1,3}%$/.test(str(v)) ? str(v) : undefined)
+
+function Media({ src, alt, focus }: { src: string | null; alt?: string; focus?: string }) {
   // eslint-disable-next-line @next/next/no-img-element -- owner photo on an arbitrary host
-  return src ? <figure data-part="media"><img src={src} alt={alt ?? ''} loading="lazy" /></figure> : null
+  return src ? <figure data-part="media"><img src={src} alt={alt ?? ''} loading="lazy" style={focus ? { objectPosition: focus } : undefined} /></figure> : null
 }
 
 /** A name that is a link when it has somewhere to go; the link stretches over the whole item (role-blocks-css). */
@@ -109,11 +113,42 @@ function Name({ text, href, metadata }: { text: string; href?: string; metadata?
 
 // ── Hero ───────────────────────────────────────────────────────────────────────────────────
 
+/** The ring of words round the hero photo's seal (LIVE-2517): an SVG circle path the words run along, the id unique per block. */
+function Seal({ id, text: words }: { id: string; text: string }) {
+  const ring = `seal-${id.replace(/[^\w-]/g, '')}`
+  return (
+    <span data-part="seal" aria-hidden="true">
+      <svg viewBox="0 0 120 120">
+        <defs><path id={ring} d="M60 60 m-46 0 a46 46 0 1 1 92 0 a46 46 0 1 1 -92 0" /></defs>
+        <text><textPath href={`#${ring}`}>{words}</textPath></text>
+      </svg>
+    </span>
+  )
+}
+
+/** The small product print pinned over the hero photo (LIVE-2517): its photo, name and price, a link when it has somewhere to go. */
+function Pin({ p, metadata }: Ctx) {
+  const src = img(p.cardImage)
+  if (!src) return null
+  const to = str(p.cardHref) ? hrefOf(str(p.cardHref), metadata) : null
+  const body = (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- owner photo on an arbitrary host */}
+      <img src={src} alt="" loading="lazy" />
+      {(str(p.cardLabel) || str(p.cardPrice)) && <span data-part="pin-text"><span>{str(p.cardLabel)}</span><span data-part="price">{str(p.cardPrice)}</span></span>}
+    </>
+  )
+  return to ? <a data-part="pin" href={to} aria-label={str(p.cardLabel) || undefined} {...rel(to)}>{body}</a> : <span data-part="pin">{body}</span>
+}
+
 function HeroBlock({ p, metadata }: Ctx) {
   const variant = roleVariant('hero', p.variant, metadata)
   const src = img(p.image)
   const showMedia = variant !== 'glow' && variant !== 'minimal'
-  const media = showMedia ? <Media src={src} alt={str(p.alt)} /> : null
+  const photo = showMedia ? <Media src={src} alt={str(p.alt)} focus={focusOf(p.focus)} /> : null
+  // A pinned print or a seal turns the photo into a stage that holds them (split and centre layouts; the full layout's photo is a backdrop).
+  const staged = !!photo && variant !== 'full' && (!!img(p.cardImage) || !!str(p.seal))
+  const media = staged ? <div data-part="stage">{photo}<Pin p={p} metadata={metadata} />{str(p.seal) && <Seal id={str(p.id) || 'hero'} text={str(p.seal)} />}</div> : photo
   return (
     <Frame role="hero" p={p} variant={variant} media={!!src && showMedia}>
       {variant === 'full' && media}
@@ -418,10 +453,10 @@ function FaqBlock({ p, metadata }: Ctx) {
   const rows = (liveRows.length ? liveRows : arr(p.items).map((f) => ({ question: str(f.question), answer: str(f.answer) }))).filter((f) => f.question)
   return (
     <Frame role="faq" p={p} variant={variant}>
-      <Heading p={p} />
+      <Heading p={p}><Actions p={p} metadata={metadata} /></Heading>
       <div data-part="list">
         {rows.map((f, i) => (
-          <details key={i} data-part="item">
+          <details key={i} data-part="item" open={p.open === true || undefined}>
             <summary><span data-part="question">{f.question}</span></summary>
             {f.answer && <p data-part="answer">{f.answer}</p>}
           </details>
@@ -525,7 +560,7 @@ function ContactBlock({ p, metadata }: Ctx) {
           {rows.length > 0 && <ContactRows rows={rows} metadata={metadata} />}
           {str(p.note) && <p data-part="note">{str(p.note)}</p>}
         </div>
-        <div data-part="side" data-card=""><RoleContactForm slug={slugOf(metadata)} buttonLabel={str(p.primaryLabel)} /></div>
+        <div data-part="side" data-card=""><RoleContactForm slug={slugOf(metadata)} buttonLabel={str(p.primaryLabel)} topics={lines(p.topics)} /></div>
       </Frame>
     )
   }
@@ -572,16 +607,30 @@ function ShopBlock({ p, metadata }: Ctx) {
   // A Space has no shop of its own to read yet (listings belong to people, not Spaces): on a live page the sample draws nothing.
   if (emptyLive(p, metadata, false)) return null
   const items = arr(p.items).filter((s) => str(s.name))
+  // With the filters on (LIVE-2517) the list is the one client piece: tabs by category, the count and a price sort over the same items.
+  if (p.filters === true) {
+    const rows: RoleShopItem[] = items.map((s) => ({
+      name: str(s.name), price: str(s.price), badge: str(s.badge), detail: str(s.detail), category: str(s.category),
+      image: img(s.image), alt: str(s.alt), focus: focusOf(s.focus) ?? null, href: str(s.href) ? hrefOf(str(s.href), metadata) : null,
+    }))
+    return (
+      <Frame role="shop" p={p} variant={variant}>
+        <Heading p={p}>{ctaOf(p, metadata)}</Heading>
+        <RoleShopGrid items={rows} card={variant !== 'list'} />
+      </Frame>
+    )
+  }
   return (
     <Frame role="shop" p={p} variant={variant}>
       <Heading p={p}>{ctaOf(p, metadata)}</Heading>
       <ul data-part="list">
         {items.map((s, i) => (
           <li key={i} data-part="item" data-card={variant === 'list' ? undefined : ''}>
-            <Media src={img(s.image)} />
+            <Media src={img(s.image)} alt={str(s.alt)} focus={focusOf(s.focus)} />
             <div data-part="text">
               {str(s.badge) && <span data-part="badge">{str(s.badge)}</span>}
               <Name text={str(s.name)} href={str(s.href)} metadata={metadata} />
+              {str(s.detail) && <p data-part="meta">{str(s.detail)}</p>}
             </div>
             {str(s.price) && <span data-part="price">{str(s.price)}</span>}
           </li>
@@ -655,7 +704,7 @@ function GalleryBlock({ p, metadata }: Ctx) {
       <ul data-part="list">
         {items.map((s, i) => (
           <li key={i} data-part="item">
-            {img(s.image) ? <Media src={img(s.image)} alt={str(s.alt) || str(s.caption)} /> : <figure data-part="media" />}
+            {img(s.image) ? <Media src={img(s.image)} alt={str(s.alt) || str(s.caption)} focus={focusOf(s.focus)} /> : <figure data-part="media" />}
             {str(s.caption) && <p data-part="caption">{str(s.caption)}</p>}
           </li>
         ))}
@@ -802,8 +851,9 @@ function StoryBlock({ p, metadata }: Ctx) {
         <Heading p={p} />
         {lines.length > 0 && <div data-part="lines">{lines.map((s, i) => <p key={i} data-part="body">{str(s.text)}</p>)}</div>}
         {str(p.quote) && <blockquote data-part="quote">{str(p.quote)}</blockquote>}
+        <Actions p={p} metadata={metadata} />
       </div>
-      {variant === 'split' && <Media src={src} alt={str(p.alt)} />}
+      {variant === 'split' && <Media src={src} alt={str(p.alt)} focus={focusOf(p.focus)} />}
     </Frame>
   )
 }
@@ -839,10 +889,12 @@ function role(id: RoleId, fields: Record<string, unknown>, Comp: (args: Ctx & { 
 export const rolesComponents: Record<string, ComponentConfig> = {
   [ROLES.hero.type]: role('hero', {
     ...head,
-    image, alt: text('Photo description', 'For screen readers.'),
+    image, alt: text('Photo description', 'For screen readers.'), focus: text('Photo crop', 'Where the crop sits, like 50% 30%. Leave empty for the middle.'),
     flip: { type: 'radio', label: 'Photo side (beside the words)', options: [{ label: 'Right', value: false }, { label: 'Left', value: true }] },
     primaryLabel: text('Main button'), primaryHref: text('Main button: where it goes', LINK_HINT),
     secondaryLabel: text('Second button'), secondaryHref: text('Second button: where it goes', LINK_HINT),
+    cardImage: { ...loomImageField, label: 'Small print over the photo (optional)' }, cardLabel: text('Small print: name'), cardPrice: text('Small print: price'), cardHref: text('Small print: where it goes', LINK_HINT),
+    seal: text('Words round the seal on the photo (optional)', 'They run round a circle, so end with a dot and a space.'),
   }, HeroBlock, { flip: false }),
   [ROLES.steps.type]: role('steps', {
     ...head,
@@ -874,6 +926,8 @@ export const rolesComponents: Record<string, ComponentConfig> = {
   [ROLES.faq.type]: role('faq', {
     ...head,
     live: yesNo('Use the Space\'s own questions'),
+    open: yesNo('Show every answer (no tapping to open)'),
+    primaryLabel: text('Button under the heading'), primaryHref: text('Button under the heading: where it goes', LINK_HINT),
     items: { type: 'array', label: 'Questions', hint: 'Used when the Space has no questions of its own.', arrayFields: { question: text('Question'), answer: area('Answer') } },
   }, FaqBlock),
   [ROLES.cta.type]: role('cta', {
@@ -900,6 +954,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     primaryLabel: text('Main button'), primaryHref: text('Main button: where it goes', LINK_HINT),
     secondaryLabel: text('Second button'), secondaryHref: text('Second button: where it goes', LINK_HINT),
     form: yesNo('Take messages right here (a contact form; the main button names its send button)'),
+    topics: area('Topics to pick from (form only)', 'One per line. Leave empty for no topic box.'),
     note: text('Small print'),
   }, ContactBlock),
   [ROLES.stats.type]: role('stats', {
@@ -909,7 +964,8 @@ export const rolesComponents: Record<string, ComponentConfig> = {
   }, StatsBlock),
   [ROLES.shop.type]: role('shop', {
     ...head, ...action,
-    items: { type: 'array', label: 'Products', arrayFields: { image, name: text('Name'), price: text('Price'), badge: text('Badge'), href: text('Link', LINK_HINT) } },
+    filters: yesNo('Let people sort the products (tabs by category, and a price sort)'),
+    items: { type: 'array', label: 'Products', arrayFields: { image, alt: text('Photo description', 'For screen readers.'), focus: text('Photo crop', 'Where the crop sits, like 50% 30%. Leave empty for the middle.'), name: text('Name'), price: text('Price'), badge: text('Badge'), detail: text('Line under the name', 'Material, size or finish.'), category: text('Category', 'Used for the tabs, like Belts.'), href: text('Link', LINK_HINT) } },
   }, ShopBlock),
   [ROLES.library.type]: role('library', {
     ...head, ...action,
@@ -922,7 +978,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
   }, PeopleBlock),
   [ROLES.gallery.type]: role('gallery', {
     ...head, ...action,
-    items: { type: 'array', label: 'Photos', arrayFields: { image, alt: text('Photo description', 'For screen readers.'), caption: text('Caption') } },
+    items: { type: 'array', label: 'Photos', arrayFields: { image, alt: text('Photo description', 'For screen readers.'), focus: text('Photo crop', 'Where the crop sits, like 50% 30%. Leave empty for the middle.'), caption: text('Caption') } },
   }, GalleryBlock),
   [ROLES.chapters.type]: role('chapters', {
     live: yesNo('Use the Space\'s own chapters'),
@@ -954,7 +1010,10 @@ export const rolesComponents: Record<string, ComponentConfig> = {
     ...head,
     items: { type: 'array', label: 'Lines of the story', arrayFields: { text: area('Words') } },
     quote: area('The line by the door'),
-    image, alt: text('Photo description', 'For screen readers.'),
+    image, alt: text('Photo description', 'For screen readers.'), focus: text('Photo crop', 'Where the crop sits, like 50% 30%. Leave empty for the middle.'),
+    flip: { type: 'radio', label: 'Photo side (beside the words)', options: [{ label: 'Right', value: false }, { label: 'Left', value: true }] },
+    primaryLabel: text('Main button'), primaryHref: text('Main button: where it goes', LINK_HINT),
+    secondaryLabel: text('Second button'), secondaryHref: text('Second button: where it goes', LINK_HINT),
   }, StoryBlock),
 }
 

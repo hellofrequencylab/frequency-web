@@ -245,22 +245,30 @@ export function SiteChrome({
   const svPhone = sv ? footer?.columns.flatMap((c) => c.links).find((l) => /^tel:/i.test(l.href)) ?? null : null
   const fhShop = fh ? templeKitShopHref(links) : null
   const fhLinks: HouseHeaderLink[] | null = fh ? freeHumanNavLinks(links, homeHref, isFreeHumanMovement(spaceSlug, brandName)) : null
+  // Aiden Tyack splits its menu round the lockup (the design's Header): the first three pages on the left, the rest on the right. The
+  // name is the way home, so Home leaves the menu; the right-hand pages ride in the tools slot (the phone menu still lists them all).
+  const atLinks = at ? links.filter((l) => l.href !== homeHref && !/^home$/i.test(l.label)) : null
+  const atRight = atLinks && atLinks.length > 3 ? (
+    <span className="at-nav-right">
+      {atLinks.slice(3).map((l) => <a key={`${l.href}:${l.label}`} href={l.href} aria-current={l.current ? 'page' : undefined}>{l.label}</a>)}
+    </span>
+  ) : null
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
   // that reserves its height, so nothing shifts when the date line folds away on scroll.
   const header = (
     <HouseHeader
       brandName={brandName}
       homeHref={homeHref}
-      links={fhLinks ?? links}
+      links={fhLinks ?? atLinks ?? links}
       adminLinks={fh ? null : adminLinks?.menu ?? null}
       adminCheck={fh ? null : adminLinks?.check ?? null}
-      cta={tk && cta && /^book/i.test(cta.label) ? { ...cta, short: 'Book' } : cta}
+      cta={at ? null : tk && cta && /^book/i.test(cta.label) ? { ...cta, short: 'Book' } : cta}
       logoUrl={logoUrl}
       logoMode={temple || designer ? (logoUrl ? 'logo' : 'name') : skin && !net ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
       skinned={!!skin}
       fadeOnPause={fadeOnPause}
       member={member}
-      tools={sv && svPhone ? <a className="sv-head-phone" href={svPhone.href}><Phone size={14} strokeWidth={2} aria-hidden="true" />{svPhone.label}</a> : tk ? <TempleKitTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={tkShop} /> : fh ? <FreeHumanTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={fhShop} /> : tools}
+      tools={sv && svPhone ? <a className="sv-head-phone" href={svPhone.href}><Phone size={14} strokeWidth={2} aria-hidden="true" />{svPhone.label}</a> : tk ? <TempleKitTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={tkShop} /> : fh ? <FreeHumanTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={fhShop} /> : at ? <>{atRight}{tools}</> : tools}
       megaChevron={fh ? <FreeHumanGlyph name="chevron-down" size={14} /> : null}
       defaultMega={fh ? previewMega : null}
       menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}

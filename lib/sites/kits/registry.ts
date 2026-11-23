@@ -100,6 +100,8 @@ for (const { kit } of CYBERWITCH_KIT_INDEX) LOADERS[`cyberwitch-${kit}`] = () =>
 for (const { kit } of MINDLESS_KIT_INDEX) LOADERS[`mindless-${kit}`] = () => import('./mindless-variants').then((m) => m.mindlessKit(kit)).then((k) => withJoinPage(k, k.niche))
 // Aiden Tyack's one kit (`aiden-tyack-general`). PRIVATE like its theme (PRIVATE_THEME_SITES): no index lists it, so it is reached only by id.
 LOADERS['aiden-tyack-general'] = () => import('./aiden-tyack-variants').then((m) => m.aidenTyackKit()).then((k) => withJoinPage(k, 'general'))
+// The site designed for aidentyack.com (`aiden-tyack-site`, LIVE-2519): the finished pages, no join page. Private the same way.
+LOADERS['aiden-tyack-site'] = () => import('./aiden-tyack-site').then((m) => m.aidenTyackSiteKit())
 // Services' sixteen trade kits (`services-<trade>`: General plus fifteen trades). `services-general` is the General kit every Mega Theme names, lib/spaces/starter-site.ts.
 for (const { id } of SERVICES_KIT_INDEX) LOADERS[id] = () => import('./services-variants').then((m) => m.servicesKit(id.slice('services-'.length) as ServicesTradeId)).then((k) => (k.id === 'services-general' ? withJoinPage(k, 'general') : k))
 
