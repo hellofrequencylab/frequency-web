@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { CalendarDays, Loader2 } from 'lucide-react'
 import { listGuestOpenSlotsAction } from '@/lib/spaces/booking-actions'
 import type { OpenSlot, ServiceType } from '@/lib/spaces/booking'
@@ -14,7 +14,22 @@ import { EmptyState } from '@/components/ui/empty-state'
 // guest door (the server re-checks the slot on every booking anyway). With no services it is the flat time
 // picker over the Space's windows.
 //
+// SERVICE LINK (BOOK-013): `?service=<id>` preselects that service, as on the Space's own Book page. The page
+// is cached, so the id is read in the browser after hydration, never on the server; an id that is not an
+// active service is ignored by BookingServiceMember.
+//
 // COPY: plain camp-counselor voice, no em/en dashes, and no word about Frequency: the website is the owner's.
+
+const NO_OP_SUBSCRIBE = () => () => {}
+
+/** The `?service=` id from the address bar; null on the server and the first client render. */
+function useServiceParam(): string | null {
+  return useSyncExternalStore(
+    NO_OP_SUBSCRIBE,
+    () => new URLSearchParams(window.location.search).get('service'),
+    () => null,
+  )
+}
 
 export function SiteBooking({
   spaceId,
@@ -27,9 +42,16 @@ export function SiteBooking({
   services: ServiceType[]
   timezone: string
 }) {
+  const serviceId = useServiceParam()
   if (services.length > 0) {
     return (
-      <BookingServiceMember spaceId={spaceId} services={services} timezone={timezone} guest={{ slug }} />
+      <BookingServiceMember
+        spaceId={spaceId}
+        services={services}
+        timezone={timezone}
+        guest={{ slug }}
+        initialServiceId={serviceId}
+      />
     )
   }
   return <SiteFlatBooking spaceId={spaceId} slug={slug} timezone={timezone} />

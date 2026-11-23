@@ -36,6 +36,9 @@ import { BookingMine } from '@/components/spaces/booking-mine'
 //
 // COPY: plain camp-counselor voice, no narrated feelings, no em/en dashes (CONTENT-VOICE §10).
 // TIMEZONE: v1 displays every slot in the Space's configured IANA timezone, LABELED.
+//
+// SERVICE LINK (BOOK-013): `serviceId` (the Book page's `?service=<id>`) preselects that service on both
+// the member and the guest side; BookingServiceMember ignores an id that is not an active service.
 
 // SlotDay + the grouping/label helpers now live in lib/spaces/booking-format (pure, client-safe), so
 // re-export the type for any server caller that still imports it from here.
@@ -45,12 +48,15 @@ export async function BookingMember({
   spaceId,
   slug,
   ownerProfileId,
+  serviceId = null,
 }: {
   spaceId: string
   slug: string
   ownerProfileId: string | null
+  /** BOOK-013: a shared service link's id, preselected when it names an active service. */
+  serviceId?: string | null
 }) {
-  if (!(await getMyProfileId())) return <GuestBooking spaceId={spaceId} slug={slug} />
+  if (!(await getMyProfileId())) return <GuestBooking spaceId={spaceId} slug={slug} serviceId={serviceId} />
 
   const [slots, services] = await Promise.all([
     listOpenSlots(spaceId),
@@ -73,6 +79,7 @@ export async function BookingMember({
           services={services}
           timezone={timezone}
           depositsLive={depositsLive}
+          initialServiceId={serviceId}
         />
       </>
     )
@@ -137,7 +144,15 @@ export async function BookingMember({
 
 /** The signed-out half (BOOK-003): the guest door on the Space's own Book page. Public reads only, and only
  *  for a Space an anonymous visitor may see; anything else asks the visitor to sign in. */
-async function GuestBooking({ spaceId, slug }: { spaceId: string; slug: string }) {
+async function GuestBooking({
+  spaceId,
+  slug,
+  serviceId,
+}: {
+  spaceId: string
+  slug: string
+  serviceId: string | null
+}) {
   const visible = await getVisibleSpaceBySlug(slug, null)
   if (!visible || visible.id !== spaceId) {
     return (
@@ -152,7 +167,15 @@ async function GuestBooking({ spaceId, slug }: { spaceId: string; slug: string }
   const guest = { slug: visible.slug }
   const setup = await readPublicBookingSetup(spaceId)
   if (setup.services.length > 0) {
-    return <BookingServiceMember spaceId={spaceId} services={setup.services} timezone={setup.timezone} guest={guest} />
+    return (
+      <BookingServiceMember
+        spaceId={spaceId}
+        services={setup.services}
+        timezone={setup.timezone}
+        guest={guest}
+        initialServiceId={serviceId}
+      />
+    )
   }
 
   const slots = setup.windowCount > 0 ? await listPublicOpenSlots(spaceId) : []

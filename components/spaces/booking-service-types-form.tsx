@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Check, Link2, Loader2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -17,6 +17,9 @@ import { IconButton } from '@/components/ui/icon-button'
 // optional description. Saved through the canEditProfile-gated setSpaceServiceTypes action, which
 // preserves existing ids so any window bound to a service keeps its binding. The server re-validates
 // and normalizes, so this form is convenience, not the gate.
+//
+// BOOK-013: a saved service carries a "Copy link" control: /spaces/<slug>/book?service=<id> opens the
+// Book page straight on that service, for a bio link, an email or a Spotlight Link card.
 //
 // COPY: plain labels, no narrated feelings, no em/en dashes (CONTENT-VOICE §10). Tokens only.
 
@@ -71,9 +74,12 @@ function newQuestionId(): string {
 
 export function BookingServiceTypesForm({
   spaceId,
+  slug,
   initialServices,
 }: {
   spaceId: string
+  /** The Space slug, for each saved service's shareable Book link (BOOK-013). */
+  slug: string
   initialServices: ServiceType[]
 }) {
   const router = useRouter()
@@ -81,6 +87,16 @@ export function BookingServiceTypesForm({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, startSave] = useTransition()
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  async function copyLink(id: string) {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/spaces/${slug}/book?service=${encodeURIComponent(id)}`)
+      setCopiedId(id)
+    } catch {
+      setError('Could not copy the link. Open the Book page and copy it from the address bar.')
+    }
+  }
 
   function update(index: number, patch: Partial<ServiceDraft>) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)))
@@ -221,6 +237,16 @@ export function BookingServiceTypesForm({
                   ))}
                 </Select>
               </label>
+              {r.id && (
+                <IconButton
+                  variant="bordered"
+                  label={copiedId === r.id ? 'Link copied' : 'Copy a link to book this service'}
+                  onClick={() => copyLink(r.id!)}
+                  className="mb-1"
+                >
+                  {copiedId === r.id ? <Check className="h-4 w-4" aria-hidden /> : <Link2 className="h-4 w-4" aria-hidden />}
+                </IconButton>
+              )}
               <IconButton
                 variant="bordered"
                 tone="danger"

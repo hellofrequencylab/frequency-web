@@ -17,6 +17,7 @@ import type { OpenSlot, BookingQuestion } from '@/lib/spaces/booking'
 import { groupSlotsByDay, sessionLengthLabel, timezoneLabel } from '@/lib/spaces/booking-format'
 import { cn } from '@/lib/utils'
 import { choiceTileClasses } from '@/components/ui/choice-tile'
+import { BookingMonthGrid } from '@/components/spaces/booking-month-grid'
 
 // MEMBER BOOKING PICKER (client). The interactive half of the Practitioner Book tab: a member taps a
 // time, optionally adds a note, and confirms via the createBooking server action. The server
@@ -33,6 +34,10 @@ import { choiceTileClasses } from '@/components/ui/choice-tile'
 // honeypot, then books through createGuestBookingAction. No reschedule, no deposit, no "your bookings": the
 // confirmation email is the visitor's record. SCAN-834: a guest success is a 30 minute HOLD; the time is
 // theirs once they click the link in the "Confirm your booking" email, so the calm screen says so. Without `guest` the member flow is unchanged.
+//
+// MONTH GRID (BOOK-013). The picker leads with a month calendar (BookingMonthGrid) with the open days
+// marked, the first open day chosen, and only that day's times as buttons, so a 60 day window of 30 minute
+// slots is one month and a handful of times on a phone, not hundreds of buttons.
 
 const NO_OP_SUBSCRIBE = () => () => {}
 
@@ -82,6 +87,7 @@ export function BookingPicker({
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<OpenSlot | null>(null)
+  const [dayKey, setDayKey] = useState<string | null>(null)
   const [note, setNote] = useState('')
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
@@ -99,6 +105,8 @@ export function BookingPicker({
   const viewerTz = useViewerTimezone(spaceTimezone)
 
   const days = useMemo(() => groupSlotsByDay(slots, viewerTz), [slots, viewerTz])
+  // The chosen day, else the first open one (also after a refresh empties the chosen day).
+  const day = days.find((d) => d.key === dayKey) ?? days[0] ?? null
   const sessionLabel = useMemo(() => sessionLengthLabel(slots), [slots])
   const viewerTzLabel = timezoneLabel(viewerTz)
   const spaceTzLabel = timezoneLabel(spaceTimezone)
@@ -223,38 +231,46 @@ export function BookingPicker({
         {sameZone
           ? `Times shown in ${spaceTzLabel}.`
           : `Times shown in your time (${viewerTzLabel}). This space runs on ${spaceTzLabel}.`}{' '}
-        Pick a slot to book a 1:1 session.
+        Pick a day, then a time.
       </p>
 
-      <div className="space-y-5">
-        {days.map((day) => (
-          <div key={day.key}>
-            <h3 className="mb-2 text-body-sm font-bold tracking-tight text-text">{day.label}</h3>
-            <div className="flex flex-wrap gap-2">
-              {day.slots.map((slot) => {
-                const active = selected?.startsAt === slot.startsAt
-                return (
-                  <button
-                    key={slot.startsAt}
-                    type="button"
-                    onClick={() => {
-                      setSelected(active ? null : slot)
-                      setError(null)
-                    }}
-                    aria-pressed={active}
-                    className={choiceTileClasses(
-                      active,
-                      cn('rounded-control px-3 py-1.5 text-body-sm font-semibold tabular-nums', active ? 'text-primary-strong' : 'text-text'),
-                    )}
-                  >
-                    {timeFmt.format(new Date(slot.startsAt))}
-                  </button>
-                )
-              })}
-            </div>
+      <BookingMonthGrid
+        days={days}
+        selectedKey={day?.key ?? null}
+        onSelect={(key) => {
+          setDayKey(key)
+          setSelected(null)
+          setError(null)
+        }}
+      />
+
+      {day && (
+        <div>
+          <h3 className="mb-2 text-body-sm font-bold tracking-tight text-text">{day.label}</h3>
+          <div className="flex flex-wrap gap-2">
+            {day.slots.map((slot) => {
+              const active = selected?.startsAt === slot.startsAt
+              return (
+                <button
+                  key={slot.startsAt}
+                  type="button"
+                  onClick={() => {
+                    setSelected(active ? null : slot)
+                    setError(null)
+                  }}
+                  aria-pressed={active}
+                  className={choiceTileClasses(
+                    active,
+                    cn('rounded-control px-3 py-1.5 text-body-sm font-semibold tabular-nums', active ? 'text-primary-strong' : 'text-text'),
+                  )}
+                >
+                  {timeFmt.format(new Date(slot.startsAt))}
+                </button>
+              )
+            })}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {selected && (
         <div className="space-y-3 rounded-card border border-border bg-surface p-4 lift-1">
