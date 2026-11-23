@@ -72,16 +72,29 @@ describe('both switches blank (the default): the proxy sends what it sent before
 })
 
 describe('the test run: CSP_NONCE_REPORT_ONLY=1', () => {
-  it('a member page gets the strict policy as report-only, and the render gets the same nonce', async () => {
+  // Rewritten 2026-11-23 on the owner's answer ("Yes, fix the test run"). This case used to hold
+  // that the proxy sends NO enforced header during the run. Measured on Vercel, that made the run
+  // blind: Next reads the nonce from the enforced header, found the static one, and stamped nothing.
+  // The promise now is that the enforced header names the nonce and still allows what today's does.
+  it('a member page gets the strict policy as report-only, and an enforced header that names the same nonce without tightening anything', async () => {
     vi.stubEnv('CSP_NONCE_REPORT_ONLY', '1')
     const seen = await visit('/feed')
-    expect(seen.enforced, 'the proxy must not replace the enforced policy during the test run').toBeNull()
     expect(seen.reportOnly).toContain("'strict-dynamic'")
     expect(seen.reportOnly).not.toMatch(/script-src[^;]*'unsafe-inline'/)
     const nonce = nonceIn(seen.reportOnly)
     expect(nonce).toBeTruthy()
     expect(seen.forwardedNonce).toBe(nonce)
-    expect(seen.forwardedPolicy).toBe(seen.reportOnly)
+
+    const enforced = (seen.enforced ?? '').split('; ')
+    expect(enforced.find((d) => d.startsWith('script-src')), 'Next takes the first script-src directive').toContain(`'nonce-${nonce}'`)
+    // Every <script> is still judged by today's sources: inline allowed, no nonce or hash required.
+    const elem = enforced.find((d) => d.startsWith('script-src-elem '))
+    expect(elem).toContain("'unsafe-inline'")
+    expect(elem).not.toMatch(/'nonce-|'sha256-|'strict-dynamic'/)
+    expect(enforced).toContain("script-src-attr 'unsafe-inline'")
+    expect(seen.enforced).not.toContain("'strict-dynamic'")
+    // And the render is handed that same header, so the two sides cannot disagree about the nonce.
+    expect(seen.forwardedPolicy).toBe(seen.enforced)
   })
 
   it('a member on a share URL is rewritten to the member page, which gets it too', async () => {

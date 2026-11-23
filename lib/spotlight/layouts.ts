@@ -16,8 +16,9 @@ export type NewWorldKitLayoutId = `new-world-kit:${LayoutName}`
 export type ServicesKitLayoutId = `services-kit:${LayoutName}`
 export type CyberWitchKitLayoutId = `cyberwitch-kit:${LayoutName}`
 export type MindlessKitLayoutId = `mindless-kit:${LayoutName}`
-/** Bold, Wildheart and Nocturne share one layout set (LIVE-2357, components/spotlight/house-kit-layouts.tsx), each in its own tokens. */
-type HouseKitLayoutId = `bold-kit:${LayoutName}` | `wildheart-kit:${LayoutName}` | `nocturne-kit:${LayoutName}`
+/** Bold, Wildheart and Nocturne share one layout set (LIVE-2357, components/spotlight/house-kit-layouts.tsx), each in its own tokens.
+ *  The private Aiden Tyack theme wears it too (LIVE-2515): it has no Spotlight preset, so only its own Space's Spotlight reaches it. */
+type HouseKitLayoutId = `bold-kit:${LayoutName}` | `wildheart-kit:${LayoutName}` | `nocturne-kit:${LayoutName}` | `aiden-tyack-kit:${LayoutName}`
 export type SpotlightLayoutId = NetworkKitLayoutId | DesignerKitLayoutId | TempleKitLayoutId | FreeHumanLayoutId | NewWorldKitLayoutId | ServicesKitLayoutId | CyberWitchKitLayoutId | MindlessKitLayoutId | HouseKitLayoutId
 
 interface SpotlightLayoutInfo {
@@ -55,16 +56,22 @@ const SPOTLIGHT_LAYOUTS_BY_THEME: Record<string, readonly SpotlightLayoutInfo[]>
   bold: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `bold-kit:${n}` as HouseKitLayoutId, label, blurb })),
   wildheart: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `wildheart-kit:${n}` as HouseKitLayoutId, label, blurb })),
   midnight: LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `nocturne-kit:${n}` as HouseKitLayoutId, label, blurb })),
+  'aiden-tyack': LAYOUT_BLURBS.map(([n, label, blurb]) => ({ id: `aiden-tyack-kit:${n}` as HouseKitLayoutId, label, blurb })),
 }
 
-const ALL_IDS: ReadonlySet<string> = new Set(Object.values(SPOTLIGHT_LAYOUTS_BY_THEME).flatMap((l) => l.map((i) => i.id)))
+/** Layouts of a PRIVATE theme (lib/theme/site-style.ts RETIRED_FROM_PICKERS): drawn only for the Space that wears the theme, through
+ *  spaceLayoutId, so a stored member Spotlight can never name one (validateSpotlightTheme reads this set). */
+const PRIVATE_LAYOUT_PREFIXES = ['aiden-tyack-kit:'] as const
+const ALL_IDS: ReadonlySet<string> = new Set(
+  Object.values(SPOTLIGHT_LAYOUTS_BY_THEME).flatMap((l) => l.map((i) => i.id)).filter((id) => !PRIVATE_LAYOUT_PREFIXES.some((p) => id.startsWith(p))),
+)
 
 /** The layouts a theme offers (empty for a theme with none). */
 export function spotlightLayoutsFor(themeId: string): readonly SpotlightLayoutInfo[] {
   return SPOTLIGHT_LAYOUTS_BY_THEME[themeId] ?? []
 }
 
-/** A stored layout value, or null when it is not a registered layout id. */
+/** A stored layout value, or null when it is not a registered layout id (or is a private theme's). */
 export function asSpotlightLayoutId(v: unknown): SpotlightLayoutId | null {
   return typeof v === 'string' && ALL_IDS.has(v) ? (v as SpotlightLayoutId) : null
 }
@@ -99,9 +106,9 @@ export function isCyberWitchKitLayout(id: SpotlightLayoutId): id is CyberWitchKi
   return id.startsWith('cyberwitch-kit:')
 }
 
-/** True for a layout the shared house kit draws for Bold, Wildheart or Nocturne (components/spotlight/house-kit-layouts.tsx). */
+/** True for a layout the shared house kit draws for Bold, Wildheart, Nocturne or Aiden Tyack (components/spotlight/house-kit-layouts.tsx). */
 export function isHouseKitLayout(id: SpotlightLayoutId): id is HouseKitLayoutId {
-  return id.startsWith('bold-kit:') || id.startsWith('wildheart-kit:') || id.startsWith('nocturne-kit:')
+  return id.startsWith('bold-kit:') || id.startsWith('wildheart-kit:') || id.startsWith('nocturne-kit:') || id.startsWith('aiden-tyack-kit:')
 }
 
 /** True for a layout the Mindless theme draws (components/spotlight/mindless-kit-layouts.tsx). */
@@ -125,6 +132,7 @@ export function asSpotlightLook(v: unknown): SpotlightLook | null {
 const SPACE_THEME_LAYOUT_KEY: Record<string, string> = {
   'new-world': 'new-world', services: 'services', cyberwitch: 'cyberwitch', mindless: 'mindless', designer: 'designer-kit',
   'temple-kit': 'temple-kit', 'free-human': 'free-human', 'network-kit': 'network-kit', bold: 'bold', wildheart: 'wildheart', midnight: 'midnight',
+  'aiden-tyack': 'aiden-tyack',
 }
 /** The themes whose Space Spotlight wears a layout only once the owner has stored a look. */
 export const HOUSE_KIT_OPT_IN: ReadonlySet<string> = new Set(['bold', 'wildheart', 'midnight'])

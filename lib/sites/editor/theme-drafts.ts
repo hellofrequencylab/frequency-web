@@ -18,7 +18,7 @@ import { MAX_THEME_DRAFTS, type WebsiteLook, type WebsiteSnapshot, type WebsiteT
 
 /** What an owner calls each theme. Nocturne is the Midnight theme under its new name; the stored id stays. */
 export const THEME_DRAFT_NAME: Record<WebsiteTheme, string> = {
-  DAWN: 'Default', Menswork: 'Bold', Wildheart: 'Wildheart', Network: 'Network', NetworkKit: 'Network', Temple: 'Temple', TempleKit: 'Temple', Midnight: 'Nocturne', Designer: 'Designer', FreeHuman: 'Honey', Services: 'Services', NewWorld: 'New World', CyberWitch: 'CyberWitch', Mindless: 'Mindless',
+  DAWN: 'Default', Menswork: 'Bold', Wildheart: 'Wildheart', Network: 'Network', NetworkKit: 'Network', Temple: 'Temple', TempleKit: 'Temple', Midnight: 'Nocturne', Designer: 'Designer', FreeHuman: 'Honey', Services: 'Services', NewWorld: 'New World', CyberWitch: 'CyberWitch', Mindless: 'Mindless', AidenTyack: 'Aiden Tyack',
 }
 
 const MAIN = 'main'

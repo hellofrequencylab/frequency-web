@@ -5,13 +5,15 @@ import { LONG_PRESS_MS, longPressStep } from '@/lib/builder/gesture'
 import { canDropLayer, isTouchPress, readLayerDrop, type LayerDropTarget } from '@/lib/sites/editor/layer-touch'
 
 type Options = {
-  /** The landing place under the finger, by its drop key, or null to clear the marker. */
-  onOver: (key: string | null) => void
+  /** The landing place under the finger, by its drop key, or null to clear the marker. `drag` says which
+   *  block is held and the place's own target, for a list that refuses some places (a full column). */
+  onOver: (key: string | null, drag?: { id: string; target: LayerDropTarget }) => void
   /** The finger lifted over a landing place the block may take. */
   onDrop: (id: string, target: LayerDropTarget, key: string) => void
 }
 
-/** Long press then drag for the Layers tree, wired once on the list around the rows (PROG-E6). The press
+/** Long press then drag for a list of blocks, wired once on the list around the rows (PROG-E6): the website
+ *  builder's Layers tree and the Space page builder's rail share it, so the gesture cannot drift. The press
  *  starts on a row (`data-layer-id`); a move past the slop before it arms is a scroll and lets go. Once armed,
  *  the page stops scrolling, the row under the finger lights, and lifting drops there. */
 export function useLayerTouchDrag({ onOver, onDrop }: Options) {
@@ -42,6 +44,19 @@ export function useLayerTouchDrag({ onOver, onDrop }: Options) {
     setDragging(null)
     latest.current.onOver(null)
   }
+  // Escape lets go with nothing moved (a pen, or a tablet with a keyboard). The lift that follows is not a
+  // drop, and the click after it is not a pick.
+  useEffect(() => {
+    if (!dragging) return
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      reset()
+      swallowClick.current = true
+    }
+    document.addEventListener('keydown', escape)
+    return () => document.removeEventListener('keydown', escape)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset reads refs and stable setters only
+  }, [dragging])
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     swallowClick.current = false
@@ -65,7 +80,7 @@ export function useLayerTouchDrag({ onOver, onDrop }: Options) {
     if (!dragging) setDragging(pressed.current)
     const drop = readLayerDrop(event.currentTarget.ownerDocument.elementFromPoint?.(event.clientX, event.clientY) ?? null)
     over.current = drop && canDropLayer(pressed.current, drop) ? drop : null
-    latest.current.onOver(over.current?.key ?? null)
+    latest.current.onOver(over.current?.key ?? null, over.current ? { id: pressed.current, target: over.current.target } : undefined)
   }
   const onPointerUp = () => {
     const id = pressed.current, drop = over.current, armed = press.current.phase === 'armed'

@@ -55,4 +55,15 @@ export const HOUSE_KIT_LAYOUTS_CSS = `
 /* Nocturne: Bodoni over Geist, square frames, hairlines, no lift. */
 .hks[data-kit-theme="midnight"]{--hk-display:var(--font-mn-bodoni,'Bodoni Moda'),'Bodoni Moda',Didot,Georgia,serif;--hk-body:var(--font-mn-geist,Geist),Geist,system-ui,sans-serif;--hk-label:var(--font-mn-geist,Geist),Geist,system-ui,sans-serif;--hk-weight:400;--hk-r:2px;--hk-r-btn:2px;--hk-portrait:2px;--hk-frame:none}
 .hks[data-kit-theme="midnight"] .hks-photo img{filter:grayscale(1) contrast(1.05)}
+/* Aiden Tyack (private, LIVE-2515): Grenze Gotisch in Title Case over Archivo, nearly square corners, and the 1.5px dashed stitch
+   inside every card (7px), photo (9px) and button (4px), as on its website (components/sites/aiden-tyack-css.ts). */
+.hks[data-kit-theme="aiden-tyack"]{--hk-display:var(--font-at-display,'Grenze Gotisch'),'Grenze Gotisch',Georgia,serif;--hk-body:var(--font-at-body,Archivo),Archivo,system-ui,sans-serif;--hk-label:var(--font-at-body,Archivo),Archivo,system-ui,sans-serif;--hk-weight:700;--hk-track:0;--hk-em:normal;--hk-r:3px;--hk-r-btn:3px;--hk-portrait:3px;--hk-frame:none;--hk-stitch:color-mix(in oklab,var(--hk-text) 38%,var(--hk-canvas))}
+.hks[data-kit-theme="aiden-tyack"] .hks-card{outline:1.5px dashed var(--hk-stitch);outline-offset:-7px;box-shadow:0 1px 2px color-mix(in oklab,var(--hk-text) 12%,transparent)}
+.hks[data-kit-theme="aiden-tyack"] .hks-btn{outline:1.5px dashed color-mix(in oklab,var(--hk-on-accent) 55%,var(--hk-accent));outline-offset:-4px}
+.hks[data-kit-theme="aiden-tyack"] .hks-btn--ghost{outline-color:var(--hk-stitch)}
+.hks[data-kit-theme="aiden-tyack"] .hks-photo{outline:1.5px dashed color-mix(in oklab,var(--hk-raised) 70%,transparent);outline-offset:-9px}
+.hks[data-kit-theme="aiden-tyack"] .hks-portrait{outline:1.5px dashed var(--hk-stitch);outline-offset:-5px}
+.hks[data-kit-theme="aiden-tyack"] .hks-quote{border-left:0;outline:1.5px dashed var(--hk-stitch);outline-offset:-7px;font-family:var(--font-at-voice,'Cormorant Garamond'),'Cormorant Garamond',Georgia,serif;font-size:22px}
+.hks[data-kit-theme="aiden-tyack"] .hks-label,.hks[data-kit-theme="aiden-tyack"] .hks-badge{letter-spacing:.18em}
+.hks[data-kit-theme="aiden-tyack"] .hks-btn:focus-visible,.hks[data-kit-theme="aiden-tyack"] .hks-card:focus-visible{outline:2px solid var(--hk-accent);outline-offset:3px}
 `

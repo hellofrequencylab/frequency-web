@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2515",
+  "title": "Aiden Tyack: the six Spotlight layouts and the four kit emails, private to its Space",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-23",
+  "source": {
+    "file": "docs/THEME-PROTOCOL.md",
+    "ref": "Daniel 2026-11-23: \"Make sure that theme is live, fully evolved and in private\"."
+  },
+  "detail": "The private Aiden Tyack theme now wears the shared house kit, like Bold, Wildheart and Nocturne. Spotlight: six layouts under aiden-tyack-kit (stack, card wall, story, calendar first, shop front, profile) in its own flat token set and a presentation of Grenze Gotisch in Title Case over Archivo, Cormorant for the quote, nearly square corners and the 1.5px dashed stitch inside cards, photos and buttons. The aidentyack Space's Spotlight offers the six looks (not opt-in). PRIVATE: the theme has no Spotlight preset, and asSpotlightLayoutId refuses aiden-tyack-kit ids, so no member Spotlight can store one. Emails: the four house kit letters (note, welcome, dates, receipt) in the same faces and corners, in the stock sample catalog. Coaching words only, with the handoff's stand-in photos.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2515.mjs"
+  },
+  "wave": "W7"
+}

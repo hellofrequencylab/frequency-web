@@ -23,6 +23,7 @@ import { SERVICES_SURFACE } from '@/lib/theme/services'
 import { NEW_WORLD_SURFACE } from '@/lib/theme/new-world'
 import { CYBERWITCH_SURFACE } from '@/lib/theme/cyberwitch'
 import { MINDLESS_SURFACE } from '@/lib/theme/mindless'
+import { AIDEN_TYACK_SURFACE } from '@/lib/theme/aiden-tyack'
 import { WILDHEART_PALETTE as W } from '@/lib/theme/wildheart'
 import type { MegaThemeId } from '@/lib/theme/mega-theme'
 import { palette } from '@/lib/theme/palette'
@@ -83,4 +84,5 @@ export const MEGA_SURFACES: Partial<Record<MegaThemeId, ThemeSurface>> = {
   'new-world': NEW_WORLD_SURFACE,
   cyberwitch: CYBERWITCH_SURFACE,
   mindless: MINDLESS_SURFACE,
+  'aiden-tyack': AIDEN_TYACK_SURFACE,
 }

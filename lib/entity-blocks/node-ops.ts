@@ -54,6 +54,8 @@ import {
   type RowRatio,
 } from './layout'
 import { entityBlockLimit, typeLimiter } from './block-limits'
+import { layerColumnTarget } from '@/lib/sites/editor/layer-focus'
+import { reorder } from '@/lib/builder/gesture'
 
 /** One row of a node document. `NodeLayout['rows'][number]`, named so the ops below read plainly. */
 export type NodeRow = NodeLayout['rows'][number]
@@ -61,7 +63,8 @@ export type NodeRow = NodeLayout['rows'][number]
 // The same bounds node-tree.ts and rows-ops.ts enforce, so a mutated document is never larger than an
 // upgraded one.
 const MAX_ROWS = 24
-const MAX_STACK = 12
+/** The most blocks one column holds. A move into a column already at it is refused, never dropped. */
+export const MAX_STACK = 12
 const MAX_BENCH = 48
 const VALID_COLUMNS: ReadonlySet<number> = new Set([1, 2, 3, 4])
 const ROW_ID_RE = /^r[0-9a-z]+$/i
@@ -274,6 +277,78 @@ export function placeNode(layout: NodeLayout, nid: string, rowId: string, col: n
   if (!lifted) return layout
   const next = insert(lifted.layout, lifted.node, rowId, col, index)
   return next ? normalizeNodeLayout(next) : layout
+}
+
+/** Where a block goes when it moves one column over inside its own section: the END of the neighbouring
+ *  column, the website Layers rule (`layerColumnTarget`, PROG-E6), read here with a section as the holding
+ *  block and its columns as the slots. `rows` carries block KEYS only (node ids, or type ids on the legacy
+ *  store), so both canvas stores answer through this one function. Null when the section has one column,
+ *  the block is already in the first or last column on that side, the block is not placed, or the target
+ *  column is at the stack cap (normalizing would drop the block that just arrived). */
+export function columnMoveTarget(
+  rows: readonly { id: string; cells: readonly (readonly string[])[] }[],
+  key: string,
+  direction: -1 | 1,
+): { rowId: string; col: number; index: number } | null {
+  const sections = rows.map((row) => ({
+    id: row.id,
+    slots: row.cells.map((stack, col) => ({ key: String(col), children: stack.map((id) => ({ id, slots: [] })) })),
+  }))
+  const target = layerColumnTarget(sections, key, direction)
+  if (!target || target.index >= MAX_STACK) return null
+  return { rowId: target.parentId, col: Number(target.slotKey), index: target.index }
+}
+
+/** Move a placed node one column over inside its own section (direction -1 left, +1 right), to the end of
+ *  that column. Its bags travel with it, and a move never trips a per-type cap or a lock: the lock rule
+ *  (`partitionSpaceBlocks`) decides what may be ADDED to a page, and a move adds nothing. A no-op where
+ *  `columnMoveTarget` answers null, on the bench, or for an unknown node. */
+export function moveNodeAcross(layout: NodeLayout, nid: string, direction: -1 | 1): NodeLayout {
+  const target = columnMoveTarget(
+    layout.rows.map((row) => ({ id: row.id, cells: row.cells.map((stack) => stack.map((n) => n.nid)) })),
+    nid,
+    direction,
+  )
+  return target ? placeNode(layout, nid, target.rowId, target.col, target.index) : layout
+}
+
+/** A place in a section a dragged block is dropped on: before the block now at `index` of column `col`
+ *  (index = the column's length is its end). Counted before the dragged block leaves, as a drop sees it. */
+export type ColumnDrop = { rowId: string; col: number; index: number }
+
+/** Where a DRAGGED block lands (PROG-E6H), the twin of `columnMoveTarget` for a drop: a place inside its own
+ *  column, or any place in another column of its own section. `rows` carries block KEYS only, so both canvas
+ *  stores answer through this one function. The order inside a column is the shared drag rule (`reorder`,
+ *  lib/builder/gesture.ts). Null, so nothing moves, when the block is not placed, the drop is in another
+ *  section, the column does not exist, the block would land where it already is, or the other column is at
+ *  the stack cap (normalizing would drop the block that just arrived), exactly as the button refuses. */
+export function dropMoveTarget(
+  rows: readonly { id: string; cells: readonly (readonly string[])[] }[],
+  key: string,
+  drop: ColumnDrop,
+): ColumnDrop | null {
+  const row = rows.find((r) => r.id === drop.rowId)
+  const from = row ? row.cells.findIndex((stack) => stack.includes(key)) : -1
+  const stack = row?.cells[drop.col]
+  if (!row || from < 0 || !stack || !Number.isInteger(drop.index) || drop.index < 0) return null
+  if (from !== drop.col) {
+    if (stack.length >= MAX_STACK) return null
+    return { rowId: row.id, col: drop.col, index: Math.min(drop.index, stack.length) }
+  }
+  const at = stack.indexOf(key)
+  const index = reorder(stack, at, Math.min(drop.index, stack.length)).indexOf(key)
+  return index === at ? null : { rowId: row.id, col: drop.col, index }
+}
+
+/** Drop a placed node on a place in its own section. Its bags travel with it; like every move it adds
+ *  nothing, so no per-type cap or lock is tripped. A no-op where `dropMoveTarget` answers null. */
+export function moveNodeTo(layout: NodeLayout, nid: string, drop: ColumnDrop): NodeLayout {
+  const target = dropMoveTarget(
+    layout.rows.map((row) => ({ id: row.id, cells: row.cells.map((stack) => stack.map((n) => n.nid)) })),
+    nid,
+    drop,
+  )
+  return target ? placeNode(layout, nid, target.rowId, target.col, target.index) : layout
 }
 
 /** Nudge a placed node one step within its own column stack (delta -1 up, +1 down). A no-op at the ends,

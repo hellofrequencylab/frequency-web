@@ -1,0 +1,18 @@
+{
+  "id": "FH-048T",
+  "title": "Hunts FH-048T: Give each chosen expansion its own switch and its own measure",
+  "lane": "program",
+  "priority": "P3",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "docs/hunts/EXPANSION-REVIEW.md",
+    "ref": "Split from FH-048 (2026-11-16): the review found that no expansion can be turned on or off by itself."
+  },
+  "detail": "Requires FH-048S (which expansions are chosen). Found by the FH-048 review: teams and branches open with HUNTS_CLAIMS_ENABLED, editions and partner pages with HUNTS_AUTHORING_ENABLED, and gifts, sponsor milestones and paid passes all with HUNTS_COMMERCE_ENABLED, so none can launch or roll back independently, and the graph engine evaluates a choice group with no switch at all. The five Hunt events carry no dimension that tells an expansion apart, and the Mystery answers answer_wrong and answer_locked fold into the unavailable class. Owed by Product and release (which expansions, and the names) then Game systems: for each chosen expansion, a child switch in lib/hunts/flags.ts under its present parent (envFlag, blank in .env.example with a one-line gate, activation gate and rollback in docs/RUNBOOKS.md, covered by lib/hunts/flags.test.ts and the legacy regression switch list), read at that expansion's entry points; a closed-set event dimension or reason class in lib/hunts/analytics.ts so its use and failures can be counted; and for gifts and sponsor milestones a stop that does not also stop refund handling. Done when: lib/hunts/flags.ts holds more than the six capability switches it has today and each chosen expansion's doors read its own. Hunts switches stay OFF.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"node:fs\").readFileSync(\"lib/hunts/flags.ts\",\"utf8\");const m=s.match(/HUNT_SWITCH_KEYS[^=]*=\\s*\\{([^}]*)\\}/);process.exit(m&&(m[1].match(/HUNTS_[A-Z_]+_ENABLED|HUNTS_ENABLED/g)||[]).length>6?0:1)'"
+  },
+  "wave": "W7"
+}

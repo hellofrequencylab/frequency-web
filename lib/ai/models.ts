@@ -10,6 +10,16 @@ export const MODELS: Record<ModelTier, string> = {
   opus: 'claude-opus-4-8',
 }
 
+/** The shortest prefix the provider will write to its prompt cache, in tokens, per tier. A marked
+ *  prefix under this is sent and billed in full every time, with no error. Taken from the provider's
+ *  API reference as bundled with our tooling on 2026-11-23, not re-read from the live page; like
+ *  MODEL_PRICES, it moves whenever a tier is re-pointed. */
+export const CACHE_MIN_TOKENS: Record<ModelTier, number> = {
+  haiku: 4096,
+  sonnet: 1024,
+  opus: 1024,
+}
+
 /** Default tier for new surfaces — cheapest first (support search runs here). */
 export const DEFAULT_TIER: ModelTier = 'haiku'
 

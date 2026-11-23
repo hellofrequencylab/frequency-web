@@ -34,7 +34,8 @@ describe('megaThemeSurfaces', () => {
 
   it('reaches the Spotlight for every Mega Theme, and to email', () => {
     // The earlier network and temple themes are no longer Spotlight presets: they are offered nowhere.
-    for (const { id } of MEGA_THEMES) expect(megaThemeSurfaces(id).spotlightPreset, id).toBe(id === 'network' || id === 'temple' ? null : id)
+    // Aiden Tyack is private: no shared Spotlight preset carries it (its Spotlight layouts follow, offered to its own Space only).
+    for (const { id } of MEGA_THEMES) expect(megaThemeSurfaces(id).spotlightPreset, id).toBe(id === 'network' || id === 'temple' || id === 'aiden-tyack' ? null : id)
     const themed = MEGA_THEMES.filter(({ id }) => megaThemeSurfaces(id).email).map(({ id }) => id)
     expect(themed).toEqual(MEGA_THEMES.map(({ id }) => id))
   })

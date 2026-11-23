@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2514",
+  "title": "Aiden Tyack: the theme fully built out, every section and photo from the handoff",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "closed": "2026-11-23",
+  "source": {
+    "file": "docs/THEME-PROTOCOL.md",
+    "ref": "Daniel 2026-11-23: \"Make sure that theme is live, fully evolved and in private\"."
+  },
+  "detail": "LIVE-2513 shipped the theme on borrowed Services blocks with one stand-in photo. The starter kit aiden-tyack-general (version 2) is now laid out from the shared role blocks, the sections the handoff's theme.manifest.json lists (hero, stats, offerings, steps, shop, statement, proof, gallery, letter, cta, faq, people, library, contact), so the owner can switch any section to its other version in the editor. components/sites/presentation/aiden-tyack.ts gives each role the handoff's default version in the nearest shared layout (forest hero = full with the redwood silhouette, quote statement = pull, maker = founder, stitched FAQ = stack). The skin dresses role blocks in grain, Title Case blackletter and the stitch (7px in cards, 9px in photos, 4px in buttons, stitched row dividers). All ten stand-in photos and the logo marks ship (public/sites/aiden-tyack). Still private to aidentyack.com. The Spotlight layouts and the four email templates are their own rows.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2514.mjs"
+  },
+  "wave": "W7"
+}

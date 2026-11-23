@@ -1,4 +1,4 @@
-// FIXTURE RENDER: the six shared house kit Spotlight layouts (components/spotlight/house-kit-layouts.tsx) for Bold, Wildheart and
+// FIXTURE RENDER: the six shared house kit Spotlight layouts (components/spotlight/house-kit-layouts.tsx) for Bold, Wildheart, Aiden Tyack and
 // Nocturne, as the preview (coaching copy) and as a live page (sample off), for a design check. Run:
 // RENDER_OUT=<dir> pnpm exec vitest run -c scripts/render/vitest.render.config.ts scripts/render/house-kit-spotlight.render.tsx
 // then open each <theme>__<layout>__<sample|live>.html (scripts/render/shot.mjs or any Playwright pass reads the folder).
@@ -22,7 +22,7 @@ it('renders the house kit Spotlight layouts', async () => {
   const { HouseKitSpotlightLayout } = await import('@/components/spotlight/house-kit-layouts')
   const { houseKitSpotlightContent, HOUSE_KIT_LAYOUT_KEYS, HOUSE_KIT_PREFIX } = await import('@/lib/spotlight/house-kit-content')
   const pub = (s: string | null) => (s?.startsWith('/') ? `file://${ROOT}/public${s}` : s)
-  for (const theme of ['bold', 'wildheart', 'midnight'] as const) {
+  for (const theme of ['bold', 'wildheart', 'midnight', 'aiden-tyack'] as const) {
     for (const mode of ['sample', 'live'] as const) {
       const raw = houseKitSpotlightContent(theme, mode === 'live' ? { name: 'Salt House', sample: false } : {})
       const c = { ...raw, portrait: pub(raw.portrait), hero: { ...raw.hero, photo: pub(raw.hero.photo) } }

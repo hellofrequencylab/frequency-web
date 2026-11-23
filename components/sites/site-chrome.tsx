@@ -21,6 +21,7 @@ import { FREE_HUMAN_CSS } from './free-human-css'
 import { NEW_WORLD_CSS } from './new-world-css'
 import { CYBERWITCH_CSS } from './cyberwitch-css'
 import { MINDLESS_CSS } from './mindless-css'
+import { AIDEN_TYACK_CSS } from './aiden-tyack-css'
 import { NEW_WORLD_DIALS_CSS } from './new-world-dials-css'
 import { SERVICES_SITE_CSS } from './services-css'
 import { Clock, Mail, MapPin, Phone } from 'lucide-react'
@@ -51,6 +52,7 @@ import { sky } from '@/lib/theme/astrology-wheel'
 import type { SiteFooter } from '@/lib/sites/site-footer'
 import type { FooterBadgeMode } from '@/lib/sites/site-badge'
 import { SITE_LOOK_CSS } from './site-look-css'
+import { AidenTyackBar, AidenTyackLogo, AIDEN_TYACK_CHROME_COPY } from './aiden-tyack-chrome'
 import type { SiteLook } from '@/lib/theme/site-style'
 import { HouseHeader, type HouseHeaderLink, type SiteLogoMode } from './house-header'
 import { SiteFooterAdmin, type SiteAdminNavLink } from './site-admin-bar'
@@ -101,12 +103,14 @@ export type SiteLink = HouseHeaderLink
  *  re-pointed), then draws its own date line under the header (components/sites/wildheart-now-line.tsx).
  *  Network layers the same way and carries its color scheme (lib/theme/network.ts) on the site root. */
 interface SiteSkin {
-  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'new-world' | 'services' | 'cyberwitch' | 'mindless'
+  theme: 'menswork' | 'wildheart' | 'network' | 'network-kit' | 'temple' | 'temple-kit' | 'midnight' | 'designer' | 'free-human' | 'new-world' | 'services' | 'cyberwitch' | 'mindless' | 'aiden-tyack'
   season: MensworkSeason
   /** Network and Network Theme Kit: the scheme the owner's accent picked. */
   scheme?: NetworkSchemeId
   /** New World: the register the owner's Register dial picked (Night by default). */
   register?: 'night' | 'day'
+  /** Aiden Tyack: the accent family the owner's accent is (lib/theme/aiden-tyack.ts aidenTyackScheme), written as data-scheme. */
+  family?: string
   /** New World and Services: the Type voice, Motion and Images dials (LIVE-1997 schema 2), written as data-type, data-motion and data-image. */
   dials?: { type: string; motion: string; image: string }
 }
@@ -127,6 +131,7 @@ export function skinCss(skin: SiteSkin | null, look = ''): string {
   if (skin.theme === 'new-world') return HOUSE_CSS + FREQUENCY_PAGE_CSS + NEW_WORLD_CSS + NEW_WORLD_DIALS_CSS
   if (skin.theme === 'cyberwitch') return HOUSE_CSS + FREQUENCY_PAGE_CSS + CYBERWITCH_CSS
   if (skin.theme === 'mindless') return HOUSE_CSS + FREQUENCY_PAGE_CSS + MINDLESS_CSS
+  if (skin.theme === 'aiden-tyack') return HOUSE_CSS + FREQUENCY_PAGE_CSS + AIDEN_TYACK_CSS
   if (skin.theme === 'services') return HOUSE_CSS + FREQUENCY_PAGE_CSS + SERVICES_SITE_CSS
   return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
@@ -231,32 +236,43 @@ export function SiteChrome({
   // menu in a glass capsule on the right, the phone from the footer's contact column, and the accent button. Over a photo hero it lies
   // on the picture. The footer leads with the closing band, prints contact lines with their icons, and ends on the dim wordmark.
   const sv = skin?.theme === 'services'
+  // Aiden Tyack draws the hammers lockup (mark, name, the tracked line under it), the announce band over the header, and the same
+  // lockup in the pine footer (components/sites/aiden-tyack-chrome.tsx).
+  const at = skin?.theme === 'aiden-tyack'
   // New World's footer is the same kit footer (handoff ui_kits/site/Chrome.jsx SiteFooter): closing line and button, contact lines with
   // their icons, the dim wordmark. Without a closing band of its own it closes on the blurb and the site's own button.
   const kitFoot = sv || skin?.theme === 'new-world'
   const svPhone = sv ? footer?.columns.flatMap((c) => c.links).find((l) => /^tel:/i.test(l.href)) ?? null : null
   const fhShop = fh ? templeKitShopHref(links) : null
   const fhLinks: HouseHeaderLink[] | null = fh ? freeHumanNavLinks(links, homeHref, isFreeHumanMovement(spaceSlug, brandName)) : null
+  // Aiden Tyack splits its menu round the lockup (the design's Header): the first three pages on the left, the rest on the right. The
+  // name is the way home, so Home leaves the menu; the right-hand pages ride in the tools slot (the phone menu still lists them all).
+  const atLinks = at ? links.filter((l) => l.href !== homeHref && !/^home$/i.test(l.label)) : null
+  const atRight = atLinks && atLinks.length > 3 ? (
+    <span className="at-nav-right">
+      {atLinks.slice(3).map((l) => <a key={`${l.href}:${l.label}`} href={l.href} aria-current={l.current ? 'page' : undefined}>{l.label}</a>)}
+    </span>
+  ) : null
   // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
   // that reserves its height, so nothing shifts when the date line folds away on scroll.
   const header = (
     <HouseHeader
       brandName={brandName}
       homeHref={homeHref}
-      links={fhLinks ?? links}
+      links={fhLinks ?? atLinks ?? links}
       adminLinks={fh ? null : adminLinks?.menu ?? null}
       adminCheck={fh ? null : adminLinks?.check ?? null}
-      cta={tk && cta && /^book/i.test(cta.label) ? { ...cta, short: 'Book' } : cta}
+      cta={at ? null : tk && cta && /^book/i.test(cta.label) ? { ...cta, short: 'Book' } : cta}
       logoUrl={logoUrl}
       logoMode={temple || designer ? (logoUrl ? 'logo' : 'name') : skin && !net ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
       skinned={!!skin}
       fadeOnPause={fadeOnPause}
       member={member}
-      tools={sv && svPhone ? <a className="sv-head-phone" href={svPhone.href}><Phone size={14} strokeWidth={2} aria-hidden="true" />{svPhone.label}</a> : tk ? <TempleKitTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={tkShop} /> : fh ? <FreeHumanTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={fhShop} /> : tools}
+      tools={sv && svPhone ? <a className="sv-head-phone" href={svPhone.href}><Phone size={14} strokeWidth={2} aria-hidden="true" />{svPhone.label}</a> : tk ? <TempleKitTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={tkShop} /> : fh ? <FreeHumanTools origin={appOrigin()} slug={spaceSlug ?? ''} shopHref={fhShop} /> : at ? <>{atRight}{tools}</> : tools}
       megaChevron={fh ? <FreeHumanGlyph name="chevron-down" size={14} /> : null}
       defaultMega={fh ? previewMega : null}
       menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}
-      brandMark={sv ? <span className="sv-wordmark" style={{ ['--sv-wm-len' as string]: brandName.length }}>{brandName}</span> : wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? (isFreeHumanMovement(spaceSlug, brandName) ? FREE_HUMAN_MOVEMENT_CHROME.tagline : null)} logoUrl={logoUrl} /> : null}
+      brandMark={sv ? <span className="sv-wordmark" style={{ ['--sv-wm-len' as string]: brandName.length }}>{brandName}</span> : wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? (isFreeHumanMovement(spaceSlug, brandName) ? FREE_HUMAN_MOVEMENT_CHROME.tagline : null)} logoUrl={logoUrl} /> : at ? <AidenTyackLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : null}
     />
   )
   const year = new Date().getFullYear()
@@ -291,12 +307,12 @@ export function SiteChrome({
       data-house-site=""
       data-house-fonts={themeFonts ? 'theme' : 'house'}
       data-house-theme={skin?.theme}
-      data-th={skin?.theme === 'new-world' || skin?.theme === 'services' || skin?.theme === 'mindless' ? skin.register ?? 'night' : undefined}
+      data-th={skin?.theme === 'new-world' || skin?.theme === 'services' || skin?.theme === 'mindless' ? skin.register ?? 'night' : skin?.theme === 'aiden-tyack' ? skin.register ?? 'day' : undefined}
       data-type={skin?.dials?.type}
       data-motion={skin?.dials?.motion}
       data-image={skin?.dials?.image}
       data-season={net || nk ? undefined : skin?.season}
-      data-scheme={net || nk ? skin?.scheme : undefined}
+      data-scheme={net || nk ? skin?.scheme : skin?.theme === 'aiden-tyack' ? skin.family : undefined}
       data-sign={skin?.theme === 'wildheart' ? sky(new Date()).sign : undefined}
       data-site-corners={look.corners}
       data-site-spacing={look.spacing}
@@ -338,6 +354,11 @@ export function SiteChrome({
           <TempleKitBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />
           {header}
         </div>
+      ) : at ? (
+        <div className="at-top">
+          <AidenTyackBar utility={footer?.utility ?? null} />
+          {header}
+        </div>
       ) : (
         header
       )}
@@ -345,7 +366,7 @@ export function SiteChrome({
 
       <main id="top">{children}</main>
 
-      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : nk ? 'nk-footer-ground' : tk ? 'tk-footer-ground' : fh ? 'fh-footer-ground fh-sky fh-flow-t' : undefined} data-footer={nk ? ((showBrandFooter ?? !!skin) ? 'full' : 'minimal') : undefined}>
+      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : nk ? 'nk-footer-ground' : tk ? 'tk-footer-ground' : at ? 'at-footer-ground' : fh ? 'fh-footer-ground fh-sky fh-flow-t' : undefined} data-footer={nk ? ((showBrandFooter ?? !!skin) ? 'full' : 'minimal') : undefined}>
       {designer && (showBrandFooter ?? !!skin) && <DesignerFooterTop footer={footer} brandName={brandName} homeHref={homeHref} logoUrl={logoUrl ?? null} slug={spaceSlug} />}
       {fh && (showBrandFooter ?? !!skin) && <FreeHumanFooterTop brandName={brandName} homeHref={homeHref} tagline={tagline} logoUrl={logoUrl ?? null} links={links} footer={footer} slug={spaceSlug} />}
       {!designer && !fh && (showBrandFooter ?? !!skin) && (
@@ -362,6 +383,8 @@ export function SiteChrome({
                 <MidnightLogo name={brandName} tagline={tagline} />
               ) : tk ? (
                 <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} />
+              ) : at ? (
+                <AidenTyackLogo name={brandName} tagline={tagline} logoUrl={logoUrl} />
               ) : kitFoot && (footer?.band || !sv) ? (
                 <span className="sv-wordmark">{brandName}</span>
               ) : (
@@ -379,7 +402,7 @@ export function SiteChrome({
               </>
             ) : (
               <>
-                {(tk ? footer?.blurb : footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
+                {(tk || at ? footer?.blurb : footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
                 {kitFoot && !sv && cta && (
                   <a className="sv-btn sv-btn--accent" href={cta.href} {...(cta.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
                     <span>{cta.label}</span>
@@ -447,7 +470,7 @@ export function SiteChrome({
         {footer?.note && <span className="hs-footer-note">{footer.note}</span>}
         {checkIn && <CheckInBadge href={checkIn.href} line={checkIn.line} />}
         {credit === 'badge' && !tk && <PartnerBadge />}
-        {((credit === 'line' && !nk) || (credit === 'badge' && tk)) && <PartnerLine label={tk ? TEMPLE_KIT_CHROME_COPY.credit : fh ? FREE_HUMAN_CHROME_COPY.credit : undefined} />}
+        {((credit === 'line' && !nk) || (credit === 'badge' && (tk || at))) && <PartnerLine label={tk ? TEMPLE_KIT_CHROME_COPY.credit : fh ? FREE_HUMAN_CHROME_COPY.credit : at ? AIDEN_TYACK_CHROME_COPY.credit : undefined} />}
       </footer>
       </div>
     </div>

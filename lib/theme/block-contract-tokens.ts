@@ -42,7 +42,7 @@ export const CORE_TOKEN_NAMES = [
 export type CoreTokenName = (typeof CORE_TOKEN_NAMES)[number]
 
 /** The ten site themes (lib/theme/site-style.ts SiteThemeId). */
-export const CONTRACT_THEME_IDS = ['frequency', 'bold', 'wildheart', 'network', 'network-kit', 'temple', 'temple-kit', 'midnight', 'designer', 'free-human', 'services', 'new-world', 'cyberwitch', 'mindless'] as const
+export const CONTRACT_THEME_IDS = ['frequency', 'bold', 'wildheart', 'network', 'network-kit', 'temple', 'temple-kit', 'midnight', 'designer', 'free-human', 'services', 'new-world', 'cyberwitch', 'mindless', 'aiden-tyack'] as const
 
 export type ContractThemeId = (typeof CONTRACT_THEME_IDS)[number]
 
@@ -75,6 +75,7 @@ const SCOPE: Readonly<Record<ContractThemeId, string>> = {
   'new-world': '[data-house-theme="new-world"]',
   cyberwitch: '[data-house-theme="cyberwitch"]',
   mindless: '[data-house-theme="mindless"]',
+  'aiden-tyack': '[data-house-theme="aiden-tyack"]',
 }
 
 type Generated = { themes: Record<string, { names: Record<string, string> }> }
@@ -146,4 +147,8 @@ export const TH_TO_CONTRACT: Readonly<Record<string, CoreTokenName | null>> = {
   '--th-noise-1-text': null,
   '--th-noise-2': null,
   '--th-noise-2-text': null,
+  // Aiden Tyack (lib/theme/aiden-tyack.ts, private): its band pair and the stitch colour.
+  '--th-band': null,
+  '--th-on-band': null,
+  '--th-stitch': null,
 }

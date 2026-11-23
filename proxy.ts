@@ -155,7 +155,7 @@ export async function proxy(request: NextRequest) {
     headers.set('x-search', req.nextUrl.search)
     if (csp) {
       headers.set('x-nonce', csp.nonce)
-      headers.set('Content-Security-Policy', csp.policy)
+      headers.set('Content-Security-Policy', csp.enforcedDuringRun ?? csp.policy)
     } else {
       // Only the proxy names a nonce. A caller's own `x-nonce` never reaches the layout.
       headers.delete('x-nonce')
@@ -165,7 +165,11 @@ export async function proxy(request: NextRequest) {
   // The policy goes on the RESPONSE at each return, never where a response is created: the Supabase
   // cookie handler below replaces `supabaseResponse`, and a header set on the first one would be lost.
   const withCsp = (res: NextResponse, csp: NonceCsp | null) => {
-    if (csp) res.headers.set(csp.header, csp.policy)
+    if (csp) {
+      res.headers.set(csp.header, csp.policy)
+      // The test run: the enforced header names the nonce too, or Next never stamps it (csp-nonce.ts).
+      if (csp.enforcedDuringRun) res.headers.set('Content-Security-Policy', csp.enforcedDuringRun)
+    }
     return res
   }
   // For the page this request names. A rewrite below renders a DIFFERENT path and asks again for it.

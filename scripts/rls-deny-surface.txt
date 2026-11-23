@@ -57,6 +57,17 @@ founding_members                     money      select,insert,update,delete
 gem_config                           money      insert,update,delete
 gem_gifts                            money      insert,update,delete
 gem_transactions                     money      insert,update,delete
+# The Hunts commerce tables (20270346041000_hunt_commerce.sql): RLS on, zero policies, service role
+# only. Verdicts recorded 2026-11-23 on the owner ruling, when the regenerated types first showed them.
+hunt_donation_asks                   money      select,insert,update,delete
+hunt_donation_gifts                  money      select,insert,update,delete
+hunt_entitlement_events              money      select,insert,update,delete
+hunt_entitlements                    money      select,insert,update,delete
+hunt_pass_bindings                   money      select,insert,update,delete
+hunt_refund_cases                    money      select,insert,update,delete
+hunt_sponsor_agreements              money      select,insert,update,delete
+hunt_sponsor_settlements             money      select,insert,update,delete
+hunt_sponsor_snapshots               money      select,insert,update,delete
 # The one money table with member-authored writes: an offer is made and withdrawn by its author,
 # so insert and update are policied. Delete is not -- an offer is history once it exists.
 listing_offers                       money      delete
@@ -73,6 +84,8 @@ spaces                               money      insert,update,delete
 reward_grants                        money      insert,update,delete
 space_benefit_redemptions            money      select,insert,update,delete
 space_billing_agreements             money      insert,update,delete
+# A bought domain and what was charged for it (20270346003100): RLS on, zero policies, service role only.
+space_domain_purchases               money      select,insert,update,delete
 space_donations                      money      select,insert,update,delete
 space_memberships                    money      insert,update,delete
 space_subscription_items             money      insert,update,delete
@@ -90,6 +103,9 @@ area_permissions                     trust      insert,update,delete
 beta_audit_log                       trust      select,insert,update,delete
 blocked_users                        trust      insert,update,delete
 capability_permissions               trust      insert,update,delete
+# A Hunt moderation report (20270346051000_hunt_moderation.sql): RLS on, zero policies. Filed and
+# worked through the server, so unlike `reports` no command is policied.
+hunt_reports                         trust      select,insert,update,delete
 # A report is filed by a member and worked by staff, so insert and update are policied. Delete
 # never is: a moderation report that can be deleted is a moderation report that can be buried.
 marketplace_reports                  trust      update,delete

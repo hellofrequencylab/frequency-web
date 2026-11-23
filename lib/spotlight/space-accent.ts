@@ -21,7 +21,7 @@ export function pickThemeSpaceAccent(rows: readonly { brand_accent: string | nul
 // borrows.
 const LAYOUT_THEME: Record<string, string> = {
   'new-world-kit': 'new-world', 'services-kit': 'services', 'temple-kit': 'temple-kit', 'free-human': 'free-human', 'network-kit': 'network-kit', 'cyberwitch-kit': 'cyberwitch', 'mindless-kit': 'mindless', 'designer-kit': 'designer',
-  'bold-kit': 'bold', 'wildheart-kit': 'wildheart', 'nocturne-kit': 'midnight',
+  'bold-kit': 'bold', 'wildheart-kit': 'wildheart', 'nocturne-kit': 'midnight', 'aiden-tyack-kit': 'aiden-tyack',
 }
 /** The site theme whose Space accent a Spotlight layout wears, or null for a layout that keeps its own. Pure. */
 export function themeOfLayout(layout: string | null | undefined): string | null {

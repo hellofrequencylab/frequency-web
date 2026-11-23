@@ -201,8 +201,36 @@
 [data-design="frequency"] [data-kit="editor"] .pick{min-width:0}
 [data-design="frequency"] [data-kit="editor"] .pick>button{max-width:120px}
 [data-design="frequency"] [data-kit="editor"] .pick>button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* A PHONE HAS NO RAIL COLUMNS (LIVE-2518). The rails are overlays here (above), but the kit's fold rules
+   outrank its own phone grid, so a folded rail kept a 60px column and an open inspector a 340px one: the grid
+   came to 400px on a 390px phone and Publish ran off the right edge. Restated for every fold, as the desktop
+   grid is above: the toolbar and the canvas take the whole phone, whatever is open over them. The canvas is
+   named into the middle column: an open rail is fixed, so it leaves the grid, and the canvas used to slide
+   into the rail's empty column behind it and re-lay the Site out at that width. */
+[data-design="frequency"] [data-kit="editor"] .pe[data-lf][data-rf]{grid-template-columns:0 minmax(0,1fr) 0}
+[data-design="frequency"] [data-kit="editor"] .pe>.stage{grid-column:2;grid-row:2}
+/* The canvas now stays under an open overlay. At night the rails are 72% glass, and a light Site behind that
+   glass lifts the ground until the muted ink falls under 4.5:1: an overlay on a phone is the solid surface. */
+.dark[data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .rail, .dark[data-design="frequency"] [data-kit="editor"] .pe[data-rf="0"] .insp{background:var(--fq-surface-raised)}
+/* The open rail on a phone is the whole rail. The kit's narrow-screen rules (under 1100px) fold every rail to
+   its icon column and hide its body, and only the 821 to 1100 band above undid that for an open one: on a
+   phone the overlay opened to five icons and no Layers, Pages, Add, Theme or Site panel. Same four rules. */
+[data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .tabs{flex-direction:row;padding:6px 6px 0}
+[data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .tabs button{height:44px;border-radius:14px 14px 0 0}
+[data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .tabs button span{display:inline}
+[data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .rail .body{display:block}
+[data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"] .rail .foot .lbl{display:inline}
 /* The zoom pill sat on top of the Vera bar; a phone canvas is already at its own width. */
 [data-design="frequency"] [data-kit="editor"] .zoom{display:none}}
+/* After a publish the bar also carries "View live site", and one phone row cannot hold both it and Publish
+   (the page picker shrank to nothing and Publish left the screen). Under the shared 600px step the link takes its
+   own row under the bar, full width, and the overlays start beneath it. */
+@media (max-width:599px){
+[data-design="frequency"] [data-kit="editor"] .pe:has(.top [data-live-link]){grid-template-rows:106px minmax(0,1fr)}
+[data-design="frequency"] [data-kit="editor"] .top:has([data-live-link]){padding-bottom:50px}
+[data-design="frequency"] [data-kit="editor"] .top [data-live-link]{position:absolute;left:6px;right:6px;bottom:6px}
+[data-design="frequency"] [data-kit="editor"] .top:has([data-live-link]) .save-alert{top:114px}
+[data-design="frequency"] [data-kit="editor"] .pe[data-lf="0"]:not([data-preview="1"]):has(.top [data-live-link]) .rail, [data-design="frequency"] [data-kit="editor"] .pe[data-rf="0"]:not([data-preview="1"]):has(.top [data-live-link]) .insp{top:106px}}
 @media (min-width:821px) and (pointer:fine){
 [data-design="frequency"] [data-kit="editor"] .pe{grid-template-rows:52px minmax(0,1fr)}
 [data-design="frequency"] [data-kit="editor"] .top{gap:6px;padding:0 10px}
@@ -293,12 +321,20 @@
 /* At night the pin above would hand the shared field form the day ink as its primary on a night surface
    (LIVE-2309): the primary and the text on it follow the app's own action pair, which night re-declares. */
 .dark[data-design="frequency"] [data-kit="editor"] .pe{--color-primary:var(--fq-action-primary);--color-primary-hover:var(--fq-action-primary-hover);--color-primary-strong:var(--fq-action-primary);--color-text-on-primary:var(--fq-action-primary-text)}
+/* SMALL PRINT BY DAY (LIVE-2518). Two pairs sat under 4.5:1 in daylight. A placeholder took the reset's
+   default, half of the field's own ink (2.4 to 2.9:1): it reads the muted ink, by day and at night. The Header
+   and Footer rows are drawn at 85% by the kit, which took their faint detail to 3.9:1 (3.7 hovered): their
+   detail and count read the body ink, so the row stays quieter than the others and still clears the bar. */
+[data-design="frequency"] [data-kit="editor"] .in::placeholder,[data-design="frequency"] [data-kit="editor"] .input::placeholder{color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="editor"] .rail .row.chrome .t small,[data-design="frequency"] [data-kit="editor"] .rail .row.chrome .meta{color:var(--fq-text-body)}
 /* Small print at night: the faint ink clears 4.5:1 on the night ground but not on a lit, hovered or raised
-   one, so row detail, counts, hints and placeholders step up to the muted ink there. */
+   one, so row detail, counts and hints step up to the muted ink there. */
 .dark[data-design="frequency"] [data-kit="editor"] .rail .row .t small,.dark[data-design="frequency"] [data-kit="editor"] .rail .row .meta{color:var(--fq-text-muted)}
 .dark[data-design="frequency"] [data-kit="editor"] .rail .row.chrome:hover{opacity:1}
+/* The chosen row at night wears the pastel wash, lighter than the rail: the muted ink is 4.05:1 there, so its
+   detail and count read the body ink (LIVE-2518). */
+.dark[data-design="frequency"] [data-kit="editor"] .rail .row.on .t small,.dark[data-design="frequency"] [data-kit="editor"] .rail .row.on .meta{color:var(--fq-text-body)}
 .dark[data-design="frequency"] [data-kit="editor"] .fields [data-field] label>em,.dark[data-design="frequency"] [data-kit="editor"] .fields [data-field] label>span{color:var(--fq-text-muted)}
-.dark[data-design="frequency"] [data-kit="editor"] .in::placeholder,.dark[data-design="frequency"] [data-kit="editor"] .input::placeholder{color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="editor"] .fields [data-field]>div{padding:var(--fq-space-4) 0;border-bottom:1px solid var(--fq-border-hair)}
 [data-design="frequency"] [data-kit="editor"] .fields [data-field]:last-child>div{border-bottom:0}
 [data-design="frequency"] [data-kit="editor"] .fields [data-field] label{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;column-gap:var(--fq-space-3);margin:0 0 var(--fq-space-3);font:500 var(--fq-text-meta)/1.3 var(--fq-font-sans);color:var(--fq-text-body)}

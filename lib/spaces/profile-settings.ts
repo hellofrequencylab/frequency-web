@@ -26,7 +26,7 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isValidAccent } from '@/lib/spaces/accent'
 import { isSpaceThemeId, DEFAULT_SPACE_THEME, type SpaceThemeId } from '@/lib/theme/space-themes'
 import { withMegaTheme } from '@/lib/theme/mega-theme'
-import { isSiteLookValue, isSiteThemeId, readSiteStyle, withSiteStyle, SITE_LOOK_OPTIONS, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { isSiteLookValue, isSiteThemeId, mayWearTheme, readSiteStyle, siteTheme, withSiteStyle, SITE_LOOK_OPTIONS, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** The editable profile fields. Every field is optional on the wire; an empty string clears the
@@ -183,7 +183,11 @@ export async function updateSpaceProfile(
       }
       const patchStyle: Partial<SiteStyle> = {}
       if (input.theme !== undefined) patchStyle.fonts = fontsOf(input.theme)
-      if (input.siteTheme !== undefined) patchStyle.theme = isSiteThemeId(input.siteTheme) ? input.siteTheme : 'frequency'
+      if (input.siteTheme !== undefined) {
+        // PRIVATE THEMES: a private theme is worn only by the Spaces it is assigned to, or one that already wears it.
+        if (isSiteThemeId(input.siteTheme) && !mayWearTheme(input.siteTheme, space.slug, siteTheme(prefs))) return fail('Choose one of the themes.')
+        patchStyle.theme = isSiteThemeId(input.siteTheme) ? input.siteTheme : 'frequency'
+      }
       if (input.styleSynced !== undefined) patchStyle.synced = input.styleSynced !== false
       if (input.spaceFonts !== undefined) patchStyle.spaceFonts = fontsOf(input.spaceFonts)
       if (input.siteLook) {

@@ -8,6 +8,7 @@ import { HouseKitSpotlightLayout } from '@/components/spotlight/house-kit-layout
 import { houseKitSpotlightContent, isHouseKitTheme } from '@/lib/spotlight/house-kit-content'
 import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
 import { MIDNIGHT_FONT_CLASS } from '@/components/sites/midnight-fonts'
+import { AIDEN_TYACK_FONT_CLASS } from '@/components/sites/aiden-tyack-fonts'
 import { overlaySpaceOnKit, spaceFactsFromGrid, type SpaceSpotlightFacts } from '@/lib/spotlight/space-kit-page'
 import { presetForAccent } from '@/lib/spotlight/space-accent'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
@@ -138,7 +139,7 @@ export function ThemedSpaceSpotlight({ space, tagline, saved, appOrigin }: { spa
   } else if (isHouseKitTheme(theme)) {
     const c = overlaySpaceOnKit(houseKitSpotlightContent(theme, { name, sample: false, accent: accent ?? undefined, photo, portrait }), facts)
     if (facts.button) drop = new Set(['links', 'button'])
-    const fonts = theme === 'wildheart' ? WILDHEART_FONT_CLASS : theme === 'midnight' ? MIDNIGHT_FONT_CLASS : undefined
+    const fonts = theme === 'wildheart' ? WILDHEART_FONT_CLASS : theme === 'midnight' ? MIDNIGHT_FONT_CLASS : theme === 'aiden-tyack' ? AIDEN_TYACK_FONT_CLASS : undefined
     body = wrap(fonts, <HouseKitSpotlightLayout layout={layout} content={c} />)
   } else if (theme === 'network-kit') {
     const raw = networkKitSpotlightContent('general', { name, sample: false, photo })

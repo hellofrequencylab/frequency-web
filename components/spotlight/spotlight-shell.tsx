@@ -72,7 +72,7 @@ export function SpotlightShell({
   if (theme.layout) {
     if (isHouseKitLayout(theme.layout)) {
       // Bold, Wildheart and Nocturne share one layout set, each in its own tokens (LIVE-2357).
-      const kit: HouseKitTheme = theme.layout.startsWith('bold-kit:') ? 'bold' : theme.layout.startsWith('wildheart-kit:') ? 'wildheart' : 'midnight'
+      const kit: HouseKitTheme = theme.layout.startsWith('bold-kit:') ? 'bold' : theme.layout.startsWith('wildheart-kit:') ? 'wildheart' : theme.layout.startsWith('aiden-tyack-kit:') ? 'aiden-tyack' : 'midnight'
       const content = houseKitSpotlightContent(kit, { name, sample: sampleContent, accent: theme.accent ?? undefined, photo: profile.header_image_url ?? undefined, portrait: profile.avatar_url ? avatarSrc(profile.avatar_url) : undefined })
       return (
         <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
