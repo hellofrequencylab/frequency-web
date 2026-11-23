@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import type { NextConfig } from 'next'
 // Next's own reader: the nonce is only useful if THIS function finds it in the header.
 import { getScriptNonceFromHeader } from 'next/dist/server/app-render/get-script-nonce-from-header'
-import { buildNoncePolicy, enforcedDirectives, inlineScriptSources, nonceCspFor, scriptHashSource } from './csp-nonce'
+import { buildCompatPolicy, buildNoncePolicy, enforcedDirectives, inlineScriptSources, nonceCspFor, scriptHashSource } from './csp-nonce'
 
 // SCAN-1243 (ADR-1954): the nonce-based script policy and its two rollout switches.
 //
@@ -195,5 +195,52 @@ describe('the constant inline scripts are allowed by hash', () => {
     const rendered = [GoogleAnalytics(), FirstPartyAnalyticsPolicy()].filter(Boolean) as { props: { dangerouslySetInnerHTML: { __html: string } } }[]
     expect(rendered.length).toBe(1)
     expect(rendered[0].props.dangerouslySetInnerHTML.__html).toBe(analyticsHeadScript())
+  })
+})
+
+// The test run only measures anything when Next can find the nonce, and Next looks in the ENFORCED
+// header first (measured 2026-11-23: with the nonce in the report-only header alone, 1 of 117
+// scripts on /feed carried it).
+describe('the test run: the enforced header names the nonce and allows what today’s does', () => {
+  const parts = { nonce: 'YWJj', scriptHashes: ["'sha256-AAAA'"], isDev: false }
+  const today = enforcedDirectives(false)
+  const todayScripts = today.find((d) => d.startsWith('script-src '))!.split(' ').slice(1)
+
+  it('Next finds the nonce: the first script-src directive is the plain one and it carries it', async () => {
+    const policy = buildCompatPolicy(parts)
+    expect(getScriptNonceFromHeader(policy)).toBe('YWJj')
+    expect(policy.split('; ').find((d) => d.startsWith('script-src'))).toMatch(/^script-src /)
+  })
+
+  it('every <script> is judged by today’s sources, with no nonce to switch unsafe-inline off', () => {
+    const elem = buildCompatPolicy(parts).split('; ').find((d) => d.startsWith('script-src-elem '))!.split(' ').slice(1)
+    expect(elem).toEqual(todayScripts.filter((s) => s !== "'wasm-unsafe-eval'"))
+    expect(elem).toContain("'unsafe-inline'")
+    expect(elem.some((s) => s.startsWith("'nonce-") || s.startsWith("'sha256-") || s === "'strict-dynamic'")).toBe(false)
+  })
+
+  it('inline handlers stay allowed, as today', () => {
+    expect(buildCompatPolicy(parts).split('; ')).toContain("script-src-attr 'unsafe-inline'")
+  })
+
+  it('script-src itself is today’s plus the nonce and the hashes, and nothing wider', () => {
+    const plain = buildCompatPolicy(parts).split('; ').find((d) => d.startsWith('script-src '))!.split(' ').slice(1)
+    expect(plain.filter((s) => s !== "'nonce-YWJj'" && s !== "'sha256-AAAA'")).toEqual(todayScripts)
+  })
+
+  it('every other directive is today’s, byte for byte', () => {
+    const rest = (list: string[]) => list.filter((d) => !d.startsWith('script-src'))
+    expect(rest(buildCompatPolicy(parts).split('; '))).toEqual(rest(today))
+  })
+
+  it('the proxy is handed it in the test run, and not when the strict policy is enforced', async () => {
+    vi.stubEnv(REPORT_ONLY, '1')
+    const run = await nonceCspFor(documentRequest(), '/feed')
+    expect(run!.header).toBe('Content-Security-Policy-Report-Only')
+    expect(run!.enforcedDuringRun).toContain(`'nonce-${run!.nonce}'`)
+    expect(run!.enforcedDuringRun).toContain('script-src-elem ')
+    vi.stubEnv(ENFORCE, '1')
+    const enforced = await nonceCspFor(documentRequest(), '/feed')
+    expect(enforced!.enforcedDuringRun).toBeNull()
   })
 })
