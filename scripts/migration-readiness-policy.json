@@ -5385,9 +5385,16 @@
           "headMode": "100644"
         },
         {
+          "file": "lib/spaces/booking-actions.test.ts",
+          "status": "modified",
+          "sha256": "1c0e9d664b008b88d1cb7eb2a7850c02c008e81cf35e8122f81246a1d534161c",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
           "file": "lib/spaces/booking-actions.ts",
           "status": "modified",
-          "sha256": "5775766cca28e7cbab65d53a313a3698b80d661f7caaa6cff0f3d3e7aa07e6df",
+          "sha256": "5ed2db4aed44d81ee39fc3a3b1f149e477b04b03e0318817590bcb157a645117",
           "baseMode": "100644",
           "headMode": "100644"
         },
