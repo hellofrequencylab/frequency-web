@@ -16,5 +16,8 @@ if (!/\.at-logo-tag\{display:flex;justify-content:space-between;width:0;min-widt
 for (const t of ['--at-khaki:#B6AD90', '--at-moss:#656D4A', '--at-sage-light:#C2C5AA']) if (!read('lib/theme/aiden-tyack.ts').includes(t)) bad.push(`the theme is missing the design colour ${t}`)
 if (!/min-height:60px;padding:0 32px;font-size:14px/.test(skin)) bad.push('the hero buttons are not the design\'s 60px')
 if (!/\[id\]\{scroll-margin-top:/.test(skin)) bad.push('a jump to a section lands under the sticky header')
+const video = read('components/page-editor/blocks/role-video.tsx')
+if (!/IntersectionObserver/.test(video) || !/prefers-reduced-motion/.test(video) || !/data-src/.test(video)) bad.push('the background video loads before it is near the screen or plays with motion turned off')
+if (!/video: '\/sites\/aiden-tyack\/video\/at-the-bench\.mp4'/.test(read('lib/sites/kits/aiden-tyack-site.ts'))) bad.push('the photo band has no workbench video')
 if (bad.length) { console.error(bad.join('\n')); process.exit(1) }
 console.log('aidentyack.com polish: sized chevron, name-width tagline, design measures and colours, headings clear of the header')

@@ -64,6 +64,11 @@ const BASE = `
 [data-role] .mu-select>svg{position:absolute;inset-inline-end:1rem;top:50%;width:1rem;height:1rem;transform:translateY(-50%);pointer-events:none;color:currentColor;opacity:.7}
 [data-role] select[data-part="input"]{appearance:none;-webkit-appearance:none;padding-inline-end:2.75rem;cursor:pointer}
 [data-role] [data-part="sorter"] .mu-select{display:inline-block}
+/* A gallery photo with a background video (LIVE-2520): the silent loop lies over the photo, which stays as the still under it and
+   is all that shows when motion is turned off. */
+[data-role] [data-part="media"][data-video]{position:relative}
+[data-role] [data-part="media"] [data-part="video"]{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+@media (prefers-reduced-motion:reduce){[data-role] [data-part="media"] [data-part="video"]{display:none}}
 `
 
 const HERO = `

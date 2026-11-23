@@ -51,8 +51,12 @@ function pages(): KitPage[] {
     items: PRODUCTS.map(([name, category, price, detail, badge, photo, focus, alt]) => ({ name, category, price, detail, badge, image: PHOTO(photo), focus, alt, href: '' })),
   })
   const band = role('RoleGallery', {
-    variant: 'carousel', eyebrow: 'Worn hard', title: 'Made for the Long Way Home', lead: '', actionLabel: '', actionHref: '',
-    items: [{ image: PHOTO('friends-at-sunset'), alt: 'Friends with their motorcycles at sunset', focus: '50% 6%', caption: '' }],
+    variant: 'carousel', eyebrow: 'At the bench', title: 'Made for the Long Way Home',
+    lead: 'Every strap is cut, dyed, punched and set by hand at one bench in San Diego, one piece at a time.', actionLabel: '', actionHref: '',
+    items: [{
+      image: PHOTO('at-the-bench-still'), alt: 'Aiden dyeing a studded strap at his workbench', focus: '50% 40%', caption: '',
+      video: '/sites/aiden-tyack/video/at-the-bench.mp4', videoWebm: '/sites/aiden-tyack/video/at-the-bench.webm',
+    }],
   })
   const made = role('RoleSteps', {
     variant: 'grid', tone: 'surface', eyebrow: "How it's made", title: 'One Pair of Hands', lead: '',

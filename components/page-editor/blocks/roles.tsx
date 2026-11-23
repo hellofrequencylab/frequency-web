@@ -11,6 +11,7 @@ import { InlineText } from '@/components/sites/inline-text'
 import { ROLES, roleVariant as pickVariant, type RoleId } from '@/lib/blocks/roles/roles'
 import { presentationDefault } from '@/components/sites/presentation'
 import { RoleContactForm, RoleLetterForm } from './role-forms'
+import { RoleBgVideo } from './role-video'
 import { RoleShopGrid, type RoleShopItem } from './role-shop'
 
 // ── The seventeen role blocks (docs/THEME-COHESION.md section 2, ADR-1923, LIVE-1858 and LIVE-1859) ─────────────────────────────────
@@ -704,7 +705,13 @@ function GalleryBlock({ p, metadata }: Ctx) {
       <ul data-part="list">
         {items.map((s, i) => (
           <li key={i} data-part="item">
-            {img(s.image) ? <Media src={img(s.image)} alt={str(s.alt) || str(s.caption)} focus={focusOf(s.focus)} /> : <figure data-part="media" />}
+            {img(s.image) && img(s.video) ? (
+              <figure data-part="media" data-video="">
+                {/* eslint-disable-next-line @next/next/no-img-element -- owner photo on an arbitrary host */}
+                <img src={img(s.image)!} alt={str(s.alt) || str(s.caption)} loading="lazy" style={focusOf(s.focus) ? { objectPosition: focusOf(s.focus)! } : undefined} />
+                <RoleBgVideo mp4={img(s.video)!} webm={img(s.videoWebm)} poster={img(s.image)} focus={focusOf(s.focus) ?? null} />
+              </figure>
+            ) : img(s.image) ? <Media src={img(s.image)} alt={str(s.alt) || str(s.caption)} focus={focusOf(s.focus)} /> : <figure data-part="media" />}
             {str(s.caption) && <p data-part="caption">{str(s.caption)}</p>}
           </li>
         ))}
@@ -978,7 +985,7 @@ export const rolesComponents: Record<string, ComponentConfig> = {
   }, PeopleBlock),
   [ROLES.gallery.type]: role('gallery', {
     ...head, ...action,
-    items: { type: 'array', label: 'Photos', arrayFields: { image, alt: text('Photo description', 'For screen readers.'), focus: text('Photo crop', 'Where the crop sits, like 50% 30%. Leave empty for the middle.'), caption: text('Caption') } },
+    items: { type: 'array', label: 'Photos', arrayFields: { image, alt: text('Photo description', 'For screen readers.'), focus: text('Photo crop', 'Where the crop sits, like 50% 30%. Leave empty for the middle.'), caption: text('Caption'), video: text('Background video (MP4)', 'Optional. A short silent clip that loops over the photo. The photo shows while it loads and for anyone who turns motion off.'), videoWebm: text('Background video (WebM)', 'Optional. A smaller copy of the same clip, used where the browser can play it.') } },
   }, GalleryBlock),
   [ROLES.chapters.type]: role('chapters', {
     live: yesNo('Use the Space\'s own chapters'),

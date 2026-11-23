@@ -477,6 +477,7 @@ ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="list"]{position:absolute;inset:0;display:block}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="item"],${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"]{height:100%;aspect-ratio:auto}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"] img{height:100%;aspect-ratio:auto;object-fit:cover;filter:saturate(.82) contrast(1.04)}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"] [data-part="video"]{filter:saturate(.82) contrast(1.04)}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"]::after{display:block;inset:0;border:0;border-radius:0;background:linear-gradient(180deg,transparent 30%,color-mix(in srgb,var(--at-photo-shade) 55%,transparent) 62%,color-mix(in srgb,var(--at-photo-shade) 82%,transparent) 100%),linear-gradient(90deg,color-mix(in srgb,var(--at-photo-shade) 35%,transparent),transparent 60%)}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="heading"]{position:relative;z-index:2;width:100%;max-width:1320px;margin-inline:auto;padding:0 var(--at-gutter) clamp(64px,9vw,128px);background:none;gap:14px;${ON_PHOTO}}
 ${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="heading"]>*{max-width:640px}
@@ -619,4 +620,5 @@ ${A} .at-top .at-bar-line{line-height:1.4}
 /* The step cards carry the design's long stitch 7px inside (the browser's dashed outline read as a grey line). */
 ${A} [data-role="steps"][data-variant="grid"][data-role] [data-part="item"][data-card]{position:relative;outline:0}
 ${A} [data-role="steps"][data-variant="grid"][data-role] [data-part="item"][data-card]::after{content:"";position:absolute;inset:7px;pointer-events:none;background:${dashBox('var(--at-stitch)')}}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child)[data-role] [data-part="lead"]{margin:6px 0 0;max-width:520px;font-size:18px;line-height:1.6;color:var(--at-photo-muted)}
 `
