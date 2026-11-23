@@ -31,6 +31,7 @@ import { huntSwitchOn } from '@/lib/hunts/flags'
 import { partnerLive, publishVenueBlocks } from '@/lib/hunts/partners'
 import { closedVenues } from '@/lib/hunts/closures'
 import { challengeViews, parseChallenges, type Challenge, type ChallengeView } from '@/lib/hunts/challenges'
+import { finaleBlocksPublish } from '@/lib/hunts/finale-store'
 import { slugify } from '@/lib/utils'
 import { generateSlug } from '@/lib/qr/codes'
 import {
@@ -561,6 +562,8 @@ export async function publishTrail(
     const live = publishChecklist(draft, hunt.revision, { venue: hunt.owner_space_id !== null, challenges, route: { ...route, closedVenues: venues.closed } })
     if (!live.ok) return { ok: false, reason: 'checklist', items: live.items }
   }
+  const finaleBlock = await finaleBlocksPublish(hunt, draft.finaleEventId)
+  if (finaleBlock) return { ok: false, reason: 'checklist', items: [finaleBlock] }
 
   const bumped = await bumpRevision(client, huntId, baseRevision)
   if (!bumped.applied) return { ok: false, reason: 'conflict', currentRevision: bumped.currentRevision }
