@@ -21,6 +21,8 @@ let hostingSpace: string | null = 'space-9'
 vi.mock('@/lib/pricing/member-leadership', () => ({
   memberWithinLeadershipAllowance: (...a: unknown[]) => leadership(...a),
 }))
+const capNotice = vi.fn(async (..._a: unknown[]) => undefined)
+vi.mock('@/lib/spaces/booking-cap-notify', () => ({ notifyBookingCapReached: (...a: unknown[]) => capNotice(...a) }))
 vi.mock('@/lib/events/host-space', () => ({ resolveHostingSpaceIdFromRow: async () => hostingSpace }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -95,6 +97,23 @@ describe('bookings a month', () => {
     expect(queries[0]!.table).toBe('space_bookings')
     expect(queries[0]!.filters).toContainEqual(['in', 'status', ['confirmed', 'pending']])
     expect(queries[0]!.filters).toContainEqual(['gte', 'created_at', monthStartIso()])
+  })
+
+  it('a refusal tells the owner (BOOK-015); a booking that fits does not', async () => {
+    capNotice.mockClear()
+    verdict.mockResolvedValue({ allowed: false, effective: 15, plan: 'free' })
+    expect((await checkSpaceBookingMeter('s1')).ok).toBe(false)
+    expect(capNotice).toHaveBeenCalledWith('s1', expect.objectContaining({ effective: 15 }))
+    capNotice.mockClear()
+    verdict.mockResolvedValue({ allowed: true })
+    expect((await checkSpaceBookingMeter('s1')).ok).toBe(true)
+    expect(capNotice).not.toHaveBeenCalled()
+  })
+
+  it('a notice that throws still refuses the booking', async () => {
+    capNotice.mockRejectedValueOnce(new Error('boom'))
+    verdict.mockResolvedValue({ allowed: false })
+    expect((await checkSpaceBookingMeter('s1')).ok).toBe(false)
   })
 
   it('month start is the first instant of the UTC month', () => {

@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/spaces/booking.ts",
     "ref": "Space booking audit 2026-11-21 (project thread: Make Space booking as robust as Calendly)"
   },
-  "detail": "FOUND 2026-11-21: checkSpaceBookingMeter refuses the booker with 'This Space has taken all the bookings its plan includes this month' and nobody tells the owner. Once the gates go live (free plan is 15 a month, LIVE-2390), a free Space silently loses customers. Fix: a once-a-month owner notice with the count of turned-away bookers and the Business upgrade; this is the clearest upgrade trigger booking has.",
+  "detail": "FOUND 2026-11-21: checkSpaceBookingMeter refuses the booker with 'This Space has taken all the bookings its plan includes this month' and nobody tells the owner. Once the gates go live (free plan is 15 a month, LIVE-2390), a free Space silently loses customers. Fix: a once-a-month owner notice with the count of turned-away bookers and the Business upgrade; this is the clearest upgrade trigger booking has.\n\nDONE 2026-11-21: when checkSpaceBookingMeter refuses a booker, it now calls notifyBookingCapReached (lib/spaces/booking-cap-notify.ts, loaded only on a refusal, inside its own catch so a failed notice can never turn into a grant). The owner gets one email per Space per calendar month (UTC, the meter's own window): the outbox dedupe key booking_cap:<space>:<YYYY-MM> makes every later refusal that month a no-op. The email names the cap that was hit (\"River Yoga hit its 15 free bookings this month, so a booker was turned away. Business takes unlimited bookings.\") and links to the Space's plan and billing page. Account mail like the trial-ending notice, sent through enqueueEmail. Skipped: the count of turned-away bookers (a once-a-month first-refusal email has no later moment to report a total; a running count needs a counter table or a month-end sweep).",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/booking-audit.mjs BOOK-015",
     "note": "Fails today; passes once the consequence in the title holds."
   },
+  "closed": "2026-11-21",
   "wave": "W7"
 }
