@@ -11,5 +11,6 @@ if (!css.includes('logo/logo-mark.svg')) bad.push('the hammers mark is missing')
 if (!/AidenTyackLogo/.test(read('components/sites/site-chrome.tsx'))) bad.push('the header and footer do not draw the Aiden Tyack lockup')
 if (!/blocks: \[hero, shop\('The shop', 'Name Your Collection', true\), quote, steps, band, proof, faq, cta, letter, contact\]/.test(kit)) bad.push('home is not in the handoff order')
 if (!/form: true/.test(kit) || !/RoleLetterForm/.test(read('components/page-editor/blocks/roles.tsx'))) bad.push('the letter and contact sections have no form')
+if (!/live: false, variant: 'founder'/.test(kit)) bad.push('the maker section would show the Space admin row in place of the portrait')
 if (bad.length) { console.error(bad.join('\n')); process.exit(1) }
 console.log('aidentyack.com: edge-to-edge handoff sections, forest hero, hammers lockup, home in the handoff order with real forms')

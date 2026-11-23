@@ -109,8 +109,9 @@ function pages(): KitPage[] {
     ],
     form: true, primaryLabel: 'Send', primaryHref: '', secondaryLabel: '', secondaryHref: '', note: '',
   })
+  // `live: false`: the maker is the kit's own portrait, never the Space's admin row (which has no photo).
   const maker = role('RolePeople', {
-    variant: 'founder', tone: 'surface', eyebrow: 'Who you will meet', title: 'Introduce the Maker',
+    live: false, variant: 'founder', tone: 'surface', eyebrow: 'Who you will meet', title: 'Introduce the Maker',
     lead: 'Tell people who makes the work and why they care about it. Two or three sentences.',
     items: [{ name: '{{person1Name|Your name}}', role: 'Maker', bio: '', photo: PHOTO('rider-portrait'), href: '' }],
   })
