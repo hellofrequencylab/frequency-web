@@ -10,9 +10,11 @@
 //
 // THE TWO SWITCHES (both blank by default, both read through envFlag; docs/RUNBOOKS.md
 // "Nonce-based script policy"):
-//   CSP_NONCE_REPORT_ONLY  the test run. The strict policy rides ALONGSIDE today's enforced one as
+//   CSP_NONCE_REPORT_ONLY  the test run. The strict policy rides ALONGSIDE the enforced one as
 //                          Content-Security-Policy-Report-Only. Nothing is blocked; a browser only
-//                          reports what the strict policy would have blocked.
+//                          reports what the strict policy would have blocked. The enforced header on
+//                          these routes is `buildCompatPolicy` for the run: today's rules, plus the
+//                          nonce where Next looks for it (see THE TEST RUN NEEDS THE NONCE below).
 //   CSP_NONCE_ENFORCE      the strict policy is sent as Content-Security-Policy on the same routes.
 //                          It wins over the first switch. Blank it and redeploy to roll back.
 // Both off (the default), `nonceCspFor` returns null before doing any work and the proxy sends
@@ -32,6 +34,15 @@
 //   · Scripts that trusted code appends (gtag.js, Stripe.js, the Maps loader, Vercel Analytics,
 //     Turbopack chunks) are allowed by `'strict-dynamic'`.
 // The full inventory is docs/security/csp-nonce.md.
+//
+// THE TEST RUN NEEDS THE NONCE IN THE ENFORCED HEADER (measured 2026-11-23, test/e2e/csp-nonce.spec.ts).
+// Next looks for the nonce in `Content-Security-Policy` FIRST and in the report-only header only
+// when the first is absent (parse-request-headers.js). On Vercel the render is handed the RESPONSE
+// side's value under that name, which during the test run was next.config.ts's static policy: no
+// nonce, so Next stamped none, and all 111 of its scripts on /feed were reported (1,122 reports in
+// 23 hours, none of them about a real gap). With the policy enforced the same page had 110 of 117
+// scripts nonced. So the run only measures anything when the enforced header itself names the nonce:
+// `buildCompatPolicy` is that header. It allows exactly what today's does.
 
 import { envFlag } from '@/lib/env/string'
 import { log } from '@/lib/log'
@@ -149,6 +160,42 @@ export function buildNoncePolicy(opts: { nonce: string; scriptHashes: readonly s
     .join('; ')
 }
 
+/**
+ * The ENFORCED header during the test run: today's policy, with the nonce where Next reads it.
+ *
+ * script-src is split in three, in this order (Next takes the first directive whose name starts
+ * with `script-src`, so the plain one must come first):
+ *   script-src        today's sources plus the nonce and the hashes. A current browser consults it
+ *                     only for what the next two do not cover (eval, WebAssembly), where the nonce
+ *                     changes nothing.
+ *   script-src-elem   today's sources, unchanged, for every <script>. `'unsafe-inline'` holds here
+ *                     because this directive names no nonce.
+ *   script-src-attr   `'unsafe-inline'`, as today's script-src allows inline handlers.
+ * A browser too old for the last two (Safari before 15.4) falls back to script-src, where the nonce
+ * switches `'unsafe-inline'` off: every script in a member document then needs the nonce or a hash,
+ * which is what the hashes are in that directive for, and what the spec above counts.
+ *
+ * PURE.
+ */
+export function buildCompatPolicy(opts: { nonce: string; scriptHashes: readonly string[]; isDev: boolean }): string {
+  if (!/^[A-Za-z0-9+/_-]+={0,2}$/.test(opts.nonce)) throw new Error('csp nonce is not base64')
+  const added = [`'nonce-${opts.nonce}'`, ...opts.scriptHashes].join(' ')
+  return enforcedDirectives(opts.isDev)
+    .flatMap((directive) => {
+      if (!directive.startsWith('script-src ')) return [directive]
+      const elementSources = directive
+        .split(' ')
+        .slice(1)
+        .filter((source) => source !== "'wasm-unsafe-eval'" && source !== "'unsafe-eval'")
+      return [
+        directive.replace("'unsafe-inline'", `'unsafe-inline' ${added}`),
+        `script-src-elem ${elementSources.join(' ')}`,
+        "script-src-attr 'unsafe-inline'",
+      ]
+    })
+    .join('; ')
+}
+
 // ── THE HASHES ───────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -201,6 +248,9 @@ export interface NonceCsp {
   /** The RESPONSE header the policy goes out under: report-only for the test run. */
   header: 'Content-Security-Policy' | 'Content-Security-Policy-Report-Only'
   policy: string
+  /** Test run only: the ENFORCED header for this response (`buildCompatPolicy`). Null when the
+   *  strict policy is itself the enforced one. */
+  enforcedDuringRun: string | null
 }
 
 /**
@@ -218,14 +268,12 @@ export async function nonceCspFor(request: MarkerRequest, renderPath: string): P
   if (!isDocumentRequest(request) || !isNonceRoute(renderPath)) return null
   try {
     const nonce = newNonce()
+    const parts = { nonce, scriptHashes: await inlineScriptHashes(), isDev: process.env.NODE_ENV === 'development' }
     return {
       nonce,
       header: mode === 'enforce' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only',
-      policy: buildNoncePolicy({
-        nonce,
-        scriptHashes: await inlineScriptHashes(),
-        isDev: process.env.NODE_ENV === 'development',
-      }),
+      policy: buildNoncePolicy(parts),
+      enforcedDuringRun: mode === 'enforce' ? null : buildCompatPolicy(parts),
     }
   } catch (error) {
     hashes = null

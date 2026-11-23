@@ -114,3 +114,7 @@ Not verified in this change, and said so:
    Next stamps the nonce (110 of 117 scripts on `/feed`). In the test run it is the static policy, so Next finds no nonce,
    stamps nothing, and the report-only policy reports every Next script. The test run measures nothing until the enforced
    header on member pages names the nonce during the run. Reading: `test/e2e/csp-nonce.spec.ts`.
+   **Fixed 2026-11-23 (owner's answer):** during the run the proxy sends `buildCompatPolicy` as the enforced header on
+   member pages. `script-src` carries the nonce and the hashes; `script-src-elem` and `script-src-attr` restate today's
+   rules, so a current browser allows exactly what it allowed before. A browser too old for those two (Safari before
+   15.4) falls back to `script-src`, where every script in a member document must carry the nonce or a listed hash.

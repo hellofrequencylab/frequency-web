@@ -14,8 +14,10 @@
 //
 // WHEN IT RUNS. Only on a `workflow_dispatch` (`e2e (manual)` with capture_shell on, which mints
 // the member session), or by hand with PW_CSP_NONCE=1. It needs a session, because a signed-out
-// request to a member page is redirected. It skips on pull requests until the mismatch it found is
-// fixed; the fix makes it a gate (docs/RUNBOOKS.md "Nonce-based script policy").
+// request to a member page is redirected, and pull request runs have none. Both causes it found
+// are fixed (the analytics script's hash, and the test run's enforced header naming the nonce), so
+// a reading above zero is now a real gap: it is the first gate before enforcing
+// (docs/RUNBOOKS.md "Nonce-based script policy").
 import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { test, expect } from './fixtures'
@@ -62,7 +64,7 @@ function readScripts(html: string, nonce: string, policy: string): Tally {
 
 test.describe('@smoke nonce policy matches the document', () => {
   test.skip(!baseURL, 'PW_BASE_URL is not set')
-  test.skip(!asked, 'a diagnostic for now: runs on workflow_dispatch or with PW_CSP_NONCE=1')
+  test.skip(!asked, 'needs a member session: runs on workflow_dispatch or with PW_CSP_NONCE=1')
   test.skip(!hasSession, 'PW_STORAGE_STATE missing: a signed-out request to a member page is redirected')
   test.use({ storageState: hasSession ? storageState : undefined })
 
