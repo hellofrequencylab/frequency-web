@@ -270,3 +270,79 @@ describe('SCAN-838: a redacted path carries a generic page_title', () => {
     expect(configArgs()?.page_title).toBe('Pricing · Frequency')
   })
 })
+
+// ── THE BROWSER TWINS (SCAN-1243) ────────────────────────────────────────────────────────────────
+//
+// The head script carries three rules as source text. They are string literals, never a function's
+// own `toString()`, because the nonce-based script policy allows this script by hash and the hash is
+// taken in the proxy's bundle while the page renders the script from another: a printed function
+// came out differently in each and the hash never matched (measured 2026-11-23). A literal can
+// drift from the rule it restates, so each twin is RUN here beside the real function.
+describe('the head script holds its rules as literals that match the real functions', () => {
+  const twin = <T>(source: string): T => new Function(`return (${source})`)() as T
+
+  it('the consent parser', async () => {
+    const { PARSE_CONSENT_CHOICE_BROWSER_SOURCE } = await import('./cookie-consent')
+    const browser = twin<(raw: unknown) => unknown>(PARSE_CONSENT_CHOICE_BROWSER_SOURCE)
+    for (const raw of ['granted', 'denied', '', 'GRANTED', 'yes', '1', null, undefined]) {
+      expect(browser(raw), String(raw)).toBe(parseConsentChoice(raw as string | null | undefined))
+    }
+  })
+
+  it('the law', async () => {
+    const { ANALYTICS_ALLOWED_BROWSER_SOURCE } = await import('./cookie-consent')
+    const browser = twin<typeof analyticsAllowed>(ANALYTICS_ALLOWED_BROWSER_SOURCE)
+    for (const choice of ['granted', 'denied', null] as const) {
+      for (const priorConsentRegion of [true, false]) {
+        const state = { choice, priorConsentRegion }
+        expect(browser(state), JSON.stringify(state)).toBe(analyticsAllowed(state))
+      }
+    }
+  })
+
+  it('the attribution query', async () => {
+    const { PIXEL_SAFE_ATTRIBUTION_QUERY_BROWSER_SOURCE, pixelSafeAttributionQuery } = await import('@/lib/analytics/sanitize')
+    const browser = twin<typeof pixelSafeAttributionQuery>(PIXEL_SAFE_ATTRIBUTION_QUERY_BROWSER_SOURCE)
+    const uuid = 'ab12cd34-1234-4567-890a-0123456789ab'
+    const click = 'A'.repeat(24)
+    const cases = [
+      '',
+      '?',
+      '?q=private+search&name=Daniel',
+      '?utm_source=email&utm_medium=email',
+      '?utm_source=EMAIL&utm_medium=Email&utm_campaign=12345',
+      '?utm_source=qr_scan&utm_medium=qr&utm_id=77',
+      '?utm_source=partner&utm_medium=referral',
+      '?utm_source=google&utm_medium=cpc&gclid=' + click,
+      '?utm_source=instagram&utm_medium=social&utm_campaign=' + uuid,
+      '?utm_source=facebook&utm_medium=social&utm_id=' + uuid,
+      '?utm_source=frequency&utm_medium=email&utm_campaign=email-ab12cd34',
+      '?utm_source=frequency&utm_medium=email&utm_campaign=email-ab12cd34-private',
+      '?utm_source=frequency&utm_medium=email&utm_id=email-ab12cd34',
+      '?utm_source=google&utm_medium=cpc&utm_campaign=email-ab12cd34',
+      '?utm_source=google&utm_medium=email',
+      '?utm_source=newsletter&utm_medium=blast&utm_campaign=mind-body-spirit',
+      '?utm_campaign=' + uuid,
+      '?utm_campaign=' + '9'.repeat(32),
+      '?utm_campaign=' + '9'.repeat(33),
+      '?utm_campaign=person%40example.test',
+      '?gclid=short',
+      '?gclid=' + click + '&dclid=' + click + '&gbraid=' + click + '&wbraid=' + click,
+      '?gclid=' + 'A'.repeat(201),
+      '?gclid=' + click + '%20x',
+      '?utm_source=email&utm_source=google&utm_medium=email',
+    ]
+    for (const search of cases) expect(browser(search), search).toBe(pixelSafeAttributionQuery(search))
+  })
+
+  it('and nothing in the script is printed from a function, so every bundle builds the same bytes', async () => {
+    const { ANALYTICS_ALLOWED_BROWSER_SOURCE, PARSE_CONSENT_CHOICE_BROWSER_SOURCE } = await import('./cookie-consent')
+    const { PIXEL_SAFE_ATTRIBUTION_QUERY_BROWSER_SOURCE } = await import('@/lib/analytics/sanitize')
+    const script = gaBootstrapScript(GA_ID, true)
+    expect(script).toContain(
+      `var law=(${ANALYTICS_ALLOWED_BROWSER_SOURCE}),parse=(${PARSE_CONSENT_CHOICE_BROWSER_SOURCE}),query=(${PIXEL_SAFE_ATTRIBUTION_QUERY_BROWSER_SOURCE});`,
+    )
+    // A printed function would carry this file's own formatting or a bundler's; the literals carry neither.
+    expect(script).not.toContain(analyticsAllowed.toString())
+  })
+})
