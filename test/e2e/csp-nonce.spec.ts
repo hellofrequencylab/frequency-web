@@ -36,7 +36,7 @@ type Tally = { total: number; nonced: number; hashed: number; data: number; wron
 
 function readScripts(html: string, nonce: string, policy: string): Tally {
   const tally: Tally = { total: 0, nonced: 0, hashed: 0, data: 0, wrongNonce: 0, bare: [] }
-  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
     const [, attrs, body] = match
     tally.total += 1
     if (DATA_BLOCK.test(attrs)) {
@@ -91,7 +91,7 @@ test.describe('@smoke nonce policy matches the document', () => {
 
       const html = await response.text()
       const tally = readScripts(html, nonce, policy!)
-      const distinct = new Set([...html.matchAll(/<script\b[^>]*\bnonce="([^"]*)"/g)].map((m) => m[1]))
+      const distinct = new Set([...html.matchAll(/<script\b[^>]*\bnonce="([^"]*)"/gi)].map((m) => m[1]))
       console.log(
         `[csp-nonce] ${path} mode=${reportOnly === policy ? 'report-only' : 'enforce'} scripts=${tally.total} nonced=${tally.nonced} hashed=${tally.hashed} data=${tally.data} wrongNonce=${tally.wrongNonce} bare=${tally.bare.length} distinctNoncesInMarkup=${distinct.size} headerNonceInMarkup=${distinct.has(nonce)}`,
       )
