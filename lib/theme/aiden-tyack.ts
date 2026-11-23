@@ -50,6 +50,9 @@ ${S}{
 --at-on-band:#ECE8DA;
 --at-band-accent-text:#C9AC82;
 --at-stitch:#B6AD90;
+--at-khaki:#B6AD90;
+--at-moss:#656D4A;
+--at-sage-light:#C2C5AA;
 --at-accent:#582F0E;
 --at-accent-hover:#7F4F24;
 --at-accent-soft:#A68A64;

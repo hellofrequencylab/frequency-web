@@ -75,7 +75,7 @@ export function RoleContactForm({ slug, buttonLabel, topics = [] }: { slug: stri
           <Select data-part="input" options={topics} value={topic} onChange={(e) => setTopic(e.target.value)} disabled={off} />
         </label>
       )}
-      <label data-part="field" data-wide=""><span data-part="label">Message</span><Textarea data-part="input" rows={4} required placeholder="What would you like to ask?" value={message} onChange={(e) => setMessage(e.target.value)} disabled={off} /></label>
+      <label data-part="field" data-wide=""><span data-part="label">Message</span><Textarea data-part="input" rows={4} required placeholder="How can we help?" value={message} onChange={(e) => setMessage(e.target.value)} disabled={off} /></label>
       <Honeypot value={company} set={setCompany} />
       <div data-wide=""><button data-part="cta" type="submit" disabled={off || status === 'loading'}>{status === 'loading' ? 'Sending' : buttonLabel || 'Send'}</button></div>
       {error && <p data-part="error" data-wide="" role="alert">{error}</p>}

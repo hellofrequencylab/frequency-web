@@ -20,12 +20,21 @@ export function AidenTyackMark({ logoUrl = null }: { logoUrl?: string | null }) 
 }
 
 export function AidenTyackLogo({ name, tagline = null, logoUrl = null }: { name: string; tagline?: string | null; logoUrl?: string | null }) {
+  const tag = tagline || AIDEN_TYACK_CHROME_COPY.tagline
+  // The line under the name spans exactly the name's width (Daniel, 11-23: centred, same length, symmetrical). Each letter is its own
+  // box spread edge to edge, so the first letter sits under the name's first letter and the last under its last, at any size. The
+  // whole word is read once by a screen reader; the spread letters are hidden from it.
   return (
     <span className="at-logo">
       <AidenTyackMark logoUrl={logoUrl} />
       <span className="at-logo-text">
         <span className="at-logo-name">{name}</span>
-        <span className="at-logo-tag">{tagline || AIDEN_TYACK_CHROME_COPY.tagline}</span>
+        <span className="at-logo-tag">
+          <span className="at-sr">{tag}</span>
+          {Array.from(tag).map((ch, i) => (
+            <span key={i} aria-hidden="true">{ch === ' ' ? '\u00a0' : ch}</span>
+          ))}
+        </span>
       </span>
     </span>
   )

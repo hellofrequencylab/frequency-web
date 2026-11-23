@@ -65,7 +65,7 @@ function pages(): KitPage[] {
   const custom = role('RoleStory', {
     variant: 'split', flip: true, eyebrow: 'Custom work', title: 'Yours, Down to the Last Stud',
     lead: 'Pick the hide, width, hardware and stud pattern. Every custom piece starts with a conversation at the bench.',
-    items: [], quote: '', image: PHOTO('rider-on-beach'), alt: 'A rider with his motorcycle at the beach', focus: '65% 50%',
+    items: [], quote: '', image: PHOTO('aiden-at-the-bench'), alt: 'Aiden at his workbench, dyeing a blue strap', focus: '40% 45%',
     primaryLabel: 'Start a Custom Order', primaryHref: '~/custom', secondaryLabel: '', secondaryHref: '',
   })
   const talk = role('RoleContact', {
@@ -80,7 +80,7 @@ function pages(): KitPage[] {
     primaryLabel: 'Send Message', primaryHref: '', secondaryLabel: '', secondaryHref: '', note: '',
   })
 
-  // THE MAKER: the portrait band, the story beside the coiled belt, then how a piece is made on parchment.
+  // THE MAKER: the portrait band, the story beside Aiden at his bench, then how a piece is made on parchment.
   const makerBand = role('RoleHero', {
     variant: 'full', eyebrow: 'The maker', title: 'One Bench, One Pair of Hands', lead: '',
     image: PHOTO('rider-portrait'), alt: 'Aiden on his motorcycle', focus: '50% 30%',
@@ -92,7 +92,7 @@ function pages(): KitPage[] {
       { text: 'The leather is full-grain vegetable-tanned hide. The hardware is solid brass, nickel or blackened steel. Nothing is outsourced, and nothing is made in batches.' },
       { text: 'Every piece is numbered and signed, and repairs are free for life.' },
     ],
-    quote: '', image: PHOTO('belt-tan-coiled-studs'), alt: 'A coiled tan belt on the workbench', focus: '',
+    quote: '', image: PHOTO('aiden-dyeing-a-strap'), alt: 'Aiden dyeing a studded strap blue at his bench', focus: '45% 60%',
     primaryLabel: 'Shop the Collection', primaryHref: '~/shop', secondaryLabel: 'Order Custom', secondaryHref: '~/custom',
   })
   const process = role('RoleSteps', {

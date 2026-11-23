@@ -58,6 +58,12 @@ const BASE = `
 @media (max-width:47.99rem){[data-role][data-vis="desktop"]{display:none!important}}
 @media (min-width:48rem){[data-role][data-vis="mobile"]{display:none!important}}
 @media (prefers-reduced-motion:reduce){[data-role] *{transition:none!important}}
+/* A dropdown is the shared Select (a span.mu-select around the select and a chevron svg). Hosted sites never load the member sheet that
+   sizes that svg, so without these rules the chevron draws at the width of its box. Size and pin it here for every theme. */
+[data-role] .mu-select{position:relative;display:block;min-width:0}
+[data-role] .mu-select>svg{position:absolute;inset-inline-end:1rem;top:50%;width:1rem;height:1rem;transform:translateY(-50%);pointer-events:none;color:currentColor;opacity:.7}
+[data-role] select[data-part="input"]{appearance:none;-webkit-appearance:none;padding-inline-end:2.75rem;cursor:pointer}
+[data-role] [data-part="sorter"] .mu-select{display:inline-block}
 `
 
 const HERO = `
