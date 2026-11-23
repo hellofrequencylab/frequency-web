@@ -425,6 +425,31 @@ vi.mock('@/lib/spaces/booking-notify', async (orig) => ({
   scheduleBookingReminder: notifySpies.reminder,
 }))
 
+// BOOK-012: the CRM timeline the no-show mark writes to and the owner's list reads back.
+const timeline = vi.hoisted(() => ({ rows: [] as { space_id: string; idempotency_key: string; metadata?: unknown }[] }))
+vi.mock('@/lib/crm/interactions', async (orig) => ({
+  ...(await orig<typeof import('@/lib/crm/interactions')>()),
+  recordSpaceMemberActivity: async (input: { spaceId: string; idempotencyKey: string; metadata?: unknown }) => {
+    if (timeline.rows.some((r) => r.idempotency_key === input.idempotencyKey)) return
+    timeline.rows.push({ space_id: input.spaceId, idempotency_key: input.idempotencyKey, metadata: input.metadata })
+  },
+}))
+function interactionsBuilder() {
+  let spaceId: string | undefined
+  return {
+    select() {
+      return this
+    },
+    eq(col: string, val: string) {
+      if (col === 'space_id') spaceId = val
+      return this
+    },
+    async in(_col: string, keys: string[]) {
+      return { data: timeline.rows.filter((r) => r.space_id === spaceId && keys.includes(r.idempotency_key)) }
+    },
+  }
+}
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     // The paid-order authority (confirm_paid_commerce_booking): flips the order's pending holds.
@@ -440,6 +465,7 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table === 'profiles') return profilesBuilder()
       if (table === 'space_calendar_entries') return calendarEntriesBuilder()
       if (table === 'space_availability_schedules') return schedulesBuilder()
+      if (table === 'contact_interactions') return interactionsBuilder()
       throw new Error(`unexpected table ${table}`)
     },
   }),
@@ -460,6 +486,7 @@ import {
   cancelBooking,
   rescheduleBooking,
   listSpaceBookings,
+  markBookingNoShow,
   withinModifyWindow,
   parseQuestions,
   parseAnswers,
@@ -493,6 +520,7 @@ beforeEach(() => {
   db.inserts = []
   db.deletes = []
   db.failNextInsert = false
+  timeline.rows = []
   calendarDb.entries = []
   calendarDb.schedules = []
   captureLeadSpy.mockClear()
@@ -1263,6 +1291,51 @@ describe('listSpaceBookings (action) — owner only', () => {
     expect(guest.memberName).toBe('Grace Hopper')
     expect(guest.guestEmail).toBe('grace@example.com')
     expect(list.find((b) => b.id === 'b1')!.guestEmail).toBeNull()
+  })
+})
+
+describe('the owner list names the service, shows the past 30 days and marks a no-show (BOOK-012)', () => {
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString()
+  beforeEach(() => {
+    db.profiles.push({ id: 'm1', display_name: 'Ada Lovelace' })
+    db.serviceTypes = [{ id: 'svc-1', space_id: 'space-1', name: 'Intro call', duration_minutes: 30, active: false, sort_order: 0 }]
+    db.bookings.push(
+      { id: 'up', space_id: 'space-1', member_profile_id: 'm1', starts_at: '2099-06-30T10:00:00.000Z', ends_at: '2099-06-30T10:30:00.000Z', status: 'confirmed', note: null, service_type_id: 'svc-1' },
+      { id: 'past', space_id: 'space-1', member_profile_id: 'm1', starts_at: hoursAgo(48), ends_at: hoursAgo(47), status: 'confirmed', note: null },
+      { id: 'old', space_id: 'space-1', member_profile_id: 'm1', starts_at: hoursAgo(24 * 40), ends_at: hoursAgo(24 * 40 - 1), status: 'confirmed', note: null },
+      { id: 'guest', space_id: 'space-1', member_profile_id: null, guest_name: 'Grace', guest_email: 'g@example.com', starts_at: hoursAgo(5), ends_at: hoursAgo(4), status: 'confirmed', note: null },
+    )
+  })
+  afterEach(() => {
+    db.serviceTypes = []
+  })
+
+  it('names the service (even one since switched off) and splits past from upcoming', async () => {
+    const list = await listSpaceBookings('space-1')
+    expect(list.map((b) => b.id).sort()).toEqual(['guest', 'past', 'up'])
+    expect(list.find((b) => b.id === 'up')).toMatchObject({ serviceName: 'Intro call', past: false, noShow: false })
+    expect(list.find((b) => b.id === 'past')).toMatchObject({ serviceName: null, past: true, noShow: false })
+  })
+
+  it('marks a past member booking once and the list shows it', async () => {
+    expect('error' in (await markBookingNoShow('past'))).toBe(false)
+    expect('error' in (await markBookingNoShow('past'))).toBe(false)
+    expect(timeline.rows).toHaveLength(1)
+    expect(timeline.rows[0]!.metadata).toMatchObject({ kind: 'booking_no_show', bookingId: 'past' })
+    expect(db.bookings.find((b) => b.id === 'past')!.status).toBe('confirmed')
+    const list = await listSpaceBookings('space-1')
+    expect(list.find((b) => b.id === 'past')!.noShow).toBe(true)
+  })
+
+  it('refuses a non-admin, an upcoming booking and a guest booking', async () => {
+    isAdmin = false
+    expect('error' in (await markBookingNoShow('past'))).toBe(true)
+    isAdmin = true
+    expect('error' in (await markBookingNoShow('up'))).toBe(true)
+    expect('error' in (await markBookingNoShow('guest'))).toBe(true)
+    currentProfileId = null
+    expect('error' in (await markBookingNoShow('past'))).toBe(true)
+    expect(timeline.rows).toHaveLength(0)
   })
 })
 
