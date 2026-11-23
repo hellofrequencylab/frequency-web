@@ -322,7 +322,10 @@ export function bellToneBySlug(slug: string | null | undefined): BellTone {
 }
 
 // Ambient loops: an optional soft background that plays for the whole sit. The
-// files live in /public/tracks; the player (lib/on-air-ambient.ts) decodes each
+// files live in Supabase Storage, in the public audio bucket (moved out of /public/tracks on
+// 2026-11-23, SCAN-1213: 14 MB of binary no longer rides the repo or a deploy). To change a track,
+// upload it under a NEW file name and point its row here at that name: the stored copies are
+// cached for a year. The player (lib/on-air-ambient.ts) decodes each
 // into a seamless crossfade-to-self loop and fades it in. `credit` keeps the
 // source on record (these are licensed Epidemic Sound tracks); it's never shown
 // to a member.
@@ -330,16 +333,25 @@ interface AmbientTrack {
   slug: string
   /** Member-facing name (setup chip). Plain words. */
   name: string
-  /** Public path under /public. */
+  /** Public URL of the stored .mp3 (`ambientTrackUrl`). */
   src: string
   /** Source / attribution, for licensing records only. */
   credit: string
 }
 
+/** Where the ambient tracks are stored: bucket and folder, as scripts and the row record them. */
+export const AMBIENT_TRACK_STORE = 'recordings-media/platform/on-air'
+
+/** The public URL of one stored track. The project URL is inlined at build time, so this is a
+ *  constant in the browser; the member app's connect-src already allows the storage host. */
+export function ambientTrackUrl(slug: string): string {
+  return `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/+$/, '')}/storage/v1/object/public/${AMBIENT_TRACK_STORE}/${slug}.mp3`
+}
+
 export const AMBIENT_TRACKS: AmbientTrack[] = [
-  { slug: 'forest', name: 'Forest', src: '/tracks/forest.mp3', credit: 'Epidemic Sound: Ambience, Forest, Bird Sing, Black Forest Czech Republic' },
-  { slug: 'ocean', name: 'Ocean', src: '/tracks/ocean.mp3', credit: 'Epidemic Sound: Water, Wave, Ocean, Waves On Shore, Beach, Close' },
-  { slug: 'drift', name: 'Drift', src: '/tracks/drift.mp3', credit: 'Epidemic Sound: Remain (DEX 1200)' },
+  { slug: 'forest', name: 'Forest', src: ambientTrackUrl('forest'), credit: 'Epidemic Sound: Ambience, Forest, Bird Sing, Black Forest Czech Republic' },
+  { slug: 'ocean', name: 'Ocean', src: ambientTrackUrl('ocean'), credit: 'Epidemic Sound: Water, Wave, Ocean, Waves On Shore, Beach, Close' },
+  { slug: 'drift', name: 'Drift', src: ambientTrackUrl('drift'), credit: 'Epidemic Sound: Remain (DEX 1200)' },
 ]
 
 export function ambientTrackBySlug(slug: string | null | undefined): AmbientTrack | null {

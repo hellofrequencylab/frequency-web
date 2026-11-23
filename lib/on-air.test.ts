@@ -257,3 +257,26 @@ describe('ringScaleAt', () => {
     expect(ringScaleAt(sigh, 11.999)).toBeCloseTo(0.62, 1)
   })
 })
+
+// The ambient tracks moved out of /public/tracks into Supabase Storage (SCAN-1213). The player
+// fetches `src` as given, so each one must be a full public storage URL for the stored file.
+describe('ambient tracks are read from storage, not from the deploy', () => {
+  it('every track points at its stored copy under the public audio bucket', async () => {
+    const { vi } = await import('vitest')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://project.supabase.co/')
+    vi.resetModules()
+    try {
+      const { AMBIENT_TRACKS, AMBIENT_TRACK_STORE, ambientTrackUrl } = await import('./on-air')
+      expect(AMBIENT_TRACK_STORE).toBe('recordings-media/platform/on-air')
+      expect(AMBIENT_TRACKS.map((t) => t.slug)).toEqual(['forest', 'ocean', 'drift'])
+      for (const track of AMBIENT_TRACKS) {
+        expect(track.src).toBe(`https://project.supabase.co/storage/v1/object/public/recordings-media/platform/on-air/${track.slug}.mp3`)
+        expect(track.src).toBe(ambientTrackUrl(track.slug))
+        expect(track.src).not.toContain('/tracks/')
+      }
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+})
