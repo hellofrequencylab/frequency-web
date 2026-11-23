@@ -378,6 +378,23 @@ async function findCancelledBooking(
   }
 }
 
+/** BOOK-009: the zone the booker's browser reported when they booked, or null (none stored, not a zone
+ *  this runtime can format, or a database without the column). The booker's own emails use it; the
+ *  owner's keep the Space's zone. Fail-soft: any error reads as null. */
+async function bookerZoneOf(admin: Admin, bookingId: string | null | undefined): Promise<string | null> {
+  if (!bookingId) return null
+  try {
+    const { data, error } = await looseFrom(admin, 'space_bookings')
+      .select('booker_time_zone')
+      .eq('id', bookingId)
+      .maybeSingle()
+    const zone = !error && typeof data?.booker_time_zone === 'string' ? data.booker_time_zone.trim() : ''
+    return usableZone(zone) ? zone : null
+  } catch {
+    return null
+  }
+}
+
 // ── public: confirmation, reminder scheduling, cancellation ─────────────────────────────────────
 
 /** Send the confirmation email to the member (with .ics) and the owner. Best-effort; never throws. */
@@ -386,6 +403,9 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
     const admin = createAdminClient()
     const tz = await bookingTimezone(admin, ctx.spaceId)
     const whenAbsolute = formatWhen(ctx.startsAt, tz)
+    // BOOK-009: the booker reads the time in their own zone; the owner keeps the Space's.
+    const bookerZone = await bookerZoneOf(admin, ctx.bookingId)
+    const bookerWhen = bookerZone ? formatWhen(ctx.startsAt, bookerZone) : whenAbsolute
     const mins = durationMinutes(ctx.startsAt, ctx.endsAt)
     const manageUrl = `${APP_URL}/spaces/${ctx.spaceSlug}/book`
     const member = await bookerRecipient(admin, ctx)
@@ -414,7 +434,7 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
         spaceName: ctx.spaceName,
         serviceName: ctx.serviceName,
         where,
-        whenAbsolute,
+        whenAbsolute: bookerWhen,
         durationMinutes: mins,
         otherPartyName: ctx.spaceName,
         manageUrl: ctx.guest?.manageUrl ?? manageUrl,
@@ -464,10 +484,14 @@ export async function notifyGuestBookingHold(ctx: {
   serviceName: string | null
   confirmUrl: string
   holdMinutes: number
+  /** BOOK-009: the guest's browser zone, already checked; null falls back to the Space's. */
+  bookerTimeZone?: string | null
 }): Promise<void> {
   try {
     const admin = createAdminClient()
-    const tz = await bookingTimezone(admin, ctx.spaceId)
+    const tz = usableZone(ctx.bookerTimeZone ?? null)
+      ? (ctx.bookerTimeZone as string)
+      : await bookingTimezone(admin, ctx.spaceId)
     await sendGuestBookingConfirmEmail({
       to: ctx.guest.email,
       guestName: ctx.guest.name,
@@ -539,6 +563,9 @@ export async function notifyBookingCancelled(
     const serviceName = ctx.serviceName ?? (await serviceNameOf(admin, found?.service_type_id))
 
     const member = await bookerRecipient(admin, ctx)
+    // BOOK-009: the booker reads the time in their own zone; the owner keeps the Space's.
+    const bookerZone = await bookerZoneOf(admin, bookingId)
+    const bookerWhen = bookerZone ? formatWhen(ctx.startsAt, bookerZone) : whenAbsolute
     let icsBase64: string | null = null
     if (bookingId) {
       const invite = await inviteIdentity(admin, bookingId)
@@ -564,7 +591,7 @@ export async function notifyBookingCancelled(
         recipientIsGuest: !!ctx.guest,
         spaceName: ctx.spaceName,
         serviceName,
-        whenAbsolute,
+        whenAbsolute: bookerWhen,
         reason,
         bookUrl: ctx.guest?.manageUrl ?? bookUrl,
         icsBase64,
@@ -637,7 +664,8 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
   if (!space) return
   const spaceName = space.brand_name?.trim() || space.name
 
-  const tz = await bookingTimezone(admin, booking.space_id)
+  // BOOK-009: a reminder only ever goes to the booker, so it states their own zone when they gave one.
+  const tz = (await bookerZoneOf(admin, booking.id)) ?? (await bookingTimezone(admin, booking.space_id))
   const serviceName = await serviceNameOf(admin, booking.service_type_id)
   const where = await serviceWhereOf(admin, booking.service_type_id)
 
