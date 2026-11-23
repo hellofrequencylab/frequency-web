@@ -11,9 +11,9 @@ insert into public.spaces (id, slug, name, type, entity_id, status, visibility) 
   ('00000000-0000-4000-b004-00000000000a', 'book004-space', 'BOOK-004 Space', 'business',
    (select id from public.entities where key = 'labs' limit 1), 'active', 'network');
 
-insert into public.space_bookings (id, space_id, starts_at, ends_at, status) values
+insert into public.space_bookings (id, space_id, starts_at, ends_at, status, guest_name, guest_email) values
   ('00000000-0000-4000-b004-0000000000b1', '00000000-0000-4000-b004-00000000000a',
-   '2030-01-08 18:00+00', '2030-01-08 19:00+00', 'confirmed');
+   '2030-01-08 18:00+00', '2030-01-08 19:00+00', 'confirmed', 'Guest', 'guest@example.com');
 
 select is(
   (select chain_id from public.space_bookings where id = '00000000-0000-4000-b004-0000000000b1'),
@@ -22,23 +22,23 @@ select is(
 );
 
 select throws_ok(
-  $$ insert into public.space_bookings (space_id, starts_at, ends_at, status) values
-     ('00000000-0000-4000-b004-00000000000a', '2030-01-08 18:30+00', '2030-01-08 19:00+00', 'pending') $$,
+  $$ insert into public.space_bookings (space_id, starts_at, ends_at, status, guest_name, guest_email) values
+     ('00000000-0000-4000-b004-00000000000a', '2030-01-08 18:30+00', '2030-01-08 19:00+00', 'pending', 'Guest', 'guest@example.com') $$,
   '23P01',
   null,
   'a live booking that overlaps another with a different start is refused'
 );
 
 select lives_ok(
-  $$ insert into public.space_bookings (space_id, starts_at, ends_at, status) values
-     ('00000000-0000-4000-b004-00000000000a', '2030-01-08 19:00+00', '2030-01-08 19:30+00', 'confirmed') $$,
+  $$ insert into public.space_bookings (space_id, starts_at, ends_at, status, guest_name, guest_email) values
+     ('00000000-0000-4000-b004-00000000000a', '2030-01-08 19:00+00', '2030-01-08 19:30+00', 'confirmed', 'Guest', 'guest@example.com') $$,
   'a booking that starts when another ends is allowed'
 );
 
 select lives_ok(
-  $$ insert into public.space_bookings (id, space_id, starts_at, ends_at, status, rescheduled_from) values
+  $$ insert into public.space_bookings (id, space_id, starts_at, ends_at, status, rescheduled_from, guest_name, guest_email) values
      ('00000000-0000-4000-b004-0000000000b2', '00000000-0000-4000-b004-00000000000a',
-      '2030-01-08 17:30+00', '2030-01-08 18:30+00', 'confirmed', '00000000-0000-4000-b004-0000000000b1') $$,
+      '2030-01-08 17:30+00', '2030-01-08 18:30+00', 'confirmed', '00000000-0000-4000-b004-0000000000b1', 'Guest', 'guest@example.com') $$,
   'a reschedule may overlap the booking it replaces while that one is still live'
 );
 
@@ -51,14 +51,14 @@ select is(
 update public.space_bookings set status = 'cancelled' where id = '00000000-0000-4000-b004-0000000000b1';
 
 select lives_ok(
-  $$ insert into public.space_bookings (space_id, starts_at, ends_at, status) values
-     ('00000000-0000-4000-b004-00000000000a', '2030-01-08 18:30+00', '2030-01-08 19:00+00', 'cancelled') $$,
+  $$ insert into public.space_bookings (space_id, starts_at, ends_at, status, guest_name, guest_email) values
+     ('00000000-0000-4000-b004-00000000000a', '2030-01-08 18:30+00', '2030-01-08 19:00+00', 'cancelled', 'Guest', 'guest@example.com') $$,
   'a cancelled booking never blocks'
 );
 
 select throws_ok(
-  $$ insert into public.space_bookings (space_id, starts_at, ends_at, status) values
-     ('00000000-0000-4000-b004-00000000000a', '2030-01-08 18:00+00', '2030-01-08 18:15+00', 'confirmed') $$,
+  $$ insert into public.space_bookings (space_id, starts_at, ends_at, status, guest_name, guest_email) values
+     ('00000000-0000-4000-b004-00000000000a', '2030-01-08 18:00+00', '2030-01-08 18:15+00', 'confirmed', 'Guest', 'guest@example.com') $$,
   '23P01',
   null,
   'the moved booking still blocks a different booker'
