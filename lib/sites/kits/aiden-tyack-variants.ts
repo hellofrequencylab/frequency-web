@@ -74,8 +74,9 @@ function pages(): KitPage[] {
     variant: 'band', tone: 'band', eyebrow: '', title: 'Built to *Outlast You*', lead: '',
     primaryLabel: '', primaryHref: '', secondaryLabel: '', secondaryHref: '', items: [],
   })
+  // `stats: []` so the block's default sample figures never ship: the owner adds real ones, or none.
   const proof = role('RoleProof', {
-    eyebrow: 'Kind words', title: 'Let *Customers Speak*', lead: '',
+    eyebrow: 'Kind words', title: 'Let *Customers Speak*', lead: '', stats: [],
     items: rows([["Paste a real review here, in the customer's own words.", 'Customer name'], ['Short and specific beats long and general.', 'Customer name'], ['Ask permission before you use a name.', 'Customer name']] as const, ([quote, name]) => ({ quote, name, role: '', photo: '', rating: 0 })),
   })
   const gallery = role('RoleGallery', {
