@@ -80,10 +80,11 @@ async function spendToday(
   sinceIso: string,
   scope: { feature?: string; spaceId?: string | null },
 ): Promise<number> {
-  const { data: viaRpc, error: rpcError } = await admin.rpc('ai_spend_today', {
-    p_feature: scope.feature ?? null,
-    p_space: scope.spaceId ?? null,
-  })
+  // Both arguments are `default null` in SQL, and an explicit null means "no scope". The generated
+  // types spell a defaulted argument as optional and cannot say it also takes null, so the unchanged
+  // payload is cast to the generated shape (the localized ADR-246 cast).
+  const args = { p_feature: scope.feature ?? null, p_space: scope.spaceId ?? null }
+  const { data: viaRpc, error: rpcError } = await admin.rpc('ai_spend_today', args as { p_feature?: string; p_space?: string })
   if (!rpcError && viaRpc != null) {
     const value = Number(viaRpc)
     if (!Number.isFinite(value) || value < 0) throw new Error('Invalid AI spend')
