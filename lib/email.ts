@@ -1299,6 +1299,30 @@ Unsubscribe from dispatch emails: ${unsubscribeUrl}
 // Voice: plain, camp-counselor, no em/en dashes. whenAbsolute is pre-formatted in
 // the Space timezone by the caller (labeled), so these builders stay tz-agnostic.
 
+/** BOOK-010: where a booked session happens, as the owner set it on the service. */
+export interface BookingWhere {
+  kind: 'in_person' | 'phone' | 'video'
+  value: string
+}
+
+/** The "Where" line for a booking email, as plain text. Pure. */
+function bookingWhereText(where: BookingWhere): string {
+  if (where.kind === 'phone') return `Phone call: ${where.value}`
+  if (where.kind === 'video') return `Video call: ${where.value}`
+  return `In person: ${where.value}`
+}
+
+/** The "Where" line as HTML. A video link is a link. Pure. */
+function bookingWhereHtml(where: BookingWhere | null | undefined): string {
+  if (!where) return ''
+  const label = where.kind === 'phone' ? 'Phone call' : where.kind === 'video' ? 'Video call' : 'In person'
+  const value =
+    where.kind === 'video' && /^https?:\/\//i.test(where.value)
+      ? `<a href="${escapeHtml(where.value)}" style="overflow-wrap:anywhere;">${escapeHtml(where.value)}</a>`
+      : escapeHtml(where.value)
+  return `<p data-fq="fq-p" style="${pStyle}"><strong>${label}:</strong> ${value}</p>`
+}
+
 export async function sendBookingConfirmationEmail(params: {
   to: string
   recipientName: string
@@ -1306,6 +1330,8 @@ export async function sendBookingConfirmationEmail(params: {
   recipientIsGuest?: boolean
   spaceName: string
   serviceName: string | null
+  /** BOOK-010: where it happens. Omitted when the service names no place. */
+  where?: BookingWhere | null
   whenAbsolute: string
   durationMinutes: number
   otherPartyName: string | null
@@ -1419,6 +1445,7 @@ function bookingConfirmationHtml(p: {
   recipientIsGuest?: boolean
   spaceName: string
   serviceName: string | null
+  where?: BookingWhere | null
   whenAbsolute: string
   durationMinutes: number
   otherPartyName: string | null
@@ -1439,6 +1466,7 @@ function bookingConfirmationHtml(p: {
       <strong>${escapeHtml(p.whenAbsolute)}</strong><br>
       <span data-fq="fq-muted" style="color:${palette.textMuted};">${p.durationMinutes} minute session</span>
     </p>
+    ${bookingWhereHtml(p.where)}
     ${emailButton(`View booking`, `${p.manageUrl}`)}
     ${
       p.madeWith
@@ -1453,6 +1481,7 @@ function bookingConfirmationText(p: {
   audience: 'member' | 'owner'
   spaceName: string
   serviceName: string | null
+  where?: BookingWhere | null
   whenAbsolute: string
   durationMinutes: number
   otherPartyName: string | null
@@ -1469,7 +1498,7 @@ ${intro}
 
 When: ${p.whenAbsolute}
 Length: ${p.durationMinutes} minute session
-
+${p.where ? `${bookingWhereText(p.where)}\n` : ''}
 View booking: ${p.manageUrl}
 ${p.madeWith ? `\n${p.madeWith.label}: ${p.madeWith.url}\n` : ''}`
 }
@@ -1479,6 +1508,8 @@ interface BookingReminderEmailParams {
   recipientName: string
   spaceName: string
   serviceName: string | null
+  /** BOOK-010: where it happens. Omitted when the service names no place. */
+  where?: BookingWhere | null
   whenAbsolute: string
   manageUrl: string
 }
@@ -1494,6 +1525,7 @@ export function buildBookingReminderEmail(params: BookingReminderEmailParams): E
       <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(params.serviceName ?? params.spaceName)}</h1>
       <p data-fq="fq-p" style="${pStyle}">Hi ${escapeHtml(params.recipientName)}, this is a reminder of your upcoming session.</p>
       <p data-fq="fq-p" style="${pStyle}"><strong>${escapeHtml(params.whenAbsolute)}</strong></p>
+      ${bookingWhereHtml(params.where)}
       ${emailButton(`View booking`, `${params.manageUrl}`)}
     `),
     text: `Reminder: ${params.serviceName ?? params.spaceName}
@@ -1501,7 +1533,7 @@ export function buildBookingReminderEmail(params: BookingReminderEmailParams): E
 Hi ${params.recipientName}, this is a reminder of your upcoming session.
 
 When: ${params.whenAbsolute}
-
+${params.where ? `${bookingWhereText(params.where)}\n` : ''}
 View booking: ${params.manageUrl}
 `,
   }

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ArrowLeft, Clock, Loader2 } from 'lucide-react'
+import { ArrowLeft, Clock, Loader2, MapPin } from 'lucide-react'
 import { listGuestOpenSlotsAction, listOpenSlotsForService } from '@/lib/spaces/booking-actions'
 import type { OpenSlot, ServiceType } from '@/lib/spaces/booking'
-import { durationLabel } from '@/lib/spaces/booking-format'
+import { durationLabel, whereLabel } from '@/lib/spaces/booking-format'
 import { BookingPicker } from '@/components/spaces/booking-picker'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CalendarDays } from 'lucide-react'
@@ -77,6 +77,12 @@ export function BookingServiceMember({
             {durationLabel(selected.durationMinutes)}
             {selected.description ? ` · ${selected.description}` : ''}
           </p>
+          {selected.location ? (
+            <p className="mt-1 flex items-center gap-1.5 text-meta text-muted">
+              <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {whereLabel(selected.location)}
+            </p>
+          ) : null}
         </div>
 
         {loading || slots === null ? (
@@ -127,6 +133,12 @@ export function BookingServiceMember({
             </span>
             {service.description && (
               <span className="line-clamp-2 text-meta text-subtle">{service.description}</span>
+            )}
+            {service.location && (
+              <span className="flex items-center gap-1.5 text-meta text-subtle">
+                <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {whereLabel(service.location)}
+              </span>
             )}
           </button>
         ))}

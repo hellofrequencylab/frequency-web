@@ -275,3 +275,71 @@ describe('runBookingReminder', () => {
     expect((routed[0] as { email: { subject: string } }).email.subject).toBe('Reminder: Deep tissue')
   })
 })
+
+describe('where the session happens (BOOK-010)', () => {
+  beforeEach(() => {
+    tables.spaces = [{ id: 'space-1', name: 'River Yoga', brand_name: null, slug: 'river', domain: null }]
+    tables.space_service_types = [
+      { id: 'svc-1', name: 'Deep tissue', location_kind: 'in_person', location_value: '12 Main St, Encinitas' },
+      { id: 'svc-2', name: 'Intro call', location_kind: 'video', location_value: 'https://meet.example.com/abc' },
+    ]
+  })
+
+  it('puts the address in the confirmation and the invite LOCATION', async () => {
+    tables.space_bookings = [{ id: 'b1', rescheduled_from: null, service_type_id: 'svc-1' }]
+    await notifyBookingConfirmed({
+      bookingId: 'b1',
+      spaceId: 'space-1',
+      spaceSlug: 'river',
+      spaceName: 'River Yoga',
+      ownerProfileId: null,
+      memberProfileId: 'member-1',
+      memberName: null,
+      startsAt: '2030-01-01T10:00:00.000Z',
+      endsAt: '2030-01-01T11:00:00.000Z',
+      serviceName: 'Deep tissue',
+    })
+    const [mail] = emails()
+    expect(mail.html).toContain('In person:')
+    expect(mail.html).toContain('12 Main St, Encinitas')
+    expect(icsOf(mail)).toContain('LOCATION:12 Main St\\, Encinitas')
+  })
+
+  it('puts the meeting link in the reminder', async () => {
+    tables.space_bookings = [
+      {
+        id: 'b2',
+        space_id: 'space-1',
+        member_profile_id: 'member-1',
+        service_type_id: 'svc-2',
+        starts_at: '2099-01-01T10:00:00.000Z',
+        ends_at: '2099-01-01T11:00:00.000Z',
+        status: 'confirmed',
+      },
+    ]
+    await runBookingReminder({ bookingId: 'b2' })
+    const body = routed[0] as { email: { html: string; text: string } }
+    expect(body.email.text).toContain('Video call: https://meet.example.com/abc')
+    expect(body.email.html).toContain('href="https://meet.example.com/abc"')
+  })
+
+  it('says nothing about a place when the service names none', async () => {
+    tables.space_service_types = [{ id: 'svc-1', name: 'Deep tissue' }]
+    tables.space_bookings = [{ id: 'b1', rescheduled_from: null, service_type_id: 'svc-1' }]
+    await notifyBookingConfirmed({
+      bookingId: 'b1',
+      spaceId: 'space-1',
+      spaceSlug: 'river',
+      spaceName: 'River Yoga',
+      ownerProfileId: null,
+      memberProfileId: 'member-1',
+      memberName: null,
+      startsAt: '2030-01-01T10:00:00.000Z',
+      endsAt: '2030-01-01T11:00:00.000Z',
+      serviceName: 'Deep tissue',
+    })
+    const [mail] = emails()
+    expect(mail.html).not.toContain('In person:')
+    expect(icsOf(mail)).not.toContain('LOCATION:')
+  })
+})

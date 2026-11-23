@@ -72,6 +72,8 @@ export const MIN_RPC_CALLS = 60
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
+  { file: 'lib/spaces/booking-notify.ts', table: 'space_service_types', column: 'location_kind', added: '2026-11-21', owner: 'BOOK-010', reason: 'Migration 20270346270000_space_service_location.sql adds this nullable column (where a service happens). The email read is fail-soft: an error reads as no place. Retire on public schema regeneration after the migration is applied.' },
+  { file: 'lib/spaces/booking-notify.ts', table: 'space_service_types', column: 'location_value', added: '2026-11-21', owner: 'BOOK-010', reason: 'Migration 20270346270000_space_service_location.sql adds this nullable column (the address, phone number or meeting link). The email read is fail-soft: an error reads as no place. Retire on public schema regeneration after the migration is applied.' },
   // EMPTY again as of 2026-11-23. Migrations 20270346120000 (save_space_profile_draft, PROG-E5),
   // 20270346130000 (ai_tokens_today and the cache token split, PROG-E8) and 20270346140000
   // (app_instances, PROG-E0) were confirmed recorded in the live project, and
