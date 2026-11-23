@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2521",
+  "title": "aidentyack.com background clip 404s on the custom domain",
+  "lane": "live",
+  "priority": "P0",
+  "size": "S",
+  "status": "done",
+  "closed": "2026-11-23",
+  "source": {
+    "file": "docs/THEME-PROTOCOL.md",
+    "ref": "Daniel 2026-11-23 16:21Z: \"bro, this is supposed to be that b roll video\" (the Made for the Long Way Home band showed its still)."
+  },
+  "detail": "The proxy matcher skipped image extensions only, so on a custom domain a request for a clip in public/ (/sites/aiden-tyack/video/at-the-bench.mp4 and .webm) ran through the proxy, was rewritten into the hosted site and answered 404. The video element kept its poster, so the band showed the still. mp4 and webm now sit beside the image extensions in the matcher. The probe builds the matcher's own first entry from proxy.ts and checks every tracked file under public/sites and public/themes skips the proxy.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/LIVE-2521.mjs"
+  },
+  "wave": "W7"
+}
