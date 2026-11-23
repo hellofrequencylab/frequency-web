@@ -7,7 +7,7 @@ import type { KitPage, SiteKit } from './types'
 // template; this is the finished site. PRIVATE like its theme: no index lists it, so only aidentyack.com is ever given it, by id.
 //
 // Every page is built from the shared role blocks, so the owner edits every word and photo in the editor. The design's parts map to them:
-//   · the forest hero: the split hero on the band, the rider portrait with the pinned Brass Stud Cuff print and the turning seal;
+//   · the forest hero: the split hero on the band, Aiden on his scooter with the pinned Brass Stud Cuff print and the turning seal;
 //   · the shop: the Shop block with its filters switch (tabs, count, price sort) and each product's material line and edition label;
 //   · the photo bands: a one-photo Gallery band (home) or the full hero (The Maker, Custom), so each page keeps one h1;
 //   · How it's made: stitched step cards on parchment; the custom work split: the Story block with the photo on the left;
@@ -41,7 +41,7 @@ function pages(): KitPage[] {
   const hero = role('RoleHero', {
     variant: 'split', tone: 'band', eyebrow: 'Batch No. 014 · Now open', title: 'Built to Outlast You',
     lead: 'Studded belts and bracelets, made by hand from vegetable-tanned hide and solid hardware.',
-    image: PHOTO('rider-portrait'), alt: 'A rider wearing a chestnut cuff', focus: '50% 35%',
+    image: PHOTO('aiden-on-his-scooter'), alt: 'Aiden riding his scooter', focus: '90% 35%',
     primaryLabel: 'Shop the Collection', primaryHref: '~/shop', secondaryLabel: 'Order Custom', secondaryHref: '~/custom',
     cardImage: PHOTO('cuff-tan-brass-stud'), cardLabel: 'Brass Stud Cuff', cardPrice: '$85', cardHref: '~/shop',
     seal: 'HANDMADE IN SAN DIEGO · NUMBERED & SIGNED · ',
