@@ -15,3 +15,9 @@ const clips = files.filter((f) => /\.(mp4|webm)$/.test(f)).length
 console.log(`LIVE-2521: ${files.length - reached.length} of ${files.length} site and theme files (${clips} clips) skip the proxy: ${reached.length ? 'RED' : 'ok'}`)
 for (const p of reached.slice(0, 20)) console.error('  reaches the proxy: ' + p)
 if (!files.length || !clips || reached.length) process.exit(1)
+// The second half: the site kit shows Aiden himself, never the design file's stand-in riders (Daniel, 16:25Z: "show the right person").
+const kit = readFileSync('lib/sites/kits/aiden-tyack-site.ts', 'utf8')
+const standIns = ['rider-portrait', 'motorcycles-at-sunset', 'rider-on-beach', 'friends-at-sunset', 'riders-on-coast-road'].filter((p) => kit.includes(`'${p}'`))
+const own = ['aiden-hammering-a-strap', 'aiden-on-his-scooter', 'blue-studded-bracelet-on-wrist'].filter((p) => !kit.includes(`'${p}'`))
+console.log(`LIVE-2521 photos: ${standIns.length} stand-in photos in the aidentyack.com kit, ${3 - own.length} of 3 of Aiden's own in place: ${standIns.length || own.length ? 'RED' : 'ok'}`)
+if (standIns.length || own.length) process.exit(1)
