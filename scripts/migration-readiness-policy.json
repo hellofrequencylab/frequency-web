@@ -5309,6 +5309,56 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5458,
+      "expiresAt": "2026-11-30T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346280000_space_bookings_no_overlap.sql",
+          "sha256": "7434c5e3c5bd4624fdebb3dafab3cb38411e74cea00495e13fc0be4b368ad274"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/BOOK-004.json",
+          "status": "modified",
+          "sha256": "d47fd6ff63d68a8346354cca8d8a06fc5ea8d113af4ea5a0fb5d62db90ff420c",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "b0a309b2f593384fe8abda36338c2990cf54d62350f16192495c26e87cb185f8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346280000_space_bookings_no_overlap.sql",
+          "status": "added",
+          "sha256": "7434c5e3c5bd4624fdebb3dafab3cb38411e74cea00495e13fc0be4b368ad274",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/space_bookings_no_overlap.test.sql",
+          "status": "added",
+          "sha256": "3f38845186e4ebc6dc1e0cd087ddf7f173e5178e768a0cd616d975c12f51565a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
