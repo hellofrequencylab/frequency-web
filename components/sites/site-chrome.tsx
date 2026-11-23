@@ -52,6 +52,7 @@ import { sky } from '@/lib/theme/astrology-wheel'
 import type { SiteFooter } from '@/lib/sites/site-footer'
 import type { FooterBadgeMode } from '@/lib/sites/site-badge'
 import { SITE_LOOK_CSS } from './site-look-css'
+import { AidenTyackBar, AidenTyackLogo, AIDEN_TYACK_CHROME_COPY } from './aiden-tyack-chrome'
 import type { SiteLook } from '@/lib/theme/site-style'
 import { HouseHeader, type HouseHeaderLink, type SiteLogoMode } from './house-header'
 import { SiteFooterAdmin, type SiteAdminNavLink } from './site-admin-bar'
@@ -235,6 +236,9 @@ export function SiteChrome({
   // menu in a glass capsule on the right, the phone from the footer's contact column, and the accent button. Over a photo hero it lies
   // on the picture. The footer leads with the closing band, prints contact lines with their icons, and ends on the dim wordmark.
   const sv = skin?.theme === 'services'
+  // Aiden Tyack draws the hammers lockup (mark, name, the tracked line under it), the announce band over the header, and the same
+  // lockup in the pine footer (components/sites/aiden-tyack-chrome.tsx).
+  const at = skin?.theme === 'aiden-tyack'
   // New World's footer is the same kit footer (handoff ui_kits/site/Chrome.jsx SiteFooter): closing line and button, contact lines with
   // their icons, the dim wordmark. Without a closing band of its own it closes on the blurb and the site's own button.
   const kitFoot = sv || skin?.theme === 'new-world'
@@ -260,7 +264,7 @@ export function SiteChrome({
       megaChevron={fh ? <FreeHumanGlyph name="chevron-down" size={14} /> : null}
       defaultMega={fh ? previewMega : null}
       menuFoot={designer ? phoneMenuFoot(footer?.utility ?? null) : null}
-      brandMark={sv ? <span className="sv-wordmark" style={{ ['--sv-wm-len' as string]: brandName.length }}>{brandName}</span> : wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? (isFreeHumanMovement(spaceSlug, brandName) ? FREE_HUMAN_MOVEMENT_CHROME.tagline : null)} logoUrl={logoUrl} /> : null}
+      brandMark={sv ? <span className="sv-wordmark" style={{ ['--sv-wm-len' as string]: brandName.length }}>{brandName}</span> : wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : midnight ? <MidnightLogo name={brandName} tagline={tagline} /> : nk ? <NetworkKitLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : tk ? <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} /> : fh ? <FreeHumanLogo name={brandName} tagline={tagline ?? (isFreeHumanMovement(spaceSlug, brandName) ? FREE_HUMAN_MOVEMENT_CHROME.tagline : null)} logoUrl={logoUrl} /> : at ? <AidenTyackLogo name={brandName} tagline={tagline} logoUrl={logoUrl} /> : null}
     />
   )
   const year = new Date().getFullYear()
@@ -342,6 +346,11 @@ export function SiteChrome({
           <TempleKitBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} links={links} utility={footer?.utility ?? null} />
           {header}
         </div>
+      ) : at ? (
+        <div className="at-top">
+          <AidenTyackBar utility={footer?.utility ?? null} />
+          {header}
+        </div>
       ) : (
         header
       )}
@@ -349,7 +358,7 @@ export function SiteChrome({
 
       <main id="top">{children}</main>
 
-      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : nk ? 'nk-footer-ground' : tk ? 'tk-footer-ground' : fh ? 'fh-footer-ground fh-sky fh-flow-t' : undefined} data-footer={nk ? ((showBrandFooter ?? !!skin) ? 'full' : 'minimal') : undefined}>
+      <div className={wild ? 'wh-footer-ground' : temple ? 'tp-footer-ground' : nk ? 'nk-footer-ground' : tk ? 'tk-footer-ground' : at ? 'at-footer-ground' : fh ? 'fh-footer-ground fh-sky fh-flow-t' : undefined} data-footer={nk ? ((showBrandFooter ?? !!skin) ? 'full' : 'minimal') : undefined}>
       {designer && (showBrandFooter ?? !!skin) && <DesignerFooterTop footer={footer} brandName={brandName} homeHref={homeHref} logoUrl={logoUrl ?? null} slug={spaceSlug} />}
       {fh && (showBrandFooter ?? !!skin) && <FreeHumanFooterTop brandName={brandName} homeHref={homeHref} tagline={tagline} logoUrl={logoUrl ?? null} links={links} footer={footer} slug={spaceSlug} />}
       {!designer && !fh && (showBrandFooter ?? !!skin) && (
@@ -366,6 +375,8 @@ export function SiteChrome({
                 <MidnightLogo name={brandName} tagline={tagline} />
               ) : tk ? (
                 <TempleKitLogo name={brandName} tagline={tagline ?? TEMPLE_KIT_CHROME_COPY.tagline} logoUrl={logoUrl} />
+              ) : at ? (
+                <AidenTyackLogo name={brandName} tagline={tagline} logoUrl={logoUrl} />
               ) : kitFoot && (footer?.band || !sv) ? (
                 <span className="sv-wordmark">{brandName}</span>
               ) : (
@@ -383,7 +394,7 @@ export function SiteChrome({
               </>
             ) : (
               <>
-                {(tk ? footer?.blurb : footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
+                {(tk || at ? footer?.blurb : footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
                 {kitFoot && !sv && cta && (
                   <a className="sv-btn sv-btn--accent" href={cta.href} {...(cta.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
                     <span>{cta.label}</span>
@@ -451,7 +462,7 @@ export function SiteChrome({
         {footer?.note && <span className="hs-footer-note">{footer.note}</span>}
         {checkIn && <CheckInBadge href={checkIn.href} line={checkIn.line} />}
         {credit === 'badge' && !tk && <PartnerBadge />}
-        {((credit === 'line' && !nk) || (credit === 'badge' && tk)) && <PartnerLine label={tk ? TEMPLE_KIT_CHROME_COPY.credit : fh ? FREE_HUMAN_CHROME_COPY.credit : undefined} />}
+        {((credit === 'line' && !nk) || (credit === 'badge' && (tk || at))) && <PartnerLine label={tk ? TEMPLE_KIT_CHROME_COPY.credit : fh ? FREE_HUMAN_CHROME_COPY.credit : at ? AIDEN_TYACK_CHROME_COPY.credit : undefined} />}
       </footer>
       </div>
     </div>
