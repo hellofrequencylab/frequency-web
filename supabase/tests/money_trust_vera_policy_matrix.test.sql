@@ -44,6 +44,15 @@ insert into _deny_matrix (tbl, denied) values
   ('gem_config',                  'insert,update,delete'),
   ('gem_gifts',                   'insert,update,delete'),
   ('gem_transactions',            'insert,update,delete'),
+  ('hunt_donation_asks',          'select,insert,update,delete'),
+  ('hunt_donation_gifts',         'select,insert,update,delete'),
+  ('hunt_entitlement_events',     'select,insert,update,delete'),
+  ('hunt_entitlements',           'select,insert,update,delete'),
+  ('hunt_pass_bindings',          'select,insert,update,delete'),
+  ('hunt_refund_cases',           'select,insert,update,delete'),
+  ('hunt_sponsor_agreements',     'select,insert,update,delete'),
+  ('hunt_sponsor_settlements',    'select,insert,update,delete'),
+  ('hunt_sponsor_snapshots',      'select,insert,update,delete'),
   ('listing_offers',              'delete'),
   ('partner_redemptions',         'insert,update,delete'),
   ('pricing_stripe_prices',       'select,insert,update,delete'),
@@ -53,6 +62,7 @@ insert into _deny_matrix (tbl, denied) values
   ('reward_grants',               'insert,update,delete'),
   ('space_benefit_redemptions',   'select,insert,update,delete'),
   ('space_billing_agreements',    'insert,update,delete'),
+  ('space_domain_purchases',      'select,insert,update,delete'),
   ('space_donations',             'select,insert,update,delete'),
   ('space_memberships',           'insert,update,delete'),
   ('space_subscription_items',    'insert,update,delete'),
@@ -69,6 +79,7 @@ insert into _deny_matrix (tbl, denied) values
   ('beta_audit_log',              'select,insert,update,delete'),
   ('blocked_users',               'insert,update,delete'),
   ('capability_permissions',      'insert,update,delete'),
+  ('hunt_reports',                'select,insert,update,delete'),
   ('marketplace_reports',         'update,delete'),
   ('reports',                     'delete'),
   ('space_standing',              'select,insert,update,delete'),
@@ -83,8 +94,8 @@ insert into _deny_matrix (tbl, denied) values
 
 -- ── 0. Non-vacuity. A matrix that failed to load asserts nothing, loudly and greenly. ──────────
 select is(
-  (select count(*) from _deny_matrix), 48::bigint,
-  'the deny matrix loaded all 48 money / trust / Vera tables'
+  (select count(*) from _deny_matrix), 59::bigint,
+  'the deny matrix loaded all 59 money / trust / Vera tables'
 );
 
 -- ── 1. Every table in the matrix is a real, live table. ────────────────────────────────────────
